@@ -51,7 +51,7 @@ deployment runs well on them, and changes them only for a reason.
 | Segments | pass-through ceiling guess | peak 1-s rate of the first 60 s × 1.5 | — | producer | [§38.5](15-producer.md#385-choosing-the-ceiling) |
 | Segments | early cut | at the next keyframe once a segment holds `max_bitrate` × duration ahead of its phase | — | producer | [§38.2](15-producer.md#382-cutting-segments) |
 | Segments | ceiling raise after an early cut | +25% | — | producer | [§38.5](15-producer.md#385-choosing-the-ceiling) |
-| Segments | starvation | a second at the cap holds ≥ 95% of the ceiling; an episode is 3–60 s at the cap; starved = ≥ 50 episodes in a day with < 10% of its seconds at the cap | — | cluster | [§38.5](15-producer.md#385-choosing-the-ceiling) |
+| Segments | starvation | a second is at the cap when its trailing keyframe interval holds ≥ 95% of what the ceiling allows; an episode is 3–60 s at the cap; starved = ≥ 50 episodes in a day with < 10% of its seconds at the cap | — | cluster | [§38.5](15-producer.md#385-choosing-the-ceiling) |
 | Segments | `auto_raise` | off (suggest only) | on: +25%, at most once a day; never lowers | set | [§38.5](15-producer.md#385-choosing-the-ceiling) |
 | Uploads | `retain` | `committed` | `committed`, `written` | producer | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Uploads | `resume_timeout` | 2 min | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |

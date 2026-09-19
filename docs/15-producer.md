@@ -226,7 +226,7 @@ is a loop with three parts.
 
    | Term | Definition |
    |---|---|
-   | second at the cap | a second whose bytes are at least 95% of the ceiling |
+   | second at the cap | a second whose trailing keyframe interval holds at least 95% of what the ceiling allows for that interval. Measured per bare second, every other second would carry an I-frame and look like a spike ([producer bench](producer-bench.md)) |
    | episode | 3 to 60 consecutive seconds at the cap. Shorter is one keyframe's spike; longer is a scene condition (noise, rain, snow, a crowd) that more bits would only spend on noise |
    | starved | at least 50 episodes in a day, while fewer than 10% of the day's seconds were at the cap |
 
