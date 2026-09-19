@@ -24,14 +24,24 @@ Each member has a stable, never-reused **ordinal** within its set (0, 1, 2, …)
 assigned at registration. Placement uses it to spread members apart ([§11](03-placement.md#11-placement)), and
 Writers use it to stagger segment boundaries ([§12.2](04-write-path.md#122-resumable-part-uploads)).
 
-A **Zone** is an optional label for Sources whose fields of view overlap. A
-zone may cross sets. It describes redundancy between angles, not fate-sharing.
-Placement does not use it yet ([§36.2](13-configuration.md#362-open-decisions)). Shale needs no camera geometry beyond
-these two labels: the only placement question is which Sources should not
-share a failure domain.
+A **Site** groups sets within a tenant, e.g. a building or a branch. It is
+payday's second permission axis (field 3): a holder can be limited to the
+sites it is a member of, so a guard at one building cannot read another's
+cameras ([§33.1](10-security.md#331-trust-model)). A set belongs to at most one
+site, fixed when the set is added. Its sources, objects, and attempts carry the
+same site. A tenant that does not use sites leaves the field empty and sees no
+difference.
+
+A **Zone** is an optional label, assigned by people, for Sources whose fields
+of view overlap. A zone may cross sets. It describes redundancy between angles,
+not fate-sharing. The v1 scheduler does not use it, and zone-aware placement is
+not planned ([§11.2](03-placement.md#112-scheduler-interface)). The label is
+stored so a future scheduler could. Shale needs no camera geometry beyond
+these labels: the only placement question is which Sources should not share a
+failure domain.
 
 An **Epoch** is a fixed time bucket (default 1 hour). The epoch of an object is
-derived from its `start_time`. During one epoch, all objects of a Source go to
+derived from its `date_started`. During one epoch, all objects of a Source go to
 the same sink as long as that sink stays eligible. When the epoch changes, the
 Source moves to another sink.
 
@@ -55,6 +65,10 @@ PENDING ──► COMMITTED ──► DELETING ──► DELETED
    ├──► LOST                     (Writer tried and retries were exhausted)
    └──► (discarded)              (only ABANDONED attempts: nothing was uploaded)
 ```
+
+`DELETED` is also reached without any state change: an object whose
+`date_deleted` has passed is deleted, whatever its stored state says
+([§20.1](06-retention-gc.md#201-date_deleted-is-an-expiry-not-an-event)).
 
 An object whose allocations were never used is removed. It reads as
 `NOT_RECEIVED`, not `LOST`, because Shale was never given any data ([§19](05-read-path.md#19-reader-semantics)).
@@ -82,8 +96,8 @@ write_attempts
   sink_id
   state
   failure_reason
-  created_at
-  finished_at
+  date_created
+  date_finished
 ```
 
 ## 9. Identity
@@ -123,9 +137,17 @@ A replacement HDD gets a new sink and never reuses the old `sink_id`.
 ## 10. Time Semantics
 
 - Stored times are UTC.
-- `start_time` / `end_time` come from the Writer, i.e. media time. The epoch is
-  derived from `start_time`, so a delayed retry still lands in its original
-  epoch.
-- `created_at` / `committed_at` come from CP / node clocks.
-- Clocks are NTP-synchronized. The CP rejects or clamps `start_time` values
+- **System times** are stamped by Shale: `date_created` (allocation, CP clock),
+  `date_committed` (commit, node clock), `date_finished` (attempt end).
+- **Data times** are `date_started` and `date_ended`: the time span the
+  object's data covers, **declared by the producer**. Shale does not interpret
+  them. It indexes them for time-range queries and derives the epoch from
+  `date_started`. A producer that declares nothing gets the write times
+  instead (first byte and commit).
+- The two differ whenever an upload is not live. A buffered segment arrives a
+  segment-length late, and a backlog after a link outage can arrive hours
+  late. A pre-allocated object's `date_created` even precedes its data. Data
+  times keep time-range queries and epochs correct in all these cases, with no
+  knowledge of what the data is.
+- Clocks are NTP-synchronized. The CP rejects or clamps `date_started` values
   that are too far from its own clock (tolerance: [§36.1](13-configuration.md#361-configuration-reference)).

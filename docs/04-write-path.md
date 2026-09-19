@@ -7,7 +7,7 @@
 ```text
 1. Writer      keeps allocations for segments due within allocation_horizon:
                SetService.Allocate {set, horizon}   (or ObjectService.Allocate
-               {source, expected start_time} for a single segment)
+               {source, expected date_started} for a single segment)
 2. CP          object_id, attempt_id, sink_id, node endpoint, access token
                (plus the next few ranked candidates, for fast reallocation)
 3. Writer      live:     opens the upload when the segment starts and streams
@@ -42,13 +42,13 @@ CP outage. It adds no durable Writer state:
   in RAM only. After a restart it simply asks again.
 - `SetService.Allocate` returns allocations for every member of the set
   up to the horizon in one call. Placement is a pure function of
-  `(set, epoch, ordinal)` and the expected `start_time` ([§11](03-placement.md#11-placement)), so an allocation
+  `(set, epoch, ordinal)` and the expected `date_started` ([§11](03-placement.md#11-placement)), so an allocation
   computed early points to the same sink as one computed at upload time.
 - An allocation is valid for `allocation_ttl` = horizon + maximum upload time
   (default 20 minutes), and so is its access token
   ([§33.2](10-security.md#332-access-tokens)). An unused allocation
   expires as `ABANDONED` and leaves no trace for readers ([§8](02-data-model.md#8-state-model)).
-- If a segment's actual `start_time` falls into a different epoch than the
+- If a segment's actual `date_started` falls into a different epoch than the
   expected one (e.g. the set restarted), the Writer discards the allocation
   and asks again.
 
@@ -110,7 +110,7 @@ HEAD /objects/<key>
 |---|---|---|
 | Starts | when the segment is complete | when the segment starts |
 | Request | one request, `Content-Length` = L | one long request (≈ segment duration), chunked |
-| Size at start | known (`Upload-Length`) | unknown; `Shale-Size-Hint` = bitrate × duration × 1.2, capped at `max_object_size` |
+| Size at start | known (`Upload-Length`) | unknown; `Shale-Size-Hint` = bitrate × duration × 1.2, capped at the agreed maximum |
 | Uplink | a burst per segment, smoothed by staggering | exactly the recording bitrate |
 | Data reaches storage | after the segment closes | within one part fill time (≈ 16–32 s) |
 | If the producer is destroyed | its buffered segments are gone | only bytes not yet written to a sink are gone ([§15](#15-partial-objects)) |
@@ -124,10 +124,10 @@ the device, before any `fsync`. A Writer chooses how long it keeps the bytes:
 
 | `retain` | Writer RAM | If the node loses unsynced data (power loss) |
 |---|---|---|
-| `until_commit` (default) | the whole segment until `201` | resume from the lower offset, or re-upload elsewhere |
-| `until_written` | about one part: the segment is sent as part-sized (hence 4 KiB-aligned) requests with `Upload-Complete: ?0`; the node replies `204` only after that part is written, and the Writer then frees it | the segment is lost |
+| `committed` (default) | the whole segment until `201` | resume from the lower offset, or re-upload elsewhere |
+| `written` | about one part: the segment is sent as part-sized (hence 4 KiB-aligned) requests with `Upload-Complete: ?0`; the node replies `204` only after that part is written, and the Writer then frees it | the segment is lost |
 
-`until_written` is meant for RAM-constrained producers. It follows the
+`written` is meant for RAM-constrained producers. It follows the
 loss-tolerant principle, but the loss is real.
 
 **Staging in parts.**
@@ -245,7 +245,7 @@ ObjectStored {
   object_key
   size
   incomplete                        (§15)
-  start_time, end_time, source_id   (for index rebuilds)
+  date_started, date_ended, source_id   (for index rebuilds)
 }
 ```
 
@@ -382,7 +382,7 @@ it can commit after A2 did.
 
 **Orphans** are files in a sink that the index does not know: a lost commit event, a
 duplicate nobody deleted, or data left over after an index loss. They waste
-space but never break correctness. GC reclaims them after their `expires_at`
+space but never break correctness. GC reclaims them after their `date_expired`
 ([§21.3](06-retention-gc.md#213-orphans)).
 
 **Missing objects** are index entries whose file is gone. They are detected
@@ -394,7 +394,7 @@ A segment can end early in two ways.
 
 **The camera stops** (set powered off, camera fault). The Writer still
 controls the upload. It ends the segment where the recording stopped and
-completes the upload normally, with the real `end_time` and size. If the
+completes the upload normally, with the real `date_ended` and size. If the
 container is broken, the Writer drops the segment instead.
 
 **The producer disappears mid-upload** (destroyed, powered off, link gone for
@@ -405,7 +405,7 @@ segment is already on a sink. When such an upload has been idle for
 
 1. flushes and keeps what it has,
 2. finalizes the file as a committed object flagged **`incomplete`**, with
-   the size it actually has and no `end_time`,
+   the size it actually has and no `date_ended`,
 3. publishes `ObjectStored` with `incomplete: true`.
 
 The node does not parse media. Writers that use live upload must use a
@@ -425,9 +425,9 @@ full, it drops the oldest unstored segment and reports it LOST.
 Writer parameters:
 
 - upload mode: `live` or `buffered`
-- `retain`: `until_commit` or `until_written` ([§12.2](#122-resumable-part-uploads))
-- RAM buffer size (`until_commit`: ≥ 2 segments per camera it serves, plus
-  headroom; `until_written`: ≈ 1 part per camera plus backlog)
+- `retain`: `committed` or `written` ([§12.2](#122-resumable-part-uploads))
+- RAM buffer size (`committed`: ≥ 2 segments per camera it serves, plus
+  headroom; `written`: ≈ 1 part per camera plus backlog)
 - maximum age of a buffered segment
 - retry backoff
 - max concurrent uploads

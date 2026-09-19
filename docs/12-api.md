@@ -60,6 +60,8 @@ localhost by default.
 | `Object` | tenant | 9 | Get, List, Watch | tenant (all tenants on cluster) |
 | `Attempt` | tenant | 10 | Get, List | tenant |
 | `EnrollmentToken` | tenant | 11 | Add, List, Erase | tenant |
+| `Site` | tenant | 19 | Add, Get, Patch, Erase, List, Watch | tenant |
+| `SiteMember` | tenant | 20 | Add, List, Erase | tenant |
 | `Node` | **global** | 12 | Get, List, Watch | cluster |
 | `Device` | **global** | 13 | Get, List, Watch | cluster |
 | `Sink` | **global** | 14 | Get, List, Watch | cluster |
@@ -67,18 +69,22 @@ localhost by default.
 | `PlacementPolicy` | **global** | 16 | Add, Get, List | cluster |
 | `JoinToken` | **global** | 17 | Add, List, Erase | cluster |
 | `UploadPolicy` | **global** | 18 | Add, Get, List | cluster |
+| `AddressPolicy` | **global** | 21 | Add, Get, List | cluster |
 
 - **Tenant-owned** is payday's default. Every entity outside the wall says
-  `global: {}` explicitly, and a search for it lists exactly the seven above.
+  `global: {}` explicitly, and a search for it lists exactly the eight above.
   Storage is physically shared, so the infrastructure that holds it belongs to
   the cluster, not to any tenant.
 - **Holders** are the tenant's actors: producers, readers, and tenant admins,
   distinguished by role. Storage Nodes are **not** holders. They authenticate
   to the cluster API by certificate
   ([§33.1](10-security.md#331-trust-model)).
-- **Field 3** of every tenant entity is left free for a future second
-  permission axis (e.g. `Site`, a group of sets within a tenant)
-  ([§36.2](13-configuration.md#362-open-decisions)).
+- **Field 3 is `site`**, payday's second permission axis
+  ([§7](02-data-model.md#7-source-set-zone-epoch)). `Set` declares it,
+  nullable and immutable. `Source`, `Object`, `Attempt`, and `EnrollmentToken`
+  carry a copy, because payday narrows each row by its own field 3.
+  `SiteMember` links holders to sites and answers "which sites may this caller
+  see". Tenant admins see all sites.
 - **Erasure.** A `Set` or `Source` is soft-erased (`date_erased`): its cameras
   stop being allocated for, and their recorded objects stay readable until
   retention removes them. An `Object` is never erased through the API. GC
@@ -91,19 +97,24 @@ localhost by default.
 Key fields, beyond payday's `id`, `tenant`, `alias`, and `date_*`:
 
 ```text
-Set              epoch, set_spread, retention (expires_after, must_delete_after),
-                 checksum, agreed link profile (mode, timeouts, horizon),
-                 profile_version
+Tenant           capacity_share (overlay on payday's Tenant, §21.4)
+Site             name, description
+SiteMember       holder, site
+Set              site, epoch, set_spread, retention (expire, delete), checksum,
+                 agreed link profile (mode, timeouts, horizon), profile_version
 Source           set, ordinal (assigned by Add, immutable), zone,
                  agreed segment profile (bitrate, segment duration, object size)
-Object           source, set, sink, object_key, start_time, end_time, size,
-                 state, incomplete, expires_at, must_delete_by, hold,
+Object           source, set, sink, object_key, date_started, date_ended, size,
+                 site, state, incomplete, date_expired, date_deleted,
                  placement_version
 Attempt          object, sink, state, failure_reason
-Node             advertise addresses, state, last heartbeat, known key IDs
-Device           node, hardware ID, health, failure score, quarantine state
+Node             alias, reported interfaces and IPs, state, last heartbeat,
+                 known key IDs
+Device           node, hardware ID, slot, health, SMART summary, failure score,
+                 quarantine (state, date, reason, history)
 Sink             node, device, path, capacity, free, pressure, capabilities
 PlacementPolicy  version, parameters, active
+AddressPolicy    version, resolver, resolver parameters, network rules, active
 UploadPolicy     version, bounds and defaults of every negotiated value, active
 ```
 
@@ -124,9 +135,9 @@ service ObjectService {
   rpc Reallocate(ObjectReallocateRequest) returns (Allocation);
   // A Writer gives up on an object; it becomes LOST (§13).
   rpc ReportFailure(ObjectReportFailureRequest) returns (Object);
-  // Holds forbid deletion, including must_delete_by (§20).
-  rpc Hold(ObjectHoldRequest) returns (Object);
-  rpc Release(ObjectReleaseRequest) returns (Object);
+  // Changes date_expired and/or date_deleted, for one object or in bulk by
+  // set or source and a time range; a reason is required and audited (§20.3).
+  rpc Reschedule(ObjectRescheduleRequest) returns (ObjectRescheduleResponse);
   // Objects and gaps over a time range, with read tokens (§17, §19).
   rpc Timeline(ObjectTimelineRequest) returns (ObjectTimelineResponse);
 }
@@ -137,8 +148,10 @@ service HolderService {
 }
 ```
 
-- `Allocation` carries `object_id`, `attempt_id`, the target sink and node
-  address, the **access token**, and the next few ranked candidates.
+- `Allocation` carries `object_id`, `attempt_id`, the target sink, the node's
+  **endpoints** as the active address resolver gives them
+  ([§34.10](11-deployment.md#3410-node-addresses)), the **access token**, and
+  the next few ranked candidates.
 - `ObjectTimelineRequest` names a set or a source and a time range.
   `ObjectTimelineResponse` lists, per source, the objects with their states
   and read tokens, and the gaps with their reasons
@@ -157,6 +170,8 @@ service NodeService {
   rpc Heartbeat(NodeHeartbeatRequest) returns (NodeHeartbeatResponse);
   // ObjectStored and deletion events, batched; applied idempotently (§34.9).
   rpc PushEvents(NodePushEventsRequest) returns (NodePushEventsResponse);
+  // What the active address resolver would hand out, for a given caller (§34.10).
+  rpc Resolve(NodeResolveRequest) returns (NodeResolveResponse);
 }
 
 service SinkService {
@@ -170,6 +185,7 @@ service DeviceService {
   rpc Release(DeviceReleaseRequest) returns (Device);
   rpc Retire(DeviceRetireRequest) returns (Device);
   rpc DeclareDead(DeviceDeclareDeadRequest) returns (Device);            // objects → LOST
+  rpc Locate(DeviceLocateRequest) returns (Device);                      // bay LED on/off
 }
 
 service SigningKeyService {
@@ -182,6 +198,10 @@ service PlacementPolicyService {
 
 service UploadPolicyService {
   rpc Activate(UploadPolicyActivateRequest) returns (UploadPolicy);       // §12.6
+}
+
+service AddressPolicyService {
+  rpc Activate(AddressPolicyActivateRequest) returns (AddressPolicy);     // §34.10
 }
 ```
 

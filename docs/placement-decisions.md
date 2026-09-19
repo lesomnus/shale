@@ -120,10 +120,11 @@ path handles that.
 ### D3. Placement key = `(set, epoch, placement_version)` + ordinal
 
 ```text
-epoch = floor(start_time / epoch_duration)
+epoch = floor(date_started / epoch_duration)
 ```
 
-- `start_time` is the **segment's media time**, not the allocation time. A
+- `date_started` is the **data time** the producer declares
+  ([§10](02-data-model.md#10-time-semantics)), not the allocation or write time. A
   segment retried minutes later, or buffered by a Writer during an outage,
   still lands with its epoch-mates.
 - `placement_version` is in the key, so a policy change rotates placement
@@ -131,7 +132,7 @@ epoch = floor(start_time / epoch_duration)
 - The key is per set, and the member's ordinal selects its position in the
   ranking (D5). Sources without a set use `(source, epoch, placement_version)`.
 - Writers pre-allocate up to `allocation_horizon` ahead ([§12.1](04-write-path.md#121-flow)), so
-  the key uses the segment's **expected** `start_time`. Segment boundaries are
+  the key uses the segment's **expected** `date_started`. Segment boundaries are
   deterministic (staggered phases), so for live uploads, which start with the
   segment, the expected time is the actual one. Because placement is
   deterministic, an early allocation lands on the same sink as a late one.
@@ -247,11 +248,14 @@ Options per set:
 | `pack` | whole set on `device_ranking[0]` of `node_ranking[0]` | a partial set is worthless; accepts one-device reads |
 | `none` | each camera keyed by `(s, e)` alone | no set structure |
 
-**Zones** (overlapping views that may cross sets) are not used in v1. Honoring
-them requires each placement to know its zone-mates' choices. That is doable
-deterministically but adds cost and coupling. Set spread already covers the
-common case, because overlapping cameras usually belong to the same set.
-Revisit if cross-set overlap matters.
+**Zones** (overlapping views that may cross sets) are not used, and
+zone-aware placement is not planned. A camera that moves away from its zone-
+mates can collide with its own set-mates, which then have to move, and the
+chain runs through every set the zones connect. Solving it needs a per-epoch
+assignment stored for each such group, which gives up the stateless hash. Set
+spread already covers the common case, because overlapping cameras usually
+belong to the same set. If zones ever matter, a zone-aware scheduler can
+replace this one without migration ([§11.2](03-placement.md#112-scheduler-interface)).
 
 ### D6. Weight = raw capacity, not free space
 
@@ -283,6 +287,7 @@ Ranking is computed over **eligible** targets:
 |---|---|
 | device healthy, not quarantined, not retired | heartbeat + failure score ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) |
 | sink not CRITICAL, not retired, passed capability probe | heartbeat ([§22.2](07-storage-node.md#222-sinks-and-devices), [§21](06-retention-gc.md#21-lazy-gc)) |
+| sink not forecast to run out this epoch | capacity forecast ([§11.1](03-placement.md#111-capacity-forecast)) |
 | node reachable | heartbeat freshness |
 | weight reduced (suspect / probation) | failure score |
 
@@ -317,7 +322,7 @@ HDDs or nodes), not a placement problem.
 
 Per-sink capacity variance has the same root: busier sinks cycle through GC
 faster, so **effective retention varies slightly per sink**. [§20](06-retention-gc.md#20-retention)
-documents that `expires_at` is a lower bound only while capacity allows.
+documents that `date_expired` is a lower bound only while capacity allows.
 
 ### D9. Versioning
 

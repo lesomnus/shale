@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | **Producer** | Holder of a tenant | tenant API | bearer credential | register and allocate for its tenant's sets |
 | **Reader** | Holder of a tenant | tenant API | bearer credential | query and read its tenant's objects |
-| **Tenant admin** | Holder of a tenant | tenant API | bearer credential | manage its tenant's sets, sources, holders, enrollment tokens, holds |
+| **Tenant admin** | Holder of a tenant | tenant API | bearer credential | manage its tenant's sites, sets, sources, holders, enrollment tokens, and retention dates |
 | **Storage Node** | cluster infrastructure | cluster API | node certificate (mTLS) | report its own devices and sinks; push events; propose GC |
 | **Cluster operator** | cluster infrastructure | cluster API | admin credential | manage tenants, nodes, devices, sinks, keys, policies |
 | **Control Plane** | — | everyone | TLS certificate, signing key | placement, authorization, metadata |
@@ -18,6 +18,11 @@
   deployment is a cluster with one tenant, so the wall is always on, and
   multi-tenancy needs no code change
   ([§7](02-data-model.md#7-source-set-zone-epoch)).
+- **Sites.** Within a tenant, a holder can be further limited to the sites it
+  is a member of (payday's second axis, field 3). Tenant admins see every
+  site. Readers and producers see only their own sites, and a producer's
+  credential is issued *within* the site of the set it was enrolled for, so it
+  is useless anywhere else ([§7](02-data-model.md#7-source-set-zone-epoch)).
 - **Two surfaces.** Anything that must span tenants (Storage Nodes, cluster
   operators) uses the cluster API, which is a separate entry point on the
   internal network. The tenant API contains no path that sees more than one
@@ -115,7 +120,7 @@ node:      shale storage --join https://cp-cluster.internal:7401 \
 1. The node connects to the cluster API and checks the CP certificate's CA
    against `--ca-hash`, which rules out a man in the middle on first contact.
 2. It generates its own key pair and calls `NodeService.Join` with a CSR, its
-   advertise addresses, and its sinks, authenticated by the one-time join
+   interfaces and IPs, and its sinks, authenticated by the one-time join
    token.
 3. The CP assigns a `node_id`, issues a **node certificate** from its built-in
    CA ([§33.5](#335-tls)), and returns the CA bundle and the key set.
@@ -136,8 +141,10 @@ device:        HolderService.Enroll {enrollment token}
 - `Enroll` is the one tenant API call made without a credential. The
   enrollment token decides the tenant and role, so a device cannot choose
   them.
-- The credential is **scoped by role**: a producer may register and allocate
-  only for the sets its enrollment named, and a reader may query and read.
+- The credential is **scoped by role and site**: a producer may register and
+  allocate only for the set its enrollment named, within that set's site. A
+  reader may query and read within the sites its enrollment named, or the
+  whole tenant if it named none.
 - The CP stores only a hash of each credential. Erasing the holder revokes it.
 - Remote devices get bearer tokens rather than client certificates because
   tokens are easier to provision and replace.
@@ -146,9 +153,10 @@ device:        HolderService.Enroll {enrollment token}
 
 - The CP runs a **built-in CA** by default. `shale cluster init` creates it. No
   external PKI is needed on Kubernetes, plain Linux, or a single machine.
-- Node certificates carry the node's advertise names and IPs. Writers and
-  Readers dial nodes directly, so these must be the addresses clients actually
-  use.
+- Node certificates carry every name and IP the active address resolver can
+  hand out for that node. Writers and Readers dial nodes directly, so the
+  certificate must match whatever endpoint they were given
+  ([§34.10](11-deployment.md#3410-node-addresses)).
 - **External certificates** (cert-manager, ACME, a corporate CA) can replace
   the built-in CA's output: configure certificate and key paths, and the node
   and CP load those instead.

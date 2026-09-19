@@ -20,7 +20,7 @@ no available object ([§19](#19-reader-semantics)).
 Object size and read scheduling unit are separate:
 
 ```text
-object        64–128 MB   storage efficiency
+object        32–512 MB   storage efficiency
 read chunk    ~16 MB      latency / fairness in the Device Queue
 ```
 
@@ -74,10 +74,10 @@ CRITICAL           abort stalled readers of deleted objects;
 Object states exposed to readers:
 
 ```text
-AVAILABLE     (possibly flagged incomplete: tail missing, end_time unknown)
+AVAILABLE     (possibly flagged incomplete: tail missing, date_ended unknown)
 UNAVAILABLE   (sink/device/node down or quarantined for reads)
 LOST          (Shale was given the data, or tried to take it, and lost it)
-DELETED       (removed by retention)
+DELETED       (date_deleted has passed, §20.1)
 NOT_FOUND     (unknown object ID)
 ```
 

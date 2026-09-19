@@ -78,10 +78,12 @@ data, so the "no SSD in the data path" rule
   - **hostNetwork.** Writers connect to the one node that placement chose, so
     every Storage Node needs a stable, directly reachable address. The data
     path should also avoid the overlay network and kube-proxy. HTTP/3 needs
-    UDP on the same port. The advertise address is the host's IP or DNS name.
+    UDP on the same port.
+  - How clients reach the node, by host IP or by a DNS name, is set by the
+    address resolver ([§34.10](#3410-node-addresses)).
   - Sinks are hostPath mounts of the HDD mount points.
-  - The pod needs no privileges. Device identity is read from the read-only
-    `/sys` every container already has ([§34.8](#348-containers)).
+  - The pod needs the devices behind its sinks and `CAP_SYS_RAWIO`, for SMART
+    and bay LEDs ([§34.8](#348-containers)). A privileged pod also works.
   - The join token comes from a Secret. After joining, the node's state
     directory is a hostPath too, so it keeps its identity across pod restarts.
 - **Upgrades** roll one Storage Node at a time. While a node is down, its
@@ -125,9 +127,15 @@ The image contains the static binary only (distroless). Requirements:
   `fallocate` reliably ([§22.2](07-storage-node.md#222-sinks-and-devices)).
 - `--network host` (or hostNetwork), for the reasons in
   [§34.5](#345-kubernetes).
-- Device identity uses `st_dev` → `/sys/dev/block/MAJ:MIN` → WWN/serial. The
-  default read-only `/sys` is enough, so no `--privileged` and no `/dev`
-  access are needed.
+- **Device access.** Device identity comes from `st_dev` →
+  `/sys/dev/block/MAJ:MIN` → WWN/serial, which the default read-only `/sys`
+  provides. SMART ([§27](09-operations.md#27-node--device--sink-health-and-quarantine))
+  and bay LEDs (`shale device locate`) need more: the block devices behind the
+  sinks and the enclosure's `/dev/sg*` devices, plus **`CAP_SYS_RAWIO`**. Grant
+  exactly that (`--device … --cap-add SYS_RAWIO`, or the Kubernetes
+  equivalent), or run the container privileged. Without it, the node still
+  stores and serves data, but health scoring loses SMART and `locate` does
+  not work.
 - The state directory is a volume, so the node keeps its identity when the
   container is replaced.
 
@@ -146,3 +154,60 @@ directly:
 - Events lost in a node crash are covered by the startup replay window
   ([§12.4](04-write-path.md#124-commit-semantics)) and, beyond that, by orphan
   reclamation ([§21.3](06-retention-gc.md#213-orphans)).
+
+### 34.10 Node addresses
+
+Writers and Readers connect directly to the node that placement chose. **How
+that node is named to a client is a replaceable policy**, kept apart from
+the node itself.
+
+```text
+Node       reports facts:     node_id, alias, interfaces and IPs it listens on
+Resolver   decides policy:    (node, caller, protocol) → endpoint(s)
+Token      stays address-free: aud = node_id, never a host name (§33.2)
+```
+
+The CP runs the active resolver whenever it hands out an endpoint: in
+allocations, reallocations, and read tokens. Nothing else in the system
+depends on how nodes are addressed. Placement, tokens, and the index all
+speak `node_id`.
+
+**Resolvers.** The resolver and its parameters form an `AddressPolicy`, a
+global, versioned entity that operators activate through the cluster API
+([§35.5](12-api.md#355-cluster-api-custom-rpcs)).
+
+| Resolver | Endpoint handed out | Use |
+|---|---|---|
+| `advertised` (default) | one of the IPs the node reports, chosen by rules on the caller's network (e.g. internal CIDRs get the internal interface, others the external one; IPv4 or IPv6) | no DNS at all |
+| `template` | a name built from the node, e.g. `{alias}.nodes.example.com` | DNS records managed outside Shale |
+| `dns` | the same template names, and the CP **maintains the records itself** in a DNS server it is given (RFC 2136 dynamic update, or a provider plugin) | DNS that follows the cluster: records appear when a node joins, change when its IPs change, and disappear when it leaves |
+
+Further resolvers (per-site or per-region names, a load-aware name, a
+service-mesh address) implement the same interface: given a node, the caller
+(its network, tenant, and site), and the protocol (HTTP/1.1, HTTP/2, or HTTP/3),
+return one or more endpoints with scheme, host, and port.
+
+**TLS follows the resolver.** A client verifies the node certificate against
+whatever host it was given, so the node certificate must cover every name and
+IP the active resolver can hand out:
+
+- The CP computes the SANs from the resolver: the IPs for `advertised`, the
+  generated names for `template` and `dns`.
+- When the `AddressPolicy` changes, affected nodes receive new certificates
+  through their normal renewal ([§33.4](10-security.md#334-enrollment)). The
+  CP activates the new policy only after they have them, the same way it
+  rotates signing keys ([§33.3](10-security.md#333-signing-keys-and-rotation)).
+- With external certificates, a wildcard such as `*.nodes.example.com` covers
+  a template in one certificate.
+
+**Stale endpoints.** An allocation can be up to one `allocation_horizon` old.
+If a node's address changed in the meantime:
+
+- Names from `template` or `dns` keep working, because DNS carries the change
+  and its TTL bounds the staleness.
+- An IP from `advertised` may no longer answer. The upload then fails like any
+  unreachable target, and `ObjectService.Reallocate` returns fresh endpoints
+  ([§13](04-write-path.md#13-retry-and-reallocation)).
+
+Changing a node's addresses never touches objects. Their location is
+`(sink_id, object_key)` ([§23.3](07-storage-node.md#233-index-metadata-control-plane)).

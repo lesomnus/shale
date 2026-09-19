@@ -51,9 +51,17 @@
 | **Duplicate** | A second stored attempt of an already committed object |
 | **Orphan** | A file in a sink unknown to the index |
 | **Lost Object** | An object that could not be stored, or whose file is gone |
-| **expires_at** | Time after which the object may be deleted when space is needed |
-| **must_delete_by** | Time by which the object must be deleted |
-| **Hold** | Flag that forbids deletion |
+| **date_expired** | Time from which the object may be deleted when space is needed |
+| **date_deleted** | Time from which the object is deleted; read like a certificate expiry |
+| **Reschedule** | Changing an object's dates, to preserve it longer or delete it sooner; audited |
+| **Data Time** | `date_started`/`date_ended`: the span an object's data covers, declared by the producer |
+| **Site** | A group of sets within a tenant (e.g. a building); payday's second permission axis |
+| **Site Member** | A holder's membership in a site, deciding which sites it may see |
+| **Capacity Forecast** | Expected incoming vs. reclaimable bytes per sink for the coming epoch |
+| **Fair Share** | GC ordering that reclaims expired objects of over-share tenants first |
+| **Scheduler** | The replaceable placement implementation behind one interface |
+| **Address Resolver** | The replaceable policy that turns a node into the endpoint a client dials: IP, template name, or CP-managed DNS |
+| **Endpoint** | Scheme, host, and port a client uses to reach a node, as a resolver hands it out |
 | **Lazy GC** | Deleting expired objects only under space pressure |
 | **GC Proposal** | Node's list of deletion candidates for CP approval |
 | **Watermark** | Free-space threshold between pressure states |
@@ -74,7 +82,7 @@
 | **Wall** | payday's tenant boundary: a caller sees and changes only its own tenant's rows |
 | **Tenant API** | gRPC surface for holders, behind the wall (`shale control`) |
 | **Cluster API** | internal gRPC surface for Storage Nodes and cluster operators, spanning tenants (`shale cluster`) |
-| **Global Entity** | An entity outside the wall, owned by the cluster: Node, Device, Sink, SigningKey, PlacementPolicy, UploadPolicy, JoinToken |
+| **Global Entity** | An entity outside the wall, owned by the cluster: Node, Device, Sink, SigningKey, PlacementPolicy, UploadPolicy, AddressPolicy, JoinToken |
 | **Upload Profile** | The upload parameters agreed for a set and its sources: object size, mode, timeouts, horizon |
 | **Upload Policy** | Cluster-wide bounds and defaults for negotiated upload profiles |
 | **Negotiation** | A producer proposing its upload profile and the CP clamping it into bounds |

@@ -146,21 +146,29 @@ Record fields:
 
 ```text
 format_version
+tenant_id
+site_id           (optional)
+set_id            (optional)
+source_id
 object_id
 attempt_id
-source_id
-set_id            (optional)
-start_time        (optional)
-end_time          (optional)
+date_started      (data time, §10)
+date_ended        (data time; unknown for an incomplete object)
 state             (open | complete)
 size_bytes        (final size, set when the upload completes; see §12.3)
 size_hint         (live uploads: expected size used for the reservation)
 incomplete        (true if finalized from an abandoned live upload, §15)
-expires_at
-must_delete_by    (optional)
+date_expired
+date_deleted      (optional)
 checksum          (optional, §30)
 placement_version
 ```
+
+The dates are the object's initial dates. When they are rescheduled
+([§20.3](06-retention-gc.md#203-rescheduling)), the node learns the new values
+from GC answers and rewrites the xattr then
+([§21.2](06-retention-gc.md#212-protocol)). The ID fields are what an index
+rebuild needs to put the object back behind the right tenant and site.
 
 Each sink carries a label file at its root (`.shale-sink`) with `sink_id`,
 `cluster_id`, the device identity seen at creation, and creation time.
@@ -171,33 +179,38 @@ Each sink carries a label file at its root (`.shale-sink`) with `sink_id`,
 /<mount>/objects/<yyyy>/<mm>/<dd>/<hh>/<object_id>.<attempt_id>
 ```
 
-- Hourly directories (from `start_time`, or from the commit time if absent)
-  keep directories small and make time-ordered scans cheap.
+- Hourly directories (from `date_started`, or from the commit time if absent)
+  keep directories small and make time-ordered scans cheap. A 16 TB sink at
+  the CCTV load of [§26.3](08-sizing.md#263-worked-example-cctv) receives ~300
+  objects an hour, so its ~250,000 objects spread over ~720 directories for 30
+  days of retention, a few hundred files each.
 - The attempt suffix means two attempts of one object never collide.
 
 ### 23.3 Index metadata (Control Plane)
 
 ```text
 object_id
-source_id
+tenant_id
+site_id
 set_id
-start_time
-end_time
+source_id
+date_started
+date_ended
 sink_id
 object_key
 size_bytes
 state
 incomplete
-expires_at
-must_delete_by
-hold
+date_expired
+date_deleted
 placement_version
-created_at
-committed_at
+date_created
+date_committed
 ```
 
-`source_id`, `set_id`, `start_time`, and `end_time` are optional for
-non-time-series workloads.
+`site_id`, `set_id`, and `source_id` are optional for workloads without that
+structure. `date_started` and `date_ended` default to the write times
+([§10](02-data-model.md#10-time-semantics)).
 
 An object's location is **`(sink_id, object_key)`**. The node is *not* part of
 the location: it comes from the `sinks` table (`sink_id → node_id, device_id`),
@@ -257,17 +270,36 @@ Against a per-object fixed cost of a few seeks (one `fsync` journal write plus
 moving between jobs, ~10–30 ms):
 
 ```text
-< 16 MB     fixed cost is significant
-32 MB       practical lower bound
-64–128 MB   sweet spot (default target)
-> 256 MB    little extra HDD benefit; larger loss unit, longer uploads over
-            slow links, more Writer RAM
+< 32 MB     fixed cost is significant           → the lower bound
+64 MB       default target
+up to 512 MB allowed by negotiation             → the upper bound
 ```
 
-For CCTV the segment size also sets the **loss granularity** and the
-**upload duration** of a live upload: at 4 Mbps, 64 MB ≈ 2 minutes of video.
-With live upload, what a destroyed producer takes with it is bounded by the
-part buffer and the link, not by the segment size ([§12.2](04-write-path.md#122-resumable-part-uploads)).
+**The lower bound (32 MB)** comes from the per-object fixed cost on HDDs:
+file creation, the `fsync` journal write, seeks between jobs, a DB row, and a
+commit event. It holds whatever the upload mode.
 
-Each Storage Node advertises `max_object_size`. Writers cut segments no larger
-than that.
+**The upper bound (512 MB)** is no longer set by node RAM. Uploads are staged
+in parts ([§12.2](04-write-path.md#122-resumable-part-uploads)), so a node
+never holds a whole object. What grows with object size is:
+
+| Object size | Segment at 4 Mbps | DB rows (5,000 cameras, 30 days) | Producer RAM (16-camera set, `retain: committed`, 2 segments per camera) |
+|---:|---:|---:|---:|
+| 64 MB | 2.1 min | ~100 M | **2 GB** |
+| 128 MB | 4.3 min | ~50 M | 4 GB |
+| 256 MB | 8.5 min | ~25 M | 8 GB |
+
+At CCTV loads the HDDs are ~5% busy and the fixed cost is invisible, and even
+100 M rows is routine for PostgreSQL. The cost that matters is **producer RAM**
+on edge gateways. That is why the default stays at 64 MB. Producers with
+high-bitrate cameras or spare RAM negotiate larger objects
+([§12.6](04-write-path.md#126-upload-profile-negotiation)).
+
+One more rule: a segment lasts at most a quarter of the set's `epoch`, so every
+epoch holds several objects per source and epoch-based placement keeps its
+meaning.
+
+The segment size also sets the **loss granularity** and the **upload
+duration** of a live upload. With live upload, what a destroyed producer
+takes with it is bounded by the part buffer and the link, not by the segment
+size ([§12.2](04-write-path.md#122-resumable-part-uploads)).

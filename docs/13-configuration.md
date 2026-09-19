@@ -21,13 +21,18 @@ deployment runs well on them, and changes them only for a reason.
 |---|---|---|---|---|---|
 | Placement | `epoch` | 1 h | — | set | [§11](03-placement.md#11-placement) |
 | Placement | `set_spread` | `spread` | `spread`, `pack`, `none` | set | [§11](03-placement.md#11-placement) |
-| Segments | target object size | 64 MB | 32–128 MB (`max_object_size`) | negotiated, per source | [§25](07-storage-node.md#25-object-size) |
+| Placement | `forecast_margin` | 1.5 | — | cluster | [§11.1](03-placement.md#111-capacity-forecast) |
+| Placement | scheduler | weighted HRW | — | cluster (`PlacementPolicy`) | [§11.2](03-placement.md#112-scheduler-interface) |
+| Addresses | resolver | `advertised` | `advertised`, `template`, `dns` | cluster (`AddressPolicy`) | [§34.10](11-deployment.md#3410-node-addresses) |
+| Retention | `retention.expire` | 30 days | — | set | [§20.2](06-retention-gc.md#202-initial-dates) |
+| Retention | `retention.delete` | none (never) | ≥ `retention.expire` | set | [§20.2](06-retention-gc.md#202-initial-dates) |
+| Segments | target object size | 64 MB | 32–512 MB; segment ≤ `epoch` / 4 | negotiated, per source | [§25](07-storage-node.md#25-object-size) |
 | Uploads | upload mode | `live` | `live`, `buffered` | negotiated, per set | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Uploads | `idle_timeout` | 30 s | 10 s – 5 min | negotiated, per set | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Uploads | `abandon_timeout` | 5 min | 1–30 min | negotiated, per set | [§15](04-write-path.md#15-partial-objects) |
 | Uploads | `allocation_horizon` | 10 min | 1–30 min | negotiated, per set | [§12.1](04-write-path.md#121-flow) |
 | Uploads | `allocation_ttl` | horizon + 10 min | derived | — | [§12.1](04-write-path.md#121-flow) |
-| Uploads | `retain` | `until_commit` | `until_commit`, `until_written` | writer | [§12.2](04-write-path.md#122-resumable-part-uploads) |
+| Uploads | `retain` | `committed` | `committed`, `written` | writer | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Uploads | `resume_timeout` | 2 min | — | writer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | placement retries | 3 | — | writer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | checksum | off (CRC32C when on) | — | set | [§30](09-operations.md#30-integrity) |
@@ -38,7 +43,13 @@ deployment runs well on them, and changes them only for a reason.
 | Node | scheduler weights WRITE : READ : MAINT | 1 : 1 : 0.1 | — | node | [§24.1](07-storage-node.md#241-starvation-free-scheduling) |
 | Node | `event_replay_window` | 10 min | — | node | [§12.4](04-write-path.md#124-commit-semantics) |
 | GC | watermarks critical / low / target | 3% / 5% / 8% | — | cluster | [§21.1](06-retention-gc.md#211-watermarks) |
-| Time | clock tolerance for `start_time` | 5 min | — | cluster | [§10](02-data-model.md#10-time-semantics) |
+| GC | `gc_proposal_factor` | 3× the bytes needed | — | node | [§21.2](06-retention-gc.md#212-protocol) |
+| GC | `capacity_share` | equal shares | — | cluster, per tenant | [§21.4](06-retention-gc.md#214-tenant-fair-share) |
+| Health | failure score events | I/O error +10, failed WRITE +5, timeout +2, Writer report +1 | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
+| Health | score half-life | 24 h | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
+| Health | suspect / quarantine / exit thresholds | 10 / 30 / 5 | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
+| Health | cool-down / probation | 24 h / 7 days at weight × 0.5 | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
+| Time | clock tolerance for `date_started` | 5 min | — | cluster | [§10](02-data-model.md#10-time-semantics) |
 | Security | `read_token_ttl` | 1 h | — | cluster | [§33.2](10-security.md#332-access-tokens) |
 | Security | CA certificate lifetime | 10 years | — | cluster | [§33.5](10-security.md#335-tls) |
 | Security | node certificate lifetime | 90 days, auto-renewed | — | cluster | [§33.4](10-security.md#334-enrollment) |
@@ -49,25 +60,30 @@ duplicates are left to GC ([§14](04-write-path.md#14-duplicates-and-orphans)).
 
 ### 36.2 Open decisions
 
-What is still undecided or deliberately left out of v1.
+None at the moment. Every question raised during the design has either been
+decided, and is described in the section it belongs to, or deliberately left
+out:
 
-| Topic | Question | Status |
-|---|---|---|
-| Hold vs. `must_delete_by` | which wins when both apply ([§20](06-retention-gc.md#20-retention)) | needs policy / legal input |
-| Quarantine | score decay, thresholds, cool-down ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) | to be set from real failure data |
-| Zone spread | use `zone` labels in placement ([§7](02-data-model.md#7-source-set-zone-epoch)) | not in v1; soft anti-affinity later if needed |
-| Second axis | payday field 3, e.g. `Site`, to narrow readers within a tenant ([§35.3](12-api.md#353-entities)) | not in v1 |
-| Tenant capacity | quotas or retention caps per tenant on shared sinks | not in v1; without them one tenant can shorten another's retention |
-| Sink layout | file-per-object vs. append-only volume files | file-per-object (see note) |
+- **Zone-aware placement** is not planned. The scheduler interface leaves room
+  for it ([§11.2](03-placement.md#112-scheduler-interface)).
+- **Serving live video** is not Shale's job
+  ([§1](01-overview.md#1-what-shale-is-for)).
 
-**Note on volume files.** Packing many objects into large pre-allocated volume
-files (Haystack style) would remove per-object filesystem metadata entirely.
-Deletion would then happen per volume, which fits epoch-grouped, similarly
-expiring data. Holds would pin whole volumes, and the unlink/fd semantics of
-[§18](05-read-path.md#18-delete-during-read) would change. It is not needed at 64–128 MB objects; revisit if objects
-shrink.
+### 36.3 Rejected alternatives
 
-**Note on multipart.** S3-style multipart (independent parts, a part list,
-and a completion call) was considered and dropped. The offset-based resumable
-upload of [§12.2](04-write-path.md#122-resumable-part-uploads) gives the same RAM savings and restart safety, and its only
-state is a file size.
+**Volume files.** Packing many objects into large pre-allocated volume files
+(Haystack style) would remove per-object filesystem metadata entirely. It pays
+off for small objects, and the 32 MB lower bound
+([§25](07-storage-node.md#25-object-size)) means Shale has none. It would also
+complicate rescheduling (deletion per volume), resumable uploads, incomplete
+objects, and the unlink/fd semantics of
+[§18](05-read-path.md#18-delete-during-read). Shale stores one file per object.
+
+**S3-style multipart.** Independent parts, a part list, and a completion call.
+The offset-based resumable upload of
+[§12.2](04-write-path.md#122-resumable-part-uploads) gives the same RAM savings
+and restart safety, and its only state is a file size.
+
+**A hold flag.** A separate "must not delete" flag raised the question of
+which wins, the hold or the deletion deadline. Rescheduling the dates
+([§20.3](06-retention-gc.md#203-rescheduling)) removes the question.

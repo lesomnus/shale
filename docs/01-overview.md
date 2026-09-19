@@ -89,7 +89,7 @@ lazy retention GC
                          │ Placement            │
                          │ Metadata index       │
                          │ Access tokens        │
-                         │ Retention / holds    │
+                         │ Retention            │
                          │ Retry/Reallocation   │
                          │ Sink/device health   │
                          └──────────┬───────────┘
@@ -133,7 +133,7 @@ directly.
 - Sign access tokens (presigned URLs) for every data-plane request
   ([§33.2](10-security.md#332-access-tokens))
 - Maintain the metadata index
-- Hold retention policy, legal holds, and approve deletions
+- Keep retention policy and object dates, and approve deletions
 - Reallocate after write failures
 - Track node, sink, and device health, and quarantine failing devices
 - Version the placement policy
