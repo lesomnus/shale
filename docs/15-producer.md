@@ -1,0 +1,278 @@
+# Shale — Producer
+
+## 38. Producer
+
+The producer is the host program that turns cameras into objects:
+`shale serve producer` ([§5](01-overview.md#5-components),
+[§33.4](10-security.md#334-joining-and-adoption)). The storage side never
+knows any of this: nodes store bytes, the Control Plane places and indexes
+them ([§22](07-storage-node.md#22-storage-node-internals)). This document is
+the producer's own design: what it takes in, how it cuts, how it runs capture
+processes, how it finds and registers cameras, and how it chooses the values
+it negotiates.
+
+### 38.1 Inputs
+
+Every source reaches the producer as **one MPEG-TS byte stream**. Where the
+stream comes from is the only difference:
+
+| Kind | Who runs it | Typical use |
+|---|---|---|
+| **Managed capture** | the producer spawns and supervises a capture process per source ([§38.3](#383-managed-capture)) | USB cameras, IP cameras, CSI cameras on a Pi |
+| **Push** | an external process connects to the producer's listener (TCP or a Unix socket) and writes TS | recording software the operator already runs; vendor SDKs |
+| **File** | the producer tails a growing file | tests |
+
+The contract is the same for all three:
+
+- MPEG-TS, with the `random_access_indicator` set on keyframes, as every
+  standard muxer does. Fragmented MP4 is accepted too; it is cut at fragment
+  boundaries with the init segment prepended to each object. TS is the
+  default because any prefix of a TS segment plays up to its last complete
+  packet, which is what an incomplete object needs
+  ([§15](04-write-path.md#15-partial-objects)).
+- A keyframe at least every 2 seconds ([§12.6](04-write-path.md#126-upload-profile-negotiation)).
+- All streams together at or below the source's `max_bitrate`. Audio goes in
+  the same TS when a source has it, and is off by default: recording sound in
+  public places is restricted in many jurisdictions
+  ([producer bench](producer-bench.md)).
+
+The producer never decodes or encodes. It reads packet headers, nothing
+inside them.
+
+### 38.2 Cutting segments
+
+The producer keeps, per source, the last PAT and PMT packets it has seen and
+the video PID from the PMT. A segment boundary is the first video packet with
+`payload_unit_start_indicator` and `random_access_indicator` set, i.e. the
+start of a keyframe, at or after the moment the boundary is due. The new
+segment starts with the cached PAT and PMT followed by that keyframe, so each
+object plays on its own.
+
+A boundary is due:
+
+- at the source's staggered phase ([§12.2](04-write-path.md#122-resumable-part-uploads)),
+  every agreed segment duration;
+- **early**, at the first keyframe after the segment has produced
+  `max_bitrate × duration` bytes while its phase boundary is still ahead. A
+  stream running at its ceiling reaches that amount exactly at the phase,
+  so it is never cut early; one running above it is. The bytes that arrive
+  between the decision and the keyframe, at most one keyframe interval plus
+  one encoder burst, are what `max_length`'s headroom was sized for
+  ([§12.6](04-write-path.md#126-upload-profile-negotiation)), so the node
+  refuses nothing. The segment closes cleanly a little short, the next one
+  starts at that keyframe, and the following boundary is the next phase
+  point as usual. This is the safety net for a ceiling guessed too low
+  ([§38.5](#385-choosing-the-ceiling)).
+
+`date_started` is the wall-clock time at which the segment's first keyframe
+arrived. `date_ended` is the arrival time of the next segment's first
+keyframe, so consecutive segments tile the timeline exactly, or the time of
+the last packet when the source stops. Both go into the upload's headers
+([§12.2](04-write-path.md#122-resumable-part-uploads)). Wall-clock stamping
+is accurate to the pipe's latency, tens of milliseconds, which is enough.
+
+In **live** mode ([§12.2](04-write-path.md#122-resumable-part-uploads)) the
+bytes stream to the node as they arrive, and the producer keeps what its
+`retain` policy says. In buffered mode the segment is complete at the next
+cut and uploaded then.
+
+### 38.3 Managed capture
+
+The producer runs one **capture process** per managed source and reads TS
+from its standard output. The default tool is **ffmpeg**. Any program that
+writes TS to its standard output satisfies the contract, so a GStreamer
+pipeline ending in `mpegtsmux ! fdsink`, or a vendor tool, can take its
+place per source.
+
+**Why ffmpeg.** One binary covers V4L2 and RTSP inputs, ALSA audio, and
+every hardware encoder the producer is likely to meet (`h264_v4l2m2m` on a
+Raspberry Pi, VAAPI, QSV, NVENC), and the distribution's own build is
+enough: the [producer bench](producer-bench.md) ran on Raspberry Pi OS's
+ffmpeg unchanged. Its flags are what most operators already know, and the
+command the producer runs can be copied into a shell and reproduced. A
+process boundary keeps Shale's binary static and its license its own, and a
+crashing encoder takes down one camera, not the producer. GStreamer would
+make the cut simpler, since its application sink hands over each buffer with
+its keyframe flag, but only when embedded in the process, which costs the
+static binary; as a subprocess it has no advantage over ffmpeg.
+
+**Configuration, in three tiers.** The producer translates the first tier
+into ffmpeg arguments, passes the second through, and leaves the third alone.
+
+```yaml
+producer:
+  cp: https://cp.example.com:7400
+  set: lobby                # the set this host is adopted for
+  uplink: 40Mbps            # optional; bounds the sum of the ceilings (§38.5)
+  ffmpeg: /usr/bin/ffmpeg   # default: from PATH
+
+sources:
+  - alias: door             # tier 1: structured, portable
+    input: v4l2:/dev/video0
+    format: mjpeg           # what the camera delivers: mjpeg | yuyv | h264
+    size: 1920x1080
+    fps: 30
+    encoder: auto           # auto | h264_v4l2m2m | h264_vaapi | h264_nvenc | libx264 | ...
+    max_bitrate: auto       # or 4Mbps; the ceiling of §12.6
+    keyframe_interval: 2s
+    audio: {device: alsa:hw:1, bitrate: 64kbps}   # absent: no audio
+
+  - alias: yard
+    input: rtsp://10.1.2.40/stream1
+    format: h264            # already encoded: remuxed with -c copy, no encoding
+    max_bitrate: onvif      # read from the camera (§38.4)
+
+  - alias: gate             # tier 2: structured plus overrides
+    input: v4l2:/dev/video2
+    format: mjpeg
+    size: 1280x720
+    fps: 30
+    encoder: libx264
+    max_bitrate: 2Mbps
+    encoder_options: {preset: veryfast, tune: zerolatency}   # -preset veryfast -tune zerolatency
+    extra_input_args: [-thread_queue_size, "512"]
+    extra_output_args: [-x264-params, "nal-hrd=cbr"]
+
+  - alias: roof             # tier 3: your own command; stdout must be TS
+    command: >
+      rpicam-vid -t 0 --codec h264 --inline --intra 60 --bitrate 4000000 -o -
+      | ffmpeg -f h264 -i - -c copy -f mpegts -
+    max_bitrate: 4.5Mbps
+```
+
+**Translation** of tier 1 (video only; audio adds `-i alsa:… -c:a aac -b:a …`):
+
+| Field | ffmpeg |
+|---|---|
+| `input: v4l2:…`, `format`, `size`, `fps` | `-f v4l2 -input_format <format> -video_size <size> -framerate <fps> -i <device>` |
+| `input: rtsp://…` | `-rtsp_transport tcp -i <url>`, with a socket timeout, and `-c:v copy` when `format: h264` |
+| `encoder: auto` | the first that works on this host: `h264_v4l2m2m`, `h264_vaapi`, `h264_qsv`, `h264_nvenc`, else `libx264 -preset veryfast` with a warning about CPU |
+| `max_bitrate` | encoders with rate control (`libx264`, VAAPI, NVENC, QSV): capped VBR, `-maxrate <video ceiling> -bufsize <2 × ceiling>` around a quality target; encoders that only take a target (`h264_v4l2m2m`): CBR at `-b:v <video ceiling>`. The video ceiling is `max_bitrate` minus the audio bitrate, divided by 1.05 for TS overhead, so the muxed stream stays under the ceiling |
+| `keyframe_interval` | `-g <fps × interval> -force_key_frames expr:gte(t,n_forced*<interval>)`, with the agreed interval ([§12.6](04-write-path.md#126-upload-profile-negotiation)), 2 s by default |
+| output (fixed) | `-f mpegts -` |
+
+The producer records which encoder `auto` chose and shows it in its
+heartbeat ([§38.6](#386-health-and-heartbeats)).
+
+**Supervision.** The producer starts each capture process, reads its output,
+restarts it with backoff when it exits, and logs its standard error. While a
+process is down the source's segment is closed as "the camera stopped"
+([§15](04-write-path.md#15-partial-objects)) and the next one starts when
+frames return. Ten seconds after a start the producer checks what it is
+getting: a keyframe interval above 2 s or a measured rate at the ceiling is
+logged as a warning with the source's alias, since either will show up as
+early cuts or poor motion quality.
+
+### 38.4 Discovery and registration
+
+`shale producer scan` prints what this host can see, as a configuration
+skeleton to edit:
+
+- **USB and CSI cameras**: every `/dev/video*` device with its formats,
+  frame sizes, and frame rates (V4L2 enumeration), and whether it delivers
+  H.264 itself.
+- **IP cameras**: ONVIF WS-Discovery on the local network. With credentials,
+  each camera's media profiles: stream URL, resolution, frame rate, the
+  configured bitrate limit, and the GOP length, which are exactly the values
+  the producer would otherwise have to guess.
+- **Audio devices**: ALSA capture devices.
+- **Encoders**: which hardware encoders ffmpeg on this host can open.
+
+`shale producer probe [--sources …]` runs each configured source for 30
+seconds and reports sustained frame rate, CPU per stream, SoC temperature,
+and which encoder engaged, the way the bench did. It answers "how many
+cameras can this host carry", not "what bitrate should they have".
+
+**Registration.** After the host is adopted, the producer makes sure every
+source in its configuration exists in its set (`SourceService.Add`,
+idempotent by alias). The Control Plane assigns ordinals. Removing a source
+from the configuration only stops recording it; erasing the `Source` is an
+admin's action, because it ends the source's history.
+
+### 38.5 Choosing the ceiling
+
+`max_bitrate` is a contract ([§12.6](04-write-path.md#126-upload-profile-negotiation)):
+the node enforces it, the forecast and the link check assume it. So it has
+to be a declared number. What Shale can do is choose that number well, and
+the way to do it is **not a one-time probe**. A minute of encoding at start-up
+describes one scene at one time of day: the bench measured a constant-quality
+encoder spending 8.6 Mbps on sensor noise at night, which says nothing about
+the same camera at noon or with a car in view. Instead, `max_bitrate: auto`
+is a loop with three parts.
+
+1. **A starting value that needs no measurement.**
+
+   | Source | Starting ceiling |
+   |---|---|
+   | managed capture | from the mode: 640×480@30 → 1 Mbps, 1280×720@30 → 2 Mbps, 1920×1080@15 → 2.5 Mbps, 1920×1080@30 → 4 Mbps, 2560×1440@30 → 8 Mbps, 3840×2160@30 → 12 Mbps; H.265 × 0.6. The table lives in the producer's configuration and comes from the bench, where hardware H.264 at these rates met its target within 5% |
+   | `onvif` | the bitrate limit the camera is configured with ([§38.4](#384-discovery-and-registration)), × 1.05 for TS overhead, plus the audio bitrate: the camera's limit is the encoder's, and the ceiling covers the container |
+   | any other pass-through stream | the peak one-second rate over the first 60 s × 1.5, logged as a guess |
+
+2. **A guard that costs no bytes.** A segment that has produced
+   `max_bitrate × duration` bytes before its phase boundary is running
+   above its ceiling, and is cut at the next keyframe
+   ([§38.2](#382-cutting-segments)). After an early cut the producer raises
+   that source's ceiling by 25% at its next negotiation, whatever its rate
+   control: the stream exceeded what was declared, so the declaration was
+   wrong. A ceiling guessed too low therefore costs a few short segments and
+   nothing else.
+
+3. **Starvation, measured by the producer.** A capped-VBR encoder that
+   needs more bits than its cap allows sits at the cap and raises its
+   quantizer, which is where motion loses detail. Bitrate alone cannot tell
+   that apart from a night of sensor noise, which also sits at the cap, so
+   the producer looks at the shape of the time spent at the cap, second by
+   second:
+
+   | Term | Definition |
+   |---|---|
+   | second at the cap | a second whose bytes are at least 95% of the ceiling |
+   | episode | 3 to 60 consecutive seconds at the cap. Shorter is one keyframe's spike; longer is a scene condition (noise, rain, snow, a crowd) that more bits would only spend on noise |
+   | starved | at least 50 episodes in a day, while fewer than 10% of the day's seconds were at the cap |
+
+   Both counts travel in the producer's heartbeat ([§38.6](#386-health-and-heartbeats)).
+   For a starved source the console **suggests** raising the ceiling by 25%,
+   with the hours of the day the episodes fell in, so a person can see
+   whether it is traffic or weather. A set with `auto_raise: on` applies the
+   suggestion itself, at most once a day, and the producer re-launches the
+   encoder with the new cap at the next segment boundary. The default is
+   off, because the episode filter makes the guess good, not certain. A CBR
+   source is never adjusted this way: it sits at its ceiling by definition,
+   and its quality is a choice, not an observation. Ceilings are never
+   lowered automatically. A loose ceiling costs only headroom in the link
+   check, and the console suggests lowering it when a source never exceeds
+   half of it.
+
+Every step stays inside the `UploadPolicy` cap, the set's
+`max_bitrate_total`, and the producer's `uplink` when one is declared: the
+sum of the set's ceilings × 1.2 must fit it
+([§12.2](04-write-path.md#122-resumable-part-uploads)). When a raise would
+break one of these, the loop stops and warns instead.
+
+The **segment duration** follows the ceiling, 64 MB ÷ ceiling by default,
+and is re-derived when the ceiling changes. Link parameters (`idle_timeout`,
+`abandon_timeout`, `allocation_horizon`) are not probed: the defaults suit
+LAN and WAN links, and a wireless producer sets a longer idle timeout in its
+configuration.
+
+### 38.6 Health and heartbeats
+
+The producer sends `ProducerService.Heartbeat` every
+`producer_heartbeat_interval` (30 s): per source its input state (`up`,
+`down`, `starting`), frame rate, measured rate over the last minute,
+keyframe interval, encoder, restarts, early cuts, and the seconds at the
+cap and episodes since the last heartbeat ([§38.5](#385-choosing-the-ceiling));
+for the host, CPU, temperature, and uplink usage. Consoles show a camera
+that went dark, and the Control Plane's `date_seen` on the `Producer` row
+comes from it ([§35.3](12-api.md#353-entities), [§31](09-operations.md#31-observability)).
+A producer whose heartbeats have been missing for `producer_down_after`
+(90 s, three heartbeats) is shown as down, and so are all of its sources.
+
+### 38.7 What the producer does not do
+
+- Decode, encode, or look inside a frame. The capture process does that.
+- Serve live video. That is the camera's or a media server's job
+  ([§1](01-overview.md#1-what-shale-is-for)).
+- Control cameras: no PTZ, no exposure, no motion detection. A system that
+  needs them sits beside the producer and reads recordings through the
+  `Timeline` ([§17](05-read-path.md#17-read-path)).
