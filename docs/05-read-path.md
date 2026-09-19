@@ -5,15 +5,20 @@
 ### 17.1 Flow
 
 ```text
-1. Reader   ObjectService.Timeline {set, from, to}      (whole set, per member)
-            ObjectService.Timeline {source, from, to}   (one camera)
+1. Reader   ObjectService.Timeline {set, from, to, size, after}      (whole set, per member)
+            ObjectService.Timeline {source, from, to, size, after}   (one camera)
             ObjectService.Get {ref}
-2. CP       objects with states, gaps with reasons, and read tokens (GET URLs)
+2. CP       one page of objects with states, gaps with reasons, read tokens
+            (GET URLs), and a cursor for the next page
 3. Reader   GET <node>/objects/<key>   (Range supported), members in parallel
 ```
 
 A time-range query returns explicit **gaps** for any part of the range that has
-no available object ([§19](#19-reader-semantics)).
+no available object ([§19](#19-reader-semantics)). It is paged like every
+`List` ([§35.1](12-api.md#351-conventions)): at most `timeline_page` objects
+(default 1,000) per answer, each with its own read token, so a query over a
+month of a large set is many small answers rather than one of tens of
+megabytes.
 
 ### 17.2 Read chunks
 
@@ -43,6 +48,11 @@ workload-specific.
   an 8-camera set (8 × 1.8 GB at 4 Mbps) takes ~15 s from 8 devices, against
   ~115 s if the set were packed on one device. Real-time playback is not
   device-bound either way. The difference shows up in exports and fast seeking.
+
+Read sessions are limited per node (`max_read_sessions`, 64) and per caller
+(`sessions_per_actor`, 16, from the token's `actor` claim,
+[§33.2](10-security.md#332-access-tokens)), so one media server cannot take a
+node's whole read capacity from the others.
 
 ## 18. Delete During Read
 
@@ -74,18 +84,30 @@ CRITICAL           abort stalled readers of deleted objects;
 Object states exposed to readers:
 
 ```text
-AVAILABLE     (possibly flagged incomplete: tail missing, date_ended unknown)
+AVAILABLE     (possibly flagged incomplete: tail missing, date_ended estimated)
 UNAVAILABLE   (sink/device/node down or quarantined for reads)
 LOST          (Shale was given the data, or tried to take it, and lost it)
-DELETED       (date_deleted has passed, §20.1)
+DELETED       (date_deleted has passed, §20.1, or GC has deleted or is
+               deleting the object, §21.2)
 NOT_FOUND     (unknown object ID)
 ```
+
+An object in `DELETING` reads as `DELETED`: no token is issued for it and it
+cannot be rescheduled, whatever its `date_deleted` says.
+
+An **incomplete** object has no declared `date_ended`. The index carries an
+**estimated** one, `date_started + size ÷ expected rate` of its source
+([§12.6](04-write-path.md#126-upload-profile-negotiation)), marked as an
+estimate, so time-range queries and the gap after it have a boundary. The
+media server finds the real end when it reads the object.
 
 Time-range queries return **gaps** with a reason:
 
 ```text
 NOT_RECEIVED  no upload was ever attempted for this span:
               the camera or set was off, or the producer failed before upload
+IN_PROGRESS   an attempt is open for this span right now: a live upload
+              in progress, or a segment not yet committed
 LOST / DELETED / UNAVAILABLE   as above, for spans covered by such objects
 ```
 
@@ -93,4 +115,11 @@ For CCTV the difference between "the camera was not recording" and "the
 storage lost it" matters, e.g. when footage is used as evidence. Shale derives
 it without any extra reporting from the producer: a span is `LOST` only if an
 attempt exists for it. A `NOT_RECEIVED` gap that covers every member of a set
-at once almost always means the set was off.
+at once almost always means the set was off. Spans older than any row the
+index still holds are answered from policy
+([§20.4](06-retention-gc.md#204-row-retention)).
+
+A read that reaches a node and finds no file gets `404`; the node reports it
+(`ObjectMissing`, [§34.9](11-deployment.md#349-events-and-directives)) and the
+CP marks the object `LOST`, or confirms its deletion if it was `DELETING`
+([§14](04-write-path.md#14-duplicates-and-orphans)).

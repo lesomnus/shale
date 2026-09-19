@@ -5,16 +5,20 @@
 Summary. The full rationale is in the [placement decision report](placement-decisions.md).
 
 - **Weighted rendezvous (HRW) hashing**, keyed by
-  `(set, epoch, placement_version)` and indexed by the member's ordinal (or
-  keyed by `(source, …)` for Sources without a set). The resulting ranking is
-  also the retry order.
-- **Weight = sink capacity** (raw HDD size in production), not free space. A
-  new, empty sink therefore does not attract a burst of writes.
-- **Eligibility filters** are applied after ranking: sink and device health,
-  quarantine ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)), CRITICAL pressure ([§21](06-retention-gc.md#21-lazy-gc)), and the
-  capacity forecast below. A momentarily busy sink (`503`) is not
-  filtered out: the Writer waits for `Retry-After`, so the Source stays on its
-  sink. Only a persistent `503` moves the attempt to the next candidate.
+  `(set, epoch, placement_version)` and indexed by the member's ordinal. The
+  resulting ranking is also the retry order.
+- **Weight = sink capacity** (raw HDD size in production; clamped by
+  `max_sink_capacity`, [§27](09-operations.md#27-node--device--sink-health-and-quarantine)),
+  not free space. A new, empty sink therefore does not attract a burst of
+  writes.
+- **Rankings cover every node and device, eligible or not.** A member whose
+  position lands on an ineligible node or device (down, quarantined,
+  retired, CRITICAL, or forecast to run out, below) falls to the **next
+  eligible one in the same ranking**. So when a node fails mid-epoch, only
+  the members that were on it move, and every other key stays where it was.
+  A momentarily busy sink (`503`) is not ineligible: the producer waits for
+  `Retry-After`, so the Source stays on its sink. Only a persistent `503`
+  moves the attempt to the next candidate.
 - **Set spread**: within an epoch, members of a set land on **distinct nodes**
   while there are enough nodes, and always on **distinct devices** up to the
   number of eligible devices. A whole-set read therefore runs in parallel
@@ -25,7 +29,7 @@ Summary. The full rationale is in the [placement decision report](placement-deci
 Placement is tunable per set:
 
 ```yaml
-placement_policy:
+placement:
   epoch: 1h              # how long a source sticks to one sink
   set_spread: spread     # spread | pack | none
 ```
@@ -35,6 +39,9 @@ placement_policy:
   per set, and set reads are limited to one device. Use it only when a partial
   set is worthless.
 - `none`: each member is placed independently.
+
+These are fields of the `Set`. The global `PlacementPolicy` is something
+else: it names the scheduler ([§11.2](#112-scheduler-interface)).
 
 | `epoch` | When one device dies (30-day retention, 480 devices) |
 |---|---|
@@ -50,19 +57,21 @@ same for every setting.
 ### 11.1 Capacity forecast
 
 The CP knows, fairly exactly, what each sink is about to receive. Every source
-placed on a sink has a negotiated bitrate
+placed on a sink has an expected rate, learned from what it has committed
 ([§12.6](04-write-path.md#126-upload-profile-negotiation)), and placement is
 deterministic for the epoch. So for each sink and the coming epoch:
 
 ```text
-incoming    = Σ bitrate of the sources placed on the sink × epoch length
+incoming    = Σ expected rate of the sources placed on the sink × epoch length
 reclaimable = free space + bytes on the sink whose date_expired falls
               before the end of the epoch                    (index query)
 ```
 
 A sink with `reclaimable < incoming × forecast_margin` (default 1.5) is
 **ineligible for that epoch**: it would reach CRITICAL before GC could make
-room. Its keys fall to their next candidates, and nothing else moves.
+room. Its keys fall to their next candidates, and nothing else moves. The
+decision is made once per sink and epoch, when the first allocation for that
+epoch is computed, so a sink at the margin does not flap.
 
 This is a filter, not a weight. Weights stay at raw capacity, so placement
 stays stable. In steady state all sinks look alike and the filter rarely
@@ -77,8 +86,8 @@ cluster runs out**, which is reported to operators
 Placement is a replaceable **scheduler** behind one interface:
 
 ```text
-input:   source, set, ordinal, zone, epoch, and the eligible nodes,
-         devices, and sinks with their weights and forecasts
+input:   source, set, ordinal, zone, epoch, and all nodes, devices, and
+         sinks with their weights, eligibility, and forecasts
 output:  a ranked list of candidate sinks (first = target, rest = retries)
 ```
 

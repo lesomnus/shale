@@ -10,7 +10,7 @@ smallest one binds, and it tells the operator **which hardware to add**.
 | Network | `W ≤ NIC_eff` | faster / more NICs |
 | HDD bandwidth | `W + R_hdd ≤ N_hdd × B_eff` | more HDDs (per node or more nodes) |
 | Capacity × retention | `W ≤ N_hdd × C_hdd × fill / T_retention` | more or larger HDDs |
-| RAM | `part buffers ≤ RAM budget` ([§26.4](#264-ram)) | RAM |
+| RAM | `part buffers + index ≤ RAM budget` ([§26.4](#264-ram)) | RAM |
 
 Where:
 
@@ -65,6 +65,7 @@ RAM is sized explicitly:
 ```text
 part buffers = uploads in flight × part_size × fill   (capped by part_buffer_pool)
 read buffers = max_read_sessions × read_chunk × 2
+index        = objects on the node × ~150 B
 ```
 
 With **live uploads** ([§12.2](04-write-path.md#122-resumable-part-uploads)) every camera has an upload in flight at all
@@ -77,6 +78,7 @@ worst case is `fill = 1`. For the CCTV node of [§26.3](#263-worked-example-cctv
 part buffers, 16 MB parts: 530 × 16 MB × 0.5 ≈ 4.2 GiB   (worst case 8.5 GiB)
 part buffers,  8 MB parts: 530 ×  8 MB × 0.5 ≈ 2.1 GiB   (worst case 4.2 GiB)
 read buffers:              64 × 16 MB × 2     = 2 GiB
+index:                     48 × 250,000 × 150 B ≈ 1.8 GiB
 ```
 
 **32 GiB** is comfortable for such a node. Because I/O bypasses the page cache
@@ -84,3 +86,10 @@ read buffers:              64 × 16 MB × 2     = 2 GiB
 
 For comparison, buffering whole objects would need 530 × 64 MB ≈ 33 GiB, and
 live upload would be impossible. That is why uploads are staged in parts.
+
+**The index is rebuilt at every start** by walking each sink's directories
+and reading inodes (~12 M on this node), which takes minutes per sink, in
+parallel across HDDs, as MAINT work. Nothing waits for it that does not need
+it: uploads create new files and reads open files by path, so both are served
+from the first second; GC proposals, the daily sweep, and `ObjectMissing`
+reports for a sink start once that sink's scan is complete.

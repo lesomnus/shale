@@ -65,7 +65,7 @@ at one device's speed.
 
 ### D1. Weighted rendezvous hashing (HRW)
 
-For a key `k` and each eligible target `d` with weight `w_d`:
+For a key `k` and each target `d` with weight `w_d`:
 
 ```text
 score(k, d) = -w_d / ln(u(k, d))      u = hash(k, d) mapped to (0, 1)
@@ -108,7 +108,7 @@ one `sink_id`. There are no Placement Groups and no Disk Groups.
 - The failure domain that matters most is the device. Loss shaping (R2) only
   works if the *sink*, and so its device, is sticky for a `(source, epoch)`. A node-local choice
   would need to replicate the same logic anyway.
-- Quarantine is decided centrally from Writer reports and heartbeats
+- Quarantine is decided centrally from producer reports and heartbeats
   ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)), so the CP already has per-device and per-sink eligibility.
 - Placement Groups exist in systems like Ceph to bound per-object metadata and
   to move data in batches. Shale records every object's location and never
@@ -125,19 +125,20 @@ epoch = floor(date_started / epoch_duration)
 
 - `date_started` is the **data time** the producer declares
   ([§10](02-data-model.md#10-time-semantics)), not the allocation or write time. A
-  segment retried minutes later, or buffered by a Writer during an outage,
+  segment retried minutes later, or buffered by a producer during an outage,
   still lands with its epoch-mates.
 - `placement_version` is in the key, so a policy change rotates placement
   cleanly rather than half-applying.
 - The key is per set, and the member's ordinal selects its position in the
-  ranking (D5). Sources without a set use `(source, epoch, placement_version)`.
-- Writers pre-allocate up to `allocation_horizon` ahead ([§12.1](04-write-path.md#121-flow)), so
+  ranking (D5). Every source belongs to a set, a lone camera being a set of
+  one ([§7](02-data-model.md#7-source-set-zone-epoch)).
+- Producers pre-allocate up to `allocation_horizon` ahead ([§12.1](04-write-path.md#121-flow)), so
   the key uses the segment's **expected** `date_started`. Segment boundaries are
   deterministic (staggered phases), so for live uploads, which start with the
   segment, the expected time is the actual one. Because placement is
   deterministic, an early allocation lands on the same sink as a late one.
   Only eligibility changes within the horizon are missed. If the actual start
-  falls in another epoch, the Writer asks again.
+  falls in another epoch, the producer asks again.
 - Epoch boundaries are aligned for all cameras. Staggering them is unnecessary
   because load is spread across devices either way. Segment boundaries, which
   do matter for bursts, are staggered separately ([§12.2](04-write-path.md#122-resumable-part-uploads)).
@@ -166,7 +167,7 @@ decides how that loss is distributed. Hence it is a policy parameter,
 configurable per set:
 
 ```yaml
-placement_policy:
+placement:
   epoch: 1h
   set_spread: spread
 ```
@@ -203,25 +204,35 @@ on and off as a unit). The two properties point the same way:
 - **Writes**: when a set powers on, it adds one camera to each of N devices
   rather than N cameras to one device.
 
-Selection for camera `s` with ordinal `i` in set `g`, epoch `e`:
+Selection for camera `s` with ordinal `i` in set `g`, epoch `e`. Rankings are
+computed over **all** nodes and devices, eligible or not; eligibility only
+decides which entries are skipped (D7):
 
 ```text
-1. node ranking    = HRW over eligible nodes,             key (g, e, version),
-                     weight = sum of the node's eligible sink capacity
-   node            = node_ranking[i mod Nn]                (Nn = #eligible nodes)
-2. device ranking  = HRW over the node's eligible devices, key (g, e, version),
-                     weight = sum of the device's eligible sink capacity
-   device          = device_ranking[(i div Nn) mod Nd]     (Nd = #eligible devices on the node)
-3. sink            = top of HRW over the device's eligible sinks, key (s, e, version),
+1. node ranking    = HRW over all nodes,                 key (g, e, version),
+                     weight = sum of the node's sink capacity (clamped, §27)
+   node            = node_ranking[i mod N]               (N = #nodes),
+                     or the next eligible node after that position
+2. device ranking  = HRW over the node's devices,        key (g, e, version),
+                     weight = sum of the device's sink capacity
+   device          = device_ranking[(i div N) mod Nd]    (Nd = #devices on the node),
+                     or the next eligible device after that position
+3. sink            = top eligible of HRW over the device's sinks, key (s, e, version),
                      weight = sink capacity
 ```
 
 In production each device has one sink, so step 3 is trivial.
 
-- Members `0 … Nn−1` land on **distinct nodes**. Beyond that, members wrap onto
+- Members `0 … N−1` land on **distinct nodes**. Beyond that, members wrap onto
   nodes already used, and step 2 gives them **different positions** in that
   node's device ranking. As a result members always sit on **distinct
   devices**, up to the total number of eligible devices.
+- Because the ranking is over all nodes, a node that becomes ineligible
+  changes nothing for the members whose positions are elsewhere: only the
+  member at its position steps forward to the next eligible node, where it
+  may sit next to a sibling for the rest of the epoch, which is soft. Ranking
+  only eligible nodes would instead shift every member behind the failed
+  one, moving most of a set mid-epoch.
 - Spreading over devices rather than sinks keeps the guarantee honest when a
   device carries several sinks: two sinks on one device fail together and share
   one Device Queue.
@@ -230,7 +241,7 @@ In production each device has one sink, so step 3 is trivial.
   would collide by chance (with 8 cameras on 10 nodes, ~98% of epochs would
   put at least two members on one node).
 - Ordinals are stable and never reused. Removing a camera leaves a hole and
-  shifts nobody (R1). A hole can let two members share a node once `Nn` is
+  shifts nobody (R1). A hole can let two members share a node once `N` is
   small, which is acceptable because the spread is soft.
 - Fallback for member `i` walks its node's device ranking, then the next node
   positions. It may land next to a sibling, which is soft again.
@@ -274,38 +285,43 @@ Consequence: during the first retention period a new sink holds less data than
 its peers. That wastes nothing and needs no correction.
 
 Mixed HDD sizes are handled by the weight itself. A 24 TB sink gets 1.5× the
-writes of a 16 TB sink and stays proportionally full.
+writes of a 16 TB sink and stays proportionally full. The weight is the
+capacity the node reports, clamped by `max_sink_capacity`
+([§27](09-operations.md#27-node--device--sink-health-and-quarantine)), so a
+misreported or malicious capacity cannot capture the cluster's writes.
 
-An optional `new_device_ramp` (e.g. weight × 0.25 for the first N days) can
-further limit infant-mortality exposure. It is off by default.
+An optional `new_device_ramp` (weight × 0.25 for the first 30 days when on)
+can further limit infant-mortality exposure. It is off by default.
 
 ### D7. Eligibility and fallback
 
-Ranking is computed over **eligible** targets:
+Ranking is computed over **all** targets. Eligibility decides which entries
+are **skipped**:
 
-| Filter | Source |
+| Skipped when | Source |
 |---|---|
-| device healthy, not quarantined, not retired | heartbeat + failure score ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) |
-| sink not CRITICAL, not retired, passed capability probe | heartbeat ([§22.2](07-storage-node.md#222-sinks-and-devices), [§21](06-retention-gc.md#21-lazy-gc)) |
-| sink not forecast to run out this epoch | capacity forecast ([§11.1](03-placement.md#111-capacity-forecast)) |
-| node reachable | heartbeat freshness |
-| weight reduced (suspect / probation) | failure score |
+| device unhealthy, quarantined, or retired | heartbeat + failure score ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) |
+| sink CRITICAL, retired, or failed the capability probe | heartbeat ([§22.2](07-storage-node.md#222-sinks-and-devices), [§21](06-retention-gc.md#21-lazy-gc)) |
+| sink forecast to run out this epoch | capacity forecast ([§11.1](03-placement.md#111-capacity-forecast)), decided once per sink and epoch |
+| node down | heartbeat freshness ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) |
+| weight reduced (suspect / probation) | failure score; changes the ranking, so it moves a proportional share of keys, like a capacity change |
 
-Deliberately **not** filters:
+Deliberately **not** grounds for skipping:
 
 - **RECLAIM pressure.** It is the steady state of a full cluster. Excluding it
   would exclude everything.
-- **Momentary queue fullness (`503`).** The Writer waits `Retry-After` on the
-  same target, which keeps `(source, epoch)` sticky. Only persistent failure
-  moves to the next candidate.
+- **Momentary queue fullness (`503`).** The producer waits `Retry-After` on
+  the same target, which keeps `(source, epoch)` sticky. Only persistent
+  failure moves to the next candidate.
 
-The allocation response includes the top few candidates, so a Writer can
-reallocate without another CP round trip. It still reports the failure so the
-CP can update health.
+The allocation response includes the top few candidates, each with its own
+attempt and token, so a producer can reallocate without another CP round
+trip. It still reports the failed attempt so the CP can update health.
 
-When eligibility changes mid-epoch (a device is quarantined), keys that pointed
-to it move to their next candidate for the rest of the epoch. HRW guarantees
-that no other keys move.
+When eligibility changes mid-epoch (a device is quarantined, a node goes
+down), the keys whose position was on that target move to the next eligible
+entry of their ranking for the rest of the epoch. Nothing else moves, because
+the ranking itself does not depend on eligibility.
 
 ### D8. Load balance is sufficient without load-aware placement
 
@@ -340,8 +356,8 @@ documents that `date_expired` is a lower bound only while capacity allows.
 | D2 | CP picks the sink (node → device → sink); no PG / Disk Group | The device is the failure unit that matters; PGs add nothing without migration |
 | D3 | Key `(set, epoch, version)` + ordinal, with media-time epochs | Retries, delayed uploads, and pre-allocation stay with their epoch |
 | D4 | `epoch` = loss-shape knob, default 1h | Same expected loss; hour-long gaps are the most usable shape for CCTV |
-| D5 | Set spread by ordinal: distinct nodes, then distinct devices | Sets are read together; parallel export and partial-loss survival |
-| D6 | Weight = capacity | No hot spot, no concentration of new data on new HDDs |
-| D7 | Filter unhealthy / CRITICAL only; `503` retried in place | Keeps stickiness; RECLAIM is the steady state |
+| D5 | Set spread by ordinal over a ranking of all nodes, then devices | Sets are read together; parallel export, partial-loss survival, and a node failure moves only its own members |
+| D6 | Weight = capacity, clamped | No hot spot, no concentration of new data on new HDDs, no capture by a misreported sink |
+| D7 | Rank everything, skip the ineligible; `503` retried in place | Keeps stickiness; RECLAIM is the steady state; nothing else moves |
 | D8 | No load-aware placement | Devices run at ~4–8% of bandwidth; upload limits handle the rest |
 | D9 | Version in key, never recompute | The index is the truth |
