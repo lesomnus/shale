@@ -5,10 +5,10 @@
 ### 17.1 Flow
 
 ```text
-1. Reader   GET /sets/{id}/objects?from=&to=      (whole set, per member)
-            GET /sources/{id}/objects?from=&to=   (one camera)
-            GET /objects/{id}
-2. CP       object lists with states, gaps, and GET URLs
+1. Reader   ObjectService.Timeline {set, from, to}      (whole set, per member)
+            ObjectService.Timeline {source, from, to}   (one camera)
+            ObjectService.Get {ref}
+2. CP       objects with states, gaps with reasons, and read tokens (GET URLs)
 3. Reader   GET <node>/objects/<key>   (Range supported), members in parallel
 ```
 

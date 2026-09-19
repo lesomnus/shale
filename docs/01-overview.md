@@ -26,6 +26,12 @@ append-only artifacts) fit as well, but they are not the design target.
 
 Shale is not a general POSIX filesystem, and not a general S3 replacement.
 
+Shale is also **not a live-viewing path**. Watching cameras live goes over a
+separate channel (typically camera → media server) that never touches Shale.
+Shale stores recordings and serves them back after they are committed. Live
+*upload* ([§12.2](04-write-path.md#122-resumable-part-uploads)) only gets
+recordings onto disk sooner. It does not make them viewable sooner.
+
 ## 2. Overview
 
 **Shale** is a distributed storage system for large immutable objects kept
@@ -63,6 +69,10 @@ object data never touches SSD/NVMe
 stateless writers, stateless readers (w.r.t. cluster state)
 
 control plane / data plane separation
+resource-oriented gRPC for control (payday); HTTP/QUIC only for object bytes
+tenant wall always on; a single organization is one tenant
+storage nodes trust only CP signatures; they never know tenants or holders
+one binary: Kubernetes, plain Linux, or a single machine; no external queue
 
 one serialized, starvation-free I/O queue per physical device
 set + source + epoch aware placement
@@ -78,13 +88,13 @@ lazy retention GC
                          │                      │
                          │ Placement            │
                          │ Metadata index       │
-                         │ Presigned URL        │
+                         │ Access tokens        │
                          │ Retention / holds    │
                          │ Retry/Reallocation   │
                          │ Sink/device health   │
                          └──────────┬───────────┘
                                     │
-                          Metadata DB / Queue
+                              Metadata DB
                                     │
                 ┌───────────────────┴───────────────────┐
                 │                                       │
@@ -112,10 +122,16 @@ directly.
 
 ### Control Plane
 
+- Serve two gRPC surfaces: the **tenant API** for producers, readers, and
+  tenant admins, and the **cluster API** for Storage Nodes and operators
+  ([§35.2](12-api.md#352-two-api-surfaces))
 - Issue object IDs and attempt IDs
 - Decide placement down to the **sink**, a storage directory on a physical
   device (see [§22.2](07-storage-node.md#222-sinks-and-devices) and the [placement decision report](placement-decisions.md))
-- Issue (optionally signed) PUT/GET URLs
+- Enroll storage nodes, producers, and readers, and run the built-in CA
+  ([§33.4](10-security.md#334-enrollment))
+- Sign access tokens (presigned URLs) for every data-plane request
+  ([§33.2](10-security.md#332-access-tokens))
 - Maintain the metadata index
 - Hold retention policy, legal holds, and approve deletions
 - Reallocate after write failures
@@ -124,7 +140,9 @@ directly.
 
 ### Storage Node
 
-The data plane.
+The data plane. It knows nothing about producers or readers and serves any
+request that carries a valid CP-signed access token
+([§33.2](10-security.md#332-access-tokens)).
 
 - Accept resumable uploads, staging each part in a RAM part buffer, subject
   to admission control ([§12.2](04-write-path.md#122-resumable-part-uploads))
@@ -133,7 +151,7 @@ The data plane.
 - Serve full and range reads
 - Delete objects approved by the Control Plane
 - Detect sink pressure and propose GC candidates
-- Publish commit events
+- Push commit events to the CP ([§34.9](11-deployment.md#349-commit-event-delivery))
 - Send node, sink, and device heartbeats
 
 ### Writer
@@ -142,19 +160,21 @@ A Writer is the producer of one set: a gateway that uploads the segments of
 all the set's cameras. It holds no durable or cluster state, but **it owns each
 segment until the Storage Node acknowledges the commit**.
 
-1. Cut segments with boundaries staggered across the set's cameras ([§12.2](04-write-path.md#122-resumable-part-uploads)).
-2. Keep allocations for the segments due within `allocation_horizon`
-   (default 10 minutes) fetched ahead from the Control Plane ([§12.1](04-write-path.md#121-flow)), in
+1. Negotiate the set's upload profile with the Control Plane from its
+   cameras' settings and its link ([§12.6](04-write-path.md#126-upload-profile-negotiation)).
+2. Cut segments with boundaries staggered across the set's cameras ([§12.2](04-write-path.md#122-resumable-part-uploads)).
+3. Keep allocations for the segments due within `allocation_horizon`
+   (negotiated, default 10 minutes) fetched ahead from the Control Plane ([§12.1](04-write-path.md#121-flow)), in
    memory only.
-3. Upload each segment to the assigned Storage Node, either **live** (streamed
+4. Upload each segment to the assigned Storage Node, either **live** (streamed
    while it is recorded; the default for CCTV) or **buffered** (sent once it is
    complete) ([§12.2](04-write-path.md#122-resumable-part-uploads)). Either way the upload is resumable: after a disconnect,
    the Writer continues from the offset the node reports.
-4. Treat the object as stored only after the final response, which the node
+5. Treat the object as stored only after the final response, which the node
    sends only after the data is durable on HDD ([§12](04-write-path.md#12-write-path)).
-5. Keep resuming on the same target while the upload makes progress.
-6. Ask for a reallocation on persistent failure.
-7. Give up (object → LOST) when retries are exhausted.
+6. Keep resuming on the same target while the upload makes progress.
+7. Ask for a reallocation on persistent failure.
+8. Give up (object → LOST) when retries are exhausted.
 
 Because a set's cameras are spread over many nodes ([§11](03-placement.md#11-placement)), a Writer keeps a pool
 of keep-alive connections, one per node it is currently writing to.
@@ -163,8 +183,9 @@ of keep-alive connections, one per node it is currently writing to.
 
 A Reader (typically a media server) is stateless.
 
-1. Query the Control Plane for objects (by ID or by source + time range).
-2. Receive GET URLs.
+1. Query the tenant API for objects (by ID, or `ObjectService.Timeline` for a
+   set or source over a time range).
+2. Receive read tokens (GET URLs) with the answer.
 3. Read whole objects or byte ranges directly from Storage Nodes.
 
 ## 6. Identity of the Project

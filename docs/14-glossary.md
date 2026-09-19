@@ -1,6 +1,6 @@
 # Shale — Glossary
 
-## 35. Glossary
+## 37. Glossary
 
 | Term | Meaning |
 |---|---|
@@ -66,3 +66,23 @@
 | **Re-homing** | Moving a device (HDD) to another node without copying data |
 | **Failure Domain** | Unit that fails together (device, node, chassis) |
 | **Blast Radius** | Set of sources and time spans affected by a failure |
+| **Access Token** | CP-signed (Ed25519) grant for one operation on one object at one node; a presigned URL carries it |
+| **Key Set** | The CP's public signing keys (`SigningKey` rows), watched and cached by nodes |
+| **Principal** | An authenticated identity: a holder, a Storage Node, a cluster operator, or the CP |
+| **Tenant** | Owner of sets, sources, objects, and holders; one per organization, and a single-organization cluster has exactly one |
+| **Holder** | An actor of a tenant: producer, reader, or tenant admin (payday) |
+| **Wall** | payday's tenant boundary: a caller sees and changes only its own tenant's rows |
+| **Tenant API** | gRPC surface for holders, behind the wall (`shale control`) |
+| **Cluster API** | internal gRPC surface for Storage Nodes and cluster operators, spanning tenants (`shale cluster`) |
+| **Global Entity** | An entity outside the wall, owned by the cluster: Node, Device, Sink, SigningKey, PlacementPolicy, UploadPolicy, JoinToken |
+| **Upload Profile** | The upload parameters agreed for a set and its sources: object size, mode, timeouts, horizon |
+| **Upload Policy** | Cluster-wide bounds and defaults for negotiated upload profiles |
+| **Negotiation** | A producer proposing its upload profile and the CP clamping it into bounds |
+| **Slug** | Human-written name of a row, `@TENANT/ALIAS#DOMAIN`; the tenant is implied in a single-organization cluster |
+| **Domain** | The byte in a UUIDv8 identifier naming the entity kind |
+| **Watch** | Streaming RPC: a snapshot, then the current state of each changed row |
+| **Join Token** | One-time token with which a Storage Node joins the cluster |
+| **Enrollment Token** | One-time token a producer or reader exchanges for a credential |
+| **Credential** | Long-lived bearer token of a holder or cluster operator; stored hashed by the CP |
+| **Node Certificate** | CA-issued certificate a node uses as TLS server and as mTLS client to the cluster API |
+| **Built-in CA** | Certificate authority run by the CP; replaceable by external certificates |

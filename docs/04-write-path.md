@@ -6,9 +6,9 @@
 
 ```text
 1. Writer      keeps allocations for segments due within allocation_horizon:
-               POST /sets/{id}/allocate  {horizon}   (or POST /objects/allocate
+               SetService.Allocate {set, horizon}   (or ObjectService.Allocate
                {source, expected start_time} for a single segment)
-2. CP          object_id, attempt_id, sink_id, node endpoint, URL
+2. CP          object_id, attempt_id, sink_id, node endpoint, access token
                (plus the next few ranked candidates, for fast reallocation)
 3. Writer      live:     opens the upload when the segment starts and streams
                          bytes as they are recorded
@@ -37,14 +37,16 @@ round trip off the upload's critical path, and it lets ingest ride out a short
 CP outage. It adds no durable Writer state:
 
 - A Writer holds allocations for the segments of each camera that are due
-  within `allocation_horizon` (default 10 minutes ≈ 5 segments at 2 minutes),
+  within `allocation_horizon` (negotiated, [§12.6](#126-upload-profile-negotiation);
+  default 10 minutes ≈ 5 segments at 2 minutes),
   in RAM only. After a restart it simply asks again.
-- `POST /sets/{id}/allocate` returns allocations for every member of the set
+- `SetService.Allocate` returns allocations for every member of the set
   up to the horizon in one call. Placement is a pure function of
   `(set, epoch, ordinal)` and the expected `start_time` ([§11](03-placement.md#11-placement)), so an allocation
   computed early points to the same sink as one computed at upload time.
 - An allocation is valid for `allocation_ttl` = horizon + maximum upload time
-  (default 20 minutes), and so is its URL signature. An unused allocation
+  (default 20 minutes), and so is its access token
+  ([§33.2](10-security.md#332-access-tokens)). An unused allocation
   expires as `ABANDONED` and leaves no trace for readers ([§8](02-data-model.md#8-state-model)).
 - If a segment's actual `start_time` falls into a different epoch than the
   expected one (e.g. the set restarted), the Writer discards the allocation
@@ -104,7 +106,7 @@ HEAD /objects/<key>
 
 **Two ways to upload.**
 
-| | Buffered | Live (default for CCTV) |
+| | Buffered | Live (default; chosen by negotiation, [§12.6](#126-upload-profile-negotiation)) |
 |---|---|---|
 | Starts | when the segment is complete | when the segment starts |
 | Request | one request, `Content-Length` = L | one long request (≈ segment duration), chunked |
@@ -165,8 +167,8 @@ large write they replace.
 |---|---|---|
 | `max_uploads` per sink | 64 | new upload → `503` + `Retry-After` |
 | `part_buffer_pool` per node | 12 GiB | stop reading sockets; TCP flow control slows the senders |
-| `idle_timeout` | 30 s without bytes | close the connection; the upload stays resumable |
-| `abandon_timeout` | 5 min without bytes | abandoned: a live upload is **finalized** as an incomplete object ([§15](#15-partial-objects)); a buffered one is deleted |
+| `idle_timeout` (negotiated) | 30 s without bytes | close the connection; the upload stays resumable |
+| `abandon_timeout` (negotiated) | 5 min without bytes | abandoned: a live upload is **finalized** as an incomplete object ([§15](#15-partial-objects)); a buffered one is deleted |
 | `allocation_ttl` | 20 min | URLs expire, so no upload can be resumed after this |
 
 With live uploads every camera on a sink has an upload in flight, and two
@@ -189,7 +191,7 @@ links the Writer:
 - in buffered mode, uploads oldest first with 1–2 concurrent uploads
   (parallel streams only compete on a wireless link). In live mode, it runs
   one stream per camera, which together equal the set's bitrate,
-- uses TLS and signed URLs ([§30](09-operations.md#30-integrity-and-security)),
+- uses TLS, as every client does ([§33.5](10-security.md#335-tls)),
 - should use a loss-tolerant TCP congestion control such as BBR.
 
 **Staggered segment boundaries.** A set powers on as a unit, and a power
@@ -247,8 +249,9 @@ ObjectStored {
 }
 ```
 
-The event queue is at-least-once. The node keeps unpublished events in RAM
-only. If the node crashes after step 10 but before publishing, the event is
+Events are pushed to the CP at least once, with no external queue
+([§34.9](11-deployment.md#349-commit-event-delivery)). The node keeps
+unpublished events in RAM only. If the node crashes after step 10 but before publishing, the event is
 lost. On startup the node republishes `ObjectStored` for every file modified
 within the last `event_replay_window` (e.g. 10 minutes), which covers that gap.
 Anything still missed becomes an orphan, and orphans are reclaimed by GC ([§21.3](06-retention-gc.md#213-orphans)).
@@ -262,6 +265,63 @@ Anything still missed becomes an orphan, and orphans are reclaimed by GC ([§21.
   first `201`).
 - A different `Upload-Length` for the same key, or bytes past the end of a
   complete upload → `409 Conflict`.
+
+### 12.6 Upload profile negotiation
+
+Cameras differ. A 1 Mbps camera fills 64 MB in 8.5 minutes, and a 16 Mbps
+camera fills it in 32 seconds. A producer on a wireless link needs more
+patience than one on a LAN. So the upload parameters that depend on the camera
+or the link are **negotiated**: the producer proposes, and the CP answers with
+the proposal clamped into cluster bounds.
+
+**What is negotiated, and what is not.**
+
+| Negotiated (per source or per set) | Not negotiated |
+|---|---|
+| target object size, from bitrate × segment duration (per source) | `part_size`, `max_uploads`, `part_buffer_pool`: the node's own resources |
+| upload mode, `live` or `buffered` (per set) | `retain`, `resume_timeout`, retries: the Writer's own business |
+| `idle_timeout`, `abandon_timeout` (per set, from the link) | watermarks, token lifetimes: cluster policy |
+| `allocation_horizon` (per set, from the producer's buffering) | |
+
+The bounds and defaults are in [§36.1](13-configuration.md#361-configuration-reference).
+They live in an `UploadPolicy`, a global, versioned entity that operators
+manage through the cluster API ([§35.5](12-api.md#355-cluster-api-custom-rpcs)).
+
+**Protocol.**
+
+```text
+Producer  SetService.Negotiate {
+            set,
+            link:    {mode, idle_timeout, abandon_timeout, allocation_horizon},
+            sources: [{source, bitrate, segment_duration}, ...]
+          }
+CP        clamps each value into the active UploadPolicy's bounds, stores the
+          result on the set and its sources, and answers {
+            profile_version,
+            agreed:      the same fields, as they now apply,
+            adjustments: [{field, proposed, agreed, reason}, ...]
+          }
+```
+
+- The producer calls `Negotiate` when it starts and whenever a camera's
+  settings change. A set that never negotiated uses the defaults.
+- The producer **must use the agreed values**. When the CP adjusts object size,
+  it keeps the camera's bitrate, which the producer cannot change, and changes
+  the **segment duration** instead. Example: 1 Mbps × 2 min = 15 MB is below
+  the 32 MB floor, so the agreed duration becomes ~4.3 min.
+- The agreed values travel **in the access token** ([§33.2](10-security.md#332-access-tokens)):
+  `max_length`, `mode`, `idle_timeout`, and `abandon_timeout`. A node enforces
+  them per upload, within its own hard caps. It needs no knowledge of sets,
+  and it cannot be asked for more than the CP agreed to.
+- Every allocation carries the current `profile_version`. When an operator
+  activates a new `UploadPolicy`, the CP re-clamps stored profiles, the version
+  changes, and the producer negotiates again on its next allocation.
+
+**Why bounds.** The lower size bound keeps the per-object fixed cost small on
+HDDs ([§25](07-storage-node.md#25-object-size)). The upper bound caps node RAM,
+the loss unit, and upload duration. Timeout bounds keep an abandoned upload
+from holding a node's slot indefinitely, and keep a slow link from being cut
+off too early.
 
 ## 13. Retry and Reallocation
 
@@ -279,7 +339,7 @@ without progress, or when `allocation_ttl` runs out.
 ### Placement retry
 
 After that, the Writer moves to the next candidate: either one returned with
-the allocation or one from `POST /objects/{id}/reallocate`. Each move creates a
+the allocation or one from `ObjectService.Reallocate`. Each move creates a
 new `attempt_id`.
 
 ```text
@@ -316,8 +376,9 @@ it can commit after A2 did.
   If an abandoned live upload was finalized first and the Writer later stored
   the full segment elsewhere, the full one replaces it, and the truncated one
   becomes the duplicate.
-- A duplicate's file is either deleted right away (the CP sends a delete) or
-  just left for GC. Both are acceptable.
+- A duplicate's file is left for GC, which reclaims it once expired
+  ([§21.3](06-retention-gc.md#213-orphans)). The CP never calls a node to
+  delete it.
 
 **Orphans** are files in a sink that the index does not know: a lost commit event, a
 duplicate nobody deleted, or data left over after an index loss. They waste

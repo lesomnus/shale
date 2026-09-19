@@ -96,27 +96,22 @@ availability problem, not data loss.
   are the things that are actually lost with the DB, so back them up.
 
 Scale check: 10 PB at 64 MB ≈ 160 M objects. At 267 MB/s per node, each node
-commits ~4 objects/s. This is well within a single PostgreSQL instance.
+commits ~4 objects/s. This is well within a single PostgreSQL instance, and
+SQLite handles a single machine ([§34.2](11-deployment.md#342-external-dependencies)).
 Suggested index: `(sink_id, expires_at)` for GC approval,
 `(source_id, start_time)` for range queries.
 
-## 30. Integrity and Security
+## 30. Integrity
 
 - **Bit rot is accepted.** No scrub, no read verification by default. A
   damaged segment usually decodes with artifacts, which is acceptable for CCTV.
-- The size check is mandatory (it detects partial files). A checksum (e.g.
+- The size check is mandatory (it detects partial files). A checksum, enabled
+  per set (e.g.
   CRC32C computed while receiving) is optional. When enabled, it is stored in
   the xattr and checked only on demand.
-- **Writers and readers are trusted devices, but not every path is.** Inside
-  the data center the network is assumed private. There, a lightweight HMAC
-  URL signature (method, path, expiry, attempt_id) only rejects misrouted or
-  stale requests.
-- **Producers on WAN or wireless links must use TLS and signed URLs.** The
-  path crosses networks Shale does not control. Signatures then are a real
-  boundary: they bind a URL to one object key and upload length, and expire
-  with `allocation_ttl`.
-- Signing keys carry a key ID. Nodes accept the current and previous key
-  during a grace period longer than the maximum URL lifetime.
+
+Authentication, tokens, enrollment, and TLS are covered in
+[§33](10-security.md#33-authentication-and-authorization).
 
 ## 31. Observability
 
@@ -153,14 +148,36 @@ Structured logs and distributed tracing are also useful.
 
 ## 32. CLI / Processes
 
-```bash
-shale status
-shale node list
-shale sink list
-shale device list
-shale device quarantine <device_id>
-shale object get <object_id>
-shale gc run <sink_id>
-```
+The binary is also the CLI. payday generates `get`, `ls`, `watch`, `add`,
+`patch`, and `erase` for each entity where the schema declares them, and rows
+are named by ID or slug ([§35.1](12-api.md#351-conventions)).
 
-Single daemon: `shaled`. Split by role: `shale-control`, `shale-storage`.
+```bash
+# processes (§34.1)
+shale control                            # tenant API
+shale cluster                            # cluster API
+shale storage --join <cp> --token <t> --ca-hash <h>
+shale all [--dev <dir>]                  # everything in one process
+
+# cluster setup (cluster API)
+shale cluster init                       # CA, signing key, first tenant, admin credentials
+shale tenant add|ls|erase
+shale join-token add --ttl 1h
+shale signing-key ls|watch|rotate
+shale placement-policy add|ls|activate
+shale upload-policy add|ls|activate      # bounds for negotiated upload profiles
+
+# cluster state and operations (cluster API)
+shale node ls|get|watch
+shale device ls|watch|quarantine|release|retire|declare-dead
+shale sink ls|watch|retire
+shale gc run <sink>
+
+# tenant work (tenant API)
+shale set add|ls|get|patch|erase|watch
+shale source add|ls|get|patch|erase
+shale enrollment-token add --role producer|reader [--set <set>] --ttl 24h
+shale holder ls|erase                    # erasing a holder revokes its credential
+shale object get|ls|watch|hold|release
+shale object timeline --set <set> --from <t> --to <t>
+```

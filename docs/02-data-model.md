@@ -2,6 +2,14 @@
 
 ## 7. Source, Set, Zone, Epoch
 
+A **Tenant** owns sets, sources, objects, and the holders (producers, readers,
+admins) that act on them. It is payday's tenant, and the wall around it is
+always on ([§33.1](10-security.md#331-trust-model)). A single organization runs
+a cluster with exactly one tenant, created by `shale cluster init`, and never
+has to name it: slugs leave it out and every holder belongs to it. Adding
+tenants later needs no change to code, schema, or clients. Storage
+infrastructure (nodes, devices, sinks) is not owned by any tenant.
+
 A **Source** is what produces objects: one camera.
 
 A **Set** is a group of Sources behind one producer. Its members:
@@ -18,7 +26,7 @@ Writers use it to stagger segment boundaries ([§12.2](04-write-path.md#122-resu
 
 A **Zone** is an optional label for Sources whose fields of view overlap. A
 zone may cross sets. It describes redundancy between angles, not fate-sharing.
-Placement does not use it yet ([§34](11-open-decisions.md#34-open-decisions)). Shale needs no camera geometry beyond
+Placement does not use it yet ([§36.2](13-configuration.md#362-open-decisions)). Shale needs no camera geometry beyond
 these two labels: the only placement question is which Sources should not
 share a failure domain.
 
@@ -80,9 +88,13 @@ write_attempts
 
 ## 9. Identity
 
+Every entity's ID is payday's UUIDv8: time-ordered, with a byte naming the
+entity kind ([§35.1](12-api.md#351-conventions)). People name rows by slug,
+e.g. `cam-03#source`, or `@acme/cam-03#source` when there are several tenants.
+
 ### Node
 
-`node_id` is a UUID, independent of hostname and IP.
+`node_id` is independent of hostname and IP.
 
 ### Device
 
@@ -116,4 +128,4 @@ A replacement HDD gets a new sink and never reuses the old `sink_id`.
   epoch.
 - `created_at` / `committed_at` come from CP / node clocks.
 - Clocks are NTP-synchronized. The CP rejects or clamps `start_time` values
-  that are too far from its own clock (tolerance: [§34](11-open-decisions.md#34-open-decisions)).
+  that are too far from its own clock (tolerance: [§36.1](13-configuration.md#361-configuration-reference)).

@@ -81,8 +81,9 @@ the second one remains a hard floor.
 
 Probe results are reported in heartbeats and shown by `shale sink list`.
 
-**Development mode.** `shaled --dev <dir>` runs the Control Plane and one
-Storage Node in one process, with a single directory sink. The multi-sink
+**Development mode.** `shale all --dev <dir>` runs the Control Plane and one
+Storage Node in one process, with a single directory sink
+([§34.7](11-deployment.md#347-single-machine)). The multi-sink
 warning is suppressed.
 
 ### 22.3 No SSD in the data path

@@ -11,7 +11,7 @@ Two separate deadlines, plus holds:
 | `hold` | Must not be deleted (e.g. an incident under investigation) | CP refuses to approve deletion |
 
 - Space permitting, expired objects are kept and stay readable.
-- Whether `hold` overrides `must_delete_by` is a legal/policy question ([§34](11-open-decisions.md#34-open-decisions)).
+- Whether `hold` overrides `must_delete_by` is a legal/policy question ([§36.2](13-configuration.md#362-open-decisions)).
 - Because GC is lazy and per-sink load varies, **actual retention differs
   slightly per sink**. `expires_at` is a lower bound only while capacity allows.
 
@@ -47,11 +47,11 @@ CP knows holds and policy.
 1. Node   free < low_watermark on sink S
 2. Node   selects candidates from its in-memory index:
           expires_at <= now, oldest first, until the target is met
-3. Node   POST /sinks/{id}/gc-proposal {candidates}
+3. Node   SinkService.ProposeGc {sink, candidates}
 4. CP     approves unless the object is held;
           marks approved objects DELETING
 5. Node   unlink (MAINT jobs), re-measures free space (§22.2)
-6. Node   reports deletions → CP marks them DELETED
+6. Node   SinkService.ReportDeleted → CP marks them DELETED
 ```
 
 The `must_delete_by` sweep uses the same proposal path, independent of space.
