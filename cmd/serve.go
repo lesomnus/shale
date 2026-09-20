@@ -43,6 +43,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/pki"
+	"github.com/lesomnus/shale/internal/proxyproto"
 	"github.com/lesomnus/shale/server/bare"
 	"github.com/lesomnus/shale/server/core"
 	"github.com/lesomnus/shale/server/pd"
@@ -460,6 +461,12 @@ func (s *Server) Serve(ctx context.Context, surface Surface, l net.Listener) err
 	if err != nil {
 		return err
 	}
+	// A trusted proxy in front (an Ingress passing TLS through) says who
+	// the client is with the PROXY protocol; the policy names the proxies
+	// (§34.10, `trusted_proxies`), and it may change while we serve.
+	l = proxyproto.Listen(l, func(ip net.IP) bool {
+		return proxyproto.Trusted(s.Deps.TrustedProxies(ctx))(ip)
+	})
 
 	stop, err := s.serveHttp(ctx, surface, g)
 	if err != nil {

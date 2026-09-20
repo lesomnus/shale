@@ -183,6 +183,17 @@ type policies struct {
 
 const policyTTL = 5 * time.Second
 
+// TrustedProxies is the active address policy's list of proxies whose
+// PROXY protocol header is believed (§34.10).
+func (d *Deps) TrustedProxies(ctx context.Context) []string {
+	_, _, _, address, err := (Core{d: d}).policies(ctx)
+	if err != nil || address == nil {
+		return nil
+	}
+
+	return address.GetTrustedProxies()
+}
+
 func (s Core) policies(ctx context.Context) (Bounds, *api.PlacementParams, int64, *api.AddressParams, error) {
 	p := &s.d.pol
 	p.mu.Lock()
