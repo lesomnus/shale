@@ -493,9 +493,20 @@ func (s *Server) Serve(ctx context.Context, surface Surface, l net.Listener) err
 	// A trusted proxy in front (an Ingress passing TLS through) says who
 	// the client is with the PROXY protocol; the policy names the proxies
 	// (§34.10, `trusted_proxies`), and it may change while we serve.
-	l = proxyproto.Listen(l, func(ip net.IP) bool {
+	pl := proxyproto.Listen(l, func(ip net.IP) bool {
 		return proxyproto.Trusted(s.Deps.TrustedProxies(ctx))(ip)
 	})
+	pl.Rejected = func(remote net.Addr, err error) {
+		// A trusted proxy's host connecting without a header: its health
+		// probes, a scan; that connection ends and the log says so once
+		// in a while.
+		lg := s.Deps.Log
+		if lg == nil {
+			lg = slog.Default()
+		}
+		lg.Debug("proxy protocol: connection rejected", "remote", remote.String(), "err", err.Error())
+	}
+	l = pl
 
 	stop, err := s.serveHttp(ctx, surface, g)
 	if err != nil {

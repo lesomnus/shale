@@ -68,6 +68,7 @@ type Result struct {
 
 var (
 	errResume  = errors.New("no progress within resume_timeout")
+	errBusy    = errors.New("the node stayed busy past resume_timeout")
 	errTooLong = errors.New("413: the upload exceeds max_length")
 	errRefused = errors.New("the node refused the upload")
 	// errNoCompletion is a 200 or 201 without Upload-Complete: ?1, which a
@@ -206,7 +207,13 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 			}
 			return errRefused
 		case status == http.StatusServiceUnavailable:
-			// Busy: wait Retry-After on the same target (§13).
+			// Busy: wait Retry-After on the same target (§13), but not
+			// forever: a target that stays busy past resume_timeout with
+			// no progress is given up like one that stays silent, so a
+			// node that keeps restarting cannot hold a segment.
+			if time.Since(lastProgress) > u.Cfg.ResumeTimeout {
+				return errBusy
+			}
 			wait := u.retryAfter(newOffset)
 			u.Log.Info("node busy", "key", al.GetObjectKey(), "wait", wait.String())
 			select {

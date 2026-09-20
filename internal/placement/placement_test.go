@@ -217,3 +217,22 @@ func TestRemovingOneNodeMovesOnlyItsMembers(t *testing.T) {
 	x.Greater(onGone, 100, "about a tenth of the members were on the gone node: %d", onGone)
 	x.Greater(stayed, 1200)
 }
+
+// A device the CP records on one node while a sink of it was re-homed to
+// another (§28.3) shows up under both nodes; before, the second node had
+// no device to walk and the ranking divided by zero.
+func TestSharedDeviceAcrossNodes(t *testing.T) {
+	a, b := pdid.New(domNode), pdid.New(domNode)
+	dev := pdid.New(domDevice)
+	c := Cluster{Sinks: []Sink{
+		{Id: pdid.New(domSink), Device: dev, Node: a, Weight: 1e12, Eligible: true},
+		{Id: pdid.New(domSink), Device: dev, Node: b, Weight: 1e12, Eligible: true},
+		{Id: pdid.New(domSink), Device: pdid.New(domDevice), Node: b, Weight: 1e12, Eligible: true},
+	}}
+	for ord := 0; ord < 6; ord++ {
+		out := Rank(c, Key{Set: pdid.New(domSet), Epoch: 1}, Member{Source: pdid.New(domSource), Ordinal: ord}, api.SetSpread_SET_SPREAD_SPREAD)
+		if len(out) != 3 {
+			t.Fatalf("ordinal %d: %d candidates, want every sink", ord, len(out))
+		}
+	}
+}

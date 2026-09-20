@@ -32,6 +32,9 @@ type Listener struct {
 	net.Listener
 	// Trusted says whether a peer is a proxy whose header is believed.
 	Trusted func(ip net.IP) bool
+	// Rejected, when set, hears of a trusted peer whose connection carried
+	// no header or a bad one: a probe, a scan, or a proxy misconfigured.
+	Rejected func(remote net.Addr, err error)
 }
 
 // Listen wraps `inner`.
@@ -40,32 +43,39 @@ func Listen(inner net.Listener, trusted func(ip net.IP) bool) *Listener {
 }
 
 // Accept answers the next connection, having read the header when the
-// peer is trusted.
+// peer is trusted. A trusted peer that sends no header, or a bad one, has
+// its connection closed and nothing else: a server takes an error from
+// Accept as the listener's own and stops, and one bad connection, a health
+// probe from the proxy's host for instance, must not take the server down.
 func (l *Listener) Accept() (net.Conn, error) {
-	c, err := l.Listener.Accept()
-	if err != nil {
-		return nil, err
-	}
-	host, _, _ := net.SplitHostPort(c.RemoteAddr().String())
-	ip := net.ParseIP(host)
-	if ip == nil || l.Trusted == nil || !l.Trusted(ip) {
-		return c, nil
-	}
-	c.SetReadDeadline(time.Now().Add(headerTimeout))
-	r := bufio.NewReader(c)
-	src, err := ReadHeader(r)
-	c.SetReadDeadline(time.Time{})
-	if err != nil {
-		c.Close()
+	for {
+		c, err := l.Listener.Accept()
+		if err != nil {
+			return nil, err
+		}
+		host, _, _ := net.SplitHostPort(c.RemoteAddr().String())
+		ip := net.ParseIP(host)
+		if ip == nil || l.Trusted == nil || !l.Trusted(ip) {
+			return c, nil
+		}
+		c.SetReadDeadline(time.Now().Add(headerTimeout))
+		r := bufio.NewReader(c)
+		src, err := ReadHeader(r)
+		c.SetReadDeadline(time.Time{})
+		if err != nil {
+			c.Close()
+			if l.Rejected != nil {
+				l.Rejected(c.RemoteAddr(), fmt.Errorf("proxy protocol: %w", err))
+			}
+			continue
+		}
+		if src == nil {
+			// LOCAL, or a health check: the proxy's own address stands.
+			return &conn{Conn: c, r: r, remote: c.RemoteAddr()}, nil
+		}
 
-		return nil, &net.OpError{Op: "accept", Net: "tcp", Source: c.RemoteAddr(), Err: fmt.Errorf("proxy protocol: %w", err)}
+		return &conn{Conn: c, r: r, remote: src}, nil
 	}
-	if src == nil {
-		// LOCAL, or a health check: the proxy's own address stands.
-		return &conn{Conn: c, r: r, remote: c.RemoteAddr()}, nil
-	}
-
-	return &conn{Conn: c, r: r, remote: src}, nil
 }
 
 // conn is a connection whose first bytes were read for the header.

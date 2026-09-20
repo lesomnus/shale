@@ -110,6 +110,9 @@ func Rank(c Cluster, k Key, m Member, spread api.SetSpread) []Sink {
 		})
 
 		Nd := len(n.devices)
+		if Nd == 0 {
+			continue
+		}
 		start := q % Nd
 		if step > 0 {
 			// A fallback node: its own position for this member is where the
@@ -147,7 +150,11 @@ func Rank(c Cluster, k Key, m Member, spread api.SetSpread) []Sink {
 // so the walk only descends into what can take a write.
 func group(c Cluster) []*node {
 	byNode := map[pdid.Id]*node{}
-	byDevice := map[pdid.Id]*device{}
+	// Devices are keyed per node: a device the CP still records on one
+	// node while a sink of it was re-homed to another (§28.3) is a device
+	// of each, with each node's own sinks, and every node in the ranking
+	// has at least one device to walk.
+	byDevice := map[[2]pdid.Id]*device{}
 	var nodes []*node
 
 	for _, s := range c.Sinks {
@@ -158,10 +165,10 @@ func group(c Cluster) []*node {
 			nodes = append(nodes, n)
 		}
 
-		d, ok := byDevice[s.Device]
+		d, ok := byDevice[[2]pdid.Id{s.Node, s.Device}]
 		if !ok {
 			d = &device{id: s.Device}
-			byDevice[s.Device] = d
+			byDevice[[2]pdid.Id{s.Node, s.Device}] = d
 			n.devices = append(n.devices, d)
 		}
 

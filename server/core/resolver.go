@@ -4,6 +4,8 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -108,7 +110,9 @@ func pickAddress(ifs []*api.HostInterface, caller string, p *api.AddressParams) 
 		}
 	}
 
-	if from != nil && from.IsLoopback() {
+	// A loopback caller is on this host: loopback reaches a node on this
+	// host and no other, which gets a routable address like any caller.
+	if from != nil && from.IsLoopback() && onThisHost(all) {
 		for _, ip := range all {
 			if ip.IsLoopback() {
 				return ip.String()
@@ -123,6 +127,9 @@ func pickAddress(ifs []*api.HostInterface, caller string, p *api.AddressParams) 
 	// a guess, and the rules above are the way to say otherwise.
 	if from != nil {
 		for _, ip := range all {
+			if ip.IsLoopback() || ip.IsLinkLocalUnicast() {
+				continue
+			}
 			if ip4, f4 := ip.To4(), from.To4(); ip4 != nil && f4 != nil && ip4[0] == f4[0] && ip4[1] == f4[1] && ip4[2] == f4[2] {
 				return ip.String()
 			}
@@ -175,4 +182,49 @@ func NamesFor(n NodeAddresses, p *api.AddressParams) (dns []string, ips []net.IP
 	dns = append(dns, "localhost")
 
 	return dns, ips
+}
+
+// hostIPs answers the addresses of this host's interfaces, read at most
+// once a minute; tests replace it.
+var hostIPs = func() []net.IP {
+	hostIPsMu.Lock()
+	defer hostIPsMu.Unlock()
+	if time.Since(hostIPsAt) < time.Minute && hostIPsCache != nil {
+		return hostIPsCache
+	}
+	var ips []net.IP
+	if addrs, err := net.InterfaceAddrs(); err == nil {
+		for _, a := range addrs {
+			if n, ok := a.(*net.IPNet); ok {
+				ips = append(ips, n.IP)
+			}
+		}
+	}
+	hostIPsCache, hostIPsAt = ips, time.Now()
+
+	return ips
+}
+
+var (
+	hostIPsMu    sync.Mutex
+	hostIPsCache []net.IP
+	hostIPsAt    time.Time
+)
+
+// onThisHost says whether a node with these addresses runs on the host
+// the CP runs on: one of its routable addresses is one of ours.
+func onThisHost(all []net.IP) bool {
+	mine := hostIPs()
+	for _, ip := range all {
+		if ip.IsLoopback() || ip.IsLinkLocalUnicast() {
+			continue
+		}
+		for _, h := range mine {
+			if h.Equal(ip) {
+				return true
+			}
+		}
+	}
+
+	return false
 }

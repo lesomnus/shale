@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"net"
 	"testing"
+	"time"
 )
 
 func TestV1(t *testing.T) {
@@ -96,5 +97,61 @@ func TestTrusted(t *testing.T) {
 	f := Trusted([]string{"10.0.0.0/8", "192.0.2.1", " "})
 	if !f(net.ParseIP("10.1.2.3")) || !f(net.ParseIP("192.0.2.1")) || f(net.ParseIP("192.0.2.2")) {
 		t.Fatal("wrong answer")
+	}
+}
+
+// A trusted peer that sends no header, a TCP health probe say, has its
+// connection closed; the listener goes on and the next connection, with
+// a header, is accepted as the address the header names (§34.10).
+func TestBadHeaderClosesOneConnection(t *testing.T) {
+	inner, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer inner.Close()
+	rejected := 0
+	l := Listen(inner, func(ip net.IP) bool { return ip.IsLoopback() })
+	l.Rejected = func(net.Addr, error) { rejected++ }
+
+	got := make(chan net.Conn, 1)
+	errs := make(chan error, 1)
+	go func() {
+		c, err := l.Accept()
+		if err != nil {
+			errs <- err
+			return
+		}
+		got <- c
+	}()
+
+	// The probe: connect, say nothing that is a header, leave.
+	probe, err := net.Dial("tcp", inner.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe.Write([]byte("GET / HTTP/1.0\r\n\r\n"))
+	probe.Close()
+
+	// A real proxy connection.
+	real, err := net.Dial("tcp", inner.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer real.Close()
+	real.Write([]byte("PROXY TCP4 203.0.113.7 10.0.0.1 51234 7400\r\n"))
+
+	select {
+	case c := <-got:
+		if c.RemoteAddr().String() != "203.0.113.7:51234" {
+			t.Fatalf("remote %s", c.RemoteAddr())
+		}
+		c.Close()
+	case err := <-errs:
+		t.Fatalf("Accept failed the listener: %v", err)
+	case <-time.After(3 * time.Second):
+		t.Fatal("no connection accepted")
+	}
+	if rejected != 1 {
+		t.Fatalf("rejected %d connections", rejected)
 	}
 }
