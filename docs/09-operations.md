@@ -90,7 +90,7 @@ Device.quarantine = { state, date_quarantined, reason,
 
 | Command | Effect |
 |---|---|
-| `shale device ls --quarantined` | devices awaiting a decision; `watch` for alerts |
+| `shale device quarantined` | devices awaiting a decision; `watch` for alerts |
 | `shale device get <device>` | the record above: why, since when, and what is at stake |
 | `shale device release <device>` | back on probation (e.g. after reseating a cable) |
 | `shale device retire <device>` | reads only, never again for writes; objects stay readable until they expire |
@@ -144,7 +144,7 @@ continues as the same `node_id` with the same sinks
 3. the CP sees sinks attached to node A:
    - A still heartbeats → B's claim is refused and B does not serve them
    - A is down → the sinks are "pending adoption"
-4. shale sink adopt <sink> --node B  (or automatically once A has been down
+4. shale sink adopt <sink> '{"node":{"id":"B"}}'  (or automatically once A has been down
    for sink_auto_adopt_after, 10 minutes)
 5. the CP updates sinks.node_id, and reconciles each sink with B (§34.9)
 6. objects are readable again; no object rows change
@@ -169,7 +169,7 @@ availability problem, not data loss.
 
 - Run the DB with ordinary replication/backups. This is cheap and avoids
   rebuilds, but it is not critical.
-- **Rebuild** path: `shale index rebuild [--sink <sink>]` makes the CP
+- **Rebuild** path: `shale index rebuild [<sink>]` makes the CP
   reconcile every sink from the beginning (`NodeControl.Reconcile` with
   `since = 0`, [§34.9](11-deployment.md#349-events-and-directives)): each
   node walks the sink (directory walk + `getxattr`) and streams the records.
