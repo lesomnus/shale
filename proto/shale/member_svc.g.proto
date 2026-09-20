@@ -1,0 +1,127 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "shale/host_svc.g.proto";
+import "shale/member.proto";
+import "shale/payday/holder_svc.g.proto";
+import "shale/payday/tenant_svc.g.proto";
+import "shale/site_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service SiteMemberService {
+  // Add creates a new SiteMember
+  rpc Add(SiteMemberAddRequest) returns (SiteMember);
+  // Get retrieves a SiteMember
+  rpc Get(SiteMemberGetRequest) returns (SiteMember);
+  // Patch updates an existing SiteMember
+  rpc Patch(SiteMemberPatchRequest) returns (SiteMember);
+  // Apply applies a patch document to an existing SiteMember
+  rpc Apply(SiteMemberApplyRequest) returns (SiteMember);
+  // Erase deletes a SiteMember
+  rpc Erase(SiteMemberRef) returns (SiteMemberEraseResponse);
+  // List reads SiteMembers a page at a time.
+  rpc List(SiteMemberListRequest) returns (SiteMemberListResponse);
+}
+
+message SiteMemberAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  HolderRef holder = 8;
+  ReaderRef reader = 9;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message SiteMemberGetRequest {
+  SiteMemberRef ref = 1;
+  SiteMemberSelect select = 2;
+}
+
+message SiteMemberRef {
+  oneof key {
+    bytes id = 1;
+  }
+}
+
+message SiteMemberSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  HolderSelect holder = 8;
+  ReaderSelect reader = 9;
+  bool date_updated = 13;
+  bool date_created = 15;
+}
+
+message SiteMemberPatchRequest {
+  SiteMemberRef ref = 1;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message SiteMemberApplyRequest {
+  SiteMemberRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message SiteMemberEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message SiteMemberListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated SiteMemberFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message SiteMemberListResponse {
+  repeated SiteMember items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message SiteMemberFilter {
+  SiteMemberRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  HolderRef holder = 4;
+  ReaderRef reader = 5;
+}

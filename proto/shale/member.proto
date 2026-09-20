@@ -1,0 +1,89 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/host.proto";
+import "shale/payday/holder.proto";
+import "shale/payday/tenant.proto";
+import "shale/site.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// SiteMember says that a person or a reader may see a site (§33.1). A row
+// carries its own site at field 3, so a caller narrowed to a site sees the
+// memberships of that site and no other.
+message SiteMember {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  Site site = 3 [(orm.edge) = {immutable: true}];
+
+  // Exactly one of the two is set.
+  Holder holder = 8 [(orm.edge) = {
+    nullable: true
+    immutable: true
+  }];
+  Reader reader = 9 [(orm.edge) = {
+    nullable: true
+    immutable: true
+  }];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "holder"
+        refs: [
+          {name: "site", number: 3},
+          {name: "holder", number: 8}
+        ]
+      },
+      {
+        name: "reader"
+        refs: [
+          {name: "site", number: 3},
+          {name: "reader", number: 9}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 20
+    erase: {hard: {}}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"},
+        {name: "site"},
+        {name: "holder"},
+        {name: "reader"}
+      ]
+      size: 50
+      max: 500
+    }
+  };
+}

@@ -1,0 +1,103 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "shale/host_svc.g.proto";
+import "shale/storage.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+// What Shale adds to the generated contracts of Device and Sink (§35.5).
+
+service DeviceService {
+  rpc Quarantine(DeviceQuarantineRequest) returns (Device);
+  rpc Release(DeviceReleaseRequest) returns (Device);
+  rpc Retire(DeviceRetireRequest) returns (Device);
+  // Its objects become LOST; the device is forgotten.
+  rpc DeclareDead(DeviceDeclareDeadRequest) returns (Device);
+  // Bay LED on or off, through the node's control API.
+  rpc Locate(DeviceLocateRequest) returns (Device);
+}
+
+service SinkService {
+  // The node proposes deletion candidates; the CP approves (§21.2).
+  rpc ProposeGc(SinkProposeGcRequest) returns (SinkProposeGcResponse);
+  // Attach a moved sink to the node that reports it (§28.3).
+  rpc Adopt(SinkAdoptRequest) returns (Sink);
+  rpc Retire(SinkRetireRequest) returns (Sink);
+}
+
+message DeviceQuarantineRequest {
+  DeviceRef ref = 1;
+  string reason = 2 [features.field_presence = IMPLICIT];
+}
+
+message DeviceReleaseRequest {
+  DeviceRef ref = 1;
+  string reason = 2 [features.field_presence = IMPLICIT];
+}
+
+message DeviceRetireRequest {
+  DeviceRef ref = 1;
+  string reason = 2 [features.field_presence = IMPLICIT];
+}
+
+message DeviceDeclareDeadRequest {
+  DeviceRef ref = 1;
+  string reason = 2 [features.field_presence = IMPLICIT];
+}
+
+message DeviceLocateRequest {
+  DeviceRef ref = 1;
+  bool off = 2 [features.field_presence = IMPLICIT];
+}
+
+// GcReason says why a node proposes (§21.2).
+enum GcReason {
+  GC_REASON_UNSPECIFIED = 0;
+  GC_REASON_PRESSURE = 1;
+  GC_REASON_SWEEP = 2;
+}
+
+// GcCandidate is a file, named by key, with what its xattr says.
+message GcCandidate {
+  string object_key = 1 [features.field_presence = IMPLICIT];
+  bytes object_id = 2 [features.field_presence = IMPLICIT];
+  bytes attempt_id = 3 [features.field_presence = IMPLICIT];
+  int64 size = 4 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_expired = 5;
+  google.protobuf.Timestamp date_deleted = 6;
+  bytes tenant_id = 7 [features.field_presence = IMPLICIT];
+}
+
+message SinkProposeGcRequest {
+  SinkRef ref = 1;
+  GcReason reason = 2 [features.field_presence = IMPLICIT];
+  repeated GcCandidate candidates = 3;
+  int64 bytes_needed = 4 [features.field_presence = IMPLICIT];
+}
+
+message GcDecision {
+  string object_key = 1 [features.field_presence = IMPLICIT];
+  bool approved = 2 [features.field_presence = IMPLICIT];
+  // The current dates when they differ from what the node proposed on; the
+  // node rewrites the xattr.
+  google.protobuf.Timestamp date_expired = 3;
+  google.protobuf.Timestamp date_deleted = 4;
+}
+
+message SinkProposeGcResponse {
+  repeated GcDecision decisions = 1;
+  int64 approved_bytes = 2 [features.field_presence = IMPLICIT];
+}
+
+message SinkAdoptRequest {
+  SinkRef ref = 1;
+  NodeRef node = 2;
+}
+
+message SinkRetireRequest {
+  SinkRef ref = 1;
+  string reason = 2 [features.field_presence = IMPLICIT];
+}

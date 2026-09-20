@@ -1,0 +1,27 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"jsx": "react-jsx",
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"verbatimModuleSyntax": true,
+		// Narrowly: what Vite puts in a page -- `import.meta.env`, and importing
+		// a stylesheet. Not `node`, which would make a file that reads the
+		// filesystem compile in a bundle that cannot.
+		//
+		// `@types/node` is installed all the same, and the two are not in
+		// conflict: this list decides which type packages are added to the
+		// **global** scope, and an `import` of `node:fs` resolves on its own.
+		// So `vite.config.ts` -- which runs in node and is not in `include`
+		// below -- reads in an editor, and nothing under `src` gains a global
+		// that would not exist in a page.
+		"types": ["vite/client"]
+	},
+	"include": ["src", "gen"]
+}

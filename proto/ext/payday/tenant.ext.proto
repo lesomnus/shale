@@ -1,0 +1,12 @@
+edition = "2023";
+
+package payday;
+
+// What Shale adds to payday's Tenant.
+message Tenant {
+  // The tenant's fraction of cluster capacity for GC fair share (§21.4).
+  // Zero means an equal share.
+  double capacity_share = 8;
+  // Bytes stored, tracked from commit and confirmed deletion events (§21.4).
+  int64 stored_bytes = 9;
+}

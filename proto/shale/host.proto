@@ -1,0 +1,359 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/common.proto";
+import "shale/payday/tenant.proto";
+import "shale/set.proto";
+import "shale/site.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// The four kinds of host (§33.1). A host row is created by the host's own
+// Join and made usable by an operator's Adopt; the generated Add is closed to callers by the gate policy.
+// Producer and Reader belong to a tenant; Node and Relay are global.
+//
+// `site` on Producer is not immutable: a producer joins with none and is put
+// into its set's site by Adopt. Set and Source are declared in set.proto and
+// name no host, so the edge from Producer to Set lives on the producer side
+// only.
+
+// HostState is where a host is in its life (§33.4).
+enum HostState {
+  HOST_STATE_UNSPECIFIED = 0;
+  HOST_STATE_PENDING = 1;
+  HOST_STATE_ADOPTED = 2;
+}
+
+// Node is a Storage Node: cluster infrastructure, outside the wall (§22).
+message Node {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  string hardware_id = 8;
+  string hostname = 9;
+  HostState state = 10;
+  string cert_serial = 11;
+  HostJoin join = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_adopted = 16 [(orm.field) = {nullable: true}];
+  // The last heartbeat; a node unheard for node_down_after is down (§27).
+  google.protobuf.Timestamp date_seen = 17 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_cert_expires = 18 [(orm.field) = {nullable: true}];
+  // Interfaces and IPs the node listens on, as it reports them; what the
+  // address resolver chooses from (§34.10).
+  repeated HostInterface interfaces = 19;
+  // The signing key IDs the node holds, from its heartbeat (§33.3).
+  repeated string key_ids = 20;
+  string ca_hash = 21;
+  string version = 22;
+  // host:port of the node's control API, which the CP dials directly (§35.7).
+  string control_address = 23;
+  // host:port of the node's data plane, as the node listens; the resolver
+  // builds endpoints from the interfaces and this port.
+  string data_address = 24;
+  NodeStatus status = 25;
+  // Cumulative failure score with a 24 h half-life (§27).
+  double failure_score = 26;
+  google.protobuf.Timestamp date_scored = 27 [(orm.field) = {nullable: true}];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "hardware"
+        refs: [{name: "hardware_id", number: 8}]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 12
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "labels"}
+      ]
+      size: 50
+      max: 500
+    }
+    watch: {}
+  };
+}
+
+// Relay is the host that fans a producer's live streams out to viewers
+// (§39): cluster infrastructure, outside the wall.
+message Relay {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  // Matched against a site's relay_selector (§39.2).
+  map<string, string> labels = 7;
+
+  string hardware_id = 8;
+  string hostname = 9;
+  HostState state = 10;
+  string cert_serial = 11;
+  HostJoin join = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_adopted = 16 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_seen = 17 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_cert_expires = 18 [(orm.field) = {nullable: true}];
+  repeated HostInterface interfaces = 19;
+  repeated string key_ids = 20;
+  string ca_hash = 21;
+  string version = 22;
+  // host:port of the ingest listener producers dial (§39.3).
+  string ingest_address = 23;
+  // host:port of the WHEP listener viewers reach (§39.4).
+  string whep_address = 24;
+  RelayStatus status = 25;
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "hardware"
+        refs: [{name: "hardware_id", number: 8}]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 24
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "labels"}
+      ]
+      size: 50
+      max: 500
+    }
+    watch: {}
+  };
+}
+
+// Producer is the host that receives a set's streams, cuts them into
+// segments, and uploads them (§38).
+message Producer {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  // Copied from the set at adoption; not immutable for that reason.
+  Site site = 3 [(orm.edge) = {nullable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  // The set this producer records, assigned at adoption; a set has at most
+  // one producer.
+  Set set = 8 [(orm.edge) = {nullable: true}];
+  string hardware_id = 9;
+  string hostname = 10;
+  HostState state = 11;
+  // The serial of the certificate this host currently holds, compared on
+  // every mTLS call, so an erased host or a replaced certificate is refused
+  // without a revocation list (§33.4).
+  string cert_serial = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  // The pending join request, replaced by every Join until adoption.
+  HostJoin join = 16;
+  google.protobuf.Timestamp date_adopted = 17 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_seen = 18 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_cert_expires = 19 [(orm.field) = {nullable: true}];
+  // The relay this producer sends live streams to (§39.2).
+  Relay relay = 20 [(orm.edge) = {nullable: true}];
+  ProducerStatus status = 21;
+  string version = 22;
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "slug"
+        refs: [
+          {name: "alias", number: 4},
+          {name: "tenant", number: 2}
+        ]
+        unique: true
+      },
+      {
+        name: "hardware"
+        refs: [
+          {name: "hardware_id", number: 9},
+          {name: "tenant", number: 2}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 22
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"},
+        {name: "set"},
+        {name: "site"},
+        {name: "labels"}
+      ]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}
+
+// Reader is a host that queries and reads objects, typically a media server
+// (§33.4); its sites are SiteMember rows.
+message Reader {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  string hardware_id = 8;
+  string hostname = 9;
+  HostState state = 10;
+  string cert_serial = 11;
+  HostJoin join = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_adopted = 16 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_seen = 17 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_cert_expires = 18 [(orm.field) = {nullable: true}];
+  string version = 19;
+  // Adopted for the whole tenant rather than for SiteMember rows (§33.4).
+  bool all_sites = 20;
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "slug"
+        refs: [
+          {name: "alias", number: 4},
+          {name: "tenant", number: 2}
+        ]
+        unique: true
+      },
+      {
+        name: "hardware"
+        refs: [
+          {name: "hardware_id", number: 8},
+          {name: "tenant", number: 2}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 23
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"},
+        {name: "labels"}
+      ]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}
+

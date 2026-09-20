@@ -1,0 +1,104 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "shale/common.proto";
+import "shale/set.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+// What Shale adds to the generated contracts of Set and Source (§35.4).
+
+service SetService {
+  // Proposed upload profile in, agreed profile and adjustments out (§12.6).
+  // The answer also carries the producer's relay assignment (§39.2).
+  rpc Negotiate(SetNegotiateRequest) returns (SetNegotiateResponse);
+  // Allocations for every member of the set, up to a horizon (§12.1).
+  rpc Allocate(SetAllocateRequest) returns (SetAllocateResponse);
+  // Live viewing: per member, the relay's endpoints, a view token, and the
+  // WHEP URL (§39.4).
+  rpc Live(SetLiveRequest) returns (SetLiveResponse);
+}
+
+service SourceService {
+  // Live viewing of one source (§39.4).
+  rpc Live(SourceLiveRequest) returns (SourceLiveResponse);
+}
+
+message SourceProposal {
+  SourceRef source = 1;
+  SegmentProfile profile = 2;
+}
+
+message SetNegotiateRequest {
+  SetRef ref = 1;
+  LinkProfile link = 2;
+  repeated SourceProposal sources = 3;
+}
+
+message SourceAgreed {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  int32 ordinal = 2 [features.field_presence = IMPLICIT];
+  SegmentProfile profile = 3;
+  int64 max_length = 4 [features.field_presence = IMPLICIT];
+}
+
+// Adjustment says what the CP changed about a proposal and why.
+message Adjustment {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  string field = 2 [features.field_presence = IMPLICIT];
+  string proposed = 3 [features.field_presence = IMPLICIT];
+  string agreed = 4 [features.field_presence = IMPLICIT];
+  string reason = 5 [features.field_presence = IMPLICIT];
+}
+
+message SetNegotiateResponse {
+  int64 profile_version = 1 [features.field_presence = IMPLICIT];
+  LinkProfile link = 2;
+  repeated SourceAgreed sources = 3;
+  repeated Adjustment adjustments = 4;
+  RelayAssignment relay = 5;
+}
+
+message SetAllocateRequest {
+  SetRef ref = 1;
+  // How far ahead, at most the agreed allocation_horizon. Zero is the
+  // horizon.
+  int64 horizon_seconds = 2 [features.field_presence = IMPLICIT];
+  // The producer's idea of now, so a slot list lines up with its clock;
+  // absent means the CP's clock.
+  google.protobuf.Timestamp now = 3;
+}
+
+message SetAllocateResponse {
+  int64 profile_version = 1 [features.field_presence = IMPLICIT];
+  repeated Allocation allocations = 2;
+}
+
+message SetLiveRequest {
+  SetRef ref = 1;
+}
+
+// LiveSource is one source's live endpoint for a viewer (§39.4).
+message LiveSource {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  int32 ordinal = 2 [features.field_presence = IMPLICIT];
+  bytes relay_id = 3 [features.field_presence = IMPLICIT];
+  repeated Endpoint endpoints = 4;
+  string whep_url = 5 [features.field_presence = IMPLICIT];
+  string view_token = 6 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_expires = 7;
+}
+
+message SetLiveResponse {
+  repeated LiveSource sources = 1;
+}
+
+message SourceLiveRequest {
+  SourceRef ref = 1;
+}
+
+message SourceLiveResponse {
+  LiveSource source = 1;
+}

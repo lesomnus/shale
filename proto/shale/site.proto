@@ -1,0 +1,76 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/payday/tenant.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Site groups sets within a tenant, e.g. a building or a branch (§7). It is
+// payday's second permission axis: field 3 of Set, Source, Object, Attempt,
+// Producer, and SiteMember names one, so a person or a reader limited to the
+// sites it is a member of cannot read another site's cameras.
+message Site {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  // Labels a relay must carry to serve this site's producers (§39.2). Empty
+  // means any relay.
+  map<string, string> relay_selector = 8;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "slug"
+        refs: [
+          {name: "alias", number: 4},
+          {name: "tenant", number: 2}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 19
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"}
+      ]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}

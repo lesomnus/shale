@@ -1,0 +1,1294 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "shale/common.proto";
+import "shale/host.proto";
+import "shale/payday/tenant_svc.g.proto";
+import "shale/set_svc.g.proto";
+import "shale/site_svc.g.proto";
+import "shale/storage.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service NodeService {
+  // Add creates a new Node
+  rpc Add(NodeAddRequest) returns (Node);
+  // Get retrieves a Node
+  rpc Get(NodeGetRequest) returns (Node);
+  // Patch updates an existing Node
+  rpc Patch(NodePatchRequest) returns (Node);
+  // Apply applies a patch document to an existing Node
+  rpc Apply(NodeApplyRequest) returns (Node);
+  // Erase deletes a Node
+  rpc Erase(NodeRef) returns (NodeEraseResponse);
+  // List reads Nodes a page at a time.
+  rpc List(NodeListRequest) returns (NodeListResponse);
+  // Watch the Nodes this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(NodeWatchRequest) returns (stream NodeWatchResponse);
+  // Hardware identity, hostname, interfaces, sinks, and CSR in; polled until
+  // adopted; node_id, certificate, CA bundle, and key set out (§33.4).
+  rpc Join(NodeJoinRequest) returns (NodeJoinResponse);
+  // An operator accepts a pending node.
+  rpc Adopt(NodeAdoptRequest) returns (Node);
+  rpc RenewCertificate(NodeRenewCertificateRequest) returns (NodeRenewCertificateResponse);
+  // Health, capacity, and pressure of the node, its devices, and its sinks
+  // (§27).
+  rpc Heartbeat(NodeHeartbeatRequest) returns (NodeHeartbeatResponse);
+  // ObjectStored, ObjectDeleted, and ObjectMissing events, batched; applied
+  // idempotently (§34.9).
+  rpc PushEvents(NodePushEventsRequest) returns (NodePushEventsResponse);
+  // What the active address resolver would hand out, for a given caller
+  // (§34.10).
+  rpc Resolve(NodeResolveRequest) returns (NodeResolveResponse);
+}
+
+service RelayService {
+  // Add creates a new Relay
+  rpc Add(RelayAddRequest) returns (Relay);
+  // Get retrieves a Relay
+  rpc Get(RelayGetRequest) returns (Relay);
+  // Patch updates an existing Relay
+  rpc Patch(RelayPatchRequest) returns (Relay);
+  // Apply applies a patch document to an existing Relay
+  rpc Apply(RelayApplyRequest) returns (Relay);
+  // Erase deletes a Relay
+  rpc Erase(RelayRef) returns (RelayEraseResponse);
+  // List reads Relays a page at a time.
+  rpc List(RelayListRequest) returns (RelayListResponse);
+  // Watch the Relays this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(RelayWatchRequest) returns (stream RelayWatchResponse);
+  rpc Join(RelayJoinRequest) returns (RelayJoinResponse);
+  rpc Adopt(RelayAdoptRequest) returns (Relay);
+  rpc RenewCertificate(RelayRenewCertificateRequest) returns (RelayRenewCertificateResponse);
+  // Attached producers, active sources, viewers, egress, load (§39.2).
+  rpc Heartbeat(RelayHeartbeatRequest) returns (RelayHeartbeatResponse);
+  // An operator moves a producer to a relay; the assignment stays sticky.
+  rpc Assign(RelayAssignRequest) returns (Relay);
+}
+
+service ProducerService {
+  // Add creates a new Producer
+  rpc Add(ProducerAddRequest) returns (Producer);
+  // Get retrieves a Producer
+  rpc Get(ProducerGetRequest) returns (Producer);
+  // Patch updates an existing Producer
+  rpc Patch(ProducerPatchRequest) returns (Producer);
+  // Apply applies a patch document to an existing Producer
+  rpc Apply(ProducerApplyRequest) returns (Producer);
+  // Erase deletes a Producer
+  rpc Erase(ProducerRef) returns (ProducerEraseResponse);
+  // List reads Producers a page at a time.
+  rpc List(ProducerListRequest) returns (ProducerListResponse);
+  // Watch the Producers this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(ProducerWatchRequest) returns (stream ProducerWatchResponse);
+  // Called without a credential by a host on its first run, and polled until
+  // an admin adopts it: hardware identity, hostname, and CSR in; certificate
+  // and CA bundle out once adopted (§33.4).
+  rpc Join(ProducerJoinRequest) returns (ProducerJoinResponse);
+  // A tenant admin accepts a pending producer and assigns its set.
+  rpc Adopt(ProducerAdoptRequest) returns (Producer);
+  // Called over mTLS before the certificate expires (§33.5).
+  rpc RenewCertificate(ProducerRenewCertificateRequest) returns (ProducerRenewCertificateResponse);
+  // Input state per source and host load, every producer_heartbeat_interval
+  // (§38.6). The answer carries the current relay assignment (§39.2).
+  rpc Heartbeat(ProducerHeartbeatRequest) returns (ProducerHeartbeatResponse);
+  // The current relay assignment and a fresh publish token, on demand.
+  rpc Relay(ProducerRelayRequest) returns (ProducerRelayResponse);
+}
+
+service ReaderService {
+  // Add creates a new Reader
+  rpc Add(ReaderAddRequest) returns (Reader);
+  // Get retrieves a Reader
+  rpc Get(ReaderGetRequest) returns (Reader);
+  // Patch updates an existing Reader
+  rpc Patch(ReaderPatchRequest) returns (Reader);
+  // Apply applies a patch document to an existing Reader
+  rpc Apply(ReaderApplyRequest) returns (Reader);
+  // Erase deletes a Reader
+  rpc Erase(ReaderRef) returns (ReaderEraseResponse);
+  // List reads Readers a page at a time.
+  rpc List(ReaderListRequest) returns (ReaderListResponse);
+  // Watch the Readers this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(ReaderWatchRequest) returns (stream ReaderWatchResponse);
+  rpc Join(ReaderJoinRequest) returns (ReaderJoinResponse);
+  rpc Adopt(ReaderAdoptRequest) returns (Reader);
+  rpc RenewCertificate(ReaderRenewCertificateRequest) returns (ReaderRenewCertificateResponse);
+  // Keeps date_seen current and reports the certificate serial.
+  rpc Heartbeat(ReaderHeartbeatRequest) returns (ReaderHeartbeatResponse);
+}
+
+message NodeAddRequest {
+  bytes id = 1;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  string hardware_id = 8 [features.field_presence = IMPLICIT];
+  string hostname = 9 [features.field_presence = IMPLICIT];
+  HostState state = 10 [features.field_presence = IMPLICIT];
+  string cert_serial = 11 [features.field_presence = IMPLICIT];
+  HostJoin join = 12;
+  google.protobuf.Timestamp date_created = 15;
+  google.protobuf.Timestamp date_adopted = 16;
+  google.protobuf.Timestamp date_seen = 17;
+  google.protobuf.Timestamp date_cert_expires = 18;
+  repeated HostInterface interfaces = 19;
+  repeated string key_ids = 20;
+  string ca_hash = 21 [features.field_presence = IMPLICIT];
+  string version = 22 [features.field_presence = IMPLICIT];
+  string control_address = 23 [features.field_presence = IMPLICIT];
+  string data_address = 24 [features.field_presence = IMPLICIT];
+  NodeStatus status = 25;
+  double failure_score = 26 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_scored = 27;
+}
+
+message NodeGetRequest {
+  NodeRef ref = 1;
+  NodeSelect select = 2;
+}
+
+message NodeRef {
+  oneof key {
+    bytes id = 1;
+    string alias = 4;
+  }
+}
+
+message NodeSelect {
+  bool all = 1;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  bool hardware_id = 8;
+  bool hostname = 9;
+  bool state = 10;
+  bool cert_serial = 11;
+  bool join = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool date_adopted = 16;
+  bool date_seen = 17;
+  bool date_cert_expires = 18;
+  bool interfaces = 19;
+  bool key_ids = 20;
+  bool ca_hash = 21;
+  bool version = 22;
+  bool control_address = 23;
+  bool data_address = 24;
+  bool status = 25;
+  bool failure_score = 26;
+  bool date_scored = 27;
+}
+
+message NodePatchRequest {
+  NodeRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  string hardware_id = 16;
+  string hostname = 18;
+  HostState state = 20;
+  string cert_serial = 22;
+  HostJoin join = 24;
+  // Clear join instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and join clears.
+  bool join_null = 25;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  google.protobuf.Timestamp date_adopted = 32;
+  // Clear date_adopted instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_adopted clears.
+  bool date_adopted_null = 33;
+  google.protobuf.Timestamp date_seen = 34;
+  // Clear date_seen instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_seen clears.
+  bool date_seen_null = 35;
+  google.protobuf.Timestamp date_cert_expires = 36;
+  // Clear date_cert_expires instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_cert_expires clears.
+  bool date_cert_expires_null = 37;
+  repeated HostInterface interfaces = 38;
+  repeated string key_ids = 40;
+  string ca_hash = 42;
+  string version = 44;
+  string control_address = 46;
+  string data_address = 48;
+  NodeStatus status = 50;
+  // Clear status instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and status clears.
+  bool status_null = 51;
+  double failure_score = 52;
+  google.protobuf.Timestamp date_scored = 54;
+  // Clear date_scored instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_scored clears.
+  bool date_scored_null = 55;
+}
+
+message NodeApplyRequest {
+  NodeRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message NodeEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message NodeListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated NodeFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message NodeListResponse {
+  repeated Node items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message NodeFilter {
+  NodeRef ref = 1;
+  map<string, string> labels = 2;
+}
+
+message NodeWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated NodeFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message NodeWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated NodeWatchItem items = 1;
+}
+
+message NodeWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Node value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message NodeJoinRequest {
+  HostJoin host = 1;
+  repeated HostInterface interfaces = 2;
+  repeated SinkReport sinks = 3;
+  repeated DeviceReport devices = 4;
+  string control_address = 5 [features.field_presence = IMPLICIT];
+  string data_address = 6 [features.field_presence = IMPLICIT];
+}
+
+message NodeJoinResponse {
+  JoinAnswer answer = 1;
+  repeated KeyEntry keys = 2;
+}
+
+// JoinAnswer is what every host's Join answers: pending, or adopted with the
+// certificate.
+message JoinAnswer {
+  HostState state = 1 [features.field_presence = IMPLICIT];
+  bytes id = 2 [features.field_presence = IMPLICIT];
+  string alias = 3 [features.field_presence = IMPLICIT];
+  // PEM: the host certificate, then the chain.
+  bytes certificate = 4 [features.field_presence = IMPLICIT];
+  // PEM: every CA a host must trust, the current and the next during a
+  // rollover (§33.5).
+  bytes ca_bundle = 5 [features.field_presence = IMPLICIT];
+  string message = 6 [features.field_presence = IMPLICIT];
+  bool rejoin = 7 [features.field_presence = IMPLICIT];
+}
+
+message NodeAdoptRequest {
+  NodeRef ref = 1;
+  string alias = 2 [features.field_presence = IMPLICIT];
+}
+
+message NodeRenewCertificateRequest {
+  bytes csr = 1 [features.field_presence = IMPLICIT];
+}
+
+message NodeRenewCertificateResponse {
+  bytes certificate = 1 [features.field_presence = IMPLICIT];
+  bytes ca_bundle = 2 [features.field_presence = IMPLICIT];
+}
+
+message NodeHeartbeatRequest {
+  string cert_serial = 1 [features.field_presence = IMPLICIT];
+  string ca_hash = 2 [features.field_presence = IMPLICIT];
+  repeated string key_ids = 3;
+  repeated DeviceReport devices = 4;
+  repeated SinkReport sinks = 5;
+  repeated HostInterface interfaces = 6;
+  string control_address = 7 [features.field_presence = IMPLICIT];
+  string data_address = 8 [features.field_presence = IMPLICIT];
+  string version = 9 [features.field_presence = IMPLICIT];
+  int64 uploads_in_flight = 10 [features.field_presence = IMPLICIT];
+  int64 index_objects = 11 [features.field_presence = IMPLICIT];
+  repeated string warnings = 12;
+}
+
+message NodeHeartbeatResponse {
+  repeated SinkAnswer sinks = 1;
+  bool renew_certificate = 2 [features.field_presence = IMPLICIT];
+}
+
+// SinkAnswer is what the CP says back about each reported sink (§28.3).
+message SinkAnswer {
+  bytes sink_id = 1 [features.field_presence = IMPLICIT];
+  SinkAttachment attachment = 2 [features.field_presence = IMPLICIT];
+  // Whether this node may serve the sink: false while it is attached to
+  // another node.
+  bool serve = 3 [features.field_presence = IMPLICIT];
+  bool accept_writes = 4 [features.field_presence = IMPLICIT];
+}
+
+message NodePushEventsRequest {
+  repeated Event events = 1;
+}
+
+message NodePushEventsResponse {
+  int32 applied = 1 [features.field_presence = IMPLICIT];
+}
+
+message NodeResolveRequest {
+  NodeRef ref = 1;
+  // The caller's address; the calling connection's when empty.
+  string from = 2 [features.field_presence = IMPLICIT];
+  string protocol = 3 [features.field_presence = IMPLICIT];
+}
+
+message NodeResolveResponse {
+  repeated Endpoint endpoints = 1;
+}
+
+message RelayAddRequest {
+  bytes id = 1;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  string hardware_id = 8 [features.field_presence = IMPLICIT];
+  string hostname = 9 [features.field_presence = IMPLICIT];
+  HostState state = 10 [features.field_presence = IMPLICIT];
+  string cert_serial = 11 [features.field_presence = IMPLICIT];
+  HostJoin join = 12;
+  google.protobuf.Timestamp date_created = 15;
+  google.protobuf.Timestamp date_adopted = 16;
+  google.protobuf.Timestamp date_seen = 17;
+  google.protobuf.Timestamp date_cert_expires = 18;
+  repeated HostInterface interfaces = 19;
+  repeated string key_ids = 20;
+  string ca_hash = 21 [features.field_presence = IMPLICIT];
+  string version = 22 [features.field_presence = IMPLICIT];
+  string ingest_address = 23 [features.field_presence = IMPLICIT];
+  string whep_address = 24 [features.field_presence = IMPLICIT];
+  RelayStatus status = 25;
+}
+
+message RelayGetRequest {
+  RelayRef ref = 1;
+  RelaySelect select = 2;
+}
+
+message RelayRef {
+  oneof key {
+    bytes id = 1;
+    string alias = 4;
+  }
+}
+
+message RelaySelect {
+  bool all = 1;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  bool hardware_id = 8;
+  bool hostname = 9;
+  bool state = 10;
+  bool cert_serial = 11;
+  bool join = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool date_adopted = 16;
+  bool date_seen = 17;
+  bool date_cert_expires = 18;
+  bool interfaces = 19;
+  bool key_ids = 20;
+  bool ca_hash = 21;
+  bool version = 22;
+  bool ingest_address = 23;
+  bool whep_address = 24;
+  bool status = 25;
+}
+
+message RelayPatchRequest {
+  RelayRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  string hardware_id = 16;
+  string hostname = 18;
+  HostState state = 20;
+  string cert_serial = 22;
+  HostJoin join = 24;
+  // Clear join instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and join clears.
+  bool join_null = 25;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  google.protobuf.Timestamp date_adopted = 32;
+  // Clear date_adopted instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_adopted clears.
+  bool date_adopted_null = 33;
+  google.protobuf.Timestamp date_seen = 34;
+  // Clear date_seen instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_seen clears.
+  bool date_seen_null = 35;
+  google.protobuf.Timestamp date_cert_expires = 36;
+  // Clear date_cert_expires instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_cert_expires clears.
+  bool date_cert_expires_null = 37;
+  repeated HostInterface interfaces = 38;
+  repeated string key_ids = 40;
+  string ca_hash = 42;
+  string version = 44;
+  string ingest_address = 46;
+  string whep_address = 48;
+  RelayStatus status = 50;
+  // Clear status instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and status clears.
+  bool status_null = 51;
+}
+
+message RelayApplyRequest {
+  RelayRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message RelayEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message RelayListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated RelayFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message RelayListResponse {
+  repeated Relay items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message RelayFilter {
+  RelayRef ref = 1;
+  map<string, string> labels = 2;
+}
+
+message RelayWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated RelayFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message RelayWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated RelayWatchItem items = 1;
+}
+
+message RelayWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Relay value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message RelayJoinRequest {
+  HostJoin host = 1;
+  repeated HostInterface interfaces = 2;
+  string ingest_address = 3 [features.field_presence = IMPLICIT];
+  string whep_address = 4 [features.field_presence = IMPLICIT];
+}
+
+message RelayJoinResponse {
+  JoinAnswer answer = 1;
+  repeated KeyEntry keys = 2;
+}
+
+message RelayAdoptRequest {
+  RelayRef ref = 1;
+  string alias = 2 [features.field_presence = IMPLICIT];
+}
+
+message RelayRenewCertificateRequest {
+  bytes csr = 1 [features.field_presence = IMPLICIT];
+}
+
+message RelayRenewCertificateResponse {
+  bytes certificate = 1 [features.field_presence = IMPLICIT];
+  bytes ca_bundle = 2 [features.field_presence = IMPLICIT];
+}
+
+message RelayHeartbeatRequest {
+  string cert_serial = 1 [features.field_presence = IMPLICIT];
+  string ca_hash = 2 [features.field_presence = IMPLICIT];
+  repeated string key_ids = 3;
+  RelayStatus status = 4;
+  repeated HostInterface interfaces = 5;
+  string ingest_address = 6 [features.field_presence = IMPLICIT];
+  string whep_address = 7 [features.field_presence = IMPLICIT];
+  string version = 8 [features.field_presence = IMPLICIT];
+}
+
+message RelayHeartbeatResponse {
+  bool renew_certificate = 1 [features.field_presence = IMPLICIT];
+}
+
+message RelayAssignRequest {
+  RelayRef ref = 1;
+  ProducerRef producer = 2;
+}
+
+message ProducerRef {
+  oneof key {
+    bytes id = 1;
+    ProducerRefBySlug slug = 4;
+  }
+}
+
+message ProducerRefBySlug {
+  string alias = 4;
+  TenantRef tenant = 2;
+}
+
+message ProducerAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  SetRef set = 8;
+  string hardware_id = 9 [features.field_presence = IMPLICIT];
+  string hostname = 10 [features.field_presence = IMPLICIT];
+  HostState state = 11 [features.field_presence = IMPLICIT];
+  string cert_serial = 12 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+  HostJoin join = 16;
+  google.protobuf.Timestamp date_adopted = 17;
+  google.protobuf.Timestamp date_seen = 18;
+  google.protobuf.Timestamp date_cert_expires = 19;
+  RelayRef relay = 20;
+  ProducerStatus status = 21;
+  string version = 22 [features.field_presence = IMPLICIT];
+}
+
+message ProducerGetRequest {
+  ProducerRef ref = 1;
+  ProducerSelect select = 2;
+}
+
+message ProducerSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  SetSelect set = 8;
+  bool hardware_id = 9;
+  bool hostname = 10;
+  bool state = 11;
+  bool cert_serial = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool join = 16;
+  bool date_adopted = 17;
+  bool date_seen = 18;
+  bool date_cert_expires = 19;
+  RelaySelect relay = 20;
+  bool status = 21;
+  bool version = 22;
+}
+
+message ProducerPatchRequest {
+  ProducerRef ref = 1;
+  SiteRef site = 6;
+  // Clear site instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and site clears.
+  bool site_null = 7;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  SetRef set = 16;
+  // Clear set instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and set clears.
+  bool set_null = 17;
+  string hardware_id = 18;
+  string hostname = 20;
+  HostState state = 22;
+  string cert_serial = 24;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  HostJoin join = 32;
+  // Clear join instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and join clears.
+  bool join_null = 33;
+  google.protobuf.Timestamp date_adopted = 34;
+  // Clear date_adopted instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_adopted clears.
+  bool date_adopted_null = 35;
+  google.protobuf.Timestamp date_seen = 36;
+  // Clear date_seen instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_seen clears.
+  bool date_seen_null = 37;
+  google.protobuf.Timestamp date_cert_expires = 38;
+  // Clear date_cert_expires instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_cert_expires clears.
+  bool date_cert_expires_null = 39;
+  RelayRef relay = 40;
+  // Clear relay instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and relay clears.
+  bool relay_null = 41;
+  ProducerStatus status = 42;
+  // Clear status instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and status clears.
+  bool status_null = 43;
+  string version = 44;
+}
+
+message ProducerApplyRequest {
+  ProducerRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message ProducerEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message ProducerListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated ProducerFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message ProducerListResponse {
+  repeated Producer items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message ProducerFilter {
+  ProducerRef ref = 1;
+  TenantRef tenant = 2;
+  SetRef set = 3;
+  SiteRef site = 4;
+  map<string, string> labels = 5;
+}
+
+message ProducerWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated ProducerFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message ProducerWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated ProducerWatchItem items = 1;
+}
+
+message ProducerWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Producer value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message ProducerJoinRequest {
+  HostJoin host = 1;
+  // The tenant this producer is meant for, implied in a single-organization
+  // cluster.
+  string tenant = 2 [features.field_presence = IMPLICIT];
+}
+
+message ProducerJoinResponse {
+  JoinAnswer answer = 1;
+}
+
+message ProducerAdoptRequest {
+  ProducerRef ref = 1;
+  SetRef set = 2;
+  // The alias to give it; the hostname when empty.
+  string alias = 3 [features.field_presence = IMPLICIT];
+}
+
+message ProducerRenewCertificateRequest {
+  bytes csr = 1 [features.field_presence = IMPLICIT];
+}
+
+message ProducerRenewCertificateResponse {
+  bytes certificate = 1 [features.field_presence = IMPLICIT];
+  bytes ca_bundle = 2 [features.field_presence = IMPLICIT];
+}
+
+message ProducerHeartbeatRequest {
+  repeated SourceReport sources = 1;
+  HostLoad load = 2;
+  string ca_hash = 3 [features.field_presence = IMPLICIT];
+  string version = 4 [features.field_presence = IMPLICIT];
+  string relay_state = 5 [features.field_presence = IMPLICIT];
+}
+
+message ProducerHeartbeatResponse {
+  RelayAssignment relay = 1;
+  int64 profile_version = 2 [features.field_presence = IMPLICIT];
+  repeated Suggestion suggestions = 3;
+  // Renew the certificate now.
+  bool renew_certificate = 4 [features.field_presence = IMPLICIT];
+}
+
+// Suggestion is a ceiling the CP suggests raising (§38.5); with auto_raise
+// the CP has already raised it.
+message Suggestion {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  int64 max_bitrate = 2 [features.field_presence = IMPLICIT];
+  int64 suggested = 3 [features.field_presence = IMPLICIT];
+  bool applied = 4 [features.field_presence = IMPLICIT];
+  string reason = 5 [features.field_presence = IMPLICIT];
+}
+
+message ProducerRelayRequest {}
+
+message ProducerRelayResponse {
+  RelayAssignment relay = 1;
+}
+
+message ReaderAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  string hardware_id = 8 [features.field_presence = IMPLICIT];
+  string hostname = 9 [features.field_presence = IMPLICIT];
+  HostState state = 10 [features.field_presence = IMPLICIT];
+  string cert_serial = 11 [features.field_presence = IMPLICIT];
+  HostJoin join = 12;
+  google.protobuf.Timestamp date_created = 15;
+  google.protobuf.Timestamp date_adopted = 16;
+  google.protobuf.Timestamp date_seen = 17;
+  google.protobuf.Timestamp date_cert_expires = 18;
+  string version = 19 [features.field_presence = IMPLICIT];
+  bool all_sites = 20 [features.field_presence = IMPLICIT];
+}
+
+message ReaderGetRequest {
+  ReaderRef ref = 1;
+  ReaderSelect select = 2;
+}
+
+message ReaderRef {
+  oneof key {
+    bytes id = 1;
+    ReaderRefBySlug slug = 4;
+  }
+}
+
+message ReaderRefBySlug {
+  string alias = 4;
+  TenantRef tenant = 2;
+}
+
+message ReaderSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  bool hardware_id = 8;
+  bool hostname = 9;
+  bool state = 10;
+  bool cert_serial = 11;
+  bool join = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool date_adopted = 16;
+  bool date_seen = 17;
+  bool date_cert_expires = 18;
+  bool version = 19;
+  bool all_sites = 20;
+}
+
+message ReaderPatchRequest {
+  ReaderRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  string hardware_id = 16;
+  string hostname = 18;
+  HostState state = 20;
+  string cert_serial = 22;
+  HostJoin join = 24;
+  // Clear join instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and join clears.
+  bool join_null = 25;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  google.protobuf.Timestamp date_adopted = 32;
+  // Clear date_adopted instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_adopted clears.
+  bool date_adopted_null = 33;
+  google.protobuf.Timestamp date_seen = 34;
+  // Clear date_seen instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_seen clears.
+  bool date_seen_null = 35;
+  google.protobuf.Timestamp date_cert_expires = 36;
+  // Clear date_cert_expires instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_cert_expires clears.
+  bool date_cert_expires_null = 37;
+  string version = 38;
+  bool all_sites = 40;
+}
+
+message ReaderApplyRequest {
+  ReaderRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message ReaderEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message ReaderListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated ReaderFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message ReaderListResponse {
+  repeated Reader items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message ReaderFilter {
+  ReaderRef ref = 1;
+  TenantRef tenant = 2;
+  map<string, string> labels = 3;
+}
+
+message ReaderWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated ReaderFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message ReaderWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated ReaderWatchItem items = 1;
+}
+
+message ReaderWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Reader value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message ReaderJoinRequest {
+  HostJoin host = 1;
+  string tenant = 2 [features.field_presence = IMPLICIT];
+}
+
+message ReaderJoinResponse {
+  JoinAnswer answer = 1;
+}
+
+message ReaderAdoptRequest {
+  ReaderRef ref = 1;
+  // None means the whole tenant.
+  repeated SiteRef sites = 2;
+  string alias = 3 [features.field_presence = IMPLICIT];
+}
+
+message ReaderRenewCertificateRequest {
+  bytes csr = 1 [features.field_presence = IMPLICIT];
+}
+
+message ReaderRenewCertificateResponse {
+  bytes certificate = 1 [features.field_presence = IMPLICIT];
+  bytes ca_bundle = 2 [features.field_presence = IMPLICIT];
+}
+
+message ReaderHeartbeatRequest {
+  string ca_hash = 1 [features.field_presence = IMPLICIT];
+  string version = 2 [features.field_presence = IMPLICIT];
+}
+
+message ReaderHeartbeatResponse {
+  bool renew_certificate = 1 [features.field_presence = IMPLICIT];
+}

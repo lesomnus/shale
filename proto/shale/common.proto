@@ -1,0 +1,392 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Messages shared by several contracts and by the data planes: what a token
+// says, what an object's xattr record holds, what an allocation hands a
+// producer, and what a host reports. None of them is an entity; they are
+// values carried inside rows, requests, and tokens.
+
+// UploadMode is how a producer sends a segment (§12.2).
+enum UploadMode {
+  UPLOAD_MODE_UNSPECIFIED = 0;
+  UPLOAD_MODE_LIVE = 1;
+  UPLOAD_MODE_BUFFERED = 2;
+}
+
+// LinkProfile is the per-set half of an upload profile (§12.6): agreed
+// between the producer and the CP, stored on the Set, and carried in put
+// tokens.
+message LinkProfile {
+  UploadMode mode = 1;
+  int64 idle_timeout_seconds = 2;
+  int64 abandon_timeout_seconds = 3;
+  int64 allocation_horizon_seconds = 4;
+}
+
+// SegmentProfile is the per-source half of an upload profile (§12.6).
+message SegmentProfile {
+  // The ceiling of all streams in a segment together, in bits per second.
+  int64 max_bitrate = 1;
+  // Segment duration in seconds. Segments are cut by duration at the nearest
+  // keyframe.
+  int64 duration_seconds = 2;
+  // Keyframe interval in milliseconds; bounds how far a cut drifts from its
+  // phase and is part of max_length.
+  int64 keyframe_interval_ms = 3;
+}
+
+// ObservedRate is what a source actually writes, learned from commits (§12.6).
+message ObservedRate {
+  // Exponentially weighted average, half-life of one epoch, in bits per second.
+  int64 recent = 1;
+  // max(recent, the rate in the same hour of the previous day), capped at
+  // max_bitrate. This is what every estimate uses.
+  int64 expected = 2;
+  google.protobuf.Timestamp date_updated = 3;
+}
+
+// Starvation is the producer's account of a source at its ceiling (§38.5).
+message Starvation {
+  int64 seconds_at_cap = 1;
+  int64 episodes = 2;
+  int64 seconds_total = 3;
+  google.protobuf.Timestamp date_reset = 4;
+  bool starved = 5;
+  int64 suggested_max_bitrate = 6;
+}
+
+// Endpoint is how a client reaches a host, as the active address resolver
+// hands it out (§34.10).
+message Endpoint {
+  string scheme = 1;
+  string host = 2;
+  int32 port = 3;
+  // "h1", "h2", or "h3".
+  string protocol = 4;
+}
+
+// Candidate is one ranked target of an allocation with its own attempt and
+// token, so a producer can move to the next one without a round trip (§13).
+message Candidate {
+  bytes attempt_id = 1;
+  bytes sink_id = 2;
+  bytes node_id = 3;
+  repeated Endpoint endpoints = 4;
+  string token = 5;
+}
+
+// Allocation is an object and its ranked candidates (§12.1).
+message Allocation {
+  bytes object_id = 1;
+  bytes source_id = 2;
+  int32 ordinal = 3;
+  // The expected date_started this allocation was computed for.
+  google.protobuf.Timestamp date_started = 4;
+  int64 profile_version = 5;
+  repeated Candidate candidates = 6;
+  google.protobuf.Timestamp date_expires = 7;
+  int64 max_length = 8;
+  int64 size_hint = 9;
+  string object_key = 10;
+  SegmentProfile profile = 11;
+  LinkProfile link = 12;
+}
+
+// RelayAssignment is the relay a producer sends live streams to (§39.2).
+message RelayAssignment {
+  bytes relay_id = 1;
+  repeated Endpoint endpoints = 2;
+  string publish_token = 3;
+  google.protobuf.Timestamp date_expires = 4;
+}
+
+// HardwareIdKind says where a host's hardware identity was read from (§33.4).
+enum HardwareIdKind {
+  HARDWARE_ID_KIND_UNSPECIFIED = 0;
+  HARDWARE_ID_KIND_DMI = 1;
+  HARDWARE_ID_KIND_DEVICE_TREE = 2;
+  // /etc/machine-id: does not survive a reinstall, and the host says so.
+  HARDWARE_ID_KIND_MACHINE_ID = 3;
+}
+
+// HostJoin is a join request as the CP keeps it on a pending host row: what
+// the host said about itself, and the CSR an adoption signs.
+message HostJoin {
+  string hardware_id = 1;
+  HardwareIdKind hardware_id_kind = 2;
+  string hostname = 3;
+  bytes csr = 4;
+  string key_fingerprint = 5;
+  google.protobuf.Timestamp date_joined = 6;
+  string version = 7;
+  string source_address = 8;
+  // "known host, new key": the request was attached to an existing row.
+  bool rejoin = 9;
+  // PEM: the certificate issued for this CSR at adoption, handed back on the
+  // host's next Join.
+  bytes certificate = 10;
+}
+
+// HostInterface is one network interface a node or relay listens on.
+message HostInterface {
+  string name = 1;
+  repeated string addresses = 2;
+}
+
+// HostLoad is the machine half of a producer or relay heartbeat.
+message HostLoad {
+  double cpu = 1;
+  double temperature = 2;
+  int64 uplink_bps = 3;
+  int64 memory_bytes = 4;
+}
+
+// SourceReport is one source's state in a producer heartbeat (§38.6).
+message SourceReport {
+  bytes source_id = 1;
+  bool input_up = 2;
+  double frame_rate = 3;
+  int64 measured_bitrate = 4;
+  int64 max_bitrate = 5;
+  int64 keyframe_interval_ms = 6;
+  int64 capture_restarts = 7;
+  int64 early_cuts = 8;
+  int64 seconds_at_cap = 9;
+  int64 episodes = 10;
+  int64 seconds_total = 11;
+  string error = 12;
+}
+
+// ProducerStatus is the last heartbeat the CP kept on a producer row.
+message ProducerStatus {
+  repeated SourceReport sources = 1;
+  HostLoad load = 2;
+  google.protobuf.Timestamp date_reported = 3;
+}
+
+// SinkCapabilities is the result of the capability probe (§22.2).
+message SinkCapabilities {
+  bool xattr = 1;
+  bool inline_record = 2;
+  bool odirect = 3;
+  bool fallocate = 4;
+  int32 inode_size = 5;
+  string filesystem = 6;
+  repeated string warnings = 7;
+}
+
+// Pressure is a sink's free-space state (§21.1).
+enum Pressure {
+  PRESSURE_UNSPECIFIED = 0;
+  PRESSURE_NORMAL = 1;
+  PRESSURE_RECLAIM = 2;
+  PRESSURE_CRITICAL = 3;
+}
+
+// SinkReport is one sink as a node reports it in a join or a heartbeat (§27).
+message SinkReport {
+  bytes sink_id = 1;
+  string device_hardware_id = 2;
+  string path = 3;
+  int64 capacity = 4;
+  int64 free = 5;
+  Pressure pressure = 6;
+  int64 uploads_in_flight = 7;
+  SinkCapabilities capabilities = 8;
+  repeated string warnings = 9;
+  bool accept_writes = 10;
+  // Objects the node's index holds for this sink.
+  int64 objects = 11;
+  // The newest date_committed in the node's index, for reconciliation.
+  google.protobuf.Timestamp date_newest = 12;
+}
+
+// SmartSummary is what the node read from a device's SMART data (§27).
+message SmartSummary {
+  bool passed = 1;
+  int64 reallocated = 2;
+  int64 pending = 3;
+  int64 offline_uncorrectable = 4;
+  int64 crc_errors = 5;
+  int32 temperature = 6;
+  google.protobuf.Timestamp date_read = 7;
+}
+
+// DeviceReport is one device as a node reports it in a heartbeat (§27).
+message DeviceReport {
+  string hardware_id = 1;
+  string slot = 2;
+  string model = 3;
+  int64 capacity = 4;
+  int64 io_errors = 5;
+  int64 failed_writes = 6;
+  int64 timeouts = 7;
+  double write_latency_ms = 8;
+  double read_latency_ms = 9;
+  int32 queue_write = 10;
+  int32 queue_read = 11;
+  int32 queue_maint = 12;
+  SmartSummary smart = 13;
+}
+
+// NodeStatus is the last heartbeat the CP kept on a node row.
+message NodeStatus {
+  google.protobuf.Timestamp date_reported = 1;
+  int32 sinks = 2;
+  int32 devices = 3;
+  int64 uploads_in_flight = 4;
+  int64 index_objects = 5;
+  repeated string warnings = 6;
+}
+
+// RelayStatus is the last heartbeat the CP kept on a relay row (§39.2).
+message RelayStatus {
+  google.protobuf.Timestamp date_reported = 1;
+  int32 attached_producers = 2;
+  int32 active_sources = 3;
+  int32 viewers = 4;
+  int64 egress_bps = 5;
+  // The sum of its producers' max_bitrate_total, which assignment balances.
+  int64 attached_bitrate = 6;
+  HostLoad load = 7;
+}
+
+// RecordState is the upload state an object file's xattr records (§23.1).
+enum RecordState {
+  RECORD_STATE_UNSPECIFIED = 0;
+  RECORD_STATE_OPEN = 1;
+  RECORD_STATE_COMPLETE = 2;
+}
+
+// ObjectRecord is the self-describing record in an object file's `user.shale`
+// xattr (§23.1), at most 255 bytes encoded. Dates are UNIX milliseconds so
+// the record stays small; a Timestamp costs two more bytes per field.
+//
+// The ID and date fields arrive in the put token; the node fills in the rest.
+message ObjectRecord {
+  int32 format_version = 1;
+  bytes tenant_id = 2;
+  bytes site_id = 3;
+  bytes set_id = 4;
+  bytes source_id = 5;
+  bytes object_id = 6;
+  bytes attempt_id = 7;
+  int64 date_started_ms = 8;
+  int64 date_ended_ms = 9;
+  RecordState state = 10;
+  int64 size = 11;
+  int64 size_hint = 12;
+  UploadMode mode = 13;
+  int64 abandon_timeout_seconds = 14;
+  bool incomplete = 15;
+  int64 date_expired_ms = 16;
+  int64 date_deleted_ms = 17;
+  bytes checksum = 18;
+  int64 placement_version = 19;
+}
+
+// TokenOp is what an access token allows (§33.2).
+enum TokenOp {
+  TOKEN_OP_UNSPECIFIED = 0;
+  TOKEN_OP_PUT = 1;
+  TOKEN_OP_GET = 2;
+  TOKEN_OP_PUBLISH = 3;
+  TOKEN_OP_VIEW = 4;
+}
+
+// TokenClaims is what the CP signs (§33.2). The wire form is
+// base64url(claims) "." base64url(Ed25519 signature).
+message TokenClaims {
+  string kid = 1;
+  google.protobuf.Timestamp exp = 2;
+  google.protobuf.Timestamp iat = 3;
+  // node_id or relay_id: a token for host A is useless on host B.
+  bytes aud = 4;
+  TokenOp op = 5;
+  bytes sink_id = 6;
+  string object_key = 7;
+  bytes attempt_id = 8;
+  ObjectRecord record = 9;
+  int64 max_length = 10;
+  UploadMode mode = 11;
+  int64 idle_timeout_seconds = 12;
+  int64 abandon_timeout_seconds = 13;
+  // publish: the source IDs this producer may feed.
+  repeated bytes sources = 14;
+  // view: the one source this viewer may watch.
+  bytes source = 15;
+  // The Producer, Reader, or person the token was issued to, and its tenant.
+  bytes actor = 16;
+  bytes actor_tenant = 17;
+}
+
+// ObjectStored is a node's word that an upload committed (§12.4).
+message ObjectStored {
+  bytes object_id = 1;
+  bytes attempt_id = 2;
+  bytes sink_id = 3;
+  string object_key = 4;
+  int64 size = 5;
+  bool incomplete = 6;
+  google.protobuf.Timestamp date_started = 7;
+  google.protobuf.Timestamp date_ended = 8;
+  google.protobuf.Timestamp date_committed = 9;
+  bytes source_id = 10;
+  bytes checksum = 11;
+  // The record as the node wrote it, so reconciliation and a late event carry
+  // everything an index rebuild needs.
+  ObjectRecord record = 12;
+}
+
+// ObjectDeleted is a node's word that an approved or ordered deletion is done
+// (§21.2).
+message ObjectDeleted {
+  bytes sink_id = 1;
+  string object_key = 2;
+  bytes object_id = 3;
+  bytes attempt_id = 4;
+  int64 size = 5;
+  google.protobuf.Timestamp date_deleted = 6;
+}
+
+// MissingReason says why a node reported a key it does not have (§14).
+enum MissingReason {
+  MISSING_REASON_UNSPECIFIED = 0;
+  // A valid token named a key the node does not have.
+  MISSING_REASON_NOT_FOUND = 1;
+  // The node removed a damaged file (size disagrees with its record).
+  MISSING_REASON_DAMAGED = 2;
+  // The node deleted an abandoned buffered upload.
+  MISSING_REASON_ABANDONED = 3;
+}
+
+message ObjectMissing {
+  bytes sink_id = 1;
+  string object_key = 2;
+  bytes object_id = 3;
+  bytes attempt_id = 4;
+  MissingReason reason = 5;
+  google.protobuf.Timestamp date_observed = 6;
+}
+
+// Event is one entry of a node's outbox (§34.9).
+message Event {
+  oneof event {
+    ObjectStored stored = 1;
+    ObjectDeleted deleted = 2;
+    ObjectMissing missing = 3;
+  }
+}
+
+// KeyEntry is one public signing key as nodes and relays receive it (§33.3).
+message KeyEntry {
+  string kid = 1;
+  bytes public_key = 2;
+  bool signing = 3;
+}

@@ -1,0 +1,213 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/common.proto";
+import "shale/payday/tenant.proto";
+import "shale/site.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// SetSpread is how a set's members are placed within an epoch (§11).
+enum SetSpread {
+  SET_SPREAD_UNSPECIFIED = 0;
+  // Distinct nodes, then distinct devices (the default).
+  SET_SPREAD_SPREAD = 1;
+  // The whole set shares one sink per epoch.
+  SET_SPREAD_PACK = 2;
+  // Each member is placed independently.
+  SET_SPREAD_NONE = 3;
+}
+
+// SetPlacement is the per-set placement tuning (§11).
+message SetPlacement {
+  // How long a source sticks to one sink. Zero means the default, one hour.
+  int64 epoch_seconds = 1;
+  SetSpread set_spread = 2;
+}
+
+// SetRetention is the set's retention settings (§20.2), counted from
+// date_started.
+message SetRetention {
+  // Zero means the default, 30 days.
+  int64 expire_seconds = 1;
+  // Zero means "= expire". `delete_none` means objects live until lazy GC
+  // reclaims them.
+  int64 delete_seconds = 2;
+  bool delete_none = 3;
+}
+
+// Set is a group of Sources behind one producer (§7): fate-shared, read
+// together, registered and removed as a unit.
+message Set {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  // Fixed when the set is added; a set belongs to at most one site.
+  Site site = 3 [(orm.edge) = {
+    nullable: true
+    immutable: true
+  }];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  SetPlacement placement = 8;
+  SetRetention retention = 9;
+  // The agreed link profile (§12.6); defaults apply while empty.
+  LinkProfile link = 10;
+  // An optional cap on the sum of the members' max_bitrates, in bits per
+  // second; zero is none.
+  int64 max_bitrate_total = 11;
+  // Whether the CP may raise a starved source's ceiling by itself (§38.5).
+  bool auto_raise = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  // CRC32C computed by the node while receiving, checked on demand (§30).
+  bool checksum = 16;
+  // Changes whenever the agreed profile changes; every allocation carries it.
+  int64 profile_version = 17;
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "slug"
+        refs: [
+          {name: "alias", number: 4},
+          {name: "tenant", number: 2}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 7
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"},
+        {name: "site"},
+        {name: "labels"}
+      ]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}
+
+// Source is what produces objects: one camera, or one stream of data (§7).
+message Source {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  // A copy of the set's site, because payday narrows each row by its own
+  // field 3.
+  Site site = 3 [(orm.edge) = {
+    nullable: true
+    immutable: true
+  }];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  Set set = 8 [(orm.edge) = {immutable: true}];
+  // Stable, never-reused index within the set, assigned by Add (§7).
+  int32 ordinal = 9 [(orm.field) = {immutable: true}];
+  // Optional label for sources with overlapping fields of view; unused by
+  // the first scheduler (§7).
+  string zone = 10;
+  // The agreed segment profile (§12.6); defaults apply while empty.
+  SegmentProfile profile = 11;
+  // Derived from commits, cached here (§12.6).
+  ObservedRate observed = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  // Seconds at the cap and episodes, as the producer reports them (§38.5).
+  Starvation starvation = 16;
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "slug"
+        refs: [
+          {name: "alias", number: 4},
+          {name: "tenant", number: 2}
+        ]
+        unique: true
+      },
+      {
+        name: "member"
+        refs: [
+          {name: "set", number: 8},
+          {name: "ordinal", number: 9}
+        ]
+        unique: true
+        includes_erased: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 8
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "tenant"},
+        {name: "set"},
+        {name: "site"},
+        {name: "labels"}
+      ]
+      size: 50
+      max: 500
+    }
+    watch: {}
+  };
+}

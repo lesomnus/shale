@@ -1,0 +1,128 @@
+# Working on shale
+
+A [payday](https://github.com/lesomnus/payday) app. Most of it is **generated
+from `proto/`**, so the usual shape of a change is: edit the schema, regenerate,
+then write the part no schema can state.
+
+`README.md` is the long version of everything below.
+
+## Regenerate after touching the schema
+
+```sh
+go tool pd gen .          # messages, ent schema, servers, layers
+go tool pd gen --ts .     # and the TypeScript half
+go tool pd gen --check .  # what CI runs: fails if anything moved
+```
+
+A generated file that was not regenerated **compiles perfectly and is wrong**.
+If you edited anything under `proto/`, you are not done until `pd gen --check`
+exits 0.
+
+```sh
+go tool pd doctor .       # what would go wrong, before it does
+```
+
+## Do not edit — regenerate
+
+| | |
+| --- | --- |
+| `*.g.go`, `*.pb.go` | wherever `go_package` puts them |
+| `server/bare/`, `server/pd/`, `internal/ent/` | in whole |
+| `proto/payday/` | in whole — payday's entities, **copied** in |
+| `proto/**/*_svc.g.proto` | the generated contract of an entity |
+| `ts/gen/` | in whole |
+
+**`.g` means a generator wrote it.** Everything else is yours — including
+`proto/app/*.proto`, `proto/ext/**` (overlays), `cmd/`, and `ts/src/`.
+
+To add a field to one of payday's entities, write an **overlay** in
+`proto/ext/payday/`. Editing `proto/payday/` directly is undone by the next
+generation.
+
+## Adding an entity
+
+```sh
+go tool pd entity add --tenanted --watch Widget .
+```
+
+Use this rather than writing the file. It picks a free domain number and writes
+the tenancy out — the two things that are cheap to get wrong and expensive to
+find later.
+
+Field numbers are read by name across every entity:
+
+- **1** key · **2** tenant · **3** *yours, a set smaller than a tenant* ·
+  **4** `alias` · **5** `name` · **6** `desc` · **7** `labels` ·
+  **13/14/15** the timestamps
+- **8–12 and 16+** are yours. An entity that does not want 4–7 **leaves those
+  numbers empty** rather than spending them on something else.
+
+## Writing a layer
+
+A layer embeds `Overlay` — and must also write `WithDriver`, which nothing
+inherits:
+
+```go
+func (s Core) WithDriver(drv dialect.Driver) (api.Server, error) {
+	next, err := enttx.Rebind(s.Next(), drv)
+	if err != nil {
+		return nil, err
+	}
+
+	return New(next), nil
+}
+
+var (
+	_ api.Server               = Core{}
+	_ enttx.Binder[api.Server] = Core{}
+)
+```
+
+Leave it out and **nothing fails until a transaction is opened** — a batch, or a
+multi-write RPC — because `enttx.Rebind` asks at run time. `pd doctor` finds it.
+
+Note it is `enttx.Rebind(s.Next(), ...)` and not `s.Next().WithDriver(...)`:
+`Next()` answers the generated `Server` interface, which deliberately has no
+such method.
+
+**Do not edit the generated `Gate`.** Your authorization goes in your own layer
+in front of it, or into the `gate.Policy` you inject.
+
+## Two servers, and one of them has no wall
+
+`cmd/serve.go` builds `Walled` and `Ungated`. `Ungated` is not a privilege — it
+is an instance the wall was never installed on, for work that cannot be done
+from inside a tenant (`init`, resolving who is calling).
+
+**Never hand `Ungated` to anything a caller can reach.** There is no superuser
+flag to check; the wiring is the whole of the control.
+
+## The wall is a predicate, so it only applies to reads
+
+`Add` has no row to narrow, so it is gated in the generated `Gate` layer
+instead. If you are reasoning about who may create something, that is where it
+is decided.
+
+## Running
+
+```sh
+go run ./cmd/shale init          # the first tenant, and somebody in it
+go run ./cmd/shale serve
+go run ./cmd/shale config env    # every variable this can be told through
+
+cd ts && npm install && npm run dev
+```
+
+## `auth.Plain` is not for production
+
+It believes what the caller writes. It is right for tests and a sandbox, and
+`serve.go` wires it because the alternative is an app that cannot be run until
+there is a certificate authority. For a browser there is `auth/authsession`,
+which serves the sign-in endpoint and mints the cookie; what it takes from this
+app is a `Verify`, since only this app knows what checking a secret means.
+
+## Reference
+
+- `README.md` — the same ground at length, including upgrading payday
+- <https://github.com/lesomnus/payday/tree/main/docs> — the guides and the
+  references behind them

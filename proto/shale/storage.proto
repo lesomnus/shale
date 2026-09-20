@@ -1,0 +1,215 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/common.proto";
+import "shale/host.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// DeviceHealth is where a device stands with the failure score (§27).
+enum DeviceHealth {
+  DEVICE_HEALTH_UNSPECIFIED = 0;
+  DEVICE_HEALTH_HEALTHY = 1;
+  // Placement weight × 0.5.
+  DEVICE_HEALTH_SUSPECT = 2;
+  // No new writes; reads still served.
+  DEVICE_HEALTH_QUARANTINED = 3;
+  // Reads only, never again for writes.
+  DEVICE_HEALTH_RETIRED = 4;
+  // Its objects are LOST; the device is forgotten.
+  DEVICE_HEALTH_DEAD = 5;
+}
+
+// DeviceQuarantine records why a device is where it is (§27).
+message DeviceQuarantine {
+  google.protobuf.Timestamp date = 1;
+  string reason = 2;
+  double score = 3;
+  repeated string recent_errors = 4;
+  // Probation after a release: weight × 0.5 until then (§27).
+  google.protobuf.Timestamp date_probation_ends = 5;
+  google.protobuf.Timestamp date_cooldown_ends = 6;
+  bool operator = 7;
+}
+
+// Device is the physical block device under one or more sinks: the I/O unit
+// and the failure domain (§22.2). Never a machine.
+message Device {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  // The node the device is attached to; null while it is being re-homed.
+  Node node = 8 [(orm.edge) = {nullable: true}];
+  // WWN or serial; the filesystem UUID or ZFS pool GUID for volumes Shale
+  // cannot see through (§9). Independent of /dev/sdX.
+  string hardware_id = 9 [(orm.field) = {unique: true}];
+  string slot = 10;
+  DeviceHealth health = 11;
+  double failure_score = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_scored = 16 [(orm.field) = {nullable: true}];
+  DeviceQuarantine quarantine = 17;
+  SmartSummary smart = 18;
+  int64 capacity = 19;
+  string model = 20;
+  DeviceReport report = 21;
+  google.protobuf.Timestamp date_seen = 22 [(orm.field) = {nullable: true}];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "node"
+        refs: [
+          {name: "node", number: 8},
+          {name: "health", number: 11}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 13
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "node"}
+      ]
+      size: 50
+      max: 500
+    }
+    watch: {}
+  };
+}
+
+// SinkAttachment says which node serves a sink (§28.3).
+enum SinkAttachment {
+  SINK_ATTACHMENT_UNSPECIFIED = 0;
+  SINK_ATTACHMENT_ATTACHED = 1;
+  // Reported by a node other than the one it is attached to, whose
+  // heartbeats have stopped.
+  SINK_ATTACHMENT_PENDING_ADOPTION = 2;
+  SINK_ATTACHMENT_RETIRED = 3;
+}
+
+// Sink is where a node stores objects: a directory with its own label,
+// capacity, pressure state, and GC; the unit of placement and location
+// (§22.2). Its id is minted by the node that labeled it and registered by the
+// CP as given.
+message Sink {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  // The node that serves the sink; null while pending adoption.
+  Node node = 8 [(orm.edge) = {nullable: true}];
+  Device device = 9 [(orm.edge) = {immutable: true}];
+  string path = 10;
+  // Raw capacity in bytes; the placement weight, clamped by
+  // max_sink_capacity (§27).
+  int64 capacity = 11;
+  int64 free = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  Pressure pressure = 16;
+  SinkCapabilities capabilities = 17;
+  SinkAttachment attachment = 18;
+  // What the CP has told the node: false while the device is quarantined or
+  // retired, or the sink retired (§34.9).
+  bool accept_writes = 19;
+  google.protobuf.Timestamp date_seen = 20 [(orm.field) = {nullable: true}];
+  int64 uploads_in_flight = 21;
+  // The newest date_committed the CP knows for this sink, for reconciliation
+  // (§34.9).
+  google.protobuf.Timestamp date_reconciled = 22 [(orm.field) = {nullable: true}];
+  // The node that last reported the sink, which may differ from `node` while
+  // a claim is refused or pending (§28.3).
+  bytes reported_by = 23 [(orm.field) = {
+    type: TYPE_UUID
+    nullable: true
+  }];
+  repeated string warnings = 24;
+  // Whether the sink's capacity was clamped for placement (§27).
+  bool capacity_clamped = 25;
+  int64 objects = 26;
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "node"
+        refs: [
+          {name: "node", number: 8},
+          {name: "attachment", number: 18}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 14
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "node"},
+        {name: "device"}
+      ]
+      size: 50
+      max: 500
+    }
+    watch: {}
+  };
+}

@@ -1,0 +1,337 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/common.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Cluster-wide, versioned settings and the CP's own keys. All global.
+
+// SigningKeyState is a key's place in rotation (§33.3).
+enum SigningKeyState {
+  SIGNING_KEY_STATE_UNSPECIFIED = 0;
+  // Known to nodes and accepted for verification, not used for signing.
+  SIGNING_KEY_STATE_ACTIVE = 1;
+  // The key new tokens are signed with; exactly one at a time.
+  SIGNING_KEY_STATE_SIGNING = 2;
+  // No longer accepted.
+  SIGNING_KEY_STATE_RETIRED = 3;
+}
+
+// SigningKey is one Ed25519 key the CP signs access tokens with (§33.3).
+// The private half is stored wrapped by the KEK and never answered with.
+message SigningKey {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  // The key ID tokens carry.
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  bytes public_key = 8 [(orm.field) = {default: ""}];
+  // The private key, wrapped by the KEK (§33.3). Written, never answered with.
+  bytes private_key = 9 [
+    (orm.field) = {default: ""},
+    (payday.field) = {secret: true}
+  ];
+  SigningKeyState state = 10;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_signing = 16 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_retired = 17 [(orm.field) = {nullable: true}];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 15
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"}
+      ]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}
+
+// PlacementParams names the scheduler and its parameters (§11.2).
+message PlacementParams {
+  // "hrw" is the first and only scheduler.
+  string scheduler = 1;
+  // Zero means the default, 1.5.
+  double forecast_margin = 2;
+  // Bytes; zero means the default, 64 TB.
+  int64 max_sink_capacity = 3;
+  bool new_device_ramp = 4;
+}
+
+// PlacementPolicy is a versioned scheduler configuration; one is active
+// (§11.2). placement_version on an object names the policy it was placed
+// under.
+message PlacementPolicy {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  int64 version = 8 [(orm.field) = {
+    unique: true
+    immutable: true
+  }];
+  PlacementParams params = 9;
+  bool active = 10;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_activated = 16 [(orm.field) = {nullable: true}];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 16
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "active"}
+      ]
+      size: 20
+      max: 100
+    }
+  };
+}
+
+// UploadBounds are the bounds and defaults of every negotiated value
+// (§12.6, §36.1). Zero means the documented default.
+message UploadBounds {
+  // The cap on any single max_bitrate, bits per second (32 Mbps).
+  int64 max_bitrate_cap = 1;
+  // Object size target and bounds in bytes (64 MB; 32 MB; 512 MB).
+  int64 target_object = 2;
+  int64 min_object = 3;
+  int64 max_object = 4;
+  // Keyframe interval in milliseconds (2000; 500; 4000).
+  int64 keyframe_interval_default_ms = 5;
+  int64 keyframe_interval_min_ms = 6;
+  int64 keyframe_interval_max_ms = 7;
+  // Seconds (30; 10; 300).
+  int64 idle_timeout_default = 8;
+  int64 idle_timeout_min = 9;
+  int64 idle_timeout_max = 10;
+  // Seconds (300; 60; 1800), and at least 2 × idle_timeout.
+  int64 abandon_timeout_default = 11;
+  int64 abandon_timeout_min = 12;
+  int64 abandon_timeout_max = 13;
+  // Seconds (600; 60; 1800).
+  int64 allocation_horizon_default = 14;
+  int64 allocation_horizon_min = 15;
+  int64 allocation_horizon_max = 16;
+  UploadMode default_mode = 17;
+  // 32.
+  int32 max_open_attempts = 18;
+  // Seconds beyond the horizon a future date_started may lie (300).
+  int64 clock_tolerance = 19;
+  // Seconds (3600).
+  int64 read_token_ttl = 20;
+  int64 view_token_ttl = 21;
+  // Seconds (86400).
+  int64 publish_token_ttl = 22;
+}
+
+// UploadPolicy is a versioned set of bounds; one is active (§12.6).
+message UploadPolicy {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  int64 version = 8 [(orm.field) = {
+    unique: true
+    immutable: true
+  }];
+  UploadBounds bounds = 9;
+  bool active = 10;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_activated = 16 [(orm.field) = {nullable: true}];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 18
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "active"}
+      ]
+      size: 20
+      max: 100
+    }
+  };
+}
+
+// NetworkRule maps a caller's network to the node interface it should be
+// handed (§34.10): callers in `caller_cidr` get an address in `prefer_cidr`.
+message NetworkRule {
+  string caller_cidr = 1;
+  string prefer_cidr = 2;
+}
+
+// AddressParams is the resolver and its parameters (§34.10).
+message AddressParams {
+  // "advertised" (default), "template", or "dns".
+  string resolver = 1;
+  // For template and dns: e.g. "{alias}.nodes.example.com".
+  string template = 2;
+  repeated NetworkRule rules = 3;
+  // Callers from these addresses carry the real client address in the
+  // PROXY protocol header.
+  repeated string trusted_proxies = 4;
+  // For dns: the server the CP updates (RFC 2136) and the zone.
+  string dns_server = 5;
+  string dns_zone = 6;
+  string dns_tsig_name = 7;
+  string dns_tsig_secret = 8;
+  // Extra names every node certificate should carry.
+  repeated string extra_names = 9;
+}
+
+// AddressPolicy is a versioned resolver configuration; one is active
+// (§34.10).
+message AddressPolicy {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+
+  int64 version = 8 [(orm.field) = {
+    unique: true
+    immutable: true
+  }];
+  AddressParams params = 9;
+  bool active = 10;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_activated = 16 [(orm.field) = {nullable: true}];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 21
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "active"}
+      ]
+      size: 20
+      max: 100
+    }
+  };
+}

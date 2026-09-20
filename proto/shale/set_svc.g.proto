@@ -1,0 +1,550 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "shale/common.proto";
+import "shale/payday/tenant_svc.g.proto";
+import "shale/set.proto";
+import "shale/site_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service SetService {
+  // Add creates a new Set
+  rpc Add(SetAddRequest) returns (Set);
+  // Get retrieves a Set
+  rpc Get(SetGetRequest) returns (Set);
+  // Patch updates an existing Set
+  rpc Patch(SetPatchRequest) returns (Set);
+  // Apply applies a patch document to an existing Set
+  rpc Apply(SetApplyRequest) returns (Set);
+  // Erase deletes a Set
+  rpc Erase(SetRef) returns (SetEraseResponse);
+  // List reads Sets a page at a time.
+  rpc List(SetListRequest) returns (SetListResponse);
+  // Watch the Sets this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(SetWatchRequest) returns (stream SetWatchResponse);
+  // Proposed upload profile in, agreed profile and adjustments out (§12.6).
+  // The answer also carries the producer's relay assignment (§39.2).
+  rpc Negotiate(SetNegotiateRequest) returns (SetNegotiateResponse);
+  // Allocations for every member of the set, up to a horizon (§12.1).
+  rpc Allocate(SetAllocateRequest) returns (SetAllocateResponse);
+  // Live viewing: per member, the relay's endpoints, a view token, and the
+  // WHEP URL (§39.4).
+  rpc Live(SetLiveRequest) returns (SetLiveResponse);
+}
+
+service SourceService {
+  // Add creates a new Source
+  rpc Add(SourceAddRequest) returns (Source);
+  // Get retrieves a Source
+  rpc Get(SourceGetRequest) returns (Source);
+  // Patch updates an existing Source
+  rpc Patch(SourcePatchRequest) returns (Source);
+  // Apply applies a patch document to an existing Source
+  rpc Apply(SourceApplyRequest) returns (Source);
+  // Erase deletes a Source
+  rpc Erase(SourceRef) returns (SourceEraseResponse);
+  // List reads Sources a page at a time.
+  rpc List(SourceListRequest) returns (SourceListResponse);
+  // Watch the Sources this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(SourceWatchRequest) returns (stream SourceWatchResponse);
+  // Live viewing of one source (§39.4).
+  rpc Live(SourceLiveRequest) returns (SourceLiveResponse);
+}
+
+message SetAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  SetPlacement placement = 8;
+  SetRetention retention = 9;
+  LinkProfile link = 10;
+  int64 max_bitrate_total = 11 [features.field_presence = IMPLICIT];
+  bool auto_raise = 12 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+  bool checksum = 16 [features.field_presence = IMPLICIT];
+  int64 profile_version = 17 [features.field_presence = IMPLICIT];
+}
+
+message SetGetRequest {
+  SetRef ref = 1;
+  SetSelect select = 2;
+}
+
+message SetRef {
+  oneof key {
+    bytes id = 1;
+    SetRefBySlug slug = 4;
+  }
+}
+
+message SetRefBySlug {
+  string alias = 4;
+  TenantRef tenant = 2;
+}
+
+message SetSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  bool placement = 8;
+  bool retention = 9;
+  bool link = 10;
+  bool max_bitrate_total = 11;
+  bool auto_raise = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool checksum = 16;
+  bool profile_version = 17;
+}
+
+message SetPatchRequest {
+  SetRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  SetPlacement placement = 16;
+  // Clear placement instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and placement clears.
+  bool placement_null = 17;
+  SetRetention retention = 18;
+  // Clear retention instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and retention clears.
+  bool retention_null = 19;
+  LinkProfile link = 20;
+  // Clear link instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and link clears.
+  bool link_null = 21;
+  int64 max_bitrate_total = 22;
+  bool auto_raise = 24;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  bool checksum = 32;
+  int64 profile_version = 34;
+}
+
+message SetApplyRequest {
+  SetRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message SetEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message SetListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated SetFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message SetListResponse {
+  repeated Set items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message SetFilter {
+  SetRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  map<string, string> labels = 4;
+}
+
+message SetWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated SetFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message SetWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated SetWatchItem items = 1;
+}
+
+message SetWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Set value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message SetNegotiateRequest {
+  SetRef ref = 1;
+  LinkProfile link = 2;
+  repeated SourceProposal sources = 3;
+}
+
+message SetNegotiateResponse {
+  int64 profile_version = 1 [features.field_presence = IMPLICIT];
+  LinkProfile link = 2;
+  repeated SourceAgreed sources = 3;
+  repeated Adjustment adjustments = 4;
+  RelayAssignment relay = 5;
+}
+
+message SourceProposal {
+  SourceRef source = 1;
+  SegmentProfile profile = 2;
+}
+
+message SourceRef {
+  oneof key {
+    bytes id = 1;
+    SourceRefBySlug slug = 4;
+    SourceRefByMember member = 8;
+  }
+}
+
+message SourceRefBySlug {
+  string alias = 4;
+  TenantRef tenant = 2;
+}
+
+message SourceRefByMember {
+  SetRef set = 8;
+  int32 ordinal = 9;
+}
+
+message SourceAgreed {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  int32 ordinal = 2 [features.field_presence = IMPLICIT];
+  SegmentProfile profile = 3;
+  int64 max_length = 4 [features.field_presence = IMPLICIT];
+}
+
+// Adjustment says what the CP changed about a proposal and why.
+message Adjustment {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  string field = 2 [features.field_presence = IMPLICIT];
+  string proposed = 3 [features.field_presence = IMPLICIT];
+  string agreed = 4 [features.field_presence = IMPLICIT];
+  string reason = 5 [features.field_presence = IMPLICIT];
+}
+
+message SetAllocateRequest {
+  SetRef ref = 1;
+  // How far ahead, at most the agreed allocation_horizon. Zero is the
+  // horizon.
+  int64 horizon_seconds = 2 [features.field_presence = IMPLICIT];
+  // The producer's idea of now, so a slot list lines up with its clock;
+  // absent means the CP's clock.
+  google.protobuf.Timestamp now = 3;
+}
+
+message SetAllocateResponse {
+  int64 profile_version = 1 [features.field_presence = IMPLICIT];
+  repeated Allocation allocations = 2;
+}
+
+message SetLiveRequest {
+  SetRef ref = 1;
+}
+
+message SetLiveResponse {
+  repeated LiveSource sources = 1;
+}
+
+// LiveSource is one source's live endpoint for a viewer (§39.4).
+message LiveSource {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  int32 ordinal = 2 [features.field_presence = IMPLICIT];
+  bytes relay_id = 3 [features.field_presence = IMPLICIT];
+  repeated Endpoint endpoints = 4;
+  string whep_url = 5 [features.field_presence = IMPLICIT];
+  string view_token = 6 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_expires = 7;
+}
+
+message SourceAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  SetRef set = 8;
+  int32 ordinal = 9 [features.field_presence = IMPLICIT];
+  string zone = 10 [features.field_presence = IMPLICIT];
+  SegmentProfile profile = 11;
+  ObservedRate observed = 12;
+  google.protobuf.Timestamp date_created = 15;
+  Starvation starvation = 16;
+}
+
+message SourceGetRequest {
+  SourceRef ref = 1;
+  SourceSelect select = 2;
+}
+
+message SourceSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  SetSelect set = 8;
+  bool ordinal = 9;
+  bool zone = 10;
+  bool profile = 11;
+  bool observed = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool starvation = 16;
+}
+
+message SourcePatchRequest {
+  SourceRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  string zone = 20;
+  SegmentProfile profile = 22;
+  // Clear profile instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and profile clears.
+  bool profile_null = 23;
+  ObservedRate observed = 24;
+  // Clear observed instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and observed clears.
+  bool observed_null = 25;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  Starvation starvation = 32;
+  // Clear starvation instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and starvation clears.
+  bool starvation_null = 33;
+}
+
+message SourceApplyRequest {
+  SourceRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message SourceEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message SourceListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated SourceFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message SourceListResponse {
+  repeated Source items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message SourceFilter {
+  SourceRef ref = 1;
+  TenantRef tenant = 2;
+  SetRef set = 3;
+  SiteRef site = 4;
+  map<string, string> labels = 5;
+}
+
+message SourceWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated SourceFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message SourceWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated SourceWatchItem items = 1;
+}
+
+message SourceWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Source value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message SourceLiveRequest {
+  SourceRef ref = 1;
+}
+
+message SourceLiveResponse {
+  LiveSource source = 1;
+}

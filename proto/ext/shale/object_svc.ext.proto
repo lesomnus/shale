@@ -1,0 +1,142 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "shale/common.proto";
+import "shale/object.proto";
+import "shale/set_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+// What Shale adds to the generated contract of Object and Attempt (§35.4).
+
+service ObjectService {
+  // One allocation for one segment of one source. Idempotent per
+  // (source, expected date_started): asking twice answers the same object.
+  rpc Allocate(ObjectAllocateRequest) returns (Allocation);
+  // The next candidate after a failed attempt (§13).
+  rpc Reallocate(ObjectReallocateRequest) returns (Allocation);
+  // A fresh token for an attempt still in progress on the same target (§12.1).
+  rpc Renew(ObjectRenewRequest) returns (Allocation);
+  // One attempt failed, with a reason; feeds health (§13, §27). The object
+  // stays PENDING.
+  rpc ReportAttempt(ObjectReportAttemptRequest) returns (Attempt);
+  // The producer gives up on an object; it becomes LOST (§13).
+  rpc ReportFailure(ObjectReportFailureRequest) returns (Object);
+  // Changes date_expired and/or date_deleted, for one object or in bulk by
+  // set or source and a time range; a reason is required and audited (§20.3).
+  rpc Reschedule(ObjectRescheduleRequest) returns (ObjectRescheduleResponse);
+  // Objects and gaps over a time range, with read tokens; paged (§17, §19).
+  rpc Timeline(ObjectTimelineRequest) returns (ObjectTimelineResponse);
+}
+
+message ObjectAllocateRequest {
+  SourceRef source = 1;
+  // The expected date_started of the segment; absent means now.
+  google.protobuf.Timestamp date_started = 2;
+}
+
+message ObjectReallocateRequest {
+  ObjectRef ref = 1;
+}
+
+message ObjectRenewRequest {
+  ObjectRef ref = 1;
+  AttemptRef attempt = 2;
+}
+
+message ObjectReportAttemptRequest {
+  ObjectRef ref = 1;
+  AttemptRef attempt = 2;
+  string failure_reason = 3 [features.field_presence = IMPLICIT];
+}
+
+message ObjectReportFailureRequest {
+  ObjectRef ref = 1;
+  string reason = 2 [features.field_presence = IMPLICIT];
+}
+
+message ObjectRescheduleRequest {
+  // Exactly one of ref, set, or source; set and source take the time range.
+  ObjectRef ref = 1;
+  SetRef set = 2;
+  SourceRef source = 3;
+  google.protobuf.Timestamp from = 4;
+  google.protobuf.Timestamp to = 5;
+  // New dates; an absent one is left as it is. delete_now sets both to now.
+  google.protobuf.Timestamp date_expired = 6;
+  google.protobuf.Timestamp date_deleted = 7;
+  bool delete_now = 8 [features.field_presence = IMPLICIT];
+  string reason = 9 [features.field_presence = IMPLICIT];
+}
+
+message ObjectRescheduleResponse {
+  int64 changed = 1 [features.field_presence = IMPLICIT];
+}
+
+message ObjectTimelineRequest {
+  // Exactly one of set or source.
+  SetRef set = 1;
+  SourceRef source = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+  // At most timeline_page objects per answer.
+  int32 size = 5 [features.field_presence = IMPLICIT];
+  string after = 6 [features.field_presence = IMPLICIT];
+}
+
+// ReadState is what a reader is told about an object (§19).
+enum ReadState {
+  READ_STATE_UNSPECIFIED = 0;
+  READ_STATE_AVAILABLE = 1;
+  READ_STATE_UNAVAILABLE = 2;
+  READ_STATE_LOST = 3;
+  READ_STATE_DELETED = 4;
+}
+
+// GapReason says why a span has no available object (§19).
+enum GapReason {
+  GAP_REASON_UNSPECIFIED = 0;
+  GAP_REASON_NOT_RECEIVED = 1;
+  GAP_REASON_IN_PROGRESS = 2;
+  GAP_REASON_LOST = 3;
+  GAP_REASON_DELETED = 4;
+  GAP_REASON_UNAVAILABLE = 5;
+}
+
+message TimelineObject {
+  bytes object_id = 1 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_started = 2;
+  google.protobuf.Timestamp date_ended = 3;
+  bool ended_estimated = 4 [features.field_presence = IMPLICIT];
+  int64 size = 5 [features.field_presence = IMPLICIT];
+  ReadState state = 6 [features.field_presence = IMPLICIT];
+  bool incomplete = 7 [features.field_presence = IMPLICIT];
+  bytes sink_id = 8 [features.field_presence = IMPLICIT];
+  string object_key = 9 [features.field_presence = IMPLICIT];
+  repeated Endpoint endpoints = 10;
+  // A presigned URL on the first endpoint, and the token on its own for
+  // clients that set headers.
+  string url = 11 [features.field_presence = IMPLICIT];
+  string token = 12 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_token_expires = 13;
+}
+
+message TimelineGap {
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+  GapReason reason = 3 [features.field_presence = IMPLICIT];
+}
+
+message TimelineSource {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  int32 ordinal = 2 [features.field_presence = IMPLICIT];
+  repeated TimelineObject objects = 3;
+  repeated TimelineGap gaps = 4;
+}
+
+message ObjectTimelineResponse {
+  repeated TimelineSource sources = 1;
+  string next = 2 [features.field_presence = IMPLICIT];
+}

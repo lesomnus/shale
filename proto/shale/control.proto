@@ -1,0 +1,116 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "shale/common.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// NodeControl is the gRPC service a Storage Node serves for the Control
+// Plane, over mTLS, accepting only a peer whose certificate names the CP
+// (§35.7). Every call is idempotent and every directive is derived from
+// state the CP holds, so a directive is never a message that can be lost
+// (§34.9).
+service NodeControl {
+  // Unlink these objects now. Answers per key: deleted | absent.
+  rpc Delete(NodeDeleteRequest) returns (NodeDeleteResponse);
+  // Rewrite date_expired and date_deleted in these objects' xattrs (§20.3).
+  rpc SetDates(NodeSetDatesRequest) returns (NodeSetDatesResponse);
+  // Stop or resume accepting uploads on a sink: quarantine, retire, release.
+  rpc SetSinkState(NodeSetSinkStateRequest) returns (NodeSetSinkStateResponse);
+  // Light or clear a bay LED (§27).
+  rpc Locate(NodeLocateRequest) returns (NodeLocateResponse);
+  // Run a GC round on a sink now.
+  rpc Gc(NodeGcRequest) returns (NodeGcResponse);
+  // Records of every complete file on a sink newer than `since`, streamed,
+  // and which of the given DELETING keys are absent (§34.9, §29).
+  rpc Reconcile(NodeReconcileRequest) returns (stream NodeReconcileResponse);
+  // A new certificate chain for the node's current key (§33.5).
+  rpc InstallCertificate(NodeInstallCertificateRequest) returns (NodeInstallCertificateResponse);
+}
+
+message NodeDeleteRequest {
+  bytes sink_id = 1;
+  repeated string keys = 2;
+}
+
+enum DeleteResult {
+  DELETE_RESULT_UNSPECIFIED = 0;
+  DELETE_RESULT_DELETED = 1;
+  DELETE_RESULT_ABSENT = 2;
+  DELETE_RESULT_FAILED = 3;
+}
+
+message NodeDeleteResponse {
+  message Key {
+    string key = 1;
+    DeleteResult result = 2;
+    string error = 3;
+  }
+  repeated Key keys = 1;
+}
+
+message NodeSetDatesRequest {
+  message Dates {
+    string key = 1;
+    google.protobuf.Timestamp date_expired = 2;
+    google.protobuf.Timestamp date_deleted = 3;
+  }
+  bytes sink_id = 1;
+  repeated Dates dates = 2;
+}
+
+message NodeSetDatesResponse {
+  repeated string absent = 1;
+}
+
+message NodeSetSinkStateRequest {
+  bytes sink_id = 1;
+  bool accept_writes = 2;
+}
+
+message NodeSetSinkStateResponse {}
+
+message NodeLocateRequest {
+  string device_hardware_id = 1;
+  bool off = 2;
+}
+
+message NodeLocateResponse {
+  bool supported = 1;
+}
+
+message NodeGcRequest {
+  bytes sink_id = 1;
+}
+
+message NodeGcResponse {
+  int64 proposed = 1;
+  int64 deleted = 2;
+  int64 reclaimed_bytes = 3;
+}
+
+message NodeReconcileRequest {
+  bytes sink_id = 1;
+  google.protobuf.Timestamp since = 2;
+  repeated string deleting = 3;
+}
+
+message NodeReconcileResponse {
+  oneof item {
+    ObjectStored record = 1;
+    string absent = 2;
+    int64 total = 3;
+  }
+}
+
+message NodeInstallCertificateRequest {
+  bytes certificate = 1;
+  bytes ca_bundle = 2;
+}
+
+message NodeInstallCertificateResponse {
+  string cert_serial = 1;
+}

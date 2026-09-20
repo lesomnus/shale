@@ -1,0 +1,47 @@
+edition = "2023";
+
+package shale;
+
+import "shale/policy.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+// What Shale adds to the generated contracts of the keys and policies (§35.5).
+
+service SigningKeyService {
+  // Add a key, wait until every live node holds it, sign with it, retire
+  // the old one after the longest token lifetime (§33.3). Answers the new
+  // key at once; the rest runs on the CP leader.
+  rpc Rotate(SigningKeyRotateRequest) returns (SigningKey);
+}
+
+service PlacementPolicyService {
+  rpc Activate(PlacementPolicyActivateRequest) returns (PlacementPolicy);
+}
+
+service UploadPolicyService {
+  rpc Activate(UploadPolicyActivateRequest) returns (UploadPolicy);
+}
+
+service AddressPolicyService {
+  // Activates after every live node holds a certificate for the new names
+  // (§34.10).
+  rpc Activate(AddressPolicyActivateRequest) returns (AddressPolicy);
+}
+
+message SigningKeyRotateRequest {
+  // Retire the old key at once instead of waiting; for a compromised key.
+  bool immediate = 1 [features.field_presence = IMPLICIT];
+}
+
+message PlacementPolicyActivateRequest {
+  PlacementPolicyRef ref = 1;
+}
+
+message UploadPolicyActivateRequest {
+  UploadPolicyRef ref = 1;
+}
+
+message AddressPolicyActivateRequest {
+  AddressPolicyRef ref = 1;
+}

@@ -1,0 +1,34 @@
+# What this deployment is configured with.
+#
+# A file, then the environment over the top of it: `SHALE_DB_DSN` beats what
+# is written here. `shale config` prints what came out, and
+# `shale config env` lists every variable there is.
+
+db:
+  driver: sqlite3
+  dsn: "file:shale.db?_pragma=foreign_keys(1)"
+
+server:
+  addr: ":50051"
+
+  # The second listener, for whatever cannot speak gRPC -- which is every
+  # browser. Delete this block and no port is opened, which is what an app with
+  # no page in front of it should do.
+  #
+  # It is the same server: a call arrives as JSON over POST, is re-encoded and
+  # handed to the handler a gRPC client would have reached, so it goes through
+  # the same interceptors and behind the same wall.
+  http:
+    addr: ":8080"
+    allow_web: true
+    # Which page may call. Nothing here is same-origin only, which is right for
+    # a built UI this server also serves and wrong for `npm run dev` -- that is
+    # 5173, and a different origin.
+    origins: ["http://localhost:5173"]
+
+watch:
+  # Named rather than defaulted, and it is the one field this app is refused for
+  # leaving out. `memory` publishes inside this process, which is right for one
+  # replica and silently wrong for two -- a client watching against one never
+  # hears about a write that landed on another, and nothing reports it.
+  broker: memory

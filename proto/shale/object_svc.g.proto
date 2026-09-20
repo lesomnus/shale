@@ -1,0 +1,525 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "shale/common.proto";
+import "shale/host_svc.g.proto";
+import "shale/object.proto";
+import "shale/payday/tenant_svc.g.proto";
+import "shale/set_svc.g.proto";
+import "shale/site_svc.g.proto";
+import "shale/storage_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service ObjectService {
+  // Add creates a new Object
+  rpc Add(ObjectAddRequest) returns (Object);
+  // Get retrieves a Object
+  rpc Get(ObjectGetRequest) returns (Object);
+  // Patch updates an existing Object
+  rpc Patch(ObjectPatchRequest) returns (Object);
+  // Apply applies a patch document to an existing Object
+  rpc Apply(ObjectApplyRequest) returns (Object);
+  // Erase deletes a Object
+  rpc Erase(ObjectRef) returns (ObjectEraseResponse);
+  // List reads Objects a page at a time.
+  rpc List(ObjectListRequest) returns (ObjectListResponse);
+  // Watch the Objects this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(ObjectWatchRequest) returns (stream ObjectWatchResponse);
+  // One allocation for one segment of one source. Idempotent per
+  // (source, expected date_started): asking twice answers the same object.
+  rpc Allocate(ObjectAllocateRequest) returns (Allocation);
+  // The next candidate after a failed attempt (§13).
+  rpc Reallocate(ObjectReallocateRequest) returns (Allocation);
+  // A fresh token for an attempt still in progress on the same target (§12.1).
+  rpc Renew(ObjectRenewRequest) returns (Allocation);
+  // One attempt failed, with a reason; feeds health (§13, §27). The object
+  // stays PENDING.
+  rpc ReportAttempt(ObjectReportAttemptRequest) returns (Attempt);
+  // The producer gives up on an object; it becomes LOST (§13).
+  rpc ReportFailure(ObjectReportFailureRequest) returns (Object);
+  // Changes date_expired and/or date_deleted, for one object or in bulk by
+  // set or source and a time range; a reason is required and audited (§20.3).
+  rpc Reschedule(ObjectRescheduleRequest) returns (ObjectRescheduleResponse);
+  // Objects and gaps over a time range, with read tokens; paged (§17, §19).
+  rpc Timeline(ObjectTimelineRequest) returns (ObjectTimelineResponse);
+}
+
+service AttemptService {
+  // Add creates a new Attempt
+  rpc Add(AttemptAddRequest) returns (Attempt);
+  // Get retrieves a Attempt
+  rpc Get(AttemptGetRequest) returns (Attempt);
+  // Patch updates an existing Attempt
+  rpc Patch(AttemptPatchRequest) returns (Attempt);
+  // Apply applies a patch document to an existing Attempt
+  rpc Apply(AttemptApplyRequest) returns (Attempt);
+  // Erase deletes a Attempt
+  rpc Erase(AttemptRef) returns (AttemptEraseResponse);
+  // List reads Attempts a page at a time.
+  rpc List(AttemptListRequest) returns (AttemptListResponse);
+}
+
+message ObjectAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  SetRef set = 8;
+  SourceRef source = 9;
+  SinkRef sink = 10;
+  string object_key = 11 [features.field_presence = IMPLICIT];
+  ObjectState state = 12 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+  google.protobuf.Timestamp date_started = 16;
+  google.protobuf.Timestamp date_ended = 17;
+  bool ended_estimated = 18 [features.field_presence = IMPLICIT];
+  int64 size = 19 [features.field_presence = IMPLICIT];
+  bool incomplete = 20 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_expired = 21;
+  google.protobuf.Timestamp date_deleted = 22;
+  bool dates_synced = 23 [features.field_presence = IMPLICIT];
+  int64 placement_version = 24 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_committed = 25;
+  google.protobuf.Timestamp date_finished = 26;
+  bytes checksum = 27;
+  int64 epoch = 28 [features.field_presence = IMPLICIT];
+}
+
+message ObjectGetRequest {
+  ObjectRef ref = 1;
+  ObjectSelect select = 2;
+}
+
+message ObjectRef {
+  oneof key {
+    bytes id = 1;
+  }
+}
+
+message ObjectSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  SetSelect set = 8;
+  SourceSelect source = 9;
+  SinkSelect sink = 10;
+  bool object_key = 11;
+  bool state = 12;
+  bool date_updated = 13;
+  bool date_created = 15;
+  bool date_started = 16;
+  bool date_ended = 17;
+  bool ended_estimated = 18;
+  bool size = 19;
+  bool incomplete = 20;
+  bool date_expired = 21;
+  bool date_deleted = 22;
+  bool dates_synced = 23;
+  bool placement_version = 24;
+  bool date_committed = 25;
+  bool date_finished = 26;
+  bool checksum = 27;
+  bool epoch = 28;
+}
+
+message ObjectPatchRequest {
+  ObjectRef ref = 1;
+  SinkRef sink = 20;
+  // Clear sink instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and sink clears.
+  bool sink_null = 21;
+  string object_key = 22;
+  ObjectState state = 24;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  google.protobuf.Timestamp date_started = 32;
+  google.protobuf.Timestamp date_ended = 34;
+  // Clear date_ended instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_ended clears.
+  bool date_ended_null = 35;
+  bool ended_estimated = 36;
+  int64 size = 38;
+  bool incomplete = 40;
+  google.protobuf.Timestamp date_expired = 42;
+  google.protobuf.Timestamp date_deleted = 44;
+  // Clear date_deleted instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_deleted clears.
+  bool date_deleted_null = 45;
+  bool dates_synced = 46;
+  int64 placement_version = 48;
+  google.protobuf.Timestamp date_committed = 50;
+  // Clear date_committed instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_committed clears.
+  bool date_committed_null = 51;
+  google.protobuf.Timestamp date_finished = 52;
+  // Clear date_finished instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_finished clears.
+  bool date_finished_null = 53;
+  bytes checksum = 54;
+  int64 epoch = 56;
+}
+
+message ObjectApplyRequest {
+  ObjectRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message ObjectEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message ObjectListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated ObjectFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message ObjectListResponse {
+  repeated Object items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message ObjectFilter {
+  ObjectRef ref = 1;
+  TenantRef tenant = 2;
+  SetRef set = 3;
+  SourceRef source = 4;
+  SinkRef sink = 5;
+}
+
+message ObjectWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated ObjectFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message ObjectWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated ObjectWatchItem items = 1;
+}
+
+message ObjectWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Object value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message ObjectAllocateRequest {
+  SourceRef source = 1;
+  // The expected date_started of the segment; absent means now.
+  google.protobuf.Timestamp date_started = 2;
+}
+
+message ObjectReallocateRequest {
+  ObjectRef ref = 1;
+}
+
+message ObjectRenewRequest {
+  ObjectRef ref = 1;
+  AttemptRef attempt = 2;
+}
+
+message AttemptRef {
+  oneof key {
+    bytes id = 1;
+  }
+}
+
+message ObjectReportAttemptRequest {
+  ObjectRef ref = 1;
+  AttemptRef attempt = 2;
+  string failure_reason = 3 [features.field_presence = IMPLICIT];
+}
+
+message ObjectReportFailureRequest {
+  ObjectRef ref = 1;
+  string reason = 2 [features.field_presence = IMPLICIT];
+}
+
+message ObjectRescheduleRequest {
+  // Exactly one of ref, set, or source; set and source take the time range.
+  ObjectRef ref = 1;
+  SetRef set = 2;
+  SourceRef source = 3;
+  google.protobuf.Timestamp from = 4;
+  google.protobuf.Timestamp to = 5;
+  // New dates; an absent one is left as it is. delete_now sets both to now.
+  google.protobuf.Timestamp date_expired = 6;
+  google.protobuf.Timestamp date_deleted = 7;
+  bool delete_now = 8 [features.field_presence = IMPLICIT];
+  string reason = 9 [features.field_presence = IMPLICIT];
+}
+
+message ObjectRescheduleResponse {
+  int64 changed = 1 [features.field_presence = IMPLICIT];
+}
+
+message ObjectTimelineRequest {
+  // Exactly one of set or source.
+  SetRef set = 1;
+  SourceRef source = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+  // At most timeline_page objects per answer.
+  int32 size = 5 [features.field_presence = IMPLICIT];
+  string after = 6 [features.field_presence = IMPLICIT];
+}
+
+message ObjectTimelineResponse {
+  repeated TimelineSource sources = 1;
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message TimelineSource {
+  bytes source_id = 1 [features.field_presence = IMPLICIT];
+  int32 ordinal = 2 [features.field_presence = IMPLICIT];
+  repeated TimelineObject objects = 3;
+  repeated TimelineGap gaps = 4;
+}
+
+message TimelineObject {
+  bytes object_id = 1 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_started = 2;
+  google.protobuf.Timestamp date_ended = 3;
+  bool ended_estimated = 4 [features.field_presence = IMPLICIT];
+  int64 size = 5 [features.field_presence = IMPLICIT];
+  ReadState state = 6 [features.field_presence = IMPLICIT];
+  bool incomplete = 7 [features.field_presence = IMPLICIT];
+  bytes sink_id = 8 [features.field_presence = IMPLICIT];
+  string object_key = 9 [features.field_presence = IMPLICIT];
+  repeated Endpoint endpoints = 10;
+  // A presigned URL on the first endpoint, and the token on its own for
+  // clients that set headers.
+  string url = 11 [features.field_presence = IMPLICIT];
+  string token = 12 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_token_expires = 13;
+}
+
+// ReadState is what a reader is told about an object (§19).
+enum ReadState {
+  READ_STATE_UNSPECIFIED = 0;
+  READ_STATE_AVAILABLE = 1;
+  READ_STATE_UNAVAILABLE = 2;
+  READ_STATE_LOST = 3;
+  READ_STATE_DELETED = 4;
+}
+
+message TimelineGap {
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+  GapReason reason = 3 [features.field_presence = IMPLICIT];
+}
+
+// GapReason says why a span has no available object (§19).
+enum GapReason {
+  GAP_REASON_UNSPECIFIED = 0;
+  GAP_REASON_NOT_RECEIVED = 1;
+  GAP_REASON_IN_PROGRESS = 2;
+  GAP_REASON_LOST = 3;
+  GAP_REASON_DELETED = 4;
+  GAP_REASON_UNAVAILABLE = 5;
+}
+
+message AttemptAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  ObjectRef object = 8;
+  SinkRef sink = 9;
+  NodeRef node = 10;
+  AttemptState state = 11 [features.field_presence = IMPLICIT];
+  string failure_reason = 12 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+  google.protobuf.Timestamp date_expires = 16;
+  google.protobuf.Timestamp date_finished = 17;
+  int32 rank = 18 [features.field_presence = IMPLICIT];
+}
+
+message AttemptGetRequest {
+  AttemptRef ref = 1;
+  AttemptSelect select = 2;
+}
+
+message AttemptSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  ObjectSelect object = 8;
+  SinkSelect sink = 9;
+  NodeSelect node = 10;
+  bool state = 11;
+  bool failure_reason = 12;
+  bool date_updated = 13;
+  bool date_created = 15;
+  bool date_expires = 16;
+  bool date_finished = 17;
+  bool rank = 18;
+}
+
+message AttemptPatchRequest {
+  AttemptRef ref = 1;
+  AttemptState state = 22;
+  string failure_reason = 24;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  google.protobuf.Timestamp date_expires = 32;
+  google.protobuf.Timestamp date_finished = 34;
+  // Clear date_finished instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_finished clears.
+  bool date_finished_null = 35;
+  int32 rank = 36;
+}
+
+message AttemptApplyRequest {
+  AttemptRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message AttemptEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message AttemptListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated AttemptFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+}
+
+message AttemptListResponse {
+  repeated Attempt items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message AttemptFilter {
+  AttemptRef ref = 1;
+  TenantRef tenant = 2;
+  ObjectRef object = 3;
+  SinkRef sink = 4;
+}

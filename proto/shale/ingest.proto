@@ -1,0 +1,48 @@
+edition = "2023";
+
+package shale;
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3).
+// The producer dials; the relay says which sources to send and when to stop.
+service RelayIngest {
+  rpc Attach(stream AttachRequest) returns (stream AttachResponse);
+}
+
+message AttachRequest {
+  // Hello once, then Data for every source the relay has started.
+  message Hello {
+    string publish_token = 1;
+  }
+  message Data {
+    bytes source_id = 1;
+    // MPEG-TS packets, a whole number of them, the same bytes the producer
+    // stores; the first bytes after a Start begin at a keyframe with the
+    // tables prepended.
+    bytes payload = 2;
+  }
+  oneof message {
+    Hello hello = 1;
+    Data data = 2;
+  }
+}
+
+message AttachResponse {
+  message Start {
+    bytes source_id = 1;
+  }
+  message Stop {
+    bytes source_id = 1;
+  }
+  // Answered to Hello: which of the token's sources the relay accepted.
+  message Welcome {
+    repeated bytes sources = 1;
+  }
+  oneof message {
+    Start start = 1;
+    Stop stop = 2;
+    Welcome welcome = 3;
+  }
+}
