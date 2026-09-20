@@ -83,7 +83,9 @@ go build ./cmd/shale
 ```
 
 `deploy/compose/` is the same single machine as containers beside
-PostgreSQL, with TLS on. `go test ./...` runs the end-to-end harness
-(`internal/e2e`), which allocates, uploads, and reads back through
-`Timeline`. `CLAUDE.md` says how the generated code and the hand-written
-layers fit.
+PostgreSQL, with TLS on; `deploy/systemd/` is several machines under
+systemd; `deploy/k8s/` is the Kubernetes deployment of §34.5. `go test
+./...` runs the end-to-end harness (`internal/e2e`), which allocates,
+uploads, and reads back through `Timeline`, on SQLite, or on PostgreSQL
+with `SHALE_E2E_DB_DSN` set. `CLAUDE.md` says how the generated code and
+the hand-written layers fit.

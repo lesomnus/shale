@@ -110,7 +110,12 @@ next start and is recognized by its hardware identity
 - **Cluster API**: a separate Deployment with a ClusterIP Service, or an
   internal LoadBalancer when Storage Nodes run outside the cluster. It is never
   exposed publicly.
-- Both share the PostgreSQL DB, the KEK, and the CA through Secrets.
+- Both share the PostgreSQL DB, the KEK, and the CA through Secrets. A Job
+  runs `shale init --k8s-secret` once: it initializes the database and puts
+  the KEK, the CA, and the CP certificate into the Secret through its
+  service account, so every CP pod mounts the same state directory. Exactly
+  one CP process runs the jobs and the directives, elected through an
+  advisory lock on the database ([§34.9](#349-events-and-directives)).
 - **Storage Nodes**: a DaemonSet restricted by a node selector to machines with
   storage HDDs.
   - **hostNetwork.** Producers connect to the one node that placement chose,
@@ -119,9 +124,15 @@ next start and is recognized by its hardware identity
     UDP on the same port. The CP reaches the node's control API on the same
     host address ([§35.7](12-api.md#357-storage-node-control-api)).
   - How clients reach the node, by host IP or by a DNS name, is set by the
-    address resolver ([§34.10](#3410-node-addresses)). Behind an Ingress the
-    tenant API does not see the caller's address, so use `template` or `dns`
-    there, or configure `trusted_proxies` with the PROXY protocol.
+    address resolver ([§34.10](#3410-node-addresses)). The DaemonSet hands
+    the node its host address (the downward API's `status.hostIP`) for the
+    data plane and the control API, so the CP dials it there. Behind an
+    Ingress the tenant API does not see the caller's address, so use
+    `template` or `dns` there, or configure `trusted_proxies` with the
+    PROXY protocol.
+  - Without an Ingress or a LoadBalancer, a NodePort on the tenant API is
+    how the outside reaches it; the sign-in listener is the API port plus
+    two, on a NodePort too. The cluster API stays a ClusterIP Service.
   - Sinks are hostPath mounts of the HDD mount points, listed in the node's
     configuration. Finding and formatting unused disks on labeled nodes is
     an idea, not a plan ([§36.2](13-configuration.md#362-open-decisions)).

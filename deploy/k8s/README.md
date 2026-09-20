@@ -93,6 +93,17 @@ It appears in `shale producer ls --pending`, and `shale producer adopt`
 binds it to a set. Its uploads go straight to the Storage Nodes on the
 host network (port 7420), never through the cluster's Services.
 
+## Known wrinkles
+
+- A Storage Node pod that starts before the `shale-cluster` Service exists
+  (the first apply) may resolve a stale address and keep retrying against
+  it. Restart the pod: `kubectl -n shale delete pod <pod>`.
+- A sink that is a directory on the OS disk reports the disk's free space;
+  declare its `capacity` (as `storage-config.yaml` does), or a nearly full
+  disk puts it at CRITICAL pressure and placement skips it.
+- The tenant API's readiness probe is a TCP connect; the node's data plane
+  drops the resulting handshake noise from its log.
+
 ## Rolling upgrades
 
 `storage.yaml` rolls one node at a time (`maxUnavailable: 1`). While a
