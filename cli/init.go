@@ -259,6 +259,18 @@ func ApplyDev(c *cmd.Config, dir string) {
 		c.Watch.Broker = "memory"
 	}
 	c.Control.AutoAdopt = true
+	// The addresses of §34.7's single machine, on loopback: payday's own
+	// defaults (50051, 8080) would otherwise stand, and the CLI's defaults
+	// below would dial the wrong ports.
+	if c.Server.Addr == "" || c.Server.Addr == ":50051" {
+		c.Server.Addr = "127.0.0.1:7400"
+	}
+	if c.Server.Http.Addr == "" || c.Server.Http.Addr == ":8080" {
+		c.Server.Http.Addr = "127.0.0.1:7402"
+	}
+	if c.Cluster.Http.Addr == "" || c.Cluster.Http.Addr == ":8080" {
+		c.Cluster.Http.Addr = "127.0.0.1:7403"
+	}
 	if len(c.Storage.Sinks) == 0 {
 		c.Storage.Sinks = []cmd.SinkConfig{{Path: filepath.Join(dir, "sink")}}
 	}
