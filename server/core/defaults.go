@@ -46,6 +46,10 @@ const (
 	DefaultAbandonGrace = time.Hour
 	DefaultRowRetention = 30 * 24 * time.Hour
 
+	// rescheduleMargin is how much of its deadline a bulk reschedule leaves
+	// rather than start another page (§20.3).
+	rescheduleMargin = 5 * time.Second
+
 	DefaultNodeDownAfter     = 30 * time.Second
 	DefaultProducerDownAfter = 90 * time.Second
 	DefaultJoinPendingTTL    = 24 * time.Hour
@@ -317,3 +321,7 @@ func spreadOf(set *api.Set) api.SetSpread {
 
 	return api.SetSpread_SET_SPREAD_SPREAD
 }
+
+// ReschedulePage is how many objects a bulk reschedule patches in one
+// transaction (§20.3). A variable so that a test can make it small.
+var ReschedulePage = 1000

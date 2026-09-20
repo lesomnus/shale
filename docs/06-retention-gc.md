@@ -72,7 +72,15 @@ There is no separate hold flag. Keeping or removing an object early is done by
 - `ObjectService.Reschedule` does this for one object, or in bulk for a set or
   a source over a time range, since an incident usually spans several cameras
   and several segments ([§35.4](12-api.md#354-tenant-api-custom-rpcs)). It is
-  refused for an object already `DELETING` or `DELETED`.
+  refused for an object already `DELETING` or `DELETED`; in bulk such objects
+  are left alone.
+- A bulk reschedule works in pages of `reschedule_page` (1,000) objects, each
+  its own transaction, and stops short of the call's deadline: a set's day is
+  tens of thousands of objects. The answer says how many were changed and how
+  many `remaining` in the range the call did not reach; the caller sends the
+  same request again while that is not zero, and the CLI does so by itself.
+  An object the request already changed is not selected again, so the calls
+  add up to exactly one change per object.
 - A reason is required. payday's audit trail records who changed which dates,
   from what, to what, and why, so the original dates are never lost and every
   decision to keep or delete has an author.

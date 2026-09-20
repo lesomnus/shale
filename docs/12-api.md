@@ -203,7 +203,9 @@ service ObjectService {
   // The producer gives up on an object; it becomes LOST (§13).
   rpc ReportFailure(ObjectReportFailureRequest) returns (Object);
   // Changes date_expired and/or date_deleted, for one object or in bulk by
-  // set or source and a time range; a reason is required and audited (§20.3).
+  // set or source and a time range; a reason is required and audited. In
+  // bulk it works in pages and stops short of its deadline, answering how
+  // many remain for the next call (§20.3).
   rpc Reschedule(ObjectRescheduleRequest) returns (ObjectRescheduleResponse);
   // Objects and gaps over a time range, with read tokens; paged (§17, §19).
   rpc Timeline(ObjectTimelineRequest) returns (ObjectTimelineResponse);

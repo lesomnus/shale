@@ -3982,10 +3982,11 @@ func (b0 ObjectRescheduleRequest_builder) Build() *ObjectRescheduleRequest {
 }
 
 type ObjectRescheduleResponse struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Changed int64                  `protobuf:"varint,1,opt,name=changed"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Changed   int64                  `protobuf:"varint,1,opt,name=changed"`
+	xxx_hidden_Remaining int64                  `protobuf:"varint,2,opt,name=remaining"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ObjectRescheduleResponse) Reset() {
@@ -4020,14 +4021,29 @@ func (x *ObjectRescheduleResponse) GetChanged() int64 {
 	return 0
 }
 
+func (x *ObjectRescheduleResponse) GetRemaining() int64 {
+	if x != nil {
+		return x.xxx_hidden_Remaining
+	}
+	return 0
+}
+
 func (x *ObjectRescheduleResponse) SetChanged(v int64) {
 	x.xxx_hidden_Changed = v
+}
+
+func (x *ObjectRescheduleResponse) SetRemaining(v int64) {
+	x.xxx_hidden_Remaining = v
 }
 
 type ObjectRescheduleResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Changed int64
+	// Objects in the range the call did not get to before its deadline; a
+	// bulk reschedule works in pages, and the caller comes again while this
+	// is not zero (§20.3).
+	Remaining int64
 }
 
 func (b0 ObjectRescheduleResponse_builder) Build() *ObjectRescheduleResponse {
@@ -4035,6 +4051,7 @@ func (b0 ObjectRescheduleResponse_builder) Build() *ObjectRescheduleResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Changed = b.Changed
+	x.xxx_hidden_Remaining = b.Remaining
 	return m0
 }
 
@@ -6550,9 +6567,10 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\fdate_deleted\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vdateDeleted\x12$\n" +
 	"\n" +
 	"delete_now\x18\b \x01(\bB\x05\xaa\x01\x02\b\x02R\tdeleteNow\x12\x1d\n" +
-	"\x06reason\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x06reason\";\n" +
+	"\x06reason\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x06reason\"`\n" +
 	"\x18ObjectRescheduleResponse\x12\x1f\n" +
-	"\achanged\x18\x01 \x01(\x03B\x05\xaa\x01\x02\b\x02R\achanged\"\xf6\x01\n" +
+	"\achanged\x18\x01 \x01(\x03B\x05\xaa\x01\x02\b\x02R\achanged\x12#\n" +
+	"\tremaining\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\tremaining\"\xf6\x01\n" +
 	"\x15ObjectTimelineRequest\x12\x1f\n" +
 	"\x03set\x18\x01 \x01(\v2\r.shale.SetRefR\x03set\x12(\n" +
 	"\x06source\x18\x02 \x01(\v2\x10.shale.SourceRefR\x06source\x12.\n" +

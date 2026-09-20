@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/shale/internal/placement"
 )
 
@@ -398,6 +399,11 @@ func (s coreObject) ReportFailure(ctx context.Context, req *api.ObjectReportFail
 
 // Reschedule changes an object's dates, one or in bulk (§20.3). A delete-now
 // sets both to now; the node hears about it through its control API.
+//
+// The bulk form works in pages, each its own transaction, and stops short of
+// the call's deadline: a set's day is tens of thousands of objects, more than
+// one call can patch. The answer says how many remain, and the caller comes
+// again; a row the request already changed is not selected twice.
 func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleRequest) (*api.ObjectRescheduleResponse, error) {
 	f, err := actor(ctx)
 	if err != nil {
@@ -406,18 +412,20 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 	if strings.TrimSpace(req.GetReason()) == "" {
 		return nil, invalid("reason", "a reason is required and audited")
 	}
-	now := s.d.now()
+	// What the row keeps is what a re-run compares against, so the dates
+	// carry no more than the row does.
+	now := s.d.now().Truncate(time.Millisecond)
 
 	var expired, deleted *time.Time
 	if req.GetDeleteNow() {
 		expired, deleted = &now, &now
 	} else {
 		if req.GetDateExpired() != nil {
-			t := req.GetDateExpired().AsTime()
+			t := req.GetDateExpired().AsTime().Truncate(time.Millisecond)
 			expired = &t
 		}
 		if req.GetDateDeleted() != nil {
-			t := req.GetDateDeleted().AsTime()
+			t := req.GetDateDeleted().AsTime().Truncate(time.Millisecond)
 			deleted = &t
 		}
 	}
@@ -425,7 +433,56 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 		return nil, invalid("dates", "nothing to change")
 	}
 
-	var rows []*ent.Object
+	// apply patches one page of rows in one transaction and says how many
+	// it changed. One object already on its way out is refused; in bulk it
+	// is left alone.
+	apply := func(rows []*ent.Object, one bool) (int64, error) {
+		var changed int64
+		err := s.tx(ctx, func(nx api.Server) error {
+			for _, r := range rows {
+				if r.State == int32(api.ObjectState_OBJECT_STATE_DELETING) || r.State == int32(api.ObjectState_OBJECT_STATE_DELETED) {
+					if one {
+						return failed("object is already %s", api.ObjectState(r.State))
+					}
+					continue
+				}
+				p := api.ObjectPatchRequest_builder{
+					Ref:              api.ObjectRef_builder{Id: r.Id[:]}.Build(),
+					DatesSynced:      z.Ptr(false),
+					DateUpdatedForce: z.Ptr(true),
+				}
+				if req.GetDeleteNow() && r.State == int32(api.ObjectState_OBJECT_STATE_COMMITTED) {
+					// The bytes go within seconds: the leader sends Delete for
+					// this file and its duplicates (§20.3).
+					p.State = z.Ptr(api.ObjectState_OBJECT_STATE_DELETING)
+				}
+				e := r.DateExpired
+				if expired != nil {
+					e = *expired
+					p.DateExpired = timestamppb.New(e)
+				}
+				if deleted != nil {
+					if deleted.Before(e) {
+						e = *deleted
+						p.DateExpired = timestamppb.New(e)
+					}
+					p.DateDeleted = timestamppb.New(*deleted)
+				} else if r.DateDeleted != nil && r.DateDeleted.Before(e) {
+					// Keeping date_expired ≤ date_deleted.
+					p.DateDeleted = timestamppb.New(e)
+				}
+				if _, err := nx.Object().Patch(ctx, p.Build()); err != nil {
+					return err
+				}
+				changed++
+			}
+
+			return nil
+		})
+
+		return changed, err
+	}
+
 	switch {
 	case req.GetRef() != nil:
 		obj, err := s.objectRow(ctx, req.GetRef())
@@ -436,91 +493,104 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 		if err != nil {
 			return nil, err
 		}
-		rows = []*ent.Object{r}
+		s.d.log().Info("reschedule", "actor", f.Actor.String(), "object", r.ObjectKey, "reason", req.GetReason(), "delete_now", req.GetDeleteNow())
+		changed, err := apply([]*ent.Object{r}, true)
+		if err != nil {
+			return nil, err
+		}
+
+		return api.ObjectRescheduleResponse_builder{Changed: changed}.Build(), nil
 	case req.GetSet() != nil || req.GetSource() != nil:
 		if req.GetFrom() == nil || req.GetTo() == nil {
 			return nil, invalid("from", "a bulk reschedule needs a time range")
-		}
-		q := s.d.Ent.Object.Query().Where(
-			object.TenantIdEQ(f.Tenant.Uuid()),
-			object.DateStartedLT(req.GetTo().AsTime()),
-			object.Or(object.DateEndedGT(req.GetFrom().AsTime()), object.DateEndedIsNil()),
-		)
-		if req.GetSource() != nil {
-			src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{Ref: req.GetSource()}.Build())
-			if err != nil {
-				return nil, err
-			}
-			q = q.Where(object.SourceIdEQ(mustId(src.GetId()).Uuid()))
-		} else {
-			set, err := s.setOf(ctx, refId(req.GetSet()))
-			if err != nil {
-				if req.GetSet().GetId() == nil {
-					set, err = s.Next().Set().Get(ctx, api.SetGetRequest_builder{Ref: req.GetSet()}.Build())
-				}
-				if err != nil {
-					return nil, err
-				}
-			}
-			q = q.Where(object.SetIdEQ(mustId(set.GetId()).Uuid()))
-		}
-		rows, err = q.Limit(100000).All(ctx)
-		if err != nil {
-			return nil, err
 		}
 	default:
 		return nil, invalid("ref", "name an object, a set, or a source")
 	}
 
-	s.d.log().Info("reschedule", "actor", f.Actor.String(), "objects", len(rows), "reason", req.GetReason(), "delete_now", req.GetDeleteNow())
-
-	var changed int64
-	err = s.tx(ctx, func(nx api.Server) error {
-		for _, r := range rows {
-			if r.State == int32(api.ObjectState_OBJECT_STATE_DELETING) || r.State == int32(api.ObjectState_OBJECT_STATE_DELETED) {
-				if req.GetRef() != nil {
-					return failed("object is already %s", api.ObjectState(r.State))
-				}
-				continue
-			}
-			p := api.ObjectPatchRequest_builder{
-				Ref:              api.ObjectRef_builder{Id: r.Id[:]}.Build(),
-				DatesSynced:      z.Ptr(false),
-				DateUpdatedForce: z.Ptr(true),
-			}
-			if req.GetDeleteNow() && r.State == int32(api.ObjectState_OBJECT_STATE_COMMITTED) {
-				// The bytes go within seconds: the leader sends Delete for
-				// this file and its duplicates (§20.3).
-				p.State = z.Ptr(api.ObjectState_OBJECT_STATE_DELETING)
-			}
-			e := r.DateExpired
-			if expired != nil {
-				e = *expired
-				p.DateExpired = timestamppb.New(e)
-			}
-			if deleted != nil {
-				if deleted.Before(e) {
-					e = *deleted
-					p.DateExpired = timestamppb.New(e)
-				}
-				p.DateDeleted = timestamppb.New(*deleted)
-			} else if r.DateDeleted != nil && r.DateDeleted.Before(e) {
-				// Keeping date_expired ≤ date_deleted.
-				p.DateDeleted = timestamppb.New(e)
-			}
-			if _, err := nx.Object().Patch(ctx, p.Build()); err != nil {
-				return err
-			}
-			changed++
+	// Rows in the range the request would still change: the ones a call
+	// that stopped at its deadline did are not selected again.
+	var pending predicate.Object
+	if req.GetDeleteNow() {
+		pending = object.Or(object.StateEQ(int32(api.ObjectState_OBJECT_STATE_COMMITTED)), object.DateDeletedIsNil(), object.DateDeletedGT(now))
+	} else {
+		var ps []predicate.Object
+		if expired != nil {
+			ps = append(ps, object.DateExpiredNEQ(*expired))
 		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
+		if deleted != nil {
+			ps = append(ps, object.DateDeletedIsNil(), object.DateDeletedNEQ(*deleted))
+		}
+		pending = object.Or(ps...)
+	}
+	q := s.d.Ent.Object.Query().Where(
+		object.TenantIdEQ(f.Tenant.Uuid()),
+		object.DateStartedLT(req.GetTo().AsTime()),
+		object.Or(object.DateEndedGT(req.GetFrom().AsTime()), object.DateEndedIsNil()),
+		object.StateNotIn(int32(api.ObjectState_OBJECT_STATE_DELETING), int32(api.ObjectState_OBJECT_STATE_DELETED)),
+		pending,
+	)
+	if req.GetSource() != nil {
+		src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{Ref: req.GetSource()}.Build())
+		if err != nil {
+			return nil, err
+		}
+		q = q.Where(object.SourceIdEQ(mustId(src.GetId()).Uuid()))
+	} else {
+		set, err := s.setOf(ctx, refId(req.GetSet()))
+		if err != nil {
+			if req.GetSet().GetId() == nil {
+				set, err = s.Next().Set().Get(ctx, api.SetGetRequest_builder{Ref: req.GetSet()}.Build())
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+		q = q.Where(object.SetIdEQ(mustId(set.GetId()).Uuid()))
 	}
 
-	return api.ObjectRescheduleResponse_builder{Changed: changed}.Build(), nil
+	var changed, remaining int64
+	deadline, bounded := ctx.Deadline()
+	// Pages walk the ids upward, so a row the patch left matching the
+	// selection (it should not) could not stall the walk.
+	var last *ent.Object
+	after := func() *ent.ObjectQuery {
+		p := q.Clone()
+		if last != nil {
+			p = p.Where(object.IdGT(last.Id))
+		}
+
+		return p
+	}
+	for {
+		rows, err := after().Order(ent.Asc(object.FieldId)).Limit(ReschedulePage).All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if len(rows) == 0 {
+			break
+		}
+		n, err := apply(rows, false)
+		if err != nil {
+			return nil, err
+		}
+		changed += n
+		last = rows[len(rows)-1]
+		if len(rows) < ReschedulePage {
+			break
+		}
+		if bounded && time.Until(deadline) < rescheduleMargin {
+			left, err := after().Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			remaining = int64(left)
+			break
+		}
+	}
+	s.d.log().Info("reschedule", "actor", f.Actor.String(), "objects", changed, "remaining", remaining, "reason", req.GetReason(), "delete_now", req.GetDeleteNow())
+
+	return api.ObjectRescheduleResponse_builder{Changed: changed, Remaining: remaining}.Build(), nil
 }
 
 func refId(r *api.SetRef) []byte {

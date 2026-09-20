@@ -61,11 +61,27 @@ func addObjectCommands(t *pdcmd.Tree, c *cmd.Config) {
 				return err
 			}
 			defer done()
-			resp, err := api.NewObjectServiceClient(conn).Reschedule(ctx, req)
-			if err != nil {
-				return err
+			// A bulk reschedule works in pages and stops short of its
+			// deadline; the answer says how many remain, and the same
+			// request (its dates were fixed above) goes again for them.
+			client := api.NewObjectServiceClient(conn)
+			var total int64
+			for {
+				resp, err := client.Reschedule(ctx, req)
+				if err != nil {
+					if total > 0 {
+						return fmt.Errorf("after %d object(s): %w", total, err)
+					}
+
+					return err
+				}
+				total += resp.GetChanged()
+				if resp.GetRemaining() == 0 {
+					break
+				}
+				self.Printf("rescheduled %d object(s), %d to go\n", total, resp.GetRemaining())
 			}
-			self.Printf("rescheduled %d object(s)\n", resp.GetChanged())
+			self.Printf("rescheduled %d object(s)\n", total)
 
 			return nil
 		}),

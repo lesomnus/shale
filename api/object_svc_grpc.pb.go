@@ -79,7 +79,9 @@ type ObjectServiceClient interface {
 	// The producer gives up on an object; it becomes LOST (§13).
 	ReportFailure(ctx context.Context, in *ObjectReportFailureRequest, opts ...grpc.CallOption) (*Object, error)
 	// Changes date_expired and/or date_deleted, for one object or in bulk by
-	// set or source and a time range; a reason is required and audited (§20.3).
+	// set or source and a time range; a reason is required and audited. In
+	// bulk it works in pages and stops short of its deadline, answering how
+	// many remain for the next call (§20.3).
 	Reschedule(ctx context.Context, in *ObjectRescheduleRequest, opts ...grpc.CallOption) (*ObjectRescheduleResponse, error)
 	// Objects and gaps over a time range, with read tokens; paged (§17, §19).
 	Timeline(ctx context.Context, in *ObjectTimelineRequest, opts ...grpc.CallOption) (*ObjectTimelineResponse, error)
@@ -286,7 +288,9 @@ type ObjectServiceServer interface {
 	// The producer gives up on an object; it becomes LOST (§13).
 	ReportFailure(context.Context, *ObjectReportFailureRequest) (*Object, error)
 	// Changes date_expired and/or date_deleted, for one object or in bulk by
-	// set or source and a time range; a reason is required and audited (§20.3).
+	// set or source and a time range; a reason is required and audited. In
+	// bulk it works in pages and stops short of its deadline, answering how
+	// many remain for the next call (§20.3).
 	Reschedule(context.Context, *ObjectRescheduleRequest) (*ObjectRescheduleResponse, error)
 	// Objects and gaps over a time range, with read tokens; paged (§17, §19).
 	Timeline(context.Context, *ObjectTimelineRequest) (*ObjectTimelineResponse, error)

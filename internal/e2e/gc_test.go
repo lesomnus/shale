@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/storage"
+	"github.com/lesomnus/shale/server/core"
 )
 
 // TestGcReclaimsToTarget is §21's protocol end to end: a small sink fills
@@ -103,12 +104,31 @@ func TestGcReclaimsToTarget(t *testing.T) {
 	}
 
 	// Expire them all: the dates reach the xattrs, the next round
-	// proposes, and the CP approves until the target is met.
-	_, err = objects.Reschedule(ctx, api.ObjectRescheduleRequest_builder{
+	// proposes, and the CP approves until the target is met. In pages of
+	// two (§20.3): a call whose deadline is nearer than the margin does one
+	// page and says how many remain; the same request again does the rest,
+	// and a third finds nothing left to change.
+	saved := core.ReschedulePage
+	core.ReschedulePage = 2
+	t.Cleanup(func() { core.ReschedulePage = saved })
+	expire := api.ObjectRescheduleRequest_builder{
 		Set: api.SetRef_builder{Id: set.GetId()}.Build(), From: timestamppb.New(base.Add(-time.Hour)), To: timestamppb.New(time.Now()),
 		DateExpired: timestamppb.New(time.Now().Add(-time.Minute)), Reason: "make room",
-	}.Build())
+	}.Build()
+	short, cancel := context.WithTimeout(ctx, 4*time.Second)
+	res, err := objects.Reschedule(short, expire)
+	cancel()
 	require.NoError(t, err)
+	require.Equal(t, int64(2), res.GetChanged(), "one page before the deadline")
+	require.Equal(t, int64(11), res.GetRemaining())
+	res, err = objects.Reschedule(ctx, expire)
+	require.NoError(t, err)
+	require.Equal(t, int64(11), res.GetChanged(), "the rest")
+	require.Zero(t, res.GetRemaining())
+	res, err = objects.Reschedule(ctx, expire)
+	require.NoError(t, err)
+	require.Zero(t, res.GetChanged(), "nothing selected twice")
+	core.ReschedulePage = saved
 	require.Eventually(t, func() bool {
 		s, err := sinks.Get(ctx, api.SinkGetRequest_builder{Ref: api.SinkRef_builder{Id: sinkId}.Build()}.Build())
 
