@@ -85,9 +85,14 @@ func closedToEveryone(m string) bool {
 	case strings.HasPrefix(m, "/shale.AttemptService/"):
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Erase")
 	case strings.HasPrefix(m, "/shale.ProducerService/"), strings.HasPrefix(m, "/shale.ReaderService/"),
-		strings.HasPrefix(m, "/shale.NodeService/"), strings.HasPrefix(m, "/shale.RelayService/"),
-		strings.HasPrefix(m, "/shale.DeviceService/"), strings.HasPrefix(m, "/shale.SinkService/"),
-		strings.HasPrefix(m, "/shale.SigningKeyService/"):
+		strings.HasPrefix(m, "/shale.NodeService/"), strings.HasPrefix(m, "/shale.DeviceService/"),
+		strings.HasPrefix(m, "/shale.SinkService/"), strings.HasPrefix(m, "/shale.SigningKeyService/"):
+		// Hosts, devices, sinks, and keys are written by the system and by
+		// the custom verbs of §32 (adopt, quarantine, retire, rotate, ...);
+		// a general write could set a state nothing else agrees with.
+		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Patch")
+	case strings.HasPrefix(m, "/shale.RelayService/"):
+		// `relay patch` is the operator's, for labels (§39.2).
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply")
 	}
 

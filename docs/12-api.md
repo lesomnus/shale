@@ -42,6 +42,14 @@ people, and per tenant on top of that (`rpc_rate`,
 [§36.1](13-configuration.md#361-configuration-reference)). A caller over its
 rate is answered `RESOURCE_EXHAUSTED` with a retry delay.
 
+**General writes.** payday closes `Patch` and `Apply` by default, since
+they can write anything the schema has. Shale serves `Patch` for the rows
+[§32](09-operations.md#32-cli--processes) says people and operators edit
+(a set's retention and placement, a source, a site, a person, a tenant's
+share, a relay's labels, the policies) and keeps it closed for what the
+system writes (objects, attempts) and for hosts, devices, sinks, and keys,
+whose states move only through their own verbs. `Apply` stays closed.
+
 ### 35.2 Two API surfaces
 
 The Control Plane serves two gRPC surfaces from **separate entry points**,

@@ -121,6 +121,12 @@ type Server struct {
 
 // Build opens the database and stacks the servers.
 func Build(ctx context.Context, c Config) (*Server, error) {
+	// Patch is an API here, for the rows §32 says people and operators edit
+	// (a set's retention, a relay's labels, a tenant's share); what each
+	// caller may patch is the gate policy's decision (gatepolicy.go), so
+	// payday's blanket refusal of general writes is lifted.
+	c.Server.AllowGeneralWrites = true
+	c.Cluster.AllowGeneralWrites = true
 	db, dia, err := c.Db.Open(ctx)
 	if err != nil {
 		return nil, err
