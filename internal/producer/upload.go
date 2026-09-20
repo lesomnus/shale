@@ -70,6 +70,9 @@ var (
 	errResume  = errors.New("no progress within resume_timeout")
 	errTooLong = errors.New("413: the upload exceeds max_length")
 	errRefused = errors.New("the node refused the upload")
+	// errNoCompletion is a 200 or 201 without Upload-Complete: ?1, which a
+	// node never means; the upload resumes from the offset it holds.
+	errNoCompletion = errors.New("the node answered success without completion")
 	// errForeign is a key that holds bytes this producer never sent: an
 	// earlier incarnation's upload of the same slot. They are not this
 	// segment's, so the attempt is given up and the object gets another
@@ -124,15 +127,24 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 		al = next
 	}
 
-	// Retries exhausted: the object is LOST and the segment dropped (§13).
-	rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	u.Objects.ReportFailure(rctx, api.ObjectReportFailureRequest_builder{
-		Ref: api.ObjectRef_builder{Id: al.GetObjectId()}.Build(), Reason: "every candidate failed",
-	}.Build())
-	cancel()
+	// Every candidate and every reallocation failed: not stored anywhere.
+	// The producer keeps the segment and tries again later, or gives it up
+	// when its RAM budget says so (§16).
 	res.Err = errors.New("every candidate failed")
 
 	return res
+}
+
+// GiveUp reports an object the producer will not upload: it becomes LOST
+// (§13).
+func (u *Uploader) GiveUp(ctx context.Context, al *api.Allocation, reason string) {
+	rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if _, err := u.Objects.ReportFailure(rctx, api.ObjectReportFailureRequest_builder{
+		Ref: api.ObjectRef_builder{Id: al.GetObjectId()}.Build(), Reason: reason,
+	}.Build()); err != nil {
+		u.Log.Warn("report failure", "key", al.GetObjectKey(), "err", err.Error())
+	}
 }
 
 func mustId(b []byte) pdid.Id {
@@ -165,9 +177,15 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		status, newOffset, sent, err := u.put(ctx, url, cand.GetToken(), al, seg, offset)
+		status, newOffset, sent, complete, err := u.put(ctx, url, cand.GetToken(), al, seg, offset)
 		if offset+sent > sentMax {
 			sentMax = offset + sent
+		}
+		if (status == http.StatusCreated || status == http.StatusOK) && !complete {
+			// A success status that does not say the object is complete is
+			// no commit: an answer the node did not mean (§12.5). The
+			// offset is asked for and the upload resumes.
+			status, err = 0, errNoCompletion
 		}
 		switch {
 		case status == http.StatusCreated || status == http.StatusOK:
@@ -247,13 +265,16 @@ func (u *Uploader) retryAfter(v int64) time.Duration {
 // put is one request from `offset`: the rest of the segment as a body that
 // grows while the capture runs (live) or a known length (buffered). It
 // answers the status, and for 409/503 the offset or Retry-After.
-func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation, seg *Segment, offset int64) (int, int64, int64, error) {
+// put is one request: the status, the offset a 409 or the Retry-After a
+// 503 carried, the bytes sent, and whether the answer said the object is
+// complete.
+func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation, seg *Segment, offset int64) (int, int64, int64, bool, error) {
 	live := !seg.Closed()
 	counted := &countingReader{r: seg.ReaderFrom(offset)}
 	var body io.Reader = counted
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
 	if err != nil {
-		return 0, -1, 0, err
+		return 0, -1, 0, false, err
 	}
 	req.Header.Set("Authorization", token.Scheme+" "+tok)
 	req.Header.Set(storage.HdrUploadOffset, strconv.FormatInt(offset, 10))
@@ -278,10 +299,11 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 
 	resp, err := u.Cfg.Client.Do(req)
 	if err != nil {
-		return 0, -1, counted.n, err
+		return 0, -1, counted.n, false, err
 	}
 	defer resp.Body.Close()
 	io.Copy(io.Discard, resp.Body)
+	complete := strings.TrimSpace(resp.Header.Get(storage.HdrUploadComplete)) == "?1"
 
 	var v int64 = -1
 	switch resp.StatusCode {
@@ -295,10 +317,10 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 		}
 	}
 	if resp.StatusCode >= 500 {
-		return resp.StatusCode, v, counted.n, fmt.Errorf("server error %d", resp.StatusCode)
+		return resp.StatusCode, v, counted.n, complete, fmt.Errorf("server error %d", resp.StatusCode)
 	}
 
-	return resp.StatusCode, v, counted.n, nil
+	return resp.StatusCode, v, counted.n, complete, nil
 }
 
 // countingReader counts what a request body handed over.

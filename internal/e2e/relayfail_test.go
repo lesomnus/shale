@@ -17,10 +17,16 @@ import (
 
 // startRelay runs one more relay in this process, with its own identity.
 func (c *cluster) startRelay(name string) (*relay.Relay, context.CancelFunc) {
+	return c.startRelayAt(name, filepath.Join(c.t.TempDir(), name))
+}
+
+// startRelayAt is startRelay with the state directory given, so a relay
+// can be started again as itself.
+func (c *cluster) startRelayAt(name, stateDir string) (*relay.Relay, context.CancelFunc) {
 	c.t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	r, err := relay.New(relay.Config{
-		StateDir:          filepath.Join(c.t.TempDir(), name),
+		StateDir:          stateDir,
 		Cp:                "http://" + c.running.ClusterAddr,
 		Dev:               true,
 		HardwareId:        "test-" + name,

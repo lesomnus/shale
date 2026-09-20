@@ -55,7 +55,11 @@ short CP outage. It adds no durable producer state:
   the slot ([§15](#15-partial-objects)) the segment that follows begins
   after the stored one ended, and gets an object of its own in the same
   slot, so nothing the camera delivered is refused. A source may hold at
-  most `max_open_attempts` (default 32) unfinished attempts.
+  most `max_open_attempts` (default 32) unfinished attempts; beyond that no
+  new object is allocated, while an object already allocated whose
+  attempts all failed still gets fresh ones, so a segment being retried
+  ([§16](#16-producer-backpressure)) is never held back by the allocations
+  ahead of it.
 - The CP accepts an expected `date_started` between `now − max_backlog_age`
   (default: the set's `retention.expire`) and `now + allocation_horizon +
   clock_tolerance` (5 minutes). A backlog that arrives hours late after a link
@@ -345,6 +349,13 @@ becomes an orphan, and orphans are reclaimed by GC ([§21.3](06-retention-gc.md#
   finalized as incomplete with the bytes it has, a buffered one is deleted.
   The producer moves to the next candidate with a corrected profile, or
   reports the object.
+- An answer is a commit only when it says so: `201`, or the `200` of a
+  key already complete, with `Upload-Complete: ?1`. An upload the node
+  had to cut short, its connection broken or the node stopping under it,
+  answers `503` with `Upload-Offset` at what reached the device and
+  `Retry-After`, and the producer resumes from there. A success status
+  without completion is treated as if it had never arrived: the producer
+  asks the offset and resumes.
 
 - **A key that holds bytes the producer never sent** is an earlier
   incarnation's upload of the same slot: the producer restarted mid-slot
@@ -542,9 +553,15 @@ same-target:  until resume_timeout without progress
 placement:    2–3
 ```
 
-When retries are exhausted, the object → **LOST**
-(`ObjectService.ReportFailure`), and the producer drops the segment. One
-object never blocks the ingest pipeline.
+When the rounds are exhausted the segment is stored nowhere yet. The
+producer keeps it and tries again after a backoff (1 s, doubling to 30 s)
+for as long as its RAM budget allows ([§16](#16-producer-backpressure)):
+the same object, its attempts renewed by the CP. Only a segment the
+producer gives up, because the budget is exceeded or the CP refused its
+start for good ([§10](02-data-model.md#10-time-semantics)), makes its
+object → **LOST** (`ObjectService.ReportFailure`). A segment that cannot be
+stored holds only its own source's queue, and only until the budget drops
+it, so one object never blocks the ingest pipeline for long.
 
 ## 14. Duplicates and Orphans
 
@@ -624,9 +641,13 @@ have re-uploaded it elsewhere if it could.
 
 ## 16. Producer Backpressure
 
-When no candidate accepts a write (all sinks at `max_uploads`, all targets failing), the
-producer buffers segments **in RAM** and retries with backoff. When its buffer
-is full, it drops the oldest unstored segment and reports it LOST.
+When no candidate accepts a write (all sinks at `max_uploads`, all targets
+failing, the CP or every node out of reach), the producer buffers segments
+**in RAM** and retries with backoff, in order, the oldest first. When its
+buffer is full, it drops the oldest unstored segment and reports it LOST.
+An allocation the CP refuses for good, a start further ahead than the
+horizon allows ([§10](02-data-model.md#10-time-semantics)), drops the
+segment at once: waiting would not change the answer.
 
 Producer parameters:
 

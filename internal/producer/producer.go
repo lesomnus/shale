@@ -58,7 +58,44 @@ type Config struct {
 	Buffer            int64
 	HeartbeatInterval time.Duration
 
+	// Now is the producer's clock for the times it stamps (§10, §38.2);
+	// nil is time.Now. Tests skew it.
+	Now func() time.Time
+
 	Log *slog.Logger
+}
+
+// Stats is what the producer counted since it started, for tests and
+// diagnostics: segments stored and lost, live batches dropped (§16, §39.6).
+type Stats struct {
+	Stored      int64
+	Lost        int64
+	LiveDropped int64
+}
+
+// Stats sums the counters over every source.
+func (p *Producer) Stats() Stats {
+	var st Stats
+	for _, s := range p.order {
+		s.mu.Lock()
+		st.Stored += s.stored
+		st.Lost += s.lost
+		s.mu.Unlock()
+	}
+	p.relay.mu.Lock()
+	st.LiveDropped = p.relay.dropped
+	p.relay.mu.Unlock()
+
+	return st
+}
+
+// now is the producer's clock.
+func (p *Producer) now() time.Time {
+	if p.cfg.Now != nil {
+		return p.cfg.Now()
+	}
+
+	return time.Now()
 }
 
 func (c *Config) defaults() {
@@ -118,9 +155,12 @@ type source struct {
 	allocs  map[int64]*api.Allocation
 	pending []*Segment
 	wake    chan struct{}
-	// lastObj is the object of the segment uploaded last: the next segment
+	// lastObj is the object of the segment finished last: the next segment
 	// never reuses it, however the slot's allocation was cached (§15).
-	lastObj []byte
+	// headAlloc is the allocation the head of the queue is being uploaded
+	// with, kept across retries (§16).
+	lastObj   []byte
+	headAlloc *api.Allocation
 
 	// Per-second accounting for the heartbeat (§38.5, §38.6).
 	secBytes   [60]int64
@@ -419,6 +459,7 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 		reader := NewReader(r)
 		s.cutter = &Cutter{
 			Reader: reader,
+			Now:    p.now,
 			Schedule: func() Schedule {
 				s.mu.Lock()
 				defer s.mu.Unlock()
@@ -579,14 +620,19 @@ func (p *Producer) enqueue(s *source, seg *Segment) {
 }
 
 // uploads is one source's upload worker: segments in order, one at a time.
+// A segment that could not be stored is kept and tried again after a
+// backoff, for as long as the RAM budget allows (§16): the oldest unstored
+// segment is the one dropped when the budget is exceeded. Only an
+// allocation the CP refuses for good ends a segment at once.
 func (p *Producer) uploads(ctx context.Context, s *source) error {
+	var backoff time.Duration
 	for {
 		s.mu.Lock()
 		var seg *Segment
 		if len(s.pending) > 0 {
 			seg = s.pending[0]
-			s.pending = s.pending[1:]
 		}
+		al := s.headAlloc
 		s.mu.Unlock()
 		if seg == nil {
 			select {
@@ -599,41 +645,127 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 
 		if p.overBudget() {
 			// The oldest unstored segment is this one: dropped (§16).
-			s.mu.Lock()
-			s.dropped++
-			s.mu.Unlock()
-			p.log.Warn("segment dropped: over the RAM budget", "source", s.cfg.Alias, "started", seg.Started)
+			p.drop(ctx, s, seg, "over the RAM budget")
+			backoff = 0
 			continue
 		}
 
-		al, err := p.allocationFor(ctx, s, seg)
-		if err != nil {
-			p.log.Warn("no allocation", "source", s.cfg.Alias, "started", seg.Started, "err", err.Error())
+		if al == nil || !al.GetDateExpires().AsTime().After(p.now().Add(time.Minute)) {
+			var err error
+			al, err = p.allocationFor(ctx, s, seg)
+			if err != nil {
+				if permanent(err) {
+					p.drop(ctx, s, seg, "no allocation: "+err.Error())
+					backoff = 0
+					continue
+				}
+				backoff = nextBackoff(backoff)
+				p.log.Warn("no allocation; keeping the segment", "source", s.cfg.Alias, "started", seg.Started, "err", err.Error(), "retry_in", backoff.String())
+				if !sleep(ctx, backoff) {
+					return nil
+				}
+				continue
+			}
 			s.mu.Lock()
-			s.lost++
+			s.headAlloc = al
 			s.mu.Unlock()
+		}
+
+		res := p.uploader.Upload(ctx, al, seg)
+		if ctx.Err() != nil {
+			return nil
+		}
+		if !res.Stored {
+			// Every candidate failed: the next try asks the CP again, which
+			// answers the same object with fresh attempts wherever writes
+			// are taken by then.
+			s.mu.Lock()
+			s.headAlloc = nil
+			s.mu.Unlock()
+			backoff = nextBackoff(backoff)
+			p.log.Warn("not stored yet; keeping the segment", "source", s.cfg.Alias, "key", al.GetObjectKey(), "err", res.Err, "retry_in", backoff.String())
+			if !sleep(ctx, backoff) {
+				return nil
+			}
 			continue
 		}
+		backoff = 0
 		s.mu.Lock()
-		s.lastObj = al.GetObjectId()
+		s.finish(seg)
+		s.stored++
 		s.mu.Unlock()
-		res := p.uploader.Upload(ctx, al, seg)
-		s.mu.Lock()
-		if res.Stored {
-			s.stored++
-		} else {
-			s.lost++
-		}
-		s.mu.Unlock()
-		if res.Stored {
-			p.log.Info("stored", "source", s.cfg.Alias, "key", al.GetObjectKey(), "bytes", seg.Len(), "attempts", res.Attempts)
-			p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "stored")))
-		} else {
-			p.log.Warn("lost", "source", s.cfg.Alias, "key", al.GetObjectKey(), "err", res.Err)
-			p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "lost")))
-		}
+		p.log.Info("stored", "source", s.cfg.Alias, "key", al.GetObjectKey(), "bytes", seg.Len(), "attempts", res.Attempts)
+		p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "stored")))
 	}
 }
+
+// drop gives a segment up: it leaves the queue, its object, if it has one,
+// is reported LOST (§13), and the count says so.
+func (p *Producer) drop(ctx context.Context, s *source, seg *Segment, why string) {
+	s.mu.Lock()
+	al := s.headAlloc
+	s.finish(seg)
+	s.lost++
+	s.mu.Unlock()
+	key := ""
+	if al != nil {
+		key = al.GetObjectKey()
+		p.uploader.GiveUp(ctx, al, why)
+	}
+	p.log.Warn("lost", "source", s.cfg.Alias, "started", seg.Started, "key", key, "why", why)
+	p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "lost")))
+}
+
+// finish takes the head segment off the queue and remembers its object as
+// the one the next segment must not get (§15). The lock is held.
+func (s *source) finish(seg *Segment) {
+	if len(s.pending) > 0 && s.pending[0] == seg {
+		s.pending = s.pending[1:]
+	}
+	if s.headAlloc != nil {
+		s.lastObj = s.headAlloc.GetObjectId()
+	}
+	s.headAlloc = nil
+}
+
+// permanent says an allocation error will not go away by asking again: the
+// CP refused the segment (a start further ahead than the horizon allows,
+// §10) or the slot holds it already.
+func permanent(err error) bool {
+	if errors.Is(err, errSlotStored) {
+		return true
+	}
+	switch status.Code(err) {
+	case codes.InvalidArgument, codes.FailedPrecondition, codes.PermissionDenied, codes.NotFound:
+		return true
+	}
+
+	return false
+}
+
+// nextBackoff doubles from a second to half a minute.
+func nextBackoff(d time.Duration) time.Duration {
+	if d == 0 {
+		return time.Second
+	}
+	if d >= 30*time.Second {
+		return 30 * time.Second
+	}
+
+	return min(2*d, 30*time.Second)
+}
+
+// sleep waits, or answers false when the context ended first.
+func sleep(ctx context.Context, d time.Duration) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case <-time.After(d):
+		return true
+	}
+}
+
+var errSlotStored = errors.New("the slot was already stored")
 
 // overBudget says whether retained segments exceed the RAM budget.
 func (p *Producer) overBudget() bool {
@@ -665,7 +797,7 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 		// the camera ended: this one needs an object of its own (§15).
 		al = nil
 	}
-	if al != nil && al.GetDateExpires().AsTime().After(time.Now().Add(time.Minute)) && len(al.GetCandidates()) > 0 {
+	if al != nil && al.GetDateExpires().AsTime().After(p.now().Add(time.Minute)) && len(al.GetCandidates()) > 0 {
 		return al, nil
 	}
 
@@ -683,7 +815,7 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 		return nil, err
 	}
 	if len(al.GetCandidates()) == 0 {
-		return nil, errors.New("the slot was already stored")
+		return nil, errSlotStored
 	}
 
 	return al, nil

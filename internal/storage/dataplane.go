@@ -548,14 +548,22 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return
 	}
 	if readErr != nil {
-		// A broken connection: the aligned prefix reaches the device, the
-		// rest is dropped and re-sent; the upload stays resumable. The
-		// checksum covered the dropped tail: recomputed on resume.
+		// A broken connection, or the node stopping under the request: the
+		// aligned prefix reaches the device, the rest is dropped and
+		// re-sent; the upload stays resumable. The checksum covered the
+		// dropped tail: recomputed on resume. The answer says so, with the
+		// offset to resume from: a handler that returned without one would
+		// answer 200, and a producer still connected would take the
+		// segment as stored (§12.5).
 		if n, err := pt.flush(df, written); err == nil {
 			written += int64(n)
 		}
 		u.crcAt = -1
 		d.log.Debug("upload interrupted", "key", key, "offset", written, "err", readErr.Error())
+		w.Header().Set(HdrUploadOffset, strconv.FormatInt(written, 10))
+		setBool(w.Header(), HdrUploadComplete, false)
+		w.Header().Set(HdrRetryAfter, "1")
+		http.Error(w, "the upload was interrupted: "+readErr.Error(), http.StatusServiceUnavailable)
 		return
 	}
 

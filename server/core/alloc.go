@@ -360,16 +360,21 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 	}
 
 	if len(attempts) == 0 {
-		// Open attempts per source are capped (§12.1).
-		n, err := s.d.Ent.Attempt.Query().
-			Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now),
-				attempt.HasObjectWith(object.SourceIdEQ(srcId.Uuid()))).
-			Count(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if n >= a.bounds.MaxOpenAttempts {
-			return nil, status.Errorf(codes.ResourceExhausted, "source %s holds %d open attempts", src.GetAlias(), n)
+		if existing == nil {
+			// Open attempts per source are capped (§12.1): the cap is on
+			// new objects. An object already allocated whose attempts all
+			// failed gets fresh ones regardless, so a segment being retried
+			// is never held back by the allocations ahead of it (§16).
+			n, err := s.d.Ent.Attempt.Query().
+				Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now),
+					attempt.HasObjectWith(object.SourceIdEQ(srcId.Uuid()))).
+				Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if n >= a.bounds.MaxOpenAttempts {
+				return nil, status.Errorf(codes.ResourceExhausted, "source %s holds %d open attempts", src.GetAlias(), n)
+			}
 		}
 
 		s.d.metrics().Allocations.Add(ctx, 1)

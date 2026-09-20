@@ -199,7 +199,9 @@ commit**.
    sends only after the data is durable on HDD ([§12](04-write-path.md#12-write-path)).
 7. Keep resuming on the same target while the upload makes progress.
 8. Report a failed attempt and move to the next candidate on persistent failure.
-9. Give up (object → LOST) when retries are exhausted.
+9. Keep a segment that could be stored nowhere and try again with a backoff
+   while the RAM budget allows; give up (object → LOST) when it does not
+   ([§16](04-write-path.md#16-producer-backpressure)).
 
 Because a set's cameras are spread over many nodes ([§11](03-placement.md#11-placement)), a producer keeps a pool
 of keep-alive connections, one per node it is currently writing to. It also
