@@ -21,10 +21,12 @@ jobs:
       - name: vet
         run: go vet ./...
       - name: test
-        # The e2e harness writes a directory sink; a tmpfs keeps the xattrs
-        # it needs and the run fast.
+        # The e2e harness writes directory sinks, whose records are user
+        # xattrs (§23.1): an ext4 image on a loop device has them wherever
+        # the runner's kernel stands on tmpfs.
         run: |
-          sudo mkdir -p /mnt/shale-tmp && sudo mount -t tmpfs -o size=512m,user_xattr tmpfs /mnt/shale-tmp
+          fallocate -l 2G /tmp/shale.img && mkfs.ext4 -q -F /tmp/shale.img
+          sudo mkdir -p /mnt/shale-tmp && sudo mount -o loop,user_xattr /tmp/shale.img /mnt/shale-tmp
           sudo chmod 1777 /mnt/shale-tmp
           TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 10m
   package:
