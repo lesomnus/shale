@@ -288,6 +288,12 @@ func storageConfig(c *cmd.Config) storage.Config {
 		cfg.Limits.PartBufferPool = v
 	}
 	cfg.Limits.Buffered = sc.Buffered
+	if v, err := storage.ParseCapacity(sc.ReadChunk); err == nil && v > 0 {
+		cfg.Limits.ReadChunk = int(v)
+	}
+	if sc.ReadBacklog > 0 {
+		cfg.Caps[storage.ClassRead] = sc.ReadBacklog
+	}
 	if sc.MaxUploads > 0 {
 		cfg.Limits.MaxUploads = sc.MaxUploads
 	}

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -54,6 +55,8 @@ type Limits struct {
 	PartSize       int
 	PartBufferPool int64
 	Buffered       bool
+	// ReadChunk is one READ job's size (§24).
+	ReadChunk int
 }
 
 // DefaultLimits are §36.1's.
@@ -65,6 +68,7 @@ var DefaultLimits = Limits{
 	IdleTimeoutMax:   5 * time.Minute,
 	PartSize:         16 << 20,
 	PartBufferPool:   12 << 30,
+	ReadChunk:        4 << 20,
 	Chunk:            1 << 20,
 }
 
@@ -111,6 +115,10 @@ func newDataPlane(n *Node, l Limits) *DataPlane {
 	if l.PartBufferPool < int64(l.PartSize) {
 		l.PartBufferPool = DefaultLimits.PartBufferPool
 	}
+	if l.ReadChunk < Align {
+		l.ReadChunk = DefaultLimits.ReadChunk
+	}
+	l.ReadChunk = (l.ReadChunk + Align - 1) &^ (Align - 1)
 
 	return &DataPlane{node: n, limits: l, log: n.log, pool: newPool(l.PartBufferPool), uploads: map[string]*upload{}, perActor: map[pdid.Id]int{}, readers: map[pdid.Id]int{}}
 }
@@ -448,8 +456,14 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		}
 		space := pt.space()
 		if len(space) == 0 {
-			// A full part: one write at its offset.
-			n, err := pt.flush(df, written)
+			// A full part: one WRITE job at its offset (§24).
+			var n int
+			err := d.node.onDevice(r.Context(), sink, ClassWrite, int64(pt.aligned()), func() error {
+				var err error
+				n, err = pt.flush(df, written)
+
+				return err
+			})
 			if err != nil {
 				readErr = err
 				break
@@ -520,7 +534,13 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 	if !complete {
 		// The flush point: the aligned prefix is on the device, and the
 		// offset says so; the tail is the producer's to send again (§12.2).
-		n, err := pt.flush(df, written)
+		var n int
+		err := d.node.onDevice(r.Context(), sink, ClassWrite, int64(pt.aligned()), func() error {
+			var err error
+			n, err = pt.flush(df, written)
+
+			return err
+		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -532,8 +552,15 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return
 	}
 
-	// The last part, padded to alignment; commit truncates to the size.
-	n, err := pt.flushAll(df, written)
+	// The last part, padded to alignment, and the commit with its fsync:
+	// one WRITE job; commit truncates to the size.
+	var n int
+	err = d.node.onDevice(r.Context(), sink, ClassWrite, int64(pt.n), func() error {
+		var err error
+		n, err = pt.flushAll(df, written)
+
+		return err
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -759,19 +786,122 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		d.mu.Unlock()
 	}()
 
-	f, err := os.Open(path)
+	// Reads go through the device in chunks of read_chunk, with O_DIRECT
+	// where the sink can, so a long export takes its turns like everyone
+	// (§17, §24).
+	f, err := openRead(path, sink.Caps.GetOdirect() && !d.limits.Buffered)
 	if err != nil {
 		d.missing(sink, key, c)
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 	defer f.Close()
+	cr := &chunkReader{f: f, size: size, chunk: d.limits.ReadChunk, read: func(off int64, b []byte) (int, error) {
+		var n int
+		err := d.node.onDevice(r.Context(), sink, ClassRead, int64(len(b)), func() error {
+			var err error
+			n, err = f.ReadAt(b, off)
+			if err == io.EOF {
+				err = nil
+			}
+
+			return err
+		})
+		if errors.Is(err, ErrBacklog) {
+			return 0, err
+		}
+
+		return n, err
+	}}
 
 	w.Header().Set("Content-Type", "video/mp2t")
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Cache-Control", "private, max-age=0")
-	_ = size
-	http.ServeContent(w, r, "", mod, f)
+	http.ServeContent(w, r, "", mod, cr)
+}
+
+// openRead opens a complete object for reading, with O_DIRECT where it
+// works; the chunk reader keeps its reads aligned.
+func openRead(path string, direct bool) (*os.File, error) {
+	flag := os.O_RDONLY
+	if direct {
+		flag |= syscall.O_DIRECT
+	}
+	f, err := os.OpenFile(path, flag, 0)
+	if err != nil && direct {
+		return os.Open(path)
+	}
+
+	return f, err
+}
+
+// chunkReader is an io.ReadSeeker over a file whose reads are whole
+// aligned chunks through the device, holding one chunk at a time.
+type chunkReader struct {
+	f     *os.File
+	size  int64
+	chunk int
+	read  func(off int64, b []byte) (int, error)
+
+	pos    int64
+	bufOff int64
+	buf    []byte
+	raw    []byte
+}
+
+func (c *chunkReader) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+	case io.SeekCurrent:
+		offset += c.pos
+	case io.SeekEnd:
+		offset += c.size
+	default:
+		return 0, errors.New("bad whence")
+	}
+	if offset < 0 {
+		return 0, errors.New("negative offset")
+	}
+	c.pos = offset
+
+	return offset, nil
+}
+
+func (c *chunkReader) Read(p []byte) (int, error) {
+	if c.pos >= c.size {
+		return 0, io.EOF
+	}
+	if c.buf == nil || c.pos < c.bufOff || c.pos >= c.bufOff+int64(len(c.buf)) {
+		// The aligned chunk holding pos.
+		start := c.pos &^ (Align - 1)
+		want := c.chunk
+		if rem := c.size - start; rem < int64(want) {
+			want = int((rem + Align - 1) &^ (Align - 1))
+		}
+		if c.raw == nil || cap(c.raw) < want+Align {
+			c.raw = make([]byte, want+Align)
+		}
+		off := Align - int(uintptr(unsafePointer(c.raw))%Align)
+		if off == Align {
+			off = 0
+		}
+		b := c.raw[off : off+want]
+		n, err := c.read(start, b)
+		if err != nil {
+			return 0, err
+		}
+		if int64(n) > c.size-start {
+			n = int(c.size - start)
+		}
+		c.buf, c.bufOff = b[:n], start
+		if n == 0 {
+			return 0, io.EOF
+		}
+	}
+	n := copy(p, c.buf[c.pos-c.bufOff:])
+	c.pos += int64(n)
+
+	return n, nil
 }
 
 // missing reports a key a valid token named that this node does not have

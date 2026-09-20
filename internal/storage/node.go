@@ -60,6 +60,9 @@ type Config struct {
 	TokenSkew         time.Duration
 	GcPage            int
 	GcProposalFactor  float64
+	// Quanta and Caps are the Device Queue's weights and backlog caps (§24).
+	Quanta Quanta
+	Caps   Caps
 
 	Log *slog.Logger
 }
@@ -113,8 +116,10 @@ type Node struct {
 	verifier *token.Verifier
 	keys     *hostagent.KeyRing
 	m        *metrics
-	outbox   *Outbox
-	dp       *DataPlane
+	// queues is one Device Queue per device, shared by its sinks (§24).
+	queues map[string]*Queue
+	outbox *Outbox
+	dp     *DataPlane
 
 	connMu sync.Mutex
 	conn   *grpc.ClientConn
@@ -185,8 +190,17 @@ func (n *Node) Run(ctx context.Context) error {
 	}
 	n.keys.Load()
 
-	// The startup scan, as background work; the node serves during it (§29).
+	// One Device Queue per device (§24), then the startup scan as MAINT
+	// work on it; the node serves during the scan (§29).
 	g, ctx := errgroup.WithContext(ctx)
+	n.queues = map[string]*Queue{}
+	for _, s := range n.sinks {
+		if _, ok := n.queues[s.DeviceId]; !ok {
+			q := NewQueue(n.cfg.Quanta, n.cfg.Caps)
+			n.queues[s.DeviceId] = q
+			g.Go(func() error { q.Run(ctx); return nil })
+		}
+	}
 	for _, s := range n.sinks {
 		s := s
 		g.Go(func() error { n.scan(ctx, s); return nil })
@@ -434,10 +448,35 @@ func (n *Node) deviceReports() []*api.DeviceReport {
 		if s.Capacity > 0 {
 			capacity = s.Capacity
 		}
-		vs = append(vs, api.DeviceReport_builder{HardwareId: s.DeviceId, Capacity: capacity}.Build())
+		dr := api.DeviceReport_builder{HardwareId: s.DeviceId, Capacity: capacity}
+		if q := n.queues[s.DeviceId]; q != nil {
+			dr.QueueWrite, dr.QueueRead, dr.QueueMaint = int32(q.Depth(ClassWrite)), int32(q.Depth(ClassRead)), int32(q.Depth(ClassMaint))
+		}
+		vs = append(vs, dr.Build())
 	}
 
 	return vs
+}
+
+// queue is the Device Queue of a sink's device; before Run, or for a sink
+// of no known device, the job runs at once.
+func (n *Node) queue(s *Sink) *Queue {
+	if q := n.queues[s.DeviceId]; q != nil {
+		return q
+	}
+
+	return nil
+}
+
+// onDevice runs fn as a job of the class on the sink's device (§24), or
+// inline when the node has no queue for it yet.
+func (n *Node) onDevice(ctx context.Context, s *Sink, class Class, cost int64, fn func() error) error {
+	q := n.queue(s)
+	if q == nil {
+		return fn()
+	}
+
+	return q.Submit(ctx, class, cost, fn)
 }
 
 func (n *Node) joinCall(ctx context.Context, conn *grpc.ClientConn, hj *api.HostJoin) (hostagent.Answer, error) {
@@ -574,7 +613,10 @@ func (n *Node) keyPoll(ctx context.Context) error {
 
 func (n *Node) scan(ctx context.Context, s *Sink) {
 	start := time.Now()
-	res, err := s.Index.Scan(ctx, s, func(k int) { n.log.Info("scan", "sink", s.Id.String(), "files", k) })
+	q := n.queue(s)
+	res, err := s.Index.Scan(ctx, s, func(k int) { n.log.Info("scan", "sink", s.Id.String(), "files", k) }, func() error {
+		return q.Submit(ctx, ClassMaint, 256*Align, func() error { return nil })
+	})
 	if err != nil {
 		n.log.Warn("scan", "sink", s.Id.String(), "err", err.Error())
 		return
@@ -737,7 +779,9 @@ func (n *Node) unlink(s *Sink, key string) api.DeleteResult {
 		rec, _ = ReadRecordPath(path)
 		size = st.Size()
 	}
-	if err := os.Remove(path); err != nil {
+	// The unlink is MAINT work on the device (§21.2, §24).
+	err = n.onDevice(context.Background(), s, ClassMaint, Align, func() error { return os.Remove(path) })
+	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			s.Index.Remove(key)
 			return api.DeleteResult_DELETE_RESULT_ABSENT

@@ -168,10 +168,11 @@ type OpenFile struct {
 // (§29): inodes only, never data. Complete files whose size disagrees with
 // the record are damaged; open files are handed back for the abandon rule
 // (§12.2).
-func (x *Index) Scan(ctx context.Context, sink *Sink, progress func(n int)) (ScanResult, error) {
+func (x *Index) Scan(ctx context.Context, sink *Sink, progress func(n int), yield func() error) (ScanResult, error) {
 	var res ScanResult
 	root := filepath.Join(sink.Path, "objects")
 	n := 0
+	seen := 0
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -181,6 +182,14 @@ func (x *Index) Scan(ctx context.Context, sink *Sink, progress func(n int)) (Sca
 		}
 		if d.IsDir() || strings.HasPrefix(d.Name(), ".") {
 			return nil
+		}
+		// A MAINT step every so many files: the walk is inode reads, and
+		// the device's writes and reads get their turns between (§24).
+		seen++
+		if yield != nil && seen%256 == 0 {
+			if err := yield(); err != nil {
+				return err
+			}
 		}
 		rel, err := filepath.Rel(sink.Path, p)
 		if err != nil {
