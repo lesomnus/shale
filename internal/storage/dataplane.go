@@ -81,6 +81,9 @@ type upload struct {
 	inflight bool
 	hint     int64
 	started  *time.Time
+	// cancel ends the request writing now, for the one that supersedes it
+	// (§12.2: one writer per key); guarded by DataPlane.mu.
+	cancel func()
 }
 
 // DataPlane serves the object paths of every sink on this node.
@@ -294,14 +297,17 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		started = &t
 	}
 
-	// One writer per key: a second request waits for the first to finish
-	// or to be cut off (§12.2).
+	// One writer per key: a new request ends the older one, which flushes
+	// its aligned prefix as on a disconnect, and takes its place (§12.2).
 	uk := d.uploadKey(sink, key)
 	d.mu.Lock()
 	u, ok := d.uploads[uk]
 	if !ok {
 		u = &upload{key: key, sink: sink, actor: actor, claims: c}
 		d.uploads[uk] = u
+	}
+	if u.inflight && u.cancel != nil {
+		u.cancel()
 	}
 	d.mu.Unlock()
 
@@ -415,6 +421,14 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		idle = d.limits.IdleTimeoutMax
 	}
 	rc := http.NewResponseController(w)
+	d.mu.Lock()
+	u.cancel = func() { rc.SetReadDeadline(time.Now()) }
+	d.mu.Unlock()
+	defer func() {
+		d.mu.Lock()
+		u.cancel = nil
+		d.mu.Unlock()
+	}()
 	df, err := openData(path, sink.Caps.GetOdirect() && !d.limits.Buffered)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -455,6 +469,24 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 			u.last = time.Now()
 			if tooLarge {
 				break
+			}
+			// A live upload past its hint: another extent, so the object
+			// stays in at most a few pieces (§12.2).
+			if u.hint > 0 && received > u.hint {
+				extra := u.record.GetSizeHint()
+				if extra < int64(d.limits.PartSize) {
+					extra = int64(d.limits.PartSize)
+				}
+				if maxLen > 0 && u.hint+extra > maxLen {
+					extra = maxLen - u.hint
+				}
+				if extra > 0 {
+					if sink.Caps.GetFallocate() {
+						reserve(f, u.hint+extra)
+					}
+					sink.Reserve(extra)
+					u.hint += extra
+				}
 			}
 		}
 		if err != nil {
