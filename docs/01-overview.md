@@ -26,11 +26,13 @@ append-only artifacts) fit as well, but they are not the design target.
 
 Shale is not a general POSIX filesystem, and not a general S3 replacement.
 
-Shale is also **not a live-viewing path**. Watching cameras live goes over a
-separate channel (typically camera → media server) that never touches Shale.
-Shale stores recordings and serves them back after they are committed. Live
-*upload* ([§12.2](04-write-path.md#122-resumable-part-uploads)) only gets
-recordings onto disk sooner. It does not make them viewable sooner.
+**Storage is not a live-viewing path.** Shale stores recordings and serves
+them back after they are committed. Live *upload*
+([§12.2](04-write-path.md#122-resumable-part-uploads)) only gets recordings
+onto disk sooner; it does not make them viewable sooner. Watching a camera
+live is the job of the **Relay** ([§39](16-relay.md#39-relay)), a separate
+host that takes the producer's stream on demand and fans it out to viewers
+over WebRTC, and that never touches a Storage Node.
 
 ## 2. Overview
 
@@ -79,6 +81,8 @@ one serialized, starvation-free I/O queue per physical device
 set + source + epoch aware placement
 
 lazy retention GC, hard deletion dates
+
+live viewing through a relay, on demand; storage and live never share a path
 ```
 
 ## 4. Architecture
@@ -122,6 +126,10 @@ directly. The Control Plane does talk to Storage Nodes, but only to give
 orders: deletions, date changes, quarantine, reconciliation
 ([§35.7](12-api.md#357-storage-node-control-api)).
 
+Beside this, and touching none of it, sits the **Relay**: a producer sends
+the same stream it records to its relay while someone is watching, and the
+relay serves viewers over WebRTC ([§39](16-relay.md#39-relay)).
+
 ## 5. Components
 
 ### Control Plane
@@ -145,6 +153,8 @@ orders: deletions, date changes, quarantine, reconciliation
 - Call nodes' control API for everything above that needs a node's hands
   ([§34.9](11-deployment.md#349-events-and-directives))
 - Version the placement policy
+- Assign each producer a relay and sign publish and view tokens for live
+  viewing ([§39](16-relay.md#39-relay))
 
 ### Storage Node
 
@@ -192,7 +202,9 @@ commit**.
 9. Give up (object → LOST) when retries are exhausted.
 
 Because a set's cameras are spread over many nodes ([§11](03-placement.md#11-placement)), a producer keeps a pool
-of keep-alive connections, one per node it is currently writing to.
+of keep-alive connections, one per node it is currently writing to. It also
+keeps one stream to its relay, and sends a camera's bytes down it only while
+someone is watching ([§39.3](16-relay.md#393-from-the-producer)).
 
 What a producer takes in is an **encoded stream** in a streamable container
 (MPEG-TS, fragmented MP4). It never decodes or encodes; the camera or a
@@ -211,6 +223,16 @@ beside the media server and holds its certificate
    set or source over a time range, one page at a time).
 2. Receive read tokens (GET URLs) with the answer.
 3. Read whole objects or byte ranges directly from Storage Nodes.
+
+A reader that wants a camera live, such as a monitoring wall, asks the same
+API for a view token and watches through the relay, exactly as a person in a
+browser does ([§39.4](16-relay.md#394-viewers)).
+
+### Relay
+
+A Relay is a host that fans live streams out to viewers over WebRTC. It is
+described in its own document ([§39](16-relay.md#39-relay)). It holds no
+state and never touches a Storage Node.
 
 ## 6. Identity of the Project
 

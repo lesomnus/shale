@@ -6,7 +6,9 @@ The Control Plane speaks **resource-oriented gRPC**, built with
 [payday](https://github.com/lesomnus/payday). Storage Nodes speak **HTTP**
 (HTTP/1.1, HTTP/2, and HTTP/3 over QUIC) to move object bytes, and serve a
 small **control API** (gRPC) that only the Control Plane calls
-([§35.7](#357-storage-node-control-api)).
+([§35.7](#357-storage-node-control-api)). Relays take streams from
+producers over gRPC and serve viewers over WHEP
+([§35.8](#358-relay-ingest-and-whep)).
 
 ### 35.1 Conventions
 
@@ -76,6 +78,7 @@ each surface that is made without a credential.
 | `Producer` | tenant | 22 | Get, Patch, List, Erase, Watch | tenant |
 | `Reader` | tenant | 23 | Get, Patch, List, Erase, Watch | tenant |
 | `Node` | **global** | 12 | Get, Patch, List, Erase, Watch | cluster |
+| `Relay` | **global** | 24 | Get, Patch, List, Erase, Watch | cluster |
 | `Device` | **global** | 13 | Get, List, Watch | cluster |
 | `Sink` | **global** | 14 | Get, List, Watch | cluster |
 | `SigningKey` | **global** | 15 | List, Watch | cluster |
@@ -89,16 +92,16 @@ hosts are adopted instead ([§33.4](10-security.md#334-joining-and-adoption),
 never reused.
 
 - **Tenant-owned** is payday's default. Every entity outside the wall says
-  `global: {}` explicitly, and a search for it lists exactly the seven above.
+  `global: {}` explicitly, and a search for it lists exactly the eight above.
   Storage is physically shared, so the infrastructure that holds it belongs to
   the cluster, not to any tenant.
 - **Holders are people**: tenant admins, cluster operators, and console users.
   They sign in ([§33.1](10-security.md#331-trust-model)). payday's audit trail
   names a Holder or a host as the actor of every write.
 - **Hosts are entities of their own.** A `Producer` and a `Reader` belong to a
-  tenant; a `Node` is global. A host row is created by the host's own `Join`
-  and made usable by an operator's `Adopt`; there is no generated `Add`. Each
-  carries its hardware identity and its certificate
+  tenant; a `Node` and a `Relay` are global. A host row is created by the
+  host's own `Join` and made usable by an operator's `Adopt`; there is no
+  generated `Add`. Each carries its hardware identity and its certificate
   ([§33.4](10-security.md#334-joining-and-adoption)).
 - **Field 3 is `site`**, payday's second permission axis
   ([§7](02-data-model.md#7-source-set-zone-epoch)). `Set` declares it,
@@ -122,7 +125,7 @@ Key fields, beyond payday's `id`, `tenant`, `alias`, and `date_*`:
 
 ```text
 Tenant           capacity_share (overlay on payday's Tenant, §21.4)
-Site             name, description
+Site             name, description, relay_selector (labels, §39.2)
 SiteMember       site, and one of holder | reader
 Set              site, epoch, set_spread, retention (expire, delete), checksum,
                  max_bitrate_total (optional cap, §12.6), auto_raise (§38.5),
@@ -133,7 +136,7 @@ Source           set, ordinal (assigned by Add, immutable), zone,
                  derived, §12.6), seconds at the cap and episodes (§38.5)
 Producer         set, site (copied from the set), hardware_id, hostname,
                  state (pending | adopted | erased), certificate serial,
-                 date_adopted, date_seen
+                 date_adopted, date_seen, relay (assigned, §39.2)
 Reader           hardware_id, hostname, state, certificate serial,
                  date_adopted, date_seen; sites through SiteMember
 Object           source, set, sink, object_key, date_started, date_ended, size,
@@ -143,6 +146,9 @@ Attempt          object, sink, node, state, failure_reason
 Node             alias, hardware_id, hostname, state, reported interfaces and
                  IPs, certificate serial, last heartbeat, known key IDs,
                  CA bundle hash
+Relay            alias, labels, hardware_id, hostname, state, reported
+                 interfaces and IPs, certificate serial, last heartbeat,
+                 attached producers, active sources, viewers, egress (§39)
 Device           node, hardware ID, slot, health, SMART summary, failure score,
                  quarantine (state, date, reason, history)
 Sink             node, device, path, capacity, free, pressure, capabilities,
@@ -158,9 +164,18 @@ UploadPolicy     version, bounds and defaults of every negotiated value, active
 ```proto
 service SetService {
   // Proposed upload profile in, agreed profile and adjustments out (§12.6).
+  // The answer also carries the producer's relay assignment (§39.2).
   rpc Negotiate(SetNegotiateRequest) returns (SetNegotiateResponse);
   // Allocations for every member of the set, up to a horizon (§12.1).
   rpc Allocate(SetAllocateRequest) returns (SetAllocateResponse);
+  // Live viewing: per member, the relay's endpoints, a view token, and the
+  // WHEP URL (§39.4).
+  rpc Live(SetLiveRequest) returns (SetLiveResponse);
+}
+
+service SourceService {
+  // The same for one source.
+  rpc Live(SourceLiveRequest) returns (SourceLiveResponse);
 }
 
 service ObjectService {
@@ -192,8 +207,12 @@ service ProducerService {
   rpc Adopt(ProducerAdoptRequest) returns (Producer);
   // Called over mTLS before the certificate expires (§33.5).
   rpc RenewCertificate(ProducerRenewCertificateRequest) returns (ProducerRenewCertificateResponse);
-  // Input state per source and host load, every producer_heartbeat_interval (§38.6).
+  // Input state per source and host load, every producer_heartbeat_interval
+  // (§38.6). The answer carries the current relay assignment (§39.2).
   rpc Heartbeat(ProducerHeartbeatRequest) returns (ProducerHeartbeatResponse);
+  // The current relay assignment and a fresh publish token, on demand:
+  // called the moment the producer's relay stream breaks (§39.2).
+  rpc Relay(ProducerRelayRequest) returns (ProducerRelayResponse);
 }
 
 service ReaderService {
@@ -243,6 +262,16 @@ service SinkService {
   rpc ProposeGc(SinkProposeGcRequest) returns (SinkProposeGcResponse);   // §21.2
   rpc Adopt(SinkAdoptRequest) returns (Sink);                            // attach a moved sink (§28.3)
   rpc Retire(SinkRetireRequest) returns (Sink);
+}
+
+service RelayService {
+  rpc Join(RelayJoinRequest) returns (RelayJoinResponse);                // as NodeService.Join (§33.4)
+  rpc Adopt(RelayAdoptRequest) returns (Relay);
+  rpc RenewCertificate(RelayRenewCertificateRequest) returns (RelayRenewCertificateResponse);
+  // Attached producers, active sources, viewers, egress, load (§39.2).
+  rpc Heartbeat(RelayHeartbeatRequest) returns (RelayHeartbeatResponse);
+  // An operator moves a producer to a relay; the assignment stays sticky.
+  rpc Assign(RelayAssignRequest) returns (Relay);
 }
 
 service DeviceService {
@@ -344,3 +373,36 @@ Every call is idempotent, and every directive is **derived from state the
 CP already holds**, so nothing is lost when a node is unreachable: the CP
 re-sends until the node acknowledges
 ([§34.9](11-deployment.md#349-events-and-directives)).
+
+### 35.8 Relay: ingest and WHEP
+
+A relay serves two things and nothing else ([§39](16-relay.md#39-relay)).
+
+**Ingest**, one bidirectional gRPC stream per producer, dialed by the
+producer:
+
+```proto
+service RelayIngest {
+  rpc Attach(stream AttachRequest) returns (stream AttachResponse);
+}
+// AttachRequest:  Hello {publish_token} once, then Data {source, bytes}
+//                 for every source the relay has started
+// AttachResponse: Start {source} | Stop {source}
+```
+
+The publish token names the relay and the producer's sources
+([§33.2](10-security.md#332-access-tokens)); the relay starts and stops
+sources as viewers come and go ([§39.3](16-relay.md#393-from-the-producer)).
+
+**WHEP**, over HTTPS, for viewers:
+
+```text
+POST   /whep/{source_id}       Content-Type: application/sdp, body: offer
+                               Authorization: Shale <view token>
+       → 201  Location: /whep/{session}   body: SDP answer
+DELETE /whep/{session}         end the session
+```
+
+ICE servers are announced in the answer's candidates and, when configured,
+as `Link` headers per the WHEP draft. There are no other endpoints besides
+health and metrics.

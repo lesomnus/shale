@@ -93,6 +93,13 @@ deployment runs well on them, and changes them only for a reason.
 | Hosts | CP certificate lifetime | 1 year, renewed by the CP | — | cluster | [§33.5](10-security.md#335-tls) |
 | Hosts | CA lifetime | 10 years, rollover starts 1 year before | — | cluster | [§33.5](10-security.md#335-tls) |
 | Security | `read_token_ttl` | 1 h | — | cluster | [§33.2](10-security.md#332-access-tokens) |
+| Live | `view_token_ttl` | 1 h | — | cluster | [§39.4](16-relay.md#394-viewers) |
+| Live | `publish_token_ttl` | 24 h | — | cluster | [§39.3](16-relay.md#393-from-the-producer) |
+| Live | `relay_idle_stop` | 10 s after the last viewer leaves | — | relay | [§39.3](16-relay.md#393-from-the-producer) |
+| Live | `max_viewers` per relay | 500 | — | relay | [§39.4](16-relay.md#394-viewers) |
+| Live | `viewers_per_actor` | 16 | — | relay | [§39.4](16-relay.md#394-viewers) |
+| Live | `ice` (STUN / TURN servers) | none (host candidates only) | — | relay | [§39.4](16-relay.md#394-viewers) |
+| Live | `relay_selector` | none (any relay) | labels | site | [§39.2](16-relay.md#392-assignment) |
 | Security | `rpc_rate` | 20 calls/s per actor, burst 100; 2,000/s per tenant | — | cluster | [§35.1](12-api.md#351-conventions) |
 | Security | `timeline_page` | 1,000 objects | — | cluster | [§17.1](05-read-path.md#171-flow) |
 
@@ -109,10 +116,13 @@ out:
 
 - **Zone-aware placement** is not planned. The scheduler interface leaves room
   for it ([§11.2](03-placement.md#112-scheduler-interface)).
-- **Serving live video** is not Shale's job
-  ([§1](01-overview.md#1-what-shale-is-for)).
+- **Live video through storage.** Live viewing is the Relay's job and never
+  touches a Storage Node ([§39](16-relay.md#39-relay)). Not in the relay's
+  first version: relay-to-relay cascades, sub-streams, multi-track sessions,
+  and playing recordings through the relay ([§39.5](16-relay.md#395-capacity)).
 - **Encoding inside Shale's binary.** The producer supervises capture
   processes and never touches a frame ([§38.3](15-producer.md#383-managed-capture)).
+  The relay transcodes audio to Opus and nothing else ([§39.1](16-relay.md#391-what-it-is)).
 
 ### 36.3 Rejected alternatives
 
@@ -148,3 +158,14 @@ responses would keep the Control Plane from ever dialing a node, but every
 CP-initiated action would then wait for the next heartbeat and need its own
 acknowledgement bookkeeping. Nodes are directly reachable by design, so the
 Control Plane calls them ([§35.7](12-api.md#357-storage-node-control-api)).
+
+**WebRTC on the producer.** Publishing from the producer over WebRTC (WHIP)
+or serving viewers from it would put ICE, DTLS, and RTP on a small machine
+and let viewers load its uplink. The producer sends plain MPEG-TS over one
+stream to its relay, only while someone watches, and WebRTC exists only
+between the relay and the viewer ([§39.3](16-relay.md#393-from-the-producer)).
+
+**An external live server.** A ready-made media server could serve WebRTC,
+but it cannot tell the producer to start and stop sending, and it would
+need its own gateway to Shale's tokens and sites. The relay reuses both
+and adds one thing, on-demand ingest ([§39](16-relay.md#39-relay)).

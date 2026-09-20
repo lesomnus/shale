@@ -12,7 +12,8 @@ shale serve cluster               Control Plane, cluster API    (Storage Nodes, 
 shale serve storage  --cp <url>   Storage Node
 shale serve producer --cp <url>   Producer: records the cameras of one set and uploads them
 shale serve reader   --cp <url>   Reader agent beside a media server (§33.4)
-shale serve all [--dev <dir>]     control, cluster, and one Storage Node in one process
+shale serve relay    --cp <url>   Relay: live streams to viewers over WebRTC (§39)
+shale serve all [--dev <dir>]     control, cluster, one Storage Node, and one Relay in one process
 ```
 
 - `control` and `cluster` are **separate entry points**, not one server with a
@@ -78,6 +79,7 @@ data, so the "no SSD in the data path" rule
 | Storage Node | each sink path | object data, sink label |
 | Producer | `/var/lib/shale/producer` | host key and certificate, CA bundle. Segments are held in RAM only ([§16](04-write-path.md#16-producer-backpressure)) |
 | Reader | `/var/lib/shale/reader` | host key and certificate, CA bundle |
+| Relay | `/var/lib/shale/relay` | host key and certificate, CA bundle, cached key set. No stream state: everything it carries is in RAM ([§39](16-relay.md#39-relay)) |
 
 A host that loses its state directory has lost its key. It joins again on its
 next start and is recognized by its hardware identity
@@ -92,6 +94,7 @@ next start and is recognized by its hardware identity
 | Storage Node | DaemonSet on nodes labeled for storage | `shale-storage.service` | same process | container per host |
 | Producer | — (an edge host) | `shale-producer.service` on the gateway | `shale-producer.service` | container on the gateway |
 | Reader | `shale-reader` sidecar or host service beside the media server | `shale-reader.service` | same host | sidecar container |
+| Relay | Deployment with hostNetwork or a LoadBalancer with UDP, one per site | `shale-relay.service` | same process | container, `--network host` |
 | DB | PostgreSQL | PostgreSQL | SQLite | PostgreSQL or SQLite |
 | Sinks | hostPath | mount points | mount points or directories | bind mounts |
 | Node network | **hostNetwork** | host | host | `--network host` |
@@ -127,15 +130,23 @@ next start and is recognized by its hardware identity
     directory is a hostPath, so it keeps its key and identity across pod
     restarts, and its hardware identity across reinstalls
     ([§33.4](10-security.md#334-joining-and-adoption)).
+- **Relays** need to be reachable by producers and viewers directly, with
+  UDP for ICE: hostNetwork on a labeled node, or a Service of type
+  LoadBalancer that carries UDP. Viewers outside the cluster network need
+  a public address or a TURN server (`ice`,
+  [§36.1](13-configuration.md#361-configuration-reference)). A relay is
+  stateless, so replicas are simply more relays for the CP to assign.
 - **Upgrades** roll one Storage Node at a time. While a node is down, its
   objects are UNAVAILABLE and placement skips it through missed heartbeats.
   No data moves, so no disruption budget beyond "one at a time" is needed.
+  A relay restart drops its sessions for a few seconds and nothing else.
 
 ### 34.6 Ubuntu with systemd
 
-- Packages install `/usr/bin/shale` and five units: `shale-control.service`,
+- Packages install `/usr/bin/shale` and six units: `shale-control.service`,
   `shale-cluster.service`, `shale-storage.service`, `shale-producer.service`,
-  and `shale-reader.service`. Enable the ones a machine plays.
+  `shale-reader.service`, and `shale-relay.service`. Enable the ones a
+  machine plays.
 - Configuration lives in `/etc/shale/shale.yaml` and state in `/var/lib/shale`.
 - Bind the cluster API to an internal interface only.
 - Services run as a dedicated `shale` user that owns the sink directories.
@@ -144,8 +155,8 @@ next start and is recognized by its hardware identity
 
 ### 34.7 Single machine
 
-`shale serve all` runs the tenant API, the cluster API, and one Storage Node in
-one process, with SQLite and an in-memory watch broker.
+`shale serve all` runs the tenant API, the cluster API, one Storage Node, and
+one Relay in one process, with SQLite and an in-memory watch broker.
 
 - `shale init` creates one tenant. A single organization never has to think
   about tenants: slugs omit them, and every producer, reader, and person
@@ -260,10 +271,12 @@ Token      stays address-free: aud = node_id, never a host name (§33.2)
 ```
 
 The CP runs the active resolver whenever it hands out an endpoint: in
-allocations, reallocations, and read tokens. Nothing else in the system
-depends on how nodes are addressed. Placement, tokens, and the index all
-speak `node_id`. The CP itself dials a node's control API on the
-cluster-facing IP the node reported, and never through the resolver.
+allocations, reallocations, read tokens, and the relay endpoints of
+`Live` and of a producer's assignment ([§39](16-relay.md#39-relay)).
+Nothing else in the system depends on how hosts are addressed. Placement,
+tokens, and the index all speak host IDs. The CP itself dials a node's
+control API on the cluster-facing IP the node reported, and never through
+the resolver.
 
 **Resolvers.** The resolver and its parameters form an `AddressPolicy`, a
 global, versioned entity that operators activate through the cluster API

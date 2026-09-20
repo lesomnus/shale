@@ -5,15 +5,22 @@
 | Term | Meaning |
 |---|---|
 | **Shale** | The storage system |
-| **Control Plane (CP)** | Placement, metadata index, tokens, retention, health, adoption; calls nodes through their control API |
+| **Control Plane (CP)** | Placement, metadata index, tokens, retention, health, adoption, relay assignment; calls nodes through their control API |
 | **Storage Node** | Host that stores and serves objects |
+| **Relay** | Host that takes a producer's live streams on demand and fans them out to viewers over WebRTC; stateless, never touches storage |
+| **Viewer** | Whoever watches live through a relay: a person in a browser, or a Reader host such as a monitoring wall |
+| **Relay Assignment** | The relay a producer sends live streams to, chosen by the CP by site labels and load, sticky until the relay is down |
+| **Publish Token** | Access token with `op = publish`: lets a producer attach to one relay and feed its sources |
+| **View Token** | Access token with `op = view`: lets a viewer watch one source on one relay for an hour |
+| **WHEP** | WebRTC HTTP egress protocol: the viewer posts an SDP offer to the relay and gets the answer |
+| **GOP Cache** | The relay's copy of the current group of pictures per source, so a joining viewer starts at once |
 | **Producer** | Host that receives a set's streams, cuts them into segments, and uploads them; owns a segment until commit |
 | **Capture Process** | A process the producer runs per managed source, whose standard output is the source's MPEG-TS stream; ffmpeg by default |
 | **Managed Capture** | The producer spawning, configuring, and supervising capture processes from its own configuration |
 | **Early Cut** | Closing a segment at the next keyframe once it has produced `max_bitrate` × duration bytes ahead of its phase; the sign of a ceiling set too low |
 | **Episode** | 3 to 60 consecutive seconds with a source at its ceiling; counted by the producer to tell starvation from noise |
 | **Reader** | Host that reads objects, typically a media server; `shale serve reader` is the agent that holds its certificate |
-| **Host** | A machine running Shale as a Storage Node, a Producer, or a Reader; adopted by an operator, authenticated by a certificate |
+| **Host** | A machine running Shale as a Storage Node, a Relay, a Producer, or a Reader; adopted by an operator, authenticated by a certificate |
 | **Hardware Identity** | DMI product UUID or device-tree serial number; how a host finds its row again after a reinstall |
 | **Adoption** | An operator accepting a pending host (or a moved sink), after which the CP issues its certificate |
 | **Pending Host** | A host that has joined and is waiting to be adopted |
@@ -91,7 +98,7 @@
 | **Re-homing** | Moving a device (HDD) to another node without copying data; the sink is adopted by the new node |
 | **Failure Domain** | Unit that fails together (device, node, chassis) |
 | **Blast Radius** | Set of sources and time spans affected by a failure |
-| **Access Token** | CP-signed (Ed25519) grant for one operation on one object at one node; carries the actor; a presigned URL carries it |
+| **Access Token** | CP-signed (Ed25519) grant for one operation at one host: put or get on one object at a node, publish or view on a relay; carries the actor; a presigned URL carries it |
 | **Key Set** | The CP's public signing keys (`SigningKey` rows), watched and cached by nodes |
 | **KEK** | Key-encryption key that wraps the private signing keys stored in the DB |
 | **Principal** | An authenticated identity: a person, a host, or the CP |
@@ -99,7 +106,7 @@
 | **Wall** | payday's tenant boundary: a caller sees and changes only its own tenant's rows |
 | **Tenant API** | gRPC surface for producers, readers, and tenant admins, behind the wall (`shale serve control`) |
 | **Cluster API** | internal gRPC surface for Storage Nodes and cluster operators, spanning tenants (`shale serve cluster`) |
-| **Global Entity** | An entity outside the wall, owned by the cluster: Node, Device, Sink, SigningKey, PlacementPolicy, UploadPolicy, AddressPolicy |
+| **Global Entity** | An entity outside the wall, owned by the cluster: Node, Relay, Device, Sink, SigningKey, PlacementPolicy, UploadPolicy, AddressPolicy |
 | **Upload Profile** | The upload parameters agreed for a set and its sources: `max_bitrate` and segment duration per source; mode, timeouts, horizon per set |
 | **Upload Policy** | Cluster-wide bounds and defaults for negotiated upload profiles |
 | **Max Bitrate** | The declared ceiling of all streams in a source's segments; the basis for every limit |

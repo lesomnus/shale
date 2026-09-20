@@ -268,11 +268,34 @@ comes from it ([§35.3](12-api.md#353-entities), [§31](09-operations.md#31-obse
 A producer whose heartbeats have been missing for `producer_down_after`
 (90 s, three heartbeats) is shown as down, and so are all of its sources.
 
-### 38.7 What the producer does not do
+### 38.7 Live output
+
+The producer never serves viewers. It keeps one gRPC stream to the relay
+the CP assigned it ([§39.2](16-relay.md#392-assignment)), and:
+
+- attaches with the publish token from its `Negotiate` or heartbeat answer,
+  and asks `ProducerService.Relay` for a fresh assignment the moment the
+  stream breaks;
+- on `Start {source}`, tees that source's TS stream
+  ([§38.1](#381-inputs)) into the relay stream, beginning at the next
+  keyframe, and stops on `Stop {source}`. The bytes are the ones it stores;
+  nothing is encoded twice;
+- counts the cameras usually watched into its uplink budget
+  ([§38.5](#385-choosing-the-ceiling)), since each watched camera costs its
+  bitrate once more.
+
+A camera meant to be watched live records H.264 Main or High profile, which
+browsers play without transcoding. Audio may be recorded as Opus
+(`audio: {codec: opus}`) to spare the relay a transcode; AAC works too, and
+the relay converts it ([§39.3](16-relay.md#393-from-the-producer)).
+
+### 38.8 What the producer does not do
 
 - Decode, encode, or look inside a frame. The capture process does that.
-- Serve live video. That is the camera's or a media server's job
-  ([§1](01-overview.md#1-what-shale-is-for)).
+- Serve viewers. Live viewing goes through the relay
+  ([§38.7](#387-live-output)), never through the producer's own uplink to
+  each viewer.
 - Control cameras: no PTZ, no exposure, no motion detection. A system that
   needs them sits beside the producer and reads recordings through the
-  `Timeline` ([§17](05-read-path.md#17-read-path)).
+  `Timeline` ([§17](05-read-path.md#17-read-path)) or watches live through
+  the relay.

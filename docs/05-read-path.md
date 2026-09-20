@@ -14,7 +14,9 @@
 ```
 
 A time-range query returns explicit **gaps** for any part of the range that has
-no available object ([§19](#19-reader-semantics)). It is paged like every
+no available object ([§19](#19-reader-semantics)). This is the path for
+recordings. A camera *now* is watched through the relay instead
+([§39](16-relay.md#39-relay)). It is paged like every
 `List` ([§35.1](12-api.md#351-conventions)): at most `timeline_page` objects
 (default 1,000) per answer, each with its own read token, so a query over a
 month of a large set is many small answers rather than one of tens of

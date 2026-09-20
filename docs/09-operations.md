@@ -4,7 +4,9 @@
 
 Nodes send heartbeats every `heartbeat_interval` (5 s). A node whose
 heartbeats are missing for `node_down_after` (30 s) is **down**: its sinks are
-skipped by placement and its objects read as UNAVAILABLE.
+skipped by placement and its objects read as UNAVAILABLE. Relays heartbeat
+on the same schedule; a relay that is down has its producers reassigned
+([§39.2](16-relay.md#392-assignment)).
 
 ```text
 node_id, certificate serial, CA bundle hash, key IDs held
@@ -241,8 +243,14 @@ producer (from its heartbeat, §38.6)
   keyframe interval, capture restarts, early cuts
   host CPU, temperature, uplink usage
 
+relay (§39)
+  attached producers, active sources, viewers, egress
+  sessions started / refused (limits, bad tokens), start-to-first-frame time
+  audio transcodes, CPU
+
 control plane
   hosts pending adoption, certificates due for renewal
+  producers per relay, reassignments
   directives pending per node, reconciliation lag per sink
   objects in DELETING, rows pruned
   watch streams, broker reconnects
@@ -268,10 +276,13 @@ shale serve cluster                      # cluster API
 shale serve storage  --cp <url>          # Storage Node; joins on first run
 shale serve producer --cp <url>          # Producer; joins on first run
 shale serve reader   --cp <url>          # Reader agent; joins on first run
+shale serve relay    --cp <url>          # Relay; joins on first run
 shale serve all [--dev <dir>]            # everything in one process
 
 # hosts (§33.4)
 shale node ls [--pending]|get|adopt|erase|watch
+shale relay ls [--pending]|get|adopt|patch|erase|watch    # patch: labels
+shale relay assign <producer> <relay>                       # move a producer (§39.2)
 shale producer ls [--pending]|get|adopt --set <set>|erase|watch      # tenant API
 shale reader ls [--pending]|get|adopt [--site <site>]...|erase|watch # tenant API
 

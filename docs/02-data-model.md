@@ -29,8 +29,11 @@ producers use it to stagger segment boundaries ([§12.2](04-write-path.md#122-re
 A **Producer** is the host that receives a set's streams, cuts them into
 segments, and uploads them: one machine, one certificate, one set
 ([§5](01-overview.md#5-components), [§33.4](10-security.md#334-joining-and-adoption)).
-A **Reader** is a host that queries and reads objects, typically a media
-server. Both are rows of their tenant, adopted by an operator
+It is also assigned a **Relay**, the host that shows its cameras live to
+viewers ([§39.2](16-relay.md#392-assignment)). A **Reader** is a host that
+queries and reads objects, typically a media server, and may watch live
+too. Producers and readers are rows of their tenant, adopted by an
+operator; relays are cluster infrastructure like nodes
 ([§35.3](12-api.md#353-entities)).
 
 A **Site** groups sets within a tenant, e.g. a building or a branch. It is
@@ -38,8 +41,10 @@ payday's second permission axis (field 3): a person or a reader can be
 limited to the sites it is a member of, so a guard at one building cannot
 read another's cameras ([§33.1](10-security.md#331-trust-model)). A set
 belongs to at most one site, fixed when the set is added. Its sources,
-objects, attempts, and producer carry the same site. A tenant that does not
-use sites leaves the field empty and sees no difference.
+objects, attempts, and producer carry the same site. A site may also name,
+by labels, which relays its producers should use
+([§39.2](16-relay.md#392-assignment)). A tenant that does not use sites
+leaves the field empty and sees no difference.
 
 A **Zone** is an optional label, assigned by people, for Sources whose fields
 of view overlap. A zone may cross sets. It describes redundancy between angles,

@@ -16,6 +16,7 @@ holds a credential.
 | **Reader** | host, tenant entity | tenant API | host certificate (mTLS) | query and read objects of its sites |
 | **Tenant admin** | person (Holder) | tenant API | payday sign-in | manage its tenant's sites, sets, sources, producers, readers, and retention dates |
 | **Storage Node** | host, global entity | cluster API | host certificate (mTLS) | report its own devices and sinks; push events; propose GC |
+| **Relay** | host, global entity | cluster API | host certificate (mTLS) | report its load; serve producers and viewers that carry tokens ([§39](16-relay.md#39-relay)) |
 | **Cluster operator** | person (Holder) | cluster API | payday sign-in | adopt nodes; manage tenants, sinks, keys, policies |
 | **Control Plane** | — | everyone | CP certificate, signing key | placement, authorization, metadata; calls nodes ([§35.7](12-api.md#357-storage-node-control-api)) |
 
@@ -39,26 +40,31 @@ holds a credential.
   credentials. The `shale` CLI signs in the same way (`shale login`) and keeps
   a session; automation uses a Holder API token. Cluster operators are Holders
   whose tenant the cluster API's policy lets see every tenant.
-- **Storage Nodes know nothing about tenants or people.** On the data plane
-  they trust one thing: a valid CP signature on each request. On their control
-  API they trust one peer: the Control Plane.
+- **Storage Nodes and Relays know nothing about tenants or people.** On
+  their data planes they trust one thing: a valid CP signature on each
+  request or stream. On its control API a node trusts one peer: the Control
+  Plane.
+- **Viewers** of live video are people in a browser or Reader hosts. Both
+  get a view token from the tenant API and present it to a relay; the relay
+  cannot tell them apart and need not ([§39.4](16-relay.md#394-viewers)).
 - Adopted hosts are trusted to behave. Networks are not: a producer may sit
   behind a WAN or wireless link, so TLS is on everywhere by default
   ([§33.5](#335-tls)).
 
 ### 33.2 Access tokens
 
-Every data-plane request a Storage Node accepts carries an **access token**
-signed by the CP. The node follows a single rule: no valid CP signature, no
-service.
+Every data-plane request a Storage Node accepts, and every stream or
+session a Relay accepts, carries an **access token** signed by the CP. The
+host follows a single rule: no valid CP signature, no service.
 
 The signature is **Ed25519** over a compact set of claims:
 
 ```text
 kid          signing key ID
 exp          expiry
-aud          node_id              (a token for node A is useless on node B)
+aud          node_id or relay_id  (a token for host A is useless on host B)
 op           put | get            (either also allows HEAD on the key)
+             publish | view       (relay: §39)
 sink_id
 object_key
 attempt_id   (put)
@@ -67,7 +73,10 @@ record       (put: the object's initial xattr record, §23.1; the node writes
 max_length   (put: upper bound on the upload's size, from the agreed profile)
 mode, idle_timeout, abandon_timeout
              (put: the agreed upload profile, §12.6; enforced within node caps)
-actor        the Producer or Reader the token was issued to, and its tenant
+sources      (publish: the source IDs this producer may feed)
+source       (view: the one source this viewer may watch)
+actor        the Producer, Reader, or person the token was issued to, and
+             its tenant
 ```
 
 - Carried in `Authorization: Shale <token>`, or in a `token=` query parameter
@@ -80,15 +89,19 @@ actor        the Producer or Reader the token was issued to, and its tenant
   either), `sink_id`/`object_key` match the path, and the upload does not
   exceed `max_length`. Ed25519 verification costs ~50 µs, which is negligible
   at hundreds of requests per second.
-- **Issued by the tenant API**, inside the wall: `Allocate` issues put tokens
-  and `Timeline` issues get tokens, and only for the caller's own tenant's
-  objects. The wall therefore extends to the data plane without the node
-  knowing tenants exist.
+- **Issued by the tenant API**, inside the wall: `Allocate` issues put
+  tokens, `Timeline` issues get tokens, `Live` issues view tokens, and
+  `Negotiate`, the producer heartbeat, and `ProducerService.Relay` issue
+  publish tokens, all only for the caller's own tenant's sources and
+  objects. The wall therefore extends to the data plane without a node or a
+  relay knowing tenants exist.
 - **Lifetime**: put tokens live as long as their allocation
   (`allocation_ttl`, [§12.1](04-write-path.md#121-flow)), and
   `ObjectService.Renew` issues a fresh one for an attempt still in progress.
-  Get tokens live `read_token_ttl` (default 1 hour). A reader asks again for
-  longer sessions.
+  Get tokens live `read_token_ttl` (default 1 hour) and view tokens
+  `view_token_ttl` (1 hour); a session already open outlives its token. A
+  publish token lives `publish_token_ttl` (24 hours) and is checked when the
+  producer attaches ([§39.3](16-relay.md#393-from-the-producer)).
 - **Replay** gains nothing. A put token names one key and one attempt, uploads
   are idempotent ([§12.5](04-write-path.md#125-idempotent-uploads)), and a
   complete object cannot be overwritten.
@@ -250,13 +263,18 @@ fetches objects directly. The media server itself manages no keys.
 | Producer / Reader → Storage Node | HTTP/1.1, HTTP/2, or HTTP/3 over TLS | CP-signed access token |
 | Storage Node → cluster API | gRPC over mTLS | node certificate |
 | Control Plane → Storage Node | gRPC over mTLS (control API, [§35.7](12-api.md#357-storage-node-control-api)) | CP certificate |
-| Node → Node | none; nodes never talk to each other | — |
+| Producer → Relay | gRPC over TLS (ingest, [§35.8](12-api.md#358-relay-ingest-and-whep)) | CP-signed publish token |
+| Viewer → Relay | HTTPS (WHEP) and WebRTC (DTLS-SRTP) | CP-signed view token |
+| Relay → cluster API | gRPC over mTLS | relay certificate |
+| Node → Node, Relay → Relay, Relay → Node | none | — |
 
 ### 33.7 What a compromise costs
 
 | Leaked | Attacker can | Response |
 |---|---|---|
-| One access token | one operation on one object until it expires | none needed |
+| One access token | one operation on one object until it expires; a view token, one camera for an hour | none needed |
+| A publish token | feed false video for that producer's cameras to viewers, for up to a day | erase the producer; the relay refuses it at its next attach |
+| A relay's key | serve any stream it carries to anyone, and feed viewers anything; it holds no token for any Storage Node, so recordings are out of reach | erase the relay and adopt the machine again; its producers are reassigned |
 | A producer's key | negotiate and allocate for that producer's set, and write objects into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
 | A reader's key | read the objects of its sites | erase the reader; effective at once for new tokens, within `read_token_ttl` for issued ones |
 | A person's session | anything that person may do, inside **their tenant only**; the wall holds | end the session, reset the password |
