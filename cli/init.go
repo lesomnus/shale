@@ -42,11 +42,18 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "admin", Brief: "the alias of the first tenant admin"},
 			&flg.String{Name: "operator", Brief: "the alias of the first cluster operator"},
 			&flg.String{Name: "dev", Brief: "development mode: everything under this directory"},
+			&flg.Switch{Name: "if-needed", Brief: "do nothing when already initialized, instead of refusing"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, next xli.Next) error {
 			if v, ok := flg.Find[string](self, "dev"); ok && v != "" {
 				ApplyDev(c, v)
+			}
+			if v, ok := flg.Find[bool](self, "if-needed"); ok && v {
+				if _, err := os.Stat(filepath.Join(c.StateDir("control"), "kek")); err == nil {
+					self.Printf("already initialized: %s\n", c.StateDir("control"))
+					return nil
+				}
 			}
 
 			return Init(ctx, c, flagOr(self, "tenant", "acme"), flagOr(self, "admin", "admin"), flagOr(self, "operator", "ops"), self)

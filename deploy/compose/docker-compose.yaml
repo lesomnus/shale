@@ -1,0 +1,93 @@
+# A single machine (§34.7) as containers: PostgreSQL and `shale serve all`,
+# which runs the tenant API, the cluster API, one Storage Node, and one
+# Relay in one process. The state directory is a volume; the sink is a
+# volume by default and a bind mount of a whole HDD with
+# `SHALE_SINK=/mnt/hdd01` (§34.8).
+#
+#   docker compose up -d
+#   docker compose logs init          # the first operator and admin
+#
+# `shale init` runs once, on first start. The configuration is inline below
+# (`configs:`), so nothing has to be copied next to this file.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: shale
+      POSTGRES_PASSWORD: ${SHALE_DB_PASSWORD:-shale}
+      POSTGRES_DB: shale
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shale -d shale"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  init:
+    image: ${SHALE_IMAGE:-ghcr.io/lesomnus/shale:latest}
+    command: ["--config", "/etc/shale/shale.yaml", "init", "--if-needed", "--tenant", "${SHALE_TENANT:-acme}"]
+    environment:
+      SHALE_DB_DSN: postgres://shale:${SHALE_DB_PASSWORD:-shale}@postgres:5432/shale?sslmode=disable
+    configs:
+      - source: shale_yaml
+        target: /etc/shale/shale.yaml
+    volumes:
+      - state:/var/lib/shale
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  shale:
+    image: ${SHALE_IMAGE:-ghcr.io/lesomnus/shale:latest}
+    command: ["--config", "/etc/shale/shale.yaml", "serve", "all"]
+    environment:
+      SHALE_DB_DSN: postgres://shale:${SHALE_DB_PASSWORD:-shale}@postgres:5432/shale?sslmode=disable
+      # What producers are told to dial for uploads: the host's address,
+      # since 7410 is published there.
+      SHALE_STORAGE_ADVERTISE: ${SHALE_ADVERTISE:-}
+      SINK_CAPACITY: ${SHALE_SINK_CAPACITY:-100GiB}
+    configs:
+      - source: shale_yaml
+        target: /etc/shale/shale.yaml
+    volumes:
+      - state:/var/lib/shale
+      - ${SHALE_SINK:-sink}:/srv/shale/sink
+    ports:
+      - "7400:7400"   # tenant API (producers, readers, admins)
+      - "7410:7410"   # Storage Node data plane
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+configs:
+  shale_yaml:
+    content: |
+      # `shale serve all` in a container (§34.7). The database DSN comes from
+      # the environment, so the password is not written here.
+      state: /var/lib/shale
+      db:
+        driver: pgx
+        dsn: $${env:SHALE_DB_DSN}
+        migrate: true
+      watch:
+        broker: memory
+      server:
+        addr: ":7400"
+      cluster:
+        addr: "127.0.0.1:7401"
+      control:
+        auto_adopt: true
+        names: ["shale"]
+      storage:
+        addr: ":7410"
+        control_addr: "127.0.0.1:7411"
+        sinks:
+          - path: /srv/shale/sink
+            capacity: "$${env:SINK_CAPACITY:-100GiB}"
+
+volumes:
+  postgres:
+  state:
+  sink:

@@ -69,3 +69,21 @@ you know the overview and data model.
   decided values. [§36.1](docs/13-configuration.md#361-configuration-reference)
   lists every one of them with its scope and bounds, and
   [§36.2](docs/13-configuration.md#362-open-decisions) lists what is still open.
+
+## Running it
+
+The binary is `cmd/shale`; the design's commands are its subcommands (§34.1).
+A single machine for development:
+
+```sh
+go build ./cmd/shale
+./shale init --dev ./dev                       # CA, keys, first tenant and people
+./shale serve all --dev ./dev                  # both APIs, a node, plaintext
+./shale --dev ./dev --as @acme/admin set add @acme/cam-set
+```
+
+`deploy/compose/` is the same single machine as containers beside
+PostgreSQL, with TLS on. `go test ./...` runs the end-to-end harness
+(`internal/e2e`), which allocates, uploads, and reads back through
+`Timeline`. `CLAUDE.md` says how the generated code and the hand-written
+layers fit.

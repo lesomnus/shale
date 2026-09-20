@@ -126,3 +126,19 @@ app is a `Verify`, since only this app knows what checking a secret means.
 - `README.md` — the same ground at length, including upgrading payday
 - <https://github.com/lesomnus/payday/tree/main/docs> — the guides and the
   references behind them
+
+## Shale specifics
+
+- `server/core` is the hand-written layer: every custom RPC of §35.4 and
+  §35.5, plus rules on a few generated verbs (a Source's ordinal, a
+  SiteMember's one-of). `cmd/serve.go` stacks it and decides the two API
+  surfaces; `server/core/gatepolicy.go` says who may call what on each.
+- Hosts are `internal/storage` (the node), and later `internal/producer`,
+  `internal/reader`, `internal/relay`; `internal/hostagent` is what they
+  share (key, join, certificate, dialing). `internal/token` is the access
+  token; `internal/placement` the HRW scheduler; `internal/pki` the CA.
+- Development mode (`--dev <dir>`) is plaintext with the plain header; the
+  e2e harness in `internal/e2e` starts `serve all --dev` in-process.
+- The design documents in `docs/` are the specification; a `§` in a comment
+  points at them. Keep them in step when behavior changes.
+- Korean in chat, English in code and documents.

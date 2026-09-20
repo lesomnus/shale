@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: generation is in step
+        run: go tool pd gen --check .
+      - name: build
+        run: go build ./...
+      - name: vet
+        run: go vet ./...
+      - name: test
+        # The e2e harness writes a directory sink; a tmpfs keeps the xattrs
+        # it needs and the run fast.
+        run: |
+          sudo mkdir -p /mnt/shale-tmp && sudo mount -t tmpfs -o size=512m,user_xattr tmpfs /mnt/shale-tmp
+          sudo chmod 1777 /mnt/shale-tmp
+          TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 10m
