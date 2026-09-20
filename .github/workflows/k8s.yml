@@ -1,0 +1,77 @@
+# The Kubernetes deployment on a kind cluster (§34.5, #69): the manifests
+# of deploy/k8s applied as they are, with the image built here; the init
+# job makes the Secret, the storage node joins and is adopted, the CLI
+# signs in through port-forwards, and a rolling restart of the storage
+# DaemonSet leaves the sink attached.
+name: k8s
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  kind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: shale
+      - name: image
+        run: |
+          docker build -t ghcr.io/lesomnus/shale:ci .
+          kind load docker-image ghcr.io/lesomnus/shale:ci --name shale
+      - name: apply
+        run: |
+          kubectl label node --all shale.io/storage=true --overwrite
+          sed -i 's/newTag: dev/newTag: ci/' deploy/k8s/kustomization.yaml
+          kubectl apply -k deploy/k8s
+          kubectl -n shale wait --for=condition=complete job/shale-init --timeout=300s
+          kubectl -n shale rollout status deploy/shale-control --timeout=300s
+          kubectl -n shale rollout status deploy/shale-cluster --timeout=300s
+          kubectl -n shale rollout status ds/shale-storage --timeout=300s
+          kubectl -n shale get pods -o wide
+      - name: smoke
+        run: |
+          set -eu
+          go build -o shale ./cmd/shale
+          kubectl -n shale get secret shale-control -o jsonpath='{.data.ca\.crt}' | base64 -d > ca.crt
+          OPS=$(kubectl -n shale logs job/shale-init | awk '/^operator /{print $NF}')
+          ADMIN=$(kubectl -n shale logs job/shale-init | awk '/^admin /{print $NF}')
+          echo "127.0.0.1 shale-cluster.shale.svc shale-control.shale.svc" | sudo tee -a /etc/hosts >/dev/null
+          kubectl -n shale port-forward svc/shale-cluster 7401:7401 7403:7403 >/dev/null 2>&1 &
+          kubectl -n shale port-forward svc/shale-control 7400:7400 7402:7402 >/dev/null 2>&1 &
+          sleep 5
+          printf 'client:\n  ca_file: ca.crt\n' > cli.yaml
+          cli() { HOME=$PWD/home ./shale --config cli.yaml --addr https://shale-control.shale.svc:7400 --cluster-addr https://shale-cluster.shale.svc:7401 "$@"; }
+          mkdir -p home
+          cli login --cluster --password "$OPS" @cluster/ops
+          cli login --password "$ADMIN" @acme/admin
+          # The storage node joined and was adopted, its sink attached.
+          for i in $(seq 1 30); do
+            if cli sink ls -o wide | grep -q .; then break; fi; sleep 2
+          done
+          cli node ls -o table
+          cli sink ls -o wide
+          cli sink ls -o protojson | grep -q '"attachment": *"SINK_ATTACHMENT_ATTACHED"'
+          # The node-failure drill inside the cluster: the DaemonSet restarts
+          # one node at a time and the sink is attached again.
+          kubectl -n shale rollout restart ds/shale-storage
+          kubectl -n shale rollout status ds/shale-storage --timeout=300s
+          sleep 10
+          cli sink ls -o protojson | grep -q '"attachment": *"SINK_ATTACHMENT_ATTACHED"'
+          kubectl -n shale logs ds/shale-storage --tail=20
+      - name: diagnostics
+        if: failure()
+        run: |
+          kubectl -n shale get all
+          kubectl -n shale describe pods | tail -80
+          kubectl -n shale logs job/shale-init || true
+          kubectl -n shale logs deploy/shale-control --tail=50 || true
+          kubectl -n shale logs ds/shale-storage --tail=50 || true
