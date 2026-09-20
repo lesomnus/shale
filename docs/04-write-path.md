@@ -186,6 +186,22 @@ loss-tolerant principle, but the loss is real. Its requests may be any
 device's writes large; smaller ones cost the node a small write each and are
 otherwise safe.
 
+Under `written` a live segment goes as a series of requests of about a part
+each, `Upload-Complete: ?0`; the node answers each with `204` and the
+4 KiB-aligned offset it holds, and the producer frees everything below it.
+Once the segment is closed and the node has all of it, one more request,
+empty, with `Upload-Complete: ?1` and `Shale-Date-Ended`, completes the
+object. The trade-off of the table above has a second face: a segment whose
+bytes were freed **cannot move**. When its node fails after that (no answer
+past `resume_timeout`, or a refusal), the producer does not try another
+candidate or report the object lost; the segment is **cut short** at the
+node's offset, what the capture still produces for it is discarded, and the
+node, when it is back, makes an incomplete object of what it holds by the
+abandon rule ([§15](#15-partial-objects)). The producer counts these as
+`cut` beside `stored` and `lost` ([§31](09-operations.md#31-observability)).
+Segments the node never took anything of are whole and move as under
+`committed`.
+
 **Staging in parts.**
 
 - Incoming bytes fill a RAM **part buffer** (`part_size`, default 16 MB). A
@@ -653,8 +669,13 @@ Producer parameters:
 
 - upload mode: `live` or `buffered`
 - `retain`: `committed` or `written` ([§12.2](#122-resumable-part-uploads))
-- RAM buffer size (`committed`: ≥ 2 segments per camera it serves, plus
-  headroom; `written`: what is above the last written offset per camera)
+- RAM buffer size (`buffer`, 512 MiB by default): what it counts is what is
+  held, so under `committed` it must cover the fleet's segments in flight,
+  `sources × max_bitrate × segment_duration` and headroom for a segment that
+  waits; under `written` a source that is being taken holds about one part
+  (16 MB) and a tail, and only the segments no node has taken yet, an
+  outage's, are whole. A control-plane restart is some twenty seconds
+  without allocations: at 120 Mbps of intake that is 300 MB held.
 - maximum age of a buffered segment
 - retry backoff
 - max concurrent uploads

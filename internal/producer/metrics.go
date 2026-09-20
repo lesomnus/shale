@@ -30,7 +30,7 @@ func newMetrics(ctx context.Context) *metrics {
 		fps:        o.Float64Gauge("shale.producer.frame_rate", metric.WithDescription("frames per second per source")),
 		keyframe:   o.Int64Gauge("shale.producer.keyframe_interval_ms", metric.WithDescription("keyframe interval per source"), metric.WithUnit("ms")),
 		restarts:   o.Int64Gauge("shale.producer.capture_restarts", metric.WithDescription("capture restarts per source")),
-		segments:   o.Int64Counter("shale.producer.segments", metric.WithDescription("segments by outcome: stored or lost")),
+		segments:   o.Int64Counter("shale.producer.segments", metric.WithDescription("segments by outcome: stored, lost, or cut short at a node's offset (§12.2)")),
 		dropped:    o.Int64Gauge("shale.producer.live_dropped", metric.WithDescription("live batches dropped because the relay lagged")),
 		transcodes: o.Int64Gauge("shale.producer.live_transcodes", metric.WithDescription("live helpers running: watched sources whose audio is encoded as Opus")),
 	}

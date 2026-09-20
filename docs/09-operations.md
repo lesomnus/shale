@@ -220,6 +220,7 @@ ingest
   resumes per upload, idle timeouts, per-actor limit hits
   live lag (recorded time − time covered by bytes on a sink), per producer
   abandoned uploads: finalized incomplete / deleted
+  producer segments by outcome: stored, lost, cut short under `retain: written` (§12.2)
   upload duration by producer (spots slow or degrading links)
   same-target / placement retry counts, lost objects
   duplicate attempts, orphans reclaimed, objects recovered by reconciliation

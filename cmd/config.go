@@ -205,7 +205,10 @@ type ProducerConfig struct {
 	// this configuration when missing and the producer is adopted for it.
 	Set     string         `yaml:"set"`
 	Sources []SourceConfig `yaml:"sources"`
-	// Retain is `committed` (default) or `written` (§12.2).
+	// Retain is `committed` (default), the whole segment in RAM until the
+	// node's 201, or `written`, only what is above the offset the node
+	// last reported durable: less RAM, and a segment whose node dies is
+	// cut short there rather than sent elsewhere (§12.2).
 	Retain string `yaml:"retain"`
 	// Upload mode proposal: `live` or `buffered`.
 	Mode              string        `yaml:"mode"`
@@ -218,7 +221,10 @@ type ProducerConfig struct {
 	PlacementRetries  int           `yaml:"placement_retries"`
 	// Uplink is the link's capacity, e.g. "20Mbps", for the link check.
 	Uplink string `yaml:"uplink"`
-	// Buffer is the RAM budget for segments, e.g. "512MiB".
+	// Buffer is the RAM budget for segments not yet stored, e.g. "512MiB"
+	// (§16): under `committed` the fleet's segments in flight, sources ×
+	// max_bitrate × segment_duration, plus headroom; under `written` about
+	// a part per source, plus whatever an outage makes wait whole.
 	Buffer            string        `yaml:"buffer"`
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	// Ffmpeg is the capture binary; `ffmpeg` on PATH by default.

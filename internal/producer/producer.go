@@ -66,11 +66,18 @@ type Config struct {
 }
 
 // Stats is what the producer counted since it started, for tests and
-// diagnostics: segments stored and lost, live batches dropped (§16, §39.6).
+// diagnostics: segments stored, lost, and cut short at a node's offset
+// under `retain: written`; live batches dropped (§16, §12.2, §39.6).
 type Stats struct {
 	Stored      int64
 	Lost        int64
+	Cut         int64
 	LiveDropped int64
+	// Held is the bytes of unstored segments in RAM, what the budget
+	// counts (§16); Released the bytes of those segments a node reported
+	// durable and `retain: written` let go (§12.2).
+	Held     int64
+	Released int64
 }
 
 // Stats sums the counters over every source.
@@ -80,6 +87,11 @@ func (p *Producer) Stats() Stats {
 		s.mu.Lock()
 		st.Stored += s.stored
 		st.Lost += s.lost
+		st.Cut += s.cut
+		for _, seg := range s.pending {
+			st.Held += seg.Held()
+			st.Released += seg.Released()
+		}
 		s.mu.Unlock()
 	}
 	p.relay.mu.Lock()
@@ -111,10 +123,22 @@ func (c *Config) defaults() {
 	if c.Mode == api.UploadMode_UPLOAD_MODE_UNSPECIFIED {
 		c.Mode = api.UploadMode_UPLOAD_MODE_LIVE
 	}
+	if c.Retain == "" {
+		c.Retain = RetainCommitted
+	}
 	if c.Log == nil {
 		c.Log = slog.Default()
 	}
 }
+
+// The `retain` policies (§12.2): what of a live segment stays in RAM.
+const (
+	// RetainCommitted keeps the whole segment until the node's 201.
+	RetainCommitted = "committed"
+	// RetainWritten keeps what is above the offset the node last reported
+	// durable; the segment can then end early, but never move (§12.2).
+	RetainWritten = "written"
+)
 
 // Producer is one producer process.
 type Producer struct {
@@ -174,6 +198,7 @@ type source struct {
 	dropped    int64
 	lost       int64
 	stored     int64
+	cut        int64
 	lastReport time.Time
 	raise      bool
 }
@@ -183,6 +208,9 @@ func New(cfg Config) (*Producer, error) {
 	cfg.defaults()
 	if len(cfg.Sources) == 0 {
 		return nil, errors.New("no sources configured")
+	}
+	if cfg.Retain != RetainCommitted && cfg.Retain != RetainWritten {
+		return nil, fmt.Errorf("retain: %q is neither %s nor %s", cfg.Retain, RetainCommitted, RetainWritten)
 	}
 	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, Ready: make(chan struct{})}
 	p.relay = newRelayLink(p)
@@ -239,7 +267,7 @@ func (p *Producer) Run(ctx context.Context) error {
 		return err
 	}
 
-	p.uploader = &Uploader{Cfg: p.cfg.Upload, Objects: api.NewObjectServiceClient(conn), Log: p.log, Mode: p.cfg.Mode}
+	p.uploader = &Uploader{Cfg: p.cfg.Upload, Objects: api.NewObjectServiceClient(conn), Log: p.log, Mode: p.cfg.Mode, Written: p.cfg.Retain == RetainWritten}
 	if p.uploader.Cfg.Client == nil {
 		// The data planes speak TLS from the same CA the producer pinned.
 		hc, err := p.agent.HTTPClient()
@@ -675,6 +703,21 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 		if ctx.Err() != nil {
 			return nil
 		}
+		if res.Cut {
+			// The segment ends where its node has it (§12.2): off the
+			// queue and counted, but not reported lost, since the node
+			// makes an incomplete object of what it holds (§15). What
+			// the capture still writes into it goes nowhere.
+			seg.Discard()
+			s.mu.Lock()
+			s.finish(seg)
+			s.cut++
+			s.mu.Unlock()
+			backoff = 0
+			p.log.Warn("cut short", "source", s.cfg.Alias, "key", al.GetObjectKey(), "offset", seg.Released(), "err", res.Err)
+			p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "cut")))
+			continue
+		}
 		if !res.Stored {
 			// Every candidate failed: the next try asks the CP again, which
 			// answers the same object with fresh attempts wherever writes
@@ -702,6 +745,7 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 // drop gives a segment up: it leaves the queue, its object, if it has one,
 // is reported LOST (§13), and the count says so.
 func (p *Producer) drop(ctx context.Context, s *source, seg *Segment, why string) {
+	seg.Discard()
 	s.mu.Lock()
 	al := s.headAlloc
 	s.finish(seg)
@@ -767,13 +811,14 @@ func sleep(ctx context.Context, d time.Duration) bool {
 
 var errSlotStored = errors.New("the slot was already stored")
 
-// overBudget says whether retained segments exceed the RAM budget.
+// overBudget says whether retained segments exceed the RAM budget: what
+// is held, which under `retain: written` is less than their length (§16).
 func (p *Producer) overBudget() bool {
 	var total int64
 	for _, s := range p.order {
 		s.mu.Lock()
 		for _, seg := range s.pending {
-			total += seg.Len()
+			total += seg.Held()
 		}
 		s.mu.Unlock()
 	}

@@ -23,10 +23,14 @@ type Segment struct {
 	// Stopped says the camera stopped rather than the schedule cutting it.
 	Stopped bool
 
-	mu     sync.Mutex
-	cond   *sync.Cond
-	buf    []byte
-	closed bool
+	mu   sync.Mutex
+	cond *sync.Cond
+	// buf holds the bytes from base on: under `retain: written` the bytes
+	// a node reported durable are released and base moves up (§12.2).
+	buf       []byte
+	base      int64
+	closed    bool
+	discarded bool
 }
 
 // NewSegment makes a segment for a test or a synthetic producer.
@@ -42,10 +46,27 @@ func newSegment(started, slot time.Time, tables []byte) *Segment {
 	return s
 }
 
-// Write appends bytes.
+// Write appends bytes. A discarded segment counts them and keeps none.
 func (s *Segment) Write(b []byte) {
 	s.mu.Lock()
-	s.buf = append(s.buf, b...)
+	if s.discarded {
+		s.base += int64(len(b))
+	} else {
+		s.buf = append(s.buf, b...)
+	}
+	s.mu.Unlock()
+	s.cond.Broadcast()
+}
+
+// Discard lets every byte go, now and as they keep arriving: the segment
+// was given up (lost, or cut short at a node's offset) while the capture
+// still writes into it, and what comes until its cut has nowhere to go.
+// Len keeps counting so the schedule cuts it as it would any other.
+func (s *Segment) Discard() {
+	s.mu.Lock()
+	s.discarded = true
+	s.base += int64(len(s.buf))
+	s.buf = nil
 	s.mu.Unlock()
 	s.cond.Broadcast()
 }
@@ -59,12 +80,46 @@ func (s *Segment) Close(ended time.Time) {
 	s.cond.Broadcast()
 }
 
-// Len is the bytes so far.
+// Len is the bytes so far, released ones included.
 func (s *Segment) Len() int64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	return s.base + int64(len(s.buf))
+}
+
+// Held is the bytes still in RAM: what the budget counts (§16).
+func (s *Segment) Held() int64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return int64(len(s.buf))
+}
+
+// Released is the offset below which the bytes were let go (§12.2).
+func (s *Segment) Released() int64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.base
+}
+
+// Release lets the bytes below `upTo` go: a node reported them durable and
+// `retain: written` keeps only what is above (§12.2). The rest is copied
+// out so the memory really goes. A reader below the offset then fails, so
+// the segment can no longer be sent from its start to anyone else.
+func (s *Segment) Release(upTo int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if upTo <= s.base {
+		return
+	}
+	if end := s.base + int64(len(s.buf)); upTo > end {
+		upTo = end
+	}
+	rest := s.buf[upTo-s.base:]
+	s.buf = append(make([]byte, 0, max(2*len(rest), 64<<10)), rest...)
+	s.base = upTo
 }
 
 // Closed says whether the segment is complete.
@@ -75,7 +130,8 @@ func (s *Segment) Closed() bool {
 	return s.closed
 }
 
-// Bytes is the whole segment, for a buffered upload after Close.
+// Bytes is the segment, for a buffered upload after Close: what is held,
+// which is the whole of it unless bytes were released.
 func (s *Segment) Bytes() []byte {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -95,15 +151,21 @@ type segReader struct {
 	off int64
 }
 
-var errPastEnd = errors.New("segment: offset past the end")
+var (
+	errPastEnd  = errors.New("segment: offset past the end")
+	errReleased = errors.New("segment: the bytes at this offset were released")
+)
 
 func (r *segReader) Read(p []byte) (int, error) {
 	s := r.s
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for int64(len(s.buf)) <= r.off {
+	if r.off < s.base {
+		return 0, errReleased
+	}
+	for s.base+int64(len(s.buf)) <= r.off {
 		if s.closed {
-			if int64(len(s.buf)) < r.off {
+			if s.base+int64(len(s.buf)) < r.off {
 				return 0, errPastEnd
 			}
 
@@ -111,7 +173,7 @@ func (r *segReader) Read(p []byte) (int, error) {
 		}
 		s.cond.Wait()
 	}
-	n := copy(p, s.buf[r.off:])
+	n := copy(p, s.buf[r.off-s.base:])
 	r.off += int64(n)
 
 	return n, nil

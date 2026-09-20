@@ -75,8 +75,10 @@ is accurate to the pipe's latency, tens of milliseconds, which is enough.
 
 In **live** mode ([§12.2](04-write-path.md#122-resumable-part-uploads)) the
 bytes stream to the node as they arrive, and the producer keeps what its
-`retain` policy says. In buffered mode the segment is complete at the next
-cut and uploaded then.
+`retain` policy says: the whole segment until it is committed, or, under
+`written`, only what the node has not yet reported durable, at the price
+that such a segment ends where its node has it if that node dies. In
+buffered mode the segment is complete at the next cut and uploaded then.
 
 ### 38.3 Managed capture
 

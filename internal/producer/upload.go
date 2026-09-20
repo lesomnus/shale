@@ -29,11 +29,18 @@ type UploadConfig struct {
 	RetryAfterCap    time.Duration
 	PlacementRetries int
 	Client           *http.Client
+	// Part is how many bytes one request carries under `retain: written`
+	// before it ends and the node reports what is durable (§12.2); about
+	// the node's part size keeps the device's writes large.
+	Part int64
 }
 
 func (c *UploadConfig) defaults() {
 	if c.ResumeTimeout == 0 {
 		c.ResumeTimeout = 2 * time.Minute
+	}
+	if c.Part == 0 {
+		c.Part = 16 << 20
 	}
 	if c.RetryAfterCap == 0 {
 		c.RetryAfterCap = 2 * time.Minute
@@ -56,6 +63,10 @@ type Uploader struct {
 	Objects api.ObjectServiceClient
 	Log     *slog.Logger
 	Mode    api.UploadMode
+	// Written is `retain: written` (§12.2): a live segment goes as a series
+	// of requests, the bytes a node reported durable are released, and a
+	// target that fails after that ends the segment where it has it.
+	Written bool
 }
 
 // Result is what became of a segment.
@@ -64,6 +75,11 @@ type Result struct {
 	Incomplete bool
 	Attempts   int
 	Err        error
+	// Cut says the segment ended where its node had it: bytes below the
+	// node's offset had been released under `retain: written`, so no other
+	// target could take it from the start (§12.2). The node finalizes what
+	// it holds as an incomplete object by the abandon rule (§15).
+	Cut bool
 }
 
 var (
@@ -104,6 +120,16 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 			}
 			if ctx.Err() != nil {
 				res.Err = ctx.Err()
+				return res
+			}
+			if seg.Released() > 0 {
+				// Bytes below the node's offset are gone from here: the
+				// segment cannot start over elsewhere. It ends where that
+				// node has it (§12.2), and the node's abandon rule makes
+				// an incomplete object of that (§15).
+				u.Log.Warn("segment cut short at the node's offset", "key", al.GetObjectKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "offset", seg.Released(), "err", err.Error())
+				res.Cut, res.Err = true, err
+
 				return res
 			}
 			u.Log.Warn("attempt failed", "key", al.GetObjectKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "err", err.Error())
@@ -173,12 +199,19 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 	// sentMax is the furthest byte this process sent for the key: a node
 	// offset beyond it is somebody else's bytes.
 	var sentMax int64
+	// Under `retain: written` a live segment goes in parts: each request
+	// ends after `part` bytes without completing, the node answers with
+	// what is durable, and those bytes are released (§12.2).
+	var part int64
+	if u.Written {
+		part = u.Cfg.Part
+	}
 	lastProgress := time.Now()
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		status, newOffset, sent, complete, err := u.put(ctx, url, cand.GetToken(), al, seg, offset)
+		status, newOffset, sent, complete, err := u.put(ctx, url, cand.GetToken(), al, seg, offset, part)
 		if offset+sent > sentMax {
 			sentMax = offset + sent
 		}
@@ -191,6 +224,20 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		switch {
 		case status == http.StatusCreated || status == http.StatusOK:
 			return nil
+		case status == http.StatusNoContent && part > 0:
+			// A part is on the device up to the offset the node reports
+			// (aligned, so at most a few KiB short of what was sent): the
+			// bytes below it are released and the next part follows, or
+			// the completing request once the segment has closed.
+			if newOffset < 0 || newOffset > sentMax {
+				return errForeign
+			}
+			if newOffset > offset {
+				lastProgress = time.Now()
+			}
+			offset = newOffset
+			seg.Release(offset)
+			continue
 		case status == http.StatusRequestEntityTooLarge:
 			return errTooLong
 		case status == http.StatusConflict:
@@ -270,14 +317,24 @@ func (u *Uploader) retryAfter(v int64) time.Duration {
 }
 
 // put is one request from `offset`: the rest of the segment as a body that
-// grows while the capture runs (live) or a known length (buffered). It
-// answers the status, and for 409/503 the offset or Retry-After.
-// put is one request: the status, the offset a 409 or the Retry-After a
-// 503 carried, the bytes sent, and whether the answer said the object is
-// complete.
-func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation, seg *Segment, offset int64) (int, int64, int64, bool, error) {
+// grows while the capture runs (live) or a known length (buffered), or,
+// with `part` set on a live segment, at most that many bytes that do not
+// complete the upload (§12.2). It answers the status, the offset a 409 or
+// a 204 or the Retry-After a 503 carried, the bytes sent, and whether the
+// answer said the object is complete.
+func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation, seg *Segment, offset, part int64) (int, int64, int64, bool, error) {
 	live := !seg.Closed()
-	counted := &countingReader{r: seg.ReaderFrom(offset)}
+	// A live segment in parts: this request carries at most `part` bytes,
+	// or what arrives before the segment closes, and does not complete
+	// the upload. The completing request comes once the segment is closed
+	// and everything is on the node: a closed segment, so the buffered
+	// branch, with nothing left to send.
+	partial := live && part > 0
+	var rd io.Reader = seg.ReaderFrom(offset)
+	if partial {
+		rd = io.LimitReader(rd, part)
+	}
+	counted := &countingReader{r: rd}
 	var body io.Reader = counted
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
 	if err != nil {
@@ -287,7 +344,13 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 	req.Header.Set(storage.HdrUploadOffset, strconv.FormatInt(offset, 10))
 	req.Header.Set(storage.HdrUploadComplete, "?1")
 	req.Header.Set(storage.HdrDateStarted, seg.Started.UTC().Format(time.RFC3339Nano))
-	if live {
+	if partial {
+		req.Header.Set(storage.HdrUploadComplete, "?0")
+		req.ContentLength = -1
+		if h := al.GetSizeHint(); h > 0 {
+			req.Header.Set(storage.HdrSizeHint, strconv.FormatInt(h, 10))
+		}
+	} else if live {
 		// Chunked, with the size hint and the end time as a trailer (§12.2).
 		req.ContentLength = -1
 		if h := al.GetSizeHint(); h > 0 {
@@ -323,7 +386,7 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 
 	var v int64 = -1
 	switch resp.StatusCode {
-	case http.StatusConflict:
+	case http.StatusConflict, http.StatusNoContent:
 		if s := resp.Header.Get(storage.HdrUploadOffset); s != "" {
 			v, _ = strconv.ParseInt(s, 10, 64)
 		}
