@@ -260,9 +260,11 @@ func TestMultiNode(t *testing.T) {
 
 		return err == nil && rec.GetDateExpiredMs() == keep.UnixMilli() && rec.GetDateDeletedMs() == keep.UnixMilli()
 	}, 5*time.Second, 200*time.Millisecond, "SetDates rewrote the xattr")
-	o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: onA.al.GetObjectId()}.Build()}.Build())
-	require.NoError(t, err)
-	require.True(t, o.GetDatesSynced())
+	require.Eventually(t, func() bool {
+		o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: onA.al.GetObjectId()}.Build()}.Build())
+
+		return err == nil && o.GetDatesSynced()
+	}, 5*time.Second, 100*time.Millisecond, "the row says the dates are synced")
 
 	// ---- delete now: the file goes within seconds, and the row follows.
 	var onB stored
