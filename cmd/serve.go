@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"google.golang.org/grpc/credentials/insecure"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -11,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log/slog"
 	"net"

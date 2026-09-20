@@ -40,8 +40,8 @@ var Version = "dev"
 type Agent struct {
 	// HardwareId overrides the machine's identity when set (§33.4).
 	HardwareId string
-	Kind  pdid.Domain
-	Store pki.Store
+	Kind       pdid.Domain
+	Store      pki.Store
 	// Cp is the Control Plane address: host:port, or a URL with scheme
 	// `https` (the default) or `http` (development only).
 	Cp string

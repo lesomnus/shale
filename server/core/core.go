@@ -11,8 +11,8 @@ package core
 import (
 	"sync"
 
-	"google.golang.org/grpc"
 	"context"
+	"google.golang.org/grpc"
 	"log/slog"
 	"time"
 
