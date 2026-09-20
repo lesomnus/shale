@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/cespare/xxhash/v2"
@@ -67,8 +68,10 @@ type allocCtx struct {
 	cluster placement.Cluster
 	nodes   map[pdid.Id]*ent.Node
 	sinks   map[pdid.Id]*ent.Sink
-	caller  string
-	now     time.Time
+	// why says, per sink, what keeps it out of placement.
+	why    map[pdid.Id]string
+	caller string
+	now    time.Time
 }
 
 func (s Core) allocCtx(ctx context.Context, set *api.Set) (*allocCtx, error) {
@@ -110,6 +113,7 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 
 	a.nodes = map[pdid.Id]*ent.Node{}
 	a.sinks = map[pdid.Id]*ent.Sink{}
+	a.why = map[pdid.Id]string{}
 	clamp := maxSinkCapacity(place)
 	downAfter := DefaultNodeDownAfter
 
@@ -130,22 +134,22 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 		eligible := true
 		switch {
 		case n.State != int32(api.HostState_HOST_STATE_ADOPTED), n.DateErased != nil:
-			eligible = false
+			eligible, a.why[id] = false, "its node is not adopted"
 		case n.DateSeen == nil || a.now.Sub(*n.DateSeen) > downAfter:
-			eligible = false
+			eligible, a.why[id] = false, "its node is down"
 		case d.Health == int32(api.DeviceHealth_DEVICE_HEALTH_QUARANTINED),
 			d.Health == int32(api.DeviceHealth_DEVICE_HEALTH_RETIRED),
 			d.Health == int32(api.DeviceHealth_DEVICE_HEALTH_DEAD),
 			d.DateErased != nil:
-			eligible = false
+			eligible, a.why[id] = false, "its device is "+api.DeviceHealth(d.Health).String()
 		case v.Attachment != int32(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED):
-			eligible = false
+			eligible, a.why[id] = false, "it is "+api.SinkAttachment(v.Attachment).String()
 		case !v.AcceptWrites:
-			eligible = false
+			eligible, a.why[id] = false, "it takes no writes"
 		case v.Pressure == int32(api.Pressure_PRESSURE_CRITICAL):
-			eligible = false
+			eligible, a.why[id] = false, "it is at CRITICAL pressure"
 		case v.Capabilities != nil && !v.Capabilities.GetXattr():
-			eligible = false
+			eligible, a.why[id] = false, "its filesystem has no xattrs"
 		}
 		if d.Health == int32(api.DeviceHealth_DEVICE_HEALTH_SUSPECT) {
 			weight *= 0.5
@@ -157,14 +161,14 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 		// The node's own score, from what producers reported (§27).
 		switch ns := nodeScore(n, a.now); {
 		case ns >= ScoreQuarantine:
-			eligible = false
+			eligible, a.why[id] = false, fmt.Sprintf("its node's failure score is %.1f", ns)
 		case ns >= ScoreSuspect:
 			weight *= 0.5
 		}
 		// The capacity forecast (§11.1): a sink that would fill before GC
 		// could make room sits this epoch out.
 		if eligible && !s.forecastOk(ctx, a, v, place) {
-			eligible = false
+			eligible, a.why[id] = false, "the forecast says it would fill this epoch"
 		}
 
 		a.cluster.Sinks = append(a.cluster.Sinks, placement.Sink{
@@ -326,6 +330,12 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		ranked := placement.Rank(a.cluster, placement.Key{Set: mustId(a.set.GetId()), Epoch: placement.Epoch(started.Unix(), int64(epoch.Seconds())), Version: a.placeV},
 			placement.Member{Source: srcId, Ordinal: int(src.GetOrdinal())}, spreadOf(a.set))
 		if len(ranked) == 0 {
+			var why []string
+			for id, w := range a.why {
+				why = append(why, a.sinks[id].Alias+": "+w)
+			}
+			s.d.log().Warn("no sink can take the write", "sinks", len(a.cluster.Sinks), "why", strings.Join(why, "; "))
+
 			return nil, status.Error(codes.Unavailable, "no sink can take the write")
 		}
 		if len(ranked) > Candidates {

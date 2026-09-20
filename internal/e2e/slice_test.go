@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -47,6 +48,9 @@ func start(t *testing.T) *cluster {
 	c.Cluster.Addr = "127.0.0.1:0"
 	c.Storage.Addr = "127.0.0.1:0"
 	c.Storage.ControlAddr = "127.0.0.1:0"
+	// A declared capacity: the sink is a directory on a shared filesystem,
+	// whose own free space says nothing about the test (§22.2).
+	c.Storage.Sinks = []cmd.SinkConfig{{Path: filepath.Join(dir, "sink"), Capacity: "4GiB"}}
 	c.Storage.HeartbeatInterval = time.Second
 	c.Control.DirectivesEvery = 500 * time.Millisecond
 	// SHALE_E2E_DB_DSN runs the suite on PostgreSQL with the LISTEN/NOTIFY
