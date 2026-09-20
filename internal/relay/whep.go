@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pion/webrtc/v4"
+	"github.com/pion/webrtc/v4/pkg/media"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -40,6 +41,7 @@ type viewer struct {
 	source *source
 	pc     *webrtc.PeerConnection
 	track  *webrtc.TrackLocalStaticSample
+	audio  *webrtc.TrackLocalStaticSample
 	once   sync.Once
 	done   chan struct{}
 	// caught says the group of pictures was handed over after connecting.
@@ -148,17 +150,37 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	}
 	// RTCP from the viewer is read and dropped, so the sender's interceptors
 	// keep running.
-	go func() {
+	drain := func(s *webrtc.RTPSender) {
 		buf := make([]byte, 1500)
 		for {
-			if _, _, err := sender.Read(buf); err != nil {
+			if _, _, err := s.Read(buf); err != nil {
 				return
 			}
 		}
-	}()
+	}
+	go drain(sender)
+	// Audio rides along as Opus when the producer records it (§39.4); the
+	// track is offered whenever the viewer asked for audio, and stays
+	// silent for a source without it.
+	var audio *webrtc.TrackLocalStaticSample
+	if strings.Contains(string(offer), "m=audio") {
+		audio, err = webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus, ClockRate: 48000, Channels: 2}, "audio", "shale")
+		if err != nil {
+			pc.Close()
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		as, err := pc.AddTrack(audio)
+		if err != nil {
+			pc.Close()
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		go drain(as)
+	}
 
 	key := newSessionKey(actor)
-	v := &viewer{key: key, actor: actor, source: src, pc: pc, track: track, done: make(chan struct{})}
+	v := &viewer{key: key, actor: actor, source: src, pc: pc, track: track, audio: audio, done: make(chan struct{})}
 	pc.OnConnectionStateChange(func(st webrtc.PeerConnectionState) {
 		switch st {
 		case webrtc.PeerConnectionStateConnected:
@@ -258,6 +280,14 @@ func (v *viewer) write(au mpegts.AccessUnit, d time.Duration) {
 	if err := v.track.WriteSample(sampleOf(au, d)); err != nil {
 		return
 	}
+}
+
+// writeAudio is one Opus packet as one sample.
+func (v *viewer) writeAudio(u mpegts.AudioUnit, d time.Duration) {
+	if v.audio == nil {
+		return
+	}
+	v.audio.WriteSample(media.Sample{Data: u.Data, Duration: d})
 }
 
 // A session key is random, prefixed by the actor for the per-actor limit.

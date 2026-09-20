@@ -27,7 +27,7 @@
   <button type="button" id="stop">Stop</button>
   <span id="status"></span>
 </form>
-<video id="v" autoplay playsinline muted controls></video>
+<video id="v" autoplay playsinline controls></video>
 <script>
   let pc, session, base;
   const status = (s) => document.getElementById('status').textContent = s;
@@ -39,6 +39,7 @@
     base = url.slice(0, url.indexOf('/whep/'));
     pc = new RTCPeerConnection();
     pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.addTransceiver('audio', { direction: 'recvonly' });
     pc.ontrack = (ev) => { document.getElementById('v').srcObject = ev.streams[0]; };
     pc.onconnectionstatechange = () => status(pc.connectionState);
     const offer = await pc.createOffer();

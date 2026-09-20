@@ -24,7 +24,9 @@ import (
 // receiving the camera's H.264 from a keyframe on; when it leaves, the
 // producer stops sending after relay_idle_stop.
 func TestLive(t *testing.T) {
-	sample := samplePath(t)
+	// The synthetic recording with video and Opus audio (§39.4).
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
+	require.NoError(t, err)
 	c := start(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -106,18 +108,29 @@ func TestLive(t *testing.T) {
 	require.Equal(t, api.TokenOp_TOKEN_OP_VIEW, claims.GetOp())
 	require.Equal(t, live.GetRelayId(), claims.GetAud())
 
-	// A WebRTC viewer: an offer to receive video, posted as WHEP.
+	// A WebRTC viewer: an offer to receive video and audio, posted as WHEP.
 	pc, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	require.NoError(t, err)
 	defer pc.Close()
 	_, err = pc.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly})
 	require.NoError(t, err)
+	_, err = pc.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly})
+	require.NoError(t, err)
 	packets := make(chan []byte, 4096)
+	audio := make(chan int, 4096)
 	pc.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
+		isAudio := track.Kind() == webrtc.RTPCodecTypeAudio
 		for {
 			pkt, _, err := track.ReadRTP()
 			if err != nil {
 				return
+			}
+			if isAudio {
+				select {
+				case audio <- len(pkt.Payload):
+				default:
+				}
+				continue
 			}
 			select {
 			case packets <- pkt.Payload:
@@ -172,6 +185,20 @@ func TestLive(t *testing.T) {
 		nal = first[3] & 0x1f
 	}
 	require.Contains(t, []byte{5, 7, 8, 6}, nal, "the stream starts at a keyframe (NAL %d)", nal)
+
+	// And the Opus the producer recorded arrives as audio.
+	heard := 0
+	audioDeadline := time.After(10 * time.Second)
+	for heard < 50 {
+		select {
+		case n := <-audio:
+			if n > 0 {
+				heard++
+			}
+		case <-audioDeadline:
+			t.Fatalf("only %d audio packets arrived", heard)
+		}
+	}
 
 	// A wrong token is refused.
 	req2, _ := http.NewRequest(http.MethodPost, live.GetWhepUrl(), bytes.NewReader([]byte(pc.LocalDescription().SDP)))

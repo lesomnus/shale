@@ -25,26 +25,28 @@ type feeder interface {
 // sink is where a source's access units go: one per viewer.
 type sink interface {
 	write(au mpegts.AccessUnit, d time.Duration)
+	writeAudio(u mpegts.AudioUnit, d time.Duration)
 }
 
 type source struct {
 	id pdid.Id
 	r  *Relay
 
-	mu      sync.Mutex
-	feeder  feeder
-	started bool
-	demux   *mpegts.Demuxer
-	gop     []mpegts.AccessUnit
-	lastPTS int64
-	viewers map[string]sink
-	idle    *time.Timer
+	mu       sync.Mutex
+	feeder   feeder
+	started  bool
+	demux    *mpegts.Demuxer
+	gop      []mpegts.AccessUnit
+	lastPTS  int64
+	lastAPTS int64
+	viewers  map[string]sink
+	idle     *time.Timer
 	// Bytes and units, for the heartbeat.
 	bytes int64
 }
 
 func newSource(r *Relay, id pdid.Id) *source {
-	return &source{id: id, r: r, demux: mpegts.New(), lastPTS: -1, viewers: map[string]sink{}}
+	return &source{id: id, r: r, demux: mpegts.New(), lastPTS: -1, lastAPTS: -1, viewers: map[string]sink{}}
 }
 
 // fallbackDuration is a frame's duration when the stamps do not say.
@@ -83,11 +85,18 @@ func (s *source) feed(b []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.bytes += int64(len(b))
-	units, err := s.demux.Write(b)
+	units, audio, err := s.demux.WriteAll(b)
 	if err != nil {
 		s.r.log.Warn("ingest", "source", s.id.String(), "err", err.Error())
 		s.demux = mpegts.New()
 		return
+	}
+	for _, u := range audio {
+		d := mpegts.Duration(s.lastAPTS, u.PTS, 20*time.Millisecond)
+		s.lastAPTS = u.PTS
+		for _, v := range s.viewers {
+			v.writeAudio(u, d)
+		}
 	}
 	for _, au := range units {
 		d := mpegts.Duration(s.lastPTS, au.PTS, fallbackDuration)

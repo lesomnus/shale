@@ -78,11 +78,11 @@ func NewCmdLive(c *cmd.Config) *xli.Command {
 				}()
 			}
 			wg.Wait()
-			fmt.Fprintf(self, "%-10s %-8s %10s %12s %8s %-6s %s\n", "SOURCE", "PACKETS", "BYTES", "RATE", "KEYS", "FIRST", "STATUS")
+			fmt.Fprintf(self, "%-10s %-8s %10s %12s %6s %6s %-6s %s\n", "SOURCE", "PACKETS", "BYTES", "RATE", "KEYS", "AUDIO", "FIRST", "STATUS")
 			for i, r := range results {
 				id := fmt.Sprintf("%x", resp.GetSources()[i].GetSourceId()[:4])
 				rate := fmt.Sprintf("%.2f Mbps", float64(r.bytes)*8/d.Seconds()/1e6)
-				fmt.Fprintf(self, "%-10s %-8d %10d %12s %8d %-6s %s\n", id, r.packets, r.bytes, rate, r.keys, r.first, r.status)
+				fmt.Fprintf(self, "%-10s %-8d %10d %12s %6d %6d %-6s %s\n", id, r.packets, r.bytes, rate, r.keys, r.audio, r.first, r.status)
 			}
 
 			return nil
@@ -92,6 +92,7 @@ func NewCmdLive(c *cmd.Config) *xli.Command {
 
 type liveResult struct {
 	packets, bytes, keys int
+	audio                int
 	first                string
 	status               string
 }
@@ -116,18 +117,26 @@ func watch(ctx context.Context, client *http.Client, ls *api.LiveSource, d time.
 		return res
 	}
 	defer pc.Close()
-	if _, err := pc.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly}); err != nil {
-		res.status = err.Error()
-		return res
+	for _, kind := range []webrtc.RTPCodecType{webrtc.RTPCodecTypeVideo, webrtc.RTPCodecTypeAudio} {
+		if _, err := pc.AddTransceiverFromKind(kind, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly}); err != nil {
+			res.status = err.Error()
+			return res
+		}
 	}
 	var mu sync.Mutex
 	pc.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
+		audio := track.Kind() == webrtc.RTPCodecTypeAudio
 		for {
 			pkt, _, err := track.ReadRTP()
 			if err != nil {
 				return
 			}
 			mu.Lock()
+			if audio {
+				res.audio++
+				mu.Unlock()
+				continue
+			}
 			res.packets++
 			res.bytes += len(pkt.Payload)
 			if t := nalType(pkt.Payload); t == 5 {

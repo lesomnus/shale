@@ -98,6 +98,10 @@ producer:
       fps: 30
       encoder: auto
       max_bitrate: auto
+#     audio:
+#       device: alsa:hw:2,0      # the camera's microphone
+#       codec: opus              # Opus records and plays live as it is (§39.4)
+
 ```
 
 Run `shale init` on the first machine before its unit starts, then adopt
