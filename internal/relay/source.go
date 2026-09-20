@@ -57,6 +57,11 @@ const fallbackDuration = 40 * time.Millisecond
 func (s *source) attach(f feeder) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.feeder != nil && s.feeder != f {
+		// A second stream from the producer replaces the first; the
+		// first's end then changes nothing (detach compares).
+		s.r.log.Info("producer re-attached", "source", s.id.String())
+	}
 	s.feeder = f
 	// A viewer was waiting: ask for bytes right away.
 	if len(s.viewers) > 0 {

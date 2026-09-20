@@ -98,6 +98,14 @@ func (l *relayLink) run(ctx context.Context) error {
 	l.mu.Unlock()
 	wait := time.Second
 	for {
+		// A change signaled before this point is in what current() answers
+		// now; a signal left over would end the stream about to be opened
+		// the moment it is up. The assignment negotiation hands over before
+		// this loop starts is such a one.
+		select {
+		case <-l.changed:
+		default:
+		}
 		ra := l.current()
 		if ra == nil {
 			select {
