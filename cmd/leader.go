@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log/slog"
 	"sync"
+	"time"
 )
 
 // The leader (§34.9): exactly one CP process runs the multi-step jobs and
@@ -41,8 +42,7 @@ func (l *Leader) Is(ctx context.Context) bool {
 	if l.conn != nil {
 		if err := l.conn.PingContext(ctx); err != nil {
 			l.log.Warn("leader: the lock's connection is gone", "err", err.Error())
-			l.conn.Close()
-			l.conn, l.held = nil, false
+			l.drop()
 		}
 	}
 	if l.conn == nil {
@@ -59,8 +59,7 @@ func (l *Leader) Is(ctx context.Context) bool {
 	var got bool
 	if err := l.conn.QueryRowContext(ctx, "select pg_try_advisory_lock($1)", leaderKey).Scan(&got); err != nil {
 		l.log.Warn("leader", "err", err.Error())
-		l.conn.Close()
-		l.conn = nil
+		l.drop()
 		return false
 	}
 	if got {
@@ -71,12 +70,24 @@ func (l *Leader) Is(ctx context.Context) bool {
 	return got
 }
 
-// Close gives the lock up.
+// Close gives the lock up. A session-level advisory lock outlives the
+// *sql.Conn, which goes back to the pool, so it is unlocked first.
 func (l *Leader) Close() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.conn != nil {
-		l.conn.Close()
-		l.conn, l.held = nil, false
+	l.drop()
+}
+
+// drop unlocks and lets the connection go, under the mutex.
+func (l *Leader) drop() {
+	if l.conn == nil {
+		return
 	}
+	if l.held {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		l.conn.ExecContext(ctx, "select pg_advisory_unlock_all()")
+		cancel()
+	}
+	l.conn.Close()
+	l.conn, l.held = nil, false
 }
