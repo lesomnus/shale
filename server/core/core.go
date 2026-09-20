@@ -87,6 +87,8 @@ type Deps struct {
 	// Now is the clock.
 	Now func() time.Time
 	Log *slog.Logger
+	// M are the instruments; made from a bare context when nil.
+	M *Metrics
 
 	pol policies
 

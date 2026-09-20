@@ -282,6 +282,7 @@ func (s coreObject) ReportAttempt(ctx context.Context, req *api.ObjectReportAtte
 	if err != nil {
 		return nil, err
 	}
+	s.d.metrics().Lost.Add(ctx, 0)
 	at, err := s.Next().Attempt().Get(ctx, api.AttemptGetRequest_builder{
 		Ref: req.GetAttempt(),
 	}.Build())

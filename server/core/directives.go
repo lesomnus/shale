@@ -172,6 +172,7 @@ func (s *Directives) Once(ctx context.Context) error {
 			s.alive[id] = false
 			s.mu.Unlock()
 			s.drop(id)
+			s.d.metrics().DirectiveErrors.Add(ctx, 1)
 			s.log().Warn("directives", "node", id.String(), "alias", n.Alias, "retry_in", wait.String(), "err", err.Error())
 			continue
 		}
@@ -563,6 +564,7 @@ func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient
 	s.mu.Lock()
 	s.Reconciled++
 	s.mu.Unlock()
+	s.d.metrics().Reconciled.Add(ctx, 1)
 	s.log().Info("reconciled", "sink", sk.Alias, "full", full, "since", since.Format(time.RFC3339), "files", total, "records", records, "learned", learned, "confirmed_absent", absent)
 
 	return nil

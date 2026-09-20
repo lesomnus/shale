@@ -112,6 +112,7 @@ type Node struct {
 
 	verifier *token.Verifier
 	keys     *hostagent.KeyRing
+	m        *metrics
 	outbox   *Outbox
 	dp       *DataPlane
 
@@ -130,6 +131,7 @@ func New(cfg Config) (*Node, error) {
 	n := &Node{cfg: cfg, log: cfg.Log, byId: map[pdid.Id]*Sink{}, keys: hostagent.NewKeyRing(cfg.StateDir), Ready: make(chan struct{})}
 	n.verifier = n.keys.Verifier
 	n.verifier.Skew = cfg.TokenSkew
+	n.m = newMetrics(context.Background())
 	n.outbox = NewOutbox()
 	n.dp = newDataPlane(n, cfg.Limits)
 	n.agent = &hostagent.Agent{Kind: DomNode, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, HardwareId: cfg.HardwareId, Log: cfg.Log}
@@ -150,6 +152,7 @@ func (n *Node) Run(ctx context.Context) error {
 	if err := os.MkdirAll(n.cfg.StateDir, 0o700); err != nil {
 		return err
 	}
+	n.m = newMetrics(ctx)
 	for _, sc := range n.cfg.Sinks {
 		s, err := OpenSink(sc, n.cfg.Marks)
 		if err != nil {
@@ -486,6 +489,10 @@ func (n *Node) heartbeat(ctx context.Context) error {
 	for _, s := range n.sinks {
 		uploads += s.uploads.Load()
 		objects += int64(s.Index.Len())
+		rep := s.Report()
+		n.m.free.Record(ctx, rep.GetFree(), sinkAttr(s))
+		n.m.pressure.Record(ctx, int64(rep.GetPressure()), sinkAttr(s))
+		n.m.indexed.Record(ctx, int64(s.Index.Len()), sinkAttr(s))
 	}
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

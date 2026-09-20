@@ -186,6 +186,7 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 		s.critical.Store(false)
 	}
 	n.log.Info("gc", "sink", s.Id.String(), "reason", reason.String(), "proposed", st.proposed, "deleted", st.deleted, "reclaimed", st.reclaimed)
+	n.m.reclaimed.Add(ctx, st.reclaimed, sinkAttr(s))
 
 	return st, nil
 }

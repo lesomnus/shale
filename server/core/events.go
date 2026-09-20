@@ -466,6 +466,7 @@ func (s Core) applyMissing(ctx context.Context, own api.Server, nodeId pdid.Id, 
 		}.Build()); err != nil {
 			return err
 		}
+		s.d.metrics().Lost.Add(ctx, 1)
 
 		return s.storedBytes(ctx, own, pdid.Id(obj.TenantId), -obj.Size)
 	}

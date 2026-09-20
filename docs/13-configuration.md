@@ -109,6 +109,23 @@ entity domain bytes ([§35.3](12-api.md#353-entities)), the order in which a
 host's hardware identity is read ([§33.4](10-security.md#334-joining-and-adoption)),
 and the rule that duplicates are left to GC ([§14](04-write-path.md#14-duplicates-and-orphans)).
 
+**Metrics.** Every process measures the instruments of
+[§31](09-operations.md#31-observability) it owns (`shale.node.*`,
+`shale.cp.*`, `shale.producer.*`, `shale.relay.*`) through OpenTelemetry,
+and exports them wherever `otel:` says; nothing is exported until it does.
+An OTLP collector:
+
+```yaml
+otel:
+  exporters:
+    otlp:
+      endpoint: collector.example.com:4317
+  providers:
+    meter:
+      processors: [resource/shale]
+      exporters: [otlp]
+```
+
 ### 36.2 Open decisions
 
 None at the moment. Every question raised during the design has either been

@@ -12,9 +12,14 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent/attempt"
+	"github.com/lesomnus/shale/internal/ent/node"
 	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/producer"
+	"github.com/lesomnus/shale/internal/ent/relay"
 	"github.com/lesomnus/shale/internal/ent/signingkey"
 	"github.com/lesomnus/shale/internal/ent/sink"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 // The Control Plane's background work (§34.9): attempts that expire, objects
@@ -197,6 +202,27 @@ func (j *Jobs) Once(ctx context.Context) error {
 					}
 				}
 			}
+		}
+	}
+
+	// The gauges of §31: hosts pending adoption, objects waiting to be
+	// unlinked, bytes per tenant.
+	m := j.d.metrics()
+	if n, err := j.d.Ent.Node.Query().Where(node.StateEQ(int32(api.HostState_HOST_STATE_PENDING))).Count(ctx); err == nil {
+		m.PendingHosts.Record(ctx, int64(n), kindAttr("node"))
+	}
+	if n, err := j.d.Ent.Producer.Query().Where(producer.StateEQ(int32(api.HostState_HOST_STATE_PENDING))).Count(ctx); err == nil {
+		m.PendingHosts.Record(ctx, int64(n), kindAttr("producer"))
+	}
+	if n, err := j.d.Ent.Relay.Query().Where(relay.StateEQ(int32(api.HostState_HOST_STATE_PENDING))).Count(ctx); err == nil {
+		m.PendingHosts.Record(ctx, int64(n), kindAttr("relay"))
+	}
+	if n, err := j.d.Ent.Object.Query().Where(object.StateEQ(int32(api.ObjectState_OBJECT_STATE_DELETING))).Count(ctx); err == nil {
+		m.Deleting.Record(ctx, int64(n))
+	}
+	if ts, err := j.d.Ent.Tenant.Query().All(ctx); err == nil {
+		for _, t := range ts {
+			m.StoredBytes.Record(ctx, t.StoredBytes, metric.WithAttributes(attribute.String("tenant", t.Alias)))
 		}
 	}
 

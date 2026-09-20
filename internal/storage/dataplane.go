@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"io"
 	"log/slog"
 	"net/http"
@@ -152,6 +154,7 @@ func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	sink := d.node.sinkOf(sinkId)
 	if sink == nil || !sink.Serves() {
+		d.node.m.refused.Add(r.Context(), 1, reasonAttr("not_served"))
 		http.Error(w, "this node does not serve that sink", http.StatusServiceUnavailable)
 		return
 	}
@@ -201,6 +204,7 @@ func (d *DataPlane) admit(sink *Sink, actor pdid.Id) bool {
 	}
 	sink.uploads.Add(1)
 	d.perActor[actor]++
+	d.node.m.uploads.Add(context.Background(), 1, sinkAttr(sink))
 
 	return true
 }
@@ -212,6 +216,7 @@ func (d *DataPlane) release(sink *Sink, actor pdid.Id) {
 	if d.perActor[actor] > 0 {
 		d.perActor[actor]--
 	}
+	d.node.m.uploads.Add(context.Background(), -1, sinkAttr(sink))
 }
 
 // put is the resumable upload (§12.2).
@@ -337,11 +342,13 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		}
 		if !sink.AcceptsWrites() {
 			w.Header().Set(HdrRetryAfter, "30")
+			d.node.m.refused.Add(r.Context(), 1, reasonAttr("no_writes"))
 			http.Error(w, "the sink takes no writes now", http.StatusServiceUnavailable)
 			return
 		}
 		if !d.admit(sink, actor) {
 			w.Header().Set(HdrRetryAfter, "10")
+			d.node.m.refused.Add(r.Context(), 1, reasonAttr("upload_limit"))
 			http.Error(w, "at the upload limit", http.StatusServiceUnavailable)
 			return
 		}
@@ -477,6 +484,8 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 func (d *DataPlane) commit(u *upload, f *os.File, size int64, ended *time.Time, incomplete bool) error {
 	sink := u.sink
 	rec := u.record
+	d.node.m.committed.Add(context.Background(), 1, metric.WithAttributes(attribute.String("sink", sink.Id.String()), attribute.Bool("incomplete", incomplete)))
+	d.node.m.bytes.Add(context.Background(), size, sinkAttr(sink))
 	if err := f.Truncate(size); err != nil {
 		return err
 	}
@@ -650,16 +659,19 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 	if d.nReaders >= d.limits.MaxReadSessions || d.readers[actor] >= d.limits.SessionsPerActor {
 		d.mu.Unlock()
 		w.Header().Set(HdrRetryAfter, "5")
+		d.node.m.refused.Add(r.Context(), 1, reasonAttr("read_limit"))
 		http.Error(w, "at the read session limit", http.StatusServiceUnavailable)
 		return
 	}
 	d.nReaders++
 	d.readers[actor]++
+	d.node.m.reads.Add(context.Background(), 1, sinkAttr(sink))
 	d.mu.Unlock()
 	defer func() {
 		d.mu.Lock()
 		d.nReaders--
 		d.readers[actor]--
+		d.node.m.reads.Add(context.Background(), -1, sinkAttr(sink))
 		d.mu.Unlock()
 	}()
 

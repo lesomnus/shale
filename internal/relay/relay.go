@@ -97,6 +97,7 @@ type Relay struct {
 
 	sources *sources
 	whep    *whepServer
+	m       *metrics
 
 	// IngestAddr and WhepAddr are the addresses bound, once Run listens.
 	IngestAddr string
@@ -110,6 +111,7 @@ func New(cfg Config) (*Relay, error) {
 	cfg.defaults()
 	r := &Relay{cfg: cfg, log: cfg.Log, keys: hostagent.NewKeyRing(cfg.StateDir), Ready: make(chan struct{})}
 	r.keys.Verifier.Skew = cfg.TokenSkew
+	r.m = newMetrics(context.Background())
 	r.agent = &hostagent.Agent{Kind: DomRelay, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, HardwareId: cfg.HardwareId, Log: cfg.Log}
 	r.sources = newSources(r)
 
@@ -127,6 +129,7 @@ func (r *Relay) Run(ctx context.Context) error {
 	if err := os.MkdirAll(r.cfg.StateDir, 0o700); err != nil {
 		return err
 	}
+	r.m = newMetrics(ctx)
 	if err := r.agent.Init(); err != nil {
 		return err
 	}
@@ -330,6 +333,9 @@ func (r *Relay) heartbeat(ctx context.Context) error {
 		serial = pki.Serial(leaf)
 	}
 	st := r.sources.status()
+	r.m.attached.Record(ctx, int64(st.GetAttachedProducers()))
+	r.m.active.Record(ctx, int64(st.GetActiveSources()))
+	r.m.viewers.Record(ctx, int64(st.GetViewers()))
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	resp, err := api.NewRelayServiceClient(conn).Heartbeat(cctx, api.RelayHeartbeatRequest_builder{

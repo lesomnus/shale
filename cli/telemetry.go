@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/lesomnus/payday/config"
+	// The OTLP exporter, so `otel:` can name it (§31).
+	_ "github.com/lesomnus/mkot/otlp"
 
 	"github.com/lesomnus/shale/cmd"
 )

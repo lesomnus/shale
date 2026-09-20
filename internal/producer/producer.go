@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"io"
 	"log/slog"
 	"os"
@@ -92,6 +94,7 @@ type Producer struct {
 	uploader *Uploader
 	profileV int64
 	relay    *relayLink
+	m        *metrics
 
 	mu       sync.Mutex
 	retained int64
@@ -139,6 +142,7 @@ func New(cfg Config) (*Producer, error) {
 	}
 	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, Ready: make(chan struct{})}
 	p.relay = newRelayLink(p)
+	p.m = newMetrics(context.Background())
 	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
 	for _, sc := range cfg.Sources {
 		if sc.Alias == "" {
@@ -161,6 +165,7 @@ func (p *Producer) Run(ctx context.Context) error {
 	if err := os.MkdirAll(p.cfg.StateDir, 0o700); err != nil {
 		return err
 	}
+	p.m = newMetrics(ctx)
 	if err := p.agent.Init(); err != nil {
 		return err
 	}
@@ -605,8 +610,10 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 		s.mu.Unlock()
 		if res.Stored {
 			p.log.Info("stored", "source", s.cfg.Alias, "key", al.GetObjectKey(), "bytes", seg.Len(), "attempts", res.Attempts)
+			p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "stored")))
 		} else {
 			p.log.Warn("lost", "source", s.cfg.Alias, "key", al.GetObjectKey(), "err", res.Err)
+			p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "lost")))
 		}
 	}
 }
@@ -775,7 +782,19 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		s.atCap, s.episodes, s.seconds = 0, 0, 0
 		s.mu.Unlock()
 		reports = append(reports, r.Build())
+		up := int64(0)
+		if r.InputUp {
+			up = 1
+		}
+		p.m.input.Record(ctx, up, sourceAttr(s.cfg.Alias))
+		p.m.rate.Record(ctx, r.MeasuredBitrate, sourceAttr(s.cfg.Alias))
+		p.m.fps.Record(ctx, r.FrameRate, sourceAttr(s.cfg.Alias))
+		p.m.keyframe.Record(ctx, r.KeyframeIntervalMs, sourceAttr(s.cfg.Alias))
+		p.m.restarts.Record(ctx, r.CaptureRestarts, sourceAttr(s.cfg.Alias))
 	}
+	p.relay.mu.Lock()
+	p.m.dropped.Record(ctx, p.relay.dropped)
+	p.relay.mu.Unlock()
 
 	hctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()

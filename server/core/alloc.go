@@ -327,6 +327,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			return nil, status.Errorf(codes.ResourceExhausted, "source %s holds %d open attempts", src.GetAlias(), n)
 		}
 
+		s.d.metrics().Allocations.Add(ctx, 1)
 		ranked := placement.Rank(a.cluster, placement.Key{Set: mustId(a.set.GetId()), Epoch: placement.Epoch(started.Unix(), int64(epoch.Seconds())), Version: a.placeV},
 			placement.Member{Source: srcId, Ordinal: int(src.GetOrdinal())}, spreadOf(a.set))
 		if len(ranked) == 0 {

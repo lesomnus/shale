@@ -98,6 +98,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	}
 	claims, err := w.r.verify(tok, api.TokenOp_TOKEN_OP_VIEW)
 	if err != nil {
+		w.r.m.sessions.Add(req.Context(), 1, outcomeAttr("bad_token"))
 		http.Error(rw, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -112,6 +113,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	}
 	total, mine := w.r.sources.viewerCount(actor)
 	if total >= w.r.cfg.MaxViewers || mine >= w.r.cfg.ViewersPerActor {
+		w.r.m.sessions.Add(req.Context(), 1, outcomeAttr("limit"))
 		rw.Header().Set("Retry-After", "10")
 		http.Error(rw, "at the viewer limit", http.StatusServiceUnavailable)
 		return
@@ -197,6 +199,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	w.mu.Lock()
 	w.sessions[key] = v
 	w.mu.Unlock()
+	w.r.m.sessions.Add(req.Context(), 1, outcomeAttr("started"))
 	src.addViewer(key, v)
 	w.r.log.Info("viewer", "source", sourceId.String(), "actor", actor, "session", key[:8])
 

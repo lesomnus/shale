@@ -189,6 +189,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		Readopt:       c.Control.Readopt,
 		Dev:           c.IsDev(),
 		Log:           slog.Default(),
+		M:             core.NewMetrics(ctx),
 	}
 	if c.Control.AutoAdopt {
 		deps.AutoAdopt = func(kind pdid.Domain, _ *api.HostJoin, _ string) bool {
