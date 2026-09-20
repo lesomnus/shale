@@ -584,7 +584,15 @@ func Hostnames(extra []string) (dns []string, ips []net.IP) {
 	if h, err := os.Hostname(); err == nil && h != "" {
 		dns = append(dns, strings.ToLower(h))
 	}
-	dns = append(dns, extra...)
+	// An address among the names is an IP SAN; a verifier never matches an
+	// IP against a DNS name.
+	for _, v := range extra {
+		if ip := net.ParseIP(strings.TrimSpace(v)); ip != nil {
+			ips = append(ips, ip)
+		} else if v != "" {
+			dns = append(dns, strings.ToLower(v))
+		}
+	}
 	ips = append(ips, net.ParseIP("127.0.0.1"), net.ParseIP("::1"))
 	if addrs, err := net.InterfaceAddrs(); err == nil {
 		for _, a := range addrs {

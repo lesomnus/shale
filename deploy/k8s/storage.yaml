@@ -34,6 +34,17 @@ spec:
         - name: storage
           image: ghcr.io/lesomnus/shale:dev
           args: ["--config", "/etc/shale/shale.yaml", "serve", "storage"]
+          env:
+            # The node is dialed on its host address: the CP reaches the
+            # control API there, and producers the data plane (§34.5).
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: SHALE_STORAGE_CONTROL_ADDR
+              value: "$(HOST_IP):7421"
+            - name: SHALE_STORAGE_ADVERTISE
+              value: "$(HOST_IP):7420"
           securityContext:
             # SMART and bay LEDs need the devices (§34.8); a node with
             # directory sinks does without.

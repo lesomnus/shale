@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"net"
 	"net/http"
@@ -217,7 +218,7 @@ func (n *Node) Run(ctx context.Context) error {
 		return err
 	}
 
-	httpSrv := &http.Server{Handler: n.dp, ReadHeaderTimeout: 30 * time.Second}
+	httpSrv := &http.Server{Handler: n.dp, ReadHeaderTimeout: 30 * time.Second, ErrorLog: log.New(httpNoise{n.log}, "", 0)}
 	g.Go(func() error {
 		var err error
 		if tlsCfg != nil {
@@ -259,6 +260,21 @@ func (n *Node) Run(ctx context.Context) error {
 	g.Go(func() error { return n.gcLoop(ctx) })
 
 	return g.Wait()
+}
+
+// httpNoise is where net/http's own log goes: a TCP probe that connects
+// and hangs up is a "TLS handshake error ... EOF" every few seconds, which
+// is not news; the rest is a warning.
+type httpNoise struct{ log *slog.Logger }
+
+func (w httpNoise) Write(p []byte) (int, error) {
+	s := strings.TrimSpace(string(p))
+	if strings.Contains(s, "TLS handshake error") && strings.HasSuffix(s, "EOF") {
+		return len(p), nil
+	}
+	w.log.Warn("http", "msg", s)
+
+	return len(p), nil
 }
 
 // tlsConfig is the node's server TLS for both listeners: its host
