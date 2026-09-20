@@ -184,9 +184,9 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		if c.Audio == nil || c.Audio.Device == "" {
 			args = append(args, "-an")
 		}
-		if encoder == "libx264" {
-			args = append(args, "-pix_fmt", "yuv420p")
-		}
+		// Every encoder here takes yuv420p; a camera's MJPEG decodes to
+		// yuvj422p, which h264_v4l2m2m refuses outright.
+		args = append(args, "-pix_fmt", "yuv420p")
 	}
 	if c.Audio != nil && c.Audio.Device != "" {
 		codec := c.Audio.Codec
