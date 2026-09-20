@@ -104,6 +104,13 @@ host network (port 7420), never through the cluster's Services.
 - The tenant API's readiness probe is a TCP connect; the node's data plane
   drops the resulting handshake noise from its log.
 
+## Applying again with a new image
+
+`shale-init` is a Job, and a Job's template is immutable: delete it before
+applying a kustomization that names a new image tag (`kubectl -n shale
+delete job shale-init`). It does nothing on the next run while the Secret
+exists.
+
 ## Rolling upgrades
 
 `storage.yaml` rolls one node at a time (`maxUnavailable: 1`). While a
