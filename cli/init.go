@@ -72,6 +72,11 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 
 					return fmt.Errorf("secret %s/%s already exists", k.Namespace(), secret)
 				}
+				// The state directory is scratch here: what a failed run
+				// (the database not up yet) left behind is not state.
+				if err := os.RemoveAll(c.StateDir("control")); err != nil {
+					return err
+				}
 			} else if ifNeeded {
 				if _, err := os.Stat(filepath.Join(c.StateDir("control"), "kek")); err == nil {
 					self.Printf("already initialized: %s\n", c.StateDir("control"))

@@ -1,0 +1,23 @@
+# Shale on Kubernetes (§34.5): PostgreSQL, the two APIs as Deployments, the
+# Storage Nodes as a DaemonSet with hostNetwork on labeled nodes.
+#
+#   kubectl apply -k deploy/k8s
+#
+# Edit before applying: the node IPs and names in control-config.yaml (the
+# CP certificate must name what producers dial), the sink path and
+# capacity in storage-config.yaml, and the image.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shale
+resources:
+  - namespace.yaml
+  - postgres.yaml
+  - control-config.yaml
+  - init-job.yaml
+  - control.yaml
+  - cluster.yaml
+  - storage-config.yaml
+  - storage.yaml
+images:
+  - name: ghcr.io/lesomnus/shale
+    newTag: dev

@@ -1,0 +1,21 @@
+# A Storage Node's configuration (§36.1): the cluster API by its Service
+# name, the listeners on the host network, and the sinks as hostPath
+# mounts (§34.5). One ConfigMap serves every node; a node whose disks are
+# laid out differently gets its own DaemonSet with its own ConfigMap.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shale-storage-config
+data:
+  shale.yaml: |
+    state: /var/lib/shale
+    cp: https://shale-cluster.shale.svc:7401
+    # ca_hash: pin the CA on first contact (`shale init` prints it)
+    storage:
+      addr: ":7420"
+      control_addr: ":7421"
+      sinks:
+        # A whole HDD mounted at this path: capacity and device detected.
+        # A directory on the OS disk (a lab) needs a declared capacity.
+        - path: /srv/shale/sinks/0
+          capacity: 20GiB

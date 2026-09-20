@@ -1,0 +1,70 @@
+# Storage Nodes: a DaemonSet on the nodes labeled `shale.io/storage=true`,
+# on the host network so producers reach the one node placement chose
+# (§34.5). The state directory is a hostPath, so a node keeps its key and
+# identity across pod restarts; sinks are hostPath mounts of the disks.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: shale-storage
+spec:
+  selector:
+    matchLabels:
+      app: shale-storage
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # One node at a time: its objects are UNAVAILABLE while it restarts,
+      # and nothing else (§34.5).
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: shale-storage
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        shale.io/storage: "true"
+        kubernetes.io/arch: amd64
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: storage
+          image: ghcr.io/lesomnus/shale:dev
+          args: ["--config", "/etc/shale/shale.yaml", "serve", "storage"]
+          securityContext:
+            # SMART and bay LEDs need the devices (§34.8); a node with
+            # directory sinks does without.
+            capabilities:
+              add: ["SYS_RAWIO"]
+          ports:
+            - containerPort: 7420
+              name: data
+            - containerPort: 7421
+              name: control
+          readinessProbe:
+            tcpSocket:
+              port: 7420
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /etc/shale
+            - name: state
+              mountPath: /var/lib/shale
+            - name: sink-0
+              mountPath: /srv/shale/sinks/0
+      volumes:
+        - name: config
+          configMap:
+            name: shale-storage-config
+        - name: state
+          hostPath:
+            path: /var/lib/shale-k8s
+            type: DirectoryOrCreate
+        - name: sink-0
+          hostPath:
+            # The mount point of the disk; a directory on the OS disk in a lab.
+            path: /srv/shale/k8s/sinks/0
+            type: DirectoryOrCreate

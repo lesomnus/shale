@@ -1,0 +1,69 @@
+# `shale init` once: the CA, the KEK, the CP certificate, the first tenant
+# and its admin, the cluster operators, and the first signing key. Inside
+# the cluster the files go into the `shale-control` Secret through the
+# job's service account (§34.5); the passwords are printed once, in the
+# job's log:
+#
+#   kubectl -n shale logs job/shale-init
+#
+# Delete the job afterwards. Running it again does nothing while the
+# Secret exists.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: shale-init
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: shale-init
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: shale-init
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: shale-init
+subjects:
+  - kind: ServiceAccount
+    name: shale-init
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: shale-init
+spec:
+  backoffLimit: 20
+  template:
+    spec:
+      serviceAccountName: shale-init
+      restartPolicy: OnFailure
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: init
+          image: ghcr.io/lesomnus/shale:dev
+          args: ["--config", "/etc/shale/shale.yaml", "init", "--if-needed", "--k8s-secret", "shale-control", "--tenant", "acme", "--admin", "admin", "--operator", "ops"]
+          env:
+            - name: SHALE_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: shale-db
+                  key: SHALE_DB_DSN
+          volumeMounts:
+            - name: config
+              mountPath: /etc/shale
+            - name: state
+              mountPath: /var/lib/shale
+      volumes:
+        - name: config
+          configMap:
+            name: shale-control-config
+        - name: state
+          emptyDir: {}

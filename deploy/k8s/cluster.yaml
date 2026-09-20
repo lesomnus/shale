@@ -1,0 +1,76 @@
+# The cluster API (§35.2): nodes, relays, and operators. Internal only: a
+# ClusterIP Service, which the Storage Nodes reach from the host network
+# through the kube-proxy replacement.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shale-cluster
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shale-cluster
+  template:
+    metadata:
+      labels:
+        app: shale-cluster
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: shale-cluster
+      containers:
+        - name: cluster
+          image: ghcr.io/lesomnus/shale:dev
+          args: ["--config", "/etc/shale/shale.yaml", "serve", "cluster"]
+          env:
+            - name: SHALE_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: shale-db
+                  key: SHALE_DB_DSN
+          ports:
+            - containerPort: 7401
+              name: grpc
+            - containerPort: 7403
+              name: http
+          readinessProbe:
+            tcpSocket:
+              port: 7401
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /etc/shale
+            - name: control-state
+              mountPath: /var/lib/shale/control
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: shale-control-config
+        - name: control-state
+          secret:
+            secretName: shale-control
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shale-cluster
+spec:
+  type: ClusterIP
+  selector:
+    app: shale-cluster
+  ports:
+    - name: grpc
+      port: 7401
+      targetPort: 7401
+    - name: http
+      port: 7403
+      targetPort: 7403

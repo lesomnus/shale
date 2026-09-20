@@ -1,0 +1,79 @@
+# The tenant API (§35.2): producers, readers, and people. It speaks gRPC
+# over TLS with the certificate from the `shale-control` Secret, so what
+# fronts it must pass TLS through (§34.5). Without an Ingress or a
+# LoadBalancer the NodePort is how the outside reaches it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shale-control
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shale-control
+  template:
+    metadata:
+      labels:
+        app: shale-control
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: shale-control
+      containers:
+        - name: control
+          image: ghcr.io/lesomnus/shale:dev
+          args: ["--config", "/etc/shale/shale.yaml", "serve", "control"]
+          env:
+            - name: SHALE_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: shale-db
+                  key: SHALE_DB_DSN
+          ports:
+            - containerPort: 7400
+              name: grpc
+            - containerPort: 7402
+              name: http
+          readinessProbe:
+            tcpSocket:
+              port: 7400
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /etc/shale
+            - name: control-state
+              mountPath: /var/lib/shale/control
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: shale-control-config
+        - name: control-state
+          secret:
+            secretName: shale-control
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shale-control
+spec:
+  type: NodePort
+  selector:
+    app: shale-control
+  ports:
+    - name: grpc
+      port: 7400
+      targetPort: 7400
+      nodePort: 30400
+    - name: http
+      port: 7402
+      targetPort: 7402
+      nodePort: 30402

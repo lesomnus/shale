@@ -1,0 +1,40 @@
+# The Control Plane's configuration (§36.1), shared by the init job and
+# both API Deployments. The state directory is the `shale-control` Secret
+# the init job makes: the KEK, the CA, and the CP certificate (§34.5).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shale-control-config
+data:
+  shale.yaml: |
+    state: /var/lib/shale
+    db:
+      driver: pgx
+      # dsn comes from the SHALE_DB_DSN environment variable (the shale-db Secret)
+      migrate: true
+    watch:
+      broker: postgres
+    server:
+      addr: ":7400"
+      http:
+        addr: ":7402"
+    cluster:
+      addr: ":7401"
+      http:
+        addr: ":7403"
+    control:
+      # Every name a client dials the APIs by: the Services, and the node
+      # addresses the NodePort is reached on from outside the cluster.
+      names:
+        - shale-control
+        - shale-control.shale.svc
+        - shale-control.shale.svc.cluster.local
+        - shale-cluster
+        - shale-cluster.shale.svc
+        - shale-cluster.shale.svc.cluster.local
+        - 10.1.2.73
+        - 10.1.2.74
+        - 10.1.2.75
+      # Nodes of this cluster are adopted as they join; producers and
+      # readers still wait for an operator (§33.4).
+      auto_adopt: true

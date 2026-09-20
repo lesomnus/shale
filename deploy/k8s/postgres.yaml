@@ -1,0 +1,71 @@
+# PostgreSQL for the index (§34.2). One instance on a local-path volume is
+# a lab; a production deployment brings its own with replication and
+# backups (§29) and replaces the DSN in the `shale-db` Secret.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shale-db
+type: Opaque
+stringData:
+  POSTGRES_USER: shale
+  POSTGRES_PASSWORD: change-me-before-applying
+  POSTGRES_DB: shale
+  # What the CP and the init job read (§36.1: db.dsn).
+  SHALE_DB_DSN: postgres://shale:change-me-before-applying@shale-postgres:5432/shale?sslmode=disable
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shale-postgres
+spec:
+  clusterIP: None
+  selector:
+    app: shale-postgres
+  ports:
+    - name: postgres
+      port: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: shale-postgres
+spec:
+  serviceName: shale-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shale-postgres
+  template:
+    metadata:
+      labels:
+        app: shale-postgres
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          envFrom:
+            - secretRef:
+                name: shale-db
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+              name: postgres
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "shale"]
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
