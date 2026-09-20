@@ -326,7 +326,8 @@ shale site add|ls|erase
 shale site-member add|ls|erase           # which people and readers may see which site
 shale holder add|ls|patch|erase          # people
 shale object get|ls|watch
-shale object reschedule '{"set":{"id":"<set>"},"from":"<t>","to":"<t>","expired":"<date>","deleted":"<date>","reason":"<text>"}'
+shale object reschedule <object> '{"expired":"<date>","deleted":"<date>","reason":"<text>"}'
+# by set or source over a time range: the API takes it (§20.3); the CLI's REF is not optional yet (#73)
 shale object timeline '{"set":{"id":"<set>"},"from":"<t>","to":"<t>","size":n,"after":"<cursor>"}'
 shale live [--for d] <set>               # a WebRTC viewer per source, for a look (§39.4)
 ```
