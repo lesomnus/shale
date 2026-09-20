@@ -179,6 +179,26 @@ func (n *Node) Run(ctx context.Context) error {
 	if len(n.sinks) == 0 {
 		return errors.New("no sinks configured")
 	}
+	// Sinks that share a device, datasets of one ZFS pool for instance
+	// (§22.2): placement spreads across devices, so these give no spread;
+	// the heartbeat says so.
+	byDevice := map[string][]*Sink{}
+	for _, s := range n.sinks {
+		byDevice[s.DeviceId] = append(byDevice[s.DeviceId], s)
+	}
+	for dev, group := range byDevice {
+		if len(group) < 2 || dev == "" {
+			continue
+		}
+		var paths []string
+		for _, s := range group {
+			paths = append(paths, s.Path)
+		}
+		for _, s := range group {
+			s.Warn(fmt.Sprintf("shares device %s with %d other sink(s): no spread across them", dev, len(group)-1))
+		}
+		n.log.Warn("sinks on one device: placement spreads across devices, not these", "device", dev, "sinks", strings.Join(paths, ", "))
+	}
 	// Several sinks on one device: warned about in the heartbeat (§22.2).
 	byDev := map[string]int{}
 	for _, s := range n.sinks {

@@ -86,13 +86,20 @@ from OpenZFS 2.3 with `direct=standard`, buffered before that. `fallocate`
 reservations mean nothing on a copy-on-write filesystem, and the probe's
 "no" is harmless there. The pool's parity or mirroring makes the device one
 that survives a disk; Shale neither sees nor needs that, and it costs
-nothing beyond the pool's own capacity.
+nothing beyond the pool's own capacity. The node reads the dataset's
+properties when it opens the sink: the capacity is the `quota` (or
+`refquota`) when none is declared, the probe answers direct I/O only with
+`direct=standard` or `always` and an inline record only with `xattr=sa`,
+and every recommended property that is off goes into the sink's
+capability warnings, which the heartbeat carries and `shale sink get`
+shows.
 
 ```yaml
 sinks:
   - path: /mnt/hdd01           # whole-HDD mount: device and capacity detected
   - path: /srv/shale/a
     capacity: 500GiB           # required when the filesystem is shared
+  - path: /tank/cctv           # a ZFS dataset: the pool is the device, its quota the capacity
 ```
 
 **Capacity on a shared filesystem.** A sink with a declared `capacity`

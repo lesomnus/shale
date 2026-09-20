@@ -98,6 +98,11 @@ func OpenSink(c SinkConfig, marks Watermarks) (*Sink, error) {
 	s.serve.Store(true)
 
 	dev, warn := deviceIdentity(path)
+	// A ZFS dataset: the pool is the device (§22.2).
+	z := zfsOf(path)
+	if z != nil && z.Guid != "" {
+		dev, warn = "zfs:"+z.Guid, nil
+	}
 	if c.Device != "" {
 		dev, warn = c.Device, nil
 	}
@@ -112,13 +117,22 @@ func OpenSink(c SinkConfig, marks Watermarks) (*Sink, error) {
 	if err != nil {
 		return nil, err
 	}
+	if z != nil {
+		z.adjust(caps)
+	}
 	s.Caps = caps
 	if !caps.GetXattr() {
 		return nil, fmt.Errorf("sink %s: the filesystem has no user xattrs, which the record needs (§22.2)", path)
 	}
 	if c.Capacity == 0 {
-		if shared, why := looksShared(path); shared {
-			s.warnings = append(s.warnings, "no capacity declared on "+why+"; the whole filesystem counts")
+		switch {
+		case z != nil && z.Quota > 0:
+			// The dataset's quota is the capacity (§22.2).
+			s.Capacity = z.Quota
+		default:
+			if shared, why := looksShared(path); shared {
+				s.warnings = append(s.warnings, "no capacity declared on "+why+"; the whole filesystem counts")
+			}
 		}
 	}
 
