@@ -65,6 +65,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			t.Drop(g)
 		}
 		addCustom(t, c, false)
+		addObjectCommands(t, c)
 		addStateCommands(t, c, false)
 		addProducerCommands(t, c)
 		root.Commands = append(root.Commands, t.Commands()...)

@@ -16,7 +16,9 @@ import (
 
 // custom are the operations that mean something (§32), mounted beside the
 // generated verbs: each takes a REF where the request names a row, and the
-// rest of the request as protojson.
+// rest of the request as protojson. `object reschedule` is not here: its
+// request has a `ref` and also names rows without one, so it is mounted by
+// hand with an optional REF (object.go).
 var custom = map[string]string{
 	"node/adopt":                "shale.NodeService.Adopt",
 	"node/resolve":              "shale.NodeService.Resolve",
@@ -33,7 +35,6 @@ var custom = map[string]string{
 	"object/renew":              "shale.ObjectService.Renew",
 	"object/report-attempt":     "shale.ObjectService.ReportAttempt",
 	"object/report-failure":     "shale.ObjectService.ReportFailure",
-	"object/reschedule":         "shale.ObjectService.Reschedule",
 	"object/timeline":           "shale.ObjectService.Timeline",
 	"sink/adopt":                "shale.SinkService.Adopt",
 	"sink/retire":               "shale.SinkService.Retire",

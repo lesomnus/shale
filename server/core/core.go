@@ -101,11 +101,27 @@ type Deps struct {
 	// let the sink in (§11.1), so a sink at the margin does not flap.
 	forecastMu sync.Mutex
 	forecast   map[forecastKey]bool
+	// readmitAt is when the forecast last had every sink out, so that
+	// warning comes once a minute while it lasts, not once an allocation.
+	readmitAt time.Time
 }
 
 type forecastKey struct {
 	sink  pdid.Id
 	epoch int64
+}
+
+// warnReadmit says whether the warning that the forecast excludes every
+// sink is due (§11.1): the first time, then once a minute.
+func (d *Deps) warnReadmit(now time.Time) bool {
+	d.forecastMu.Lock()
+	defer d.forecastMu.Unlock()
+	if !d.readmitAt.IsZero() && now.Sub(d.readmitAt) < time.Minute {
+		return false
+	}
+	d.readmitAt = now
+
+	return true
 }
 
 // allowReport says whether a producer's report against a node still counts

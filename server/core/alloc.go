@@ -204,7 +204,7 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 	// keep every sink out, there is nothing to spread over and stopping the
 	// writes protects no footage: those sinks take writes anyway, and
 	// pressure decides from there.
-	if readmitForecast(a.cluster.Sinks, a.why) {
+	if readmitForecast(a.cluster.Sinks, a.why) && s.d.warnReadmit(a.now) {
 		s.d.log().Warn("the forecast excludes every sink; writing anyway, pressure decides", "sinks", len(a.cluster.Sinks))
 	}
 
