@@ -88,6 +88,21 @@ func start(t *testing.T) *cluster {
 	}
 
 	cl := &cluster{t: t, cfg: c, running: r, cancel: cancel, done: done}
+	// The node is up once its first heartbeat registered its sink.
+	ops := api.NewSinkServiceClient(cl.dialCluster("@cluster/ops"))
+	require.Eventually(t, func() bool {
+		vs, err := ops.List(ctx, api.SinkListRequest_builder{}.Build())
+		if err != nil {
+			return false
+		}
+		for _, s := range vs.GetItems() {
+			if s.GetDateSeen() != nil && s.GetAttachment() == api.SinkAttachment_SINK_ATTACHMENT_ATTACHED {
+				return true
+			}
+		}
+
+		return false
+	}, 30*time.Second, 100*time.Millisecond, "the node's sink is registered")
 	t.Cleanup(func() {
 		cancel()
 		select {

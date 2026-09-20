@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -165,7 +166,13 @@ func loginURL(c *cmd.Config, addr string, cluster bool) (string, bool, error) {
 		case "7401":
 			port = "7403"
 		default:
-			port = p
+			// The sign-in listener is the API port plus two, on any port
+			// (a NodePort 30400 signs in on 30402).
+			if n, err := strconv.Atoi(p); err == nil {
+				port = strconv.Itoa(n + 2)
+			} else {
+				port = p
+			}
 		}
 	}
 	scheme := "https"
