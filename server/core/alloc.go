@@ -187,7 +187,7 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 		// The capacity forecast (§11.1): a sink that would fill before GC
 		// could make room sits this epoch out.
 		if eligible && !s.forecastOk(ctx, a, v, place) {
-			eligible, a.why[id] = false, "the forecast says it would fill this epoch"
+			eligible, a.why[id] = false, forecastWhy
 		}
 
 		a.cluster.Sinks = append(a.cluster.Sinks, placement.Sink{
@@ -199,7 +199,42 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 		})
 	}
 
+	// The forecast keeps a sink that would fill this epoch from taking
+	// more, so the others have room to spread over (§11.1). When it would
+	// keep every sink out, there is nothing to spread over and stopping the
+	// writes protects no footage: those sinks take writes anyway, and
+	// pressure decides from there.
+	if readmitForecast(a.cluster.Sinks, a.why) {
+		s.d.log().Warn("the forecast excludes every sink; writing anyway, pressure decides", "sinks", len(a.cluster.Sinks))
+	}
+
 	return nil
+}
+
+// forecastWhy is the reason a sink the forecast excluded carries.
+const forecastWhy = "the forecast says it would fill this epoch"
+
+// readmitForecast makes the sinks the forecast alone excluded eligible
+// again when no sink is eligible at all, and says whether it did.
+func readmitForecast(sinks []placement.Sink, why map[pdid.Id]string) bool {
+	var byForecast []int
+	for i, v := range sinks {
+		if v.Eligible {
+			return false
+		}
+		if why[v.Id] == forecastWhy {
+			byForecast = append(byForecast, i)
+		}
+	}
+	if len(byForecast) == 0 {
+		return false
+	}
+	for _, i := range byForecast {
+		sinks[i].Eligible = true
+		delete(why, sinks[i].Id)
+	}
+
+	return true
 }
 
 // forecastOk is the capacity forecast of §11.1 for one sink and the

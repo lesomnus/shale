@@ -78,6 +78,14 @@ room. Its keys fall to their next candidates, and nothing else moves. The
 decision is made once per sink and epoch, when the first allocation for that
 epoch is computed, so a sink at the margin does not flap.
 
+The filter never leaves a set with nowhere to write: when the forecast
+alone would keep every sink out, none is kept out, since stopping the
+writes would protect no footage, and pressure decides from there
+([§21](06-retention-gc.md#21-lazy-gc)). The lab found this with three
+20 GiB sinks under 96 Mbps and a 30-day retention: at the epoch's turn the
+forecast excluded all three, the cluster refused every write with 13 GB
+still free, and the producer dropped what it could not hold.
+
 This is a filter, not a weight. Weights stay at raw capacity, so placement
 stays stable. In steady state all sinks look alike and the filter rarely
 fires. It catches the exceptions: a sink full of long-retention data, a
