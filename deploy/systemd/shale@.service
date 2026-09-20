@@ -1,0 +1,28 @@
+# One unit per role (§34.6): `systemctl enable --now shale@storage`,
+# `shale@producer`, `shale@control`, `shale@cluster`, `shale@relay`,
+# `shale@reader`, or `shale@all` for a single machine. Configuration lives
+# in /etc/shale/shale.yaml and state in /var/lib/shale.
+[Unit]
+Description=Shale %i
+Documentation=https://github.com/lesomnus/shale
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=shale
+Group=shale
+ExecStart=/usr/bin/shale --config /etc/shale/shale.yaml serve %i
+Restart=always
+RestartSec=5
+# Many concurrent uploads (§34.6).
+LimitNOFILE=65536
+StateDirectory=shale
+StateDirectoryMode=0700
+# The node's sinks are outside the state directory; they are owned by the
+# shale user at install time.
+NoNewPrivileges=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

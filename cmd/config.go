@@ -141,46 +141,46 @@ type StorageConfig struct {
 	Buffered bool `yaml:"buffered"`
 }
 
-// SourceConfig is one camera a producer records (§38).
+// SourceConfig is one camera a producer records (§38.3): tier 1 is the
+// structured fields, tier 2 the options passed through, tier 3 a command of
+// your own whose stdout is MPEG-TS.
 type SourceConfig struct {
 	// Alias of the Source row; registered from this configuration when
-	// missing.
+	// missing (§38.4).
 	Alias string `yaml:"alias"`
 	Name  string `yaml:"name"`
-	// Input: an RTSP/ONVIF URL, a V4L2 device, or `-` for a stream on the
-	// command's stdout.
+	// Input: `v4l2:/dev/video0`, `rtsp://...`, or `file:/path.ts`.
 	Input string `yaml:"input"`
-	// Command is a custom capture command (tier 3); its stdout is the
-	// MPEG-TS stream.
-	Command []string `yaml:"command"`
-	// Encoder options (tier 2), passed through to ffmpeg.
-	EncoderOptions []string `yaml:"encoder_options"`
-	// Structured settings (tier 1).
-	Video VideoConfig `yaml:"video"`
-	Audio AudioConfig `yaml:"audio"`
+	// Format is what the camera delivers: mjpeg | yuyv | h264 | h265.
+	Format string `yaml:"format"`
+	Size   string `yaml:"size"`
+	Fps    int    `yaml:"fps"`
+	// Encoder: auto | h264_v4l2m2m | h264_vaapi | h264_qsv | h264_nvenc |
+	// libx264 | copy.
+	Encoder string `yaml:"encoder"`
 	// MaxBitrate is the declared ceiling, e.g. "4Mbps", or "auto" (§38.5).
 	MaxBitrate string `yaml:"max_bitrate"`
-	// PassThrough copies the camera's own stream without encoding.
-	PassThrough bool `yaml:"pass_through"`
+	// KeyframeInterval, e.g. "2s"; negotiated, 2 s by default.
+	KeyframeInterval time.Duration `yaml:"keyframe_interval"`
+	Audio            *AudioConfig  `yaml:"audio"`
+	// Tier 2.
+	EncoderOptions  map[string]string `yaml:"encoder_options"`
+	ExtraInputArgs  []string          `yaml:"extra_input_args"`
+	ExtraOutputArgs []string          `yaml:"extra_output_args"`
+	// Tier 3: run with `sh -c`; stdout must be MPEG-TS.
+	Command string `yaml:"command"`
 	// Zone label (§7).
 	Zone string `yaml:"zone"`
 }
 
-// VideoConfig is the tier-1 video settings (§38.3).
-type VideoConfig struct {
-	Codec      string `yaml:"codec"`
-	Resolution string `yaml:"resolution"`
-	FrameRate  int    `yaml:"frame_rate"`
-	Encoder    string `yaml:"encoder"`
-	// Keyframe interval, e.g. "2s".
-	KeyframeInterval time.Duration `yaml:"keyframe_interval"`
-}
-
-// AudioConfig is the tier-1 audio settings.
+// AudioConfig is a source's audio; absent means no audio (§38.1).
 type AudioConfig struct {
-	Codec   string `yaml:"codec"`
+	// Device, e.g. `alsa:hw:1`.
+	Device string `yaml:"device"`
+	// Bitrate, e.g. "64kbps".
 	Bitrate string `yaml:"bitrate"`
-	Enabled bool   `yaml:"enabled"`
+	// Codec: aac (default) or opus (§38.7).
+	Codec string `yaml:"codec"`
 }
 
 // ProducerConfig is a producer's own settings (§36.1, producer scope).

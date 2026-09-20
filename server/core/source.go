@@ -37,6 +37,12 @@ func (s coreSource) Add(ctx context.Context, req *api.SourceAddRequest) (*api.So
 	if err != nil {
 		return nil, err
 	}
+	// A producer registers sources into its own set and no other (§38.4).
+	if f, err := actor(ctx); err == nil && kindOf(f.Actor) == DomProducer {
+		if err := s.producerOwns(ctx, f.Actor, set); err != nil {
+			return nil, err
+		}
+	}
 
 	var out *api.Source
 	err = s.tx(ctx, func(nx api.Server) error {

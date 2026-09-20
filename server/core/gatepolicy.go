@@ -102,6 +102,7 @@ var producerMay = map[string]bool{
 	api.SetService_Get_FullMethodName: true, api.SetService_List_FullMethodName: true,
 	api.SetService_Negotiate_FullMethodName: true, api.SetService_Allocate_FullMethodName: true,
 	api.SourceService_Get_FullMethodName: true, api.SourceService_List_FullMethodName: true,
+	api.SourceService_Add_FullMethodName: true,
 	api.ObjectService_Get_FullMethodName: true, api.ObjectService_Allocate_FullMethodName: true,
 	api.ObjectService_Reallocate_FullMethodName: true, api.ObjectService_Renew_FullMethodName: true,
 	api.ObjectService_ReportAttempt_FullMethodName: true, api.ObjectService_ReportFailure_FullMethodName: true,

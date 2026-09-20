@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/otx/log"
@@ -16,8 +17,10 @@ import (
 
 	"github.com/lesomnus/payday/spin"
 
+	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
+	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/storage"
 )
 
@@ -207,14 +210,21 @@ func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 	g.Go(func() error { return s.Serve(ctx, cmd.SurfaceTenant, tl) })
 	g.Go(func() error { return s.Serve(ctx, cmd.SurfaceCluster, cl) })
 
-	// The node in the same process dials the cluster listener.
+	// The node in the same process dials the cluster listener, on loopback
+	// when it listens on every interface.
 	nc := storageConfig(c)
 	if nc.Cp == "" || c.Cp == "" {
 		scheme := "https://"
 		if c.IsDev() {
 			scheme = "http://"
 		}
-		nc.Cp = scheme + cl.Addr().String()
+		addr := cl.Addr().String()
+		if host, port, err := net.SplitHostPort(addr); err == nil {
+			if ip := net.ParseIP(host); ip == nil || ip.IsUnspecified() {
+				addr = net.JoinHostPort("127.0.0.1", port)
+			}
+		}
+		nc.Cp = scheme + addr
 	}
 	n, err := storage.New(nc)
 	if err != nil {
@@ -299,12 +309,101 @@ func storageConfig(c *cmd.Config) storage.Config {
 	return cfg
 }
 
-// The producer, the reader agent, and the relay arrive with their own
-// packages; until then the commands say so.
-var (
-	serveProducer = func(ctx context.Context, c *cmd.Config) error {
-		return errors.New("the producer is not built yet")
+// serveProducer is `shale serve producer` (§38).
+func serveProducer(ctx context.Context, c *cmd.Config) error {
+	ctx, done, err := Telemetry(ctx, c)
+	if err != nil {
+		return err
 	}
+	defer done()
+	cfg, err := ProducerConfig(c)
+	if err != nil {
+		return err
+	}
+	p, err := producer.New(cfg)
+	if err != nil {
+		return err
+	}
+
+	return p.Run(ctx)
+}
+
+// ProducerConfig maps the file onto the producer's settings.
+func ProducerConfig(c *cmd.Config) (producer.Config, error) {
+	pc := c.Producer
+	cfg := producer.Config{
+		StateDir:          c.StateDir("producer"),
+		Cp:                c.Cp,
+		CaHash:            c.CaHash,
+		Dev:               c.IsDev(),
+		Tenant:            c.Tenant,
+		Ffmpeg:            pc.Ffmpeg,
+		Retain:            pc.Retain,
+		SegmentDuration:   pc.SegmentDuration,
+		IdleTimeout:       pc.IdleTimeout,
+		AbandonTimeout:    pc.AbandonTimeout,
+		AllocationHorizon: pc.AllocationHorizon,
+		HeartbeatInterval: pc.HeartbeatInterval,
+		Log:               slog.Default(),
+	}
+	cfg.Upload = producer.UploadConfig{ResumeTimeout: pc.ResumeTimeout, RetryAfterCap: pc.RetryAfterCap, PlacementRetries: pc.PlacementRetries}
+	switch strings.ToLower(pc.Mode) {
+	case "buffered":
+		cfg.Mode = api.UploadMode_UPLOAD_MODE_BUFFERED
+	case "live", "":
+		cfg.Mode = api.UploadMode_UPLOAD_MODE_LIVE
+	default:
+		return cfg, errors.New("producer.mode: live or buffered")
+	}
+	if pc.Uplink != "" {
+		v, err := producer.ParseBitrate(pc.Uplink)
+		if err != nil {
+			return cfg, err
+		}
+		cfg.Uplink = v
+	}
+	if pc.Buffer != "" {
+		v, err := storage.ParseCapacity(pc.Buffer)
+		if err != nil {
+			return cfg, err
+		}
+		cfg.Buffer = v
+	}
+	for _, sc := range pc.Sources {
+		src := producer.SourceConfig{
+			Alias: sc.Alias, Name: sc.Name, Input: sc.Input, Format: sc.Format, Size: sc.Size, Fps: sc.Fps,
+			Encoder: sc.Encoder, KeyframeInterval: sc.KeyframeInterval, EncoderOptions: sc.EncoderOptions,
+			ExtraInputArgs: sc.ExtraInputArgs, ExtraOutputArgs: sc.ExtraOutputArgs, Command: sc.Command, Zone: sc.Zone,
+		}
+		if sc.MaxBitrate == "" || strings.EqualFold(sc.MaxBitrate, "auto") {
+			src.MaxBitrateAuto = true
+		} else {
+			v, err := producer.ParseBitrate(sc.MaxBitrate)
+			if err != nil {
+				return cfg, err
+			}
+			src.MaxBitrate = v
+		}
+		if sc.Audio != nil {
+			a := &producer.AudioConfig{Device: sc.Audio.Device, Codec: sc.Audio.Codec}
+			if sc.Audio.Bitrate != "" {
+				v, err := producer.ParseBitrate(sc.Audio.Bitrate)
+				if err != nil {
+					return cfg, err
+				}
+				a.Bitrate = v
+			}
+			src.Audio = a
+		}
+		cfg.Sources = append(cfg.Sources, src)
+	}
+
+	return cfg, nil
+}
+
+// The reader agent and the relay arrive with their own packages; until
+// then the commands say so.
+var (
 	serveReader = func(ctx context.Context, c *cmd.Config) error {
 		return errors.New("the reader agent is not built yet")
 	}

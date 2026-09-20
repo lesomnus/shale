@@ -62,6 +62,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			t.Drop(g)
 		}
 		addCustom(t, c, false)
+		addProducerCommands(t, c)
 		root.Commands = append(root.Commands, t.Commands()...)
 	}
 	if t, err := pdcmd.New(&connector{c: c, cluster: true}); err == nil {

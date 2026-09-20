@@ -190,9 +190,12 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		return nil, status.Errorf(codes.InvalidArgument, "date_started %s is older than the set's retention", started.Format(time.RFC3339))
 	}
 
+	// The slot's object, if any: date_started is the slot at allocation and
+	// the data time once stored, so the lookup is by the slot's span.
 	srcId := mustId(src.GetId())
 	existing, err := s.d.Ent.Object.Query().
-		Where(object.SourceIdEQ(srcId.Uuid()), object.DateStartedEQ(started.UTC())).
+		Where(object.SourceIdEQ(srcId.Uuid()), object.DateStartedGTE(started.UTC()), object.DateStartedLT(started.UTC().Add(duration))).
+		Order(ent.Asc(object.FieldDateStarted)).
 		WithSink().
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
