@@ -189,20 +189,34 @@ func (d *Demuxer) parsePMT(s []byte) {
 	}
 	infoLen := int(s[10]&0x0f)<<8 | int(s[11])
 	i := 12 + infoLen
+	var video, audio uint16
+	var codec byte
+	opus := false
 	for i+5 <= end {
 		typ := s[i]
 		pid := uint16(s[i+1]&0x1f)<<8 | uint16(s[i+2])
 		esLen := int(s[i+3]&0x0f)<<8 | int(s[i+4])
 		desc := s[i+5 : min(i+5+esLen, end)]
 		i += 5 + esLen
-		if (typ == StreamH264 || typ == StreamH265) && d.videoPID == 0 {
-			d.videoPID, d.codec = pid, typ
+		if (typ == StreamH264 || typ == StreamH265) && video == 0 {
+			video, codec = pid, typ
 		}
 		// Opus rides a private stream with a registration descriptor
-		// saying so (Opus in TS: ETSI TS 102 366 style, as ffmpeg writes).
-		if typ == 0x06 && d.audioPID == 0 && hasRegistration(desc, "Opus") {
-			d.audioPID, d.opus = pid, true
+		// saying so, as ffmpeg writes it.
+		if typ == 0x06 && audio == 0 && hasRegistration(desc, "Opus") {
+			audio, opus = pid, true
 		}
+	}
+	// The tables may change under a session: the producer's tee switches
+	// between the camera's bytes and its live helper's (§38.7), whose PIDs
+	// need not agree. A unit being assembled belongs to the old stream.
+	if video != d.videoPID || codec != d.codec {
+		d.videoPID, d.codec = video, codec
+		d.open, d.buf = false, d.buf[:0]
+	}
+	if audio != d.audioPID || opus != d.opus {
+		d.audioPID, d.opus = audio, opus
+		d.aopen, d.abuf = false, d.abuf[:0]
 	}
 }
 

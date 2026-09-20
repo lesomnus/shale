@@ -185,13 +185,17 @@ type SourceConfig struct {
 	Zone string `yaml:"zone"`
 }
 
-// AudioConfig is a source's audio; absent means no audio (§38.1).
+// AudioConfig is a source's audio (§38.3): absent, a camera's own audio is
+// recorded as the camera sends it, and a USB camera has none.
 type AudioConfig struct {
-	// Device, e.g. `alsa:hw:1`.
+	// Device is a microphone, e.g. `alsa:hw:1`, recorded in place of the
+	// camera's audio.
 	Device string `yaml:"device"`
-	// Bitrate, e.g. "64kbps".
+	// Bitrate, e.g. "64kbps": what a microphone is encoded at, and the
+	// Opus the live helper makes for the relay (§38.7).
 	Bitrate string `yaml:"bitrate"`
-	// Codec: aac (default) or opus (§38.7).
+	// Codec: copy (the default for a camera's audio), aac (the default for
+	// a microphone), opus (plays live as it is), or none.
 	Codec string `yaml:"codec"`
 }
 

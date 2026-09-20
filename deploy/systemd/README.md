@@ -103,7 +103,7 @@ producer:
       max_bitrate: auto
 #     audio:
 #       device: alsa:plughw:2,0  # the camera's microphone; plughw converts what hw: cannot
-#       codec: opus              # Opus records and plays live as it is (§39.4)
+#       codec: opus              # Opus plays live as it is; aac, the default, plays through the live helper (§38.7)
 
 ```
 

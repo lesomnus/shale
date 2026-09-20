@@ -242,11 +242,12 @@ producer (from its heartbeat, §38.6)
   per source: input up/down, frame rate, measured rate vs. ceiling,
   keyframe interval, capture restarts, early cuts
   host CPU, temperature, uplink usage
+  live helpers running (audio transcodes for the relay, §38.7), live bytes dropped
 
 relay (§39)
   attached producers, active sources, viewers, egress
   sessions started / refused (limits, bad tokens), start-to-first-frame time
-  audio transcodes, CPU
+  CPU
 
 control plane
   hosts pending adoption, certificates due for renewal

@@ -39,11 +39,26 @@ type Streams struct {
 	// 0x10 MPEG-4.
 	Video     byte
 	AudioPIDs []uint16
+	// AudioTypes are the stream types of AudioPIDs, in order: 0x0F AAC,
+	// 0x11 AAC in LATM, 0x03/0x04 MPEG audio, 0x81/0x87 AC-3/E-AC-3, 0x06 a
+	// private stream its descriptors name.
+	AudioTypes []byte
+	// AudioOpus says an audio stream is Opus: a private stream with a
+	// registration descriptor saying so, as ffmpeg writes it (§39.4).
+	AudioOpus bool
+	// AudioAnon says an audio stream is a private stream no descriptor
+	// names, which is what ffmpeg writes for a codec TS has no type for,
+	// G.711 copied from a camera being the usual case: no player finds it
+	// (§38.3).
+	AudioAnon bool
 	// PAT and PMT are the last table packets seen, prepended to every
 	// segment so it plays on its own (§38.2).
 	PAT []byte
 	PMT []byte
 }
+
+// HasAudio says whether the tables named an audio stream at all.
+func (s Streams) HasAudio() bool { return len(s.AudioPIDs) > 0 }
 
 // Reader reads packets and keeps the tables.
 type Reader struct {
@@ -172,22 +187,74 @@ func (r *Reader) parsePMT(p *Packet) {
 	var video uint16
 	var vt byte
 	var audio []uint16
+	var types []byte
+	opus, anon := false, false
 	for i := 0; i+5 <= len(es); {
 		st := es[i]
 		pid := uint16(es[i+1]&0x1f)<<8 | uint16(es[i+2])
 		esl := int(es[i+3]&0x0f)<<8 | int(es[i+4])
+		desc := es[i+5 : min(i+5+esl, len(es))]
+		i += 5 + esl
 		switch st {
 		case 0x1b, 0x24, 0x02, 0x10:
 			if video == 0 {
 				video, vt = pid, st
 			}
-		case 0x0f, 0x11, 0x03, 0x04, 0x81, 0x06:
-			audio = append(audio, pid)
+		case 0x0f, 0x11, 0x03, 0x04, 0x81, 0x87, 0x8a:
+			audio, types = append(audio, pid), append(types, st)
+		case 0x06:
+			// A private stream is whatever its descriptors say: Opus by its
+			// registration, Dolby or DTS by their DVB descriptors, and with
+			// none at all the codec TS has no type for (§38.3). Anything
+			// else named (KLV, teletext, subtitles) is not audio.
+			switch {
+			case hasRegistration(desc, "Opus"):
+				audio, types, opus = append(audio, pid), append(types, st), true
+			case hasDescriptor(desc, 0x6a, 0x7a, 0x7b):
+				audio, types = append(audio, pid), append(types, st)
+			case len(desc) == 0:
+				audio, types, anon = append(audio, pid), append(types, st), true
+			}
 		}
-		i += 5 + esl
 	}
-	r.s.VideoPID, r.s.Video, r.s.AudioPIDs = video, vt, audio
+	r.s.VideoPID, r.s.Video = video, vt
+	r.s.AudioPIDs, r.s.AudioTypes, r.s.AudioOpus, r.s.AudioAnon = audio, types, opus, anon
 	r.s.PMT = append(r.s.PMT[:0], p.Data[:]...)
+}
+
+// hasRegistration looks for a registration descriptor (tag 5) with the
+// format identifier among an elementary stream's descriptors.
+func hasRegistration(desc []byte, format string) bool {
+	for i := 0; i+2 <= len(desc); {
+		tag, n := desc[i], int(desc[i+1])
+		if i+2+n > len(desc) {
+			return false
+		}
+		if tag == 0x05 && n >= 4 && string(desc[i+2:i+6]) == format {
+			return true
+		}
+		i += 2 + n
+	}
+
+	return false
+}
+
+// hasDescriptor says whether any of the tags is among the descriptors.
+func hasDescriptor(desc []byte, tags ...byte) bool {
+	for i := 0; i+2 <= len(desc); {
+		tag, n := desc[i], int(desc[i+1])
+		if i+2+n > len(desc) {
+			return false
+		}
+		for _, t := range tags {
+			if tag == t {
+				return true
+			}
+		}
+		i += 2 + n
+	}
+
+	return false
 }
 
 // IsKeyframe says whether this packet starts a keyframe of the video

@@ -437,13 +437,22 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 		}
 		var pk Packet
 		started := time.Now()
-		checked := false
+		checked, tables := false, false
 		for {
 			if err := reader.Next(&pk); err != nil {
 				if !errors.Is(err, io.EOF) && ctx.Err() == nil {
 					p.log.Warn("stream", "source", s.cfg.Alias, "err", err.Error())
 				}
 				break
+			}
+			if !tables && len(reader.Streams().PMT) > 0 {
+				// The first PMT says what the capture produces; audio TS
+				// cannot carry restarts it encoding (§38.3), before any
+				// segment opened.
+				tables = true
+				if s.capture.CheckAudio(reader.Streams()) {
+					break
+				}
 			}
 			s.cutter.Feed(&pk)
 			p.relay.feed(s, &pk, reader)
@@ -795,6 +804,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 	p.relay.mu.Lock()
 	p.m.dropped.Record(ctx, p.relay.dropped)
 	p.relay.mu.Unlock()
+	p.m.transcodes.Record(ctx, p.relay.transcodes())
 
 	hctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()

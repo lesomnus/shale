@@ -143,7 +143,8 @@ out:
   and playing recordings through the relay ([§39.5](16-relay.md#395-capacity)).
 - **Encoding inside Shale's binary.** The producer supervises capture
   processes and never touches a frame ([§38.3](15-producer.md#383-managed-capture)).
-  The relay transcodes audio to Opus and nothing else ([§39.1](16-relay.md#391-what-it-is)).
+  The producer's live helper, an ffmpeg it runs while a camera is watched,
+  transcodes audio to Opus and nothing else ([§38.7](15-producer.md#387-live-output)).
 
 Ideas recorded, not planned:
 

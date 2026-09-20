@@ -15,14 +15,16 @@ import (
 	"github.com/lesomnus/shale/api"
 )
 
-// The live tee (§39.3): the producer keeps one stream to the relay the CP
-// assigned it, sends nothing until the relay says Start for a source, then
-// forwards that source's TS bytes, the same ones it stores, from the next
-// keyframe on with the tables prepended, until Stop.
+// The live tee (§39.3, §38.7): the producer keeps one stream to the relay
+// the CP assigned it, sends nothing until the relay says Start for a
+// source, then forwards that source's TS bytes from the next keyframe on
+// with the tables prepended, until Stop. The video is the one it stores;
+// audio that is not Opus goes through the live helper (live.go) first.
 
 // relayLink is the producer's side of the relay stream.
 type relayLink struct {
-	p *Producer
+	p   *Producer
+	ctx context.Context
 
 	mu         sync.Mutex
 	assignment *api.RelayAssignment
@@ -32,14 +34,22 @@ type relayLink struct {
 	active map[pdid.Id]*tap
 	send   chan *api.AttachRequest
 	// relayId is the relay attached to, for the heartbeat's sake.
-	relayId pdid.Id
-	dropped int64
+	relayId  pdid.Id
+	dropped  int64
+	noFfmpeg bool
 }
 
 // tap is one started source: bytes accumulate from the keyframe on.
 type tap struct {
 	keyed bool
 	buf   []byte
+	// h is the live helper while the source's audio is not Opus (§38.7);
+	// nil when the bytes go as they are.
+	h *helper
+	// raw says the helper failed for good and the bytes go as they are;
+	// fails counts its exits.
+	raw   bool
+	fails int
 }
 
 const (
@@ -83,6 +93,9 @@ func (l *relayLink) current() *api.RelayAssignment {
 
 // run keeps the stream up while there is an assignment.
 func (l *relayLink) run(ctx context.Context) error {
+	l.mu.Lock()
+	l.ctx = ctx
+	l.mu.Unlock()
 	wait := time.Second
 	for {
 		ra := l.current()
@@ -221,8 +234,12 @@ func (l *relayLink) start(id pdid.Id) {
 func (l *relayLink) stop(id pdid.Id) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if _, ok := l.active[id]; ok {
+	if t, ok := l.active[id]; ok {
 		delete(l.active, id)
+		if t.h != nil {
+			t.h.close()
+			t.h = nil
+		}
 		l.p.log.Info("live off", "source", id.String())
 	}
 }
@@ -230,12 +247,33 @@ func (l *relayLink) stop(id pdid.Id) {
 func (l *relayLink) clear() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	for _, t := range l.active {
+		if t.h != nil {
+			t.h.close()
+			t.h = nil
+		}
+	}
 	l.active = map[pdid.Id]*tap{}
 	l.relayId = pdid.Nil
 }
 
+// transcodes is how many live helpers run, for the heartbeat.
+func (l *relayLink) transcodes() int64 {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	var n int64
+	for _, t := range l.active {
+		if t.h != nil {
+			n++
+		}
+	}
+
+	return n
+}
+
 // feed is the tap in the capture loop: a started source's packets go to
-// the relay from the next keyframe on, the tables first, in batches.
+// the relay from the next keyframe on, the tables first, in batches,
+// through the live helper when the audio is not Opus (§38.7).
 func (l *relayLink) feed(s *source, pk *Packet, reader *Reader) {
 	if s.row == nil {
 		return
@@ -257,28 +295,61 @@ func (l *relayLink) feed(s *source, pk *Packet, reader *Reader) {
 		}
 		t.keyed = true
 		t.buf = append(t.buf[:0], reader.Tables()...)
+		if t.h == nil && !t.raw && needsOpus(reader.Streams()) {
+			h, err := l.startHelper(id, s)
+			t.h = h
+			switch {
+			case err == nil:
+			case errors.Is(err, errNoFfmpeg):
+				// Said once per attachment: the bytes go as they are.
+				t.raw = true
+				if !l.noFfmpeg {
+					l.noFfmpeg = true
+					l.p.log.Warn("no ffmpeg for the live helper: cameras whose audio is not Opus play silent live", "source", s.cfg.Alias)
+				}
+			default:
+				t.raw = true
+				l.p.log.Warn("live helper could not start; sending the camera's bytes as they are", "source", s.cfg.Alias, "err", err.Error())
+			}
+		}
 	}
 	t.buf = append(t.buf, pk.Data[:]...)
-	flush := len(t.buf) >= tapFlush
-	var msg *api.AttachRequest
-	if flush {
-		msg = api.AttachRequest_builder{Data: api.AttachRequest_Data_builder{SourceId: id.Bytes(), Payload: append([]byte(nil), t.buf...)}.Build()}.Build()
-		t.buf = t.buf[:0]
-	}
-	l.mu.Unlock()
-	if msg == nil {
+	if len(t.buf) < tapFlush {
+		l.mu.Unlock()
 		return
 	}
+	chunk := append([]byte(nil), t.buf...)
+	t.buf = t.buf[:0]
+	h := t.h
+	l.mu.Unlock()
+	if h != nil {
+		if !h.write(chunk) {
+			l.drop()
+		}
+
+		return
+	}
+	l.sendData(id, chunk)
+}
+
+// sendData queues one Data message for the relay, dropping it when the
+// relay is behind rather than holding the capture loop.
+func (l *relayLink) sendData(id pdid.Id, payload []byte) {
+	msg := api.AttachRequest_builder{Data: api.AttachRequest_Data_builder{SourceId: id.Bytes(), Payload: append([]byte(nil), payload...)}.Build()}.Build()
 	select {
 	case l.send <- msg:
 	default:
-		l.mu.Lock()
-		l.dropped++
-		n := l.dropped
-		l.mu.Unlock()
-		if n == 1 || n%1000 == 0 {
-			l.p.log.Warn("live bytes dropped: the relay is not keeping up", "dropped", n)
-		}
+		l.drop()
+	}
+}
+
+func (l *relayLink) drop() {
+	l.mu.Lock()
+	l.dropped++
+	n := l.dropped
+	l.mu.Unlock()
+	if n == 1 || n%1000 == 0 {
+		l.p.log.Warn("live bytes dropped: the relay or the live helper is not keeping up", "dropped", n)
 	}
 }
 

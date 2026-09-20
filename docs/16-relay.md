@@ -33,9 +33,11 @@ Producer ──────────────► Relay ═══ WebRTC �
   trusts one thing: a CP signature on a token
   ([§33.2](10-security.md#332-access-tokens)). A producer presents a
   **publish token**, a viewer a **view token**.
-- It moves bytes and re-packetizes them. Video is never transcoded. The one
-  transcode in the whole system is audio, AAC to Opus, because browsers play
-  no AAC over WebRTC ([§39.4](#394-viewers)).
+- It moves bytes and re-packetizes them. Nothing is transcoded here. The
+  one transcode in the whole system is audio to Opus, because browsers
+  play no other audio over WebRTC ([§39.4](#394-viewers)), and the producer
+  does it on its side, in an ffmpeg it runs only while the camera is
+  watched ([§38.7](15-producer.md#387-live-output)).
 - Two or more relays are the normal case. Each producer is assigned one
   ([§39.2](#392-assignment)), so a whole set is always on one relay.
 
@@ -74,7 +76,7 @@ for as long as it runs (`RelayIngest.Attach`,
 ```text
 Producer  Hello {publish token}          aud = relay, the producer's sources
 Relay     Start {source}                 someone is watching this camera
-Producer  Data {source, bytes} ...       the same MPEG-TS bytes it stores
+Producer  Data {source, bytes} ...       the video it stores, the audio as Opus
 Relay     Stop {source}                  nobody has watched for relay_idle_stop
 ```
 
@@ -83,18 +85,23 @@ Relay     Stop {source}                  nobody has watched for relay_idle_stop
   sends `Start`; the producer begins at the next keyframe, so the first
   bytes are playable. When the last viewer leaves the relay waits
   `relay_idle_stop` (10 s), which absorbs a page reload, then sends `Stop`.
-- **The same bytes.** The producer tees the source's TS stream
-  ([§38.1](15-producer.md#381-inputs)): what goes to the relay is what goes
-  into the object. No second encoder, no CPU. On the uplink it costs the
-  watched cameras' bitrate on top of recording, and the link check in
+- **The same video.** The producer tees the source's TS stream
+  ([§38.1](15-producer.md#381-inputs)): the video that goes to the relay is
+  the video that goes into the object, never encoded twice. Audio that is
+  not Opus is transcoded on the producer's side by its live helper
+  ([§38.7](15-producer.md#387-live-output)), so what the relay gets is the
+  same video remuxed with Opus. On the uplink it costs the watched cameras'
+  bitrate on top of recording, and the link check in
   [§12.2](04-write-path.md#122-resumable-part-uploads) must allow for the
   cameras that are usually watched.
 - **Codecs for live.** A camera that will be watched live should record
   H.264 Main or High profile, which every browser plays; the relay serves
   H.265 only to a viewer whose offer includes it and refuses the others.
-  Audio may stay AAC (the relay transcodes) or be recorded as Opus
-  (`audio.codec: opus` in the producer's configuration), which the relay
-  then passes through and which any media server also plays.
+  Audio arrives as Opus either way: recorded so (`audio.codec: opus` in
+  the producer's configuration) it passes through; recorded as AAC or
+  anything else, the producer transcodes it while the camera is watched.
+  The relay follows the tables of whatever it is sent, so the helper's
+  stream need not share the camera's PIDs.
 - **No keyframe on request.** A viewer joining mid-stream cannot make the
   encoder produce a keyframe (ffmpeg gives no way to), so the relay keeps
   the current group of pictures in memory instead ([§39.4](#394-viewers)).

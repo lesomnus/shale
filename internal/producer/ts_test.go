@@ -190,3 +190,35 @@ func TestSegmentReaderStreams(t *testing.T) {
 	x.NoError(err)
 	x.Equal("d", string(b))
 }
+
+// What the tables say about audio (§38.3): Opus by its registration
+// descriptor, AAC by its stream type, and G.711 copied into TS as a private
+// stream nothing names.
+func TestReaderAudioTypes(t *testing.T) {
+	cases := []struct {
+		file  string
+		types []byte
+		opus  bool
+		anon  bool
+	}{
+		{"av.ts", []byte{0x06}, true, false},
+		{"aac.ts", []byte{0x0f}, false, false},
+		{"ulaw.ts", []byte{0x06}, false, true},
+	}
+	for _, c := range cases {
+		t.Run(c.file, func(t *testing.T) {
+			b, err := os.ReadFile(filepath.Join("testdata", c.file))
+			require.NoError(t, err)
+			r := NewReader(bytes.NewReader(b))
+			var p Packet
+			for r.Next(&p) == nil {
+			}
+			s := r.Streams()
+			require.True(t, s.HasAudio())
+			require.Equal(t, c.types, s.AudioTypes)
+			require.Equal(t, c.opus, s.AudioOpus, "Opus")
+			require.Equal(t, c.anon, s.AudioAnon, "anonymous")
+			require.Equal(t, uint16(0x100), s.VideoPID)
+		})
+	}
+}

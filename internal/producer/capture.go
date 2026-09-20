@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -49,12 +50,51 @@ type SourceConfig struct {
 	Zone    string
 }
 
-// AudioConfig is a source's audio (§38.3).
+// AudioConfig is a source's audio (§38.3): a microphone beside the camera,
+// and what the TS carries.
 type AudioConfig struct {
-	Device  string
+	// Device is an ALSA capture device, `alsa:hw:1`; empty means the
+	// camera's own audio, if it sends any.
+	Device string
+	// Bitrate is the encoded rate in bits per second, 64 kbps by default;
+	// it also sizes the live helper's Opus (§38.7).
 	Bitrate int64
-	Codec   string
+	// Codec is one of AudioCodecs; empty is `copy` for a camera's audio and
+	// `aac` for a microphone.
+	Codec string
 }
+
+// AudioCodecs are the values of `audio.codec` (§38.3).
+var AudioCodecs = map[string]string{
+	"copy": "the camera's audio as it sends it, the default for a camera",
+	"aac":  "encoded as AAC, the default for a microphone",
+	"opus": "encoded as Opus, which the relay passes through as it is (§39.4)",
+	"none": "no audio",
+}
+
+// DefaultAudioBitrate is the encoded rate when none is configured.
+const DefaultAudioBitrate = 64_000
+
+// audioBitrate is the configured rate or the default.
+func (c SourceConfig) audioBitrate() int64 {
+	if c.Audio != nil && c.Audio.Bitrate > 0 {
+		return c.Audio.Bitrate
+	}
+
+	return DefaultAudioBitrate
+}
+
+// audioCodec is the configured codec, lower-cased, or empty.
+func (c SourceConfig) audioCodec() string {
+	if c.Audio == nil {
+		return ""
+	}
+
+	return strings.ToLower(strings.TrimSpace(c.Audio.Codec))
+}
+
+// hasMic says a microphone is configured.
+func (c SourceConfig) hasMic() bool { return c.Audio != nil && c.Audio.Device != "" }
 
 // StartingCeiling is the table of §38.5: a ceiling from the mode, with no
 // measurement.
@@ -142,17 +182,22 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		args = append(args, "-i", input)
 	}
 
-	if c.Audio != nil && c.Audio.Device != "" {
+	// Audio (§38.3): a microphone is a second input and is encoded; a
+	// camera's own audio is copied as it is unless `audio.codec` says to
+	// encode or drop it; a USB camera has none. What a camera sends and TS
+	// cannot carry is caught by CheckAudio once the stream shows it.
+	mic := c.hasMic()
+	codec := c.audioCodec()
+	usb := strings.HasPrefix(input, "v4l2:")
+	silent := codec == "none" || (usb && !mic)
+	if mic {
 		args = append(args, "-f", "alsa", "-i", strings.TrimPrefix(c.Audio.Device, "alsa:"))
 	}
 
 	// Video.
 	audioBps := int64(0)
-	if c.Audio != nil {
-		audioBps = c.Audio.Bitrate
-		if audioBps == 0 {
-			audioBps = 64_000
-		}
+	if !silent {
+		audioBps = c.audioBitrate()
 	}
 	videoCeiling := int64(float64(ceiling-audioBps) / TsOverhead)
 	if videoCeiling < 100_000 {
@@ -181,22 +226,28 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		default:
 			args = append(args, "-maxrate", strconv.FormatInt(videoCeiling, 10), "-bufsize", strconv.FormatInt(2*videoCeiling, 10), "-b:v", strconv.FormatInt(videoCeiling*3/4, 10))
 		}
-		if c.Audio == nil || c.Audio.Device == "" {
-			args = append(args, "-an")
-		}
 		// Every encoder here takes yuv420p; a camera's MJPEG decodes to
 		// yuvj422p, which h264_v4l2m2m refuses outright.
 		args = append(args, "-pix_fmt", "yuv420p")
 	}
-	if c.Audio != nil && c.Audio.Device != "" {
-		codec := c.Audio.Codec
-		if codec == "" {
-			codec = "aac"
-		}
+	switch {
+	case silent:
+		args = append(args, "-an")
+	case mic:
+		// The microphone's sound with the camera's picture, whatever else
+		// either carries; raw PCM has to be encoded.
+		enc := "aac"
 		if codec == "opus" {
-			codec = "libopus"
+			enc = "libopus"
 		}
-		args = append(args, "-c:a", codec, "-b:a", strconv.FormatInt(audioBps, 10))
+		args = append(args, "-map", "0:v:0", "-map", "1:a:0", "-c:a", enc, "-b:a", strconv.FormatInt(audioBps, 10))
+	case codec == "aac":
+		args = append(args, "-c:a", "aac", "-b:a", strconv.FormatInt(audioBps, 10))
+	case codec == "opus":
+		args = append(args, "-c:a", "libopus", "-b:a", strconv.FormatInt(audioBps, 10))
+	default:
+		// `copy`, or nothing said: the camera's audio as it sends it.
+		args = append(args, "-c:a", "copy")
 	}
 	for k, v := range c.EncoderOptions {
 		args = append(args, "-"+k, v)
@@ -346,6 +397,49 @@ type Capture struct {
 	up       bool
 	started  time.Time
 	lastErr  string
+	// audioFallback is the codec the camera's audio is encoded with from
+	// the next start on, set by CheckAudio (§38.3).
+	audioFallback string
+	// cancel ends the running process; kicked says it was ended on purpose.
+	cancel context.CancelFunc
+	kicked bool
+}
+
+// CheckAudio looks at what the tables say a capture produces (§38.3): a
+// camera's audio copied into a private stream nothing names is audio no
+// player will find, so the capture is restarted encoding it as AAC, once.
+// It answers true when it restarted; the caller stops reading the stream.
+func (c *Capture) CheckAudio(st Streams) bool {
+	in := c.Source.Input
+	if !st.AudioAnon || c.Source.Command != "" || strings.HasPrefix(in, "raw:") || strings.HasPrefix(in, "v4l2:") || c.Source.hasMic() {
+		return false
+	}
+	if codec := c.Source.audioCodec(); codec != "" && codec != "copy" {
+		return false
+	}
+	c.mu.Lock()
+	if c.audioFallback != "" {
+		c.mu.Unlock()
+		return false
+	}
+	c.audioFallback = "aac"
+	c.kicked = true
+	cancel := c.cancel
+	c.mu.Unlock()
+	c.Log.Warn("the camera's audio cannot be stored as it is (TS has no type for it); encoding it as AAC from now on, or set audio.codec", "source", c.Source.Alias)
+	if cancel != nil {
+		cancel()
+	}
+
+	return true
+}
+
+// AudioFallback is the codec CheckAudio settled on, or empty.
+func (c *Capture) AudioFallback() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.audioFallback
 }
 
 // Restarts is how many times the process was restarted.
@@ -377,15 +471,20 @@ func (c *Capture) LastError() string {
 func (c *Capture) Run(ctx context.Context, read func(r io.Reader)) error {
 	backoff := time.Second
 	for {
-		if err := c.once(ctx, read); err != nil && ctx.Err() == nil {
+		err := c.once(ctx, read)
+		if ctx.Err() != nil {
+			return nil
+		}
+		if errors.Is(err, errKicked) {
+			// Ended on purpose, to start again with other arguments.
+			continue
+		}
+		if err != nil {
 			c.mu.Lock()
 			c.restarts++
 			c.lastErr = err.Error()
 			c.mu.Unlock()
 			c.Log.Warn("capture exited", "source", c.Source.Alias, "err", err.Error(), "restart_in", backoff.String())
-		}
-		if ctx.Err() != nil {
-			return nil
 		}
 		select {
 		case <-ctx.Done():
@@ -398,11 +497,29 @@ func (c *Capture) Run(ctx context.Context, read func(r io.Reader)) error {
 	}
 }
 
+// errKicked is a process ended by CheckAudio, to be started again at once.
+var errKicked = errors.New("capture restarted with the audio encoded")
+
 func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	if strings.HasPrefix(c.Source.Input, "raw:") {
 		return c.raw(ctx, read)
 	}
 	ceiling, keyframe := c.Profile()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	c.mu.Lock()
+	c.cancel, c.kicked = cancel, false
+	fallback := c.audioFallback
+	c.mu.Unlock()
+	src := c.Source
+	if fallback != "" {
+		a := AudioConfig{}
+		if src.Audio != nil {
+			a = *src.Audio
+		}
+		a.Codec = fallback
+		src.Audio = &a
+	}
 	var cmd *exec.Cmd
 	if c.Source.Command != "" {
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", c.Source.Command)
@@ -419,7 +536,7 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 				encoder = c.Encoder
 			}
 		}
-		args := Args(c.Source, encoder, ceiling, keyframe)
+		args := Args(src, encoder, ceiling, keyframe)
 		c.Log.Info("capture", "source", c.Source.Alias, "cmd", c.Ffmpeg+" "+strings.Join(args, " "))
 		cmd = exec.CommandContext(ctx, c.Ffmpeg, args...)
 	}
@@ -459,10 +576,37 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	err = cmd.Wait()
 	c.mu.Lock()
 	c.up = false
+	c.cancel = nil
+	kicked := c.kicked
 	c.mu.Unlock()
+	if kicked {
+		return errKicked
+	}
 	if err != nil {
 		return err
 	}
 
 	return fmt.Errorf("capture ended")
+}
+
+// LiveArgs is the ffmpeg command of the live helper (§38.7): a source's TS
+// in, the same video and its audio as Opus out, flushed packet by packet
+// so a viewer is a few frames behind the recording. The probe is kept
+// short, since it is what a viewer waits for; `nobuffer` would shorten it
+// further but discards the packets it probed, the keyframe the tee began
+// with among them.
+func LiveArgs(bitrate int64) []string {
+	if bitrate <= 0 {
+		bitrate = DefaultAudioBitrate
+	}
+
+	return []string{
+		"-hide_banner", "-loglevel", "warning", "-nostats",
+		"-probesize", "262144", "-analyzeduration", "500000",
+		"-f", "mpegts", "-i", "pipe:0",
+		"-map", "0:v:0", "-map", "0:a:0?",
+		"-c:v", "copy", "-c:a", "libopus", "-b:a", strconv.FormatInt(bitrate, 10),
+		"-muxdelay", "0", "-muxpreload", "0", "-flush_packets", "1",
+		"-f", "mpegts", "pipe:1",
+	}
 }

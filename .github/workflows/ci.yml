@@ -20,6 +20,10 @@ jobs:
         run: go build ./...
       - name: vet
         run: go vet ./...
+      - name: ffmpeg
+        # The producer's live helper and its audio fallback run ffmpeg
+        # (§38.3, §38.7); the tests that need it skip without it.
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - name: test
         # The e2e harness writes directory sinks, whose records are user
         # xattrs (§23.1): an ext4 image on a loop device has them wherever

@@ -204,6 +204,7 @@ func (s Scan) WriteSkeleton(w io.Writer) {
 		fmt.Fprintln(w, "      input: rtsp://<user>:<pass>@<camera>/stream1   # from the camera's media profile")
 		fmt.Fprintln(w, "      format: h264")
 		fmt.Fprintln(w, "      max_bitrate: 4Mbps   # the camera's configured limit × 1.05 plus audio")
+		fmt.Fprintln(w, "      # audio: {codec: none}   # its audio is recorded as it sends it; none drops it")
 	}
 	if len(s.Cameras) == 0 && len(s.Onvif) == 0 {
 		fmt.Fprintln(w, "    []   # no camera found")
