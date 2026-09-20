@@ -7,6 +7,10 @@ case "$1" in
     if ! getent passwd shale >/dev/null; then
       adduser --system --group --home /var/lib/shale --no-create-home --shell /usr/sbin/nologin shale
     fi
+    # A producer opens cameras and microphones (§38.1).
+    for g in video audio; do
+      if getent group "$g" >/dev/null; then adduser shale "$g" >/dev/null 2>&1 || true; fi
+    done
     install -d -o shale -g shale -m 0700 /var/lib/shale
     install -d -m 0755 /etc/shale
     if [ ! -e /etc/shale/shale.yaml ]; then

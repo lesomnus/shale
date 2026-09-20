@@ -64,6 +64,9 @@ sudo cp /etc/shale/shale.yaml.example /etc/shale/shale.yaml   # then edit
 sudo systemctl enable --now shale@storage
 ```
 
+The service user needs the `video` group for cameras and `audio` for
+microphones (the package adds both); `arecord -l` names the card.
+
 ## A Raspberry Pi as a producer
 
 The arm64 package runs on Raspberry Pi OS (64-bit). `ffmpeg` from the
@@ -99,7 +102,7 @@ producer:
       encoder: auto
       max_bitrate: auto
 #     audio:
-#       device: alsa:hw:2,0      # the camera's microphone
+#       device: alsa:plughw:2,0  # the camera's microphone; plughw converts what hw: cannot
 #       codec: opus              # Opus records and plays live as it is (§39.4)
 
 ```
