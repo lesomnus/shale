@@ -337,6 +337,28 @@ func (s *Server) tlsConfig() (*tls.Config, error) {
 	return cfg, nil
 }
 
+// actorLimiter is the per-actor limiter of `control.actor_limit`, or
+// nothing.
+func (s *Server) actorLimiter() grpcx.Limiter {
+	l := s.cfg.Control.ActorLimit
+	if !l.Limits() {
+		return nil
+	}
+
+	return grpcx.NewLimiter(l.Rate, l.BurstOr())
+}
+
+// byActor keys a limiter by who is calling (§35.1); a public call is not
+// counted.
+func byActor(ctx context.Context, _ string) string {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return ""
+	}
+
+	return f.Actor.String()
+}
+
 // cpKeyPair is the CP's own certificate: external files when configured,
 // else what `shale init` issued from the built-in CA.
 func (s *Server) cpKeyPair() (string, string) {
@@ -394,6 +416,7 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 		WithUnary(auth.InterceptorUnary(s.Auth, Resolver(s), core.Public)).
 		WithStream(auth.InterceptorStream(s.Auth, Resolver(s), core.Public)).
 		WithUnary(grpcx.LimitUnary(sc.Limiter(), gate.ByTenant())).
+		WithUnary(grpcx.LimitUnary(s.actorLimiter(), byActor)).
 		With(gate.Interceptor(policy)).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(sc.Closed()))

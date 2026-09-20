@@ -39,7 +39,7 @@ type cluster struct {
 	done    chan error
 }
 
-func start(t *testing.T) *cluster {
+func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 	t.Helper()
 	dir := t.TempDir()
 	c := &cmd.Config{}
@@ -56,6 +56,9 @@ func start(t *testing.T) *cluster {
 	c.Relay.IngestAddr = "127.0.0.1:0"
 	c.Relay.WhepAddr = "127.0.0.1:0"
 	c.Relay.IdleStop = time.Second
+	for _, o := range opts {
+		o(c)
+	}
 	// SHALE_E2E_DB_DSN runs the suite on PostgreSQL with the LISTEN/NOTIFY
 	// broker and the leader lease (§34.2): the database is emptied first.
 	if dsn := os.Getenv("SHALE_E2E_DB_DSN"); dsn != "" {

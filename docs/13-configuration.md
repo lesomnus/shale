@@ -88,6 +88,8 @@ deployment runs well on them, and changes them only for a reason.
 | Health | `sink_auto_adopt_after` | 10 min | — | cluster | [§28.3](09-operations.md#283-node-failure-and-device-re-homing) |
 | Health | `reconcile_interval` | 24 h | — | cluster | [§34.9](11-deployment.md#349-events-and-directives) |
 | Health | `control.directives_every` | 5 s | — | control | [§34.9](11-deployment.md#349-events-and-directives) |
+| Limits | `server.limit` / `cluster.limit` | none | rate, burst per tenant | control | [§35.1](12-api.md#351-conventions) |
+| Limits | `control.actor_limit` | none | rate, burst per actor | control | [§35.1](12-api.md#351-conventions) |
 | Hosts | `join_pending_ttl` | 24 h | — | cluster | [§33.4](10-security.md#334-joining-and-adoption) |
 | Hosts | `readopt` | `manual` | `manual`, `auto` | cluster | [§33.4](10-security.md#334-joining-and-adoption) |
 | Hosts | host certificate lifetime | 90 days, renewed at 60 | — | cluster | [§33.5](10-security.md#335-tls) |

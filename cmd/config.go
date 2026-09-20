@@ -97,6 +97,10 @@ type ControlConfig struct {
 	// all` sets it for the hosts in its own process; a lab may set it for
 	// everything.
 	AutoAdopt bool `yaml:"auto_adopt"`
+	// ActorLimit is a rate limit per actor on both APIs, beside the
+	// per-tenant one of `server.limit` (§35.1): a misbehaving host is
+	// refused with RESOURCE_EXHAUSTED before its tenant is.
+	ActorLimit config.LimitConfig `yaml:"actor_limit"`
 	// Leader lease: how often the background jobs run.
 	JobsEvery time.Duration `yaml:"jobs_every"`
 	// DirectivesEvery is how often the leader compares the state with what
