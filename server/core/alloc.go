@@ -37,10 +37,7 @@ func slotOf(t time.Time, setId []byte, ordinal, setSize int, d time.Duration) ti
 		setSize = 1
 	}
 
-	h := xxhash.Sum64(setId)
-	phase := time.Duration(h%uint64(d)) + time.Duration(ordinal)*d/time.Duration(setSize)
-	phase %= d
-
+	phase := Phase(setId, ordinal, setSize, d)
 	base := t.Add(-phase).Truncate(d)
 
 	return base.Add(phase)
@@ -53,8 +50,11 @@ func Phase(setId []byte, ordinal, setSize int, d time.Duration) time.Duration {
 		return 0
 	}
 	h := xxhash.Sum64(setId)
+	phase := (time.Duration(h%uint64(d)) + time.Duration(ordinal)*d/time.Duration(setSize)) % d
 
-	return (time.Duration(h%uint64(d)) + time.Duration(ordinal)*d/time.Duration(setSize)) % d
+	// Whole milliseconds: every date Shale stores is one (§23.1), and a
+	// database keeps microseconds at best.
+	return phase.Truncate(time.Millisecond)
 }
 
 // context of one allocation: everything read once per call.

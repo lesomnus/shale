@@ -6,9 +6,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -47,6 +49,16 @@ func start(t *testing.T) *cluster {
 	c.Storage.ControlAddr = "127.0.0.1:0"
 	c.Storage.HeartbeatInterval = time.Second
 	c.Control.DirectivesEvery = 500 * time.Millisecond
+	// SHALE_E2E_DB_DSN runs the suite on PostgreSQL with the LISTEN/NOTIFY
+	// broker and the leader lease (§34.2): the database is emptied first.
+	if dsn := os.Getenv("SHALE_E2E_DB_DSN"); dsn != "" {
+		c.Db.Driver, c.Db.Dsn, c.Watch.Broker = "pgx", dsn, "postgres"
+		db, err := sql.Open("pgx", dsn)
+		require.NoError(t, err)
+		_, err = db.Exec("drop schema public cascade; create schema public")
+		require.NoError(t, err)
+		db.Close()
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	require.NoError(t, cli.Init(ctx, c, "acme", "admin", "ops", io.Discard))
@@ -301,8 +313,17 @@ func TestVerticalSlice(t *testing.T) {
 			}
 			require.True(t, found, "a gap for the skipped slot at %s", start)
 		}
-		// And the window before the first segment is NOT_RECEIVED.
-		require.Equal(t, api.GapReason_GAP_REASON_NOT_RECEIVED, ts.GetGaps()[0].GetReason())
+		// The window before the first segment, when there is one, is
+		// NOT_RECEIVED; and no gap is a sliver, since every date is whole
+		// milliseconds.
+		if first := ts.GetObjects()[0].GetDateStarted().AsTime(); first.After(from) {
+			require.Equal(t, api.GapReason_GAP_REASON_NOT_RECEIVED, ts.GetGaps()[0].GetReason())
+			require.True(t, ts.GetGaps()[0].GetFrom().AsTime().Equal(from))
+			require.True(t, ts.GetGaps()[0].GetTo().AsTime().Equal(first))
+		}
+		for _, g := range ts.GetGaps() {
+			require.GreaterOrEqual(t, g.GetTo().AsTime().Sub(g.GetFrom().AsTime()), time.Second, "no sliver gaps")
+		}
 	}
 
 	// Read one back through its presigned URL, and a range of it.
