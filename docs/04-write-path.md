@@ -342,6 +342,17 @@ becomes an orphan, and orphans are reclaimed by GC ([§21.3](06-retention-gc.md#
   The producer moves to the next candidate with a corrected profile, or
   reports the object.
 
+- **A key that holds bytes the producer never sent** is an earlier
+  incarnation's upload of the same slot: the producer restarted mid-slot
+  and the CP answered the same object and attempts. The node cannot tell
+  whose bytes they are, so the producer does: a `409` whose offset is
+  past what it stated, or a `HEAD` offset past what it sent, ends the
+  attempt with the reason "the node holds bytes of this key that are not
+  ours", the CP keeps that sink eligible, and `Reallocate` hands out a
+  fresh attempt with a fresh key. The old file is finalized or removed by
+  the abandon rule and ends as a duplicate.
+
+
 ### 12.6 Upload profile negotiation
 
 Cameras differ. A 1 Mbps camera fills 64 MB in 8.5 minutes, and a 16 Mbps

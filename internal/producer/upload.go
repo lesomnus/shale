@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/storage"
 	"github.com/lesomnus/shale/internal/token"
+	"github.com/lesomnus/shale/server/core"
 )
 
 // The upload client (§12.2, §13): live or buffered, resumable from the
@@ -69,6 +70,11 @@ var (
 	errResume  = errors.New("no progress within resume_timeout")
 	errTooLong = errors.New("413: the upload exceeds max_length")
 	errRefused = errors.New("the node refused the upload")
+	// errForeign is a key that holds bytes this producer never sent: an
+	// earlier incarnation's upload of the same slot. They are not this
+	// segment's, so the attempt is given up and the object gets another
+	// (§12.5, §15).
+	errForeign = errors.New(core.ForeignBytesReason)
 )
 
 // Upload sends one segment: live while it grows, buffered once closed. It
@@ -151,19 +157,30 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), key)
 
 	var offset int64
+	// sentMax is the furthest byte this process sent for the key: a node
+	// offset beyond it is somebody else's bytes.
+	var sentMax int64
 	lastProgress := time.Now()
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		status, newOffset, err := u.put(ctx, url, cand.GetToken(), al, seg, offset)
+		status, newOffset, sent, err := u.put(ctx, url, cand.GetToken(), al, seg, offset)
+		if offset+sent > sentMax {
+			sentMax = offset + sent
+		}
 		switch {
 		case status == http.StatusCreated || status == http.StatusOK:
 			return nil
 		case status == http.StatusRequestEntityTooLarge:
 			return errTooLong
 		case status == http.StatusConflict:
-			// The node's offset differs: carry on from there (§12.5).
+			// The node's offset differs: carry on from there (§12.5), unless
+			// it is past what we told it, which is a file we did not write:
+			// our own bytes only ever leave the node behind what we said.
+			if newOffset > offset {
+				return errForeign
+			}
 			if newOffset >= 0 {
 				offset = newOffset
 				lastProgress = time.Now()
@@ -192,6 +209,9 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		}
 		cur, herr := u.head(ctx, url, cand.GetToken())
 		if herr == nil {
+			if cur > sentMax {
+				return errForeign
+			}
 			if cur > offset {
 				offset = cur
 				lastProgress = time.Now()
@@ -227,12 +247,13 @@ func (u *Uploader) retryAfter(v int64) time.Duration {
 // put is one request from `offset`: the rest of the segment as a body that
 // grows while the capture runs (live) or a known length (buffered). It
 // answers the status, and for 409/503 the offset or Retry-After.
-func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation, seg *Segment, offset int64) (int, int64, error) {
+func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation, seg *Segment, offset int64) (int, int64, int64, error) {
 	live := !seg.Closed()
-	var body io.Reader = seg.ReaderFrom(offset)
+	counted := &countingReader{r: seg.ReaderFrom(offset)}
+	var body io.Reader = counted
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
 	if err != nil {
-		return 0, -1, err
+		return 0, -1, 0, err
 	}
 	req.Header.Set("Authorization", token.Scheme+" "+tok)
 	req.Header.Set(storage.HdrUploadOffset, strconv.FormatInt(offset, 10))
@@ -257,7 +278,7 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 
 	resp, err := u.Cfg.Client.Do(req)
 	if err != nil {
-		return 0, -1, err
+		return 0, -1, counted.n, err
 	}
 	defer resp.Body.Close()
 	io.Copy(io.Discard, resp.Body)
@@ -274,10 +295,23 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 		}
 	}
 	if resp.StatusCode >= 500 {
-		return resp.StatusCode, v, fmt.Errorf("server error %d", resp.StatusCode)
+		return resp.StatusCode, v, counted.n, fmt.Errorf("server error %d", resp.StatusCode)
 	}
 
-	return resp.StatusCode, v, nil
+	return resp.StatusCode, v, counted.n, nil
+}
+
+// countingReader counts what a request body handed over.
+type countingReader struct {
+	r io.Reader
+	n int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+
+	return n, err
 }
 
 // trailerBody fills the end-time trailer once the segment is closed, which

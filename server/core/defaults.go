@@ -8,6 +8,10 @@ import (
 	"github.com/lesomnus/shale/api"
 )
 
+// ForeignBytesReason is what a producer reports when a key holds bytes it
+// never sent (§12.5); the sink stays eligible for another attempt.
+const ForeignBytesReason = "the node holds bytes of this key that are not ours"
+
 // The decided defaults of §36.1. A deployment changes them through the
 // policy entities, never by editing these.
 const (

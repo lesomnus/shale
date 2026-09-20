@@ -29,6 +29,11 @@ type Segment struct {
 	closed bool
 }
 
+// NewSegment makes a segment for a test or a synthetic producer.
+func NewSegment(started time.Time, tables []byte) *Segment {
+	return newSegment(started, started, tables)
+}
+
 func newSegment(started, slot time.Time, tables []byte) *Segment {
 	s := &Segment{Started: started, Slot: slot}
 	s.cond = sync.NewCond(&s.mu)

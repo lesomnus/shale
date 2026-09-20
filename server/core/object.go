@@ -142,6 +142,12 @@ func (s coreObject) Reallocate(ctx context.Context, req *api.ObjectReallocateReq
 	}
 	used := map[pdid.Id]bool{}
 	for _, t := range tried {
+		// A sink where the producer found an earlier incarnation's bytes
+		// at the key is not a sink that failed: a fresh attempt there has a
+		// fresh key (§12.5).
+		if t.State == int32(api.AttemptState_ATTEMPT_STATE_FAILED) && t.FailureReason == ForeignBytesReason {
+			continue
+		}
 		used[pdid.Id(t.SinkId)] = true
 	}
 
