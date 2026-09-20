@@ -299,7 +299,8 @@ service AddressPolicyService {
 }
 ```
 
-- Nodes **watch** `SigningKey` instead of polling for keys
+- Nodes **poll** `SigningKey` every 30 s; a rotation waits for every live
+  node to report the new key before it signs
   ([§33.3](10-security.md#333-signing-keys-and-rotation)).
 - Consoles watch `Node`, `Device`, `Sink`, `Producer`, and `Reader` for live
   state, including hosts waiting to be adopted.

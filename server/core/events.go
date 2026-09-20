@@ -138,9 +138,14 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 		if _, err := own.Object().Add(ctx, add.Build()); err != nil {
 			return err
 		}
-		obj, err = s.d.Ent.Object.Query().Where(object.IdEQ(objId.Uuid())).Only(ctx)
-		if err != nil {
-			return err
+		// The row as this transaction knows it; the client outside the
+		// transaction cannot see it yet.
+		obj = &ent.Object{
+			Id: objId.Uuid(), TenantId: mustId(rec.GetTenantId()).Uuid(), SetId: mustId(rec.GetSetId()).Uuid(), SourceId: mustId(rec.GetSourceId()).Uuid(),
+			State: int32(api.ObjectState_OBJECT_STATE_PENDING), DateStarted: add.DateStarted.AsTime(), DateExpired: add.DateExpired.AsTime(), DatesSynced: true,
+		}
+		if len(rec.GetSiteId()) > 0 {
+			obj.SiteId = mustId(rec.GetSiteId()).Uuid()
 		}
 	}
 
@@ -162,9 +167,9 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 		}.Build()); err != nil {
 			return err
 		}
-		at, err = s.d.Ent.Attempt.Query().Where(attempt.IdEQ(atId.Uuid())).Only(ctx)
-		if err != nil {
-			return err
+		at = &ent.Attempt{
+			Id: atId.Uuid(), TenantId: obj.TenantId, SiteId: obj.SiteId, ObjectId: objId.Uuid(), SinkId: mustId(ev.GetSinkId()).Uuid(), NodeId: nodeId.Uuid(),
+			State: int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED), DateExpires: now,
 		}
 	}
 

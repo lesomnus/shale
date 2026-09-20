@@ -91,6 +91,13 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 		if _, err := srv.Device().Patch(ctx, patch.Build()); err != nil {
 			return nil, err
 		}
+		// What the report adds to the failure score (§27): counters that
+		// rose since the last report, and SMART.
+		if delta, reasons := reportDelta(row.Report, dr); delta > 0 {
+			if err := s.scoreDevice(ctx, srv, row, delta, reasons, now); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	var answers []*api.SinkAnswer

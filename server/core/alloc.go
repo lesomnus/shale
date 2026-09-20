@@ -150,6 +150,22 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 		if d.Health == int32(api.DeviceHealth_DEVICE_HEALTH_SUSPECT) {
 			weight *= 0.5
 		}
+		// A device on probation after a release runs at half weight (§27).
+		if q := d.Quarantine; q != nil && q.GetDateProbationEnds() != nil && a.now.Before(q.GetDateProbationEnds().AsTime()) {
+			weight *= 0.5
+		}
+		// The node's own score, from what producers reported (§27).
+		switch ns := nodeScore(n, a.now); {
+		case ns >= ScoreQuarantine:
+			eligible = false
+		case ns >= ScoreSuspect:
+			weight *= 0.5
+		}
+		// The capacity forecast (§11.1): a sink that would fill before GC
+		// could make room sits this epoch out.
+		if eligible && !s.forecastOk(ctx, a, v, place) {
+			eligible = false
+		}
 
 		a.cluster.Sinks = append(a.cluster.Sinks, placement.Sink{
 			Id:       id,
@@ -161,6 +177,60 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 	}
 
 	return nil
+}
+
+// forecastOk is the capacity forecast of §11.1 for one sink and the
+// current epoch, decided once per epoch: what the sink took in over the
+// last epoch is what it is about to take in, and what it can reclaim is
+// its free space plus what expires before the epoch ends.
+func (s Core) forecastOk(ctx context.Context, a *allocCtx, v *ent.Sink, place *api.PlacementParams) bool {
+	epoch := epochOf(a.set)
+	if epoch <= 0 {
+		epoch = DefaultEpoch
+	}
+	start := a.now.Truncate(epoch)
+	key := forecastKey{sink: pdid.Id(v.Id), epoch: start.Unix()}
+	s.d.forecastMu.Lock()
+	if s.d.forecast == nil {
+		s.d.forecast = map[forecastKey]bool{}
+	}
+	ok, seen := s.d.forecast[key]
+	s.d.forecastMu.Unlock()
+	if seen {
+		return ok
+	}
+
+	incoming, err := s.d.Ent.Object.Query().
+		Where(object.SinkIdEQ(v.Id), object.DateCommittedGT(a.now.Add(-epoch))).
+		Aggregate(ent.Sum(object.FieldSize)).
+		Int(ctx)
+	if err != nil {
+		return true
+	}
+	expiring, err := s.d.Ent.Object.Query().
+		Where(object.SinkIdEQ(v.Id), object.StateEQ(int32(api.ObjectState_OBJECT_STATE_COMMITTED)), object.DateExpiredLT(start.Add(epoch))).
+		Aggregate(ent.Sum(object.FieldSize)).
+		Int(ctx)
+	if err != nil {
+		return true
+	}
+	reclaimable := float64(v.Free + int64(expiring))
+	ok = reclaimable >= float64(incoming)*forecastMargin(place)
+	if !ok {
+		s.d.log().Warn("sink sits this epoch out: it would fill before GC could make room", "sink", v.Alias,
+			"incoming", incoming, "reclaimable", int64(reclaimable), "margin", forecastMargin(place))
+	}
+	s.d.forecastMu.Lock()
+	// The map is small: one entry per sink per epoch, pruned as epochs pass.
+	for k := range s.d.forecast {
+		if k.epoch < start.Unix() {
+			delete(s.d.forecast, k)
+		}
+	}
+	s.d.forecast[key] = ok
+	s.d.forecastMu.Unlock()
+
+	return ok
 }
 
 // ObjectKey is the path of an object within its sink (§23.2).

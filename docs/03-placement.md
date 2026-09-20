@@ -67,6 +67,11 @@ reclaimable = free space + bytes on the sink whose date_expired falls
               before the end of the epoch                    (index query)
 ```
 
+The CP estimates `incoming` from what the sink took in over the last epoch:
+placement is deterministic per epoch, so the sources that landed on a sink
+are the ones about to land on it again, and their committed bytes are their
+expected rate already summed.
+
 A sink with `reclaimable < incoming × forecast_margin` (default 1.5) is
 **ineligible for that epoch**: it would reach CRITICAL before GC could make
 room. Its keys fall to their next candidates, and nothing else moves. The

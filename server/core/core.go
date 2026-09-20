@@ -9,6 +9,9 @@
 package core
 
 import (
+	"sync"
+
+	"google.golang.org/grpc"
 	"context"
 	"log/slog"
 	"time"
@@ -77,11 +80,54 @@ type Deps struct {
 	Readopt string
 	// Dev is development mode: plaintext endpoints.
 	Dev bool
+	// DialNode opens a node's control API for the leader's directives
+	// (§34.9): over mTLS with the CP's certificate, checking that the
+	// peer's certificate names `id`. Nil where no directives run.
+	DialNode func(ctx context.Context, addr string, id pdid.Id) (*grpc.ClientConn, error)
 	// Now is the clock.
 	Now func() time.Time
 	Log *slog.Logger
 
 	pol policies
+
+	// reports caps what one producer may add to one node's score per day
+	// (§27); per process, which is enough for a cap.
+	reportsMu sync.Mutex
+	reports   map[[2]pdid.Id][]time.Time
+
+	// forecast remembers, per sink and epoch, whether the capacity forecast
+	// let the sink in (§11.1), so a sink at the margin does not flap.
+	forecastMu sync.Mutex
+	forecast   map[forecastKey]bool
+}
+
+type forecastKey struct {
+	sink  pdid.Id
+	epoch int64
+}
+
+// allowReport says whether a producer's report against a node still counts
+// today (§27).
+func (d *Deps) allowReport(node, producer pdid.Id, now time.Time) bool {
+	d.reportsMu.Lock()
+	defer d.reportsMu.Unlock()
+	if d.reports == nil {
+		d.reports = map[[2]pdid.Id][]time.Time{}
+	}
+	k := [2]pdid.Id{node, producer}
+	var kept []time.Time
+	for _, t := range d.reports[k] {
+		if now.Sub(t) < 24*time.Hour {
+			kept = append(kept, t)
+		}
+	}
+	if len(kept) >= ProducerReportCap {
+		d.reports[k] = kept
+		return false
+	}
+	d.reports[k] = append(kept, now)
+
+	return true
 }
 
 func (d *Deps) now() time.Time {

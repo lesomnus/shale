@@ -46,6 +46,7 @@ func start(t *testing.T) *cluster {
 	c.Storage.Addr = "127.0.0.1:0"
 	c.Storage.ControlAddr = "127.0.0.1:0"
 	c.Storage.HeartbeatInterval = time.Second
+	c.Control.DirectivesEvery = 500 * time.Millisecond
 
 	ctx, cancel := context.WithCancel(context.Background())
 	require.NoError(t, cli.Init(ctx, c, "acme", "admin", "ops", io.Discard))

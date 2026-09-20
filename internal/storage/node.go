@@ -42,6 +42,9 @@ type Config struct {
 	Cp       string
 	CaHash   string
 	Dev      bool
+	// HardwareId overrides the machine's identity, for a second node in
+	// one process.
+	HardwareId string
 
 	// Addr is the data plane listener; ControlAddr the control API (§35.7).
 	Addr        string
@@ -129,7 +132,7 @@ func New(cfg Config) (*Node, error) {
 	n.verifier.Skew = cfg.TokenSkew
 	n.outbox = NewOutbox()
 	n.dp = newDataPlane(n, cfg.Limits)
-	n.agent = &hostagent.Agent{Kind: DomNode, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
+	n.agent = &hostagent.Agent{Kind: DomNode, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, HardwareId: cfg.HardwareId, Log: cfg.Log}
 
 	return n, nil
 }

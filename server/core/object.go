@@ -300,14 +300,25 @@ func (s coreObject) ReportAttempt(ctx context.Context, req *api.ObjectReportAtte
 	if reason == "" {
 		reason = "reported"
 	}
-
-	return s.Next().Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
+	now := s.d.now()
+	out, err := s.Next().Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
 		Ref:           api.AttemptRef_builder{Id: at.GetId()}.Build(),
 		State:         &st,
 		FailureReason: &reason,
-		DateFinished:  timestamppb.New(s.d.now()),
+		DateFinished:  timestamppb.New(now),
 		DateUpdated:   at.GetDateUpdated(),
 	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	// The node's failure score (§27): +1, capped per producer per day.
+	if f, err := actor(ctx); err == nil && len(at.GetNode().GetId()) > 0 {
+		if err := s.producerReport(ctx, mustId(at.GetNode().GetId()), f.Actor, now); err != nil {
+			s.d.log().Warn("score node", "err", err.Error())
+		}
+	}
+
+	return out, nil
 }
 
 // ReportFailure is the producer giving up on an object: it becomes LOST
@@ -457,6 +468,11 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 				Ref:              api.ObjectRef_builder{Id: r.Id[:]}.Build(),
 				DatesSynced:      z.Ptr(false),
 				DateUpdatedForce: z.Ptr(true),
+			}
+			if req.GetDeleteNow() && r.State == int32(api.ObjectState_OBJECT_STATE_COMMITTED) {
+				// The bytes go within seconds: the leader sends Delete for
+				// this file and its duplicates (§20.3).
+				p.State = z.Ptr(api.ObjectState_OBJECT_STATE_DELETING)
 			}
 			e := r.DateExpired
 			if expired != nil {

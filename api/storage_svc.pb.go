@@ -7042,6 +7042,213 @@ func (b0 SinkRetireRequest_builder) Build() *SinkRetireRequest {
 	return m0
 }
 
+type SinkReconcileRequest struct {
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref  *SinkRef               `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Full bool                   `protobuf:"varint,2,opt,name=full"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SinkReconcileRequest) Reset() {
+	*x = SinkReconcileRequest{}
+	mi := &file_shale_storage_svc_g_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SinkReconcileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SinkReconcileRequest) ProtoMessage() {}
+
+func (x *SinkReconcileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_storage_svc_g_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SinkReconcileRequest) GetRef() *SinkRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SinkReconcileRequest) GetFull() bool {
+	if x != nil {
+		return x.xxx_hidden_Full
+	}
+	return false
+}
+
+func (x *SinkReconcileRequest) SetRef(v *SinkRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SinkReconcileRequest) SetFull(v bool) {
+	x.xxx_hidden_Full = v
+}
+
+func (x *SinkReconcileRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SinkReconcileRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+type SinkReconcileRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref  *SinkRef
+	Full bool
+}
+
+func (b0 SinkReconcileRequest_builder) Build() *SinkReconcileRequest {
+	m0 := &SinkReconcileRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Full = b.Full
+	return m0
+}
+
+type SinkReconcileResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Sinks int64                  `protobuf:"varint,1,opt,name=sinks"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SinkReconcileResponse) Reset() {
+	*x = SinkReconcileResponse{}
+	mi := &file_shale_storage_svc_g_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SinkReconcileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SinkReconcileResponse) ProtoMessage() {}
+
+func (x *SinkReconcileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_storage_svc_g_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SinkReconcileResponse) GetSinks() int64 {
+	if x != nil {
+		return x.xxx_hidden_Sinks
+	}
+	return 0
+}
+
+func (x *SinkReconcileResponse) SetSinks(v int64) {
+	x.xxx_hidden_Sinks = v
+}
+
+type SinkReconcileResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Sinks int64
+}
+
+func (b0 SinkReconcileResponse_builder) Build() *SinkReconcileResponse {
+	m0 := &SinkReconcileResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Sinks = b.Sinks
+	return m0
+}
+
+type SinkGcRequest struct {
+	state          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref *SinkRef               `protobuf:"bytes,1,opt,name=ref"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SinkGcRequest) Reset() {
+	*x = SinkGcRequest{}
+	mi := &file_shale_storage_svc_g_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SinkGcRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SinkGcRequest) ProtoMessage() {}
+
+func (x *SinkGcRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_storage_svc_g_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SinkGcRequest) GetRef() *SinkRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SinkGcRequest) SetRef(v *SinkRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SinkGcRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SinkGcRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+type SinkGcRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref *SinkRef
+}
+
+func (b0 SinkGcRequest_builder) Build() *SinkGcRequest {
+	m0 := &SinkGcRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	return m0
+}
+
 var File_shale_storage_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_storage_svc_g_proto_rawDesc = "" +
@@ -7346,7 +7553,14 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x04node\x18\x02 \x01(\v2\x0e.shale.NodeRefR\x04node\"T\n" +
 	"\x11SinkRetireRequest\x12 \n" +
 	"\x03ref\x18\x01 \x01(\v2\x0e.shale.SinkRefR\x03ref\x12\x1d\n" +
-	"\x06reason\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06reason*R\n" +
+	"\x06reason\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06reason\"S\n" +
+	"\x14SinkReconcileRequest\x12 \n" +
+	"\x03ref\x18\x01 \x01(\v2\x0e.shale.SinkRefR\x03ref\x12\x19\n" +
+	"\x04full\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\x04full\"4\n" +
+	"\x15SinkReconcileResponse\x12\x1b\n" +
+	"\x05sinks\x18\x01 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x05sinks\"1\n" +
+	"\rSinkGcRequest\x12 \n" +
+	"\x03ref\x18\x01 \x01(\v2\x0e.shale.SinkRefR\x03ref*R\n" +
 	"\bGcReason\x12\x19\n" +
 	"\x15GC_REASON_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12GC_REASON_PRESSURE\x10\x01\x12\x13\n" +
@@ -7364,7 +7578,7 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\aRelease\x12\x1b.shale.DeviceReleaseRequest\x1a\r.shale.Device\x123\n" +
 	"\x06Retire\x12\x1a.shale.DeviceRetireRequest\x1a\r.shale.Device\x12=\n" +
 	"\vDeclareDead\x12\x1f.shale.DeviceDeclareDeadRequest\x1a\r.shale.Device\x123\n" +
-	"\x06Locate\x12\x1a.shale.DeviceLocateRequest\x1a\r.shale.Device2\x93\x04\n" +
+	"\x06Locate\x12\x1a.shale.DeviceLocateRequest\x1a\r.shale.Device2\x84\x05\n" +
 	"\vSinkService\x12)\n" +
 	"\x03Add\x12\x15.shale.SinkAddRequest\x1a\v.shale.Sink\x12)\n" +
 	"\x03Get\x12\x15.shale.SinkGetRequest\x1a\v.shale.Sink\x12-\n" +
@@ -7375,10 +7589,12 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x05Watch\x12\x17.shale.SinkWatchRequest\x1a\x18.shale.SinkWatchResponse0\x01\x12F\n" +
 	"\tProposeGc\x12\x1b.shale.SinkProposeGcRequest\x1a\x1c.shale.SinkProposeGcResponse\x12-\n" +
 	"\x05Adopt\x12\x17.shale.SinkAdoptRequest\x1a\v.shale.Sink\x12/\n" +
-	"\x06Retire\x12\x18.shale.SinkRetireRequest\x1a\v.shale.SinkB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
+	"\x06Retire\x12\x18.shale.SinkRetireRequest\x1a\v.shale.Sink\x12F\n" +
+	"\tReconcile\x12\x1b.shale.SinkReconcileRequest\x1a\x1c.shale.SinkReconcileResponse\x12'\n" +
+	"\x02Gc\x12\x14.shale.SinkGcRequest\x1a\v.shale.SinkB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
 var file_shale_storage_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_shale_storage_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
+var file_shale_storage_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
 var file_shale_storage_svc_g_proto_goTypes = []any{
 	(GcReason)(0),                    // 0: shale.GcReason
 	(*DeviceAddRequest)(nil),         // 1: shale.DeviceAddRequest
@@ -7418,153 +7634,162 @@ var file_shale_storage_svc_g_proto_goTypes = []any{
 	(*GcDecision)(nil),               // 35: shale.GcDecision
 	(*SinkAdoptRequest)(nil),         // 36: shale.SinkAdoptRequest
 	(*SinkRetireRequest)(nil),        // 37: shale.SinkRetireRequest
-	nil,                              // 38: shale.DeviceAddRequest.LabelsEntry
-	nil,                              // 39: shale.DevicePatchRequest.LabelsEntry
-	nil,                              // 40: shale.SinkAddRequest.LabelsEntry
-	nil,                              // 41: shale.SinkPatchRequest.LabelsEntry
-	(*NodeRef)(nil),                  // 42: shale.NodeRef
-	(DeviceHealth)(0),                // 43: shale.DeviceHealth
-	(*timestamppb.Timestamp)(nil),    // 44: google.protobuf.Timestamp
-	(*DeviceQuarantine)(nil),         // 45: shale.DeviceQuarantine
-	(*SmartSummary)(nil),             // 46: shale.SmartSummary
-	(*DeviceReport)(nil),             // 47: shale.DeviceReport
-	(*NodeSelect)(nil),               // 48: shale.NodeSelect
-	(*patchpb.Patch)(nil),            // 49: patch.Patch
-	(*Device)(nil),                   // 50: shale.Device
-	(Pressure)(0),                    // 51: shale.Pressure
-	(*SinkCapabilities)(nil),         // 52: shale.SinkCapabilities
-	(SinkAttachment)(0),              // 53: shale.SinkAttachment
-	(*Sink)(nil),                     // 54: shale.Sink
+	(*SinkReconcileRequest)(nil),     // 38: shale.SinkReconcileRequest
+	(*SinkReconcileResponse)(nil),    // 39: shale.SinkReconcileResponse
+	(*SinkGcRequest)(nil),            // 40: shale.SinkGcRequest
+	nil,                              // 41: shale.DeviceAddRequest.LabelsEntry
+	nil,                              // 42: shale.DevicePatchRequest.LabelsEntry
+	nil,                              // 43: shale.SinkAddRequest.LabelsEntry
+	nil,                              // 44: shale.SinkPatchRequest.LabelsEntry
+	(*NodeRef)(nil),                  // 45: shale.NodeRef
+	(DeviceHealth)(0),                // 46: shale.DeviceHealth
+	(*timestamppb.Timestamp)(nil),    // 47: google.protobuf.Timestamp
+	(*DeviceQuarantine)(nil),         // 48: shale.DeviceQuarantine
+	(*SmartSummary)(nil),             // 49: shale.SmartSummary
+	(*DeviceReport)(nil),             // 50: shale.DeviceReport
+	(*NodeSelect)(nil),               // 51: shale.NodeSelect
+	(*patchpb.Patch)(nil),            // 52: patch.Patch
+	(*Device)(nil),                   // 53: shale.Device
+	(Pressure)(0),                    // 54: shale.Pressure
+	(*SinkCapabilities)(nil),         // 55: shale.SinkCapabilities
+	(SinkAttachment)(0),              // 56: shale.SinkAttachment
+	(*Sink)(nil),                     // 57: shale.Sink
 }
 var file_shale_storage_svc_g_proto_depIdxs = []int32{
-	38,  // 0: shale.DeviceAddRequest.labels:type_name -> shale.DeviceAddRequest.LabelsEntry
-	42,  // 1: shale.DeviceAddRequest.node:type_name -> shale.NodeRef
-	43,  // 2: shale.DeviceAddRequest.health:type_name -> shale.DeviceHealth
-	44,  // 3: shale.DeviceAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	44,  // 4: shale.DeviceAddRequest.date_scored:type_name -> google.protobuf.Timestamp
-	45,  // 5: shale.DeviceAddRequest.quarantine:type_name -> shale.DeviceQuarantine
-	46,  // 6: shale.DeviceAddRequest.smart:type_name -> shale.SmartSummary
-	47,  // 7: shale.DeviceAddRequest.report:type_name -> shale.DeviceReport
-	44,  // 8: shale.DeviceAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	41,  // 0: shale.DeviceAddRequest.labels:type_name -> shale.DeviceAddRequest.LabelsEntry
+	45,  // 1: shale.DeviceAddRequest.node:type_name -> shale.NodeRef
+	46,  // 2: shale.DeviceAddRequest.health:type_name -> shale.DeviceHealth
+	47,  // 3: shale.DeviceAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	47,  // 4: shale.DeviceAddRequest.date_scored:type_name -> google.protobuf.Timestamp
+	48,  // 5: shale.DeviceAddRequest.quarantine:type_name -> shale.DeviceQuarantine
+	49,  // 6: shale.DeviceAddRequest.smart:type_name -> shale.SmartSummary
+	50,  // 7: shale.DeviceAddRequest.report:type_name -> shale.DeviceReport
+	47,  // 8: shale.DeviceAddRequest.date_seen:type_name -> google.protobuf.Timestamp
 	3,   // 9: shale.DeviceGetRequest.ref:type_name -> shale.DeviceRef
 	4,   // 10: shale.DeviceGetRequest.select:type_name -> shale.DeviceSelect
-	48,  // 11: shale.DeviceSelect.node:type_name -> shale.NodeSelect
+	51,  // 11: shale.DeviceSelect.node:type_name -> shale.NodeSelect
 	3,   // 12: shale.DevicePatchRequest.ref:type_name -> shale.DeviceRef
-	39,  // 13: shale.DevicePatchRequest.labels:type_name -> shale.DevicePatchRequest.LabelsEntry
-	42,  // 14: shale.DevicePatchRequest.node:type_name -> shale.NodeRef
-	43,  // 15: shale.DevicePatchRequest.health:type_name -> shale.DeviceHealth
-	44,  // 16: shale.DevicePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	44,  // 17: shale.DevicePatchRequest.date_scored:type_name -> google.protobuf.Timestamp
-	45,  // 18: shale.DevicePatchRequest.quarantine:type_name -> shale.DeviceQuarantine
-	46,  // 19: shale.DevicePatchRequest.smart:type_name -> shale.SmartSummary
-	47,  // 20: shale.DevicePatchRequest.report:type_name -> shale.DeviceReport
-	44,  // 21: shale.DevicePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	42,  // 13: shale.DevicePatchRequest.labels:type_name -> shale.DevicePatchRequest.LabelsEntry
+	45,  // 14: shale.DevicePatchRequest.node:type_name -> shale.NodeRef
+	46,  // 15: shale.DevicePatchRequest.health:type_name -> shale.DeviceHealth
+	47,  // 16: shale.DevicePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	47,  // 17: shale.DevicePatchRequest.date_scored:type_name -> google.protobuf.Timestamp
+	48,  // 18: shale.DevicePatchRequest.quarantine:type_name -> shale.DeviceQuarantine
+	49,  // 19: shale.DevicePatchRequest.smart:type_name -> shale.SmartSummary
+	50,  // 20: shale.DevicePatchRequest.report:type_name -> shale.DeviceReport
+	47,  // 21: shale.DevicePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
 	3,   // 22: shale.DeviceApplyRequest.ref:type_name -> shale.DeviceRef
-	49,  // 23: shale.DeviceApplyRequest.patch:type_name -> patch.Patch
+	52,  // 23: shale.DeviceApplyRequest.patch:type_name -> patch.Patch
 	10,  // 24: shale.DeviceListRequest.filters:type_name -> shale.DeviceFilter
-	50,  // 25: shale.DeviceListResponse.items:type_name -> shale.Device
+	53,  // 25: shale.DeviceListResponse.items:type_name -> shale.Device
 	3,   // 26: shale.DeviceFilter.ref:type_name -> shale.DeviceRef
-	42,  // 27: shale.DeviceFilter.node:type_name -> shale.NodeRef
+	45,  // 27: shale.DeviceFilter.node:type_name -> shale.NodeRef
 	10,  // 28: shale.DeviceWatchRequest.filters:type_name -> shale.DeviceFilter
 	13,  // 29: shale.DeviceWatchResponse.items:type_name -> shale.DeviceWatchItem
-	50,  // 30: shale.DeviceWatchItem.value:type_name -> shale.Device
+	53,  // 30: shale.DeviceWatchItem.value:type_name -> shale.Device
 	3,   // 31: shale.DeviceQuarantineRequest.ref:type_name -> shale.DeviceRef
 	3,   // 32: shale.DeviceReleaseRequest.ref:type_name -> shale.DeviceRef
 	3,   // 33: shale.DeviceRetireRequest.ref:type_name -> shale.DeviceRef
 	3,   // 34: shale.DeviceDeclareDeadRequest.ref:type_name -> shale.DeviceRef
 	3,   // 35: shale.DeviceLocateRequest.ref:type_name -> shale.DeviceRef
-	40,  // 36: shale.SinkAddRequest.labels:type_name -> shale.SinkAddRequest.LabelsEntry
-	42,  // 37: shale.SinkAddRequest.node:type_name -> shale.NodeRef
+	43,  // 36: shale.SinkAddRequest.labels:type_name -> shale.SinkAddRequest.LabelsEntry
+	45,  // 37: shale.SinkAddRequest.node:type_name -> shale.NodeRef
 	3,   // 38: shale.SinkAddRequest.device:type_name -> shale.DeviceRef
-	44,  // 39: shale.SinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	51,  // 40: shale.SinkAddRequest.pressure:type_name -> shale.Pressure
-	52,  // 41: shale.SinkAddRequest.capabilities:type_name -> shale.SinkCapabilities
-	53,  // 42: shale.SinkAddRequest.attachment:type_name -> shale.SinkAttachment
-	44,  // 43: shale.SinkAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	44,  // 44: shale.SinkAddRequest.date_reconciled:type_name -> google.protobuf.Timestamp
+	47,  // 39: shale.SinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	54,  // 40: shale.SinkAddRequest.pressure:type_name -> shale.Pressure
+	55,  // 41: shale.SinkAddRequest.capabilities:type_name -> shale.SinkCapabilities
+	56,  // 42: shale.SinkAddRequest.attachment:type_name -> shale.SinkAttachment
+	47,  // 43: shale.SinkAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	47,  // 44: shale.SinkAddRequest.date_reconciled:type_name -> google.protobuf.Timestamp
 	21,  // 45: shale.SinkGetRequest.ref:type_name -> shale.SinkRef
 	22,  // 46: shale.SinkGetRequest.select:type_name -> shale.SinkSelect
-	48,  // 47: shale.SinkSelect.node:type_name -> shale.NodeSelect
+	51,  // 47: shale.SinkSelect.node:type_name -> shale.NodeSelect
 	4,   // 48: shale.SinkSelect.device:type_name -> shale.DeviceSelect
 	21,  // 49: shale.SinkPatchRequest.ref:type_name -> shale.SinkRef
-	41,  // 50: shale.SinkPatchRequest.labels:type_name -> shale.SinkPatchRequest.LabelsEntry
-	42,  // 51: shale.SinkPatchRequest.node:type_name -> shale.NodeRef
-	44,  // 52: shale.SinkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	51,  // 53: shale.SinkPatchRequest.pressure:type_name -> shale.Pressure
-	52,  // 54: shale.SinkPatchRequest.capabilities:type_name -> shale.SinkCapabilities
-	53,  // 55: shale.SinkPatchRequest.attachment:type_name -> shale.SinkAttachment
-	44,  // 56: shale.SinkPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	44,  // 57: shale.SinkPatchRequest.date_reconciled:type_name -> google.protobuf.Timestamp
+	44,  // 50: shale.SinkPatchRequest.labels:type_name -> shale.SinkPatchRequest.LabelsEntry
+	45,  // 51: shale.SinkPatchRequest.node:type_name -> shale.NodeRef
+	47,  // 52: shale.SinkPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	54,  // 53: shale.SinkPatchRequest.pressure:type_name -> shale.Pressure
+	55,  // 54: shale.SinkPatchRequest.capabilities:type_name -> shale.SinkCapabilities
+	56,  // 55: shale.SinkPatchRequest.attachment:type_name -> shale.SinkAttachment
+	47,  // 56: shale.SinkPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	47,  // 57: shale.SinkPatchRequest.date_reconciled:type_name -> google.protobuf.Timestamp
 	21,  // 58: shale.SinkApplyRequest.ref:type_name -> shale.SinkRef
-	49,  // 59: shale.SinkApplyRequest.patch:type_name -> patch.Patch
+	52,  // 59: shale.SinkApplyRequest.patch:type_name -> patch.Patch
 	28,  // 60: shale.SinkListRequest.filters:type_name -> shale.SinkFilter
-	54,  // 61: shale.SinkListResponse.items:type_name -> shale.Sink
+	57,  // 61: shale.SinkListResponse.items:type_name -> shale.Sink
 	21,  // 62: shale.SinkFilter.ref:type_name -> shale.SinkRef
-	42,  // 63: shale.SinkFilter.node:type_name -> shale.NodeRef
+	45,  // 63: shale.SinkFilter.node:type_name -> shale.NodeRef
 	3,   // 64: shale.SinkFilter.device:type_name -> shale.DeviceRef
 	28,  // 65: shale.SinkWatchRequest.filters:type_name -> shale.SinkFilter
 	31,  // 66: shale.SinkWatchResponse.items:type_name -> shale.SinkWatchItem
-	54,  // 67: shale.SinkWatchItem.value:type_name -> shale.Sink
+	57,  // 67: shale.SinkWatchItem.value:type_name -> shale.Sink
 	21,  // 68: shale.SinkProposeGcRequest.ref:type_name -> shale.SinkRef
 	0,   // 69: shale.SinkProposeGcRequest.reason:type_name -> shale.GcReason
 	34,  // 70: shale.SinkProposeGcRequest.candidates:type_name -> shale.GcCandidate
 	35,  // 71: shale.SinkProposeGcResponse.decisions:type_name -> shale.GcDecision
-	44,  // 72: shale.GcCandidate.date_expired:type_name -> google.protobuf.Timestamp
-	44,  // 73: shale.GcCandidate.date_deleted:type_name -> google.protobuf.Timestamp
-	44,  // 74: shale.GcDecision.date_expired:type_name -> google.protobuf.Timestamp
-	44,  // 75: shale.GcDecision.date_deleted:type_name -> google.protobuf.Timestamp
+	47,  // 72: shale.GcCandidate.date_expired:type_name -> google.protobuf.Timestamp
+	47,  // 73: shale.GcCandidate.date_deleted:type_name -> google.protobuf.Timestamp
+	47,  // 74: shale.GcDecision.date_expired:type_name -> google.protobuf.Timestamp
+	47,  // 75: shale.GcDecision.date_deleted:type_name -> google.protobuf.Timestamp
 	21,  // 76: shale.SinkAdoptRequest.ref:type_name -> shale.SinkRef
-	42,  // 77: shale.SinkAdoptRequest.node:type_name -> shale.NodeRef
+	45,  // 77: shale.SinkAdoptRequest.node:type_name -> shale.NodeRef
 	21,  // 78: shale.SinkRetireRequest.ref:type_name -> shale.SinkRef
-	1,   // 79: shale.DeviceService.Add:input_type -> shale.DeviceAddRequest
-	2,   // 80: shale.DeviceService.Get:input_type -> shale.DeviceGetRequest
-	5,   // 81: shale.DeviceService.Patch:input_type -> shale.DevicePatchRequest
-	6,   // 82: shale.DeviceService.Apply:input_type -> shale.DeviceApplyRequest
-	3,   // 83: shale.DeviceService.Erase:input_type -> shale.DeviceRef
-	8,   // 84: shale.DeviceService.List:input_type -> shale.DeviceListRequest
-	11,  // 85: shale.DeviceService.Watch:input_type -> shale.DeviceWatchRequest
-	14,  // 86: shale.DeviceService.Quarantine:input_type -> shale.DeviceQuarantineRequest
-	15,  // 87: shale.DeviceService.Release:input_type -> shale.DeviceReleaseRequest
-	16,  // 88: shale.DeviceService.Retire:input_type -> shale.DeviceRetireRequest
-	17,  // 89: shale.DeviceService.DeclareDead:input_type -> shale.DeviceDeclareDeadRequest
-	18,  // 90: shale.DeviceService.Locate:input_type -> shale.DeviceLocateRequest
-	19,  // 91: shale.SinkService.Add:input_type -> shale.SinkAddRequest
-	20,  // 92: shale.SinkService.Get:input_type -> shale.SinkGetRequest
-	23,  // 93: shale.SinkService.Patch:input_type -> shale.SinkPatchRequest
-	24,  // 94: shale.SinkService.Apply:input_type -> shale.SinkApplyRequest
-	21,  // 95: shale.SinkService.Erase:input_type -> shale.SinkRef
-	26,  // 96: shale.SinkService.List:input_type -> shale.SinkListRequest
-	29,  // 97: shale.SinkService.Watch:input_type -> shale.SinkWatchRequest
-	32,  // 98: shale.SinkService.ProposeGc:input_type -> shale.SinkProposeGcRequest
-	36,  // 99: shale.SinkService.Adopt:input_type -> shale.SinkAdoptRequest
-	37,  // 100: shale.SinkService.Retire:input_type -> shale.SinkRetireRequest
-	50,  // 101: shale.DeviceService.Add:output_type -> shale.Device
-	50,  // 102: shale.DeviceService.Get:output_type -> shale.Device
-	50,  // 103: shale.DeviceService.Patch:output_type -> shale.Device
-	50,  // 104: shale.DeviceService.Apply:output_type -> shale.Device
-	7,   // 105: shale.DeviceService.Erase:output_type -> shale.DeviceEraseResponse
-	9,   // 106: shale.DeviceService.List:output_type -> shale.DeviceListResponse
-	12,  // 107: shale.DeviceService.Watch:output_type -> shale.DeviceWatchResponse
-	50,  // 108: shale.DeviceService.Quarantine:output_type -> shale.Device
-	50,  // 109: shale.DeviceService.Release:output_type -> shale.Device
-	50,  // 110: shale.DeviceService.Retire:output_type -> shale.Device
-	50,  // 111: shale.DeviceService.DeclareDead:output_type -> shale.Device
-	50,  // 112: shale.DeviceService.Locate:output_type -> shale.Device
-	54,  // 113: shale.SinkService.Add:output_type -> shale.Sink
-	54,  // 114: shale.SinkService.Get:output_type -> shale.Sink
-	54,  // 115: shale.SinkService.Patch:output_type -> shale.Sink
-	54,  // 116: shale.SinkService.Apply:output_type -> shale.Sink
-	25,  // 117: shale.SinkService.Erase:output_type -> shale.SinkEraseResponse
-	27,  // 118: shale.SinkService.List:output_type -> shale.SinkListResponse
-	30,  // 119: shale.SinkService.Watch:output_type -> shale.SinkWatchResponse
-	33,  // 120: shale.SinkService.ProposeGc:output_type -> shale.SinkProposeGcResponse
-	54,  // 121: shale.SinkService.Adopt:output_type -> shale.Sink
-	54,  // 122: shale.SinkService.Retire:output_type -> shale.Sink
-	101, // [101:123] is the sub-list for method output_type
-	79,  // [79:101] is the sub-list for method input_type
-	79,  // [79:79] is the sub-list for extension type_name
-	79,  // [79:79] is the sub-list for extension extendee
-	0,   // [0:79] is the sub-list for field type_name
+	21,  // 79: shale.SinkReconcileRequest.ref:type_name -> shale.SinkRef
+	21,  // 80: shale.SinkGcRequest.ref:type_name -> shale.SinkRef
+	1,   // 81: shale.DeviceService.Add:input_type -> shale.DeviceAddRequest
+	2,   // 82: shale.DeviceService.Get:input_type -> shale.DeviceGetRequest
+	5,   // 83: shale.DeviceService.Patch:input_type -> shale.DevicePatchRequest
+	6,   // 84: shale.DeviceService.Apply:input_type -> shale.DeviceApplyRequest
+	3,   // 85: shale.DeviceService.Erase:input_type -> shale.DeviceRef
+	8,   // 86: shale.DeviceService.List:input_type -> shale.DeviceListRequest
+	11,  // 87: shale.DeviceService.Watch:input_type -> shale.DeviceWatchRequest
+	14,  // 88: shale.DeviceService.Quarantine:input_type -> shale.DeviceQuarantineRequest
+	15,  // 89: shale.DeviceService.Release:input_type -> shale.DeviceReleaseRequest
+	16,  // 90: shale.DeviceService.Retire:input_type -> shale.DeviceRetireRequest
+	17,  // 91: shale.DeviceService.DeclareDead:input_type -> shale.DeviceDeclareDeadRequest
+	18,  // 92: shale.DeviceService.Locate:input_type -> shale.DeviceLocateRequest
+	19,  // 93: shale.SinkService.Add:input_type -> shale.SinkAddRequest
+	20,  // 94: shale.SinkService.Get:input_type -> shale.SinkGetRequest
+	23,  // 95: shale.SinkService.Patch:input_type -> shale.SinkPatchRequest
+	24,  // 96: shale.SinkService.Apply:input_type -> shale.SinkApplyRequest
+	21,  // 97: shale.SinkService.Erase:input_type -> shale.SinkRef
+	26,  // 98: shale.SinkService.List:input_type -> shale.SinkListRequest
+	29,  // 99: shale.SinkService.Watch:input_type -> shale.SinkWatchRequest
+	32,  // 100: shale.SinkService.ProposeGc:input_type -> shale.SinkProposeGcRequest
+	36,  // 101: shale.SinkService.Adopt:input_type -> shale.SinkAdoptRequest
+	37,  // 102: shale.SinkService.Retire:input_type -> shale.SinkRetireRequest
+	38,  // 103: shale.SinkService.Reconcile:input_type -> shale.SinkReconcileRequest
+	40,  // 104: shale.SinkService.Gc:input_type -> shale.SinkGcRequest
+	53,  // 105: shale.DeviceService.Add:output_type -> shale.Device
+	53,  // 106: shale.DeviceService.Get:output_type -> shale.Device
+	53,  // 107: shale.DeviceService.Patch:output_type -> shale.Device
+	53,  // 108: shale.DeviceService.Apply:output_type -> shale.Device
+	7,   // 109: shale.DeviceService.Erase:output_type -> shale.DeviceEraseResponse
+	9,   // 110: shale.DeviceService.List:output_type -> shale.DeviceListResponse
+	12,  // 111: shale.DeviceService.Watch:output_type -> shale.DeviceWatchResponse
+	53,  // 112: shale.DeviceService.Quarantine:output_type -> shale.Device
+	53,  // 113: shale.DeviceService.Release:output_type -> shale.Device
+	53,  // 114: shale.DeviceService.Retire:output_type -> shale.Device
+	53,  // 115: shale.DeviceService.DeclareDead:output_type -> shale.Device
+	53,  // 116: shale.DeviceService.Locate:output_type -> shale.Device
+	57,  // 117: shale.SinkService.Add:output_type -> shale.Sink
+	57,  // 118: shale.SinkService.Get:output_type -> shale.Sink
+	57,  // 119: shale.SinkService.Patch:output_type -> shale.Sink
+	57,  // 120: shale.SinkService.Apply:output_type -> shale.Sink
+	25,  // 121: shale.SinkService.Erase:output_type -> shale.SinkEraseResponse
+	27,  // 122: shale.SinkService.List:output_type -> shale.SinkListResponse
+	30,  // 123: shale.SinkService.Watch:output_type -> shale.SinkWatchResponse
+	33,  // 124: shale.SinkService.ProposeGc:output_type -> shale.SinkProposeGcResponse
+	57,  // 125: shale.SinkService.Adopt:output_type -> shale.Sink
+	57,  // 126: shale.SinkService.Retire:output_type -> shale.Sink
+	39,  // 127: shale.SinkService.Reconcile:output_type -> shale.SinkReconcileResponse
+	57,  // 128: shale.SinkService.Gc:output_type -> shale.Sink
+	105, // [105:129] is the sub-list for method output_type
+	81,  // [81:105] is the sub-list for method input_type
+	81,  // [81:81] is the sub-list for extension type_name
+	81,  // [81:81] is the sub-list for extension extendee
+	0,   // [0:81] is the sub-list for field type_name
 }
 
 func init() { file_shale_storage_svc_g_proto_init() }
@@ -7590,7 +7815,7 @@ func file_shale_storage_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_storage_svc_g_proto_rawDesc), len(file_shale_storage_svc_g_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   41,
+			NumMessages:   44,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

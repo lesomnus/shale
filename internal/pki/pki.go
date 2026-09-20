@@ -252,6 +252,38 @@ func IdOf(c *x509.Certificate) (pdid.Id, bool) {
 	return pdid.Nil, false
 }
 
+// VerifyPeer verifies a presented chain against `pool` (the system roots
+// when nil) and checks that the leaf names host `id`, whatever address was
+// dialed: hosts are named by ID, never by address (§33.2, §34.10).
+func VerifyPeer(pool *x509.CertPool, id pdid.Id) func(raw [][]byte, _ [][]*x509.Certificate) error {
+	return func(raw [][]byte, _ [][]*x509.Certificate) error {
+		if len(raw) == 0 {
+			return errors.New("no certificate presented")
+		}
+		var chain []*x509.Certificate
+		for _, b := range raw {
+			c, err := x509.ParseCertificate(b)
+			if err != nil {
+				return err
+			}
+			chain = append(chain, c)
+		}
+		opts := x509.VerifyOptions{Roots: pool, Intermediates: x509.NewCertPool(), KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
+		for _, c := range chain[1:] {
+			opts.Intermediates.AddCert(c)
+		}
+		if _, err := chain[0].Verify(opts); err != nil {
+			return err
+		}
+		got, ok := IdOf(chain[0])
+		if !ok || got != id {
+			return fmt.Errorf("the peer's certificate names %s, not %s", got, id)
+		}
+
+		return nil
+	}
+}
+
 // Serial writes a serial number the way rows store and compare it.
 func Serial(c *x509.Certificate) string {
 	return c.SerialNumber.Text(16)

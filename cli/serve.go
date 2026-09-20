@@ -304,7 +304,7 @@ func storageConfig(c *cmd.Config) storage.Config {
 	}
 	for _, s := range sc.Sinks {
 		capacity, _ := storage.ParseCapacity(s.Capacity)
-		cfg.Sinks = append(cfg.Sinks, storage.SinkConfig{Path: s.Path, Capacity: capacity})
+		cfg.Sinks = append(cfg.Sinks, storage.SinkConfig{Path: s.Path, Capacity: capacity, Device: s.Device})
 	}
 
 	return cfg

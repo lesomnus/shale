@@ -38,6 +38,8 @@ var Version = "dev"
 
 // Agent is one host's identity handling.
 type Agent struct {
+	// HardwareId overrides the machine's identity when set (§33.4).
+	HardwareId string
 	Kind  pdid.Domain
 	Store pki.Store
 	// Cp is the Control Plane address: host:port, or a URL with scheme
@@ -66,6 +68,11 @@ func (a *Agent) Init() error {
 	hw, err := hostid.ReadOr(a.Store.Dir)
 	if err != nil {
 		return err
+	}
+	if a.HardwareId != "" {
+		// Declared: a second host in one process (a test, a lab) must not
+		// share the machine's identity.
+		hw = hostid.Identity{Id: a.HardwareId, Kind: api.HardwareIdKind_HARDWARE_ID_KIND_MACHINE_ID}
 	}
 	a.hw = hw
 	a.hostname, _ = os.Hostname()

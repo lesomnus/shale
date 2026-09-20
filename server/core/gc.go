@@ -224,10 +224,84 @@ func (s coreSink) Adopt(ctx context.Context, req *api.SinkAdoptRequest) (*api.Si
 	}
 
 	return s.SinkServiceServer.Patch(ctx, api.SinkPatchRequest_builder{
-		Ref:              api.SinkRef_builder{Id: sk.GetId()}.Build(),
-		Node:             api.NodeRef_builder{Id: n.GetId()}.Build(),
-		Attachment:       z.Ptr(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED),
-		DateUpdatedForce: z.Ptr(true),
+		Ref:                api.SinkRef_builder{Id: sk.GetId()}.Build(),
+		Node:               api.NodeRef_builder{Id: n.GetId()}.Build(),
+		Attachment:         z.Ptr(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED),
+		DateReconciledNull: z.Ptr(true),
+		DateUpdatedForce:   z.Ptr(true),
+	}.Build())
+}
+
+// Reconcile asks for a reconciliation of one sink, or of every sink, which
+// the leader carries out (§34.9); `full` is the index rebuild of §29.
+func (s coreSink) Reconcile(ctx context.Context, req *api.SinkReconcileRequest) (*api.SinkReconcileResponse, error) {
+	if _, err := actor(ctx); err != nil {
+		return nil, err
+	}
+	var rows []*api.Sink
+	if req.GetRef() != nil {
+		sk, err := s.SinkServiceServer.Get(ctx, api.SinkGetRequest_builder{Ref: req.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+		rows = []*api.Sink{sk}
+	} else {
+		after := ""
+		for {
+			vs, err := s.SinkServiceServer.List(ctx, api.SinkListRequest_builder{Size: 500, After: after}.Build())
+			if err != nil {
+				return nil, err
+			}
+			rows = append(rows, vs.GetItems()...)
+			if vs.GetNext() == "" {
+				break
+			}
+			after = vs.GetNext()
+		}
+	}
+	var n int64
+	for _, sk := range rows {
+		if sk.GetAttachment() != api.SinkAttachment_SINK_ATTACHMENT_ATTACHED {
+			continue
+		}
+		labels := map[string]string{}
+		for k, v := range sk.GetLabels() {
+			labels[k] = v
+		}
+		if req.GetFull() {
+			labels[LabelReconcile] = "full"
+		} else {
+			labels[LabelReconcile] = "now"
+		}
+		if _, err := s.SinkServiceServer.Patch(ctx, api.SinkPatchRequest_builder{
+			Ref: api.SinkRef_builder{Id: sk.GetId()}.Build(), Labels: labels, DateReconciledNull: z.Ptr(true), DateUpdatedForce: z.Ptr(true),
+		}.Build()); err != nil {
+			return nil, err
+		}
+		n++
+	}
+
+	return api.SinkReconcileResponse_builder{Sinks: n}.Build(), nil
+}
+
+// Gc asks for a GC round on the sink, which the leader runs through the
+// node's control API (§21).
+func (s coreSink) Gc(ctx context.Context, req *api.SinkGcRequest) (*api.Sink, error) {
+	if _, err := actor(ctx); err != nil {
+		return nil, err
+	}
+	sk, err := s.SinkServiceServer.Get(ctx, api.SinkGetRequest_builder{Ref: req.GetRef()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	labels := map[string]string{}
+	for k, v := range sk.GetLabels() {
+		labels[k] = v
+	}
+	labels[LabelGc] = "run"
+
+	return s.SinkServiceServer.Patch(ctx, api.SinkPatchRequest_builder{
+		Ref: api.SinkRef_builder{Id: sk.GetId()}.Build(), Labels: labels, DateUpdatedForce: z.Ptr(true),
 	}.Build())
 }
 
@@ -278,49 +352,20 @@ func (s coreDevice) setHealth(ctx context.Context, ref *api.DeviceRef, h api.Dev
 		return nil, err
 	}
 	now := s.d.now()
-	q := api.DeviceQuarantine_builder{Date: timestamppb.New(now), Reason: reason, Score: d.GetFailureScore(), Operator: operator}
+	id := mustId(d.GetId())
+	// A release by an operator starts from a clean score; the rest keep
+	// theirs, so a retired device still shows why.
+	score := d.GetFailureScore()
 	if h == api.DeviceHealth_DEVICE_HEALTH_HEALTHY {
-		// Released: probation for seven days (§27).
-		q.DateProbationEnds = timestamppb.New(now.Add(7 * 24 * time.Hour))
+		score = 0
 	}
-
-	accept := h == api.DeviceHealth_DEVICE_HEALTH_HEALTHY || h == api.DeviceHealth_DEVICE_HEALTH_SUSPECT
-	var out *api.Device
-	err = s.tx(ctx, func(nx api.Server) error {
-		v, err := nx.Device().Patch(ctx, api.DevicePatchRequest_builder{
-			Ref:              api.DeviceRef_builder{Id: d.GetId()}.Build(),
-			Health:           &h,
-			Quarantine:       q.Build(),
-			DateUpdatedForce: z.Ptr(true),
-		}.Build())
-		if err != nil {
-			return err
-		}
-		out = v
-
-		// Every sink on the device follows (§27); the directive to the node
-		// is derived from this state.
-		sinks, err := s.d.Ent.Sink.Query().Where(sink.DeviceIdEQ(mustId(d.GetId()).Uuid())).All(ctx)
-		if err != nil {
-			return err
-		}
-		for _, sk := range sinks {
-			if _, err := nx.Sink().Patch(ctx, api.SinkPatchRequest_builder{
-				Ref:              api.SinkRef_builder{Id: sk.Id[:]}.Build(),
-				AcceptWrites:     z.Ptr(accept),
-				DateUpdatedForce: z.Ptr(true),
-			}.Build()); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
+	if err := s.tx(ctx, func(nx api.Server) error {
+		return s.setDeviceHealth(ctx, nx, id, h, reason, operator, score, now)
+	}); err != nil {
 		return nil, err
 	}
 
-	return out, nil
+	return s.DeviceServiceServer.Get(ctx, api.DeviceGetRequest_builder{Ref: api.DeviceRef_builder{Id: d.GetId()}.Build()}.Build())
 }
 
 func (s coreDevice) Quarantine(ctx context.Context, req *api.DeviceQuarantineRequest) (*api.Device, error) {

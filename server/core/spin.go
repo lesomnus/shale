@@ -200,6 +200,12 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 	}
 
+	// Devices return from SUSPECT, and from quarantine after the cool-down,
+	// on decay alone (§27).
+	if err := (Core{d: j.d}).healthSweep(ctx, own, now); err != nil {
+		j.log().Warn("health sweep", "err", err.Error())
+	}
+
 	// Sinks whose node has been down for sink_auto_adopt_after and that
 	// another node reports are adopted there (§28.3).
 	pendingSinks, err := j.d.Ent.Sink.Query().Where(sink.AttachmentEQ(int32(api.SinkAttachment_SINK_ATTACHMENT_PENDING_ADOPTION))).All(ctx)
@@ -217,11 +223,13 @@ func (j *Jobs) Once(ctx context.Context) error {
 		if n.DateSeen != nil && now.Sub(*n.DateSeen) < 10*time.Minute {
 			continue
 		}
+		j.log().Info("sink adopted by the node reporting it; its node has been down", "sink", sk.Alias, "node", pdid.Id(*sk.ReportedBy).String())
 		own.Sink().Patch(ctx, api.SinkPatchRequest_builder{
-			Ref:              api.SinkRef_builder{Id: sk.Id[:]}.Build(),
-			Node:             api.NodeRef_builder{Id: pdid.Id(*sk.ReportedBy).Bytes()}.Build(),
-			Attachment:       z.Ptr(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED),
-			DateUpdatedForce: z.Ptr(true),
+			Ref:                api.SinkRef_builder{Id: sk.Id[:]}.Build(),
+			Node:               api.NodeRef_builder{Id: pdid.Id(*sk.ReportedBy).Bytes()}.Build(),
+			Attachment:         z.Ptr(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED),
+			DateReconciledNull: z.Ptr(true),
+			DateUpdatedForce:   z.Ptr(true),
 		}.Build())
 	}
 

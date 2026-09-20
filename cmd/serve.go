@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"google.golang.org/grpc/credentials/insecure"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -88,6 +89,8 @@ type Server struct {
 	Deps  *core.Deps
 	Sites *core.Sites
 	Jobs  *core.Jobs
+	// Directives is the leader's traffic toward the nodes (§34.9).
+	Directives *core.Directives
 
 	// CA is the built-in CA, nil before `shale init`.
 	CA *pki.CA
@@ -212,6 +215,12 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		s.Jobs.Every = c.Control.JobsEvery
 	}
 	s.Spin = append(s.Spin, s.Jobs)
+	deps.DialNode = s.nodeDialer()
+	s.Directives = core.NewDirectives(deps)
+	if c.Control.DirectivesEvery > 0 {
+		s.Directives.Every = c.Control.DirectivesEvery
+	}
+	s.Spin = append(s.Spin, s.Directives)
 	if c.Watch.Outbox && b != nil {
 		s.Spin = append(s.Spin, pd.Drain(client, b, c.Watch.Every()))
 	}
@@ -309,6 +318,49 @@ func (s *Server) tlsConfig() (*tls.Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// cpKeyPair is the CP's own certificate: external files when configured,
+// else what `shale init` issued from the built-in CA.
+func (s *Server) cpKeyPair() (string, string) {
+	c := s.cfg
+	if c.Control.CertFile != "" {
+		return c.Control.CertFile, c.Control.KeyFile
+	}
+	dir := c.StateDir("control")
+
+	return filepath.Join(dir, CpCertFile), filepath.Join(dir, CpKeyFile)
+}
+
+// nodeDialer opens a node's control API for the leader's directives
+// (§34.9, §35.7): mTLS with the CP's certificate, and the peer must be the
+// node it claims to be, whatever address it was dialed on. Development mode
+// is plaintext.
+func (s *Server) nodeDialer() func(ctx context.Context, addr string, id pdid.Id) (*grpc.ClientConn, error) {
+	return func(ctx context.Context, addr string, id pdid.Id) (*grpc.ClientConn, error) {
+		if s.cfg.IsDev() && s.cfg.Control.CertFile == "" {
+			return grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		}
+		certFile, keyFile := s.cpKeyPair()
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			return nil, fmt.Errorf("control plane certificate: %w", err)
+		}
+		var pool *x509.CertPool
+		if s.CA != nil {
+			pool = x509.NewCertPool()
+			pool.AddCert(s.CA.Cert)
+		}
+		cfg := &tls.Config{
+			Certificates:          []tls.Certificate{cert},
+			MinVersion:            tls.VersionTLS12,
+			NextProtos:            []string{"h2"},
+			InsecureSkipVerify:    true, // verified by name below, not by address
+			VerifyPeerCertificate: pki.VerifyPeer(pool, id),
+		}
+
+		return grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+	}
 }
 
 // Grpc builds the server every call of one surface arrives at.

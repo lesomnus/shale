@@ -124,8 +124,10 @@ traced. It grants nothing.
   the same row, so a rotation is one transaction and never leaves a replica
   signing with a key the others do not know. Only public halves are readable
   through the API.
-- Nodes receive the key set when they are adopted, then **watch**
-  `SigningKey` on the cluster API, so a new key reaches them within seconds.
+- Nodes receive the key set when they are adopted, then **poll**
+  `SigningKey` on the cluster API every 30 s, so a new key reaches them
+  well before it signs anything: rotation waits until every live node
+  reports holding it.
   They **cache the key set in their state directory**, so a node that
   restarts while the CP is down still verifies tokens.
 - Each heartbeat reports the key IDs the node holds.

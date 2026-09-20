@@ -45,6 +45,10 @@ storage:
   sinks:
     - path: /mnt/hdd01
     - path: /mnt/hdd02
+    # a directory with no disk of its own (a lab): declare its identity
+    # - path: /srv/shale/sink
+    #   capacity: 50GiB
+    #   device: lab-davy-1
 ```
 
 ```yaml

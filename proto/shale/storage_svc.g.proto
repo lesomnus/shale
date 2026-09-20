@@ -73,6 +73,11 @@ service SinkService {
   // Attach a moved sink to the node that reports it (§28.3).
   rpc Adopt(SinkAdoptRequest) returns (Sink);
   rpc Retire(SinkRetireRequest) returns (Sink);
+  // Reconcile the sink with its node now, from the beginning with `full`
+  // (§34.9, §29); every sink when no ref is given. The leader carries it out.
+  rpc Reconcile(SinkReconcileRequest) returns (SinkReconcileResponse);
+  // Run a GC round on the sink now, through the node's control API (§21).
+  rpc Gc(SinkGcRequest) returns (Sink);
 }
 
 message DeviceAddRequest {
@@ -589,4 +594,17 @@ message SinkAdoptRequest {
 message SinkRetireRequest {
   SinkRef ref = 1;
   string reason = 2 [features.field_presence = IMPLICIT];
+}
+
+message SinkReconcileRequest {
+  SinkRef ref = 1;
+  bool full = 2 [features.field_presence = IMPLICIT];
+}
+
+message SinkReconcileResponse {
+  int64 sinks = 1 [features.field_presence = IMPLICIT];
+}
+
+message SinkGcRequest {
+  SinkRef ref = 1;
 }

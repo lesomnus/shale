@@ -591,6 +591,8 @@ const (
 	SinkService_ProposeGc_FullMethodName = "/shale.SinkService/ProposeGc"
 	SinkService_Adopt_FullMethodName     = "/shale.SinkService/Adopt"
 	SinkService_Retire_FullMethodName    = "/shale.SinkService/Retire"
+	SinkService_Reconcile_FullMethodName = "/shale.SinkService/Reconcile"
+	SinkService_Gc_FullMethodName        = "/shale.SinkService/Gc"
 )
 
 // SinkServiceClient is the client API for SinkService service.
@@ -626,6 +628,11 @@ type SinkServiceClient interface {
 	// Attach a moved sink to the node that reports it (§28.3).
 	Adopt(ctx context.Context, in *SinkAdoptRequest, opts ...grpc.CallOption) (*Sink, error)
 	Retire(ctx context.Context, in *SinkRetireRequest, opts ...grpc.CallOption) (*Sink, error)
+	// Reconcile the sink with its node now, from the beginning with `full`
+	// (§34.9, §29); every sink when no ref is given. The leader carries it out.
+	Reconcile(ctx context.Context, in *SinkReconcileRequest, opts ...grpc.CallOption) (*SinkReconcileResponse, error)
+	// Run a GC round on the sink now, through the node's control API (§21).
+	Gc(ctx context.Context, in *SinkGcRequest, opts ...grpc.CallOption) (*Sink, error)
 }
 
 type sinkServiceClient struct {
@@ -745,6 +752,26 @@ func (c *sinkServiceClient) Retire(ctx context.Context, in *SinkRetireRequest, o
 	return out, nil
 }
 
+func (c *sinkServiceClient) Reconcile(ctx context.Context, in *SinkReconcileRequest, opts ...grpc.CallOption) (*SinkReconcileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SinkReconcileResponse)
+	err := c.cc.Invoke(ctx, SinkService_Reconcile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sinkServiceClient) Gc(ctx context.Context, in *SinkGcRequest, opts ...grpc.CallOption) (*Sink, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Sink)
+	err := c.cc.Invoke(ctx, SinkService_Gc_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SinkServiceServer is the server API for SinkService service.
 // All implementations must embed UnimplementedSinkServiceServer
 // for forward compatibility.
@@ -778,6 +805,11 @@ type SinkServiceServer interface {
 	// Attach a moved sink to the node that reports it (§28.3).
 	Adopt(context.Context, *SinkAdoptRequest) (*Sink, error)
 	Retire(context.Context, *SinkRetireRequest) (*Sink, error)
+	// Reconcile the sink with its node now, from the beginning with `full`
+	// (§34.9, §29); every sink when no ref is given. The leader carries it out.
+	Reconcile(context.Context, *SinkReconcileRequest) (*SinkReconcileResponse, error)
+	// Run a GC round on the sink now, through the node's control API (§21).
+	Gc(context.Context, *SinkGcRequest) (*Sink, error)
 	mustEmbedUnimplementedSinkServiceServer()
 }
 
@@ -817,6 +849,12 @@ func (UnimplementedSinkServiceServer) Adopt(context.Context, *SinkAdoptRequest) 
 }
 func (UnimplementedSinkServiceServer) Retire(context.Context, *SinkRetireRequest) (*Sink, error) {
 	return nil, status.Error(codes.Unimplemented, "method Retire not implemented")
+}
+func (UnimplementedSinkServiceServer) Reconcile(context.Context, *SinkReconcileRequest) (*SinkReconcileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Reconcile not implemented")
+}
+func (UnimplementedSinkServiceServer) Gc(context.Context, *SinkGcRequest) (*Sink, error) {
+	return nil, status.Error(codes.Unimplemented, "method Gc not implemented")
 }
 func (UnimplementedSinkServiceServer) mustEmbedUnimplementedSinkServiceServer() {}
 func (UnimplementedSinkServiceServer) testEmbeddedByValue()                     {}
@@ -1012,6 +1050,42 @@ func _SinkService_Retire_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SinkService_Reconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SinkReconcileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SinkServiceServer).Reconcile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SinkService_Reconcile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SinkServiceServer).Reconcile(ctx, req.(*SinkReconcileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SinkService_Gc_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SinkGcRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SinkServiceServer).Gc(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SinkService_Gc_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SinkServiceServer).Gc(ctx, req.(*SinkGcRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SinkService_ServiceDesc is the grpc.ServiceDesc for SinkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1054,6 +1128,14 @@ var SinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Retire",
 			Handler:    _SinkService_Retire_Handler,
+		},
+		{
+			MethodName: "Reconcile",
+			Handler:    _SinkService_Reconcile_Handler,
+		},
+		{
+			MethodName: "Gc",
+			Handler:    _SinkService_Gc_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

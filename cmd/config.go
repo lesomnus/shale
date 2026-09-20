@@ -99,6 +99,9 @@ type ControlConfig struct {
 	AutoAdopt bool `yaml:"auto_adopt"`
 	// Leader lease: how often the background jobs run.
 	JobsEvery time.Duration `yaml:"jobs_every"`
+	// DirectivesEvery is how often the leader compares the state with what
+	// the nodes were told (§34.9); default 5 s.
+	DirectivesEvery time.Duration `yaml:"directives_every"`
 }
 
 // SinkConfig is one sink a node serves (§22.2).
@@ -106,6 +109,9 @@ type SinkConfig struct {
 	Path string `yaml:"path"`
 	// Capacity is required on a shared filesystem, e.g. "500GiB".
 	Capacity string `yaml:"capacity"`
+	// Device declares the device identity for a volume with no disk behind
+	// it (a lab, a test); normally it is read from the block device.
+	Device string `yaml:"device"`
 }
 
 // StorageConfig is a Storage Node's own settings (§36.1, node scope).

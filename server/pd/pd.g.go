@@ -9704,6 +9704,16 @@ func (s interceptSink) Retire(ctx context.Context, req *api.SinkRetireRequest) (
 		api.SinkService_Retire_FullMethodName, req, s.SinkServiceServer.Retire)
 }
 
+func (s interceptSink) Reconcile(ctx context.Context, req *api.SinkReconcileRequest) (*api.SinkReconcileResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SinkServiceServer,
+		api.SinkService_Reconcile_FullMethodName, req, s.SinkServiceServer.Reconcile)
+}
+
+func (s interceptSink) Gc(ctx context.Context, req *api.SinkGcRequest) (*api.Sink, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SinkServiceServer,
+		api.SinkService_Gc_FullMethodName, req, s.SinkServiceServer.Gc)
+}
+
 func (s Intercept) Object() api.ObjectServiceServer {
 	return interceptObject{s, s.Next().Object()}
 }
@@ -11922,6 +11932,32 @@ func dispatch(ctx context.Context, s api.Server, op *pdpb.Op) (*anypb.Any, error
 		}
 
 		res, err := s.Sink().Retire(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.SinkService_Reconcile_FullMethodName:
+		v := &api.SinkReconcileRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Sink().Reconcile(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.SinkService_Gc_FullMethodName:
+		v := &api.SinkGcRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Sink().Gc(ctx, v)
 		if err != nil {
 			return nil, err
 		}

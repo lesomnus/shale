@@ -238,6 +238,10 @@ The CP sends a directive when the state changes, retries with backoff while
 the node is unreachable, and re-sends everything still implied for a node when
 its heartbeats resume. A node that was down therefore catches up within
 seconds of coming back, and nothing the CP decided while it was down is lost.
+The leader compares the state with what every live node was told every
+`directives_every` (5 s); it dials a node's control API on the address the
+node's heartbeats come from, with the port the node reports, and checks the
+node's certificate by the ID it names rather than by that address.
 
 **Reconciliation.** `NodeControl.Reconcile {sink, since, deleting}` makes the
 node stream the records of every complete file on the sink newer than

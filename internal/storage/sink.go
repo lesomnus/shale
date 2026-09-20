@@ -39,6 +39,9 @@ type Label struct {
 type SinkConfig struct {
 	Path     string
 	Capacity int64
+	// Device declares the device identity instead of reading it from the
+	// block device: for tests, and for volumes with no disk behind them.
+	Device string
 }
 
 // Watermarks are the free-space thresholds as fractions of capacity (§21.1).
@@ -95,6 +98,9 @@ func OpenSink(c SinkConfig, marks Watermarks) (*Sink, error) {
 	s.serve.Store(true)
 
 	dev, warn := deviceIdentity(path)
+	if c.Device != "" {
+		dev, warn = c.Device, nil
+	}
 	s.DeviceId = dev
 	s.warnings = append(s.warnings, warn...)
 

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"net"
 	"crypto/x509"
 	"fmt"
 	"strings"
@@ -1047,8 +1048,16 @@ func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) 
 	if len(req.GetInterfaces()) > 0 {
 		patch.Interfaces = req.GetInterfaces()
 	}
-	if req.GetControlAddress() != "" {
-		patch.ControlAddress = z.Ptr(req.GetControlAddress())
+	if addr := req.GetControlAddress(); addr != "" {
+		// The CP dials the control API on the cluster-facing IP the node
+		// came from, never through the resolver (§34.10): a node reports
+		// the port it bound, on whatever interface it listens on.
+		if host, port, err := net.SplitHostPort(addr); err == nil && (host == "" || host == "0.0.0.0" || host == "::") {
+			if p, ok := peerAddr(ctx); ok {
+				addr = net.JoinHostPort(p, port)
+			}
+		}
+		patch.ControlAddress = z.Ptr(addr)
 	}
 	if req.GetDataAddress() != "" {
 		patch.DataAddress = z.Ptr(req.GetDataAddress())
