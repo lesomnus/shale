@@ -79,6 +79,10 @@ message Candidate {
   bytes node_id = 3;
   repeated Endpoint endpoints = 4;
   string token = 5;
+  // The key this candidate's token names: it carries the attempt id, so
+  // every candidate has its own (§23.2). The allocation's object_key is
+  // the first candidate's.
+  string object_key = 6;
 }
 
 // Allocation is an object and its ranked candidates (§12.1).

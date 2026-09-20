@@ -459,6 +459,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			NodeId:    nodeId.Bytes(),
 			Endpoints: s.endpoints(n, a.caller, a.address),
 			Token:     tok,
+			ObjectKey: k,
 		}.Build())
 	}
 

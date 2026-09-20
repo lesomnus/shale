@@ -853,6 +853,7 @@ type Candidate struct {
 	xxx_hidden_NodeId    []byte                 `protobuf:"bytes,3,opt,name=node_id,json=nodeId"`
 	xxx_hidden_Endpoints *[]*Endpoint           `protobuf:"bytes,4,rep,name=endpoints"`
 	xxx_hidden_Token     string                 `protobuf:"bytes,5,opt,name=token"`
+	xxx_hidden_ObjectKey string                 `protobuf:"bytes,6,opt,name=object_key,json=objectKey"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -919,6 +920,13 @@ func (x *Candidate) GetToken() string {
 	return ""
 }
 
+func (x *Candidate) GetObjectKey() string {
+	if x != nil {
+		return x.xxx_hidden_ObjectKey
+	}
+	return ""
+}
+
 func (x *Candidate) SetAttemptId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -948,6 +956,10 @@ func (x *Candidate) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
+func (x *Candidate) SetObjectKey(v string) {
+	x.xxx_hidden_ObjectKey = v
+}
+
 type Candidate_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -956,6 +968,10 @@ type Candidate_builder struct {
 	NodeId    []byte
 	Endpoints []*Endpoint
 	Token     string
+	// The key this candidate's token names: it carries the attempt id, so
+	// every candidate has its own (§23.2). The allocation's object_key is
+	// the first candidate's.
+	ObjectKey string
 }
 
 func (b0 Candidate_builder) Build() *Candidate {
@@ -967,6 +983,7 @@ func (b0 Candidate_builder) Build() *Candidate {
 	x.xxx_hidden_NodeId = b.NodeId
 	x.xxx_hidden_Endpoints = &b.Endpoints
 	x.xxx_hidden_Token = b.Token
+	x.xxx_hidden_ObjectKey = b.ObjectKey
 	return m0
 }
 
@@ -4723,14 +4740,16 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x06scheme\x18\x01 \x01(\tR\x06scheme\x12\x12\n" +
 	"\x04host\x18\x02 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x03 \x01(\x05R\x04port\x12\x1a\n" +
-	"\bprotocol\x18\x04 \x01(\tR\bprotocol\"\xa1\x01\n" +
+	"\bprotocol\x18\x04 \x01(\tR\bprotocol\"\xc0\x01\n" +
 	"\tCandidate\x12\x1d\n" +
 	"\n" +
 	"attempt_id\x18\x01 \x01(\fR\tattemptId\x12\x17\n" +
 	"\asink_id\x18\x02 \x01(\fR\x06sinkId\x12\x17\n" +
 	"\anode_id\x18\x03 \x01(\fR\x06nodeId\x12-\n" +
 	"\tendpoints\x18\x04 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12\x14\n" +
-	"\x05token\x18\x05 \x01(\tR\x05token\"\xed\x03\n" +
+	"\x05token\x18\x05 \x01(\tR\x05token\x12\x1d\n" +
+	"\n" +
+	"object_key\x18\x06 \x01(\tR\tobjectKey\"\xed\x03\n" +
 	"\n" +
 	"Allocation\x12\x1b\n" +
 	"\tobject_id\x18\x01 \x01(\fR\bobjectId\x12\x1b\n" +

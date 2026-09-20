@@ -26,10 +26,16 @@ import (
 // cluster's CP, with its own identity and a declared device, and answers
 // it with a way to stop it.
 func (c *cluster) startNode(name, sinkDir string) (*storage.Node, context.CancelFunc) {
+	return c.startNodeAt(name, filepath.Join(c.t.TempDir(), name), sinkDir)
+}
+
+// startNodeAt is startNode with the state directory given, so a node can
+// be started again as itself.
+func (c *cluster) startNodeAt(name, stateDir, sinkDir string) (*storage.Node, context.CancelFunc) {
 	c.t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	cfg := storage.Config{
-		StateDir:          filepath.Join(c.t.TempDir(), name),
+		StateDir:          stateDir,
 		Cp:                "http://" + c.running.ClusterAddr,
 		Dev:               true,
 		HardwareId:        "test-" + name,
@@ -39,6 +45,9 @@ func (c *cluster) startNode(name, sinkDir string) (*storage.Node, context.Cancel
 		HeartbeatInterval: time.Second,
 		Log:               slog.Default().With("node", name),
 	}
+	// Small parts, so a test can see what reached the device (§12.2).
+	cfg.Limits = storage.DefaultLimits
+	cfg.Limits.PartSize = 64 << 10
 	n, err := storage.New(cfg)
 	require.NoError(c.t, err)
 	done := make(chan error, 1)

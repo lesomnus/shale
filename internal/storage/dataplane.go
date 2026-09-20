@@ -593,7 +593,14 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return err
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// The device would not take it (the node is stopping): what is
+		// held reaches the device as on a disconnect, and the upload stays
+		// open for the producer to finish elsewhere or later.
+		if k, ferr := pt.flush(df, written); ferr == nil {
+			written += int64(k)
+		}
+		u.crcAt = -1
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 	written += int64(n)

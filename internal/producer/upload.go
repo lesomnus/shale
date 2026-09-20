@@ -142,7 +142,13 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		return errors.New("no endpoint")
 	}
 	ep := cand.GetEndpoints()[0]
-	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al.GetObjectKey())
+	// The key is the candidate's: it names the attempt, and the token
+	// names the key (§23.2).
+	key := cand.GetObjectKey()
+	if key == "" {
+		key = al.GetObjectKey()
+	}
+	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), key)
 
 	var offset int64
 	lastProgress := time.Now()
