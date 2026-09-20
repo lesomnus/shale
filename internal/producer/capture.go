@@ -48,6 +48,9 @@ type SourceConfig struct {
 	// Tier 3: a whole command, run with `sh -c`; its stdout is TS.
 	Command string
 	Zone    string
+	// RawLoops is how many times a `raw:` input plays before the capture
+	// ends, as a camera that stops would; 0 is forever. Tests only.
+	RawLoops int
 }
 
 // AudioConfig is a source's audio (§38.3): a microphone beside the camera,
@@ -471,6 +474,7 @@ func (c *Capture) LastError() string {
 func (c *Capture) Run(ctx context.Context, read func(r io.Reader)) error {
 	backoff := time.Second
 	for {
+		began := time.Now()
 		err := c.once(ctx, read)
 		if ctx.Err() != nil {
 			return nil
@@ -478,6 +482,11 @@ func (c *Capture) Run(ctx context.Context, read func(r io.Reader)) error {
 		if errors.Is(err, errKicked) {
 			// Ended on purpose, to start again with other arguments.
 			continue
+		}
+		if time.Since(began) > healthyRun {
+			// A run that lasted is not part of a crash loop: the next
+			// restart is quick again.
+			backoff = time.Second
 		}
 		if err != nil {
 			c.mu.Lock()
@@ -499,6 +508,10 @@ func (c *Capture) Run(ctx context.Context, read func(r io.Reader)) error {
 
 // errKicked is a process ended by CheckAudio, to be started again at once.
 var errKicked = errors.New("capture restarted with the audio encoded")
+
+// healthyRun is how long a capture has to run for its exit to count as an
+// ordinary stop rather than the next turn of a crash loop.
+const healthyRun = time.Minute
 
 func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	if strings.HasPrefix(c.Source.Input, "raw:") {

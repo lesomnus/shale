@@ -65,6 +65,9 @@ type ObjectServiceClient interface {
 	Watch(ctx context.Context, in *ObjectWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ObjectWatchResponse], error)
 	// One allocation for one segment of one source. Idempotent per
 	// (source, expected date_started): asking twice answers the same object.
+	// A segment that begins after the slot's stored object ended, or after
+	// the object named in `after`, is the slot's next segment and gets an
+	// object of its own (§12.1, §15).
 	Allocate(ctx context.Context, in *ObjectAllocateRequest, opts ...grpc.CallOption) (*Allocation, error)
 	// The next candidate after a failed attempt (§13).
 	Reallocate(ctx context.Context, in *ObjectReallocateRequest, opts ...grpc.CallOption) (*Allocation, error)
@@ -269,6 +272,9 @@ type ObjectServiceServer interface {
 	Watch(*ObjectWatchRequest, grpc.ServerStreamingServer[ObjectWatchResponse]) error
 	// One allocation for one segment of one source. Idempotent per
 	// (source, expected date_started): asking twice answers the same object.
+	// A segment that begins after the slot's stored object ended, or after
+	// the object named in `after`, is the slot's next segment and gets an
+	// object of its own (§12.1, §15).
 	Allocate(context.Context, *ObjectAllocateRequest) (*Allocation, error)
 	// The next candidate after a failed attempt (§13).
 	Reallocate(context.Context, *ObjectReallocateRequest) (*Allocation, error)

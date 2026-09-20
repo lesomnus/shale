@@ -3139,6 +3139,7 @@ type ObjectAllocateRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Source      *SourceRef             `protobuf:"bytes,1,opt,name=source"`
 	xxx_hidden_DateStarted *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_started,json=dateStarted"`
+	xxx_hidden_After       *ObjectRef             `protobuf:"bytes,3,opt,name=after"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3182,12 +3183,23 @@ func (x *ObjectAllocateRequest) GetDateStarted() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *ObjectAllocateRequest) GetAfter() *ObjectRef {
+	if x != nil {
+		return x.xxx_hidden_After
+	}
+	return nil
+}
+
 func (x *ObjectAllocateRequest) SetSource(v *SourceRef) {
 	x.xxx_hidden_Source = v
 }
 
 func (x *ObjectAllocateRequest) SetDateStarted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateStarted = v
+}
+
+func (x *ObjectAllocateRequest) SetAfter(v *ObjectRef) {
+	x.xxx_hidden_After = v
 }
 
 func (x *ObjectAllocateRequest) HasSource() bool {
@@ -3204,6 +3216,13 @@ func (x *ObjectAllocateRequest) HasDateStarted() bool {
 	return x.xxx_hidden_DateStarted != nil
 }
 
+func (x *ObjectAllocateRequest) HasAfter() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_After != nil
+}
+
 func (x *ObjectAllocateRequest) ClearSource() {
 	x.xxx_hidden_Source = nil
 }
@@ -3212,12 +3231,20 @@ func (x *ObjectAllocateRequest) ClearDateStarted() {
 	x.xxx_hidden_DateStarted = nil
 }
 
+func (x *ObjectAllocateRequest) ClearAfter() {
+	x.xxx_hidden_After = nil
+}
+
 type ObjectAllocateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Source *SourceRef
 	// The expected date_started of the segment; absent means now.
 	DateStarted *timestamppb.Timestamp
+	// The object of the segment before this one, when the camera ended that
+	// segment and this one begins in the same slot (§15): the answer is
+	// another object, whatever state the last one is in.
+	After *ObjectRef
 }
 
 func (b0 ObjectAllocateRequest_builder) Build() *ObjectAllocateRequest {
@@ -3226,6 +3253,7 @@ func (b0 ObjectAllocateRequest_builder) Build() *ObjectAllocateRequest {
 	_, _ = b, x
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_DateStarted = b.DateStarted
+	x.xxx_hidden_After = b.After
 	return m0
 }
 
@@ -6491,10 +6519,11 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\x0fObjectWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
 	"\x05value\x18\x02 \x01(\v2\r.shale.ObjectR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\x80\x01\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa8\x01\n" +
 	"\x15ObjectAllocateRequest\x12(\n" +
 	"\x06source\x18\x01 \x01(\v2\x10.shale.SourceRefR\x06source\x12=\n" +
-	"\fdate_started\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateStarted\"=\n" +
+	"\fdate_started\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateStarted\x12&\n" +
+	"\x05after\x18\x03 \x01(\v2\x10.shale.ObjectRefR\x05after\"=\n" +
 	"\x17ObjectReallocateRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\"e\n" +
 	"\x12ObjectRenewRequest\x12\"\n" +
@@ -6765,108 +6794,109 @@ var file_shale_object_svc_g_proto_depIdxs = []int32{
 	50,  // 41: shale.ObjectWatchItem.value:type_name -> shale.Object
 	40,  // 42: shale.ObjectAllocateRequest.source:type_name -> shale.SourceRef
 	43,  // 43: shale.ObjectAllocateRequest.date_started:type_name -> google.protobuf.Timestamp
-	4,   // 44: shale.ObjectReallocateRequest.ref:type_name -> shale.ObjectRef
-	4,   // 45: shale.ObjectRenewRequest.ref:type_name -> shale.ObjectRef
-	18,  // 46: shale.ObjectRenewRequest.attempt:type_name -> shale.AttemptRef
-	4,   // 47: shale.ObjectReportAttemptRequest.ref:type_name -> shale.ObjectRef
-	18,  // 48: shale.ObjectReportAttemptRequest.attempt:type_name -> shale.AttemptRef
-	4,   // 49: shale.ObjectReportFailureRequest.ref:type_name -> shale.ObjectRef
-	4,   // 50: shale.ObjectRescheduleRequest.ref:type_name -> shale.ObjectRef
-	39,  // 51: shale.ObjectRescheduleRequest.set:type_name -> shale.SetRef
-	40,  // 52: shale.ObjectRescheduleRequest.source:type_name -> shale.SourceRef
-	43,  // 53: shale.ObjectRescheduleRequest.from:type_name -> google.protobuf.Timestamp
-	43,  // 54: shale.ObjectRescheduleRequest.to:type_name -> google.protobuf.Timestamp
-	43,  // 55: shale.ObjectRescheduleRequest.date_expired:type_name -> google.protobuf.Timestamp
-	43,  // 56: shale.ObjectRescheduleRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	39,  // 57: shale.ObjectTimelineRequest.set:type_name -> shale.SetRef
-	40,  // 58: shale.ObjectTimelineRequest.source:type_name -> shale.SourceRef
-	43,  // 59: shale.ObjectTimelineRequest.from:type_name -> google.protobuf.Timestamp
-	43,  // 60: shale.ObjectTimelineRequest.to:type_name -> google.protobuf.Timestamp
-	25,  // 61: shale.ObjectTimelineResponse.sources:type_name -> shale.TimelineSource
-	26,  // 62: shale.TimelineSource.objects:type_name -> shale.TimelineObject
-	27,  // 63: shale.TimelineSource.gaps:type_name -> shale.TimelineGap
-	43,  // 64: shale.TimelineObject.date_started:type_name -> google.protobuf.Timestamp
-	43,  // 65: shale.TimelineObject.date_ended:type_name -> google.protobuf.Timestamp
-	0,   // 66: shale.TimelineObject.state:type_name -> shale.ReadState
-	51,  // 67: shale.TimelineObject.endpoints:type_name -> shale.Endpoint
-	43,  // 68: shale.TimelineObject.date_token_expires:type_name -> google.protobuf.Timestamp
-	43,  // 69: shale.TimelineGap.from:type_name -> google.protobuf.Timestamp
-	43,  // 70: shale.TimelineGap.to:type_name -> google.protobuf.Timestamp
-	1,   // 71: shale.TimelineGap.reason:type_name -> shale.GapReason
-	37,  // 72: shale.AttemptAddRequest.tenant:type_name -> shale.TenantRef
-	38,  // 73: shale.AttemptAddRequest.site:type_name -> shale.SiteRef
-	4,   // 74: shale.AttemptAddRequest.object:type_name -> shale.ObjectRef
-	41,  // 75: shale.AttemptAddRequest.sink:type_name -> shale.SinkRef
-	52,  // 76: shale.AttemptAddRequest.node:type_name -> shale.NodeRef
-	53,  // 77: shale.AttemptAddRequest.state:type_name -> shale.AttemptState
-	43,  // 78: shale.AttemptAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	43,  // 79: shale.AttemptAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	43,  // 80: shale.AttemptAddRequest.date_finished:type_name -> google.protobuf.Timestamp
-	18,  // 81: shale.AttemptGetRequest.ref:type_name -> shale.AttemptRef
-	30,  // 82: shale.AttemptGetRequest.select:type_name -> shale.AttemptSelect
-	44,  // 83: shale.AttemptSelect.tenant:type_name -> shale.TenantSelect
-	45,  // 84: shale.AttemptSelect.site:type_name -> shale.SiteSelect
-	5,   // 85: shale.AttemptSelect.object:type_name -> shale.ObjectSelect
-	48,  // 86: shale.AttemptSelect.sink:type_name -> shale.SinkSelect
-	54,  // 87: shale.AttemptSelect.node:type_name -> shale.NodeSelect
-	18,  // 88: shale.AttemptPatchRequest.ref:type_name -> shale.AttemptRef
-	53,  // 89: shale.AttemptPatchRequest.state:type_name -> shale.AttemptState
-	43,  // 90: shale.AttemptPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	43,  // 91: shale.AttemptPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
-	43,  // 92: shale.AttemptPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
-	18,  // 93: shale.AttemptApplyRequest.ref:type_name -> shale.AttemptRef
-	49,  // 94: shale.AttemptApplyRequest.patch:type_name -> patch.Patch
-	36,  // 95: shale.AttemptListRequest.filters:type_name -> shale.AttemptFilter
-	55,  // 96: shale.AttemptListResponse.items:type_name -> shale.Attempt
-	18,  // 97: shale.AttemptFilter.ref:type_name -> shale.AttemptRef
-	37,  // 98: shale.AttemptFilter.tenant:type_name -> shale.TenantRef
-	4,   // 99: shale.AttemptFilter.object:type_name -> shale.ObjectRef
-	41,  // 100: shale.AttemptFilter.sink:type_name -> shale.SinkRef
-	2,   // 101: shale.ObjectService.Add:input_type -> shale.ObjectAddRequest
-	3,   // 102: shale.ObjectService.Get:input_type -> shale.ObjectGetRequest
-	6,   // 103: shale.ObjectService.Patch:input_type -> shale.ObjectPatchRequest
-	7,   // 104: shale.ObjectService.Apply:input_type -> shale.ObjectApplyRequest
-	4,   // 105: shale.ObjectService.Erase:input_type -> shale.ObjectRef
-	9,   // 106: shale.ObjectService.List:input_type -> shale.ObjectListRequest
-	12,  // 107: shale.ObjectService.Watch:input_type -> shale.ObjectWatchRequest
-	15,  // 108: shale.ObjectService.Allocate:input_type -> shale.ObjectAllocateRequest
-	16,  // 109: shale.ObjectService.Reallocate:input_type -> shale.ObjectReallocateRequest
-	17,  // 110: shale.ObjectService.Renew:input_type -> shale.ObjectRenewRequest
-	19,  // 111: shale.ObjectService.ReportAttempt:input_type -> shale.ObjectReportAttemptRequest
-	20,  // 112: shale.ObjectService.ReportFailure:input_type -> shale.ObjectReportFailureRequest
-	21,  // 113: shale.ObjectService.Reschedule:input_type -> shale.ObjectRescheduleRequest
-	23,  // 114: shale.ObjectService.Timeline:input_type -> shale.ObjectTimelineRequest
-	28,  // 115: shale.AttemptService.Add:input_type -> shale.AttemptAddRequest
-	29,  // 116: shale.AttemptService.Get:input_type -> shale.AttemptGetRequest
-	31,  // 117: shale.AttemptService.Patch:input_type -> shale.AttemptPatchRequest
-	32,  // 118: shale.AttemptService.Apply:input_type -> shale.AttemptApplyRequest
-	18,  // 119: shale.AttemptService.Erase:input_type -> shale.AttemptRef
-	34,  // 120: shale.AttemptService.List:input_type -> shale.AttemptListRequest
-	50,  // 121: shale.ObjectService.Add:output_type -> shale.Object
-	50,  // 122: shale.ObjectService.Get:output_type -> shale.Object
-	50,  // 123: shale.ObjectService.Patch:output_type -> shale.Object
-	50,  // 124: shale.ObjectService.Apply:output_type -> shale.Object
-	8,   // 125: shale.ObjectService.Erase:output_type -> shale.ObjectEraseResponse
-	10,  // 126: shale.ObjectService.List:output_type -> shale.ObjectListResponse
-	13,  // 127: shale.ObjectService.Watch:output_type -> shale.ObjectWatchResponse
-	56,  // 128: shale.ObjectService.Allocate:output_type -> shale.Allocation
-	56,  // 129: shale.ObjectService.Reallocate:output_type -> shale.Allocation
-	56,  // 130: shale.ObjectService.Renew:output_type -> shale.Allocation
-	55,  // 131: shale.ObjectService.ReportAttempt:output_type -> shale.Attempt
-	50,  // 132: shale.ObjectService.ReportFailure:output_type -> shale.Object
-	22,  // 133: shale.ObjectService.Reschedule:output_type -> shale.ObjectRescheduleResponse
-	24,  // 134: shale.ObjectService.Timeline:output_type -> shale.ObjectTimelineResponse
-	55,  // 135: shale.AttemptService.Add:output_type -> shale.Attempt
-	55,  // 136: shale.AttemptService.Get:output_type -> shale.Attempt
-	55,  // 137: shale.AttemptService.Patch:output_type -> shale.Attempt
-	55,  // 138: shale.AttemptService.Apply:output_type -> shale.Attempt
-	33,  // 139: shale.AttemptService.Erase:output_type -> shale.AttemptEraseResponse
-	35,  // 140: shale.AttemptService.List:output_type -> shale.AttemptListResponse
-	121, // [121:141] is the sub-list for method output_type
-	101, // [101:121] is the sub-list for method input_type
-	101, // [101:101] is the sub-list for extension type_name
-	101, // [101:101] is the sub-list for extension extendee
-	0,   // [0:101] is the sub-list for field type_name
+	4,   // 44: shale.ObjectAllocateRequest.after:type_name -> shale.ObjectRef
+	4,   // 45: shale.ObjectReallocateRequest.ref:type_name -> shale.ObjectRef
+	4,   // 46: shale.ObjectRenewRequest.ref:type_name -> shale.ObjectRef
+	18,  // 47: shale.ObjectRenewRequest.attempt:type_name -> shale.AttemptRef
+	4,   // 48: shale.ObjectReportAttemptRequest.ref:type_name -> shale.ObjectRef
+	18,  // 49: shale.ObjectReportAttemptRequest.attempt:type_name -> shale.AttemptRef
+	4,   // 50: shale.ObjectReportFailureRequest.ref:type_name -> shale.ObjectRef
+	4,   // 51: shale.ObjectRescheduleRequest.ref:type_name -> shale.ObjectRef
+	39,  // 52: shale.ObjectRescheduleRequest.set:type_name -> shale.SetRef
+	40,  // 53: shale.ObjectRescheduleRequest.source:type_name -> shale.SourceRef
+	43,  // 54: shale.ObjectRescheduleRequest.from:type_name -> google.protobuf.Timestamp
+	43,  // 55: shale.ObjectRescheduleRequest.to:type_name -> google.protobuf.Timestamp
+	43,  // 56: shale.ObjectRescheduleRequest.date_expired:type_name -> google.protobuf.Timestamp
+	43,  // 57: shale.ObjectRescheduleRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	39,  // 58: shale.ObjectTimelineRequest.set:type_name -> shale.SetRef
+	40,  // 59: shale.ObjectTimelineRequest.source:type_name -> shale.SourceRef
+	43,  // 60: shale.ObjectTimelineRequest.from:type_name -> google.protobuf.Timestamp
+	43,  // 61: shale.ObjectTimelineRequest.to:type_name -> google.protobuf.Timestamp
+	25,  // 62: shale.ObjectTimelineResponse.sources:type_name -> shale.TimelineSource
+	26,  // 63: shale.TimelineSource.objects:type_name -> shale.TimelineObject
+	27,  // 64: shale.TimelineSource.gaps:type_name -> shale.TimelineGap
+	43,  // 65: shale.TimelineObject.date_started:type_name -> google.protobuf.Timestamp
+	43,  // 66: shale.TimelineObject.date_ended:type_name -> google.protobuf.Timestamp
+	0,   // 67: shale.TimelineObject.state:type_name -> shale.ReadState
+	51,  // 68: shale.TimelineObject.endpoints:type_name -> shale.Endpoint
+	43,  // 69: shale.TimelineObject.date_token_expires:type_name -> google.protobuf.Timestamp
+	43,  // 70: shale.TimelineGap.from:type_name -> google.protobuf.Timestamp
+	43,  // 71: shale.TimelineGap.to:type_name -> google.protobuf.Timestamp
+	1,   // 72: shale.TimelineGap.reason:type_name -> shale.GapReason
+	37,  // 73: shale.AttemptAddRequest.tenant:type_name -> shale.TenantRef
+	38,  // 74: shale.AttemptAddRequest.site:type_name -> shale.SiteRef
+	4,   // 75: shale.AttemptAddRequest.object:type_name -> shale.ObjectRef
+	41,  // 76: shale.AttemptAddRequest.sink:type_name -> shale.SinkRef
+	52,  // 77: shale.AttemptAddRequest.node:type_name -> shale.NodeRef
+	53,  // 78: shale.AttemptAddRequest.state:type_name -> shale.AttemptState
+	43,  // 79: shale.AttemptAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	43,  // 80: shale.AttemptAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	43,  // 81: shale.AttemptAddRequest.date_finished:type_name -> google.protobuf.Timestamp
+	18,  // 82: shale.AttemptGetRequest.ref:type_name -> shale.AttemptRef
+	30,  // 83: shale.AttemptGetRequest.select:type_name -> shale.AttemptSelect
+	44,  // 84: shale.AttemptSelect.tenant:type_name -> shale.TenantSelect
+	45,  // 85: shale.AttemptSelect.site:type_name -> shale.SiteSelect
+	5,   // 86: shale.AttemptSelect.object:type_name -> shale.ObjectSelect
+	48,  // 87: shale.AttemptSelect.sink:type_name -> shale.SinkSelect
+	54,  // 88: shale.AttemptSelect.node:type_name -> shale.NodeSelect
+	18,  // 89: shale.AttemptPatchRequest.ref:type_name -> shale.AttemptRef
+	53,  // 90: shale.AttemptPatchRequest.state:type_name -> shale.AttemptState
+	43,  // 91: shale.AttemptPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	43,  // 92: shale.AttemptPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
+	43,  // 93: shale.AttemptPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
+	18,  // 94: shale.AttemptApplyRequest.ref:type_name -> shale.AttemptRef
+	49,  // 95: shale.AttemptApplyRequest.patch:type_name -> patch.Patch
+	36,  // 96: shale.AttemptListRequest.filters:type_name -> shale.AttemptFilter
+	55,  // 97: shale.AttemptListResponse.items:type_name -> shale.Attempt
+	18,  // 98: shale.AttemptFilter.ref:type_name -> shale.AttemptRef
+	37,  // 99: shale.AttemptFilter.tenant:type_name -> shale.TenantRef
+	4,   // 100: shale.AttemptFilter.object:type_name -> shale.ObjectRef
+	41,  // 101: shale.AttemptFilter.sink:type_name -> shale.SinkRef
+	2,   // 102: shale.ObjectService.Add:input_type -> shale.ObjectAddRequest
+	3,   // 103: shale.ObjectService.Get:input_type -> shale.ObjectGetRequest
+	6,   // 104: shale.ObjectService.Patch:input_type -> shale.ObjectPatchRequest
+	7,   // 105: shale.ObjectService.Apply:input_type -> shale.ObjectApplyRequest
+	4,   // 106: shale.ObjectService.Erase:input_type -> shale.ObjectRef
+	9,   // 107: shale.ObjectService.List:input_type -> shale.ObjectListRequest
+	12,  // 108: shale.ObjectService.Watch:input_type -> shale.ObjectWatchRequest
+	15,  // 109: shale.ObjectService.Allocate:input_type -> shale.ObjectAllocateRequest
+	16,  // 110: shale.ObjectService.Reallocate:input_type -> shale.ObjectReallocateRequest
+	17,  // 111: shale.ObjectService.Renew:input_type -> shale.ObjectRenewRequest
+	19,  // 112: shale.ObjectService.ReportAttempt:input_type -> shale.ObjectReportAttemptRequest
+	20,  // 113: shale.ObjectService.ReportFailure:input_type -> shale.ObjectReportFailureRequest
+	21,  // 114: shale.ObjectService.Reschedule:input_type -> shale.ObjectRescheduleRequest
+	23,  // 115: shale.ObjectService.Timeline:input_type -> shale.ObjectTimelineRequest
+	28,  // 116: shale.AttemptService.Add:input_type -> shale.AttemptAddRequest
+	29,  // 117: shale.AttemptService.Get:input_type -> shale.AttemptGetRequest
+	31,  // 118: shale.AttemptService.Patch:input_type -> shale.AttemptPatchRequest
+	32,  // 119: shale.AttemptService.Apply:input_type -> shale.AttemptApplyRequest
+	18,  // 120: shale.AttemptService.Erase:input_type -> shale.AttemptRef
+	34,  // 121: shale.AttemptService.List:input_type -> shale.AttemptListRequest
+	50,  // 122: shale.ObjectService.Add:output_type -> shale.Object
+	50,  // 123: shale.ObjectService.Get:output_type -> shale.Object
+	50,  // 124: shale.ObjectService.Patch:output_type -> shale.Object
+	50,  // 125: shale.ObjectService.Apply:output_type -> shale.Object
+	8,   // 126: shale.ObjectService.Erase:output_type -> shale.ObjectEraseResponse
+	10,  // 127: shale.ObjectService.List:output_type -> shale.ObjectListResponse
+	13,  // 128: shale.ObjectService.Watch:output_type -> shale.ObjectWatchResponse
+	56,  // 129: shale.ObjectService.Allocate:output_type -> shale.Allocation
+	56,  // 130: shale.ObjectService.Reallocate:output_type -> shale.Allocation
+	56,  // 131: shale.ObjectService.Renew:output_type -> shale.Allocation
+	55,  // 132: shale.ObjectService.ReportAttempt:output_type -> shale.Attempt
+	50,  // 133: shale.ObjectService.ReportFailure:output_type -> shale.Object
+	22,  // 134: shale.ObjectService.Reschedule:output_type -> shale.ObjectRescheduleResponse
+	24,  // 135: shale.ObjectService.Timeline:output_type -> shale.ObjectTimelineResponse
+	55,  // 136: shale.AttemptService.Add:output_type -> shale.Attempt
+	55,  // 137: shale.AttemptService.Get:output_type -> shale.Attempt
+	55,  // 138: shale.AttemptService.Patch:output_type -> shale.Attempt
+	55,  // 139: shale.AttemptService.Apply:output_type -> shale.Attempt
+	33,  // 140: shale.AttemptService.Erase:output_type -> shale.AttemptEraseResponse
+	35,  // 141: shale.AttemptService.List:output_type -> shale.AttemptListResponse
+	122, // [122:142] is the sub-list for method output_type
+	102, // [102:122] is the sub-list for method input_type
+	102, // [102:102] is the sub-list for extension type_name
+	102, // [102:102] is the sub-list for extension extendee
+	0,   // [0:102] is the sub-list for field type_name
 }
 
 func init() { file_shale_object_svc_g_proto_init() }

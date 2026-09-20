@@ -47,11 +47,15 @@ short CP outage. It adds no durable producer state:
   `(set, epoch, ordinal)` and the expected `date_started`
   ([§11](03-placement.md#11-placement)), so an allocation computed early
   points to the same sink as one computed at upload time.
-- Allocation is **idempotent per segment slot**: asking again for the same
+- Allocation is **idempotent per segment**: asking again for the same
   `(source, expected date_started)` answers the same `object_id`, with a fresh
   attempt only if the previous one has expired. A producer therefore never
-  creates two objects for one segment, however often it restarts. A source
-  may hold at most `max_open_attempts` (default 32) unfinished attempts.
+  creates two objects for one segment, however often it restarts. A slot
+  usually holds one segment; when the camera stops and comes back within
+  the slot ([§15](#15-partial-objects)) the segment that follows begins
+  after the stored one ended, and gets an object of its own in the same
+  slot, so nothing the camera delivered is refused. A source may hold at
+  most `max_open_attempts` (default 32) unfinished attempts.
 - The CP accepts an expected `date_started` between `now − max_backlog_age`
   (default: the set's `retention.expire`) and `now + allocation_horizon +
   clock_tolerance` (5 minutes). A backlog that arrives hours late after a link
@@ -586,7 +590,9 @@ A segment can end early in two ways.
 **The camera stops** (set powered off, camera fault). The producer still
 controls the upload. It ends the segment where the recording stopped and
 completes the upload normally, with the real `date_ended` and size. If the
-container is broken, the producer drops the segment instead.
+container is broken, the producer drops the segment instead. When frames
+return within the same slot, the next segment is a second object of that
+slot ([§12.1](#121-flow)); the slot's phase boundary cuts it as usual.
 
 **The producer disappears mid-upload** (destroyed, powered off, link gone for
 good). This case matters for CCTV: the last minutes before a producer is

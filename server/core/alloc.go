@@ -24,8 +24,10 @@ import (
 	"github.com/lesomnus/shale/internal/placement"
 )
 
-// The allocation engine (§12.1): one object per segment slot, a ranked list
-// of candidates each with its own attempt and token, idempotent per slot.
+// The allocation engine (§12.1): one object per segment, a ranked list of
+// candidates each with its own attempt and token, idempotent per segment.
+// A slot usually holds one segment; a camera that stops and comes back
+// within the slot starts another (§15), which gets an object of its own.
 
 // slot is the segment a data time falls in, with the staggered phase of §12.2:
 //
@@ -42,6 +44,17 @@ func slotOf(t time.Time, setId []byte, ordinal, setSize int, d time.Duration) ti
 	base := t.Add(-phase).Truncate(d)
 
 	return base.Add(phase)
+}
+
+// segmentAfter says whether a segment that begins at `started` comes after
+// a stored object of its slot: after the object's end, or, for an object
+// with no end (incomplete, lost), more than the slack after its start.
+func segmentAfter(o *ent.Object, started time.Time, slack time.Duration) bool {
+	if o.DateEnded != nil {
+		return !started.Before(*o.DateEnded)
+	}
+
+	return started.After(o.DateStarted.Add(slack))
 }
 
 // Phase is the segment phase of a member, for producers that cut segments
@@ -250,8 +263,10 @@ func ObjectKey(started time.Time, object, attempt pdid.Id) string {
 	return fmt.Sprintf("objects/%04d/%02d/%02d/%02d/%s.%s", t.Year(), int(t.Month()), t.Day(), t.Hour(), object, attempt)
 }
 
-// allocateSlot is one allocation: idempotent per (source, slot).
-func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, src *api.Source, started time.Time, actor pdid.Id, tenant pdid.Id) (*api.Allocation, error) {
+// allocateSlot is one allocation: idempotent per (source, segment). `after`
+// is the object of the segment the producer says ended before this one,
+// or Nil.
+func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, src *api.Source, started time.Time, after pdid.Id, actor pdid.Id, tenant pdid.Id) (*api.Allocation, error) {
 	prof := segmentOf(src, a.set, a.bounds)
 	if prof == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "source %s has no max_bitrate; negotiate first", src.GetAlias())
@@ -270,16 +285,40 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		return nil, status.Errorf(codes.InvalidArgument, "date_started %s is older than the set's retention", started.Format(time.RFC3339))
 	}
 
-	// The slot's object, if any: date_started is the slot at allocation and
-	// the data time once stored, so the lookup is by the slot's span.
+	// The slot's objects: date_started is the slot at allocation and the
+	// data time once stored, so the lookup is by the slot's span. A slot
+	// holds one object per segment (§12.1, §15): `started` belongs to the
+	// last object that began no later than it, with a keyframe interval and
+	// an encoder burst of slack, since the slot's first object is allocated
+	// at the slot's start and stored at its first keyframe.
 	srcId := mustId(src.GetId())
-	existing, err := s.d.Ent.Object.Query().
-		Where(object.SourceIdEQ(srcId.Uuid()), object.DateStartedGTE(started.UTC()), object.DateStartedLT(started.UTC().Add(duration))).
+	slotStart := slotOf(started, a.set.GetId(), int(src.GetOrdinal()), len(a.members), duration)
+	inSlot, err := s.d.Ent.Object.Query().
+		Where(object.SourceIdEQ(srcId.Uuid()), object.DateStartedGTE(slotStart.UTC()), object.DateStartedLT(slotStart.UTC().Add(duration))).
 		Order(ent.Asc(object.FieldDateStarted)).
 		WithSink().
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
+		All(ctx)
+	if err != nil {
 		return nil, err
+	}
+	slack := time.Duration(prof.GetKeyframeIntervalMs())*time.Millisecond + EncoderBurst
+	var existing *ent.Object
+	for _, o := range inSlot {
+		if !o.DateStarted.After(started.Add(slack)) {
+			existing = o
+		}
+	}
+	if existing != nil && existing.State != int32(api.ObjectState_OBJECT_STATE_PENDING) && segmentAfter(existing, started, slack) {
+		// The slot's stored object ended before this segment began: the
+		// camera stopped and came back within the slot (§15), and the
+		// segment that follows gets an object of its own.
+		existing = nil
+	}
+	if existing != nil && after != pdid.Nil && pdid.Id(existing.Id) == after {
+		// The producer says that object was the segment before this one
+		// and the camera ended it; its commit may still be on its way, so
+		// its state does not decide. The next segment gets its own.
+		existing = nil
 	}
 
 	ttl := horizon + duration + time.Duration(link.GetAbandonTimeoutSeconds())*time.Second + 5*time.Minute
@@ -554,7 +593,7 @@ func (s coreSet) Allocate(ctx context.Context, req *api.SetAllocateRequest) (*ap
 			d := time.Duration(prof.GetDurationSeconds()) * time.Second
 			start := slotOf(now, set.GetId(), int(m.GetOrdinal()), len(a.members), d)
 			for !start.After(now.Add(horizon)) {
-				al, err := s.allocateSlot(ctx, next, a, m, start, f.Actor, f.Tenant)
+				al, err := s.allocateSlot(ctx, next, a, m, start, pdid.Nil, f.Actor, f.Tenant)
 				if err != nil {
 					return err
 				}

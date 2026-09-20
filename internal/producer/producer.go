@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -117,6 +118,9 @@ type source struct {
 	allocs  map[int64]*api.Allocation
 	pending []*Segment
 	wake    chan struct{}
+	// lastObj is the object of the segment uploaded last: the next segment
+	// never reuses it, however the slot's allocation was cached (§15).
+	lastObj []byte
 
 	// Per-second accounting for the heartbeat (§38.5, §38.6).
 	secBytes   [60]int64
@@ -399,9 +403,10 @@ func (p *Producer) negotiate(ctx context.Context) error {
 // capture runs the source's capture process and cuts its stream.
 func (p *Producer) capture(ctx context.Context, s *source) error {
 	s.capture = &Capture{
-		Ffmpeg: p.cfg.Ffmpeg,
-		Source: s.cfg,
-		Log:    p.log,
+		Ffmpeg:   p.cfg.Ffmpeg,
+		Source:   s.cfg,
+		Log:      p.log,
+		RawLoops: s.cfg.RawLoops,
 		Profile: func() (int64, time.Duration) {
 			s.mu.Lock()
 			defer s.mu.Unlock()
@@ -609,6 +614,9 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 			s.mu.Unlock()
 			continue
 		}
+		s.mu.Lock()
+		s.lastObj = al.GetObjectId()
+		s.mu.Unlock()
 		res := p.uploader.Upload(ctx, al, seg)
 		s.mu.Lock()
 		if res.Stored {
@@ -650,17 +658,27 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 	if al != nil {
 		delete(s.allocs, slot)
 	}
+	last := s.lastObj
 	s.mu.Unlock()
+	if al != nil && len(last) > 0 && bytes.Equal(al.GetObjectId(), last) {
+		// The slot's allocation was the segment before this one, which
+		// the camera ended: this one needs an object of its own (§15).
+		al = nil
+	}
 	if al != nil && al.GetDateExpires().AsTime().After(time.Now().Add(time.Minute)) && len(al.GetCandidates()) > 0 {
 		return al, nil
 	}
 
 	actx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	al, err := api.NewObjectServiceClient(p.conn).Allocate(actx, api.ObjectAllocateRequest_builder{
+	req := api.ObjectAllocateRequest_builder{
 		Source:      api.SourceRef_builder{Id: s.row.GetId()}.Build(),
 		DateStarted: timestamppb.New(seg.Started),
-	}.Build())
+	}
+	if len(last) > 0 {
+		req.After = api.ObjectRef_builder{Id: last}.Build()
+	}
+	al, err := api.NewObjectServiceClient(p.conn).Allocate(actx, req.Build())
 	if err != nil {
 		return nil, err
 	}

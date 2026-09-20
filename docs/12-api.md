@@ -189,6 +189,9 @@ service SourceService {
 service ObjectService {
   // One allocation for one segment of one source. Idempotent per
   // (source, expected date_started): asking twice answers the same object.
+  // A segment that begins after the slot's stored object ended, or after
+  // the object named in `after`, is the slot's next segment and gets an
+  // object of its own (§12.1, §15).
   rpc Allocate(ObjectAllocateRequest) returns (Allocation);
   // The next candidate after a failed attempt (§13).
   rpc Reallocate(ObjectReallocateRequest) returns (Allocation);

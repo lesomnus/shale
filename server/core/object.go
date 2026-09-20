@@ -74,12 +74,24 @@ func (s coreObject) Allocate(ctx context.Context, req *api.ObjectAllocateRequest
 	if req.GetDateStarted() != nil {
 		t = req.GetDateStarted().AsTime()
 	}
-	d := time.Duration(prof.GetDurationSeconds()) * time.Second
-	start := slotOf(t, set.GetId(), int(src.GetOrdinal()), len(a.members), d)
+	// The segment's own start decides which object of its slot it is
+	// (§12.1, §15); the slot's start stands in when the producer gave none.
+	if req.GetDateStarted() == nil {
+		d := time.Duration(prof.GetDurationSeconds()) * time.Second
+		t = slotOf(t, set.GetId(), int(src.GetOrdinal()), len(a.members), d)
+	}
+	after := pdid.Nil
+	if len(req.GetAfter().GetId()) > 0 {
+		id, err := pdid.From(req.GetAfter().GetId())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %v", err)
+		}
+		after = id
+	}
 
 	var out *api.Allocation
 	err = s.tx(ctx, func(next api.Server) error {
-		v, err := s.allocateSlot(ctx, next, a, src, start, f.Actor, f.Tenant)
+		v, err := s.allocateSlot(ctx, next, a, src, t, after, f.Actor, f.Tenant)
 		out = v
 
 		return err
@@ -200,7 +212,7 @@ func (s coreObject) Reallocate(ctx context.Context, req *api.ObjectReallocateReq
 	// attempt including the new one.
 	var out *api.Allocation
 	err = s.tx(ctx, func(nx api.Server) error {
-		v, err := s.allocateSlot(ctx, nx, a, src, started, f.Actor, f.Tenant)
+		v, err := s.allocateSlot(ctx, nx, a, src, started, pdid.Nil, f.Actor, f.Tenant)
 		out = v
 
 		return err
@@ -266,7 +278,7 @@ func (s coreObject) Renew(ctx context.Context, req *api.ObjectRenewRequest) (*ap
 
 	var out *api.Allocation
 	err = s.tx(ctx, func(nx api.Server) error {
-		v, err := s.allocateSlot(ctx, nx, a, src, obj.GetDateStarted().AsTime(), f.Actor, f.Tenant)
+		v, err := s.allocateSlot(ctx, nx, a, src, obj.GetDateStarted().AsTime(), pdid.Nil, f.Actor, f.Tenant)
 		out = v
 
 		return err
