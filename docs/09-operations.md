@@ -271,46 +271,56 @@ in as a person (`shale login`) and keeps a session.
 
 ```bash
 # processes (§34.1)
-shale init                               # CA, signing key, first tenant, first operator and admin
-shale serve control                      # tenant API
-shale serve cluster                      # cluster API
-shale serve storage  --cp <url>          # Storage Node; joins on first run
-shale serve producer --cp <url>          # Producer; joins on first run
-shale serve reader   --cp <url>          # Reader agent; joins on first run
-shale serve relay    --cp <url>          # Relay; joins on first run
-shale serve all [--dev <dir>]            # everything in one process
+shale init [--tenant t] [--admin a] [--operator o]   # CA, signing key, first tenant, first operator and admin
+shale serve control|cluster|storage|producer|reader|relay|all [--dev <dir>]
+shale login [--cluster] [--password p] @tenant/alias # sign in as a person; keeps a session
+shale holder set-password <holder>
+
+# Every entity has the generated verbs the schema declares: get|ls|watch|add|
+# patch|erase. Flags come before arguments. A custom verb takes a REF where
+# its request names a row and the rest of the request as protojson; every
+# field shows with `-o protojson`. A state is a verb of its own (`pending`,
+# `quarantined`), since an enum is not something `ls` filters by.
 
 # hosts (§33.4)
-shale node ls [--pending]|get|adopt|erase|watch
-shale relay ls [--pending]|get|adopt|patch|erase|watch    # patch: labels
-shale relay assign <producer> <relay>                       # move a producer (§39.2)
-shale producer ls [--pending]|get|adopt --set <set>|erase|watch      # tenant API
-shale reader ls [--pending]|get|adopt [--site <site>]...|erase|watch # tenant API
+shale node ls|pending|get|erase|watch
+shale node adopt <node>
+shale node resolve <node> '{"from":"<ip>"}'                 # the endpoint that caller would get (§34.10)
+shale relay ls|pending|get|patch|erase|watch                 # patch: labels
+shale relay adopt <relay>
+shale relay assign <relay> '{"producer":{"id":"<producer>"}}' # move a producer (§39.2)
+shale producer ls|pending|get|erase|watch                    # tenant API
+shale producer adopt <producer> '{"set":{"id":"<set>"}}'
+shale producer scan|probe                                    # what this host can see (§38.4)
+shale reader ls|pending|get|erase|watch                      # tenant API
+shale reader adopt <reader> '{"sites":[{"id":"<site>"}]}'
 
 # cluster setup (cluster API)
 shale tenant add|ls|erase|patch          # patch: capacity_share
 shale signing-key ls|watch|rotate
-shale ca rotate                          # start a CA rollover early (§33.5)
 shale placement-policy add|ls|activate
-shale address-policy add|ls|activate     # how nodes are named to clients
-shale node resolve <node> [--from <ip>]  # the endpoint a caller would get
+shale address-policy add|ls|activate     # how nodes are named to clients (§34.10)
 shale upload-policy add|ls|activate      # bounds for negotiated upload profiles
+# `ca rotate`, a CA rollover started early (§33.5), comes with the rollover itself (#60)
 
 # cluster state and operations (cluster API)
-shale device ls [--quarantined]|get|watch
+shale device ls|quarantined|get|watch
 shale device quarantine|release|retire|declare-dead|locate <device>
-shale sink ls [--pending]|adopt --node <node>|retire|watch
+shale sink ls|pending|get|watch
+shale sink adopt <sink> '{"node":{"id":"<node>"}}'  # re-home a sink (§28.3)
+shale sink retire|reconcile|gc <sink>
 shale gc run <sink>
-shale index rebuild [--sink <sink>]
+shale index rebuild [<sink>]
 
 # tenant work (tenant API)
 shale set add|ls|get|patch|erase|watch   # patch: retention, placement, max_bitrate_total
-shale source add|ls|get|patch|erase
+shale set negotiate|allocate|live <set>
+shale source add|ls|get|patch|erase|live
 shale site add|ls|erase
 shale site-member add|ls|erase           # which people and readers may see which site
 shale holder add|ls|patch|erase          # people
 shale object get|ls|watch
-shale object reschedule --set <set> --from <t> --to <t> \
-      [--expired <date>] [--deleted <date>] --reason <text>
-shale object timeline --set <set> --from <t> --to <t> [--size n] [--after cursor]
+shale object reschedule '{"set":{"id":"<set>"},"from":"<t>","to":"<t>","expired":"<date>","deleted":"<date>","reason":"<text>"}'
+shale object timeline '{"set":{"id":"<set>"},"from":"<t>","to":"<t>","size":n,"after":"<cursor>"}'
+shale live [--for d] <set>               # a WebRTC viewer per source, for a look (§39.4)
 ```
