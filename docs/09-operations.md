@@ -150,6 +150,12 @@ continues as the same `node_id` with the same sinks
 6. objects are readable again; no object rows change
 ```
 
+A sink its node stops reporting, the disk pulled or the directory gone, is
+pending adoption from that heartbeat on: placement skips it, and the CP
+stops handing out tokens for it, so producers are not sent to a node that
+answers "this node does not serve that sink". The node's next report of
+it, or an adoption by another node, attaches it again.
+
 This recovers data without violating "no migration", because no bytes are
 copied. The adoption step is what keeps a sink from being served by two nodes
 at once, which the label check cannot prevent on a shared filesystem, where

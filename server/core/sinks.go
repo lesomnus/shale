@@ -27,6 +27,10 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 	}
 	clamp := maxSinkCapacity(place)
 
+	// The sinks this report names; one of this node's that it does not is
+	// pending adoption below.
+	reported := map[string]bool{}
+
 	// Devices by hardware id, from both lists.
 	reports := map[string]*api.DeviceReport{}
 	for _, d := range devices {
@@ -103,6 +107,9 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 	var answers []*api.SinkAnswer
 	for _, sr := range sinks {
 		sid, err := pdid.From(sr.GetSinkId())
+		if err == nil {
+			reported[string(sid.Bytes())] = true
+		}
 		if err != nil || sid.Domain() != DomSink {
 			s.d.log().Warn("sink report with a bad id", "node", nodeId.String(), "path", sr.GetPath())
 			continue
@@ -198,6 +205,31 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 			Serve:        serve,
 			AcceptWrites: serve && row.AcceptWrites,
 		}.Build())
+	}
+
+	// A sink of this node that its report no longer names, the disk pulled
+	// or the directory gone, is pending adoption from now on (§28.3):
+	// placement skips it, and no token names it on a node that would
+	// answer "this node does not serve that sink". Its next report, or an
+	// adoption by another node, attaches it again.
+	stale, err := s.d.Ent.Sink.Query().
+		Where(sink.NodeIdEQ(nodeId.Uuid()), sink.AttachmentEQ(int32(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED)), sink.DateErasedIsNil()).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range stale {
+		if reported[string(row.Id[:])] {
+			continue
+		}
+		if _, err := srv.Sink().Patch(ctx, api.SinkPatchRequest_builder{
+			Ref:              api.SinkRef_builder{Id: row.Id[:]}.Build(),
+			Attachment:       z.Ptr(api.SinkAttachment_SINK_ATTACHMENT_PENDING_ADOPTION),
+			DateUpdatedForce: z.Ptr(true),
+		}.Build()); err != nil {
+			return nil, err
+		}
+		s.d.log().Warn("sink no longer reported by its node; pending adoption", "sink", row.Alias, "node", nodeId.String())
 	}
 
 	return answers, nil

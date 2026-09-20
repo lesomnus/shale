@@ -334,3 +334,53 @@ func dumpSink(t *testing.T, when, dir string) {
 		return nil
 	})
 }
+
+// TestSinkNoLongerReported is §28.3 for a sink that leaves its node: the
+// node comes back without it, the CP marks it pending adoption at the
+// first heartbeat, and the sink it reports instead is attached.
+func TestSinkNoLongerReported(t *testing.T) {
+	c := start(t)
+	ctx := context.Background()
+	ops := c.dialCluster("@cluster/ops")
+	sinks := api.NewSinkServiceClient(ops)
+
+	stateB := filepath.Join(t.TempDir(), "node-b")
+	sinkB1 := filepath.Join(t.TempDir(), "sink-b1")
+	nodeB, stopB := c.startNodeAt("b", stateB, sinkB1)
+	ofNode := func() map[string]api.SinkAttachment {
+		out := map[string]api.SinkAttachment{}
+		vs, err := sinks.List(ctx, api.SinkListRequest_builder{}.Build())
+		if err != nil {
+			return out
+		}
+		for _, s := range vs.GetItems() {
+			if string(s.GetNode().GetId()) == string(nodeB.Id().Bytes()) {
+				out[s.GetPath()] = s.GetAttachment()
+			}
+		}
+
+		return out
+	}
+	require.Eventually(t, func() bool { return ofNode()[sinkB1] == api.SinkAttachment_SINK_ATTACHMENT_ATTACHED }, 30*time.Second, 200*time.Millisecond, "the first sink is attached")
+
+	// The node comes back as itself with another sink and not the first.
+	stopB()
+	sinkB2 := filepath.Join(t.TempDir(), "sink-b2")
+	c.startNodeAt("b", stateB, sinkB2)
+	require.Eventually(t, func() bool {
+		m := ofNode()
+
+		return m[sinkB2] == api.SinkAttachment_SINK_ATTACHMENT_ATTACHED && m[sinkB1] == api.SinkAttachment_SINK_ATTACHMENT_PENDING_ADOPTION
+	}, 30*time.Second, 200*time.Millisecond, "the vanished sink is pending adoption, the new one attached: %v", ofNode())
+
+	// Back with the first sink too: attached again.
+	// (A node lists every sink it has; the harness gives one per node, so
+	// the first sink returns alone.)
+	vs, err := sinks.List(ctx, api.SinkListRequest_builder{}.Build())
+	require.NoError(t, err)
+	for _, s := range vs.GetItems() {
+		if s.GetPath() == sinkB1 {
+			require.Equal(t, nodeB.Id().Bytes(), s.GetNode().GetId(), "the pending sink still names its node")
+		}
+	}
+}

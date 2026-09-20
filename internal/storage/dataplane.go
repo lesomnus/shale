@@ -190,6 +190,7 @@ func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	sink := d.node.sinkOf(sinkId)
 	if sink == nil || !sink.Serves() {
+		d.log.Info("refused: this node does not serve that sink", "sink", sinkId.String(), "key", key)
 		d.node.m.refused.Add(r.Context(), 1, reasonAttr("not_served"))
 		http.Error(w, "this node does not serve that sink", http.StatusServiceUnavailable)
 		return
@@ -382,12 +383,14 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		if !sink.AcceptsWrites() {
 			w.Header().Set(HdrRetryAfter, "30")
 			d.node.m.refused.Add(r.Context(), 1, reasonAttr("no_writes"))
+			d.log.Info("refused: the sink takes no writes now", "sink", sink.Id.String(), "key", key)
 			http.Error(w, "the sink takes no writes now", http.StatusServiceUnavailable)
 			return
 		}
 		if !d.admit(sink, actor) {
 			w.Header().Set(HdrRetryAfter, "10")
 			d.node.m.refused.Add(r.Context(), 1, reasonAttr("upload_limit"))
+			d.log.Info("refused: at the upload limit", "sink", sink.Id.String(), "key", key, "uploads", sink.uploads.Load(), "actor", actor.String())
 			http.Error(w, "at the upload limit", http.StatusServiceUnavailable)
 			return
 		}
@@ -608,6 +611,7 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 			written += int64(k)
 		}
 		u.crcAt = -1
+		d.log.Info("refused: the device would not take the last part", "sink", sink.Id.String(), "key", key, "err", err.Error())
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}

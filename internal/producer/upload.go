@@ -309,8 +309,17 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 		return 0, -1, counted.n, false, err
 	}
 	defer resp.Body.Close()
+	// The body of a refusal says why; the log carries it.
+	var reason string
+	if resp.StatusCode >= 400 {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 200))
+		reason = strings.TrimSpace(string(b))
+	}
 	io.Copy(io.Discard, resp.Body)
 	complete := strings.TrimSpace(resp.Header.Get(storage.HdrUploadComplete)) == "?1"
+	if resp.StatusCode == http.StatusServiceUnavailable && reason != "" {
+		u.Log.Info("node refused", "key", al.GetObjectKey(), "why", reason)
+	}
 
 	var v int64 = -1
 	switch resp.StatusCode {
