@@ -154,6 +154,12 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 		if d.Health == int32(api.DeviceHealth_DEVICE_HEALTH_SUSPECT) {
 			weight *= 0.5
 		}
+		// A new device ramps in at a quarter weight for its first month when
+		// the policy says so (D6), so a fresh HDD does not take a burst of
+		// the cluster's writes at once.
+		if place.GetNewDeviceRamp() && a.now.Sub(d.DateCreated) < 30*24*time.Hour {
+			weight *= 0.25
+		}
 		// A device on probation after a release runs at half weight (§27).
 		if q := d.Quarantine; q != nil && q.GetDateProbationEnds() != nil && a.now.Before(q.GetDateProbationEnds().AsTime()) {
 			weight *= 0.5

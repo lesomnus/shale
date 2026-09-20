@@ -177,3 +177,43 @@ func TestEpoch(t *testing.T) {
 	x.Equal(int64(7200), Epoch(7200, 3600))
 	x.Equal(int64(3600), Epoch(3600, 0))
 }
+
+// TestRemovingOneNodeMovesOnlyItsMembers is D5/D7 over many sets: when
+// one of ten nodes goes, the members whose first choice was on it move,
+// and nobody else does.
+func TestRemovingOneNodeMovesOnlyItsMembers(t *testing.T) {
+	x := require.New(t)
+	c := cluster(10, 2)
+	gone := c.Sinks[7].Node
+	without := Cluster{}
+	for _, s := range c.Sinks {
+		s.Eligible = s.Node != gone
+		without.Sinks = append(without.Sinks, s)
+	}
+
+	moved, stayed, onGone := 0, 0, 0
+	for range 200 {
+		k := Key{Set: pdid.New(domSet), Epoch: 3600, Version: 1}
+		for ord := range 8 {
+			m := Member{Source: pdid.New(domSource), Ordinal: ord}
+			before := Rank(c, k, m, api.SetSpread_SET_SPREAD_SPREAD)
+			after := Rank(without, k, m, api.SetSpread_SET_SPREAD_SPREAD)
+			x.NotEmpty(before)
+			x.NotEmpty(after)
+			x.Len(after, 18, "the gone node's sinks are not candidates")
+			if before[0].Node == gone {
+				onGone++
+				x.NotEqual(before[0].Id, after[0].Id)
+				continue
+			}
+			if before[0].Id == after[0].Id {
+				stayed++
+			} else {
+				moved++
+			}
+		}
+	}
+	x.Equal(0, moved, "a member whose sink stayed keeps it")
+	x.Greater(onGone, 100, "about a tenth of the members were on the gone node: %d", onGone)
+	x.Greater(stayed, 1200)
+}
