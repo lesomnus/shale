@@ -458,17 +458,24 @@ func (s *Directives) gc(ctx context.Context, client api.NodeControlClient, sk *e
 		return fmt.Errorf("Gc on %s: %w", sk.Alias, err)
 	}
 	s.log().Info("gc round", "sink", sk.Alias, "proposed", resp.GetProposed(), "deleted", resp.GetDeleted(), "reclaimed", resp.GetReclaimedBytes())
-	labels := map[string]string{}
-	for k, v := range sk.Labels {
-		if k != LabelGc {
-			labels[k] = v
-		}
-	}
 	_, err = s.d.Own.Sink().Patch(ctx, api.SinkPatchRequest_builder{
-		Ref: api.SinkRef_builder{Id: sk.Id[:]}.Build(), Labels: labels, DateUpdatedForce: z.Ptr(true),
+		Ref: api.SinkRef_builder{Id: sk.Id[:]}.Build(), Labels: cleared(sk.Labels, LabelGc), DateUpdatedForce: z.Ptr(true),
 	}.Build())
 
 	return err
+}
+
+// cleared is the labels with one set to "", which is how a one-shot
+// request is taken off a row: a patch carrying an empty map changes
+// nothing, so the key stays with an empty value.
+func cleared(labels map[string]string, key string) map[string]string {
+	out := map[string]string{}
+	for k, v := range labels {
+		out[k] = v
+	}
+	out[key] = ""
+
+	return out
 }
 
 // reconcile asks the node for what the CP may have missed on a sink and
@@ -548,14 +555,8 @@ func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient
 		}
 	}
 
-	labels := map[string]string{}
-	for k, v := range sk.Labels {
-		if k != LabelReconcile {
-			labels[k] = v
-		}
-	}
 	if _, err := s.d.Own.Sink().Patch(ctx, api.SinkPatchRequest_builder{
-		Ref: api.SinkRef_builder{Id: sk.Id[:]}.Build(), DateReconciled: timestamppb.New(now), Labels: labels, DateUpdatedForce: z.Ptr(true),
+		Ref: api.SinkRef_builder{Id: sk.Id[:]}.Build(), DateReconciled: timestamppb.New(now), Labels: cleared(sk.Labels, LabelReconcile), DateUpdatedForce: z.Ptr(true),
 	}.Build()); err != nil {
 		return err
 	}

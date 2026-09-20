@@ -443,9 +443,9 @@ func (s coreDevice) Locate(ctx context.Context, req *api.DeviceLocateRequest) (*
 		labels = map[string]string{}
 	}
 	if req.GetOff() {
-		delete(labels, "shale.io/locate")
+		labels[LabelLocate] = ""
 	} else {
-		labels["shale.io/locate"] = "on"
+		labels[LabelLocate] = "on"
 	}
 
 	return s.DeviceServiceServer.Patch(ctx, api.DevicePatchRequest_builder{

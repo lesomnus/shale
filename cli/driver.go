@@ -5,6 +5,7 @@ package cli
 // are blank-imported here rather than in `cmd` so that nothing that only
 // needs `cmd.Build` links an engine it never opens.
 import (
+	_ "github.com/lesomnus/payday/config/brokerpg"
 	_ "github.com/lesomnus/payday/config/dbpgx"
 	_ "github.com/lesomnus/payday/config/dbsqlite3"
 )

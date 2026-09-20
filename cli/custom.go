@@ -1,9 +1,15 @@
 package cli
 
 import (
+	"context"
 	"strings"
 
+	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/arg"
+
 	"github.com/lesomnus/payday/pdcmd"
+
+	"github.com/lesomnus/shale/api"
 
 	"github.com/lesomnus/shale/cmd"
 )
@@ -34,7 +40,6 @@ var custom = map[string]string{
 	"sink/reconcile":            "shale.SinkService.Reconcile",
 	"sink/gc":                   "shale.SinkService.Gc",
 	"gc/run":                    "shale.SinkService.Gc",
-	"index/rebuild":             "shale.SinkService.Reconcile",
 	"device/quarantine":         "shale.DeviceService.Quarantine",
 	"device/release":            "shale.DeviceService.Release",
 	"device/retire":             "shale.DeviceService.Retire",
@@ -46,6 +51,51 @@ var custom = map[string]string{
 	"address-policy/activate":   "shale.AddressPolicyService.Activate",
 }
 
+// groups are the command groups of §32 that no entity generates, with
+// their one-line help.
+var groups = map[string]string{
+	"gc": "GC on demand: `gc run <sink>` runs a round through the node",
+}
+
+// addIndexCommands mounts `index rebuild [<sink>]` (§29): every attached
+// sink, or one, reconciled from the beginning by the leader.
+func addIndexCommands(t *pdcmd.Tree, c *cmd.Config) {
+	t.Add("index", &xli.Command{Brief: "the metadata index, a cache of what the sinks hold"})
+	t.Add("index/rebuild", &xli.Command{
+		Name:  "rebuild",
+		Brief: "reconcile every sink, or one, from the beginning",
+		Args: arg.Args{
+			&arg.String{Name: "SINK", Brief: "one sink, by id or @alias; every sink when absent", Optional: true},
+		},
+		Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
+			conn, done, err := (&connector{c: c, cluster: true}).Connect(ctx)
+			if err != nil {
+				return err
+			}
+			defer done()
+			req := api.SinkReconcileRequest_builder{Full: true}
+			if v, ok := arg.Get[string](self, "SINK"); ok && v != "" {
+				ref, err := pdcmd.RefParser{}.Parse(v)
+				if err != nil {
+					return err
+				}
+				r := &api.SinkRef{}
+				if err := ref.Fill(r.ProtoReflect()); err != nil {
+					return err
+				}
+				req.Ref = r
+			}
+			resp, err := api.NewSinkServiceClient(conn).Reconcile(ctx, req.Build())
+			if err != nil {
+				return err
+			}
+			self.Printf("reconciling %d sink(s) from the beginning; watch the leader's log for `reconciled`\n", resp.GetSinks())
+
+			return nil
+		}),
+	})
+}
+
 func addCustom(t *pdcmd.Tree, c *cmd.Config, cluster bool) {
 	for path, method := range custom {
 		group := path[:strings.IndexByte(path, '/')]
@@ -55,6 +105,9 @@ func addCustom(t *pdcmd.Tree, c *cmd.Config, cluster bool) {
 		u, err := t.Unary(method)
 		if err != nil {
 			continue
+		}
+		if t.Command(group) == nil {
+			t.Add(group, &xli.Command{Brief: groups[group]})
 		}
 		t.Add(path, u)
 	}

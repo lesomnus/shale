@@ -331,6 +331,16 @@ func TestMultiNode(t *testing.T) {
 	}
 	require.NotEmpty(t, url)
 	require.Contains(t, url, fmt.Sprintf(":%d/", portOf(t, nodeD.DataAddr)), "the URL points at D, the sink's new node")
+	// D serves the sink from its next heartbeat on.
+	require.Eventually(t, func() bool {
+		resp, err := http.Get(url)
+		if err != nil {
+			return false
+		}
+		resp.Body.Close()
+
+		return resp.StatusCode == http.StatusOK
+	}, 10*time.Second, 200*time.Millisecond, "D serves the moved sink")
 	require.Equal(t, body, fetch(t, url))
 }
 

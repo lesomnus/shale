@@ -20,6 +20,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
+	"github.com/lesomnus/shale/internal/k8s"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
 )
@@ -43,20 +44,63 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "operator", Brief: "the alias of the first cluster operator"},
 			&flg.String{Name: "dev", Brief: "development mode: everything under this directory"},
 			&flg.Switch{Name: "if-needed", Brief: "do nothing when already initialized, instead of refusing"},
+			&flg.String{Name: "k8s-secret", Brief: "inside a cluster: put the KEK, CA, and CP certificate into this Secret (§34.5)"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, next xli.Next) error {
 			if v, ok := flg.Find[string](self, "dev"); ok && v != "" {
 				ApplyDev(c, v)
 			}
-			if v, ok := flg.Find[bool](self, "if-needed"); ok && v {
+			ifNeeded, _ := flg.Find[bool](self, "if-needed")
+			secret := flagOr(self, "k8s-secret", "")
+			if secret != "" {
+				// The Secret is the state directory of every CP pod (§34.5):
+				// its presence is what "initialized" means here.
+				k, ok := k8s.InCluster()
+				if !ok {
+					return errors.New("--k8s-secret: not inside a cluster (no service account)")
+				}
+				exists, err := k.SecretExists(ctx, secret)
+				if err != nil {
+					return err
+				}
+				if exists {
+					if ifNeeded {
+						self.Printf("already initialized: secret %s/%s\n", k.Namespace(), secret)
+						return nil
+					}
+
+					return fmt.Errorf("secret %s/%s already exists", k.Namespace(), secret)
+				}
+			} else if ifNeeded {
 				if _, err := os.Stat(filepath.Join(c.StateDir("control"), "kek")); err == nil {
 					self.Printf("already initialized: %s\n", c.StateDir("control"))
 					return nil
 				}
 			}
 
-			return Init(ctx, c, flagOr(self, "tenant", "acme"), flagOr(self, "admin", "admin"), flagOr(self, "operator", "ops"), self)
+			if err := Init(ctx, c, flagOr(self, "tenant", "acme"), flagOr(self, "admin", "admin"), flagOr(self, "operator", "ops"), self); err != nil {
+				return err
+			}
+			if secret == "" {
+				return nil
+			}
+			k, _ := k8s.InCluster()
+			dir := c.StateDir("control")
+			files := map[string][]byte{}
+			for _, name := range []string{"kek", cmd.CaCertFile, cmd.CaKeyFile, cmd.CpCertFile, cmd.CpKeyFile} {
+				b, err := os.ReadFile(filepath.Join(dir, name))
+				if err != nil {
+					return err
+				}
+				files[name] = b
+			}
+			if err := k.CreateSecret(ctx, secret, files); err != nil {
+				return err
+			}
+			self.Printf("\nsecret %s/%s holds the KEK, the CA, and the CP certificate; mount it at %s in every CP pod\n", k.Namespace(), secret, dir)
+
+			return nil
 		}),
 	}
 }

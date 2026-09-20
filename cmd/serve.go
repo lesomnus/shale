@@ -91,6 +91,9 @@ type Server struct {
 	Jobs  *core.Jobs
 	// Directives is the leader's traffic toward the nodes (§34.9).
 	Directives *core.Directives
+	// Leader is the lease over PostgreSQL; nil on SQLite, where this
+	// process is the only one.
+	Leader *Leader
 
 	// CA is the built-in CA, nil before `shale init`.
 	CA *pki.CA
@@ -214,13 +217,19 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	if c.Control.JobsEvery > 0 {
 		s.Jobs.Every = c.Control.JobsEvery
 	}
-	s.Spin = append(s.Spin, s.Jobs)
 	deps.DialNode = s.nodeDialer()
 	s.Directives = core.NewDirectives(deps)
 	if c.Control.DirectivesEvery > 0 {
 		s.Directives.Every = c.Control.DirectivesEvery
 	}
-	s.Spin = append(s.Spin, s.Directives)
+	if dia == "postgres" {
+		// Several CP processes share the database: one of them leads
+		// (§34.9).
+		s.Leader = NewLeader(db, slog.Default())
+		s.Jobs.Leader = s.Leader.Is
+		s.Directives.Leader = s.Leader.Is
+	}
+	s.Spin = append(s.Spin, s.Jobs, s.Directives)
 	if c.Watch.Outbox && b != nil {
 		s.Spin = append(s.Spin, pd.Drain(client, b, c.Watch.Every()))
 	}
@@ -277,7 +286,13 @@ func (s *Server) login(ctx context.Context, r *http.Request) (authsession.Sessio
 	return authsession.Session{Id: who.String(), TenantId: tenant.String(), Grant: frame.Whole()}, nil
 }
 
-func (s *Server) Close() error { return s.Db.Close() }
+func (s *Server) Close() error {
+	if s.Leader != nil {
+		s.Leader.Close()
+	}
+
+	return s.Db.Close()
+}
 
 // tlsConfig is the CP's server TLS: external files when configured, else
 // the certificate `shale init` issued from the built-in CA. Client
