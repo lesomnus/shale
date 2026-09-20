@@ -105,7 +105,7 @@ var producerMay = map[string]bool{
 	api.ObjectService_Get_FullMethodName: true, api.ObjectService_Allocate_FullMethodName: true,
 	api.ObjectService_Reallocate_FullMethodName: true, api.ObjectService_Renew_FullMethodName: true,
 	api.ObjectService_ReportAttempt_FullMethodName: true, api.ObjectService_ReportFailure_FullMethodName: true,
-	api.AttemptService_Get_FullMethodName: true,
+	api.AttemptService_Get_FullMethodName:  true,
 	api.ProducerService_Get_FullMethodName: true, api.ProducerService_Heartbeat_FullMethodName: true,
 	api.ProducerService_Relay_FullMethodName: true, api.ProducerService_RenewCertificate_FullMethodName: true,
 }
@@ -163,7 +163,7 @@ var nodeMay = map[string]bool{
 	api.NodeService_Get_FullMethodName: true, api.NodeService_Heartbeat_FullMethodName: true,
 	api.NodeService_PushEvents_FullMethodName: true, api.NodeService_RenewCertificate_FullMethodName: true,
 	api.NodeService_Resolve_FullMethodName: true,
-	api.SinkService_Get_FullMethodName: true, api.SinkService_List_FullMethodName: true, api.SinkService_ProposeGc_FullMethodName: true,
+	api.SinkService_Get_FullMethodName:     true, api.SinkService_List_FullMethodName: true, api.SinkService_ProposeGc_FullMethodName: true,
 	api.DeviceService_Get_FullMethodName: true, api.DeviceService_List_FullMethodName: true,
 	api.SigningKeyService_Get_FullMethodName: true, api.SigningKeyService_List_FullMethodName: true, api.SigningKeyService_Watch_FullMethodName: true,
 }
@@ -171,7 +171,7 @@ var nodeMay = map[string]bool{
 var relayMay = map[string]bool{
 	api.RelayService_Get_FullMethodName: true, api.RelayService_Heartbeat_FullMethodName: true,
 	api.RelayService_RenewCertificate_FullMethodName: true,
-	api.SigningKeyService_Get_FullMethodName: true, api.SigningKeyService_List_FullMethodName: true, api.SigningKeyService_Watch_FullMethodName: true,
+	api.SigningKeyService_Get_FullMethodName:         true, api.SigningKeyService_List_FullMethodName: true, api.SigningKeyService_Watch_FullMethodName: true,
 }
 
 func (p ClusterPolicy) May(_ context.Context, c gate.Call) error {

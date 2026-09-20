@@ -17,17 +17,17 @@ import (
 
 // Entry is one complete object file as the index knows it (§29).
 type Entry struct {
-	Key       string
-	ObjectId  pdid.Id
-	AttemptId pdid.Id
-	Size      int64
-	Started   time.Time
-	Ended     time.Time
-	Expired   time.Time
-	Deleted   time.Time
+	Key        string
+	ObjectId   pdid.Id
+	AttemptId  pdid.Id
+	Size       int64
+	Started    time.Time
+	Ended      time.Time
+	Expired    time.Time
+	Deleted    time.Time
 	Incomplete bool
-	Committed time.Time
-	Record    *api.ObjectRecord
+	Committed  time.Time
+	Record     *api.ObjectRecord
 }
 
 // Index is a sink's in-memory index of complete files, rebuilt from the

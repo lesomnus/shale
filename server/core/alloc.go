@@ -424,7 +424,7 @@ func (s coreSet) Allocate(ctx context.Context, req *api.SetAllocateRequest) (*ap
 	}
 
 	set, err := s.SetServiceServer.Get(ctx, api.SetGetRequest_builder{
-		Ref:    req.GetRef(),
+		Ref: req.GetRef(),
 	}.Build())
 	if err != nil {
 		return nil, err

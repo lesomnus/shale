@@ -198,7 +198,7 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 	}
 
 	set, err := s.SetServiceServer.Get(ctx, api.SetGetRequest_builder{
-		Ref:    req.GetRef(),
+		Ref: req.GetRef(),
 	}.Build())
 	if err != nil {
 		return nil, err

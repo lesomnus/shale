@@ -31,12 +31,12 @@ import (
 const Scheme = "Shale"
 
 var (
-	ErrMalformed = errors.New("token: malformed")
-	ErrSignature = errors.New("token: bad signature")
+	ErrMalformed  = errors.New("token: malformed")
+	ErrSignature  = errors.New("token: bad signature")
 	ErrUnknownKey = errors.New("token: unknown key")
-	ErrExpired   = errors.New("token: expired")
-	ErrAudience  = errors.New("token: not for this host")
-	ErrOp        = errors.New("token: operation not allowed")
+	ErrExpired    = errors.New("token: expired")
+	ErrAudience   = errors.New("token: not for this host")
+	ErrOp         = errors.New("token: operation not allowed")
 )
 
 var enc = base64.RawURLEncoding

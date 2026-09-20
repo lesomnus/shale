@@ -59,8 +59,8 @@ func TestIssueAndVerify(t *testing.T) {
 	x.Equal(Serial(c), Serial(chain[0]))
 
 	renew := RenewAt(c)
-	x.True(renew.After(now.Add(59*24*time.Hour)))
-	x.True(renew.Before(now.Add(61*24*time.Hour)))
+	x.True(renew.After(now.Add(59 * 24 * time.Hour)))
+	x.True(renew.Before(now.Add(61 * 24 * time.Hour)))
 
 	cp, err := ca.IssueServer(&k.Key.PublicKey, CpName, Names{DNS: []string{"cp.example"}}, CpLifetime, now)
 	x.NoError(err)

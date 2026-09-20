@@ -195,4 +195,3 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 
 	return answers, nil
 }
-

@@ -186,6 +186,18 @@ func (n *Node) Run(ctx context.Context) error {
 		g.Go(func() error { n.scan(ctx, s); return nil })
 	}
 
+	// The listeners first, so the join reports the ports actually bound.
+	dl, err := net.Listen("tcp", n.cfg.Addr)
+	if err != nil {
+		return err
+	}
+	n.DataAddr = dl.Addr().String()
+	cl, err := net.Listen("tcp", n.cfg.ControlAddr)
+	if err != nil {
+		return err
+	}
+	n.cfg.ControlAddr = cl.Addr().String()
+
 	// Join unless the certificate says who we are (§33.4).
 	if !n.agent.Ready(time.Now()) {
 		ans, err := n.agent.Join(ctx, n.joinCall)
@@ -196,17 +208,6 @@ func (n *Node) Run(ctx context.Context) error {
 	}
 	n.id = n.agent.Id()
 	n.log.Info("node", "id", n.id.String())
-
-	// The data plane and the control API.
-	dl, err := net.Listen("tcp", n.cfg.Addr)
-	if err != nil {
-		return err
-	}
-	n.DataAddr = dl.Addr().String()
-	cl, err := net.Listen("tcp", n.cfg.ControlAddr)
-	if err != nil {
-		return err
-	}
 
 	tlsCfg, err := n.tlsConfig()
 	if err != nil {

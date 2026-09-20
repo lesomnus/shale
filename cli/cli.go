@@ -78,7 +78,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 func applyClientFlags(c *cmd.Config) xli.Handler {
 	return xli.OnRunPass(func(ctx context.Context, self *xli.Command, next xli.Next) error {
 		if v, ok := flg.Find[string](self, "dev"); ok && v != "" {
-			applyDev(c, v)
+			ApplyDev(c, v)
 		}
 		if v, ok := flg.Find[string](self, "as"); ok && v != "" {
 			c.Client.As = v

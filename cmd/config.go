@@ -116,7 +116,7 @@ type StorageConfig struct {
 	ControlAddr string `yaml:"control_addr"`
 	// Advertise overrides the address a node reports for its data plane, for
 	// a container whose interfaces are not the host's.
-	Advertise string `yaml:"advertise"`
+	Advertise string       `yaml:"advertise"`
 	Sinks     []SinkConfig `yaml:"sinks"`
 
 	PartSize          string        `yaml:"part_size"`

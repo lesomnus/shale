@@ -32,7 +32,7 @@ func (s coreSource) Add(ctx context.Context, req *api.SourceAddRequest) (*api.So
 	}
 
 	set, err := s.Next().Set().Get(ctx, api.SetGetRequest_builder{
-		Ref:    req.GetSet(),
+		Ref: req.GetSet(),
 	}.Build())
 	if err != nil {
 		return nil, err

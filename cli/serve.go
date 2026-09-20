@@ -35,7 +35,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 	}
 	apply := func(self *xli.Command) {
 		if v, ok := flg.Find[string](self, "dev"); ok && v != "" {
-			applyDev(c, v)
+			ApplyDev(c, v)
 		}
 		if v, ok := flg.Find[string](self, "cp"); ok && v != "" {
 			c.Cp = v
@@ -105,7 +105,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				Name: "all", Brief: "control, cluster, one Storage Node, and one Relay in one process", Flags: common(),
 				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 					apply(self)
-					return serveAll(ctx, c)
+					return ServeAll(ctx, c, nil)
 				}),
 			},
 		},
@@ -159,8 +159,16 @@ func serveControlPlane(ctx context.Context, c *cmd.Config, surfaces []cmd.Surfac
 	return g.Wait()
 }
 
-// serveAll is §34.7: both APIs, a node, and a relay in one process.
-func serveAll(ctx context.Context, c *cmd.Config) error {
+// Running is what ServeAll tells a caller once its listeners are up.
+type Running struct {
+	TenantAddr  string
+	ClusterAddr string
+	Node        *storage.Node
+}
+
+// ServeAll is §34.7: both APIs, a node, and a relay in one process. `ready`
+// is told the addresses once they are bound.
+func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 	ctx, done, err := Telemetry(ctx, c)
 	if err != nil {
 		return err
@@ -211,6 +219,9 @@ func serveAll(ctx context.Context, c *cmd.Config) error {
 	n, err := storage.New(nc)
 	if err != nil {
 		return err
+	}
+	if ready != nil {
+		ready(Running{TenantAddr: tl.Addr().String(), ClusterAddr: cl.Addr().String(), Node: n})
 	}
 	g.Go(func() error {
 		// Give the listeners a moment; the join loop retries anyway.

@@ -34,7 +34,7 @@ func (s Core) Object() api.ObjectServiceServer {
 // setOf reads a set through the wall by id.
 func (s Core) setOf(ctx context.Context, id []byte) (*api.Set, error) {
 	return s.Next().Set().Get(ctx, api.SetGetRequest_builder{
-		Ref:    api.SetRef_builder{Id: id}.Build(),
+		Ref: api.SetRef_builder{Id: id}.Build(),
 	}.Build())
 }
 
@@ -46,7 +46,7 @@ func (s coreObject) Allocate(ctx context.Context, req *api.ObjectAllocateRequest
 	}
 
 	src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{
-		Ref:    req.GetSource(),
+		Ref: req.GetSource(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (s coreObject) Allocate(ctx context.Context, req *api.ObjectAllocateRequest
 // objectRow reads an object through the wall.
 func (s Core) objectRow(ctx context.Context, ref *api.ObjectRef) (*api.Object, error) {
 	return s.Next().Object().Get(ctx, api.ObjectGetRequest_builder{
-		Ref:    ref,
+		Ref: ref,
 	}.Build())
 }
 
@@ -115,7 +115,7 @@ func (s coreObject) Reallocate(ctx context.Context, req *api.ObjectReallocateReq
 	}
 
 	src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{
-		Ref:    api.SourceRef_builder{Id: obj.GetSource().GetId()}.Build(),
+		Ref: api.SourceRef_builder{Id: obj.GetSource().GetId()}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func (s coreObject) Renew(ctx context.Context, req *api.ObjectRenewRequest) (*ap
 		return nil, err
 	}
 	at, err := s.Next().Attempt().Get(ctx, api.AttemptGetRequest_builder{
-		Ref:    req.GetAttempt(),
+		Ref: req.GetAttempt(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ func (s coreObject) Renew(ctx context.Context, req *api.ObjectRenewRequest) (*ap
 	}
 
 	src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{
-		Ref:    api.SourceRef_builder{Id: obj.GetSource().GetId()}.Build(),
+		Ref: api.SourceRef_builder{Id: obj.GetSource().GetId()}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -283,7 +283,7 @@ func (s coreObject) ReportAttempt(ctx context.Context, req *api.ObjectReportAtte
 		return nil, err
 	}
 	at, err := s.Next().Attempt().Get(ctx, api.AttemptGetRequest_builder{
-		Ref:    req.GetAttempt(),
+		Ref: req.GetAttempt(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -565,11 +565,13 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 	} else {
 		q = q.Where(object.SetIdEQ(mustId(set.GetId()).Uuid()))
 	}
+	var ends map[pdid.Id]time.Time
 	if req.GetAfter() != "" {
-		t, id, err := decodeCursor(req.GetAfter())
+		t, id, e, err := decodeCursor(req.GetAfter())
 		if err != nil {
 			return nil, invalid("after", err.Error())
 		}
+		ends = e
 		q = q.Where(object.Or(object.DateStartedGT(t), object.And(object.DateStartedEQ(t), object.IdGT(id.Uuid()))))
 	}
 	rows, err := q.Order(ent.Asc(object.FieldDateStarted), ent.Asc(object.FieldId)).Limit(size + 1).WithSink(func(sq *ent.SinkQuery) { sq.WithNode() }).All(ctx)
@@ -577,10 +579,8 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 		return nil, err
 	}
 
-	next := ""
-	if len(rows) > size {
-		last := rows[size-1]
-		next = encodeCursor(last.DateStarted, pdid.Id(last.Id))
+	more := len(rows) > size
+	if more {
 		rows = rows[:size]
 	}
 
@@ -618,7 +618,13 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 	for _, m := range members {
 		id := mustId(m.GetId())
 		out[id] = api.TimelineSource_builder{SourceId: m.GetId(), Ordinal: m.GetOrdinal()}.Build()
-		cursor[id] = from
+		// A continuation page carries on from where each source's last
+		// listed object ended, so a gap between two pages is told once.
+		if e, ok := ends[id]; ok {
+			cursor[id] = e
+		} else {
+			cursor[id] = from
+		}
 	}
 
 	for _, r := range rows {
@@ -720,6 +726,12 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 		}
 	}
 
+	next := ""
+	if more {
+		last := rows[len(rows)-1]
+		next = encodeCursor(last.DateStarted, pdid.Id(last.Id), cursor)
+	}
+
 	// The tail of the window, when this is the last page: spans past what
 	// retention keeps answer from policy (§20.4).
 	if next == "" {
@@ -747,26 +759,53 @@ func gap(from, to time.Time, reason api.GapReason) *api.TimelineGap {
 	return api.TimelineGap_builder{From: timestamppb.New(from), To: timestamppb.New(to), Reason: reason}.Build()
 }
 
-func encodeCursor(t time.Time, id pdid.Id) string {
-	return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%d|%s", t.UnixNano(), id)))
+// A cursor names the last row read and, per source, where its gaps left
+// off, so a page carries on without repeating or skipping a span.
+func encodeCursor(t time.Time, id pdid.Id, ends map[pdid.Id]time.Time) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d|%s", t.UnixNano(), id)
+	for k, v := range ends {
+		fmt.Fprintf(&b, "|%s=%d", k, v.UnixNano())
+	}
+
+	return base64.RawURLEncoding.EncodeToString([]byte(b.String()))
 }
 
-func decodeCursor(s string) (time.Time, pdid.Id, error) {
+func decodeCursor(s string) (time.Time, pdid.Id, map[pdid.Id]time.Time, error) {
 	b, err := base64.RawURLEncoding.DecodeString(s)
 	if err != nil {
-		return time.Time{}, pdid.Nil, err
+		return time.Time{}, pdid.Nil, nil, err
+	}
+	parts := strings.Split(string(b), "|")
+	if len(parts) < 2 {
+		return time.Time{}, pdid.Nil, nil, fmt.Errorf("malformed cursor")
 	}
 	var ns int64
-	var idS string
-	if _, err := fmt.Sscanf(string(b), "%d|%s", &ns, &idS); err != nil {
-		return time.Time{}, pdid.Nil, err
+	if _, err := fmt.Sscanf(parts[0], "%d", &ns); err != nil {
+		return time.Time{}, pdid.Nil, nil, err
 	}
-	id, err := pdid.Parse(idS)
+	id, err := pdid.Parse(parts[1])
 	if err != nil {
-		return time.Time{}, pdid.Nil, err
+		return time.Time{}, pdid.Nil, nil, err
+	}
+	ends := map[pdid.Id]time.Time{}
+	for _, p := range parts[2:] {
+		k, v, ok := strings.Cut(p, "=")
+		if !ok {
+			continue
+		}
+		sid, err := pdid.Parse(k)
+		if err != nil {
+			continue
+		}
+		var e int64
+		if _, err := fmt.Sscanf(v, "%d", &e); err != nil {
+			continue
+		}
+		ends[sid] = time.Unix(0, e).UTC()
 	}
 
-	return time.Unix(0, ns).UTC(), id, nil
+	return time.Unix(0, ns).UTC(), id, ends, nil
 }
 
 func callerOf(ctx context.Context) string {

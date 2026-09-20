@@ -287,7 +287,7 @@ func (s Core) observe(ctx context.Context, own api.Server, obj *ent.Object, ev *
 	rate := float64(ev.GetSize()) * 8 / span.Seconds()
 
 	src, err := own.Source().Get(ctx, api.SourceGetRequest_builder{
-		Ref:    api.SourceRef_builder{Id: obj.SourceId[:]}.Build(),
+		Ref: api.SourceRef_builder{Id: obj.SourceId[:]}.Build(),
 	}.Build())
 	if err != nil {
 		return err

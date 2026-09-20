@@ -311,7 +311,7 @@ func (s coreProducer) Adopt(ctx context.Context, req *api.ProducerAdoptRequest) 
 	}
 
 	p, err := s.ProducerServiceServer.Get(ctx, api.ProducerGetRequest_builder{
-		Ref:    req.GetRef(),
+		Ref: req.GetRef(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -417,7 +417,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 	}
 
 	p, err := s.d.Own.Producer().Get(ctx, api.ProducerGetRequest_builder{
-		Ref:    api.ProducerRef_builder{Id: f.Actor.Bytes()}.Build(),
+		Ref: api.ProducerRef_builder{Id: f.Actor.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -620,7 +620,7 @@ func (s coreReader) Adopt(ctx context.Context, req *api.ReaderAdoptRequest) (*ap
 	}
 
 	r, err := s.ReaderServiceServer.Get(ctx, api.ReaderGetRequest_builder{
-		Ref:    req.GetRef(),
+		Ref: req.GetRef(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -950,7 +950,7 @@ func (s coreNode) Adopt(ctx context.Context, req *api.NodeAdoptRequest) (*api.No
 		return nil, err
 	}
 	n, err := s.NodeServiceServer.Get(ctx, api.NodeGetRequest_builder{
-		Ref:    req.GetRef(),
+		Ref: req.GetRef(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -1018,7 +1018,7 @@ func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) 
 	}
 
 	n, err := s.d.Own.Node().Get(ctx, api.NodeGetRequest_builder{
-		Ref:    api.NodeRef_builder{Id: f.Actor.Bytes()}.Build(),
+		Ref: api.NodeRef_builder{Id: f.Actor.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
