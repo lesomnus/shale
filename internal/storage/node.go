@@ -57,9 +57,11 @@ type Config struct {
 	HeartbeatInterval time.Duration
 	EventReplayWindow time.Duration
 	SweepInterval     time.Duration
-	TokenSkew         time.Duration
-	GcPage            int
-	GcProposalFactor  float64
+	// GcInterval is how often a sink under pressure gets a round (§21).
+	GcInterval       time.Duration
+	TokenSkew        time.Duration
+	GcPage           int
+	GcProposalFactor float64
 	// Quanta and Caps are the Device Queue's weights and backlog caps (§24).
 	Quanta Quanta
 	Caps   Caps
@@ -100,6 +102,9 @@ func (c *Config) defaults() {
 	}
 	if c.Log == nil {
 		c.Log = slog.Default()
+	}
+	if c.GcInterval == 0 {
+		c.GcInterval = time.Minute
 	}
 }
 

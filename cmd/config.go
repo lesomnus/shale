@@ -129,11 +129,13 @@ type StorageConfig struct {
 	Advertise string       `yaml:"advertise"`
 	Sinks     []SinkConfig `yaml:"sinks"`
 
-	PartSize          string        `yaml:"part_size"`
-	MaxUploads        int           `yaml:"max_uploads"`
-	UploadsPerActor   int           `yaml:"uploads_per_actor"`
-	PartBufferPool    string        `yaml:"part_buffer_pool"`
-	ReadChunk         string        `yaml:"read_chunk"`
+	PartSize        string `yaml:"part_size"`
+	MaxUploads      int    `yaml:"max_uploads"`
+	UploadsPerActor int    `yaml:"uploads_per_actor"`
+	PartBufferPool  string `yaml:"part_buffer_pool"`
+	ReadChunk       string `yaml:"read_chunk"`
+	// GcInterval is how often a sink under pressure gets a GC round (1 min).
+	GcInterval        time.Duration `yaml:"gc_interval"`
 	MaxReadSessions   int           `yaml:"max_read_sessions"`
 	SessionsPerActor  int           `yaml:"sessions_per_actor"`
 	ReadBacklog       int           `yaml:"read_backlog"`

@@ -31,7 +31,7 @@ func (c *cluster) startNode(name, sinkDir string) (*storage.Node, context.Cancel
 
 // startNodeAt is startNode with the state directory given, so a node can
 // be started again as itself.
-func (c *cluster) startNodeAt(name, stateDir, sinkDir string) (*storage.Node, context.CancelFunc) {
+func (c *cluster) startNodeAt(name, stateDir, sinkDir string, opts ...func(*storage.Config)) (*storage.Node, context.CancelFunc) {
 	c.t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	cfg := storage.Config{
@@ -48,6 +48,9 @@ func (c *cluster) startNodeAt(name, stateDir, sinkDir string) (*storage.Node, co
 	// Small parts, so a test can see what reached the device (§12.2).
 	cfg.Limits = storage.DefaultLimits
 	cfg.Limits.PartSize = 64 << 10
+	for _, o := range opts {
+		o(&cfg)
+	}
 	n, err := storage.New(cfg)
 	require.NoError(c.t, err)
 	done := make(chan error, 1)

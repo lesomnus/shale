@@ -77,6 +77,7 @@ deployment runs well on them, and changes them only for a reason.
 | Node | `gc_page` | 5,000 candidates | — | node | [§21.2](06-retention-gc.md#212-protocol) |
 | Node | `token_skew` | 1 min | — | node | [§33.2](10-security.md#332-access-tokens) |
 | GC | watermarks critical / low / target | 3% / 5% / 8% | — | cluster | [§21.1](06-retention-gc.md#211-watermarks) |
+| GC | `gc_interval` | 1 min | — | node | [§21.2](06-retention-gc.md#212-protocol) |
 | GC | `gc_proposal_factor` | 3× the bytes needed | — | node | [§21.2](06-retention-gc.md#212-protocol) |
 | GC | `capacity_share` | equal shares | — | cluster, per tenant | [§21.4](06-retention-gc.md#214-tenant-fair-share) |
 | Health | failure score events | I/O error +10, failed WRITE +5, timeout +2, producer report +1 | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |

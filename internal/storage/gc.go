@@ -21,7 +21,7 @@ type gcStats struct {
 }
 
 func (n *Node) gcLoop(ctx context.Context) error {
-	pressure := time.NewTicker(time.Minute)
+	pressure := time.NewTicker(n.cfg.GcInterval)
 	defer pressure.Stop()
 	// The first sweep an hour after start, then every sweep_interval.
 	sweep := time.NewTimer(time.Hour)
@@ -154,7 +154,7 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 
 		cctx, cancel := context.WithTimeout(ctx, time.Minute)
 		resp, err := client.ProposeGc(cctx, api.SinkProposeGcRequest_builder{
-			Ref: api.SinkRef_builder{Id: s.Id.Bytes()}.Build(), Reason: reason, Candidates: gcs, BytesNeeded: needed,
+			Ref: api.SinkRef_builder{Id: s.Id.Bytes()}.Build(), Reason: reason, Candidates: gcs, BytesNeeded: needed - st.reclaimed,
 		}.Build())
 		cancel()
 		if err != nil {
@@ -177,6 +177,13 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 			if d.GetDateExpired() != nil || d.GetDateDeleted() != nil {
 				// The CP knows newer dates: rewrite the xattr (§21.2 step 5).
 				n.setDates(s, d.GetObjectKey(), d.GetDateExpired(), d.GetDateDeleted())
+			}
+		}
+		// Enough: a round stops at the target rather than at the end of
+		// its candidates (§21.1).
+		if reason == api.GcReason_GC_REASON_PRESSURE && !force {
+			if _, f := s.Free(); f >= int64(float64(capacity)*s.Marks.Target) {
+				break
 			}
 		}
 	}

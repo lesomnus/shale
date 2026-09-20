@@ -267,6 +267,7 @@ func storageConfig(c *cmd.Config) storage.Config {
 		HeartbeatInterval: sc.HeartbeatInterval,
 		EventReplayWindow: sc.EventReplayWindow,
 		SweepInterval:     sc.SweepInterval,
+		GcInterval:        sc.GcInterval,
 		TokenSkew:         sc.TokenSkew,
 		GcPage:            sc.GcPage,
 		GcProposalFactor:  sc.GcProposalFactor,
