@@ -432,24 +432,28 @@ func TestResumeAndIdempotence(t *testing.T) {
 		return resp
 	}
 
-	// The first half, not complete: 204 with the offset.
+	// The first half, not complete: 204 with the offset on the device,
+	// which is the 4 KiB-aligned prefix of what was sent (§12.2); the tail
+	// is the producer's to send again.
+	aligned := fmt.Sprint(100_000 &^ (storage.Align - 1))
 	resp := do(http.MethodPut, 0, "?0", body[:100_000])
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
-	require.Equal(t, "100000", resp.Header.Get(storage.HdrUploadOffset))
+	require.Equal(t, aligned, resp.Header.Get(storage.HdrUploadOffset))
 
 	// HEAD says where to resume.
 	resp = do(http.MethodHead, 0, "", nil)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	require.Equal(t, "100000", resp.Header.Get(storage.HdrUploadOffset))
+	require.Equal(t, aligned, resp.Header.Get(storage.HdrUploadOffset))
 	require.Equal(t, "?0", resp.Header.Get(storage.HdrUploadComplete))
 
 	// A wrong offset is refused with the current one.
 	resp = do(http.MethodPut, 50_000, "?1", body[50_000:])
 	require.Equal(t, http.StatusConflict, resp.StatusCode)
-	require.Equal(t, "100000", resp.Header.Get(storage.HdrUploadOffset))
+	require.Equal(t, aligned, resp.Header.Get(storage.HdrUploadOffset))
 
-	// The rest, complete: 201.
-	resp = do(http.MethodPut, 100_000, "?1", body[100_000:])
+	// The rest from the reported offset, complete: 201.
+	from := 100_000 &^ (storage.Align - 1)
+	resp = do(http.MethodPut, from, "?1", body[from:])
 	require.Equal(t, http.StatusCreated, resp.StatusCode)
 
 	// Again: 200, already complete.

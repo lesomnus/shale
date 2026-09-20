@@ -49,6 +49,11 @@ type Limits struct {
 	IdleTimeoutMax   time.Duration
 	// Chunk is the buffer a request body is copied through.
 	Chunk int
+	// PartSize is the staging buffer per upload (§12.2); PartBufferPool
+	// bounds what every upload holds at once; Buffered keeps O_DIRECT off.
+	PartSize       int
+	PartBufferPool int64
+	Buffered       bool
 }
 
 // DefaultLimits are §36.1's.
@@ -58,6 +63,8 @@ var DefaultLimits = Limits{
 	MaxReadSessions:  64,
 	SessionsPerActor: 16,
 	IdleTimeoutMax:   5 * time.Minute,
+	PartSize:         16 << 20,
+	PartBufferPool:   12 << 30,
 	Chunk:            1 << 20,
 }
 
@@ -81,6 +88,7 @@ type DataPlane struct {
 	node   *Node
 	limits Limits
 	log    *slog.Logger
+	pool   *pool
 
 	mu       sync.Mutex
 	uploads  map[string]*upload // by sink+key
@@ -93,8 +101,15 @@ func newDataPlane(n *Node, l Limits) *DataPlane {
 	if l.Chunk <= 0 {
 		l.Chunk = DefaultLimits.Chunk
 	}
+	if l.PartSize < Align {
+		l.PartSize = DefaultLimits.PartSize
+	}
+	l.PartSize = (l.PartSize + Align - 1) &^ (Align - 1)
+	if l.PartBufferPool < int64(l.PartSize) {
+		l.PartBufferPool = DefaultLimits.PartBufferPool
+	}
 
-	return &DataPlane{node: n, limits: l, log: n.log, uploads: map[string]*upload{}, perActor: map[pdid.Id]int{}, readers: map[pdid.Id]int{}}
+	return &DataPlane{node: n, limits: l, log: n.log, pool: newPool(l.PartBufferPool), uploads: map[string]*upload{}, perActor: map[pdid.Id]int{}, readers: map[pdid.Id]int{}}
 }
 
 func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -392,32 +407,52 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return
 	}
 
-	// Copy the body in, with the idle timeout on every read (§12.2).
+	// Staging in parts (§12.2, §22.4): the body fills a part buffer that
+	// grows on demand; a full one is one aligned write at its offset, with
+	// O_DIRECT where the sink can. The idle timeout is on every read.
 	idle := time.Duration(c.GetIdleTimeoutSeconds()) * time.Second
 	if idle <= 0 || idle > d.limits.IdleTimeoutMax {
 		idle = d.limits.IdleTimeoutMax
 	}
 	rc := http.NewResponseController(w)
-	buf := make([]byte, d.limits.Chunk)
-	written := cur
+	df, err := openData(path, sink.Caps.GetOdirect() && !d.limits.Buffered)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer df.Close()
+	pt := newPart(d.pool, d.limits.PartSize)
+	defer pt.free()
+	written := cur  // on the device
+	received := cur // including what the part holds
 	tooLarge := false
 	var readErr error
 	for {
+		if err := pt.room(r.Context(), 1); err != nil {
+			readErr = err
+			break
+		}
+		space := pt.space()
+		if len(space) == 0 {
+			// A full part: one write at its offset.
+			n, err := pt.flush(df, written)
+			if err != nil {
+				readErr = err
+				break
+			}
+			written += int64(n)
+			continue
+		}
 		rc.SetReadDeadline(time.Now().Add(idle))
-		n, err := r.Body.Read(buf)
+		n, err := r.Body.Read(space)
 		if n > 0 {
-			if maxLen > 0 && written+int64(n) > maxLen {
+			if maxLen > 0 && received+int64(n) > maxLen {
 				tooLarge = true
-				n = int(maxLen - written)
+				n = int(maxLen - received)
 			}
-			if n > 0 {
-				if _, werr := f.WriteAt(buf[:n], written); werr != nil {
-					readErr = werr
-					break
-				}
-				written += int64(n)
-				u.last = time.Now()
-			}
+			pt.n += n
+			received += int64(n)
+			u.last = time.Now()
 			if tooLarge {
 				break
 			}
@@ -432,29 +467,46 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 
 	if tooLarge {
 		// Beyond max_length: the node treats the upload as abandoned at once
-		// (§12.5).
+		// (§12.5), with what it holds on the device.
+		if n, err := pt.flushAll(df, written); err == nil {
+			written += int64(n)
+		}
 		d.abandon(u, f, written, "413")
 		http.Error(w, "the upload exceeds max_length", http.StatusRequestEntityTooLarge)
 		return
 	}
 	if readErr != nil {
-		// A broken connection leaves the upload open and resumable.
+		// A broken connection: the aligned prefix reaches the device, the
+		// rest is dropped and re-sent; the upload stays resumable.
+		if n, err := pt.flush(df, written); err == nil {
+			written += int64(n)
+		}
 		d.log.Debug("upload interrupted", "key", key, "offset", written, "err", readErr.Error())
 		return
 	}
 
 	if !complete {
-		// The flush point: what is held is written; the offset is on the
-		// device (§12.2).
-		if err := f.Sync(); err != nil {
+		// The flush point: the aligned prefix is on the device, and the
+		// offset says so; the tail is the producer's to send again (§12.2).
+		n, err := pt.flush(df, written)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		written += int64(n)
 		w.Header().Set(HdrUploadOffset, strconv.FormatInt(written, 10))
 		setBool(w.Header(), HdrUploadComplete, false)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+
+	// The last part, padded to alignment; commit truncates to the size.
+	n, err := pt.flushAll(df, written)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	written += int64(n)
 
 	// Complete: the end of this body is the end of the object (§12.4).
 	var ended *time.Time

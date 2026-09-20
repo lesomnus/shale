@@ -281,6 +281,13 @@ func storageConfig(c *cmd.Config) storage.Config {
 		}
 	}
 	cfg.Limits = storage.DefaultLimits
+	if v, err := storage.ParseCapacity(sc.PartSize); err == nil && v > 0 {
+		cfg.Limits.PartSize = int(v)
+	}
+	if v, err := storage.ParseCapacity(sc.PartBufferPool); err == nil && v > 0 {
+		cfg.Limits.PartBufferPool = v
+	}
+	cfg.Limits.Buffered = sc.Buffered
 	if sc.MaxUploads > 0 {
 		cfg.Limits.MaxUploads = sc.MaxUploads
 	}
