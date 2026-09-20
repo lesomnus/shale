@@ -122,7 +122,9 @@ next start and is recognized by its hardware identity
     address resolver ([§34.10](#3410-node-addresses)). Behind an Ingress the
     tenant API does not see the caller's address, so use `template` or `dns`
     there, or configure `trusted_proxies` with the PROXY protocol.
-  - Sinks are hostPath mounts of the HDD mount points.
+  - Sinks are hostPath mounts of the HDD mount points, listed in the node's
+    configuration. Finding and formatting unused disks on labeled nodes is
+    an idea, not a plan ([§36.2](13-configuration.md#362-open-decisions)).
   - The pod needs the devices behind its sinks and `CAP_SYS_RAWIO`, for SMART
     and bay LEDs ([§34.8](#348-containers)). A privileged pod also works.
   - Each new machine joins on its first start and appears in

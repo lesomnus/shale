@@ -144,7 +144,7 @@ certificate ([§33.1](10-security.md#331-trust-model)).
 
 Watching a set of eight cameras is eight WHEP sessions to one relay. That
 is cheap for a browser and shares one ICE path. A single session carrying
-several tracks is a later optimization, not a v1 feature.
+several tracks is a later optimization, not part of the first relay.
 
 ### 39.5 Capacity
 
@@ -158,7 +158,7 @@ example  = 100 viewers × 4 Mbps = 400 Mbps, a fraction of one 10 GbE port
 
 Hundreds of viewers per relay are ordinary. A relay per site is the usual
 shape, both for the labels in [§39.2](#392-assignment) and so that a
-site's viewers and producers share a network. What is **not in v1**:
+site's viewers and producers share a network. What the **first relay leaves out**:
 relay-to-relay cascades for one camera watched from many regions, a
 lower-resolution sub-stream for viewers on poor links (many IP cameras
 produce one; the producer could forward it), multi-track sessions, and

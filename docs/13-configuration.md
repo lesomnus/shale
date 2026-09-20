@@ -124,6 +124,13 @@ out:
   processes and never touches a frame ([§38.3](15-producer.md#383-managed-capture)).
   The relay transcodes audio to Opus and nothing else ([§39.1](16-relay.md#391-what-it-is)).
 
+Ideas recorded, not planned:
+
+- **Disk discovery.** A node finding the unused disks of labeled machines
+  and formatting them into sinks after an operator's claim, as Rook does.
+  Sinks are listed explicitly until someone needs this
+  ([§22.2](07-storage-node.md#222-sinks-and-devices)).
+
 ### 36.3 Rejected alternatives
 
 **Volume files.** Packing many objects into large pre-allocated volume files

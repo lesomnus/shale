@@ -91,7 +91,7 @@ input:   source, set, ordinal, zone, epoch, and all nodes, devices, and
 output:  a ranked list of candidate sinks (first = target, rest = retries)
 ```
 
-The weighted-HRW scheduler above is the v1 implementation.
+The weighted-HRW scheduler above is the first implementation.
 `PlacementPolicy` names the scheduler and its parameters, and
 `placement_version` identifies the policy an object was placed under.
 

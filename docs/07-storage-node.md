@@ -59,11 +59,34 @@ Other layouts are supported for low-budget deployments and testing:
 |---|---|---|
 | One sink per whole HDD | production | capacity and free space from `statfs` |
 | Directory sink on a shared filesystem | single-HDD nodes, existing RAID/NAS/cloud volumes | `capacity` required |
+| ZFS dataset | an existing pool with its own redundancy | `capacity` = the dataset's quota; the **pool** is the device (below) |
 | Several sinks on one device | tests only | no spread benefit; node warns in its heartbeat |
 | tmpfs or container directory | CI, development | no `O_DIRECT`; buffered fallback. tmpfs needs Linux 6.6 or later, mounted with `user_xattr` |
 
 A volume with redundancy underneath (RAID, NAS) counts as a single device.
 Shale neither sees nor relies on that redundancy.
+
+**ZFS.** A dataset is a directory sink, and the **pool** is the device: the
+node uses the pool GUID as the device identity, not the dataset's own
+filesystem ID. Two datasets of one pool are therefore two sinks on one
+device, which the node warns about, and a pool with several vdevs is still
+one device, because every dataset stripes across all of them. A vdev cannot
+be a device on its own. Dataset properties that suit object data:
+
+```text
+recordsize=1M  compression=off  xattr=sa  dnodesize=auto  atime=off
+primarycache=metadata  logbias=throughput  quota=<the sink's capacity>
+```
+
+`xattr=sa` is what keeps the record inline on ZFS; the default stores
+attributes as hidden directories. `primarycache=metadata` keeps the ARC from
+caching object data, which is [§22.4](#224-bypass-the-page-cache) by other
+means. The probe reports what the OpenZFS version provides: true direct I/O
+from OpenZFS 2.3 with `direct=standard`, buffered before that. `fallocate`
+reservations mean nothing on a copy-on-write filesystem, and the probe's
+"no" is harmless there. The pool's parity or mirroring makes the device one
+that survives a disk; Shale neither sees nor needs that, and it costs
+nothing beyond the pool's own capacity.
 
 ```yaml
 sinks:
@@ -80,6 +103,11 @@ which the node knows because it owns those descriptors. Its pressure state
 filesystem's real free space. Other tenants can fill a shared filesystem, so
 the second one remains a hard floor. Below the critical watermark the node
 refuses new uploads on the sink by itself ([§21.1](06-retention-gc.md#211-watermarks)).
+
+Sinks are always listed explicitly. An idea that is recorded but not
+planned: a node could find the unused disks of labeled machines and format
+them into sinks after an operator's claim, the way Rook does
+([§36.2](13-configuration.md#362-open-decisions)).
 
 **Capability probe.** At registration the node tests the sink's filesystem:
 

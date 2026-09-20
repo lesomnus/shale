@@ -48,7 +48,7 @@ leaves the field empty and sees no difference.
 
 A **Zone** is an optional label, assigned by people, for Sources whose fields
 of view overlap. A zone may cross sets. It describes redundancy between angles,
-not fate-sharing. The v1 scheduler does not use it, and zone-aware placement is
+not fate-sharing. The first scheduler does not use it, and zone-aware placement is
 not planned ([§11.2](03-placement.md#112-scheduler-interface)). The label is
 stored so a future scheduler could. Shale needs no camera geometry beyond
 these labels: the only placement question is which Sources should not share a
@@ -146,7 +146,9 @@ is how a machine that lost its state finds its row again.
 ### Device
 
 `device_id` comes from the hardware (WWN, or serial). For volumes Shale cannot
-see through, it is the filesystem UUID. It is independent of `/dev/sdX`.
+see through, it is the filesystem UUID, or the pool GUID for a ZFS dataset
+([§22.2](07-storage-node.md#222-sinks-and-devices)). It is independent of
+`/dev/sdX`.
 
 ### Sink
 
