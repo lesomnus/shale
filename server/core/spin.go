@@ -106,7 +106,7 @@ func (j *Jobs) Once(ctx context.Context) error {
 		if open > 0 {
 			continue
 		}
-		if _, err := own.Object().Erase(ctx, api.ObjectRef_builder{Id: o.Id[:]}.Build()); err != nil {
+		if err := j.eraseObject(ctx, o.Id); err != nil {
 			j.log().Warn("remove object", "err", err.Error())
 		}
 	}
@@ -123,7 +123,7 @@ func (j *Jobs) Once(ctx context.Context) error {
 		if o.DateDeleted != nil && o.DateDeleted.Add(DefaultRowRetention).After(now) {
 			continue
 		}
-		if _, err := own.Object().Erase(ctx, api.ObjectRef_builder{Id: o.Id[:]}.Build()); err != nil {
+		if err := j.eraseObject(ctx, o.Id); err != nil {
 			j.log().Warn("prune object", "err", err.Error())
 		}
 	}
@@ -234,6 +234,22 @@ func (j *Jobs) Once(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// eraseObject removes an object row with its attempts, which reference it.
+func (j *Jobs) eraseObject(ctx context.Context, id [16]byte) error {
+	ats, err := j.d.Ent.Attempt.Query().Where(attempt.ObjectIdEQ(id)).All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, a := range ats {
+		if _, err := j.d.Own.Attempt().Erase(ctx, api.AttemptRef_builder{Id: a.Id[:]}.Build()); err != nil {
+			return err
+		}
+	}
+	_, err = j.d.Own.Object().Erase(ctx, api.ObjectRef_builder{Id: id[:]}.Build())
+
+	return err
 }
 
 // promote makes a key the signing key and demotes the rest.

@@ -52,6 +52,16 @@ storage:
 ```
 
 ```yaml
+# a relay, one per site (§39): producers dial :7430, viewers :7431 (WHEP)
+state: /var/lib/shale
+cp: https://cp.example.com:7401
+relay:
+  ingest_addr: ":7430"
+  whep_addr: ":7431"
+  # ice: ["stun:stun.example.com:3478"]   # for viewers behind NAT
+```
+
+```yaml
 # the producer beside the cameras (§38.3)
 state: /var/lib/shale
 cp: https://10.1.2.73:7400

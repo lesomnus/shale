@@ -129,6 +129,11 @@ app is a `Verify`, since only this app knows what checking a secret means.
 
 ## Shale specifics
 
+- `internal/relay` is the live path (§39): `RelayIngest` from producers,
+  WHEP to viewers through pion; `internal/mpegts` takes the access units
+  out of the TS. The producer's tee is `internal/producer/relay.go`; the
+  CP's assignment and tokens are `server/core/live.go`.
+
 - `server/core` is the hand-written layer: every custom RPC of §35.4 and
   §35.5, plus rules on a few generated verbs (a Source's ordinal, a
   SiteMember's one-of). `cmd/serve.go` stacks it and decides the two API

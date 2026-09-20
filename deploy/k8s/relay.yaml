@@ -1,0 +1,70 @@
+# The relay (§39, §34.5): on the host network so producers and viewers
+# reach it directly, with UDP for ICE. One per site is the usual shape;
+# replicas are simply more relays for the CP to assign. Its certificate
+# names the host's addresses, like a node's.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shale-relay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shale-relay
+  template:
+    metadata:
+      labels:
+        app: shale-relay
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: relay
+          image: ghcr.io/lesomnus/shale:dev
+          args: ["--config", "/etc/shale/shale.yaml", "serve", "relay"]
+          env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: SHALE_RELAY_ADVERTISE
+              value: "$(HOST_IP)"
+          ports:
+            - containerPort: 7430
+              name: ingest
+            - containerPort: 7431
+              name: whep
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 7431
+              scheme: HTTPS
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /etc/shale
+            - name: state
+              mountPath: /var/lib/shale
+      volumes:
+        - name: config
+          configMap:
+            name: shale-relay-config
+        - name: state
+          hostPath:
+            path: /var/lib/shale-k8s-relay
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shale-relay-config
+data:
+  shale.yaml: |
+    state: /var/lib/shale
+    cp: https://shale-cluster.shale.svc:7401
+    relay:
+      ingest_addr: ":7430"
+      whep_addr: ":7431"
+      # ice: ["stun:stun.example.com:3478"]

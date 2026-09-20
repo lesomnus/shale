@@ -82,7 +82,10 @@ go build ./cmd/shale
 ./shale --dev ./dev --as @acme/admin set add @acme/cam-set
 ```
 
-`deploy/compose/` is the same single machine as containers beside
+`shale serve all` also runs a relay (§39): `./shale --dev ./dev live
+@acme/cam-set` watches a set as a WebRTC viewer and reports what arrived,
+and `web/live.html` plays one source in a browser from what `Live`
+answers. `deploy/compose/` is the same single machine as containers beside
 PostgreSQL, with TLS on; `deploy/systemd/` is several machines under
 systemd; `deploy/k8s/` is the Kubernetes deployment of §34.5. `go test
 ./...` runs the end-to-end harness (`internal/e2e`), which allocates,

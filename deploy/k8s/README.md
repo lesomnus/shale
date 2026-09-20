@@ -110,9 +110,13 @@ host network (port 7420), never through the cluster's Services.
 node restarts its objects are UNAVAILABLE and placement skips it through
 missed heartbeats; nothing moves. The API Deployments roll normally.
 
+The relay (`relay.yaml`) runs on the host network of one amd64 node;
+`shale live @acme/<set>` from a machine that reaches it is the quickest
+check that a set plays.
+
 ## Not here yet
 
-- The relay (E6) and the reader agent: no manifests until they exist.
+- The reader agent: no manifests until it exists.
 - A Helm chart: the kustomization is the deliverable for now.
 - An Ingress with TLS passthrough: this cluster has no ingress controller;
   the NodePort stands in for it.

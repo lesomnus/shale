@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shale live</title>
+<style>
+  :root { color-scheme: light dark; --ink: #1a1c1e; --muted: #6b7075; --ground: #f6f5f2; --line: #d9d6cf; --accent: #2a6f97; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #e8e6e1; --muted: #9aa0a6; --ground: #16181a; --line: #33373b; --accent: #6fb2d9; } }
+  body { margin: 0; padding: 16px; font: 14px/1.5 system-ui, sans-serif; color: var(--ink); background: var(--ground); }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  input { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: inherit; min-width: 220px; }
+  button { font: inherit; padding: 6px 12px; border: 1px solid var(--accent); border-radius: 4px; background: var(--accent); color: white; cursor: pointer; }
+  #status { color: var(--muted); }
+  video { max-width: 100%; background: black; border-radius: 4px; }
+  p.hint { color: var(--muted); max-width: 65ch; }
+</style>
+</head>
+<body>
+<h1>Shale live</h1>
+<p class="hint">Paste what <code>SetService.Live</code> or <code>SourceService.Live</code> answered for one source: its WHEP URL and its view token (§39.4). The page posts an SDP offer to the relay and plays the answer. The token lives an hour; ask <code>Live</code> again for a fresh one.</p>
+<form id="f">
+  <input id="url" placeholder="https://relay:7431/whep/<source id>" size="60">
+  <input id="token" placeholder="view token" size="60">
+  <button type="submit">Watch</button>
+  <button type="button" id="stop">Stop</button>
+  <span id="status"></span>
+</form>
+<video id="v" autoplay playsinline muted controls></video>
+<script>
+  let pc, session, base;
+  const status = (s) => document.getElementById('status').textContent = s;
+  document.getElementById('f').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await stop();
+    const url = document.getElementById('url').value.trim();
+    const token = document.getElementById('token').value.trim();
+    base = url.slice(0, url.indexOf('/whep/'));
+    pc = new RTCPeerConnection();
+    pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.ontrack = (ev) => { document.getElementById('v').srcObject = ev.streams[0]; };
+    pc.onconnectionstatechange = () => status(pc.connectionState);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await new Promise((r) => { if (pc.iceGatheringState === 'complete') r(); else pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && r(); });
+    status('asking the relay');
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/sdp', 'Authorization': 'Shale ' + token }, body: pc.localDescription.sdp });
+    if (resp.status !== 201) { status('refused: ' + resp.status + ' ' + (await resp.text())); return; }
+    session = resp.headers.get('Location');
+    await pc.setRemoteDescription({ type: 'answer', sdp: await resp.text() });
+  });
+  async function stop() {
+    if (session) { try { await fetch(base + session, { method: 'DELETE' }); } catch (_) {} session = null; }
+    if (pc) { pc.close(); pc = null; }
+    document.getElementById('v').srcObject = null;
+    status('');
+  }
+  document.getElementById('stop').addEventListener('click', stop);
+  window.addEventListener('pagehide', stop);
+</script>
+</body>
+</html>
