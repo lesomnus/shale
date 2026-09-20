@@ -228,6 +228,14 @@ func uuidsOf[T any](ids []pdid.Id, conv func(pdid.Id) T) []T {
 	return out
 }
 
+// aliasSuffix is the random tail of an identifier, since its head is the
+// time it was minted and two rows minted in one minute share it.
+func aliasSuffix(id pdid.Id) string {
+	v := id.String()
+
+	return v[len(v)-8:]
+}
+
 func failed(msg string, args ...any) error {
 	return status.Errorf(codes.FailedPrecondition, msg, args...)
 }

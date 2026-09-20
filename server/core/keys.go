@@ -235,7 +235,7 @@ func (k *Keys) Create(ctx context.Context, own api.Server, signing bool) (*api.S
 		return nil, errors.New("keys: no KEK")
 	}
 
-	kid := "k-" + pdid.New(DomSigningKey).String()[:8]
+	kid := "k-" + aliasSuffix(pdid.New(DomSigningKey))
 	key, err := token.Generate(kid)
 	if err != nil {
 		return nil, err

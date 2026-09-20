@@ -130,7 +130,7 @@ func aliasFor(hostname string, taken func(string) bool) string {
 	for strings.Contains(base, "--") {
 		base = strings.ReplaceAll(base, "--", "-")
 	}
-	if base == "" || !slug.Is(base) {
+	if _, err := slug.ParseAlias(base); base == "" || err != nil {
 		base = "host"
 	}
 	if !taken(base) {
@@ -143,7 +143,7 @@ func aliasFor(hostname string, taken func(string) bool) string {
 		}
 	}
 
-	return base + "-" + pdid.New(DomNode).String()[:8]
+	return base + "-" + aliasSuffix(pdid.New(DomNode))
 }
 
 // tenantFor is the tenant a producer or reader joins: the one named, or the

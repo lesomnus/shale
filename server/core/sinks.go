@@ -49,7 +49,7 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 			id := pdid.New(DomDevice)
 			if _, err := srv.Device().Add(ctx, api.DeviceAddRequest_builder{
 				Id:         id.Bytes(),
-				Alias:      "dev-" + id.String()[:8],
+				Alias:      "dev-" + aliasSuffix(id),
 				Node:       api.NodeRef_builder{Id: nodeId.Bytes()}.Build(),
 				HardwareId: hid,
 				Slot:       dr.GetSlot(),
@@ -120,7 +120,7 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 		if row == nil {
 			if _, err := srv.Sink().Add(ctx, api.SinkAddRequest_builder{
 				Id:              sid.Bytes(),
-				Alias:           "sink-" + sid.String()[:8],
+				Alias:           "sink-" + aliasSuffix(sid),
 				Node:            api.NodeRef_builder{Id: nodeId.Bytes()}.Build(),
 				Device:          api.DeviceRef_builder{Id: devId.Bytes()}.Build(),
 				Path:            sr.GetPath(),
