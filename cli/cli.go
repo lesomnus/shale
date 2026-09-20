@@ -65,6 +65,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			t.Drop(g)
 		}
 		addCustom(t, c, false)
+		addStateCommands(t, c, false)
 		addProducerCommands(t, c)
 		root.Commands = append(root.Commands, t.Commands()...)
 	}
@@ -73,6 +74,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			t.Drop(g)
 		}
 		addCustom(t, c, true)
+		addStateCommands(t, c, true)
 		addIndexCommands(t, c)
 		root.Commands = append(root.Commands, t.Commands()...)
 	}

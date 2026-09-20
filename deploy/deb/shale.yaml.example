@@ -1,0 +1,45 @@
+# Shale configuration (§36.1). Copy to /etc/shale/shale.yaml and keep the
+# stanzas the roles this machine runs need.
+state: /var/lib/shale
+
+# --- the control plane (shale@all, shale@control, shale@cluster) ---------
+# db:
+#   driver: sqlite3                       # one machine; pgx for several
+#   dsn: "file:/var/lib/shale/control/shale.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+#   migrate: true
+# watch:
+#   broker: memory                        # postgres with several processes
+# server:
+#   addr: ":7400"
+# cluster:
+#   addr: ":7401"
+# control:
+#   names: ["cp.example.com", "10.0.0.10"]   # every name a client dials
+#   auto_adopt: false
+
+# --- every other role: the cluster API to join (§33.4) ---------------------
+# cp: https://cp.example.com:7401
+# ca_hash: sha256:...                     # printed by `shale init`
+
+# --- a storage node (shale@storage) ----------------------------------------
+# storage:
+#   addr: ":7410"
+#   control_addr: ":7411"
+#   sinks:
+#     - path: /mnt/hdd01                  # a whole HDD: identity and capacity detected
+#     - path: /mnt/hdd02
+
+# --- a producer beside the cameras (shale@producer; cp is the tenant API) --
+# cp: https://cp.example.com:7400
+# tenant: acme
+# producer:
+#   sources:
+#     - alias: door
+#       input: v4l2:/dev/video0
+#       size: 1920x1080
+#       fps: 30
+
+# --- a relay (shale@relay) ------------------------------------------------
+# relay:
+#   ingest_addr: ":7430"
+#   whep_addr: ":7431"

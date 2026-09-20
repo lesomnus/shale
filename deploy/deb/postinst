@@ -1,0 +1,20 @@
+#!/bin/sh
+# The service user and its directories (§34.3). Nothing is started: which
+# roles a machine runs is an operator's `systemctl enable --now shale@<role>`.
+set -e
+case "$1" in
+  configure)
+    if ! getent passwd shale >/dev/null; then
+      adduser --system --group --home /var/lib/shale --no-create-home --shell /usr/sbin/nologin shale
+    fi
+    install -d -o shale -g shale -m 0700 /var/lib/shale
+    install -d -m 0755 /etc/shale
+    if [ ! -e /etc/shale/shale.yaml ]; then
+      echo "shale: write /etc/shale/shale.yaml (see /etc/shale/shale.yaml.example), then: systemctl enable --now shale@<role>"
+    fi
+    if [ -d /run/systemd/system ]; then
+      systemctl daemon-reload || true
+    fi
+    ;;
+esac
+exit 0

@@ -51,6 +51,30 @@ storage:
     #   device: lab-davy-1
 ```
 
+## The package
+
+`deploy/deb/build.sh [version] [amd64|arm64]` builds a Debian package with
+the binary, the template unit, and `/etc/shale/shale.yaml.example`; its
+postinst makes the `shale` user and `/var/lib/shale`, and starts nothing.
+CI attaches one per architecture to every run.
+
+```sh
+sudo dpkg -i shale_0.1.0_amd64.deb
+sudo cp /etc/shale/shale.yaml.example /etc/shale/shale.yaml   # then edit
+sudo systemctl enable --now shale@storage
+```
+
+## A Raspberry Pi as a producer
+
+The arm64 package runs on Raspberry Pi OS (64-bit). `ffmpeg` from the
+distribution carries the `h264_v4l2m2m` encoder the Pi's hardware offers,
+which `shale producer scan` picks when it opens; a USB camera at 1080p30
+records at about 4 Mbps with the SoC around 50% busy. Give the producer
+`cp:` (the tenant API), `tenant:`, and one source per camera, adopt it
+with `shale producer adopt`, and it records from then on, surviving
+ffmpeg restarts and losing nothing while the control plane is down that
+its RAM buffer can hold (§38).
+
 ```yaml
 # a relay, one per site (§39): producers dial :7430, viewers :7431 (WHEP)
 state: /var/lib/shale

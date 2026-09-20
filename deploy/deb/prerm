@@ -1,0 +1,13 @@
+#!/bin/sh
+# Stop every instance before the binary goes; state and sinks stay.
+set -e
+case "$1" in
+  remove|deconfigure)
+    if [ -d /run/systemd/system ]; then
+      for u in $(systemctl list-units --plain --no-legend 'shale@*' 2>/dev/null | awk '{print $1}'); do
+        systemctl stop "$u" || true
+      done
+    fi
+    ;;
+esac
+exit 0
