@@ -251,6 +251,20 @@ func (a *Agent) Dial(ctx context.Context) (*grpc.ClientConn, error) {
 	return grpc.NewClient(addr, opts...)
 }
 
+// DialAddr opens a gRPC connection to another host (a relay) with the
+// pinned CA; `plain` is development mode.
+func (a *Agent) DialAddr(ctx context.Context, addr string, plain bool) (*grpc.ClientConn, error) {
+	if plain {
+		return grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	}
+	cfg, err := a.tlsConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+}
+
 // HTTPClient is a client for the data planes: it trusts the pinned CA and
 // presents the host certificate, since a node verifies a client
 // certificate when one is given (§33.5).

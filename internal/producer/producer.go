@@ -91,6 +91,7 @@ type Producer struct {
 
 	uploader *Uploader
 	profileV int64
+	relay    *relayLink
 
 	mu       sync.Mutex
 	retained int64
@@ -137,6 +138,7 @@ func New(cfg Config) (*Producer, error) {
 		return nil, errors.New("no sources configured")
 	}
 	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, Ready: make(chan struct{})}
+	p.relay = newRelayLink(p)
 	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
 	for _, sc := range cfg.Sources {
 		if sc.Alias == "" {
@@ -207,6 +209,7 @@ func (p *Producer) Run(ctx context.Context) error {
 	g.Go(func() error { return p.allocations(ctx) })
 	g.Go(func() error { return p.heartbeats(ctx) })
 	g.Go(func() error { return p.ticks(ctx) })
+	g.Go(func() error { return p.relay.run(ctx) })
 	close(p.Ready)
 
 	return g.Wait()
@@ -360,6 +363,7 @@ func (p *Producer) negotiate(ctx context.Context) error {
 		p.log.Info("adjusted", "source", mustId(a.GetSourceId()).String(), "field", a.GetField(), "proposed", a.GetProposed(), "agreed", a.GetAgreed(), "why", a.GetReason())
 	}
 	p.profileV = resp.GetProfileVersion()
+	p.relay.set(resp.GetRelay())
 	p.set.SetLink(resp.GetLink())
 	p.cfg.Mode = resp.GetLink().GetMode()
 	if p.uploader != nil {
@@ -437,6 +441,7 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 				break
 			}
 			s.cutter.Feed(&pk)
+			p.relay.feed(s, &pk, reader)
 			s.account(&pk, reader)
 			if !checked && time.Since(started) > 10*time.Second {
 				checked = true
@@ -783,6 +788,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	p.relay.set(resp.GetRelay())
 	if resp.GetProfileVersion() != 0 && resp.GetProfileVersion() != p.profileV {
 		if err := p.negotiate(ctx); err != nil {
 			p.log.Warn("negotiate", "err", err.Error())

@@ -53,6 +53,9 @@ func start(t *testing.T) *cluster {
 	c.Storage.Sinks = []cmd.SinkConfig{{Path: filepath.Join(dir, "sink"), Capacity: "4GiB"}}
 	c.Storage.HeartbeatInterval = time.Second
 	c.Control.DirectivesEvery = 500 * time.Millisecond
+	c.Relay.IngestAddr = "127.0.0.1:0"
+	c.Relay.WhepAddr = "127.0.0.1:0"
+	c.Relay.IdleStop = time.Second
 	// SHALE_E2E_DB_DSN runs the suite on PostgreSQL with the LISTEN/NOTIFY
 	// broker and the leader lease (§34.2): the database is emptied first.
 	if dsn := os.Getenv("SHALE_E2E_DB_DSN"); dsn != "" {

@@ -2,11 +2,8 @@ package storage
 
 import (
 	"context"
-	"crypto/ed25519"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -14,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -115,6 +111,7 @@ type Node struct {
 	byId  map[pdid.Id]*Sink
 
 	verifier *token.Verifier
+	keys     *hostagent.KeyRing
 	outbox   *Outbox
 	dp       *DataPlane
 
@@ -130,7 +127,8 @@ type Node struct {
 // New prepares a node; Run does the work.
 func New(cfg Config) (*Node, error) {
 	cfg.defaults()
-	n := &Node{cfg: cfg, log: cfg.Log, byId: map[pdid.Id]*Sink{}, verifier: token.NewVerifier(), Ready: make(chan struct{})}
+	n := &Node{cfg: cfg, log: cfg.Log, byId: map[pdid.Id]*Sink{}, keys: hostagent.NewKeyRing(cfg.StateDir), Ready: make(chan struct{})}
+	n.verifier = n.keys.Verifier
 	n.verifier.Skew = cfg.TokenSkew
 	n.outbox = NewOutbox()
 	n.dp = newDataPlane(n, cfg.Limits)
@@ -182,7 +180,7 @@ func (n *Node) Run(ctx context.Context) error {
 	if err := n.agent.Init(); err != nil {
 		return err
 	}
-	n.loadKeys()
+	n.keys.Load()
 
 	// The startup scan, as background work; the node serves during it (§29).
 	g, ctx := errgroup.WithContext(ctx)
@@ -209,7 +207,7 @@ func (n *Node) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		n.applyKeys(ans.Keys)
+		n.keys.Apply(ans.Keys)
 	}
 	n.id = n.agent.Id()
 	n.log.Info("node", "id", n.id.String())
@@ -560,75 +558,9 @@ func (n *Node) pushEvents(ctx context.Context, evs []*api.Event) error {
 
 // ---- the key set ---------------------------------------------------------
 
-func (n *Node) keysFile() string { return filepath.Join(n.cfg.StateDir, "keys.json") }
-
-// loadKeys reads the cached key set, so a node that restarts while the CP
-// is down still verifies tokens (§33.3).
-func (n *Node) loadKeys() {
-	b, err := os.ReadFile(n.keysFile())
-	if err != nil {
-		return
-	}
-	var m map[string]string
-	if err := json.Unmarshal(b, &m); err != nil {
-		return
-	}
-	keys := map[string]ed25519.PublicKey{}
-	for kid, v := range m {
-		if pub, err := base64.StdEncoding.DecodeString(v); err == nil && len(pub) == ed25519.PublicKeySize {
-			keys[kid] = ed25519.PublicKey(pub)
-		}
-	}
-	n.verifier.Set(keys)
-}
-
-func (n *Node) applyKeys(vs []*api.KeyEntry) {
-	if len(vs) == 0 {
-		return
-	}
-	keys := map[string]ed25519.PublicKey{}
-	m := map[string]string{}
-	for _, k := range vs {
-		if len(k.GetPublicKey()) != ed25519.PublicKeySize {
-			continue
-		}
-		keys[k.GetKid()] = ed25519.PublicKey(k.GetPublicKey())
-		m[k.GetKid()] = base64.StdEncoding.EncodeToString(k.GetPublicKey())
-	}
-	n.verifier.Set(keys)
-	if b, err := json.Marshal(m); err == nil {
-		os.WriteFile(n.keysFile(), b, 0o600)
-	}
-}
-
-// keyPoll keeps the key set current. A Watch names rows, and a node cannot
-// name a key it has not heard of, so it lists every 30 seconds instead;
-// rotation waits for the heartbeat that reports the new key anyway (§33.3).
+// keyPoll keeps the key set current (§33.3).
 func (n *Node) keyPoll(ctx context.Context) error {
-	t := time.NewTicker(30 * time.Second)
-	defer t.Stop()
-	for {
-		if conn, err := n.client(ctx); err == nil {
-			cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-			resp, err := api.NewSigningKeyServiceClient(conn).List(cctx, api.SigningKeyListRequest_builder{Size: 100}.Build())
-			cancel()
-			if err == nil {
-				var vs []*api.KeyEntry
-				for _, k := range resp.GetItems() {
-					if k.GetState() == api.SigningKeyState_SIGNING_KEY_STATE_RETIRED {
-						continue
-					}
-					vs = append(vs, api.KeyEntry_builder{Kid: k.GetAlias(), PublicKey: k.GetPublicKey()}.Build())
-				}
-				n.applyKeys(vs)
-			}
-		}
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-t.C:
-		}
-	}
+	return n.keys.Poll(ctx, n.client, func(err error) { n.log.Warn("keys", "err", err.Error()) })
 }
 
 // ---- scans and sweeps ----------------------------------------------------

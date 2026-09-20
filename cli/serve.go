@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/shale/cmd"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
 	"github.com/lesomnus/shale/internal/producer"
+	"github.com/lesomnus/shale/internal/relay"
 	"github.com/lesomnus/shale/internal/storage"
 )
 
@@ -409,7 +410,79 @@ var (
 		return errors.New("the reader agent is not built yet")
 	}
 	serveRelay = func(ctx context.Context, c *cmd.Config) error {
-		return errors.New("the relay is not built yet")
+		ctx, done, err := Telemetry(ctx, c)
+		if err != nil {
+			return err
+		}
+		defer done()
+		if c.Cp == "" {
+			return errors.New("a relay needs cp: the cluster API to join (§33.4)")
+		}
+		r, err := relay.New(relayConfig(c))
+		if err != nil {
+			return err
+		}
+
+		return r.Run(ctx)
 	}
-	relayInProcess func(ctx context.Context, c *cmd.Config, clusterAddr string) error
+	relayInProcess = func(ctx context.Context, c *cmd.Config, clusterAddr string) error {
+		rc := relayConfig(c)
+		if rc.Cp == "" {
+			scheme := "https://"
+			if c.IsDev() {
+				scheme = "http://"
+			}
+			addr := clusterAddr
+			if host, port, err := net.SplitHostPort(addr); err == nil {
+				if ip := net.ParseIP(host); ip == nil || ip.IsUnspecified() {
+					addr = net.JoinHostPort("127.0.0.1", port)
+				}
+			}
+			rc.Cp = scheme + addr
+		}
+		r, err := relay.New(rc)
+		if err != nil {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(200 * time.Millisecond):
+		}
+
+		return r.Run(ctx)
+	}
 )
+
+// relayConfig maps the file onto the relay's settings (§36.1).
+func relayConfig(c *cmd.Config) relay.Config {
+	rc := c.Relay
+	cfg := relay.Config{
+		StateDir:          c.StateDir("relay"),
+		Cp:                c.Cp,
+		CaHash:            c.CaHash,
+		Dev:               c.IsDev(),
+		IngestAddr:        rc.IngestAddr,
+		WhepAddr:          rc.WhepAddr,
+		Advertise:         rc.Advertise,
+		IdleStop:          rc.IdleStop,
+		MaxViewers:        rc.MaxViewers,
+		ViewersPerActor:   rc.ViewersPerActor,
+		Ice:               rc.Ice,
+		Nat1To1:           rc.Nat1To1,
+		UdpPortMin:        rc.UdpPortMin,
+		UdpPortMax:        rc.UdpPortMax,
+		HeartbeatInterval: c.Storage.HeartbeatInterval,
+		Log:               slog.Default(),
+	}
+	if c.IsDev() {
+		if cfg.IngestAddr == "" {
+			cfg.IngestAddr = "127.0.0.1:7430"
+		}
+		if cfg.WhepAddr == "" {
+			cfg.WhepAddr = "127.0.0.1:7431"
+		}
+	}
+
+	return cfg
+}
