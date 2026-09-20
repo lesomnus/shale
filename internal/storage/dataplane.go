@@ -2,10 +2,13 @@ package storage
 
 import (
 	"context"
+	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"hash/crc32"
 	"io"
 	"log/slog"
 	"net/http"
@@ -39,6 +42,9 @@ const (
 	HdrDateEnded      = "Shale-Date-Ended"
 	HdrIncomplete     = "Shale-Incomplete"
 	HdrRetryAfter     = "Retry-After"
+	// HdrChecksum carries the object's checksum on HEAD, as `crc32c=<hex>`
+	// (§30).
+	HdrChecksum = "Shale-Checksum"
 )
 
 // Limits are the node's admission limits (§12.2, §17.4).
@@ -88,6 +94,10 @@ type upload struct {
 	// cancel ends the request writing now, for the one that supersedes it
 	// (§12.2: one writer per key); guarded by DataPlane.mu.
 	cancel func()
+	// crc is the CRC32C of the bytes up to crcAt, when the record asks for
+	// one (§30); crcAt of -1 means it has to be recomputed from the file.
+	crc   uint32
+	crcAt int64
 }
 
 // DataPlane serves the object paths of every sink on this node.
@@ -421,6 +431,18 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return
 	}
 
+	// The running checksum (§30): a node that restarts, or dropped a tail,
+	// recomputes it from the file, as MAINT work, before it continues.
+	wantCrc := rec.GetCrc32C()
+	if wantCrc && u.crcAt != cur {
+		crc, err := d.recomputeCrc(r.Context(), sink, f, cur)
+		if err != nil {
+			http.Error(w, "checksum: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		u.crc, u.crcAt = crc, cur
+	}
+
 	// Staging in parts (§12.2, §22.4): the body fills a part buffer that
 	// grows on demand; a full one is one aligned write at its offset, with
 	// O_DIRECT where the sink can. The idle timeout is on every read.
@@ -478,6 +500,10 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 				tooLarge = true
 				n = int(maxLen - received)
 			}
+			if wantCrc {
+				u.crc = crc32.Update(u.crc, castagnoli, space[:n])
+				u.crcAt += int64(n)
+			}
 			pt.n += n
 			received += int64(n)
 			u.last = time.Now()
@@ -523,10 +549,12 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 	}
 	if readErr != nil {
 		// A broken connection: the aligned prefix reaches the device, the
-		// rest is dropped and re-sent; the upload stays resumable.
+		// rest is dropped and re-sent; the upload stays resumable. The
+		// checksum covered the dropped tail: recomputed on resume.
 		if n, err := pt.flush(df, written); err == nil {
 			written += int64(n)
 		}
+		u.crcAt = -1
 		d.log.Debug("upload interrupted", "key", key, "offset", written, "err", readErr.Error())
 		return
 	}
@@ -546,6 +574,9 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 			return
 		}
 		written += int64(n)
+		if written != received {
+			u.crcAt = -1
+		}
 		w.Header().Set(HdrUploadOffset, strconv.FormatInt(written, 10))
 		setBool(w.Header(), HdrUploadComplete, false)
 		w.WriteHeader(http.StatusNoContent)
@@ -602,6 +633,11 @@ func (d *DataPlane) commit(u *upload, f *os.File, size int64, ended *time.Time, 
 	}
 	if sink.Caps.GetFallocate() && u.hint > size {
 		unreserve(f, size, u.hint)
+	}
+	if rec.GetCrc32C() && u.crcAt == size {
+		var sum [4]byte
+		binary.BigEndian.PutUint32(sum[:], u.crc)
+		rec.SetChecksum(sum[:])
 	}
 	now := time.Now().UTC()
 	rec.SetState(api.RecordState_RECORD_STATE_COMPLETE)
@@ -726,6 +762,9 @@ func (d *DataPlane) head(w http.ResponseWriter, r *http.Request, sink *Sink, key
 	complete := rec.GetState() == api.RecordState_RECORD_STATE_COMPLETE
 	setBool(w.Header(), HdrUploadComplete, complete)
 	w.Header().Set(HdrUploadOffset, strconv.FormatInt(st.Size(), 10))
+	if sum := rec.GetChecksum(); len(sum) == 4 {
+		w.Header().Set(HdrChecksum, "crc32c="+hex.EncodeToString(sum))
+	}
 	if complete {
 		w.Header().Set("Content-Length", strconv.FormatInt(st.Size(), 10))
 		w.Header().Set(HdrUploadLength, strconv.FormatInt(st.Size(), 10))
@@ -818,6 +857,42 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Cache-Control", "private, max-age=0")
 	http.ServeContent(w, r, "", mod, cr)
+}
+
+// castagnoli is CRC32C's polynomial table.
+var castagnoli = crc32.MakeTable(crc32.Castagnoli)
+
+// recomputeCrc is the CRC32C of the first `n` bytes of the file, read in
+// chunks as MAINT work on the device (§30).
+func (d *DataPlane) recomputeCrc(ctx context.Context, sink *Sink, f *os.File, n int64) (uint32, error) {
+	var crc uint32
+	buf := make([]byte, d.limits.ReadChunk)
+	for off := int64(0); off < n; {
+		want := int64(len(buf))
+		if n-off < want {
+			want = n - off
+		}
+		var got int
+		err := d.node.onDevice(ctx, sink, ClassMaint, want, func() error {
+			var err error
+			got, err = f.ReadAt(buf[:want], off)
+			if err == io.EOF {
+				err = nil
+			}
+
+			return err
+		})
+		if err != nil {
+			return 0, err
+		}
+		if got == 0 {
+			break
+		}
+		crc = crc32.Update(crc, castagnoli, buf[:got])
+		off += int64(got)
+	}
+
+	return crc, nil
 }
 
 // openRead opens a complete object for reading, with O_DIRECT where it

@@ -3154,6 +3154,7 @@ type ObjectRecord struct {
 	xxx_hidden_DateDeletedMs         int64                  `protobuf:"varint,17,opt,name=date_deleted_ms,json=dateDeletedMs"`
 	xxx_hidden_Checksum              []byte                 `protobuf:"bytes,18,opt,name=checksum"`
 	xxx_hidden_PlacementVersion      int64                  `protobuf:"varint,19,opt,name=placement_version,json=placementVersion"`
+	xxx_hidden_Crc32C                bool                   `protobuf:"varint,20,opt,name=crc32c"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -3316,6 +3317,13 @@ func (x *ObjectRecord) GetPlacementVersion() int64 {
 	return 0
 }
 
+func (x *ObjectRecord) GetCrc32C() bool {
+	if x != nil {
+		return x.xxx_hidden_Crc32C
+	}
+	return false
+}
+
 func (x *ObjectRecord) SetFormatVersion(v int32) {
 	x.xxx_hidden_FormatVersion = v
 }
@@ -3413,6 +3421,10 @@ func (x *ObjectRecord) SetPlacementVersion(v int64) {
 	x.xxx_hidden_PlacementVersion = v
 }
 
+func (x *ObjectRecord) SetCrc32C(v bool) {
+	x.xxx_hidden_Crc32C = v
+}
+
 type ObjectRecord_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -3435,6 +3447,9 @@ type ObjectRecord_builder struct {
 	DateDeletedMs         int64
 	Checksum              []byte
 	PlacementVersion      int64
+	// Crc32c asks the node to compute a CRC32C while receiving and keep it
+	// in `checksum` (§30), which the set's `checksum` flag turns on.
+	Crc32C bool
 }
 
 func (b0 ObjectRecord_builder) Build() *ObjectRecord {
@@ -3460,6 +3475,7 @@ func (b0 ObjectRecord_builder) Build() *ObjectRecord {
 	x.xxx_hidden_DateDeletedMs = b.DateDeletedMs
 	x.xxx_hidden_Checksum = b.Checksum
 	x.xxx_hidden_PlacementVersion = b.PlacementVersion
+	x.xxx_hidden_Crc32C = b.Crc32C
 	return m0
 }
 
@@ -4854,7 +4870,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\n" +
 	"egress_bps\x18\x05 \x01(\x03R\tegressBps\x12)\n" +
 	"\x10attached_bitrate\x18\x06 \x01(\x03R\x0fattachedBitrate\x12#\n" +
-	"\x04load\x18\a \x01(\v2\x0f.shale.HostLoadR\x04load\"\x9a\x05\n" +
+	"\x04load\x18\a \x01(\v2\x0f.shale.HostLoadR\x04load\"\xb2\x05\n" +
 	"\fObjectRecord\x12%\n" +
 	"\x0eformat_version\x18\x01 \x01(\x05R\rformatVersion\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\fR\btenantId\x12\x17\n" +
@@ -4878,7 +4894,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x0fdate_expired_ms\x18\x10 \x01(\x03R\rdateExpiredMs\x12&\n" +
 	"\x0fdate_deleted_ms\x18\x11 \x01(\x03R\rdateDeletedMs\x12\x1a\n" +
 	"\bchecksum\x18\x12 \x01(\fR\bchecksum\x12+\n" +
-	"\x11placement_version\x18\x13 \x01(\x03R\x10placementVersion\"\xcc\x04\n" +
+	"\x11placement_version\x18\x13 \x01(\x03R\x10placementVersion\x12\x16\n" +
+	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xcc\x04\n" +
 	"\vTokenClaims\x12\x10\n" +
 	"\x03kid\x18\x01 \x01(\tR\x03kid\x12,\n" +
 	"\x03exp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12,\n" +

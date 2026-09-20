@@ -289,6 +289,10 @@ message ObjectRecord {
   int64 date_deleted_ms = 17;
   bytes checksum = 18;
   int64 placement_version = 19;
+  // Crc32c asks the node to compute a CRC32C while receiving and keep it
+  // in `checksum` (§30), which the set's `checksum` flag turns on.
+  bool crc32c = 20;
+
 }
 
 // TokenOp is what an access token allows (§33.2).

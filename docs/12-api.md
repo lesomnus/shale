@@ -343,6 +343,9 @@ HEAD   /objects/{object_key}   upload offset and completeness, or object metadat
   ([§34.9](11-deployment.md#349-events-and-directives)).
 - Nodes also serve health and metrics endpoints, and nothing else over HTTP.
 
+A `HEAD` on a complete object also answers `Shale-Checksum: crc32c=<hex>`
+when the set asked for checksums ([§30](09-operations.md#30-integrity)).
+
 ### 35.7 Storage Node: control API
 
 The Control Plane calls nodes. Each node serves one gRPC service on its

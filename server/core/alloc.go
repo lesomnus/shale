@@ -429,6 +429,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			DateExpiredMs:         expiredMs,
 			DateDeletedMs:         deletedMs,
 			PlacementVersion:      a.placeV,
+			Crc32C:                a.set.GetChecksum(),
 		}.Build()
 
 		tok, err := s.d.Keys.Sign(ctx, api.TokenClaims_builder{
