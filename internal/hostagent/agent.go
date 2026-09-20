@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -241,6 +242,34 @@ func (a *Agent) Dial(ctx context.Context) (*grpc.ClientConn, error) {
 	}
 
 	return grpc.NewClient(addr, opts...)
+}
+
+// HTTPClient is a client for the data planes: it trusts the pinned CA and
+// presents the host certificate, since a node verifies a client
+// certificate when one is given (§33.5).
+func (a *Agent) HTTPClient() (*http.Client, error) {
+	tr := &http.Transport{
+		MaxIdleConnsPerHost: 8,
+		IdleConnTimeout:     90 * time.Second,
+		ForceAttemptHTTP2:   true,
+	}
+	bundle, err := a.Store.Bundle()
+	if err != nil {
+		return nil, err
+	}
+	if len(bundle) > 0 {
+		pool, err := pki.Pool(bundle)
+		if err != nil {
+			return nil, err
+		}
+		cfg := &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}
+		if cert, err := a.Certificate(); err == nil && cert != nil {
+			cfg.Certificates = []tls.Certificate{*cert}
+		}
+		tr.TLSClientConfig = cfg
+	}
+
+	return &http.Client{Transport: tr}, nil
 }
 
 // Answer is what a kind's Join RPC hands back to the loop.

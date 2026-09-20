@@ -189,6 +189,14 @@ func (p *Producer) Run(ctx context.Context) error {
 	}
 
 	p.uploader = &Uploader{Cfg: p.cfg.Upload, Objects: api.NewObjectServiceClient(conn), Log: p.log, Mode: p.cfg.Mode}
+	if p.uploader.Cfg.Client == nil {
+		// The data planes speak TLS from the same CA the producer pinned.
+		hc, err := p.agent.HTTPClient()
+		if err != nil {
+			return err
+		}
+		p.uploader.Cfg.Client = hc
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	for _, s := range p.order {

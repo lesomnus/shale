@@ -182,7 +182,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 
 		// A transport error or a 5xx: HEAD for the offset and resume.
 		if err != nil {
-			u.Log.Debug("upload interrupted", "key", al.GetObjectKey(), "err", err.Error())
+			u.Log.Warn("upload interrupted", "key", al.GetObjectKey(), "url", url, "err", err.Error())
 		}
 		cur, herr := u.head(ctx, url, cand.GetToken())
 		if herr == nil {
