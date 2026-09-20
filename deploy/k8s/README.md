@@ -62,6 +62,29 @@ kubectl apply -k deploy/k8s
   `shale node adopt` each one to keep the operator in the loop), and
   reports its sinks. Its state lives in `/var/lib/shale-k8s` on the host.
 
+## Behind an Ingress
+
+A producer outside the cluster can reach the tenant API through an
+ingress controller that passes the port through and says who is calling
+with the PROXY protocol ([§34.10](../../docs/11-deployment.md#3410-node-addresses)).
+With ingress-nginx:
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.13.3/deploy/static/provider/baremetal/deploy.yaml
+kubectl -n ingress-nginx create configmap tcp-services --from-literal=7400=shale/shale-control:7400::PROXY
+kubectl -n ingress-nginx patch deploy ingress-nginx-controller --type=json \
+  -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--tcp-services-configmap=$(POD_NAMESPACE)/tcp-services"}]'
+kubectl -n ingress-nginx patch svc ingress-nginx-controller --type=json \
+  -p '[{"op":"add","path":"/spec/ports/-","value":{"name":"shale-control","port":7400,"targetPort":7400,"nodePort":30740}}]'
+```
+
+Run the controller on the host network of the nodes set aside for it
+(`hostNetwork: true`, a `nodeSelector`), and activate an `AddressPolicy`
+whose `trusted_proxies` are those hosts' addresses, node IP and pod-CIDR
+host address alike, and nothing wider: a trusted pod CIDR makes the CP
+expect a header from every pod and every kubelet probe. Producers then
+dial the NodePort (30740 above) on any node the CP certificate names.
+
 ## Using it
 
 Sign in from a machine that reaches a node IP, with the CA the init job

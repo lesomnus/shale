@@ -313,11 +313,23 @@ return one or more endpoints with scheme, host, and port.
 **The caller's network** is the source address of the call, unless the
 `AddressPolicy` lists `trusted_proxies`: calls from those addresses carry the
 real client address in the PROXY protocol header, and the resolver uses that.
+A connection from a trusted address without a header is closed: a proxy's
+host sends nothing else, and its probes and scans end at the listener.
 Behind an Ingress or LoadBalancer without it, every caller looks internal, so
 `advertised` would hand remote producers unreachable addresses. Such
 deployments use `template` or `dns`, where the IP is chosen by DNS on the
 client's side (split-horizon DNS gives internal and external clients
 different answers), and the CP never needs the caller's network at all.
+
+On Kubernetes the proxy is an ingress controller passing the API's TCP
+port through with the PROXY protocol (ingress-nginx: a `tcp-services`
+entry `7400: shale/shale-control:7400::PROXY`). Run it on the host network
+of nodes set aside for it and trust those hosts' addresses, never the pod
+CIDR: as a pod it reaches the CP from a pod address, and a pod CIDR that is
+trusted makes the CP expect a header from every pod and every kubelet
+probe. Verified on the lab cluster (#70): the tenant API logs a producer's
+calls from its own address through the ingress, and `advertised` hands it
+node endpoints it can reach.
 
 **TLS follows the resolver.** A client verifies the node certificate against
 whatever host it was given, so the node certificate must cover every name and
