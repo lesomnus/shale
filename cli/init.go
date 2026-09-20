@@ -122,8 +122,13 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 	if err != nil {
 		return fmt.Errorf("tenant %q: %w", clusterAlias, err)
 	}
+	opPass := core.RandomPassword()
+	opHash, err := core.HashPassword(opPass)
+	if err != nil {
+		return err
+	}
 	op, err := s.Ungated.Holder().Add(ctx, api.HolderAddRequest_builder{
-		Tenant: api.TenantRef_builder{Id: ct.GetId()}.Build(), Alias: operator, AllSites: true,
+		Tenant: api.TenantRef_builder{Id: ct.GetId()}.Build(), Alias: operator, AllSites: true, Password: opHash,
 	}.Build())
 	if err != nil {
 		return fmt.Errorf("operator %q: %w", operator, err)
@@ -133,8 +138,13 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 	if err != nil {
 		return fmt.Errorf("tenant %q: %w", tenant, err)
 	}
+	adminPass := core.RandomPassword()
+	adminHash, err := core.HashPassword(adminPass)
+	if err != nil {
+		return err
+	}
 	h, err := s.Ungated.Holder().Add(ctx, api.HolderAddRequest_builder{
-		Tenant: api.TenantRef_builder{Id: t.GetId()}.Build(), Alias: admin, AllSites: true,
+		Tenant: api.TenantRef_builder{Id: t.GetId()}.Build(), Alias: admin, AllSites: true, Password: adminHash,
 	}.Build())
 	if err != nil {
 		return fmt.Errorf("admin %q: %w", admin, err)
@@ -159,9 +169,10 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 	fmt.Fprintf(out, "ca          %s\n", pki.Fingerprint(ca.Cert))
 	fmt.Fprintf(out, "signing key %s\n", sk.GetAlias())
 	fmt.Fprintf(out, "tenant      @%s   %s\n", clusterAlias, pv(ct.GetId()))
-	fmt.Fprintf(out, "operator    @%s/%s   %s\n", clusterAlias, operator, pv(op.GetId()))
+	fmt.Fprintf(out, "operator    @%s/%s   %s   password: %s\n", clusterAlias, operator, pv(op.GetId()), opPass)
 	fmt.Fprintf(out, "tenant      @%s   %s\n", tenant, pv(t.GetId()))
-	fmt.Fprintf(out, "admin       @%s/%s   %s\n", tenant, admin, pv(h.GetId()))
+	fmt.Fprintf(out, "admin       @%s/%s   %s   password: %s\n", tenant, admin, pv(h.GetId()), adminPass)
+	fmt.Fprintf(out, "\nthe passwords are printed once; sign in with `shale login @%s/%s` and change them with `shale holder set-password`\n", tenant, admin)
 	if c.IsDev() {
 		fmt.Fprintf(out, "\ndevelopment mode: call as @%s/%s on the tenant API and @%s/%s on the cluster API\n", tenant, admin, clusterAlias, operator)
 	}

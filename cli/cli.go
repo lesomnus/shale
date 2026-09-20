@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdcmd"
@@ -50,6 +51,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			pdcmd.NewCmdConfig(cmd.Loader, c),
 			NewCmdInit(c),
 			NewCmdServe(c),
+			NewCmdLogin(c),
 		},
 
 		Handler: xli.Chain(pdcmd.Load(cmd.Loader, c), applyClientFlags(c), xli.RequireSubcommand()),
@@ -143,6 +145,7 @@ func (r *connector) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 // dial opens a connection as the CLI: plaintext with the plain header when
 // the address says http, else TLS against the CP's CA.
 func dial(c *cmd.Config, addr string) (*grpc.ClientConn, error) {
+	orig := addr
 	plain := false
 	if strings.Contains(addr, "://") {
 		u, err := url.Parse(addr)
@@ -167,13 +170,26 @@ func dial(c *cmd.Config, addr string) (*grpc.ClientConn, error) {
 		creds := credentials.NewClientTLSFromCert(pool, "")
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	}
-	if c.Client.As != "" {
+	switch {
+	case c.Client.As != "":
 		opts = append(opts, auth.Inject(auth.PlainProvider(c.Client.As))...)
-	} else if c.Client.Token != "" {
+	case c.Client.Token != "":
 		opts = append(opts, auth.Inject(auth.BearerProvider(c.Client.Token))...)
+	default:
+		if cookie := savedSession(orig); cookie != "" {
+			opts = append(opts, auth.Inject(cookieProvider(cookie))...)
+		}
 	}
 
 	return grpc.NewClient(addr, opts...)
+}
+
+// cookieProvider sends a session cookie as the `cookie` metadata the
+// session handler reads.
+func cookieProvider(cookie string) auth.Provider {
+	return auth.ProviderFunc(func(ctx context.Context) context.Context {
+		return metadata.AppendToOutgoingContext(ctx, "cookie", cookie)
+	})
 }
 
 func caPool(c *cmd.Config) (*x509.CertPool, error) {

@@ -33,6 +33,9 @@ service HolderService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(HolderWatchRequest) returns (stream HolderWatchResponse);
+  // SetPassword replaces a person's password. A person may set their own;
+  // anyone in the tenant may set another's until roles arrive.
+  rpc SetPassword(HolderSetPasswordRequest) returns (Holder);
 }
 
 message HolderAddRequest {
@@ -207,4 +210,9 @@ message HolderWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message HolderSetPasswordRequest {
+  HolderRef ref = 1;
+  string password = 2 [features.field_presence = IMPLICIT];
 }

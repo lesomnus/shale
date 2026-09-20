@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HolderService_Add_FullMethodName   = "/shale.HolderService/Add"
-	HolderService_Get_FullMethodName   = "/shale.HolderService/Get"
-	HolderService_Patch_FullMethodName = "/shale.HolderService/Patch"
-	HolderService_Apply_FullMethodName = "/shale.HolderService/Apply"
-	HolderService_Erase_FullMethodName = "/shale.HolderService/Erase"
-	HolderService_List_FullMethodName  = "/shale.HolderService/List"
-	HolderService_Watch_FullMethodName = "/shale.HolderService/Watch"
+	HolderService_Add_FullMethodName         = "/shale.HolderService/Add"
+	HolderService_Get_FullMethodName         = "/shale.HolderService/Get"
+	HolderService_Patch_FullMethodName       = "/shale.HolderService/Patch"
+	HolderService_Apply_FullMethodName       = "/shale.HolderService/Apply"
+	HolderService_Erase_FullMethodName       = "/shale.HolderService/Erase"
+	HolderService_List_FullMethodName        = "/shale.HolderService/List"
+	HolderService_Watch_FullMethodName       = "/shale.HolderService/Watch"
+	HolderService_SetPassword_FullMethodName = "/shale.HolderService/SetPassword"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -56,6 +57,9 @@ type HolderServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *HolderWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[HolderWatchResponse], error)
+	// SetPassword replaces a person's password. A person may set their own;
+	// anyone in the tenant may set another's until roles arrive.
+	SetPassword(ctx context.Context, in *HolderSetPasswordRequest, opts ...grpc.CallOption) (*Holder, error)
 }
 
 type holderServiceClient struct {
@@ -145,6 +149,16 @@ func (c *holderServiceClient) Watch(ctx context.Context, in *HolderWatchRequest,
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HolderService_WatchClient = grpc.ServerStreamingClient[HolderWatchResponse]
 
+func (c *holderServiceClient) SetPassword(ctx context.Context, in *HolderSetPasswordRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_SetPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -173,6 +187,9 @@ type HolderServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*HolderWatchRequest, grpc.ServerStreamingServer[HolderWatchResponse]) error
+	// SetPassword replaces a person's password. A person may set their own;
+	// anyone in the tenant may set another's until roles arrive.
+	SetPassword(context.Context, *HolderSetPasswordRequest) (*Holder, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -203,6 +220,9 @@ func (UnimplementedHolderServiceServer) List(context.Context, *HolderListRequest
 }
 func (UnimplementedHolderServiceServer) Watch(*HolderWatchRequest, grpc.ServerStreamingServer[HolderWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedHolderServiceServer) SetPassword(context.Context, *HolderSetPasswordRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetPassword not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -344,6 +364,24 @@ func _HolderService_Watch_Handler(srv interface{}, stream grpc.ServerStream) err
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type HolderService_WatchServer = grpc.ServerStreamingServer[HolderWatchResponse]
 
+func _HolderService_SetPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderSetPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).SetPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_SetPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).SetPassword(ctx, req.(*HolderSetPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -374,6 +412,10 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _HolderService_List_Handler,
+		},
+		{
+			MethodName: "SetPassword",
+			Handler:    _HolderService_SetPassword_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

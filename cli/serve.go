@@ -167,6 +167,7 @@ type Running struct {
 	TenantAddr  string
 	ClusterAddr string
 	Node        *storage.Node
+	CP          *cmd.Server
 }
 
 // ServeAll is §34.7: both APIs, a node, and a relay in one process. `ready`
@@ -231,7 +232,7 @@ func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 		return err
 	}
 	if ready != nil {
-		ready(Running{TenantAddr: tl.Addr().String(), ClusterAddr: cl.Addr().String(), Node: n})
+		ready(Running{TenantAddr: tl.Addr().String(), ClusterAddr: cl.Addr().String(), Node: n, CP: s})
 	}
 	g.Go(func() error {
 		// Give the listeners a moment; the join loop retries anyway.

@@ -1,0 +1,19 @@
+edition = "2023";
+
+package shale;
+
+option go_package = "github.com/lesomnus/shale/api";
+
+// What Shale adds to the generated contract of Holder: people sign in with
+// a password (§33.1), and the password is set by an RPC rather than by a
+// general write.
+service HolderService {
+  // SetPassword replaces a person's password. A person may set their own;
+  // anyone in the tenant may set another's until roles arrive.
+  rpc SetPassword(HolderSetPasswordRequest) returns (Holder);
+}
+
+message HolderSetPasswordRequest {
+  HolderRef ref = 1;
+  string password = 2 [features.field_presence = IMPLICIT];
+}

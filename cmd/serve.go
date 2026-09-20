@@ -2,17 +2,24 @@ package cmd
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/lesomnus/otx/log"
 	"github.com/protobuf-orm/ent/dialect"
@@ -23,6 +30,8 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/lesomnus/payday/auth"
+	"github.com/lesomnus/payday/auth/authsession"
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdid"
@@ -88,14 +97,19 @@ type Server struct {
 	// ClusterTenant holds the cluster operators; Nil before init.
 	ClusterTenant pdid.Id
 
-	// Auth is how a credential is read. Set by [Build] to mTLS plus, in
-	// development, the plain header; sessions are added by the CLI.
+	// Auth is how a credential is read: a session cookie, mTLS, and in
+	// development the plain header.
 	Auth auth.Handler
+	// Sessions mints and reads the cookies people sign in with; nil before
+	// init, when there is no KEK to seal them under.
+	Sessions *authsession.Sessions
 
 	// Spin is whatever this deployment has to run besides answering.
 	Spin []any
 
-	cfg Config
+	cfg       Config
+	httpMu    sync.Mutex
+	httpAddrs map[Surface]string
 }
 
 // Build opens the database and stacks the servers.
@@ -133,7 +147,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 
-	s := &Server{Db: db, Ent: client, Drv: drv, Dialect: dia, Watch: w, Ungated: ungated, cfg: c}
+	s := &Server{Db: db, Ent: client, Drv: drv, Dialect: dia, Watch: w, Ungated: ungated, cfg: c, httpAddrs: map[Surface]string{}}
 
 	// The CA and the KEK, when `shale init` has made them.
 	dir := c.StateDir("control")
@@ -202,14 +216,56 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		s.Spin = append(s.Spin, pd.Drain(client, b, c.Watch.Every()))
 	}
 
-	// Who is calling: the certificate, and in development the plain header.
-	hs := []auth.Handler{auth.MTls()}
+	// Who is calling: a session cookie, the certificate, and in development
+	// the plain header (§33.1). Sessions are sealed into the cookie under a
+	// key derived from the KEK, so every CP process reads them alike.
+	if s.Kek != nil {
+		sealed, err := authsession.NewSealed(sessionKey(s.Kek))
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
+		opts := []authsession.Option{authsession.WithLifetime(24 * time.Hour), authsession.WithIdle(0)}
+		if c.IsDev() {
+			opts = append(opts, authsession.Insecure())
+		}
+		s.Sessions = authsession.New(sealed, opts...)
+	}
+	var hs []auth.Handler
+	if s.Sessions != nil {
+		hs = append(hs, s.Sessions.Handler())
+	}
+	hs = append(hs, auth.MTls())
 	if c.IsDev() {
 		hs = append(hs, auth.Plain())
 	}
 	s.Auth = auth.Seq(hs...)
 
 	return s, nil
+}
+
+// sessionKey derives the session sealing key from the KEK, so the KEK
+// itself never leaves the key ring.
+func sessionKey(kek core.Kek) []byte {
+	h := hmac.New(sha256.New, kek)
+	h.Write([]byte("shale session"))
+
+	return h.Sum(nil)
+}
+
+// login is what checking a secret means here (§33.1): the person's
+// argon2id verifier on their row.
+func (s *Server) login(ctx context.Context, r *http.Request) (authsession.Session, error) {
+	var body struct{ Tenant, Alias, Password string }
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&body); err != nil {
+		return authsession.Session{}, err
+	}
+	who, tenant, err := core.Core{}.WithDeps(s.Deps).VerifyPassword(ctx, body.Tenant, body.Alias, body.Password)
+	if err != nil {
+		return authsession.Session{}, err
+	}
+
+	return authsession.Session{Id: who.String(), TenantId: tenant.String(), Grant: frame.Whole()}, nil
 }
 
 func (s *Server) Close() error { return s.Db.Close() }
@@ -360,12 +416,22 @@ func (s *Server) serveHttp(ctx context.Context, surface Surface, g *grpc.Server)
 		sc = s.cfg.Cluster
 	}
 	if !sc.Http.Serves() {
-		return func() {}, nil
+		// The sign-in endpoint needs a listener: two ports up from the
+		// API by default (7402 beside 7400, 7403 beside 7401).
+		if s.Sessions == nil {
+			return func() {}, nil
+		}
+		sc.Http.Addr = defaultHttpAddr(s.cfg.ListenAddr(surface, true))
 	}
 
 	h, err := web.New(sc.Http, g)
 	if err != nil {
 		return nil, err
+	}
+	// Signing in and out (§33.1).
+	if s.Sessions != nil {
+		h.Handle("POST /session", s.Sessions.Serve(s.login))
+		h.Handle("DELETE /session", s.Sessions.Serve(s.login))
 	}
 
 	l, err := net.Listen("tcp", sc.Http.Addr)
@@ -390,8 +456,35 @@ func (s *Server) serveHttp(ctx context.Context, surface Surface, g *grpc.Server)
 	}
 
 	log.From(ctx).InfoContext(ctx, "http", slog.String("addr", l.Addr().String()))
+	s.httpMu.Lock()
+	s.httpAddrs[surface] = l.Addr().String()
+	s.httpMu.Unlock()
 
 	return func() { srv.Close() }, nil
+}
+
+// HttpAddr is where a surface's HTTP listener is bound, or "" when it is
+// not (yet).
+func (s *Server) HttpAddr(surface Surface) string {
+	s.httpMu.Lock()
+	defer s.httpMu.Unlock()
+
+	return s.httpAddrs[surface]
+}
+
+// defaultHttpAddr is the HTTP listener beside an API address.
+func defaultHttpAddr(apiAddr string) string {
+	host, port, err := net.SplitHostPort(apiAddr)
+	if err != nil {
+		return ":7402"
+	}
+	n, _ := strconv.Atoi(port)
+	if n == 0 {
+		// A test's ephemeral port: the HTTP listener takes one too.
+		return net.JoinHostPort(host, "0")
+	}
+
+	return net.JoinHostPort(host, strconv.Itoa(n+2))
 }
 
 // ListenAddr is where a surface listens: the configuration, or the

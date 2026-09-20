@@ -106,6 +106,10 @@ type Core struct {
 	d *Deps
 }
 
+// WithDeps is a Core with no server below it, for the few things a
+// deployment asks the layer outside a request: verifying a password.
+func (s Core) WithDeps(d *Deps) Core { return Core{d: d} }
+
 // New stacks the layer over `next`.
 func New(next api.Server, d *Deps) Core { return Core{api.NewOverlay(next), d} }
 

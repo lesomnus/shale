@@ -9532,6 +9532,11 @@ func (s interceptHolder) Watch(req *api.HolderWatchRequest, out grpc.ServerStrea
 		api.HolderService_Watch_FullMethodName, req, out, s.HolderServiceServer.Watch)
 }
 
+func (s interceptHolder) SetPassword(ctx context.Context, req *api.HolderSetPasswordRequest) (*api.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_SetPassword_FullMethodName, req, s.HolderServiceServer.SetPassword)
+}
+
 func (s Intercept) SiteMember() api.SiteMemberServiceServer {
 	return interceptSiteMember{s, s.Next().SiteMember()}
 }
@@ -11566,6 +11571,19 @@ func dispatch(ctx context.Context, s api.Server, op *pdpb.Op) (*anypb.Any, error
 		}
 
 		res, err := s.Holder().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.HolderService_SetPassword_FullMethodName:
+		v := &api.HolderSetPasswordRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().SetPassword(ctx, v)
 		if err != nil {
 			return nil, err
 		}
