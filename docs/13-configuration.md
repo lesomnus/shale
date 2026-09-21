@@ -72,6 +72,9 @@ deployment runs well on them, and changes them only for a reason.
 | Producer | `producer_heartbeat_interval` | 30 s | — | producer | [§38.6](15-producer.md#386-health-and-heartbeats) |
 | Producer | `producer_down_after` | 90 s (three heartbeats) | — | cluster | [§38.6](15-producer.md#386-health-and-heartbeats) |
 | Producer | `uplink` | none | — | producer | [§38.5](15-producer.md#385-choosing-the-ceiling) |
+| Producer | `push` | off | `unix:/path`, `tcp://host:port`: the listener pushed sources are written to | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
+| Producer | `push_idle` | 30 s | — | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
+| Producer | a source's `kind` | `ts` | `ts`, `raw`; pushed sources only | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | encoder target | (ceiling − audio) ÷ 1.05; capped VBR with `bufsize` = 2 s at the ceiling | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Producer | start-up check | 10 s after a capture process starts | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Node | `gc_page` | 5,000 candidates | — | node | [§21.2](06-retention-gc.md#212-protocol) |

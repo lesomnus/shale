@@ -168,8 +168,13 @@ type SourceConfig struct {
 	// missing (§38.4).
 	Alias string `yaml:"alias"`
 	Name  string `yaml:"name"`
-	// Input: `v4l2:/dev/video0`, `rtsp://...`, or `file:/path.ts`.
+	// Input: `v4l2:/dev/video0`, `rtsp://...`, `file:/path.ts`, or `push`
+	// for a stream a process on this host writes to `producer.push`
+	// (§38.9).
 	Input string `yaml:"input"`
+	// Kind of a pushed stream: `ts` (the default), or `raw` for frames
+	// that are not video, cut at frame boundaries (§38.9).
+	Kind string `yaml:"kind"`
 	// Format is what the camera delivers: mjpeg | yuyv | h264 | h265.
 	Format string `yaml:"format"`
 	Size   string `yaml:"size"`
@@ -244,6 +249,12 @@ type ProducerConfig struct {
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	// Ffmpeg is the capture binary; `ffmpeg` on PATH by default.
 	Ffmpeg string `yaml:"ffmpeg"`
+	// Push is the listener pushed sources are written to (§38.9):
+	// `unix:/run/shale/push.sock` or `tcp://127.0.0.1:7450`. Off when
+	// empty. PushIdle is how long a pushed stream may carry nothing
+	// before its open segment closes as stopped (30 s).
+	Push     string        `yaml:"push"`
+	PushIdle time.Duration `yaml:"push_idle"`
 }
 
 // ReaderConfig is the reader agent's own settings (§33.4).

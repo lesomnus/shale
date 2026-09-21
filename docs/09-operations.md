@@ -300,6 +300,7 @@ shale relay assign <relay> '{"producer":{"id":"<producer>"}}' # move a producer 
 shale producer ls|pending|get|erase|watch                    # tenant API
 shale producer adopt <producer> '{"set":{"id":"<set>"}}'
 shale producer scan|probe                                    # what this host can see (§38.4)
+shale producer push [--to ADDR] [--open] <alias> [FILE]      # write a stream to a pushed source (§38.9)
 shale reader ls|pending|get|erase|watch                      # tenant API
 shale reader adopt <reader> '{"sites":[{"id":"<site>"}]}'
 

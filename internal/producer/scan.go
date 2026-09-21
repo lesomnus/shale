@@ -231,6 +231,13 @@ func Probe(ctx context.Context, ffmpeg string, sources []SourceConfig, d time.Du
 	var out []ProbeResult
 	for _, sc := range sources {
 		res := ProbeResult{Alias: sc.Alias}
+		if sc.Input == InputPush {
+			// Nothing to run: whatever pushes it is not this process.
+			res.Err = "pushed (" + sc.Kind + "): not probed"
+			out = append(out, res)
+
+			continue
+		}
 		ceiling := sc.MaxBitrate
 		if ceiling == 0 {
 			ceiling = StartingCeiling(sc.Size, sc.Fps, sc.Format)

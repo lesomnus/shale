@@ -26,8 +26,12 @@ type SourceConfig struct {
 	Alias string
 	Name  string
 	// Input: `v4l2:/dev/video0`, `rtsp://...`, `file:/path.ts` (tests),
-	// `tcp://:port` or `unix:/path` for a push source (§38.1).
+	// or `push` for a stream a process writes to the producer's listener
+	// (§38.1, §38.9).
 	Input string
+	// Kind is what a pushed stream is: `ts` (the default) or `raw`,
+	// frames cut at frame boundaries (§38.9).
+	Kind string
 	// Format is what the camera delivers: mjpeg | yuyv | h264 | h265.
 	Format string
 	Size   string

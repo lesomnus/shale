@@ -220,15 +220,25 @@ func (s Schedule) Due(cur *Segment, t time.Time) (due bool, early bool) {
 
 // Cutter turns packets into segments for one source.
 type Cutter struct {
+	// Reader is the TS stream; nil for a raw source, whose frames come
+	// through FeedFrame (§38.9).
 	Reader   *Reader
 	Schedule func() Schedule
 	// Out receives every closed segment; Open every segment as it opens.
 	Out  func(*Segment)
 	Open func(*Segment)
 	Now  func() time.Time
+	// Prefix is what a raw source's laminae start with, the last prefix
+	// frame; OnPrefix is told when a new one arrives, so the source keeps
+	// it across streams.
+	Prefix   func() []byte
+	OnPrefix func([]byte)
 
 	cur   *Segment
 	stats CutStats
+	// last is the data time of the last frame of a raw source, which is
+	// where its segment ends when the source stops.
+	last time.Time
 }
 
 // CutStats is what the heartbeat reports about the cutting (§38.6).
@@ -278,10 +288,52 @@ func (c *Cutter) now() time.Time {
 	return time.Now()
 }
 
+// FeedFrame handles one frame of a raw source (§38.9): a prefix frame is
+// kept for the laminae to come, a data frame may start a lamina, and its
+// timestamp is the data time when the writer gave one.
+func (c *Cutter) FeedFrame(f *Frame) {
+	t := f.Time
+	if t.IsZero() {
+		t = c.now()
+	}
+	if f.Kind == FramePrefix {
+		if c.OnPrefix != nil {
+			c.OnPrefix(append([]byte(nil), f.Payload...))
+		}
+
+		return
+	}
+	c.stats.Frames++
+	c.stats.Keyframes++
+	c.stats.LastKey = c.now()
+	if due, early := c.Schedule().Due(c.cur, t); due {
+		c.cut(t, early)
+	}
+	c.last = t
+	c.cur.Write(f.Payload)
+	c.stats.Bytes += int64(len(f.Payload))
+}
+
+// prefix is what a new segment starts with: the TS tables, or a raw
+// source's prefix frame. A TS segment without tables could not play on its
+// own and is not started; a raw source may have no prefix at all.
+func (c *Cutter) prefix() ([]byte, bool) {
+	if c.Reader != nil {
+		tables := c.Reader.Tables()
+
+		return tables, tables != nil
+	}
+	if c.Prefix != nil {
+		return c.Prefix(), true
+	}
+
+	return nil, true
+}
+
 // cut closes the current segment and opens the next one at this keyframe.
 func (c *Cutter) cut(now time.Time, early bool) {
-	tables := c.Reader.Tables()
-	if tables == nil {
+	tables, ok := c.prefix()
+	if !ok {
 		// No PAT/PMT yet: the segment could not play on its own.
 		return
 	}
@@ -308,7 +360,12 @@ func (c *Cutter) Stop() {
 		return
 	}
 	c.cur.Stopped = true
-	c.cur.Close(c.now())
+	ended := c.now()
+	if c.Reader == nil && !c.last.IsZero() {
+		// A raw source's data ended where its last frame said.
+		ended = c.last
+	}
+	c.cur.Close(ended)
 	if c.Out != nil {
 		c.Out(c.cur)
 	}

@@ -19,8 +19,8 @@ stream comes from is the only difference:
 | Kind | Who runs it | Typical use |
 |---|---|---|
 | **Managed capture** | the producer spawns and supervises a capture process per source ([§38.3](#383-managed-capture)) | USB cameras, IP cameras, CSI cameras on a Pi |
-| **Push** | an external process connects to the producer's listener (TCP or a Unix socket) and writes TS | recording software the operator already runs; vendor SDKs |
-| **File** | the producer tails a growing file | tests |
+| **Push** (`input: push`) | a process on the host writes the stream to the producer's listener, `producer.push`, in the node's upload contract ([§38.9](#389-pushed-sources-and-raw-frames)): TS by default, or raw frames (`kind: raw`) for what is not video | recording software the operator already runs; vendor SDKs; a robot's sensor streams |
+| **File** | `file:` plays a recording through ffmpeg, `raw:` replays one without it, both looped | tests |
 
 The contract is the same for all three:
 
@@ -323,3 +323,77 @@ the price of a recording that HLS players do not take
   needs them sits beside the producer and reads recordings through the
   `Timeline` ([§17](05-read-path.md#17-read-path)) or watches live through
   the relay.
+
+### 38.9 Pushed sources and raw frames
+
+A pushed source (`input: push`) is written to the producer by a process on
+the host, at the listener `producer.push` names: `unix:/run/shale/push.sock`,
+or `tcp://127.0.0.1:7450` for a writer in a container. The contract is the
+node's upload ([§12.2](04-write-path.md#122-resumable-part-uploads)), one
+per source, that never completes while the source runs:
+
+```text
+PUT  /sources/<alias>/frames   Upload-Offset: o   Upload-Complete: ?0 | ?1
+                               body = the stream from o (Content-Length, or chunked)
+       → 204  Upload-Offset: cur   taken up to cur
+       → 409  Upload-Offset: cur   o is not cur, or a request is already open
+HEAD /sources/<alias>/frames   → Upload-Offset: cur, Upload-Complete: ?0 | ?1
+```
+
+- The offset counts the bytes of the stream the producer has taken. A
+  writer keeps what is above the last `204` and, after a disconnect, asks
+  `HEAD` and sends from there; a request at any other offset is refused
+  with the right one. One request is open per source at a time.
+- `?0` is the normal state: the stream goes on in the next request. `?1`
+  ends the stream: the open segment is cut at once (`Stopped`), the
+  offset returns to zero, and the next request begins a new stream.
+- A request with no bytes for `push_idle` (30 s) is answered `204` and
+  ended, and a stream with no bytes for that long closes its open segment
+  as stopped; both stay open for the next bytes. A sensor that reports
+  nothing for a while does not hold a lamina open, and its next record
+  starts the next one.
+- What the bytes are is the source's `kind` in the producer's
+  configuration; the request does not say. `ts`, the default, is the
+  contract of [§38.1](#381-inputs), cut at keyframes like a capture's
+  stdout. `raw` is frames:
+
+```text
+frame = kind (1) | timestamp (8, unix ns, big-endian; 0 = none) | length (4, big-endian) | bytes
+kind   0  data     a lamina may be cut before this frame
+       1  prefix   kept, and prepended to every lamina that starts after it;
+                   replaced by the next prefix frame
+```
+
+This is TS with the video taken out: a prefix frame is the PAT and PMT,
+every data frame boundary is a keyframe, the timestamp is the PCR. The
+schedule stays the producer's, as for a camera: the staggered phase, the
+epoch rule and the early cut past `max_bitrate × duration`
+([§38.2](#382-cutting-segments), [§25](07-storage-node.md#25-lamina-size)),
+with the cut moved to the next frame boundary. A raw source declares
+`max_bitrate`, since there is no camera mode to guess it from, and a
+stream under about 0.28 Mbps makes a small lamina every quarter epoch, so
+low-rate records belong multiplexed into one source.
+
+- Data times are the frames' timestamps when the writer gives them,
+  arrival otherwise ([§10](02-data-model.md#10-time-semantics)). A writer
+  flushing what it kept while offline lands its records with their own
+  times, within `max_backlog_age`. `date_ended` is the next lamina's
+  first frame, or the last frame when the stream ended.
+- Only the bytes between the frame headers are stored: a lamina is the
+  prefix followed by whole records, and a reader that knows the format
+  reads it as a file. An incomplete lamina
+  ([§15](04-write-path.md#15-partial-laminae)) ends in whole records plus
+  at most one torn one.
+- No live output ([§38.7](#387-live-output)): a raw source has nothing a
+  relay could show.
+- A self-delimiting format needs one frame per record and one prefix
+  frame per header. For MCAP: the magic, the Header and every Schema and
+  Channel so far go in the prefix frame, resent whole when a channel is
+  added; one Chunk record makes a data frame; a lamina lacks a Footer,
+  which MCAP's stream readers accept.
+
+`shale producer push [--to ADDR] ALIAS [FILE]` is the reference writer: it
+sends a file, or stdin, in requests of a part each, resumes from `HEAD`,
+and completes the stream at the end (`--open` leaves it open). A pushed
+source is not probed ([§38.4](#384-discovery-and-registration)); whatever
+pushes it is not the producer's process.

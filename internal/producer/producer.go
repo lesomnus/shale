@@ -44,6 +44,11 @@ type Config struct {
 
 	Sources []SourceConfig
 	Ffmpeg  string
+	// Push is the listener pushed sources are written to (§38.9),
+	// `unix:/path` or `tcp://host:port`; PushIdle how long a pushed
+	// stream may carry nothing before its segment closes (30 s).
+	Push     string
+	PushIdle time.Duration
 
 	Mode              api.UploadMode
 	Retain            string
@@ -157,6 +162,9 @@ type Producer struct {
 	profileV int64
 	relay    *relayLink
 	m        *metrics
+	// push is the listener pushed sources are written to; nil when no
+	// source is pushed (§38.9).
+	push *Push
 
 	mu       sync.Mutex
 	retained int64
@@ -165,12 +173,26 @@ type Producer struct {
 	Ready chan struct{}
 }
 
+// input is what the heartbeat asks of where a source's bytes come from: a
+// capture process, or the listener a process pushes to.
+type input interface {
+	Up() bool
+	Restarts() int64
+	LastError() string
+}
+
 // source is one camera's state.
 type source struct {
 	cfg     SourceConfig
 	row     *api.Source
 	capture *Capture
-	cutter  *Cutter
+	// push is the source's side of the listener when a process on the
+	// host writes the stream (§38.9); capture is nil then.
+	push   *pushSource
+	cutter *Cutter
+	// prefix is a raw source's last prefix frame, what its laminae start
+	// with (§38.9), kept across streams.
+	prefix []byte
 
 	mu      sync.Mutex
 	profile *api.SegmentProfile
@@ -223,13 +245,44 @@ func New(cfg Config) (*Producer, error) {
 		if _, dup := p.sources[sc.Alias]; dup {
 			return nil, fmt.Errorf("source %s is listed twice", sc.Alias)
 		}
+		if sc.Kind != "" && sc.Kind != KindTS && sc.Kind != KindRaw {
+			return nil, fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindTS, KindRaw)
+		}
 		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, wake: make(chan struct{}, 1)}
+		if sc.Input == InputPush {
+			if cfg.Push == "" {
+				return nil, fmt.Errorf("source %s is pushed, and producer.push names no listener", sc.Alias)
+			}
+			if p.push == nil {
+				p.push = &Push{Addr: cfg.Push, Idle: cfg.PushIdle, Log: cfg.Log}
+			}
+			s.push = p.push.Add(sc.Alias)
+		}
+		if sc.Kind == KindRaw {
+			if sc.Input != InputPush {
+				return nil, fmt.Errorf("source %s: a raw source is pushed (input: push)", sc.Alias)
+			}
+			if sc.MaxBitrate <= 0 {
+				return nil, fmt.Errorf("source %s: a raw source declares max_bitrate; there is no camera mode to guess it from", sc.Alias)
+			}
+		}
 		p.sources[sc.Alias] = s
 		p.order = append(p.order, s)
 	}
 
 	return p, nil
 }
+
+// The ways a source reaches the producer (§38.1) that are not a capture
+// process: a stream a process on the host pushes to the listener.
+const InputPush = "push"
+
+// A source's kind (§38.9): TS, cut at keyframes, or raw frames, cut at
+// frame boundaries.
+const (
+	KindTS  = "ts"
+	KindRaw = "raw"
+)
 
 // Run joins, registers its sources, negotiates, and records until the
 // context is done.
@@ -278,6 +331,13 @@ func (p *Producer) Run(ctx context.Context) error {
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
+	if p.push != nil {
+		if err := p.push.Listen(); err != nil {
+			return err
+		}
+		p.log.Info("push: listening", "addr", p.cfg.Push)
+		g.Go(func() error { return p.push.Serve(ctx) })
+	}
 	for _, s := range p.order {
 		s := s
 		g.Go(func() error { return p.capture(ctx, s) })
@@ -468,8 +528,23 @@ func (p *Producer) negotiate(ctx context.Context) error {
 	return nil
 }
 
-// capture runs the source's capture process and cuts its stream.
+// capture runs the source's capture process and cuts its stream; a pushed
+// source's streams come from the listener instead (§38.9).
 func (p *Producer) capture(ctx context.Context, s *source) error {
+	if s.push != nil {
+		return s.push.Run(ctx, func(st *pushStream) {
+			st.OnIdle = func() {
+				if s.cutter != nil {
+					s.cutter.Stop()
+				}
+			}
+			if s.cfg.Kind == KindRaw {
+				p.readFrames(ctx, s, st)
+			} else {
+				p.readTS(ctx, s, st)
+			}
+		})
+	}
 	s.capture = &Capture{
 		Ffmpeg:   p.cfg.Ffmpeg,
 		Source:   s.cfg,
@@ -483,62 +558,103 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 		},
 	}
 
-	return s.capture.Run(ctx, func(r io.Reader) {
-		reader := NewReader(r)
-		s.cutter = &Cutter{
-			Reader: reader,
-			Now:    p.now,
-			Schedule: func() Schedule {
+	return s.capture.Run(ctx, func(r io.Reader) { p.readTS(ctx, s, r) })
+}
+
+// newCutter is the source's cutter for one stream, handing segments to
+// the uploads as the mode says.
+func (p *Producer) newCutter(s *source, reader *Reader) *Cutter {
+	return &Cutter{
+		Reader: reader,
+		Now:    p.now,
+		Schedule: func() Schedule {
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			return s.sched
+		},
+		Open: func(seg *Segment) {
+			if p.cfg.Mode == api.UploadMode_UPLOAD_MODE_LIVE {
+				p.enqueue(s, seg)
+			}
+		},
+		Out: func(seg *Segment) {
+			if p.cfg.Mode != api.UploadMode_UPLOAD_MODE_LIVE {
+				p.enqueue(s, seg)
+			}
+			if seg.Early {
 				s.mu.Lock()
-				defer s.mu.Unlock()
-				return s.sched
-			},
-			Open: func(seg *Segment) {
-				if p.cfg.Mode == api.UploadMode_UPLOAD_MODE_LIVE {
-					p.enqueue(s, seg)
-				}
-			},
-			Out: func(seg *Segment) {
-				if p.cfg.Mode != api.UploadMode_UPLOAD_MODE_LIVE {
-					p.enqueue(s, seg)
-				}
-				if seg.Early {
-					s.mu.Lock()
-					s.raise = true
-					s.mu.Unlock()
-				}
-			},
+				s.raise = true
+				s.mu.Unlock()
+			}
+		},
+		Prefix: func() []byte {
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			return s.prefix
+		},
+		OnPrefix: func(b []byte) {
+			s.mu.Lock()
+			s.prefix = b
+			s.mu.Unlock()
+		},
+	}
+}
+
+// readTS cuts one TS stream, a capture's stdout or a pushed stream, until
+// it ends.
+func (p *Producer) readTS(ctx context.Context, s *source, r io.Reader) {
+	reader := NewReader(r)
+	s.cutter = p.newCutter(s, reader)
+	var pk Packet
+	started := time.Now()
+	checked, tables := false, false
+	for {
+		if err := reader.Next(&pk); err != nil {
+			if !errors.Is(err, io.EOF) && ctx.Err() == nil {
+				p.log.Warn("stream", "source", s.cfg.Alias, "err", err.Error())
+			}
+			break
 		}
-		var pk Packet
-		started := time.Now()
-		checked, tables := false, false
-		for {
-			if err := reader.Next(&pk); err != nil {
-				if !errors.Is(err, io.EOF) && ctx.Err() == nil {
-					p.log.Warn("stream", "source", s.cfg.Alias, "err", err.Error())
-				}
+		if !tables && len(reader.Streams().PMT) > 0 {
+			// The first PMT says what the capture produces; audio TS
+			// cannot carry restarts it encoding (§38.3), before any
+			// segment opened. A pushed stream is what it is.
+			tables = true
+			if s.capture != nil && s.capture.CheckAudio(reader.Streams()) {
 				break
 			}
-			if !tables && len(reader.Streams().PMT) > 0 {
-				// The first PMT says what the capture produces; audio TS
-				// cannot carry restarts it encoding (§38.3), before any
-				// segment opened.
-				tables = true
-				if s.capture.CheckAudio(reader.Streams()) {
-					break
-				}
-			}
-			s.cutter.Feed(&pk)
-			p.relay.feed(s, &pk, reader)
-			s.account(&pk, reader)
-			if !checked && time.Since(started) > 10*time.Second {
-				checked = true
-				p.startupCheck(s)
-			}
 		}
-		// The camera stopped: the segment closes where the recording did (§15).
-		s.cutter.Stop()
-	})
+		s.cutter.Feed(&pk)
+		p.relay.feed(s, &pk, reader)
+		s.account(&pk, reader)
+		if !checked && time.Since(started) > 10*time.Second {
+			checked = true
+			p.startupCheck(s)
+		}
+	}
+	// The camera stopped: the segment closes where the recording did (§15).
+	s.cutter.Stop()
+}
+
+// readFrames cuts one raw stream (§38.9) until it ends: frames, cut at
+// frame boundaries, the last prefix frame in front of every lamina.
+func (p *Producer) readFrames(ctx context.Context, s *source, r io.Reader) {
+	reader := NewFrameReader(r)
+	s.cutter = p.newCutter(s, nil)
+	var f Frame
+	for {
+		if err := reader.Next(&f); err != nil {
+			if !errors.Is(err, io.EOF) && ctx.Err() == nil {
+				p.log.Warn("stream", "source", s.cfg.Alias, "err", err.Error())
+			}
+			break
+		}
+		s.cutter.FeedFrame(&f)
+		if f.Kind == FrameData {
+			s.accountBytes(FrameHeader + len(f.Payload))
+		}
+	}
+	s.cutter.Stop()
 }
 
 // startupCheck is the ten-second look at what a capture produces (§38.3).
@@ -577,6 +693,26 @@ func (s *source) account(pk *Packet, r *Reader) {
 	if r.IsVideoFrame(pk) {
 		s.secFrames[s.secIdx]++
 	}
+}
+
+// accountBytes is account for a raw source: bytes per second, and a
+// frame per data frame.
+func (s *source) accountBytes(n int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	if s.lastTick.IsZero() {
+		s.lastTick = now.Truncate(time.Second)
+	}
+	for now.Sub(s.lastTick) >= time.Second {
+		s.closeSecond()
+		s.lastTick = s.lastTick.Add(time.Second)
+		s.secIdx = (s.secIdx + 1) % 60
+		s.secBytes[s.secIdx] = 0
+		s.secFrames[s.secIdx] = 0
+	}
+	s.secBytes[s.secIdx] += int64(n)
+	s.secFrames[s.secIdx]++
 }
 
 func (s *source) closeSecond() {
@@ -965,9 +1101,15 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		if s.cutter != nil {
 			st = s.cutter.Stats()
 		}
+		var in input
+		if s.push != nil {
+			in = s.push
+		} else if s.capture != nil {
+			in = s.capture
+		}
 		r := api.SourceReport_builder{
 			SourceId:           s.row.GetId(),
-			InputUp:            s.capture != nil && s.capture.Up() && time.Since(st.LastKey) < 10*time.Second,
+			InputUp:            in != nil && in.Up() && time.Since(st.LastKey) < 10*time.Second,
 			FrameRate:          s.frameRate(),
 			MeasuredBitrate:    s.rate(60),
 			MaxBitrate:         s.ceiling,
@@ -977,10 +1119,10 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 			Episodes:           s.episodes,
 			SecondsTotal:       s.seconds,
 		}
-		if s.capture != nil {
-			r.CaptureRestarts = s.capture.Restarts()
-			if !s.capture.Up() {
-				r.Error = s.capture.LastError()
+		if in != nil {
+			r.CaptureRestarts = in.Restarts()
+			if !in.Up() {
+				r.Error = in.LastError()
 			}
 		}
 		s.atCap, s.episodes, s.seconds = 0, 0, 0
