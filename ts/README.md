@@ -17,6 +17,10 @@ npm run sandbox:build     # the control plane compiled into the page (public/app
 npm run dev               # then http://localhost:5173/?sandbox
 npm run test:sandbox      # headless Chromium through every page (needs `npx playwright install chromium`)
 npm run build:sandbox     # dist/, the page with the sandbox in it, for a static host
+
+BASE=https://cp:7402 TENANT_PW=… CLUSTER_PW=… node test/server.mjs
+                          # the same walk against a deployment (§40.4); ADOPT=1 adopts
+                          #   what waits, a producer for SET
 ```
 
 `npm run build` is what the Dockerfile and `deploy/deb/build.sh` run before

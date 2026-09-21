@@ -174,7 +174,11 @@ next start and is recognized by its hardware identity
   connections every 10 s ([§38.6](15-producer.md#386-health-and-heartbeats)),
   and a server from before the keepalive answers that with `GOAWAY
   ENHANCE_YOUR_CALM` and a reconnect every half minute, harmless for
-  recording and a hiccup for a live stream.
+  recording and a hiccup for a live stream. A person's session is read
+  under the cookie's name, and the name is the surface's since the console
+  ([§40.1](17-console.md#401-two-surfaces-two-sign-ins)): a session minted
+  before that is not read after the upgrade, so people — the CLI included —
+  sign in again once.
 
 ### 34.6 Ubuntu with systemd
 

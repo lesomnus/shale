@@ -11,3 +11,4 @@ ts/dist
 ts/public
 ts/test
 web/console/dist
+/dist

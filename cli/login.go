@@ -212,13 +212,33 @@ func signIn(ctx context.Context, c *cmd.Config, addr, tenant, alias, password st
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("sign-in refused: %d %s", resp.StatusCode, strings.TrimSpace(string(b)))
 	}
-	for _, ck := range resp.Cookies() {
-		if strings.Contains(ck.Name, "pd_session") {
-			return ck.Name + "=" + ck.Value, nil
+	ck := sessionCookie(resp.Cookies())
+	if ck == nil {
+		return "", errors.New("the sign-in answered no session cookie")
+	}
+
+	return ck.Name + "=" + ck.Value, nil
+}
+
+// sessionCookie is the session among the cookies a sign-in answered with:
+// the one named for it, under whichever name this server gives it -- one
+// per surface since §40.1 (`__Host-shale_tenant`, `shale_cluster`), or
+// payday's own before that -- and failing that the only cookie there is.
+// The CLI sends it back as it was named, so the name is the server's to
+// choose.
+func sessionCookie(cks []*http.Cookie) *http.Cookie {
+	for _, ck := range cks {
+		if ck.Value != "" && (strings.Contains(ck.Name, "shale_") || strings.Contains(ck.Name, "session")) {
+			return ck
+		}
+	}
+	for _, ck := range cks {
+		if ck.Value != "" {
+			return ck
 		}
 	}
 
-	return "", errors.New("the sign-in answered no session cookie")
+	return nil
 }
 
 var _ = pki.CpName
