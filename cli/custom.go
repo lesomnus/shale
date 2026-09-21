@@ -36,6 +36,7 @@ var custom = map[string]string{
 	"object/report-attempt":     "shale.ObjectService.ReportAttempt",
 	"object/report-failure":     "shale.ObjectService.ReportFailure",
 	"object/timeline":           "shale.ObjectService.Timeline",
+	"holder/issue-password":     "shale.HolderService.IssuePassword",
 	"sink/adopt":                "shale.SinkService.Adopt",
 	"sink/retire":               "shale.SinkService.Retire",
 	"sink/reconcile":            "shale.SinkService.Reconcile",

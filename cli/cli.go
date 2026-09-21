@@ -31,6 +31,10 @@ import (
 	"github.com/lesomnus/shale/server/core"
 )
 
+// protoPackage is the proto package this app's entities are declared in,
+// which is what tells its command tree apart from roster's in one process.
+const protoPackage = "shale"
+
 // Cmd is this app's own command line: what payday supplies, what the app
 // has of its own, and the generated verbs of every entity (§32).
 func Cmd(c *cmd.Config) *xli.Command {
@@ -60,26 +64,28 @@ func Cmd(c *cmd.Config) *xli.Command {
 	}
 
 	// Two trees, one per surface (§32): the generated verbs of the cluster's
-	// entities reach the cluster API, the rest the tenant API.
-	if t, err := pdcmd.New(&connector{c: c, cluster: false}); err == nil {
-		for g := range clusterGroups {
-			t.Drop(g)
-		}
-		addCustom(t, c, false)
-		addObjectCommands(t, c)
-		addStateCommands(t, c, false)
-		addProducerCommands(t, c)
-		root.Commands = append(root.Commands, t.Commands()...)
+	// entities reach the cluster API, the rest the tenant API. Built for
+	// this app's own package by name, since roster's entities are in the
+	// process too (§33.1) and a tree of everything would have two `holder`
+	// commands pointed at two different servers.
+	t := pdcmd.NewIn(&connector{c: c, cluster: false}, protoPackage)
+	for g := range clusterGroups {
+		t.Drop(g)
 	}
-	if t, err := pdcmd.New(&connector{c: c, cluster: true}); err == nil {
-		for g := range tenantGroups {
-			t.Drop(g)
-		}
-		addCustom(t, c, true)
-		addStateCommands(t, c, true)
-		addIndexCommands(t, c)
-		root.Commands = append(root.Commands, t.Commands()...)
+	addCustom(t, c, false)
+	addObjectCommands(t, c)
+	addStateCommands(t, c, false)
+	addProducerCommands(t, c)
+	root.Commands = append(root.Commands, t.Commands()...)
+
+	t = pdcmd.NewIn(&connector{c: c, cluster: true}, protoPackage)
+	for g := range tenantGroups {
+		t.Drop(g)
 	}
+	addCustom(t, c, true)
+	addStateCommands(t, c, true)
+	addIndexCommands(t, c)
+	root.Commands = append(root.Commands, t.Commands()...)
 
 	return root
 }
