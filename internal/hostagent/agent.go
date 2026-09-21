@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/auth"
@@ -234,7 +235,7 @@ func (a *Agent) Dial(ctx context.Context) (*grpc.ClientConn, error) {
 		return nil, err
 	}
 
-	var opts []grpc.DialOption
+	opts := []grpc.DialOption{Keepalive()}
 	if plain {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if !a.id.IsZero() {
@@ -255,14 +256,39 @@ func (a *Agent) Dial(ctx context.Context) (*grpc.ClientConn, error) {
 // pinned CA; `plain` is development mode.
 func (a *Agent) DialAddr(ctx context.Context, addr string, plain bool) (*grpc.ClientConn, error) {
 	if plain {
-		return grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		return grpc.NewClient(addr, Keepalive(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	cfg, err := a.tlsConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	return grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+	return grpc.NewClient(addr, Keepalive(), grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+}
+
+// The keepalive between hosts and the CP, and producers and relays
+// (§38.6): a link that stalls, a producer on WiFi above all, is noticed
+// in seconds and redialed, rather than found out by the next call's
+// deadline and ended by the server a minute later.
+const (
+	KeepaliveTime    = 10 * time.Second
+	KeepaliveTimeout = 5 * time.Second
+)
+
+// Keepalive is the client side: a ping every KeepaliveTime on an idle
+// connection too, answered within KeepaliveTimeout or the connection is
+// closed and the next call redials.
+func Keepalive() grpc.DialOption {
+	return grpc.WithKeepaliveParams(keepalive.ClientParameters{Time: KeepaliveTime, Timeout: KeepaliveTimeout, PermitWithoutStream: true})
+}
+
+// KeepaliveServer is the server side of the same: it permits the client's
+// pings, and pings a silent client itself so a dead one is closed.
+func KeepaliveServer() []grpc.ServerOption {
+	return []grpc.ServerOption{
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{MinTime: KeepaliveTime / 2, PermitWithoutStream: true}),
+		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 3 * KeepaliveTime, Timeout: 2 * KeepaliveTimeout}),
+	}
 }
 
 // HTTPClient is a client for the data planes: it trusts the pinned CA and

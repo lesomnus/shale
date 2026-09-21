@@ -167,6 +167,11 @@ next start and is recognized by its hardware identity
   laminae are UNAVAILABLE and placement skips it through missed heartbeats.
   No data moves, so no disruption budget beyond "one at a time" is needed.
   A relay restart drops its sessions for a few seconds and nothing else.
+  The Control Plane and the relays go before the hosts: a host pings its
+  connections every 10 s ([§38.6](15-producer.md#386-health-and-heartbeats)),
+  and a server from before the keepalive answers that with `GOAWAY
+  ENHANCE_YOUR_CALM` and a reconnect every half minute, harmless for
+  recording and a hiccup for a live stream.
 
 ### 34.6 Ubuntu with systemd
 

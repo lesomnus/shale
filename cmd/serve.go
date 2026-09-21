@@ -43,6 +43,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/dsn"
 	"github.com/lesomnus/shale/internal/ent"
+	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/internal/proxyproto"
@@ -434,7 +435,7 @@ func (s *Server) cpKeyPair() (string, string) {
 func (s *Server) nodeDialer() func(ctx context.Context, addr string, id pdid.Id) (*grpc.ClientConn, error) {
 	return func(ctx context.Context, addr string, id pdid.Id) (*grpc.ClientConn, error) {
 		if s.cfg.IsDev() && s.cfg.Control.CertFile == "" {
-			return grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			return grpc.NewClient(addr, hostagent.Keepalive(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		}
 		certFile, keyFile := s.cpKeyPair()
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
@@ -454,7 +455,7 @@ func (s *Server) nodeDialer() func(ctx context.Context, addr string, id pdid.Id)
 			VerifyPeerCertificate: pki.VerifyPeer(pool, id),
 		}
 
-		return grpc.NewClient(addr, grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+		return grpc.NewClient(addr, hostagent.Keepalive(), grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
 	}
 }
 
@@ -478,6 +479,7 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 		WithUnary(grpcx.ClosedUnary(sc.Closed()))
 
 	os := append(opts, chain.ServerOptions()...)
+	os = append(os, hostagent.KeepaliveServer()...)
 	if sc.Tls.Active() {
 		vs, err := sc.GrpcOptions()
 		if err != nil {

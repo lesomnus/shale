@@ -166,7 +166,7 @@ func (r *Relay) Run(ctx context.Context) error {
 
 	// Ingest: producers dial with a publish token; TLS with the host
 	// certificate, no client certificate needed (§39.7).
-	var opts []grpc.ServerOption
+	opts := hostagent.KeepaliveServer()
 	if tlsCfg != nil {
 		c := tlsCfg.Clone()
 		c.NextProtos = []string{"h2"}

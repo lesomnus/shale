@@ -297,6 +297,18 @@ comes from it ([§35.3](12-api.md#353-entities), [§31](09-operations.md#31-obse
 A producer whose heartbeats have been missing for `producer_down_after`
 (90 s, three heartbeats) is shown as down, and so are all of its sources.
 
+**A link that stalls.** Every connection between a host and the Control
+Plane, and between a producer and its relay, carries an HTTP/2 keepalive:
+a ping every 10 s, on an idle connection too, answered within 5 s or the
+connection is closed and the next call redials. A producer on WiFi sees
+its link stall now and then, for tens of seconds, most often when a live
+session starts and the tee's bytes join the uploads; without the
+keepalive that was a heartbeat timed out at its 10 s deadline and a
+connection the server ended a minute later. With it the stall costs one
+call and a redial. What the stall does to the bytes themselves is the
+uplink's problem ([§38.5](#385-choosing-the-ceiling)): recording is
+retained and retried, and live viewers get what the link carries.
+
 ### 38.7 Live output
 
 The producer never serves viewers. It keeps one gRPC stream to the relay

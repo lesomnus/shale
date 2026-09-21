@@ -382,7 +382,7 @@ func (n *Node) tlsConfig() (*tls.Config, error) {
 // controlServer is the NodeControl gRPC service: over mTLS it accepts one
 // peer, the Control Plane (§35.7).
 func (n *Node) controlServer(tlsCfg *tls.Config) *grpc.Server {
-	var opts []grpc.ServerOption
+	opts := hostagent.KeepaliveServer()
 	if tlsCfg != nil {
 		c := tlsCfg.Clone()
 		c.ClientAuth = tls.RequireAndVerifyClientCert
