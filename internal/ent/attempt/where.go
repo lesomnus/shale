@@ -101,9 +101,9 @@ func SiteId(v uuid.UUID) predicate.Attempt {
 	return predicate.Attempt(sql.FieldEQ(FieldSiteId, v))
 }
 
-// ObjectId applies equality check predicate on the "object_id" field. It's identical to ObjectIdEQ.
-func ObjectId(v uuid.UUID) predicate.Attempt {
-	return predicate.Attempt(sql.FieldEQ(FieldObjectId, v))
+// LaminaId applies equality check predicate on the "lamina_id" field. It's identical to LaminaIdEQ.
+func LaminaId(v uuid.UUID) predicate.Attempt {
+	return predicate.Attempt(sql.FieldEQ(FieldLaminaId, v))
 }
 
 // SinkId applies equality check predicate on the "sink_id" field. It's identical to SinkIdEQ.
@@ -501,24 +501,24 @@ func SiteIdNotNil() predicate.Attempt {
 	return predicate.Attempt(sql.FieldNotNull(FieldSiteId))
 }
 
-// ObjectIdEQ applies the EQ predicate on the "object_id" field.
-func ObjectIdEQ(v uuid.UUID) predicate.Attempt {
-	return predicate.Attempt(sql.FieldEQ(FieldObjectId, v))
+// LaminaIdEQ applies the EQ predicate on the "lamina_id" field.
+func LaminaIdEQ(v uuid.UUID) predicate.Attempt {
+	return predicate.Attempt(sql.FieldEQ(FieldLaminaId, v))
 }
 
-// ObjectIdNEQ applies the NEQ predicate on the "object_id" field.
-func ObjectIdNEQ(v uuid.UUID) predicate.Attempt {
-	return predicate.Attempt(sql.FieldNEQ(FieldObjectId, v))
+// LaminaIdNEQ applies the NEQ predicate on the "lamina_id" field.
+func LaminaIdNEQ(v uuid.UUID) predicate.Attempt {
+	return predicate.Attempt(sql.FieldNEQ(FieldLaminaId, v))
 }
 
-// ObjectIdIn applies the In predicate on the "object_id" field.
-func ObjectIdIn(vs ...uuid.UUID) predicate.Attempt {
-	return predicate.Attempt(sql.FieldIn(FieldObjectId, vs...))
+// LaminaIdIn applies the In predicate on the "lamina_id" field.
+func LaminaIdIn(vs ...uuid.UUID) predicate.Attempt {
+	return predicate.Attempt(sql.FieldIn(FieldLaminaId, vs...))
 }
 
-// ObjectIdNotIn applies the NotIn predicate on the "object_id" field.
-func ObjectIdNotIn(vs ...uuid.UUID) predicate.Attempt {
-	return predicate.Attempt(sql.FieldNotIn(FieldObjectId, vs...))
+// LaminaIdNotIn applies the NotIn predicate on the "lamina_id" field.
+func LaminaIdNotIn(vs ...uuid.UUID) predicate.Attempt {
+	return predicate.Attempt(sql.FieldNotIn(FieldLaminaId, vs...))
 }
 
 // SinkIdEQ applies the EQ predicate on the "sink_id" field.
@@ -607,21 +607,21 @@ func HasSiteWith(preds ...predicate.Site) predicate.Attempt {
 	})
 }
 
-// HasObject applies the HasEdge predicate on the "object" edge.
-func HasObject() predicate.Attempt {
+// HasLamina applies the HasEdge predicate on the "lamina" edge.
+func HasLamina() predicate.Attempt {
 	return predicate.Attempt(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, ObjectTable, ObjectColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, LaminaTable, LaminaColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasObjectWith applies the HasEdge predicate on the "object" edge with a given conditions (other predicates).
-func HasObjectWith(preds ...predicate.Object) predicate.Attempt {
+// HasLaminaWith applies the HasEdge predicate on the "lamina" edge with a given conditions (other predicates).
+func HasLaminaWith(preds ...predicate.Lamina) predicate.Attempt {
 	return predicate.Attempt(func(s *sql.Selector) {
-		step := newObjectStep()
+		step := newLaminaStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

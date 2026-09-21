@@ -1,4 +1,4 @@
-// Package placement chooses sinks for new objects (§11, and the decision
+// Package placement chooses sinks for new laminae (§11, and the decision
 // report's D1-D9).
 //
 // It is a pure function of the key, the cluster as the caller describes it,

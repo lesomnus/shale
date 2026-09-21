@@ -18,7 +18,7 @@ import (
 
 // TestSegmentsAfterStops is §15 and §12.1 with a camera that stops and comes
 // back within a slot: the recording plays once per capture, so every
-// restart starts a new segment in the same slot, and each gets an object
+// restart starts a new segment in the same slot, and each gets a lamina
 // of its own, none refused for a slot "already stored".
 func TestSegmentsAfterStops(t *testing.T) {
 	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
@@ -69,13 +69,13 @@ func TestSegmentsAfterStops(t *testing.T) {
 	}.Build())
 	require.NoError(t, err)
 
-	// Every play that ended is an object of its own: as many committed
-	// objects as capture restarts (the play in progress has none yet), and
-	// at least four of them. A play folded into the object before it would
+	// Every play that ended is a lamina of its own: as many committed
+	// laminae as capture restarts (the play in progress has none yet), and
+	// at least four of them. A play folded into the lamina before it would
 	// leave the count one short for good, the plays being identical bytes
 	// the node takes as a retry.
-	objects := api.NewObjectServiceClient(admin)
-	var committed []*api.Object
+	laminae := api.NewLaminaServiceClient(admin)
+	var committed []*api.Lamina
 	require.Eventually(t, func() bool {
 		me, err := producers.Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: pending.GetId()}.Build()}.Build())
 		if err != nil {
@@ -85,8 +85,8 @@ func TestSegmentsAfterStops(t *testing.T) {
 		for _, r := range me.GetStatus().GetSources() {
 			restarts += r.GetCaptureRestarts()
 		}
-		vs, err := objects.List(ctx, api.ObjectListRequest_builder{
-			Filters: []*api.ObjectFilter{api.ObjectFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
+		vs, err := laminae.List(ctx, api.LaminaListRequest_builder{
+			Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
 			Size:    100,
 		}.Build())
 		if err != nil {
@@ -95,20 +95,20 @@ func TestSegmentsAfterStops(t *testing.T) {
 		committed = committed[:0]
 		for _, o := range vs.GetItems() {
 			switch o.GetState() {
-			case api.ObjectState_OBJECT_STATE_COMMITTED:
+			case api.LaminaState_LAMINA_STATE_COMMITTED:
 				committed = append(committed, o)
-			case api.ObjectState_OBJECT_STATE_LOST:
-				t.Fatalf("object %x is LOST", o.GetId())
+			case api.LaminaState_LAMINA_STATE_LOST:
+				t.Fatalf("lamina %x is LOST", o.GetId())
 			}
 		}
 
 		return len(committed) >= 4 && int64(len(committed)) >= restarts
-	}, 120*time.Second, 500*time.Millisecond, "every ended play is a committed object")
+	}, 120*time.Second, 500*time.Millisecond, "every ended play is a committed lamina")
 	keys := map[string]bool{}
 	for _, o := range committed {
-		keys[o.GetObjectKey()] = true
+		keys[o.GetLaminaKey()] = true
 	}
-	require.Len(t, keys, len(committed), "one key per object")
+	require.Len(t, keys, len(committed), "one key per lamina")
 
 	// They tile the recording, each ending before the next begins, and
 	// at least two share a slot: the plays are seconds, the slots minutes.

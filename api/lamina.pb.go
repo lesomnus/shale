@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        (unknown)
-// source: shale/object.proto
+// source: shale/lamina.proto
 
 package api
 
@@ -23,57 +23,57 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ObjectState is the object machine of §8.
-type ObjectState int32
+// LaminaState is the lamina machine of §8.
+type LaminaState int32
 
 const (
-	ObjectState_OBJECT_STATE_UNSPECIFIED ObjectState = 0
-	ObjectState_OBJECT_STATE_PENDING     ObjectState = 1
-	ObjectState_OBJECT_STATE_COMMITTED   ObjectState = 2
-	ObjectState_OBJECT_STATE_DELETING    ObjectState = 3
-	ObjectState_OBJECT_STATE_DELETED     ObjectState = 4
-	ObjectState_OBJECT_STATE_LOST        ObjectState = 5
+	LaminaState_LAMINA_STATE_UNSPECIFIED LaminaState = 0
+	LaminaState_LAMINA_STATE_PENDING     LaminaState = 1
+	LaminaState_LAMINA_STATE_COMMITTED   LaminaState = 2
+	LaminaState_LAMINA_STATE_DELETING    LaminaState = 3
+	LaminaState_LAMINA_STATE_DELETED     LaminaState = 4
+	LaminaState_LAMINA_STATE_LOST        LaminaState = 5
 )
 
-// Enum value maps for ObjectState.
+// Enum value maps for LaminaState.
 var (
-	ObjectState_name = map[int32]string{
-		0: "OBJECT_STATE_UNSPECIFIED",
-		1: "OBJECT_STATE_PENDING",
-		2: "OBJECT_STATE_COMMITTED",
-		3: "OBJECT_STATE_DELETING",
-		4: "OBJECT_STATE_DELETED",
-		5: "OBJECT_STATE_LOST",
+	LaminaState_name = map[int32]string{
+		0: "LAMINA_STATE_UNSPECIFIED",
+		1: "LAMINA_STATE_PENDING",
+		2: "LAMINA_STATE_COMMITTED",
+		3: "LAMINA_STATE_DELETING",
+		4: "LAMINA_STATE_DELETED",
+		5: "LAMINA_STATE_LOST",
 	}
-	ObjectState_value = map[string]int32{
-		"OBJECT_STATE_UNSPECIFIED": 0,
-		"OBJECT_STATE_PENDING":     1,
-		"OBJECT_STATE_COMMITTED":   2,
-		"OBJECT_STATE_DELETING":    3,
-		"OBJECT_STATE_DELETED":     4,
-		"OBJECT_STATE_LOST":        5,
+	LaminaState_value = map[string]int32{
+		"LAMINA_STATE_UNSPECIFIED": 0,
+		"LAMINA_STATE_PENDING":     1,
+		"LAMINA_STATE_COMMITTED":   2,
+		"LAMINA_STATE_DELETING":    3,
+		"LAMINA_STATE_DELETED":     4,
+		"LAMINA_STATE_LOST":        5,
 	}
 )
 
-func (x ObjectState) Enum() *ObjectState {
-	p := new(ObjectState)
+func (x LaminaState) Enum() *LaminaState {
+	p := new(LaminaState)
 	*p = x
 	return p
 }
 
-func (x ObjectState) String() string {
+func (x LaminaState) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ObjectState) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_object_proto_enumTypes[0].Descriptor()
+func (LaminaState) Descriptor() protoreflect.EnumDescriptor {
+	return file_shale_lamina_proto_enumTypes[0].Descriptor()
 }
 
-func (ObjectState) Type() protoreflect.EnumType {
-	return &file_shale_object_proto_enumTypes[0]
+func (LaminaState) Type() protoreflect.EnumType {
+	return &file_shale_lamina_proto_enumTypes[0]
 }
 
-func (x ObjectState) Number() protoreflect.EnumNumber {
+func (x LaminaState) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
@@ -120,23 +120,23 @@ func (x AttemptState) String() string {
 }
 
 func (AttemptState) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_object_proto_enumTypes[1].Descriptor()
+	return file_shale_lamina_proto_enumTypes[1].Descriptor()
 }
 
 func (AttemptState) Type() protoreflect.EnumType {
-	return &file_shale_object_proto_enumTypes[1]
+	return &file_shale_lamina_proto_enumTypes[1]
 }
 
 func (x AttemptState) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Object is the immutable unit of storage, a video segment (§23). Its row is
+// Lamina is the immutable unit of storage, a video segment (§23). Its row is
 // the index (§23.3); the truth lives in the sink's xattrs.
 //
 // Never erased through the API: GC moves it to DELETED and the row is pruned
 // later by row retention (§20.4), which is a hard erase the CP performs.
-type Object struct {
+type Lamina struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id               []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Tenant           *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
@@ -144,8 +144,8 @@ type Object struct {
 	xxx_hidden_Set              *Set                   `protobuf:"bytes,8,opt,name=set"`
 	xxx_hidden_Source           *Source                `protobuf:"bytes,9,opt,name=source"`
 	xxx_hidden_Sink             *Sink                  `protobuf:"bytes,10,opt,name=sink"`
-	xxx_hidden_ObjectKey        string                 `protobuf:"bytes,11,opt,name=object_key,json=objectKey"`
-	xxx_hidden_State            ObjectState            `protobuf:"varint,12,opt,name=state,enum=shale.ObjectState"`
+	xxx_hidden_LaminaKey        string                 `protobuf:"bytes,11,opt,name=lamina_key,json=laminaKey"`
+	xxx_hidden_State            LaminaState            `protobuf:"varint,12,opt,name=state,enum=shale.LaminaState"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateCreated      *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_DateStarted      *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=date_started,json=dateStarted"`
@@ -165,21 +165,21 @@ type Object struct {
 	sizeCache                   protoimpl.SizeCache
 }
 
-func (x *Object) Reset() {
-	*x = Object{}
-	mi := &file_shale_object_proto_msgTypes[0]
+func (x *Lamina) Reset() {
+	*x = Lamina{}
+	mi := &file_shale_lamina_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Object) String() string {
+func (x *Lamina) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Object) ProtoMessage() {}
+func (*Lamina) ProtoMessage() {}
 
-func (x *Object) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_proto_msgTypes[0]
+func (x *Lamina) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -190,409 +190,409 @@ func (x *Object) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *Object) GetId() []byte {
+func (x *Lamina) GetId() []byte {
 	if x != nil {
 		return x.xxx_hidden_Id
 	}
 	return nil
 }
 
-func (x *Object) GetTenant() *Tenant {
+func (x *Lamina) GetTenant() *Tenant {
 	if x != nil {
 		return x.xxx_hidden_Tenant
 	}
 	return nil
 }
 
-func (x *Object) GetSite() *Site {
+func (x *Lamina) GetSite() *Site {
 	if x != nil {
 		return x.xxx_hidden_Site
 	}
 	return nil
 }
 
-func (x *Object) GetSet() *Set {
+func (x *Lamina) GetSet() *Set {
 	if x != nil {
 		return x.xxx_hidden_Set
 	}
 	return nil
 }
 
-func (x *Object) GetSource() *Source {
+func (x *Lamina) GetSource() *Source {
 	if x != nil {
 		return x.xxx_hidden_Source
 	}
 	return nil
 }
 
-func (x *Object) GetSink() *Sink {
+func (x *Lamina) GetSink() *Sink {
 	if x != nil {
 		return x.xxx_hidden_Sink
 	}
 	return nil
 }
 
-func (x *Object) GetObjectKey() string {
+func (x *Lamina) GetLaminaKey() string {
 	if x != nil {
-		return x.xxx_hidden_ObjectKey
+		return x.xxx_hidden_LaminaKey
 	}
 	return ""
 }
 
-func (x *Object) GetState() ObjectState {
+func (x *Lamina) GetState() LaminaState {
 	if x != nil {
 		return x.xxx_hidden_State
 	}
-	return ObjectState_OBJECT_STATE_UNSPECIFIED
+	return LaminaState_LAMINA_STATE_UNSPECIFIED
 }
 
-func (x *Object) GetDateUpdated() *timestamppb.Timestamp {
+func (x *Lamina) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
 	}
 	return nil
 }
 
-func (x *Object) GetDateCreated() *timestamppb.Timestamp {
+func (x *Lamina) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
 	}
 	return nil
 }
 
-func (x *Object) GetDateStarted() *timestamppb.Timestamp {
+func (x *Lamina) GetDateStarted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateStarted
 	}
 	return nil
 }
 
-func (x *Object) GetDateEnded() *timestamppb.Timestamp {
+func (x *Lamina) GetDateEnded() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateEnded
 	}
 	return nil
 }
 
-func (x *Object) GetEndedEstimated() bool {
+func (x *Lamina) GetEndedEstimated() bool {
 	if x != nil {
 		return x.xxx_hidden_EndedEstimated
 	}
 	return false
 }
 
-func (x *Object) GetSize() int64 {
+func (x *Lamina) GetSize() int64 {
 	if x != nil {
 		return x.xxx_hidden_Size
 	}
 	return 0
 }
 
-func (x *Object) GetIncomplete() bool {
+func (x *Lamina) GetIncomplete() bool {
 	if x != nil {
 		return x.xxx_hidden_Incomplete
 	}
 	return false
 }
 
-func (x *Object) GetDateExpired() *timestamppb.Timestamp {
+func (x *Lamina) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
 
-func (x *Object) GetDateDeleted() *timestamppb.Timestamp {
+func (x *Lamina) GetDateDeleted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateDeleted
 	}
 	return nil
 }
 
-func (x *Object) GetDatesSynced() bool {
+func (x *Lamina) GetDatesSynced() bool {
 	if x != nil {
 		return x.xxx_hidden_DatesSynced
 	}
 	return false
 }
 
-func (x *Object) GetPlacementVersion() int64 {
+func (x *Lamina) GetPlacementVersion() int64 {
 	if x != nil {
 		return x.xxx_hidden_PlacementVersion
 	}
 	return 0
 }
 
-func (x *Object) GetDateCommitted() *timestamppb.Timestamp {
+func (x *Lamina) GetDateCommitted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCommitted
 	}
 	return nil
 }
 
-func (x *Object) GetDateFinished() *timestamppb.Timestamp {
+func (x *Lamina) GetDateFinished() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateFinished
 	}
 	return nil
 }
 
-func (x *Object) GetChecksum() []byte {
+func (x *Lamina) GetChecksum() []byte {
 	if x != nil {
 		return x.xxx_hidden_Checksum
 	}
 	return nil
 }
 
-func (x *Object) GetEpoch() int64 {
+func (x *Lamina) GetEpoch() int64 {
 	if x != nil {
 		return x.xxx_hidden_Epoch
 	}
 	return 0
 }
 
-func (x *Object) SetId(v []byte) {
+func (x *Lamina) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
 }
 
-func (x *Object) SetTenant(v *Tenant) {
+func (x *Lamina) SetTenant(v *Tenant) {
 	x.xxx_hidden_Tenant = v
 }
 
-func (x *Object) SetSite(v *Site) {
+func (x *Lamina) SetSite(v *Site) {
 	x.xxx_hidden_Site = v
 }
 
-func (x *Object) SetSet(v *Set) {
+func (x *Lamina) SetSet(v *Set) {
 	x.xxx_hidden_Set = v
 }
 
-func (x *Object) SetSource(v *Source) {
+func (x *Lamina) SetSource(v *Source) {
 	x.xxx_hidden_Source = v
 }
 
-func (x *Object) SetSink(v *Sink) {
+func (x *Lamina) SetSink(v *Sink) {
 	x.xxx_hidden_Sink = v
 }
 
-func (x *Object) SetObjectKey(v string) {
-	x.xxx_hidden_ObjectKey = v
+func (x *Lamina) SetLaminaKey(v string) {
+	x.xxx_hidden_LaminaKey = v
 }
 
-func (x *Object) SetState(v ObjectState) {
+func (x *Lamina) SetState(v LaminaState) {
 	x.xxx_hidden_State = v
 }
 
-func (x *Object) SetDateUpdated(v *timestamppb.Timestamp) {
+func (x *Lamina) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
 
-func (x *Object) SetDateCreated(v *timestamppb.Timestamp) {
+func (x *Lamina) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
 
-func (x *Object) SetDateStarted(v *timestamppb.Timestamp) {
+func (x *Lamina) SetDateStarted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateStarted = v
 }
 
-func (x *Object) SetDateEnded(v *timestamppb.Timestamp) {
+func (x *Lamina) SetDateEnded(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateEnded = v
 }
 
-func (x *Object) SetEndedEstimated(v bool) {
+func (x *Lamina) SetEndedEstimated(v bool) {
 	x.xxx_hidden_EndedEstimated = v
 }
 
-func (x *Object) SetSize(v int64) {
+func (x *Lamina) SetSize(v int64) {
 	x.xxx_hidden_Size = v
 }
 
-func (x *Object) SetIncomplete(v bool) {
+func (x *Lamina) SetIncomplete(v bool) {
 	x.xxx_hidden_Incomplete = v
 }
 
-func (x *Object) SetDateExpired(v *timestamppb.Timestamp) {
+func (x *Lamina) SetDateExpired(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpired = v
 }
 
-func (x *Object) SetDateDeleted(v *timestamppb.Timestamp) {
+func (x *Lamina) SetDateDeleted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateDeleted = v
 }
 
-func (x *Object) SetDatesSynced(v bool) {
+func (x *Lamina) SetDatesSynced(v bool) {
 	x.xxx_hidden_DatesSynced = v
 }
 
-func (x *Object) SetPlacementVersion(v int64) {
+func (x *Lamina) SetPlacementVersion(v int64) {
 	x.xxx_hidden_PlacementVersion = v
 }
 
-func (x *Object) SetDateCommitted(v *timestamppb.Timestamp) {
+func (x *Lamina) SetDateCommitted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCommitted = v
 }
 
-func (x *Object) SetDateFinished(v *timestamppb.Timestamp) {
+func (x *Lamina) SetDateFinished(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateFinished = v
 }
 
-func (x *Object) SetChecksum(v []byte) {
+func (x *Lamina) SetChecksum(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Checksum = v
 }
 
-func (x *Object) SetEpoch(v int64) {
+func (x *Lamina) SetEpoch(v int64) {
 	x.xxx_hidden_Epoch = v
 }
 
-func (x *Object) HasTenant() bool {
+func (x *Lamina) HasTenant() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *Object) HasSite() bool {
+func (x *Lamina) HasSite() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Site != nil
 }
 
-func (x *Object) HasSet() bool {
+func (x *Lamina) HasSet() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Set != nil
 }
 
-func (x *Object) HasSource() bool {
+func (x *Lamina) HasSource() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Source != nil
 }
 
-func (x *Object) HasSink() bool {
+func (x *Lamina) HasSink() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Sink != nil
 }
 
-func (x *Object) HasDateUpdated() bool {
+func (x *Lamina) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateUpdated != nil
 }
 
-func (x *Object) HasDateCreated() bool {
+func (x *Lamina) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateCreated != nil
 }
 
-func (x *Object) HasDateStarted() bool {
+func (x *Lamina) HasDateStarted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateStarted != nil
 }
 
-func (x *Object) HasDateEnded() bool {
+func (x *Lamina) HasDateEnded() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateEnded != nil
 }
 
-func (x *Object) HasDateExpired() bool {
+func (x *Lamina) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *Object) HasDateDeleted() bool {
+func (x *Lamina) HasDateDeleted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateDeleted != nil
 }
 
-func (x *Object) HasDateCommitted() bool {
+func (x *Lamina) HasDateCommitted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateCommitted != nil
 }
 
-func (x *Object) HasDateFinished() bool {
+func (x *Lamina) HasDateFinished() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateFinished != nil
 }
 
-func (x *Object) ClearTenant() {
+func (x *Lamina) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *Object) ClearSite() {
+func (x *Lamina) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
-func (x *Object) ClearSet() {
+func (x *Lamina) ClearSet() {
 	x.xxx_hidden_Set = nil
 }
 
-func (x *Object) ClearSource() {
+func (x *Lamina) ClearSource() {
 	x.xxx_hidden_Source = nil
 }
 
-func (x *Object) ClearSink() {
+func (x *Lamina) ClearSink() {
 	x.xxx_hidden_Sink = nil
 }
 
-func (x *Object) ClearDateUpdated() {
+func (x *Lamina) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
-func (x *Object) ClearDateCreated() {
+func (x *Lamina) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
 
-func (x *Object) ClearDateStarted() {
+func (x *Lamina) ClearDateStarted() {
 	x.xxx_hidden_DateStarted = nil
 }
 
-func (x *Object) ClearDateEnded() {
+func (x *Lamina) ClearDateEnded() {
 	x.xxx_hidden_DateEnded = nil
 }
 
-func (x *Object) ClearDateExpired() {
+func (x *Lamina) ClearDateExpired() {
 	x.xxx_hidden_DateExpired = nil
 }
 
-func (x *Object) ClearDateDeleted() {
+func (x *Lamina) ClearDateDeleted() {
 	x.xxx_hidden_DateDeleted = nil
 }
 
-func (x *Object) ClearDateCommitted() {
+func (x *Lamina) ClearDateCommitted() {
 	x.xxx_hidden_DateCommitted = nil
 }
 
-func (x *Object) ClearDateFinished() {
+func (x *Lamina) ClearDateFinished() {
 	x.xxx_hidden_DateFinished = nil
 }
 
-type Object_builder struct {
+type Lamina_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Id     []byte
@@ -600,17 +600,17 @@ type Object_builder struct {
 	Site   *Site
 	Set    *Set
 	Source *Source
-	// The sink the object was committed to; null until then.
+	// The sink the lamina was committed to; null until then.
 	Sink *Sink
-	// Path within the sink; with the sink, the object's location.
-	ObjectKey   string
-	State       ObjectState
+	// Path within the sink; with the sink, the lamina's location.
+	LaminaKey   string
+	State       LaminaState
 	DateUpdated *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
 	// Data time (§10): declared by the producer.
 	DateStarted *timestamppb.Timestamp
 	DateEnded   *timestamppb.Timestamp
-	// date_ended is an estimate for an incomplete object (§19).
+	// date_ended is an estimate for an incomplete lamina (§19).
 	EndedEstimated bool
 	Size           int64
 	Incomplete     bool
@@ -620,16 +620,16 @@ type Object_builder struct {
 	DatesSynced      bool
 	PlacementVersion int64
 	DateCommitted    *timestamppb.Timestamp
-	// When the object became DELETED or LOST, for row retention (§20.4).
+	// When the lamina became DELETED or LOST, for row retention (§20.4).
 	DateFinished *timestamppb.Timestamp
 	Checksum     []byte
 	// The epoch bucket date_started falls in, in seconds since the epoch, so
-	// one index answers "the objects of this source in this epoch".
+	// one index answers "the laminae of this source in this epoch".
 	Epoch int64
 }
 
-func (b0 Object_builder) Build() *Object {
-	m0 := &Object{}
+func (b0 Lamina_builder) Build() *Lamina {
+	m0 := &Lamina{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
@@ -638,7 +638,7 @@ func (b0 Object_builder) Build() *Object {
 	x.xxx_hidden_Set = b.Set
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_Sink = b.Sink
-	x.xxx_hidden_ObjectKey = b.ObjectKey
+	x.xxx_hidden_LaminaKey = b.LaminaKey
 	x.xxx_hidden_State = b.State
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -658,15 +658,15 @@ func (b0 Object_builder) Build() *Object {
 	return m0
 }
 
-// Attempt is one write attempt of an object: one candidate of one allocation
-// (§8). FAILED and ABANDONED are the CP's guesses; a late ObjectStored still
+// Attempt is one write attempt of a lamina: one candidate of one allocation
+// (§8). FAILED and ABANDONED are the CP's guesses; a late LaminaStored still
 // moves it to STORED or DUPLICATE (§14).
 type Attempt struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Tenant        *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Site          *Site                  `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Object        *Object                `protobuf:"bytes,8,opt,name=object"`
+	xxx_hidden_Lamina        *Lamina                `protobuf:"bytes,8,opt,name=lamina"`
 	xxx_hidden_Sink          *Sink                  `protobuf:"bytes,9,opt,name=sink"`
 	xxx_hidden_Node          *Node                  `protobuf:"bytes,10,opt,name=node"`
 	xxx_hidden_State         AttemptState           `protobuf:"varint,11,opt,name=state,enum=shale.AttemptState"`
@@ -682,7 +682,7 @@ type Attempt struct {
 
 func (x *Attempt) Reset() {
 	*x = Attempt{}
-	mi := &file_shale_object_proto_msgTypes[1]
+	mi := &file_shale_lamina_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -694,7 +694,7 @@ func (x *Attempt) String() string {
 func (*Attempt) ProtoMessage() {}
 
 func (x *Attempt) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_proto_msgTypes[1]
+	mi := &file_shale_lamina_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -726,9 +726,9 @@ func (x *Attempt) GetSite() *Site {
 	return nil
 }
 
-func (x *Attempt) GetObject() *Object {
+func (x *Attempt) GetLamina() *Lamina {
 	if x != nil {
-		return x.xxx_hidden_Object
+		return x.xxx_hidden_Lamina
 	}
 	return nil
 }
@@ -811,8 +811,8 @@ func (x *Attempt) SetSite(v *Site) {
 	x.xxx_hidden_Site = v
 }
 
-func (x *Attempt) SetObject(v *Object) {
-	x.xxx_hidden_Object = v
+func (x *Attempt) SetLamina(v *Lamina) {
+	x.xxx_hidden_Lamina = v
 }
 
 func (x *Attempt) SetSink(v *Sink) {
@@ -865,11 +865,11 @@ func (x *Attempt) HasSite() bool {
 	return x.xxx_hidden_Site != nil
 }
 
-func (x *Attempt) HasObject() bool {
+func (x *Attempt) HasLamina() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Object != nil
+	return x.xxx_hidden_Lamina != nil
 }
 
 func (x *Attempt) HasSink() bool {
@@ -922,8 +922,8 @@ func (x *Attempt) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
-func (x *Attempt) ClearObject() {
-	x.xxx_hidden_Object = nil
+func (x *Attempt) ClearLamina() {
+	x.xxx_hidden_Lamina = nil
 }
 
 func (x *Attempt) ClearSink() {
@@ -956,7 +956,7 @@ type Attempt_builder struct {
 	Id     []byte
 	Tenant *Tenant
 	Site   *Site
-	Object *Object
+	Lamina *Lamina
 	Sink   *Sink
 	// The node the sink was on when the attempt was allocated.
 	Node          *Node
@@ -978,7 +978,7 @@ func (b0 Attempt_builder) Build() *Attempt {
 	x.xxx_hidden_Id = b.Id
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
-	x.xxx_hidden_Object = b.Object
+	x.xxx_hidden_Lamina = b.Lamina
 	x.xxx_hidden_Sink = b.Sink
 	x.xxx_hidden_Node = b.Node
 	x.xxx_hidden_State = b.State
@@ -991,12 +991,12 @@ func (b0 Attempt_builder) Build() *Attempt {
 	return m0
 }
 
-var File_shale_object_proto protoreflect.FileDescriptor
+var File_shale_lamina_proto protoreflect.FileDescriptor
 
-const file_shale_object_proto_rawDesc = "" +
+const file_shale_lamina_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/object.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xb6\v\n" +
-	"\x06Object\x12\x1b\n" +
+	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xb6\v\n" +
+	"\x06Lamina\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
 	"\x04site\x18\x03 \x01(\v2\v.shale.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12$\n" +
@@ -1006,8 +1006,8 @@ const file_shale_object_proto_rawDesc = "" +
 	"\x04sink\x18\n" +
 	" \x01(\v2\v.shale.SinkB\x06\xf2\x82\x16\x028\x01R\x04sink\x12\x1d\n" +
 	"\n" +
-	"object_key\x18\v \x01(\tR\tobjectKey\x12(\n" +
-	"\x05state\x18\f \x01(\x0e2\x12.shale.ObjectStateR\x05state\x12F\n" +
+	"lamina_key\x18\v \x01(\tR\tlaminaKey\x12(\n" +
+	"\x05state\x18\f \x01(\x0e2\x12.shale.LaminaStateR\x05state\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12F\n" +
 	"\fdate_started\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x82\x01\x00R\vdateStarted\x12A\n" +
@@ -1036,7 +1036,7 @@ const file_shale_object_proto_rawDesc = "" +
 	"\x04sink\x10\n" +
 	"\x1a\x0e\n" +
 	"\n" +
-	"object_key\x10\v\x1a \x12\x02gc\x1a\b\n" +
+	"lamina_key\x10\v\x1a \x12\x02gc\x1a\b\n" +
 	"\x04sink\x10\n" +
 	"\x1a\x10\n" +
 	"\fdate_expired\x10\x15\x1a%\x12\x05state\x1a\t\n" +
@@ -1058,7 +1058,7 @@ const file_shale_object_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
 	"\x04site\x18\x03 \x01(\v2\v.shale.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12-\n" +
-	"\x06object\x18\b \x01(\v2\r.shale.ObjectB\x06\xf2\x82\x16\x02@\x01R\x06object\x12'\n" +
+	"\x06lamina\x18\b \x01(\v2\r.shale.LaminaB\x06\xf2\x82\x16\x02@\x01R\x06lamina\x12'\n" +
 	"\x04sink\x18\t \x01(\v2\v.shale.SinkB\x06\xf2\x82\x16\x02@\x01R\x04sink\x12'\n" +
 	"\x04node\x18\n" +
 	" \x01(\v2\v.shale.NodeB\x06\xf2\x82\x16\x02@\x01R\x04node\x12)\n" +
@@ -1070,9 +1070,9 @@ const file_shale_object_proto_rawDesc = "" +
 	"\rdate_finished\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateFinished\x12\x12\n" +
 	"\x04rank\x18\x12 \x01(\x05R\x04rank:\xc5\x01\xca\xfc\x15s\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x1a&\x12\x06object\x1a\n" +
+	"\x02id\x10\x01\x1a&\x12\x06lamina\x1a\n" +
 	"\n" +
-	"\x06object\x10\b\x1a\x10\n" +
+	"\x06lamina\x10\b\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a#\x12\x04open\x1a\t\n" +
 	"\x05state\x10\v\x1a\x10\n" +
 	"\fdate_expires\x10\x10\x8a\xbb\x16J\b\n" +
@@ -1085,16 +1085,16 @@ const file_shale_object_proto_rawDesc = "" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\b\n" +
-	"\x06object\x1a\x06\n" +
+	"\x06lamina\x1a\x06\n" +
 	"\x04sink 2(\xf4\x03B\x02\n" +
 	"\x00*\xad\x01\n" +
-	"\vObjectState\x12\x1c\n" +
-	"\x18OBJECT_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
-	"\x14OBJECT_STATE_PENDING\x10\x01\x12\x1a\n" +
-	"\x16OBJECT_STATE_COMMITTED\x10\x02\x12\x19\n" +
-	"\x15OBJECT_STATE_DELETING\x10\x03\x12\x18\n" +
-	"\x14OBJECT_STATE_DELETED\x10\x04\x12\x15\n" +
-	"\x11OBJECT_STATE_LOST\x10\x05*\xb8\x01\n" +
+	"\vLaminaState\x12\x1c\n" +
+	"\x18LAMINA_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14LAMINA_STATE_PENDING\x10\x01\x12\x1a\n" +
+	"\x16LAMINA_STATE_COMMITTED\x10\x02\x12\x19\n" +
+	"\x15LAMINA_STATE_DELETING\x10\x03\x12\x18\n" +
+	"\x14LAMINA_STATE_DELETED\x10\x04\x12\x15\n" +
+	"\x11LAMINA_STATE_LOST\x10\x05*\xb8\x01\n" +
 	"\fAttemptState\x12\x1d\n" +
 	"\x19ATTEMPT_STATE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17ATTEMPT_STATE_ALLOCATED\x10\x01\x12\x18\n" +
@@ -1103,12 +1103,12 @@ const file_shale_object_proto_rawDesc = "" +
 	"\x17ATTEMPT_STATE_ABANDONED\x10\x04\x12\x1b\n" +
 	"\x17ATTEMPT_STATE_DUPLICATE\x10\x05B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_object_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_shale_object_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_shale_object_proto_goTypes = []any{
-	(ObjectState)(0),              // 0: shale.ObjectState
+var file_shale_lamina_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_shale_lamina_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_shale_lamina_proto_goTypes = []any{
+	(LaminaState)(0),              // 0: shale.LaminaState
 	(AttemptState)(0),             // 1: shale.AttemptState
-	(*Object)(nil),                // 2: shale.Object
+	(*Lamina)(nil),                // 2: shale.Lamina
 	(*Attempt)(nil),               // 3: shale.Attempt
 	(*Tenant)(nil),                // 4: shale.Tenant
 	(*Site)(nil),                  // 5: shale.Site
@@ -1118,24 +1118,24 @@ var file_shale_object_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 	(*Node)(nil),                  // 10: shale.Node
 }
-var file_shale_object_proto_depIdxs = []int32{
-	4,  // 0: shale.Object.tenant:type_name -> shale.Tenant
-	5,  // 1: shale.Object.site:type_name -> shale.Site
-	6,  // 2: shale.Object.set:type_name -> shale.Set
-	7,  // 3: shale.Object.source:type_name -> shale.Source
-	8,  // 4: shale.Object.sink:type_name -> shale.Sink
-	0,  // 5: shale.Object.state:type_name -> shale.ObjectState
-	9,  // 6: shale.Object.date_updated:type_name -> google.protobuf.Timestamp
-	9,  // 7: shale.Object.date_created:type_name -> google.protobuf.Timestamp
-	9,  // 8: shale.Object.date_started:type_name -> google.protobuf.Timestamp
-	9,  // 9: shale.Object.date_ended:type_name -> google.protobuf.Timestamp
-	9,  // 10: shale.Object.date_expired:type_name -> google.protobuf.Timestamp
-	9,  // 11: shale.Object.date_deleted:type_name -> google.protobuf.Timestamp
-	9,  // 12: shale.Object.date_committed:type_name -> google.protobuf.Timestamp
-	9,  // 13: shale.Object.date_finished:type_name -> google.protobuf.Timestamp
+var file_shale_lamina_proto_depIdxs = []int32{
+	4,  // 0: shale.Lamina.tenant:type_name -> shale.Tenant
+	5,  // 1: shale.Lamina.site:type_name -> shale.Site
+	6,  // 2: shale.Lamina.set:type_name -> shale.Set
+	7,  // 3: shale.Lamina.source:type_name -> shale.Source
+	8,  // 4: shale.Lamina.sink:type_name -> shale.Sink
+	0,  // 5: shale.Lamina.state:type_name -> shale.LaminaState
+	9,  // 6: shale.Lamina.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 7: shale.Lamina.date_created:type_name -> google.protobuf.Timestamp
+	9,  // 8: shale.Lamina.date_started:type_name -> google.protobuf.Timestamp
+	9,  // 9: shale.Lamina.date_ended:type_name -> google.protobuf.Timestamp
+	9,  // 10: shale.Lamina.date_expired:type_name -> google.protobuf.Timestamp
+	9,  // 11: shale.Lamina.date_deleted:type_name -> google.protobuf.Timestamp
+	9,  // 12: shale.Lamina.date_committed:type_name -> google.protobuf.Timestamp
+	9,  // 13: shale.Lamina.date_finished:type_name -> google.protobuf.Timestamp
 	4,  // 14: shale.Attempt.tenant:type_name -> shale.Tenant
 	5,  // 15: shale.Attempt.site:type_name -> shale.Site
-	2,  // 16: shale.Attempt.object:type_name -> shale.Object
+	2,  // 16: shale.Attempt.lamina:type_name -> shale.Lamina
 	8,  // 17: shale.Attempt.sink:type_name -> shale.Sink
 	10, // 18: shale.Attempt.node:type_name -> shale.Node
 	1,  // 19: shale.Attempt.state:type_name -> shale.AttemptState
@@ -1150,9 +1150,9 @@ var file_shale_object_proto_depIdxs = []int32{
 	0,  // [0:24] is the sub-list for field type_name
 }
 
-func init() { file_shale_object_proto_init() }
-func file_shale_object_proto_init() {
-	if File_shale_object_proto != nil {
+func init() { file_shale_lamina_proto_init() }
+func file_shale_lamina_proto_init() {
+	if File_shale_lamina_proto != nil {
 		return
 	}
 	file_shale_host_proto_init()
@@ -1164,18 +1164,18 @@ func file_shale_object_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_object_proto_rawDesc), len(file_shale_object_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_lamina_proto_rawDesc), len(file_shale_lamina_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_shale_object_proto_goTypes,
-		DependencyIndexes: file_shale_object_proto_depIdxs,
-		EnumInfos:         file_shale_object_proto_enumTypes,
-		MessageInfos:      file_shale_object_proto_msgTypes,
+		GoTypes:           file_shale_lamina_proto_goTypes,
+		DependencyIndexes: file_shale_lamina_proto_depIdxs,
+		EnumInfos:         file_shale_lamina_proto_enumTypes,
+		MessageInfos:      file_shale_lamina_proto_msgTypes,
 	}.Build()
-	File_shale_object_proto = out.File
-	file_shale_object_proto_goTypes = nil
-	file_shale_object_proto_depIdxs = nil
+	File_shale_lamina_proto = out.File
+	file_shale_lamina_proto_goTypes = nil
+	file_shale_lamina_proto_depIdxs = nil
 }

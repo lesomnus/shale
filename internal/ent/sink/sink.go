@@ -54,8 +54,8 @@ const (
 	FieldWarnings = "warnings"
 	// FieldCapacityClamped holds the string denoting the capacity_clamped field in the database.
 	FieldCapacityClamped = "capacity_clamped"
-	// FieldObjects holds the string denoting the objects field in the database.
-	FieldObjects = "objects"
+	// FieldLaminae holds the string denoting the laminae field in the database.
+	FieldLaminae = "laminae"
 	// FieldNodeId holds the string denoting the node_id field in the database.
 	FieldNodeId = "node_id"
 	// FieldDeviceId holds the string denoting the device_id field in the database.
@@ -105,7 +105,7 @@ var Columns = []string{
 	FieldReportedBy,
 	FieldWarnings,
 	FieldCapacityClamped,
-	FieldObjects,
+	FieldLaminae,
 	FieldNodeId,
 	FieldDeviceId,
 }
@@ -220,9 +220,9 @@ func ByCapacityClamped(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCapacityClamped, opts...).ToFunc()
 }
 
-// ByObjects orders the results by the objects field.
-func ByObjects(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldObjects, opts...).ToFunc()
+// ByLaminae orders the results by the laminae field.
+func ByLaminae(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLaminae, opts...).ToFunc()
 }
 
 // ByNodeId orders the results by the node_id field.

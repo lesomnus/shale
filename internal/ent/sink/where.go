@@ -141,9 +141,9 @@ func CapacityClamped(v bool) predicate.Sink {
 	return predicate.Sink(sql.FieldEQ(FieldCapacityClamped, v))
 }
 
-// Objects applies equality check predicate on the "objects" field. It's identical to ObjectsEQ.
-func Objects(v int64) predicate.Sink {
-	return predicate.Sink(sql.FieldEQ(FieldObjects, v))
+// Laminae applies equality check predicate on the "laminae" field. It's identical to LaminaeEQ.
+func Laminae(v int64) predicate.Sink {
+	return predicate.Sink(sql.FieldEQ(FieldLaminae, v))
 }
 
 // NodeId applies equality check predicate on the "node_id" field. It's identical to NodeIdEQ.
@@ -956,44 +956,44 @@ func CapacityClampedNEQ(v bool) predicate.Sink {
 	return predicate.Sink(sql.FieldNEQ(FieldCapacityClamped, v))
 }
 
-// ObjectsEQ applies the EQ predicate on the "objects" field.
-func ObjectsEQ(v int64) predicate.Sink {
-	return predicate.Sink(sql.FieldEQ(FieldObjects, v))
+// LaminaeEQ applies the EQ predicate on the "laminae" field.
+func LaminaeEQ(v int64) predicate.Sink {
+	return predicate.Sink(sql.FieldEQ(FieldLaminae, v))
 }
 
-// ObjectsNEQ applies the NEQ predicate on the "objects" field.
-func ObjectsNEQ(v int64) predicate.Sink {
-	return predicate.Sink(sql.FieldNEQ(FieldObjects, v))
+// LaminaeNEQ applies the NEQ predicate on the "laminae" field.
+func LaminaeNEQ(v int64) predicate.Sink {
+	return predicate.Sink(sql.FieldNEQ(FieldLaminae, v))
 }
 
-// ObjectsIn applies the In predicate on the "objects" field.
-func ObjectsIn(vs ...int64) predicate.Sink {
-	return predicate.Sink(sql.FieldIn(FieldObjects, vs...))
+// LaminaeIn applies the In predicate on the "laminae" field.
+func LaminaeIn(vs ...int64) predicate.Sink {
+	return predicate.Sink(sql.FieldIn(FieldLaminae, vs...))
 }
 
-// ObjectsNotIn applies the NotIn predicate on the "objects" field.
-func ObjectsNotIn(vs ...int64) predicate.Sink {
-	return predicate.Sink(sql.FieldNotIn(FieldObjects, vs...))
+// LaminaeNotIn applies the NotIn predicate on the "laminae" field.
+func LaminaeNotIn(vs ...int64) predicate.Sink {
+	return predicate.Sink(sql.FieldNotIn(FieldLaminae, vs...))
 }
 
-// ObjectsGT applies the GT predicate on the "objects" field.
-func ObjectsGT(v int64) predicate.Sink {
-	return predicate.Sink(sql.FieldGT(FieldObjects, v))
+// LaminaeGT applies the GT predicate on the "laminae" field.
+func LaminaeGT(v int64) predicate.Sink {
+	return predicate.Sink(sql.FieldGT(FieldLaminae, v))
 }
 
-// ObjectsGTE applies the GTE predicate on the "objects" field.
-func ObjectsGTE(v int64) predicate.Sink {
-	return predicate.Sink(sql.FieldGTE(FieldObjects, v))
+// LaminaeGTE applies the GTE predicate on the "laminae" field.
+func LaminaeGTE(v int64) predicate.Sink {
+	return predicate.Sink(sql.FieldGTE(FieldLaminae, v))
 }
 
-// ObjectsLT applies the LT predicate on the "objects" field.
-func ObjectsLT(v int64) predicate.Sink {
-	return predicate.Sink(sql.FieldLT(FieldObjects, v))
+// LaminaeLT applies the LT predicate on the "laminae" field.
+func LaminaeLT(v int64) predicate.Sink {
+	return predicate.Sink(sql.FieldLT(FieldLaminae, v))
 }
 
-// ObjectsLTE applies the LTE predicate on the "objects" field.
-func ObjectsLTE(v int64) predicate.Sink {
-	return predicate.Sink(sql.FieldLTE(FieldObjects, v))
+// LaminaeLTE applies the LTE predicate on the "laminae" field.
+func LaminaeLTE(v int64) predicate.Sink {
+	return predicate.Sink(sql.FieldLTE(FieldLaminae, v))
 }
 
 // NodeIdEQ applies the EQ predicate on the "node_id" field.

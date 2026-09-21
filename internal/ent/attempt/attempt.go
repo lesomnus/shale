@@ -30,8 +30,8 @@ const (
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
 	FieldSiteId = "site_id"
-	// FieldObjectId holds the string denoting the object_id field in the database.
-	FieldObjectId = "object_id"
+	// FieldLaminaId holds the string denoting the lamina_id field in the database.
+	FieldLaminaId = "lamina_id"
 	// FieldSinkId holds the string denoting the sink_id field in the database.
 	FieldSinkId = "sink_id"
 	// FieldNodeId holds the string denoting the node_id field in the database.
@@ -40,8 +40,8 @@ const (
 	EdgeTenant = "tenant"
 	// EdgeSite holds the string denoting the site edge name in mutations.
 	EdgeSite = "site"
-	// EdgeObject holds the string denoting the object edge name in mutations.
-	EdgeObject = "object"
+	// EdgeLamina holds the string denoting the lamina edge name in mutations.
+	EdgeLamina = "lamina"
 	// EdgeSink holds the string denoting the sink edge name in mutations.
 	EdgeSink = "sink"
 	// EdgeNode holds the string denoting the node edge name in mutations.
@@ -62,13 +62,13 @@ const (
 	SiteInverseTable = "site"
 	// SiteColumn is the table column denoting the site relation/edge.
 	SiteColumn = "site_id"
-	// ObjectTable is the table that holds the object relation/edge.
-	ObjectTable = "attempt"
-	// ObjectInverseTable is the table name for the Object entity.
-	// It exists in this package in order to avoid circular dependency with the "object" package.
-	ObjectInverseTable = "object"
-	// ObjectColumn is the table column denoting the object relation/edge.
-	ObjectColumn = "object_id"
+	// LaminaTable is the table that holds the lamina relation/edge.
+	LaminaTable = "attempt"
+	// LaminaInverseTable is the table name for the Lamina entity.
+	// It exists in this package in order to avoid circular dependency with the "lamina" package.
+	LaminaInverseTable = "lamina"
+	// LaminaColumn is the table column denoting the lamina relation/edge.
+	LaminaColumn = "lamina_id"
 	// SinkTable is the table that holds the sink relation/edge.
 	SinkTable = "attempt"
 	// SinkInverseTable is the table name for the Sink entity.
@@ -97,7 +97,7 @@ var Columns = []string{
 	FieldRank,
 	FieldTenantId,
 	FieldSiteId,
-	FieldObjectId,
+	FieldLaminaId,
 	FieldSinkId,
 	FieldNodeId,
 }
@@ -165,9 +165,9 @@ func BySiteId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSiteId, opts...).ToFunc()
 }
 
-// ByObjectId orders the results by the object_id field.
-func ByObjectId(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldObjectId, opts...).ToFunc()
+// ByLaminaId orders the results by the lamina_id field.
+func ByLaminaId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLaminaId, opts...).ToFunc()
 }
 
 // BySinkId orders the results by the sink_id field.
@@ -194,10 +194,10 @@ func BySiteField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByObjectField orders the results by object field.
-func ByObjectField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByLaminaField orders the results by lamina field.
+func ByLaminaField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newObjectStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newLaminaStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -228,11 +228,11 @@ func newSiteStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, SiteTable, SiteColumn),
 	)
 }
-func newObjectStep() *sqlgraph.Step {
+func newLaminaStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldId),
-		sqlgraph.To(ObjectInverseTable, FieldId),
-		sqlgraph.Edge(sqlgraph.M2O, false, ObjectTable, ObjectColumn),
+		sqlgraph.To(LaminaInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, LaminaTable, LaminaColumn),
 	)
 }
 func newSinkStep() *sqlgraph.Step {

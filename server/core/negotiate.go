@@ -69,14 +69,14 @@ func clampSegment(p *api.SegmentProfile, b Bounds, epoch time.Duration, adjust f
 	dur := p.GetDurationSeconds()
 	proposed := dur
 	if dur <= 0 {
-		dur = int64(math.Round(float64(b.TargetObject) / bps))
+		dur = int64(math.Round(float64(b.TargetLamina) / bps))
 	}
 
-	// The ceiling max_bitrate × duration should be at least min_object and
-	// must be at most max_object. Only the duration moves: the camera's
+	// The ceiling max_bitrate × duration should be at least min_lamina and
+	// must be at most max_lamina. Only the duration moves: the camera's
 	// ceiling is not the CP's to change.
-	minDur := int64(math.Ceil(float64(b.MinObject) / bps))
-	maxDur := int64(math.Floor(float64(b.MaxObject) / bps))
+	minDur := int64(math.Ceil(float64(b.MinLamina) / bps))
+	maxDur := int64(math.Floor(float64(b.MaxLamina) / bps))
 	epochCap := int64(epoch.Seconds() / 4)
 
 	if dur < minDur {
@@ -93,7 +93,7 @@ func clampSegment(p *api.SegmentProfile, b Bounds, epoch time.Duration, adjust f
 		dur = 1
 	}
 	if proposed > 0 && dur != proposed {
-		adjust("segment_duration", fmt.Sprint(proposed), fmt.Sprint(dur), "keeps max_bitrate × duration within the object size bounds and a quarter of the epoch")
+		adjust("segment_duration", fmt.Sprint(proposed), fmt.Sprint(dur), "keeps max_bitrate × duration within the lamina size bounds and a quarter of the epoch")
 	}
 
 	return api.SegmentProfile_builder{

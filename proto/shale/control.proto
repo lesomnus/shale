@@ -14,9 +14,9 @@ option go_package = "github.com/lesomnus/shale/api";
 // state the CP holds, so a directive is never a message that can be lost
 // (§34.9).
 service NodeControl {
-  // Unlink these objects now. Answers per key: deleted | absent.
+  // Unlink these laminae now. Answers per key: deleted | absent.
   rpc Delete(NodeDeleteRequest) returns (NodeDeleteResponse);
-  // Rewrite date_expired and date_deleted in these objects' xattrs (§20.3).
+  // Rewrite date_expired and date_deleted in these laminae' xattrs (§20.3).
   rpc SetDates(NodeSetDatesRequest) returns (NodeSetDatesResponse);
   // Stop or resume accepting uploads on a sink: quarantine, retire, release.
   rpc SetSinkState(NodeSetSinkStateRequest) returns (NodeSetSinkStateResponse);
@@ -100,7 +100,7 @@ message NodeReconcileRequest {
 
 message NodeReconcileResponse {
   oneof item {
-    ObjectStored record = 1;
+    LaminaStored record = 1;
     string absent = 2;
     int64 total = 3;
   }

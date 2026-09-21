@@ -1040,7 +1040,7 @@ func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) 
 			Sinks:           int32(len(req.GetSinks())),
 			Devices:         int32(len(req.GetDevices())),
 			UploadsInFlight: req.GetUploadsInFlight(),
-			IndexObjects:    req.GetIndexObjects(),
+			IndexLaminae:    req.GetIndexLaminae(),
 			Warnings:        req.GetWarnings(),
 		}.Build(),
 		DateUpdatedForce: z.Ptr(true),

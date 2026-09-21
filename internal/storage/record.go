@@ -1,5 +1,5 @@
 // Package storage is the Storage Node (§22-§25): sinks, the self-describing
-// object files in them, the HTTP data plane producers and readers use, the
+// lamina files in them, the HTTP data plane producers and readers use, the
 // in-memory index, the events it pushes to the Control Plane, and the
 // control API the Control Plane calls.
 package storage
@@ -15,7 +15,7 @@ import (
 	"github.com/lesomnus/shale/api"
 )
 
-// XattrName is where an object file carries its record (§23.1).
+// XattrName is where a lamina file carries its record (§23.1).
 const XattrName = "user.shale"
 
 // RecordMax is the hard limit on the encoded record: XFS keeps an attribute
@@ -28,7 +28,7 @@ const FormatVersion = 1
 var ErrNoRecord = errors.New("storage: no record")
 
 // EncodeRecord marshals a record and refuses one over the limit.
-func EncodeRecord(r *api.ObjectRecord) ([]byte, error) {
+func EncodeRecord(r *api.LaminaRecord) ([]byte, error) {
 	b, err := proto.MarshalOptions{Deterministic: true}.Marshal(r)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func EncodeRecord(r *api.ObjectRecord) ([]byte, error) {
 }
 
 // WriteRecord sets the record on an open file.
-func WriteRecord(f *os.File, r *api.ObjectRecord) error {
+func WriteRecord(f *os.File, r *api.LaminaRecord) error {
 	b, err := EncodeRecord(r)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func WriteRecord(f *os.File, r *api.ObjectRecord) error {
 }
 
 // ReadRecord reads the record of an open file.
-func ReadRecord(f *os.File) (*api.ObjectRecord, error) {
+func ReadRecord(f *os.File) (*api.LaminaRecord, error) {
 	buf := make([]byte, RecordMax+1)
 	n, err := unix.Fgetxattr(int(f.Fd()), XattrName, buf)
 	if err != nil {
@@ -66,7 +66,7 @@ func ReadRecord(f *os.File) (*api.ObjectRecord, error) {
 }
 
 // ReadRecordPath reads the record by path.
-func ReadRecordPath(path string) (*api.ObjectRecord, error) {
+func ReadRecordPath(path string) (*api.LaminaRecord, error) {
 	buf := make([]byte, RecordMax+1)
 	n, err := unix.Getxattr(path, XattrName, buf)
 	if err != nil {
@@ -81,7 +81,7 @@ func ReadRecordPath(path string) (*api.ObjectRecord, error) {
 }
 
 // WriteRecordPath sets the record by path.
-func WriteRecordPath(path string, r *api.ObjectRecord) error {
+func WriteRecordPath(path string, r *api.LaminaRecord) error {
 	b, err := EncodeRecord(r)
 	if err != nil {
 		return err
@@ -90,8 +90,8 @@ func WriteRecordPath(path string, r *api.ObjectRecord) error {
 	return unix.Setxattr(path, XattrName, b, 0)
 }
 
-func decode(b []byte) (*api.ObjectRecord, error) {
-	var r api.ObjectRecord
+func decode(b []byte) (*api.LaminaRecord, error) {
+	var r api.LaminaRecord
 	// A newer format than this node knows is read for the fields it knows;
 	// unknown fields are kept by proto (§23.1).
 	if err := proto.Unmarshal(b, &r); err != nil {
@@ -103,10 +103,10 @@ func decode(b []byte) (*api.ObjectRecord, error) {
 
 // RecordFromToken is the record a put token carries, filled with what the
 // node knows at open (§23.1).
-func RecordFromToken(c *api.TokenClaims, sizeHint int64) *api.ObjectRecord {
-	r := proto.Clone(c.GetRecord()).(*api.ObjectRecord)
+func RecordFromToken(c *api.TokenClaims, sizeHint int64) *api.LaminaRecord {
+	r := proto.Clone(c.GetRecord()).(*api.LaminaRecord)
 	if r == nil {
-		r = &api.ObjectRecord{}
+		r = &api.LaminaRecord{}
 	}
 	r.SetFormatVersion(FormatVersion)
 	r.SetState(api.RecordState_RECORD_STATE_OPEN)

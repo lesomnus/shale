@@ -358,24 +358,24 @@ func (_u *SinkUpdate) SetNillableCapacityClamped(v *bool) *SinkUpdate {
 	return _u
 }
 
-// SetObjects sets the "objects" field.
-func (_u *SinkUpdate) SetObjects(v int64) *SinkUpdate {
-	_u.mutation.ResetObjects()
-	_u.mutation.SetObjects(v)
+// SetLaminae sets the "laminae" field.
+func (_u *SinkUpdate) SetLaminae(v int64) *SinkUpdate {
+	_u.mutation.ResetLaminae()
+	_u.mutation.SetLaminae(v)
 	return _u
 }
 
-// SetNillableObjects sets the "objects" field if the given value is not nil.
-func (_u *SinkUpdate) SetNillableObjects(v *int64) *SinkUpdate {
+// SetNillableLaminae sets the "laminae" field if the given value is not nil.
+func (_u *SinkUpdate) SetNillableLaminae(v *int64) *SinkUpdate {
 	if v != nil {
-		_u.SetObjects(*v)
+		_u.SetLaminae(*v)
 	}
 	return _u
 }
 
-// AddObjects adds value to the "objects" field.
-func (_u *SinkUpdate) AddObjects(v int64) *SinkUpdate {
-	_u.mutation.AddObjects(v)
+// AddLaminae adds value to the "laminae" field.
+func (_u *SinkUpdate) AddLaminae(v int64) *SinkUpdate {
+	_u.mutation.AddLaminae(v)
 	return _u
 }
 
@@ -576,11 +576,11 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.CapacityClamped(); ok {
 		_spec.SetField(sink.FieldCapacityClamped, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.Objects(); ok {
-		_spec.SetField(sink.FieldObjects, field.TypeInt64, value)
+	if value, ok := _u.mutation.Laminae(); ok {
+		_spec.SetField(sink.FieldLaminae, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.AddedObjects(); ok {
-		_spec.AddField(sink.FieldObjects, field.TypeInt64, value)
+	if value, ok := _u.mutation.AddedLaminae(); ok {
+		_spec.AddField(sink.FieldLaminae, field.TypeInt64, value)
 	}
 	if _u.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -958,24 +958,24 @@ func (_u *SinkUpdateOne) SetNillableCapacityClamped(v *bool) *SinkUpdateOne {
 	return _u
 }
 
-// SetObjects sets the "objects" field.
-func (_u *SinkUpdateOne) SetObjects(v int64) *SinkUpdateOne {
-	_u.mutation.ResetObjects()
-	_u.mutation.SetObjects(v)
+// SetLaminae sets the "laminae" field.
+func (_u *SinkUpdateOne) SetLaminae(v int64) *SinkUpdateOne {
+	_u.mutation.ResetLaminae()
+	_u.mutation.SetLaminae(v)
 	return _u
 }
 
-// SetNillableObjects sets the "objects" field if the given value is not nil.
-func (_u *SinkUpdateOne) SetNillableObjects(v *int64) *SinkUpdateOne {
+// SetNillableLaminae sets the "laminae" field if the given value is not nil.
+func (_u *SinkUpdateOne) SetNillableLaminae(v *int64) *SinkUpdateOne {
 	if v != nil {
-		_u.SetObjects(*v)
+		_u.SetLaminae(*v)
 	}
 	return _u
 }
 
-// AddObjects adds value to the "objects" field.
-func (_u *SinkUpdateOne) AddObjects(v int64) *SinkUpdateOne {
-	_u.mutation.AddObjects(v)
+// AddLaminae adds value to the "laminae" field.
+func (_u *SinkUpdateOne) AddLaminae(v int64) *SinkUpdateOne {
+	_u.mutation.AddLaminae(v)
 	return _u
 }
 
@@ -1206,11 +1206,11 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	if value, ok := _u.mutation.CapacityClamped(); ok {
 		_spec.SetField(sink.FieldCapacityClamped, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.Objects(); ok {
-		_spec.SetField(sink.FieldObjects, field.TypeInt64, value)
+	if value, ok := _u.mutation.Laminae(); ok {
+		_spec.SetField(sink.FieldLaminae, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.AddedObjects(); ok {
-		_spec.AddField(sink.FieldObjects, field.TypeInt64, value)
+	if value, ok := _u.mutation.AddedLaminae(); ok {
+		_spec.AddField(sink.FieldLaminae, field.TypeInt64, value)
 	}
 	if _u.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{

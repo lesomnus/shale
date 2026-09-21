@@ -149,7 +149,7 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 				ReportedBy:      nodeId.Bytes(),
 				Warnings:        warnings,
 				CapacityClamped: clamped,
-				Objects:         sr.GetObjects(),
+				Laminae:         sr.GetLaminae(),
 			}.Build()); err != nil {
 				return nil, err
 			}
@@ -170,7 +170,7 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 			ReportedBy:       nodeId.Bytes(),
 			Warnings:         warnings,
 			CapacityClamped:  z.Ptr(clamped),
-			Objects:          z.Ptr(sr.GetObjects()),
+			Laminae:          z.Ptr(sr.GetLaminae()),
 			DateUpdatedForce: z.Ptr(true),
 		}
 

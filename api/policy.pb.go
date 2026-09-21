@@ -471,7 +471,7 @@ func (b0 PlacementParams_builder) Build() *PlacementParams {
 }
 
 // PlacementPolicy is a versioned scheduler configuration; one is active
-// (§11.2). placement_version on an object names the policy it was placed
+// (§11.2). placement_version on a lamina names the policy it was placed
 // under.
 type PlacementPolicy struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
@@ -747,9 +747,9 @@ func (b0 PlacementPolicy_builder) Build() *PlacementPolicy {
 type UploadBounds struct {
 	state                                protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_MaxBitrateCap             int64                  `protobuf:"varint,1,opt,name=max_bitrate_cap,json=maxBitrateCap"`
-	xxx_hidden_TargetObject              int64                  `protobuf:"varint,2,opt,name=target_object,json=targetObject"`
-	xxx_hidden_MinObject                 int64                  `protobuf:"varint,3,opt,name=min_object,json=minObject"`
-	xxx_hidden_MaxObject                 int64                  `protobuf:"varint,4,opt,name=max_object,json=maxObject"`
+	xxx_hidden_TargetLamina              int64                  `protobuf:"varint,2,opt,name=target_lamina,json=targetLamina"`
+	xxx_hidden_MinLamina                 int64                  `protobuf:"varint,3,opt,name=min_lamina,json=minLamina"`
+	xxx_hidden_MaxLamina                 int64                  `protobuf:"varint,4,opt,name=max_lamina,json=maxLamina"`
 	xxx_hidden_KeyframeIntervalDefaultMs int64                  `protobuf:"varint,5,opt,name=keyframe_interval_default_ms,json=keyframeIntervalDefaultMs"`
 	xxx_hidden_KeyframeIntervalMinMs     int64                  `protobuf:"varint,6,opt,name=keyframe_interval_min_ms,json=keyframeIntervalMinMs"`
 	xxx_hidden_KeyframeIntervalMaxMs     int64                  `protobuf:"varint,7,opt,name=keyframe_interval_max_ms,json=keyframeIntervalMaxMs"`
@@ -804,23 +804,23 @@ func (x *UploadBounds) GetMaxBitrateCap() int64 {
 	return 0
 }
 
-func (x *UploadBounds) GetTargetObject() int64 {
+func (x *UploadBounds) GetTargetLamina() int64 {
 	if x != nil {
-		return x.xxx_hidden_TargetObject
+		return x.xxx_hidden_TargetLamina
 	}
 	return 0
 }
 
-func (x *UploadBounds) GetMinObject() int64 {
+func (x *UploadBounds) GetMinLamina() int64 {
 	if x != nil {
-		return x.xxx_hidden_MinObject
+		return x.xxx_hidden_MinLamina
 	}
 	return 0
 }
 
-func (x *UploadBounds) GetMaxObject() int64 {
+func (x *UploadBounds) GetMaxLamina() int64 {
 	if x != nil {
-		return x.xxx_hidden_MaxObject
+		return x.xxx_hidden_MaxLamina
 	}
 	return 0
 }
@@ -955,16 +955,16 @@ func (x *UploadBounds) SetMaxBitrateCap(v int64) {
 	x.xxx_hidden_MaxBitrateCap = v
 }
 
-func (x *UploadBounds) SetTargetObject(v int64) {
-	x.xxx_hidden_TargetObject = v
+func (x *UploadBounds) SetTargetLamina(v int64) {
+	x.xxx_hidden_TargetLamina = v
 }
 
-func (x *UploadBounds) SetMinObject(v int64) {
-	x.xxx_hidden_MinObject = v
+func (x *UploadBounds) SetMinLamina(v int64) {
+	x.xxx_hidden_MinLamina = v
 }
 
-func (x *UploadBounds) SetMaxObject(v int64) {
-	x.xxx_hidden_MaxObject = v
+func (x *UploadBounds) SetMaxLamina(v int64) {
+	x.xxx_hidden_MaxLamina = v
 }
 
 func (x *UploadBounds) SetKeyframeIntervalDefaultMs(v int64) {
@@ -1044,10 +1044,10 @@ type UploadBounds_builder struct {
 
 	// The cap on any single max_bitrate, bits per second (32 Mbps).
 	MaxBitrateCap int64
-	// Object size target and bounds in bytes (64 MB; 32 MB; 512 MB).
-	TargetObject int64
-	MinObject    int64
-	MaxObject    int64
+	// Lamina size target and bounds in bytes (64 MB; 32 MB; 512 MB).
+	TargetLamina int64
+	MinLamina    int64
+	MaxLamina    int64
 	// Keyframe interval in milliseconds (2000; 500; 4000).
 	KeyframeIntervalDefaultMs int64
 	KeyframeIntervalMinMs     int64
@@ -1081,9 +1081,9 @@ func (b0 UploadBounds_builder) Build() *UploadBounds {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_MaxBitrateCap = b.MaxBitrateCap
-	x.xxx_hidden_TargetObject = b.TargetObject
-	x.xxx_hidden_MinObject = b.MinObject
-	x.xxx_hidden_MaxObject = b.MaxObject
+	x.xxx_hidden_TargetLamina = b.TargetLamina
+	x.xxx_hidden_MinLamina = b.MinLamina
+	x.xxx_hidden_MaxLamina = b.MaxLamina
 	x.xxx_hidden_KeyframeIntervalDefaultMs = b.KeyframeIntervalDefaultMs
 	x.xxx_hidden_KeyframeIntervalMinMs = b.KeyframeIntervalMinMs
 	x.xxx_hidden_KeyframeIntervalMaxMs = b.KeyframeIntervalMaxMs
@@ -1968,11 +1968,11 @@ const file_shale_policy_proto_rawDesc = "" +
 	"\x06active \x14(d*\x00\"\x97\b\n" +
 	"\fUploadBounds\x12&\n" +
 	"\x0fmax_bitrate_cap\x18\x01 \x01(\x03R\rmaxBitrateCap\x12#\n" +
-	"\rtarget_object\x18\x02 \x01(\x03R\ftargetObject\x12\x1d\n" +
+	"\rtarget_lamina\x18\x02 \x01(\x03R\ftargetLamina\x12\x1d\n" +
 	"\n" +
-	"min_object\x18\x03 \x01(\x03R\tminObject\x12\x1d\n" +
+	"min_lamina\x18\x03 \x01(\x03R\tminLamina\x12\x1d\n" +
 	"\n" +
-	"max_object\x18\x04 \x01(\x03R\tmaxObject\x12?\n" +
+	"max_lamina\x18\x04 \x01(\x03R\tmaxLamina\x12?\n" +
 	"\x1ckeyframe_interval_default_ms\x18\x05 \x01(\x03R\x19keyframeIntervalDefaultMs\x127\n" +
 	"\x18keyframe_interval_min_ms\x18\x06 \x01(\x03R\x15keyframeIntervalMinMs\x127\n" +
 	"\x18keyframe_interval_max_ms\x18\a \x01(\x03R\x15keyframeIntervalMaxMs\x120\n" +

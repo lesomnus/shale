@@ -549,10 +549,10 @@ func (n *Node) heartbeat(ctx context.Context) error {
 		serial = pki.Serial(leaf)
 	}
 	var uploads int64
-	var objects int64
+	var laminae int64
 	for _, s := range n.sinks {
 		uploads += s.uploads.Load()
-		objects += int64(s.Index.Len())
+		laminae += int64(s.Index.Len())
 		rep := s.Report()
 		n.m.free.Record(ctx, rep.GetFree(), sinkAttr(s))
 		n.m.pressure.Record(ctx, int64(rep.GetPressure()), sinkAttr(s))
@@ -571,7 +571,7 @@ func (n *Node) heartbeat(ctx context.Context) error {
 		DataAddress:     n.dataAddress(),
 		Version:         hostagent.Version,
 		UploadsInFlight: uploads,
-		IndexObjects:    objects,
+		IndexLaminae:    laminae,
 	}.Build())
 	if err != nil {
 		return err
@@ -653,8 +653,8 @@ func (n *Node) scan(ctx context.Context, s *Sink) {
 		path, _ := s.FilePath(key)
 		rec, _ := ReadRecordPath(path)
 		os.Remove(path)
-		n.outbox.Push(api.Event_builder{Missing: api.ObjectMissing_builder{
-			SinkId: s.Id.Bytes(), ObjectKey: key, ObjectId: rec.GetObjectId(), AttemptId: rec.GetAttemptId(),
+		n.outbox.Push(api.Event_builder{Missing: api.LaminaMissing_builder{
+			SinkId: s.Id.Bytes(), LaminaKey: key, LaminaId: rec.GetLaminaId(), AttemptId: rec.GetAttemptId(),
 			Reason: api.MissingReason_MISSING_REASON_DAMAGED, DateObserved: timestamppb.Now(),
 		}.Build()}.Build())
 	}
@@ -796,7 +796,7 @@ func (n *Node) unlink(s *Sink, key string) api.DeleteResult {
 		return api.DeleteResult_DELETE_RESULT_FAILED
 	}
 	e, _ := s.Index.Get(key)
-	var rec *api.ObjectRecord
+	var rec *api.LaminaRecord
 	var size int64
 	if e != nil {
 		rec, size = e.Record, e.Size
@@ -815,8 +815,8 @@ func (n *Node) unlink(s *Sink, key string) api.DeleteResult {
 		return api.DeleteResult_DELETE_RESULT_FAILED
 	}
 	s.Index.Remove(key)
-	n.outbox.Push(api.Event_builder{Deleted: api.ObjectDeleted_builder{
-		SinkId: s.Id.Bytes(), ObjectKey: key, ObjectId: rec.GetObjectId(), AttemptId: rec.GetAttemptId(),
+	n.outbox.Push(api.Event_builder{Deleted: api.LaminaDeleted_builder{
+		SinkId: s.Id.Bytes(), LaminaKey: key, LaminaId: rec.GetLaminaId(), AttemptId: rec.GetAttemptId(),
 		Size: size, DateDeleted: timestamppb.Now(),
 	}.Build()}.Build())
 

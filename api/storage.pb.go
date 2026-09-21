@@ -35,7 +35,7 @@ const (
 	DeviceHealth_DEVICE_HEALTH_QUARANTINED DeviceHealth = 3
 	// Reads only, never again for writes.
 	DeviceHealth_DEVICE_HEALTH_RETIRED DeviceHealth = 4
-	// Its objects are LOST; the device is forgotten.
+	// Its laminae are LOST; the device is forgotten.
 	DeviceHealth_DEVICE_HEALTH_DEAD DeviceHealth = 5
 )
 
@@ -737,7 +737,7 @@ func (b0 Device_builder) Build() *Device {
 	return m0
 }
 
-// Sink is where a node stores objects: a directory with its own label,
+// Sink is where a node stores laminae: a directory with its own label,
 // capacity, pressure state, and GC; the unit of placement and location
 // (§22.2). Its id is minted by the node that labeled it and registered by the
 // CP as given.
@@ -766,7 +766,7 @@ type Sink struct {
 	xxx_hidden_ReportedBy      []byte                 `protobuf:"bytes,23,opt,name=reported_by,json=reportedBy"`
 	xxx_hidden_Warnings        []string               `protobuf:"bytes,24,rep,name=warnings"`
 	xxx_hidden_CapacityClamped bool                   `protobuf:"varint,25,opt,name=capacity_clamped,json=capacityClamped"`
-	xxx_hidden_Objects         int64                  `protobuf:"varint,26,opt,name=objects"`
+	xxx_hidden_Laminae         int64                  `protobuf:"varint,26,opt,name=laminae"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -957,9 +957,9 @@ func (x *Sink) GetCapacityClamped() bool {
 	return false
 }
 
-func (x *Sink) GetObjects() int64 {
+func (x *Sink) GetLaminae() int64 {
 	if x != nil {
-		return x.xxx_hidden_Objects
+		return x.xxx_hidden_Laminae
 	}
 	return 0
 }
@@ -1062,8 +1062,8 @@ func (x *Sink) SetCapacityClamped(v bool) {
 	x.xxx_hidden_CapacityClamped = v
 }
 
-func (x *Sink) SetObjects(v int64) {
-	x.xxx_hidden_Objects = v
+func (x *Sink) SetLaminae(v int64) {
+	x.xxx_hidden_Laminae = v
 }
 
 func (x *Sink) HasNode() bool {
@@ -1190,7 +1190,7 @@ type Sink_builder struct {
 	Warnings   []string
 	// Whether the sink's capacity was clamped for placement (§27).
 	CapacityClamped bool
-	Objects         int64
+	Laminae         int64
 }
 
 func (b0 Sink_builder) Build() *Sink {
@@ -1220,7 +1220,7 @@ func (b0 Sink_builder) Build() *Sink {
 	x.xxx_hidden_ReportedBy = b.ReportedBy
 	x.xxx_hidden_Warnings = b.Warnings
 	x.xxx_hidden_CapacityClamped = b.CapacityClamped
-	x.xxx_hidden_Objects = b.Objects
+	x.xxx_hidden_Laminae = b.Laminae
 	return m0
 }
 
@@ -1309,7 +1309,7 @@ const file_shale_storage_proto_rawDesc = "" +
 	"reportedBy\x12\x1a\n" +
 	"\bwarnings\x18\x18 \x03(\tR\bwarnings\x12)\n" +
 	"\x10capacity_clamped\x18\x19 \x01(\bR\x0fcapacityClamped\x12\x18\n" +
-	"\aobjects\x18\x1a \x01(\x03R\aobjects\x1a9\n" +
+	"\alaminae\x18\x1a \x01(\x03R\alaminae\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\x90\x01\xca\xfc\x15H\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +

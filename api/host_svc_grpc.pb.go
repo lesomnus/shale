@@ -71,7 +71,7 @@ type NodeServiceClient interface {
 	// Health, capacity, and pressure of the node, its devices, and its sinks
 	// (§27).
 	Heartbeat(ctx context.Context, in *NodeHeartbeatRequest, opts ...grpc.CallOption) (*NodeHeartbeatResponse, error)
-	// ObjectStored, ObjectDeleted, and ObjectMissing events, batched; applied
+	// LaminaStored, LaminaDeleted, and LaminaMissing events, batched; applied
 	// idempotently (§34.9).
 	PushEvents(ctx context.Context, in *NodePushEventsRequest, opts ...grpc.CallOption) (*NodePushEventsResponse, error)
 	// What the active address resolver would hand out, for a given caller
@@ -263,7 +263,7 @@ type NodeServiceServer interface {
 	// Health, capacity, and pressure of the node, its devices, and its sinks
 	// (§27).
 	Heartbeat(context.Context, *NodeHeartbeatRequest) (*NodeHeartbeatResponse, error)
-	// ObjectStored, ObjectDeleted, and ObjectMissing events, batched; applied
+	// LaminaStored, LaminaDeleted, and LaminaMissing events, batched; applied
 	// idempotently (§34.9).
 	PushEvents(context.Context, *NodePushEventsRequest) (*NodePushEventsResponse, error)
 	// What the active address resolver would hand out, for a given caller

@@ -1,4 +1,4 @@
-// Package producer is the host program that turns cameras into objects
+// Package producer is the host program that turns cameras into laminae
 // (§38): it reads MPEG-TS from capture processes, cuts segments at keyframes
 // on a staggered schedule, and uploads them with the allocations the
 // Control Plane hands it. It never decodes or encodes; it reads packet

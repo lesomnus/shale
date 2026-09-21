@@ -4,7 +4,7 @@
 
 Nodes send heartbeats every `heartbeat_interval` (5 s). A node whose
 heartbeats are missing for `node_down_after` (30 s) is **down**: its sinks are
-skipped by placement and its objects read as UNAVAILABLE. Relays heartbeat
+skipped by placement and its laminae read as UNAVAILABLE. Relays heartbeat
 on the same schedule; a relay that is down has its producers reassigned
 ([§39.2](16-relay.md#392-assignment)).
 
@@ -85,7 +85,7 @@ operator's call. Every device records why it is where it is:
 ```text
 Device.quarantine = { state, date_quarantined, reason,
                       score history, recent errors, SMART summary,
-                      objects and bytes on it }
+                      laminae and bytes on it }
 ```
 
 | Command | Effect |
@@ -93,8 +93,8 @@ Device.quarantine = { state, date_quarantined, reason,
 | `shale device quarantined` | devices awaiting a decision; `watch` for alerts |
 | `shale device get <device>` | the record above: why, since when, and what is at stake |
 | `shale device release <device>` | back on probation (e.g. after reseating a cable) |
-| `shale device retire <device>` | reads only, never again for writes; objects stay readable until they expire |
-| `shale device declare-dead <device>` | its objects → LOST; the device is forgotten |
+| `shale device retire <device>` | reads only, never again for writes; laminae stay readable until they expire |
+| `shale device declare-dead <device>` | its laminae → LOST; the device is forgotten |
 | `shale device locate <device> [--off]` | light the bay LED, so the right HDD is pulled |
 
 Every one of these reaches the node through its control API. A replaced HDD
@@ -113,7 +113,7 @@ Consoles watch `Device` to show the quarantine queue live, and `Node`,
 no replica · no EC · no RAID · no draining · no migration · no rebuild
 ```
 
-Objects on a device or node under maintenance are temporarily UNAVAILABLE. This
+Laminae on a device or node under maintenance are temporarily UNAVAILABLE. This
 availability loss is deliberate. Placement ([§11](03-placement.md#11-placement)) shapes how that loss is
 distributed across sources and time.
 
@@ -121,14 +121,14 @@ distributed across sources and time.
 
 ```text
 device failure
-→ only the objects on that device's sinks are LOST
+→ only the laminae on that device's sinks are LOST
 → every other device keeps working
 → no rebuild, no restoration
 ```
 
 ### 28.3 Node failure and device re-homing
 
-A node failure makes all of its sinks' objects UNAVAILABLE, not LOST: the sinks
+A node failure makes all of its sinks' laminae UNAVAILABLE, not LOST: the sinks
 are independent, self-describing filesystems.
 
 **The same machine comes back**, after a reinstall or with a new OS disk: it
@@ -147,7 +147,7 @@ continues as the same `node_id` with the same sinks
 4. shale sink adopt <sink> '{"node":{"id":"B"}}'  (or automatically once A has been down
    for sink_auto_adopt_after, 10 minutes)
 5. the CP updates sinks.node_id, and reconciles each sink with B (§34.9)
-6. objects are readable again; no object rows change
+6. laminae are readable again; no lamina rows change
 ```
 
 A sink its node stops reporting, the disk pulled or the directory gone, is
@@ -180,23 +180,23 @@ availability problem, not data loss.
   `since = 0`, [§34.9](11-deployment.md#349-events-and-directives)): each
   node walks the sink (directory walk + `getxattr`) and streams the records.
   Because the xattrs are inline in the inodes, the scan reads inodes only,
-  never object data.
-- The xattr carries the object's current dates as last told to the node
-  ([§20.3](06-retention-gc.md#203-rescheduling)), so rescheduled objects come
+  never lamina data.
+- The xattr carries the lamina's current dates as last told to the node
+  ([§20.3](06-retention-gc.md#203-rescheduling)), so rescheduled laminae come
   back with their rescheduled dates, except for changes made while their node
   was unreachable.
 - What exists only in the DB: the audit trail, people, sites, policies, and
   the host rows with their certificate serials. After a DB loss every host
   therefore has to be adopted again. Back the DB up.
 
-Scale check: 10 PB at 64 MB ≈ 160 M objects. At 267 MB/s per node, each node
-commits ~4 objects/s. This is well within a single PostgreSQL instance, and
+Scale check: 10 PB at 64 MB ≈ 160 M laminae. At 267 MB/s per node, each node
+commits ~4 laminae/s. This is well within a single PostgreSQL instance, and
 SQLite handles a single machine ([§34.2](11-deployment.md#342-external-dependencies)).
 Suggested indexes: `(sink_id, date_expired)` for GC approval,
 `(source_id, date_started)` and `(set_id, date_started)` for range queries.
-Rows of deleted and lost objects are pruned
+Rows of deleted and lost laminae are pruned
 ([§20.4](06-retention-gc.md#204-row-retention)), so the table holds about
-one retention period of objects plus 30 days.
+one retention period of laminae plus 30 days.
 
 ## 30. Integrity
 
@@ -222,8 +222,8 @@ ingest
   abandoned uploads: finalized incomplete / deleted
   producer segments by outcome: stored, lost, cut short under `retain: written` (§12.2)
   upload duration by producer (spots slow or degrading links)
-  same-target / placement retry counts, lost objects
-  duplicate attempts, orphans reclaimed, objects recovered by reconciliation
+  same-target / placement retry counts, lost laminae
+  duplicate attempts, orphans reclaimed, laminae recovered by reconciliation
 
 device
   queue depth and wait time per class (WRITE/READ/MAINT)
@@ -260,7 +260,7 @@ control plane
   hosts pending adoption, certificates due for renewal
   producers per relay, reassignments
   directives pending per node, reconciliation lag per sink
-  objects in DELETING, rows pruned
+  laminae in DELETING, rows pruned
   watch streams, broker reconnects
 
 ceilings (§26)
@@ -327,11 +327,11 @@ shale source add|ls|get|patch|erase|live
 shale site add|ls|erase
 shale site-member add|ls|erase           # which people and readers may see which site
 shale holder add|ls|patch|erase          # people: `add` makes them at roster first (§33.1)
-shale object get|ls|watch
-shale object reschedule <object> --expired <t> --deleted <t> --reason <text>
-shale object reschedule --set <set>|--source <source> --from <t> --to <t> --expired <t> --reason <text>
-shale object reschedule ... --delete-now --reason <text>   # both dates to now (§20.3)
+shale lamina get|ls|watch
+shale lamina reschedule <lamina> --expired <t> --deleted <t> --reason <text>
+shale lamina reschedule --set <set>|--source <source> --from <t> --to <t> --expired <t> --reason <text>
+shale lamina reschedule ... --delete-now --reason <text>   # both dates to now (§20.3)
                                          # <t>: RFC 3339, a date, `now`, or a duration from now (--from=-24h)
-shale object timeline '{"set":{"id":"<set>"},"from":"<t>","to":"<t>","size":n,"after":"<cursor>"}'
+shale lamina timeline '{"set":{"id":"<set>"},"from":"<t>","to":"<t>","size":n,"after":"<cursor>"}'
 shale live [--for d] <set>               # a WebRTC viewer per source, for a look (§39.4)
 ```

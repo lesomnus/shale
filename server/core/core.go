@@ -38,7 +38,7 @@ const (
 	DomHolder          pdid.Domain = 2
 	DomSet             pdid.Domain = 7
 	DomSource          pdid.Domain = 8
-	DomObject          pdid.Domain = 9
+	DomLamina          pdid.Domain = 9
 	DomAttempt         pdid.Domain = 10
 	DomNode            pdid.Domain = 12
 	DomDevice          pdid.Domain = 13

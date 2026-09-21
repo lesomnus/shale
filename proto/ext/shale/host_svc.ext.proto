@@ -47,7 +47,7 @@ service NodeService {
   // Health, capacity, and pressure of the node, its devices, and its sinks
   // (§27).
   rpc Heartbeat(NodeHeartbeatRequest) returns (NodeHeartbeatResponse);
-  // ObjectStored, ObjectDeleted, and ObjectMissing events, batched; applied
+  // LaminaStored, LaminaDeleted, and LaminaMissing events, batched; applied
   // idempotently (§34.9).
   rpc PushEvents(NodePushEventsRequest) returns (NodePushEventsResponse);
   // What the active address resolver would hand out, for a given caller
@@ -212,7 +212,7 @@ message NodeHeartbeatRequest {
   string data_address = 8 [features.field_presence = IMPLICIT];
   string version = 9 [features.field_presence = IMPLICIT];
   int64 uploads_in_flight = 10 [features.field_presence = IMPLICIT];
-  int64 index_objects = 11 [features.field_presence = IMPLICIT];
+  int64 index_laminae = 11 [features.field_presence = IMPLICIT];
   repeated string warnings = 12;
 }
 

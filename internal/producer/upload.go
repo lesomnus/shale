@@ -60,7 +60,7 @@ func (c *UploadConfig) defaults() {
 // Uploader uploads segments with the allocations it is given.
 type Uploader struct {
 	Cfg     UploadConfig
-	Objects api.ObjectServiceClient
+	Laminae api.LaminaServiceClient
 	Log     *slog.Logger
 	Mode    api.UploadMode
 	// Written is `retain: written` (§12.2): a live segment goes as a series
@@ -78,7 +78,7 @@ type Result struct {
 	// Cut says the segment ended where its node had it: bytes below the
 	// node's offset had been released under `retain: written`, so no other
 	// target could take it from the start (§12.2). The node finalizes what
-	// it holds as an incomplete object by the abandon rule (§15).
+	// it holds as an incomplete lamina by the abandon rule (§15).
 	Cut bool
 }
 
@@ -92,7 +92,7 @@ var (
 	errNoCompletion = errors.New("the node answered success without completion")
 	// errForeign is a key that holds bytes this producer never sent: an
 	// earlier incarnation's upload of the same slot. They are not this
-	// segment's, so the attempt is given up and the object gets another
+	// segment's, so the attempt is given up and the lamina gets another
 	// (§12.5, §15).
 	errForeign = errors.New(core.ForeignBytesReason)
 )
@@ -126,17 +126,17 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 				// Bytes below the node's offset are gone from here: the
 				// segment cannot start over elsewhere. It ends where that
 				// node has it (§12.2), and the node's abandon rule makes
-				// an incomplete object of that (§15).
-				u.Log.Warn("segment cut short at the node's offset", "key", al.GetObjectKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "offset", seg.Released(), "err", err.Error())
+				// an incomplete lamina of that (§15).
+				u.Log.Warn("segment cut short at the node's offset", "key", al.GetLaminaKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "offset", seg.Released(), "err", err.Error())
 				res.Cut, res.Err = true, err
 
 				return res
 			}
-			u.Log.Warn("attempt failed", "key", al.GetObjectKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "err", err.Error())
+			u.Log.Warn("attempt failed", "key", al.GetLaminaKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "err", err.Error())
 			// The failed attempt is reported before moving on (§13).
 			rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-			u.Objects.ReportAttempt(rctx, api.ObjectReportAttemptRequest_builder{
-				Ref:           api.ObjectRef_builder{Id: al.GetObjectId()}.Build(),
+			u.Laminae.ReportAttempt(rctx, api.LaminaReportAttemptRequest_builder{
+				Ref:           api.LaminaRef_builder{Id: al.GetLaminaId()}.Build(),
 				Attempt:       api.AttemptRef_builder{Id: cand.GetAttemptId()}.Build(),
 				FailureReason: err.Error(),
 			}.Build())
@@ -145,10 +145,10 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 
 		// Every candidate tried: ask for the next one.
 		rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		next, err := u.Objects.Reallocate(rctx, api.ObjectReallocateRequest_builder{Ref: api.ObjectRef_builder{Id: al.GetObjectId()}.Build()}.Build())
+		next, err := u.Laminae.Reallocate(rctx, api.LaminaReallocateRequest_builder{Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build()}.Build())
 		cancel()
 		if err != nil {
-			u.Log.Warn("reallocate", "key", al.GetObjectKey(), "err", err.Error())
+			u.Log.Warn("reallocate", "key", al.GetLaminaKey(), "err", err.Error())
 			break
 		}
 		al = next
@@ -162,15 +162,15 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 	return res
 }
 
-// GiveUp reports an object the producer will not upload: it becomes LOST
+// GiveUp reports a lamina the producer will not upload: it becomes LOST
 // (§13).
 func (u *Uploader) GiveUp(ctx context.Context, al *api.Allocation, reason string) {
 	rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	if _, err := u.Objects.ReportFailure(rctx, api.ObjectReportFailureRequest_builder{
-		Ref: api.ObjectRef_builder{Id: al.GetObjectId()}.Build(), Reason: reason,
+	if _, err := u.Laminae.ReportFailure(rctx, api.LaminaReportFailureRequest_builder{
+		Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build(), Reason: reason,
 	}.Build()); err != nil {
-		u.Log.Warn("report failure", "key", al.GetObjectKey(), "err", err.Error())
+		u.Log.Warn("report failure", "key", al.GetLaminaKey(), "err", err.Error())
 	}
 }
 
@@ -189,9 +189,9 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 	ep := cand.GetEndpoints()[0]
 	// The key is the candidate's: it names the attempt, and the token
 	// names the key (§23.2).
-	key := cand.GetObjectKey()
+	key := cand.GetLaminaKey()
 	if key == "" {
-		key = al.GetObjectKey()
+		key = al.GetLaminaKey()
 	}
 	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), key)
 
@@ -216,7 +216,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 			sentMax = offset + sent
 		}
 		if (status == http.StatusCreated || status == http.StatusOK) && !complete {
-			// A success status that does not say the object is complete is
+			// A success status that does not say the lamina is complete is
 			// no commit: an answer the node did not mean (§12.5). The
 			// offset is asked for and the upload resumes.
 			status, err = 0, errNoCompletion
@@ -262,7 +262,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 				return errBusy
 			}
 			wait := u.retryAfter(newOffset)
-			u.Log.Info("node busy", "key", al.GetObjectKey(), "wait", wait.String())
+			u.Log.Info("node busy", "key", al.GetLaminaKey(), "wait", wait.String())
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -277,7 +277,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 
 		// A transport error or a 5xx: HEAD for the offset and resume.
 		if err != nil {
-			u.Log.Warn("upload interrupted", "key", al.GetObjectKey(), "url", url, "err", err.Error())
+			u.Log.Warn("upload interrupted", "key", al.GetLaminaKey(), "url", url, "err", err.Error())
 		}
 		cur, herr := u.head(ctx, url, cand.GetToken())
 		if herr == nil {
@@ -321,7 +321,7 @@ func (u *Uploader) retryAfter(v int64) time.Duration {
 // with `part` set on a live segment, at most that many bytes that do not
 // complete the upload (§12.2). It answers the status, the offset a 409 or
 // a 204 or the Retry-After a 503 carried, the bytes sent, and whether the
-// answer said the object is complete.
+// answer said the lamina is complete.
 func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation, seg *Segment, offset, part int64) (int, int64, int64, bool, error) {
 	live := !seg.Closed()
 	// A live segment in parts: this request carries at most `part` bytes,
@@ -381,7 +381,7 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 	io.Copy(io.Discard, resp.Body)
 	complete := strings.TrimSpace(resp.Header.Get(storage.HdrUploadComplete)) == "?1"
 	if resp.StatusCode == http.StatusServiceUnavailable && reason != "" {
-		u.Log.Info("node refused", "key", al.GetObjectKey(), "why", reason)
+		u.Log.Info("node refused", "key", al.GetLaminaKey(), "why", reason)
 	}
 
 	var v int64 = -1

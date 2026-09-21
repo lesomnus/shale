@@ -43,6 +43,9 @@ func DeviceOrErr(p Device, err error) Device {
 // Holder is the predicate function for holder builders.
 type Holder func(*sql.Selector)
 
+// Lamina is the predicate function for lamina builders.
+type Lamina func(*sql.Selector)
+
 // Node is the predicate function for node builders.
 type Node func(*sql.Selector)
 
@@ -56,9 +59,6 @@ func NodeOrErr(p Node, err error) Node {
 		p(s)
 	}
 }
-
-// Object is the predicate function for object builders.
-type Object func(*sql.Selector)
 
 // Outbox is the predicate function for outbox builders.
 type Outbox func(*sql.Selector)

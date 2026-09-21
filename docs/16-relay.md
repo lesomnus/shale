@@ -6,7 +6,7 @@ The Relay is the live path: it takes a producer's streams and fans them out
 to viewers over WebRTC. It exists so that nobody watches a camera *through
 the producer*, which is a small machine on a small uplink, and so that live
 viewing and recording never share a path. The Relay holds no state, reads no
-object, and is never between a producer and a Storage Node
+lamina, and is never between a producer and a Storage Node
 ([§1](01-overview.md#1-what-shale-is-for)).
 
 ```text
@@ -87,7 +87,7 @@ Relay     Stop {source}                  nobody has watched for relay_idle_stop
   `relay_idle_stop` (10 s), which absorbs a page reload, then sends `Stop`.
 - **The same video.** The producer tees the source's TS stream
   ([§38.1](15-producer.md#381-inputs)): the video that goes to the relay is
-  the video that goes into the object, never encoded twice. Audio that is
+  the video that goes into the lamina, never encoded twice. Audio that is
   not Opus is transcoded on the producer's side by its live helper
   ([§38.7](15-producer.md#387-live-output)), so what the relay gets is the
   same video remuxed with Opus. On the uplink it costs the watched cameras'
@@ -179,7 +179,7 @@ Nodes as they are today ([§17](05-read-path.md#17-read-path)).
 | Relay process restarts | every session and attachment drops; the relay has no state to recover | producers re-attach (they were dialing anyway); viewers ask `Live` again |
 | Relay down | as above, and the CP reassigns its producers | a few seconds of no live picture; recording unaffected |
 | Producer's uplink saturated by viewers | live bytes and recording compete | the link check counts watched cameras; the operator sizes the uplink or limits which cameras are watchable |
-| Producer down | its cameras are off for viewers and for recording alike | as in [§15](04-write-path.md#15-partial-objects) |
+| Producer down | its cameras are off for viewers and for recording alike | as in [§15](04-write-path.md#15-partial-laminae) |
 | CP down | no new `Live` and no new publish tokens; open sessions and attachments continue | as for reads ([§12.1](04-write-path.md#121-flow)): run the CP highly available |
 
 ### 39.7 Security
@@ -200,7 +200,7 @@ Nodes as they are today ([§17](05-read-path.md#17-read-path)).
 
 ### 39.8 What the relay does not do
 
-- Record, replay, or read objects.
+- Record, replay, or read laminae.
 - Transcode video, or change resolution or frame rate.
 - Talk to cameras or producers on its own initiative: it only answers
   connections that carry a token.

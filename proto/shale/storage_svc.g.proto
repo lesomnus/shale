@@ -37,7 +37,7 @@ service DeviceService {
   rpc Quarantine(DeviceQuarantineRequest) returns (Device);
   rpc Release(DeviceReleaseRequest) returns (Device);
   rpc Retire(DeviceRetireRequest) returns (Device);
-  // Its objects become LOST; the device is forgotten.
+  // Its laminae become LOST; the device is forgotten.
   rpc DeclareDead(DeviceDeclareDeadRequest) returns (Device);
   // Bay LED on or off, through the node's control API.
   rpc Locate(DeviceLocateRequest) returns (Device);
@@ -345,7 +345,7 @@ message SinkAddRequest {
   bytes reported_by = 23;
   repeated string warnings = 24;
   bool capacity_clamped = 25 [features.field_presence = IMPLICIT];
-  int64 objects = 26 [features.field_presence = IMPLICIT];
+  int64 laminae = 26 [features.field_presence = IMPLICIT];
 }
 
 message SinkGetRequest {
@@ -384,7 +384,7 @@ message SinkSelect {
   bool reported_by = 23;
   bool warnings = 24;
   bool capacity_clamped = 25;
-  bool objects = 26;
+  bool laminae = 26;
 }
 
 message SinkPatchRequest {
@@ -446,7 +446,7 @@ message SinkPatchRequest {
   bool reported_by_null = 47;
   repeated string warnings = 48;
   bool capacity_clamped = 50;
-  int64 objects = 52;
+  int64 laminae = 52;
 }
 
 message SinkApplyRequest {
@@ -568,8 +568,8 @@ enum GcReason {
 
 // GcCandidate is a file, named by key, with what its xattr says.
 message GcCandidate {
-  string object_key = 1 [features.field_presence = IMPLICIT];
-  bytes object_id = 2 [features.field_presence = IMPLICIT];
+  string lamina_key = 1 [features.field_presence = IMPLICIT];
+  bytes lamina_id = 2 [features.field_presence = IMPLICIT];
   bytes attempt_id = 3 [features.field_presence = IMPLICIT];
   int64 size = 4 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_expired = 5;
@@ -578,7 +578,7 @@ message GcCandidate {
 }
 
 message GcDecision {
-  string object_key = 1 [features.field_presence = IMPLICIT];
+  string lamina_key = 1 [features.field_presence = IMPLICIT];
   bool approved = 2 [features.field_presence = IMPLICIT];
   // The current dates when they differ from what the node proposed on; the
   // node rewrites the xattr.

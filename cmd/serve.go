@@ -512,7 +512,7 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 func registerTenant(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterSetServiceServer(g, s.Set())
 	api.RegisterSourceServiceServer(g, s.Source())
-	api.RegisterObjectServiceServer(g, s.Object())
+	api.RegisterLaminaServiceServer(g, s.Lamina())
 	api.RegisterAttemptServiceServer(g, s.Attempt())
 	api.RegisterSiteServiceServer(g, s.Site())
 	api.RegisterSiteMemberServiceServer(g, s.SiteMember())

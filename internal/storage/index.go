@@ -15,10 +15,10 @@ import (
 	"github.com/lesomnus/shale/api"
 )
 
-// Entry is one complete object file as the index knows it (§29).
+// Entry is one complete lamina file as the index knows it (§29).
 type Entry struct {
 	Key        string
-	ObjectId   pdid.Id
+	LaminaId   pdid.Id
 	AttemptId  pdid.Id
 	Size       int64
 	Started    time.Time
@@ -27,7 +27,7 @@ type Entry struct {
 	Deleted    time.Time
 	Incomplete bool
 	Committed  time.Time
-	Record     *api.ObjectRecord
+	Record     *api.LaminaRecord
 }
 
 // Index is a sink's in-memory index of complete files, rebuilt from the
@@ -82,7 +82,7 @@ func (x *Index) Get(key string) (*Entry, bool) {
 	return e, ok
 }
 
-// Len is how many objects the index holds.
+// Len is how many laminae the index holds.
 func (x *Index) Len() int {
 	x.mu.RLock()
 	defer x.mu.RUnlock()
@@ -128,9 +128,9 @@ func (x *Index) Snapshot() []*Entry {
 }
 
 // EntryOf builds an entry from a record and the file's size.
-func EntryOf(key string, r *api.ObjectRecord, size int64, committed time.Time) *Entry {
+func EntryOf(key string, r *api.LaminaRecord, size int64, committed time.Time) *Entry {
 	e := &Entry{Key: key, Size: size, Record: r, Incomplete: r.GetIncomplete(), Committed: committed}
-	e.ObjectId, _ = pdid.From(r.GetObjectId())
+	e.LaminaId, _ = pdid.From(r.GetLaminaId())
 	e.AttemptId, _ = pdid.From(r.GetAttemptId())
 	if r.GetDateStartedMs() > 0 {
 		e.Started = time.UnixMilli(r.GetDateStartedMs()).UTC()
@@ -159,18 +159,18 @@ type ScanResult struct {
 // OpenFile is an upload the scan found still open.
 type OpenFile struct {
 	Key      string
-	Record   *api.ObjectRecord
+	Record   *api.LaminaRecord
 	Size     int64
 	Modified time.Time
 }
 
-// Scan walks the sink's objects and rebuilds the index from their records
+// Scan walks the sink's laminae and rebuilds the index from their records
 // (§29): inodes only, never data. Complete files whose size disagrees with
 // the record are damaged; open files are handed back for the abandon rule
 // (§12.2).
 func (x *Index) Scan(ctx context.Context, sink *Sink, progress func(n int), yield func() error) (ScanResult, error) {
 	var res ScanResult
-	root := filepath.Join(sink.Path, "objects")
+	root := filepath.Join(sink.Path, "laminae")
 	n := 0
 	seen := 0
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {

@@ -17,14 +17,14 @@ Storage Node
 
 - No hardware RAID, no mdraid, no multi-HDD ZFS pool
 - One XFS (or ext4) filesystem per HDD, **with its journal on the same HDD**.
-  An external journal on a shared SSD would save one seek per object, but it
+  An external journal on a shared SSD would save one seek per lamina, but it
   would turn one SSD failure into the loss of every filesystem on the node,
   which breaks the per-device failure isolation.
-- **Inodes large enough to hold the object record inline**
-  ([§23.1](#231-self-describing-objects)): `mkfs.xfs -i size=1024` (the
+- **Inodes large enough to hold the lamina record inline**
+  ([§23.1](#231-self-describing-laminae)): `mkfs.xfs -i size=1024` (the
   512-byte default also fits, with little margin) and `mkfs.ext4 -I 512`.
   ext4's default 256-byte inode leaves about 96 bytes for inline attributes,
-  so the record would land in a separate block: one extra write per object
+  so the record would land in a separate block: one extra write per lamina
   and one extra random read per inode on every scan, which defeats
   [§29](09-operations.md#29-metadata-index). The cost of the larger inode is
   under 0.01% of a 16 TB sink.
@@ -34,9 +34,9 @@ Storage Node
 
 ### 22.2 Sinks and devices
 
-A **Sink** is where Shale stores objects: a directory registered on a node,
+A **Sink** is where Shale stores laminae: a directory registered on a node,
 with its own label, capacity, pressure state, and GC. Placement chooses sinks,
-and an object's location is `(sink_id, object_key)`.
+and a lamina's location is `(sink_id, lamina_key)`.
 
 A **Device** is the physical block device under a sink. The node detects it at
 registration (`st_dev` → block device → WWN/serial; for a volume Shale cannot
@@ -48,7 +48,7 @@ UUID). The **device**, not the sink, is:
   health and quarantine are tracked per device ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)).
 
 **In production each HDD is one device holding exactly one sink, mounted
-whole.** The documents still keep the terms apart. *Sink* is where objects
+whole.** The documents still keep the terms apart. *Sink* is where laminae
 live (placement, location, capacity, GC). *Device* is what fails and what
 serializes I/O. *HDD* is used only for hardware and media behavior. A machine
 is a *host*, never a device ([§9](02-data-model.md#9-identity)).
@@ -71,7 +71,7 @@ node uses the pool GUID as the device identity, not the dataset's own
 filesystem ID. Two datasets of one pool are therefore two sinks on one
 device, which the node warns about, and a pool with several vdevs is still
 one device, because every dataset stripes across all of them. A vdev cannot
-be a device on its own. Dataset properties that suit object data:
+be a device on its own. Dataset properties that suit lamina data:
 
 ```text
 recordsize=1M  compression=off  xattr=sa  dnodesize=auto  atime=off
@@ -80,7 +80,7 @@ primarycache=metadata  logbias=throughput  quota=<the sink's capacity>
 
 `xattr=sa` is what keeps the record inline on ZFS; the default stores
 attributes as hidden directories. `primarycache=metadata` keeps the ARC from
-caching object data, which is [§22.4](#224-bypass-the-page-cache) by other
+caching lamina data, which is [§22.4](#224-bypass-the-page-cache) by other
 means. The probe reports what the OpenZFS version provides: true direct I/O
 from OpenZFS 2.3 with `direct=standard`, buffered before that. `fallocate`
 reservations mean nothing on a copy-on-write filesystem, and the probe's
@@ -120,10 +120,10 @@ them into sinks after an operator's claim, the way Rook does
 
 | Feature | Required | Without it |
 |---|---|---|
-| user xattrs | **yes** | registration fails, because self-describing metadata and upload state live there ([§23.1](#231-self-describing-objects), [§12.2](04-write-path.md#122-resumable-part-uploads)) |
+| user xattrs | **yes** | registration fails, because self-describing metadata and upload state live there ([§23.1](#231-self-describing-laminae), [§12.2](04-write-path.md#122-resumable-part-uploads)) |
 | inline record | no | the probe reads the inode size and warns when the record cannot stay inline ([§22.1](#221-hdd-layout)) |
 | `O_DIRECT` | no | buffered writes, `fsync` at commit; page-cache effects return ([§22.4](#224-bypass-the-page-cache)) |
-| `fallocate` | no | no extent reservation; objects may fragment |
+| `fallocate` | no | no extent reservation; laminae may fragment |
 
 Probe results are reported in heartbeats and shown by `shale sink ls`.
 
@@ -134,7 +134,7 @@ suppressed.
 
 ### 22.3 No SSD in the data path
 
-**Object data is never written to SSD/NVMe**, not even temporarily. There is
+**Lamina data is never written to SSD/NVMe**, not even temporarily. There is
 no persistent spool. Reasons:
 
 - A persistent spool writes every byte twice and would wear out SSDs quickly
@@ -164,20 +164,20 @@ each device sees exactly the I/O its Device Queue issued.
 What matters is not whether the OS "knows" the I/O is sequential, but:
 
 - large contiguous extents are allocated (`fallocate` the full size up front),
-- I/O from different objects is not interleaved on a device (one Device Queue),
-- `fsync` is rare (once per object),
+- I/O from different laminae is not interleaved on a device (one Device Queue),
+- `fsync` is rare (once per lamina),
 - the filesystem does not fragment.
 
 Rough time scales: kernel scheduling µs to tens of µs, HDD seek a few ms, one
 7200rpm revolution ≈ 8.3 ms.
 
-## 23. Object Model and Storage Format
+## 23. Lamina Model and Storage Format
 
-An **Object** is the unit of storage and is immutable.
+An **Lamina** is the unit of storage and is immutable.
 
-### 23.1 Self-describing objects
+### 23.1 Self-describing laminae
 
-Each object file carries its own metadata in an **inline extended attribute**
+Each lamina file carries its own metadata in an **inline extended attribute**
 (`user.shale`), so a sink alone is enough to rebuild its part of the index.
 
 - The xattr is set before the data is written, and it is persisted by the
@@ -199,10 +199,10 @@ tenant_id
 site_id           (optional)
 set_id
 source_id
-object_id
+lamina_id
 attempt_id
 date_started      (data time, §10)
-date_ended        (data time; unknown for an incomplete object)
+date_ended        (data time; unknown for an incomplete lamina)
 state             (open | complete)
 size_bytes        (final size, set when the upload completes; see §12.3)
 size_hint         (live uploads: expected size used for the reservation)
@@ -217,10 +217,10 @@ placement_version
 
 The ID and date fields arrive in the put token's `record`
 ([§33.2](10-security.md#332-access-tokens)); the node fills in the rest. The
-dates are the object's initial dates until the CP reschedules them, and then
+dates are the lamina's initial dates until the CP reschedules them, and then
 the CP tells the node to rewrite the xattr at once
 ([§20.3](06-retention-gc.md#203-rescheduling)). The ID fields are what an
-index rebuild needs to put the object back behind the right tenant and site.
+index rebuild needs to put the lamina back behind the right tenant and site.
 
 A node that meets a `format_version` newer than it knows, for instance after
 a rollback or when a sink moved from a newer node, reads the fields it knows
@@ -232,29 +232,29 @@ Each sink carries a label file at its root (`.shale-sink`) with `sink_id`,
 ### 23.2 Paths
 
 ```text
-/<mount>/objects/<yyyy>/<mm>/<dd>/<hh>/<object_id>.<attempt_id>
+/<mount>/laminae/<yyyy>/<mm>/<dd>/<hh>/<lamina_id>.<attempt_id>
 ```
 
 - Hourly directories (from the expected `date_started` at allocation, or
   from the allocation time when the producer declares none) keep directories
   small and make time-ordered scans cheap. A 16 TB sink at the CCTV load of
-  [§26.3](08-sizing.md#263-worked-example-cctv) receives ~300 objects an
-  hour, so its ~250,000 objects spread over ~720 directories for 30 days of
+  [§26.3](08-sizing.md#263-worked-example-cctv) receives ~300 laminae an
+  hour, so its ~250,000 laminae spread over ~720 directories for 30 days of
   retention, a few hundred files each.
-- The attempt suffix means two attempts of one object never collide.
+- The attempt suffix means two attempts of one lamina never collide.
 
 ### 23.3 Index metadata (Control Plane)
 
 ```text
-object_id
+lamina_id
 tenant_id
 site_id
 set_id
 source_id
 date_started
-date_ended          (estimated for an incomplete object, §19)
+date_ended          (estimated for an incomplete lamina, §19)
 sink_id
-object_key
+lamina_key
 size_bytes
 state
 incomplete
@@ -270,9 +270,9 @@ date_committed
 and `date_ended` default to the write times
 ([§10](02-data-model.md#10-time-semantics)).
 
-An object's location is **`(sink_id, object_key)`**. The node is *not* part of
+A lamina's location is **`(sink_id, lamina_key)`**. The node is *not* part of
 the location: it comes from the `sinks` table (`sink_id → node_id, device_id`),
-so a device can be moved to another node without rewriting object rows ([§28.3](09-operations.md#283-node-failure-and-device-re-homing)).
+so a device can be moved to another node without rewriting lamina rows ([§28.3](09-operations.md#283-node-failure-and-device-re-homing)).
 
 URLs are never stored. They are generated on demand.
 
@@ -312,11 +312,11 @@ Instead the worker uses **deficit round robin (DRR) by bytes** across classes:
 Weights are configurable per node. Bandwidth-bound deployments may favor
 WRITE, and deployments that need interactive playback may favor READ.
 
-## 25. Object Size
+## 25. Lamina Size
 
 At ~200 MB/s sequential write:
 
-| Object size | Pure write time |
+| Lamina size | Pure write time |
 |---:|---:|
 | 1 MB | ~5 ms |
 | 16 MB | ~80 ms |
@@ -325,7 +325,7 @@ At ~200 MB/s sequential write:
 | 128 MB | ~640 ms |
 | 500 MB | ~2.5 s |
 
-Against a per-object fixed cost of a few seeks (one `fsync` journal write plus
+Against a per-lamina fixed cost of a few seeks (one `fsync` journal write plus
 moving between jobs, ~10–30 ms):
 
 ```text
@@ -334,18 +334,18 @@ moving between jobs, ~10–30 ms):
 up to 512 MB allowed by negotiation             → the upper bound
 ```
 
-**The lower bound (32 MB)** comes from the per-object fixed cost on HDDs:
+**The lower bound (32 MB)** comes from the per-lamina fixed cost on HDDs:
 file creation, the `fsync` journal write, seeks between jobs, a DB row, and a
 commit event. It holds whatever the upload mode. It applies to the ceiling
-`max_bitrate × duration`, so a quiet VBR camera writes smaller objects, and it
+`max_bitrate × duration`, so a quiet VBR camera writes smaller laminae, and it
 yields to the epoch rule below for very low ceilings
 ([§12.6](04-write-path.md#126-upload-profile-negotiation)).
 
 **The upper bound (512 MB)** is no longer set by node RAM. Uploads are staged
 in parts ([§12.2](04-write-path.md#122-resumable-part-uploads)), so a node
-never holds a whole object. What grows with object size is:
+never holds a whole lamina. What grows with lamina size is:
 
-| Object size | Segment at 4 Mbps | DB rows (5,000 cameras, 30 days) | Producer RAM (16-camera set, `retain: committed`, 2 segments per camera) |
+| Lamina size | Segment at 4 Mbps | DB rows (5,000 cameras, 30 days) | Producer RAM (16-camera set, `retain: committed`, 2 segments per camera) |
 |---:|---:|---:|---:|
 | 64 MB | 2.1 min | ~100 M | **2 GB** |
 | 128 MB | 4.3 min | ~50 M | 4 GB |
@@ -354,13 +354,13 @@ never holds a whole object. What grows with object size is:
 At CCTV loads the HDDs are ~5% busy and the fixed cost is invisible, and even
 100 M rows is routine for PostgreSQL. The cost that matters is **producer RAM**
 on edge gateways. That is why the default stays at 64 MB. Producers with
-high-bitrate cameras or spare RAM negotiate larger objects
+high-bitrate cameras or spare RAM negotiate larger laminae
 ([§12.6](04-write-path.md#126-upload-profile-negotiation)).
 
 One more rule: a segment lasts at most a quarter of the set's `epoch`, so every
-epoch holds several objects per source and epoch-based placement keeps its
+epoch holds several laminae per source and epoch-based placement keeps its
 meaning. When the two rules conflict, for a ceiling under about 0.28 Mbps at
-a one-hour epoch, the epoch rule wins and the object is smaller than 32 MB.
+a one-hour epoch, the epoch rule wins and the lamina is smaller than 32 MB.
 
 The segment size also sets the **loss granularity** and the **upload
 duration** of a live upload. With live upload, what a destroyed producer

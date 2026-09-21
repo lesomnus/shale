@@ -9,8 +9,8 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/shale/internal/ent/attempt"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
-	"github.com/lesomnus/shale/internal/ent/object"
 	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/site"
@@ -30,7 +30,7 @@ type AttemptQuery struct {
 	predicates []predicate.Attempt
 	withTenant *TenantQuery
 	withSite   *SiteQuery
-	withObject *ObjectQuery
+	withLamina *LaminaQuery
 	withSink   *SinkQuery
 	withNode   *NodeQuery
 	modifiers  []func(*sql.Selector)
@@ -114,9 +114,9 @@ func (_q *AttemptQuery) QuerySite() *SiteQuery {
 	return query
 }
 
-// QueryObject chains the current query on the "object" edge.
-func (_q *AttemptQuery) QueryObject() *ObjectQuery {
-	query := (&ObjectClient{config: _q.config}).Query()
+// QueryLamina chains the current query on the "lamina" edge.
+func (_q *AttemptQuery) QueryLamina() *LaminaQuery {
+	query := (&LaminaClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -127,8 +127,8 @@ func (_q *AttemptQuery) QueryObject() *ObjectQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(attempt.Table, attempt.FieldId, selector),
-			sqlgraph.To(object.Table, object.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, attempt.ObjectTable, attempt.ObjectColumn),
+			sqlgraph.To(lamina.Table, lamina.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, attempt.LaminaTable, attempt.LaminaColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -374,7 +374,7 @@ func (_q *AttemptQuery) Clone() *AttemptQuery {
 		predicates: append([]predicate.Attempt{}, _q.predicates...),
 		withTenant: _q.withTenant.Clone(),
 		withSite:   _q.withSite.Clone(),
-		withObject: _q.withObject.Clone(),
+		withLamina: _q.withLamina.Clone(),
 		withSink:   _q.withSink.Clone(),
 		withNode:   _q.withNode.Clone(),
 		// clone intermediate query.
@@ -406,14 +406,14 @@ func (_q *AttemptQuery) WithSite(opts ...func(*SiteQuery)) *AttemptQuery {
 	return _q
 }
 
-// WithObject tells the query-builder to eager-load the nodes that are connected to
-// the "object" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *AttemptQuery) WithObject(opts ...func(*ObjectQuery)) *AttemptQuery {
-	query := (&ObjectClient{config: _q.config}).Query()
+// WithLamina tells the query-builder to eager-load the nodes that are connected to
+// the "lamina" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *AttemptQuery) WithLamina(opts ...func(*LaminaQuery)) *AttemptQuery {
+	query := (&LaminaClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withObject = query
+	_q.withLamina = query
 	return _q
 }
 
@@ -520,7 +520,7 @@ func (_q *AttemptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Atte
 		loadedTypes = [5]bool{
 			_q.withTenant != nil,
 			_q.withSite != nil,
-			_q.withObject != nil,
+			_q.withLamina != nil,
 			_q.withSink != nil,
 			_q.withNode != nil,
 		}
@@ -558,9 +558,9 @@ func (_q *AttemptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Atte
 			return nil, err
 		}
 	}
-	if query := _q.withObject; query != nil {
-		if err := _q.loadObject(ctx, query, nodes, nil,
-			func(n *Attempt, e *Object) { n.Edges.Object = e }); err != nil {
+	if query := _q.withLamina; query != nil {
+		if err := _q.loadLamina(ctx, query, nodes, nil,
+			func(n *Attempt, e *Lamina) { n.Edges.Lamina = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -637,11 +637,11 @@ func (_q *AttemptQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []
 	}
 	return nil
 }
-func (_q *AttemptQuery) loadObject(ctx context.Context, query *ObjectQuery, nodes []*Attempt, init func(*Attempt), assign func(*Attempt, *Object)) error {
+func (_q *AttemptQuery) loadLamina(ctx context.Context, query *LaminaQuery, nodes []*Attempt, init func(*Attempt), assign func(*Attempt, *Lamina)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Attempt)
 	for i := range nodes {
-		fk := nodes[i].ObjectId
+		fk := nodes[i].LaminaId
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -650,7 +650,7 @@ func (_q *AttemptQuery) loadObject(ctx context.Context, query *ObjectQuery, node
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(object.IdIn(ids...))
+	query.Where(lamina.IdIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -658,7 +658,7 @@ func (_q *AttemptQuery) loadObject(ctx context.Context, query *ObjectQuery, node
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.Id]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "object_id" returned %v`, n.Id)
+			return fmt.Errorf(`unexpected foreign-key "lamina_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -759,8 +759,8 @@ func (_q *AttemptQuery) querySpec() *sqlgraph.QuerySpec {
 		if _q.withSite != nil {
 			_spec.Node.AddColumnOnce(attempt.FieldSiteId)
 		}
-		if _q.withObject != nil {
-			_spec.Node.AddColumnOnce(attempt.FieldObjectId)
+		if _q.withLamina != nil {
+			_spec.Node.AddColumnOnce(attempt.FieldLaminaId)
 		}
 		if _q.withSink != nil {
 			_spec.Node.AddColumnOnce(attempt.FieldSinkId)

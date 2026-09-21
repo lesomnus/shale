@@ -18,7 +18,7 @@ import (
 // RAM whatever its segment length; when the node dies under a segment
 // whose parts it had, that segment is cut short at the node's offset
 // rather than kept or moved, nothing is reported lost, and the node back
-// makes an incomplete object of what it holds (§15). The segments after
+// makes an incomplete lamina of what it holds (§15). The segments after
 // it wait whole, and drain when the node returns.
 func TestBacklogAfterOutageWritten(t *testing.T) {
 	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
@@ -31,7 +31,7 @@ func TestBacklogAfterOutageWritten(t *testing.T) {
 	// Segments of a few MB, so one spans many parts.
 	up, err := api.NewUploadPolicyServiceClient(ops).Add(ctx, api.UploadPolicyAddRequest_builder{
 		Alias: "parts", Version: 1,
-		Bounds: api.UploadBounds_builder{MinObject: 1 << 20, TargetObject: 4 << 20, MaxObject: 16 << 20}.Build(),
+		Bounds: api.UploadBounds_builder{MinLamina: 1 << 20, TargetLamina: 4 << 20, MaxLamina: 16 << 20}.Build(),
 	}.Build())
 	require.NoError(t, err)
 	_, err = api.NewUploadPolicyServiceClient(ops).Activate(ctx, api.UploadPolicyActivateRequest_builder{Ref: api.UploadPolicyRef_builder{Id: up.GetId()}.Build()}.Build())
@@ -116,30 +116,30 @@ func TestBacklogAfterOutageWritten(t *testing.T) {
 	require.Equal(t, before, mid.Stored, "nothing stored while every sink is out of reach")
 
 	// B is back: the backlog drains, and B's abandon rule makes an
-	// incomplete object of the cut segment, with the size it had.
+	// incomplete lamina of the cut segment, with the size it had.
 	c.startNodeAt("b", stateB, sinkB)
 	require.Eventually(t, func() bool {
 		st := p.Stats()
 
 		return st.Stored >= before+2 && st.Lost == 0
 	}, 120*time.Second, 500*time.Millisecond, "the backlog is stored: %+v", p.Stats())
-	objects := api.NewObjectServiceClient(admin)
+	laminae := api.NewLaminaServiceClient(admin)
 	require.Eventually(t, func() bool {
-		list, err := objects.List(ctx, api.ObjectListRequest_builder{
-			Filters: []*api.ObjectFilter{api.ObjectFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
+		list, err := laminae.List(ctx, api.LaminaListRequest_builder{
+			Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
 			Size:    200,
 		}.Build())
 		if err != nil {
 			return false
 		}
 		for _, o := range list.GetItems() {
-			require.NotEqual(t, api.ObjectState_OBJECT_STATE_LOST, o.GetState())
-			if o.GetState() == api.ObjectState_OBJECT_STATE_COMMITTED && o.GetIncomplete() && o.GetSize() >= part {
+			require.NotEqual(t, api.LaminaState_LAMINA_STATE_LOST, o.GetState())
+			if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED && o.GetIncomplete() && o.GetSize() >= part {
 				return true
 			}
 		}
 
 		return false
-	}, 150*time.Second, time.Second, "the cut segment is an incomplete object of at least a part")
+	}, 150*time.Second, time.Second, "the cut segment is an incomplete lamina of at least a part")
 	require.Equal(t, int64(0), p.Stats().Lost)
 }

@@ -12,7 +12,7 @@ import (
 
 // A caller on the CP's own host (loopback) gets loopback for the node that
 // shares the host, and a routable address for every other node: the lab's
-// CLI on the CP host was handed 127.0.0.1 for objects on other nodes
+// CLI on the CP host was handed 127.0.0.1 for laminae on other nodes
 // (§34.10).
 func TestPickAddressLoopbackCaller(t *testing.T) {
 	saved := hostIPs

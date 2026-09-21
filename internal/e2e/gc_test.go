@@ -16,7 +16,7 @@ import (
 )
 
 // TestGcReclaimsToTarget is §21's protocol end to end: a small sink fills
-// past its low watermark, its objects are rescheduled to expire now, the
+// past its low watermark, its laminae are rescheduled to expire now, the
 // node proposes, the CP approves, files go, events close the rows, and
 // the round stops once free space reaches the target rather than
 // deleting everything approvable.
@@ -51,7 +51,7 @@ func TestGcReclaimsToTarget(t *testing.T) {
 	conn := c.dial("@acme/admin")
 	sets := api.NewSetServiceClient(conn)
 	sources := api.NewSourceServiceClient(conn)
-	objects := api.NewObjectServiceClient(conn)
+	laminae := api.NewLaminaServiceClient(conn)
 	set, err := sets.Add(ctx, api.SetAddRequest_builder{Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "gc"}.Build())
 	require.NoError(t, err)
 	src, err := sources.Add(ctx, api.SourceAddRequest_builder{
@@ -60,7 +60,7 @@ func TestGcReclaimsToTarget(t *testing.T) {
 	}.Build())
 	require.NoError(t, err)
 
-	// 13 objects of 310 KB on the small sink: free falls under the low
+	// 13 laminae of 310 KB on the small sink: free falls under the low
 	// watermark (5%) but stays above critical (3%).
 	body := make([]byte, 310_000)
 	for i := range body {
@@ -72,7 +72,7 @@ func TestGcReclaimsToTarget(t *testing.T) {
 		var al *api.Allocation
 		var cand *api.Candidate
 		for j := range 40 {
-			a, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+			a, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 				Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(base.Add(time.Duration(i*40+j) * time.Hour)),
 			}.Build())
 			require.NoError(t, err)
@@ -87,20 +87,20 @@ func TestGcReclaimsToTarget(t *testing.T) {
 		}
 		require.NotNil(t, al, "a slot on the small sink")
 		require.Equal(t, 201, putTo(t, cand, body, al.GetDateStarted().AsTime().Add(time.Minute)))
-		ids = append(ids, al.GetObjectId())
+		ids = append(ids, al.GetLaminaId())
 	}
 	require.Eventually(t, func() bool {
 		s, err := sinks.Get(ctx, api.SinkGetRequest_builder{Ref: api.SinkRef_builder{Id: sinkId}.Build()}.Build())
 
-		return err == nil && s.GetObjects() == 13 && s.GetPressure() == api.Pressure_PRESSURE_RECLAIM
-	}, 20*time.Second, 200*time.Millisecond, "the sink is under pressure with every object indexed")
+		return err == nil && s.GetLaminae() == 13 && s.GetPressure() == api.Pressure_PRESSURE_RECLAIM
+	}, 20*time.Second, 200*time.Millisecond, "the sink is under pressure with every lamina indexed")
 
-	// Nothing is approvable while every object is within retention.
+	// Nothing is approvable while every lamina is within retention.
 	time.Sleep(3 * time.Second)
 	for _, id := range ids {
-		o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: id}.Build()}.Build())
+		o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: id}.Build()}.Build())
 		require.NoError(t, err)
-		require.Equal(t, api.ObjectState_OBJECT_STATE_COMMITTED, o.GetState(), "retention holds")
+		require.Equal(t, api.LaminaState_LAMINA_STATE_COMMITTED, o.GetState(), "retention holds")
 	}
 
 	// Expire them all: the dates reach the xattrs, the next round
@@ -111,21 +111,21 @@ func TestGcReclaimsToTarget(t *testing.T) {
 	saved := core.ReschedulePage
 	core.ReschedulePage = 2
 	t.Cleanup(func() { core.ReschedulePage = saved })
-	expire := api.ObjectRescheduleRequest_builder{
+	expire := api.LaminaRescheduleRequest_builder{
 		Set: api.SetRef_builder{Id: set.GetId()}.Build(), From: timestamppb.New(base.Add(-time.Hour)), To: timestamppb.New(time.Now()),
 		DateExpired: timestamppb.New(time.Now().Add(-time.Minute)), Reason: "make room",
 	}.Build()
 	short, cancel := context.WithTimeout(ctx, 4*time.Second)
-	res, err := objects.Reschedule(short, expire)
+	res, err := laminae.Reschedule(short, expire)
 	cancel()
 	require.NoError(t, err)
 	require.Equal(t, int64(2), res.GetChanged(), "one page before the deadline")
 	require.Equal(t, int64(11), res.GetRemaining())
-	res, err = objects.Reschedule(ctx, expire)
+	res, err = laminae.Reschedule(ctx, expire)
 	require.NoError(t, err)
 	require.Equal(t, int64(11), res.GetChanged(), "the rest")
 	require.Zero(t, res.GetRemaining())
-	res, err = objects.Reschedule(ctx, expire)
+	res, err = laminae.Reschedule(ctx, expire)
 	require.NoError(t, err)
 	require.Zero(t, res.GetChanged(), "nothing selected twice")
 	core.ReschedulePage = saved
@@ -139,14 +139,14 @@ func TestGcReclaimsToTarget(t *testing.T) {
 	require.Eventually(t, func() bool {
 		deleted, kept = 0, 0
 		for _, id := range ids {
-			o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: id}.Build()}.Build())
+			o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: id}.Build()}.Build())
 			if err != nil {
 				return false
 			}
 			switch o.GetState() {
-			case api.ObjectState_OBJECT_STATE_DELETED:
+			case api.LaminaState_LAMINA_STATE_DELETED:
 				deleted++
-			case api.ObjectState_OBJECT_STATE_COMMITTED:
+			case api.LaminaState_LAMINA_STATE_COMMITTED:
 				kept++
 			default:
 				return false
@@ -161,7 +161,7 @@ func TestGcReclaimsToTarget(t *testing.T) {
 // putTo uploads a buffered body to one candidate and answers the status.
 func putTo(t *testing.T, cand *api.Candidate, body []byte, ended time.Time) int {
 	t.Helper()
-	al := api.Allocation_builder{ObjectKey: cand.GetObjectKey(), Candidates: []*api.Candidate{cand}, DateStarted: timestamppb.New(ended.Add(-time.Minute))}.Build()
+	al := api.Allocation_builder{LaminaKey: cand.GetLaminaKey(), Candidates: []*api.Candidate{cand}, DateStarted: timestamppb.New(ended.Add(-time.Minute))}.Build()
 
 	return put(t, al, body, ended)
 }

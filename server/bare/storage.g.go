@@ -708,7 +708,7 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 		q.SetWarnings(u)
 	}
 	q.SetCapacityClamped(req.GetCapacityClamped())
-	q.SetObjects(req.GetObjects())
+	q.SetLaminae(req.GetLaminae())
 
 	u, err := q.Save(ctx)
 	if err != nil {
@@ -836,8 +836,8 @@ func SinkSelectedFields(m *api.SinkSelect) []string {
 	if m.GetCapacityClamped() {
 		vs = append(vs, sink.FieldCapacityClamped)
 	}
-	if m.GetObjects() {
-		vs = append(vs, sink.FieldObjects)
+	if m.GetLaminae() {
+		vs = append(vs, sink.FieldLaminae)
 	}
 
 	return vs
@@ -928,7 +928,7 @@ func SinkGetKey(ctx context.Context, db *ent.Client, ref *api.SinkRef) (uuid.UUI
 var sinkOrmEntity = ormpatch.MustEntityOf(api.File_shale_storage_proto, "Sink")
 
 var sinkPatchColumns = entpatch.Columns{
-	1: sink.FieldId, 4: sink.FieldAlias, 5: sink.FieldName, 6: sink.FieldDesc, 7: sink.FieldLabels, 8: sink.NodeColumn, 9: sink.DeviceColumn, 10: sink.FieldPath, 11: sink.FieldCapacity, 12: sink.FieldFree, 13: sink.FieldDateUpdated, 14: sink.FieldDateErased, 15: sink.FieldDateCreated, 16: sink.FieldPressure, 17: sink.FieldCapabilities, 18: sink.FieldAttachment, 19: sink.FieldAcceptWrites, 20: sink.FieldDateSeen, 21: sink.FieldUploadsInFlight, 22: sink.FieldDateReconciled, 23: sink.FieldReportedBy, 24: sink.FieldWarnings, 25: sink.FieldCapacityClamped, 26: sink.FieldObjects}
+	1: sink.FieldId, 4: sink.FieldAlias, 5: sink.FieldName, 6: sink.FieldDesc, 7: sink.FieldLabels, 8: sink.NodeColumn, 9: sink.DeviceColumn, 10: sink.FieldPath, 11: sink.FieldCapacity, 12: sink.FieldFree, 13: sink.FieldDateUpdated, 14: sink.FieldDateErased, 15: sink.FieldDateCreated, 16: sink.FieldPressure, 17: sink.FieldCapabilities, 18: sink.FieldAttachment, 19: sink.FieldAcceptWrites, 20: sink.FieldDateSeen, 21: sink.FieldUploadsInFlight, 22: sink.FieldDateReconciled, 23: sink.FieldReportedBy, 24: sink.FieldWarnings, 25: sink.FieldCapacityClamped, 26: sink.FieldLaminae}
 
 func (s SinkServiceServer) Apply(ctx context.Context, req *api.SinkApplyRequest) (*api.Sink, error) {
 	if !req.HasPatch() {

@@ -142,7 +142,7 @@ episode rule still has no motion under it.
 | Start offset between streams | 21 ms |
 | Levels | peak 0.0 dBFS, mean −33.9 dB |
 
-Audio and video share one object with no change to storage. The declared
+Audio and video share one lamina with no change to storage. The declared
 `max_bitrate` covers both. The peak at 0 dBFS means the microphone gain is too
 high and loud sounds clip.
 

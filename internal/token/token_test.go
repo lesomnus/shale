@@ -21,7 +21,7 @@ func TestRoundTrip(t *testing.T) {
 		Exp:       timestamppb.New(exp),
 		Aud:       []byte("node-a"),
 		Op:        api.TokenOp_TOKEN_OP_PUT,
-		ObjectKey: "objects/2026/09/20/00/x",
+		LaminaKey: "laminae/2026/09/20/00/x",
 		MaxLength: 123,
 	}.Build())
 	x.NoError(err)
@@ -33,7 +33,7 @@ func TestRoundTrip(t *testing.T) {
 	x.NoError(err)
 	x.Equal("k1", c.GetKid())
 	x.Equal(int64(123), c.GetMaxLength())
-	x.Equal("objects/2026/09/20/00/x", c.GetObjectKey())
+	x.Equal("laminae/2026/09/20/00/x", c.GetLaminaKey())
 
 	x.NoError(Check(c, []byte("node-a"), api.TokenOp_TOKEN_OP_PUT))
 	x.ErrorIs(Check(c, []byte("node-b"), api.TokenOp_TOKEN_OP_PUT), ErrAudience)

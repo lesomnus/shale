@@ -176,8 +176,8 @@ func (_u *AttemptUpdate) check() error {
 	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Attempt.tenant"`)
 	}
-	if _u.mutation.ObjectCleared() && len(_u.mutation.ObjectIds()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Attempt.object"`)
+	if _u.mutation.LaminaCleared() && len(_u.mutation.LaminaIds()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Attempt.lamina"`)
 	}
 	if _u.mutation.SinkCleared() && len(_u.mutation.SinkIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Attempt.sink"`)
@@ -421,8 +421,8 @@ func (_u *AttemptUpdateOne) check() error {
 	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Attempt.tenant"`)
 	}
-	if _u.mutation.ObjectCleared() && len(_u.mutation.ObjectIds()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Attempt.object"`)
+	if _u.mutation.LaminaCleared() && len(_u.mutation.LaminaIds()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Attempt.lamina"`)
 	}
 	if _u.mutation.SinkCleared() && len(_u.mutation.SinkIds()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Attempt.sink"`)

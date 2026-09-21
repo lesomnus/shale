@@ -30,7 +30,7 @@ type zfsDataset struct {
 	Props map[string]string
 }
 
-// zfsProps are the properties read, and the values object data wants.
+// zfsProps are the properties read, and the values lamina data wants.
 var zfsProps = []struct{ name, want string }{
 	{"xattr", "sa"},
 	{"recordsize", "1M"},
@@ -141,7 +141,7 @@ func (z *zfsDataset) adjust(caps *api.SinkCapabilities) {
 		}
 	}
 	if len(off) > 0 {
-		caps.SetWarnings(append(caps.GetWarnings(), "zfs: recommended for object data: "+strings.Join(off, ", ")))
+		caps.SetWarnings(append(caps.GetWarnings(), "zfs: recommended for lamina data: "+strings.Join(off, ", ")))
 	}
 }
 

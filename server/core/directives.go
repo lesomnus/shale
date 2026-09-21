@@ -19,8 +19,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/device"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
-	"github.com/lesomnus/shale/internal/ent/object"
 	"github.com/lesomnus/shale/internal/ent/sink"
 )
 
@@ -313,37 +313,37 @@ func (s *Directives) node(ctx context.Context, n *ent.Node, resume bool, now tim
 	return nil
 }
 
-// deletes sends Delete for every object DELETING on the sink and for the
-// duplicates of those objects on it (§20.3, §21.2). An answer of absent
+// deletes sends Delete for every lamina DELETING on the sink and for the
+// duplicates of those laminae on it (§20.3, §21.2). An answer of absent
 // confirms the deletion; deleted waits for the node's event.
 func (s *Directives) deletes(ctx context.Context, client api.NodeControlClient, nodeId pdid.Id, sk *ent.Sink, now time.Time, resume bool) error {
-	objs, err := s.d.Ent.Object.Query().
-		Where(object.SinkIdEQ(sk.Id), object.StateEQ(int32(api.ObjectState_OBJECT_STATE_DELETING))).
+	objs, err := s.d.Ent.Lamina.Query().
+		Where(lamina.SinkIdEQ(sk.Id), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_DELETING))).
 		Limit(deletePage).
 		All(ctx)
 	if err != nil {
 		return err
 	}
-	keys := map[string]*ent.Object{}
+	keys := map[string]*ent.Lamina{}
 	for _, o := range objs {
-		keys[o.ObjectKey] = o
+		keys[o.LaminaKey] = o
 	}
-	// Duplicates of objects being deleted, wherever the object's own file
+	// Duplicates of laminae being deleted, wherever the lamina's own file
 	// is: their files sit on this sink.
 	dups, err := s.d.Ent.Attempt.Query().
 		Where(attempt.SinkIdEQ(sk.Id), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_DUPLICATE)),
-			attempt.HasObjectWith(object.StateIn(int32(api.ObjectState_OBJECT_STATE_DELETING), int32(api.ObjectState_OBJECT_STATE_DELETED)))).
-		WithObject().
+			attempt.HasLaminaWith(lamina.StateIn(int32(api.LaminaState_LAMINA_STATE_DELETING), int32(api.LaminaState_LAMINA_STATE_DELETED)))).
+		WithLamina().
 		Limit(deletePage).
 		All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, a := range dups {
-		if a.Edges.Object == nil {
+		if a.Edges.Lamina == nil {
 			continue
 		}
-		key := ObjectKey(a.Edges.Object.DateStarted, pdid.Id(a.ObjectId), pdid.Id(a.Id))
+		key := LaminaKey(a.Edges.Lamina.DateStarted, pdid.Id(a.LaminaId), pdid.Id(a.Id))
 		if _, ok := keys[key]; !ok {
 			keys[key] = nil
 		}
@@ -388,8 +388,8 @@ func (s *Directives) deletes(ctx context.Context, client api.NodeControlClient, 
 			}
 			core := Core{d: s.d}
 			if err := core.ownTx(ctx, func(own api.Server) error {
-				return core.applyMissing(ctx, own, nodeId, api.ObjectMissing_builder{
-					SinkId: sk.Id[:], ObjectKey: r.GetKey(), Reason: api.MissingReason_MISSING_REASON_NOT_FOUND,
+				return core.applyMissing(ctx, own, nodeId, api.LaminaMissing_builder{
+					SinkId: sk.Id[:], LaminaKey: r.GetKey(), Reason: api.MissingReason_MISSING_REASON_NOT_FOUND,
 				}.Build())
 			}); err != nil {
 				s.log().Warn("confirm deletion", "key", r.GetKey(), "err", err.Error())
@@ -402,24 +402,24 @@ func (s *Directives) deletes(ctx context.Context, client api.NodeControlClient, 
 	return nil
 }
 
-// dates rewrites the xattrs of objects whose dates changed (§20.3).
+// dates rewrites the xattrs of laminae whose dates changed (§20.3).
 func (s *Directives) dates(ctx context.Context, client api.NodeControlClient, sk *ent.Sink) error {
-	objs, err := s.d.Ent.Object.Query().
-		Where(object.SinkIdEQ(sk.Id), object.DatesSyncedEQ(false), object.StateEQ(int32(api.ObjectState_OBJECT_STATE_COMMITTED))).
+	objs, err := s.d.Ent.Lamina.Query().
+		Where(lamina.SinkIdEQ(sk.Id), lamina.DatesSyncedEQ(false), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_COMMITTED))).
 		Limit(deletePage).
 		All(ctx)
 	if err != nil || len(objs) == 0 {
 		return err
 	}
 	var dates []*api.NodeSetDatesRequest_Dates
-	byKey := map[string]*ent.Object{}
+	byKey := map[string]*ent.Lamina{}
 	for _, o := range objs {
-		d := api.NodeSetDatesRequest_Dates_builder{Key: o.ObjectKey, DateExpired: timestamppb.New(o.DateExpired)}
+		d := api.NodeSetDatesRequest_Dates_builder{Key: o.LaminaKey, DateExpired: timestamppb.New(o.DateExpired)}
 		if o.DateDeleted != nil {
 			d.DateDeleted = timestamppb.New(*o.DateDeleted)
 		}
 		dates = append(dates, d.Build())
-		byKey[o.ObjectKey] = o
+		byKey[o.LaminaKey] = o
 	}
 	cctx, cancel := context.WithTimeout(ctx, directiveTimeout)
 	resp, err := client.SetDates(cctx, api.NodeSetDatesRequest_builder{SinkId: sk.Id[:], Dates: dates}.Build())
@@ -436,13 +436,13 @@ func (s *Directives) dates(ctx context.Context, client api.NodeControlClient, sk
 		_ = absent[key]
 		// Synced, or nothing to sync to: either way the directive is done.
 		// A missing file is the reconciliation's finding, not this one's.
-		if _, err := s.d.Own.Object().Patch(ctx, api.ObjectPatchRequest_builder{
-			Ref: api.ObjectRef_builder{Id: o.Id[:]}.Build(), DatesSynced: z.Ptr(true), DateUpdatedForce: z.Ptr(true),
+		if _, err := s.d.Own.Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
+			Ref: api.LaminaRef_builder{Id: o.Id[:]}.Build(), DatesSynced: z.Ptr(true), DateUpdatedForce: z.Ptr(true),
 		}.Build()); err != nil {
 			return err
 		}
 	}
-	s.log().Info("dates synced", "sink", sk.Alias, "objects", len(byKey), "absent", len(absent))
+	s.log().Info("dates synced", "sink", sk.Alias, "laminae", len(byKey), "absent", len(absent))
 
 	return nil
 }
@@ -484,9 +484,9 @@ func cleared(labels map[string]string, key string) map[string]string {
 func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient, nodeId pdid.Id, sk *ent.Sink, full bool, now time.Time) error {
 	var since time.Time
 	if !full {
-		newest, err := s.d.Ent.Object.Query().
-			Where(object.SinkIdEQ(sk.Id), object.DateCommittedNotNil()).
-			Order(ent.Desc(object.FieldDateCommitted)).
+		newest, err := s.d.Ent.Lamina.Query().
+			Where(lamina.SinkIdEQ(sk.Id), lamina.DateCommittedNotNil()).
+			Order(ent.Desc(lamina.FieldDateCommitted)).
 			First(ctx)
 		if err != nil && !ent.IsNotFound(err) {
 			return err
@@ -495,8 +495,8 @@ func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient
 			since = newest.DateCommitted.Add(-reconcileMargin)
 		}
 	}
-	deleting, err := s.d.Ent.Object.Query().
-		Where(object.SinkIdEQ(sk.Id), object.StateEQ(int32(api.ObjectState_OBJECT_STATE_DELETING))).
+	deleting, err := s.d.Ent.Lamina.Query().
+		Where(lamina.SinkIdEQ(sk.Id), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_DELETING))).
 		Limit(10000).
 		All(ctx)
 	if err != nil {
@@ -504,7 +504,7 @@ func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient
 	}
 	var keys []string
 	for _, o := range deleting {
-		keys = append(keys, o.ObjectKey)
+		keys = append(keys, o.LaminaKey)
 	}
 
 	cctx, cancel := context.WithTimeout(ctx, time.Hour)
@@ -540,15 +540,15 @@ func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient
 			if err := core.ownTx(ctx, func(own api.Server) error {
 				return core.applyStored(ctx, own, nodeId, rec)
 			}); err != nil {
-				s.log().Warn("reconcile record", "sink", sk.Alias, "key", rec.GetObjectKey(), "err", err.Error())
+				s.log().Warn("reconcile record", "sink", sk.Alias, "key", rec.GetLaminaKey(), "err", err.Error())
 				continue
 			}
 			learned++
 		case item.HasAbsent():
 			absent++
 			if err := core.ownTx(ctx, func(own api.Server) error {
-				return core.applyMissing(ctx, own, nodeId, api.ObjectMissing_builder{
-					SinkId: sk.Id[:], ObjectKey: item.GetAbsent(), Reason: api.MissingReason_MISSING_REASON_NOT_FOUND,
+				return core.applyMissing(ctx, own, nodeId, api.LaminaMissing_builder{
+					SinkId: sk.Id[:], LaminaKey: item.GetAbsent(), Reason: api.MissingReason_MISSING_REASON_NOT_FOUND,
 				}.Build())
 			}); err != nil {
 				s.log().Warn("reconcile absent", "sink", sk.Alias, "key", item.GetAbsent(), "err", err.Error())

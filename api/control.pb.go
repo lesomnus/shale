@@ -855,7 +855,7 @@ func (x *NodeReconcileResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *NodeReconcileResponse) GetRecord() *ObjectStored {
+func (x *NodeReconcileResponse) GetRecord() *LaminaStored {
 	if x != nil {
 		if x, ok := x.xxx_hidden_Item.(*nodeReconcileResponse_Record); ok {
 			return x.Record
@@ -882,7 +882,7 @@ func (x *NodeReconcileResponse) GetTotal() int64 {
 	return 0
 }
 
-func (x *NodeReconcileResponse) SetRecord(v *ObjectStored) {
+func (x *NodeReconcileResponse) SetRecord(v *LaminaStored) {
 	if v == nil {
 		x.xxx_hidden_Item = nil
 		return
@@ -976,7 +976,7 @@ type NodeReconcileResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Fields of oneof xxx_hidden_Item:
-	Record *ObjectStored
+	Record *LaminaStored
 	Absent *string
 	Total  *int64
 	// -- end of xxx_hidden_Item
@@ -1013,7 +1013,7 @@ type isNodeReconcileResponse_Item interface {
 }
 
 type nodeReconcileResponse_Record struct {
-	Record *ObjectStored `protobuf:"bytes,1,opt,name=record,oneof"`
+	Record *LaminaStored `protobuf:"bytes,1,opt,name=record,oneof"`
 }
 
 type nodeReconcileResponse_Absent struct {
@@ -1399,7 +1399,7 @@ const file_shale_control_proto_rawDesc = "" +
 	"\x05since\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x12\x1a\n" +
 	"\bdeleting\x18\x03 \x03(\tR\bdeleting\"\x80\x01\n" +
 	"\x15NodeReconcileResponse\x12-\n" +
-	"\x06record\x18\x01 \x01(\v2\x13.shale.ObjectStoredH\x00R\x06record\x12\x18\n" +
+	"\x06record\x18\x01 \x01(\v2\x13.shale.LaminaStoredH\x00R\x06record\x12\x18\n" +
 	"\x06absent\x18\x02 \x01(\tH\x00R\x06absent\x12\x16\n" +
 	"\x05total\x18\x03 \x01(\x03H\x00R\x05totalB\x06\n" +
 	"\x04item\"^\n" +
@@ -1444,13 +1444,13 @@ var file_shale_control_proto_goTypes = []any{
 	(*NodeDeleteResponse_Key)(nil),         // 15: shale.NodeDeleteResponse.Key
 	(*NodeSetDatesRequest_Dates)(nil),      // 16: shale.NodeSetDatesRequest.Dates
 	(*timestamppb.Timestamp)(nil),          // 17: google.protobuf.Timestamp
-	(*ObjectStored)(nil),                   // 18: shale.ObjectStored
+	(*LaminaStored)(nil),                   // 18: shale.LaminaStored
 }
 var file_shale_control_proto_depIdxs = []int32{
 	15, // 0: shale.NodeDeleteResponse.keys:type_name -> shale.NodeDeleteResponse.Key
 	16, // 1: shale.NodeSetDatesRequest.dates:type_name -> shale.NodeSetDatesRequest.Dates
 	17, // 2: shale.NodeReconcileRequest.since:type_name -> google.protobuf.Timestamp
-	18, // 3: shale.NodeReconcileResponse.record:type_name -> shale.ObjectStored
+	18, // 3: shale.NodeReconcileResponse.record:type_name -> shale.LaminaStored
 	0,  // 4: shale.NodeDeleteResponse.Key.result:type_name -> shale.DeleteResult
 	17, // 5: shale.NodeSetDatesRequest.Dates.date_expired:type_name -> google.protobuf.Timestamp
 	17, // 6: shale.NodeSetDatesRequest.Dates.date_deleted:type_name -> google.protobuf.Timestamp

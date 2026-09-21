@@ -21,7 +21,7 @@ enum DeviceHealth {
   DEVICE_HEALTH_QUARANTINED = 3;
   // Reads only, never again for writes.
   DEVICE_HEALTH_RETIRED = 4;
-  // Its objects are LOST; the device is forgotten.
+  // Its laminae are LOST; the device is forgotten.
   DEVICE_HEALTH_DEAD = 5;
 }
 
@@ -122,7 +122,7 @@ enum SinkAttachment {
   SINK_ATTACHMENT_RETIRED = 3;
 }
 
-// Sink is where a node stores objects: a directory with its own label,
+// Sink is where a node stores laminae: a directory with its own label,
 // capacity, pressure state, and GC; the unit of placement and location
 // (§22.2). Its id is minted by the node that labeled it and registered by the
 // CP as given.
@@ -173,7 +173,7 @@ message Sink {
   repeated string warnings = 24;
   // Whether the sink's capacity was clamped for placement (§27).
   bool capacity_clamped = 25;
-  int64 objects = 26;
+  int64 laminae = 26;
 
   option (orm.message) = {
     rpc: {crud: true}

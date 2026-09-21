@@ -45,15 +45,15 @@ func TestProducerRecords(t *testing.T) {
 	admin := c.dial("@acme/admin")
 	ops := c.dialCluster("@cluster/ops")
 
-	// Small objects, so a 15 s recording makes several: an UploadPolicy of
+	// Small laminae, so a 15 s recording makes several: an UploadPolicy of
 	// the test's own, activated through the cluster API.
 	up, err := api.NewUploadPolicyServiceClient(ops).Add(ctx, api.UploadPolicyAddRequest_builder{
 		Alias:   "small",
 		Version: 1,
 		Bounds: api.UploadBounds_builder{
-			MinObject:    512 << 10,
-			TargetObject: 1 << 20,
-			MaxObject:    4 << 20,
+			MinLamina:    512 << 10,
+			TargetLamina: 1 << 20,
+			MaxLamina:    4 << 20,
 		}.Build(),
 	}.Build())
 	require.NoError(t, err)
@@ -139,11 +139,11 @@ func TestProducerRecords(t *testing.T) {
 
 	// Segments commit as the recording plays; the recording loops, so they
 	// keep coming.
-	objects := api.NewObjectServiceClient(admin)
-	var committed []*api.Object
+	laminae := api.NewLaminaServiceClient(admin)
+	var committed []*api.Lamina
 	require.Eventually(t, func() bool {
-		vs, err := objects.List(ctx, api.ObjectListRequest_builder{
-			Filters: []*api.ObjectFilter{api.ObjectFilter_builder{Source: api.SourceRef_builder{Id: src.GetId()}.Build()}.Build()},
+		vs, err := laminae.List(ctx, api.LaminaListRequest_builder{
+			Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: src.GetId()}.Build()}.Build()},
 			Size:    100,
 		}.Build())
 		if err != nil {
@@ -151,7 +151,7 @@ func TestProducerRecords(t *testing.T) {
 		}
 		committed = committed[:0]
 		for _, o := range vs.GetItems() {
-			if o.GetState() == api.ObjectState_OBJECT_STATE_COMMITTED {
+			if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED {
 				committed = append(committed, o)
 			}
 		}
@@ -169,13 +169,13 @@ func TestProducerRecords(t *testing.T) {
 	// starting with the tables and a keyframe.
 	from := committed[0].GetDateStarted().AsTime().Add(-time.Second)
 	to := time.Now().Add(time.Minute)
-	tl, err := objects.Timeline(ctx, api.ObjectTimelineRequest_builder{
+	tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
 		Source: api.SourceRef_builder{Id: src.GetId()}.Build(),
 		From:   timestamppb.New(from), To: timestamppb.New(to),
 	}.Build())
 	require.NoError(t, err)
 	require.Len(t, tl.GetSources(), 1)
-	objs := tl.GetSources()[0].GetObjects()
+	objs := tl.GetSources()[0].GetLaminae()
 	require.GreaterOrEqual(t, len(objs), 3)
 	for i, o := range objs {
 		require.Equal(t, api.ReadState_READ_STATE_AVAILABLE, o.GetState())

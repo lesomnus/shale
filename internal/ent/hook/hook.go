@@ -69,6 +69,18 @@ func (f HolderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HolderMutation", m)
 }
 
+// The LaminaFunc type is an adapter to allow the use of ordinary
+// function as Lamina mutator.
+type LaminaFunc func(context.Context, *ent.LaminaMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f LaminaFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.LaminaMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LaminaMutation", m)
+}
+
 // The NodeFunc type is an adapter to allow the use of ordinary
 // function as Node mutator.
 type NodeFunc func(context.Context, *ent.NodeMutation) (ent.Value, error)
@@ -79,18 +91,6 @@ func (f NodeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NodeMutation", m)
-}
-
-// The ObjectFunc type is an adapter to allow the use of ordinary
-// function as Object mutator.
-type ObjectFunc func(context.Context, *ent.ObjectMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ObjectFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ObjectMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ObjectMutation", m)
 }
 
 // The OutboxFunc type is an adapter to allow the use of ordinary

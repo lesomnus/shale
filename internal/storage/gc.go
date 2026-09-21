@@ -139,7 +139,7 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 		var gcs []*api.GcCandidate
 		for _, e := range page {
 			c := api.GcCandidate_builder{
-				ObjectKey: e.Key, ObjectId: e.Record.GetObjectId(), AttemptId: e.Record.GetAttemptId(),
+				LaminaKey: e.Key, LaminaId: e.Record.GetLaminaId(), AttemptId: e.Record.GetAttemptId(),
 				Size: e.Size, TenantId: e.Record.GetTenantId(),
 			}
 			if !e.Expired.IsZero() {
@@ -163,12 +163,12 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 		}
 
 		for _, d := range resp.GetDecisions() {
-			e, ok := s.Index.Get(d.GetObjectKey())
+			e, ok := s.Index.Get(d.GetLaminaKey())
 			if !ok {
 				continue
 			}
 			if d.GetApproved() {
-				if n.unlink(s, d.GetObjectKey()) == api.DeleteResult_DELETE_RESULT_DELETED {
+				if n.unlink(s, d.GetLaminaKey()) == api.DeleteResult_DELETE_RESULT_DELETED {
 					st.deleted++
 					st.reclaimed += e.Size
 				}
@@ -176,7 +176,7 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 			}
 			if d.GetDateExpired() != nil || d.GetDateDeleted() != nil {
 				// The CP knows newer dates: rewrite the xattr (§21.2 step 5).
-				n.setDates(s, d.GetObjectKey(), d.GetDateExpired(), d.GetDateDeleted())
+				n.setDates(s, d.GetLaminaKey(), d.GetDateExpired(), d.GetDateDeleted())
 			}
 		}
 		// Enough: a round stops at the target rather than at the end of

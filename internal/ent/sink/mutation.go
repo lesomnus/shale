@@ -44,8 +44,8 @@ type Mutation struct {
 	warnings             *[]string
 	appendwarnings       []string
 	capacity_clamped     *bool
-	objects              *int64
-	addobjects           *int64
+	laminae              *int64
+	addlaminae           *int64
 	clearedFields        map[string]struct{}
 	node                 *uuid.UUID
 	clearednode          bool
@@ -668,43 +668,43 @@ func (m *Mutation) ResetCapacityClamped() {
 	m.capacity_clamped = nil
 }
 
-// SetObjects sets the "objects" field.
-func (m *Mutation) SetObjects(i int64) {
-	m.objects = &i
-	m.addobjects = nil
+// SetLaminae sets the "laminae" field.
+func (m *Mutation) SetLaminae(i int64) {
+	m.laminae = &i
+	m.addlaminae = nil
 }
 
-// Objects returns the value of the "objects" field in the mutation.
-func (m *Mutation) Objects() (r int64, exists bool) {
-	v := m.objects
+// Laminae returns the value of the "laminae" field in the mutation.
+func (m *Mutation) Laminae() (r int64, exists bool) {
+	v := m.laminae
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// AddObjects adds i to the "objects" field.
-func (m *Mutation) AddObjects(i int64) {
-	if m.addobjects != nil {
-		*m.addobjects += i
+// AddLaminae adds i to the "laminae" field.
+func (m *Mutation) AddLaminae(i int64) {
+	if m.addlaminae != nil {
+		*m.addlaminae += i
 	} else {
-		m.addobjects = &i
+		m.addlaminae = &i
 	}
 }
 
-// AddedObjects returns the value that was added to the "objects" field in this mutation.
-func (m *Mutation) AddedObjects() (r int64, exists bool) {
-	v := m.addobjects
+// AddedLaminae returns the value that was added to the "laminae" field in this mutation.
+func (m *Mutation) AddedLaminae() (r int64, exists bool) {
+	v := m.addlaminae
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetObjects resets all changes to the "objects" field.
-func (m *Mutation) ResetObjects() {
-	m.objects = nil
-	m.addobjects = nil
+// ResetLaminae resets all changes to the "laminae" field.
+func (m *Mutation) ResetLaminae() {
+	m.laminae = nil
+	m.addlaminae = nil
 }
 
 // SetNodeId sets the "node_id" field.
@@ -907,8 +907,8 @@ func (m *Mutation) Fields() []string {
 	if m.capacity_clamped != nil {
 		fields = append(fields, FieldCapacityClamped)
 	}
-	if m.objects != nil {
-		fields = append(fields, FieldObjects)
+	if m.laminae != nil {
+		fields = append(fields, FieldLaminae)
 	}
 	if m.node != nil {
 		fields = append(fields, FieldNodeId)
@@ -964,8 +964,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Warnings()
 	case FieldCapacityClamped:
 		return m.CapacityClamped()
-	case FieldObjects:
-		return m.Objects()
+	case FieldLaminae:
+		return m.Laminae()
 	case FieldNodeId:
 		return m.NodeId()
 	case FieldDeviceId:
@@ -1126,12 +1126,12 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCapacityClamped(v)
 		return nil
-	case FieldObjects:
+	case FieldLaminae:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetObjects(v)
+		m.SetLaminae(v)
 		return nil
 	case FieldNodeId:
 		v, ok := value.(uuid.UUID)
@@ -1170,8 +1170,8 @@ func (m *Mutation) AddedFields() []string {
 	if m.adduploads_in_flight != nil {
 		fields = append(fields, FieldUploadsInFlight)
 	}
-	if m.addobjects != nil {
-		fields = append(fields, FieldObjects)
+	if m.addlaminae != nil {
+		fields = append(fields, FieldLaminae)
 	}
 	return fields
 }
@@ -1191,8 +1191,8 @@ func (m *Mutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedAttachment()
 	case FieldUploadsInFlight:
 		return m.AddedUploadsInFlight()
-	case FieldObjects:
-		return m.AddedObjects()
+	case FieldLaminae:
+		return m.AddedLaminae()
 	}
 	return nil, false
 }
@@ -1237,12 +1237,12 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddUploadsInFlight(v)
 		return nil
-	case FieldObjects:
+	case FieldLaminae:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddObjects(v)
+		m.AddLaminae(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Sink numeric field %s", name)
@@ -1388,8 +1388,8 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldCapacityClamped:
 		m.ResetCapacityClamped()
 		return nil
-	case FieldObjects:
-		m.ResetObjects()
+	case FieldLaminae:
+		m.ResetLaminae()
 		return nil
 	case FieldNodeId:
 		m.ResetNodeId()

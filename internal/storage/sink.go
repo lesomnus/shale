@@ -89,7 +89,7 @@ func OpenSink(c SinkConfig, marks Watermarks) (*Sink, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.MkdirAll(filepath.Join(path, "objects"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(path, "laminae"), 0o755); err != nil {
 		return nil, err
 	}
 
@@ -271,7 +271,7 @@ func (s *Sink) Report() *api.SinkReport {
 		Capabilities:     s.Caps,
 		Warnings:         warnings,
 		AcceptWrites:     s.AcceptsWrites(),
-		Objects:          int64(s.Index.Len()),
+		Laminae:          int64(s.Index.Len()),
 		DateNewest:       newest,
 	}.Build()
 }
@@ -290,12 +290,12 @@ func (s *Sink) Warn(v string) {
 
 // FilePath is the file of a key, refusing keys that leave the sink.
 func (s *Sink) FilePath(key string) (string, error) {
-	if !strings.HasPrefix(key, "objects/") || strings.Contains(key, "..") || strings.Contains(key, "\x00") {
-		return "", fmt.Errorf("bad object key %q", key)
+	if !strings.HasPrefix(key, "laminae/") || strings.Contains(key, "..") || strings.Contains(key, "\x00") {
+		return "", fmt.Errorf("bad lamina key %q", key)
 	}
 	p := filepath.Join(s.Path, filepath.FromSlash(key))
 	if !strings.HasPrefix(p, s.Path+string(filepath.Separator)) {
-		return "", fmt.Errorf("bad object key %q", key)
+		return "", fmt.Errorf("bad lamina key %q", key)
 	}
 
 	return p, nil

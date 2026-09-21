@@ -14,7 +14,7 @@ service DeviceService {
   rpc Quarantine(DeviceQuarantineRequest) returns (Device);
   rpc Release(DeviceReleaseRequest) returns (Device);
   rpc Retire(DeviceRetireRequest) returns (Device);
-  // Its objects become LOST; the device is forgotten.
+  // Its laminae become LOST; the device is forgotten.
   rpc DeclareDead(DeviceDeclareDeadRequest) returns (Device);
   // Bay LED on or off, through the node's control API.
   rpc Locate(DeviceLocateRequest) returns (Device);
@@ -80,8 +80,8 @@ enum GcReason {
 
 // GcCandidate is a file, named by key, with what its xattr says.
 message GcCandidate {
-  string object_key = 1 [features.field_presence = IMPLICIT];
-  bytes object_id = 2 [features.field_presence = IMPLICIT];
+  string lamina_key = 1 [features.field_presence = IMPLICIT];
+  bytes lamina_id = 2 [features.field_presence = IMPLICIT];
   bytes attempt_id = 3 [features.field_presence = IMPLICIT];
   int64 size = 4 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_expired = 5;
@@ -97,7 +97,7 @@ message SinkProposeGcRequest {
 }
 
 message GcDecision {
-  string object_key = 1 [features.field_presence = IMPLICIT];
+  string lamina_key = 1 [features.field_presence = IMPLICIT];
   bool approved = 2 [features.field_presence = IMPLICIT];
   // The current dates when they differ from what the node proposed on; the
   // node rewrites the xattr.

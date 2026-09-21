@@ -62,8 +62,8 @@ type Sink struct {
 	Warnings []string `json:"warnings,omitempty"`
 	// CapacityClamped holds the value of the "capacity_clamped" field.
 	CapacityClamped bool `json:"capacity_clamped,omitempty"`
-	// Objects holds the value of the "objects" field.
-	Objects int64 `json:"objects,omitempty"`
+	// Laminae holds the value of the "laminae" field.
+	Laminae int64 `json:"laminae,omitempty"`
 	// NodeId holds the value of the "node_id" field.
 	NodeId uuid.UUID `json:"node_id,omitempty"`
 	// DeviceId holds the value of the "device_id" field.
@@ -116,7 +116,7 @@ func (*Sink) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case sink.FieldAcceptWrites, sink.FieldCapacityClamped:
 			values[i] = new(sql.NullBool)
-		case sink.FieldCapacity, sink.FieldFree, sink.FieldPressure, sink.FieldAttachment, sink.FieldUploadsInFlight, sink.FieldObjects:
+		case sink.FieldCapacity, sink.FieldFree, sink.FieldPressure, sink.FieldAttachment, sink.FieldUploadsInFlight, sink.FieldLaminae:
 			values[i] = new(sql.NullInt64)
 		case sink.FieldAlias, sink.FieldName, sink.FieldDesc, sink.FieldPath:
 			values[i] = new(sql.NullString)
@@ -277,11 +277,11 @@ func (_m *Sink) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.CapacityClamped = value.Bool
 			}
-		case sink.FieldObjects:
+		case sink.FieldLaminae:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field objects", values[i])
+				return fmt.Errorf("unexpected type %T for field laminae", values[i])
 			} else if value.Valid {
-				_m.Objects = value.Int64
+				_m.Laminae = value.Int64
 			}
 		case sink.FieldNodeId:
 			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
@@ -409,8 +409,8 @@ func (_m *Sink) String() string {
 	builder.WriteString("capacity_clamped=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CapacityClamped))
 	builder.WriteString(", ")
-	builder.WriteString("objects=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Objects))
+	builder.WriteString("laminae=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Laminae))
 	builder.WriteString(", ")
 	builder.WriteString("node_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.NodeId))

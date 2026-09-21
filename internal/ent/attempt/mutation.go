@@ -31,8 +31,8 @@ type Mutation struct {
 	clearedtenant  bool
 	site           *uuid.UUID
 	clearedsite    bool
-	object         *uuid.UUID
-	clearedobject  bool
+	lamina         *uuid.UUID
+	clearedlamina  bool
 	sink           *uuid.UUID
 	clearedsink    bool
 	node           *uuid.UUID
@@ -317,23 +317,23 @@ func (m *Mutation) ResetSiteId() {
 	delete(m.clearedFields, FieldSiteId)
 }
 
-// SetObjectId sets the "object_id" field.
-func (m *Mutation) SetObjectId(u uuid.UUID) {
-	m.object = &u
+// SetLaminaId sets the "lamina_id" field.
+func (m *Mutation) SetLaminaId(u uuid.UUID) {
+	m.lamina = &u
 }
 
-// ObjectId returns the value of the "object_id" field in the mutation.
-func (m *Mutation) ObjectId() (r uuid.UUID, exists bool) {
-	v := m.object
+// LaminaId returns the value of the "lamina_id" field in the mutation.
+func (m *Mutation) LaminaId() (r uuid.UUID, exists bool) {
+	v := m.lamina
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetObjectId resets all changes to the "object_id" field.
-func (m *Mutation) ResetObjectId() {
-	m.object = nil
+// ResetLaminaId resets all changes to the "lamina_id" field.
+func (m *Mutation) ResetLaminaId() {
+	m.lamina = nil
 }
 
 // SetSinkId sets the "sink_id" field.
@@ -428,31 +428,31 @@ func (m *Mutation) ResetSite() {
 	m.clearedsite = false
 }
 
-// ClearObject clears the "object" edge to the Object entity.
-func (m *Mutation) ClearObject() {
-	m.clearedobject = true
-	m.clearedFields[FieldObjectId] = struct{}{}
+// ClearLamina clears the "lamina" edge to the Lamina entity.
+func (m *Mutation) ClearLamina() {
+	m.clearedlamina = true
+	m.clearedFields[FieldLaminaId] = struct{}{}
 }
 
-// ObjectCleared reports if the "object" edge to the Object entity was cleared.
-func (m *Mutation) ObjectCleared() bool {
-	return m.clearedobject
+// LaminaCleared reports if the "lamina" edge to the Lamina entity was cleared.
+func (m *Mutation) LaminaCleared() bool {
+	return m.clearedlamina
 }
 
-// ObjectIds returns the "object" edge Ids in the mutation.
+// LaminaIds returns the "lamina" edge Ids in the mutation.
 // Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
-// ObjectId instead. It exists only for internal usage by the builders.
-func (m *Mutation) ObjectIds() (ids []uuid.UUID) {
-	if id := m.object; id != nil {
+// LaminaId instead. It exists only for internal usage by the builders.
+func (m *Mutation) LaminaIds() (ids []uuid.UUID) {
+	if id := m.lamina; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetObject resets all changes to the "object" edge.
-func (m *Mutation) ResetObject() {
-	m.object = nil
-	m.clearedobject = false
+// ResetLamina resets all changes to the "lamina" edge.
+func (m *Mutation) ResetLamina() {
+	m.lamina = nil
+	m.clearedlamina = false
 }
 
 // ClearSink clears the "sink" edge to the Sink entity.
@@ -571,8 +571,8 @@ func (m *Mutation) Fields() []string {
 	if m.site != nil {
 		fields = append(fields, FieldSiteId)
 	}
-	if m.object != nil {
-		fields = append(fields, FieldObjectId)
+	if m.lamina != nil {
+		fields = append(fields, FieldLaminaId)
 	}
 	if m.sink != nil {
 		fields = append(fields, FieldSinkId)
@@ -606,8 +606,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.TenantId()
 	case FieldSiteId:
 		return m.SiteId()
-	case FieldObjectId:
-		return m.ObjectId()
+	case FieldLaminaId:
+		return m.LaminaId()
 	case FieldSinkId:
 		return m.SinkId()
 	case FieldNodeId:
@@ -691,12 +691,12 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSiteId(v)
 		return nil
-	case FieldObjectId:
+	case FieldLaminaId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetObjectId(v)
+		m.SetLaminaId(v)
 		return nil
 	case FieldSinkId:
 		v, ok := value.(uuid.UUID)
@@ -842,8 +842,8 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldSiteId:
 		m.ResetSiteId()
 		return nil
-	case FieldObjectId:
-		m.ResetObjectId()
+	case FieldLaminaId:
+		m.ResetLaminaId()
 		return nil
 	case FieldSinkId:
 		m.ResetSinkId()
@@ -864,8 +864,8 @@ func (m *Mutation) AddedEdges() []string {
 	if m.site != nil {
 		edges = append(edges, EdgeSite)
 	}
-	if m.object != nil {
-		edges = append(edges, EdgeObject)
+	if m.lamina != nil {
+		edges = append(edges, EdgeLamina)
 	}
 	if m.sink != nil {
 		edges = append(edges, EdgeSink)
@@ -888,8 +888,8 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.site; id != nil {
 			return []ent.Value{*id}
 		}
-	case EdgeObject:
-		if id := m.object; id != nil {
+	case EdgeLamina:
+		if id := m.lamina; id != nil {
 			return []ent.Value{*id}
 		}
 	case EdgeSink:
@@ -925,8 +925,8 @@ func (m *Mutation) ClearedEdges() []string {
 	if m.clearedsite {
 		edges = append(edges, EdgeSite)
 	}
-	if m.clearedobject {
-		edges = append(edges, EdgeObject)
+	if m.clearedlamina {
+		edges = append(edges, EdgeLamina)
 	}
 	if m.clearedsink {
 		edges = append(edges, EdgeSink)
@@ -945,8 +945,8 @@ func (m *Mutation) EdgeCleared(name string) bool {
 		return m.clearedtenant
 	case EdgeSite:
 		return m.clearedsite
-	case EdgeObject:
-		return m.clearedobject
+	case EdgeLamina:
+		return m.clearedlamina
 	case EdgeSink:
 		return m.clearedsink
 	case EdgeNode:
@@ -965,8 +965,8 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeSite:
 		m.ClearSite()
 		return nil
-	case EdgeObject:
-		m.ClearObject()
+	case EdgeLamina:
+		m.ClearLamina()
 		return nil
 	case EdgeSink:
 		m.ClearSink()
@@ -988,8 +988,8 @@ func (m *Mutation) ResetEdge(name string) error {
 	case EdgeSite:
 		m.ResetSite()
 		return nil
-	case EdgeObject:
-		m.ResetObject()
+	case EdgeLamina:
+		m.ResetLamina()
 		return nil
 	case EdgeSink:
 		m.ResetSink()

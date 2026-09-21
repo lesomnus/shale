@@ -4,7 +4,7 @@
 
 The Control Plane speaks **resource-oriented gRPC**, built with
 [payday](https://github.com/lesomnus/payday). Storage Nodes speak **HTTP**
-(HTTP/1.1, HTTP/2, and HTTP/3 over QUIC) to move object bytes, and serve a
+(HTTP/1.1, HTTP/2, and HTTP/3 over QUIC) to move lamina bytes, and serve a
 small **control API** (gRPC) that only the Control Plane calls
 ([§35.7](#357-storage-node-control-api)). Relays take streams from
 producers over gRPC and serve viewers over WHEP
@@ -31,7 +31,7 @@ TypeScript client are generated from that declaration.
 
 **Identifiers** are payday's UUIDv8: time-ordered, with one **domain byte**
 naming the entity kind, so a reference of the wrong kind is refused at the
-edge. An `object_id` is therefore also a creation timestamp.
+edge. A `lamina_id` is therefore also a creation timestamp.
 
 **Slugs** are the names people write: `@TENANT/ALIAS#DOMAIN`. In a
 single-organization deployment the tenant is implied by the caller, so
@@ -47,7 +47,7 @@ they can write anything the schema has. Shale serves `Patch` for the rows
 [§32](09-operations.md#32-cli--processes) says people and operators edit
 (a set's retention and placement, a source, a site, a person, a tenant's
 share, a relay's labels, the policies) and keeps it closed for what the
-system writes (objects, attempts) and for hosts, devices, sinks, and keys,
+system writes (laminae, attempts) and for hosts, devices, sinks, and keys,
 whose states move only through their own verbs. `Apply` stays closed.
 
 ### 35.2 Two API surfaces
@@ -79,7 +79,7 @@ each surface that is made without a credential.
 | `Holder` (payday) | tenant | 2 | Add, Get, Patch, List, Erase | tenant |
 | `Set` | tenant | 7 | Add, Get, Patch, Erase, List, Watch | tenant |
 | `Source` | tenant | 8 | Add, Get, Patch, Erase, List, Watch | tenant |
-| `Object` | tenant | 9 | Get, List, Watch | tenant (all tenants on cluster) |
+| `Lamina` | tenant | 9 | Get, List, Watch | tenant (all tenants on cluster) |
 | `Attempt` | tenant | 10 | Get, List | tenant |
 | `Site` | tenant | 19 | Add, Get, Patch, Erase, List, Watch | tenant |
 | `SiteMember` | tenant | 20 | Add, List, Erase | tenant |
@@ -113,18 +113,18 @@ never reused.
   ([§33.4](10-security.md#334-joining-and-adoption)).
 - **Field 3 is `site`**, payday's second permission axis
   ([§7](02-data-model.md#7-source-set-zone-epoch)). `Set` declares it,
-  nullable and immutable. `Source`, `Object`, `Attempt`, and `Producer` carry
+  nullable and immutable. `Source`, `Lamina`, `Attempt`, and `Producer` carry
   a copy, because payday narrows each row by its own field 3. A reader may see
   several sites, so its sites are `SiteMember` rows, like a person's. Tenant
   admins see all sites.
 - **Erasure.** A `Set` or `Source` is soft-erased (`date_erased`): its cameras
-  stop being allocated for, and their recorded objects stay readable until
+  stop being allocated for, and their recorded laminae stay readable until
   retention removes them. A host is soft-erased too, and an erased host's
   certificate is refused from then on ([§33.4](10-security.md#334-joining-and-adoption)).
-  An `Object` is never erased through the API. GC moves it to `DELETED`
+  A `lamina` is never erased through the API. GC moves it to `DELETED`
   ([§21](06-retention-gc.md#21-lazy-gc)), and the row is pruned later
   ([§20.4](06-retention-gc.md#204-row-retention)).
-- **Generated `Patch` stays closed on `Object`, `Attempt`, and the global
+- **Generated `Patch` stays closed on `Lamina`, `Attempt`, and the global
   entities**, and on the state and identity fields of hosts. State there
   changes only through the custom RPCs below, each of which means one thing.
   `Patch` on a host changes its alias, name, and labels.
@@ -147,10 +147,10 @@ Producer         set, site (copied from the set), hardware_id, hostname,
                  date_adopted, date_seen, relay (assigned, §39.2)
 Reader           hardware_id, hostname, state, certificate serial,
                  date_adopted, date_seen; sites through SiteMember
-Object           source, set, sink, object_key, date_started, date_ended, size,
+Lamina           source, set, sink, lamina_key, date_started, date_ended, size,
                  site, state, incomplete, date_expired, date_deleted,
                  dates_synced (§20.3), placement_version, date_committed
-Attempt          object, sink, node, state, failure_reason
+Attempt          lamina, sink, node, state, failure_reason
 Node             alias, hardware_id, hostname, state, reported interfaces and
                  IPs, certificate serial, last heartbeat, known key IDs,
                  CA bundle hash
@@ -186,29 +186,29 @@ service SourceService {
   rpc Live(SourceLiveRequest) returns (SourceLiveResponse);
 }
 
-service ObjectService {
+service LaminaService {
   // One allocation for one segment of one source. Idempotent per
-  // (source, expected date_started): asking twice answers the same object.
-  // A segment that begins after the slot's stored object ended, or after
-  // the object named in `after`, is the slot's next segment and gets an
-  // object of its own (§12.1, §15).
-  rpc Allocate(ObjectAllocateRequest) returns (Allocation);
+  // (source, expected date_started): asking twice answers the same lamina.
+  // A segment that begins after the slot's stored lamina ended, or after
+  // the lamina named in `after`, is the slot's next segment and gets an
+  // lamina of its own (§12.1, §15).
+  rpc Allocate(LaminaAllocateRequest) returns (Allocation);
   // The next candidate after a failed attempt (§13).
-  rpc Reallocate(ObjectReallocateRequest) returns (Allocation);
+  rpc Reallocate(LaminaReallocateRequest) returns (Allocation);
   // A fresh token for an attempt still in progress on the same target (§12.1).
-  rpc Renew(ObjectRenewRequest) returns (Allocation);
-  // One attempt failed, with a reason; feeds health (§13, §27). The object
+  rpc Renew(LaminaRenewRequest) returns (Allocation);
+  // One attempt failed, with a reason; feeds health (§13, §27). The lamina
   // stays PENDING.
-  rpc ReportAttempt(ObjectReportAttemptRequest) returns (Attempt);
-  // The producer gives up on an object; it becomes LOST (§13).
-  rpc ReportFailure(ObjectReportFailureRequest) returns (Object);
-  // Changes date_expired and/or date_deleted, for one object or in bulk by
+  rpc ReportAttempt(LaminaReportAttemptRequest) returns (Attempt);
+  // The producer gives up on a lamina; it becomes LOST (§13).
+  rpc ReportFailure(LaminaReportFailureRequest) returns (Lamina);
+  // Changes date_expired and/or date_deleted, for one lamina or in bulk by
   // set or source and a time range; a reason is required and audited. In
   // bulk it works in pages and stops short of its deadline, answering how
   // many remain for the next call (§20.3).
-  rpc Reschedule(ObjectRescheduleRequest) returns (ObjectRescheduleResponse);
-  // Objects and gaps over a time range, with read tokens; paged (§17, §19).
-  rpc Timeline(ObjectTimelineRequest) returns (ObjectTimelineResponse);
+  rpc Reschedule(LaminaRescheduleRequest) returns (LaminaRescheduleResponse);
+  // Laminae and gaps over a time range, with read tokens; paged (§17, §19).
+  rpc Timeline(LaminaTimelineRequest) returns (LaminaTimelineResponse);
 }
 
 service ProducerService {
@@ -235,19 +235,19 @@ service ReaderService {
 }
 ```
 
-- `Allocation` carries `object_id`, the target sink, and the **ranked
+- `Allocation` carries `lamina_id`, the target sink, and the **ranked
   candidates**. Each candidate has its own `attempt_id`, the node's
   **endpoints** as the active address resolver gives them
   ([§34.10](11-deployment.md#3410-node-addresses)), and its own **access
   token**, so a producer can move to the next candidate without a round trip
   ([§13](04-write-path.md#13-retry-and-reallocation)).
-- `ObjectTimelineRequest` names a set or a source and a time range, with
-  `size` (at most `timeline_page`, default 1,000 objects) and `after`.
-  `ObjectTimelineResponse` lists, per source, the objects of the page with
+- `LaminaTimelineRequest` names a set or a source and a time range, with
+  `size` (at most `timeline_page`, default 1,000 laminae) and `after`.
+  `LaminaTimelineResponse` lists, per source, the laminae of the page with
   their states and read tokens, the gaps with their reasons
   (`NOT_RECEIVED`, `IN_PROGRESS`, `LOST`, `DELETED`, `UNAVAILABLE`), and
   `next`.
-- `ObjectService.Watch` filtered by a set is how a console shows segments
+- `LaminaService.Watch` filtered by a set is how a console shows segments
   arriving. Watch requires filters, so no caller watches the whole table.
 - `Holder` has no custom RPCs. People sign in through payday
   ([§33.1](10-security.md#331-trust-model)).
@@ -264,7 +264,7 @@ service NodeService {
   rpc RenewCertificate(NodeRenewCertificateRequest) returns (NodeRenewCertificateResponse);
   // Health, capacity, and pressure of the node, its devices, and its sinks (§27).
   rpc Heartbeat(NodeHeartbeatRequest) returns (NodeHeartbeatResponse);
-  // ObjectStored, ObjectDeleted, and ObjectMissing events, batched; applied
+  // LaminaStored, LaminaDeleted, and LaminaMissing events, batched; applied
   // idempotently (§34.9).
   rpc PushEvents(NodePushEventsRequest) returns (NodePushEventsResponse);
   // What the active address resolver would hand out, for a given caller (§34.10).
@@ -291,7 +291,7 @@ service DeviceService {
   rpc Quarantine(DeviceQuarantineRequest) returns (Device);               // §27
   rpc Release(DeviceReleaseRequest) returns (Device);
   rpc Retire(DeviceRetireRequest) returns (Device);
-  rpc DeclareDead(DeviceDeclareDeadRequest) returns (Device);            // objects → LOST
+  rpc DeclareDead(DeviceDeclareDeadRequest) returns (Device);            // laminae → LOST
   rpc Locate(DeviceLocateRequest) returns (Device);                      // bay LED on/off
 }
 
@@ -324,18 +324,18 @@ service AddressPolicyService {
 ### 35.6 Storage Node: HTTP data plane
 
 ```text
-PUT    /objects/{object_key}   Upload-Offset, Upload-Complete, Upload-Length
+PUT    /laminae/{lamina_key}   Upload-Offset, Upload-Complete, Upload-Length
                                or Shale-Size-Hint, Shale-Date-Started,
                                Shale-Date-Ended; resumable, may be chunked
-GET    /objects/{object_key}   Range supported
-HEAD   /objects/{object_key}   upload offset and completeness, or object metadata
+GET    /laminae/{lamina_key}   Range supported
+HEAD   /laminae/{lamina_key}   upload offset and completeness, or lamina metadata
 ```
 
 | Response | Meaning |
 |---|---|
 | `201` | upload complete and durable (commit) |
 | `204 Upload-Offset` | request accepted; every byte below the offset is written to the device |
-| `200` | the upload was already complete; `Shale-Incomplete: ?1` if the node finalized it from an abandoned live upload ([§15](04-write-path.md#15-partial-objects)) |
+| `200` | the upload was already complete; `Shale-Incomplete: ?1` if the node finalized it from an abandoned live upload ([§15](04-write-path.md#15-partial-laminae)) |
 | `409 Upload-Offset` | the request's offset does not match the node's; resume from the offset given |
 | `413` | the upload would exceed the token's `max_length`; the node finalizes what it has ([§12.5](04-write-path.md#125-idempotent-uploads)) |
 | `503 Retry-After` | the sink or the caller is at its upload limit |
@@ -356,7 +356,7 @@ HEAD   /objects/{object_key}   upload offset and completeness, or object metadat
   ([§34.9](11-deployment.md#349-events-and-directives)).
 - Nodes also serve health and metrics endpoints, and nothing else over HTTP.
 
-A `HEAD` on a complete object also answers `Shale-Checksum: crc32c=<hex>`
+A `HEAD` on a complete lamina also answers `Shale-Checksum: crc32c=<hex>`
 when the set asked for checksums ([§30](09-operations.md#30-integrity)).
 
 ### 35.7 Storage Node: control API
@@ -368,9 +368,9 @@ chains to the cluster CA and names the Control Plane
 
 ```proto
 service NodeControl {
-  // Unlink these objects now. Answers per key: deleted | absent.
+  // Unlink these laminae now. Answers per key: deleted | absent.
   rpc Delete(NodeDeleteRequest) returns (NodeDeleteResponse);
-  // Rewrite date_expired and date_deleted in these objects' xattrs (§20.3).
+  // Rewrite date_expired and date_deleted in these laminae' xattrs (§20.3).
   rpc SetDates(NodeSetDatesRequest) returns (NodeSetDatesResponse);
   // Stop or resume accepting uploads on a sink: quarantine, retire, release (§27).
   rpc SetSinkState(NodeSetSinkStateRequest) returns (NodeSetSinkStateResponse);

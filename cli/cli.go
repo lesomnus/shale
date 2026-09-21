@@ -40,7 +40,7 @@ const protoPackage = "shale"
 func Cmd(c *cmd.Config) *xli.Command {
 	root := &xli.Command{
 		Name:  cmd.Name,
-		Brief: "a loss-tolerant object store for CCTV",
+		Brief: "a loss-tolerant lamina store for CCTV",
 
 		Flags: flg.Flags{
 			pdcmd.ConfigFlag(),
@@ -73,7 +73,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 		t.Drop(g)
 	}
 	addCustom(t, c, false)
-	addObjectCommands(t, c)
+	addLaminaCommands(t, c)
 	addStateCommands(t, c, false)
 	addProducerCommands(t, c)
 	root.Commands = append(root.Commands, t.Commands()...)
@@ -123,7 +123,7 @@ var clusterGroups = map[string]bool{
 }
 
 var tenantGroups = map[string]bool{
-	"set": true, "source": true, "object": true, "attempt": true, "site": true, "site-member": true,
+	"set": true, "source": true, "lamina": true, "attempt": true, "site": true, "site-member": true,
 	"producer": true, "reader": true, "holder": true, "audit": true,
 }
 

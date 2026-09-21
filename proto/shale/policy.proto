@@ -97,7 +97,7 @@ message PlacementParams {
 }
 
 // PlacementPolicy is a versioned scheduler configuration; one is active
-// (§11.2). placement_version on an object names the policy it was placed
+// (§11.2). placement_version on a lamina names the policy it was placed
 // under.
 message PlacementPolicy {
   bytes id = 1 [(orm.field) = {
@@ -161,10 +161,10 @@ message PlacementPolicy {
 message UploadBounds {
   // The cap on any single max_bitrate, bits per second (32 Mbps).
   int64 max_bitrate_cap = 1;
-  // Object size target and bounds in bytes (64 MB; 32 MB; 512 MB).
-  int64 target_object = 2;
-  int64 min_object = 3;
-  int64 max_object = 4;
+  // Lamina size target and bounds in bytes (64 MB; 32 MB; 512 MB).
+  int64 target_lamina = 2;
+  int64 min_lamina = 3;
+  int64 max_lamina = 4;
   // Keyframe interval in milliseconds (2000; 500; 4000).
   int64 keyframe_interval_default_ms = 5;
   int64 keyframe_interval_min_ms = 6;

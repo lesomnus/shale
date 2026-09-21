@@ -59,8 +59,8 @@ func TestBuildReschedule(t *testing.T) {
 	require.Equal(t, "acme", req.GetSet().GetSlug().GetTenant().GetAlias())
 	require.True(t, req.GetDeleteNow())
 
-	// One object takes no range.
-	obj := pdid.New(domain("shale.Object"))
+	// One lamina takes no range.
+	obj := pdid.New(domain("shale.Lamina"))
 	req, err = buildReschedule(rescheduleOpts{ref: obj.String(), deleted: "+30m", reason: "hold"}, now)
 	require.NoError(t, err)
 	require.Equal(t, obj.Bytes(), req.GetRef().GetId())
@@ -70,7 +70,7 @@ func TestBuildReschedule(t *testing.T) {
 		"nothing named":         {from: "-1h", to: "now", expired: "now", reason: "r"},
 		"two named":             {ref: obj.String(), set: set.String(), from: "-1h", to: "now", expired: "now", reason: "r"},
 		"a set without a range": {set: set.String(), expired: "now", reason: "r"},
-		"an object with one":    {ref: obj.String(), from: "-1h", to: "now", expired: "now", reason: "r"},
+		"a lamina with one":     {ref: obj.String(), from: "-1h", to: "now", expired: "now", reason: "r"},
 		"a range backwards":     {set: set.String(), from: "now", to: "-1h", expired: "now", reason: "r"},
 		"nothing to change":     {set: set.String(), from: "-1h", to: "now", reason: "r"},
 		"delete-now and a date": {set: set.String(), from: "-1h", to: "now", deleteNow: true, expired: "now", reason: "r"},

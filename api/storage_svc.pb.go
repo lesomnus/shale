@@ -3348,7 +3348,7 @@ type SinkAddRequest struct {
 	xxx_hidden_ReportedBy      []byte                 `protobuf:"bytes,23,opt,name=reported_by,json=reportedBy"`
 	xxx_hidden_Warnings        []string               `protobuf:"bytes,24,rep,name=warnings"`
 	xxx_hidden_CapacityClamped bool                   `protobuf:"varint,25,opt,name=capacity_clamped,json=capacityClamped"`
-	xxx_hidden_Objects         int64                  `protobuf:"varint,26,opt,name=objects"`
+	xxx_hidden_Laminae         int64                  `protobuf:"varint,26,opt,name=laminae"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -3527,9 +3527,9 @@ func (x *SinkAddRequest) GetCapacityClamped() bool {
 	return false
 }
 
-func (x *SinkAddRequest) GetObjects() int64 {
+func (x *SinkAddRequest) GetLaminae() int64 {
 	if x != nil {
-		return x.xxx_hidden_Objects
+		return x.xxx_hidden_Laminae
 	}
 	return 0
 }
@@ -3626,8 +3626,8 @@ func (x *SinkAddRequest) SetCapacityClamped(v bool) {
 	x.xxx_hidden_CapacityClamped = v
 }
 
-func (x *SinkAddRequest) SetObjects(v int64) {
-	x.xxx_hidden_Objects = v
+func (x *SinkAddRequest) SetLaminae(v int64) {
+	x.xxx_hidden_Laminae = v
 }
 
 func (x *SinkAddRequest) HasId() bool {
@@ -3744,7 +3744,7 @@ type SinkAddRequest_builder struct {
 	ReportedBy      []byte
 	Warnings        []string
 	CapacityClamped bool
-	Objects         int64
+	Laminae         int64
 }
 
 func (b0 SinkAddRequest_builder) Build() *SinkAddRequest {
@@ -3778,7 +3778,7 @@ func (b0 SinkAddRequest_builder) Build() *SinkAddRequest {
 	}
 	x.xxx_hidden_Warnings = b.Warnings
 	x.xxx_hidden_CapacityClamped = b.CapacityClamped
-	x.xxx_hidden_Objects = b.Objects
+	x.xxx_hidden_Laminae = b.Laminae
 	return m0
 }
 
@@ -4066,7 +4066,7 @@ type SinkSelect struct {
 	xxx_hidden_ReportedBy      bool                   `protobuf:"varint,23,opt,name=reported_by,json=reportedBy"`
 	xxx_hidden_Warnings        bool                   `protobuf:"varint,24,opt,name=warnings"`
 	xxx_hidden_CapacityClamped bool                   `protobuf:"varint,25,opt,name=capacity_clamped,json=capacityClamped"`
-	xxx_hidden_Objects         bool                   `protobuf:"varint,26,opt,name=objects"`
+	xxx_hidden_Laminae         bool                   `protobuf:"varint,26,opt,name=laminae"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -4259,9 +4259,9 @@ func (x *SinkSelect) GetCapacityClamped() bool {
 	return false
 }
 
-func (x *SinkSelect) GetObjects() bool {
+func (x *SinkSelect) GetLaminae() bool {
 	if x != nil {
-		return x.xxx_hidden_Objects
+		return x.xxx_hidden_Laminae
 	}
 	return false
 }
@@ -4379,8 +4379,8 @@ func (x *SinkSelect) SetCapacityClamped(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 24)
 }
 
-func (x *SinkSelect) SetObjects(v bool) {
-	x.xxx_hidden_Objects = v
+func (x *SinkSelect) SetLaminae(v bool) {
+	x.xxx_hidden_Laminae = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 24)
 }
 
@@ -4545,7 +4545,7 @@ func (x *SinkSelect) HasCapacityClamped() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
 }
 
-func (x *SinkSelect) HasObjects() bool {
+func (x *SinkSelect) HasLaminae() bool {
 	if x == nil {
 		return false
 	}
@@ -4665,9 +4665,9 @@ func (x *SinkSelect) ClearCapacityClamped() {
 	x.xxx_hidden_CapacityClamped = false
 }
 
-func (x *SinkSelect) ClearObjects() {
+func (x *SinkSelect) ClearLaminae() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 23)
-	x.xxx_hidden_Objects = false
+	x.xxx_hidden_Laminae = false
 }
 
 type SinkSelect_builder struct {
@@ -4696,7 +4696,7 @@ type SinkSelect_builder struct {
 	ReportedBy      *bool
 	Warnings        *bool
 	CapacityClamped *bool
-	Objects         *bool
+	Laminae         *bool
 }
 
 func (b0 SinkSelect_builder) Build() *SinkSelect {
@@ -4789,9 +4789,9 @@ func (b0 SinkSelect_builder) Build() *SinkSelect {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 24)
 		x.xxx_hidden_CapacityClamped = *b.CapacityClamped
 	}
-	if b.Objects != nil {
+	if b.Laminae != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 24)
-		x.xxx_hidden_Objects = *b.Objects
+		x.xxx_hidden_Laminae = *b.Laminae
 	}
 	return m0
 }
@@ -4824,7 +4824,7 @@ type SinkPatchRequest struct {
 	xxx_hidden_ReportedByNull     bool                   `protobuf:"varint,47,opt,name=reported_by_null,json=reportedByNull"`
 	xxx_hidden_Warnings           []string               `protobuf:"bytes,48,rep,name=warnings"`
 	xxx_hidden_CapacityClamped    bool                   `protobuf:"varint,50,opt,name=capacity_clamped,json=capacityClamped"`
-	xxx_hidden_Objects            int64                  `protobuf:"varint,52,opt,name=objects"`
+	xxx_hidden_Laminae            int64                  `protobuf:"varint,52,opt,name=laminae"`
 	XXX_raceDetectHookData        protoimpl.RaceDetectHookData
 	XXX_presence                  [1]uint32
 	unknownFields                 protoimpl.UnknownFields
@@ -5054,9 +5054,9 @@ func (x *SinkPatchRequest) GetCapacityClamped() bool {
 	return false
 }
 
-func (x *SinkPatchRequest) GetObjects() int64 {
+func (x *SinkPatchRequest) GetLaminae() int64 {
 	if x != nil {
-		return x.xxx_hidden_Objects
+		return x.xxx_hidden_Laminae
 	}
 	return 0
 }
@@ -5186,8 +5186,8 @@ func (x *SinkPatchRequest) SetCapacityClamped(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 25, 27)
 }
 
-func (x *SinkPatchRequest) SetObjects(v int64) {
-	x.xxx_hidden_Objects = v
+func (x *SinkPatchRequest) SetLaminae(v int64) {
+	x.xxx_hidden_Laminae = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 27)
 }
 
@@ -5359,7 +5359,7 @@ func (x *SinkPatchRequest) HasCapacityClamped() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 25)
 }
 
-func (x *SinkPatchRequest) HasObjects() bool {
+func (x *SinkPatchRequest) HasLaminae() bool {
 	if x == nil {
 		return false
 	}
@@ -5480,9 +5480,9 @@ func (x *SinkPatchRequest) ClearCapacityClamped() {
 	x.xxx_hidden_CapacityClamped = false
 }
 
-func (x *SinkPatchRequest) ClearObjects() {
+func (x *SinkPatchRequest) ClearLaminae() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 26)
-	x.xxx_hidden_Objects = 0
+	x.xxx_hidden_Laminae = 0
 }
 
 type SinkPatchRequest_builder struct {
@@ -5546,7 +5546,7 @@ type SinkPatchRequest_builder struct {
 	ReportedByNull  *bool
 	Warnings        []string
 	CapacityClamped *bool
-	Objects         *int64
+	Laminae         *int64
 }
 
 func (b0 SinkPatchRequest_builder) Build() *SinkPatchRequest {
@@ -5633,9 +5633,9 @@ func (b0 SinkPatchRequest_builder) Build() *SinkPatchRequest {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 25, 27)
 		x.xxx_hidden_CapacityClamped = *b.CapacityClamped
 	}
-	if b.Objects != nil {
+	if b.Laminae != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 27)
-		x.xxx_hidden_Objects = *b.Objects
+		x.xxx_hidden_Laminae = *b.Laminae
 	}
 	return m0
 }
@@ -6574,8 +6574,8 @@ func (b0 SinkProposeGcResponse_builder) Build() *SinkProposeGcResponse {
 // GcCandidate is a file, named by key, with what its xattr says.
 type GcCandidate struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_ObjectKey   string                 `protobuf:"bytes,1,opt,name=object_key,json=objectKey"`
-	xxx_hidden_ObjectId    []byte                 `protobuf:"bytes,2,opt,name=object_id,json=objectId"`
+	xxx_hidden_LaminaKey   string                 `protobuf:"bytes,1,opt,name=lamina_key,json=laminaKey"`
+	xxx_hidden_LaminaId    []byte                 `protobuf:"bytes,2,opt,name=lamina_id,json=laminaId"`
 	xxx_hidden_AttemptId   []byte                 `protobuf:"bytes,3,opt,name=attempt_id,json=attemptId"`
 	xxx_hidden_Size        int64                  `protobuf:"varint,4,opt,name=size"`
 	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=date_expired,json=dateExpired"`
@@ -6610,16 +6610,16 @@ func (x *GcCandidate) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GcCandidate) GetObjectKey() string {
+func (x *GcCandidate) GetLaminaKey() string {
 	if x != nil {
-		return x.xxx_hidden_ObjectKey
+		return x.xxx_hidden_LaminaKey
 	}
 	return ""
 }
 
-func (x *GcCandidate) GetObjectId() []byte {
+func (x *GcCandidate) GetLaminaId() []byte {
 	if x != nil {
-		return x.xxx_hidden_ObjectId
+		return x.xxx_hidden_LaminaId
 	}
 	return nil
 }
@@ -6659,15 +6659,15 @@ func (x *GcCandidate) GetTenantId() []byte {
 	return nil
 }
 
-func (x *GcCandidate) SetObjectKey(v string) {
-	x.xxx_hidden_ObjectKey = v
+func (x *GcCandidate) SetLaminaKey(v string) {
+	x.xxx_hidden_LaminaKey = v
 }
 
-func (x *GcCandidate) SetObjectId(v []byte) {
+func (x *GcCandidate) SetLaminaId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_ObjectId = v
+	x.xxx_hidden_LaminaId = v
 }
 
 func (x *GcCandidate) SetAttemptId(v []byte) {
@@ -6721,8 +6721,8 @@ func (x *GcCandidate) ClearDateDeleted() {
 type GcCandidate_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ObjectKey   string
-	ObjectId    []byte
+	LaminaKey   string
+	LaminaId    []byte
 	AttemptId   []byte
 	Size        int64
 	DateExpired *timestamppb.Timestamp
@@ -6734,8 +6734,8 @@ func (b0 GcCandidate_builder) Build() *GcCandidate {
 	m0 := &GcCandidate{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_ObjectKey = b.ObjectKey
-	x.xxx_hidden_ObjectId = b.ObjectId
+	x.xxx_hidden_LaminaKey = b.LaminaKey
+	x.xxx_hidden_LaminaId = b.LaminaId
 	x.xxx_hidden_AttemptId = b.AttemptId
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_DateExpired = b.DateExpired
@@ -6746,7 +6746,7 @@ func (b0 GcCandidate_builder) Build() *GcCandidate {
 
 type GcDecision struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_ObjectKey   string                 `protobuf:"bytes,1,opt,name=object_key,json=objectKey"`
+	xxx_hidden_LaminaKey   string                 `protobuf:"bytes,1,opt,name=lamina_key,json=laminaKey"`
 	xxx_hidden_Approved    bool                   `protobuf:"varint,2,opt,name=approved"`
 	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateDeleted *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_deleted,json=dateDeleted"`
@@ -6779,9 +6779,9 @@ func (x *GcDecision) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *GcDecision) GetObjectKey() string {
+func (x *GcDecision) GetLaminaKey() string {
 	if x != nil {
-		return x.xxx_hidden_ObjectKey
+		return x.xxx_hidden_LaminaKey
 	}
 	return ""
 }
@@ -6807,8 +6807,8 @@ func (x *GcDecision) GetDateDeleted() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *GcDecision) SetObjectKey(v string) {
-	x.xxx_hidden_ObjectKey = v
+func (x *GcDecision) SetLaminaKey(v string) {
+	x.xxx_hidden_LaminaKey = v
 }
 
 func (x *GcDecision) SetApproved(v bool) {
@@ -6848,7 +6848,7 @@ func (x *GcDecision) ClearDateDeleted() {
 type GcDecision_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ObjectKey string
+	LaminaKey string
 	Approved  bool
 	// The current dates when they differ from what the node proposed on; the
 	// node rewrites the xattr.
@@ -6860,7 +6860,7 @@ func (b0 GcDecision_builder) Build() *GcDecision {
 	m0 := &GcDecision{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_ObjectKey = b.ObjectKey
+	x.xxx_hidden_LaminaKey = b.LaminaKey
 	x.xxx_hidden_Approved = b.Approved
 	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateDeleted = b.DateDeleted
@@ -7418,7 +7418,7 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"reportedBy\x12\x1a\n" +
 	"\bwarnings\x18\x18 \x03(\tR\bwarnings\x120\n" +
 	"\x10capacity_clamped\x18\x19 \x01(\bB\x05\xaa\x01\x02\b\x02R\x0fcapacityClamped\x12\x1f\n" +
-	"\aobjects\x18\x1a \x01(\x03B\x05\xaa\x01\x02\b\x02R\aobjects\x1a9\n" +
+	"\alaminae\x18\x1a \x01(\x03B\x05\xaa\x01\x02\b\x02R\alaminae\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"]\n" +
@@ -7459,7 +7459,7 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"reportedBy\x12\x1a\n" +
 	"\bwarnings\x18\x18 \x01(\bR\bwarnings\x12)\n" +
 	"\x10capacity_clamped\x18\x19 \x01(\bR\x0fcapacityClamped\x12\x18\n" +
-	"\aobjects\x18\x1a \x01(\bR\aobjects\"\xfd\b\n" +
+	"\alaminae\x18\x1a \x01(\bR\alaminae\"\xfd\b\n" +
 	"\x10SinkPatchRequest\x12 \n" +
 	"\x03ref\x18\x01 \x01(\v2\x0e.shale.SinkRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -7491,7 +7491,7 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x10reported_by_null\x18/ \x01(\bR\x0ereportedByNull\x12\x1a\n" +
 	"\bwarnings\x180 \x03(\tR\bwarnings\x12)\n" +
 	"\x10capacity_clamped\x182 \x01(\bR\x0fcapacityClamped\x12\x18\n" +
-	"\aobjects\x184 \x01(\x03R\aobjects\x1a9\n" +
+	"\alaminae\x184 \x01(\x03R\alaminae\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
@@ -7533,8 +7533,8 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\x0eapproved_bytes\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\rapprovedBytes\"\xba\x02\n" +
 	"\vGcCandidate\x12$\n" +
 	"\n" +
-	"object_key\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\tobjectKey\x12\"\n" +
-	"\tobject_id\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\bobjectId\x12$\n" +
+	"lamina_key\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\tlaminaKey\x12\"\n" +
+	"\tlamina_id\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\blaminaId\x12$\n" +
 	"\n" +
 	"attempt_id\x18\x03 \x01(\fB\x05\xaa\x01\x02\b\x02R\tattemptId\x12\x19\n" +
 	"\x04size\x18\x04 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x04size\x12=\n" +
@@ -7544,7 +7544,7 @@ const file_shale_storage_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"GcDecision\x12$\n" +
 	"\n" +
-	"object_key\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\tobjectKey\x12!\n" +
+	"lamina_key\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\tlaminaKey\x12!\n" +
 	"\bapproved\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\bapproved\x12=\n" +
 	"\fdate_expired\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x12=\n" +
 	"\fdate_deleted\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateDeleted\"X\n" +

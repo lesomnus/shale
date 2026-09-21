@@ -16,7 +16,7 @@ import (
 // a decision. Most of what this app writes decides nothing: a producer
 // allocating, a node's events landing, the leader's jobs moving dates and
 // deleting, a heartbeat's date_seen, the tenant's byte count. On the load
-// run those were thirteen rows an object and five sixths of the database,
+// run those were thirteen rows a lamina and five sixths of the database,
 // with no clock to leave by. A person's write is the evidence a trail is
 // for, so a write is recorded when the frame's actor is a person, and the
 // system's own bookkeeping, the hosts' and the deployment's, is not.

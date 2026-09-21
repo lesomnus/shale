@@ -33,7 +33,7 @@ var clusterServices = []string{
 
 // tenantServices are the tenant API.
 var tenantServices = []string{
-	"/shale.SetService/", "/shale.SourceService/", "/shale.ObjectService/", "/shale.AttemptService/",
+	"/shale.SetService/", "/shale.SourceService/", "/shale.LaminaService/", "/shale.AttemptService/",
 	"/shale.SiteService/", "/shale.SiteMemberService/", "/shale.ProducerService/", "/shale.ReaderService/",
 	"/shale.HolderService/", "/shale.AuditService/",
 }
@@ -80,7 +80,7 @@ func denied(method, why string) error {
 // surface: rows the system writes (§35.3).
 func closedToEveryone(m string) bool {
 	switch {
-	case strings.HasPrefix(m, "/shale.ObjectService/"):
+	case strings.HasPrefix(m, "/shale.LaminaService/"):
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Erase")
 	case strings.HasPrefix(m, "/shale.AttemptService/"):
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Erase")
@@ -108,9 +108,9 @@ var producerMay = map[string]bool{
 	api.SetService_Negotiate_FullMethodName: true, api.SetService_Allocate_FullMethodName: true,
 	api.SourceService_Get_FullMethodName: true, api.SourceService_List_FullMethodName: true,
 	api.SourceService_Add_FullMethodName: true,
-	api.ObjectService_Get_FullMethodName: true, api.ObjectService_Allocate_FullMethodName: true,
-	api.ObjectService_Reallocate_FullMethodName: true, api.ObjectService_Renew_FullMethodName: true,
-	api.ObjectService_ReportAttempt_FullMethodName: true, api.ObjectService_ReportFailure_FullMethodName: true,
+	api.LaminaService_Get_FullMethodName: true, api.LaminaService_Allocate_FullMethodName: true,
+	api.LaminaService_Reallocate_FullMethodName: true, api.LaminaService_Renew_FullMethodName: true,
+	api.LaminaService_ReportAttempt_FullMethodName: true, api.LaminaService_ReportFailure_FullMethodName: true,
 	api.AttemptService_Get_FullMethodName:  true,
 	api.ProducerService_Get_FullMethodName: true, api.ProducerService_Heartbeat_FullMethodName: true,
 	api.ProducerService_Relay_FullMethodName: true, api.ProducerService_RenewCertificate_FullMethodName: true,
@@ -119,7 +119,7 @@ var producerMay = map[string]bool{
 var readerMay = map[string]bool{
 	api.SetService_Get_FullMethodName: true, api.SetService_List_FullMethodName: true, api.SetService_Live_FullMethodName: true,
 	api.SourceService_Get_FullMethodName: true, api.SourceService_List_FullMethodName: true, api.SourceService_Live_FullMethodName: true,
-	api.ObjectService_Get_FullMethodName: true, api.ObjectService_List_FullMethodName: true, api.ObjectService_Timeline_FullMethodName: true,
+	api.LaminaService_Get_FullMethodName: true, api.LaminaService_List_FullMethodName: true, api.LaminaService_Timeline_FullMethodName: true,
 	api.SiteService_Get_FullMethodName: true, api.SiteService_List_FullMethodName: true,
 	api.ReaderService_Get_FullMethodName: true, api.ReaderService_Heartbeat_FullMethodName: true,
 	api.ReaderService_RenewCertificate_FullMethodName: true,

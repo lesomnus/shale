@@ -28,7 +28,7 @@ func TestOneWriterPerKey(t *testing.T) {
 	conn := c.dial("@acme/admin")
 	sets := api.NewSetServiceClient(conn)
 	sources := api.NewSourceServiceClient(conn)
-	objects := api.NewObjectServiceClient(conn)
+	laminae := api.NewLaminaServiceClient(conn)
 
 	set, err := sets.Add(ctx, api.SetAddRequest_builder{Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "writer"}.Build())
 	require.NoError(t, err)
@@ -37,13 +37,13 @@ func TestOneWriterPerKey(t *testing.T) {
 		Profile: api.SegmentProfile_builder{MaxBitrate: 2_000_000}.Build(),
 	}.Build())
 	require.NoError(t, err)
-	al, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+	al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 		Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(time.Now().Add(-time.Hour)),
 	}.Build())
 	require.NoError(t, err)
 	cand := al.GetCandidates()[0]
 	ep := cand.GetEndpoints()[0]
-	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al.GetObjectKey())
+	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al.GetLaminaKey())
 	body := make([]byte, 300_000)
 	rand.Read(body)
 
@@ -92,7 +92,7 @@ func TestOneWriterPerKey(t *testing.T) {
 	select {
 	case r := <-first:
 		if r != nil {
-			require.NotEqual(t, http.StatusCreated, r.StatusCode, "the older request did not complete the object")
+			require.NotEqual(t, http.StatusCreated, r.StatusCode, "the older request did not complete the lamina")
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("the older request never ended")
@@ -100,14 +100,14 @@ func TestOneWriterPerKey(t *testing.T) {
 
 	// Whole, and the bytes are the bytes.
 	require.Eventually(t, func() bool {
-		o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: al.GetObjectId()}.Build()}.Build())
+		o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build()}.Build())
 
-		return err == nil && o.GetState() == api.ObjectState_OBJECT_STATE_COMMITTED && o.GetSize() == int64(len(body))
+		return err == nil && o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED && o.GetSize() == int64(len(body))
 	}, 10*time.Second, 200*time.Millisecond)
-	tl, err := objects.Timeline(ctx, api.ObjectTimelineRequest_builder{
+	tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
 		Set: api.SetRef_builder{Id: set.GetId()}.Build(), From: timestamppb.New(time.Now().Add(-2 * time.Hour)), To: timestamppb.New(time.Now()), Size: 10,
 	}.Build())
 	require.NoError(t, err)
-	require.Len(t, tl.GetSources()[0].GetObjects(), 1)
-	require.Equal(t, body, fetch(t, tl.GetSources()[0].GetObjects()[0].GetUrl()))
+	require.Len(t, tl.GetSources()[0].GetLaminae(), 1)
+	require.Equal(t, body, fetch(t, tl.GetSources()[0].GetLaminae()[0].GetUrl()))
 }

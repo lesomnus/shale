@@ -12,8 +12,8 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent/attempt"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
-	"github.com/lesomnus/shale/internal/ent/object"
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/relay"
 	"github.com/lesomnus/shale/internal/ent/signingkey"
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-// The Control Plane's background work (§34.9): attempts that expire, objects
+// The Control Plane's background work (§34.9): attempts that expire, laminae
 // nobody stored, rows past their retention, keys past their rotation, sinks
 // whose node is gone. Exactly one CP replica runs it, elected by a lease the
 // deployment supplies; `shale serve all` and a single control process need
@@ -93,17 +93,17 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 	}
 
-	// Objects none of whose attempts stored anything, abandon_grace after
+	// Laminae none of whose attempts stored anything, abandon_grace after
 	// the last one expired, are removed (§12.1, §20.4).
-	pending, err := j.d.Ent.Object.Query().
-		Where(object.StateEQ(int32(api.ObjectState_OBJECT_STATE_PENDING)), object.DateCreatedLT(now.Add(-DefaultAbandonGrace))).
+	pending, err := j.d.Ent.Lamina.Query().
+		Where(lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_PENDING)), lamina.DateCreatedLT(now.Add(-DefaultAbandonGrace))).
 		Limit(1000).All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, o := range pending {
 		open, err := j.d.Ent.Attempt.Query().
-			Where(attempt.ObjectIdEQ(o.Id), attempt.Or(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateFinishedGT(now.Add(-DefaultAbandonGrace)))).
+			Where(attempt.LaminaIdEQ(o.Id), attempt.Or(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateFinishedGT(now.Add(-DefaultAbandonGrace)))).
 			Count(ctx)
 		if err != nil {
 			return err
@@ -111,15 +111,15 @@ func (j *Jobs) Once(ctx context.Context) error {
 		if open > 0 {
 			continue
 		}
-		if err := j.eraseObject(ctx, o.Id); err != nil {
-			j.log().Warn("remove object", "err", err.Error())
+		if err := j.eraseLamina(ctx, o.Id); err != nil {
+			j.log().Warn("remove lamina", "err", err.Error())
 		}
 	}
 
-	// Row retention (§20.4): DELETED and LOST objects a month after they
+	// Row retention (§20.4): DELETED and LOST laminae a month after they
 	// ended.
-	old, err := j.d.Ent.Object.Query().
-		Where(object.StateIn(int32(api.ObjectState_OBJECT_STATE_DELETED), int32(api.ObjectState_OBJECT_STATE_LOST)), object.DateFinishedLT(now.Add(-DefaultRowRetention))).
+	old, err := j.d.Ent.Lamina.Query().
+		Where(lamina.StateIn(int32(api.LaminaState_LAMINA_STATE_DELETED), int32(api.LaminaState_LAMINA_STATE_LOST)), lamina.DateFinishedLT(now.Add(-DefaultRowRetention))).
 		Limit(1000).All(ctx)
 	if err != nil {
 		return err
@@ -128,12 +128,12 @@ func (j *Jobs) Once(ctx context.Context) error {
 		if o.DateDeleted != nil && o.DateDeleted.Add(DefaultRowRetention).After(now) {
 			continue
 		}
-		if err := j.eraseObject(ctx, o.Id); err != nil {
-			j.log().Warn("prune object", "err", err.Error())
+		if err := j.eraseLamina(ctx, o.Id); err != nil {
+			j.log().Warn("prune lamina", "err", err.Error())
 		}
 	}
 	// Attempts in a terminal state other than STORED, a week after they
-	// ended, whose object is gone.
+	// ended, whose lamina is gone.
 	stale, err := j.d.Ent.Attempt.Query().
 		Where(attempt.StateNEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateFinishedLT(now.Add(-7*24*time.Hour))).
 		Limit(1000).All(ctx)
@@ -141,7 +141,7 @@ func (j *Jobs) Once(ctx context.Context) error {
 		return err
 	}
 	for _, a := range stale {
-		if _, err := j.d.Ent.Object.Get(ctx, a.ObjectId); err == nil {
+		if _, err := j.d.Ent.Lamina.Get(ctx, a.LaminaId); err == nil {
 			continue
 		}
 		own.Attempt().Erase(ctx, api.AttemptRef_builder{Id: a.Id[:]}.Build())
@@ -205,7 +205,7 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 	}
 
-	// The gauges of §31: hosts pending adoption, objects waiting to be
+	// The gauges of §31: hosts pending adoption, laminae waiting to be
 	// unlinked, bytes per tenant.
 	m := j.d.metrics()
 	if n, err := j.d.Ent.Node.Query().Where(node.StateEQ(int32(api.HostState_HOST_STATE_PENDING))).Count(ctx); err == nil {
@@ -217,7 +217,7 @@ func (j *Jobs) Once(ctx context.Context) error {
 	if n, err := j.d.Ent.Relay.Query().Where(relay.StateEQ(int32(api.HostState_HOST_STATE_PENDING))).Count(ctx); err == nil {
 		m.PendingHosts.Record(ctx, int64(n), kindAttr("relay"))
 	}
-	if n, err := j.d.Ent.Object.Query().Where(object.StateEQ(int32(api.ObjectState_OBJECT_STATE_DELETING))).Count(ctx); err == nil {
+	if n, err := j.d.Ent.Lamina.Query().Where(lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_DELETING))).Count(ctx); err == nil {
 		m.Deleting.Record(ctx, int64(n))
 	}
 	if ts, err := j.d.Ent.Tenant.Query().All(ctx); err == nil {
@@ -262,9 +262,9 @@ func (j *Jobs) Once(ctx context.Context) error {
 	return nil
 }
 
-// eraseObject removes an object row with its attempts, which reference it.
-func (j *Jobs) eraseObject(ctx context.Context, id [16]byte) error {
-	ats, err := j.d.Ent.Attempt.Query().Where(attempt.ObjectIdEQ(id)).All(ctx)
+// eraseLamina removes a lamina row with its attempts, which reference it.
+func (j *Jobs) eraseLamina(ctx context.Context, id [16]byte) error {
+	ats, err := j.d.Ent.Attempt.Query().Where(attempt.LaminaIdEQ(id)).All(ctx)
 	if err != nil {
 		return err
 	}
@@ -273,7 +273,7 @@ func (j *Jobs) eraseObject(ctx context.Context, id [16]byte) error {
 			return err
 		}
 	}
-	_, err = j.d.Own.Object().Erase(ctx, api.ObjectRef_builder{Id: id[:]}.Build())
+	_, err = j.d.Own.Lamina().Erase(ctx, api.LaminaRef_builder{Id: id[:]}.Build())
 
 	return err
 }

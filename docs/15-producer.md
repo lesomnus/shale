@@ -2,7 +2,7 @@
 
 ## 38. Producer
 
-The producer is the host program that turns cameras into objects:
+The producer is the host program that turns cameras into laminae:
 `shale serve producer` ([§5](01-overview.md#5-components),
 [§33.4](10-security.md#334-joining-and-adoption)). The storage side never
 knows any of this: nodes store bytes, the Control Plane places and indexes
@@ -26,10 +26,10 @@ The contract is the same for all three:
 
 - MPEG-TS, with the `random_access_indicator` set on keyframes, as every
   standard muxer does. Fragmented MP4 is accepted too; it is cut at fragment
-  boundaries with the init segment prepended to each object. TS is the
+  boundaries with the init segment prepended to each lamina. TS is the
   default because any prefix of a TS segment plays up to its last complete
-  packet, which is what an incomplete object needs
-  ([§15](04-write-path.md#15-partial-objects)).
+  packet, which is what an incomplete lamina needs
+  ([§15](04-write-path.md#15-partial-laminae)).
 - A keyframe at least every 2 seconds ([§12.6](04-write-path.md#126-upload-profile-negotiation)).
 - All streams together at or below the source's `max_bitrate`. Audio goes in
   the same TS when a source has it: a camera's own audio as the camera
@@ -41,6 +41,11 @@ The contract is the same for all three:
 The producer never decodes or encodes. It reads packet headers, nothing
 inside them.
 
+A segment is the producer's word for what it sends. The cluster keeps it as
+a lamina, with the state [§8](02-data-model.md#8-state-model) gives it, and
+the producer never sees that state: it holds a segment until a node has it,
+and then forgets it.
+
 ### 38.2 Cutting segments
 
 The producer keeps, per source, the last PAT and PMT packets it has seen and
@@ -48,7 +53,7 @@ the video PID from the PMT. A segment boundary is the first video packet with
 `payload_unit_start_indicator` and `random_access_indicator` set, i.e. the
 start of a keyframe, at or after the moment the boundary is due. The new
 segment starts with the cached PAT and PMT followed by that keyframe, so each
-object plays on its own.
+lamina plays on its own.
 
 A boundary is due:
 
@@ -163,7 +168,7 @@ heartbeat ([§38.6](#386-health-and-heartbeats)).
 **Supervision.** The producer starts each capture process, reads its output,
 restarts it with backoff when it exits, and logs its standard error. While a
 process is down the source's segment is closed as "the camera stopped"
-([§15](04-write-path.md#15-partial-objects)) and the next one starts when
+([§15](04-write-path.md#15-partial-laminae)) and the next one starts when
 frames return. Ten seconds after a start the producer checks what it is
 getting: a keyframe interval above 2 s or a measured rate at the ceiling is
 logged as a warning with the source's alias, since either will show up as

@@ -9,7 +9,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/protobuf-orm/ent/dialect/sql"
@@ -17,43 +17,43 @@ import (
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
-// ObjectUpdate is the builder for updating Object entities.
-type ObjectUpdate struct {
+// LaminaUpdate is the builder for updating Lamina entities.
+type LaminaUpdate struct {
 	config
 	hooks     []Hook
-	mutation  *ObjectMutation
+	mutation  *LaminaMutation
 	modifiers []func(*sql.UpdateBuilder)
 }
 
-// Where appends a list predicates to the ObjectUpdate builder.
-func (_u *ObjectUpdate) Where(ps ...predicate.Object) *ObjectUpdate {
+// Where appends a list predicates to the LaminaUpdate builder.
+func (_u *LaminaUpdate) Where(ps ...predicate.Lamina) *LaminaUpdate {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
-// SetObjectKey sets the "object_key" field.
-func (_u *ObjectUpdate) SetObjectKey(v string) *ObjectUpdate {
-	_u.mutation.SetObjectKey(v)
+// SetLaminaKey sets the "lamina_key" field.
+func (_u *LaminaUpdate) SetLaminaKey(v string) *LaminaUpdate {
+	_u.mutation.SetLaminaKey(v)
 	return _u
 }
 
-// SetNillableObjectKey sets the "object_key" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableObjectKey(v *string) *ObjectUpdate {
+// SetNillableLaminaKey sets the "lamina_key" field if the given value is not nil.
+func (_u *LaminaUpdate) SetNillableLaminaKey(v *string) *LaminaUpdate {
 	if v != nil {
-		_u.SetObjectKey(*v)
+		_u.SetLaminaKey(*v)
 	}
 	return _u
 }
 
 // SetState sets the "state" field.
-func (_u *ObjectUpdate) SetState(v int32) *ObjectUpdate {
+func (_u *LaminaUpdate) SetState(v int32) *LaminaUpdate {
 	_u.mutation.ResetState()
 	_u.mutation.SetState(v)
 	return _u
 }
 
 // SetNillableState sets the "state" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableState(v *int32) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableState(v *int32) *LaminaUpdate {
 	if v != nil {
 		_u.SetState(*v)
 	}
@@ -61,19 +61,19 @@ func (_u *ObjectUpdate) SetNillableState(v *int32) *ObjectUpdate {
 }
 
 // AddState adds value to the "state" field.
-func (_u *ObjectUpdate) AddState(v int32) *ObjectUpdate {
+func (_u *LaminaUpdate) AddState(v int32) *LaminaUpdate {
 	_u.mutation.AddState(v)
 	return _u
 }
 
 // SetDateUpdated sets the "date_updated" field.
-func (_u *ObjectUpdate) SetDateUpdated(v time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetDateUpdated(v time.Time) *LaminaUpdate {
 	_u.mutation.SetDateUpdated(v)
 	return _u
 }
 
 // SetNillableDateUpdated sets the "date_updated" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableDateUpdated(v *time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableDateUpdated(v *time.Time) *LaminaUpdate {
 	if v != nil {
 		_u.SetDateUpdated(*v)
 	}
@@ -81,13 +81,13 @@ func (_u *ObjectUpdate) SetNillableDateUpdated(v *time.Time) *ObjectUpdate {
 }
 
 // SetDateStarted sets the "date_started" field.
-func (_u *ObjectUpdate) SetDateStarted(v time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetDateStarted(v time.Time) *LaminaUpdate {
 	_u.mutation.SetDateStarted(v)
 	return _u
 }
 
 // SetNillableDateStarted sets the "date_started" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableDateStarted(v *time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableDateStarted(v *time.Time) *LaminaUpdate {
 	if v != nil {
 		_u.SetDateStarted(*v)
 	}
@@ -95,19 +95,19 @@ func (_u *ObjectUpdate) SetNillableDateStarted(v *time.Time) *ObjectUpdate {
 }
 
 // ClearDateStarted clears the value of the "date_started" field.
-func (_u *ObjectUpdate) ClearDateStarted() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearDateStarted() *LaminaUpdate {
 	_u.mutation.ClearDateStarted()
 	return _u
 }
 
 // SetDateEnded sets the "date_ended" field.
-func (_u *ObjectUpdate) SetDateEnded(v time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetDateEnded(v time.Time) *LaminaUpdate {
 	_u.mutation.SetDateEnded(v)
 	return _u
 }
 
 // SetNillableDateEnded sets the "date_ended" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableDateEnded(v *time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableDateEnded(v *time.Time) *LaminaUpdate {
 	if v != nil {
 		_u.SetDateEnded(*v)
 	}
@@ -115,19 +115,19 @@ func (_u *ObjectUpdate) SetNillableDateEnded(v *time.Time) *ObjectUpdate {
 }
 
 // ClearDateEnded clears the value of the "date_ended" field.
-func (_u *ObjectUpdate) ClearDateEnded() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearDateEnded() *LaminaUpdate {
 	_u.mutation.ClearDateEnded()
 	return _u
 }
 
 // SetEndedEstimated sets the "ended_estimated" field.
-func (_u *ObjectUpdate) SetEndedEstimated(v bool) *ObjectUpdate {
+func (_u *LaminaUpdate) SetEndedEstimated(v bool) *LaminaUpdate {
 	_u.mutation.SetEndedEstimated(v)
 	return _u
 }
 
 // SetNillableEndedEstimated sets the "ended_estimated" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableEndedEstimated(v *bool) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableEndedEstimated(v *bool) *LaminaUpdate {
 	if v != nil {
 		_u.SetEndedEstimated(*v)
 	}
@@ -135,14 +135,14 @@ func (_u *ObjectUpdate) SetNillableEndedEstimated(v *bool) *ObjectUpdate {
 }
 
 // SetSize sets the "size" field.
-func (_u *ObjectUpdate) SetSize(v int64) *ObjectUpdate {
+func (_u *LaminaUpdate) SetSize(v int64) *LaminaUpdate {
 	_u.mutation.ResetSize()
 	_u.mutation.SetSize(v)
 	return _u
 }
 
 // SetNillableSize sets the "size" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableSize(v *int64) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableSize(v *int64) *LaminaUpdate {
 	if v != nil {
 		_u.SetSize(*v)
 	}
@@ -150,19 +150,19 @@ func (_u *ObjectUpdate) SetNillableSize(v *int64) *ObjectUpdate {
 }
 
 // AddSize adds value to the "size" field.
-func (_u *ObjectUpdate) AddSize(v int64) *ObjectUpdate {
+func (_u *LaminaUpdate) AddSize(v int64) *LaminaUpdate {
 	_u.mutation.AddSize(v)
 	return _u
 }
 
 // SetIncomplete sets the "incomplete" field.
-func (_u *ObjectUpdate) SetIncomplete(v bool) *ObjectUpdate {
+func (_u *LaminaUpdate) SetIncomplete(v bool) *LaminaUpdate {
 	_u.mutation.SetIncomplete(v)
 	return _u
 }
 
 // SetNillableIncomplete sets the "incomplete" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableIncomplete(v *bool) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableIncomplete(v *bool) *LaminaUpdate {
 	if v != nil {
 		_u.SetIncomplete(*v)
 	}
@@ -170,13 +170,13 @@ func (_u *ObjectUpdate) SetNillableIncomplete(v *bool) *ObjectUpdate {
 }
 
 // SetDateExpired sets the "date_expired" field.
-func (_u *ObjectUpdate) SetDateExpired(v time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetDateExpired(v time.Time) *LaminaUpdate {
 	_u.mutation.SetDateExpired(v)
 	return _u
 }
 
 // SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableDateExpired(v *time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableDateExpired(v *time.Time) *LaminaUpdate {
 	if v != nil {
 		_u.SetDateExpired(*v)
 	}
@@ -184,19 +184,19 @@ func (_u *ObjectUpdate) SetNillableDateExpired(v *time.Time) *ObjectUpdate {
 }
 
 // ClearDateExpired clears the value of the "date_expired" field.
-func (_u *ObjectUpdate) ClearDateExpired() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearDateExpired() *LaminaUpdate {
 	_u.mutation.ClearDateExpired()
 	return _u
 }
 
 // SetDateDeleted sets the "date_deleted" field.
-func (_u *ObjectUpdate) SetDateDeleted(v time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetDateDeleted(v time.Time) *LaminaUpdate {
 	_u.mutation.SetDateDeleted(v)
 	return _u
 }
 
 // SetNillableDateDeleted sets the "date_deleted" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableDateDeleted(v *time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableDateDeleted(v *time.Time) *LaminaUpdate {
 	if v != nil {
 		_u.SetDateDeleted(*v)
 	}
@@ -204,19 +204,19 @@ func (_u *ObjectUpdate) SetNillableDateDeleted(v *time.Time) *ObjectUpdate {
 }
 
 // ClearDateDeleted clears the value of the "date_deleted" field.
-func (_u *ObjectUpdate) ClearDateDeleted() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearDateDeleted() *LaminaUpdate {
 	_u.mutation.ClearDateDeleted()
 	return _u
 }
 
 // SetDatesSynced sets the "dates_synced" field.
-func (_u *ObjectUpdate) SetDatesSynced(v bool) *ObjectUpdate {
+func (_u *LaminaUpdate) SetDatesSynced(v bool) *LaminaUpdate {
 	_u.mutation.SetDatesSynced(v)
 	return _u
 }
 
 // SetNillableDatesSynced sets the "dates_synced" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableDatesSynced(v *bool) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableDatesSynced(v *bool) *LaminaUpdate {
 	if v != nil {
 		_u.SetDatesSynced(*v)
 	}
@@ -224,14 +224,14 @@ func (_u *ObjectUpdate) SetNillableDatesSynced(v *bool) *ObjectUpdate {
 }
 
 // SetPlacementVersion sets the "placement_version" field.
-func (_u *ObjectUpdate) SetPlacementVersion(v int64) *ObjectUpdate {
+func (_u *LaminaUpdate) SetPlacementVersion(v int64) *LaminaUpdate {
 	_u.mutation.ResetPlacementVersion()
 	_u.mutation.SetPlacementVersion(v)
 	return _u
 }
 
 // SetNillablePlacementVersion sets the "placement_version" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillablePlacementVersion(v *int64) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillablePlacementVersion(v *int64) *LaminaUpdate {
 	if v != nil {
 		_u.SetPlacementVersion(*v)
 	}
@@ -239,19 +239,19 @@ func (_u *ObjectUpdate) SetNillablePlacementVersion(v *int64) *ObjectUpdate {
 }
 
 // AddPlacementVersion adds value to the "placement_version" field.
-func (_u *ObjectUpdate) AddPlacementVersion(v int64) *ObjectUpdate {
+func (_u *LaminaUpdate) AddPlacementVersion(v int64) *LaminaUpdate {
 	_u.mutation.AddPlacementVersion(v)
 	return _u
 }
 
 // SetDateCommitted sets the "date_committed" field.
-func (_u *ObjectUpdate) SetDateCommitted(v time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetDateCommitted(v time.Time) *LaminaUpdate {
 	_u.mutation.SetDateCommitted(v)
 	return _u
 }
 
 // SetNillableDateCommitted sets the "date_committed" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableDateCommitted(v *time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableDateCommitted(v *time.Time) *LaminaUpdate {
 	if v != nil {
 		_u.SetDateCommitted(*v)
 	}
@@ -259,19 +259,19 @@ func (_u *ObjectUpdate) SetNillableDateCommitted(v *time.Time) *ObjectUpdate {
 }
 
 // ClearDateCommitted clears the value of the "date_committed" field.
-func (_u *ObjectUpdate) ClearDateCommitted() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearDateCommitted() *LaminaUpdate {
 	_u.mutation.ClearDateCommitted()
 	return _u
 }
 
 // SetDateFinished sets the "date_finished" field.
-func (_u *ObjectUpdate) SetDateFinished(v time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetDateFinished(v time.Time) *LaminaUpdate {
 	_u.mutation.SetDateFinished(v)
 	return _u
 }
 
 // SetNillableDateFinished sets the "date_finished" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableDateFinished(v *time.Time) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableDateFinished(v *time.Time) *LaminaUpdate {
 	if v != nil {
 		_u.SetDateFinished(*v)
 	}
@@ -279,32 +279,32 @@ func (_u *ObjectUpdate) SetNillableDateFinished(v *time.Time) *ObjectUpdate {
 }
 
 // ClearDateFinished clears the value of the "date_finished" field.
-func (_u *ObjectUpdate) ClearDateFinished() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearDateFinished() *LaminaUpdate {
 	_u.mutation.ClearDateFinished()
 	return _u
 }
 
 // SetChecksum sets the "checksum" field.
-func (_u *ObjectUpdate) SetChecksum(v []byte) *ObjectUpdate {
+func (_u *LaminaUpdate) SetChecksum(v []byte) *LaminaUpdate {
 	_u.mutation.SetChecksum(v)
 	return _u
 }
 
 // ClearChecksum clears the value of the "checksum" field.
-func (_u *ObjectUpdate) ClearChecksum() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearChecksum() *LaminaUpdate {
 	_u.mutation.ClearChecksum()
 	return _u
 }
 
 // SetEpoch sets the "epoch" field.
-func (_u *ObjectUpdate) SetEpoch(v int64) *ObjectUpdate {
+func (_u *LaminaUpdate) SetEpoch(v int64) *LaminaUpdate {
 	_u.mutation.ResetEpoch()
 	_u.mutation.SetEpoch(v)
 	return _u
 }
 
 // SetNillableEpoch sets the "epoch" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableEpoch(v *int64) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableEpoch(v *int64) *LaminaUpdate {
 	if v != nil {
 		_u.SetEpoch(*v)
 	}
@@ -312,19 +312,19 @@ func (_u *ObjectUpdate) SetNillableEpoch(v *int64) *ObjectUpdate {
 }
 
 // AddEpoch adds value to the "epoch" field.
-func (_u *ObjectUpdate) AddEpoch(v int64) *ObjectUpdate {
+func (_u *LaminaUpdate) AddEpoch(v int64) *LaminaUpdate {
 	_u.mutation.AddEpoch(v)
 	return _u
 }
 
 // SetSinkId sets the "sink_id" field.
-func (_u *ObjectUpdate) SetSinkId(v uuid.UUID) *ObjectUpdate {
+func (_u *LaminaUpdate) SetSinkId(v uuid.UUID) *LaminaUpdate {
 	_u.mutation.SetSinkId(v)
 	return _u
 }
 
 // SetNillableSinkId sets the "sink_id" field if the given value is not nil.
-func (_u *ObjectUpdate) SetNillableSinkId(v *uuid.UUID) *ObjectUpdate {
+func (_u *LaminaUpdate) SetNillableSinkId(v *uuid.UUID) *LaminaUpdate {
 	if v != nil {
 		_u.SetSinkId(*v)
 	}
@@ -332,34 +332,34 @@ func (_u *ObjectUpdate) SetNillableSinkId(v *uuid.UUID) *ObjectUpdate {
 }
 
 // ClearSinkId clears the value of the "sink_id" field.
-func (_u *ObjectUpdate) ClearSinkId() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearSinkId() *LaminaUpdate {
 	_u.mutation.ClearSinkId()
 	return _u
 }
 
 // SetSink sets the "sink" edge to the Sink entity.
-func (_u *ObjectUpdate) SetSink(v *Sink) *ObjectUpdate {
+func (_u *LaminaUpdate) SetSink(v *Sink) *LaminaUpdate {
 	return _u.SetSinkId(v.Id)
 }
 
-// Mutation returns the ObjectMutation object of the builder.
-func (_u *ObjectUpdate) Mutation() *ObjectMutation {
+// Mutation returns the LaminaMutation object of the builder.
+func (_u *LaminaUpdate) Mutation() *LaminaMutation {
 	return _u.mutation
 }
 
 // ClearSink clears the "sink" edge to the Sink entity.
-func (_u *ObjectUpdate) ClearSink() *ObjectUpdate {
+func (_u *LaminaUpdate) ClearSink() *LaminaUpdate {
 	_u.mutation.ClearSink()
 	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (_u *ObjectUpdate) Save(ctx context.Context) (int, error) {
+func (_u *LaminaUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *ObjectUpdate) SaveX(ctx context.Context) int {
+func (_u *LaminaUpdate) SaveX(ctx context.Context) int {
 	affected, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -368,43 +368,43 @@ func (_u *ObjectUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (_u *ObjectUpdate) Exec(ctx context.Context) error {
+func (_u *LaminaUpdate) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *ObjectUpdate) ExecX(ctx context.Context) {
+func (_u *LaminaUpdate) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *ObjectUpdate) check() error {
+func (_u *LaminaUpdate) check() error {
 	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Object.tenant"`)
+		return errors.New(`ent: clearing a required unique edge "Lamina.tenant"`)
 	}
 	if _u.mutation.SetCleared() && len(_u.mutation.SetIds()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Object.set"`)
+		return errors.New(`ent: clearing a required unique edge "Lamina.set"`)
 	}
 	if _u.mutation.SourceCleared() && len(_u.mutation.SourceIds()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Object.source"`)
+		return errors.New(`ent: clearing a required unique edge "Lamina.source"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (_u *ObjectUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ObjectUpdate {
+func (_u *LaminaUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *LaminaUpdate {
 	_u.modifiers = append(_u.modifiers, modifiers...)
 	return _u
 }
 
-func (_u *ObjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(object.Table, object.Columns, sqlgraph.NewFieldSpec(object.FieldId, field.TypeUuid))
+	_spec := sqlgraph.NewUpdateSpec(lamina.Table, lamina.Columns, sqlgraph.NewFieldSpec(lamina.FieldId, field.TypeUuid))
 	if ps := _u.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -412,96 +412,96 @@ func (_u *ObjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
-	if value, ok := _u.mutation.ObjectKey(); ok {
-		_spec.SetField(object.FieldObjectKey, field.TypeString, value)
+	if value, ok := _u.mutation.LaminaKey(); ok {
+		_spec.SetField(lamina.FieldLaminaKey, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.State(); ok {
-		_spec.SetField(object.FieldState, field.TypeInt32, value)
+		_spec.SetField(lamina.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
-		_spec.AddField(object.FieldState, field.TypeInt32, value)
+		_spec.AddField(lamina.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
-		_spec.SetField(object.FieldDateUpdated, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateUpdated, field.TypeTime, value)
 	}
 	if _u.mutation.DateCreatedCleared() {
-		_spec.ClearField(object.FieldDateCreated, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateCreated, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateStarted(); ok {
-		_spec.SetField(object.FieldDateStarted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateStarted, field.TypeTime, value)
 	}
 	if _u.mutation.DateStartedCleared() {
-		_spec.ClearField(object.FieldDateStarted, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateStarted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateEnded(); ok {
-		_spec.SetField(object.FieldDateEnded, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateEnded, field.TypeTime, value)
 	}
 	if _u.mutation.DateEndedCleared() {
-		_spec.ClearField(object.FieldDateEnded, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateEnded, field.TypeTime)
 	}
 	if value, ok := _u.mutation.EndedEstimated(); ok {
-		_spec.SetField(object.FieldEndedEstimated, field.TypeBool, value)
+		_spec.SetField(lamina.FieldEndedEstimated, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Size(); ok {
-		_spec.SetField(object.FieldSize, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldSize, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.AddedSize(); ok {
-		_spec.AddField(object.FieldSize, field.TypeInt64, value)
+		_spec.AddField(lamina.FieldSize, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Incomplete(); ok {
-		_spec.SetField(object.FieldIncomplete, field.TypeBool, value)
+		_spec.SetField(lamina.FieldIncomplete, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.DateExpired(); ok {
-		_spec.SetField(object.FieldDateExpired, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateExpired, field.TypeTime, value)
 	}
 	if _u.mutation.DateExpiredCleared() {
-		_spec.ClearField(object.FieldDateExpired, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateExpired, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateDeleted(); ok {
-		_spec.SetField(object.FieldDateDeleted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateDeleted, field.TypeTime, value)
 	}
 	if _u.mutation.DateDeletedCleared() {
-		_spec.ClearField(object.FieldDateDeleted, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateDeleted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DatesSynced(); ok {
-		_spec.SetField(object.FieldDatesSynced, field.TypeBool, value)
+		_spec.SetField(lamina.FieldDatesSynced, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.PlacementVersion(); ok {
-		_spec.SetField(object.FieldPlacementVersion, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldPlacementVersion, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.AddedPlacementVersion(); ok {
-		_spec.AddField(object.FieldPlacementVersion, field.TypeInt64, value)
+		_spec.AddField(lamina.FieldPlacementVersion, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateCommitted(); ok {
-		_spec.SetField(object.FieldDateCommitted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateCommitted, field.TypeTime, value)
 	}
 	if _u.mutation.DateCommittedCleared() {
-		_spec.ClearField(object.FieldDateCommitted, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateCommitted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateFinished(); ok {
-		_spec.SetField(object.FieldDateFinished, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateFinished, field.TypeTime, value)
 	}
 	if _u.mutation.DateFinishedCleared() {
-		_spec.ClearField(object.FieldDateFinished, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateFinished, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Checksum(); ok {
-		_spec.SetField(object.FieldChecksum, field.TypeBytes, value)
+		_spec.SetField(lamina.FieldChecksum, field.TypeBytes, value)
 	}
 	if _u.mutation.ChecksumCleared() {
-		_spec.ClearField(object.FieldChecksum, field.TypeBytes)
+		_spec.ClearField(lamina.FieldChecksum, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.Epoch(); ok {
-		_spec.SetField(object.FieldEpoch, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldEpoch, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.AddedEpoch(); ok {
-		_spec.AddField(object.FieldEpoch, field.TypeInt64, value)
+		_spec.AddField(lamina.FieldEpoch, field.TypeInt64, value)
 	}
 	if _u.mutation.SinkCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.SinkTable,
-			Columns: []string{object.SinkColumn},
+			Table:   lamina.SinkTable,
+			Columns: []string{lamina.SinkColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(sink.FieldId, field.TypeUuid),
@@ -513,8 +513,8 @@ func (_u *ObjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.SinkTable,
-			Columns: []string{object.SinkColumn},
+			Table:   lamina.SinkTable,
+			Columns: []string{lamina.SinkColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(sink.FieldId, field.TypeUuid),
@@ -528,7 +528,7 @@ func (_u *ObjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{object.Label}
+			err = &NotFoundError{lamina.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -538,38 +538,38 @@ func (_u *ObjectUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	return _node, nil
 }
 
-// ObjectUpdateOne is the builder for updating a single Object entity.
-type ObjectUpdateOne struct {
+// LaminaUpdateOne is the builder for updating a single Lamina entity.
+type LaminaUpdateOne struct {
 	config
 	fields    []string
 	hooks     []Hook
-	mutation  *ObjectMutation
+	mutation  *LaminaMutation
 	modifiers []func(*sql.UpdateBuilder)
 }
 
-// SetObjectKey sets the "object_key" field.
-func (_u *ObjectUpdateOne) SetObjectKey(v string) *ObjectUpdateOne {
-	_u.mutation.SetObjectKey(v)
+// SetLaminaKey sets the "lamina_key" field.
+func (_u *LaminaUpdateOne) SetLaminaKey(v string) *LaminaUpdateOne {
+	_u.mutation.SetLaminaKey(v)
 	return _u
 }
 
-// SetNillableObjectKey sets the "object_key" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableObjectKey(v *string) *ObjectUpdateOne {
+// SetNillableLaminaKey sets the "lamina_key" field if the given value is not nil.
+func (_u *LaminaUpdateOne) SetNillableLaminaKey(v *string) *LaminaUpdateOne {
 	if v != nil {
-		_u.SetObjectKey(*v)
+		_u.SetLaminaKey(*v)
 	}
 	return _u
 }
 
 // SetState sets the "state" field.
-func (_u *ObjectUpdateOne) SetState(v int32) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetState(v int32) *LaminaUpdateOne {
 	_u.mutation.ResetState()
 	_u.mutation.SetState(v)
 	return _u
 }
 
 // SetNillableState sets the "state" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableState(v *int32) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableState(v *int32) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetState(*v)
 	}
@@ -577,19 +577,19 @@ func (_u *ObjectUpdateOne) SetNillableState(v *int32) *ObjectUpdateOne {
 }
 
 // AddState adds value to the "state" field.
-func (_u *ObjectUpdateOne) AddState(v int32) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) AddState(v int32) *LaminaUpdateOne {
 	_u.mutation.AddState(v)
 	return _u
 }
 
 // SetDateUpdated sets the "date_updated" field.
-func (_u *ObjectUpdateOne) SetDateUpdated(v time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetDateUpdated(v time.Time) *LaminaUpdateOne {
 	_u.mutation.SetDateUpdated(v)
 	return _u
 }
 
 // SetNillableDateUpdated sets the "date_updated" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableDateUpdated(v *time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableDateUpdated(v *time.Time) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetDateUpdated(*v)
 	}
@@ -597,13 +597,13 @@ func (_u *ObjectUpdateOne) SetNillableDateUpdated(v *time.Time) *ObjectUpdateOne
 }
 
 // SetDateStarted sets the "date_started" field.
-func (_u *ObjectUpdateOne) SetDateStarted(v time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetDateStarted(v time.Time) *LaminaUpdateOne {
 	_u.mutation.SetDateStarted(v)
 	return _u
 }
 
 // SetNillableDateStarted sets the "date_started" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableDateStarted(v *time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableDateStarted(v *time.Time) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetDateStarted(*v)
 	}
@@ -611,19 +611,19 @@ func (_u *ObjectUpdateOne) SetNillableDateStarted(v *time.Time) *ObjectUpdateOne
 }
 
 // ClearDateStarted clears the value of the "date_started" field.
-func (_u *ObjectUpdateOne) ClearDateStarted() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearDateStarted() *LaminaUpdateOne {
 	_u.mutation.ClearDateStarted()
 	return _u
 }
 
 // SetDateEnded sets the "date_ended" field.
-func (_u *ObjectUpdateOne) SetDateEnded(v time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetDateEnded(v time.Time) *LaminaUpdateOne {
 	_u.mutation.SetDateEnded(v)
 	return _u
 }
 
 // SetNillableDateEnded sets the "date_ended" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableDateEnded(v *time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableDateEnded(v *time.Time) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetDateEnded(*v)
 	}
@@ -631,19 +631,19 @@ func (_u *ObjectUpdateOne) SetNillableDateEnded(v *time.Time) *ObjectUpdateOne {
 }
 
 // ClearDateEnded clears the value of the "date_ended" field.
-func (_u *ObjectUpdateOne) ClearDateEnded() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearDateEnded() *LaminaUpdateOne {
 	_u.mutation.ClearDateEnded()
 	return _u
 }
 
 // SetEndedEstimated sets the "ended_estimated" field.
-func (_u *ObjectUpdateOne) SetEndedEstimated(v bool) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetEndedEstimated(v bool) *LaminaUpdateOne {
 	_u.mutation.SetEndedEstimated(v)
 	return _u
 }
 
 // SetNillableEndedEstimated sets the "ended_estimated" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableEndedEstimated(v *bool) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableEndedEstimated(v *bool) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetEndedEstimated(*v)
 	}
@@ -651,14 +651,14 @@ func (_u *ObjectUpdateOne) SetNillableEndedEstimated(v *bool) *ObjectUpdateOne {
 }
 
 // SetSize sets the "size" field.
-func (_u *ObjectUpdateOne) SetSize(v int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetSize(v int64) *LaminaUpdateOne {
 	_u.mutation.ResetSize()
 	_u.mutation.SetSize(v)
 	return _u
 }
 
 // SetNillableSize sets the "size" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableSize(v *int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableSize(v *int64) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetSize(*v)
 	}
@@ -666,19 +666,19 @@ func (_u *ObjectUpdateOne) SetNillableSize(v *int64) *ObjectUpdateOne {
 }
 
 // AddSize adds value to the "size" field.
-func (_u *ObjectUpdateOne) AddSize(v int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) AddSize(v int64) *LaminaUpdateOne {
 	_u.mutation.AddSize(v)
 	return _u
 }
 
 // SetIncomplete sets the "incomplete" field.
-func (_u *ObjectUpdateOne) SetIncomplete(v bool) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetIncomplete(v bool) *LaminaUpdateOne {
 	_u.mutation.SetIncomplete(v)
 	return _u
 }
 
 // SetNillableIncomplete sets the "incomplete" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableIncomplete(v *bool) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableIncomplete(v *bool) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetIncomplete(*v)
 	}
@@ -686,13 +686,13 @@ func (_u *ObjectUpdateOne) SetNillableIncomplete(v *bool) *ObjectUpdateOne {
 }
 
 // SetDateExpired sets the "date_expired" field.
-func (_u *ObjectUpdateOne) SetDateExpired(v time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetDateExpired(v time.Time) *LaminaUpdateOne {
 	_u.mutation.SetDateExpired(v)
 	return _u
 }
 
 // SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableDateExpired(v *time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableDateExpired(v *time.Time) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetDateExpired(*v)
 	}
@@ -700,19 +700,19 @@ func (_u *ObjectUpdateOne) SetNillableDateExpired(v *time.Time) *ObjectUpdateOne
 }
 
 // ClearDateExpired clears the value of the "date_expired" field.
-func (_u *ObjectUpdateOne) ClearDateExpired() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearDateExpired() *LaminaUpdateOne {
 	_u.mutation.ClearDateExpired()
 	return _u
 }
 
 // SetDateDeleted sets the "date_deleted" field.
-func (_u *ObjectUpdateOne) SetDateDeleted(v time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetDateDeleted(v time.Time) *LaminaUpdateOne {
 	_u.mutation.SetDateDeleted(v)
 	return _u
 }
 
 // SetNillableDateDeleted sets the "date_deleted" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableDateDeleted(v *time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableDateDeleted(v *time.Time) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetDateDeleted(*v)
 	}
@@ -720,19 +720,19 @@ func (_u *ObjectUpdateOne) SetNillableDateDeleted(v *time.Time) *ObjectUpdateOne
 }
 
 // ClearDateDeleted clears the value of the "date_deleted" field.
-func (_u *ObjectUpdateOne) ClearDateDeleted() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearDateDeleted() *LaminaUpdateOne {
 	_u.mutation.ClearDateDeleted()
 	return _u
 }
 
 // SetDatesSynced sets the "dates_synced" field.
-func (_u *ObjectUpdateOne) SetDatesSynced(v bool) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetDatesSynced(v bool) *LaminaUpdateOne {
 	_u.mutation.SetDatesSynced(v)
 	return _u
 }
 
 // SetNillableDatesSynced sets the "dates_synced" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableDatesSynced(v *bool) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableDatesSynced(v *bool) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetDatesSynced(*v)
 	}
@@ -740,14 +740,14 @@ func (_u *ObjectUpdateOne) SetNillableDatesSynced(v *bool) *ObjectUpdateOne {
 }
 
 // SetPlacementVersion sets the "placement_version" field.
-func (_u *ObjectUpdateOne) SetPlacementVersion(v int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetPlacementVersion(v int64) *LaminaUpdateOne {
 	_u.mutation.ResetPlacementVersion()
 	_u.mutation.SetPlacementVersion(v)
 	return _u
 }
 
 // SetNillablePlacementVersion sets the "placement_version" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillablePlacementVersion(v *int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillablePlacementVersion(v *int64) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetPlacementVersion(*v)
 	}
@@ -755,19 +755,19 @@ func (_u *ObjectUpdateOne) SetNillablePlacementVersion(v *int64) *ObjectUpdateOn
 }
 
 // AddPlacementVersion adds value to the "placement_version" field.
-func (_u *ObjectUpdateOne) AddPlacementVersion(v int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) AddPlacementVersion(v int64) *LaminaUpdateOne {
 	_u.mutation.AddPlacementVersion(v)
 	return _u
 }
 
 // SetDateCommitted sets the "date_committed" field.
-func (_u *ObjectUpdateOne) SetDateCommitted(v time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetDateCommitted(v time.Time) *LaminaUpdateOne {
 	_u.mutation.SetDateCommitted(v)
 	return _u
 }
 
 // SetNillableDateCommitted sets the "date_committed" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableDateCommitted(v *time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableDateCommitted(v *time.Time) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetDateCommitted(*v)
 	}
@@ -775,19 +775,19 @@ func (_u *ObjectUpdateOne) SetNillableDateCommitted(v *time.Time) *ObjectUpdateO
 }
 
 // ClearDateCommitted clears the value of the "date_committed" field.
-func (_u *ObjectUpdateOne) ClearDateCommitted() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearDateCommitted() *LaminaUpdateOne {
 	_u.mutation.ClearDateCommitted()
 	return _u
 }
 
 // SetDateFinished sets the "date_finished" field.
-func (_u *ObjectUpdateOne) SetDateFinished(v time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetDateFinished(v time.Time) *LaminaUpdateOne {
 	_u.mutation.SetDateFinished(v)
 	return _u
 }
 
 // SetNillableDateFinished sets the "date_finished" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableDateFinished(v *time.Time) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableDateFinished(v *time.Time) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetDateFinished(*v)
 	}
@@ -795,32 +795,32 @@ func (_u *ObjectUpdateOne) SetNillableDateFinished(v *time.Time) *ObjectUpdateOn
 }
 
 // ClearDateFinished clears the value of the "date_finished" field.
-func (_u *ObjectUpdateOne) ClearDateFinished() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearDateFinished() *LaminaUpdateOne {
 	_u.mutation.ClearDateFinished()
 	return _u
 }
 
 // SetChecksum sets the "checksum" field.
-func (_u *ObjectUpdateOne) SetChecksum(v []byte) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetChecksum(v []byte) *LaminaUpdateOne {
 	_u.mutation.SetChecksum(v)
 	return _u
 }
 
 // ClearChecksum clears the value of the "checksum" field.
-func (_u *ObjectUpdateOne) ClearChecksum() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearChecksum() *LaminaUpdateOne {
 	_u.mutation.ClearChecksum()
 	return _u
 }
 
 // SetEpoch sets the "epoch" field.
-func (_u *ObjectUpdateOne) SetEpoch(v int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetEpoch(v int64) *LaminaUpdateOne {
 	_u.mutation.ResetEpoch()
 	_u.mutation.SetEpoch(v)
 	return _u
 }
 
 // SetNillableEpoch sets the "epoch" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableEpoch(v *int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableEpoch(v *int64) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetEpoch(*v)
 	}
@@ -828,19 +828,19 @@ func (_u *ObjectUpdateOne) SetNillableEpoch(v *int64) *ObjectUpdateOne {
 }
 
 // AddEpoch adds value to the "epoch" field.
-func (_u *ObjectUpdateOne) AddEpoch(v int64) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) AddEpoch(v int64) *LaminaUpdateOne {
 	_u.mutation.AddEpoch(v)
 	return _u
 }
 
 // SetSinkId sets the "sink_id" field.
-func (_u *ObjectUpdateOne) SetSinkId(v uuid.UUID) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetSinkId(v uuid.UUID) *LaminaUpdateOne {
 	_u.mutation.SetSinkId(v)
 	return _u
 }
 
 // SetNillableSinkId sets the "sink_id" field if the given value is not nil.
-func (_u *ObjectUpdateOne) SetNillableSinkId(v *uuid.UUID) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetNillableSinkId(v *uuid.UUID) *LaminaUpdateOne {
 	if v != nil {
 		_u.SetSinkId(*v)
 	}
@@ -848,47 +848,47 @@ func (_u *ObjectUpdateOne) SetNillableSinkId(v *uuid.UUID) *ObjectUpdateOne {
 }
 
 // ClearSinkId clears the value of the "sink_id" field.
-func (_u *ObjectUpdateOne) ClearSinkId() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearSinkId() *LaminaUpdateOne {
 	_u.mutation.ClearSinkId()
 	return _u
 }
 
 // SetSink sets the "sink" edge to the Sink entity.
-func (_u *ObjectUpdateOne) SetSink(v *Sink) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) SetSink(v *Sink) *LaminaUpdateOne {
 	return _u.SetSinkId(v.Id)
 }
 
-// Mutation returns the ObjectMutation object of the builder.
-func (_u *ObjectUpdateOne) Mutation() *ObjectMutation {
+// Mutation returns the LaminaMutation object of the builder.
+func (_u *LaminaUpdateOne) Mutation() *LaminaMutation {
 	return _u.mutation
 }
 
 // ClearSink clears the "sink" edge to the Sink entity.
-func (_u *ObjectUpdateOne) ClearSink() *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) ClearSink() *LaminaUpdateOne {
 	_u.mutation.ClearSink()
 	return _u
 }
 
-// Where appends a list predicates to the ObjectUpdate builder.
-func (_u *ObjectUpdateOne) Where(ps ...predicate.Object) *ObjectUpdateOne {
+// Where appends a list predicates to the LaminaUpdate builder.
+func (_u *LaminaUpdateOne) Where(ps ...predicate.Lamina) *LaminaUpdateOne {
 	_u.mutation.Where(ps...)
 	return _u
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (_u *ObjectUpdateOne) Select(field string, fields ...string) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) Select(field string, fields ...string) *LaminaUpdateOne {
 	_u.fields = append([]string{field}, fields...)
 	return _u
 }
 
-// Save executes the query and returns the updated Object entity.
-func (_u *ObjectUpdateOne) Save(ctx context.Context) (*Object, error) {
+// Save executes the query and returns the updated Lamina entity.
+func (_u *LaminaUpdateOne) Save(ctx context.Context) (*Lamina, error) {
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_u *ObjectUpdateOne) SaveX(ctx context.Context) *Object {
+func (_u *LaminaUpdateOne) SaveX(ctx context.Context) *Lamina {
 	node, err := _u.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -897,56 +897,56 @@ func (_u *ObjectUpdateOne) SaveX(ctx context.Context) *Object {
 }
 
 // Exec executes the query on the entity.
-func (_u *ObjectUpdateOne) Exec(ctx context.Context) error {
+func (_u *LaminaUpdateOne) Exec(ctx context.Context) error {
 	_, err := _u.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_u *ObjectUpdateOne) ExecX(ctx context.Context) {
+func (_u *LaminaUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_u *ObjectUpdateOne) check() error {
+func (_u *LaminaUpdateOne) check() error {
 	if _u.mutation.TenantCleared() && len(_u.mutation.TenantIds()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Object.tenant"`)
+		return errors.New(`ent: clearing a required unique edge "Lamina.tenant"`)
 	}
 	if _u.mutation.SetCleared() && len(_u.mutation.SetIds()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Object.set"`)
+		return errors.New(`ent: clearing a required unique edge "Lamina.set"`)
 	}
 	if _u.mutation.SourceCleared() && len(_u.mutation.SourceIds()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Object.source"`)
+		return errors.New(`ent: clearing a required unique edge "Lamina.source"`)
 	}
 	return nil
 }
 
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
-func (_u *ObjectUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ObjectUpdateOne {
+func (_u *LaminaUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *LaminaUpdateOne {
 	_u.modifiers = append(_u.modifiers, modifiers...)
 	return _u
 }
 
-func (_u *ObjectUpdateOne) sqlSave(ctx context.Context) (_node *Object, err error) {
+func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(object.Table, object.Columns, sqlgraph.NewFieldSpec(object.FieldId, field.TypeUuid))
+	_spec := sqlgraph.NewUpdateSpec(lamina.Table, lamina.Columns, sqlgraph.NewFieldSpec(lamina.FieldId, field.TypeUuid))
 	id, ok := _u.mutation.Id()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Object.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Lamina.id" for update`)}
 	}
 	_spec.Node.Id.Value = id
 	if fields := _u.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, object.FieldId)
+		_spec.Node.Columns = append(_spec.Node.Columns, lamina.FieldId)
 		for _, f := range fields {
-			if !object.ValidColumn(f) {
+			if !lamina.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != object.FieldId {
+			if f != lamina.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -958,96 +958,96 @@ func (_u *ObjectUpdateOne) sqlSave(ctx context.Context) (_node *Object, err erro
 			}
 		}
 	}
-	if value, ok := _u.mutation.ObjectKey(); ok {
-		_spec.SetField(object.FieldObjectKey, field.TypeString, value)
+	if value, ok := _u.mutation.LaminaKey(); ok {
+		_spec.SetField(lamina.FieldLaminaKey, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.State(); ok {
-		_spec.SetField(object.FieldState, field.TypeInt32, value)
+		_spec.SetField(lamina.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
-		_spec.AddField(object.FieldState, field.TypeInt32, value)
+		_spec.AddField(lamina.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
-		_spec.SetField(object.FieldDateUpdated, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateUpdated, field.TypeTime, value)
 	}
 	if _u.mutation.DateCreatedCleared() {
-		_spec.ClearField(object.FieldDateCreated, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateCreated, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateStarted(); ok {
-		_spec.SetField(object.FieldDateStarted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateStarted, field.TypeTime, value)
 	}
 	if _u.mutation.DateStartedCleared() {
-		_spec.ClearField(object.FieldDateStarted, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateStarted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateEnded(); ok {
-		_spec.SetField(object.FieldDateEnded, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateEnded, field.TypeTime, value)
 	}
 	if _u.mutation.DateEndedCleared() {
-		_spec.ClearField(object.FieldDateEnded, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateEnded, field.TypeTime)
 	}
 	if value, ok := _u.mutation.EndedEstimated(); ok {
-		_spec.SetField(object.FieldEndedEstimated, field.TypeBool, value)
+		_spec.SetField(lamina.FieldEndedEstimated, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Size(); ok {
-		_spec.SetField(object.FieldSize, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldSize, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.AddedSize(); ok {
-		_spec.AddField(object.FieldSize, field.TypeInt64, value)
+		_spec.AddField(lamina.FieldSize, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Incomplete(); ok {
-		_spec.SetField(object.FieldIncomplete, field.TypeBool, value)
+		_spec.SetField(lamina.FieldIncomplete, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.DateExpired(); ok {
-		_spec.SetField(object.FieldDateExpired, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateExpired, field.TypeTime, value)
 	}
 	if _u.mutation.DateExpiredCleared() {
-		_spec.ClearField(object.FieldDateExpired, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateExpired, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateDeleted(); ok {
-		_spec.SetField(object.FieldDateDeleted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateDeleted, field.TypeTime, value)
 	}
 	if _u.mutation.DateDeletedCleared() {
-		_spec.ClearField(object.FieldDateDeleted, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateDeleted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DatesSynced(); ok {
-		_spec.SetField(object.FieldDatesSynced, field.TypeBool, value)
+		_spec.SetField(lamina.FieldDatesSynced, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.PlacementVersion(); ok {
-		_spec.SetField(object.FieldPlacementVersion, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldPlacementVersion, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.AddedPlacementVersion(); ok {
-		_spec.AddField(object.FieldPlacementVersion, field.TypeInt64, value)
+		_spec.AddField(lamina.FieldPlacementVersion, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateCommitted(); ok {
-		_spec.SetField(object.FieldDateCommitted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateCommitted, field.TypeTime, value)
 	}
 	if _u.mutation.DateCommittedCleared() {
-		_spec.ClearField(object.FieldDateCommitted, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateCommitted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateFinished(); ok {
-		_spec.SetField(object.FieldDateFinished, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateFinished, field.TypeTime, value)
 	}
 	if _u.mutation.DateFinishedCleared() {
-		_spec.ClearField(object.FieldDateFinished, field.TypeTime)
+		_spec.ClearField(lamina.FieldDateFinished, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Checksum(); ok {
-		_spec.SetField(object.FieldChecksum, field.TypeBytes, value)
+		_spec.SetField(lamina.FieldChecksum, field.TypeBytes, value)
 	}
 	if _u.mutation.ChecksumCleared() {
-		_spec.ClearField(object.FieldChecksum, field.TypeBytes)
+		_spec.ClearField(lamina.FieldChecksum, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.Epoch(); ok {
-		_spec.SetField(object.FieldEpoch, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldEpoch, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.AddedEpoch(); ok {
-		_spec.AddField(object.FieldEpoch, field.TypeInt64, value)
+		_spec.AddField(lamina.FieldEpoch, field.TypeInt64, value)
 	}
 	if _u.mutation.SinkCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.SinkTable,
-			Columns: []string{object.SinkColumn},
+			Table:   lamina.SinkTable,
+			Columns: []string{lamina.SinkColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(sink.FieldId, field.TypeUuid),
@@ -1059,8 +1059,8 @@ func (_u *ObjectUpdateOne) sqlSave(ctx context.Context) (_node *Object, err erro
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.SinkTable,
-			Columns: []string{object.SinkColumn},
+			Table:   lamina.SinkTable,
+			Columns: []string{lamina.SinkColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(sink.FieldId, field.TypeUuid),
@@ -1072,12 +1072,12 @@ func (_u *ObjectUpdateOne) sqlSave(ctx context.Context) (_node *Object, err erro
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
-	_node = &Object{config: _u.config}
+	_node = &Lamina{config: _u.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{object.Label}
+			err = &NotFoundError{lamina.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}

@@ -98,6 +98,6 @@ func (e *Sink) Proto() *api.Sink {
 	}
 	x.SetWarnings(e.Warnings)
 	x.SetCapacityClamped(e.CapacityClamped)
-	x.SetObjects(e.Objects)
+	x.SetLaminae(e.Laminae)
 	return x
 }

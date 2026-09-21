@@ -16,8 +16,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent/audit"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
-	"github.com/lesomnus/shale/internal/ent/object"
 	"github.com/lesomnus/shale/internal/ent/outbox"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
@@ -48,8 +48,8 @@ const (
 	TypeAudit           = "Audit"
 	TypeDevice          = "Device"
 	TypeHolder          = "Holder"
+	TypeLamina          = "Lamina"
 	TypeNode            = "Node"
-	TypeObject          = "Object"
 	TypeOutbox          = "Outbox"
 	TypePlacementPolicy = "PlacementPolicy"
 	TypeProducer        = "Producer"
@@ -658,21 +658,21 @@ func (m *AttemptMutation) OldSiteId(ctx context.Context) (v uuid.UUID, err error
 	return oldValue.SiteId, nil
 }
 
-// OldObjectId returns the old "object_id" field's value of the Attempt entity.
+// OldLaminaId returns the old "lamina_id" field's value of the Attempt entity.
 // If the Attempt object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AttemptMutation) OldObjectId(ctx context.Context) (v uuid.UUID, err error) {
+func (m *AttemptMutation) OldLaminaId(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldObjectId is only allowed on UpdateOne operations")
+		return v, errors.New("OldLaminaId is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldObjectId requires an Id field in the mutation")
+		return v, errors.New("OldLaminaId requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldObjectId: %w", err)
+		return v, fmt.Errorf("querying old value for OldLaminaId: %w", err)
 	}
-	return oldValue.ObjectId, nil
+	return oldValue.LaminaId, nil
 }
 
 // OldSinkId returns the old "sink_id" field's value of the Attempt entity.
@@ -732,8 +732,8 @@ func (m *AttemptMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldTenantId(ctx)
 	case attempt.FieldSiteId:
 		return m.OldSiteId(ctx)
-	case attempt.FieldObjectId:
-		return m.OldObjectId(ctx)
+	case attempt.FieldLaminaId:
+		return m.OldLaminaId(ctx)
 	case attempt.FieldSinkId:
 		return m.OldSinkId(ctx)
 	case attempt.FieldNodeId:
@@ -1843,6 +1843,544 @@ func (m *HolderMutation) OldField(ctx context.Context, name string) (ent.Value, 
 	return nil, fmt.Errorf("unknown Holder field %s", name)
 }
 
+// LaminaMutation represents an operation that mutates the Lamina nodes in the graph.
+type LaminaMutation struct {
+	lamina.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*Lamina, error)
+}
+
+var _ ent.Mutation = (*LaminaMutation)(nil)
+
+// laminaOption allows management of the mutation configuration using functional options.
+type laminaOption func(*LaminaMutation)
+
+// newLaminaMutation creates new mutation for the Lamina entity.
+func newLaminaMutation(c config, op Op, opts ...laminaOption) *LaminaMutation {
+	m := &LaminaMutation{
+		Mutation: *lamina.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of Lamina entities.
+func (m *LaminaMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *LaminaMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withLaminaId sets the Id field of the mutation.
+func withLaminaId(id uuid.UUID) laminaOption {
+	return func(m *LaminaMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Lamina
+		)
+		m.oldValue = func(ctx context.Context) (*Lamina, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Lamina.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withLamina sets the old Lamina of the mutation.
+func withLamina(node *Lamina) laminaOption {
+	return func(m *LaminaMutation) {
+		m.oldValue = func(context.Context) (*Lamina, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m LaminaMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m LaminaMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *LaminaMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().Lamina.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldLaminaKey returns the old "lamina_key" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldLaminaKey(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLaminaKey is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLaminaKey requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLaminaKey: %w", err)
+	}
+	return oldValue.LaminaKey, nil
+}
+
+// OldState returns the old "state" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldState(ctx context.Context) (v int32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldState requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldDateStarted returns the old "date_started" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDateStarted(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateStarted is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateStarted requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateStarted: %w", err)
+	}
+	return oldValue.DateStarted, nil
+}
+
+// OldDateEnded returns the old "date_ended" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDateEnded(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateEnded is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateEnded requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateEnded: %w", err)
+	}
+	return oldValue.DateEnded, nil
+}
+
+// OldEndedEstimated returns the old "ended_estimated" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldEndedEstimated(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldEndedEstimated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldEndedEstimated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndedEstimated: %w", err)
+	}
+	return oldValue.EndedEstimated, nil
+}
+
+// OldSize returns the old "size" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldSize(ctx context.Context) (v int64, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSize is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSize requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSize: %w", err)
+	}
+	return oldValue.Size, nil
+}
+
+// OldIncomplete returns the old "incomplete" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldIncomplete(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldIncomplete is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldIncomplete requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIncomplete: %w", err)
+	}
+	return oldValue.Incomplete, nil
+}
+
+// OldDateExpired returns the old "date_expired" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDateExpired(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateExpired is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateExpired requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateExpired: %w", err)
+	}
+	return oldValue.DateExpired, nil
+}
+
+// OldDateDeleted returns the old "date_deleted" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDateDeleted(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateDeleted is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateDeleted requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateDeleted: %w", err)
+	}
+	return oldValue.DateDeleted, nil
+}
+
+// OldDatesSynced returns the old "dates_synced" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDatesSynced(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDatesSynced is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDatesSynced requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDatesSynced: %w", err)
+	}
+	return oldValue.DatesSynced, nil
+}
+
+// OldPlacementVersion returns the old "placement_version" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldPlacementVersion(ctx context.Context) (v int64, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPlacementVersion is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPlacementVersion requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlacementVersion: %w", err)
+	}
+	return oldValue.PlacementVersion, nil
+}
+
+// OldDateCommitted returns the old "date_committed" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDateCommitted(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCommitted is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCommitted requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCommitted: %w", err)
+	}
+	return oldValue.DateCommitted, nil
+}
+
+// OldDateFinished returns the old "date_finished" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldDateFinished(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateFinished is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateFinished requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateFinished: %w", err)
+	}
+	return oldValue.DateFinished, nil
+}
+
+// OldChecksum returns the old "checksum" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldChecksum(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldChecksum is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldChecksum requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChecksum: %w", err)
+	}
+	return oldValue.Checksum, nil
+}
+
+// OldEpoch returns the old "epoch" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldEpoch(ctx context.Context) (v int64, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldEpoch is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldEpoch requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEpoch: %w", err)
+	}
+	return oldValue.Epoch, nil
+}
+
+// OldTenantId returns the old "tenant_id" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldTenantId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTenantId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTenantId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantId: %w", err)
+	}
+	return oldValue.TenantId, nil
+}
+
+// OldSiteId returns the old "site_id" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldSiteId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSiteId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSiteId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSiteId: %w", err)
+	}
+	return oldValue.SiteId, nil
+}
+
+// OldSetId returns the old "set_id" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldSetId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSetId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSetId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSetId: %w", err)
+	}
+	return oldValue.SetId, nil
+}
+
+// OldSourceId returns the old "source_id" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldSourceId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSourceId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSourceId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceId: %w", err)
+	}
+	return oldValue.SourceId, nil
+}
+
+// OldSinkId returns the old "sink_id" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldSinkId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSinkId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSinkId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSinkId: %w", err)
+	}
+	return oldValue.SinkId, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *LaminaMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case lamina.FieldLaminaKey:
+		return m.OldLaminaKey(ctx)
+	case lamina.FieldState:
+		return m.OldState(ctx)
+	case lamina.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case lamina.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case lamina.FieldDateStarted:
+		return m.OldDateStarted(ctx)
+	case lamina.FieldDateEnded:
+		return m.OldDateEnded(ctx)
+	case lamina.FieldEndedEstimated:
+		return m.OldEndedEstimated(ctx)
+	case lamina.FieldSize:
+		return m.OldSize(ctx)
+	case lamina.FieldIncomplete:
+		return m.OldIncomplete(ctx)
+	case lamina.FieldDateExpired:
+		return m.OldDateExpired(ctx)
+	case lamina.FieldDateDeleted:
+		return m.OldDateDeleted(ctx)
+	case lamina.FieldDatesSynced:
+		return m.OldDatesSynced(ctx)
+	case lamina.FieldPlacementVersion:
+		return m.OldPlacementVersion(ctx)
+	case lamina.FieldDateCommitted:
+		return m.OldDateCommitted(ctx)
+	case lamina.FieldDateFinished:
+		return m.OldDateFinished(ctx)
+	case lamina.FieldChecksum:
+		return m.OldChecksum(ctx)
+	case lamina.FieldEpoch:
+		return m.OldEpoch(ctx)
+	case lamina.FieldTenantId:
+		return m.OldTenantId(ctx)
+	case lamina.FieldSiteId:
+		return m.OldSiteId(ctx)
+	case lamina.FieldSetId:
+		return m.OldSetId(ctx)
+	case lamina.FieldSourceId:
+		return m.OldSourceId(ctx)
+	case lamina.FieldSinkId:
+		return m.OldSinkId(ctx)
+	}
+	return nil, fmt.Errorf("unknown Lamina field %s", name)
+}
+
 // NodeMutation represents an operation that mutates the Node nodes in the graph.
 type NodeMutation struct {
 	node.Mutation
@@ -2417,544 +2955,6 @@ func (m *NodeMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDateScored(ctx)
 	}
 	return nil, fmt.Errorf("unknown Node field %s", name)
-}
-
-// ObjectMutation represents an operation that mutates the Object nodes in the graph.
-type ObjectMutation struct {
-	object.Mutation
-	config
-	id       *uuid.UUID
-	done     bool
-	oldValue func(context.Context) (*Object, error)
-}
-
-var _ ent.Mutation = (*ObjectMutation)(nil)
-
-// objectOption allows management of the mutation configuration using functional options.
-type objectOption func(*ObjectMutation)
-
-// newObjectMutation creates new mutation for the Object entity.
-func newObjectMutation(c config, op Op, opts ...objectOption) *ObjectMutation {
-	m := &ObjectMutation{
-		Mutation: *object.NewMutation(op),
-		config:   c,
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// SetId sets the value of the id field. Note that this
-// operation is only accepted on creation of Object entities.
-func (m *ObjectMutation) SetId(id uuid.UUID) {
-	m.id = &id
-}
-
-// Id returns the Id value in the mutation. Note that the Id is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *ObjectMutation) Id() (id uuid.UUID, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// withObjectId sets the Id field of the mutation.
-func withObjectId(id uuid.UUID) objectOption {
-	return func(m *ObjectMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *Object
-		)
-		m.oldValue = func(ctx context.Context) (*Object, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().Object.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withObject sets the old Object of the mutation.
-func withObject(node *Object) objectOption {
-	return func(m *ObjectMutation) {
-		m.oldValue = func(context.Context) (*Object, error) {
-			return node, nil
-		}
-		m.id = &node.Id
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m ObjectMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m ObjectMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// Ids queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *ObjectMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
-	switch {
-	case m.Op().Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.Id()
-		if exists {
-			return []uuid.UUID{id}, nil
-		}
-		fallthrough
-	case m.Op().Is(OpUpdate | OpDelete):
-		return m.Client().Object.Query().Where(m.Predicates()...).Ids(ctx)
-	default:
-		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
-	}
-}
-
-// OldObjectKey returns the old "object_key" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldObjectKey(ctx context.Context) (v string, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldObjectKey is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldObjectKey requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldObjectKey: %w", err)
-	}
-	return oldValue.ObjectKey, nil
-}
-
-// OldState returns the old "state" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldState(ctx context.Context) (v int32, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldState is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldState requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldState: %w", err)
-	}
-	return oldValue.State, nil
-}
-
-// OldDateUpdated returns the old "date_updated" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
-	}
-	return oldValue.DateUpdated, nil
-}
-
-// OldDateCreated returns the old "date_created" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateCreated requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
-	}
-	return oldValue.DateCreated, nil
-}
-
-// OldDateStarted returns the old "date_started" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDateStarted(ctx context.Context) (v time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateStarted is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateStarted requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateStarted: %w", err)
-	}
-	return oldValue.DateStarted, nil
-}
-
-// OldDateEnded returns the old "date_ended" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDateEnded(ctx context.Context) (v *time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateEnded is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateEnded requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateEnded: %w", err)
-	}
-	return oldValue.DateEnded, nil
-}
-
-// OldEndedEstimated returns the old "ended_estimated" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldEndedEstimated(ctx context.Context) (v bool, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldEndedEstimated is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldEndedEstimated requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEndedEstimated: %w", err)
-	}
-	return oldValue.EndedEstimated, nil
-}
-
-// OldSize returns the old "size" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldSize(ctx context.Context) (v int64, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldSize is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldSize requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSize: %w", err)
-	}
-	return oldValue.Size, nil
-}
-
-// OldIncomplete returns the old "incomplete" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldIncomplete(ctx context.Context) (v bool, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldIncomplete is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldIncomplete requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIncomplete: %w", err)
-	}
-	return oldValue.Incomplete, nil
-}
-
-// OldDateExpired returns the old "date_expired" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDateExpired(ctx context.Context) (v time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateExpired is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateExpired requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateExpired: %w", err)
-	}
-	return oldValue.DateExpired, nil
-}
-
-// OldDateDeleted returns the old "date_deleted" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDateDeleted(ctx context.Context) (v *time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateDeleted is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateDeleted requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateDeleted: %w", err)
-	}
-	return oldValue.DateDeleted, nil
-}
-
-// OldDatesSynced returns the old "dates_synced" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDatesSynced(ctx context.Context) (v bool, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDatesSynced is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDatesSynced requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDatesSynced: %w", err)
-	}
-	return oldValue.DatesSynced, nil
-}
-
-// OldPlacementVersion returns the old "placement_version" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldPlacementVersion(ctx context.Context) (v int64, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldPlacementVersion is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldPlacementVersion requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPlacementVersion: %w", err)
-	}
-	return oldValue.PlacementVersion, nil
-}
-
-// OldDateCommitted returns the old "date_committed" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDateCommitted(ctx context.Context) (v *time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateCommitted is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateCommitted requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateCommitted: %w", err)
-	}
-	return oldValue.DateCommitted, nil
-}
-
-// OldDateFinished returns the old "date_finished" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldDateFinished(ctx context.Context) (v *time.Time, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateFinished is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateFinished requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateFinished: %w", err)
-	}
-	return oldValue.DateFinished, nil
-}
-
-// OldChecksum returns the old "checksum" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldChecksum(ctx context.Context) (v []byte, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldChecksum is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldChecksum requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldChecksum: %w", err)
-	}
-	return oldValue.Checksum, nil
-}
-
-// OldEpoch returns the old "epoch" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldEpoch(ctx context.Context) (v int64, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldEpoch is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldEpoch requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEpoch: %w", err)
-	}
-	return oldValue.Epoch, nil
-}
-
-// OldTenantId returns the old "tenant_id" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldTenantId(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldTenantId is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldTenantId requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTenantId: %w", err)
-	}
-	return oldValue.TenantId, nil
-}
-
-// OldSiteId returns the old "site_id" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldSiteId(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldSiteId is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldSiteId requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSiteId: %w", err)
-	}
-	return oldValue.SiteId, nil
-}
-
-// OldSetId returns the old "set_id" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldSetId(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldSetId is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldSetId requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSetId: %w", err)
-	}
-	return oldValue.SetId, nil
-}
-
-// OldSourceId returns the old "source_id" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldSourceId(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldSourceId is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldSourceId requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSourceId: %w", err)
-	}
-	return oldValue.SourceId, nil
-}
-
-// OldSinkId returns the old "sink_id" field's value of the Object entity.
-// If the Object object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ObjectMutation) OldSinkId(ctx context.Context) (v uuid.UUID, err error) {
-	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldSinkId is only allowed on UpdateOne operations")
-	}
-	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldSinkId requires an Id field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSinkId: %w", err)
-	}
-	return oldValue.SinkId, nil
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *ObjectMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case object.FieldObjectKey:
-		return m.OldObjectKey(ctx)
-	case object.FieldState:
-		return m.OldState(ctx)
-	case object.FieldDateUpdated:
-		return m.OldDateUpdated(ctx)
-	case object.FieldDateCreated:
-		return m.OldDateCreated(ctx)
-	case object.FieldDateStarted:
-		return m.OldDateStarted(ctx)
-	case object.FieldDateEnded:
-		return m.OldDateEnded(ctx)
-	case object.FieldEndedEstimated:
-		return m.OldEndedEstimated(ctx)
-	case object.FieldSize:
-		return m.OldSize(ctx)
-	case object.FieldIncomplete:
-		return m.OldIncomplete(ctx)
-	case object.FieldDateExpired:
-		return m.OldDateExpired(ctx)
-	case object.FieldDateDeleted:
-		return m.OldDateDeleted(ctx)
-	case object.FieldDatesSynced:
-		return m.OldDatesSynced(ctx)
-	case object.FieldPlacementVersion:
-		return m.OldPlacementVersion(ctx)
-	case object.FieldDateCommitted:
-		return m.OldDateCommitted(ctx)
-	case object.FieldDateFinished:
-		return m.OldDateFinished(ctx)
-	case object.FieldChecksum:
-		return m.OldChecksum(ctx)
-	case object.FieldEpoch:
-		return m.OldEpoch(ctx)
-	case object.FieldTenantId:
-		return m.OldTenantId(ctx)
-	case object.FieldSiteId:
-		return m.OldSiteId(ctx)
-	case object.FieldSetId:
-		return m.OldSetId(ctx)
-	case object.FieldSourceId:
-		return m.OldSourceId(ctx)
-	case object.FieldSinkId:
-		return m.OldSinkId(ctx)
-	}
-	return nil, fmt.Errorf("unknown Object field %s", name)
 }
 
 // OutboxMutation represents an operation that mutates the Outbox nodes in the graph.
@@ -6281,21 +6281,21 @@ func (m *SinkMutation) OldCapacityClamped(ctx context.Context) (v bool, err erro
 	return oldValue.CapacityClamped, nil
 }
 
-// OldObjects returns the old "objects" field's value of the Sink entity.
+// OldLaminae returns the old "laminae" field's value of the Sink entity.
 // If the Sink object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SinkMutation) OldObjects(ctx context.Context) (v int64, err error) {
+func (m *SinkMutation) OldLaminae(ctx context.Context) (v int64, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldObjects is only allowed on UpdateOne operations")
+		return v, errors.New("OldLaminae is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldObjects requires an Id field in the mutation")
+		return v, errors.New("OldLaminae requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldObjects: %w", err)
+		return v, fmt.Errorf("querying old value for OldLaminae: %w", err)
 	}
-	return oldValue.Objects, nil
+	return oldValue.Laminae, nil
 }
 
 // OldNodeId returns the old "node_id" field's value of the Sink entity.
@@ -6377,8 +6377,8 @@ func (m *SinkMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldWarnings(ctx)
 	case sink.FieldCapacityClamped:
 		return m.OldCapacityClamped(ctx)
-	case sink.FieldObjects:
-		return m.OldObjects(ctx)
+	case sink.FieldLaminae:
+		return m.OldLaminae(ctx)
 	case sink.FieldNodeId:
 		return m.OldNodeId(ctx)
 	case sink.FieldDeviceId:

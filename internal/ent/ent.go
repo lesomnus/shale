@@ -14,8 +14,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent/audit"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
-	"github.com/lesomnus/shale/internal/ent/object"
 	"github.com/lesomnus/shale/internal/ent/outbox"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
@@ -97,8 +97,8 @@ func checkColumn(t, c string) error {
 			audit.Table:           audit.ValidColumn,
 			device.Table:          device.ValidColumn,
 			holder.Table:          holder.ValidColumn,
+			lamina.Table:          lamina.ValidColumn,
 			node.Table:            node.ValidColumn,
-			object.Table:          object.ValidColumn,
 			outbox.Table:          outbox.ValidColumn,
 			placementpolicy.Table: placementpolicy.ValidColumn,
 			producer.Table:        producer.ValidColumn,

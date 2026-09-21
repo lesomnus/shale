@@ -29,8 +29,8 @@ func TestScan(t *testing.T) {
 		if err := os.WriteFile(p, make([]byte, size), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		rec := api.ObjectRecord_builder{
-			FormatVersion: FormatVersion, State: state, Size: recSize, ObjectId: pdid.New(9).Bytes(), AttemptId: pdid.New(10).Bytes(),
+		rec := api.LaminaRecord_builder{
+			FormatVersion: FormatVersion, State: state, Size: recSize, LaminaId: pdid.New(9).Bytes(), AttemptId: pdid.New(10).Bytes(),
 			DateStartedMs: time.Now().Add(-time.Hour).UnixMilli(), DateExpiredMs: time.Now().Add(24 * time.Hour).UnixMilli(),
 		}.Build()
 		if err := WriteRecordPath(p, rec); err != nil {
@@ -38,11 +38,11 @@ func TestScan(t *testing.T) {
 		}
 	}
 	for i := range 300 {
-		write(fmt.Sprintf("objects/2026/09/20/01/%032x.%032x", i, i), 1000+int64(i), api.RecordState_RECORD_STATE_COMPLETE, 1000+int64(i))
+		write(fmt.Sprintf("laminae/2026/09/20/01/%032x.%032x", i, i), 1000+int64(i), api.RecordState_RECORD_STATE_COMPLETE, 1000+int64(i))
 	}
-	write("objects/2026/09/20/02/open.open", 4096, api.RecordState_RECORD_STATE_OPEN, 0)
-	write("objects/2026/09/20/02/short.short", 500, api.RecordState_RECORD_STATE_COMPLETE, 1000)
-	p, _ := s.FilePath("objects/2026/09/20/03/stranger.file")
+	write("laminae/2026/09/20/02/open.open", 4096, api.RecordState_RECORD_STATE_OPEN, 0)
+	write("laminae/2026/09/20/02/short.short", 500, api.RecordState_RECORD_STATE_COMPLETE, 1000)
+	p, _ := s.FilePath("laminae/2026/09/20/03/stranger.file")
 	os.MkdirAll(filepath.Dir(p), 0o755)
 	os.WriteFile(p, []byte("not ours"), 0o644)
 
@@ -54,10 +54,10 @@ func TestScan(t *testing.T) {
 	if res.Complete != 300 || s.Index.Len() != 300 {
 		t.Fatalf("complete %d, indexed %d", res.Complete, s.Index.Len())
 	}
-	if len(res.Open) != 1 || res.Open[0].Key != "objects/2026/09/20/02/open.open" || res.Open[0].Size != 4096 {
+	if len(res.Open) != 1 || res.Open[0].Key != "laminae/2026/09/20/02/open.open" || res.Open[0].Size != 4096 {
 		t.Fatalf("open: %+v", res.Open)
 	}
-	if len(res.Damaged) != 1 || res.Damaged[0] != "objects/2026/09/20/02/short.short" {
+	if len(res.Damaged) != 1 || res.Damaged[0] != "laminae/2026/09/20/02/short.short" {
 		t.Fatalf("damaged: %v", res.Damaged)
 	}
 	if res.Unknown != 1 {

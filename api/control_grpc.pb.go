@@ -38,9 +38,9 @@ const (
 // state the CP holds, so a directive is never a message that can be lost
 // (§34.9).
 type NodeControlClient interface {
-	// Unlink these objects now. Answers per key: deleted | absent.
+	// Unlink these laminae now. Answers per key: deleted | absent.
 	Delete(ctx context.Context, in *NodeDeleteRequest, opts ...grpc.CallOption) (*NodeDeleteResponse, error)
-	// Rewrite date_expired and date_deleted in these objects' xattrs (§20.3).
+	// Rewrite date_expired and date_deleted in these laminae' xattrs (§20.3).
 	SetDates(ctx context.Context, in *NodeSetDatesRequest, opts ...grpc.CallOption) (*NodeSetDatesResponse, error)
 	// Stop or resume accepting uploads on a sink: quarantine, retire, release.
 	SetSinkState(ctx context.Context, in *NodeSetSinkStateRequest, opts ...grpc.CallOption) (*NodeSetSinkStateResponse, error)
@@ -152,9 +152,9 @@ func (c *nodeControlClient) InstallCertificate(ctx context.Context, in *NodeInst
 // state the CP holds, so a directive is never a message that can be lost
 // (§34.9).
 type NodeControlServer interface {
-	// Unlink these objects now. Answers per key: deleted | absent.
+	// Unlink these laminae now. Answers per key: deleted | absent.
 	Delete(context.Context, *NodeDeleteRequest) (*NodeDeleteResponse, error)
-	// Rewrite date_expired and date_deleted in these objects' xattrs (§20.3).
+	// Rewrite date_expired and date_deleted in these laminae' xattrs (§20.3).
 	SetDates(context.Context, *NodeSetDatesRequest) (*NodeSetDatesResponse, error)
 	// Stop or resume accepting uploads on a sink: quarantine, retire, release.
 	SetSinkState(context.Context, *NodeSetSinkStateRequest) (*NodeSetSinkStateResponse, error)

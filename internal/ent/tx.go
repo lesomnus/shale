@@ -22,10 +22,10 @@ type Tx struct {
 	Device *DeviceClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
+	// Lamina is the client for interacting with the Lamina builders.
+	Lamina *LaminaClient
 	// Node is the client for interacting with the Node builders.
 	Node *NodeClient
-	// Object is the client for interacting with the Object builders.
-	Object *ObjectClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
 	// PlacementPolicy is the client for interacting with the PlacementPolicy builders.
@@ -188,8 +188,8 @@ func (tx *Tx) init() {
 	tx.Audit = NewAuditClient(tx.config)
 	tx.Device = NewDeviceClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
+	tx.Lamina = NewLaminaClient(tx.config)
 	tx.Node = NewNodeClient(tx.config)
-	tx.Object = NewObjectClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.PlacementPolicy = NewPlacementPolicyClient(tx.config)
 	tx.Producer = NewProducerClient(tx.config)

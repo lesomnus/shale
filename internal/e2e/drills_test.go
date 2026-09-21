@@ -193,10 +193,10 @@ func TestBacklogAfterOutage(t *testing.T) {
 	defer cancel()
 	ops := c.dialCluster("@cluster/ops")
 
-	// Small objects, so segments are seconds apart.
+	// Small laminae, so segments are seconds apart.
 	up, err := api.NewUploadPolicyServiceClient(ops).Add(ctx, api.UploadPolicyAddRequest_builder{
 		Alias: "small", Version: 1,
-		Bounds: api.UploadBounds_builder{MinObject: 512 << 10, TargetObject: 1 << 20, MaxObject: 4 << 20}.Build(),
+		Bounds: api.UploadBounds_builder{MinLamina: 512 << 10, TargetLamina: 1 << 20, MaxLamina: 4 << 20}.Build(),
 	}.Build())
 	require.NoError(t, err)
 	_, err = api.NewUploadPolicyServiceClient(ops).Activate(ctx, api.UploadPolicyActivateRequest_builder{Ref: api.UploadPolicyRef_builder{Id: up.GetId()}.Build()}.Build())
@@ -273,13 +273,13 @@ func TestBacklogAfterOutage(t *testing.T) {
 	require.Equal(t, int64(0), p.Stats().Lost)
 
 	// The CP's view catches up with the nodes' events: as many committed
-	// objects as the producer counts stored, none lost.
-	objects := api.NewObjectServiceClient(admin)
-	var committed []*api.Object
+	// laminae as the producer counts stored, none lost.
+	laminae := api.NewLaminaServiceClient(admin)
+	var committed []*api.Lamina
 	require.Eventually(t, func() bool {
 		stored := p.Stats().Stored
-		list, err := objects.List(ctx, api.ObjectListRequest_builder{
-			Filters: []*api.ObjectFilter{api.ObjectFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
+		list, err := laminae.List(ctx, api.LaminaListRequest_builder{
+			Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
 			Size:    200,
 		}.Build())
 		if err != nil {
@@ -287,8 +287,8 @@ func TestBacklogAfterOutage(t *testing.T) {
 		}
 		committed = committed[:0]
 		for _, o := range list.GetItems() {
-			require.NotEqual(t, api.ObjectState_OBJECT_STATE_LOST, o.GetState())
-			if o.GetState() == api.ObjectState_OBJECT_STATE_COMMITTED {
+			require.NotEqual(t, api.LaminaState_LAMINA_STATE_LOST, o.GetState())
+			if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED {
 				committed = append(committed, o)
 			}
 		}
@@ -304,7 +304,7 @@ func TestBacklogAfterOutage(t *testing.T) {
 		dumpSink(t, "at the end", sinkB)
 
 		return false
-	}, 30*time.Second, 2*time.Second, "every stored segment is a committed object")
+	}, 30*time.Second, 2*time.Second, "every stored segment is a committed lamina")
 	sort.Slice(committed, func(i, j int) bool {
 		return committed[i].GetDateStarted().AsTime().Before(committed[j].GetDateStarted().AsTime())
 	})

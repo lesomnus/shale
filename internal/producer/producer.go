@@ -179,7 +179,7 @@ type source struct {
 	allocs  map[int64]*api.Allocation
 	pending []*Segment
 	wake    chan struct{}
-	// lastObj is the object of the segment finished last: the next segment
+	// lastObj is the lamina of the segment finished last: the next segment
 	// never reuses it, however the slot's allocation was cached (§15).
 	// headAlloc is the allocation the head of the queue is being uploaded
 	// with, kept across retries (§16).
@@ -267,7 +267,7 @@ func (p *Producer) Run(ctx context.Context) error {
 		return err
 	}
 
-	p.uploader = &Uploader{Cfg: p.cfg.Upload, Objects: api.NewObjectServiceClient(conn), Log: p.log, Mode: p.cfg.Mode, Written: p.cfg.Retain == RetainWritten}
+	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(conn), Log: p.log, Mode: p.cfg.Mode, Written: p.cfg.Retain == RetainWritten}
 	if p.uploader.Cfg.Client == nil {
 		// The data planes speak TLS from the same CA the producer pinned.
 		hc, err := p.agent.HTTPClient()
@@ -706,7 +706,7 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 		if res.Cut {
 			// The segment ends where its node has it (§12.2): off the
 			// queue and counted, but not reported lost, since the node
-			// makes an incomplete object of what it holds (§15). What
+			// makes an incomplete lamina of what it holds (§15). What
 			// the capture still writes into it goes nowhere.
 			seg.Discard()
 			s.mu.Lock()
@@ -714,19 +714,19 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 			s.cut++
 			s.mu.Unlock()
 			backoff = 0
-			p.log.Warn("cut short", "source", s.cfg.Alias, "key", al.GetObjectKey(), "offset", seg.Released(), "err", res.Err)
+			p.log.Warn("cut short", "source", s.cfg.Alias, "key", al.GetLaminaKey(), "offset", seg.Released(), "err", res.Err)
 			p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "cut")))
 			continue
 		}
 		if !res.Stored {
 			// Every candidate failed: the next try asks the CP again, which
-			// answers the same object with fresh attempts wherever writes
+			// answers the same lamina with fresh attempts wherever writes
 			// are taken by then.
 			s.mu.Lock()
 			s.headAlloc = nil
 			s.mu.Unlock()
 			backoff = nextBackoff(backoff)
-			p.log.Warn("not stored yet; keeping the segment", "source", s.cfg.Alias, "key", al.GetObjectKey(), "err", res.Err, "retry_in", backoff.String())
+			p.log.Warn("not stored yet; keeping the segment", "source", s.cfg.Alias, "key", al.GetLaminaKey(), "err", res.Err, "retry_in", backoff.String())
 			if !sleep(ctx, backoff) {
 				return nil
 			}
@@ -737,12 +737,12 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 		s.finish(seg)
 		s.stored++
 		s.mu.Unlock()
-		p.log.Info("stored", "source", s.cfg.Alias, "key", al.GetObjectKey(), "bytes", seg.Len(), "attempts", res.Attempts)
+		p.log.Info("stored", "source", s.cfg.Alias, "key", al.GetLaminaKey(), "bytes", seg.Len(), "attempts", res.Attempts)
 		p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "stored")))
 	}
 }
 
-// drop gives a segment up: it leaves the queue, its object, if it has one,
+// drop gives a segment up: it leaves the queue, its lamina, if it has one,
 // is reported LOST (§13), and the count says so.
 func (p *Producer) drop(ctx context.Context, s *source, seg *Segment, why string) {
 	seg.Discard()
@@ -753,21 +753,21 @@ func (p *Producer) drop(ctx context.Context, s *source, seg *Segment, why string
 	s.mu.Unlock()
 	key := ""
 	if al != nil {
-		key = al.GetObjectKey()
+		key = al.GetLaminaKey()
 		p.uploader.GiveUp(ctx, al, why)
 	}
 	p.log.Warn("lost", "source", s.cfg.Alias, "started", seg.Started, "key", key, "why", why)
 	p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "lost")))
 }
 
-// finish takes the head segment off the queue and remembers its object as
+// finish takes the head segment off the queue and remembers its lamina as
 // the one the next segment must not get (§15). The lock is held.
 func (s *source) finish(seg *Segment) {
 	if len(s.pending) > 0 && s.pending[0] == seg {
 		s.pending = s.pending[1:]
 	}
 	if s.headAlloc != nil {
-		s.lastObj = s.headAlloc.GetObjectId()
+		s.lastObj = s.headAlloc.GetLaminaId()
 	}
 	s.headAlloc = nil
 }
@@ -837,9 +837,9 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 	}
 	last := s.lastObj
 	s.mu.Unlock()
-	if al != nil && len(last) > 0 && bytes.Equal(al.GetObjectId(), last) {
+	if al != nil && len(last) > 0 && bytes.Equal(al.GetLaminaId(), last) {
 		// The slot's allocation was the segment before this one, which
-		// the camera ended: this one needs an object of its own (§15).
+		// the camera ended: this one needs a lamina of its own (§15).
 		al = nil
 	}
 	if al != nil && al.GetDateExpires().AsTime().After(p.now().Add(time.Minute)) && len(al.GetCandidates()) > 0 {
@@ -848,14 +848,14 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 
 	actx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	req := api.ObjectAllocateRequest_builder{
+	req := api.LaminaAllocateRequest_builder{
 		Source:      api.SourceRef_builder{Id: s.row.GetId()}.Build(),
 		DateStarted: timestamppb.New(seg.Started),
 	}
 	if len(last) > 0 {
-		req.After = api.ObjectRef_builder{Id: last}.Build()
+		req.After = api.LaminaRef_builder{Id: last}.Build()
 	}
-	al, err := api.NewObjectServiceClient(p.conn).Allocate(actx, req.Build())
+	al, err := api.NewLaminaServiceClient(p.conn).Allocate(actx, req.Build())
 	if err != nil {
 		return nil, err
 	}

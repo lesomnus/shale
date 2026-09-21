@@ -6,47 +6,47 @@ import (
 	bytes "bytes"
 )
 
-func (x *ObjectRef) Pick() *ObjectGetRequest {
-	return ObjectGetRequest_builder{Ref: x}.Build()
+func (x *LaminaRef) Pick() *LaminaGetRequest {
+	return LaminaGetRequest_builder{Ref: x}.Build()
 }
 
-func (x *Object) Ref() *ObjectRef {
+func (x *Lamina) Ref() *LaminaRef {
 	if v := x.GetId(); len(v) > 0 {
-		return ObjectById(v)
+		return LaminaById(v)
 	}
 
 	return nil
 }
 
-func (x *Object) Pick() *ObjectGetRequest {
+func (x *Lamina) Pick() *LaminaGetRequest {
 	return x.Ref().Pick()
 }
 
-func (x *ObjectRef) Picks(v *Object) bool {
+func (x *LaminaRef) Picks(v *Lamina) bool {
 	switch x.WhichKey() {
-	case ObjectRef_Id_case:
+	case LaminaRef_Id_case:
 		return bytes.Equal(x.GetId(), v.GetId())
 	default:
 		return false
 	}
 }
 
-func (x *ObjectGetRequest) WithSelect(f func(s *ObjectSelect)) *ObjectGetRequest {
+func (x *LaminaGetRequest) WithSelect(f func(s *LaminaSelect)) *LaminaGetRequest {
 	if !x.HasSelect() {
-		x.SetSelect(&ObjectSelect{})
+		x.SetSelect(&LaminaSelect{})
 	}
 	f(x.GetSelect())
 	return x
 }
 
-func ObjectById(v []byte) *ObjectRef {
-	x := &ObjectRef{}
+func LaminaById(v []byte) *LaminaRef {
+	x := &LaminaRef{}
 	x.SetId(v)
 	return x
 }
 
-func ObjectGetById(v []byte) *ObjectGetRequest {
-	return ObjectGetRequest_builder{Ref: ObjectById(v)}.Build()
+func LaminaGetById(v []byte) *LaminaGetRequest {
+	return LaminaGetRequest_builder{Ref: LaminaById(v)}.Build()
 }
 
 func (x *AttemptRef) Pick() *AttemptGetRequest {

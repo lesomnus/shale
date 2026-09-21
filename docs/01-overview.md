@@ -37,20 +37,23 @@ over WebRTC, and that never touches a Storage Node.
 ## 2. Overview
 
 **Shale** is a distributed storage system for large immutable objects kept
-for a bounded retention period.
+for a bounded retention period. It calls them **laminae**, after the thin
+layers shale splits into: a lamina is one source's bytes for one span of
+time, laid down in order with the ones before and after it
+([§8](02-data-model.md#8-state-model)).
 
 Where typical distributed storage spends raw capacity on replicas, erasure
 coding, or RAID to raise durability, Shale **explicitly accepts losing some
-objects** and in exchange uses almost all raw capacity and keeps HDD I/O
+laminae** and in exchange uses almost all raw capacity and keeps HDD I/O
 sequential.
 
 Assumptions:
 
-- An object is written once and never modified.
+- A lamina is written once and never modified.
 - Writes arrive continuously.
-- Objects are tens of MB or larger.
-- Losing some objects is not a service failure.
-- Old objects may be deleted according to retention policy.
+- Laminae are tens of MB or larger.
+- Losing some laminae is not a service failure.
+- Old laminae may be deleted according to retention policy.
 - Reads exist but are far rarer than writes, or arrive in bursts.
 - Source and time information can guide placement.
 - The number of storage nodes and HDDs grows over time.
@@ -63,15 +66,15 @@ no erasure coding
 no RAID
 
 one physical copy (best effort; an occasional duplicate is tolerated)
-immutable object
+immutable lamina
 partial loss acceptable
 metadata loss acceptable (rebuildable from sinks, best effort)
 
-object data never touches SSD/NVMe
+lamina data never touches SSD/NVMe
 stateless producers, stateless readers (w.r.t. cluster state)
 
 control plane / data plane separation
-resource-oriented gRPC for control (payday); HTTP/QUIC only for object bytes
+resource-oriented gRPC for control (payday); HTTP/QUIC only for lamina bytes
 tenant wall always on; a single organization is one tenant
 storage nodes trust only CP signatures; they never know tenants or people
 people sign in; hosts are adopted once, and the CP manages their certificates
@@ -107,7 +110,7 @@ live viewing through a relay, on demand; storage and live never share a path
             Producers                                Readers
         (set gateways)                          (media servers)
                 │                                       │
-           PUT object                              GET / Range
+           PUT lamina                              GET / Range
                 │                                       │
                 ▼                                       ▼
        ┌────────────────┐                     ┌────────────────┐
@@ -120,7 +123,7 @@ live viewing through a relay, on demand; storage and live never share a path
        └────────────────┘                     └────────────────┘
 ```
 
-Object data never passes through the Control Plane. The Control Plane handles
+Lamina data never passes through the Control Plane. The Control Plane handles
 metadata and placement only; Producers and Readers talk to Storage Nodes
 directly. The Control Plane does talk to Storage Nodes, but only to give
 orders: deletions, date changes, quarantine, reconciliation
@@ -140,13 +143,13 @@ relay serves viewers over WebRTC ([§39](16-relay.md#39-relay)).
 - Adopt hosts and run the built-in CA: issue, renew, and refuse the
   certificates of nodes, producers, and readers
   ([§33.4](10-security.md#334-joining-and-adoption))
-- Issue object IDs and attempt IDs
+- Issue lamina IDs and attempt IDs
 - Decide placement down to the **sink**, a storage directory on a physical
   device (see [§22.2](07-storage-node.md#222-sinks-and-devices) and the [placement decision report](placement-decisions.md))
 - Sign access tokens (presigned URLs) for every data-plane request
   ([§33.2](10-security.md#332-access-tokens))
 - Maintain the metadata index
-- Keep retention policy and object dates, approve deletions, and order the
+- Keep retention policy and lamina dates, approve deletions, and order the
   immediate ones
 - Reallocate after write failures
 - Track node, sink, and device health, and quarantine failing devices
@@ -165,9 +168,9 @@ request that carries a valid CP-signed access token
 - Accept resumable uploads, staging each part in a RAM part buffer, subject
   to admission control ([§12.2](04-write-path.md#122-resumable-part-uploads))
 - Run one Device Queue per device
-- Write objects durably and self-describingly ([§23](07-storage-node.md#23-object-model-and-storage-format))
+- Write laminae durably and self-describingly ([§23](07-storage-node.md#23-lamina-model-and-storage-format))
 - Serve full and range reads
-- Delete objects the Control Plane approves or orders, and sweep past
+- Delete laminae the Control Plane approves or orders, and sweep past
   deletion dates daily ([§20.1](06-retention-gc.md#201-date_deleted-is-an-expiry-not-an-event))
 - Detect sink pressure and propose GC candidates
 - Push commit, deletion, and missing-file events to the CP
@@ -195,12 +198,12 @@ commit**.
    while it is recorded; the default for CCTV) or **buffered** (sent once it is
    complete) ([§12.2](04-write-path.md#122-resumable-part-uploads)). Either way the upload is resumable: after a disconnect,
    the producer continues from the offset the node reports.
-6. Treat the object as stored only after the final response, which the node
+6. Treat the lamina as stored only after the final response, which the node
    sends only after the data is durable on HDD ([§12](04-write-path.md#12-write-path)).
 7. Keep resuming on the same target while the upload makes progress.
 8. Report a failed attempt and move to the next candidate on persistent failure.
 9. Keep a segment that could be stored nowhere and try again with a backoff
-   while the RAM budget allows; give up (object → LOST) when it does not
+   while the RAM budget allows; give up (lamina → LOST) when it does not
    ([§16](04-write-path.md#16-producer-backpressure)).
 
 Because a set's cameras are spread over many nodes ([§11](03-placement.md#11-placement)), a producer keeps a pool
@@ -221,10 +224,10 @@ A Reader is a media server host. It is stateless. `shale serve reader` runs
 beside the media server and holds its certificate
 ([§33.4](10-security.md#334-joining-and-adoption)).
 
-1. Query the tenant API for objects (by ID, or `ObjectService.Timeline` for a
+1. Query the tenant API for laminae (by ID, or `LaminaService.Timeline` for a
    set or source over a time range, one page at a time).
 2. Receive read tokens (GET URLs) with the answer.
-3. Read whole objects or byte ranges directly from Storage Nodes.
+3. Read whole laminae or byte ranges directly from Storage Nodes.
 
 A reader that wants a camera live, such as a monitoring wall, asks the same
 API for a view token and watches through the relay, exactly as a person in a

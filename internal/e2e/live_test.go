@@ -98,12 +98,12 @@ func TestLiveTranscode(t *testing.T) {
 	defer cancel()
 	admin := c.dial("@acme/admin")
 
-	// Small objects, so a segment commits while the test watches: an
+	// Small laminae, so a segment commits while the test watches: an
 	// UploadPolicy of the test's own, activated before the set negotiates.
 	ops := c.dialCluster("@cluster/ops")
 	up, err := api.NewUploadPolicyServiceClient(ops).Add(ctx, api.UploadPolicyAddRequest_builder{
 		Alias: "small", Version: 1,
-		Bounds: api.UploadBounds_builder{MinObject: 512 << 10, TargetObject: 1 << 20, MaxObject: 4 << 20}.Build(),
+		Bounds: api.UploadBounds_builder{MinLamina: 512 << 10, TargetLamina: 1 << 20, MaxLamina: 4 << 20}.Build(),
 	}.Build())
 	require.NoError(t, err)
 	_, err = api.NewUploadPolicyServiceClient(ops).Activate(ctx, api.UploadPolicyActivateRequest_builder{
@@ -125,18 +125,18 @@ func TestLiveTranscode(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, sources.GetItems(), 1)
 	src := sources.GetItems()[0]
-	objects := api.NewObjectServiceClient(admin)
-	var committed *api.Object
+	laminae := api.NewLaminaServiceClient(admin)
+	var committed *api.Lamina
 	require.Eventually(t, func() bool {
-		vs, err := objects.List(ctx, api.ObjectListRequest_builder{
-			Filters: []*api.ObjectFilter{api.ObjectFilter_builder{Source: api.SourceRef_builder{Id: src.GetId()}.Build()}.Build()},
+		vs, err := laminae.List(ctx, api.LaminaListRequest_builder{
+			Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: src.GetId()}.Build()}.Build()},
 			Size:    100,
 		}.Build())
 		if err != nil {
 			return false
 		}
 		for _, o := range vs.GetItems() {
-			if o.GetState() == api.ObjectState_OBJECT_STATE_COMMITTED {
+			if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED {
 				committed = o
 				return true
 			}
@@ -144,7 +144,7 @@ func TestLiveTranscode(t *testing.T) {
 
 		return false
 	}, 90*time.Second, 500*time.Millisecond, "a segment commits")
-	tl, err := objects.Timeline(ctx, api.ObjectTimelineRequest_builder{
+	tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
 		Source: api.SourceRef_builder{Id: src.GetId()}.Build(),
 		From:   timestamppb.New(committed.GetDateStarted().AsTime().Add(-time.Second)),
 		To:     timestamppb.New(time.Now().Add(time.Minute)),
@@ -152,8 +152,8 @@ func TestLiveTranscode(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, tl.GetSources(), 1)
 	var url string
-	for _, o := range tl.GetSources()[0].GetObjects() {
-		if string(o.GetObjectId()) == string(committed.GetId()) {
+	for _, o := range tl.GetSources()[0].GetLaminae() {
+		if string(o.GetLaminaId()) == string(committed.GetId()) {
 			url = o.GetUrl()
 		}
 	}

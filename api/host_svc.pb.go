@@ -3792,7 +3792,7 @@ type NodeHeartbeatRequest struct {
 	xxx_hidden_DataAddress     string                 `protobuf:"bytes,8,opt,name=data_address,json=dataAddress"`
 	xxx_hidden_Version         string                 `protobuf:"bytes,9,opt,name=version"`
 	xxx_hidden_UploadsInFlight int64                  `protobuf:"varint,10,opt,name=uploads_in_flight,json=uploadsInFlight"`
-	xxx_hidden_IndexObjects    int64                  `protobuf:"varint,11,opt,name=index_objects,json=indexObjects"`
+	xxx_hidden_IndexLaminae    int64                  `protobuf:"varint,11,opt,name=index_laminae,json=indexLaminae"`
 	xxx_hidden_Warnings        []string               `protobuf:"bytes,12,rep,name=warnings"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -3899,9 +3899,9 @@ func (x *NodeHeartbeatRequest) GetUploadsInFlight() int64 {
 	return 0
 }
 
-func (x *NodeHeartbeatRequest) GetIndexObjects() int64 {
+func (x *NodeHeartbeatRequest) GetIndexLaminae() int64 {
 	if x != nil {
-		return x.xxx_hidden_IndexObjects
+		return x.xxx_hidden_IndexLaminae
 	}
 	return 0
 }
@@ -3953,8 +3953,8 @@ func (x *NodeHeartbeatRequest) SetUploadsInFlight(v int64) {
 	x.xxx_hidden_UploadsInFlight = v
 }
 
-func (x *NodeHeartbeatRequest) SetIndexObjects(v int64) {
-	x.xxx_hidden_IndexObjects = v
+func (x *NodeHeartbeatRequest) SetIndexLaminae(v int64) {
+	x.xxx_hidden_IndexLaminae = v
 }
 
 func (x *NodeHeartbeatRequest) SetWarnings(v []string) {
@@ -3974,7 +3974,7 @@ type NodeHeartbeatRequest_builder struct {
 	DataAddress     string
 	Version         string
 	UploadsInFlight int64
-	IndexObjects    int64
+	IndexLaminae    int64
 	Warnings        []string
 }
 
@@ -3992,7 +3992,7 @@ func (b0 NodeHeartbeatRequest_builder) Build() *NodeHeartbeatRequest {
 	x.xxx_hidden_DataAddress = b.DataAddress
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_UploadsInFlight = b.UploadsInFlight
-	x.xxx_hidden_IndexObjects = b.IndexObjects
+	x.xxx_hidden_IndexLaminae = b.IndexLaminae
 	x.xxx_hidden_Warnings = b.Warnings
 	return m0
 }
@@ -15655,7 +15655,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\aversion\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x121\n" +
 	"\x11uploads_in_flight\x18\n" +
 	" \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0fuploadsInFlight\x12*\n" +
-	"\rindex_objects\x18\v \x01(\x03B\x05\xaa\x01\x02\b\x02R\findexObjects\x12\x1a\n" +
+	"\rindex_laminae\x18\v \x01(\x03B\x05\xaa\x01\x02\b\x02R\findexLaminae\x12\x1a\n" +
 	"\bwarnings\x18\f \x03(\tR\bwarnings\"t\n" +
 	"\x15NodeHeartbeatResponse\x12'\n" +
 	"\x05sinks\x18\x01 \x03(\v2\x11.shale.SinkAnswerR\x05sinks\x122\n" +

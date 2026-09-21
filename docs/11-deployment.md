@@ -68,7 +68,7 @@ optional.
 
 ### 34.3 State on disk
 
-Everything except object data lives on the OS disk. None of it is object
+Everything except lamina data lives on the OS disk. None of it is lamina
 data, so the "no SSD in the data path" rule
 ([§22.3](07-storage-node.md#223-no-ssd-in-the-data-path)) is not affected.
 
@@ -76,7 +76,7 @@ data, so the "no SSD in the data path" rule
 |---|---|---|
 | CP | `/var/lib/shale/control` | KEK, CA key and certificate (or mounted Secrets), SQLite DB for `shale serve all` |
 | Storage Node | `/var/lib/shale/storage` | host key and certificate, CA bundle, cached key set |
-| Storage Node | each sink path | object data, sink label |
+| Storage Node | each sink path | lamina data, sink label |
 | Producer | `/var/lib/shale/producer` | host key and certificate, CA bundle. Segments are held in RAM only ([§16](04-write-path.md#16-producer-backpressure)) |
 | Reader | `/var/lib/shale/reader` | host key and certificate, CA bundle |
 | Relay | `/var/lib/shale/relay` | host key and certificate, CA bundle, cached key set. No stream state: everything it carries is in RAM ([§39](16-relay.md#39-relay)) |
@@ -150,7 +150,7 @@ next start and is recognized by its hardware identity
   [§36.1](13-configuration.md#361-configuration-reference)). A relay is
   stateless, so replicas are simply more relays for the CP to assign.
 - **Upgrades** roll one Storage Node at a time. While a node is down, its
-  objects are UNAVAILABLE and placement skips it through missed heartbeats.
+  laminae are UNAVAILABLE and placement skips it through missed heartbeats.
   No data moves, so no disruption budget beyond "one at a time" is needed.
   A relay restart drops its sessions for a few seconds and nothing else.
 
@@ -225,9 +225,9 @@ are direct, idempotent, and repeat until acknowledged.
 
 | Event | When | Deduplicated by |
 |---|---|---|
-| `ObjectStored` | an upload committed, or was finalized incomplete ([§12.4](04-write-path.md#124-commit-semantics)) | `attempt_id` |
-| `ObjectDeleted` | a file the CP approved or ordered deleted is gone ([§21.2](06-retention-gc.md#212-protocol)) | `(sink_id, object_key)` |
-| `ObjectMissing` | a valid token named a key the node does not have, or the node removed a damaged or abandoned file itself ([§14](04-write-path.md#14-duplicates-and-orphans)) | `(sink_id, object_key, reason)` |
+| `LaminaStored` | an upload committed, or was finalized incomplete ([§12.4](04-write-path.md#124-commit-semantics)) | `attempt_id` |
+| `LaminaDeleted` | a file the CP approved or ordered deleted is gone ([§21.2](06-retention-gc.md#212-protocol)) | `(sink_id, lamina_key)` |
+| `LaminaMissing` | a valid token named a key the node does not have, or the node removed a damaged or abandoned file itself ([§14](04-write-path.md#14-duplicates-and-orphans)) | `(sink_id, lamina_key, reason)` |
 
 - Each node keeps an outbox of unsent events in RAM and sends them in batches
   with `NodeService.PushEvents`.
@@ -246,8 +246,8 @@ holds**:
 
 | State on the CP | Directive it implies | Cleared by |
 |---|---|---|
-| object `DELETING` on sink S | `Delete` | `ObjectDeleted`, or `Delete` answering `absent` |
-| object with `dates_synced = false` | `SetDates` | the node's acknowledgement |
+| lamina `DELETING` on sink S | `Delete` | `LaminaDeleted`, or `Delete` answering `absent` |
+| lamina with `dates_synced = false` | `SetDates` | the node's acknowledgement |
 | device `QUARANTINED` or retired; sink retired | `SetSinkState(accept_writes: false)` | acknowledgement |
 | device released | `SetSinkState(accept_writes: true)` | acknowledgement |
 | node certificate outdated by an `AddressPolicy` change | `InstallCertificate` | the heartbeat reporting the new serial |
@@ -275,7 +275,7 @@ margin:
 - with `since = 0` for a full index rebuild ([§29](09-operations.md#29-metadata-index)).
 
 Commits whose events were lost become known this way instead of staying
-orphans, and objects stuck in `DELETING` because a node died between the
+orphans, and laminae stuck in `DELETING` because a node died between the
 unlink and its event are confirmed gone.
 
 **One leader.** Rotation waits, policy activation, directive delivery,
@@ -363,5 +363,5 @@ If a node's address changed in the meantime:
   unreachable target, and the producer moves to the next candidate
   ([§13](04-write-path.md#13-retry-and-reallocation)).
 
-Changing a node's addresses never touches objects. Their location is
-`(sink_id, object_key)` ([§23.3](07-storage-node.md#233-index-metadata-control-plane)).
+Changing a node's addresses never touches laminae. Their location is
+`(sink_id, lamina_key)` ([§23.3](07-storage-node.md#233-index-metadata-control-plane)).

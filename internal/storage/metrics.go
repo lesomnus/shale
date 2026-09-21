@@ -34,7 +34,7 @@ func newMetrics(ctx context.Context) *metrics {
 		reclaimed: o.Int64Counter("shale.node.gc_reclaimed_bytes", metric.WithDescription("bytes GC reclaimed per sink"), metric.WithUnit("By")),
 		free:      o.Int64Gauge("shale.node.sink_free_bytes", metric.WithDescription("free bytes per sink"), metric.WithUnit("By")),
 		pressure:  o.Int64Gauge("shale.node.sink_pressure", metric.WithDescription("pressure state per sink: 1 normal, 2 low, 3 critical")),
-		indexed:   o.Int64Gauge("shale.node.index_objects", metric.WithDescription("objects in the index per sink")),
+		indexed:   o.Int64Gauge("shale.node.index_laminae", metric.WithDescription("laminae in the index per sink")),
 	}
 }
 

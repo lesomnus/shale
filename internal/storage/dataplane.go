@@ -29,7 +29,7 @@ import (
 )
 
 // The HTTP data plane (§35.6): resumable uploads (§12.2), idempotent
-// (§12.5), commits (§12.4), partial objects (§15), and reads with Range
+// (§12.5), commits (§12.4), partial laminae (§15), and reads with Range
 // (§17).
 
 // Header names.
@@ -42,7 +42,7 @@ const (
 	HdrDateEnded      = "Shale-Date-Ended"
 	HdrIncomplete     = "Shale-Incomplete"
 	HdrRetryAfter     = "Retry-After"
-	// HdrChecksum carries the object's checksum on HEAD, as `crc32c=<hex>`
+	// HdrChecksum carries the lamina's checksum on HEAD, as `crc32c=<hex>`
 	// (§30).
 	HdrChecksum = "Shale-Checksum"
 )
@@ -86,7 +86,7 @@ type upload struct {
 	sink     *Sink
 	actor    pdid.Id
 	claims   *api.TokenClaims
-	record   *api.ObjectRecord
+	record   *api.LaminaRecord
 	last     time.Time
 	inflight bool
 	hint     int64
@@ -100,7 +100,7 @@ type upload struct {
 	crcAt int64
 }
 
-// DataPlane serves the object paths of every sink on this node.
+// DataPlane serves the lamina paths of every sink on this node.
 type DataPlane struct {
 	node   *Node
 	limits Limits
@@ -139,7 +139,7 @@ func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok\n"))
 		return
-	case strings.HasPrefix(r.URL.Path, "/objects/"):
+	case strings.HasPrefix(r.URL.Path, "/laminae/"):
 	default:
 		http.NotFound(w, r)
 		return
@@ -178,7 +178,7 @@ func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
-	if c.GetObjectKey() != key {
+	if c.GetLaminaKey() != key {
 		http.Error(w, "the token names another key", http.StatusForbidden)
 		return
 	}
@@ -342,7 +342,7 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 	// What is on disk already.
 	f, err := os.OpenFile(path, os.O_RDWR, 0)
 	var cur int64
-	var rec *api.ObjectRecord
+	var rec *api.LaminaRecord
 	switch {
 	case err == nil:
 		rec, err = ReadRecord(f)
@@ -513,7 +513,7 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 			if tooLarge {
 				break
 			}
-			// A live upload past its hint: another extent, so the object
+			// A live upload past its hint: another extent, so the lamina
 			// stays in at most a few pieces (§12.2).
 			if u.hint > 0 && received > u.hint {
 				extra := u.record.GetSizeHint()
@@ -617,7 +617,7 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 	}
 	written += int64(n)
 
-	// Complete: the end of this body is the end of the object (§12.4).
+	// Complete: the end of this body is the end of the lamina (§12.4).
 	var ended *time.Time
 	if v := r.Header.Get(HdrDateEnded); v != "" {
 		if t, err := time.Parse(time.RFC3339Nano, v); err == nil {
@@ -686,12 +686,12 @@ func (d *DataPlane) commit(u *upload, f *os.File, size int64, ended *time.Time, 
 	return nil
 }
 
-func storedEvent(sink *Sink, e *Entry, committed time.Time) *api.ObjectStored {
-	ev := api.ObjectStored_builder{
-		ObjectId:      e.Record.GetObjectId(),
+func storedEvent(sink *Sink, e *Entry, committed time.Time) *api.LaminaStored {
+	ev := api.LaminaStored_builder{
+		LaminaId:      e.Record.GetLaminaId(),
 		AttemptId:     e.Record.GetAttemptId(),
 		SinkId:        sink.Id.Bytes(),
-		ObjectKey:     e.Key,
+		LaminaKey:     e.Key,
 		Size:          e.Size,
 		Incomplete:    e.Incomplete,
 		DateCommitted: timestamppb.New(committed),
@@ -723,10 +723,10 @@ func (d *DataPlane) abandon(u *upload, f *os.File, size int64, why string) {
 		d.mu.Lock()
 		delete(d.uploads, d.uploadKey(sink, u.key))
 		d.mu.Unlock()
-		d.node.outbox.Push(api.Event_builder{Missing: api.ObjectMissing_builder{
+		d.node.outbox.Push(api.Event_builder{Missing: api.LaminaMissing_builder{
 			SinkId:       sink.Id.Bytes(),
-			ObjectKey:    u.key,
-			ObjectId:     u.record.GetObjectId(),
+			LaminaKey:    u.key,
+			LaminaId:     u.record.GetLaminaId(),
 			AttemptId:    u.record.GetAttemptId(),
 			Reason:       api.MissingReason_MISSING_REASON_ABANDONED,
 			DateObserved: timestamppb.Now(),
@@ -755,7 +755,7 @@ func (d *DataPlane) abandon(u *upload, f *os.File, size int64, why string) {
 	d.log.Info("abandoned live upload finalized incomplete", "key", u.key, "size", size, "why", why)
 }
 
-// head answers the upload offset and completeness, or the object's
+// head answers the upload offset and completeness, or the lamina's
 // metadata (§12.2).
 func (d *DataPlane) head(w http.ResponseWriter, r *http.Request, sink *Sink, key string, c *api.TokenClaims) {
 	path, err := sink.FilePath(key)
@@ -796,7 +796,7 @@ func (d *DataPlane) head(w http.ResponseWriter, r *http.Request, sink *Sink, key
 	w.WriteHeader(http.StatusOK)
 }
 
-// get serves a complete object with Range (§17).
+// get serves a complete lamina with Range (§17).
 func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key string, c *api.TokenClaims, actor pdid.Id) {
 	path, err := sink.FilePath(key)
 	if err != nil {
@@ -914,7 +914,7 @@ func (d *DataPlane) recomputeCrc(ctx context.Context, sink *Sink, f *os.File, n 
 	return crc, nil
 }
 
-// openRead opens a complete object for reading, with O_DIRECT where it
+// openRead opens a complete lamina for reading, with O_DIRECT where it
 // works; the chunk reader keeps its reads aligned.
 func openRead(path string, direct bool) (*os.File, error) {
 	flag := os.O_RDONLY
@@ -1001,10 +1001,10 @@ func (c *chunkReader) Read(p []byte) (int, error) {
 // missing reports a key a valid token named that this node does not have
 // (§14).
 func (d *DataPlane) missing(sink *Sink, key string, c *api.TokenClaims) {
-	d.node.outbox.Push(api.Event_builder{Missing: api.ObjectMissing_builder{
+	d.node.outbox.Push(api.Event_builder{Missing: api.LaminaMissing_builder{
 		SinkId:       sink.Id.Bytes(),
-		ObjectKey:    key,
-		ObjectId:     c.GetRecord().GetObjectId(),
+		LaminaKey:    key,
+		LaminaId:     c.GetRecord().GetLaminaId(),
 		AttemptId:    c.GetAttemptId(),
 		Reason:       api.MissingReason_MISSING_REASON_NOT_FOUND,
 		DateObserved: timestamppb.Now(),

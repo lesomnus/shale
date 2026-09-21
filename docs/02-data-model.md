@@ -2,7 +2,7 @@
 
 ## 7. Source, Set, Zone, Epoch
 
-A **Tenant** owns sets, sources, objects, and the people and hosts that act
+A **Tenant** owns sets, sources, laminae, and the people and hosts that act
 on them. It is payday's tenant, and the wall around it is always on
 ([§33.1](10-security.md#331-trust-model)). A single organization runs a
 cluster with exactly one tenant, created by `shale init`, and never has to
@@ -10,7 +10,7 @@ name it: slugs leave it out and everything belongs to it. Adding tenants
 later needs no change to code, schema, or clients. Storage infrastructure
 (nodes, devices, sinks) is not owned by any tenant.
 
-A **Source** is what produces objects: one camera, or more generally one
+A **Source** is what produces laminae: one camera, or more generally one
 stream of data.
 
 A **Set** is a group of Sources behind one producer. Every Source belongs to
@@ -31,7 +31,7 @@ segments, and uploads them: one machine, one certificate, one set
 ([§5](01-overview.md#5-components), [§33.4](10-security.md#334-joining-and-adoption)).
 It is also assigned a **Relay**, the host that shows its cameras live to
 viewers ([§39.2](16-relay.md#392-assignment)). A **Reader** is a host that
-queries and reads objects, typically a media server, and may watch live
+queries and reads laminae, typically a media server, and may watch live
 too. Producers and readers are rows of their tenant, adopted by an
 operator; relays are cluster infrastructure like nodes
 ([§35.3](12-api.md#353-entities)).
@@ -41,7 +41,7 @@ payday's second permission axis (field 3): a person or a reader can be
 limited to the sites it is a member of, so a guard at one building cannot
 read another's cameras ([§33.1](10-security.md#331-trust-model)). A set
 belongs to at most one site, fixed when the set is added. Its sources,
-objects, attempts, and producer carry the same site. A site may also name,
+laminae, attempts, and producer carry the same site. A site may also name,
 by labels, which relays its producers should use
 ([§39.2](16-relay.md#392-assignment)). A tenant that does not use sites
 leaves the field empty and sees no difference.
@@ -54,8 +54,8 @@ stored so a future scheduler could. Shale needs no camera geometry beyond
 these labels: the only placement question is which Sources should not share a
 failure domain.
 
-An **Epoch** is a fixed time bucket (default 1 hour). The epoch of an object is
-derived from its `date_started`. During one epoch, all objects of a Source go to
+An **Epoch** is a fixed time bucket (default 1 hour). The epoch of a lamina is
+derived from its `date_started`. During one epoch, all laminae of a Source go to
 the same sink as long as that sink stays eligible. When the epoch changes, the
 Source moves to another sink.
 
@@ -68,35 +68,49 @@ camera-17
 
 ## 8. State Model
 
-Object state and attempt state are separate machines.
+Two words for the same bytes, on purpose. A **segment** is what a producer
+makes: the bytes of one source between two cuts and the time span they
+cover, and nothing else. It has no state; the producer keeps it until a
+node has it, then forgets it ([§38.2](15-producer.md#382-cutting-segments)).
+A **lamina** is what the cluster keeps about a segment: a row that exists
+from the moment it is allocated, before the segment is cut, through the
+attempts to store it, to `STORED`, `LOST` or `DELETED`, with its dates and
+its place on a sink. A complete upload makes the lamina's bytes the
+segment's; a cut-short one makes them a prefix
+([§15](04-write-path.md#15-partial-laminae)). One segment, one lamina, and
+the lamina outlives the producer's memory of the segment. The word is the
+geologist's: shale splits along its laminae, and a recording splits along
+its laminae, each one playable on its own.
 
-### Object
+Lamina state and attempt state are separate machines.
+
+### Lamina
 
 ```text
 PENDING ──► COMMITTED ──► DELETING ──► DELETED
    │            │  ▲
    │            └──┼──► LOST     (file found missing on read / device declared dead)
-   ├──► LOST ──────┘             (producer gave up; a late ObjectStored still
-   │                              brings the object back, §14)
+   ├──► LOST ──────┘             (producer gave up; a late LaminaStored still
+   │                              brings the lamina back, §14)
    └──► (removed)                (no attempt stored anything within its TTL
                                   plus abandon_grace; recreated by a late event)
 ```
 
-`DELETED` is also reached without any state change: an object whose
+`DELETED` is also reached without any state change: a lamina whose
 `date_deleted` has passed is deleted, whatever its stored state says
 ([§20.1](06-retention-gc.md#201-date_deleted-is-an-expiry-not-an-event)).
 `DELETING` already reads as `DELETED` ([§19](05-read-path.md#19-reader-semantics)).
 
-An object whose allocations were never used is removed. It reads as
+A lamina whose allocations were never used is removed. It reads as
 `NOT_RECEIVED`, not `LOST`, because Shale was never given any data ([§19](05-read-path.md#19-reader-semantics)).
-Rows of deleted and lost objects are pruned after a while
+Rows of deleted and lost laminae are pruned after a while
 ([§20.4](06-retention-gc.md#204-row-retention)).
 
-A committed object may carry the `incomplete` flag ([§15](04-write-path.md#15-partial-objects)). It is still
+A committed lamina may carry the `incomplete` flag ([§15](04-write-path.md#15-partial-laminae)). It is still
 `COMMITTED`; the flag only says its tail is missing.
 
 `UNAVAILABLE` is not stored. It is derived at read time from the health of the
-object's sink, device, and node.
+lamina's sink, device, and node.
 
 ### Write attempt
 
@@ -108,14 +122,14 @@ ALLOCATED ──► STORED
     └──► DUPLICATE    (stored, but another attempt won)
 ```
 
-`FAILED` and `ABANDONED` are the CP's guesses. An `ObjectStored` that arrives
+`FAILED` and `ABANDONED` are the CP's guesses. A `LaminaStored` that arrives
 later moves the attempt to `STORED` or `DUPLICATE`, because the node's word
 about what is on its device is final ([§14](04-write-path.md#14-duplicates-and-orphans)).
 
 ```text
 write_attempts
   attempt_id
-  object_id
+  lamina_id
   sink_id
   node_id          (the node the sink was on when the attempt was allocated)
   state
@@ -174,17 +188,17 @@ A replacement HDD gets a new sink and never reuses the old `sink_id`.
 
 - Stored times are UTC.
 - **System times** are stamped by Shale: `date_created` (allocation, CP clock),
-  `date_committed` (commit, node clock, carried in the `ObjectStored` event),
+  `date_committed` (commit, node clock, carried in the `LaminaStored` event),
   `date_finished` (attempt end).
 - **Data times** are `date_started` and `date_ended`: the time span the
-  object's data covers, **declared by the producer** in the upload's headers
+  lamina's data covers, **declared by the producer** in the upload's headers
   ([§12.2](04-write-path.md#122-resumable-part-uploads)). Shale does not
   interpret them. It indexes them for time-range queries and derives the
   epoch from `date_started`. A producer that declares nothing gets the write
   times instead (allocation and commit).
 - The two differ whenever an upload is not live. A buffered segment arrives a
   segment-length late, and a backlog after a link outage can arrive hours
-  late. A pre-allocated object's `date_created` even precedes its data. Data
+  late. A pre-allocated lamina's `date_created` even precedes its data. Data
   times keep time-range queries and epochs correct in all these cases, with no
   knowledge of what the data is.
 - Clocks are NTP-synchronized. The CP accepts a `date_started` up to

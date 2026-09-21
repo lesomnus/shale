@@ -13,7 +13,7 @@ spec:
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
-      # One node at a time: its objects are UNAVAILABLE while it restarts,
+      # One node at a time: its laminae are UNAVAILABLE while it restarts,
       # and nothing else (§34.5).
       maxUnavailable: 1
   template:

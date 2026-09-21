@@ -5,33 +5,33 @@ package ent
 import (
 	"context"
 
-	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
-// ObjectDelete is the builder for deleting a Object entity.
-type ObjectDelete struct {
+// LaminaDelete is the builder for deleting a Lamina entity.
+type LaminaDelete struct {
 	config
 	hooks    []Hook
-	mutation *ObjectMutation
+	mutation *LaminaMutation
 }
 
-// Where appends a list predicates to the ObjectDelete builder.
-func (_d *ObjectDelete) Where(ps ...predicate.Object) *ObjectDelete {
+// Where appends a list predicates to the LaminaDelete builder.
+func (_d *LaminaDelete) Where(ps ...predicate.Lamina) *LaminaDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (_d *ObjectDelete) Exec(ctx context.Context) (int, error) {
+func (_d *LaminaDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ObjectDelete) ExecX(ctx context.Context) int {
+func (_d *LaminaDelete) ExecX(ctx context.Context) int {
 	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (_d *ObjectDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (_d *ObjectDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(object.Table, sqlgraph.NewFieldSpec(object.FieldId, field.TypeUuid))
+func (_d *LaminaDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(lamina.Table, sqlgraph.NewFieldSpec(lamina.FieldId, field.TypeUuid))
 	if ps := _d.mutation.Predicates(); len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -56,32 +56,32 @@ func (_d *ObjectDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// ObjectDeleteOne is the builder for deleting a single Object entity.
-type ObjectDeleteOne struct {
-	_d *ObjectDelete
+// LaminaDeleteOne is the builder for deleting a single Lamina entity.
+type LaminaDeleteOne struct {
+	_d *LaminaDelete
 }
 
-// Where appends a list predicates to the ObjectDelete builder.
-func (_d *ObjectDeleteOne) Where(ps ...predicate.Object) *ObjectDeleteOne {
+// Where appends a list predicates to the LaminaDelete builder.
+func (_d *LaminaDeleteOne) Where(ps ...predicate.Lamina) *LaminaDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query.
-func (_d *ObjectDeleteOne) Exec(ctx context.Context) error {
+func (_d *LaminaDeleteOne) Exec(ctx context.Context) error {
 	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{object.Label}
+		return &NotFoundError{lamina.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *ObjectDeleteOne) ExecX(ctx context.Context) {
+func (_d *LaminaDeleteOne) ExecX(ctx context.Context) {
 	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}

@@ -221,7 +221,7 @@ type SetRetention_builder struct {
 
 	// Zero means the default, 30 days.
 	ExpireSeconds int64
-	// Zero means "= expire". `delete_none` means objects live until lazy GC
+	// Zero means "= expire". `delete_none` means laminae live until lazy GC
 	// reclaims them.
 	DeleteSeconds int64
 	DeleteNone    bool
@@ -618,7 +618,7 @@ func (b0 Set_builder) Build() *Set {
 	return m0
 }
 
-// Source is what produces objects: one camera, or one stream of data (§7).
+// Source is what produces laminae: one camera, or one stream of data (§7).
 type Source struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`

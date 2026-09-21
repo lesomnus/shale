@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: shale/object_svc.g.proto
+// source: shale/lamina_svc.g.proto
 
 package api
 
@@ -19,39 +19,39 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ObjectService_Add_FullMethodName           = "/shale.ObjectService/Add"
-	ObjectService_Get_FullMethodName           = "/shale.ObjectService/Get"
-	ObjectService_Patch_FullMethodName         = "/shale.ObjectService/Patch"
-	ObjectService_Apply_FullMethodName         = "/shale.ObjectService/Apply"
-	ObjectService_Erase_FullMethodName         = "/shale.ObjectService/Erase"
-	ObjectService_List_FullMethodName          = "/shale.ObjectService/List"
-	ObjectService_Watch_FullMethodName         = "/shale.ObjectService/Watch"
-	ObjectService_Allocate_FullMethodName      = "/shale.ObjectService/Allocate"
-	ObjectService_Reallocate_FullMethodName    = "/shale.ObjectService/Reallocate"
-	ObjectService_Renew_FullMethodName         = "/shale.ObjectService/Renew"
-	ObjectService_ReportAttempt_FullMethodName = "/shale.ObjectService/ReportAttempt"
-	ObjectService_ReportFailure_FullMethodName = "/shale.ObjectService/ReportFailure"
-	ObjectService_Reschedule_FullMethodName    = "/shale.ObjectService/Reschedule"
-	ObjectService_Timeline_FullMethodName      = "/shale.ObjectService/Timeline"
+	LaminaService_Add_FullMethodName           = "/shale.LaminaService/Add"
+	LaminaService_Get_FullMethodName           = "/shale.LaminaService/Get"
+	LaminaService_Patch_FullMethodName         = "/shale.LaminaService/Patch"
+	LaminaService_Apply_FullMethodName         = "/shale.LaminaService/Apply"
+	LaminaService_Erase_FullMethodName         = "/shale.LaminaService/Erase"
+	LaminaService_List_FullMethodName          = "/shale.LaminaService/List"
+	LaminaService_Watch_FullMethodName         = "/shale.LaminaService/Watch"
+	LaminaService_Allocate_FullMethodName      = "/shale.LaminaService/Allocate"
+	LaminaService_Reallocate_FullMethodName    = "/shale.LaminaService/Reallocate"
+	LaminaService_Renew_FullMethodName         = "/shale.LaminaService/Renew"
+	LaminaService_ReportAttempt_FullMethodName = "/shale.LaminaService/ReportAttempt"
+	LaminaService_ReportFailure_FullMethodName = "/shale.LaminaService/ReportFailure"
+	LaminaService_Reschedule_FullMethodName    = "/shale.LaminaService/Reschedule"
+	LaminaService_Timeline_FullMethodName      = "/shale.LaminaService/Timeline"
 )
 
-// ObjectServiceClient is the client API for ObjectService service.
+// LaminaServiceClient is the client API for LaminaService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ObjectServiceClient interface {
-	// Add creates a new Object
-	Add(ctx context.Context, in *ObjectAddRequest, opts ...grpc.CallOption) (*Object, error)
-	// Get retrieves a Object
-	Get(ctx context.Context, in *ObjectGetRequest, opts ...grpc.CallOption) (*Object, error)
-	// Patch updates an existing Object
-	Patch(ctx context.Context, in *ObjectPatchRequest, opts ...grpc.CallOption) (*Object, error)
-	// Apply applies a patch document to an existing Object
-	Apply(ctx context.Context, in *ObjectApplyRequest, opts ...grpc.CallOption) (*Object, error)
-	// Erase deletes a Object
-	Erase(ctx context.Context, in *ObjectRef, opts ...grpc.CallOption) (*ObjectEraseResponse, error)
-	// List reads Objects a page at a time.
-	List(ctx context.Context, in *ObjectListRequest, opts ...grpc.CallOption) (*ObjectListResponse, error)
-	// Watch the Objects this caller may see, as they are now and as they change.
+type LaminaServiceClient interface {
+	// Add creates a new Lamina
+	Add(ctx context.Context, in *LaminaAddRequest, opts ...grpc.CallOption) (*Lamina, error)
+	// Get retrieves a Lamina
+	Get(ctx context.Context, in *LaminaGetRequest, opts ...grpc.CallOption) (*Lamina, error)
+	// Patch updates an existing Lamina
+	Patch(ctx context.Context, in *LaminaPatchRequest, opts ...grpc.CallOption) (*Lamina, error)
+	// Apply applies a patch document to an existing Lamina
+	Apply(ctx context.Context, in *LaminaApplyRequest, opts ...grpc.CallOption) (*Lamina, error)
+	// Erase deletes a Lamina
+	Erase(ctx context.Context, in *LaminaRef, opts ...grpc.CallOption) (*LaminaEraseResponse, error)
+	// List reads Laminas a page at a time.
+	List(ctx context.Context, in *LaminaListRequest, opts ...grpc.CallOption) (*LaminaListResponse, error)
+	// Watch the Laminas this caller may see, as they are now and as they change.
 	//
 	// What arrives is **state and never a delta**, so a client converges rather
 	// than replays: it keeps what it was last told about a row and replaces it.
@@ -62,106 +62,106 @@ type ObjectServiceClient interface {
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
-	Watch(ctx context.Context, in *ObjectWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ObjectWatchResponse], error)
+	Watch(ctx context.Context, in *LaminaWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LaminaWatchResponse], error)
 	// One allocation for one segment of one source. Idempotent per
-	// (source, expected date_started): asking twice answers the same object.
-	// A segment that begins after the slot's stored object ended, or after
-	// the object named in `after`, is the slot's next segment and gets an
-	// object of its own (§12.1, §15).
-	Allocate(ctx context.Context, in *ObjectAllocateRequest, opts ...grpc.CallOption) (*Allocation, error)
+	// (source, expected date_started): asking twice answers the same lamina.
+	// A segment that begins after the slot's stored lamina ended, or after
+	// the lamina named in `after`, is the slot's next segment and gets an
+	// lamina of its own (§12.1, §15).
+	Allocate(ctx context.Context, in *LaminaAllocateRequest, opts ...grpc.CallOption) (*Allocation, error)
 	// The next candidate after a failed attempt (§13).
-	Reallocate(ctx context.Context, in *ObjectReallocateRequest, opts ...grpc.CallOption) (*Allocation, error)
+	Reallocate(ctx context.Context, in *LaminaReallocateRequest, opts ...grpc.CallOption) (*Allocation, error)
 	// A fresh token for an attempt still in progress on the same target (§12.1).
-	Renew(ctx context.Context, in *ObjectRenewRequest, opts ...grpc.CallOption) (*Allocation, error)
-	// One attempt failed, with a reason; feeds health (§13, §27). The object
+	Renew(ctx context.Context, in *LaminaRenewRequest, opts ...grpc.CallOption) (*Allocation, error)
+	// One attempt failed, with a reason; feeds health (§13, §27). The lamina
 	// stays PENDING.
-	ReportAttempt(ctx context.Context, in *ObjectReportAttemptRequest, opts ...grpc.CallOption) (*Attempt, error)
-	// The producer gives up on an object; it becomes LOST (§13).
-	ReportFailure(ctx context.Context, in *ObjectReportFailureRequest, opts ...grpc.CallOption) (*Object, error)
-	// Changes date_expired and/or date_deleted, for one object or in bulk by
+	ReportAttempt(ctx context.Context, in *LaminaReportAttemptRequest, opts ...grpc.CallOption) (*Attempt, error)
+	// The producer gives up on a lamina; it becomes LOST (§13).
+	ReportFailure(ctx context.Context, in *LaminaReportFailureRequest, opts ...grpc.CallOption) (*Lamina, error)
+	// Changes date_expired and/or date_deleted, for one lamina or in bulk by
 	// set or source and a time range; a reason is required and audited. In
 	// bulk it works in pages and stops short of its deadline, answering how
 	// many remain for the next call (§20.3).
-	Reschedule(ctx context.Context, in *ObjectRescheduleRequest, opts ...grpc.CallOption) (*ObjectRescheduleResponse, error)
-	// Objects and gaps over a time range, with read tokens; paged (§17, §19).
-	Timeline(ctx context.Context, in *ObjectTimelineRequest, opts ...grpc.CallOption) (*ObjectTimelineResponse, error)
+	Reschedule(ctx context.Context, in *LaminaRescheduleRequest, opts ...grpc.CallOption) (*LaminaRescheduleResponse, error)
+	// Laminae and gaps over a time range, with read tokens; paged (§17, §19).
+	Timeline(ctx context.Context, in *LaminaTimelineRequest, opts ...grpc.CallOption) (*LaminaTimelineResponse, error)
 }
 
-type objectServiceClient struct {
+type laminaServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewObjectServiceClient(cc grpc.ClientConnInterface) ObjectServiceClient {
-	return &objectServiceClient{cc}
+func NewLaminaServiceClient(cc grpc.ClientConnInterface) LaminaServiceClient {
+	return &laminaServiceClient{cc}
 }
 
-func (c *objectServiceClient) Add(ctx context.Context, in *ObjectAddRequest, opts ...grpc.CallOption) (*Object, error) {
+func (c *laminaServiceClient) Add(ctx context.Context, in *LaminaAddRequest, opts ...grpc.CallOption) (*Lamina, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Object)
-	err := c.cc.Invoke(ctx, ObjectService_Add_FullMethodName, in, out, cOpts...)
+	out := new(Lamina)
+	err := c.cc.Invoke(ctx, LaminaService_Add_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Get(ctx context.Context, in *ObjectGetRequest, opts ...grpc.CallOption) (*Object, error) {
+func (c *laminaServiceClient) Get(ctx context.Context, in *LaminaGetRequest, opts ...grpc.CallOption) (*Lamina, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Object)
-	err := c.cc.Invoke(ctx, ObjectService_Get_FullMethodName, in, out, cOpts...)
+	out := new(Lamina)
+	err := c.cc.Invoke(ctx, LaminaService_Get_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Patch(ctx context.Context, in *ObjectPatchRequest, opts ...grpc.CallOption) (*Object, error) {
+func (c *laminaServiceClient) Patch(ctx context.Context, in *LaminaPatchRequest, opts ...grpc.CallOption) (*Lamina, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Object)
-	err := c.cc.Invoke(ctx, ObjectService_Patch_FullMethodName, in, out, cOpts...)
+	out := new(Lamina)
+	err := c.cc.Invoke(ctx, LaminaService_Patch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Apply(ctx context.Context, in *ObjectApplyRequest, opts ...grpc.CallOption) (*Object, error) {
+func (c *laminaServiceClient) Apply(ctx context.Context, in *LaminaApplyRequest, opts ...grpc.CallOption) (*Lamina, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Object)
-	err := c.cc.Invoke(ctx, ObjectService_Apply_FullMethodName, in, out, cOpts...)
+	out := new(Lamina)
+	err := c.cc.Invoke(ctx, LaminaService_Apply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Erase(ctx context.Context, in *ObjectRef, opts ...grpc.CallOption) (*ObjectEraseResponse, error) {
+func (c *laminaServiceClient) Erase(ctx context.Context, in *LaminaRef, opts ...grpc.CallOption) (*LaminaEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ObjectEraseResponse)
-	err := c.cc.Invoke(ctx, ObjectService_Erase_FullMethodName, in, out, cOpts...)
+	out := new(LaminaEraseResponse)
+	err := c.cc.Invoke(ctx, LaminaService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) List(ctx context.Context, in *ObjectListRequest, opts ...grpc.CallOption) (*ObjectListResponse, error) {
+func (c *laminaServiceClient) List(ctx context.Context, in *LaminaListRequest, opts ...grpc.CallOption) (*LaminaListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ObjectListResponse)
-	err := c.cc.Invoke(ctx, ObjectService_List_FullMethodName, in, out, cOpts...)
+	out := new(LaminaListResponse)
+	err := c.cc.Invoke(ctx, LaminaService_List_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Watch(ctx context.Context, in *ObjectWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ObjectWatchResponse], error) {
+func (c *laminaServiceClient) Watch(ctx context.Context, in *LaminaWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LaminaWatchResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ObjectService_ServiceDesc.Streams[0], ObjectService_Watch_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &LaminaService_ServiceDesc.Streams[0], LaminaService_Watch_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[ObjectWatchRequest, ObjectWatchResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[LaminaWatchRequest, LaminaWatchResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -172,95 +172,95 @@ func (c *objectServiceClient) Watch(ctx context.Context, in *ObjectWatchRequest,
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ObjectService_WatchClient = grpc.ServerStreamingClient[ObjectWatchResponse]
+type LaminaService_WatchClient = grpc.ServerStreamingClient[LaminaWatchResponse]
 
-func (c *objectServiceClient) Allocate(ctx context.Context, in *ObjectAllocateRequest, opts ...grpc.CallOption) (*Allocation, error) {
+func (c *laminaServiceClient) Allocate(ctx context.Context, in *LaminaAllocateRequest, opts ...grpc.CallOption) (*Allocation, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Allocation)
-	err := c.cc.Invoke(ctx, ObjectService_Allocate_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, LaminaService_Allocate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Reallocate(ctx context.Context, in *ObjectReallocateRequest, opts ...grpc.CallOption) (*Allocation, error) {
+func (c *laminaServiceClient) Reallocate(ctx context.Context, in *LaminaReallocateRequest, opts ...grpc.CallOption) (*Allocation, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Allocation)
-	err := c.cc.Invoke(ctx, ObjectService_Reallocate_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, LaminaService_Reallocate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Renew(ctx context.Context, in *ObjectRenewRequest, opts ...grpc.CallOption) (*Allocation, error) {
+func (c *laminaServiceClient) Renew(ctx context.Context, in *LaminaRenewRequest, opts ...grpc.CallOption) (*Allocation, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Allocation)
-	err := c.cc.Invoke(ctx, ObjectService_Renew_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, LaminaService_Renew_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) ReportAttempt(ctx context.Context, in *ObjectReportAttemptRequest, opts ...grpc.CallOption) (*Attempt, error) {
+func (c *laminaServiceClient) ReportAttempt(ctx context.Context, in *LaminaReportAttemptRequest, opts ...grpc.CallOption) (*Attempt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Attempt)
-	err := c.cc.Invoke(ctx, ObjectService_ReportAttempt_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, LaminaService_ReportAttempt_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) ReportFailure(ctx context.Context, in *ObjectReportFailureRequest, opts ...grpc.CallOption) (*Object, error) {
+func (c *laminaServiceClient) ReportFailure(ctx context.Context, in *LaminaReportFailureRequest, opts ...grpc.CallOption) (*Lamina, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Object)
-	err := c.cc.Invoke(ctx, ObjectService_ReportFailure_FullMethodName, in, out, cOpts...)
+	out := new(Lamina)
+	err := c.cc.Invoke(ctx, LaminaService_ReportFailure_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Reschedule(ctx context.Context, in *ObjectRescheduleRequest, opts ...grpc.CallOption) (*ObjectRescheduleResponse, error) {
+func (c *laminaServiceClient) Reschedule(ctx context.Context, in *LaminaRescheduleRequest, opts ...grpc.CallOption) (*LaminaRescheduleResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ObjectRescheduleResponse)
-	err := c.cc.Invoke(ctx, ObjectService_Reschedule_FullMethodName, in, out, cOpts...)
+	out := new(LaminaRescheduleResponse)
+	err := c.cc.Invoke(ctx, LaminaService_Reschedule_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Timeline(ctx context.Context, in *ObjectTimelineRequest, opts ...grpc.CallOption) (*ObjectTimelineResponse, error) {
+func (c *laminaServiceClient) Timeline(ctx context.Context, in *LaminaTimelineRequest, opts ...grpc.CallOption) (*LaminaTimelineResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ObjectTimelineResponse)
-	err := c.cc.Invoke(ctx, ObjectService_Timeline_FullMethodName, in, out, cOpts...)
+	out := new(LaminaTimelineResponse)
+	err := c.cc.Invoke(ctx, LaminaService_Timeline_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ObjectServiceServer is the server API for ObjectService service.
-// All implementations must embed UnimplementedObjectServiceServer
+// LaminaServiceServer is the server API for LaminaService service.
+// All implementations must embed UnimplementedLaminaServiceServer
 // for forward compatibility.
-type ObjectServiceServer interface {
-	// Add creates a new Object
-	Add(context.Context, *ObjectAddRequest) (*Object, error)
-	// Get retrieves a Object
-	Get(context.Context, *ObjectGetRequest) (*Object, error)
-	// Patch updates an existing Object
-	Patch(context.Context, *ObjectPatchRequest) (*Object, error)
-	// Apply applies a patch document to an existing Object
-	Apply(context.Context, *ObjectApplyRequest) (*Object, error)
-	// Erase deletes a Object
-	Erase(context.Context, *ObjectRef) (*ObjectEraseResponse, error)
-	// List reads Objects a page at a time.
-	List(context.Context, *ObjectListRequest) (*ObjectListResponse, error)
-	// Watch the Objects this caller may see, as they are now and as they change.
+type LaminaServiceServer interface {
+	// Add creates a new Lamina
+	Add(context.Context, *LaminaAddRequest) (*Lamina, error)
+	// Get retrieves a Lamina
+	Get(context.Context, *LaminaGetRequest) (*Lamina, error)
+	// Patch updates an existing Lamina
+	Patch(context.Context, *LaminaPatchRequest) (*Lamina, error)
+	// Apply applies a patch document to an existing Lamina
+	Apply(context.Context, *LaminaApplyRequest) (*Lamina, error)
+	// Erase deletes a Lamina
+	Erase(context.Context, *LaminaRef) (*LaminaEraseResponse, error)
+	// List reads Laminas a page at a time.
+	List(context.Context, *LaminaListRequest) (*LaminaListResponse, error)
+	// Watch the Laminas this caller may see, as they are now and as they change.
 	//
 	// What arrives is **state and never a delta**, so a client converges rather
 	// than replays: it keeps what it was last told about a row and replaces it.
@@ -271,415 +271,415 @@ type ObjectServiceServer interface {
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
-	Watch(*ObjectWatchRequest, grpc.ServerStreamingServer[ObjectWatchResponse]) error
+	Watch(*LaminaWatchRequest, grpc.ServerStreamingServer[LaminaWatchResponse]) error
 	// One allocation for one segment of one source. Idempotent per
-	// (source, expected date_started): asking twice answers the same object.
-	// A segment that begins after the slot's stored object ended, or after
-	// the object named in `after`, is the slot's next segment and gets an
-	// object of its own (§12.1, §15).
-	Allocate(context.Context, *ObjectAllocateRequest) (*Allocation, error)
+	// (source, expected date_started): asking twice answers the same lamina.
+	// A segment that begins after the slot's stored lamina ended, or after
+	// the lamina named in `after`, is the slot's next segment and gets an
+	// lamina of its own (§12.1, §15).
+	Allocate(context.Context, *LaminaAllocateRequest) (*Allocation, error)
 	// The next candidate after a failed attempt (§13).
-	Reallocate(context.Context, *ObjectReallocateRequest) (*Allocation, error)
+	Reallocate(context.Context, *LaminaReallocateRequest) (*Allocation, error)
 	// A fresh token for an attempt still in progress on the same target (§12.1).
-	Renew(context.Context, *ObjectRenewRequest) (*Allocation, error)
-	// One attempt failed, with a reason; feeds health (§13, §27). The object
+	Renew(context.Context, *LaminaRenewRequest) (*Allocation, error)
+	// One attempt failed, with a reason; feeds health (§13, §27). The lamina
 	// stays PENDING.
-	ReportAttempt(context.Context, *ObjectReportAttemptRequest) (*Attempt, error)
-	// The producer gives up on an object; it becomes LOST (§13).
-	ReportFailure(context.Context, *ObjectReportFailureRequest) (*Object, error)
-	// Changes date_expired and/or date_deleted, for one object or in bulk by
+	ReportAttempt(context.Context, *LaminaReportAttemptRequest) (*Attempt, error)
+	// The producer gives up on a lamina; it becomes LOST (§13).
+	ReportFailure(context.Context, *LaminaReportFailureRequest) (*Lamina, error)
+	// Changes date_expired and/or date_deleted, for one lamina or in bulk by
 	// set or source and a time range; a reason is required and audited. In
 	// bulk it works in pages and stops short of its deadline, answering how
 	// many remain for the next call (§20.3).
-	Reschedule(context.Context, *ObjectRescheduleRequest) (*ObjectRescheduleResponse, error)
-	// Objects and gaps over a time range, with read tokens; paged (§17, §19).
-	Timeline(context.Context, *ObjectTimelineRequest) (*ObjectTimelineResponse, error)
-	mustEmbedUnimplementedObjectServiceServer()
+	Reschedule(context.Context, *LaminaRescheduleRequest) (*LaminaRescheduleResponse, error)
+	// Laminae and gaps over a time range, with read tokens; paged (§17, §19).
+	Timeline(context.Context, *LaminaTimelineRequest) (*LaminaTimelineResponse, error)
+	mustEmbedUnimplementedLaminaServiceServer()
 }
 
-// UnimplementedObjectServiceServer must be embedded to have
+// UnimplementedLaminaServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedObjectServiceServer struct{}
+type UnimplementedLaminaServiceServer struct{}
 
-func (UnimplementedObjectServiceServer) Add(context.Context, *ObjectAddRequest) (*Object, error) {
+func (UnimplementedLaminaServiceServer) Add(context.Context, *LaminaAddRequest) (*Lamina, error) {
 	return nil, status.Error(codes.Unimplemented, "method Add not implemented")
 }
-func (UnimplementedObjectServiceServer) Get(context.Context, *ObjectGetRequest) (*Object, error) {
+func (UnimplementedLaminaServiceServer) Get(context.Context, *LaminaGetRequest) (*Lamina, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedObjectServiceServer) Patch(context.Context, *ObjectPatchRequest) (*Object, error) {
+func (UnimplementedLaminaServiceServer) Patch(context.Context, *LaminaPatchRequest) (*Lamina, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
 }
-func (UnimplementedObjectServiceServer) Apply(context.Context, *ObjectApplyRequest) (*Object, error) {
+func (UnimplementedLaminaServiceServer) Apply(context.Context, *LaminaApplyRequest) (*Lamina, error) {
 	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
-func (UnimplementedObjectServiceServer) Erase(context.Context, *ObjectRef) (*ObjectEraseResponse, error) {
+func (UnimplementedLaminaServiceServer) Erase(context.Context, *LaminaRef) (*LaminaEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
-func (UnimplementedObjectServiceServer) List(context.Context, *ObjectListRequest) (*ObjectListResponse, error) {
+func (UnimplementedLaminaServiceServer) List(context.Context, *LaminaListRequest) (*LaminaListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedObjectServiceServer) Watch(*ObjectWatchRequest, grpc.ServerStreamingServer[ObjectWatchResponse]) error {
+func (UnimplementedLaminaServiceServer) Watch(*LaminaWatchRequest, grpc.ServerStreamingServer[LaminaWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
 }
-func (UnimplementedObjectServiceServer) Allocate(context.Context, *ObjectAllocateRequest) (*Allocation, error) {
+func (UnimplementedLaminaServiceServer) Allocate(context.Context, *LaminaAllocateRequest) (*Allocation, error) {
 	return nil, status.Error(codes.Unimplemented, "method Allocate not implemented")
 }
-func (UnimplementedObjectServiceServer) Reallocate(context.Context, *ObjectReallocateRequest) (*Allocation, error) {
+func (UnimplementedLaminaServiceServer) Reallocate(context.Context, *LaminaReallocateRequest) (*Allocation, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reallocate not implemented")
 }
-func (UnimplementedObjectServiceServer) Renew(context.Context, *ObjectRenewRequest) (*Allocation, error) {
+func (UnimplementedLaminaServiceServer) Renew(context.Context, *LaminaRenewRequest) (*Allocation, error) {
 	return nil, status.Error(codes.Unimplemented, "method Renew not implemented")
 }
-func (UnimplementedObjectServiceServer) ReportAttempt(context.Context, *ObjectReportAttemptRequest) (*Attempt, error) {
+func (UnimplementedLaminaServiceServer) ReportAttempt(context.Context, *LaminaReportAttemptRequest) (*Attempt, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReportAttempt not implemented")
 }
-func (UnimplementedObjectServiceServer) ReportFailure(context.Context, *ObjectReportFailureRequest) (*Object, error) {
+func (UnimplementedLaminaServiceServer) ReportFailure(context.Context, *LaminaReportFailureRequest) (*Lamina, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReportFailure not implemented")
 }
-func (UnimplementedObjectServiceServer) Reschedule(context.Context, *ObjectRescheduleRequest) (*ObjectRescheduleResponse, error) {
+func (UnimplementedLaminaServiceServer) Reschedule(context.Context, *LaminaRescheduleRequest) (*LaminaRescheduleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reschedule not implemented")
 }
-func (UnimplementedObjectServiceServer) Timeline(context.Context, *ObjectTimelineRequest) (*ObjectTimelineResponse, error) {
+func (UnimplementedLaminaServiceServer) Timeline(context.Context, *LaminaTimelineRequest) (*LaminaTimelineResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Timeline not implemented")
 }
-func (UnimplementedObjectServiceServer) mustEmbedUnimplementedObjectServiceServer() {}
-func (UnimplementedObjectServiceServer) testEmbeddedByValue()                       {}
+func (UnimplementedLaminaServiceServer) mustEmbedUnimplementedLaminaServiceServer() {}
+func (UnimplementedLaminaServiceServer) testEmbeddedByValue()                       {}
 
-// UnsafeObjectServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ObjectServiceServer will
+// UnsafeLaminaServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to LaminaServiceServer will
 // result in compilation errors.
-type UnsafeObjectServiceServer interface {
-	mustEmbedUnimplementedObjectServiceServer()
+type UnsafeLaminaServiceServer interface {
+	mustEmbedUnimplementedLaminaServiceServer()
 }
 
-func RegisterObjectServiceServer(s grpc.ServiceRegistrar, srv ObjectServiceServer) {
-	// If the following call panics, it indicates UnimplementedObjectServiceServer was
+func RegisterLaminaServiceServer(s grpc.ServiceRegistrar, srv LaminaServiceServer) {
+	// If the following call panics, it indicates UnimplementedLaminaServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&ObjectService_ServiceDesc, srv)
+	s.RegisterService(&LaminaService_ServiceDesc, srv)
 }
 
-func _ObjectService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectAddRequest)
+func _LaminaService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaAddRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Add(ctx, in)
+		return srv.(LaminaServiceServer).Add(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Add_FullMethodName,
+		FullMethod: LaminaService_Add_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Add(ctx, req.(*ObjectAddRequest))
+		return srv.(LaminaServiceServer).Add(ctx, req.(*LaminaAddRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectGetRequest)
+func _LaminaService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaGetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Get(ctx, in)
+		return srv.(LaminaServiceServer).Get(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Get_FullMethodName,
+		FullMethod: LaminaService_Get_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Get(ctx, req.(*ObjectGetRequest))
+		return srv.(LaminaServiceServer).Get(ctx, req.(*LaminaGetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectPatchRequest)
+func _LaminaService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaPatchRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Patch(ctx, in)
+		return srv.(LaminaServiceServer).Patch(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Patch_FullMethodName,
+		FullMethod: LaminaService_Patch_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Patch(ctx, req.(*ObjectPatchRequest))
+		return srv.(LaminaServiceServer).Patch(ctx, req.(*LaminaPatchRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectApplyRequest)
+func _LaminaService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaApplyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Apply(ctx, in)
+		return srv.(LaminaServiceServer).Apply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Apply_FullMethodName,
+		FullMethod: LaminaService_Apply_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Apply(ctx, req.(*ObjectApplyRequest))
+		return srv.(LaminaServiceServer).Apply(ctx, req.(*LaminaApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectRef)
+func _LaminaService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaRef)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Erase(ctx, in)
+		return srv.(LaminaServiceServer).Erase(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Erase_FullMethodName,
+		FullMethod: LaminaService_Erase_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Erase(ctx, req.(*ObjectRef))
+		return srv.(LaminaServiceServer).Erase(ctx, req.(*LaminaRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectListRequest)
+func _LaminaService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).List(ctx, in)
+		return srv.(LaminaServiceServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_List_FullMethodName,
+		FullMethod: LaminaService_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).List(ctx, req.(*ObjectListRequest))
+		return srv.(LaminaServiceServer).List(ctx, req.(*LaminaListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ObjectWatchRequest)
+func _LaminaService_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(LaminaWatchRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(ObjectServiceServer).Watch(m, &grpc.GenericServerStream[ObjectWatchRequest, ObjectWatchResponse]{ServerStream: stream})
+	return srv.(LaminaServiceServer).Watch(m, &grpc.GenericServerStream[LaminaWatchRequest, LaminaWatchResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ObjectService_WatchServer = grpc.ServerStreamingServer[ObjectWatchResponse]
+type LaminaService_WatchServer = grpc.ServerStreamingServer[LaminaWatchResponse]
 
-func _ObjectService_Allocate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectAllocateRequest)
+func _LaminaService_Allocate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaAllocateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Allocate(ctx, in)
+		return srv.(LaminaServiceServer).Allocate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Allocate_FullMethodName,
+		FullMethod: LaminaService_Allocate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Allocate(ctx, req.(*ObjectAllocateRequest))
+		return srv.(LaminaServiceServer).Allocate(ctx, req.(*LaminaAllocateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Reallocate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectReallocateRequest)
+func _LaminaService_Reallocate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaReallocateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Reallocate(ctx, in)
+		return srv.(LaminaServiceServer).Reallocate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Reallocate_FullMethodName,
+		FullMethod: LaminaService_Reallocate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Reallocate(ctx, req.(*ObjectReallocateRequest))
+		return srv.(LaminaServiceServer).Reallocate(ctx, req.(*LaminaReallocateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Renew_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectRenewRequest)
+func _LaminaService_Renew_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaRenewRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Renew(ctx, in)
+		return srv.(LaminaServiceServer).Renew(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Renew_FullMethodName,
+		FullMethod: LaminaService_Renew_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Renew(ctx, req.(*ObjectRenewRequest))
+		return srv.(LaminaServiceServer).Renew(ctx, req.(*LaminaRenewRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_ReportAttempt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectReportAttemptRequest)
+func _LaminaService_ReportAttempt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaReportAttemptRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).ReportAttempt(ctx, in)
+		return srv.(LaminaServiceServer).ReportAttempt(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_ReportAttempt_FullMethodName,
+		FullMethod: LaminaService_ReportAttempt_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).ReportAttempt(ctx, req.(*ObjectReportAttemptRequest))
+		return srv.(LaminaServiceServer).ReportAttempt(ctx, req.(*LaminaReportAttemptRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_ReportFailure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectReportFailureRequest)
+func _LaminaService_ReportFailure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaReportFailureRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).ReportFailure(ctx, in)
+		return srv.(LaminaServiceServer).ReportFailure(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_ReportFailure_FullMethodName,
+		FullMethod: LaminaService_ReportFailure_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).ReportFailure(ctx, req.(*ObjectReportFailureRequest))
+		return srv.(LaminaServiceServer).ReportFailure(ctx, req.(*LaminaReportFailureRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Reschedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectRescheduleRequest)
+func _LaminaService_Reschedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaRescheduleRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Reschedule(ctx, in)
+		return srv.(LaminaServiceServer).Reschedule(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Reschedule_FullMethodName,
+		FullMethod: LaminaService_Reschedule_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Reschedule(ctx, req.(*ObjectRescheduleRequest))
+		return srv.(LaminaServiceServer).Reschedule(ctx, req.(*LaminaRescheduleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Timeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ObjectTimelineRequest)
+func _LaminaService_Timeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaTimelineRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Timeline(ctx, in)
+		return srv.(LaminaServiceServer).Timeline(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ObjectService_Timeline_FullMethodName,
+		FullMethod: LaminaService_Timeline_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Timeline(ctx, req.(*ObjectTimelineRequest))
+		return srv.(LaminaServiceServer).Timeline(ctx, req.(*LaminaTimelineRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// ObjectService_ServiceDesc is the grpc.ServiceDesc for ObjectService service.
+// LaminaService_ServiceDesc is the grpc.ServiceDesc for LaminaService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ObjectService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "shale.ObjectService",
-	HandlerType: (*ObjectServiceServer)(nil),
+var LaminaService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "shale.LaminaService",
+	HandlerType: (*LaminaServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Add",
-			Handler:    _ObjectService_Add_Handler,
+			Handler:    _LaminaService_Add_Handler,
 		},
 		{
 			MethodName: "Get",
-			Handler:    _ObjectService_Get_Handler,
+			Handler:    _LaminaService_Get_Handler,
 		},
 		{
 			MethodName: "Patch",
-			Handler:    _ObjectService_Patch_Handler,
+			Handler:    _LaminaService_Patch_Handler,
 		},
 		{
 			MethodName: "Apply",
-			Handler:    _ObjectService_Apply_Handler,
+			Handler:    _LaminaService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",
-			Handler:    _ObjectService_Erase_Handler,
+			Handler:    _LaminaService_Erase_Handler,
 		},
 		{
 			MethodName: "List",
-			Handler:    _ObjectService_List_Handler,
+			Handler:    _LaminaService_List_Handler,
 		},
 		{
 			MethodName: "Allocate",
-			Handler:    _ObjectService_Allocate_Handler,
+			Handler:    _LaminaService_Allocate_Handler,
 		},
 		{
 			MethodName: "Reallocate",
-			Handler:    _ObjectService_Reallocate_Handler,
+			Handler:    _LaminaService_Reallocate_Handler,
 		},
 		{
 			MethodName: "Renew",
-			Handler:    _ObjectService_Renew_Handler,
+			Handler:    _LaminaService_Renew_Handler,
 		},
 		{
 			MethodName: "ReportAttempt",
-			Handler:    _ObjectService_ReportAttempt_Handler,
+			Handler:    _LaminaService_ReportAttempt_Handler,
 		},
 		{
 			MethodName: "ReportFailure",
-			Handler:    _ObjectService_ReportFailure_Handler,
+			Handler:    _LaminaService_ReportFailure_Handler,
 		},
 		{
 			MethodName: "Reschedule",
-			Handler:    _ObjectService_Reschedule_Handler,
+			Handler:    _LaminaService_Reschedule_Handler,
 		},
 		{
 			MethodName: "Timeline",
-			Handler:    _ObjectService_Timeline_Handler,
+			Handler:    _LaminaService_Timeline_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Watch",
-			Handler:       _ObjectService_Watch_Handler,
+			Handler:       _LaminaService_Watch_Handler,
 			ServerStreams: true,
 		},
 	},
-	Metadata: "shale/object_svc.g.proto",
+	Metadata: "shale/lamina_svc.g.proto",
 }
 
 const (
@@ -983,5 +983,5 @@ var AttemptService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "shale/object_svc.g.proto",
+	Metadata: "shale/lamina_svc.g.proto",
 }

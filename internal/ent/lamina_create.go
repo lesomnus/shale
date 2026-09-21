@@ -9,7 +9,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/site"
@@ -20,39 +20,39 @@ import (
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
-// ObjectCreate is the builder for creating a Object entity.
-type ObjectCreate struct {
+// LaminaCreate is the builder for creating a Lamina entity.
+type LaminaCreate struct {
 	config
-	mutation *ObjectMutation
+	mutation *LaminaMutation
 	hooks    []Hook
 }
 
-// SetObjectKey sets the "object_key" field.
-func (_c *ObjectCreate) SetObjectKey(v string) *ObjectCreate {
-	_c.mutation.SetObjectKey(v)
+// SetLaminaKey sets the "lamina_key" field.
+func (_c *LaminaCreate) SetLaminaKey(v string) *LaminaCreate {
+	_c.mutation.SetLaminaKey(v)
 	return _c
 }
 
 // SetState sets the "state" field.
-func (_c *ObjectCreate) SetState(v int32) *ObjectCreate {
+func (_c *LaminaCreate) SetState(v int32) *LaminaCreate {
 	_c.mutation.SetState(v)
 	return _c
 }
 
 // SetDateUpdated sets the "date_updated" field.
-func (_c *ObjectCreate) SetDateUpdated(v time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetDateUpdated(v time.Time) *LaminaCreate {
 	_c.mutation.SetDateUpdated(v)
 	return _c
 }
 
 // SetDateCreated sets the "date_created" field.
-func (_c *ObjectCreate) SetDateCreated(v time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetDateCreated(v time.Time) *LaminaCreate {
 	_c.mutation.SetDateCreated(v)
 	return _c
 }
 
 // SetNillableDateCreated sets the "date_created" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableDateCreated(v *time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableDateCreated(v *time.Time) *LaminaCreate {
 	if v != nil {
 		_c.SetDateCreated(*v)
 	}
@@ -60,13 +60,13 @@ func (_c *ObjectCreate) SetNillableDateCreated(v *time.Time) *ObjectCreate {
 }
 
 // SetDateStarted sets the "date_started" field.
-func (_c *ObjectCreate) SetDateStarted(v time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetDateStarted(v time.Time) *LaminaCreate {
 	_c.mutation.SetDateStarted(v)
 	return _c
 }
 
 // SetNillableDateStarted sets the "date_started" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableDateStarted(v *time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableDateStarted(v *time.Time) *LaminaCreate {
 	if v != nil {
 		_c.SetDateStarted(*v)
 	}
@@ -74,13 +74,13 @@ func (_c *ObjectCreate) SetNillableDateStarted(v *time.Time) *ObjectCreate {
 }
 
 // SetDateEnded sets the "date_ended" field.
-func (_c *ObjectCreate) SetDateEnded(v time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetDateEnded(v time.Time) *LaminaCreate {
 	_c.mutation.SetDateEnded(v)
 	return _c
 }
 
 // SetNillableDateEnded sets the "date_ended" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableDateEnded(v *time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableDateEnded(v *time.Time) *LaminaCreate {
 	if v != nil {
 		_c.SetDateEnded(*v)
 	}
@@ -88,31 +88,31 @@ func (_c *ObjectCreate) SetNillableDateEnded(v *time.Time) *ObjectCreate {
 }
 
 // SetEndedEstimated sets the "ended_estimated" field.
-func (_c *ObjectCreate) SetEndedEstimated(v bool) *ObjectCreate {
+func (_c *LaminaCreate) SetEndedEstimated(v bool) *LaminaCreate {
 	_c.mutation.SetEndedEstimated(v)
 	return _c
 }
 
 // SetSize sets the "size" field.
-func (_c *ObjectCreate) SetSize(v int64) *ObjectCreate {
+func (_c *LaminaCreate) SetSize(v int64) *LaminaCreate {
 	_c.mutation.SetSize(v)
 	return _c
 }
 
 // SetIncomplete sets the "incomplete" field.
-func (_c *ObjectCreate) SetIncomplete(v bool) *ObjectCreate {
+func (_c *LaminaCreate) SetIncomplete(v bool) *LaminaCreate {
 	_c.mutation.SetIncomplete(v)
 	return _c
 }
 
 // SetDateExpired sets the "date_expired" field.
-func (_c *ObjectCreate) SetDateExpired(v time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetDateExpired(v time.Time) *LaminaCreate {
 	_c.mutation.SetDateExpired(v)
 	return _c
 }
 
 // SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableDateExpired(v *time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableDateExpired(v *time.Time) *LaminaCreate {
 	if v != nil {
 		_c.SetDateExpired(*v)
 	}
@@ -120,13 +120,13 @@ func (_c *ObjectCreate) SetNillableDateExpired(v *time.Time) *ObjectCreate {
 }
 
 // SetDateDeleted sets the "date_deleted" field.
-func (_c *ObjectCreate) SetDateDeleted(v time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetDateDeleted(v time.Time) *LaminaCreate {
 	_c.mutation.SetDateDeleted(v)
 	return _c
 }
 
 // SetNillableDateDeleted sets the "date_deleted" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableDateDeleted(v *time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableDateDeleted(v *time.Time) *LaminaCreate {
 	if v != nil {
 		_c.SetDateDeleted(*v)
 	}
@@ -134,25 +134,25 @@ func (_c *ObjectCreate) SetNillableDateDeleted(v *time.Time) *ObjectCreate {
 }
 
 // SetDatesSynced sets the "dates_synced" field.
-func (_c *ObjectCreate) SetDatesSynced(v bool) *ObjectCreate {
+func (_c *LaminaCreate) SetDatesSynced(v bool) *LaminaCreate {
 	_c.mutation.SetDatesSynced(v)
 	return _c
 }
 
 // SetPlacementVersion sets the "placement_version" field.
-func (_c *ObjectCreate) SetPlacementVersion(v int64) *ObjectCreate {
+func (_c *LaminaCreate) SetPlacementVersion(v int64) *LaminaCreate {
 	_c.mutation.SetPlacementVersion(v)
 	return _c
 }
 
 // SetDateCommitted sets the "date_committed" field.
-func (_c *ObjectCreate) SetDateCommitted(v time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetDateCommitted(v time.Time) *LaminaCreate {
 	_c.mutation.SetDateCommitted(v)
 	return _c
 }
 
 // SetNillableDateCommitted sets the "date_committed" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableDateCommitted(v *time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableDateCommitted(v *time.Time) *LaminaCreate {
 	if v != nil {
 		_c.SetDateCommitted(*v)
 	}
@@ -160,13 +160,13 @@ func (_c *ObjectCreate) SetNillableDateCommitted(v *time.Time) *ObjectCreate {
 }
 
 // SetDateFinished sets the "date_finished" field.
-func (_c *ObjectCreate) SetDateFinished(v time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetDateFinished(v time.Time) *LaminaCreate {
 	_c.mutation.SetDateFinished(v)
 	return _c
 }
 
 // SetNillableDateFinished sets the "date_finished" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableDateFinished(v *time.Time) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableDateFinished(v *time.Time) *LaminaCreate {
 	if v != nil {
 		_c.SetDateFinished(*v)
 	}
@@ -174,31 +174,31 @@ func (_c *ObjectCreate) SetNillableDateFinished(v *time.Time) *ObjectCreate {
 }
 
 // SetChecksum sets the "checksum" field.
-func (_c *ObjectCreate) SetChecksum(v []byte) *ObjectCreate {
+func (_c *LaminaCreate) SetChecksum(v []byte) *LaminaCreate {
 	_c.mutation.SetChecksum(v)
 	return _c
 }
 
 // SetEpoch sets the "epoch" field.
-func (_c *ObjectCreate) SetEpoch(v int64) *ObjectCreate {
+func (_c *LaminaCreate) SetEpoch(v int64) *LaminaCreate {
 	_c.mutation.SetEpoch(v)
 	return _c
 }
 
 // SetTenantId sets the "tenant_id" field.
-func (_c *ObjectCreate) SetTenantId(v uuid.UUID) *ObjectCreate {
+func (_c *LaminaCreate) SetTenantId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetTenantId(v)
 	return _c
 }
 
 // SetSiteId sets the "site_id" field.
-func (_c *ObjectCreate) SetSiteId(v uuid.UUID) *ObjectCreate {
+func (_c *LaminaCreate) SetSiteId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetSiteId(v)
 	return _c
 }
 
 // SetNillableSiteId sets the "site_id" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableSiteId(v *uuid.UUID) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableSiteId(v *uuid.UUID) *LaminaCreate {
 	if v != nil {
 		_c.SetSiteId(*v)
 	}
@@ -206,25 +206,25 @@ func (_c *ObjectCreate) SetNillableSiteId(v *uuid.UUID) *ObjectCreate {
 }
 
 // SetSetId sets the "set_id" field.
-func (_c *ObjectCreate) SetSetId(v uuid.UUID) *ObjectCreate {
+func (_c *LaminaCreate) SetSetId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetSetId(v)
 	return _c
 }
 
 // SetSourceId sets the "source_id" field.
-func (_c *ObjectCreate) SetSourceId(v uuid.UUID) *ObjectCreate {
+func (_c *LaminaCreate) SetSourceId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetSourceId(v)
 	return _c
 }
 
 // SetSinkId sets the "sink_id" field.
-func (_c *ObjectCreate) SetSinkId(v uuid.UUID) *ObjectCreate {
+func (_c *LaminaCreate) SetSinkId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetSinkId(v)
 	return _c
 }
 
 // SetNillableSinkId sets the "sink_id" field if the given value is not nil.
-func (_c *ObjectCreate) SetNillableSinkId(v *uuid.UUID) *ObjectCreate {
+func (_c *LaminaCreate) SetNillableSinkId(v *uuid.UUID) *LaminaCreate {
 	if v != nil {
 		_c.SetSinkId(*v)
 	}
@@ -232,48 +232,48 @@ func (_c *ObjectCreate) SetNillableSinkId(v *uuid.UUID) *ObjectCreate {
 }
 
 // SetId sets the "id" field.
-func (_c *ObjectCreate) SetId(v uuid.UUID) *ObjectCreate {
+func (_c *LaminaCreate) SetId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetId(v)
 	return _c
 }
 
 // SetTenant sets the "tenant" edge to the Tenant entity.
-func (_c *ObjectCreate) SetTenant(v *Tenant) *ObjectCreate {
+func (_c *LaminaCreate) SetTenant(v *Tenant) *LaminaCreate {
 	return _c.SetTenantId(v.Id)
 }
 
 // SetSite sets the "site" edge to the Site entity.
-func (_c *ObjectCreate) SetSite(v *Site) *ObjectCreate {
+func (_c *LaminaCreate) SetSite(v *Site) *LaminaCreate {
 	return _c.SetSiteId(v.Id)
 }
 
 // SetSet sets the "set" edge to the Set entity.
-func (_c *ObjectCreate) SetSet(v *Set) *ObjectCreate {
+func (_c *LaminaCreate) SetSet(v *Set) *LaminaCreate {
 	return _c.SetSetId(v.Id)
 }
 
 // SetSource sets the "source" edge to the Source entity.
-func (_c *ObjectCreate) SetSource(v *Source) *ObjectCreate {
+func (_c *LaminaCreate) SetSource(v *Source) *LaminaCreate {
 	return _c.SetSourceId(v.Id)
 }
 
 // SetSink sets the "sink" edge to the Sink entity.
-func (_c *ObjectCreate) SetSink(v *Sink) *ObjectCreate {
+func (_c *LaminaCreate) SetSink(v *Sink) *LaminaCreate {
 	return _c.SetSinkId(v.Id)
 }
 
-// Mutation returns the ObjectMutation object of the builder.
-func (_c *ObjectCreate) Mutation() *ObjectMutation {
+// Mutation returns the LaminaMutation object of the builder.
+func (_c *LaminaCreate) Mutation() *LaminaMutation {
 	return _c.mutation
 }
 
-// Save creates the Object in the database.
-func (_c *ObjectCreate) Save(ctx context.Context) (*Object, error) {
+// Save creates the Lamina in the database.
+func (_c *LaminaCreate) Save(ctx context.Context) (*Lamina, error) {
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (_c *ObjectCreate) SaveX(ctx context.Context) *Object {
+func (_c *LaminaCreate) SaveX(ctx context.Context) *Lamina {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -282,69 +282,69 @@ func (_c *ObjectCreate) SaveX(ctx context.Context) *Object {
 }
 
 // Exec executes the query.
-func (_c *ObjectCreate) Exec(ctx context.Context) error {
+func (_c *LaminaCreate) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ObjectCreate) ExecX(ctx context.Context) {
+func (_c *LaminaCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (_c *ObjectCreate) check() error {
-	if _, ok := _c.mutation.ObjectKey(); !ok {
-		return &ValidationError{Name: "object_key", err: errors.New(`ent: missing required field "Object.object_key"`)}
+func (_c *LaminaCreate) check() error {
+	if _, ok := _c.mutation.LaminaKey(); !ok {
+		return &ValidationError{Name: "lamina_key", err: errors.New(`ent: missing required field "Lamina.lamina_key"`)}
 	}
 	if _, ok := _c.mutation.State(); !ok {
-		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "Object.state"`)}
+		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "Lamina.state"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
-		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Object.date_updated"`)}
+		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Lamina.date_updated"`)}
 	}
 	if _, ok := _c.mutation.EndedEstimated(); !ok {
-		return &ValidationError{Name: "ended_estimated", err: errors.New(`ent: missing required field "Object.ended_estimated"`)}
+		return &ValidationError{Name: "ended_estimated", err: errors.New(`ent: missing required field "Lamina.ended_estimated"`)}
 	}
 	if _, ok := _c.mutation.Size(); !ok {
-		return &ValidationError{Name: "size", err: errors.New(`ent: missing required field "Object.size"`)}
+		return &ValidationError{Name: "size", err: errors.New(`ent: missing required field "Lamina.size"`)}
 	}
 	if _, ok := _c.mutation.Incomplete(); !ok {
-		return &ValidationError{Name: "incomplete", err: errors.New(`ent: missing required field "Object.incomplete"`)}
+		return &ValidationError{Name: "incomplete", err: errors.New(`ent: missing required field "Lamina.incomplete"`)}
 	}
 	if _, ok := _c.mutation.DatesSynced(); !ok {
-		return &ValidationError{Name: "dates_synced", err: errors.New(`ent: missing required field "Object.dates_synced"`)}
+		return &ValidationError{Name: "dates_synced", err: errors.New(`ent: missing required field "Lamina.dates_synced"`)}
 	}
 	if _, ok := _c.mutation.PlacementVersion(); !ok {
-		return &ValidationError{Name: "placement_version", err: errors.New(`ent: missing required field "Object.placement_version"`)}
+		return &ValidationError{Name: "placement_version", err: errors.New(`ent: missing required field "Lamina.placement_version"`)}
 	}
 	if _, ok := _c.mutation.Epoch(); !ok {
-		return &ValidationError{Name: "epoch", err: errors.New(`ent: missing required field "Object.epoch"`)}
+		return &ValidationError{Name: "epoch", err: errors.New(`ent: missing required field "Lamina.epoch"`)}
 	}
 	if _, ok := _c.mutation.TenantId(); !ok {
-		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Object.tenant_id"`)}
+		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Lamina.tenant_id"`)}
 	}
 	if _, ok := _c.mutation.GetSetId(); !ok {
-		return &ValidationError{Name: "set_id", err: errors.New(`ent: missing required field "Object.set_id"`)}
+		return &ValidationError{Name: "set_id", err: errors.New(`ent: missing required field "Lamina.set_id"`)}
 	}
 	if _, ok := _c.mutation.SourceId(); !ok {
-		return &ValidationError{Name: "source_id", err: errors.New(`ent: missing required field "Object.source_id"`)}
+		return &ValidationError{Name: "source_id", err: errors.New(`ent: missing required field "Lamina.source_id"`)}
 	}
 	if len(_c.mutation.TenantIds()) == 0 {
-		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Object.tenant"`)}
+		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Lamina.tenant"`)}
 	}
 	if len(_c.mutation.SetIds()) == 0 {
-		return &ValidationError{Name: "set", err: errors.New(`ent: missing required edge "Object.set"`)}
+		return &ValidationError{Name: "set", err: errors.New(`ent: missing required edge "Lamina.set"`)}
 	}
 	if len(_c.mutation.SourceIds()) == 0 {
-		return &ValidationError{Name: "source", err: errors.New(`ent: missing required edge "Object.source"`)}
+		return &ValidationError{Name: "source", err: errors.New(`ent: missing required edge "Lamina.source"`)}
 	}
 	return nil
 }
 
-func (_c *ObjectCreate) sqlSave(ctx context.Context) (*Object, error) {
+func (_c *LaminaCreate) sqlSave(ctx context.Context) (*Lamina, error) {
 	if err := _c.check(); err != nil {
 		return nil, err
 	}
@@ -371,89 +371,89 @@ func (_c *ObjectCreate) sqlSave(ctx context.Context) (*Object, error) {
 	return _node, nil
 }
 
-func (_c *ObjectCreate) createSpec() (*Object, *sqlgraph.CreateSpec) {
+func (_c *LaminaCreate) createSpec() (*Lamina, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Object{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(object.Table, sqlgraph.NewFieldSpec(object.FieldId, field.TypeUuid))
+		_node = &Lamina{config: _c.config}
+		_spec = sqlgraph.NewCreateSpec(lamina.Table, sqlgraph.NewFieldSpec(lamina.FieldId, field.TypeUuid))
 	)
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
 	}
-	if value, ok := _c.mutation.ObjectKey(); ok {
-		_spec.SetField(object.FieldObjectKey, field.TypeString, value)
-		_node.ObjectKey = value
+	if value, ok := _c.mutation.LaminaKey(); ok {
+		_spec.SetField(lamina.FieldLaminaKey, field.TypeString, value)
+		_node.LaminaKey = value
 	}
 	if value, ok := _c.mutation.State(); ok {
-		_spec.SetField(object.FieldState, field.TypeInt32, value)
+		_spec.SetField(lamina.FieldState, field.TypeInt32, value)
 		_node.State = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
-		_spec.SetField(object.FieldDateUpdated, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateUpdated, field.TypeTime, value)
 		_node.DateUpdated = value
 	}
 	if value, ok := _c.mutation.DateCreated(); ok {
-		_spec.SetField(object.FieldDateCreated, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
 	}
 	if value, ok := _c.mutation.DateStarted(); ok {
-		_spec.SetField(object.FieldDateStarted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateStarted, field.TypeTime, value)
 		_node.DateStarted = value
 	}
 	if value, ok := _c.mutation.DateEnded(); ok {
-		_spec.SetField(object.FieldDateEnded, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateEnded, field.TypeTime, value)
 		_node.DateEnded = &value
 	}
 	if value, ok := _c.mutation.EndedEstimated(); ok {
-		_spec.SetField(object.FieldEndedEstimated, field.TypeBool, value)
+		_spec.SetField(lamina.FieldEndedEstimated, field.TypeBool, value)
 		_node.EndedEstimated = value
 	}
 	if value, ok := _c.mutation.Size(); ok {
-		_spec.SetField(object.FieldSize, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldSize, field.TypeInt64, value)
 		_node.Size = value
 	}
 	if value, ok := _c.mutation.Incomplete(); ok {
-		_spec.SetField(object.FieldIncomplete, field.TypeBool, value)
+		_spec.SetField(lamina.FieldIncomplete, field.TypeBool, value)
 		_node.Incomplete = value
 	}
 	if value, ok := _c.mutation.DateExpired(); ok {
-		_spec.SetField(object.FieldDateExpired, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateExpired, field.TypeTime, value)
 		_node.DateExpired = value
 	}
 	if value, ok := _c.mutation.DateDeleted(); ok {
-		_spec.SetField(object.FieldDateDeleted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateDeleted, field.TypeTime, value)
 		_node.DateDeleted = &value
 	}
 	if value, ok := _c.mutation.DatesSynced(); ok {
-		_spec.SetField(object.FieldDatesSynced, field.TypeBool, value)
+		_spec.SetField(lamina.FieldDatesSynced, field.TypeBool, value)
 		_node.DatesSynced = value
 	}
 	if value, ok := _c.mutation.PlacementVersion(); ok {
-		_spec.SetField(object.FieldPlacementVersion, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldPlacementVersion, field.TypeInt64, value)
 		_node.PlacementVersion = value
 	}
 	if value, ok := _c.mutation.DateCommitted(); ok {
-		_spec.SetField(object.FieldDateCommitted, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateCommitted, field.TypeTime, value)
 		_node.DateCommitted = &value
 	}
 	if value, ok := _c.mutation.DateFinished(); ok {
-		_spec.SetField(object.FieldDateFinished, field.TypeTime, value)
+		_spec.SetField(lamina.FieldDateFinished, field.TypeTime, value)
 		_node.DateFinished = &value
 	}
 	if value, ok := _c.mutation.Checksum(); ok {
-		_spec.SetField(object.FieldChecksum, field.TypeBytes, value)
+		_spec.SetField(lamina.FieldChecksum, field.TypeBytes, value)
 		_node.Checksum = value
 	}
 	if value, ok := _c.mutation.Epoch(); ok {
-		_spec.SetField(object.FieldEpoch, field.TypeInt64, value)
+		_spec.SetField(lamina.FieldEpoch, field.TypeInt64, value)
 		_node.Epoch = value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.TenantTable,
-			Columns: []string{object.TenantColumn},
+			Table:   lamina.TenantTable,
+			Columns: []string{lamina.TenantColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(tenant.FieldId, field.TypeUuid),
@@ -469,8 +469,8 @@ func (_c *ObjectCreate) createSpec() (*Object, *sqlgraph.CreateSpec) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.SiteTable,
-			Columns: []string{object.SiteColumn},
+			Table:   lamina.SiteTable,
+			Columns: []string{lamina.SiteColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(site.FieldId, field.TypeUuid),
@@ -486,8 +486,8 @@ func (_c *ObjectCreate) createSpec() (*Object, *sqlgraph.CreateSpec) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.SetTable,
-			Columns: []string{object.SetColumn},
+			Table:   lamina.SetTable,
+			Columns: []string{lamina.SetColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(set.FieldId, field.TypeUuid),
@@ -503,8 +503,8 @@ func (_c *ObjectCreate) createSpec() (*Object, *sqlgraph.CreateSpec) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.SourceTable,
-			Columns: []string{object.SourceColumn},
+			Table:   lamina.SourceTable,
+			Columns: []string{lamina.SourceColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(source.FieldId, field.TypeUuid),
@@ -520,8 +520,8 @@ func (_c *ObjectCreate) createSpec() (*Object, *sqlgraph.CreateSpec) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   object.SinkTable,
-			Columns: []string{object.SinkColumn},
+			Table:   lamina.SinkTable,
+			Columns: []string{lamina.SinkColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(sink.FieldId, field.TypeUuid),
@@ -536,26 +536,26 @@ func (_c *ObjectCreate) createSpec() (*Object, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
-// ObjectCreateBulk is the builder for creating many Object entities in bulk.
-type ObjectCreateBulk struct {
+// LaminaCreateBulk is the builder for creating many Lamina entities in bulk.
+type LaminaCreateBulk struct {
 	config
 	err      error
-	builders []*ObjectCreate
+	builders []*LaminaCreate
 }
 
-// Save creates the Object entities in the database.
-func (_c *ObjectCreateBulk) Save(ctx context.Context) ([]*Object, error) {
+// Save creates the Lamina entities in the database.
+func (_c *LaminaCreateBulk) Save(ctx context.Context) ([]*Lamina, error) {
 	if _c.err != nil {
 		return nil, _c.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(_c.builders))
-	nodes := make([]*Object, len(_c.builders))
+	nodes := make([]*Lamina, len(_c.builders))
 	mutators := make([]Mutator, len(_c.builders))
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*ObjectMutation)
+				mutation, ok := m.(*LaminaMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -598,7 +598,7 @@ func (_c *ObjectCreateBulk) Save(ctx context.Context) ([]*Object, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (_c *ObjectCreateBulk) SaveX(ctx context.Context) []*Object {
+func (_c *LaminaCreateBulk) SaveX(ctx context.Context) []*Lamina {
 	v, err := _c.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -607,13 +607,13 @@ func (_c *ObjectCreateBulk) SaveX(ctx context.Context) []*Object {
 }
 
 // Exec executes the query.
-func (_c *ObjectCreateBulk) Exec(ctx context.Context) error {
+func (_c *LaminaCreateBulk) Exec(ctx context.Context) error {
 	_, err := _c.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_c *ObjectCreateBulk) ExecX(ctx context.Context) {
+func (_c *LaminaCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
 	}

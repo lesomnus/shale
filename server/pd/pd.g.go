@@ -34,8 +34,8 @@ import (
 	audit "github.com/lesomnus/shale/internal/ent/audit"
 	device "github.com/lesomnus/shale/internal/ent/device"
 	holder "github.com/lesomnus/shale/internal/ent/holder"
+	lamina "github.com/lesomnus/shale/internal/ent/lamina"
 	node "github.com/lesomnus/shale/internal/ent/node"
-	object "github.com/lesomnus/shale/internal/ent/object"
 	outbox "github.com/lesomnus/shale/internal/ent/outbox"
 	placementpolicy "github.com/lesomnus/shale/internal/ent/placementpolicy"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
@@ -98,8 +98,8 @@ const (
 	AuditDomain           pdid.Domain = 3  // "audit"
 	DeviceDomain          pdid.Domain = 13 // "device"
 	HolderDomain          pdid.Domain = 2  // "holder"
+	LaminaDomain          pdid.Domain = 9  // "lamina"
 	NodeDomain            pdid.Domain = 12 // "node"
-	ObjectDomain          pdid.Domain = 9  // "object"
 	OutboxDomain          pdid.Domain = 4  // "outbox"
 	PlacementPolicyDomain pdid.Domain = 16 // "placement-policy"
 	ProducerDomain        pdid.Domain = 22 // "producer"
@@ -121,8 +121,8 @@ func init() {
 	pdid.Register("shale.Audit", AuditDomain, "audit")
 	pdid.Register("shale.Device", DeviceDomain, "device")
 	pdid.Register("shale.Holder", HolderDomain, "holder")
+	pdid.Register("shale.Lamina", LaminaDomain, "lamina")
 	pdid.Register("shale.Node", NodeDomain, "node")
-	pdid.Register("shale.Object", ObjectDomain, "object")
 	pdid.Register("shale.Outbox", OutboxDomain, "outbox")
 	pdid.Register("shale.PlacementPolicy", PlacementPolicyDomain, "placement-policy")
 	pdid.Register("shale.Producer", ProducerDomain, "producer")
@@ -148,8 +148,8 @@ var Domains = map[string]pdid.Domain{
 	"shale.Audit":           AuditDomain,
 	"shale.Device":          DeviceDomain,
 	"shale.Holder":          HolderDomain,
+	"shale.Lamina":          LaminaDomain,
 	"shale.Node":            NodeDomain,
-	"shale.Object":          ObjectDomain,
 	"shale.Outbox":          OutboxDomain,
 	"shale.PlacementPolicy": PlacementPolicyDomain,
 	"shale.Producer":        ProducerDomain,
@@ -247,19 +247,19 @@ func (wall) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	return holder.TenantIdIn(vs...), nil
 }
 
-// NodeScope: declared `global`, so it is not behind the wall at all.
-func (wall) NodeScope(ctx context.Context) (predicate.Node, error) {
-	return nil, nil
-}
-
-// ObjectScope: a row belongs to the tenant its "tenant" reaches.
-func (wall) ObjectScope(ctx context.Context) (predicate.Object, error) {
+// LaminaScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) LaminaScope(ctx context.Context) (predicate.Lamina, error) {
 	vs, all, err := frame.Narrow(ctx)
 	if all || err != nil {
 		return nil, err
 	}
 
-	return object.TenantIdIn(vs...), nil
+	return lamina.TenantIdIn(vs...), nil
+}
+
+// NodeScope: declared `global`, so it is not behind the wall at all.
+func (wall) NodeScope(ctx context.Context) (predicate.Node, error) {
+	return nil, nil
 }
 
 // OutboxScope: declared `global`, so it is not behind the wall at all.
@@ -428,19 +428,19 @@ func (x grouped) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
 
-// NodeScope: in no set -- it declared no field 3, so this narrows nothing.
-func (x grouped) NodeScope(ctx context.Context) (predicate.Node, error) {
-	return nil, nil
-}
-
-// ObjectScope: in the Site its "site" names.
-func (x grouped) ObjectScope(ctx context.Context) (predicate.Object, error) {
+// LaminaScope: in the Site its "site" names.
+func (x grouped) LaminaScope(ctx context.Context) (predicate.Lamina, error) {
 	vs, all, err := frame.NarrowSet(ctx, x.of)
 	if all || err != nil {
 		return nil, err
 	}
 
-	return object.SiteIdIn(vs...), nil
+	return lamina.SiteIdIn(vs...), nil
+}
+
+// NodeScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) NodeScope(ctx context.Context) (predicate.Node, error) {
+	return nil, nil
 }
 
 // OutboxScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -1006,29 +1006,29 @@ func filterAttempt(f *api.AttemptFilter) (predicate.Attempt, error) {
 			ps = append(ps, attempt.HasTenantWith(q))
 		}
 	}
-	if f.HasObject() {
-		w := f.GetObject()
+	if f.HasLamina() {
+		w := f.GetLamina()
 		if b := w.GetId(); len(b) > 0 {
 			// The **foreign key column** on this row, which is what an
 			// edge is. A subquery for a comparison against an indexed
 			// column is work nobody asked for.
 			k, err := entuuid.FromBytes(b)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "object: %s", err)
+				return nil, status.Errorf(codes.InvalidArgument, "lamina: %s", err)
 			}
 
-			ps = append(ps, attempt.ObjectIdEQ(k))
+			ps = append(ps, attempt.LaminaIdEQ(k))
 		} else {
 			// Named some other way -- an alias, a slug. Resolving it
 			// would be a read, and a predicate is built without one, so
 			// it becomes a condition on the target instead. One hop,
 			// against whatever index that column has.
-			q, err := bare.ObjectPick(w)
+			q, err := bare.LaminaPick(w)
 			if err != nil {
 				return nil, err
 			}
 
-			ps = append(ps, attempt.HasObjectWith(q))
+			ps = append(ps, attempt.HasLaminaWith(q))
 		}
 	}
 	if f.HasSink() {
@@ -2102,6 +2102,431 @@ func (s sinkHolder) watchHolderKeys(
 	return ks, nil
 }
 
+type sinkLamina struct {
+	api.LaminaServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Lamina() api.LaminaServiceServer {
+	return sinkLamina{s.Server.Lamina(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderLamina is how Laminas come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderLamina = []sqlpage.Order{
+	{Column: lamina.FieldDateCreated, Desc: false},
+	{Column: lamina.FieldId, Desc: false},
+}
+
+const (
+	// LaminaPageSize is what a request that did not say gets, and
+	// LaminaPageLimit is the most it gets however loudly it asks.
+	LaminaPageSize  = 100
+	LaminaPageLimit = 1000
+
+	// LaminaFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	LaminaFilterLimit = 32
+)
+
+// List answers with the Laminas that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkLamina) List(ctx context.Context, req *api.LaminaListRequest) (*api.LaminaListResponse, error) {
+	q := s.store.Db.Lamina.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.LaminaNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > LaminaFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), LaminaFilterLimit)
+		}
+
+		ps := make([]predicate.Lamina, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterLamina(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(lamina.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := sqlpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := sqlpage.After(orderLamina, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), LaminaPageSize, LaminaPageLimit)
+	us, err := q.Order(lamina.ByDateCreated(), lamina.ById()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.Lamina, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.LaminaListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := sqlpage.Encode(last.DateCreated, last.Id)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterLamina turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterLamina(f *api.LaminaFilter) (predicate.Lamina, error) {
+	ps := make([]predicate.Lamina, 0, 1)
+	if f.HasRef() {
+		p, err := bare.LaminaPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, lamina.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, lamina.HasTenantWith(q))
+		}
+	}
+	if f.HasSet() {
+		w := f.GetSet()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "set: %s", err)
+			}
+
+			ps = append(ps, lamina.SetIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SetPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, lamina.HasSetWith(q))
+		}
+	}
+	if f.HasSource() {
+		w := f.GetSource()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "source: %s", err)
+			}
+
+			ps = append(ps, lamina.SourceIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SourcePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, lamina.HasSourceWith(q))
+		}
+	}
+	if f.HasSink() {
+		w := f.GetSink()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "sink: %s", err)
+			}
+
+			ps = append(ps, lamina.SinkIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SinkPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, lamina.HasSinkWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return lamina.And(ps...), nil
+}
+
+// LaminaService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a Lamina. A service is named for the entity it
+// is about, so the name carries it.
+var LaminaService = watch.ServiceOf(api.LaminaService_Get_FullMethodName)
+
+// Watch answers with the Laminas this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkLamina) Watch(req *api.LaminaWatchRequest, out grpc.ServerStreamingServer[api.LaminaWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > LaminaFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), LaminaFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchLaminaKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, LaminaService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.LaminaWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.LaminaWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.LaminaWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkLamina) watchNow(
+	ctx context.Context, req *api.LaminaWatchRequest, out grpc.ServerStreamingServer[api.LaminaWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.LaminaListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.LaminaWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.LaminaWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.LaminaWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkLamina) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.Lamina, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.LaminaGetRequest_builder{
+		Ref: api.LaminaRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchLaminaKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkLamina) watchLaminaKeys(
+	ctx context.Context, fs []*api.LaminaFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.LaminaGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
 type sinkNode struct {
 	api.NodeServiceServer
 	store  bare.Store
@@ -2502,431 +2927,6 @@ func (s sinkNode) watchNodeKeys(
 		}
 
 		v, err := s.Get(ctx, api.NodeGetRequest_builder{Ref: f.GetRef()}.Build())
-		if err != nil {
-			return nil, err
-		}
-
-		k, err := pdid.From(v.GetId())
-		if err != nil {
-			return nil, err
-		}
-
-		ks = append(ks, k)
-	}
-
-	return ks, nil
-}
-
-type sinkObject struct {
-	api.ObjectServiceServer
-	store  bare.Store
-	w      *watch.Watch
-	namer  slug.Namer
-	joined bool
-}
-
-func (s Sink) Object() api.ObjectServiceServer {
-	return sinkObject{s.Server.Object(), s.Server.Store, s.w, s.namer, s.joined}
-}
-
-// orderObject is how Objects come back.
-//
-// The last column is the key, and it is not decoration: a cursor cannot
-// tell apart two rows equal in every column of the order, so the page after
-// the first of them either repeats the second or skips it. Rows written by
-// one request are stamped a moment apart at best.
-var orderObject = []sqlpage.Order{
-	{Column: object.FieldDateCreated, Desc: false},
-	{Column: object.FieldId, Desc: false},
-}
-
-const (
-	// ObjectPageSize is what a request that did not say gets, and
-	// ObjectPageLimit is the most it gets however loudly it asks.
-	ObjectPageSize  = 100
-	ObjectPageLimit = 1000
-
-	// ObjectFilterLimit is how many filters one request may carry. Each is a
-	// predicate in the same query, so it is what says how much of the
-	// database a request may ask to read -- and it is refused rather than
-	// clamped, because dropping half the filters would answer a question
-	// nobody asked.
-	ObjectFilterLimit = 32
-)
-
-// List answers with the Objects that match any of the given filters, or with
-// every one there is if the request named none, a page at a time.
-func (s sinkObject) List(ctx context.Context, req *api.ObjectListRequest) (*api.ObjectListResponse, error) {
-	q := s.store.Db.Object.Query()
-
-	// Through the same narrowing every generated read goes through, and not
-	// by asking the scope alone: what narrows a read is the wall today and
-	// the wall and something else tomorrow, and a list that reached past it
-	// would be the one read that missed the something else.
-	if p, err := bare.ObjectNarrow(ctx, s.store.Scope, nil); err != nil {
-		return nil, err
-	} else if p != nil {
-		q.Where(p)
-	}
-
-	if fs := req.GetFilters(); len(fs) > 0 {
-		if len(fs) > ObjectFilterLimit {
-			return nil, status.Errorf(codes.InvalidArgument,
-				"filters: %d of them, and %d is the most one list carries", len(fs), ObjectFilterLimit)
-		}
-
-		ps := make([]predicate.Object, 0, len(fs))
-		for i, f := range fs {
-			p, err := filterObject(f)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
-			}
-
-			ps = append(ps, p)
-		}
-
-		q.Where(object.Or(ps...))
-	}
-
-	if v := req.GetAfter(); v != "" {
-		var (
-			at0 time.Time
-			at1 uuid.UUID
-		)
-		if err := sqlpage.Decode(v, &at0, &at1); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
-		}
-
-		p, err := sqlpage.After(orderObject, []any{at0, at1})
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
-		}
-
-		q.Where(p)
-	}
-
-	// One row more than the page, which is how "is there another" is answered
-	// without a second query and without a count. The extra is dropped before
-	// the answer is built; it was only ever asked for to see whether it was
-	// there -- so a full last page answers with no cursor rather than sending
-	// the caller back for an empty one.
-	size := sqlpage.Size(int(req.GetSize()), ObjectPageSize, ObjectPageLimit)
-	us, err := q.Order(object.ByDateCreated(), object.ById()).Limit(size + 1).All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	more := len(us) > size
-	if more {
-		us = us[:size]
-	}
-
-	items := make([]*api.Object, len(us))
-	for i, u := range us {
-		items[i] = u.Proto()
-	}
-
-	res := api.ObjectListResponse_builder{Items: items}.Build()
-	if more {
-		last := us[len(us)-1]
-		next, err := sqlpage.Encode(last.DateCreated, last.Id)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "next: %s", err)
-		}
-
-		res.SetNext(next)
-	}
-
-	return res, nil
-}
-
-// filterObject turns one filter into the predicate that selects what it
-// names. Naming nothing is refused, since the request asked for "these" and
-// did not say which.
-func filterObject(f *api.ObjectFilter) (predicate.Object, error) {
-	ps := make([]predicate.Object, 0, 1)
-	if f.HasRef() {
-		p, err := bare.ObjectPick(f.GetRef())
-		if err != nil {
-			return nil, err
-		}
-
-		ps = append(ps, p)
-	}
-	if f.HasTenant() {
-		w := f.GetTenant()
-		if b := w.GetId(); len(b) > 0 {
-			// The **foreign key column** on this row, which is what an
-			// edge is. A subquery for a comparison against an indexed
-			// column is work nobody asked for.
-			k, err := entuuid.FromBytes(b)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
-			}
-
-			ps = append(ps, object.TenantIdEQ(k))
-		} else {
-			// Named some other way -- an alias, a slug. Resolving it
-			// would be a read, and a predicate is built without one, so
-			// it becomes a condition on the target instead. One hop,
-			// against whatever index that column has.
-			q, err := bare.TenantPick(w)
-			if err != nil {
-				return nil, err
-			}
-
-			ps = append(ps, object.HasTenantWith(q))
-		}
-	}
-	if f.HasSet() {
-		w := f.GetSet()
-		if b := w.GetId(); len(b) > 0 {
-			// The **foreign key column** on this row, which is what an
-			// edge is. A subquery for a comparison against an indexed
-			// column is work nobody asked for.
-			k, err := entuuid.FromBytes(b)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "set: %s", err)
-			}
-
-			ps = append(ps, object.SetIdEQ(k))
-		} else {
-			// Named some other way -- an alias, a slug. Resolving it
-			// would be a read, and a predicate is built without one, so
-			// it becomes a condition on the target instead. One hop,
-			// against whatever index that column has.
-			q, err := bare.SetPick(w)
-			if err != nil {
-				return nil, err
-			}
-
-			ps = append(ps, object.HasSetWith(q))
-		}
-	}
-	if f.HasSource() {
-		w := f.GetSource()
-		if b := w.GetId(); len(b) > 0 {
-			// The **foreign key column** on this row, which is what an
-			// edge is. A subquery for a comparison against an indexed
-			// column is work nobody asked for.
-			k, err := entuuid.FromBytes(b)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "source: %s", err)
-			}
-
-			ps = append(ps, object.SourceIdEQ(k))
-		} else {
-			// Named some other way -- an alias, a slug. Resolving it
-			// would be a read, and a predicate is built without one, so
-			// it becomes a condition on the target instead. One hop,
-			// against whatever index that column has.
-			q, err := bare.SourcePick(w)
-			if err != nil {
-				return nil, err
-			}
-
-			ps = append(ps, object.HasSourceWith(q))
-		}
-	}
-	if f.HasSink() {
-		w := f.GetSink()
-		if b := w.GetId(); len(b) > 0 {
-			// The **foreign key column** on this row, which is what an
-			// edge is. A subquery for a comparison against an indexed
-			// column is work nobody asked for.
-			k, err := entuuid.FromBytes(b)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "sink: %s", err)
-			}
-
-			ps = append(ps, object.SinkIdEQ(k))
-		} else {
-			// Named some other way -- an alias, a slug. Resolving it
-			// would be a read, and a predicate is built without one, so
-			// it becomes a condition on the target instead. One hop,
-			// against whatever index that column has.
-			q, err := bare.SinkPick(w)
-			if err != nil {
-				return nil, err
-			}
-
-			ps = append(ps, object.HasSinkWith(q))
-		}
-	}
-	if len(ps) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
-	}
-
-	return object.And(ps...), nil
-}
-
-// ObjectService is the prefix of every Rpc of that service, which is how a
-// change is known to be about a Object. A service is named for the entity it
-// is about, so the name carries it.
-var ObjectService = watch.ServiceOf(api.ObjectService_Get_FullMethodName)
-
-// Watch answers with the Objects this caller may see, as they are now and as
-// they change.
-//
-// What is sent is **state and never a delta**, which is what makes a stream
-// that missed something still correct: the next item about a row carries the
-// whole of it, so a client converges rather than replays. It is also what
-// makes the first message safe to duplicate against the ones after it.
-func (s sinkObject) Watch(req *api.ObjectWatchRequest, out grpc.ServerStreamingServer[api.ObjectWatchResponse]) error {
-	ctx := out.Context()
-
-	// A watch with no filters is the whole table, forever. It is the one
-	// shape that has no cap at all, so it is the one shape refused.
-	fs := req.GetFilters()
-	switch {
-	case len(fs) == 0:
-		return status.Error(codes.InvalidArgument,
-			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
-	case len(fs) > ObjectFilterLimit:
-		return status.Errorf(codes.InvalidArgument,
-			"filters: %d of them, and %d is the most one watch carries", len(fs), ObjectFilterLimit)
-	}
-
-	// Resolved before anything is subscribed to, so a name that names
-	// nothing is an answer rather than a stream that quietly watches none.
-	watching, err := s.watchObjectKeys(ctx, fs)
-	if err != nil {
-		return err
-	}
-
-	var snapshot func(watch.Seen) error
-	if !req.GetSkipSnapshot() {
-		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
-	}
-
-	if s.w == nil {
-		return status.Error(codes.Unimplemented,
-			"this deployment publishes no changes; see WithWatch")
-	}
-
-	return watch.Stream(ctx, s.w, ObjectService, snapshot,
-		func(ks map[pdid.Id]string, sent watch.Seen) error {
-			items := make([]*api.ObjectWatchItem, 0, len(ks))
-			for k, action := range ks {
-				u, err := s.watchRead(ctx, watching, k)
-				if err != nil {
-					return err
-				}
-				if u == nil && !sent[k] {
-					// Not theirs, or not what they asked for, and they
-					// have never been told about it. A row that never
-					// matched is not news.
-					continue
-				}
-
-				sent[k] = u != nil
-				items = append(items, api.ObjectWatchItem_builder{
-					Id:     k.Bytes(),
-					Value:  u,
-					Action: action,
-				}.Build())
-			}
-			if len(items) == 0 {
-				return nil
-			}
-
-			return out.Send(api.ObjectWatchResponse_builder{Items: items}.Build())
-		})
-}
-
-// watchNow sends what matches right now, through the same List a caller
-// would have called -- so what a stream begins with and what a list answers
-// cannot disagree, and a client does not have to do both and race them.
-func (s sinkObject) watchNow(
-	ctx context.Context, req *api.ObjectWatchRequest, out grpc.ServerStreamingServer[api.ObjectWatchResponse],
-	sent watch.Seen,
-) error {
-	after := ""
-	for {
-		res, err := s.List(ctx, api.ObjectListRequest_builder{
-			Filters: req.GetFilters(),
-			After:   after,
-		}.Build())
-		if err != nil {
-			return err
-		}
-
-		items := make([]*api.ObjectWatchItem, 0, len(res.GetItems()))
-		for _, u := range res.GetItems() {
-			k, err := pdid.From(u.GetId())
-			if err != nil {
-				return err
-			}
-
-			sent[k] = true
-			// No action: this is not something anybody asked for, it is
-			// what is already there.
-			items = append(items, api.ObjectWatchItem_builder{Id: u.GetId(), Value: u}.Build())
-		}
-		if len(items) > 0 {
-			if err := out.Send(api.ObjectWatchResponse_builder{Items: items}.Build()); err != nil {
-				return err
-			}
-		}
-
-		if after = res.GetNext(); after == "" {
-			return nil
-		}
-	}
-}
-
-// watchRead answers with the row as it is now, or nil when it is no longer
-// one this caller may see -- erased, walled off, or no longer matching what
-// they asked for. The three are deliberately indistinguishable to a caller:
-// a stream that told them apart would be saying which rows stopped being
-// theirs, which is the thing the wall is for.
-//
-// The Get is what keeps the wall out of this file. It goes through the same
-// server every other read does, with the context of the caller who asked, so
-// a row they may not see comes back NotFound and is never sent.
-func (s sinkObject) watchRead(
-	ctx context.Context, watching []pdid.Id, k pdid.Id,
-) (*api.Object, error) {
-	// Not one of the rows this stream is about. Asked before the read, so a
-	// busy table costs a stream nothing for the rows it does not watch.
-	if !slices.Contains(watching, k) {
-		return nil, nil
-	}
-
-	v, err := s.Get(ctx, api.ObjectGetRequest_builder{
-		Ref: api.ObjectRef_builder{Id: k.Bytes()}.Build(),
-	}.Build())
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return v, nil
-}
-
-// watchObjectKeys is the rows a stream is about, resolved once when it opens.
-//
-// A filter names a row and a row is named several ways -- by identifier, or
-// by whatever unique index the schema declared. Resolving them here rather
-// than comparing them per event does three things: the comparison afterwards
-// is an identifier against an identifier, a name that names nothing is
-// refused when the stream opens rather than silently watching nothing, and a
-// row renamed while the stream is open goes on being the row that was asked
-// for -- which is what somebody watching a thing meant.
-func (s sinkObject) watchObjectKeys(
-	ctx context.Context, fs []*api.ObjectFilter,
-) ([]pdid.Id, error) {
-	ks := make([]pdid.Id, 0, len(fs))
-	for i, f := range fs {
-		if !f.HasRef() {
-			return nil, status.Errorf(codes.InvalidArgument,
-				"filters[%d]: a watch says which rows it is about by naming them", i)
-		}
-
-		v, err := s.Get(ctx, api.ObjectGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -7569,12 +7569,12 @@ func (s gateAttempt) Add(ctx context.Context, req *api.AttemptAddRequest) (*api.
 		}
 	}
 
-	if ref := req.GetObject(); ref != nil {
-		if _, err := s.Gate.Next().Object().Get(ctx, api.ObjectGetRequest_builder{
+	if ref := req.GetLamina(); ref != nil {
+		if _, err := s.Gate.Next().Lamina().Get(ctx, api.LaminaGetRequest_builder{
 			Ref: ref,
 		}.Build()); err != nil {
 			if status.Code(err) == codes.NotFound {
-				return nil, gate.ErrNotFound("Object")
+				return nil, gate.ErrNotFound("Lamina")
 			}
 
 			return nil, err
@@ -7584,16 +7584,16 @@ func (s gateAttempt) Add(ctx context.Context, req *api.AttemptAddRequest) (*api.
 	return s.AttemptServiceServer.Add(ctx, req)
 }
 
-type gateObject struct {
+type gateLamina struct {
 	Gate
-	api.ObjectServiceServer
+	api.LaminaServiceServer
 }
 
-func (s Gate) Object() api.ObjectServiceServer {
-	return gateObject{s, s.Next().Object()}
+func (s Gate) Lamina() api.LaminaServiceServer {
+	return gateLamina{s, s.Next().Lamina()}
 }
 
-// Add refuses a Object put into a Tenant this caller cannot see.
+// Add refuses a Lamina put into a Tenant this caller cannot see.
 //
 // The wall is a predicate and an Add has no query, so without this the
 // identifier in `tenant` becomes a foreign key with nothing consulted.
@@ -7604,7 +7604,7 @@ func (s Gate) Object() api.ObjectServiceServer {
 // NotFound rather than a refusal, for the reason on `gateHolder.Add`:
 // that a row exists is itself something a caller who may not see it
 // should not be told.
-func (s gateObject) Add(ctx context.Context, req *api.ObjectAddRequest) (*api.Object, error) {
+func (s gateLamina) Add(ctx context.Context, req *api.LaminaAddRequest) (*api.Lamina, error) {
 	if ref := req.GetTenant(); ref != nil {
 		if _, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
 			Ref: ref,
@@ -7653,7 +7653,7 @@ func (s gateObject) Add(ctx context.Context, req *api.ObjectAddRequest) (*api.Ob
 		}
 	}
 
-	return s.ObjectServiceServer.Add(ctx, req)
+	return s.LaminaServiceServer.Add(ctx, req)
 }
 
 type gateProducer struct {
@@ -8321,9 +8321,9 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
-	case ObjectDomain:
-		row, err := s.Object().Get(ctx, api.ObjectGetRequest_builder{
-			Ref: api.ObjectRef_builder{Id: key.Bytes()}.Build(),
+	case LaminaDomain:
+		row, err := s.Lamina().Get(ctx, api.LaminaGetRequest_builder{
+			Ref: api.LaminaRef_builder{Id: key.Bytes()}.Build(),
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
@@ -9402,94 +9402,6 @@ func (s interceptReader) Heartbeat(ctx context.Context, req *api.ReaderHeartbeat
 		api.ReaderService_Heartbeat_FullMethodName, req, s.ReaderServiceServer.Heartbeat)
 }
 
-func (s Intercept) Holder() api.HolderServiceServer {
-	return interceptHolder{s, s.Next().Holder()}
-}
-
-type interceptHolder struct {
-	Intercept
-	api.HolderServiceServer
-}
-
-func (s interceptHolder) Add(ctx context.Context, req *api.HolderAddRequest) (*api.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		api.HolderService_Add_FullMethodName, req, s.HolderServiceServer.Add)
-}
-
-func (s interceptHolder) Get(ctx context.Context, req *api.HolderGetRequest) (*api.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		api.HolderService_Get_FullMethodName, req, s.HolderServiceServer.Get)
-}
-
-func (s interceptHolder) Patch(ctx context.Context, req *api.HolderPatchRequest) (*api.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		api.HolderService_Patch_FullMethodName, req, s.HolderServiceServer.Patch)
-}
-
-func (s interceptHolder) Apply(ctx context.Context, req *api.HolderApplyRequest) (*api.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		api.HolderService_Apply_FullMethodName, req, s.HolderServiceServer.Apply)
-}
-
-func (s interceptHolder) Erase(ctx context.Context, req *api.HolderRef) (*api.HolderEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		api.HolderService_Erase_FullMethodName, req, s.HolderServiceServer.Erase)
-}
-
-func (s interceptHolder) List(ctx context.Context, req *api.HolderListRequest) (*api.HolderListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		api.HolderService_List_FullMethodName, req, s.HolderServiceServer.List)
-}
-
-func (s interceptHolder) Watch(req *api.HolderWatchRequest, out grpc.ServerStreamingServer[api.HolderWatchResponse]) error {
-	return grpcx.RunStream(s.stream, s.HolderServiceServer,
-		api.HolderService_Watch_FullMethodName, req, out, s.HolderServiceServer.Watch)
-}
-
-func (s interceptHolder) IssuePassword(ctx context.Context, req *api.HolderIssuePasswordRequest) (*api.HolderIssuePasswordResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		api.HolderService_IssuePassword_FullMethodName, req, s.HolderServiceServer.IssuePassword)
-}
-
-func (s Intercept) SiteMember() api.SiteMemberServiceServer {
-	return interceptSiteMember{s, s.Next().SiteMember()}
-}
-
-type interceptSiteMember struct {
-	Intercept
-	api.SiteMemberServiceServer
-}
-
-func (s interceptSiteMember) Add(ctx context.Context, req *api.SiteMemberAddRequest) (*api.SiteMember, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
-		api.SiteMemberService_Add_FullMethodName, req, s.SiteMemberServiceServer.Add)
-}
-
-func (s interceptSiteMember) Get(ctx context.Context, req *api.SiteMemberGetRequest) (*api.SiteMember, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
-		api.SiteMemberService_Get_FullMethodName, req, s.SiteMemberServiceServer.Get)
-}
-
-func (s interceptSiteMember) Patch(ctx context.Context, req *api.SiteMemberPatchRequest) (*api.SiteMember, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
-		api.SiteMemberService_Patch_FullMethodName, req, s.SiteMemberServiceServer.Patch)
-}
-
-func (s interceptSiteMember) Apply(ctx context.Context, req *api.SiteMemberApplyRequest) (*api.SiteMember, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
-		api.SiteMemberService_Apply_FullMethodName, req, s.SiteMemberServiceServer.Apply)
-}
-
-func (s interceptSiteMember) Erase(ctx context.Context, req *api.SiteMemberRef) (*api.SiteMemberEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
-		api.SiteMemberService_Erase_FullMethodName, req, s.SiteMemberServiceServer.Erase)
-}
-
-func (s interceptSiteMember) List(ctx context.Context, req *api.SiteMemberListRequest) (*api.SiteMemberListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
-		api.SiteMemberService_List_FullMethodName, req, s.SiteMemberServiceServer.List)
-}
-
 func (s Intercept) Device() api.DeviceServiceServer {
 	return interceptDevice{s, s.Next().Device()}
 }
@@ -9628,83 +9540,83 @@ func (s interceptSink) Gc(ctx context.Context, req *api.SinkGcRequest) (*api.Sin
 		api.SinkService_Gc_FullMethodName, req, s.SinkServiceServer.Gc)
 }
 
-func (s Intercept) Object() api.ObjectServiceServer {
-	return interceptObject{s, s.Next().Object()}
+func (s Intercept) Lamina() api.LaminaServiceServer {
+	return interceptLamina{s, s.Next().Lamina()}
 }
 
-type interceptObject struct {
+type interceptLamina struct {
 	Intercept
-	api.ObjectServiceServer
+	api.LaminaServiceServer
 }
 
-func (s interceptObject) Add(ctx context.Context, req *api.ObjectAddRequest) (*api.Object, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Add_FullMethodName, req, s.ObjectServiceServer.Add)
+func (s interceptLamina) Add(ctx context.Context, req *api.LaminaAddRequest) (*api.Lamina, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Add_FullMethodName, req, s.LaminaServiceServer.Add)
 }
 
-func (s interceptObject) Get(ctx context.Context, req *api.ObjectGetRequest) (*api.Object, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Get_FullMethodName, req, s.ObjectServiceServer.Get)
+func (s interceptLamina) Get(ctx context.Context, req *api.LaminaGetRequest) (*api.Lamina, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Get_FullMethodName, req, s.LaminaServiceServer.Get)
 }
 
-func (s interceptObject) Patch(ctx context.Context, req *api.ObjectPatchRequest) (*api.Object, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Patch_FullMethodName, req, s.ObjectServiceServer.Patch)
+func (s interceptLamina) Patch(ctx context.Context, req *api.LaminaPatchRequest) (*api.Lamina, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Patch_FullMethodName, req, s.LaminaServiceServer.Patch)
 }
 
-func (s interceptObject) Apply(ctx context.Context, req *api.ObjectApplyRequest) (*api.Object, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Apply_FullMethodName, req, s.ObjectServiceServer.Apply)
+func (s interceptLamina) Apply(ctx context.Context, req *api.LaminaApplyRequest) (*api.Lamina, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Apply_FullMethodName, req, s.LaminaServiceServer.Apply)
 }
 
-func (s interceptObject) Erase(ctx context.Context, req *api.ObjectRef) (*api.ObjectEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Erase_FullMethodName, req, s.ObjectServiceServer.Erase)
+func (s interceptLamina) Erase(ctx context.Context, req *api.LaminaRef) (*api.LaminaEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Erase_FullMethodName, req, s.LaminaServiceServer.Erase)
 }
 
-func (s interceptObject) List(ctx context.Context, req *api.ObjectListRequest) (*api.ObjectListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_List_FullMethodName, req, s.ObjectServiceServer.List)
+func (s interceptLamina) List(ctx context.Context, req *api.LaminaListRequest) (*api.LaminaListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_List_FullMethodName, req, s.LaminaServiceServer.List)
 }
 
-func (s interceptObject) Watch(req *api.ObjectWatchRequest, out grpc.ServerStreamingServer[api.ObjectWatchResponse]) error {
-	return grpcx.RunStream(s.stream, s.ObjectServiceServer,
-		api.ObjectService_Watch_FullMethodName, req, out, s.ObjectServiceServer.Watch)
+func (s interceptLamina) Watch(req *api.LaminaWatchRequest, out grpc.ServerStreamingServer[api.LaminaWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.LaminaServiceServer,
+		api.LaminaService_Watch_FullMethodName, req, out, s.LaminaServiceServer.Watch)
 }
 
-func (s interceptObject) Allocate(ctx context.Context, req *api.ObjectAllocateRequest) (*api.Allocation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Allocate_FullMethodName, req, s.ObjectServiceServer.Allocate)
+func (s interceptLamina) Allocate(ctx context.Context, req *api.LaminaAllocateRequest) (*api.Allocation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Allocate_FullMethodName, req, s.LaminaServiceServer.Allocate)
 }
 
-func (s interceptObject) Reallocate(ctx context.Context, req *api.ObjectReallocateRequest) (*api.Allocation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Reallocate_FullMethodName, req, s.ObjectServiceServer.Reallocate)
+func (s interceptLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateRequest) (*api.Allocation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Reallocate_FullMethodName, req, s.LaminaServiceServer.Reallocate)
 }
 
-func (s interceptObject) Renew(ctx context.Context, req *api.ObjectRenewRequest) (*api.Allocation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Renew_FullMethodName, req, s.ObjectServiceServer.Renew)
+func (s interceptLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*api.Allocation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Renew_FullMethodName, req, s.LaminaServiceServer.Renew)
 }
 
-func (s interceptObject) ReportAttempt(ctx context.Context, req *api.ObjectReportAttemptRequest) (*api.Attempt, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_ReportAttempt_FullMethodName, req, s.ObjectServiceServer.ReportAttempt)
+func (s interceptLamina) ReportAttempt(ctx context.Context, req *api.LaminaReportAttemptRequest) (*api.Attempt, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_ReportAttempt_FullMethodName, req, s.LaminaServiceServer.ReportAttempt)
 }
 
-func (s interceptObject) ReportFailure(ctx context.Context, req *api.ObjectReportFailureRequest) (*api.Object, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_ReportFailure_FullMethodName, req, s.ObjectServiceServer.ReportFailure)
+func (s interceptLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFailureRequest) (*api.Lamina, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_ReportFailure_FullMethodName, req, s.LaminaServiceServer.ReportFailure)
 }
 
-func (s interceptObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleRequest) (*api.ObjectRescheduleResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Reschedule_FullMethodName, req, s.ObjectServiceServer.Reschedule)
+func (s interceptLamina) Reschedule(ctx context.Context, req *api.LaminaRescheduleRequest) (*api.LaminaRescheduleResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Reschedule_FullMethodName, req, s.LaminaServiceServer.Reschedule)
 }
 
-func (s interceptObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest) (*api.ObjectTimelineResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ObjectServiceServer,
-		api.ObjectService_Timeline_FullMethodName, req, s.ObjectServiceServer.Timeline)
+func (s interceptLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest) (*api.LaminaTimelineResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Timeline_FullMethodName, req, s.LaminaServiceServer.Timeline)
 }
 
 func (s Intercept) Attempt() api.AttemptServiceServer {
@@ -9744,6 +9656,94 @@ func (s interceptAttempt) Erase(ctx context.Context, req *api.AttemptRef) (*api.
 func (s interceptAttempt) List(ctx context.Context, req *api.AttemptListRequest) (*api.AttemptListResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.AttemptServiceServer,
 		api.AttemptService_List_FullMethodName, req, s.AttemptServiceServer.List)
+}
+
+func (s Intercept) Holder() api.HolderServiceServer {
+	return interceptHolder{s, s.Next().Holder()}
+}
+
+type interceptHolder struct {
+	Intercept
+	api.HolderServiceServer
+}
+
+func (s interceptHolder) Add(ctx context.Context, req *api.HolderAddRequest) (*api.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_Add_FullMethodName, req, s.HolderServiceServer.Add)
+}
+
+func (s interceptHolder) Get(ctx context.Context, req *api.HolderGetRequest) (*api.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_Get_FullMethodName, req, s.HolderServiceServer.Get)
+}
+
+func (s interceptHolder) Patch(ctx context.Context, req *api.HolderPatchRequest) (*api.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_Patch_FullMethodName, req, s.HolderServiceServer.Patch)
+}
+
+func (s interceptHolder) Apply(ctx context.Context, req *api.HolderApplyRequest) (*api.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_Apply_FullMethodName, req, s.HolderServiceServer.Apply)
+}
+
+func (s interceptHolder) Erase(ctx context.Context, req *api.HolderRef) (*api.HolderEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_Erase_FullMethodName, req, s.HolderServiceServer.Erase)
+}
+
+func (s interceptHolder) List(ctx context.Context, req *api.HolderListRequest) (*api.HolderListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_List_FullMethodName, req, s.HolderServiceServer.List)
+}
+
+func (s interceptHolder) Watch(req *api.HolderWatchRequest, out grpc.ServerStreamingServer[api.HolderWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.HolderServiceServer,
+		api.HolderService_Watch_FullMethodName, req, out, s.HolderServiceServer.Watch)
+}
+
+func (s interceptHolder) IssuePassword(ctx context.Context, req *api.HolderIssuePasswordRequest) (*api.HolderIssuePasswordResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		api.HolderService_IssuePassword_FullMethodName, req, s.HolderServiceServer.IssuePassword)
+}
+
+func (s Intercept) SiteMember() api.SiteMemberServiceServer {
+	return interceptSiteMember{s, s.Next().SiteMember()}
+}
+
+type interceptSiteMember struct {
+	Intercept
+	api.SiteMemberServiceServer
+}
+
+func (s interceptSiteMember) Add(ctx context.Context, req *api.SiteMemberAddRequest) (*api.SiteMember, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
+		api.SiteMemberService_Add_FullMethodName, req, s.SiteMemberServiceServer.Add)
+}
+
+func (s interceptSiteMember) Get(ctx context.Context, req *api.SiteMemberGetRequest) (*api.SiteMember, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
+		api.SiteMemberService_Get_FullMethodName, req, s.SiteMemberServiceServer.Get)
+}
+
+func (s interceptSiteMember) Patch(ctx context.Context, req *api.SiteMemberPatchRequest) (*api.SiteMember, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
+		api.SiteMemberService_Patch_FullMethodName, req, s.SiteMemberServiceServer.Patch)
+}
+
+func (s interceptSiteMember) Apply(ctx context.Context, req *api.SiteMemberApplyRequest) (*api.SiteMember, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
+		api.SiteMemberService_Apply_FullMethodName, req, s.SiteMemberServiceServer.Apply)
+}
+
+func (s interceptSiteMember) Erase(ctx context.Context, req *api.SiteMemberRef) (*api.SiteMemberEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
+		api.SiteMemberService_Erase_FullMethodName, req, s.SiteMemberServiceServer.Erase)
+}
+
+func (s interceptSiteMember) List(ctx context.Context, req *api.SiteMemberListRequest) (*api.SiteMemberListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SiteMemberServiceServer,
+		api.SiteMemberService_List_FullMethodName, req, s.SiteMemberServiceServer.List)
 }
 
 func (s Intercept) Audit() api.AuditServiceServer {
@@ -11423,175 +11423,6 @@ func dispatch(ctx context.Context, s api.Server, op *pdpb.Op) (*anypb.Any, error
 
 		return anypb.New(res)
 
-	case api.HolderService_Add_FullMethodName:
-		v := &api.HolderAddRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Add(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.HolderService_Get_FullMethodName:
-		v := &api.HolderGetRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Get(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.HolderService_Patch_FullMethodName:
-		v := &api.HolderPatchRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Patch(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.HolderService_Apply_FullMethodName:
-		v := &api.HolderApplyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Apply(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.HolderService_Erase_FullMethodName:
-		v := &api.HolderRef{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().Erase(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.HolderService_List_FullMethodName:
-		v := &api.HolderListRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.HolderService_IssuePassword_FullMethodName:
-		v := &api.HolderIssuePasswordRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.Holder().IssuePassword(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.SiteMemberService_Add_FullMethodName:
-		v := &api.SiteMemberAddRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.SiteMember().Add(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.SiteMemberService_Get_FullMethodName:
-		v := &api.SiteMemberGetRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.SiteMember().Get(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.SiteMemberService_Patch_FullMethodName:
-		v := &api.SiteMemberPatchRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.SiteMember().Patch(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.SiteMemberService_Apply_FullMethodName:
-		v := &api.SiteMemberApplyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.SiteMember().Apply(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.SiteMemberService_Erase_FullMethodName:
-		v := &api.SiteMemberRef{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.SiteMember().Erase(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case api.SiteMemberService_List_FullMethodName:
-		v := &api.SiteMemberListRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.SiteMember().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
 	case api.DeviceService_Add_FullMethodName:
 		v := &api.DeviceAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -11878,169 +11709,169 @@ func dispatch(ctx context.Context, s api.Server, op *pdpb.Op) (*anypb.Any, error
 
 		return anypb.New(res)
 
-	case api.ObjectService_Add_FullMethodName:
-		v := &api.ObjectAddRequest{}
+	case api.LaminaService_Add_FullMethodName:
+		v := &api.LaminaAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Add(ctx, v)
+		res, err := s.Lamina().Add(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Get_FullMethodName:
-		v := &api.ObjectGetRequest{}
+	case api.LaminaService_Get_FullMethodName:
+		v := &api.LaminaGetRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Get(ctx, v)
+		res, err := s.Lamina().Get(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Patch_FullMethodName:
-		v := &api.ObjectPatchRequest{}
+	case api.LaminaService_Patch_FullMethodName:
+		v := &api.LaminaPatchRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Patch(ctx, v)
+		res, err := s.Lamina().Patch(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Apply_FullMethodName:
-		v := &api.ObjectApplyRequest{}
+	case api.LaminaService_Apply_FullMethodName:
+		v := &api.LaminaApplyRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Apply(ctx, v)
+		res, err := s.Lamina().Apply(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Erase_FullMethodName:
-		v := &api.ObjectRef{}
+	case api.LaminaService_Erase_FullMethodName:
+		v := &api.LaminaRef{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Erase(ctx, v)
+		res, err := s.Lamina().Erase(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_List_FullMethodName:
-		v := &api.ObjectListRequest{}
+	case api.LaminaService_List_FullMethodName:
+		v := &api.LaminaListRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().List(ctx, v)
+		res, err := s.Lamina().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Allocate_FullMethodName:
-		v := &api.ObjectAllocateRequest{}
+	case api.LaminaService_Allocate_FullMethodName:
+		v := &api.LaminaAllocateRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Allocate(ctx, v)
+		res, err := s.Lamina().Allocate(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Reallocate_FullMethodName:
-		v := &api.ObjectReallocateRequest{}
+	case api.LaminaService_Reallocate_FullMethodName:
+		v := &api.LaminaReallocateRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Reallocate(ctx, v)
+		res, err := s.Lamina().Reallocate(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Renew_FullMethodName:
-		v := &api.ObjectRenewRequest{}
+	case api.LaminaService_Renew_FullMethodName:
+		v := &api.LaminaRenewRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Renew(ctx, v)
+		res, err := s.Lamina().Renew(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_ReportAttempt_FullMethodName:
-		v := &api.ObjectReportAttemptRequest{}
+	case api.LaminaService_ReportAttempt_FullMethodName:
+		v := &api.LaminaReportAttemptRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().ReportAttempt(ctx, v)
+		res, err := s.Lamina().ReportAttempt(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_ReportFailure_FullMethodName:
-		v := &api.ObjectReportFailureRequest{}
+	case api.LaminaService_ReportFailure_FullMethodName:
+		v := &api.LaminaReportFailureRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().ReportFailure(ctx, v)
+		res, err := s.Lamina().ReportFailure(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Reschedule_FullMethodName:
-		v := &api.ObjectRescheduleRequest{}
+	case api.LaminaService_Reschedule_FullMethodName:
+		v := &api.LaminaRescheduleRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Reschedule(ctx, v)
+		res, err := s.Lamina().Reschedule(ctx, v)
 		if err != nil {
 			return nil, err
 		}
 
 		return anypb.New(res)
 
-	case api.ObjectService_Timeline_FullMethodName:
-		v := &api.ObjectTimelineRequest{}
+	case api.LaminaService_Timeline_FullMethodName:
+		v := &api.LaminaTimelineRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
 			return nil, batch.ErrRequest(m, err)
 		}
 
-		res, err := s.Object().Timeline(ctx, v)
+		res, err := s.Lamina().Timeline(ctx, v)
 		if err != nil {
 			return nil, err
 		}
@@ -12119,6 +11950,175 @@ func dispatch(ctx context.Context, s api.Server, op *pdpb.Op) (*anypb.Any, error
 		}
 
 		res, err := s.Attempt().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.HolderService_Add_FullMethodName:
+		v := &api.HolderAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.HolderService_Get_FullMethodName:
+		v := &api.HolderGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.HolderService_Patch_FullMethodName:
+		v := &api.HolderPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.HolderService_Apply_FullMethodName:
+		v := &api.HolderApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.HolderService_Erase_FullMethodName:
+		v := &api.HolderRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.HolderService_List_FullMethodName:
+		v := &api.HolderListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.HolderService_IssuePassword_FullMethodName:
+		v := &api.HolderIssuePasswordRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().IssuePassword(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.SiteMemberService_Add_FullMethodName:
+		v := &api.SiteMemberAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMember().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.SiteMemberService_Get_FullMethodName:
+		v := &api.SiteMemberGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMember().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.SiteMemberService_Patch_FullMethodName:
+		v := &api.SiteMemberPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMember().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.SiteMemberService_Apply_FullMethodName:
+		v := &api.SiteMemberApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMember().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.SiteMemberService_Erase_FullMethodName:
+		v := &api.SiteMemberRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMember().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.SiteMemberService_List_FullMethodName:
+		v := &api.SiteMemberListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.SiteMember().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

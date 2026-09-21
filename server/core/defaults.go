@@ -19,9 +19,9 @@ const (
 	DefaultRetentionExpire = 30 * 24 * time.Hour
 
 	DefaultMaxBitrateCap int64 = 32_000_000
-	DefaultTargetObject  int64 = 64 << 20
-	DefaultMinObject     int64 = 32 << 20
-	DefaultMaxObject     int64 = 512 << 20
+	DefaultTargetLamina  int64 = 64 << 20
+	DefaultMinLamina     int64 = 32 << 20
+	DefaultMaxLamina     int64 = 512 << 20
 
 	DefaultKeyframeMs int64 = 2000
 	MinKeyframeMs     int64 = 500
@@ -73,9 +73,9 @@ const (
 // Bounds are the active UploadPolicy's bounds with the defaults filled in.
 type Bounds struct {
 	MaxBitrateCap   int64
-	TargetObject    int64
-	MinObject       int64
-	MaxObject       int64
+	TargetLamina    int64
+	MinLamina       int64
+	MaxLamina       int64
 	KeyframeDefault time.Duration
 	KeyframeMin     time.Duration
 	KeyframeMax     time.Duration
@@ -101,9 +101,9 @@ type Bounds struct {
 func DefaultBounds() Bounds {
 	return Bounds{
 		MaxBitrateCap:   DefaultMaxBitrateCap,
-		TargetObject:    DefaultTargetObject,
-		MinObject:       DefaultMinObject,
-		MaxObject:       DefaultMaxObject,
+		TargetLamina:    DefaultTargetLamina,
+		MinLamina:       DefaultMinLamina,
+		MaxLamina:       DefaultMaxLamina,
 		KeyframeDefault: time.Duration(DefaultKeyframeMs) * time.Millisecond,
 		KeyframeMin:     time.Duration(MinKeyframeMs) * time.Millisecond,
 		KeyframeMax:     time.Duration(MaxKeyframeMs) * time.Millisecond,
@@ -149,9 +149,9 @@ func boundsFrom(p *api.UploadPolicy) Bounds {
 	}
 
 	set(&b.MaxBitrateCap, u.GetMaxBitrateCap())
-	set(&b.TargetObject, u.GetTargetObject())
-	set(&b.MinObject, u.GetMinObject())
-	set(&b.MaxObject, u.GetMaxObject())
+	set(&b.TargetLamina, u.GetTargetLamina())
+	set(&b.MinLamina, u.GetMinLamina())
+	set(&b.MaxLamina, u.GetMaxLamina())
 	setD(&b.KeyframeDefault, u.GetKeyframeIntervalDefaultMs(), time.Millisecond)
 	setD(&b.KeyframeMin, u.GetKeyframeIntervalMinMs(), time.Millisecond)
 	setD(&b.KeyframeMax, u.GetKeyframeIntervalMaxMs(), time.Millisecond)
@@ -322,6 +322,6 @@ func spreadOf(set *api.Set) api.SetSpread {
 	return api.SetSpread_SET_SPREAD_SPREAD
 }
 
-// ReschedulePage is how many objects a bulk reschedule patches in one
+// ReschedulePage is how many laminae a bulk reschedule patches in one
 // transaction (§20.3). A variable so that a test can make it small.
 var ReschedulePage = 1000

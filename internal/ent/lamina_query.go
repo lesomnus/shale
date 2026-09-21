@@ -8,7 +8,7 @@ import (
 	"math"
 	"uuid"
 
-	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/sink"
@@ -21,13 +21,13 @@ import (
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
-// ObjectQuery is the builder for querying Object entities.
-type ObjectQuery struct {
+// LaminaQuery is the builder for querying Lamina entities.
+type LaminaQuery struct {
 	config
 	ctx        *QueryContext
-	order      []object.OrderOption
+	order      []lamina.OrderOption
 	inters     []Interceptor
-	predicates []predicate.Object
+	predicates []predicate.Lamina
 	withTenant *TenantQuery
 	withSite   *SiteQuery
 	withSet    *SetQuery
@@ -39,39 +39,39 @@ type ObjectQuery struct {
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the ObjectQuery builder.
-func (_q *ObjectQuery) Where(ps ...predicate.Object) *ObjectQuery {
+// Where adds a new predicate for the LaminaQuery builder.
+func (_q *LaminaQuery) Where(ps ...predicate.Lamina) *LaminaQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *ObjectQuery) Limit(limit int) *ObjectQuery {
+func (_q *LaminaQuery) Limit(limit int) *LaminaQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *ObjectQuery) Offset(offset int) *ObjectQuery {
+func (_q *LaminaQuery) Offset(offset int) *LaminaQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *ObjectQuery) Unique(unique bool) *ObjectQuery {
+func (_q *LaminaQuery) Unique(unique bool) *LaminaQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *ObjectQuery) Order(o ...object.OrderOption) *ObjectQuery {
+func (_q *LaminaQuery) Order(o ...lamina.OrderOption) *LaminaQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
 // QueryTenant chains the current query on the "tenant" edge.
-func (_q *ObjectQuery) QueryTenant() *TenantQuery {
+func (_q *LaminaQuery) QueryTenant() *TenantQuery {
 	query := (&TenantClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -82,9 +82,9 @@ func (_q *ObjectQuery) QueryTenant() *TenantQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, selector),
+			sqlgraph.From(lamina.Table, lamina.FieldId, selector),
 			sqlgraph.To(tenant.Table, tenant.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.TenantTable, object.TenantColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.TenantTable, lamina.TenantColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -93,7 +93,7 @@ func (_q *ObjectQuery) QueryTenant() *TenantQuery {
 }
 
 // QuerySite chains the current query on the "site" edge.
-func (_q *ObjectQuery) QuerySite() *SiteQuery {
+func (_q *LaminaQuery) QuerySite() *SiteQuery {
 	query := (&SiteClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -104,9 +104,9 @@ func (_q *ObjectQuery) QuerySite() *SiteQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, selector),
+			sqlgraph.From(lamina.Table, lamina.FieldId, selector),
 			sqlgraph.To(site.Table, site.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.SiteTable, object.SiteColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SiteTable, lamina.SiteColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -115,7 +115,7 @@ func (_q *ObjectQuery) QuerySite() *SiteQuery {
 }
 
 // QuerySet chains the current query on the "set" edge.
-func (_q *ObjectQuery) QuerySet() *SetQuery {
+func (_q *LaminaQuery) QuerySet() *SetQuery {
 	query := (&SetClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -126,9 +126,9 @@ func (_q *ObjectQuery) QuerySet() *SetQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, selector),
+			sqlgraph.From(lamina.Table, lamina.FieldId, selector),
 			sqlgraph.To(set.Table, set.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.SetTable, object.SetColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SetTable, lamina.SetColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -137,7 +137,7 @@ func (_q *ObjectQuery) QuerySet() *SetQuery {
 }
 
 // QuerySource chains the current query on the "source" edge.
-func (_q *ObjectQuery) QuerySource() *SourceQuery {
+func (_q *LaminaQuery) QuerySource() *SourceQuery {
 	query := (&SourceClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -148,9 +148,9 @@ func (_q *ObjectQuery) QuerySource() *SourceQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, selector),
+			sqlgraph.From(lamina.Table, lamina.FieldId, selector),
 			sqlgraph.To(source.Table, source.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.SourceTable, object.SourceColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SourceTable, lamina.SourceColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -159,7 +159,7 @@ func (_q *ObjectQuery) QuerySource() *SourceQuery {
 }
 
 // QuerySink chains the current query on the "sink" edge.
-func (_q *ObjectQuery) QuerySink() *SinkQuery {
+func (_q *LaminaQuery) QuerySink() *SinkQuery {
 	query := (&SinkClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -170,9 +170,9 @@ func (_q *ObjectQuery) QuerySink() *SinkQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, selector),
+			sqlgraph.From(lamina.Table, lamina.FieldId, selector),
 			sqlgraph.To(sink.Table, sink.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.SinkTable, object.SinkColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SinkTable, lamina.SinkColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -180,21 +180,21 @@ func (_q *ObjectQuery) QuerySink() *SinkQuery {
 	return query
 }
 
-// First returns the first Object entity from the query.
-// Returns a *NotFoundError when no Object was found.
-func (_q *ObjectQuery) First(ctx context.Context) (*Object, error) {
+// First returns the first Lamina entity from the query.
+// Returns a *NotFoundError when no Lamina was found.
+func (_q *LaminaQuery) First(ctx context.Context) (*Lamina, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{object.Label}
+		return nil, &NotFoundError{lamina.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *ObjectQuery) FirstX(ctx context.Context) *Object {
+func (_q *LaminaQuery) FirstX(ctx context.Context) *Lamina {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -202,22 +202,22 @@ func (_q *ObjectQuery) FirstX(ctx context.Context) *Object {
 	return node
 }
 
-// FirstId returns the first Object Id from the query.
-// Returns a *NotFoundError when no Object Id was found.
-func (_q *ObjectQuery) FirstId(ctx context.Context) (id uuid.UUID, err error) {
+// FirstId returns the first Lamina Id from the query.
+// Returns a *NotFoundError when no Lamina Id was found.
+func (_q *LaminaQuery) FirstId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(1).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryFirstId)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{object.Label}
+		err = &NotFoundError{lamina.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIdX is like FirstId, but panics if an error occurs.
-func (_q *ObjectQuery) FirstIdX(ctx context.Context) uuid.UUID {
+func (_q *LaminaQuery) FirstIdX(ctx context.Context) uuid.UUID {
 	id, err := _q.FirstId(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -225,10 +225,10 @@ func (_q *ObjectQuery) FirstIdX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// Only returns a single Object entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Object entity is found.
-// Returns a *NotFoundError when no Object entities are found.
-func (_q *ObjectQuery) Only(ctx context.Context) (*Object, error) {
+// Only returns a single Lamina entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Lamina entity is found.
+// Returns a *NotFoundError when no Lamina entities are found.
+func (_q *LaminaQuery) Only(ctx context.Context) (*Lamina, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -237,14 +237,14 @@ func (_q *ObjectQuery) Only(ctx context.Context) (*Object, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{object.Label}
+		return nil, &NotFoundError{lamina.Label}
 	default:
-		return nil, &NotSingularError{object.Label}
+		return nil, &NotSingularError{lamina.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *ObjectQuery) OnlyX(ctx context.Context) *Object {
+func (_q *LaminaQuery) OnlyX(ctx context.Context) *Lamina {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -252,10 +252,10 @@ func (_q *ObjectQuery) OnlyX(ctx context.Context) *Object {
 	return node
 }
 
-// OnlyId is like Only, but returns the only Object Id in the query.
-// Returns a *NotSingularError when more than one Object Id is found.
+// OnlyId is like Only, but returns the only Lamina Id in the query.
+// Returns a *NotSingularError when more than one Lamina Id is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *ObjectQuery) OnlyId(ctx context.Context) (id uuid.UUID, err error) {
+func (_q *LaminaQuery) OnlyId(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = _q.Limit(2).Ids(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyId)); err != nil {
 		return
@@ -264,15 +264,15 @@ func (_q *ObjectQuery) OnlyId(ctx context.Context) (id uuid.UUID, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{object.Label}
+		err = &NotFoundError{lamina.Label}
 	default:
-		err = &NotSingularError{object.Label}
+		err = &NotSingularError{lamina.Label}
 	}
 	return
 }
 
 // OnlyIdX is like OnlyId, but panics if an error occurs.
-func (_q *ObjectQuery) OnlyIdX(ctx context.Context) uuid.UUID {
+func (_q *LaminaQuery) OnlyIdX(ctx context.Context) uuid.UUID {
 	id, err := _q.OnlyId(ctx)
 	if err != nil {
 		panic(err)
@@ -280,18 +280,18 @@ func (_q *ObjectQuery) OnlyIdX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// All executes the query and returns a list of Object entities.
-func (_q *ObjectQuery) All(ctx context.Context) ([]*Object, error) {
+// All executes the query and returns a list of Lamina entities.
+func (_q *LaminaQuery) All(ctx context.Context) ([]*Lamina, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Object, *ObjectQuery]()
-	return withInterceptors[[]*Object](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*Lamina, *LaminaQuery]()
+	return withInterceptors[[]*Lamina](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *ObjectQuery) AllX(ctx context.Context) []*Object {
+func (_q *LaminaQuery) AllX(ctx context.Context) []*Lamina {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -299,20 +299,20 @@ func (_q *ObjectQuery) AllX(ctx context.Context) []*Object {
 	return nodes
 }
 
-// Ids executes the query and returns a list of Object Ids.
-func (_q *ObjectQuery) Ids(ctx context.Context) (ids []uuid.UUID, err error) {
+// Ids executes the query and returns a list of Lamina Ids.
+func (_q *LaminaQuery) Ids(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIds)
-	if err = _q.Select(object.FieldId).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(lamina.FieldId).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IdsX is like Ids, but panics if an error occurs.
-func (_q *ObjectQuery) IdsX(ctx context.Context) []uuid.UUID {
+func (_q *LaminaQuery) IdsX(ctx context.Context) []uuid.UUID {
 	ids, err := _q.Ids(ctx)
 	if err != nil {
 		panic(err)
@@ -321,16 +321,16 @@ func (_q *ObjectQuery) IdsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (_q *ObjectQuery) Count(ctx context.Context) (int, error) {
+func (_q *LaminaQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*ObjectQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*LaminaQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *ObjectQuery) CountX(ctx context.Context) int {
+func (_q *LaminaQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -339,7 +339,7 @@ func (_q *ObjectQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *ObjectQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *LaminaQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstId(ctx); {
 	case IsNotFound(err):
@@ -352,7 +352,7 @@ func (_q *ObjectQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *ObjectQuery) ExistX(ctx context.Context) bool {
+func (_q *LaminaQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -360,18 +360,18 @@ func (_q *ObjectQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the ObjectQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the LaminaQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *ObjectQuery) Clone() *ObjectQuery {
+func (_q *LaminaQuery) Clone() *LaminaQuery {
 	if _q == nil {
 		return nil
 	}
-	return &ObjectQuery{
+	return &LaminaQuery{
 		config:     _q.config,
 		ctx:        _q.ctx.Clone(),
-		order:      append([]object.OrderOption{}, _q.order...),
+		order:      append([]lamina.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Object{}, _q.predicates...),
+		predicates: append([]predicate.Lamina{}, _q.predicates...),
 		withTenant: _q.withTenant.Clone(),
 		withSite:   _q.withSite.Clone(),
 		withSet:    _q.withSet.Clone(),
@@ -386,7 +386,7 @@ func (_q *ObjectQuery) Clone() *ObjectQuery {
 
 // WithTenant tells the query-builder to eager-load the nodes that are connected to
 // the "tenant" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ObjectQuery) WithTenant(opts ...func(*TenantQuery)) *ObjectQuery {
+func (_q *LaminaQuery) WithTenant(opts ...func(*TenantQuery)) *LaminaQuery {
 	query := (&TenantClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -397,7 +397,7 @@ func (_q *ObjectQuery) WithTenant(opts ...func(*TenantQuery)) *ObjectQuery {
 
 // WithSite tells the query-builder to eager-load the nodes that are connected to
 // the "site" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ObjectQuery) WithSite(opts ...func(*SiteQuery)) *ObjectQuery {
+func (_q *LaminaQuery) WithSite(opts ...func(*SiteQuery)) *LaminaQuery {
 	query := (&SiteClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -408,7 +408,7 @@ func (_q *ObjectQuery) WithSite(opts ...func(*SiteQuery)) *ObjectQuery {
 
 // WithSet tells the query-builder to eager-load the nodes that are connected to
 // the "set" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ObjectQuery) WithSet(opts ...func(*SetQuery)) *ObjectQuery {
+func (_q *LaminaQuery) WithSet(opts ...func(*SetQuery)) *LaminaQuery {
 	query := (&SetClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -419,7 +419,7 @@ func (_q *ObjectQuery) WithSet(opts ...func(*SetQuery)) *ObjectQuery {
 
 // WithSource tells the query-builder to eager-load the nodes that are connected to
 // the "source" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ObjectQuery) WithSource(opts ...func(*SourceQuery)) *ObjectQuery {
+func (_q *LaminaQuery) WithSource(opts ...func(*SourceQuery)) *LaminaQuery {
 	query := (&SourceClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -430,7 +430,7 @@ func (_q *ObjectQuery) WithSource(opts ...func(*SourceQuery)) *ObjectQuery {
 
 // WithSink tells the query-builder to eager-load the nodes that are connected to
 // the "sink" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ObjectQuery) WithSink(opts ...func(*SinkQuery)) *ObjectQuery {
+func (_q *LaminaQuery) WithSink(opts ...func(*SinkQuery)) *LaminaQuery {
 	query := (&SinkClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -445,19 +445,19 @@ func (_q *ObjectQuery) WithSink(opts ...func(*SinkQuery)) *ObjectQuery {
 // Example:
 //
 //	var v []struct {
-//		ObjectKey string `json:"object_key,omitempty"`
+//		LaminaKey string `json:"lamina_key,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Object.Query().
-//		GroupBy(object.FieldObjectKey).
+//	client.Lamina.Query().
+//		GroupBy(lamina.FieldLaminaKey).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *ObjectQuery) GroupBy(field string, fields ...string) *ObjectGroupBy {
+func (_q *LaminaQuery) GroupBy(field string, fields ...string) *LaminaGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ObjectGroupBy{build: _q}
+	grbuild := &LaminaGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = object.Label
+	grbuild.label = lamina.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -468,26 +468,26 @@ func (_q *ObjectQuery) GroupBy(field string, fields ...string) *ObjectGroupBy {
 // Example:
 //
 //	var v []struct {
-//		ObjectKey string `json:"object_key,omitempty"`
+//		LaminaKey string `json:"lamina_key,omitempty"`
 //	}
 //
-//	client.Object.Query().
-//		Select(object.FieldObjectKey).
+//	client.Lamina.Query().
+//		Select(lamina.FieldLaminaKey).
 //		Scan(ctx, &v)
-func (_q *ObjectQuery) Select(fields ...string) *ObjectSelect {
+func (_q *LaminaQuery) Select(fields ...string) *LaminaSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &ObjectSelect{ObjectQuery: _q}
-	sbuild.label = object.Label
+	sbuild := &LaminaSelect{LaminaQuery: _q}
+	sbuild.label = lamina.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a ObjectSelect configured with the given aggregations.
-func (_q *ObjectQuery) Aggregate(fns ...AggregateFunc) *ObjectSelect {
+// Aggregate returns a LaminaSelect configured with the given aggregations.
+func (_q *LaminaQuery) Aggregate(fns ...AggregateFunc) *LaminaSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *ObjectQuery) prepareQuery(ctx context.Context) error {
+func (_q *LaminaQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -499,7 +499,7 @@ func (_q *ObjectQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !object.ValidColumn(f) {
+		if !lamina.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -513,9 +513,9 @@ func (_q *ObjectQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *ObjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Object, error) {
+func (_q *LaminaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lamina, error) {
 	var (
-		nodes       = []*Object{}
+		nodes       = []*Lamina{}
 		_spec       = _q.querySpec()
 		loadedTypes = [5]bool{
 			_q.withTenant != nil,
@@ -526,10 +526,10 @@ func (_q *ObjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Objec
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Object).scanValues(nil, columns)
+		return (*Lamina).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Object{config: _q.config}
+		node := &Lamina{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -548,40 +548,40 @@ func (_q *ObjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Objec
 	}
 	if query := _q.withTenant; query != nil {
 		if err := _q.loadTenant(ctx, query, nodes, nil,
-			func(n *Object, e *Tenant) { n.Edges.Tenant = e }); err != nil {
+			func(n *Lamina, e *Tenant) { n.Edges.Tenant = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withSite; query != nil {
 		if err := _q.loadSite(ctx, query, nodes, nil,
-			func(n *Object, e *Site) { n.Edges.Site = e }); err != nil {
+			func(n *Lamina, e *Site) { n.Edges.Site = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withSet; query != nil {
 		if err := _q.loadSet(ctx, query, nodes, nil,
-			func(n *Object, e *Set) { n.Edges.Set = e }); err != nil {
+			func(n *Lamina, e *Set) { n.Edges.Set = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withSource; query != nil {
 		if err := _q.loadSource(ctx, query, nodes, nil,
-			func(n *Object, e *Source) { n.Edges.Source = e }); err != nil {
+			func(n *Lamina, e *Source) { n.Edges.Source = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := _q.withSink; query != nil {
 		if err := _q.loadSink(ctx, query, nodes, nil,
-			func(n *Object, e *Sink) { n.Edges.Sink = e }); err != nil {
+			func(n *Lamina, e *Sink) { n.Edges.Sink = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *ObjectQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes []*Object, init func(*Object), assign func(*Object, *Tenant)) error {
+func (_q *LaminaQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes []*Lamina, init func(*Lamina), assign func(*Lamina, *Tenant)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Object)
+	nodeids := make(map[uuid.UUID][]*Lamina)
 	for i := range nodes {
 		fk := nodes[i].TenantId
 		if _, ok := nodeids[fk]; !ok {
@@ -608,9 +608,9 @@ func (_q *ObjectQuery) loadTenant(ctx context.Context, query *TenantQuery, nodes
 	}
 	return nil
 }
-func (_q *ObjectQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []*Object, init func(*Object), assign func(*Object, *Site)) error {
+func (_q *LaminaQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []*Lamina, init func(*Lamina), assign func(*Lamina, *Site)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Object)
+	nodeids := make(map[uuid.UUID][]*Lamina)
 	for i := range nodes {
 		fk := nodes[i].SiteId
 		if _, ok := nodeids[fk]; !ok {
@@ -637,9 +637,9 @@ func (_q *ObjectQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []*
 	}
 	return nil
 }
-func (_q *ObjectQuery) loadSet(ctx context.Context, query *SetQuery, nodes []*Object, init func(*Object), assign func(*Object, *Set)) error {
+func (_q *LaminaQuery) loadSet(ctx context.Context, query *SetQuery, nodes []*Lamina, init func(*Lamina), assign func(*Lamina, *Set)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Object)
+	nodeids := make(map[uuid.UUID][]*Lamina)
 	for i := range nodes {
 		fk := nodes[i].SetId
 		if _, ok := nodeids[fk]; !ok {
@@ -666,9 +666,9 @@ func (_q *ObjectQuery) loadSet(ctx context.Context, query *SetQuery, nodes []*Ob
 	}
 	return nil
 }
-func (_q *ObjectQuery) loadSource(ctx context.Context, query *SourceQuery, nodes []*Object, init func(*Object), assign func(*Object, *Source)) error {
+func (_q *LaminaQuery) loadSource(ctx context.Context, query *SourceQuery, nodes []*Lamina, init func(*Lamina), assign func(*Lamina, *Source)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Object)
+	nodeids := make(map[uuid.UUID][]*Lamina)
 	for i := range nodes {
 		fk := nodes[i].SourceId
 		if _, ok := nodeids[fk]; !ok {
@@ -695,9 +695,9 @@ func (_q *ObjectQuery) loadSource(ctx context.Context, query *SourceQuery, nodes
 	}
 	return nil
 }
-func (_q *ObjectQuery) loadSink(ctx context.Context, query *SinkQuery, nodes []*Object, init func(*Object), assign func(*Object, *Sink)) error {
+func (_q *LaminaQuery) loadSink(ctx context.Context, query *SinkQuery, nodes []*Lamina, init func(*Lamina), assign func(*Lamina, *Sink)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Object)
+	nodeids := make(map[uuid.UUID][]*Lamina)
 	for i := range nodes {
 		fk := nodes[i].SinkId
 		if _, ok := nodeids[fk]; !ok {
@@ -725,7 +725,7 @@ func (_q *ObjectQuery) loadSink(ctx context.Context, query *SinkQuery, nodes []*
 	return nil
 }
 
-func (_q *ObjectQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *LaminaQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	if len(_q.modifiers) > 0 {
 		_spec.Modifiers = _q.modifiers
@@ -737,8 +737,8 @@ func (_q *ObjectQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *ObjectQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(object.Table, object.Columns, sqlgraph.NewFieldSpec(object.FieldId, field.TypeUuid))
+func (_q *LaminaQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(lamina.Table, lamina.Columns, sqlgraph.NewFieldSpec(lamina.FieldId, field.TypeUuid))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -747,26 +747,26 @@ func (_q *ObjectQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, object.FieldId)
+		_spec.Node.Columns = append(_spec.Node.Columns, lamina.FieldId)
 		for i := range fields {
-			if fields[i] != object.FieldId {
+			if fields[i] != lamina.FieldId {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
 		if _q.withTenant != nil {
-			_spec.Node.AddColumnOnce(object.FieldTenantId)
+			_spec.Node.AddColumnOnce(lamina.FieldTenantId)
 		}
 		if _q.withSite != nil {
-			_spec.Node.AddColumnOnce(object.FieldSiteId)
+			_spec.Node.AddColumnOnce(lamina.FieldSiteId)
 		}
 		if _q.withSet != nil {
-			_spec.Node.AddColumnOnce(object.FieldSetId)
+			_spec.Node.AddColumnOnce(lamina.FieldSetId)
 		}
 		if _q.withSource != nil {
-			_spec.Node.AddColumnOnce(object.FieldSourceId)
+			_spec.Node.AddColumnOnce(lamina.FieldSourceId)
 		}
 		if _q.withSink != nil {
-			_spec.Node.AddColumnOnce(object.FieldSinkId)
+			_spec.Node.AddColumnOnce(lamina.FieldSinkId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
@@ -792,12 +792,12 @@ func (_q *ObjectQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *ObjectQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *LaminaQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(object.Table)
+	t1 := builder.Table(lamina.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = object.Columns
+		columns = lamina.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -828,33 +828,33 @@ func (_q *ObjectQuery) sqlQuery(ctx context.Context) *sql.Selector {
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (_q *ObjectQuery) Modify(modifiers ...func(s *sql.Selector)) *ObjectSelect {
+func (_q *LaminaQuery) Modify(modifiers ...func(s *sql.Selector)) *LaminaSelect {
 	_q.modifiers = append(_q.modifiers, modifiers...)
 	return _q.Select()
 }
 
-// ObjectGroupBy is the group-by builder for Object entities.
-type ObjectGroupBy struct {
+// LaminaGroupBy is the group-by builder for Lamina entities.
+type LaminaGroupBy struct {
 	selector
-	build *ObjectQuery
+	build *LaminaQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *ObjectGroupBy) Aggregate(fns ...AggregateFunc) *ObjectGroupBy {
+func (_g *LaminaGroupBy) Aggregate(fns ...AggregateFunc) *LaminaGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *ObjectGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *LaminaGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ObjectQuery, *ObjectGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*LaminaQuery, *LaminaGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *ObjectGroupBy) sqlScan(ctx context.Context, root *ObjectQuery, v any) error {
+func (_g *LaminaGroupBy) sqlScan(ctx context.Context, root *LaminaQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -881,28 +881,28 @@ func (_g *ObjectGroupBy) sqlScan(ctx context.Context, root *ObjectQuery, v any) 
 	return sql.ScanSlice(rows, v)
 }
 
-// ObjectSelect is the builder for selecting fields of Object entities.
-type ObjectSelect struct {
-	*ObjectQuery
+// LaminaSelect is the builder for selecting fields of Lamina entities.
+type LaminaSelect struct {
+	*LaminaQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *ObjectSelect) Aggregate(fns ...AggregateFunc) *ObjectSelect {
+func (_s *LaminaSelect) Aggregate(fns ...AggregateFunc) *LaminaSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *ObjectSelect) Scan(ctx context.Context, v any) error {
+func (_s *LaminaSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ObjectQuery, *ObjectSelect](ctx, _s.ObjectQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*LaminaQuery, *LaminaSelect](ctx, _s.LaminaQuery, _s, _s.inters, v)
 }
 
-func (_s *ObjectSelect) sqlScan(ctx context.Context, root *ObjectQuery, v any) error {
+func (_s *LaminaSelect) sqlScan(ctx context.Context, root *LaminaQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {
@@ -924,7 +924,7 @@ func (_s *ObjectSelect) sqlScan(ctx context.Context, root *ObjectQuery, v any) e
 }
 
 // Modify adds a query modifier for attaching custom logic to queries.
-func (_s *ObjectSelect) Modify(modifiers ...func(s *sql.Selector)) *ObjectSelect {
+func (_s *LaminaSelect) Modify(modifiers ...func(s *sql.Selector)) *LaminaSelect {
 	_s.modifiers = append(_s.modifiers, modifiers...)
 	return _s
 }

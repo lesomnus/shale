@@ -64,7 +64,7 @@ type DeviceServiceClient interface {
 	Quarantine(ctx context.Context, in *DeviceQuarantineRequest, opts ...grpc.CallOption) (*Device, error)
 	Release(ctx context.Context, in *DeviceReleaseRequest, opts ...grpc.CallOption) (*Device, error)
 	Retire(ctx context.Context, in *DeviceRetireRequest, opts ...grpc.CallOption) (*Device, error)
-	// Its objects become LOST; the device is forgotten.
+	// Its laminae become LOST; the device is forgotten.
 	DeclareDead(ctx context.Context, in *DeviceDeclareDeadRequest, opts ...grpc.CallOption) (*Device, error)
 	// Bay LED on or off, through the node's control API.
 	Locate(ctx context.Context, in *DeviceLocateRequest, opts ...grpc.CallOption) (*Device, error)
@@ -238,7 +238,7 @@ type DeviceServiceServer interface {
 	Quarantine(context.Context, *DeviceQuarantineRequest) (*Device, error)
 	Release(context.Context, *DeviceReleaseRequest) (*Device, error)
 	Retire(context.Context, *DeviceRetireRequest) (*Device, error)
-	// Its objects become LOST; the device is forgotten.
+	// Its laminae become LOST; the device is forgotten.
 	DeclareDead(context.Context, *DeviceDeclareDeadRequest) (*Device, error)
 	// Bay LED on or off, through the node's control API.
 	Locate(context.Context, *DeviceLocateRequest) (*Device, error)

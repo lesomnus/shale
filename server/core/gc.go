@@ -15,7 +15,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
-	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/sink"
 )
 
@@ -56,7 +56,7 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 
 	type cand struct {
 		c      *api.GcCandidate
-		obj    *ent.Object
+		obj    *ent.Lamina
 		tenant pdid.Id
 		when   time.Time
 		ok     bool
@@ -65,7 +65,7 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 	var cands []*cand
 	for _, c := range req.GetCandidates() {
 		cc := &cand{c: c}
-		obj, err := s.d.Ent.Object.Query().Where(object.SinkIdEQ(sid.Uuid()), object.ObjectKeyEQ(c.GetObjectKey())).First(ctx)
+		obj, err := s.d.Ent.Lamina.Query().Where(lamina.SinkIdEQ(sid.Uuid()), lamina.LaminaKeyEQ(c.GetLaminaKey())).First(ctx)
 		if err != nil && !ent.IsNotFound(err) {
 			return nil, err
 		}
@@ -90,10 +90,10 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 		}
 		cc.obj = obj
 		cc.tenant = pdid.Id(obj.TenantId)
-		switch api.ObjectState(obj.State) {
-		case api.ObjectState_OBJECT_STATE_DELETING:
+		switch api.LaminaState(obj.State) {
+		case api.LaminaState_LAMINA_STATE_DELETING:
 			cc.ok = true
-		case api.ObjectState_OBJECT_STATE_COMMITTED, api.ObjectState_OBJECT_STATE_LOST:
+		case api.LaminaState_LAMINA_STATE_COMMITTED, api.LaminaState_LAMINA_STATE_LOST:
 			if sweep {
 				cc.ok = obj.DateDeleted != nil && !obj.DateDeleted.After(now)
 				if obj.DateDeleted != nil {
@@ -133,7 +133,7 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 	var decisions []*api.GcDecision
 	err = s.ownTx(ctx, func(own api.Server) error {
 		for _, c := range cands {
-			d := api.GcDecision_builder{ObjectKey: c.c.GetObjectKey()}
+			d := api.GcDecision_builder{LaminaKey: c.c.GetLaminaKey()}
 			if c.obj != nil && c.dates {
 				d.DateExpired = timestamppb.New(c.obj.DateExpired)
 				if c.obj.DateDeleted != nil {
@@ -143,10 +143,10 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 			if c.ok && (sweep || target <= 0 || approved < target) {
 				d.Approved = true
 				approved += c.c.GetSize()
-				if c.obj != nil && c.obj.State != int32(api.ObjectState_OBJECT_STATE_DELETING) {
-					if _, err := own.Object().Patch(ctx, api.ObjectPatchRequest_builder{
-						Ref:              api.ObjectRef_builder{Id: c.obj.Id[:]}.Build(),
-						State:            z.Ptr(api.ObjectState_OBJECT_STATE_DELETING),
+				if c.obj != nil && c.obj.State != int32(api.LaminaState_LAMINA_STATE_DELETING) {
+					if _, err := own.Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
+						Ref:              api.LaminaRef_builder{Id: c.obj.Id[:]}.Build(),
+						State:            z.Ptr(api.LaminaState_LAMINA_STATE_DELETING),
 						DateUpdatedForce: z.Ptr(true),
 					}.Build()); err != nil {
 						return err
@@ -203,7 +203,7 @@ func (s Core) overShare(ctx context.Context) map[pdid.Id]bool {
 	return out
 }
 
-// Adopt attaches a moved sink to a node (§28.3). Every object row keeps its
+// Adopt attaches a moved sink to a node (§28.3). Every lamina row keeps its
 // location; the CP reconciles the sink with the new node.
 func (s coreSink) Adopt(ctx context.Context, req *api.SinkAdoptRequest) (*api.Sink, error) {
 	if _, err := actor(ctx); err != nil {
@@ -380,7 +380,7 @@ func (s coreDevice) Retire(ctx context.Context, req *api.DeviceRetireRequest) (*
 	return s.setHealth(ctx, req.GetRef(), api.DeviceHealth_DEVICE_HEALTH_RETIRED, req.GetReason(), true)
 }
 
-// DeclareDead marks every object on the device's sinks LOST and forgets the
+// DeclareDead marks every lamina on the device's sinks LOST and forgets the
 // device (§27).
 func (s coreDevice) DeclareDead(ctx context.Context, req *api.DeviceDeclareDeadRequest) (*api.Device, error) {
 	d, err := s.setHealth(ctx, req.GetRef(), api.DeviceHealth_DEVICE_HEALTH_DEAD, req.GetReason(), true)
@@ -394,15 +394,15 @@ func (s coreDevice) DeclareDead(ctx context.Context, req *api.DeviceDeclareDeadR
 			return err
 		}
 		for _, sk := range sinks {
-			objs, err := s.d.Ent.Object.Query().
-				Where(object.SinkIdEQ(sk.Id), object.StateIn(int32(api.ObjectState_OBJECT_STATE_COMMITTED), int32(api.ObjectState_OBJECT_STATE_DELETING))).
+			objs, err := s.d.Ent.Lamina.Query().
+				Where(lamina.SinkIdEQ(sk.Id), lamina.StateIn(int32(api.LaminaState_LAMINA_STATE_COMMITTED), int32(api.LaminaState_LAMINA_STATE_DELETING))).
 				All(ctx)
 			if err != nil {
 				return err
 			}
 			for _, o := range objs {
-				if _, err := own.Object().Patch(ctx, api.ObjectPatchRequest_builder{
-					Ref: api.ObjectRef_builder{Id: o.Id[:]}.Build(), State: z.Ptr(api.ObjectState_OBJECT_STATE_LOST),
+				if _, err := own.Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
+					Ref: api.LaminaRef_builder{Id: o.Id[:]}.Build(), State: z.Ptr(api.LaminaState_LAMINA_STATE_LOST),
 					DateFinished: timestamppb.New(now), DateUpdatedForce: z.Ptr(true),
 				}.Build()); err != nil {
 					return err

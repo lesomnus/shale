@@ -9,8 +9,8 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/shale/internal/ent/attempt"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
-	"github.com/lesomnus/shale/internal/ent/object"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/site"
 	"github.com/lesomnus/shale/internal/ent/tenant"
@@ -41,8 +41,8 @@ type Attempt struct {
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
 	SiteId uuid.UUID `json:"site_id,omitempty"`
-	// ObjectId holds the value of the "object_id" field.
-	ObjectId uuid.UUID `json:"object_id,omitempty"`
+	// LaminaId holds the value of the "lamina_id" field.
+	LaminaId uuid.UUID `json:"lamina_id,omitempty"`
 	// SinkId holds the value of the "sink_id" field.
 	SinkId uuid.UUID `json:"sink_id,omitempty"`
 	// NodeId holds the value of the "node_id" field.
@@ -59,8 +59,8 @@ type AttemptEdges struct {
 	Tenant *Tenant `json:"tenant,omitempty"`
 	// Site holds the value of the site edge.
 	Site *Site `json:"site,omitempty"`
-	// Object holds the value of the object edge.
-	Object *Object `json:"object,omitempty"`
+	// Lamina holds the value of the lamina edge.
+	Lamina *Lamina `json:"lamina,omitempty"`
 	// Sink holds the value of the sink edge.
 	Sink *Sink `json:"sink,omitempty"`
 	// Node holds the value of the node edge.
@@ -92,15 +92,15 @@ func (e AttemptEdges) SiteOrErr() (*Site, error) {
 	return nil, &NotLoadedError{edge: "site"}
 }
 
-// ObjectOrErr returns the Object value or an error if the edge
+// LaminaOrErr returns the Lamina value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e AttemptEdges) ObjectOrErr() (*Object, error) {
-	if e.Object != nil {
-		return e.Object, nil
+func (e AttemptEdges) LaminaOrErr() (*Lamina, error) {
+	if e.Lamina != nil {
+		return e.Lamina, nil
 	} else if e.loadedTypes[2] {
-		return nil, &NotFoundError{label: object.Label}
+		return nil, &NotFoundError{label: lamina.Label}
 	}
-	return nil, &NotLoadedError{edge: "object"}
+	return nil, &NotLoadedError{edge: "lamina"}
 }
 
 // SinkOrErr returns the Sink value or an error if the edge
@@ -138,7 +138,7 @@ func (*Attempt) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case attempt.FieldSiteId:
 			values[i] = new(sql.Null[uuid.UUID])
-		case attempt.FieldId, attempt.FieldTenantId, attempt.FieldObjectId, attempt.FieldSinkId, attempt.FieldNodeId:
+		case attempt.FieldId, attempt.FieldTenantId, attempt.FieldLaminaId, attempt.FieldSinkId, attempt.FieldNodeId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -216,11 +216,11 @@ func (_m *Attempt) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SiteId = value.V
 			}
-		case attempt.FieldObjectId:
+		case attempt.FieldLaminaId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field object_id", values[i])
+				return fmt.Errorf("unexpected type %T for field lamina_id", values[i])
 			} else if value != nil {
-				_m.ObjectId = *value
+				_m.LaminaId = *value
 			}
 		case attempt.FieldSinkId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -257,9 +257,9 @@ func (_m *Attempt) QuerySite() *SiteQuery {
 	return NewAttemptClient(_m.config).QuerySite(_m)
 }
 
-// QueryObject queries the "object" edge of the Attempt entity.
-func (_m *Attempt) QueryObject() *ObjectQuery {
-	return NewAttemptClient(_m.config).QueryObject(_m)
+// QueryLamina queries the "lamina" edge of the Attempt entity.
+func (_m *Attempt) QueryLamina() *LaminaQuery {
+	return NewAttemptClient(_m.config).QueryLamina(_m)
 }
 
 // QuerySink queries the "sink" edge of the Attempt entity.
@@ -324,8 +324,8 @@ func (_m *Attempt) String() string {
 	builder.WriteString("site_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SiteId))
 	builder.WriteString(", ")
-	builder.WriteString("object_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ObjectId))
+	builder.WriteString("lamina_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.LaminaId))
 	builder.WriteString(", ")
 	builder.WriteString("sink_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SinkId))

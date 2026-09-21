@@ -1,6 +1,6 @@
 // Package relay is the live path (§39): it takes a producer's TS bytes over
 // one gRPC stream and fans the video out to viewers over WebRTC (WHEP). It
-// holds no state, reads no object, and trusts one thing: a CP signature on
+// holds no state, reads no lamina, and trusts one thing: a CP signature on
 // a token.
 package relay
 

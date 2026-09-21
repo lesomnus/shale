@@ -10,8 +10,8 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/shale/internal/ent/attempt"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
-	"github.com/lesomnus/shale/internal/ent/object"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/site"
 	"github.com/lesomnus/shale/internal/ent/tenant"
@@ -113,9 +113,9 @@ func (_c *AttemptCreate) SetNillableSiteId(v *uuid.UUID) *AttemptCreate {
 	return _c
 }
 
-// SetObjectId sets the "object_id" field.
-func (_c *AttemptCreate) SetObjectId(v uuid.UUID) *AttemptCreate {
-	_c.mutation.SetObjectId(v)
+// SetLaminaId sets the "lamina_id" field.
+func (_c *AttemptCreate) SetLaminaId(v uuid.UUID) *AttemptCreate {
+	_c.mutation.SetLaminaId(v)
 	return _c
 }
 
@@ -147,9 +147,9 @@ func (_c *AttemptCreate) SetSite(v *Site) *AttemptCreate {
 	return _c.SetSiteId(v.Id)
 }
 
-// SetObject sets the "object" edge to the Object entity.
-func (_c *AttemptCreate) SetObject(v *Object) *AttemptCreate {
-	return _c.SetObjectId(v.Id)
+// SetLamina sets the "lamina" edge to the Lamina entity.
+func (_c *AttemptCreate) SetLamina(v *Lamina) *AttemptCreate {
+	return _c.SetLaminaId(v.Id)
 }
 
 // SetSink sets the "sink" edge to the Sink entity.
@@ -211,8 +211,8 @@ func (_c *AttemptCreate) check() error {
 	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Attempt.tenant_id"`)}
 	}
-	if _, ok := _c.mutation.ObjectId(); !ok {
-		return &ValidationError{Name: "object_id", err: errors.New(`ent: missing required field "Attempt.object_id"`)}
+	if _, ok := _c.mutation.LaminaId(); !ok {
+		return &ValidationError{Name: "lamina_id", err: errors.New(`ent: missing required field "Attempt.lamina_id"`)}
 	}
 	if _, ok := _c.mutation.SinkId(); !ok {
 		return &ValidationError{Name: "sink_id", err: errors.New(`ent: missing required field "Attempt.sink_id"`)}
@@ -223,8 +223,8 @@ func (_c *AttemptCreate) check() error {
 	if len(_c.mutation.TenantIds()) == 0 {
 		return &ValidationError{Name: "tenant", err: errors.New(`ent: missing required edge "Attempt.tenant"`)}
 	}
-	if len(_c.mutation.ObjectIds()) == 0 {
-		return &ValidationError{Name: "object", err: errors.New(`ent: missing required edge "Attempt.object"`)}
+	if len(_c.mutation.LaminaIds()) == 0 {
+		return &ValidationError{Name: "lamina", err: errors.New(`ent: missing required edge "Attempt.lamina"`)}
 	}
 	if len(_c.mutation.SinkIds()) == 0 {
 		return &ValidationError{Name: "sink", err: errors.New(`ent: missing required edge "Attempt.sink"`)}
@@ -333,21 +333,21 @@ func (_c *AttemptCreate) createSpec() (*Attempt, *sqlgraph.CreateSpec) {
 		_node.SiteId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.ObjectIds(); len(nodes) > 0 {
+	if nodes := _c.mutation.LaminaIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   attempt.ObjectTable,
-			Columns: []string{attempt.ObjectColumn},
+			Table:   attempt.LaminaTable,
+			Columns: []string{attempt.LaminaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IdSpec: sqlgraph.NewFieldSpec(object.FieldId, field.TypeUuid),
+				IdSpec: sqlgraph.NewFieldSpec(lamina.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.ObjectId = nodes[0]
+		_node.LaminaId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.SinkIds(); len(nodes) > 0 {

@@ -106,11 +106,11 @@ output:  a ranked list of candidate sinks (first = target, rest = retries)
 
 The weighted-HRW scheduler above is the first implementation.
 `PlacementPolicy` names the scheduler and its parameters, and
-`placement_version` identifies the policy an object was placed under.
+`placement_version` identifies the policy a lamina was placed under.
 
-Swapping schedulers is safe at any time. Past object locations are never
+Swapping schedulers is safe at any time. Past lamina locations are never
 recomputed: the index is the source of truth, and the scheduler is only used
-to place new objects. A new scheduler therefore changes where future objects
+to place new laminae. A new scheduler therefore changes where future laminae
 go, and needs no migration.
 
 This is where zone-aware placement would go, if it is ever needed

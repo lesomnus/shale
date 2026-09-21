@@ -80,7 +80,7 @@ func (c *cluster) startNodeAt(name, stateDir, sinkDir string, opts ...func(*stor
 // quarantine that stops writes within a heartbeat and a release that
 // resumes them; a reschedule that reaches the xattr within seconds; a
 // delete-now that removes the file; and a sink that moves to another node
-// and serves again, with every object indexed, after `sink adopt`.
+// and serves again, with every lamina indexed, after `sink adopt`.
 func TestMultiNode(t *testing.T) {
 	c := start(t)
 	ctx := context.Background()
@@ -130,7 +130,7 @@ func TestMultiNode(t *testing.T) {
 	conn := c.dial("@acme/admin")
 	sets := api.NewSetServiceClient(conn)
 	sources := api.NewSourceServiceClient(conn)
-	objects := api.NewObjectServiceClient(conn)
+	laminae := api.NewLaminaServiceClient(conn)
 	set, err := sets.Add(ctx, api.SetAddRequest_builder{Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "multi"}.Build())
 	require.NoError(t, err)
 	var srcs []*api.Source
@@ -168,7 +168,7 @@ func TestMultiNode(t *testing.T) {
 	bySink := map[pdid.Id]int{}
 	for _, src := range srcs {
 		for i := range n {
-			al, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+			al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 				Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(base.Add(time.Duration(i) * dur)),
 			}.Build())
 			require.NoError(t, err)
@@ -182,8 +182,8 @@ func TestMultiNode(t *testing.T) {
 	require.Len(t, bySink, 3, "placement used every sink: %v", bySink)
 	require.Eventually(t, func() bool {
 		for _, s := range all {
-			o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: s.al.GetObjectId()}.Build()}.Build())
-			if err != nil || o.GetState() != api.ObjectState_OBJECT_STATE_COMMITTED {
+			o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: s.al.GetLaminaId()}.Build()}.Build())
+			if err != nil || o.GetState() != api.LaminaState_LAMINA_STATE_COMMITTED {
 				return false
 			}
 		}
@@ -198,7 +198,7 @@ func TestMultiNode(t *testing.T) {
 		for range 50 {
 			slot++
 			for _, src := range srcs {
-				al, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+				al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 					Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(base.Add(time.Duration(slot) * dur)),
 				}.Build())
 				require.NoError(t, err)
@@ -221,7 +221,7 @@ func TestMultiNode(t *testing.T) {
 	// And placement no longer offers the sink at all.
 	for _, src := range srcs {
 		slot++
-		al, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+		al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 			Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(base.Add(time.Duration(slot) * dur)),
 		}.Build())
 		require.NoError(t, err)
@@ -249,19 +249,19 @@ func TestMultiNode(t *testing.T) {
 		}
 	}
 	keep := time.Now().Add(10 * 24 * time.Hour).Truncate(time.Millisecond)
-	res, err := objects.Reschedule(ctx, api.ObjectRescheduleRequest_builder{
-		Ref: api.ObjectRef_builder{Id: onA.al.GetObjectId()}.Build(), DateExpired: timestamppb.New(keep), DateDeleted: timestamppb.New(keep), Reason: "incident",
+	res, err := laminae.Reschedule(ctx, api.LaminaRescheduleRequest_builder{
+		Ref: api.LaminaRef_builder{Id: onA.al.GetLaminaId()}.Build(), DateExpired: timestamppb.New(keep), DateDeleted: timestamppb.New(keep), Reason: "incident",
 	}.Build())
 	require.NoError(t, err)
 	require.Equal(t, int64(1), res.GetChanged())
-	pathA := filepath.Join(c.cfg.Storage.Sinks[0].Path, onA.al.GetObjectKey())
+	pathA := filepath.Join(c.cfg.Storage.Sinks[0].Path, onA.al.GetLaminaKey())
 	require.Eventually(t, func() bool {
 		rec, err := storage.ReadRecordPath(pathA)
 
 		return err == nil && rec.GetDateExpiredMs() == keep.UnixMilli() && rec.GetDateDeletedMs() == keep.UnixMilli()
 	}, 5*time.Second, 200*time.Millisecond, "SetDates rewrote the xattr")
 	require.Eventually(t, func() bool {
-		o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: onA.al.GetObjectId()}.Build()}.Build())
+		o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: onA.al.GetLaminaId()}.Build()}.Build())
 
 		return err == nil && o.GetDatesSynced()
 	}, 5*time.Second, 100*time.Millisecond, "the row says the dates are synced")
@@ -274,11 +274,11 @@ func TestMultiNode(t *testing.T) {
 			break
 		}
 	}
-	pathB := filepath.Join(dirB, onB.al.GetObjectKey())
+	pathB := filepath.Join(dirB, onB.al.GetLaminaKey())
 	_, err = os.Stat(pathB)
 	require.NoError(t, err)
-	_, err = objects.Reschedule(ctx, api.ObjectRescheduleRequest_builder{
-		Ref: api.ObjectRef_builder{Id: onB.al.GetObjectId()}.Build(), DeleteNow: true, Reason: "privacy request",
+	_, err = laminae.Reschedule(ctx, api.LaminaRescheduleRequest_builder{
+		Ref: api.LaminaRef_builder{Id: onB.al.GetLaminaId()}.Build(), DeleteNow: true, Reason: "privacy request",
 	}.Build())
 	require.NoError(t, err)
 	require.Eventually(t, func() bool {
@@ -286,13 +286,13 @@ func TestMultiNode(t *testing.T) {
 		if !os.IsNotExist(err) {
 			return false
 		}
-		o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: onB.al.GetObjectId()}.Build()}.Build())
+		o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: onB.al.GetLaminaId()}.Build()}.Build())
 
-		return err == nil && o.GetState() == api.ObjectState_OBJECT_STATE_DELETED
+		return err == nil && o.GetState() == api.LaminaState_LAMINA_STATE_DELETED
 	}, 10*time.Second, 200*time.Millisecond, "Delete removed the file and the event closed the row")
 
 	// ---- a sink moves: C dies, D attaches C's disk, and after `sink adopt`
-	// the objects on it are readable again and every one is indexed.
+	// the laminae on it are readable again and every one is indexed.
 	var onC stored
 	for _, s := range all {
 		if s.sink == mustId(sinkC.GetId()) {
@@ -301,10 +301,10 @@ func TestMultiNode(t *testing.T) {
 		}
 	}
 	// One row the CP lost: reconciliation brings it back from the xattr.
-	lostId := mustId(onC.al.GetObjectId()).Uuid()
-	_, err = c.running.CP.Ent.Attempt.Delete().Where(attempt.ObjectIdEQ(lostId)).Exec(ctx)
+	lostId := mustId(onC.al.GetLaminaId()).Uuid()
+	_, err = c.running.CP.Ent.Attempt.Delete().Where(attempt.LaminaIdEQ(lostId)).Exec(ctx)
 	require.NoError(t, err)
-	require.NoError(t, c.running.CP.Ent.Object.DeleteOneId(lostId).Exec(ctx))
+	require.NoError(t, c.running.CP.Ent.Lamina.DeleteOneId(lostId).Exec(ctx))
 	stopC()
 	t.Log("waiting for the CP to consider node C down")
 	time.Sleep(core.DefaultNodeDownAfter + 2*time.Second)
@@ -325,20 +325,20 @@ func TestMultiNode(t *testing.T) {
 
 		return err == nil && s.GetDateReconciled() != nil
 	}, 15*time.Second, 200*time.Millisecond, "the leader reconciled the moved sink")
-	back, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: onC.al.GetObjectId()}.Build()}.Build())
+	back, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: onC.al.GetLaminaId()}.Build()}.Build())
 	require.NoError(t, err, "the erased row came back from the sink")
-	require.Equal(t, api.ObjectState_OBJECT_STATE_COMMITTED, back.GetState())
+	require.Equal(t, api.LaminaState_LAMINA_STATE_COMMITTED, back.GetState())
 	require.Equal(t, sinkC.GetId(), back.GetSink().GetId())
 
 	// Readable through D.
-	tl, err := objects.Timeline(ctx, api.ObjectTimelineRequest_builder{
+	tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
 		Set: setRef("multi"), From: timestamppb.New(onC.al.GetDateStarted().AsTime()), To: timestamppb.New(onC.al.GetDateStarted().AsTime().Add(dur)), Size: 10,
 	}.Build())
 	require.NoError(t, err)
 	var url string
 	for _, src := range tl.GetSources() {
-		for _, o := range src.GetObjects() {
-			if string(o.GetObjectId()) == string(onC.al.GetObjectId()) {
+		for _, o := range src.GetLaminae() {
+			if string(o.GetLaminaId()) == string(onC.al.GetLaminaId()) {
 				url = o.GetUrl()
 			}
 		}

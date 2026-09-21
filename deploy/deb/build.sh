@@ -42,7 +42,7 @@ Installed-Size: $SIZE
 Depends: adduser
 Recommends: ffmpeg
 Description: loss-tolerant object store for CCTV
- Shale records camera streams as objects on plain HDDs and plays them
+ Shale records camera streams as laminae on plain HDDs and plays them
  live. One binary serves every role: the control plane, a storage node,
  a producer beside the cameras, a relay for live viewing, a reader.
  Each role is an instance of the shale@ systemd unit.

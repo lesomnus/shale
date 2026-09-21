@@ -13,7 +13,7 @@ func unsafePointer(b []byte) unsafe.Pointer { return unsafe.Pointer(unsafe.Slice
 // Staging in parts (§12.2, §22.4): incoming bytes fill a RAM part buffer
 // that grows on demand up to part_size; a full buffer is one write at its
 // offset, aligned to 4 KiB so the device can take it with O_DIRECT, and
-// the object stays one contiguous extent. The end of a request flushes
+// the lamina stays one contiguous extent. The end of a request flushes
 // the aligned prefix; what does not fill a block is dropped and re-sent.
 // A node-wide pool bounds what every upload holds at once: when it is
 // spent, the sockets stop being read and TCP flow control slows the

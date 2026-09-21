@@ -14,22 +14,22 @@ import "shale/storage.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
 
-// ObjectState is the object machine of §8.
-enum ObjectState {
-  OBJECT_STATE_UNSPECIFIED = 0;
-  OBJECT_STATE_PENDING = 1;
-  OBJECT_STATE_COMMITTED = 2;
-  OBJECT_STATE_DELETING = 3;
-  OBJECT_STATE_DELETED = 4;
-  OBJECT_STATE_LOST = 5;
+// LaminaState is the lamina machine of §8.
+enum LaminaState {
+  LAMINA_STATE_UNSPECIFIED = 0;
+  LAMINA_STATE_PENDING = 1;
+  LAMINA_STATE_COMMITTED = 2;
+  LAMINA_STATE_DELETING = 3;
+  LAMINA_STATE_DELETED = 4;
+  LAMINA_STATE_LOST = 5;
 }
 
-// Object is the immutable unit of storage, a video segment (§23). Its row is
+// Lamina is the immutable unit of storage, a video segment (§23). Its row is
 // the index (§23.3); the truth lives in the sink's xattrs.
 //
 // Never erased through the API: GC moves it to DELETED and the row is pruned
 // later by row retention (§20.4), which is a hard erase the CP performs.
-message Object {
+message Lamina {
   bytes id = 1 [(orm.field) = {
     type: TYPE_UUID
     key: true
@@ -43,11 +43,11 @@ message Object {
 
   Set set = 8 [(orm.edge) = {immutable: true}];
   Source source = 9 [(orm.edge) = {immutable: true}];
-  // The sink the object was committed to; null until then.
+  // The sink the lamina was committed to; null until then.
   Sink sink = 10 [(orm.edge) = {nullable: true}];
-  // Path within the sink; with the sink, the object's location.
-  string object_key = 11;
-  ObjectState state = 12;
+  // Path within the sink; with the sink, the lamina's location.
+  string lamina_key = 11;
+  LaminaState state = 12;
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
@@ -58,7 +58,7 @@ message Object {
   // Data time (§10): declared by the producer.
   google.protobuf.Timestamp date_started = 16 [(orm.field) = {default: ""}];
   google.protobuf.Timestamp date_ended = 17 [(orm.field) = {nullable: true}];
-  // date_ended is an estimate for an incomplete object (§19).
+  // date_ended is an estimate for an incomplete lamina (§19).
   bool ended_estimated = 18;
   int64 size = 19;
   bool incomplete = 20;
@@ -68,11 +68,11 @@ message Object {
   bool dates_synced = 23;
   int64 placement_version = 24;
   google.protobuf.Timestamp date_committed = 25 [(orm.field) = {nullable: true}];
-  // When the object became DELETED or LOST, for row retention (§20.4).
+  // When the lamina became DELETED or LOST, for row retention (§20.4).
   google.protobuf.Timestamp date_finished = 26 [(orm.field) = {nullable: true}];
   bytes checksum = 27 [(orm.field) = {default: ""}];
   // The epoch bucket date_started falls in, in seconds since the epoch, so
-  // one index answers "the objects of this source in this epoch".
+  // one index answers "the laminae of this source in this epoch".
   int64 epoch = 28;
 
   option (orm.message) = {
@@ -103,7 +103,7 @@ message Object {
         name: "location"
         refs: [
           {name: "sink", number: 10},
-          {name: "object_key", number: 11}
+          {name: "lamina_key", number: 11}
         ]
       },
       {
@@ -154,8 +154,8 @@ enum AttemptState {
   ATTEMPT_STATE_DUPLICATE = 5;
 }
 
-// Attempt is one write attempt of an object: one candidate of one allocation
-// (§8). FAILED and ABANDONED are the CP's guesses; a late ObjectStored still
+// Attempt is one write attempt of a lamina: one candidate of one allocation
+// (§8). FAILED and ABANDONED are the CP's guesses; a late LaminaStored still
 // moves it to STORED or DUPLICATE (§14).
 message Attempt {
   bytes id = 1 [(orm.field) = {
@@ -169,7 +169,7 @@ message Attempt {
     immutable: true
   }];
 
-  Object object = 8 [(orm.edge) = {immutable: true}];
+  Lamina lamina = 8 [(orm.edge) = {immutable: true}];
   Sink sink = 9 [(orm.edge) = {immutable: true}];
   // The node the sink was on when the attempt was allocated.
   Node node = 10 [(orm.edge) = {immutable: true}];
@@ -199,9 +199,9 @@ message Attempt {
         ]
       },
       {
-        name: "object"
+        name: "lamina"
         refs: [
-          {name: "object", number: 8},
+          {name: "lamina", number: 8},
           {name: "date_created", number: 15}
         ]
       },
@@ -225,7 +225,7 @@ message Attempt {
       by: [
         {name: "ref"},
         {name: "tenant"},
-        {name: "object"},
+        {name: "lamina"},
         {name: "sink"}
       ]
       size: 50

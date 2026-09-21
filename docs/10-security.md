@@ -14,7 +14,7 @@ holds a credential.
 | Principal | Kind | Authenticates to | With | May |
 |---|---|---|---|---|
 | **Producer** | host, tenant entity | tenant API | host certificate (mTLS) | negotiate and allocate for its set; upload with the access tokens it is given |
-| **Reader** | host, tenant entity | tenant API | host certificate (mTLS) | query and read objects of its sites |
+| **Reader** | host, tenant entity | tenant API | host certificate (mTLS) | query and read laminae of its sites |
 | **Tenant admin** | person (Holder) | tenant API | a session, after roster verified the password | manage its tenant's sites, sets, sources, producers, readers, and retention dates |
 | **Storage Node** | host, global entity | cluster API | host certificate (mTLS) | report its own devices and sinks; push events; propose GC |
 | **Relay** | host, global entity | cluster API | host certificate (mTLS) | report its load; serve producers and viewers that carry tokens ([§39](16-relay.md#39-relay)) |
@@ -98,9 +98,9 @@ aud          node_id or relay_id  (a token for host A is useless on host B)
 op           put | get            (either also allows HEAD on the key)
              publish | view       (relay: §39)
 sink_id
-object_key
+lamina_key
 attempt_id   (put)
-record       (put: the object's initial xattr record, §23.1; the node writes
+record       (put: the lamina's initial xattr record, §23.1; the node writes
               it as given and fills in what only it knows)
 max_length   (put: upper bound on the upload's size, from the agreed profile)
 mode, idle_timeout, abandon_timeout
@@ -118,25 +118,25 @@ actor        the Producer, Reader, or person the token was issued to, and
 - **Verification** on the node is local and needs no call to the CP:
   signature, known `kid`, `exp` (with `token_skew`, default 1 minute), `aud`
   equals its own node ID, `op` matches the method (`HEAD` is allowed by
-  either), `sink_id`/`object_key` match the path, and the upload does not
+  either), `sink_id`/`lamina_key` match the path, and the upload does not
   exceed `max_length`. Ed25519 verification costs ~50 µs, which is negligible
   at hundreds of requests per second.
 - **Issued by the tenant API**, inside the wall: `Allocate` issues put
   tokens, `Timeline` issues get tokens, `Live` issues view tokens, and
   `Negotiate`, the producer heartbeat, and `ProducerService.Relay` issue
   publish tokens, all only for the caller's own tenant's sources and
-  objects. The wall therefore extends to the data plane without a node or a
+  laminae. The wall therefore extends to the data plane without a node or a
   relay knowing tenants exist.
 - **Lifetime**: put tokens live as long as their allocation
   (`allocation_ttl`, [§12.1](04-write-path.md#121-flow)), and
-  `ObjectService.Renew` issues a fresh one for an attempt still in progress.
+  `LaminaService.Renew` issues a fresh one for an attempt still in progress.
   Get tokens live `read_token_ttl` (default 1 hour) and view tokens
   `view_token_ttl` (1 hour); a session already open outlives its token. A
   publish token lives `publish_token_ttl` (24 hours) and is checked when the
   producer attaches ([§39.3](16-relay.md#393-from-the-producer)).
 - **Replay** gains nothing. A put token names one key and one attempt, uploads
   are idempotent ([§12.5](04-write-path.md#125-idempotent-uploads)), and a
-  complete object cannot be overwritten.
+  complete lamina cannot be overwritten.
 - **Revocation** stops the CP from issuing new tokens. Tokens already issued
   stay valid until they expire: at most `allocation_ttl` for uploads (22
   minutes at the defaults, about 80 at the bounds) and `read_token_ttl` for
@@ -247,14 +247,14 @@ the CP can verify.
 the certificate serial the row records, so an erased host, or a host whose
 certificate was replaced, is refused on its next call without a revocation
 list. `shale node erase` is refused while sinks are attached to the node,
-unless `--detach` is given, which leaves their objects UNAVAILABLE until the
+unless `--detach` is given, which leaves their laminae UNAVAILABLE until the
 sinks are adopted elsewhere ([§28.3](09-operations.md#283-node-failure-and-device-re-homing)).
 
 A **Reader** host is the machine that runs a media server. `shale serve
 reader` is an agent beside it: it holds the reader's certificate, serves the
 tenant API on localhost without TLS for the media server software, and writes
 the CA bundle to a file the media server uses to trust Storage Nodes when it
-fetches objects directly. The media server itself manages no keys.
+fetches laminae directly. The media server itself manages no keys.
 
 ### 33.5 TLS
 
@@ -306,14 +306,14 @@ fetches objects directly. The media server itself manages no keys.
 
 | Leaked | Attacker can | Response |
 |---|---|---|
-| One access token | one operation on one object until it expires; a view token, one camera for an hour | none needed |
+| One access token | one operation on one lamina until it expires; a view token, one camera for an hour | none needed |
 | A publish token | feed false video for that producer's cameras to viewers, for up to a day | erase the producer; the relay refuses it at its next attach |
 | A relay's key | serve any stream it carries to anyone, and feed viewers anything; it holds no token for any Storage Node, so recordings are out of reach | erase the relay and adopt the machine again; its producers are reassigned |
-| A producer's key | negotiate and allocate for that producer's set, and write objects into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
-| A reader's key | read the objects of its sites | erase the reader; effective at once for new tokens, within `read_token_ttl` for issued ones |
+| A producer's key | negotiate and allocate for that producer's set, and write laminae into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
+| A reader's key | read the laminae of its sites | erase the reader; effective at once for new tokens, within `read_token_ttl` for issued ones |
 | A person's session | anything that person may do, inside **their tenant only**; the wall holds | end the session, reset the password |
 | A node's key | act as that node: serve or drop its own sinks' data, report its own devices and sinks (the CP rejects reports for sinks and devices not attached to that node, and clamps reported capacity, [§27](09-operations.md#27-node--device--sink-health-and-quarantine)) | erase the node and adopt the machine again under a new key |
 | A hardware identity | request adoption as a known host | nothing until an operator adopts it; with `readopt: auto`, impersonate that host, which is why the default is `manual` |
 | A cluster operator's session | manage the cluster and read across tenants, **from the internal network** | end the session; the cluster API is not reachable from outside |
-| The CP signing key | read and write any object on any node | rotate the key at once ([§33.3](#333-signing-keys-and-rotation)) |
+| The CP signing key | read and write any lamina on any node | rotate the key at once ([§33.3](#333-signing-keys-and-rotation)) |
 | The CA key | impersonate nodes or the CP to clients | re-initialize the CA and adopt every host again; protect it accordingly |

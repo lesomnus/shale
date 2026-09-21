@@ -35,7 +35,7 @@ message SetPlacement {
 message SetRetention {
   // Zero means the default, 30 days.
   int64 expire_seconds = 1;
-  // Zero means "= expire". `delete_none` means objects live until lazy GC
+  // Zero means "= expire". `delete_none` means laminae live until lazy GC
   // reclaims them.
   int64 delete_seconds = 2;
   bool delete_none = 3;
@@ -122,7 +122,7 @@ message Set {
   };
 }
 
-// Source is what produces objects: one camera, or one stream of data (§7).
+// Source is what produces laminae: one camera, or one stream of data (§7).
 message Source {
   bytes id = 1 [(orm.field) = {
     type: TYPE_UUID

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Segment is one object in the making: bytes that grow while the capture
+// Segment is one lamina in the making: bytes that grow while the capture
 // runs and an uploader reads them, closed when the segment is cut (§38.2).
 // It is the RAM the producer holds under its `retain` policy (§16).
 type Segment struct {

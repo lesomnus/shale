@@ -25,10 +25,10 @@ func NewMetrics(ctx context.Context) *Metrics {
 
 	return &Metrics{
 		Allocations:     o.Int64Counter("shale.cp.allocations", metric.WithDescription("allocations answered")),
-		Lost:            o.Int64Counter("shale.cp.objects_lost", metric.WithDescription("objects that became LOST")),
+		Lost:            o.Int64Counter("shale.cp.laminae_lost", metric.WithDescription("laminae that became LOST")),
 		DirectiveErrors: o.Int64Counter("shale.cp.directive_errors", metric.WithDescription("rounds of directives a node did not take")),
 		Reconciled:      o.Int64Counter("shale.cp.reconciliations", metric.WithDescription("sinks reconciled")),
-		Deleting:        o.Int64Gauge("shale.cp.objects_deleting", metric.WithDescription("objects waiting for their node to unlink them")),
+		Deleting:        o.Int64Gauge("shale.cp.laminae_deleting", metric.WithDescription("laminae waiting for their node to unlink them")),
 		PendingHosts:    o.Int64Gauge("shale.cp.hosts_pending", metric.WithDescription("hosts waiting for adoption, by kind")),
 		StoredBytes:     o.Int64Gauge("shale.cp.stored_bytes", metric.WithDescription("bytes stored per tenant"), metric.WithUnit("By")),
 	}

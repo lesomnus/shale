@@ -14,8 +14,8 @@ import (
 	audit "github.com/lesomnus/shale/internal/ent/audit"
 	device "github.com/lesomnus/shale/internal/ent/device"
 	holder "github.com/lesomnus/shale/internal/ent/holder"
+	lamina "github.com/lesomnus/shale/internal/ent/lamina"
 	node "github.com/lesomnus/shale/internal/ent/node"
-	object "github.com/lesomnus/shale/internal/ent/object"
 	outbox "github.com/lesomnus/shale/internal/ent/outbox"
 	placementpolicy "github.com/lesomnus/shale/internal/ent/placementpolicy"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
@@ -337,10 +337,10 @@ type Scope interface {
 	ReaderScope(ctx context.Context) (predicate.Reader, error)
 	DeviceScope(ctx context.Context) (predicate.Device, error)
 	SinkScope(ctx context.Context) (predicate.Sink, error)
+	LaminaScope(ctx context.Context) (predicate.Lamina, error)
+	AttemptScope(ctx context.Context) (predicate.Attempt, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	SiteMemberScope(ctx context.Context) (predicate.SiteMember, error)
-	ObjectScope(ctx context.Context) (predicate.Object, error)
-	AttemptScope(ctx context.Context) (predicate.Attempt, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 	SigningKeyScope(ctx context.Context) (predicate.SigningKey, error)
@@ -391,16 +391,16 @@ func (Unscoped) DeviceScope(_ context.Context) (predicate.Device, error) {
 func (Unscoped) SinkScope(_ context.Context) (predicate.Sink, error) {
 	return nil, nil
 }
+func (Unscoped) LaminaScope(_ context.Context) (predicate.Lamina, error) {
+	return nil, nil
+}
+func (Unscoped) AttemptScope(_ context.Context) (predicate.Attempt, error) {
+	return nil, nil
+}
 func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
 func (Unscoped) SiteMemberScope(_ context.Context) (predicate.SiteMember, error) {
-	return nil, nil
-}
-func (Unscoped) ObjectScope(_ context.Context) (predicate.Object, error) {
-	return nil, nil
-}
-func (Unscoped) AttemptScope(_ context.Context) (predicate.Attempt, error) {
 	return nil, nil
 }
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
@@ -641,6 +641,46 @@ func (ss Scopes) SinkScope(ctx context.Context) (predicate.Sink, error) {
 	return sink.And(ps...), nil
 }
 
+func (ss Scopes) LaminaScope(ctx context.Context) (predicate.Lamina, error) {
+	ps := make([]predicate.Lamina, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.LaminaScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return lamina.And(ps...), nil
+}
+
+func (ss Scopes) AttemptScope(ctx context.Context) (predicate.Attempt, error) {
+	ps := make([]predicate.Attempt, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.AttemptScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return attempt.And(ps...), nil
+}
+
 func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	ps := make([]predicate.Holder, 0, len(ss))
 	for _, s := range ss {
@@ -679,46 +719,6 @@ func (ss Scopes) SiteMemberScope(ctx context.Context) (predicate.SiteMember, err
 	}
 
 	return sitemember.And(ps...), nil
-}
-
-func (ss Scopes) ObjectScope(ctx context.Context) (predicate.Object, error) {
-	ps := make([]predicate.Object, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.ObjectScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return object.And(ps...), nil
-}
-
-func (ss Scopes) AttemptScope(ctx context.Context) (predicate.Attempt, error) {
-	ps := make([]predicate.Attempt, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.AttemptScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return attempt.And(ps...), nil
 }
 
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
@@ -969,14 +969,14 @@ func (s Server) Producer() api.ProducerServiceServer { return ProducerServiceSer
 func (s Server) Reader() api.ReaderServiceServer     { return ReaderServiceServer{Store: s.Store} }
 func (s Server) Device() api.DeviceServiceServer     { return DeviceServiceServer{Store: s.Store} }
 func (s Server) Sink() api.SinkServiceServer         { return SinkServiceServer{Store: s.Store} }
+func (s Server) Lamina() api.LaminaServiceServer     { return LaminaServiceServer{Store: s.Store} }
+func (s Server) Attempt() api.AttemptServiceServer   { return AttemptServiceServer{Store: s.Store} }
 func (s Server) Holder() api.HolderServiceServer     { return HolderServiceServer{Store: s.Store} }
 func (s Server) SiteMember() api.SiteMemberServiceServer {
 	return SiteMemberServiceServer{Store: s.Store}
 }
-func (s Server) Object() api.ObjectServiceServer   { return ObjectServiceServer{Store: s.Store} }
-func (s Server) Attempt() api.AttemptServiceServer { return AttemptServiceServer{Store: s.Store} }
-func (s Server) Audit() api.AuditServiceServer     { return AuditServiceServer{Store: s.Store} }
-func (s Server) Outbox() api.OutboxServiceServer   { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Audit() api.AuditServiceServer   { return AuditServiceServer{Store: s.Store} }
+func (s Server) Outbox() api.OutboxServiceServer { return OutboxServiceServer{Store: s.Store} }
 func (s Server) SigningKey() api.SigningKeyServiceServer {
 	return SigningKeyServiceServer{Store: s.Store}
 }

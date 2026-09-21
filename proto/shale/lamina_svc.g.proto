@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
 import "shale/common.proto";
 import "shale/host_svc.g.proto";
-import "shale/object.proto";
+import "shale/lamina.proto";
 import "shale/payday/tenant_svc.g.proto";
 import "shale/set_svc.g.proto";
 import "shale/site_svc.g.proto";
@@ -13,20 +13,20 @@ import "shale/storage_svc.g.proto";
 
 option go_package = "github.com/lesomnus/shale/api";
 
-service ObjectService {
-  // Add creates a new Object
-  rpc Add(ObjectAddRequest) returns (Object);
-  // Get retrieves a Object
-  rpc Get(ObjectGetRequest) returns (Object);
-  // Patch updates an existing Object
-  rpc Patch(ObjectPatchRequest) returns (Object);
-  // Apply applies a patch document to an existing Object
-  rpc Apply(ObjectApplyRequest) returns (Object);
-  // Erase deletes a Object
-  rpc Erase(ObjectRef) returns (ObjectEraseResponse);
-  // List reads Objects a page at a time.
-  rpc List(ObjectListRequest) returns (ObjectListResponse);
-  // Watch the Objects this caller may see, as they are now and as they change.
+service LaminaService {
+  // Add creates a new Lamina
+  rpc Add(LaminaAddRequest) returns (Lamina);
+  // Get retrieves a Lamina
+  rpc Get(LaminaGetRequest) returns (Lamina);
+  // Patch updates an existing Lamina
+  rpc Patch(LaminaPatchRequest) returns (Lamina);
+  // Apply applies a patch document to an existing Lamina
+  rpc Apply(LaminaApplyRequest) returns (Lamina);
+  // Erase deletes a Lamina
+  rpc Erase(LaminaRef) returns (LaminaEraseResponse);
+  // List reads Laminas a page at a time.
+  rpc List(LaminaListRequest) returns (LaminaListResponse);
+  // Watch the Laminas this caller may see, as they are now and as they change.
   //
   // What arrives is **state and never a delta**, so a client converges rather
   // than replays: it keeps what it was last told about a row and replaces it.
@@ -37,29 +37,29 @@ service ObjectService {
   // not have to List first and race the subscription. A row may arrive twice --
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
-  rpc Watch(ObjectWatchRequest) returns (stream ObjectWatchResponse);
+  rpc Watch(LaminaWatchRequest) returns (stream LaminaWatchResponse);
   // One allocation for one segment of one source. Idempotent per
-  // (source, expected date_started): asking twice answers the same object.
-  // A segment that begins after the slot's stored object ended, or after
-  // the object named in `after`, is the slot's next segment and gets an
-  // object of its own (§12.1, §15).
-  rpc Allocate(ObjectAllocateRequest) returns (Allocation);
+  // (source, expected date_started): asking twice answers the same lamina.
+  // A segment that begins after the slot's stored lamina ended, or after
+  // the lamina named in `after`, is the slot's next segment and gets an
+  // lamina of its own (§12.1, §15).
+  rpc Allocate(LaminaAllocateRequest) returns (Allocation);
   // The next candidate after a failed attempt (§13).
-  rpc Reallocate(ObjectReallocateRequest) returns (Allocation);
+  rpc Reallocate(LaminaReallocateRequest) returns (Allocation);
   // A fresh token for an attempt still in progress on the same target (§12.1).
-  rpc Renew(ObjectRenewRequest) returns (Allocation);
-  // One attempt failed, with a reason; feeds health (§13, §27). The object
+  rpc Renew(LaminaRenewRequest) returns (Allocation);
+  // One attempt failed, with a reason; feeds health (§13, §27). The lamina
   // stays PENDING.
-  rpc ReportAttempt(ObjectReportAttemptRequest) returns (Attempt);
-  // The producer gives up on an object; it becomes LOST (§13).
-  rpc ReportFailure(ObjectReportFailureRequest) returns (Object);
-  // Changes date_expired and/or date_deleted, for one object or in bulk by
+  rpc ReportAttempt(LaminaReportAttemptRequest) returns (Attempt);
+  // The producer gives up on a lamina; it becomes LOST (§13).
+  rpc ReportFailure(LaminaReportFailureRequest) returns (Lamina);
+  // Changes date_expired and/or date_deleted, for one lamina or in bulk by
   // set or source and a time range; a reason is required and audited. In
   // bulk it works in pages and stops short of its deadline, answering how
   // many remain for the next call (§20.3).
-  rpc Reschedule(ObjectRescheduleRequest) returns (ObjectRescheduleResponse);
-  // Objects and gaps over a time range, with read tokens; paged (§17, §19).
-  rpc Timeline(ObjectTimelineRequest) returns (ObjectTimelineResponse);
+  rpc Reschedule(LaminaRescheduleRequest) returns (LaminaRescheduleResponse);
+  // Laminae and gaps over a time range, with read tokens; paged (§17, §19).
+  rpc Timeline(LaminaTimelineRequest) returns (LaminaTimelineResponse);
 }
 
 service AttemptService {
@@ -77,15 +77,15 @@ service AttemptService {
   rpc List(AttemptListRequest) returns (AttemptListResponse);
 }
 
-message ObjectAddRequest {
+message LaminaAddRequest {
   bytes id = 1;
   TenantRef tenant = 2;
   SiteRef site = 3;
   SetRef set = 8;
   SourceRef source = 9;
   SinkRef sink = 10;
-  string object_key = 11 [features.field_presence = IMPLICIT];
-  ObjectState state = 12 [features.field_presence = IMPLICIT];
+  string lamina_key = 11 [features.field_presence = IMPLICIT];
+  LaminaState state = 12 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
   google.protobuf.Timestamp date_started = 16;
   google.protobuf.Timestamp date_ended = 17;
@@ -102,25 +102,25 @@ message ObjectAddRequest {
   int64 epoch = 28 [features.field_presence = IMPLICIT];
 }
 
-message ObjectGetRequest {
-  ObjectRef ref = 1;
-  ObjectSelect select = 2;
+message LaminaGetRequest {
+  LaminaRef ref = 1;
+  LaminaSelect select = 2;
 }
 
-message ObjectRef {
+message LaminaRef {
   oneof key {
     bytes id = 1;
   }
 }
 
-message ObjectSelect {
+message LaminaSelect {
   bool all = 1;
   TenantSelect tenant = 2;
   SiteSelect site = 3;
   SetSelect set = 8;
   SourceSelect source = 9;
   SinkSelect sink = 10;
-  bool object_key = 11;
+  bool lamina_key = 11;
   bool state = 12;
   bool date_updated = 13;
   bool date_created = 15;
@@ -139,16 +139,16 @@ message ObjectSelect {
   bool epoch = 28;
 }
 
-message ObjectPatchRequest {
-  ObjectRef ref = 1;
+message LaminaPatchRequest {
+  LaminaRef ref = 1;
   SinkRef sink = 20;
   // Clear sink instead of writing it.
   // It takes a field of its own because an unset value already means
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and sink clears.
   bool sink_null = 21;
-  string object_key = 22;
-  ObjectState state = 24;
+  string lamina_key = 22;
+  LaminaState state = 24;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -198,12 +198,12 @@ message ObjectPatchRequest {
   int64 epoch = 56;
 }
 
-message ObjectApplyRequest {
-  ObjectRef ref = 1;
+message LaminaApplyRequest {
+  LaminaRef ref = 1;
   patch.Patch patch = 2;
 }
 
-message ObjectEraseResponse {
+message LaminaEraseResponse {
   // Erased is whether this call is the one that erased the row.
   //
   // False for a row that was already gone, was never there, or is out
@@ -212,10 +212,10 @@ message ObjectEraseResponse {
   bool erased = 1;
 }
 
-message ObjectListRequest {
+message LaminaListRequest {
   // Bounded because the work is: each filter is a predicate in the same query,
   // so this is what says how much of the database one request may read.
-  repeated ObjectFilter filters = 1;
+  repeated LaminaFilter filters = 1;
 
   // How many to answer with. Nothing said is what the schema declared, and more
   // than the cap is the cap -- a caller asking for more than there is meant no
@@ -229,8 +229,8 @@ message ObjectListRequest {
   string after = 3 [features.field_presence = IMPLICIT];
 }
 
-message ObjectListResponse {
-  repeated Object items = 1;
+message LaminaListResponse {
+  repeated Lamina items = 1;
 
   // What to ask for next, and empty when this was the last of them.
   //
@@ -242,15 +242,15 @@ message ObjectListResponse {
   string next = 2 [features.field_presence = IMPLICIT];
 }
 
-message ObjectFilter {
-  ObjectRef ref = 1;
+message LaminaFilter {
+  LaminaRef ref = 1;
   TenantRef tenant = 2;
   SetRef set = 3;
   SourceRef source = 4;
   SinkRef sink = 5;
 }
 
-message ObjectWatchRequest {
+message LaminaWatchRequest {
   // Which rows to watch, in the same words List takes them: what is watched is
   // what that list would answer with, now and afterwards.
   //
@@ -258,7 +258,7 @@ message ObjectWatchRequest {
   // runs its filters once; a watch runs them again for every write that touches
   // the entity, for as long as the stream is open. A watch with no filters is
   // the whole table, forever, which is the one shape that has no cap at all.
-  repeated ObjectFilter filters = 1;
+  repeated LaminaFilter filters = 1;
 
   // Skip what is there now and send only what changes from here.
   //
@@ -268,12 +268,12 @@ message ObjectWatchRequest {
   bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
 }
 
-message ObjectWatchResponse {
+message LaminaWatchResponse {
   // What changed, or -- in the first message -- everything that matches.
-  repeated ObjectWatchItem items = 1;
+  repeated LaminaWatchItem items = 1;
 }
 
-message ObjectWatchItem {
+message LaminaWatchItem {
   // Which row. Always said, since one that is gone still has to be named.
   bytes id = 1;
 
@@ -287,7 +287,7 @@ message ObjectWatchItem {
   //
   // It is only ever said about a row this stream has already carried. One that
   // never matched is not news.
-  Object value = 2;
+  Lamina value = 2;
 
   // The RPC that changed it, by the name gRPC knows it by. It is what the
   // caller of *that* RPC asked for and not the write it became, so an RPC
@@ -298,22 +298,22 @@ message ObjectWatchItem {
   string action = 3 [features.field_presence = IMPLICIT];
 }
 
-message ObjectAllocateRequest {
+message LaminaAllocateRequest {
   SourceRef source = 1;
   // The expected date_started of the segment; absent means now.
   google.protobuf.Timestamp date_started = 2;
-  // The object of the segment before this one, when the camera ended that
+  // The lamina of the segment before this one, when the camera ended that
   // segment and this one begins in the same slot (§15): the answer is
-  // another object, whatever state the last one is in.
-  ObjectRef after = 3;
+  // another lamina, whatever state the last one is in.
+  LaminaRef after = 3;
 }
 
-message ObjectReallocateRequest {
-  ObjectRef ref = 1;
+message LaminaReallocateRequest {
+  LaminaRef ref = 1;
 }
 
-message ObjectRenewRequest {
-  ObjectRef ref = 1;
+message LaminaRenewRequest {
+  LaminaRef ref = 1;
   AttemptRef attempt = 2;
 }
 
@@ -323,20 +323,20 @@ message AttemptRef {
   }
 }
 
-message ObjectReportAttemptRequest {
-  ObjectRef ref = 1;
+message LaminaReportAttemptRequest {
+  LaminaRef ref = 1;
   AttemptRef attempt = 2;
   string failure_reason = 3 [features.field_presence = IMPLICIT];
 }
 
-message ObjectReportFailureRequest {
-  ObjectRef ref = 1;
+message LaminaReportFailureRequest {
+  LaminaRef ref = 1;
   string reason = 2 [features.field_presence = IMPLICIT];
 }
 
-message ObjectRescheduleRequest {
+message LaminaRescheduleRequest {
   // Exactly one of ref, set, or source; set and source take the time range.
-  ObjectRef ref = 1;
+  LaminaRef ref = 1;
   SetRef set = 2;
   SourceRef source = 3;
   google.protobuf.Timestamp from = 4;
@@ -348,26 +348,26 @@ message ObjectRescheduleRequest {
   string reason = 9 [features.field_presence = IMPLICIT];
 }
 
-message ObjectRescheduleResponse {
+message LaminaRescheduleResponse {
   int64 changed = 1 [features.field_presence = IMPLICIT];
-  // Objects in the range the call did not get to before its deadline; a
+  // Laminae in the range the call did not get to before its deadline; a
   // bulk reschedule works in pages, and the caller comes again while this
   // is not zero (§20.3).
   int64 remaining = 2 [features.field_presence = IMPLICIT];
 }
 
-message ObjectTimelineRequest {
+message LaminaTimelineRequest {
   // Exactly one of set or source.
   SetRef set = 1;
   SourceRef source = 2;
   google.protobuf.Timestamp from = 3;
   google.protobuf.Timestamp to = 4;
-  // At most timeline_page objects per answer.
+  // At most timeline_page laminae per answer.
   int32 size = 5 [features.field_presence = IMPLICIT];
   string after = 6 [features.field_presence = IMPLICIT];
 }
 
-message ObjectTimelineResponse {
+message LaminaTimelineResponse {
   repeated TimelineSource sources = 1;
   string next = 2 [features.field_presence = IMPLICIT];
 }
@@ -375,12 +375,12 @@ message ObjectTimelineResponse {
 message TimelineSource {
   bytes source_id = 1 [features.field_presence = IMPLICIT];
   int32 ordinal = 2 [features.field_presence = IMPLICIT];
-  repeated TimelineObject objects = 3;
+  repeated TimelineLamina laminae = 3;
   repeated TimelineGap gaps = 4;
 }
 
-message TimelineObject {
-  bytes object_id = 1 [features.field_presence = IMPLICIT];
+message TimelineLamina {
+  bytes lamina_id = 1 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_started = 2;
   google.protobuf.Timestamp date_ended = 3;
   bool ended_estimated = 4 [features.field_presence = IMPLICIT];
@@ -388,7 +388,7 @@ message TimelineObject {
   ReadState state = 6 [features.field_presence = IMPLICIT];
   bool incomplete = 7 [features.field_presence = IMPLICIT];
   bytes sink_id = 8 [features.field_presence = IMPLICIT];
-  string object_key = 9 [features.field_presence = IMPLICIT];
+  string lamina_key = 9 [features.field_presence = IMPLICIT];
   repeated Endpoint endpoints = 10;
   // A presigned URL on the first endpoint, and the token on its own for
   // clients that set headers.
@@ -397,7 +397,7 @@ message TimelineObject {
   google.protobuf.Timestamp date_token_expires = 13;
 }
 
-// ReadState is what a reader is told about an object (§19).
+// ReadState is what a reader is told about a lamina (§19).
 enum ReadState {
   READ_STATE_UNSPECIFIED = 0;
   READ_STATE_AVAILABLE = 1;
@@ -412,7 +412,7 @@ message TimelineGap {
   GapReason reason = 3 [features.field_presence = IMPLICIT];
 }
 
-// GapReason says why a span has no available object (§19).
+// GapReason says why a span has no available lamina (§19).
 enum GapReason {
   GAP_REASON_UNSPECIFIED = 0;
   GAP_REASON_NOT_RECEIVED = 1;
@@ -426,7 +426,7 @@ message AttemptAddRequest {
   bytes id = 1;
   TenantRef tenant = 2;
   SiteRef site = 3;
-  ObjectRef object = 8;
+  LaminaRef lamina = 8;
   SinkRef sink = 9;
   NodeRef node = 10;
   AttemptState state = 11 [features.field_presence = IMPLICIT];
@@ -446,7 +446,7 @@ message AttemptSelect {
   bool all = 1;
   TenantSelect tenant = 2;
   SiteSelect site = 3;
-  ObjectSelect object = 8;
+  LaminaSelect lamina = 8;
   SinkSelect sink = 9;
   NodeSelect node = 10;
   bool state = 11;
@@ -533,6 +533,6 @@ message AttemptListResponse {
 message AttemptFilter {
   AttemptRef ref = 1;
   TenantRef tenant = 2;
-  ObjectRef object = 3;
+  LaminaRef lamina = 3;
   SinkRef sink = 4;
 }

@@ -19,15 +19,15 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/attempt"
-	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/placement"
 )
 
-// The allocation engine (§12.1): one object per segment, a ranked list of
+// The allocation engine (§12.1): one lamina per segment, a ranked list of
 // candidates each with its own attempt and token, idempotent per segment.
 // A slot usually holds one segment; a camera that stops and comes back
-// within the slot starts another (§15), which gets an object of its own.
+// within the slot starts another (§15), which gets a lamina of its own.
 
 // slot is the segment a data time falls in, with the staggered phase of §12.2:
 //
@@ -47,9 +47,9 @@ func slotOf(t time.Time, setId []byte, ordinal, setSize int, d time.Duration) ti
 }
 
 // segmentAfter says whether a segment that begins at `started` comes after
-// a stored object of its slot: after the object's end, or, for an object
+// a stored lamina of its slot: after the lamina's end, or, for a lamina
 // with no end (incomplete, lost), more than the slack after its start.
-func segmentAfter(o *ent.Object, started time.Time, slack time.Duration) bool {
+func segmentAfter(o *ent.Lamina, started time.Time, slack time.Duration) bool {
 	if o.DateEnded != nil {
 		return !started.Before(*o.DateEnded)
 	}
@@ -258,16 +258,16 @@ func (s Core) forecastOk(ctx context.Context, a *allocCtx, v *ent.Sink, place *a
 		return ok
 	}
 
-	incoming, err := s.d.Ent.Object.Query().
-		Where(object.SinkIdEQ(v.Id), object.DateCommittedGT(a.now.Add(-epoch))).
-		Aggregate(ent.Sum(object.FieldSize)).
+	incoming, err := s.d.Ent.Lamina.Query().
+		Where(lamina.SinkIdEQ(v.Id), lamina.DateCommittedGT(a.now.Add(-epoch))).
+		Aggregate(ent.Sum(lamina.FieldSize)).
 		Int(ctx)
 	if err != nil {
 		return true
 	}
-	expiring, err := s.d.Ent.Object.Query().
-		Where(object.SinkIdEQ(v.Id), object.StateEQ(int32(api.ObjectState_OBJECT_STATE_COMMITTED)), object.DateExpiredLT(start.Add(epoch))).
-		Aggregate(ent.Sum(object.FieldSize)).
+	expiring, err := s.d.Ent.Lamina.Query().
+		Where(lamina.SinkIdEQ(v.Id), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_COMMITTED)), lamina.DateExpiredLT(start.Add(epoch))).
+		Aggregate(ent.Sum(lamina.FieldSize)).
 		Int(ctx)
 	if err != nil {
 		return true
@@ -291,15 +291,15 @@ func (s Core) forecastOk(ctx context.Context, a *allocCtx, v *ent.Sink, place *a
 	return ok
 }
 
-// ObjectKey is the path of an object within its sink (§23.2).
-func ObjectKey(started time.Time, object, attempt pdid.Id) string {
+// LaminaKey is the path of a lamina within its sink (§23.2).
+func LaminaKey(started time.Time, lamina, attempt pdid.Id) string {
 	t := started.UTC()
 
-	return fmt.Sprintf("objects/%04d/%02d/%02d/%02d/%s.%s", t.Year(), int(t.Month()), t.Day(), t.Hour(), object, attempt)
+	return fmt.Sprintf("laminae/%04d/%02d/%02d/%02d/%s.%s", t.Year(), int(t.Month()), t.Day(), t.Hour(), lamina, attempt)
 }
 
 // allocateSlot is one allocation: idempotent per (source, segment). `after`
-// is the object of the segment the producer says ended before this one,
+// is the lamina of the segment the producer says ended before this one,
 // or Nil.
 func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, src *api.Source, started time.Time, after pdid.Id, actor pdid.Id, tenant pdid.Id) (*api.Allocation, error) {
 	prof := segmentOf(src, a.set, a.bounds)
@@ -320,37 +320,37 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		return nil, status.Errorf(codes.InvalidArgument, "date_started %s is older than the set's retention", started.Format(time.RFC3339))
 	}
 
-	// The slot's objects: date_started is the slot at allocation and the
+	// The slot's laminae: date_started is the slot at allocation and the
 	// data time once stored, so the lookup is by the slot's span. A slot
-	// holds one object per segment (§12.1, §15): `started` belongs to the
-	// last object that began no later than it, with a keyframe interval and
-	// an encoder burst of slack, since the slot's first object is allocated
+	// holds one lamina per segment (§12.1, §15): `started` belongs to the
+	// last lamina that began no later than it, with a keyframe interval and
+	// an encoder burst of slack, since the slot's first lamina is allocated
 	// at the slot's start and stored at its first keyframe.
 	srcId := mustId(src.GetId())
 	slotStart := slotOf(started, a.set.GetId(), int(src.GetOrdinal()), len(a.members), duration)
-	inSlot, err := s.d.Ent.Object.Query().
-		Where(object.SourceIdEQ(srcId.Uuid()), object.DateStartedGTE(slotStart.UTC()), object.DateStartedLT(slotStart.UTC().Add(duration))).
-		Order(ent.Asc(object.FieldDateStarted)).
+	inSlot, err := s.d.Ent.Lamina.Query().
+		Where(lamina.SourceIdEQ(srcId.Uuid()), lamina.DateStartedGTE(slotStart.UTC()), lamina.DateStartedLT(slotStart.UTC().Add(duration))).
+		Order(ent.Asc(lamina.FieldDateStarted)).
 		WithSink().
 		All(ctx)
 	if err != nil {
 		return nil, err
 	}
 	slack := time.Duration(prof.GetKeyframeIntervalMs())*time.Millisecond + EncoderBurst
-	var existing *ent.Object
+	var existing *ent.Lamina
 	for _, o := range inSlot {
 		if !o.DateStarted.After(started.Add(slack)) {
 			existing = o
 		}
 	}
-	if existing != nil && existing.State != int32(api.ObjectState_OBJECT_STATE_PENDING) && segmentAfter(existing, started, slack) {
-		// The slot's stored object ended before this segment began: the
+	if existing != nil && existing.State != int32(api.LaminaState_LAMINA_STATE_PENDING) && segmentAfter(existing, started, slack) {
+		// The slot's stored lamina ended before this segment began: the
 		// camera stopped and came back within the slot (§15), and the
-		// segment that follows gets an object of its own.
+		// segment that follows gets a lamina of its own.
 		existing = nil
 	}
 	if existing != nil && after != pdid.Nil && pdid.Id(existing.Id) == after {
-		// The producer says that object was the segment before this one
+		// The producer says that lamina was the segment before this one
 		// and the camera ended it; its commit may still be on its way, so
 		// its state does not decide. The next segment gets its own.
 		existing = nil
@@ -365,11 +365,11 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 	)
 	if existing != nil {
 		objId = pdid.Id(existing.Id)
-		if existing.State != int32(api.ObjectState_OBJECT_STATE_PENDING) {
-			// Already committed, lost, or deleted: the same object, with
+		if existing.State != int32(api.LaminaState_LAMINA_STATE_PENDING) {
+			// Already committed, lost, or deleted: the same lamina, with
 			// nothing to upload to.
 			return api.Allocation_builder{
-				ObjectId:       objId.Bytes(),
+				LaminaId:       objId.Bytes(),
 				SourceId:       src.GetId(),
 				Ordinal:        src.GetOrdinal(),
 				DateStarted:    timestamppb.New(started),
@@ -377,13 +377,13 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 				DateExpires:    timestamppb.New(a.now),
 				Profile:        prof,
 				Link:           link,
-				ObjectKey:      existing.ObjectKey,
+				LaminaKey:      existing.LaminaKey,
 			}.Build(), nil
 		}
 
 		// Unexpired attempts are answered again, with fresh tokens.
 		open, err := s.d.Ent.Attempt.Query().
-			Where(attempt.ObjectIdEQ(existing.Id), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now)).
+			Where(attempt.LaminaIdEQ(existing.Id), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now)).
 			Order(ent.Asc(attempt.FieldRank)).
 			All(ctx)
 		if err != nil {
@@ -397,12 +397,12 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 	if len(attempts) == 0 {
 		if existing == nil {
 			// Open attempts per source are capped (§12.1): the cap is on
-			// new objects. An object already allocated whose attempts all
+			// new laminae. A lamina already allocated whose attempts all
 			// failed gets fresh ones regardless, so a segment being retried
 			// is never held back by the allocations ahead of it (§16).
 			n, err := s.d.Ent.Attempt.Query().
 				Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now),
-					attempt.HasObjectWith(object.SourceIdEQ(srcId.Uuid()))).
+					attempt.HasLaminaWith(lamina.SourceIdEQ(srcId.Uuid()))).
 				Count(ctx)
 			if err != nil {
 				return nil, err
@@ -429,18 +429,18 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		}
 
 		if existing == nil {
-			objId = pdid.New(DomObject)
+			objId = pdid.New(DomLamina)
 			var siteRef *api.SiteRef
 			if len(a.set.GetSite().GetId()) > 0 {
 				siteRef = api.SiteRef_builder{Id: a.set.GetSite().GetId()}.Build()
 			}
-			add := api.ObjectAddRequest_builder{
+			add := api.LaminaAddRequest_builder{
 				Id:               objId.Bytes(),
 				Tenant:           tenantRef(tenant),
 				Site:             siteRef,
 				Set:              api.SetRef_builder{Id: a.set.GetId()}.Build(),
 				Source:           api.SourceRef_builder{Id: src.GetId()}.Build(),
-				State:            api.ObjectState_OBJECT_STATE_PENDING,
+				State:            api.LaminaState_LAMINA_STATE_PENDING,
 				DateStarted:      timestamppb.New(started),
 				DateExpired:      timestamppb.New(started.Add(expire)),
 				DatesSynced:      true,
@@ -450,7 +450,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			if !none {
 				add.DateDeleted = timestamppb.New(started.Add(del))
 			}
-			if _, err := next.Object().Add(ctx, add.Build()); err != nil {
+			if _, err := next.Lamina().Add(ctx, add.Build()); err != nil {
 				return nil, err
 			}
 		}
@@ -465,7 +465,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 				Id:          at.Bytes(),
 				Tenant:      tenantRef(tenant),
 				Site:        siteRef,
-				Object:      api.ObjectRef_builder{Id: objId.Bytes()}.Build(),
+				Lamina:      api.LaminaRef_builder{Id: objId.Bytes()}.Build(),
 				Sink:        api.SinkRef_builder{Id: target.Id.Bytes()}.Build(),
 				Node:        api.NodeRef_builder{Id: target.Node.Bytes()}.Build(),
 				State:       api.AttemptState_ATTEMPT_STATE_ALLOCATED,
@@ -495,18 +495,18 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 	var key string
 	for _, at := range attempts {
 		atId, sinkId, nodeId := at.id, at.sink, at.node
-		k := ObjectKey(started, objId, atId)
+		k := LaminaKey(started, objId, atId)
 		if key == "" {
 			key = k
 		}
 
-		record := api.ObjectRecord_builder{
+		record := api.LaminaRecord_builder{
 			FormatVersion:         1,
 			TenantId:              tenant.Bytes(),
 			SiteId:                siteId,
 			SetId:                 a.set.GetId(),
 			SourceId:              src.GetId(),
-			ObjectId:              objId.Bytes(),
+			LaminaId:              objId.Bytes(),
 			AttemptId:             atId.Bytes(),
 			DateStartedMs:         started.UnixMilli(),
 			Mode:                  link.GetMode(),
@@ -523,7 +523,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			Aud:                   nodeId.Bytes(),
 			Op:                    api.TokenOp_TOKEN_OP_PUT,
 			SinkId:                sinkId.Bytes(),
-			ObjectKey:             k,
+			LaminaKey:             k,
 			AttemptId:             atId.Bytes(),
 			Record:                record,
 			MaxLength:             maxLen,
@@ -544,7 +544,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			NodeId:    nodeId.Bytes(),
 			Endpoints: s.endpoints(n, a.caller, a.address),
 			Token:     tok,
-			ObjectKey: k,
+			LaminaKey: k,
 		}.Build())
 	}
 
@@ -565,7 +565,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 	}
 
 	return api.Allocation_builder{
-		ObjectId:       objId.Bytes(),
+		LaminaId:       objId.Bytes(),
 		SourceId:       src.GetId(),
 		Ordinal:        src.GetOrdinal(),
 		DateStarted:    timestamppb.New(started),
@@ -574,7 +574,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		DateExpires:    exp,
 		MaxLength:      maxLen,
 		SizeHint:       hint,
-		ObjectKey:      key,
+		LaminaKey:      key,
 		Profile:        prof,
 		Link:           link,
 	}.Build(), nil

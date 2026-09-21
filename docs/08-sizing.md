@@ -59,13 +59,13 @@ bandwidth. Longer retention → buy HDDs.
 
 ### 26.4 RAM
 
-Object data is buffered only in RAM ([§22.3](07-storage-node.md#223-no-ssd-in-the-data-path)), one **part** at a time ([§12.2](04-write-path.md#122-resumable-part-uploads)), so
+Lamina data is buffered only in RAM ([§22.3](07-storage-node.md#223-no-ssd-in-the-data-path)), one **part** at a time ([§12.2](04-write-path.md#122-resumable-part-uploads)), so
 RAM is sized explicitly:
 
 ```text
 part buffers = uploads in flight × part_size × fill   (capped by part_buffer_pool)
 read buffers = max_read_sessions × read_chunk × 2
-index        = objects on the node × ~150 B
+index        = laminae on the node × ~150 B
 ```
 
 With **live uploads** ([§12.2](04-write-path.md#122-resumable-part-uploads)) every camera has an upload in flight at all
@@ -84,33 +84,33 @@ index:                     48 × 250,000 × 150 B ≈ 1.8 GiB
 **32 GiB** is comfortable for such a node. Because I/O bypasses the page cache
 ([§22.4](07-storage-node.md#224-bypass-the-page-cache)), extra RAM does not improve throughput.
 
-For comparison, buffering whole objects would need 530 × 64 MB ≈ 33 GiB, and
+For comparison, buffering whole laminae would need 530 × 64 MB ≈ 33 GiB, and
 live upload would be impossible. That is why uploads are staged in parts.
 
 **The index is rebuilt at every start** by walking each sink's directories
 and reading inodes (~12 M on this node), which takes minutes per sink, in
 parallel across HDDs, as MAINT work. Nothing waits for it that does not need
 it: uploads create new files and reads open files by path, so both are served
-from the first second; GC proposals, the daily sweep, and `ObjectMissing`
+from the first second; GC proposals, the daily sweep, and `LaminaMissing`
 reports for a sink start once that sink's scan is complete.
 
 ### 26.5 The control plane's database
 
-The database holds a row per object, a row per attempt (three per
+The database holds a row per lamina, a row per attempt (three per
 allocation, [§13](04-write-path.md#13-failure-handling)), and payday's audit
-trail. The #56 load run (48 sources, small objects, three sinks) measured
+trail. The #56 load run (48 sources, small laminae, three sinks) measured
 what each costs, as PostgreSQL stores it, indexes included:
 
 ```text
-object row                       ~1.2 KB, kept as long as the object (§20.4)
-attempt row                      ~0.5 KB; the stored one with its object,
+lamina row                       ~1.2 KB, kept as long as the lamina (§20.4)
+attempt row                      ~0.5 KB; the stored one with its lamina,
                                  the two others for 7 days
 audit row                        ~0.9 KB: ~350 B of values, the rest the row's
                                  columns and seven indexes
 ```
 
 payday's recorder is told about every write inside the transaction that
-makes it, and on that run the trail was thirteen rows an object over its
+makes it, and on that run the trail was thirteen rows a lamina over its
 life (allocation 4, the node's events ~6, GC 3) plus the heartbeats and the
 tenant's byte counter: 5.7 GB of a 6.9 GB database after twenty hours,
 with no clock to leave by. Almost none of it was a decision anybody made.
@@ -119,14 +119,14 @@ the caller is a person, and the system's own writes, the hosts', the
 leader's and the deployment's, do not ([§20.4](06-retention-gc.md#204-row-retention)).
 An operator's reschedule, a quarantine, a policy activated, a person made:
 those are on the trail with who, what, from what, to what, and why; an
-object allocated, stored and collected is not, and the object's row and its
+lamina allocated, stored and collected is not, and the lamina's row and its
 attempts say what happened to it.
 
 For the fleet of [§26.3](#263-worked-example-cctv), 5,000 cameras at 4 Mbps
-and 64 MB objects make ~3.4 M objects a day:
+and 64 MB laminae make ~3.4 M laminae a day:
 
 ```text
-objects and stored attempts, 30 days:   3.4 M × 30 × 1.7 KB ≈ 170 GB
+laminae and stored attempts, 30 days:   3.4 M × 30 × 1.7 KB ≈ 170 GB
 failed attempts, 7 days:                3.4 M ×  7 × 1.0 KB ≈  24 GB
 audit trail:                            what operators do; a few rows a minute
 ```
@@ -141,7 +141,7 @@ audit:
   profile: pipa                          # 90 days in the table, a year in the archive
   archive: /var/lib/shale/control/audit  # what leaves the table is written here first
   by:
-    object:                              # reschedules: the object's own row retention
+    lamina:                              # reschedules: the lamina's own row retention
       retain: 720h
 ```
 
@@ -156,13 +156,13 @@ audit:
   process comes up, unless `discard: true` says the deployment means to
   keep no copy.
 - `by:` sets a kind apart, keyed by the word the schema registered
-  (`object`, `set`, `source`, `holder`, `tenant`, `sink`, …). `site` is a
+  (`lamina`, `set`, `source`, `holder`, `tenant`, `sink`, …). `site` is a
   word roster registers too, so in this process it answers nobody and is
-  written as its number, `d19`. The kind worth setting apart is `object`:
+  written as its number, `d19`. The kind worth setting apart is `lamina`:
   a bulk reschedule ([§20.3](06-retention-gc.md#203-rescheduling)) writes a
-  row per object it changes, and the #73 drill left 184,000 of them for
-  48,000 objects, against a few hundred rows for everything else people
-  did in a day. Those rows are evidence of the object's dates, and the
-  object's own row retention is the natural window for them.
+  row per lamina it changes, and the #73 drill left 184,000 of them for
+  48,000 laminae, against a few hundred rows for everything else people
+  did in a day. Those rows are evidence of the lamina's dates, and the
+  lamina's own row retention is the natural window for them.
 - The leader applies the policy once a day (`every`), in batches of a
   thousand rows ([§34.9](11-deployment.md#349-events-and-directives)).

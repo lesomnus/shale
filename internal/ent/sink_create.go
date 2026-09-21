@@ -185,9 +185,9 @@ func (_c *SinkCreate) SetCapacityClamped(v bool) *SinkCreate {
 	return _c
 }
 
-// SetObjects sets the "objects" field.
-func (_c *SinkCreate) SetObjects(v int64) *SinkCreate {
-	_c.mutation.SetObjects(v)
+// SetLaminae sets the "laminae" field.
+func (_c *SinkCreate) SetLaminae(v int64) *SinkCreate {
+	_c.mutation.SetLaminae(v)
 	return _c
 }
 
@@ -297,8 +297,8 @@ func (_c *SinkCreate) check() error {
 	if _, ok := _c.mutation.CapacityClamped(); !ok {
 		return &ValidationError{Name: "capacity_clamped", err: errors.New(`ent: missing required field "Sink.capacity_clamped"`)}
 	}
-	if _, ok := _c.mutation.Objects(); !ok {
-		return &ValidationError{Name: "objects", err: errors.New(`ent: missing required field "Sink.objects"`)}
+	if _, ok := _c.mutation.Laminae(); !ok {
+		return &ValidationError{Name: "laminae", err: errors.New(`ent: missing required field "Sink.laminae"`)}
 	}
 	if _, ok := _c.mutation.DeviceId(); !ok {
 		return &ValidationError{Name: "device_id", err: errors.New(`ent: missing required field "Sink.device_id"`)}
@@ -435,9 +435,9 @@ func (_c *SinkCreate) createSpec() (*Sink, *sqlgraph.CreateSpec, error) {
 		_spec.SetField(sink.FieldCapacityClamped, field.TypeBool, value)
 		_node.CapacityClamped = value
 	}
-	if value, ok := _c.mutation.Objects(); ok {
-		_spec.SetField(sink.FieldObjects, field.TypeInt64, value)
-		_node.Objects = value
+	if value, ok := _c.mutation.Laminae(); ok {
+		_spec.SetField(sink.FieldLaminae, field.TypeInt64, value)
+		_node.Laminae = value
 	}
 	if nodes := _c.mutation.NodeIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

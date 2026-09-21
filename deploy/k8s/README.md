@@ -144,7 +144,7 @@ exists.
 ## Rolling upgrades
 
 `storage.yaml` rolls one node at a time (`maxUnavailable: 1`). While a
-node restarts its objects are UNAVAILABLE and placement skips it through
+node restarts its laminae are UNAVAILABLE and placement skips it through
 missed heartbeats; nothing moves. The API Deployments roll normally.
 
 The relay (`relay.yaml`) runs on the host network of one amd64 node;

@@ -1,11 +1,11 @@
 # Shale Placement — Decision Report
 
-This report records how Shale places new objects and why. The design summary
+This report records how Shale places new laminae and why. The design summary
 is in [§11](03-placement.md#11-placement).
 
 ## Terminology
 
-Shale places objects into **sinks** (storage directories), and each sink sits
+Shale places laminae into **sinks** (storage directories), and each sink sits
 on a physical **device** ([§22.2](07-storage-node.md#222-sinks-and-devices)). In production every HDD is one device
 holding one sink, so in the scenario numbers below sinks, devices, and HDDs
 coincide (480 of each). The terms still mean different things, and the report
@@ -110,8 +110,8 @@ one `sink_id`. There are no Placement Groups and no Disk Groups.
   would need to replicate the same logic anyway.
 - Quarantine is decided centrally from producer reports and heartbeats
   ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)), so the CP already has per-device and per-sink eligibility.
-- Placement Groups exist in systems like Ceph to bound per-object metadata and
-  to move data in batches. Shale records every object's location and never
+- Placement Groups exist in systems like Ceph to bound per-lamina metadata and
+  to move data in batches. Shale records every lamina's location and never
   moves data, so PGs would be an extra layer with no function.
 
 The node can still refuse a write (`503`, device error), and the normal retry
@@ -342,8 +342,8 @@ documents that `date_expired` is a lower bound only while capacity allows.
 
 ### D9. Versioning
 
-- `placement_version` is stored with each object for diagnostics only.
-- Past locations are **never recomputed**. The index (`sink_id`, `object_key`)
+- `placement_version` is stored with each lamina for diagnostics only.
+- Past locations are **never recomputed**. The index (`sink_id`, `lamina_key`)
   is authoritative.
 - A new version applies to allocations after its activation. Epochs in
   progress switch at once. That moves only future segments, which is harmless.

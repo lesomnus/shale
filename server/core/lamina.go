@@ -18,18 +18,18 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/attempt"
-	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/shale/internal/placement"
 )
 
-type coreObject struct {
+type coreLamina struct {
 	Core
-	api.ObjectServiceServer
+	api.LaminaServiceServer
 }
 
-func (s Core) Object() api.ObjectServiceServer {
-	return coreObject{s, s.Next().Object()}
+func (s Core) Lamina() api.LaminaServiceServer {
+	return coreLamina{s, s.Next().Lamina()}
 }
 
 // setOf reads a set through the wall by id.
@@ -40,7 +40,7 @@ func (s Core) setOf(ctx context.Context, id []byte) (*api.Set, error) {
 }
 
 // Allocate is one allocation for one segment of one source (§12.1).
-func (s coreObject) Allocate(ctx context.Context, req *api.ObjectAllocateRequest) (*api.Allocation, error) {
+func (s coreLamina) Allocate(ctx context.Context, req *api.LaminaAllocateRequest) (*api.Allocation, error) {
 	f, err := actor(ctx)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (s coreObject) Allocate(ctx context.Context, req *api.ObjectAllocateRequest
 	if req.GetDateStarted() != nil {
 		t = req.GetDateStarted().AsTime()
 	}
-	// The segment's own start decides which object of its slot it is
+	// The segment's own start decides which lamina of its slot it is
 	// (§12.1, §15); the slot's start stands in when the producer gave none.
 	if req.GetDateStarted() == nil {
 		d := time.Duration(prof.GetDurationSeconds()) * time.Second
@@ -104,27 +104,27 @@ func (s coreObject) Allocate(ctx context.Context, req *api.ObjectAllocateRequest
 	return out, nil
 }
 
-// objectRow reads an object through the wall.
-func (s Core) objectRow(ctx context.Context, ref *api.ObjectRef) (*api.Object, error) {
-	return s.Next().Object().Get(ctx, api.ObjectGetRequest_builder{
+// LaminaRow reads a lamina through the wall.
+func (s Core) LaminaRow(ctx context.Context, ref *api.LaminaRef) (*api.Lamina, error) {
+	return s.Next().Lamina().Get(ctx, api.LaminaGetRequest_builder{
 		Ref: ref,
 	}.Build())
 }
 
 // Reallocate is the next candidate after the ones an allocation carried
 // (§13): the ranking again, skipping every sink that already has an attempt.
-func (s coreObject) Reallocate(ctx context.Context, req *api.ObjectReallocateRequest) (*api.Allocation, error) {
+func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateRequest) (*api.Allocation, error) {
 	f, err := actor(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	obj, err := s.objectRow(ctx, req.GetRef())
+	obj, err := s.LaminaRow(ctx, req.GetRef())
 	if err != nil {
 		return nil, err
 	}
-	if obj.GetState() != api.ObjectState_OBJECT_STATE_PENDING {
-		return nil, failed("object is %s, not pending", obj.GetState())
+	if obj.GetState() != api.LaminaState_LAMINA_STATE_PENDING {
+		return nil, failed("lamina is %s, not pending", obj.GetState())
 	}
 
 	src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{
@@ -149,7 +149,7 @@ func (s coreObject) Reallocate(ctx context.Context, req *api.ObjectReallocateReq
 	}
 
 	objId := mustId(obj.GetId())
-	tried, err := s.d.Ent.Attempt.Query().Where(attempt.ObjectIdEQ(objId.Uuid())).All(ctx)
+	tried, err := s.d.Ent.Attempt.Query().Where(attempt.LaminaIdEQ(objId.Uuid())).All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (s coreObject) Reallocate(ctx context.Context, req *api.ObjectReallocateReq
 			Id:          at.Bytes(),
 			Tenant:      tenantRef(f.Tenant),
 			Site:        siteRef,
-			Object:      api.ObjectRef_builder{Id: obj.GetId()}.Build(),
+			Lamina:      api.LaminaRef_builder{Id: obj.GetId()}.Build(),
 			Sink:        api.SinkRef_builder{Id: next.Id.Bytes()}.Build(),
 			Node:        api.NodeRef_builder{Id: next.Node.Bytes()}.Build(),
 			State:       api.AttemptState_ATTEMPT_STATE_ALLOCATED,
@@ -227,13 +227,13 @@ func (s coreObject) Reallocate(ctx context.Context, req *api.ObjectReallocateReq
 
 // Renew is a fresh token for an attempt still in progress on the same
 // target (§12.1).
-func (s coreObject) Renew(ctx context.Context, req *api.ObjectRenewRequest) (*api.Allocation, error) {
+func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*api.Allocation, error) {
 	f, err := actor(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	obj, err := s.objectRow(ctx, req.GetRef())
+	obj, err := s.LaminaRow(ctx, req.GetRef())
 	if err != nil {
 		return nil, err
 	}
@@ -243,8 +243,8 @@ func (s coreObject) Renew(ctx context.Context, req *api.ObjectRenewRequest) (*ap
 	if err != nil {
 		return nil, err
 	}
-	if string(at.GetObject().GetId()) != string(obj.GetId()) {
-		return nil, invalid("attempt", "not an attempt of this object")
+	if string(at.GetLamina().GetId()) != string(obj.GetId()) {
+		return nil, invalid("attempt", "not an attempt of this lamina")
 	}
 	if at.GetState() != api.AttemptState_ATTEMPT_STATE_ALLOCATED {
 		return nil, failed("attempt is %s", at.GetState())
@@ -291,13 +291,13 @@ func (s coreObject) Renew(ctx context.Context, req *api.ObjectRenewRequest) (*ap
 	return out, nil
 }
 
-// ReportAttempt marks one attempt failed (§13). The object stays PENDING.
-func (s coreObject) ReportAttempt(ctx context.Context, req *api.ObjectReportAttemptRequest) (*api.Attempt, error) {
+// ReportAttempt marks one attempt failed (§13). The lamina stays PENDING.
+func (s coreLamina) ReportAttempt(ctx context.Context, req *api.LaminaReportAttemptRequest) (*api.Attempt, error) {
 	if _, err := actor(ctx); err != nil {
 		return nil, err
 	}
 
-	obj, err := s.objectRow(ctx, req.GetRef())
+	obj, err := s.LaminaRow(ctx, req.GetRef())
 	if err != nil {
 		return nil, err
 	}
@@ -308,8 +308,8 @@ func (s coreObject) ReportAttempt(ctx context.Context, req *api.ObjectReportAtte
 	if err != nil {
 		return nil, err
 	}
-	if string(at.GetObject().GetId()) != string(obj.GetId()) {
-		return nil, invalid("attempt", "not an attempt of this object")
+	if string(at.GetLamina().GetId()) != string(obj.GetId()) {
+		return nil, invalid("attempt", "not an attempt of this lamina")
 	}
 	if at.GetState() != api.AttemptState_ATTEMPT_STATE_ALLOCATED {
 		return at, nil
@@ -341,26 +341,26 @@ func (s coreObject) ReportAttempt(ctx context.Context, req *api.ObjectReportAtte
 	return out, nil
 }
 
-// ReportFailure is the producer giving up on an object: it becomes LOST
-// (§13). A late ObjectStored still brings it back (§14).
-func (s coreObject) ReportFailure(ctx context.Context, req *api.ObjectReportFailureRequest) (*api.Object, error) {
+// ReportFailure is the producer giving up on a lamina: it becomes LOST
+// (§13). A late LaminaStored still brings it back (§14).
+func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFailureRequest) (*api.Lamina, error) {
 	if _, err := actor(ctx); err != nil {
 		return nil, err
 	}
 
-	obj, err := s.objectRow(ctx, req.GetRef())
+	obj, err := s.LaminaRow(ctx, req.GetRef())
 	if err != nil {
 		return nil, err
 	}
-	if obj.GetState() != api.ObjectState_OBJECT_STATE_PENDING {
+	if obj.GetState() != api.LaminaState_LAMINA_STATE_PENDING {
 		return obj, nil
 	}
 
 	now := s.d.now()
-	var out *api.Object
+	var out *api.Lamina
 	err = s.tx(ctx, func(nx api.Server) error {
 		open, err := s.d.Ent.Attempt.Query().
-			Where(attempt.ObjectIdEQ(mustId(obj.GetId()).Uuid()), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED))).
+			Where(attempt.LaminaIdEQ(mustId(obj.GetId()).Uuid()), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED))).
 			All(ctx)
 		if err != nil {
 			return err
@@ -379,9 +379,9 @@ func (s coreObject) ReportFailure(ctx context.Context, req *api.ObjectReportFail
 			}
 		}
 
-		st := api.ObjectState_OBJECT_STATE_LOST
-		v, err := nx.Object().Patch(ctx, api.ObjectPatchRequest_builder{
-			Ref:          api.ObjectRef_builder{Id: obj.GetId()}.Build(),
+		st := api.LaminaState_LAMINA_STATE_LOST
+		v, err := nx.Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
+			Ref:          api.LaminaRef_builder{Id: obj.GetId()}.Build(),
 			State:        &st,
 			DateFinished: timestamppb.New(now),
 			DateUpdated:  obj.GetDateUpdated(),
@@ -397,14 +397,14 @@ func (s coreObject) ReportFailure(ctx context.Context, req *api.ObjectReportFail
 	return out, nil
 }
 
-// Reschedule changes an object's dates, one or in bulk (§20.3). A delete-now
+// Reschedule changes a lamina's dates, one or in bulk (§20.3). A delete-now
 // sets both to now; the node hears about it through its control API.
 //
 // The bulk form works in pages, each its own transaction, and stops short of
-// the call's deadline: a set's day is tens of thousands of objects, more than
+// the call's deadline: a set's day is tens of thousands of laminae, more than
 // one call can patch. The answer says how many remain, and the caller comes
 // again; a row the request already changed is not selected twice.
-func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleRequest) (*api.ObjectRescheduleResponse, error) {
+func (s coreLamina) Reschedule(ctx context.Context, req *api.LaminaRescheduleRequest) (*api.LaminaRescheduleResponse, error) {
 	f, err := actor(ctx)
 	if err != nil {
 		return nil, err
@@ -434,27 +434,27 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 	}
 
 	// apply patches one page of rows in one transaction and says how many
-	// it changed. One object already on its way out is refused; in bulk it
+	// it changed. One lamina already on its way out is refused; in bulk it
 	// is left alone.
-	apply := func(rows []*ent.Object, one bool) (int64, error) {
+	apply := func(rows []*ent.Lamina, one bool) (int64, error) {
 		var changed int64
 		err := s.tx(ctx, func(nx api.Server) error {
 			for _, r := range rows {
-				if r.State == int32(api.ObjectState_OBJECT_STATE_DELETING) || r.State == int32(api.ObjectState_OBJECT_STATE_DELETED) {
+				if r.State == int32(api.LaminaState_LAMINA_STATE_DELETING) || r.State == int32(api.LaminaState_LAMINA_STATE_DELETED) {
 					if one {
-						return failed("object is already %s", api.ObjectState(r.State))
+						return failed("lamina is already %s", api.LaminaState(r.State))
 					}
 					continue
 				}
-				p := api.ObjectPatchRequest_builder{
-					Ref:              api.ObjectRef_builder{Id: r.Id[:]}.Build(),
+				p := api.LaminaPatchRequest_builder{
+					Ref:              api.LaminaRef_builder{Id: r.Id[:]}.Build(),
 					DatesSynced:      z.Ptr(false),
 					DateUpdatedForce: z.Ptr(true),
 				}
-				if req.GetDeleteNow() && r.State == int32(api.ObjectState_OBJECT_STATE_COMMITTED) {
+				if req.GetDeleteNow() && r.State == int32(api.LaminaState_LAMINA_STATE_COMMITTED) {
 					// The bytes go within seconds: the leader sends Delete for
 					// this file and its duplicates (§20.3).
-					p.State = z.Ptr(api.ObjectState_OBJECT_STATE_DELETING)
+					p.State = z.Ptr(api.LaminaState_LAMINA_STATE_DELETING)
 				}
 				e := r.DateExpired
 				if expired != nil {
@@ -471,7 +471,7 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 					// Keeping date_expired ≤ date_deleted.
 					p.DateDeleted = timestamppb.New(e)
 				}
-				if _, err := nx.Object().Patch(ctx, p.Build()); err != nil {
+				if _, err := nx.Lamina().Patch(ctx, p.Build()); err != nil {
 					return err
 				}
 				changed++
@@ -485,49 +485,49 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 
 	switch {
 	case req.GetRef() != nil:
-		obj, err := s.objectRow(ctx, req.GetRef())
+		obj, err := s.LaminaRow(ctx, req.GetRef())
 		if err != nil {
 			return nil, err
 		}
-		r, err := s.d.Ent.Object.Get(ctx, mustId(obj.GetId()).Uuid())
+		r, err := s.d.Ent.Lamina.Get(ctx, mustId(obj.GetId()).Uuid())
 		if err != nil {
 			return nil, err
 		}
-		s.d.log().Info("reschedule", "actor", f.Actor.String(), "object", r.ObjectKey, "reason", req.GetReason(), "delete_now", req.GetDeleteNow())
-		changed, err := apply([]*ent.Object{r}, true)
+		s.d.log().Info("reschedule", "actor", f.Actor.String(), "lamina", r.LaminaKey, "reason", req.GetReason(), "delete_now", req.GetDeleteNow())
+		changed, err := apply([]*ent.Lamina{r}, true)
 		if err != nil {
 			return nil, err
 		}
 
-		return api.ObjectRescheduleResponse_builder{Changed: changed}.Build(), nil
+		return api.LaminaRescheduleResponse_builder{Changed: changed}.Build(), nil
 	case req.GetSet() != nil || req.GetSource() != nil:
 		if req.GetFrom() == nil || req.GetTo() == nil {
 			return nil, invalid("from", "a bulk reschedule needs a time range")
 		}
 	default:
-		return nil, invalid("ref", "name an object, a set, or a source")
+		return nil, invalid("ref", "name a lamina, a set, or a source")
 	}
 
 	// Rows in the range the request would still change: the ones a call
 	// that stopped at its deadline did are not selected again.
-	var pending predicate.Object
+	var pending predicate.Lamina
 	if req.GetDeleteNow() {
-		pending = object.Or(object.StateEQ(int32(api.ObjectState_OBJECT_STATE_COMMITTED)), object.DateDeletedIsNil(), object.DateDeletedGT(now))
+		pending = lamina.Or(lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_COMMITTED)), lamina.DateDeletedIsNil(), lamina.DateDeletedGT(now))
 	} else {
-		var ps []predicate.Object
+		var ps []predicate.Lamina
 		if expired != nil {
-			ps = append(ps, object.DateExpiredNEQ(*expired))
+			ps = append(ps, lamina.DateExpiredNEQ(*expired))
 		}
 		if deleted != nil {
-			ps = append(ps, object.DateDeletedIsNil(), object.DateDeletedNEQ(*deleted))
+			ps = append(ps, lamina.DateDeletedIsNil(), lamina.DateDeletedNEQ(*deleted))
 		}
-		pending = object.Or(ps...)
+		pending = lamina.Or(ps...)
 	}
-	q := s.d.Ent.Object.Query().Where(
-		object.TenantIdEQ(f.Tenant.Uuid()),
-		object.DateStartedLT(req.GetTo().AsTime()),
-		object.Or(object.DateEndedGT(req.GetFrom().AsTime()), object.DateEndedIsNil()),
-		object.StateNotIn(int32(api.ObjectState_OBJECT_STATE_DELETING), int32(api.ObjectState_OBJECT_STATE_DELETED)),
+	q := s.d.Ent.Lamina.Query().Where(
+		lamina.TenantIdEQ(f.Tenant.Uuid()),
+		lamina.DateStartedLT(req.GetTo().AsTime()),
+		lamina.Or(lamina.DateEndedGT(req.GetFrom().AsTime()), lamina.DateEndedIsNil()),
+		lamina.StateNotIn(int32(api.LaminaState_LAMINA_STATE_DELETING), int32(api.LaminaState_LAMINA_STATE_DELETED)),
 		pending,
 	)
 	if req.GetSource() != nil {
@@ -535,7 +535,7 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 		if err != nil {
 			return nil, err
 		}
-		q = q.Where(object.SourceIdEQ(mustId(src.GetId()).Uuid()))
+		q = q.Where(lamina.SourceIdEQ(mustId(src.GetId()).Uuid()))
 	} else {
 		set, err := s.setOf(ctx, refId(req.GetSet()))
 		if err != nil {
@@ -546,24 +546,24 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 				return nil, err
 			}
 		}
-		q = q.Where(object.SetIdEQ(mustId(set.GetId()).Uuid()))
+		q = q.Where(lamina.SetIdEQ(mustId(set.GetId()).Uuid()))
 	}
 
 	var changed, remaining int64
 	deadline, bounded := ctx.Deadline()
 	// Pages walk the ids upward, so a row the patch left matching the
 	// selection (it should not) could not stall the walk.
-	var last *ent.Object
-	after := func() *ent.ObjectQuery {
+	var last *ent.Lamina
+	after := func() *ent.LaminaQuery {
 		p := q.Clone()
 		if last != nil {
-			p = p.Where(object.IdGT(last.Id))
+			p = p.Where(lamina.IdGT(last.Id))
 		}
 
 		return p
 	}
 	for {
-		rows, err := after().Order(ent.Asc(object.FieldId)).Limit(ReschedulePage).All(ctx)
+		rows, err := after().Order(ent.Asc(lamina.FieldId)).Limit(ReschedulePage).All(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -588,9 +588,9 @@ func (s coreObject) Reschedule(ctx context.Context, req *api.ObjectRescheduleReq
 			break
 		}
 	}
-	s.d.log().Info("reschedule", "actor", f.Actor.String(), "objects", changed, "remaining", remaining, "reason", req.GetReason(), "delete_now", req.GetDeleteNow())
+	s.d.log().Info("reschedule", "actor", f.Actor.String(), "laminae", changed, "remaining", remaining, "reason", req.GetReason(), "delete_now", req.GetDeleteNow())
 
-	return api.ObjectRescheduleResponse_builder{Changed: changed, Remaining: remaining}.Build(), nil
+	return api.LaminaRescheduleResponse_builder{Changed: changed, Remaining: remaining}.Build(), nil
 }
 
 func refId(r *api.SetRef) []byte {
@@ -601,9 +601,9 @@ func refId(r *api.SetRef) []byte {
 	return r.GetId()
 }
 
-// Timeline answers objects and gaps over a time range with read tokens,
+// Timeline answers laminae and gaps over a time range with read tokens,
 // paged (§17, §19).
-func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest) (*api.ObjectTimelineResponse, error) {
+func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest) (*api.LaminaTimelineResponse, error) {
 	f, err := actor(ctx)
 	if err != nil {
 		return nil, err
@@ -660,15 +660,15 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 		byId[mustId(m.GetId())] = m
 	}
 
-	q := s.d.Ent.Object.Query().Where(
-		object.TenantIdEQ(f.Tenant.Uuid()),
-		object.DateStartedLT(to),
-		object.Or(object.DateEndedGT(from), object.DateEndedIsNil()),
+	q := s.d.Ent.Lamina.Query().Where(
+		lamina.TenantIdEQ(f.Tenant.Uuid()),
+		lamina.DateStartedLT(to),
+		lamina.Or(lamina.DateEndedGT(from), lamina.DateEndedIsNil()),
 	)
 	if req.GetSource() != nil {
-		q = q.Where(object.SourceIdEQ(mustId(members[0].GetId()).Uuid()))
+		q = q.Where(lamina.SourceIdEQ(mustId(members[0].GetId()).Uuid()))
 	} else {
-		q = q.Where(object.SetIdEQ(mustId(set.GetId()).Uuid()))
+		q = q.Where(lamina.SetIdEQ(mustId(set.GetId()).Uuid()))
 	}
 	var ends map[pdid.Id]time.Time
 	if req.GetAfter() != "" {
@@ -677,9 +677,9 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 			return nil, invalid("after", err.Error())
 		}
 		ends = e
-		q = q.Where(object.Or(object.DateStartedGT(t), object.And(object.DateStartedEQ(t), object.IdGT(id.Uuid()))))
+		q = q.Where(lamina.Or(lamina.DateStartedGT(t), lamina.And(lamina.DateStartedEQ(t), lamina.IdGT(id.Uuid()))))
 	}
-	rows, err := q.Order(ent.Asc(object.FieldDateStarted), ent.Asc(object.FieldId)).Limit(size + 1).WithSink(func(sq *ent.SinkQuery) { sq.WithNode() }).All(ctx)
+	rows, err := q.Order(ent.Asc(lamina.FieldDateStarted), ent.Asc(lamina.FieldId)).Limit(size + 1).WithSink(func(sq *ent.SinkQuery) { sq.WithNode() }).All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -689,11 +689,11 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 		rows = rows[:size]
 	}
 
-	// Open attempts of pending objects, for IN_PROGRESS gaps.
+	// Open attempts of pending laminae, for IN_PROGRESS gaps.
 	now := s.d.now()
 	pending := map[pdid.Id]bool{}
 	for _, r := range rows {
-		if r.State == int32(api.ObjectState_OBJECT_STATE_PENDING) {
+		if r.State == int32(api.LaminaState_LAMINA_STATE_PENDING) {
 			pending[pdid.Id(r.Id)] = true
 		}
 	}
@@ -704,13 +704,13 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 			pids = append(pids, id)
 		}
 		open, err := s.d.Ent.Attempt.Query().
-			Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(now), attempt.HasObjectWith(object.IdIn(uuidsOf(pids, pdid.Id.Uuid)...))).
+			Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(now), attempt.HasLaminaWith(lamina.IdIn(uuidsOf(pids, pdid.Id.Uuid)...))).
 			All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, a := range open {
-			inProgress[pdid.Id(a.ObjectId)] = true
+			inProgress[pdid.Id(a.LaminaId)] = true
 		}
 	}
 
@@ -724,7 +724,7 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 		id := mustId(m.GetId())
 		out[id] = api.TimelineSource_builder{SourceId: m.GetId(), Ordinal: m.GetOrdinal()}.Build()
 		// A continuation page carries on from where each source's last
-		// listed object ended, so a gap between two pages is told once.
+		// listed lamina ended, so a gap between two pages is told once.
 		if e, ok := ends[id]; ok {
 			cursor[id] = e
 		} else {
@@ -759,25 +759,25 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 			}
 		}
 
-		// The gap before this object.
+		// The gap before this lamina.
 		if c := cursor[srcId]; start.After(c) {
 			ts.SetGaps(append(ts.GetGaps(), gap(c, start, api.GapReason_GAP_REASON_NOT_RECEIVED)))
 		}
 
 		state := api.ReadState_READ_STATE_UNSPECIFIED
 		var reason api.GapReason
-		switch api.ObjectState(r.State) {
-		case api.ObjectState_OBJECT_STATE_PENDING:
+		switch api.LaminaState(r.State) {
+		case api.LaminaState_LAMINA_STATE_PENDING:
 			if inProgress[pdid.Id(r.Id)] {
 				reason = api.GapReason_GAP_REASON_IN_PROGRESS
 			} else {
 				reason = api.GapReason_GAP_REASON_NOT_RECEIVED
 			}
-		case api.ObjectState_OBJECT_STATE_LOST:
+		case api.LaminaState_LAMINA_STATE_LOST:
 			reason = api.GapReason_GAP_REASON_LOST
-		case api.ObjectState_OBJECT_STATE_DELETING, api.ObjectState_OBJECT_STATE_DELETED:
+		case api.LaminaState_LAMINA_STATE_DELETING, api.LaminaState_LAMINA_STATE_DELETED:
 			reason = api.GapReason_GAP_REASON_DELETED
-		case api.ObjectState_OBJECT_STATE_COMMITTED:
+		case api.LaminaState_LAMINA_STATE_COMMITTED:
 			if r.DateDeleted != nil && !r.DateDeleted.After(now) {
 				reason = api.GapReason_GAP_REASON_DELETED
 				break
@@ -790,8 +790,8 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 		}
 
 		if state == api.ReadState_READ_STATE_AVAILABLE {
-			to := api.TimelineObject_builder{
-				ObjectId:       r.Id[:],
+			to := api.TimelineLamina_builder{
+				LaminaId:       r.Id[:],
 				DateStarted:    timestamppb.New(start),
 				DateEnded:      timestamppb.New(end),
 				EndedEstimated: estimated,
@@ -799,7 +799,7 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 				State:          state,
 				Incomplete:     r.Incomplete,
 				SinkId:         r.SinkId[:],
-				ObjectKey:      r.ObjectKey,
+				LaminaKey:      r.LaminaKey,
 			}
 			exp := now.Add(b.ReadTokenTTL)
 			tok, err := s.d.Keys.Sign(ctx, api.TokenClaims_builder{
@@ -808,7 +808,7 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 				Aud:         r.Edges.Sink.Edges.Node.Id[:],
 				Op:          api.TokenOp_TOKEN_OP_GET,
 				SinkId:      r.SinkId[:],
-				ObjectKey:   r.ObjectKey,
+				LaminaKey:   r.LaminaKey,
 				Actor:       f.Actor.Bytes(),
 				ActorTenant: f.Tenant.Bytes(),
 			}.Build())
@@ -820,9 +820,9 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 			eps := s.endpoints(r.Edges.Sink.Edges.Node, callerOf(ctx), address)
 			to.Endpoints = eps
 			if len(eps) > 0 {
-				to.Url = fmt.Sprintf("%s://%s:%d/%s?token=%s", eps[0].GetScheme(), eps[0].GetHost(), eps[0].GetPort(), r.ObjectKey, tok)
+				to.Url = fmt.Sprintf("%s://%s:%d/%s?token=%s", eps[0].GetScheme(), eps[0].GetHost(), eps[0].GetPort(), r.LaminaKey, tok)
 			}
-			ts.SetObjects(append(ts.GetObjects(), to.Build()))
+			ts.SetLaminae(append(ts.GetLaminae(), to.Build()))
 		} else {
 			ts.SetGaps(append(ts.GetGaps(), gap(start, end, reason)))
 		}
@@ -857,7 +857,7 @@ func (s coreObject) Timeline(ctx context.Context, req *api.ObjectTimelineRequest
 		sources = append(sources, out[mustId(m.GetId())])
 	}
 
-	return api.ObjectTimelineResponse_builder{Sources: sources, Next: next}.Build(), nil
+	return api.LaminaTimelineResponse_builder{Sources: sources, Next: next}.Build(), nil
 }
 
 func gap(from, to time.Time, reason api.GapReason) *api.TimelineGap {

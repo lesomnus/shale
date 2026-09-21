@@ -8,7 +8,7 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/lesomnus/shale/internal/ent/object"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/site"
@@ -18,13 +18,13 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
-// Object is the model entity for the Object schema.
-type Object struct {
+// Lamina is the model entity for the Lamina schema.
+type Lamina struct {
 	config `json:"-"`
 	// Id of the ent.
 	Id uuid.UUID `json:"id,omitempty"`
-	// ObjectKey holds the value of the "object_key" field.
-	ObjectKey string `json:"object_key,omitempty"`
+	// LaminaKey holds the value of the "lamina_key" field.
+	LaminaKey string `json:"lamina_key,omitempty"`
 	// State holds the value of the "state" field.
 	State int32 `json:"state,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
@@ -68,13 +68,13 @@ type Object struct {
 	// SinkId holds the value of the "sink_id" field.
 	SinkId uuid.UUID `json:"sink_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the ObjectQuery when eager-loading is set.
-	Edges        ObjectEdges `json:"edges"`
+	// The values are being populated by the LaminaQuery when eager-loading is set.
+	Edges        LaminaEdges `json:"edges"`
 	selectValues sql.SelectValues
 }
 
-// ObjectEdges holds the relations/edges for other nodes in the graph.
-type ObjectEdges struct {
+// LaminaEdges holds the relations/edges for other nodes in the graph.
+type LaminaEdges struct {
 	// Tenant holds the value of the tenant edge.
 	Tenant *Tenant `json:"tenant,omitempty"`
 	// Site holds the value of the site edge.
@@ -92,7 +92,7 @@ type ObjectEdges struct {
 
 // TenantOrErr returns the Tenant value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ObjectEdges) TenantOrErr() (*Tenant, error) {
+func (e LaminaEdges) TenantOrErr() (*Tenant, error) {
 	if e.Tenant != nil {
 		return e.Tenant, nil
 	} else if e.loadedTypes[0] {
@@ -103,7 +103,7 @@ func (e ObjectEdges) TenantOrErr() (*Tenant, error) {
 
 // SiteOrErr returns the Site value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ObjectEdges) SiteOrErr() (*Site, error) {
+func (e LaminaEdges) SiteOrErr() (*Site, error) {
 	if e.Site != nil {
 		return e.Site, nil
 	} else if e.loadedTypes[1] {
@@ -114,7 +114,7 @@ func (e ObjectEdges) SiteOrErr() (*Site, error) {
 
 // SetOrErr returns the Set value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ObjectEdges) SetOrErr() (*Set, error) {
+func (e LaminaEdges) SetOrErr() (*Set, error) {
 	if e.Set != nil {
 		return e.Set, nil
 	} else if e.loadedTypes[2] {
@@ -125,7 +125,7 @@ func (e ObjectEdges) SetOrErr() (*Set, error) {
 
 // SourceOrErr returns the Source value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ObjectEdges) SourceOrErr() (*Source, error) {
+func (e LaminaEdges) SourceOrErr() (*Source, error) {
 	if e.Source != nil {
 		return e.Source, nil
 	} else if e.loadedTypes[3] {
@@ -136,7 +136,7 @@ func (e ObjectEdges) SourceOrErr() (*Source, error) {
 
 // SinkOrErr returns the Sink value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ObjectEdges) SinkOrErr() (*Sink, error) {
+func (e LaminaEdges) SinkOrErr() (*Sink, error) {
 	if e.Sink != nil {
 		return e.Sink, nil
 	} else if e.loadedTypes[4] {
@@ -146,23 +146,23 @@ func (e ObjectEdges) SinkOrErr() (*Sink, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Object) scanValues(columns []string) ([]any, error) {
+func (*Lamina) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case object.FieldChecksum:
+		case lamina.FieldChecksum:
 			values[i] = new([]byte)
-		case object.FieldEndedEstimated, object.FieldIncomplete, object.FieldDatesSynced:
+		case lamina.FieldEndedEstimated, lamina.FieldIncomplete, lamina.FieldDatesSynced:
 			values[i] = new(sql.NullBool)
-		case object.FieldState, object.FieldSize, object.FieldPlacementVersion, object.FieldEpoch:
+		case lamina.FieldState, lamina.FieldSize, lamina.FieldPlacementVersion, lamina.FieldEpoch:
 			values[i] = new(sql.NullInt64)
-		case object.FieldObjectKey:
+		case lamina.FieldLaminaKey:
 			values[i] = new(sql.NullString)
-		case object.FieldDateUpdated, object.FieldDateCreated, object.FieldDateStarted, object.FieldDateEnded, object.FieldDateExpired, object.FieldDateDeleted, object.FieldDateCommitted, object.FieldDateFinished:
+		case lamina.FieldDateUpdated, lamina.FieldDateCreated, lamina.FieldDateStarted, lamina.FieldDateEnded, lamina.FieldDateExpired, lamina.FieldDateDeleted, lamina.FieldDateCommitted, lamina.FieldDateFinished:
 			values[i] = new(sql.NullTime)
-		case object.FieldSiteId, object.FieldSinkId:
+		case lamina.FieldSiteId, lamina.FieldSinkId:
 			values[i] = new(sql.Null[uuid.UUID])
-		case object.FieldId, object.FieldTenantId, object.FieldSetId, object.FieldSourceId:
+		case lamina.FieldId, lamina.FieldTenantId, lamina.FieldSetId, lamina.FieldSourceId:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -172,150 +172,150 @@ func (*Object) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Object fields.
-func (_m *Object) assignValues(columns []string, values []any) error {
+// to the Lamina fields.
+func (_m *Lamina) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case object.FieldId:
+		case lamina.FieldId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.Id = *value
 			}
-		case object.FieldObjectKey:
+		case lamina.FieldLaminaKey:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field object_key", values[i])
+				return fmt.Errorf("unexpected type %T for field lamina_key", values[i])
 			} else if value.Valid {
-				_m.ObjectKey = value.String
+				_m.LaminaKey = value.String
 			}
-		case object.FieldState:
+		case lamina.FieldState:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field state", values[i])
 			} else if value.Valid {
 				_m.State = int32(value.Int64)
 			}
-		case object.FieldDateUpdated:
+		case lamina.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_updated", values[i])
 			} else if value.Valid {
 				_m.DateUpdated = value.Time
 			}
-		case object.FieldDateCreated:
+		case lamina.FieldDateCreated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_created", values[i])
 			} else if value.Valid {
 				_m.DateCreated = value.Time
 			}
-		case object.FieldDateStarted:
+		case lamina.FieldDateStarted:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_started", values[i])
 			} else if value.Valid {
 				_m.DateStarted = value.Time
 			}
-		case object.FieldDateEnded:
+		case lamina.FieldDateEnded:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_ended", values[i])
 			} else if value.Valid {
 				_m.DateEnded = new(time.Time)
 				*_m.DateEnded = value.Time
 			}
-		case object.FieldEndedEstimated:
+		case lamina.FieldEndedEstimated:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field ended_estimated", values[i])
 			} else if value.Valid {
 				_m.EndedEstimated = value.Bool
 			}
-		case object.FieldSize:
+		case lamina.FieldSize:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field size", values[i])
 			} else if value.Valid {
 				_m.Size = value.Int64
 			}
-		case object.FieldIncomplete:
+		case lamina.FieldIncomplete:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field incomplete", values[i])
 			} else if value.Valid {
 				_m.Incomplete = value.Bool
 			}
-		case object.FieldDateExpired:
+		case lamina.FieldDateExpired:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_expired", values[i])
 			} else if value.Valid {
 				_m.DateExpired = value.Time
 			}
-		case object.FieldDateDeleted:
+		case lamina.FieldDateDeleted:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_deleted", values[i])
 			} else if value.Valid {
 				_m.DateDeleted = new(time.Time)
 				*_m.DateDeleted = value.Time
 			}
-		case object.FieldDatesSynced:
+		case lamina.FieldDatesSynced:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field dates_synced", values[i])
 			} else if value.Valid {
 				_m.DatesSynced = value.Bool
 			}
-		case object.FieldPlacementVersion:
+		case lamina.FieldPlacementVersion:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field placement_version", values[i])
 			} else if value.Valid {
 				_m.PlacementVersion = value.Int64
 			}
-		case object.FieldDateCommitted:
+		case lamina.FieldDateCommitted:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_committed", values[i])
 			} else if value.Valid {
 				_m.DateCommitted = new(time.Time)
 				*_m.DateCommitted = value.Time
 			}
-		case object.FieldDateFinished:
+		case lamina.FieldDateFinished:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_finished", values[i])
 			} else if value.Valid {
 				_m.DateFinished = new(time.Time)
 				*_m.DateFinished = value.Time
 			}
-		case object.FieldChecksum:
+		case lamina.FieldChecksum:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field checksum", values[i])
 			} else if value != nil {
 				_m.Checksum = *value
 			}
-		case object.FieldEpoch:
+		case lamina.FieldEpoch:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field epoch", values[i])
 			} else if value.Valid {
 				_m.Epoch = value.Int64
 			}
-		case object.FieldTenantId:
+		case lamina.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
 			} else if value != nil {
 				_m.TenantId = *value
 			}
-		case object.FieldSiteId:
+		case lamina.FieldSiteId:
 			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
 				return fmt.Errorf("unexpected type %T for field site_id", values[i])
 			} else if value.Valid {
 				_m.SiteId = value.V
 			}
-		case object.FieldSetId:
+		case lamina.FieldSetId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field set_id", values[i])
 			} else if value != nil {
 				_m.SetId = *value
 			}
-		case object.FieldSourceId:
+		case lamina.FieldSourceId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field source_id", values[i])
 			} else if value != nil {
 				_m.SourceId = *value
 			}
-		case object.FieldSinkId:
+		case lamina.FieldSinkId:
 			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
 				return fmt.Errorf("unexpected type %T for field sink_id", values[i])
 			} else if value.Valid {
@@ -328,62 +328,62 @@ func (_m *Object) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Object.
+// Value returns the ent.Value that was dynamically selected and assigned to the Lamina.
 // This includes values selected through modifiers, order, etc.
-func (_m *Object) Value(name string) (ent.Value, error) {
+func (_m *Lamina) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryTenant queries the "tenant" edge of the Object entity.
-func (_m *Object) QueryTenant() *TenantQuery {
-	return NewObjectClient(_m.config).QueryTenant(_m)
+// QueryTenant queries the "tenant" edge of the Lamina entity.
+func (_m *Lamina) QueryTenant() *TenantQuery {
+	return NewLaminaClient(_m.config).QueryTenant(_m)
 }
 
-// QuerySite queries the "site" edge of the Object entity.
-func (_m *Object) QuerySite() *SiteQuery {
-	return NewObjectClient(_m.config).QuerySite(_m)
+// QuerySite queries the "site" edge of the Lamina entity.
+func (_m *Lamina) QuerySite() *SiteQuery {
+	return NewLaminaClient(_m.config).QuerySite(_m)
 }
 
-// QuerySet queries the "set" edge of the Object entity.
-func (_m *Object) QuerySet() *SetQuery {
-	return NewObjectClient(_m.config).QuerySet(_m)
+// QuerySet queries the "set" edge of the Lamina entity.
+func (_m *Lamina) QuerySet() *SetQuery {
+	return NewLaminaClient(_m.config).QuerySet(_m)
 }
 
-// QuerySource queries the "source" edge of the Object entity.
-func (_m *Object) QuerySource() *SourceQuery {
-	return NewObjectClient(_m.config).QuerySource(_m)
+// QuerySource queries the "source" edge of the Lamina entity.
+func (_m *Lamina) QuerySource() *SourceQuery {
+	return NewLaminaClient(_m.config).QuerySource(_m)
 }
 
-// QuerySink queries the "sink" edge of the Object entity.
-func (_m *Object) QuerySink() *SinkQuery {
-	return NewObjectClient(_m.config).QuerySink(_m)
+// QuerySink queries the "sink" edge of the Lamina entity.
+func (_m *Lamina) QuerySink() *SinkQuery {
+	return NewLaminaClient(_m.config).QuerySink(_m)
 }
 
-// Update returns a builder for updating this Object.
-// Note that you need to call Object.Unwrap() before calling this method if this Object
+// Update returns a builder for updating this Lamina.
+// Note that you need to call Lamina.Unwrap() before calling this method if this Lamina
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (_m *Object) Update() *ObjectUpdateOne {
-	return NewObjectClient(_m.config).UpdateOne(_m)
+func (_m *Lamina) Update() *LaminaUpdateOne {
+	return NewLaminaClient(_m.config).UpdateOne(_m)
 }
 
-// Unwrap unwraps the Object entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Lamina entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (_m *Object) Unwrap() *Object {
+func (_m *Lamina) Unwrap() *Lamina {
 	_tx, ok := _m.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Object is not a transactional entity")
+		panic("ent: Lamina is not a transactional entity")
 	}
 	_m.config.driver = _tx.drv
 	return _m
 }
 
 // String implements the fmt.Stringer.
-func (_m *Object) String() string {
+func (_m *Lamina) String() string {
 	var builder strings.Builder
-	builder.WriteString("Object(")
+	builder.WriteString("Lamina(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
-	builder.WriteString("object_key=")
-	builder.WriteString(_m.ObjectKey)
+	builder.WriteString("lamina_key=")
+	builder.WriteString(_m.LaminaKey)
 	builder.WriteString(", ")
 	builder.WriteString("state=")
 	builder.WriteString(fmt.Sprintf("%v", _m.State))
@@ -459,5 +459,5 @@ func (_m *Object) String() string {
 	return builder.String()
 }
 
-// ObjectList is a parsable slice of Object.
-type ObjectList []*Object
+// LaminaList is a parsable slice of Lamina.
+type LaminaList []*Lamina

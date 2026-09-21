@@ -24,7 +24,7 @@ const (
 )
 
 // Site groups sets within a tenant, e.g. a building or a branch (§7). It is
-// payday's second permission axis: field 3 of Set, Source, Object, Attempt,
+// payday's second permission axis: field 3 of Set, Source, Lamina, Attempt,
 // Producer, and SiteMember names one, so a person or a reader limited to the
 // sites it is a member of cannot read another site's cameras.
 type Site struct {

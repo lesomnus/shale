@@ -35,13 +35,13 @@ deployment runs well on them, and changes them only for a reason.
 | Segments | `max_bitrate` | declared by the producer | ≤ the policy's `max_bitrate` | negotiated, per source | [§12.6](04-write-path.md#126-upload-profile-negotiation) |
 | Segments | `max_bitrate` cap | 32 Mbps | — | cluster (`UploadPolicy`) | [§12.6](04-write-path.md#126-upload-profile-negotiation) |
 | Segments | `max_bitrate_total` | none | — | set | [§12.6](04-write-path.md#126-upload-profile-negotiation) |
-| Segments | segment duration | 64 MB ÷ `max_bitrate` | `max_bitrate` × duration ≤ 512 MB, ≥ 32 MB as a target; duration ≤ `epoch` / 4 | negotiated, per source | [§12.6](04-write-path.md#126-upload-profile-negotiation), [§25](07-storage-node.md#25-object-size) |
+| Segments | segment duration | 64 MB ÷ `max_bitrate` | `max_bitrate` × duration ≤ 512 MB, ≥ 32 MB as a target; duration ≤ `epoch` / 4 | negotiated, per source | [§12.6](04-write-path.md#126-upload-profile-negotiation), [§25](07-storage-node.md#25-lamina-size) |
 | Segments | `keyframe_interval` | 2 s | 0.5–4 s | negotiated, per source | [§12.6](04-write-path.md#126-upload-profile-negotiation) |
 | Segments | `max_length` | `max_bitrate` × (duration + `keyframe_interval` + 2 s) | derived | — | [§12.6](04-write-path.md#126-upload-profile-negotiation) |
 | Segments | observed rate half-life | one epoch | — | cluster | [§12.6](04-write-path.md#126-upload-profile-negotiation) |
 | Uploads | upload mode | `live` | `live`, `buffered` | negotiated, per set | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Uploads | `idle_timeout` | 30 s | 10 s – 5 min | negotiated, per set | [§12.2](04-write-path.md#122-resumable-part-uploads) |
-| Uploads | `abandon_timeout` | 5 min | 1–30 min, and ≥ 2 × `idle_timeout` | negotiated, per set | [§15](04-write-path.md#15-partial-objects) |
+| Uploads | `abandon_timeout` | 5 min | 1–30 min, and ≥ 2 × `idle_timeout` | negotiated, per set | [§15](04-write-path.md#15-partial-laminae) |
 | Uploads | `allocation_horizon` | 10 min | 1–30 min | negotiated, per set | [§12.1](04-write-path.md#121-flow) |
 | Uploads | `allocation_ttl` | horizon + longest segment + `abandon_timeout` + 5 min (22 min at the defaults) | derived | — | [§12.1](04-write-path.md#121-flow) |
 | Uploads | `max_open_attempts` per source | 32 | — | cluster | [§12.1](04-write-path.md#121-flow) |
@@ -104,7 +104,7 @@ deployment runs well on them, and changes them only for a reason.
 | Trail | `audit.retain`, `audit.destroy` | the profile's | how long a row stays in the table, and in the archive | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.archive`, `audit.discard` | none | a directory; a window with neither is refused | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.every` | 24h | — | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
-| Trail | `audit.by.<kind>` | — | `profile`, `retain`, `destroy`, `discard` for one kind: `object`, `set`, `holder`, …, `d19` for `site` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
+| Trail | `audit.by.<kind>` | — | `profile`, `retain`, `destroy`, `discard` for one kind: `lamina`, `set`, `holder`, …, `d19` for `site` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | People | `auth.roster.db` | SQLite beside the control plane's state | a database every control plane shares | control | [§34.7](11-deployment.md#347-single-machine), [§34.5](11-deployment.md#345-kubernetes) |
 | Live | `view_token_ttl` | 1 h | — | cluster | [§39.4](16-relay.md#394-viewers) |
 | Live | `publish_token_ttl` | 24 h | — | cluster | [§39.3](16-relay.md#393-from-the-producer) |
@@ -114,7 +114,7 @@ deployment runs well on them, and changes them only for a reason.
 | Live | `ice` (STUN / TURN servers) | none (host candidates only) | — | relay | [§39.4](16-relay.md#394-viewers) |
 | Live | `relay_selector` | none (any relay) | labels | site | [§39.2](16-relay.md#392-assignment) |
 | Security | `rpc_rate` | 20 calls/s per actor, burst 100; 2,000/s per tenant | — | cluster | [§35.1](12-api.md#351-conventions) |
-| Security | `timeline_page` | 1,000 objects | — | cluster | [§17.1](05-read-path.md#171-flow) |
+| Security | `timeline_page` | 1,000 laminae | — | cluster | [§17.1](05-read-path.md#171-flow) |
 
 Not configurable on purpose: the token signature algorithm (Ed25519), the
 entity domain bytes ([§35.3](12-api.md#353-entities)), the order in which a
@@ -164,13 +164,13 @@ Ideas recorded, not planned:
 
 ### 36.3 Rejected alternatives
 
-**Volume files.** Packing many objects into large pre-allocated volume files
-(Haystack style) would remove per-object filesystem metadata entirely. It pays
-off for small objects, and the 32 MB lower bound
-([§25](07-storage-node.md#25-object-size)) means Shale has none. It would also
+**Volume files.** Packing many laminae into large pre-allocated volume files
+(Haystack style) would remove per-lamina filesystem metadata entirely. It pays
+off for small laminae, and the 32 MB lower bound
+([§25](07-storage-node.md#25-lamina-size)) means Shale has none. It would also
 complicate rescheduling (deletion per volume), resumable uploads, incomplete
-objects, and the unlink/fd semantics of
-[§18](05-read-path.md#18-delete-during-read). Shale stores one file per object.
+laminae, and the unlink/fd semantics of
+[§18](05-read-path.md#18-delete-during-read). Shale stores one file per lamina.
 
 **S3-style multipart.** Independent parts, a part list, and a completion call.
 The offset-based resumable upload of

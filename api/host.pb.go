@@ -1533,7 +1533,7 @@ func (b0 Producer_builder) Build() *Producer {
 	return m0
 }
 
-// Reader is a host that queries and reads objects, typically a media server
+// Reader is a host that queries and reads laminae, typically a media server
 // (§33.4); its sites are SiteMember rows.
 type Reader struct {
 	state                      protoimpl.MessageState `protogen:"opaque.v1"`

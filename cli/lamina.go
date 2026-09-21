@@ -19,26 +19,26 @@ import (
 	"github.com/lesomnus/shale/cmd"
 )
 
-// addObjectCommands mounts `object reschedule` (§20.3, §32) by hand. The
+// addLaminaCommands mounts `lamina reschedule` (§20.3, §32) by hand. The
 // generated verb makes REF mandatory because the request has a `ref`, but
 // the bulk form names a set or a source and a time range instead, so the
 // reference is optional here and the rest are flags.
-func addObjectCommands(t *pdcmd.Tree, c *cmd.Config) {
-	t.Add("object/reschedule", &xli.Command{
+func addLaminaCommands(t *pdcmd.Tree, c *cmd.Config) {
+	t.Add("lamina/reschedule", &xli.Command{
 		Name:  "reschedule",
-		Brief: "change when objects expire and are deleted: one, or a set's or a source's over a range",
+		Brief: "change when laminae expire and are deleted: one, or a set's or a source's over a range",
 		Flags: flg.Flags{
-			&flg.String{Name: "set", Brief: "every object of the set, by id or @tenant/alias, within --from and --to"},
-			&flg.String{Name: "source", Brief: "every object of the source, by id or @tenant/alias, within --from and --to"},
+			&flg.String{Name: "set", Brief: "every lamina of the set, by id or @tenant/alias, within --from and --to"},
+			&flg.String{Name: "source", Brief: "every lamina of the source, by id or @tenant/alias, within --from and --to"},
 			&flg.String{Name: "from", Brief: "start of the range: RFC 3339, a date, `now`, or a duration from now (--from=-24h)"},
 			&flg.String{Name: "to", Brief: "end of the range, in the same forms"},
 			&flg.String{Name: "expired", Brief: "the new date_expired, in the same forms; absent leaves it"},
 			&flg.String{Name: "deleted", Brief: "the new date_deleted, in the same forms; absent leaves it"},
-			&flg.Switch{Name: "delete-now", Brief: "set both dates to now: the objects read as deleted at once"},
+			&flg.Switch{Name: "delete-now", Brief: "set both dates to now: the laminae read as deleted at once"},
 			&flg.String{Name: "reason", Brief: "why, for the audit trail (required)"},
 		},
 		Args: arg.Args{
-			&arg.String{Name: "REF", Brief: "one object, by id; absent with --set or --source", Optional: true},
+			&arg.String{Name: "REF", Brief: "one lamina, by id; absent with --set or --source", Optional: true},
 		},
 		Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 			var o rescheduleOpts
@@ -64,13 +64,13 @@ func addObjectCommands(t *pdcmd.Tree, c *cmd.Config) {
 			// A bulk reschedule works in pages and stops short of its
 			// deadline; the answer says how many remain, and the same
 			// request (its dates were fixed above) goes again for them.
-			client := api.NewObjectServiceClient(conn)
+			client := api.NewLaminaServiceClient(conn)
 			var total int64
 			for {
 				resp, err := client.Reschedule(ctx, req)
 				if err != nil {
 					if total > 0 {
-						return fmt.Errorf("after %d object(s): %w", total, err)
+						return fmt.Errorf("after %d lamina(s): %w", total, err)
 					}
 
 					return err
@@ -79,16 +79,16 @@ func addObjectCommands(t *pdcmd.Tree, c *cmd.Config) {
 				if resp.GetRemaining() == 0 {
 					break
 				}
-				self.Printf("rescheduled %d object(s), %d to go\n", total, resp.GetRemaining())
+				self.Printf("rescheduled %d lamina(s), %d to go\n", total, resp.GetRemaining())
 			}
-			self.Printf("rescheduled %d object(s)\n", total)
+			self.Printf("rescheduled %d lamina(s)\n", total)
 
 			return nil
 		}),
 	})
 }
 
-// rescheduleOpts is `object reschedule` as typed.
+// rescheduleOpts is `lamina reschedule` as typed.
 type rescheduleOpts struct {
 	ref, set, source           string
 	from, to, expired, deleted string
@@ -97,15 +97,15 @@ type rescheduleOpts struct {
 }
 
 // buildReschedule turns the command line into the request, refusing the
-// combinations the server would: exactly one of an object, a set, or a
-// source; a range with the bulk forms and none with an object; something to
+// combinations the server would: exactly one of a lamina, a set, or a
+// source; a range with the bulk forms and none with a lamina; something to
 // change; a reason.
-func buildReschedule(o rescheduleOpts, now time.Time) (*api.ObjectRescheduleRequest, error) {
-	req := api.ObjectRescheduleRequest_builder{DeleteNow: o.deleteNow, Reason: strings.TrimSpace(o.reason)}
+func buildReschedule(o rescheduleOpts, now time.Time) (*api.LaminaRescheduleRequest, error) {
+	req := api.LaminaRescheduleRequest_builder{DeleteNow: o.deleteNow, Reason: strings.TrimSpace(o.reason)}
 	named := 0
 	if o.ref != "" {
-		r := &api.ObjectRef{}
-		if err := fillRef(r, o.ref, "shale.Object"); err != nil {
+		r := &api.LaminaRef{}
+		if err := fillRef(r, o.ref, "shale.Lamina"); err != nil {
 			return nil, err
 		}
 		req.Ref, named = r, named+1
@@ -125,11 +125,11 @@ func buildReschedule(o rescheduleOpts, now time.Time) (*api.ObjectRescheduleRequ
 		req.Source, named = r, named+1
 	}
 	if named != 1 {
-		return nil, fmt.Errorf("name exactly one of an object (REF), --set, or --source")
+		return nil, fmt.Errorf("name exactly one of a lamina (REF), --set, or --source")
 	}
 	switch {
 	case req.Ref != nil && (o.from != "" || o.to != ""):
-		return nil, fmt.Errorf("--from and --to go with --set or --source, not with one object")
+		return nil, fmt.Errorf("--from and --to go with --set or --source, not with one lamina")
 	case req.Ref == nil && (o.from == "" || o.to == ""):
 		return nil, fmt.Errorf("--set and --source take a range: --from and --to")
 	}

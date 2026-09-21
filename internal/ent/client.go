@@ -15,8 +15,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent/audit"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
-	"github.com/lesomnus/shale/internal/ent/object"
 	"github.com/lesomnus/shale/internal/ent/outbox"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
@@ -49,10 +49,10 @@ type Client struct {
 	Device *DeviceClient
 	// Holder is the client for interacting with the Holder builders.
 	Holder *HolderClient
+	// Lamina is the client for interacting with the Lamina builders.
+	Lamina *LaminaClient
 	// Node is the client for interacting with the Node builders.
 	Node *NodeClient
-	// Object is the client for interacting with the Object builders.
-	Object *ObjectClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
 	// PlacementPolicy is the client for interacting with the PlacementPolicy builders.
@@ -94,8 +94,8 @@ func (c *Client) init() {
 	c.Audit = NewAuditClient(c.config)
 	c.Device = NewDeviceClient(c.config)
 	c.Holder = NewHolderClient(c.config)
+	c.Lamina = NewLaminaClient(c.config)
 	c.Node = NewNodeClient(c.config)
-	c.Object = NewObjectClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
 	c.PlacementPolicy = NewPlacementPolicyClient(c.config)
 	c.Producer = NewProducerClient(c.config)
@@ -206,8 +206,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Audit:           NewAuditClient(cfg),
 		Device:          NewDeviceClient(cfg),
 		Holder:          NewHolderClient(cfg),
+		Lamina:          NewLaminaClient(cfg),
 		Node:            NewNodeClient(cfg),
-		Object:          NewObjectClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		PlacementPolicy: NewPlacementPolicyClient(cfg),
 		Producer:        NewProducerClient(cfg),
@@ -245,8 +245,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Audit:           NewAuditClient(cfg),
 		Device:          NewDeviceClient(cfg),
 		Holder:          NewHolderClient(cfg),
+		Lamina:          NewLaminaClient(cfg),
 		Node:            NewNodeClient(cfg),
-		Object:          NewObjectClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		PlacementPolicy: NewPlacementPolicyClient(cfg),
 		Producer:        NewProducerClient(cfg),
@@ -335,7 +335,7 @@ func (c *Client) InTx() bool {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.AddressPolicy, c.Attempt, c.Audit, c.Device, c.Holder, c.Node, c.Object,
+		c.AddressPolicy, c.Attempt, c.Audit, c.Device, c.Holder, c.Lamina, c.Node,
 		c.Outbox, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.Set,
 		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
 	} {
@@ -347,7 +347,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.AddressPolicy, c.Attempt, c.Audit, c.Device, c.Holder, c.Node, c.Object,
+		c.AddressPolicy, c.Attempt, c.Audit, c.Device, c.Holder, c.Lamina, c.Node,
 		c.Outbox, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.Set,
 		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
 	} {
@@ -368,10 +368,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Device.mutate(ctx, m)
 	case *HolderMutation:
 		return c.Holder.mutate(ctx, m)
+	case *LaminaMutation:
+		return c.Lamina.mutate(ctx, m)
 	case *NodeMutation:
 		return c.Node.mutate(ctx, m)
-	case *ObjectMutation:
-		return c.Object.mutate(ctx, m)
 	case *OutboxMutation:
 		return c.Outbox.mutate(ctx, m)
 	case *PlacementPolicyMutation:
@@ -676,15 +676,15 @@ func (c *AttemptClient) QuerySite(_m *Attempt) *SiteQuery {
 	return query
 }
 
-// QueryObject queries the object edge of a Attempt.
-func (c *AttemptClient) QueryObject(_m *Attempt) *ObjectQuery {
-	query := (&ObjectClient{config: c.config}).Query()
+// QueryLamina queries the lamina edge of a Attempt.
+func (c *AttemptClient) QueryLamina(_m *Attempt) *LaminaQuery {
+	query := (&LaminaClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.Id
 		step := sqlgraph.NewStep(
 			sqlgraph.From(attempt.Table, attempt.FieldId, id),
-			sqlgraph.To(object.Table, object.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, attempt.ObjectTable, attempt.ObjectColumn),
+			sqlgraph.To(lamina.Table, lamina.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, attempt.LaminaTable, attempt.LaminaColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1180,6 +1180,219 @@ func (c *HolderClient) mutate(ctx context.Context, m *HolderMutation) (Value, er
 	}
 }
 
+// LaminaClient is a client for the Lamina schema.
+type LaminaClient struct {
+	config
+}
+
+// NewLaminaClient returns a client for the Lamina from the given config.
+func NewLaminaClient(c config) *LaminaClient {
+	return &LaminaClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `lamina.Hooks(f(g(h())))`.
+func (c *LaminaClient) Use(hooks ...Hook) {
+	c.hooks.Lamina = append(c.hooks.Lamina, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `lamina.Intercept(f(g(h())))`.
+func (c *LaminaClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Lamina = append(c.inters.Lamina, interceptors...)
+}
+
+// Create returns a builder for creating a Lamina entity.
+func (c *LaminaClient) Create() *LaminaCreate {
+	mutation := newLaminaMutation(c.config, OpCreate)
+	return &LaminaCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Lamina entities.
+func (c *LaminaClient) CreateBulk(builders ...*LaminaCreate) *LaminaCreateBulk {
+	return &LaminaCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *LaminaClient) MapCreateBulk(slice any, setFunc func(*LaminaCreate, int)) *LaminaCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &LaminaCreateBulk{err: fmt.Errorf("calling to LaminaClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*LaminaCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &LaminaCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Lamina.
+func (c *LaminaClient) Update() *LaminaUpdate {
+	mutation := newLaminaMutation(c.config, OpUpdate)
+	return &LaminaUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *LaminaClient) UpdateOne(_m *Lamina) *LaminaUpdateOne {
+	mutation := newLaminaMutation(c.config, OpUpdateOne, withLamina(_m))
+	return &LaminaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *LaminaClient) UpdateOneId(id uuid.UUID) *LaminaUpdateOne {
+	mutation := newLaminaMutation(c.config, OpUpdateOne, withLaminaId(id))
+	return &LaminaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Lamina.
+func (c *LaminaClient) Delete() *LaminaDelete {
+	mutation := newLaminaMutation(c.config, OpDelete)
+	return &LaminaDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *LaminaClient) DeleteOne(_m *Lamina) *LaminaDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *LaminaClient) DeleteOneId(id uuid.UUID) *LaminaDeleteOne {
+	builder := c.Delete().Where(lamina.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &LaminaDeleteOne{builder}
+}
+
+// Query returns a query builder for Lamina.
+func (c *LaminaClient) Query() *LaminaQuery {
+	return &LaminaQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeLamina},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Lamina entity by its id.
+func (c *LaminaClient) Get(ctx context.Context, id uuid.UUID) (*Lamina, error) {
+	return c.Query().Where(lamina.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *LaminaClient) GetX(ctx context.Context, id uuid.UUID) *Lamina {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a Lamina.
+func (c *LaminaClient) QueryTenant(_m *Lamina) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(lamina.Table, lamina.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.TenantTable, lamina.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a Lamina.
+func (c *LaminaClient) QuerySite(_m *Lamina) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(lamina.Table, lamina.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SiteTable, lamina.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySet queries the set edge of a Lamina.
+func (c *LaminaClient) QuerySet(_m *Lamina) *SetQuery {
+	query := (&SetClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(lamina.Table, lamina.FieldId, id),
+			sqlgraph.To(set.Table, set.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SetTable, lamina.SetColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySource queries the source edge of a Lamina.
+func (c *LaminaClient) QuerySource(_m *Lamina) *SourceQuery {
+	query := (&SourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(lamina.Table, lamina.FieldId, id),
+			sqlgraph.To(source.Table, source.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SourceTable, lamina.SourceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySink queries the sink edge of a Lamina.
+func (c *LaminaClient) QuerySink(_m *Lamina) *SinkQuery {
+	query := (&SinkClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(lamina.Table, lamina.FieldId, id),
+			sqlgraph.To(sink.Table, sink.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SinkTable, lamina.SinkColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *LaminaClient) Hooks() []Hook {
+	return c.hooks.Lamina
+}
+
+// Interceptors returns the client interceptors.
+func (c *LaminaClient) Interceptors() []Interceptor {
+	return c.inters.Lamina
+}
+
+func (c *LaminaClient) mutate(ctx context.Context, m *LaminaMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&LaminaCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&LaminaUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&LaminaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&LaminaDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Lamina mutation op: %q", m.Op())
+	}
+}
+
 // NodeClient is a client for the Node schema.
 type NodeClient struct {
 	config
@@ -1310,219 +1523,6 @@ func (c *NodeClient) mutate(ctx context.Context, m *NodeMutation) (Value, error)
 		return (&NodeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Node mutation op: %q", m.Op())
-	}
-}
-
-// ObjectClient is a client for the Object schema.
-type ObjectClient struct {
-	config
-}
-
-// NewObjectClient returns a client for the Object from the given config.
-func NewObjectClient(c config) *ObjectClient {
-	return &ObjectClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `object.Hooks(f(g(h())))`.
-func (c *ObjectClient) Use(hooks ...Hook) {
-	c.hooks.Object = append(c.hooks.Object, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `object.Intercept(f(g(h())))`.
-func (c *ObjectClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Object = append(c.inters.Object, interceptors...)
-}
-
-// Create returns a builder for creating a Object entity.
-func (c *ObjectClient) Create() *ObjectCreate {
-	mutation := newObjectMutation(c.config, OpCreate)
-	return &ObjectCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Object entities.
-func (c *ObjectClient) CreateBulk(builders ...*ObjectCreate) *ObjectCreateBulk {
-	return &ObjectCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ObjectClient) MapCreateBulk(slice any, setFunc func(*ObjectCreate, int)) *ObjectCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ObjectCreateBulk{err: fmt.Errorf("calling to ObjectClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ObjectCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ObjectCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Object.
-func (c *ObjectClient) Update() *ObjectUpdate {
-	mutation := newObjectMutation(c.config, OpUpdate)
-	return &ObjectUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ObjectClient) UpdateOne(_m *Object) *ObjectUpdateOne {
-	mutation := newObjectMutation(c.config, OpUpdateOne, withObject(_m))
-	return &ObjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneId returns an update builder for the given id.
-func (c *ObjectClient) UpdateOneId(id uuid.UUID) *ObjectUpdateOne {
-	mutation := newObjectMutation(c.config, OpUpdateOne, withObjectId(id))
-	return &ObjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Object.
-func (c *ObjectClient) Delete() *ObjectDelete {
-	mutation := newObjectMutation(c.config, OpDelete)
-	return &ObjectDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ObjectClient) DeleteOne(_m *Object) *ObjectDeleteOne {
-	return c.DeleteOneId(_m.Id)
-}
-
-// DeleteOneId returns a builder for deleting the given entity by its id.
-func (c *ObjectClient) DeleteOneId(id uuid.UUID) *ObjectDeleteOne {
-	builder := c.Delete().Where(object.Id(id))
-	builder.mutation.id = &id
-	builder.mutation.SetOp(OpDeleteOne)
-	return &ObjectDeleteOne{builder}
-}
-
-// Query returns a query builder for Object.
-func (c *ObjectClient) Query() *ObjectQuery {
-	return &ObjectQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeObject},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a Object entity by its id.
-func (c *ObjectClient) Get(ctx context.Context, id uuid.UUID) (*Object, error) {
-	return c.Query().Where(object.Id(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ObjectClient) GetX(ctx context.Context, id uuid.UUID) *Object {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryTenant queries the tenant edge of a Object.
-func (c *ObjectClient) QueryTenant(_m *Object) *TenantQuery {
-	query := (&TenantClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.Id
-		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, id),
-			sqlgraph.To(tenant.Table, tenant.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.TenantTable, object.TenantColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QuerySite queries the site edge of a Object.
-func (c *ObjectClient) QuerySite(_m *Object) *SiteQuery {
-	query := (&SiteClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.Id
-		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, id),
-			sqlgraph.To(site.Table, site.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.SiteTable, object.SiteColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QuerySet queries the set edge of a Object.
-func (c *ObjectClient) QuerySet(_m *Object) *SetQuery {
-	query := (&SetClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.Id
-		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, id),
-			sqlgraph.To(set.Table, set.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.SetTable, object.SetColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QuerySource queries the source edge of a Object.
-func (c *ObjectClient) QuerySource(_m *Object) *SourceQuery {
-	query := (&SourceClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.Id
-		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, id),
-			sqlgraph.To(source.Table, source.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.SourceTable, object.SourceColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QuerySink queries the sink edge of a Object.
-func (c *ObjectClient) QuerySink(_m *Object) *SinkQuery {
-	query := (&SinkClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.Id
-		step := sqlgraph.NewStep(
-			sqlgraph.From(object.Table, object.FieldId, id),
-			sqlgraph.To(sink.Table, sink.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, object.SinkTable, object.SinkColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *ObjectClient) Hooks() []Hook {
-	return c.hooks.Object
-}
-
-// Interceptors returns the client interceptors.
-func (c *ObjectClient) Interceptors() []Interceptor {
-	return c.inters.Object
-}
-
-func (c *ObjectClient) mutate(ctx context.Context, m *ObjectMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ObjectCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ObjectUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ObjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ObjectDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown Object mutation op: %q", m.Op())
 	}
 }
 
@@ -3530,12 +3530,12 @@ func (c *UploadPolicyClient) mutate(ctx context.Context, m *UploadPolicyMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AddressPolicy, Attempt, Audit, Device, Holder, Node, Object, Outbox,
+		AddressPolicy, Attempt, Audit, Device, Holder, Lamina, Node, Outbox,
 		PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site,
 		SiteMember, Source, Tenant, UploadPolicy []ent.Hook
 	}
 	inters struct {
-		AddressPolicy, Attempt, Audit, Device, Holder, Node, Object, Outbox,
+		AddressPolicy, Attempt, Audit, Device, Holder, Lamina, Node, Outbox,
 		PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site,
 		SiteMember, Source, Tenant, UploadPolicy []ent.Interceptor
 	}

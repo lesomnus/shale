@@ -6,14 +6,14 @@
 
 ```text
 1. Producer    keeps allocations for segments due within allocation_horizon:
-               SetService.Allocate {set, horizon}   (or ObjectService.Allocate
+               SetService.Allocate {set, horizon}   (or LaminaService.Allocate
                {source, expected date_started} for a single segment)
-2. CP          object_id and a ranked list of candidates, each with its own
+2. CP          lamina_id and a ranked list of candidates, each with its own
                attempt_id, sink_id, node endpoints, and access token
 3. Producer    live:     opens the upload when the segment starts and streams
                          bytes as they are recorded
                buffered: opens the upload once the segment is complete
-               PUT <node>/objects/<key>  Upload-Offset: 0  Upload-Complete: ?1
+               PUT <node>/laminae/<key>  Upload-Offset: 0  Upload-Complete: ?1
                Shale-Date-Started: <t>
                (Content-Length, or chunked + Shale-Size-Hint for live)
 4. Node        admission: accept if the sink is below max_uploads and the
@@ -28,10 +28,10 @@
                upload is complete
 8. Worker      last part written, unused reservation released,
                xattr state=complete + final size, fsync   (one flush)
-9. Node        add to the in-memory index; queue the ObjectStored event
+9. Node        add to the in-memory index; queue the LaminaStored event
 10. Node       reply 201 to the producer     ← commit point
 11. Producer   release the segment
-12. CP         ObjectStored → state COMMITTED in the index
+12. CP         LaminaStored → state COMMITTED in the index
 ```
 
 **Pre-allocation.** Producers fetch allocations ahead of time. That takes the
@@ -48,15 +48,15 @@ short CP outage. It adds no durable producer state:
   ([§11](03-placement.md#11-placement)), so an allocation computed early
   points to the same sink as one computed at upload time.
 - Allocation is **idempotent per segment**: asking again for the same
-  `(source, expected date_started)` answers the same `object_id`, with a fresh
+  `(source, expected date_started)` answers the same `lamina_id`, with a fresh
   attempt only if the previous one has expired. A producer therefore never
-  creates two objects for one segment, however often it restarts. A slot
+  creates two laminae for one segment, however often it restarts. A slot
   usually holds one segment; when the camera stops and comes back within
-  the slot ([§15](#15-partial-objects)) the segment that follows begins
-  after the stored one ended, and gets an object of its own in the same
+  the slot ([§15](#15-partial-laminae)) the segment that follows begins
+  after the stored one ended, and gets a lamina of its own in the same
   slot, so nothing the camera delivered is refused. A source may hold at
   most `max_open_attempts` (default 32) unfinished attempts; beyond that no
-  new object is allocated, while an object already allocated whose
+  new lamina is allocated, while a lamina already allocated whose
   attempts all failed still gets fresh ones, so a segment being retried
   ([§16](#16-producer-backpressure)) is never held back by the allocations
   ahead of it.
@@ -81,11 +81,11 @@ short CP outage. It adds no durable producer state:
   and runs for its whole segment, and the node's abandon decision after it.
   An upload that still outlives it, for instance a buffered backlog queued
   behind other segments, gets a fresh token for the same attempt and target
-  from `ObjectService.Renew`.
-- An attempt without an `ObjectStored` at the end of its TTL becomes
-  `ABANDONED`, and an object none of whose attempts stored anything is
+  from `LaminaService.Renew`.
+- An attempt without a `LaminaStored` at the end of its TTL becomes
+  `ABANDONED`, and a lamina none of whose attempts stored anything is
   removed `abandon_grace` (1 hour) later. Both are provisional: a late
-  `ObjectStored` still wins ([§14](#14-duplicates-and-orphans)).
+  `LaminaStored` still wins ([§14](#14-duplicates-and-orphans)).
 - If a segment's actual `date_started` falls into a different epoch than the
   expected one (e.g. the set restarted), the producer discards the allocation
   and asks again.
@@ -106,7 +106,7 @@ During a CP outage:
 | Function | Behavior | Lasts |
 |---|---|---|
 | Writes | continue on allocations in hand | `allocation_horizon` |
-| Commits | succeed on the node; `ObjectStored` events queue in node RAM (~200 B each) | hours |
+| Commits | succeed on the node; `LaminaStored` events queue in node RAM (~200 B each) | hours |
 | GC | no approvals, so sinks drift from `low` toward `critical` | ~16 h from 5% to 3% free at 5.6 MB/s per sink ([§26.3](08-sizing.md#263-worked-example-cctv)); at CRITICAL the node refuses new uploads on that sink |
 | Reads | location lookup and URLs unavailable | **stop immediately** |
 
@@ -123,7 +123,7 @@ segments live. One upload protocol serves them all.
 resumable-upload draft:
 
 ```text
-PUT  /objects/<key>   Upload-Offset: o   Upload-Complete: ?1 | ?0
+PUT  /laminae/<key>   Upload-Offset: o   Upload-Complete: ?1 | ?0
                       [Upload-Length: L]  [Shale-Size-Hint: H]
                       [Shale-Date-Started: t]      (first request)
                       [Shale-Date-Ended: t]        (the request that completes;
@@ -133,13 +133,13 @@ PUT  /objects/<key>   Upload-Offset: o   Upload-Complete: ?1 | ?0
        → 204  Upload-Offset: cur   request accepted; bytes below cur are written
        → 409  Upload-Offset: cur   o does not match the node's offset
        → 413                       the upload would exceed max_length (§12.5)
-HEAD /objects/<key>
+HEAD /laminae/<key>
        → Upload-Offset: cur, Upload-Complete: ?0 | ?1, [Upload-Length],
          [Shale-Incomplete: ?1]    (finalized by the node, §15)
 ```
 
 - `Upload-Complete: ?1` means "the end of this request body is the end of the
-  object". A body that ends cleanly completes the upload. A broken connection
+  lamina". A body that ends cleanly completes the upload. A broken connection
   leaves it open.
 - After a disconnect the producer asks `HEAD` for the offset and sends the
   rest from there. Bytes the node already has are never sent again. A put
@@ -165,10 +165,10 @@ HEAD /objects/<key>
 | Size at start | known (`Upload-Length`) | unknown; `Shale-Size-Hint` = the source's expected rate × duration × 1.2 ([§12.6](#126-upload-profile-negotiation)), capped at `max_length` |
 | Uplink | a burst per segment, smoothed by staggering | exactly the recording bitrate |
 | Data reaches storage | after the segment closes | within one part fill time (≈ 16–32 s at 4–8 Mbps) |
-| If the producer is destroyed | its buffered segments are gone | only bytes not yet written to a sink are gone ([§15](#15-partial-objects)) |
+| If the producer is destroyed | its buffered segments are gone | only bytes not yet written to a sink are gone ([§15](#15-partial-laminae)) |
 
 For live uploads, the node reserves `size_hint`. If the stream outgrows it,
-the node reserves another extent; the object may then be in two pieces, which
+the node reserves another extent; the lamina may then be in two pieces, which
 is harmless. At completion the unused reservation beyond EOF is released.
 
 **Producer retention.** The node reports an offset once the bytes are written
@@ -191,13 +191,13 @@ each, `Upload-Complete: ?0`; the node answers each with `204` and the
 4 KiB-aligned offset it holds, and the producer frees everything below it.
 Once the segment is closed and the node has all of it, one more request,
 empty, with `Upload-Complete: ?1` and `Shale-Date-Ended`, completes the
-object. The trade-off of the table above has a second face: a segment whose
+lamina. The trade-off of the table above has a second face: a segment whose
 bytes were freed **cannot move**. When its node fails after that (no answer
 past `resume_timeout`, or a refusal), the producer does not try another
-candidate or report the object lost; the segment is **cut short** at the
+candidate or report the lamina lost; the segment is **cut short** at the
 node's offset, what the capture still produces for it is discarded, and the
-node, when it is back, makes an incomplete object of what it holds by the
-abandon rule ([§15](#15-partial-objects)). The producer counts these as
+node, when it is back, makes an incomplete lamina of what it holds by the
+abandon rule ([§15](#15-partial-laminae)). The producer counts these as
 `cut` beside `stored` and `lost` ([§31](09-operations.md#31-observability)).
 Segments the node never took anything of are whole and move as under
 `committed`.
@@ -209,7 +209,7 @@ Segments the node never took anything of are whole and move as under
   released. Buffers grow on demand, so a slowly filling live upload holds only
   what it has received so far.
 - The extent was reserved up front with `fallocate(KEEP_SIZE)`. Parts of
-  concurrent uploads therefore interleave in *time* on a device, but each object
+  concurrent uploads therefore interleave in *time* on a device, but each lamina
   stays **contiguous on the device**, and later reads remain sequential.
 - On disconnect, the node flushes the aligned prefix of the buffer and drops
   the unaligned remainder. The reported offset is then 4 KiB-aligned and the
@@ -220,7 +220,7 @@ Segments the node never took anything of are whole and move as under
 **Cost on the device.** A live or slow camera writes a 16 MB part every ~30 s at
 4 Mbps. About 10 such cameras per sink add ~0.3 part-writes per second, i.e.
 ~3 ms of seeking per second, **< 1% of device time**. Devices still see only large
-sequential writes, just part-sized rather than object-sized:
+sequential writes, just part-sized rather than lamina-sized:
 
 | `part_size` | Write time | Efficiency at full device load (one ~10 ms seek per part) |
 |---:|---:|---:|
@@ -241,8 +241,8 @@ large write they replace.
 | `uploads_per_actor` per node | 64 | new upload from that actor → `503` + `Retry-After` |
 | `part_buffer_pool` per node | 12 GiB | stop reading sockets; TCP flow control slows the senders |
 | `idle_timeout` (negotiated) | 30 s without bytes | close the connection; the upload stays resumable |
-| `abandon_timeout` (negotiated, ≥ 2 × `idle_timeout`) | 5 min without bytes and no open request | abandoned: a live upload is **finalized** as an incomplete object ([§15](#15-partial-objects)); a buffered one is deleted and reported |
-| `allocation_ttl` | 22 min | tokens expire; `ObjectService.Renew` before that, or a new attempt after |
+| `abandon_timeout` (negotiated, ≥ 2 × `idle_timeout`) | 5 min without bytes and no open request | abandoned: a live upload is **finalized** as an incomplete lamina ([§15](#15-partial-laminae)); a buffered one is deleted and reported |
+| `allocation_ttl` | 22 min | tokens expire; `LaminaService.Renew` before that, or a new attempt after |
 
 Abandonment never fires while a request on the key is open: the idle timeout
 closes an idle request first, and only then does the abandon clock count.
@@ -257,7 +257,7 @@ Unlike a minimum-rate rule, none of these penalize a slow but steady link.
 
 **Node restarts.** Upload state is the file, so an upload survives a node
 process restart. The xattr of an `open` file records the upload's `mode` and
-`abandon_timeout` ([§23.1](07-storage-node.md#231-self-describing-objects)), so
+`abandon_timeout` ([§23.1](07-storage-node.md#231-self-describing-laminae)), so
 the startup scan can apply the abandon rule without the token: it leaves
 `open` files alone until they have been idle for their `abandon_timeout`, then
 finalizes live ones and deletes buffered ones. After a power loss, unflushed
@@ -287,7 +287,7 @@ phase(camera) = (hash(set) + ordinal × D / set_size) mod D     (D = segment dur
 The first segment after power-on is shortened to reach its phase. For
 buffered uploads this spaces the set's uploads evenly, so the producer's uplink
 sees a smooth stream instead of set-sized bursts. For live uploads the uplink
-is smooth anyway. Staggering then spreads the per-object work (file creation,
+is smooth anyway. Staggering then spreads the per-lamina work (file creation,
 final `fsync`, commit events, allocation use) and the part flushes of cameras
 that started together.
 
@@ -297,34 +297,34 @@ The classic `write temp → fsync → rename → fsync dir` pattern does two thi
 it hides half-written files from readers, and it tells complete files apart
 from partial ones after a crash. Shale gets both more cheaply:
 
-- **Visibility**: readers only find objects through the index, which only
-  learns about an object after the fsync. The node's in-memory index likewise
+- **Visibility**: readers only find laminae through the index, which only
+  learns about a lamina after the fsync. The node's in-memory index likewise
   exposes only completed writes.
 - **Partial detection**: the xattr says `state=open` until the final
   `fsync`, which writes `state=complete` and the final size in the same
   journal flush. An `open` file is an upload in progress (resumable, [§12.2](#122-resumable-part-uploads)),
-  or an abandoned one once idle for `abandon_timeout` ([§15](#15-partial-objects)). A `complete` file
+  or an abandoned one once idle for `abandon_timeout` ([§15](#15-partial-laminae)). A `complete` file
   whose size disagrees with its xattr is damaged: the node deletes it and
-  reports it (`ObjectMissing`, [§34.9](11-deployment.md#349-events-and-directives)).
+  reports it (`LaminaMissing`, [§34.9](11-deployment.md#349-events-and-directives)).
 
 This saves a rename and a directory fsync (extra journal writes, i.e. seeks) on
-every object. A file cut off by a crash is simply a lost object, which the
+every lamina. A file cut off by a crash is simply a lost lamina, which the
 design already accepts.
 
 ### 12.4 Commit semantics
 
-**Commit** means: the object is durable in one specific sink, and so on one
+**Commit** means: the lamina is durable in one specific sink, and so on one
 physical device.
 
 The Storage Node decides the commit, and the producer learns of it from the
-PUT response. The `ObjectStored` event updates the index:
+PUT response. The `LaminaStored` event updates the index:
 
 ```text
-ObjectStored {
-  object_id
+LaminaStored {
+  lamina_id
   attempt_id
   sink_id
-  object_key
+  lamina_key
   size
   incomplete                            (§15)
   date_started, date_ended              (as declared, §10)
@@ -333,7 +333,7 @@ ObjectStored {
 }
 ```
 
-The IDs and dates the node writes into the object's xattr come from the
+The IDs and dates the node writes into the lamina's xattr come from the
 `record` in the put token ([§33.2](10-security.md#332-access-tokens)); the
 node adds what only it knows: size, state, `date_ended`, and the
 `incomplete` flag.
@@ -341,7 +341,7 @@ node adds what only it knows: size, state, `date_ended`, and the
 Events are pushed to the CP at least once, with no external queue
 ([§34.9](11-deployment.md#349-events-and-directives)). The node keeps
 unpublished events in RAM only. If the node crashes after step 10 but before
-publishing, the event is lost. On startup the node republishes `ObjectStored`
+publishing, the event is lost. On startup the node republishes `LaminaStored`
 for every file modified within the last `event_replay_window` (10 minutes),
 which covers a quick restart. A longer outage is covered by
 **reconciliation**: when the node's heartbeats resume, the CP asks it for
@@ -357,14 +357,14 @@ becomes an orphan, and orphans are reclaimed by GC ([§21.3](06-retention-gc.md#
 - If the upload is already complete → `200` (the producer may have missed the
   first `201`). If the node completed it itself, the answer carries
   `Shale-Incomplete: ?1`, and the producer must not treat the segment as
-  stored ([§15](#15-partial-objects)).
+  stored ([§15](#15-partial-laminae)).
 - A different `Upload-Length` for the same key, or bytes past the end of a
   complete upload → `409 Conflict`.
 - Bytes that would take the upload past the token's `max_length` → `413`.
   The node then treats the upload as abandoned at once: a live one is
   finalized as incomplete with the bytes it has, a buffered one is deleted.
   The producer moves to the next candidate with a corrected profile, or
-  reports the object.
+  reports the lamina.
 - An answer is a commit only when it says so: `201`, or the `200` of a
   key already complete, with `Upload-Complete: ?1`. An upload the node
   had to cut short, its connection broken or the node stopping under it,
@@ -375,7 +375,7 @@ becomes an orphan, and orphans are reclaimed by GC ([§21.3](06-retention-gc.md#
 
 - **A key that holds bytes the producer never sent** is an earlier
   incarnation's upload of the same slot: the producer restarted mid-slot
-  and the CP answered the same object and attempts. The node cannot tell
+  and the CP answered the same lamina and attempts. The node cannot tell
   whose bytes they are, so the producer does: a `409` whose offset is
   past what it stated, or a `HEAD` offset past what it sent, ends the
   attempt with the reason "the node holds bytes of this key that are not
@@ -464,7 +464,7 @@ So a producer declares **`max_bitrate`**:
   encoding has no ceiling to declare, and the node refuses bytes beyond
   `max_length`;
 - used for everything that must hold in the worst case: `max_length`, the
-  object size bounds, and the link check below;
+  lamina size bounds, and the link check below;
 - bounded twice: the `UploadPolicy` caps any single `max_bitrate` (default
   32 Mbps), and a tenant admin may cap a set's total (`max_bitrate_total`), so
   a mistaken or compromised producer cannot multiply its footprint and eat
@@ -476,19 +476,19 @@ So a producer declares **`max_bitrate`**:
 Segments are still **cut by duration**, at the keyframe nearest the staggered
 phase ([§12.2](#122-resumable-part-uploads)), or earlier when a segment
 approaches `max_length` ([§38.2](15-producer.md#382-cutting-segments)).
-Durations keep segment boundaries deterministic and time ranges aligned. Under VBR, the object size varies
+Durations keep segment boundaries deterministic and time ranges aligned. Under VBR, the lamina size varies
 instead: a quiet segment is small, and a busy one approaches `max_length`. The
 bounds apply to the ceiling, `max_bitrate × duration`, which should be at
-least 32 MB and must be at most 512 MB. A small object from a quiet scene is
-fine: the number of objects per hour is fixed by the duration, and a quiet
+least 32 MB and must be at most 512 MB. A small lamina from a quiet scene is
+fine: the number of laminae per hour is fixed by the duration, and a quiet
 camera costs a sink little time.
 
 Two rules bound the duration from above: the 512 MB ceiling and "a segment
-lasts at most a quarter of the epoch" ([§25](07-storage-node.md#25-object-size)).
+lasts at most a quarter of the epoch" ([§25](07-storage-node.md#25-lamina-size)).
 For a source under about 0.28 Mbps (audio only, a very low-resolution camera)
 the 32 MB floor cannot be reached within a quarter epoch. **The epoch rule
 wins**: the duration is capped at `epoch / 4` and the floor is a target, not
-a bound. Such objects are small anyway, as VBR objects already are.
+a bound. Such laminae are small anyway, as VBR laminae already are.
 
 The **keyframe interval** is negotiated with the rest of the profile
 (default 2 s, at most 4 s). Segments can only be cut at keyframes, so the
@@ -497,7 +497,7 @@ interval bounds how far a boundary drifts from its phase, and it is part of
 
 **Observed rate.** What a source actually writes is learned from what it
 commits. For each source the CP keeps an **observed rate**, the size of its
-committed objects divided by their data time span
+committed laminae divided by their data time span
 ([§10](02-data-model.md#10-time-semantics)):
 
 ```text
@@ -515,16 +515,16 @@ The observed rate feeds the estimates, never the limits:
 | Uses the expected (observed) rate | Uses `max_bitrate` |
 |---|---|
 | `Shale-Size-Hint` for live uploads | `max_length` in the access token |
-| capacity forecast ([§11.1](03-placement.md#111-capacity-forecast)) | object size bounds |
+| capacity forecast ([§11.1](03-placement.md#111-capacity-forecast)) | lamina size bounds |
 | "time until the cluster runs out" | link check: the uplink must carry the sum of its set's ceilings |
-| the estimated end of an incomplete object ([§19](05-read-path.md#19-reader-semantics)) | |
+| the estimated end of an incomplete lamina ([§19](05-read-path.md#19-reader-semantics)) | |
 
 The observed rate is state, but it is **derived**: it can be recomputed at any
-time from the objects table, so it adds no new source of truth. It is cached on
+time from the laminae table, so it adds no new source of truth. It is cached on
 the `Source` row.
 
-**Why bounds.** The lower size bound keeps the per-object fixed cost small on
-HDDs ([§25](07-storage-node.md#25-object-size)). The upper bound caps node RAM,
+**Why bounds.** The lower size bound keeps the per-lamina fixed cost small on
+HDDs ([§25](07-storage-node.md#25-lamina-size)). The upper bound caps node RAM,
 the loss unit, and upload duration. Timeout bounds keep an abandoned upload
 from holding a node's slot indefinitely, and keep a slow link from being cut
 off too early.
@@ -547,12 +547,12 @@ without progress, or when the token cannot be renewed.
 
 After that, the producer moves to the next candidate: one returned with the
 allocation, each of which carries its own `attempt_id` and token, or one from
-`ObjectService.Reallocate`. Before it moves, it reports the failed attempt
-(`ObjectService.ReportAttempt {attempt, failure_reason}`), which marks the
+`LaminaService.Reallocate`. Before it moves, it reports the failed attempt
+(`LaminaService.ReportAttempt {attempt, failure_reason}`), which marks the
 attempt `FAILED` and feeds health ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)).
 
 ```text
-object O123
+lamina O123
 attempt A1 → sink S-0412 (node17) → FAILED (I/O error)
 attempt A2 → sink S-0087 (node42) → STORED
 ```
@@ -572,51 +572,51 @@ placement:    2–3
 When the rounds are exhausted the segment is stored nowhere yet. The
 producer keeps it and tries again after a backoff (1 s, doubling to 30 s)
 for as long as its RAM budget allows ([§16](#16-producer-backpressure)):
-the same object, its attempts renewed by the CP. Only a segment the
+the same lamina, its attempts renewed by the CP. Only a segment the
 producer gives up, because the budget is exceeded or the CP refused its
 start for good ([§10](02-data-model.md#10-time-semantics)), makes its
-object → **LOST** (`ObjectService.ReportFailure`). A segment that cannot be
+lamina → **LOST** (`LaminaService.ReportFailure`). A segment that cannot be
 stored holds only its own source's queue, and only until the budget drops
-it, so one object never blocks the ingest pipeline for long.
+it, so one lamina never blocks the ingest pipeline for long.
 
 ## 14. Duplicates and Orphans
 
 **One physical copy is best effort.** If attempt A1 is slow rather than dead,
 it can commit after A2 did.
 
-- The index has a unique constraint on `object_id`. The first
-  `ObjectStored` wins, and later ones for *other* attempts mark their attempt
+- The index has a unique constraint on `lamina_id`. The first
+  `LaminaStored` wins, and later ones for *other* attempts mark their attempt
   `DUPLICATE`. Redelivery of the same event is recognized by `attempt_id` and
   changes nothing.
-- Exception: a **complete** attempt always beats an **incomplete** one ([§15](#15-partial-objects)).
+- Exception: a **complete** attempt always beats an **incomplete** one ([§15](#15-partial-laminae)).
   If an abandoned live upload was finalized first and the producer later
   stored the full segment elsewhere, the full one replaces it, and the
   truncated one becomes the duplicate.
-- **A late event still counts.** An `ObjectStored` for an attempt already
+- **A late event still counts.** A `LaminaStored` for an attempt already
   marked `ABANDONED` or `FAILED` moves it to `STORED` (or `DUPLICATE`), an
-  object already `LOST` returns to `COMMITTED`, and an object whose row was
+  lamina already `LOST` returns to `COMMITTED`, and a lamina whose row was
   removed is recreated from the event. The node's word about what is on its
   device is final; the CP's timeouts are guesses.
 - A duplicate's file is left for GC, which reclaims it once its xattr dates
   say so ([§21.3](06-retention-gc.md#213-orphans)), or at once when the
-  object is deleted early ([§20.3](06-retention-gc.md#203-rescheduling)).
+  lamina is deleted early ([§20.3](06-retention-gc.md#203-rescheduling)).
 
 **Orphans** are files in a sink that the index does not know: a lost commit
 event, a duplicate nobody deleted, or data left over after an index loss.
 They waste space but never break correctness. Reconciliation turns most of
-them back into known objects ([§34.9](11-deployment.md#349-events-and-directives));
+them back into known laminae ([§34.9](11-deployment.md#349-events-and-directives));
 GC reclaims the rest after their xattr `date_expired`
 ([§21.3](06-retention-gc.md#213-orphans)).
 
-**Missing objects** are index entries whose file is gone. They are detected
+**Missing laminae** are index entries whose file is gone. They are detected
 lazily: when a valid token names a key the node does not have, the node
-answers `404` and pushes `ObjectMissing`. The CP marks the object `LOST`,
+answers `404` and pushes `LaminaMissing`. The CP marks the lamina `LOST`,
 unless it was `DELETING`, in which case the deletion is simply confirmed
 ([§21.2](06-retention-gc.md#212-protocol)). The node reports its own
 housekeeping the same way: a damaged file it removed ([§12.3](#123-why-there-is-no-temp-file-and-no-rename))
-or an abandoned buffered upload it deleted ([§15](#15-partial-objects)).
+or an abandoned buffered upload it deleted ([§15](#15-partial-laminae)).
 
-## 15. Partial Objects
+## 15. Partial Laminae
 
 A segment can end early in two ways.
 
@@ -624,7 +624,7 @@ A segment can end early in two ways.
 controls the upload. It ends the segment where the recording stopped and
 completes the upload normally, with the real `date_ended` and size. If the
 container is broken, the producer drops the segment instead. When frames
-return within the same slot, the next segment is a second object of that
+return within the same slot, the next segment is a second lamina of that
 slot ([§12.1](#121-flow)); the slot's phase boundary cuts it as usual.
 
 **The producer disappears mid-upload** (destroyed, powered off, link gone for
@@ -634,13 +634,13 @@ segment is already on a sink. When such an upload has been idle for
 `abandon_timeout`, the node:
 
 1. flushes and keeps what it has,
-2. finalizes the file as a committed object flagged **`incomplete`**, with
+2. finalizes the file as a committed lamina flagged **`incomplete`**, with
    the size it actually has and no `date_ended`,
-3. publishes `ObjectStored` with `incomplete: true`.
+3. publishes `LaminaStored` with `incomplete: true`.
 
 From then on `HEAD` and a resumed `PUT` answer with `Shale-Incomplete: ?1`
 ([§12.5](#125-idempotent-uploads)). A producer that comes back and sees it
-knows the node has closed the object without the tail. If it still holds the
+knows the node has closed the lamina without the tail. If it still holds the
 segment (`retain: committed`), it uploads the whole segment to the next
 candidate, and the complete copy replaces the incomplete one
 ([§14](#14-duplicates-and-orphans)).
@@ -648,11 +648,11 @@ candidate, and the complete copy replaces the incomplete one
 The node does not parse media. Producers that use live upload must use a
 **streamable container** (MPEG-TS, fragmented MP4) so that any prefix is
 playable up to its last complete unit. The media server works out the real
-duration when it reads the object; the index carries an estimate
+duration when it reads the lamina; the index carries an estimate
 ([§19](05-read-path.md#19-reader-semantics)).
 
 A buffered upload that is abandoned is deleted instead, and the node reports
-it (`ObjectMissing`). Its producer still holds the whole segment and will
+it (`LaminaMissing`). Its producer still holds the whole segment and will
 have re-uploaded it elsewhere if it could.
 
 ## 16. Producer Backpressure

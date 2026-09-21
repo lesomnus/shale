@@ -65,7 +65,7 @@ var (
 		{Name: "rank", Type: field.TypeInt32},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
-		{Name: "object_id", Type: field.TypeUuid},
+		{Name: "lamina_id", Type: field.TypeUuid},
 		{Name: "sink_id", Type: field.TypeUuid},
 		{Name: "node_id", Type: field.TypeUuid},
 	}
@@ -88,9 +88,9 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "attempt_object_object",
+				Symbol:     "attempt_lamina_lamina",
 				Columns:    []*schema.Column{AttemptColumns[10]},
-				RefColumns: []*schema.Column{ObjectColumns[0]},
+				RefColumns: []*schema.Column{LaminaColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
@@ -113,7 +113,7 @@ var (
 				Columns: []*schema.Column{AttemptColumns[4], AttemptColumns[0]},
 			},
 			{
-				Name:    "attempt_date_created_object_id",
+				Name:    "attempt_date_created_lamina_id",
 				Unique:  false,
 				Columns: []*schema.Column{AttemptColumns[4], AttemptColumns[10]},
 			},
@@ -279,6 +279,102 @@ var (
 			},
 		},
 	}
+	// LaminaColumns holds the columns for the "lamina" table.
+	LaminaColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "lamina_key", Type: field.TypeString},
+		{Name: "state", Type: field.TypeInt32},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "date_started", Type: field.TypeTime, Nullable: true},
+		{Name: "date_ended", Type: field.TypeTime, Nullable: true},
+		{Name: "ended_estimated", Type: field.TypeBool},
+		{Name: "size", Type: field.TypeInt64},
+		{Name: "incomplete", Type: field.TypeBool},
+		{Name: "date_expired", Type: field.TypeTime, Nullable: true},
+		{Name: "date_deleted", Type: field.TypeTime, Nullable: true},
+		{Name: "dates_synced", Type: field.TypeBool},
+		{Name: "placement_version", Type: field.TypeInt64},
+		{Name: "date_committed", Type: field.TypeTime, Nullable: true},
+		{Name: "date_finished", Type: field.TypeTime, Nullable: true},
+		{Name: "checksum", Type: field.TypeBytes, Nullable: true},
+		{Name: "epoch", Type: field.TypeInt64},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "set_id", Type: field.TypeUuid},
+		{Name: "source_id", Type: field.TypeUuid},
+		{Name: "sink_id", Type: field.TypeUuid, Nullable: true},
+	}
+	// LaminaTable holds the schema information for the "lamina" table.
+	LaminaTable = &schema.Table{
+		Name:       "lamina",
+		Columns:    LaminaColumns,
+		PrimaryKey: []*schema.Column{LaminaColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "lamina_tenant_tenant",
+				Columns:    []*schema.Column{LaminaColumns[18]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "lamina_site_site",
+				Columns:    []*schema.Column{LaminaColumns[19]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "lamina_set_set",
+				Columns:    []*schema.Column{LaminaColumns[20]},
+				RefColumns: []*schema.Column{SetColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "lamina_source_source",
+				Columns:    []*schema.Column{LaminaColumns[21]},
+				RefColumns: []*schema.Column{SourceColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "lamina_sink_sink",
+				Columns:    []*schema.Column{LaminaColumns[22]},
+				RefColumns: []*schema.Column{SinkColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "lamina_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{LaminaColumns[4], LaminaColumns[0]},
+			},
+			{
+				Name:    "lamina_date_started_source_id",
+				Unique:  false,
+				Columns: []*schema.Column{LaminaColumns[5], LaminaColumns[21]},
+			},
+			{
+				Name:    "lamina_date_started_set_id",
+				Unique:  false,
+				Columns: []*schema.Column{LaminaColumns[5], LaminaColumns[20]},
+			},
+			{
+				Name:    "lamina_lamina_key_sink_id",
+				Unique:  false,
+				Columns: []*schema.Column{LaminaColumns[1], LaminaColumns[22]},
+			},
+			{
+				Name:    "lamina_date_expired_sink_id",
+				Unique:  false,
+				Columns: []*schema.Column{LaminaColumns[10], LaminaColumns[22]},
+			},
+			{
+				Name:    "lamina_state_date_finished",
+				Unique:  false,
+				Columns: []*schema.Column{LaminaColumns[2], LaminaColumns[15]},
+			},
+		},
+	}
 	// NodeColumns holds the columns for the "node" table.
 	NodeColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -330,102 +426,6 @@ var (
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
-			},
-		},
-	}
-	// ObjectColumns holds the columns for the "object" table.
-	ObjectColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUuid, Unique: true},
-		{Name: "object_key", Type: field.TypeString},
-		{Name: "state", Type: field.TypeInt32},
-		{Name: "date_updated", Type: field.TypeTime},
-		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "date_started", Type: field.TypeTime, Nullable: true},
-		{Name: "date_ended", Type: field.TypeTime, Nullable: true},
-		{Name: "ended_estimated", Type: field.TypeBool},
-		{Name: "size", Type: field.TypeInt64},
-		{Name: "incomplete", Type: field.TypeBool},
-		{Name: "date_expired", Type: field.TypeTime, Nullable: true},
-		{Name: "date_deleted", Type: field.TypeTime, Nullable: true},
-		{Name: "dates_synced", Type: field.TypeBool},
-		{Name: "placement_version", Type: field.TypeInt64},
-		{Name: "date_committed", Type: field.TypeTime, Nullable: true},
-		{Name: "date_finished", Type: field.TypeTime, Nullable: true},
-		{Name: "checksum", Type: field.TypeBytes, Nullable: true},
-		{Name: "epoch", Type: field.TypeInt64},
-		{Name: "tenant_id", Type: field.TypeUuid},
-		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
-		{Name: "set_id", Type: field.TypeUuid},
-		{Name: "source_id", Type: field.TypeUuid},
-		{Name: "sink_id", Type: field.TypeUuid, Nullable: true},
-	}
-	// ObjectTable holds the schema information for the "object" table.
-	ObjectTable = &schema.Table{
-		Name:       "object",
-		Columns:    ObjectColumns,
-		PrimaryKey: []*schema.Column{ObjectColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "object_tenant_tenant",
-				Columns:    []*schema.Column{ObjectColumns[18]},
-				RefColumns: []*schema.Column{TenantColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "object_site_site",
-				Columns:    []*schema.Column{ObjectColumns[19]},
-				RefColumns: []*schema.Column{SiteColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "object_set_set",
-				Columns:    []*schema.Column{ObjectColumns[20]},
-				RefColumns: []*schema.Column{SetColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "object_source_source",
-				Columns:    []*schema.Column{ObjectColumns[21]},
-				RefColumns: []*schema.Column{SourceColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "object_sink_sink",
-				Columns:    []*schema.Column{ObjectColumns[22]},
-				RefColumns: []*schema.Column{SinkColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "object_date_created_id",
-				Unique:  false,
-				Columns: []*schema.Column{ObjectColumns[4], ObjectColumns[0]},
-			},
-			{
-				Name:    "object_date_started_source_id",
-				Unique:  false,
-				Columns: []*schema.Column{ObjectColumns[5], ObjectColumns[21]},
-			},
-			{
-				Name:    "object_date_started_set_id",
-				Unique:  false,
-				Columns: []*schema.Column{ObjectColumns[5], ObjectColumns[20]},
-			},
-			{
-				Name:    "object_object_key_sink_id",
-				Unique:  false,
-				Columns: []*schema.Column{ObjectColumns[1], ObjectColumns[22]},
-			},
-			{
-				Name:    "object_date_expired_sink_id",
-				Unique:  false,
-				Columns: []*schema.Column{ObjectColumns[10], ObjectColumns[22]},
-			},
-			{
-				Name:    "object_state_date_finished",
-				Unique:  false,
-				Columns: []*schema.Column{ObjectColumns[2], ObjectColumns[15]},
 			},
 		},
 	}
@@ -797,7 +797,7 @@ var (
 		{Name: "reported_by", Type: field.TypeUuid, Nullable: true},
 		{Name: "warnings", Type: field.TypeJson, Nullable: true},
 		{Name: "capacity_clamped", Type: field.TypeBool},
-		{Name: "objects", Type: field.TypeInt64},
+		{Name: "laminae", Type: field.TypeInt64},
 		{Name: "node_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "device_id", Type: field.TypeUuid},
 	}
@@ -1076,8 +1076,8 @@ var (
 		AuditTable,
 		DeviceTable,
 		HolderTable,
+		LaminaTable,
 		NodeTable,
-		ObjectTable,
 		OutboxTable,
 		PlacementpolicyTable,
 		ProducerTable,
@@ -1100,7 +1100,7 @@ func init() {
 	}
 	AttemptTable.ForeignKeys[0].RefTable = TenantTable
 	AttemptTable.ForeignKeys[1].RefTable = SiteTable
-	AttemptTable.ForeignKeys[2].RefTable = ObjectTable
+	AttemptTable.ForeignKeys[2].RefTable = LaminaTable
 	AttemptTable.ForeignKeys[3].RefTable = SinkTable
 	AttemptTable.ForeignKeys[4].RefTable = NodeTable
 	AttemptTable.Annotation = &entsql.Annotation{
@@ -1117,16 +1117,16 @@ func init() {
 	HolderTable.Annotation = &entsql.Annotation{
 		Table: "holder",
 	}
+	LaminaTable.ForeignKeys[0].RefTable = TenantTable
+	LaminaTable.ForeignKeys[1].RefTable = SiteTable
+	LaminaTable.ForeignKeys[2].RefTable = SetTable
+	LaminaTable.ForeignKeys[3].RefTable = SourceTable
+	LaminaTable.ForeignKeys[4].RefTable = SinkTable
+	LaminaTable.Annotation = &entsql.Annotation{
+		Table: "lamina",
+	}
 	NodeTable.Annotation = &entsql.Annotation{
 		Table: "node",
-	}
-	ObjectTable.ForeignKeys[0].RefTable = TenantTable
-	ObjectTable.ForeignKeys[1].RefTable = SiteTable
-	ObjectTable.ForeignKeys[2].RefTable = SetTable
-	ObjectTable.ForeignKeys[3].RefTable = SourceTable
-	ObjectTable.ForeignKeys[4].RefTable = SinkTable
-	ObjectTable.Annotation = &entsql.Annotation{
-		Table: "object",
 	}
 	OutboxTable.Annotation = &entsql.Annotation{
 		Table: "outbox",

@@ -23,7 +23,7 @@ import (
 // TestNodeDiesMidUpload is the first drill of §23's fault suite: a node
 // stops in the middle of a live upload, comes back as itself on the same
 // sink, adopts the open file from its record at the scan, and the
-// producer resumes from the offset HEAD reports and completes the object,
+// producer resumes from the offset HEAD reports and completes the lamina,
 // whose bytes then read back whole.
 func TestNodeDiesMidUpload(t *testing.T) {
 	c := start(t)
@@ -52,7 +52,7 @@ func TestNodeDiesMidUpload(t *testing.T) {
 	conn := c.dial("@acme/admin")
 	sets := api.NewSetServiceClient(conn)
 	sources := api.NewSourceServiceClient(conn)
-	objects := api.NewObjectServiceClient(conn)
+	laminae := api.NewLaminaServiceClient(conn)
 	set, err := sets.Add(ctx, api.SetAddRequest_builder{Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "crash"}.Build())
 	require.NoError(t, err)
 	src, err := sources.Add(ctx, api.SourceAddRequest_builder{
@@ -65,7 +65,7 @@ func TestNodeDiesMidUpload(t *testing.T) {
 	var al *api.Allocation
 	var cand *api.Candidate
 	for i := range 100 {
-		a, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+		a, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 			Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(time.Now().Add(-time.Duration(i+1) * time.Hour)),
 		}.Build())
 		require.NoError(t, err)
@@ -80,7 +80,7 @@ func TestNodeDiesMidUpload(t *testing.T) {
 	}
 	require.NotNil(t, al, "some slot lands on node B")
 	ep := cand.GetEndpoints()[0]
-	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), cand.GetObjectKey())
+	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), cand.GetLaminaKey())
 	body := make([]byte, 400_000)
 	rand.Read(body)
 
@@ -126,7 +126,7 @@ func TestNodeDiesMidUpload(t *testing.T) {
 
 	// HEAD says what reached the device: an aligned prefix of what was
 	// sent, and the upload still open.
-	ep2 := fmt.Sprintf("%s://%s/%s", ep.GetScheme(), nodeB2.DataAddr, cand.GetObjectKey())
+	ep2 := fmt.Sprintf("%s://%s/%s", ep.GetScheme(), nodeB2.DataAddr, cand.GetLaminaKey())
 	head, _ := http.NewRequest(http.MethodHead, ep2, nil)
 	head.Header.Set("Authorization", token.Scheme+" "+cand.GetToken())
 	resp, err := http.DefaultClient.Do(head)
@@ -154,18 +154,18 @@ func TestNodeDiesMidUpload(t *testing.T) {
 	require.Equal(t, http.StatusCreated, resp.StatusCode)
 
 	require.Eventually(t, func() bool {
-		o, err := objects.Get(ctx, api.ObjectGetRequest_builder{Ref: api.ObjectRef_builder{Id: al.GetObjectId()}.Build()}.Build())
+		o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build()}.Build())
 
-		return err == nil && o.GetState() == api.ObjectState_OBJECT_STATE_COMMITTED && o.GetSize() == int64(len(body))
-	}, 15*time.Second, 200*time.Millisecond, "the object commits")
-	tl, err := objects.Timeline(ctx, api.ObjectTimelineRequest_builder{
+		return err == nil && o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED && o.GetSize() == int64(len(body))
+	}, 15*time.Second, 200*time.Millisecond, "the lamina commits")
+	tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
 		Set: api.SetRef_builder{Id: set.GetId()}.Build(), From: timestamppb.New(al.GetDateStarted().AsTime().Add(-time.Minute)), To: timestamppb.New(al.GetDateStarted().AsTime().Add(time.Hour)), Size: 10,
 	}.Build())
 	require.NoError(t, err)
 	var got []byte
 	for _, s := range tl.GetSources() {
-		for _, o := range s.GetObjects() {
-			if string(o.GetObjectId()) == string(al.GetObjectId()) {
+		for _, o := range s.GetLaminae() {
+			if string(o.GetLaminaId()) == string(al.GetLaminaId()) {
 				got = fetch(t, o.GetUrl())
 			}
 		}

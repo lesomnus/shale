@@ -128,7 +128,7 @@ func (Sink) Fields() []ent.Field {
 		field.Json("warnings", []string{}).
 			Optional(),
 		field.Bool("capacity_clamped"),
-		field.Int64("objects"),
+		field.Int64("laminae"),
 		field.Uuid("node_id").
 			Optional(),
 		field.Uuid("device_id").

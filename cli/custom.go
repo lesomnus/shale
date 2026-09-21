@@ -16,9 +16,9 @@ import (
 
 // custom are the operations that mean something (§32), mounted beside the
 // generated verbs: each takes a REF where the request names a row, and the
-// rest of the request as protojson. `object reschedule` is not here: its
+// rest of the request as protojson. `lamina reschedule` is not here: its
 // request has a `ref` and also names rows without one, so it is mounted by
-// hand with an optional REF (object.go).
+// hand with an optional REF (lamina.go).
 var custom = map[string]string{
 	"node/adopt":                "shale.NodeService.Adopt",
 	"node/resolve":              "shale.NodeService.Resolve",
@@ -30,12 +30,12 @@ var custom = map[string]string{
 	"set/allocate":              "shale.SetService.Allocate",
 	"set/live":                  "shale.SetService.Live",
 	"source/live":               "shale.SourceService.Live",
-	"object/allocate":           "shale.ObjectService.Allocate",
-	"object/reallocate":         "shale.ObjectService.Reallocate",
-	"object/renew":              "shale.ObjectService.Renew",
-	"object/report-attempt":     "shale.ObjectService.ReportAttempt",
-	"object/report-failure":     "shale.ObjectService.ReportFailure",
-	"object/timeline":           "shale.ObjectService.Timeline",
+	"lamina/allocate":           "shale.LaminaService.Allocate",
+	"lamina/reallocate":         "shale.LaminaService.Reallocate",
+	"lamina/renew":              "shale.LaminaService.Renew",
+	"lamina/report-attempt":     "shale.LaminaService.ReportAttempt",
+	"lamina/report-failure":     "shale.LaminaService.ReportFailure",
+	"lamina/timeline":           "shale.LaminaService.Timeline",
 	"holder/issue-password":     "shale.HolderService.IssuePassword",
 	"sink/adopt":                "shale.SinkService.Adopt",
 	"sink/retire":               "shale.SinkService.Retire",

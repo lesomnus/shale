@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        (unknown)
-// source: shale/object_svc.g.proto
+// source: shale/lamina_svc.g.proto
 
 package api
 
@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ReadState is what a reader is told about an object (§19).
+// ReadState is what a reader is told about a lamina (§19).
 type ReadState int32
 
 const (
@@ -62,18 +62,18 @@ func (x ReadState) String() string {
 }
 
 func (ReadState) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_object_svc_g_proto_enumTypes[0].Descriptor()
+	return file_shale_lamina_svc_g_proto_enumTypes[0].Descriptor()
 }
 
 func (ReadState) Type() protoreflect.EnumType {
-	return &file_shale_object_svc_g_proto_enumTypes[0]
+	return &file_shale_lamina_svc_g_proto_enumTypes[0]
 }
 
 func (x ReadState) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// GapReason says why a span has no available object (§19).
+// GapReason says why a span has no available lamina (§19).
 type GapReason int32
 
 const (
@@ -116,18 +116,18 @@ func (x GapReason) String() string {
 }
 
 func (GapReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_object_svc_g_proto_enumTypes[1].Descriptor()
+	return file_shale_lamina_svc_g_proto_enumTypes[1].Descriptor()
 }
 
 func (GapReason) Type() protoreflect.EnumType {
-	return &file_shale_object_svc_g_proto_enumTypes[1]
+	return &file_shale_lamina_svc_g_proto_enumTypes[1]
 }
 
 func (x GapReason) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-type ObjectAddRequest struct {
+type LaminaAddRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id               []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Tenant           *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
@@ -135,8 +135,8 @@ type ObjectAddRequest struct {
 	xxx_hidden_Set              *SetRef                `protobuf:"bytes,8,opt,name=set"`
 	xxx_hidden_Source           *SourceRef             `protobuf:"bytes,9,opt,name=source"`
 	xxx_hidden_Sink             *SinkRef               `protobuf:"bytes,10,opt,name=sink"`
-	xxx_hidden_ObjectKey        string                 `protobuf:"bytes,11,opt,name=object_key,json=objectKey"`
-	xxx_hidden_State            ObjectState            `protobuf:"varint,12,opt,name=state,enum=shale.ObjectState"`
+	xxx_hidden_LaminaKey        string                 `protobuf:"bytes,11,opt,name=lamina_key,json=laminaKey"`
+	xxx_hidden_State            LaminaState            `protobuf:"varint,12,opt,name=state,enum=shale.LaminaState"`
 	xxx_hidden_DateCreated      *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_DateStarted      *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=date_started,json=dateStarted"`
 	xxx_hidden_DateEnded        *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=date_ended,json=dateEnded"`
@@ -157,21 +157,21 @@ type ObjectAddRequest struct {
 	sizeCache                   protoimpl.SizeCache
 }
 
-func (x *ObjectAddRequest) Reset() {
-	*x = ObjectAddRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[0]
+func (x *LaminaAddRequest) Reset() {
+	*x = LaminaAddRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectAddRequest) String() string {
+func (x *LaminaAddRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectAddRequest) ProtoMessage() {}
+func (*LaminaAddRequest) ProtoMessage() {}
 
-func (x *ObjectAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[0]
+func (x *LaminaAddRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -182,161 +182,161 @@ func (x *ObjectAddRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectAddRequest) GetId() []byte {
+func (x *LaminaAddRequest) GetId() []byte {
 	if x != nil {
 		return x.xxx_hidden_Id
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetTenant() *TenantRef {
+func (x *LaminaAddRequest) GetTenant() *TenantRef {
 	if x != nil {
 		return x.xxx_hidden_Tenant
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetSite() *SiteRef {
+func (x *LaminaAddRequest) GetSite() *SiteRef {
 	if x != nil {
 		return x.xxx_hidden_Site
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetSet() *SetRef {
+func (x *LaminaAddRequest) GetSet() *SetRef {
 	if x != nil {
 		return x.xxx_hidden_Set
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetSource() *SourceRef {
+func (x *LaminaAddRequest) GetSource() *SourceRef {
 	if x != nil {
 		return x.xxx_hidden_Source
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetSink() *SinkRef {
+func (x *LaminaAddRequest) GetSink() *SinkRef {
 	if x != nil {
 		return x.xxx_hidden_Sink
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetObjectKey() string {
+func (x *LaminaAddRequest) GetLaminaKey() string {
 	if x != nil {
-		return x.xxx_hidden_ObjectKey
+		return x.xxx_hidden_LaminaKey
 	}
 	return ""
 }
 
-func (x *ObjectAddRequest) GetState() ObjectState {
+func (x *LaminaAddRequest) GetState() LaminaState {
 	if x != nil {
 		return x.xxx_hidden_State
 	}
-	return ObjectState_OBJECT_STATE_UNSPECIFIED
+	return LaminaState_LAMINA_STATE_UNSPECIFIED
 }
 
-func (x *ObjectAddRequest) GetDateCreated() *timestamppb.Timestamp {
+func (x *LaminaAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetDateStarted() *timestamppb.Timestamp {
+func (x *LaminaAddRequest) GetDateStarted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateStarted
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetDateEnded() *timestamppb.Timestamp {
+func (x *LaminaAddRequest) GetDateEnded() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateEnded
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetEndedEstimated() bool {
+func (x *LaminaAddRequest) GetEndedEstimated() bool {
 	if x != nil {
 		return x.xxx_hidden_EndedEstimated
 	}
 	return false
 }
 
-func (x *ObjectAddRequest) GetSize() int64 {
+func (x *LaminaAddRequest) GetSize() int64 {
 	if x != nil {
 		return x.xxx_hidden_Size
 	}
 	return 0
 }
 
-func (x *ObjectAddRequest) GetIncomplete() bool {
+func (x *LaminaAddRequest) GetIncomplete() bool {
 	if x != nil {
 		return x.xxx_hidden_Incomplete
 	}
 	return false
 }
 
-func (x *ObjectAddRequest) GetDateExpired() *timestamppb.Timestamp {
+func (x *LaminaAddRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetDateDeleted() *timestamppb.Timestamp {
+func (x *LaminaAddRequest) GetDateDeleted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateDeleted
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetDatesSynced() bool {
+func (x *LaminaAddRequest) GetDatesSynced() bool {
 	if x != nil {
 		return x.xxx_hidden_DatesSynced
 	}
 	return false
 }
 
-func (x *ObjectAddRequest) GetPlacementVersion() int64 {
+func (x *LaminaAddRequest) GetPlacementVersion() int64 {
 	if x != nil {
 		return x.xxx_hidden_PlacementVersion
 	}
 	return 0
 }
 
-func (x *ObjectAddRequest) GetDateCommitted() *timestamppb.Timestamp {
+func (x *LaminaAddRequest) GetDateCommitted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCommitted
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetDateFinished() *timestamppb.Timestamp {
+func (x *LaminaAddRequest) GetDateFinished() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateFinished
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetChecksum() []byte {
+func (x *LaminaAddRequest) GetChecksum() []byte {
 	if x != nil {
 		return x.xxx_hidden_Checksum
 	}
 	return nil
 }
 
-func (x *ObjectAddRequest) GetEpoch() int64 {
+func (x *LaminaAddRequest) GetEpoch() int64 {
 	if x != nil {
 		return x.xxx_hidden_Epoch
 	}
 	return 0
 }
 
-func (x *ObjectAddRequest) SetId(v []byte) {
+func (x *LaminaAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
@@ -344,83 +344,83 @@ func (x *ObjectAddRequest) SetId(v []byte) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 22)
 }
 
-func (x *ObjectAddRequest) SetTenant(v *TenantRef) {
+func (x *LaminaAddRequest) SetTenant(v *TenantRef) {
 	x.xxx_hidden_Tenant = v
 }
 
-func (x *ObjectAddRequest) SetSite(v *SiteRef) {
+func (x *LaminaAddRequest) SetSite(v *SiteRef) {
 	x.xxx_hidden_Site = v
 }
 
-func (x *ObjectAddRequest) SetSet(v *SetRef) {
+func (x *LaminaAddRequest) SetSet(v *SetRef) {
 	x.xxx_hidden_Set = v
 }
 
-func (x *ObjectAddRequest) SetSource(v *SourceRef) {
+func (x *LaminaAddRequest) SetSource(v *SourceRef) {
 	x.xxx_hidden_Source = v
 }
 
-func (x *ObjectAddRequest) SetSink(v *SinkRef) {
+func (x *LaminaAddRequest) SetSink(v *SinkRef) {
 	x.xxx_hidden_Sink = v
 }
 
-func (x *ObjectAddRequest) SetObjectKey(v string) {
-	x.xxx_hidden_ObjectKey = v
+func (x *LaminaAddRequest) SetLaminaKey(v string) {
+	x.xxx_hidden_LaminaKey = v
 }
 
-func (x *ObjectAddRequest) SetState(v ObjectState) {
+func (x *LaminaAddRequest) SetState(v LaminaState) {
 	x.xxx_hidden_State = v
 }
 
-func (x *ObjectAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
+func (x *LaminaAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
 
-func (x *ObjectAddRequest) SetDateStarted(v *timestamppb.Timestamp) {
+func (x *LaminaAddRequest) SetDateStarted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateStarted = v
 }
 
-func (x *ObjectAddRequest) SetDateEnded(v *timestamppb.Timestamp) {
+func (x *LaminaAddRequest) SetDateEnded(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateEnded = v
 }
 
-func (x *ObjectAddRequest) SetEndedEstimated(v bool) {
+func (x *LaminaAddRequest) SetEndedEstimated(v bool) {
 	x.xxx_hidden_EndedEstimated = v
 }
 
-func (x *ObjectAddRequest) SetSize(v int64) {
+func (x *LaminaAddRequest) SetSize(v int64) {
 	x.xxx_hidden_Size = v
 }
 
-func (x *ObjectAddRequest) SetIncomplete(v bool) {
+func (x *LaminaAddRequest) SetIncomplete(v bool) {
 	x.xxx_hidden_Incomplete = v
 }
 
-func (x *ObjectAddRequest) SetDateExpired(v *timestamppb.Timestamp) {
+func (x *LaminaAddRequest) SetDateExpired(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpired = v
 }
 
-func (x *ObjectAddRequest) SetDateDeleted(v *timestamppb.Timestamp) {
+func (x *LaminaAddRequest) SetDateDeleted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateDeleted = v
 }
 
-func (x *ObjectAddRequest) SetDatesSynced(v bool) {
+func (x *LaminaAddRequest) SetDatesSynced(v bool) {
 	x.xxx_hidden_DatesSynced = v
 }
 
-func (x *ObjectAddRequest) SetPlacementVersion(v int64) {
+func (x *LaminaAddRequest) SetPlacementVersion(v int64) {
 	x.xxx_hidden_PlacementVersion = v
 }
 
-func (x *ObjectAddRequest) SetDateCommitted(v *timestamppb.Timestamp) {
+func (x *LaminaAddRequest) SetDateCommitted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCommitted = v
 }
 
-func (x *ObjectAddRequest) SetDateFinished(v *timestamppb.Timestamp) {
+func (x *LaminaAddRequest) SetDateFinished(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateFinished = v
 }
 
-func (x *ObjectAddRequest) SetChecksum(v []byte) {
+func (x *LaminaAddRequest) SetChecksum(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
@@ -428,167 +428,167 @@ func (x *ObjectAddRequest) SetChecksum(v []byte) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 22)
 }
 
-func (x *ObjectAddRequest) SetEpoch(v int64) {
+func (x *LaminaAddRequest) SetEpoch(v int64) {
 	x.xxx_hidden_Epoch = v
 }
 
-func (x *ObjectAddRequest) HasId() bool {
+func (x *LaminaAddRequest) HasId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *ObjectAddRequest) HasTenant() bool {
+func (x *LaminaAddRequest) HasTenant() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *ObjectAddRequest) HasSite() bool {
+func (x *LaminaAddRequest) HasSite() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Site != nil
 }
 
-func (x *ObjectAddRequest) HasSet() bool {
+func (x *LaminaAddRequest) HasSet() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Set != nil
 }
 
-func (x *ObjectAddRequest) HasSource() bool {
+func (x *LaminaAddRequest) HasSource() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Source != nil
 }
 
-func (x *ObjectAddRequest) HasSink() bool {
+func (x *LaminaAddRequest) HasSink() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Sink != nil
 }
 
-func (x *ObjectAddRequest) HasDateCreated() bool {
+func (x *LaminaAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateCreated != nil
 }
 
-func (x *ObjectAddRequest) HasDateStarted() bool {
+func (x *LaminaAddRequest) HasDateStarted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateStarted != nil
 }
 
-func (x *ObjectAddRequest) HasDateEnded() bool {
+func (x *LaminaAddRequest) HasDateEnded() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateEnded != nil
 }
 
-func (x *ObjectAddRequest) HasDateExpired() bool {
+func (x *LaminaAddRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *ObjectAddRequest) HasDateDeleted() bool {
+func (x *LaminaAddRequest) HasDateDeleted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateDeleted != nil
 }
 
-func (x *ObjectAddRequest) HasDateCommitted() bool {
+func (x *LaminaAddRequest) HasDateCommitted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateCommitted != nil
 }
 
-func (x *ObjectAddRequest) HasDateFinished() bool {
+func (x *LaminaAddRequest) HasDateFinished() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateFinished != nil
 }
 
-func (x *ObjectAddRequest) HasChecksum() bool {
+func (x *LaminaAddRequest) HasChecksum() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
 }
 
-func (x *ObjectAddRequest) ClearId() {
+func (x *LaminaAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
 }
 
-func (x *ObjectAddRequest) ClearTenant() {
+func (x *LaminaAddRequest) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *ObjectAddRequest) ClearSite() {
+func (x *LaminaAddRequest) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
-func (x *ObjectAddRequest) ClearSet() {
+func (x *LaminaAddRequest) ClearSet() {
 	x.xxx_hidden_Set = nil
 }
 
-func (x *ObjectAddRequest) ClearSource() {
+func (x *LaminaAddRequest) ClearSource() {
 	x.xxx_hidden_Source = nil
 }
 
-func (x *ObjectAddRequest) ClearSink() {
+func (x *LaminaAddRequest) ClearSink() {
 	x.xxx_hidden_Sink = nil
 }
 
-func (x *ObjectAddRequest) ClearDateCreated() {
+func (x *LaminaAddRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
 
-func (x *ObjectAddRequest) ClearDateStarted() {
+func (x *LaminaAddRequest) ClearDateStarted() {
 	x.xxx_hidden_DateStarted = nil
 }
 
-func (x *ObjectAddRequest) ClearDateEnded() {
+func (x *LaminaAddRequest) ClearDateEnded() {
 	x.xxx_hidden_DateEnded = nil
 }
 
-func (x *ObjectAddRequest) ClearDateExpired() {
+func (x *LaminaAddRequest) ClearDateExpired() {
 	x.xxx_hidden_DateExpired = nil
 }
 
-func (x *ObjectAddRequest) ClearDateDeleted() {
+func (x *LaminaAddRequest) ClearDateDeleted() {
 	x.xxx_hidden_DateDeleted = nil
 }
 
-func (x *ObjectAddRequest) ClearDateCommitted() {
+func (x *LaminaAddRequest) ClearDateCommitted() {
 	x.xxx_hidden_DateCommitted = nil
 }
 
-func (x *ObjectAddRequest) ClearDateFinished() {
+func (x *LaminaAddRequest) ClearDateFinished() {
 	x.xxx_hidden_DateFinished = nil
 }
 
-func (x *ObjectAddRequest) ClearChecksum() {
+func (x *LaminaAddRequest) ClearChecksum() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 20)
 	x.xxx_hidden_Checksum = nil
 }
 
-type ObjectAddRequest_builder struct {
+type LaminaAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Id               []byte
@@ -597,8 +597,8 @@ type ObjectAddRequest_builder struct {
 	Set              *SetRef
 	Source           *SourceRef
 	Sink             *SinkRef
-	ObjectKey        string
-	State            ObjectState
+	LaminaKey        string
+	State            LaminaState
 	DateCreated      *timestamppb.Timestamp
 	DateStarted      *timestamppb.Timestamp
 	DateEnded        *timestamppb.Timestamp
@@ -615,8 +615,8 @@ type ObjectAddRequest_builder struct {
 	Epoch            int64
 }
 
-func (b0 ObjectAddRequest_builder) Build() *ObjectAddRequest {
-	m0 := &ObjectAddRequest{}
+func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
+	m0 := &LaminaAddRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
@@ -628,7 +628,7 @@ func (b0 ObjectAddRequest_builder) Build() *ObjectAddRequest {
 	x.xxx_hidden_Set = b.Set
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_Sink = b.Sink
-	x.xxx_hidden_ObjectKey = b.ObjectKey
+	x.xxx_hidden_LaminaKey = b.LaminaKey
 	x.xxx_hidden_State = b.State
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_DateStarted = b.DateStarted
@@ -650,29 +650,29 @@ func (b0 ObjectAddRequest_builder) Build() *ObjectAddRequest {
 	return m0
 }
 
-type ObjectGetRequest struct {
+type LaminaGetRequest struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref    *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Select *ObjectSelect          `protobuf:"bytes,2,opt,name=select"`
+	xxx_hidden_Ref    *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Select *LaminaSelect          `protobuf:"bytes,2,opt,name=select"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
-func (x *ObjectGetRequest) Reset() {
-	*x = ObjectGetRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[1]
+func (x *LaminaGetRequest) Reset() {
+	*x = LaminaGetRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectGetRequest) String() string {
+func (x *LaminaGetRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectGetRequest) ProtoMessage() {}
+func (*LaminaGetRequest) ProtoMessage() {}
 
-func (x *ObjectGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[1]
+func (x *LaminaGetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -683,59 +683,59 @@ func (x *ObjectGetRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectGetRequest) GetRef() *ObjectRef {
+func (x *LaminaGetRequest) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectGetRequest) GetSelect() *ObjectSelect {
+func (x *LaminaGetRequest) GetSelect() *LaminaSelect {
 	if x != nil {
 		return x.xxx_hidden_Select
 	}
 	return nil
 }
 
-func (x *ObjectGetRequest) SetRef(v *ObjectRef) {
+func (x *LaminaGetRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectGetRequest) SetSelect(v *ObjectSelect) {
+func (x *LaminaGetRequest) SetSelect(v *LaminaSelect) {
 	x.xxx_hidden_Select = v
 }
 
-func (x *ObjectGetRequest) HasRef() bool {
+func (x *LaminaGetRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectGetRequest) HasSelect() bool {
+func (x *LaminaGetRequest) HasSelect() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Select != nil
 }
 
-func (x *ObjectGetRequest) ClearRef() {
+func (x *LaminaGetRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *ObjectGetRequest) ClearSelect() {
+func (x *LaminaGetRequest) ClearSelect() {
 	x.xxx_hidden_Select = nil
 }
 
-type ObjectGetRequest_builder struct {
+type LaminaGetRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref    *ObjectRef
-	Select *ObjectSelect
+	Ref    *LaminaRef
+	Select *LaminaSelect
 }
 
-func (b0 ObjectGetRequest_builder) Build() *ObjectGetRequest {
-	m0 := &ObjectGetRequest{}
+func (b0 LaminaGetRequest_builder) Build() *LaminaGetRequest {
+	m0 := &LaminaGetRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -743,28 +743,28 @@ func (b0 ObjectGetRequest_builder) Build() *ObjectGetRequest {
 	return m0
 }
 
-type ObjectRef struct {
+type LaminaRef struct {
 	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Key isObjectRef_Key        `protobuf_oneof:"key"`
+	xxx_hidden_Key isLaminaRef_Key        `protobuf_oneof:"key"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
-func (x *ObjectRef) Reset() {
-	*x = ObjectRef{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[2]
+func (x *LaminaRef) Reset() {
+	*x = LaminaRef{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectRef) String() string {
+func (x *LaminaRef) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectRef) ProtoMessage() {}
+func (*LaminaRef) ProtoMessage() {}
 
-func (x *ObjectRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[2]
+func (x *LaminaRef) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -775,63 +775,63 @@ func (x *ObjectRef) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectRef) GetId() []byte {
+func (x *LaminaRef) GetId() []byte {
 	if x != nil {
-		if x, ok := x.xxx_hidden_Key.(*objectRef_Id); ok {
+		if x, ok := x.xxx_hidden_Key.(*laminaRef_Id); ok {
 			return x.Id
 		}
 	}
 	return nil
 }
 
-func (x *ObjectRef) SetId(v []byte) {
+func (x *LaminaRef) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Key = &objectRef_Id{v}
+	x.xxx_hidden_Key = &laminaRef_Id{v}
 }
 
-func (x *ObjectRef) HasKey() bool {
+func (x *LaminaRef) HasKey() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Key != nil
 }
 
-func (x *ObjectRef) HasId() bool {
+func (x *LaminaRef) HasId() bool {
 	if x == nil {
 		return false
 	}
-	_, ok := x.xxx_hidden_Key.(*objectRef_Id)
+	_, ok := x.xxx_hidden_Key.(*laminaRef_Id)
 	return ok
 }
 
-func (x *ObjectRef) ClearKey() {
+func (x *LaminaRef) ClearKey() {
 	x.xxx_hidden_Key = nil
 }
 
-func (x *ObjectRef) ClearId() {
-	if _, ok := x.xxx_hidden_Key.(*objectRef_Id); ok {
+func (x *LaminaRef) ClearId() {
+	if _, ok := x.xxx_hidden_Key.(*laminaRef_Id); ok {
 		x.xxx_hidden_Key = nil
 	}
 }
 
-const ObjectRef_Key_not_set_case case_ObjectRef_Key = 0
-const ObjectRef_Id_case case_ObjectRef_Key = 1
+const LaminaRef_Key_not_set_case case_LaminaRef_Key = 0
+const LaminaRef_Id_case case_LaminaRef_Key = 1
 
-func (x *ObjectRef) WhichKey() case_ObjectRef_Key {
+func (x *LaminaRef) WhichKey() case_LaminaRef_Key {
 	if x == nil {
-		return ObjectRef_Key_not_set_case
+		return LaminaRef_Key_not_set_case
 	}
 	switch x.xxx_hidden_Key.(type) {
-	case *objectRef_Id:
-		return ObjectRef_Id_case
+	case *laminaRef_Id:
+		return LaminaRef_Id_case
 	default:
-		return ObjectRef_Key_not_set_case
+		return LaminaRef_Key_not_set_case
 	}
 }
 
-type ObjectRef_builder struct {
+type LaminaRef_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Fields of oneof xxx_hidden_Key:
@@ -839,37 +839,37 @@ type ObjectRef_builder struct {
 	// -- end of xxx_hidden_Key
 }
 
-func (b0 ObjectRef_builder) Build() *ObjectRef {
-	m0 := &ObjectRef{}
+func (b0 LaminaRef_builder) Build() *LaminaRef {
+	m0 := &LaminaRef{}
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		x.xxx_hidden_Key = &objectRef_Id{b.Id}
+		x.xxx_hidden_Key = &laminaRef_Id{b.Id}
 	}
 	return m0
 }
 
-type case_ObjectRef_Key protoreflect.FieldNumber
+type case_LaminaRef_Key protoreflect.FieldNumber
 
-func (x case_ObjectRef_Key) String() string {
-	md := file_shale_object_svc_g_proto_msgTypes[2].Descriptor()
+func (x case_LaminaRef_Key) String() string {
+	md := file_shale_lamina_svc_g_proto_msgTypes[2].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
 	return protoimpl.X.MessageFieldStringOf(md, protoreflect.FieldNumber(x))
 }
 
-type isObjectRef_Key interface {
-	isObjectRef_Key()
+type isLaminaRef_Key interface {
+	isLaminaRef_Key()
 }
 
-type objectRef_Id struct {
+type laminaRef_Id struct {
 	Id []byte `protobuf:"bytes,1,opt,name=id,oneof"`
 }
 
-func (*objectRef_Id) isObjectRef_Key() {}
+func (*laminaRef_Id) isLaminaRef_Key() {}
 
-type ObjectSelect struct {
+type LaminaSelect struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_All              bool                   `protobuf:"varint,1,opt,name=all"`
 	xxx_hidden_Tenant           *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
@@ -877,7 +877,7 @@ type ObjectSelect struct {
 	xxx_hidden_Set              *SetSelect             `protobuf:"bytes,8,opt,name=set"`
 	xxx_hidden_Source           *SourceSelect          `protobuf:"bytes,9,opt,name=source"`
 	xxx_hidden_Sink             *SinkSelect            `protobuf:"bytes,10,opt,name=sink"`
-	xxx_hidden_ObjectKey        bool                   `protobuf:"varint,11,opt,name=object_key,json=objectKey"`
+	xxx_hidden_LaminaKey        bool                   `protobuf:"varint,11,opt,name=lamina_key,json=laminaKey"`
 	xxx_hidden_State            bool                   `protobuf:"varint,12,opt,name=state"`
 	xxx_hidden_DateUpdated      bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateCreated      bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -900,21 +900,21 @@ type ObjectSelect struct {
 	sizeCache                   protoimpl.SizeCache
 }
 
-func (x *ObjectSelect) Reset() {
-	*x = ObjectSelect{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[3]
+func (x *LaminaSelect) Reset() {
+	*x = LaminaSelect{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectSelect) String() string {
+func (x *LaminaSelect) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectSelect) ProtoMessage() {}
+func (*LaminaSelect) ProtoMessage() {}
 
-func (x *ObjectSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[3]
+func (x *LaminaSelect) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -925,549 +925,549 @@ func (x *ObjectSelect) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectSelect) GetAll() bool {
+func (x *LaminaSelect) GetAll() bool {
 	if x != nil {
 		return x.xxx_hidden_All
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetTenant() *TenantSelect {
+func (x *LaminaSelect) GetTenant() *TenantSelect {
 	if x != nil {
 		return x.xxx_hidden_Tenant
 	}
 	return nil
 }
 
-func (x *ObjectSelect) GetSite() *SiteSelect {
+func (x *LaminaSelect) GetSite() *SiteSelect {
 	if x != nil {
 		return x.xxx_hidden_Site
 	}
 	return nil
 }
 
-func (x *ObjectSelect) GetSet() *SetSelect {
+func (x *LaminaSelect) GetSet() *SetSelect {
 	if x != nil {
 		return x.xxx_hidden_Set
 	}
 	return nil
 }
 
-func (x *ObjectSelect) GetSource() *SourceSelect {
+func (x *LaminaSelect) GetSource() *SourceSelect {
 	if x != nil {
 		return x.xxx_hidden_Source
 	}
 	return nil
 }
 
-func (x *ObjectSelect) GetSink() *SinkSelect {
+func (x *LaminaSelect) GetSink() *SinkSelect {
 	if x != nil {
 		return x.xxx_hidden_Sink
 	}
 	return nil
 }
 
-func (x *ObjectSelect) GetObjectKey() bool {
+func (x *LaminaSelect) GetLaminaKey() bool {
 	if x != nil {
-		return x.xxx_hidden_ObjectKey
+		return x.xxx_hidden_LaminaKey
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetState() bool {
+func (x *LaminaSelect) GetState() bool {
 	if x != nil {
 		return x.xxx_hidden_State
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDateUpdated() bool {
+func (x *LaminaSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDateCreated() bool {
+func (x *LaminaSelect) GetDateCreated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDateStarted() bool {
+func (x *LaminaSelect) GetDateStarted() bool {
 	if x != nil {
 		return x.xxx_hidden_DateStarted
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDateEnded() bool {
+func (x *LaminaSelect) GetDateEnded() bool {
 	if x != nil {
 		return x.xxx_hidden_DateEnded
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetEndedEstimated() bool {
+func (x *LaminaSelect) GetEndedEstimated() bool {
 	if x != nil {
 		return x.xxx_hidden_EndedEstimated
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetSize() bool {
+func (x *LaminaSelect) GetSize() bool {
 	if x != nil {
 		return x.xxx_hidden_Size
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetIncomplete() bool {
+func (x *LaminaSelect) GetIncomplete() bool {
 	if x != nil {
 		return x.xxx_hidden_Incomplete
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDateExpired() bool {
+func (x *LaminaSelect) GetDateExpired() bool {
 	if x != nil {
 		return x.xxx_hidden_DateExpired
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDateDeleted() bool {
+func (x *LaminaSelect) GetDateDeleted() bool {
 	if x != nil {
 		return x.xxx_hidden_DateDeleted
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDatesSynced() bool {
+func (x *LaminaSelect) GetDatesSynced() bool {
 	if x != nil {
 		return x.xxx_hidden_DatesSynced
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetPlacementVersion() bool {
+func (x *LaminaSelect) GetPlacementVersion() bool {
 	if x != nil {
 		return x.xxx_hidden_PlacementVersion
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDateCommitted() bool {
+func (x *LaminaSelect) GetDateCommitted() bool {
 	if x != nil {
 		return x.xxx_hidden_DateCommitted
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetDateFinished() bool {
+func (x *LaminaSelect) GetDateFinished() bool {
 	if x != nil {
 		return x.xxx_hidden_DateFinished
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetChecksum() bool {
+func (x *LaminaSelect) GetChecksum() bool {
 	if x != nil {
 		return x.xxx_hidden_Checksum
 	}
 	return false
 }
 
-func (x *ObjectSelect) GetEpoch() bool {
+func (x *LaminaSelect) GetEpoch() bool {
 	if x != nil {
 		return x.xxx_hidden_Epoch
 	}
 	return false
 }
 
-func (x *ObjectSelect) SetAll(v bool) {
+func (x *LaminaSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 23)
 }
 
-func (x *ObjectSelect) SetTenant(v *TenantSelect) {
+func (x *LaminaSelect) SetTenant(v *TenantSelect) {
 	x.xxx_hidden_Tenant = v
 }
 
-func (x *ObjectSelect) SetSite(v *SiteSelect) {
+func (x *LaminaSelect) SetSite(v *SiteSelect) {
 	x.xxx_hidden_Site = v
 }
 
-func (x *ObjectSelect) SetSet(v *SetSelect) {
+func (x *LaminaSelect) SetSet(v *SetSelect) {
 	x.xxx_hidden_Set = v
 }
 
-func (x *ObjectSelect) SetSource(v *SourceSelect) {
+func (x *LaminaSelect) SetSource(v *SourceSelect) {
 	x.xxx_hidden_Source = v
 }
 
-func (x *ObjectSelect) SetSink(v *SinkSelect) {
+func (x *LaminaSelect) SetSink(v *SinkSelect) {
 	x.xxx_hidden_Sink = v
 }
 
-func (x *ObjectSelect) SetObjectKey(v bool) {
-	x.xxx_hidden_ObjectKey = v
+func (x *LaminaSelect) SetLaminaKey(v bool) {
+	x.xxx_hidden_LaminaKey = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 23)
 }
 
-func (x *ObjectSelect) SetState(v bool) {
+func (x *LaminaSelect) SetState(v bool) {
 	x.xxx_hidden_State = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 23)
 }
 
-func (x *ObjectSelect) SetDateUpdated(v bool) {
+func (x *LaminaSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 23)
 }
 
-func (x *ObjectSelect) SetDateCreated(v bool) {
+func (x *LaminaSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 23)
 }
 
-func (x *ObjectSelect) SetDateStarted(v bool) {
+func (x *LaminaSelect) SetDateStarted(v bool) {
 	x.xxx_hidden_DateStarted = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 23)
 }
 
-func (x *ObjectSelect) SetDateEnded(v bool) {
+func (x *LaminaSelect) SetDateEnded(v bool) {
 	x.xxx_hidden_DateEnded = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 23)
 }
 
-func (x *ObjectSelect) SetEndedEstimated(v bool) {
+func (x *LaminaSelect) SetEndedEstimated(v bool) {
 	x.xxx_hidden_EndedEstimated = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 23)
 }
 
-func (x *ObjectSelect) SetSize(v bool) {
+func (x *LaminaSelect) SetSize(v bool) {
 	x.xxx_hidden_Size = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 23)
 }
 
-func (x *ObjectSelect) SetIncomplete(v bool) {
+func (x *LaminaSelect) SetIncomplete(v bool) {
 	x.xxx_hidden_Incomplete = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 23)
 }
 
-func (x *ObjectSelect) SetDateExpired(v bool) {
+func (x *LaminaSelect) SetDateExpired(v bool) {
 	x.xxx_hidden_DateExpired = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 23)
 }
 
-func (x *ObjectSelect) SetDateDeleted(v bool) {
+func (x *LaminaSelect) SetDateDeleted(v bool) {
 	x.xxx_hidden_DateDeleted = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 23)
 }
 
-func (x *ObjectSelect) SetDatesSynced(v bool) {
+func (x *LaminaSelect) SetDatesSynced(v bool) {
 	x.xxx_hidden_DatesSynced = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 23)
 }
 
-func (x *ObjectSelect) SetPlacementVersion(v bool) {
+func (x *LaminaSelect) SetPlacementVersion(v bool) {
 	x.xxx_hidden_PlacementVersion = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 23)
 }
 
-func (x *ObjectSelect) SetDateCommitted(v bool) {
+func (x *LaminaSelect) SetDateCommitted(v bool) {
 	x.xxx_hidden_DateCommitted = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 23)
 }
 
-func (x *ObjectSelect) SetDateFinished(v bool) {
+func (x *LaminaSelect) SetDateFinished(v bool) {
 	x.xxx_hidden_DateFinished = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 23)
 }
 
-func (x *ObjectSelect) SetChecksum(v bool) {
+func (x *LaminaSelect) SetChecksum(v bool) {
 	x.xxx_hidden_Checksum = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 23)
 }
 
-func (x *ObjectSelect) SetEpoch(v bool) {
+func (x *LaminaSelect) SetEpoch(v bool) {
 	x.xxx_hidden_Epoch = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 23)
 }
 
-func (x *ObjectSelect) HasAll() bool {
+func (x *LaminaSelect) HasAll() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *ObjectSelect) HasTenant() bool {
+func (x *LaminaSelect) HasTenant() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *ObjectSelect) HasSite() bool {
+func (x *LaminaSelect) HasSite() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Site != nil
 }
 
-func (x *ObjectSelect) HasSet() bool {
+func (x *LaminaSelect) HasSet() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Set != nil
 }
 
-func (x *ObjectSelect) HasSource() bool {
+func (x *LaminaSelect) HasSource() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Source != nil
 }
 
-func (x *ObjectSelect) HasSink() bool {
+func (x *LaminaSelect) HasSink() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Sink != nil
 }
 
-func (x *ObjectSelect) HasObjectKey() bool {
+func (x *LaminaSelect) HasLaminaKey() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *ObjectSelect) HasState() bool {
+func (x *LaminaSelect) HasState() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *ObjectSelect) HasDateUpdated() bool {
+func (x *LaminaSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *ObjectSelect) HasDateCreated() bool {
+func (x *LaminaSelect) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *ObjectSelect) HasDateStarted() bool {
+func (x *LaminaSelect) HasDateStarted() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
-func (x *ObjectSelect) HasDateEnded() bool {
+func (x *LaminaSelect) HasDateEnded() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
-func (x *ObjectSelect) HasEndedEstimated() bool {
+func (x *LaminaSelect) HasEndedEstimated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
-func (x *ObjectSelect) HasSize() bool {
+func (x *LaminaSelect) HasSize() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 13)
 }
 
-func (x *ObjectSelect) HasIncomplete() bool {
+func (x *LaminaSelect) HasIncomplete() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
 }
 
-func (x *ObjectSelect) HasDateExpired() bool {
+func (x *LaminaSelect) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 15)
 }
 
-func (x *ObjectSelect) HasDateDeleted() bool {
+func (x *LaminaSelect) HasDateDeleted() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 16)
 }
 
-func (x *ObjectSelect) HasDatesSynced() bool {
+func (x *LaminaSelect) HasDatesSynced() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
 }
 
-func (x *ObjectSelect) HasPlacementVersion() bool {
+func (x *LaminaSelect) HasPlacementVersion() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 18)
 }
 
-func (x *ObjectSelect) HasDateCommitted() bool {
+func (x *LaminaSelect) HasDateCommitted() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
 }
 
-func (x *ObjectSelect) HasDateFinished() bool {
+func (x *LaminaSelect) HasDateFinished() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
 }
 
-func (x *ObjectSelect) HasChecksum() bool {
+func (x *LaminaSelect) HasChecksum() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
 }
 
-func (x *ObjectSelect) HasEpoch() bool {
+func (x *LaminaSelect) HasEpoch() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
 }
 
-func (x *ObjectSelect) ClearAll() {
+func (x *LaminaSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
 }
 
-func (x *ObjectSelect) ClearTenant() {
+func (x *LaminaSelect) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *ObjectSelect) ClearSite() {
+func (x *LaminaSelect) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
-func (x *ObjectSelect) ClearSet() {
+func (x *LaminaSelect) ClearSet() {
 	x.xxx_hidden_Set = nil
 }
 
-func (x *ObjectSelect) ClearSource() {
+func (x *LaminaSelect) ClearSource() {
 	x.xxx_hidden_Source = nil
 }
 
-func (x *ObjectSelect) ClearSink() {
+func (x *LaminaSelect) ClearSink() {
 	x.xxx_hidden_Sink = nil
 }
 
-func (x *ObjectSelect) ClearObjectKey() {
+func (x *LaminaSelect) ClearLaminaKey() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_ObjectKey = false
+	x.xxx_hidden_LaminaKey = false
 }
 
-func (x *ObjectSelect) ClearState() {
+func (x *LaminaSelect) ClearState() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_State = false
 }
 
-func (x *ObjectSelect) ClearDateUpdated() {
+func (x *LaminaSelect) ClearDateUpdated() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateUpdated = false
 }
 
-func (x *ObjectSelect) ClearDateCreated() {
+func (x *LaminaSelect) ClearDateCreated() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateCreated = false
 }
 
-func (x *ObjectSelect) ClearDateStarted() {
+func (x *LaminaSelect) ClearDateStarted() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateStarted = false
 }
 
-func (x *ObjectSelect) ClearDateEnded() {
+func (x *LaminaSelect) ClearDateEnded() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_DateEnded = false
 }
 
-func (x *ObjectSelect) ClearEndedEstimated() {
+func (x *LaminaSelect) ClearEndedEstimated() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_EndedEstimated = false
 }
 
-func (x *ObjectSelect) ClearSize() {
+func (x *LaminaSelect) ClearSize() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
 	x.xxx_hidden_Size = false
 }
 
-func (x *ObjectSelect) ClearIncomplete() {
+func (x *LaminaSelect) ClearIncomplete() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 14)
 	x.xxx_hidden_Incomplete = false
 }
 
-func (x *ObjectSelect) ClearDateExpired() {
+func (x *LaminaSelect) ClearDateExpired() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
 	x.xxx_hidden_DateExpired = false
 }
 
-func (x *ObjectSelect) ClearDateDeleted() {
+func (x *LaminaSelect) ClearDateDeleted() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 16)
 	x.xxx_hidden_DateDeleted = false
 }
 
-func (x *ObjectSelect) ClearDatesSynced() {
+func (x *LaminaSelect) ClearDatesSynced() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 17)
 	x.xxx_hidden_DatesSynced = false
 }
 
-func (x *ObjectSelect) ClearPlacementVersion() {
+func (x *LaminaSelect) ClearPlacementVersion() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 18)
 	x.xxx_hidden_PlacementVersion = false
 }
 
-func (x *ObjectSelect) ClearDateCommitted() {
+func (x *LaminaSelect) ClearDateCommitted() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
 	x.xxx_hidden_DateCommitted = false
 }
 
-func (x *ObjectSelect) ClearDateFinished() {
+func (x *LaminaSelect) ClearDateFinished() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 20)
 	x.xxx_hidden_DateFinished = false
 }
 
-func (x *ObjectSelect) ClearChecksum() {
+func (x *LaminaSelect) ClearChecksum() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
 	x.xxx_hidden_Checksum = false
 }
 
-func (x *ObjectSelect) ClearEpoch() {
+func (x *LaminaSelect) ClearEpoch() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 22)
 	x.xxx_hidden_Epoch = false
 }
 
-type ObjectSelect_builder struct {
+type LaminaSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	All              *bool
@@ -1476,7 +1476,7 @@ type ObjectSelect_builder struct {
 	Set              *SetSelect
 	Source           *SourceSelect
 	Sink             *SinkSelect
-	ObjectKey        *bool
+	LaminaKey        *bool
 	State            *bool
 	DateUpdated      *bool
 	DateCreated      *bool
@@ -1495,8 +1495,8 @@ type ObjectSelect_builder struct {
 	Epoch            *bool
 }
 
-func (b0 ObjectSelect_builder) Build() *ObjectSelect {
-	m0 := &ObjectSelect{}
+func (b0 LaminaSelect_builder) Build() *LaminaSelect {
+	m0 := &LaminaSelect{}
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
@@ -1508,9 +1508,9 @@ func (b0 ObjectSelect_builder) Build() *ObjectSelect {
 	x.xxx_hidden_Set = b.Set
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_Sink = b.Sink
-	if b.ObjectKey != nil {
+	if b.LaminaKey != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 23)
-		x.xxx_hidden_ObjectKey = *b.ObjectKey
+		x.xxx_hidden_LaminaKey = *b.LaminaKey
 	}
 	if b.State != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 23)
@@ -1579,13 +1579,13 @@ func (b0 ObjectSelect_builder) Build() *ObjectSelect {
 	return m0
 }
 
-type ObjectPatchRequest struct {
+type LaminaPatchRequest struct {
 	state                        protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref               *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Ref               *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Sink              *SinkRef               `protobuf:"bytes,20,opt,name=sink"`
 	xxx_hidden_SinkNull          bool                   `protobuf:"varint,21,opt,name=sink_null,json=sinkNull"`
-	xxx_hidden_ObjectKey         *string                `protobuf:"bytes,22,opt,name=object_key,json=objectKey"`
-	xxx_hidden_State             ObjectState            `protobuf:"varint,24,opt,name=state,enum=shale.ObjectState"`
+	xxx_hidden_LaminaKey         *string                `protobuf:"bytes,22,opt,name=lamina_key,json=laminaKey"`
+	xxx_hidden_State             LaminaState            `protobuf:"varint,24,opt,name=state,enum=shale.LaminaState"`
 	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce  bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	xxx_hidden_DateStarted       *timestamppb.Timestamp `protobuf:"bytes,32,opt,name=date_started,json=dateStarted"`
@@ -1611,21 +1611,21 @@ type ObjectPatchRequest struct {
 	sizeCache                    protoimpl.SizeCache
 }
 
-func (x *ObjectPatchRequest) Reset() {
-	*x = ObjectPatchRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[4]
+func (x *LaminaPatchRequest) Reset() {
+	*x = LaminaPatchRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectPatchRequest) String() string {
+func (x *LaminaPatchRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectPatchRequest) ProtoMessage() {}
+func (*LaminaPatchRequest) ProtoMessage() {}
 
-func (x *ObjectPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[4]
+func (x *LaminaPatchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1636,281 +1636,281 @@ func (x *ObjectPatchRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectPatchRequest) GetRef() *ObjectRef {
+func (x *LaminaPatchRequest) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetSink() *SinkRef {
+func (x *LaminaPatchRequest) GetSink() *SinkRef {
 	if x != nil {
 		return x.xxx_hidden_Sink
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetSinkNull() bool {
+func (x *LaminaPatchRequest) GetSinkNull() bool {
 	if x != nil {
 		return x.xxx_hidden_SinkNull
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetObjectKey() string {
+func (x *LaminaPatchRequest) GetLaminaKey() string {
 	if x != nil {
-		if x.xxx_hidden_ObjectKey != nil {
-			return *x.xxx_hidden_ObjectKey
+		if x.xxx_hidden_LaminaKey != nil {
+			return *x.xxx_hidden_LaminaKey
 		}
 		return ""
 	}
 	return ""
 }
 
-func (x *ObjectPatchRequest) GetState() ObjectState {
+func (x *LaminaPatchRequest) GetState() LaminaState {
 	if x != nil {
 		if protoimpl.X.Present(&(x.XXX_presence[0]), 4) {
 			return x.xxx_hidden_State
 		}
 	}
-	return ObjectState_OBJECT_STATE_UNSPECIFIED
+	return LaminaState_LAMINA_STATE_UNSPECIFIED
 }
 
-func (x *ObjectPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
+func (x *LaminaPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetDateUpdatedForce() bool {
+func (x *LaminaPatchRequest) GetDateUpdatedForce() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdatedForce
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetDateStarted() *timestamppb.Timestamp {
+func (x *LaminaPatchRequest) GetDateStarted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateStarted
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetDateEnded() *timestamppb.Timestamp {
+func (x *LaminaPatchRequest) GetDateEnded() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateEnded
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetDateEndedNull() bool {
+func (x *LaminaPatchRequest) GetDateEndedNull() bool {
 	if x != nil {
 		return x.xxx_hidden_DateEndedNull
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetEndedEstimated() bool {
+func (x *LaminaPatchRequest) GetEndedEstimated() bool {
 	if x != nil {
 		return x.xxx_hidden_EndedEstimated
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetSize() int64 {
+func (x *LaminaPatchRequest) GetSize() int64 {
 	if x != nil {
 		return x.xxx_hidden_Size
 	}
 	return 0
 }
 
-func (x *ObjectPatchRequest) GetIncomplete() bool {
+func (x *LaminaPatchRequest) GetIncomplete() bool {
 	if x != nil {
 		return x.xxx_hidden_Incomplete
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetDateExpired() *timestamppb.Timestamp {
+func (x *LaminaPatchRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetDateDeleted() *timestamppb.Timestamp {
+func (x *LaminaPatchRequest) GetDateDeleted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateDeleted
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetDateDeletedNull() bool {
+func (x *LaminaPatchRequest) GetDateDeletedNull() bool {
 	if x != nil {
 		return x.xxx_hidden_DateDeletedNull
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetDatesSynced() bool {
+func (x *LaminaPatchRequest) GetDatesSynced() bool {
 	if x != nil {
 		return x.xxx_hidden_DatesSynced
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetPlacementVersion() int64 {
+func (x *LaminaPatchRequest) GetPlacementVersion() int64 {
 	if x != nil {
 		return x.xxx_hidden_PlacementVersion
 	}
 	return 0
 }
 
-func (x *ObjectPatchRequest) GetDateCommitted() *timestamppb.Timestamp {
+func (x *LaminaPatchRequest) GetDateCommitted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCommitted
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetDateCommittedNull() bool {
+func (x *LaminaPatchRequest) GetDateCommittedNull() bool {
 	if x != nil {
 		return x.xxx_hidden_DateCommittedNull
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetDateFinished() *timestamppb.Timestamp {
+func (x *LaminaPatchRequest) GetDateFinished() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateFinished
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetDateFinishedNull() bool {
+func (x *LaminaPatchRequest) GetDateFinishedNull() bool {
 	if x != nil {
 		return x.xxx_hidden_DateFinishedNull
 	}
 	return false
 }
 
-func (x *ObjectPatchRequest) GetChecksum() []byte {
+func (x *LaminaPatchRequest) GetChecksum() []byte {
 	if x != nil {
 		return x.xxx_hidden_Checksum
 	}
 	return nil
 }
 
-func (x *ObjectPatchRequest) GetEpoch() int64 {
+func (x *LaminaPatchRequest) GetEpoch() int64 {
 	if x != nil {
 		return x.xxx_hidden_Epoch
 	}
 	return 0
 }
 
-func (x *ObjectPatchRequest) SetRef(v *ObjectRef) {
+func (x *LaminaPatchRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectPatchRequest) SetSink(v *SinkRef) {
+func (x *LaminaPatchRequest) SetSink(v *SinkRef) {
 	x.xxx_hidden_Sink = v
 }
 
-func (x *ObjectPatchRequest) SetSinkNull(v bool) {
+func (x *LaminaPatchRequest) SetSinkNull(v bool) {
 	x.xxx_hidden_SinkNull = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 24)
 }
 
-func (x *ObjectPatchRequest) SetObjectKey(v string) {
-	x.xxx_hidden_ObjectKey = &v
+func (x *LaminaPatchRequest) SetLaminaKey(v string) {
+	x.xxx_hidden_LaminaKey = &v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 24)
 }
 
-func (x *ObjectPatchRequest) SetState(v ObjectState) {
+func (x *LaminaPatchRequest) SetState(v LaminaState) {
 	x.xxx_hidden_State = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 24)
 }
 
-func (x *ObjectPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
+func (x *LaminaPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
 
-func (x *ObjectPatchRequest) SetDateUpdatedForce(v bool) {
+func (x *LaminaPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 24)
 }
 
-func (x *ObjectPatchRequest) SetDateStarted(v *timestamppb.Timestamp) {
+func (x *LaminaPatchRequest) SetDateStarted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateStarted = v
 }
 
-func (x *ObjectPatchRequest) SetDateEnded(v *timestamppb.Timestamp) {
+func (x *LaminaPatchRequest) SetDateEnded(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateEnded = v
 }
 
-func (x *ObjectPatchRequest) SetDateEndedNull(v bool) {
+func (x *LaminaPatchRequest) SetDateEndedNull(v bool) {
 	x.xxx_hidden_DateEndedNull = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 24)
 }
 
-func (x *ObjectPatchRequest) SetEndedEstimated(v bool) {
+func (x *LaminaPatchRequest) SetEndedEstimated(v bool) {
 	x.xxx_hidden_EndedEstimated = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 24)
 }
 
-func (x *ObjectPatchRequest) SetSize(v int64) {
+func (x *LaminaPatchRequest) SetSize(v int64) {
 	x.xxx_hidden_Size = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 24)
 }
 
-func (x *ObjectPatchRequest) SetIncomplete(v bool) {
+func (x *LaminaPatchRequest) SetIncomplete(v bool) {
 	x.xxx_hidden_Incomplete = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 24)
 }
 
-func (x *ObjectPatchRequest) SetDateExpired(v *timestamppb.Timestamp) {
+func (x *LaminaPatchRequest) SetDateExpired(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpired = v
 }
 
-func (x *ObjectPatchRequest) SetDateDeleted(v *timestamppb.Timestamp) {
+func (x *LaminaPatchRequest) SetDateDeleted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateDeleted = v
 }
 
-func (x *ObjectPatchRequest) SetDateDeletedNull(v bool) {
+func (x *LaminaPatchRequest) SetDateDeletedNull(v bool) {
 	x.xxx_hidden_DateDeletedNull = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 24)
 }
 
-func (x *ObjectPatchRequest) SetDatesSynced(v bool) {
+func (x *LaminaPatchRequest) SetDatesSynced(v bool) {
 	x.xxx_hidden_DatesSynced = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 24)
 }
 
-func (x *ObjectPatchRequest) SetPlacementVersion(v int64) {
+func (x *LaminaPatchRequest) SetPlacementVersion(v int64) {
 	x.xxx_hidden_PlacementVersion = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 24)
 }
 
-func (x *ObjectPatchRequest) SetDateCommitted(v *timestamppb.Timestamp) {
+func (x *LaminaPatchRequest) SetDateCommitted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCommitted = v
 }
 
-func (x *ObjectPatchRequest) SetDateCommittedNull(v bool) {
+func (x *LaminaPatchRequest) SetDateCommittedNull(v bool) {
 	x.xxx_hidden_DateCommittedNull = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 24)
 }
 
-func (x *ObjectPatchRequest) SetDateFinished(v *timestamppb.Timestamp) {
+func (x *LaminaPatchRequest) SetDateFinished(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateFinished = v
 }
 
-func (x *ObjectPatchRequest) SetDateFinishedNull(v bool) {
+func (x *LaminaPatchRequest) SetDateFinishedNull(v bool) {
 	x.xxx_hidden_DateFinishedNull = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 24)
 }
 
-func (x *ObjectPatchRequest) SetChecksum(v []byte) {
+func (x *LaminaPatchRequest) SetChecksum(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
@@ -1918,302 +1918,302 @@ func (x *ObjectPatchRequest) SetChecksum(v []byte) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 24)
 }
 
-func (x *ObjectPatchRequest) SetEpoch(v int64) {
+func (x *LaminaPatchRequest) SetEpoch(v int64) {
 	x.xxx_hidden_Epoch = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 24)
 }
 
-func (x *ObjectPatchRequest) HasRef() bool {
+func (x *LaminaPatchRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectPatchRequest) HasSink() bool {
+func (x *LaminaPatchRequest) HasSink() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Sink != nil
 }
 
-func (x *ObjectPatchRequest) HasSinkNull() bool {
+func (x *LaminaPatchRequest) HasSinkNull() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
-func (x *ObjectPatchRequest) HasObjectKey() bool {
+func (x *LaminaPatchRequest) HasLaminaKey() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *ObjectPatchRequest) HasState() bool {
+func (x *LaminaPatchRequest) HasState() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *ObjectPatchRequest) HasDateUpdated() bool {
+func (x *LaminaPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateUpdated != nil
 }
 
-func (x *ObjectPatchRequest) HasDateUpdatedForce() bool {
+func (x *LaminaPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *ObjectPatchRequest) HasDateStarted() bool {
+func (x *LaminaPatchRequest) HasDateStarted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateStarted != nil
 }
 
-func (x *ObjectPatchRequest) HasDateEnded() bool {
+func (x *LaminaPatchRequest) HasDateEnded() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateEnded != nil
 }
 
-func (x *ObjectPatchRequest) HasDateEndedNull() bool {
+func (x *LaminaPatchRequest) HasDateEndedNull() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *ObjectPatchRequest) HasEndedEstimated() bool {
+func (x *LaminaPatchRequest) HasEndedEstimated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
-func (x *ObjectPatchRequest) HasSize() bool {
+func (x *LaminaPatchRequest) HasSize() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
-func (x *ObjectPatchRequest) HasIncomplete() bool {
+func (x *LaminaPatchRequest) HasIncomplete() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
-func (x *ObjectPatchRequest) HasDateExpired() bool {
+func (x *LaminaPatchRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *ObjectPatchRequest) HasDateDeleted() bool {
+func (x *LaminaPatchRequest) HasDateDeleted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateDeleted != nil
 }
 
-func (x *ObjectPatchRequest) HasDateDeletedNull() bool {
+func (x *LaminaPatchRequest) HasDateDeletedNull() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 15)
 }
 
-func (x *ObjectPatchRequest) HasDatesSynced() bool {
+func (x *LaminaPatchRequest) HasDatesSynced() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 16)
 }
 
-func (x *ObjectPatchRequest) HasPlacementVersion() bool {
+func (x *LaminaPatchRequest) HasPlacementVersion() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
 }
 
-func (x *ObjectPatchRequest) HasDateCommitted() bool {
+func (x *LaminaPatchRequest) HasDateCommitted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateCommitted != nil
 }
 
-func (x *ObjectPatchRequest) HasDateCommittedNull() bool {
+func (x *LaminaPatchRequest) HasDateCommittedNull() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
 }
 
-func (x *ObjectPatchRequest) HasDateFinished() bool {
+func (x *LaminaPatchRequest) HasDateFinished() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateFinished != nil
 }
 
-func (x *ObjectPatchRequest) HasDateFinishedNull() bool {
+func (x *LaminaPatchRequest) HasDateFinishedNull() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
 }
 
-func (x *ObjectPatchRequest) HasChecksum() bool {
+func (x *LaminaPatchRequest) HasChecksum() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
 }
 
-func (x *ObjectPatchRequest) HasEpoch() bool {
+func (x *LaminaPatchRequest) HasEpoch() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 23)
 }
 
-func (x *ObjectPatchRequest) ClearRef() {
+func (x *LaminaPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *ObjectPatchRequest) ClearSink() {
+func (x *LaminaPatchRequest) ClearSink() {
 	x.xxx_hidden_Sink = nil
 }
 
-func (x *ObjectPatchRequest) ClearSinkNull() {
+func (x *LaminaPatchRequest) ClearSinkNull() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_SinkNull = false
 }
 
-func (x *ObjectPatchRequest) ClearObjectKey() {
+func (x *LaminaPatchRequest) ClearLaminaKey() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_ObjectKey = nil
+	x.xxx_hidden_LaminaKey = nil
 }
 
-func (x *ObjectPatchRequest) ClearState() {
+func (x *LaminaPatchRequest) ClearState() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_State = ObjectState_OBJECT_STATE_UNSPECIFIED
+	x.xxx_hidden_State = LaminaState_LAMINA_STATE_UNSPECIFIED
 }
 
-func (x *ObjectPatchRequest) ClearDateUpdated() {
+func (x *LaminaPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
-func (x *ObjectPatchRequest) ClearDateUpdatedForce() {
+func (x *LaminaPatchRequest) ClearDateUpdatedForce() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
-func (x *ObjectPatchRequest) ClearDateStarted() {
+func (x *LaminaPatchRequest) ClearDateStarted() {
 	x.xxx_hidden_DateStarted = nil
 }
 
-func (x *ObjectPatchRequest) ClearDateEnded() {
+func (x *LaminaPatchRequest) ClearDateEnded() {
 	x.xxx_hidden_DateEnded = nil
 }
 
-func (x *ObjectPatchRequest) ClearDateEndedNull() {
+func (x *LaminaPatchRequest) ClearDateEndedNull() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateEndedNull = false
 }
 
-func (x *ObjectPatchRequest) ClearEndedEstimated() {
+func (x *LaminaPatchRequest) ClearEndedEstimated() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_EndedEstimated = false
 }
 
-func (x *ObjectPatchRequest) ClearSize() {
+func (x *LaminaPatchRequest) ClearSize() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_Size = 0
 }
 
-func (x *ObjectPatchRequest) ClearIncomplete() {
+func (x *LaminaPatchRequest) ClearIncomplete() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_Incomplete = false
 }
 
-func (x *ObjectPatchRequest) ClearDateExpired() {
+func (x *LaminaPatchRequest) ClearDateExpired() {
 	x.xxx_hidden_DateExpired = nil
 }
 
-func (x *ObjectPatchRequest) ClearDateDeleted() {
+func (x *LaminaPatchRequest) ClearDateDeleted() {
 	x.xxx_hidden_DateDeleted = nil
 }
 
-func (x *ObjectPatchRequest) ClearDateDeletedNull() {
+func (x *LaminaPatchRequest) ClearDateDeletedNull() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
 	x.xxx_hidden_DateDeletedNull = false
 }
 
-func (x *ObjectPatchRequest) ClearDatesSynced() {
+func (x *LaminaPatchRequest) ClearDatesSynced() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 16)
 	x.xxx_hidden_DatesSynced = false
 }
 
-func (x *ObjectPatchRequest) ClearPlacementVersion() {
+func (x *LaminaPatchRequest) ClearPlacementVersion() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 17)
 	x.xxx_hidden_PlacementVersion = 0
 }
 
-func (x *ObjectPatchRequest) ClearDateCommitted() {
+func (x *LaminaPatchRequest) ClearDateCommitted() {
 	x.xxx_hidden_DateCommitted = nil
 }
 
-func (x *ObjectPatchRequest) ClearDateCommittedNull() {
+func (x *LaminaPatchRequest) ClearDateCommittedNull() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
 	x.xxx_hidden_DateCommittedNull = false
 }
 
-func (x *ObjectPatchRequest) ClearDateFinished() {
+func (x *LaminaPatchRequest) ClearDateFinished() {
 	x.xxx_hidden_DateFinished = nil
 }
 
-func (x *ObjectPatchRequest) ClearDateFinishedNull() {
+func (x *LaminaPatchRequest) ClearDateFinishedNull() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
 	x.xxx_hidden_DateFinishedNull = false
 }
 
-func (x *ObjectPatchRequest) ClearChecksum() {
+func (x *LaminaPatchRequest) ClearChecksum() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 22)
 	x.xxx_hidden_Checksum = nil
 }
 
-func (x *ObjectPatchRequest) ClearEpoch() {
+func (x *LaminaPatchRequest) ClearEpoch() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 23)
 	x.xxx_hidden_Epoch = 0
 }
 
-type ObjectPatchRequest_builder struct {
+type LaminaPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref  *ObjectRef
+	Ref  *LaminaRef
 	Sink *SinkRef
 	// Clear sink instead of writing it.
 	// It takes a field of its own because an unset value already means
 	// "leave it alone", so no value could have meant NULL. It wins
 	// outright: setting both this and sink clears.
 	SinkNull  *bool
-	ObjectKey *string
-	State     *ObjectState
+	LaminaKey *string
+	State     *LaminaState
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -2263,8 +2263,8 @@ type ObjectPatchRequest_builder struct {
 	Epoch            *int64
 }
 
-func (b0 ObjectPatchRequest_builder) Build() *ObjectPatchRequest {
-	m0 := &ObjectPatchRequest{}
+func (b0 LaminaPatchRequest_builder) Build() *LaminaPatchRequest {
+	m0 := &LaminaPatchRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -2273,9 +2273,9 @@ func (b0 ObjectPatchRequest_builder) Build() *ObjectPatchRequest {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 24)
 		x.xxx_hidden_SinkNull = *b.SinkNull
 	}
-	if b.ObjectKey != nil {
+	if b.LaminaKey != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 24)
-		x.xxx_hidden_ObjectKey = b.ObjectKey
+		x.xxx_hidden_LaminaKey = b.LaminaKey
 	}
 	if b.State != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 24)
@@ -2339,29 +2339,29 @@ func (b0 ObjectPatchRequest_builder) Build() *ObjectPatchRequest {
 	return m0
 }
 
-type ObjectApplyRequest struct {
+type LaminaApplyRequest struct {
 	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Ref   *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *ObjectApplyRequest) Reset() {
-	*x = ObjectApplyRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[5]
+func (x *LaminaApplyRequest) Reset() {
+	*x = LaminaApplyRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectApplyRequest) String() string {
+func (x *LaminaApplyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectApplyRequest) ProtoMessage() {}
+func (*LaminaApplyRequest) ProtoMessage() {}
 
-func (x *ObjectApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[5]
+func (x *LaminaApplyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2372,59 +2372,59 @@ func (x *ObjectApplyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectApplyRequest) GetRef() *ObjectRef {
+func (x *LaminaApplyRequest) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectApplyRequest) GetPatch() *patchpb.Patch {
+func (x *LaminaApplyRequest) GetPatch() *patchpb.Patch {
 	if x != nil {
 		return x.xxx_hidden_Patch
 	}
 	return nil
 }
 
-func (x *ObjectApplyRequest) SetRef(v *ObjectRef) {
+func (x *LaminaApplyRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectApplyRequest) SetPatch(v *patchpb.Patch) {
+func (x *LaminaApplyRequest) SetPatch(v *patchpb.Patch) {
 	x.xxx_hidden_Patch = v
 }
 
-func (x *ObjectApplyRequest) HasRef() bool {
+func (x *LaminaApplyRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectApplyRequest) HasPatch() bool {
+func (x *LaminaApplyRequest) HasPatch() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Patch != nil
 }
 
-func (x *ObjectApplyRequest) ClearRef() {
+func (x *LaminaApplyRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *ObjectApplyRequest) ClearPatch() {
+func (x *LaminaApplyRequest) ClearPatch() {
 	x.xxx_hidden_Patch = nil
 }
 
-type ObjectApplyRequest_builder struct {
+type LaminaApplyRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref   *ObjectRef
+	Ref   *LaminaRef
 	Patch *patchpb.Patch
 }
 
-func (b0 ObjectApplyRequest_builder) Build() *ObjectApplyRequest {
-	m0 := &ObjectApplyRequest{}
+func (b0 LaminaApplyRequest_builder) Build() *LaminaApplyRequest {
+	m0 := &LaminaApplyRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -2432,7 +2432,7 @@ func (b0 ObjectApplyRequest_builder) Build() *ObjectApplyRequest {
 	return m0
 }
 
-type ObjectEraseResponse struct {
+type LaminaEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
@@ -2441,21 +2441,21 @@ type ObjectEraseResponse struct {
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *ObjectEraseResponse) Reset() {
-	*x = ObjectEraseResponse{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[6]
+func (x *LaminaEraseResponse) Reset() {
+	*x = LaminaEraseResponse{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectEraseResponse) String() string {
+func (x *LaminaEraseResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectEraseResponse) ProtoMessage() {}
+func (*LaminaEraseResponse) ProtoMessage() {}
 
-func (x *ObjectEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[6]
+func (x *LaminaEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2466,31 +2466,31 @@ func (x *ObjectEraseResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectEraseResponse) GetErased() bool {
+func (x *LaminaEraseResponse) GetErased() bool {
 	if x != nil {
 		return x.xxx_hidden_Erased
 	}
 	return false
 }
 
-func (x *ObjectEraseResponse) SetErased(v bool) {
+func (x *LaminaEraseResponse) SetErased(v bool) {
 	x.xxx_hidden_Erased = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
 }
 
-func (x *ObjectEraseResponse) HasErased() bool {
+func (x *LaminaEraseResponse) HasErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *ObjectEraseResponse) ClearErased() {
+func (x *LaminaEraseResponse) ClearErased() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Erased = false
 }
 
-type ObjectEraseResponse_builder struct {
+type LaminaEraseResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Erased is whether this call is the one that erased the row.
@@ -2501,8 +2501,8 @@ type ObjectEraseResponse_builder struct {
 	Erased *bool
 }
 
-func (b0 ObjectEraseResponse_builder) Build() *ObjectEraseResponse {
-	m0 := &ObjectEraseResponse{}
+func (b0 LaminaEraseResponse_builder) Build() *LaminaEraseResponse {
+	m0 := &LaminaEraseResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Erased != nil {
@@ -2512,30 +2512,30 @@ func (b0 ObjectEraseResponse_builder) Build() *ObjectEraseResponse {
 	return m0
 }
 
-type ObjectListRequest struct {
+type LaminaListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Filters *[]*ObjectFilter       `protobuf:"bytes,1,rep,name=filters"`
+	xxx_hidden_Filters *[]*LaminaFilter       `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *ObjectListRequest) Reset() {
-	*x = ObjectListRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[7]
+func (x *LaminaListRequest) Reset() {
+	*x = LaminaListRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectListRequest) String() string {
+func (x *LaminaListRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectListRequest) ProtoMessage() {}
+func (*LaminaListRequest) ProtoMessage() {}
 
-func (x *ObjectListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[7]
+func (x *LaminaListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2546,7 +2546,7 @@ func (x *ObjectListRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectListRequest) GetFilters() []*ObjectFilter {
+func (x *LaminaListRequest) GetFilters() []*LaminaFilter {
 	if x != nil {
 		if x.xxx_hidden_Filters != nil {
 			return *x.xxx_hidden_Filters
@@ -2555,38 +2555,38 @@ func (x *ObjectListRequest) GetFilters() []*ObjectFilter {
 	return nil
 }
 
-func (x *ObjectListRequest) GetSize() int32 {
+func (x *LaminaListRequest) GetSize() int32 {
 	if x != nil {
 		return x.xxx_hidden_Size
 	}
 	return 0
 }
 
-func (x *ObjectListRequest) GetAfter() string {
+func (x *LaminaListRequest) GetAfter() string {
 	if x != nil {
 		return x.xxx_hidden_After
 	}
 	return ""
 }
 
-func (x *ObjectListRequest) SetFilters(v []*ObjectFilter) {
+func (x *LaminaListRequest) SetFilters(v []*LaminaFilter) {
 	x.xxx_hidden_Filters = &v
 }
 
-func (x *ObjectListRequest) SetSize(v int32) {
+func (x *LaminaListRequest) SetSize(v int32) {
 	x.xxx_hidden_Size = v
 }
 
-func (x *ObjectListRequest) SetAfter(v string) {
+func (x *LaminaListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
 }
 
-type ObjectListRequest_builder struct {
+type LaminaListRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Bounded because the work is: each filter is a predicate in the same query,
 	// so this is what says how much of the database one request may read.
-	Filters []*ObjectFilter
+	Filters []*LaminaFilter
 	// How many to answer with. Nothing said is what the schema declared, and more
 	// than the cap is the cap -- a caller asking for more than there is meant no
 	// harm, so it is not an error and it is not the whole table either.
@@ -2598,8 +2598,8 @@ type ObjectListRequest_builder struct {
 	After string
 }
 
-func (b0 ObjectListRequest_builder) Build() *ObjectListRequest {
-	m0 := &ObjectListRequest{}
+func (b0 LaminaListRequest_builder) Build() *LaminaListRequest {
+	m0 := &LaminaListRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Filters = &b.Filters
@@ -2608,29 +2608,29 @@ func (b0 ObjectListRequest_builder) Build() *ObjectListRequest {
 	return m0
 }
 
-type ObjectListResponse struct {
+type LaminaListResponse struct {
 	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Items *[]*Object             `protobuf:"bytes,1,rep,name=items"`
+	xxx_hidden_Items *[]*Lamina             `protobuf:"bytes,1,rep,name=items"`
 	xxx_hidden_Next  string                 `protobuf:"bytes,2,opt,name=next"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *ObjectListResponse) Reset() {
-	*x = ObjectListResponse{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[8]
+func (x *LaminaListResponse) Reset() {
+	*x = LaminaListResponse{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectListResponse) String() string {
+func (x *LaminaListResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectListResponse) ProtoMessage() {}
+func (*LaminaListResponse) ProtoMessage() {}
 
-func (x *ObjectListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[8]
+func (x *LaminaListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2641,7 +2641,7 @@ func (x *ObjectListResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectListResponse) GetItems() []*Object {
+func (x *LaminaListResponse) GetItems() []*Lamina {
 	if x != nil {
 		if x.xxx_hidden_Items != nil {
 			return *x.xxx_hidden_Items
@@ -2650,25 +2650,25 @@ func (x *ObjectListResponse) GetItems() []*Object {
 	return nil
 }
 
-func (x *ObjectListResponse) GetNext() string {
+func (x *LaminaListResponse) GetNext() string {
 	if x != nil {
 		return x.xxx_hidden_Next
 	}
 	return ""
 }
 
-func (x *ObjectListResponse) SetItems(v []*Object) {
+func (x *LaminaListResponse) SetItems(v []*Lamina) {
 	x.xxx_hidden_Items = &v
 }
 
-func (x *ObjectListResponse) SetNext(v string) {
+func (x *LaminaListResponse) SetNext(v string) {
 	x.xxx_hidden_Next = v
 }
 
-type ObjectListResponse_builder struct {
+type LaminaListResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Items []*Object
+	Items []*Lamina
 	// What to ask for next, and empty when this was the last of them.
 	//
 	// Empty means there is no more *for now*: a list is read as it is, and one
@@ -2679,8 +2679,8 @@ type ObjectListResponse_builder struct {
 	Next string
 }
 
-func (b0 ObjectListResponse_builder) Build() *ObjectListResponse {
-	m0 := &ObjectListResponse{}
+func (b0 LaminaListResponse_builder) Build() *LaminaListResponse {
+	m0 := &LaminaListResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Items = &b.Items
@@ -2688,9 +2688,9 @@ func (b0 ObjectListResponse_builder) Build() *ObjectListResponse {
 	return m0
 }
 
-type ObjectFilter struct {
+type LaminaFilter struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref    *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Ref    *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Tenant *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Set    *SetRef                `protobuf:"bytes,3,opt,name=set"`
 	xxx_hidden_Source *SourceRef             `protobuf:"bytes,4,opt,name=source"`
@@ -2699,21 +2699,21 @@ type ObjectFilter struct {
 	sizeCache         protoimpl.SizeCache
 }
 
-func (x *ObjectFilter) Reset() {
-	*x = ObjectFilter{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[9]
+func (x *LaminaFilter) Reset() {
+	*x = LaminaFilter{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectFilter) String() string {
+func (x *LaminaFilter) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectFilter) ProtoMessage() {}
+func (*LaminaFilter) ProtoMessage() {}
 
-func (x *ObjectFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[9]
+func (x *LaminaFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2724,128 +2724,128 @@ func (x *ObjectFilter) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectFilter) GetRef() *ObjectRef {
+func (x *LaminaFilter) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectFilter) GetTenant() *TenantRef {
+func (x *LaminaFilter) GetTenant() *TenantRef {
 	if x != nil {
 		return x.xxx_hidden_Tenant
 	}
 	return nil
 }
 
-func (x *ObjectFilter) GetSet() *SetRef {
+func (x *LaminaFilter) GetSet() *SetRef {
 	if x != nil {
 		return x.xxx_hidden_Set
 	}
 	return nil
 }
 
-func (x *ObjectFilter) GetSource() *SourceRef {
+func (x *LaminaFilter) GetSource() *SourceRef {
 	if x != nil {
 		return x.xxx_hidden_Source
 	}
 	return nil
 }
 
-func (x *ObjectFilter) GetSink() *SinkRef {
+func (x *LaminaFilter) GetSink() *SinkRef {
 	if x != nil {
 		return x.xxx_hidden_Sink
 	}
 	return nil
 }
 
-func (x *ObjectFilter) SetRef(v *ObjectRef) {
+func (x *LaminaFilter) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectFilter) SetTenant(v *TenantRef) {
+func (x *LaminaFilter) SetTenant(v *TenantRef) {
 	x.xxx_hidden_Tenant = v
 }
 
-func (x *ObjectFilter) SetSet(v *SetRef) {
+func (x *LaminaFilter) SetSet(v *SetRef) {
 	x.xxx_hidden_Set = v
 }
 
-func (x *ObjectFilter) SetSource(v *SourceRef) {
+func (x *LaminaFilter) SetSource(v *SourceRef) {
 	x.xxx_hidden_Source = v
 }
 
-func (x *ObjectFilter) SetSink(v *SinkRef) {
+func (x *LaminaFilter) SetSink(v *SinkRef) {
 	x.xxx_hidden_Sink = v
 }
 
-func (x *ObjectFilter) HasRef() bool {
+func (x *LaminaFilter) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectFilter) HasTenant() bool {
+func (x *LaminaFilter) HasTenant() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *ObjectFilter) HasSet() bool {
+func (x *LaminaFilter) HasSet() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Set != nil
 }
 
-func (x *ObjectFilter) HasSource() bool {
+func (x *LaminaFilter) HasSource() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Source != nil
 }
 
-func (x *ObjectFilter) HasSink() bool {
+func (x *LaminaFilter) HasSink() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Sink != nil
 }
 
-func (x *ObjectFilter) ClearRef() {
+func (x *LaminaFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *ObjectFilter) ClearTenant() {
+func (x *LaminaFilter) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *ObjectFilter) ClearSet() {
+func (x *LaminaFilter) ClearSet() {
 	x.xxx_hidden_Set = nil
 }
 
-func (x *ObjectFilter) ClearSource() {
+func (x *LaminaFilter) ClearSource() {
 	x.xxx_hidden_Source = nil
 }
 
-func (x *ObjectFilter) ClearSink() {
+func (x *LaminaFilter) ClearSink() {
 	x.xxx_hidden_Sink = nil
 }
 
-type ObjectFilter_builder struct {
+type LaminaFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref    *ObjectRef
+	Ref    *LaminaRef
 	Tenant *TenantRef
 	Set    *SetRef
 	Source *SourceRef
 	Sink   *SinkRef
 }
 
-func (b0 ObjectFilter_builder) Build() *ObjectFilter {
-	m0 := &ObjectFilter{}
+func (b0 LaminaFilter_builder) Build() *LaminaFilter {
+	m0 := &LaminaFilter{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -2856,29 +2856,29 @@ func (b0 ObjectFilter_builder) Build() *ObjectFilter {
 	return m0
 }
 
-type ObjectWatchRequest struct {
+type LaminaWatchRequest struct {
 	state                   protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Filters      *[]*ObjectFilter       `protobuf:"bytes,1,rep,name=filters"`
+	xxx_hidden_Filters      *[]*LaminaFilter       `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_SkipSnapshot bool                   `protobuf:"varint,2,opt,name=skip_snapshot,json=skipSnapshot"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
 
-func (x *ObjectWatchRequest) Reset() {
-	*x = ObjectWatchRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[10]
+func (x *LaminaWatchRequest) Reset() {
+	*x = LaminaWatchRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectWatchRequest) String() string {
+func (x *LaminaWatchRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectWatchRequest) ProtoMessage() {}
+func (*LaminaWatchRequest) ProtoMessage() {}
 
-func (x *ObjectWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[10]
+func (x *LaminaWatchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2889,7 +2889,7 @@ func (x *ObjectWatchRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectWatchRequest) GetFilters() []*ObjectFilter {
+func (x *LaminaWatchRequest) GetFilters() []*LaminaFilter {
 	if x != nil {
 		if x.xxx_hidden_Filters != nil {
 			return *x.xxx_hidden_Filters
@@ -2898,22 +2898,22 @@ func (x *ObjectWatchRequest) GetFilters() []*ObjectFilter {
 	return nil
 }
 
-func (x *ObjectWatchRequest) GetSkipSnapshot() bool {
+func (x *LaminaWatchRequest) GetSkipSnapshot() bool {
 	if x != nil {
 		return x.xxx_hidden_SkipSnapshot
 	}
 	return false
 }
 
-func (x *ObjectWatchRequest) SetFilters(v []*ObjectFilter) {
+func (x *LaminaWatchRequest) SetFilters(v []*LaminaFilter) {
 	x.xxx_hidden_Filters = &v
 }
 
-func (x *ObjectWatchRequest) SetSkipSnapshot(v bool) {
+func (x *LaminaWatchRequest) SetSkipSnapshot(v bool) {
 	x.xxx_hidden_SkipSnapshot = v
 }
 
-type ObjectWatchRequest_builder struct {
+type LaminaWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Which rows to watch, in the same words List takes them: what is watched is
@@ -2923,7 +2923,7 @@ type ObjectWatchRequest_builder struct {
 	// runs its filters once; a watch runs them again for every write that touches
 	// the entity, for as long as the stream is open. A watch with no filters is
 	// the whole table, forever, which is the one shape that has no cap at all.
-	Filters []*ObjectFilter
+	Filters []*LaminaFilter
 	// Skip what is there now and send only what changes from here.
 	//
 	// Off by default, and the default is the safe one: a client that does not
@@ -2932,8 +2932,8 @@ type ObjectWatchRequest_builder struct {
 	SkipSnapshot bool
 }
 
-func (b0 ObjectWatchRequest_builder) Build() *ObjectWatchRequest {
-	m0 := &ObjectWatchRequest{}
+func (b0 LaminaWatchRequest_builder) Build() *LaminaWatchRequest {
+	m0 := &LaminaWatchRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Filters = &b.Filters
@@ -2941,28 +2941,28 @@ func (b0 ObjectWatchRequest_builder) Build() *ObjectWatchRequest {
 	return m0
 }
 
-type ObjectWatchResponse struct {
+type LaminaWatchResponse struct {
 	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Items *[]*ObjectWatchItem    `protobuf:"bytes,1,rep,name=items"`
+	xxx_hidden_Items *[]*LaminaWatchItem    `protobuf:"bytes,1,rep,name=items"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *ObjectWatchResponse) Reset() {
-	*x = ObjectWatchResponse{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[11]
+func (x *LaminaWatchResponse) Reset() {
+	*x = LaminaWatchResponse{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectWatchResponse) String() string {
+func (x *LaminaWatchResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectWatchResponse) ProtoMessage() {}
+func (*LaminaWatchResponse) ProtoMessage() {}
 
-func (x *ObjectWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[11]
+func (x *LaminaWatchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2973,7 +2973,7 @@ func (x *ObjectWatchResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectWatchResponse) GetItems() []*ObjectWatchItem {
+func (x *LaminaWatchResponse) GetItems() []*LaminaWatchItem {
 	if x != nil {
 		if x.xxx_hidden_Items != nil {
 			return *x.xxx_hidden_Items
@@ -2982,29 +2982,29 @@ func (x *ObjectWatchResponse) GetItems() []*ObjectWatchItem {
 	return nil
 }
 
-func (x *ObjectWatchResponse) SetItems(v []*ObjectWatchItem) {
+func (x *LaminaWatchResponse) SetItems(v []*LaminaWatchItem) {
 	x.xxx_hidden_Items = &v
 }
 
-type ObjectWatchResponse_builder struct {
+type LaminaWatchResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// What changed, or -- in the first message -- everything that matches.
-	Items []*ObjectWatchItem
+	Items []*LaminaWatchItem
 }
 
-func (b0 ObjectWatchResponse_builder) Build() *ObjectWatchResponse {
-	m0 := &ObjectWatchResponse{}
+func (b0 LaminaWatchResponse_builder) Build() *LaminaWatchResponse {
+	m0 := &LaminaWatchResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Items = &b.Items
 	return m0
 }
 
-type ObjectWatchItem struct {
+type LaminaWatchItem struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Value       *Object                `protobuf:"bytes,2,opt,name=value"`
+	xxx_hidden_Value       *Lamina                `protobuf:"bytes,2,opt,name=value"`
 	xxx_hidden_Action      string                 `protobuf:"bytes,3,opt,name=action"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -3012,21 +3012,21 @@ type ObjectWatchItem struct {
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *ObjectWatchItem) Reset() {
-	*x = ObjectWatchItem{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[12]
+func (x *LaminaWatchItem) Reset() {
+	*x = LaminaWatchItem{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectWatchItem) String() string {
+func (x *LaminaWatchItem) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectWatchItem) ProtoMessage() {}
+func (*LaminaWatchItem) ProtoMessage() {}
 
-func (x *ObjectWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[12]
+func (x *LaminaWatchItem) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3037,28 +3037,28 @@ func (x *ObjectWatchItem) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectWatchItem) GetId() []byte {
+func (x *LaminaWatchItem) GetId() []byte {
 	if x != nil {
 		return x.xxx_hidden_Id
 	}
 	return nil
 }
 
-func (x *ObjectWatchItem) GetValue() *Object {
+func (x *LaminaWatchItem) GetValue() *Lamina {
 	if x != nil {
 		return x.xxx_hidden_Value
 	}
 	return nil
 }
 
-func (x *ObjectWatchItem) GetAction() string {
+func (x *LaminaWatchItem) GetAction() string {
 	if x != nil {
 		return x.xxx_hidden_Action
 	}
 	return ""
 }
 
-func (x *ObjectWatchItem) SetId(v []byte) {
+func (x *LaminaWatchItem) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
@@ -3066,38 +3066,38 @@ func (x *ObjectWatchItem) SetId(v []byte) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
 }
 
-func (x *ObjectWatchItem) SetValue(v *Object) {
+func (x *LaminaWatchItem) SetValue(v *Lamina) {
 	x.xxx_hidden_Value = v
 }
 
-func (x *ObjectWatchItem) SetAction(v string) {
+func (x *LaminaWatchItem) SetAction(v string) {
 	x.xxx_hidden_Action = v
 }
 
-func (x *ObjectWatchItem) HasId() bool {
+func (x *LaminaWatchItem) HasId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
-func (x *ObjectWatchItem) HasValue() bool {
+func (x *LaminaWatchItem) HasValue() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Value != nil
 }
 
-func (x *ObjectWatchItem) ClearId() {
+func (x *LaminaWatchItem) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
 }
 
-func (x *ObjectWatchItem) ClearValue() {
+func (x *LaminaWatchItem) ClearValue() {
 	x.xxx_hidden_Value = nil
 }
 
-type ObjectWatchItem_builder struct {
+type LaminaWatchItem_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Which row. Always said, since one that is gone still has to be named.
@@ -3112,7 +3112,7 @@ type ObjectWatchItem_builder struct {
 	//
 	// It is only ever said about a row this stream has already carried. One that
 	// never matched is not news.
-	Value *Object
+	Value *Lamina
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
 	// written by hand is here under its own name.
@@ -3122,8 +3122,8 @@ type ObjectWatchItem_builder struct {
 	Action string
 }
 
-func (b0 ObjectWatchItem_builder) Build() *ObjectWatchItem {
-	m0 := &ObjectWatchItem{}
+func (b0 LaminaWatchItem_builder) Build() *LaminaWatchItem {
+	m0 := &LaminaWatchItem{}
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
@@ -3135,30 +3135,30 @@ func (b0 ObjectWatchItem_builder) Build() *ObjectWatchItem {
 	return m0
 }
 
-type ObjectAllocateRequest struct {
+type LaminaAllocateRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Source      *SourceRef             `protobuf:"bytes,1,opt,name=source"`
 	xxx_hidden_DateStarted *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_started,json=dateStarted"`
-	xxx_hidden_After       *ObjectRef             `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_After       *LaminaRef             `protobuf:"bytes,3,opt,name=after"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *ObjectAllocateRequest) Reset() {
-	*x = ObjectAllocateRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[13]
+func (x *LaminaAllocateRequest) Reset() {
+	*x = LaminaAllocateRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectAllocateRequest) String() string {
+func (x *LaminaAllocateRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectAllocateRequest) ProtoMessage() {}
+func (*LaminaAllocateRequest) ProtoMessage() {}
 
-func (x *ObjectAllocateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[13]
+func (x *LaminaAllocateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3169,86 +3169,86 @@ func (x *ObjectAllocateRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectAllocateRequest) GetSource() *SourceRef {
+func (x *LaminaAllocateRequest) GetSource() *SourceRef {
 	if x != nil {
 		return x.xxx_hidden_Source
 	}
 	return nil
 }
 
-func (x *ObjectAllocateRequest) GetDateStarted() *timestamppb.Timestamp {
+func (x *LaminaAllocateRequest) GetDateStarted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateStarted
 	}
 	return nil
 }
 
-func (x *ObjectAllocateRequest) GetAfter() *ObjectRef {
+func (x *LaminaAllocateRequest) GetAfter() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_After
 	}
 	return nil
 }
 
-func (x *ObjectAllocateRequest) SetSource(v *SourceRef) {
+func (x *LaminaAllocateRequest) SetSource(v *SourceRef) {
 	x.xxx_hidden_Source = v
 }
 
-func (x *ObjectAllocateRequest) SetDateStarted(v *timestamppb.Timestamp) {
+func (x *LaminaAllocateRequest) SetDateStarted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateStarted = v
 }
 
-func (x *ObjectAllocateRequest) SetAfter(v *ObjectRef) {
+func (x *LaminaAllocateRequest) SetAfter(v *LaminaRef) {
 	x.xxx_hidden_After = v
 }
 
-func (x *ObjectAllocateRequest) HasSource() bool {
+func (x *LaminaAllocateRequest) HasSource() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Source != nil
 }
 
-func (x *ObjectAllocateRequest) HasDateStarted() bool {
+func (x *LaminaAllocateRequest) HasDateStarted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateStarted != nil
 }
 
-func (x *ObjectAllocateRequest) HasAfter() bool {
+func (x *LaminaAllocateRequest) HasAfter() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_After != nil
 }
 
-func (x *ObjectAllocateRequest) ClearSource() {
+func (x *LaminaAllocateRequest) ClearSource() {
 	x.xxx_hidden_Source = nil
 }
 
-func (x *ObjectAllocateRequest) ClearDateStarted() {
+func (x *LaminaAllocateRequest) ClearDateStarted() {
 	x.xxx_hidden_DateStarted = nil
 }
 
-func (x *ObjectAllocateRequest) ClearAfter() {
+func (x *LaminaAllocateRequest) ClearAfter() {
 	x.xxx_hidden_After = nil
 }
 
-type ObjectAllocateRequest_builder struct {
+type LaminaAllocateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Source *SourceRef
 	// The expected date_started of the segment; absent means now.
 	DateStarted *timestamppb.Timestamp
-	// The object of the segment before this one, when the camera ended that
+	// The lamina of the segment before this one, when the camera ended that
 	// segment and this one begins in the same slot (§15): the answer is
-	// another object, whatever state the last one is in.
-	After *ObjectRef
+	// another lamina, whatever state the last one is in.
+	After *LaminaRef
 }
 
-func (b0 ObjectAllocateRequest_builder) Build() *ObjectAllocateRequest {
-	m0 := &ObjectAllocateRequest{}
+func (b0 LaminaAllocateRequest_builder) Build() *LaminaAllocateRequest {
+	m0 := &LaminaAllocateRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Source = b.Source
@@ -3257,28 +3257,28 @@ func (b0 ObjectAllocateRequest_builder) Build() *ObjectAllocateRequest {
 	return m0
 }
 
-type ObjectReallocateRequest struct {
+type LaminaReallocateRequest struct {
 	state          protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Ref *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
-func (x *ObjectReallocateRequest) Reset() {
-	*x = ObjectReallocateRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[14]
+func (x *LaminaReallocateRequest) Reset() {
+	*x = LaminaReallocateRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectReallocateRequest) String() string {
+func (x *LaminaReallocateRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectReallocateRequest) ProtoMessage() {}
+func (*LaminaReallocateRequest) ProtoMessage() {}
 
-func (x *ObjectReallocateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[14]
+func (x *LaminaReallocateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3289,65 +3289,65 @@ func (x *ObjectReallocateRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectReallocateRequest) GetRef() *ObjectRef {
+func (x *LaminaReallocateRequest) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectReallocateRequest) SetRef(v *ObjectRef) {
+func (x *LaminaReallocateRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectReallocateRequest) HasRef() bool {
+func (x *LaminaReallocateRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectReallocateRequest) ClearRef() {
+func (x *LaminaReallocateRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-type ObjectReallocateRequest_builder struct {
+type LaminaReallocateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *ObjectRef
+	Ref *LaminaRef
 }
 
-func (b0 ObjectReallocateRequest_builder) Build() *ObjectReallocateRequest {
-	m0 := &ObjectReallocateRequest{}
+func (b0 LaminaReallocateRequest_builder) Build() *LaminaReallocateRequest {
+	m0 := &LaminaReallocateRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	return m0
 }
 
-type ObjectRenewRequest struct {
+type LaminaRenewRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref     *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Ref     *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Attempt *AttemptRef            `protobuf:"bytes,2,opt,name=attempt"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *ObjectRenewRequest) Reset() {
-	*x = ObjectRenewRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[15]
+func (x *LaminaRenewRequest) Reset() {
+	*x = LaminaRenewRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectRenewRequest) String() string {
+func (x *LaminaRenewRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectRenewRequest) ProtoMessage() {}
+func (*LaminaRenewRequest) ProtoMessage() {}
 
-func (x *ObjectRenewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[15]
+func (x *LaminaRenewRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3358,59 +3358,59 @@ func (x *ObjectRenewRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectRenewRequest) GetRef() *ObjectRef {
+func (x *LaminaRenewRequest) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectRenewRequest) GetAttempt() *AttemptRef {
+func (x *LaminaRenewRequest) GetAttempt() *AttemptRef {
 	if x != nil {
 		return x.xxx_hidden_Attempt
 	}
 	return nil
 }
 
-func (x *ObjectRenewRequest) SetRef(v *ObjectRef) {
+func (x *LaminaRenewRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectRenewRequest) SetAttempt(v *AttemptRef) {
+func (x *LaminaRenewRequest) SetAttempt(v *AttemptRef) {
 	x.xxx_hidden_Attempt = v
 }
 
-func (x *ObjectRenewRequest) HasRef() bool {
+func (x *LaminaRenewRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectRenewRequest) HasAttempt() bool {
+func (x *LaminaRenewRequest) HasAttempt() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Attempt != nil
 }
 
-func (x *ObjectRenewRequest) ClearRef() {
+func (x *LaminaRenewRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *ObjectRenewRequest) ClearAttempt() {
+func (x *LaminaRenewRequest) ClearAttempt() {
 	x.xxx_hidden_Attempt = nil
 }
 
-type ObjectRenewRequest_builder struct {
+type LaminaRenewRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref     *ObjectRef
+	Ref     *LaminaRef
 	Attempt *AttemptRef
 }
 
-func (b0 ObjectRenewRequest_builder) Build() *ObjectRenewRequest {
-	m0 := &ObjectRenewRequest{}
+func (b0 LaminaRenewRequest_builder) Build() *LaminaRenewRequest {
+	m0 := &LaminaRenewRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -3427,7 +3427,7 @@ type AttemptRef struct {
 
 func (x *AttemptRef) Reset() {
 	*x = AttemptRef{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[16]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3439,7 +3439,7 @@ func (x *AttemptRef) String() string {
 func (*AttemptRef) ProtoMessage() {}
 
 func (x *AttemptRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[16]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3527,7 +3527,7 @@ func (b0 AttemptRef_builder) Build() *AttemptRef {
 type case_AttemptRef_Key protoreflect.FieldNumber
 
 func (x case_AttemptRef_Key) String() string {
-	md := file_shale_object_svc_g_proto_msgTypes[16].Descriptor()
+	md := file_shale_lamina_svc_g_proto_msgTypes[16].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -3544,30 +3544,30 @@ type attemptRef_Id struct {
 
 func (*attemptRef_Id) isAttemptRef_Key() {}
 
-type ObjectReportAttemptRequest struct {
+type LaminaReportAttemptRequest struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref           *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Ref           *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Attempt       *AttemptRef            `protobuf:"bytes,2,opt,name=attempt"`
 	xxx_hidden_FailureReason string                 `protobuf:"bytes,3,opt,name=failure_reason,json=failureReason"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
 
-func (x *ObjectReportAttemptRequest) Reset() {
-	*x = ObjectReportAttemptRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[17]
+func (x *LaminaReportAttemptRequest) Reset() {
+	*x = LaminaReportAttemptRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectReportAttemptRequest) String() string {
+func (x *LaminaReportAttemptRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectReportAttemptRequest) ProtoMessage() {}
+func (*LaminaReportAttemptRequest) ProtoMessage() {}
 
-func (x *ObjectReportAttemptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[17]
+func (x *LaminaReportAttemptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3578,71 +3578,71 @@ func (x *ObjectReportAttemptRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectReportAttemptRequest) GetRef() *ObjectRef {
+func (x *LaminaReportAttemptRequest) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectReportAttemptRequest) GetAttempt() *AttemptRef {
+func (x *LaminaReportAttemptRequest) GetAttempt() *AttemptRef {
 	if x != nil {
 		return x.xxx_hidden_Attempt
 	}
 	return nil
 }
 
-func (x *ObjectReportAttemptRequest) GetFailureReason() string {
+func (x *LaminaReportAttemptRequest) GetFailureReason() string {
 	if x != nil {
 		return x.xxx_hidden_FailureReason
 	}
 	return ""
 }
 
-func (x *ObjectReportAttemptRequest) SetRef(v *ObjectRef) {
+func (x *LaminaReportAttemptRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectReportAttemptRequest) SetAttempt(v *AttemptRef) {
+func (x *LaminaReportAttemptRequest) SetAttempt(v *AttemptRef) {
 	x.xxx_hidden_Attempt = v
 }
 
-func (x *ObjectReportAttemptRequest) SetFailureReason(v string) {
+func (x *LaminaReportAttemptRequest) SetFailureReason(v string) {
 	x.xxx_hidden_FailureReason = v
 }
 
-func (x *ObjectReportAttemptRequest) HasRef() bool {
+func (x *LaminaReportAttemptRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectReportAttemptRequest) HasAttempt() bool {
+func (x *LaminaReportAttemptRequest) HasAttempt() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Attempt != nil
 }
 
-func (x *ObjectReportAttemptRequest) ClearRef() {
+func (x *LaminaReportAttemptRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *ObjectReportAttemptRequest) ClearAttempt() {
+func (x *LaminaReportAttemptRequest) ClearAttempt() {
 	x.xxx_hidden_Attempt = nil
 }
 
-type ObjectReportAttemptRequest_builder struct {
+type LaminaReportAttemptRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref           *ObjectRef
+	Ref           *LaminaRef
 	Attempt       *AttemptRef
 	FailureReason string
 }
 
-func (b0 ObjectReportAttemptRequest_builder) Build() *ObjectReportAttemptRequest {
-	m0 := &ObjectReportAttemptRequest{}
+func (b0 LaminaReportAttemptRequest_builder) Build() *LaminaReportAttemptRequest {
+	m0 := &LaminaReportAttemptRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -3651,29 +3651,29 @@ func (b0 ObjectReportAttemptRequest_builder) Build() *ObjectReportAttemptRequest
 	return m0
 }
 
-type ObjectReportFailureRequest struct {
+type LaminaReportFailureRequest struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref    *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Ref    *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Reason string                 `protobuf:"bytes,2,opt,name=reason"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
-func (x *ObjectReportFailureRequest) Reset() {
-	*x = ObjectReportFailureRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[18]
+func (x *LaminaReportFailureRequest) Reset() {
+	*x = LaminaReportFailureRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectReportFailureRequest) String() string {
+func (x *LaminaReportFailureRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectReportFailureRequest) ProtoMessage() {}
+func (*LaminaReportFailureRequest) ProtoMessage() {}
 
-func (x *ObjectReportFailureRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[18]
+func (x *LaminaReportFailureRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3684,48 +3684,48 @@ func (x *ObjectReportFailureRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectReportFailureRequest) GetRef() *ObjectRef {
+func (x *LaminaReportFailureRequest) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectReportFailureRequest) GetReason() string {
+func (x *LaminaReportFailureRequest) GetReason() string {
 	if x != nil {
 		return x.xxx_hidden_Reason
 	}
 	return ""
 }
 
-func (x *ObjectReportFailureRequest) SetRef(v *ObjectRef) {
+func (x *LaminaReportFailureRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectReportFailureRequest) SetReason(v string) {
+func (x *LaminaReportFailureRequest) SetReason(v string) {
 	x.xxx_hidden_Reason = v
 }
 
-func (x *ObjectReportFailureRequest) HasRef() bool {
+func (x *LaminaReportFailureRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectReportFailureRequest) ClearRef() {
+func (x *LaminaReportFailureRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-type ObjectReportFailureRequest_builder struct {
+type LaminaReportFailureRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref    *ObjectRef
+	Ref    *LaminaRef
 	Reason string
 }
 
-func (b0 ObjectReportFailureRequest_builder) Build() *ObjectReportFailureRequest {
-	m0 := &ObjectReportFailureRequest{}
+func (b0 LaminaReportFailureRequest_builder) Build() *LaminaReportFailureRequest {
+	m0 := &LaminaReportFailureRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -3733,9 +3733,9 @@ func (b0 ObjectReportFailureRequest_builder) Build() *ObjectReportFailureRequest
 	return m0
 }
 
-type ObjectRescheduleRequest struct {
+type LaminaRescheduleRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref         *ObjectRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Ref         *LaminaRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Set         *SetRef                `protobuf:"bytes,2,opt,name=set"`
 	xxx_hidden_Source      *SourceRef             `protobuf:"bytes,3,opt,name=source"`
 	xxx_hidden_From        *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=from"`
@@ -3748,21 +3748,21 @@ type ObjectRescheduleRequest struct {
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *ObjectRescheduleRequest) Reset() {
-	*x = ObjectRescheduleRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[19]
+func (x *LaminaRescheduleRequest) Reset() {
+	*x = LaminaRescheduleRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectRescheduleRequest) String() string {
+func (x *LaminaRescheduleRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectRescheduleRequest) ProtoMessage() {}
+func (*LaminaRescheduleRequest) ProtoMessage() {}
 
-func (x *ObjectRescheduleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[19]
+func (x *LaminaRescheduleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3773,187 +3773,187 @@ func (x *ObjectRescheduleRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectRescheduleRequest) GetRef() *ObjectRef {
+func (x *LaminaRescheduleRequest) GetRef() *LaminaRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *ObjectRescheduleRequest) GetSet() *SetRef {
+func (x *LaminaRescheduleRequest) GetSet() *SetRef {
 	if x != nil {
 		return x.xxx_hidden_Set
 	}
 	return nil
 }
 
-func (x *ObjectRescheduleRequest) GetSource() *SourceRef {
+func (x *LaminaRescheduleRequest) GetSource() *SourceRef {
 	if x != nil {
 		return x.xxx_hidden_Source
 	}
 	return nil
 }
 
-func (x *ObjectRescheduleRequest) GetFrom() *timestamppb.Timestamp {
+func (x *LaminaRescheduleRequest) GetFrom() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_From
 	}
 	return nil
 }
 
-func (x *ObjectRescheduleRequest) GetTo() *timestamppb.Timestamp {
+func (x *LaminaRescheduleRequest) GetTo() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_To
 	}
 	return nil
 }
 
-func (x *ObjectRescheduleRequest) GetDateExpired() *timestamppb.Timestamp {
+func (x *LaminaRescheduleRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
 
-func (x *ObjectRescheduleRequest) GetDateDeleted() *timestamppb.Timestamp {
+func (x *LaminaRescheduleRequest) GetDateDeleted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateDeleted
 	}
 	return nil
 }
 
-func (x *ObjectRescheduleRequest) GetDeleteNow() bool {
+func (x *LaminaRescheduleRequest) GetDeleteNow() bool {
 	if x != nil {
 		return x.xxx_hidden_DeleteNow
 	}
 	return false
 }
 
-func (x *ObjectRescheduleRequest) GetReason() string {
+func (x *LaminaRescheduleRequest) GetReason() string {
 	if x != nil {
 		return x.xxx_hidden_Reason
 	}
 	return ""
 }
 
-func (x *ObjectRescheduleRequest) SetRef(v *ObjectRef) {
+func (x *LaminaRescheduleRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *ObjectRescheduleRequest) SetSet(v *SetRef) {
+func (x *LaminaRescheduleRequest) SetSet(v *SetRef) {
 	x.xxx_hidden_Set = v
 }
 
-func (x *ObjectRescheduleRequest) SetSource(v *SourceRef) {
+func (x *LaminaRescheduleRequest) SetSource(v *SourceRef) {
 	x.xxx_hidden_Source = v
 }
 
-func (x *ObjectRescheduleRequest) SetFrom(v *timestamppb.Timestamp) {
+func (x *LaminaRescheduleRequest) SetFrom(v *timestamppb.Timestamp) {
 	x.xxx_hidden_From = v
 }
 
-func (x *ObjectRescheduleRequest) SetTo(v *timestamppb.Timestamp) {
+func (x *LaminaRescheduleRequest) SetTo(v *timestamppb.Timestamp) {
 	x.xxx_hidden_To = v
 }
 
-func (x *ObjectRescheduleRequest) SetDateExpired(v *timestamppb.Timestamp) {
+func (x *LaminaRescheduleRequest) SetDateExpired(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpired = v
 }
 
-func (x *ObjectRescheduleRequest) SetDateDeleted(v *timestamppb.Timestamp) {
+func (x *LaminaRescheduleRequest) SetDateDeleted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateDeleted = v
 }
 
-func (x *ObjectRescheduleRequest) SetDeleteNow(v bool) {
+func (x *LaminaRescheduleRequest) SetDeleteNow(v bool) {
 	x.xxx_hidden_DeleteNow = v
 }
 
-func (x *ObjectRescheduleRequest) SetReason(v string) {
+func (x *LaminaRescheduleRequest) SetReason(v string) {
 	x.xxx_hidden_Reason = v
 }
 
-func (x *ObjectRescheduleRequest) HasRef() bool {
+func (x *LaminaRescheduleRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *ObjectRescheduleRequest) HasSet() bool {
+func (x *LaminaRescheduleRequest) HasSet() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Set != nil
 }
 
-func (x *ObjectRescheduleRequest) HasSource() bool {
+func (x *LaminaRescheduleRequest) HasSource() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Source != nil
 }
 
-func (x *ObjectRescheduleRequest) HasFrom() bool {
+func (x *LaminaRescheduleRequest) HasFrom() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_From != nil
 }
 
-func (x *ObjectRescheduleRequest) HasTo() bool {
+func (x *LaminaRescheduleRequest) HasTo() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_To != nil
 }
 
-func (x *ObjectRescheduleRequest) HasDateExpired() bool {
+func (x *LaminaRescheduleRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *ObjectRescheduleRequest) HasDateDeleted() bool {
+func (x *LaminaRescheduleRequest) HasDateDeleted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateDeleted != nil
 }
 
-func (x *ObjectRescheduleRequest) ClearRef() {
+func (x *LaminaRescheduleRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *ObjectRescheduleRequest) ClearSet() {
+func (x *LaminaRescheduleRequest) ClearSet() {
 	x.xxx_hidden_Set = nil
 }
 
-func (x *ObjectRescheduleRequest) ClearSource() {
+func (x *LaminaRescheduleRequest) ClearSource() {
 	x.xxx_hidden_Source = nil
 }
 
-func (x *ObjectRescheduleRequest) ClearFrom() {
+func (x *LaminaRescheduleRequest) ClearFrom() {
 	x.xxx_hidden_From = nil
 }
 
-func (x *ObjectRescheduleRequest) ClearTo() {
+func (x *LaminaRescheduleRequest) ClearTo() {
 	x.xxx_hidden_To = nil
 }
 
-func (x *ObjectRescheduleRequest) ClearDateExpired() {
+func (x *LaminaRescheduleRequest) ClearDateExpired() {
 	x.xxx_hidden_DateExpired = nil
 }
 
-func (x *ObjectRescheduleRequest) ClearDateDeleted() {
+func (x *LaminaRescheduleRequest) ClearDateDeleted() {
 	x.xxx_hidden_DateDeleted = nil
 }
 
-type ObjectRescheduleRequest_builder struct {
+type LaminaRescheduleRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Exactly one of ref, set, or source; set and source take the time range.
-	Ref    *ObjectRef
+	Ref    *LaminaRef
 	Set    *SetRef
 	Source *SourceRef
 	From   *timestamppb.Timestamp
@@ -3965,8 +3965,8 @@ type ObjectRescheduleRequest_builder struct {
 	Reason      string
 }
 
-func (b0 ObjectRescheduleRequest_builder) Build() *ObjectRescheduleRequest {
-	m0 := &ObjectRescheduleRequest{}
+func (b0 LaminaRescheduleRequest_builder) Build() *LaminaRescheduleRequest {
+	m0 := &LaminaRescheduleRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -3981,7 +3981,7 @@ func (b0 ObjectRescheduleRequest_builder) Build() *ObjectRescheduleRequest {
 	return m0
 }
 
-type ObjectRescheduleResponse struct {
+type LaminaRescheduleResponse struct {
 	state                protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Changed   int64                  `protobuf:"varint,1,opt,name=changed"`
 	xxx_hidden_Remaining int64                  `protobuf:"varint,2,opt,name=remaining"`
@@ -3989,21 +3989,21 @@ type ObjectRescheduleResponse struct {
 	sizeCache            protoimpl.SizeCache
 }
 
-func (x *ObjectRescheduleResponse) Reset() {
-	*x = ObjectRescheduleResponse{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[20]
+func (x *LaminaRescheduleResponse) Reset() {
+	*x = LaminaRescheduleResponse{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectRescheduleResponse) String() string {
+func (x *LaminaRescheduleResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectRescheduleResponse) ProtoMessage() {}
+func (*LaminaRescheduleResponse) ProtoMessage() {}
 
-func (x *ObjectRescheduleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[20]
+func (x *LaminaRescheduleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4014,40 +4014,40 @@ func (x *ObjectRescheduleResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectRescheduleResponse) GetChanged() int64 {
+func (x *LaminaRescheduleResponse) GetChanged() int64 {
 	if x != nil {
 		return x.xxx_hidden_Changed
 	}
 	return 0
 }
 
-func (x *ObjectRescheduleResponse) GetRemaining() int64 {
+func (x *LaminaRescheduleResponse) GetRemaining() int64 {
 	if x != nil {
 		return x.xxx_hidden_Remaining
 	}
 	return 0
 }
 
-func (x *ObjectRescheduleResponse) SetChanged(v int64) {
+func (x *LaminaRescheduleResponse) SetChanged(v int64) {
 	x.xxx_hidden_Changed = v
 }
 
-func (x *ObjectRescheduleResponse) SetRemaining(v int64) {
+func (x *LaminaRescheduleResponse) SetRemaining(v int64) {
 	x.xxx_hidden_Remaining = v
 }
 
-type ObjectRescheduleResponse_builder struct {
+type LaminaRescheduleResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Changed int64
-	// Objects in the range the call did not get to before its deadline; a
+	// Laminae in the range the call did not get to before its deadline; a
 	// bulk reschedule works in pages, and the caller comes again while this
 	// is not zero (§20.3).
 	Remaining int64
 }
 
-func (b0 ObjectRescheduleResponse_builder) Build() *ObjectRescheduleResponse {
-	m0 := &ObjectRescheduleResponse{}
+func (b0 LaminaRescheduleResponse_builder) Build() *LaminaRescheduleResponse {
+	m0 := &LaminaRescheduleResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Changed = b.Changed
@@ -4055,7 +4055,7 @@ func (b0 ObjectRescheduleResponse_builder) Build() *ObjectRescheduleResponse {
 	return m0
 }
 
-type ObjectTimelineRequest struct {
+type LaminaTimelineRequest struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Set    *SetRef                `protobuf:"bytes,1,opt,name=set"`
 	xxx_hidden_Source *SourceRef             `protobuf:"bytes,2,opt,name=source"`
@@ -4067,21 +4067,21 @@ type ObjectTimelineRequest struct {
 	sizeCache         protoimpl.SizeCache
 }
 
-func (x *ObjectTimelineRequest) Reset() {
-	*x = ObjectTimelineRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[21]
+func (x *LaminaTimelineRequest) Reset() {
+	*x = LaminaTimelineRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectTimelineRequest) String() string {
+func (x *LaminaTimelineRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectTimelineRequest) ProtoMessage() {}
+func (*LaminaTimelineRequest) ProtoMessage() {}
 
-func (x *ObjectTimelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[21]
+func (x *LaminaTimelineRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4092,117 +4092,117 @@ func (x *ObjectTimelineRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectTimelineRequest) GetSet() *SetRef {
+func (x *LaminaTimelineRequest) GetSet() *SetRef {
 	if x != nil {
 		return x.xxx_hidden_Set
 	}
 	return nil
 }
 
-func (x *ObjectTimelineRequest) GetSource() *SourceRef {
+func (x *LaminaTimelineRequest) GetSource() *SourceRef {
 	if x != nil {
 		return x.xxx_hidden_Source
 	}
 	return nil
 }
 
-func (x *ObjectTimelineRequest) GetFrom() *timestamppb.Timestamp {
+func (x *LaminaTimelineRequest) GetFrom() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_From
 	}
 	return nil
 }
 
-func (x *ObjectTimelineRequest) GetTo() *timestamppb.Timestamp {
+func (x *LaminaTimelineRequest) GetTo() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_To
 	}
 	return nil
 }
 
-func (x *ObjectTimelineRequest) GetSize() int32 {
+func (x *LaminaTimelineRequest) GetSize() int32 {
 	if x != nil {
 		return x.xxx_hidden_Size
 	}
 	return 0
 }
 
-func (x *ObjectTimelineRequest) GetAfter() string {
+func (x *LaminaTimelineRequest) GetAfter() string {
 	if x != nil {
 		return x.xxx_hidden_After
 	}
 	return ""
 }
 
-func (x *ObjectTimelineRequest) SetSet(v *SetRef) {
+func (x *LaminaTimelineRequest) SetSet(v *SetRef) {
 	x.xxx_hidden_Set = v
 }
 
-func (x *ObjectTimelineRequest) SetSource(v *SourceRef) {
+func (x *LaminaTimelineRequest) SetSource(v *SourceRef) {
 	x.xxx_hidden_Source = v
 }
 
-func (x *ObjectTimelineRequest) SetFrom(v *timestamppb.Timestamp) {
+func (x *LaminaTimelineRequest) SetFrom(v *timestamppb.Timestamp) {
 	x.xxx_hidden_From = v
 }
 
-func (x *ObjectTimelineRequest) SetTo(v *timestamppb.Timestamp) {
+func (x *LaminaTimelineRequest) SetTo(v *timestamppb.Timestamp) {
 	x.xxx_hidden_To = v
 }
 
-func (x *ObjectTimelineRequest) SetSize(v int32) {
+func (x *LaminaTimelineRequest) SetSize(v int32) {
 	x.xxx_hidden_Size = v
 }
 
-func (x *ObjectTimelineRequest) SetAfter(v string) {
+func (x *LaminaTimelineRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
 }
 
-func (x *ObjectTimelineRequest) HasSet() bool {
+func (x *LaminaTimelineRequest) HasSet() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Set != nil
 }
 
-func (x *ObjectTimelineRequest) HasSource() bool {
+func (x *LaminaTimelineRequest) HasSource() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Source != nil
 }
 
-func (x *ObjectTimelineRequest) HasFrom() bool {
+func (x *LaminaTimelineRequest) HasFrom() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_From != nil
 }
 
-func (x *ObjectTimelineRequest) HasTo() bool {
+func (x *LaminaTimelineRequest) HasTo() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_To != nil
 }
 
-func (x *ObjectTimelineRequest) ClearSet() {
+func (x *LaminaTimelineRequest) ClearSet() {
 	x.xxx_hidden_Set = nil
 }
 
-func (x *ObjectTimelineRequest) ClearSource() {
+func (x *LaminaTimelineRequest) ClearSource() {
 	x.xxx_hidden_Source = nil
 }
 
-func (x *ObjectTimelineRequest) ClearFrom() {
+func (x *LaminaTimelineRequest) ClearFrom() {
 	x.xxx_hidden_From = nil
 }
 
-func (x *ObjectTimelineRequest) ClearTo() {
+func (x *LaminaTimelineRequest) ClearTo() {
 	x.xxx_hidden_To = nil
 }
 
-type ObjectTimelineRequest_builder struct {
+type LaminaTimelineRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Exactly one of set or source.
@@ -4210,13 +4210,13 @@ type ObjectTimelineRequest_builder struct {
 	Source *SourceRef
 	From   *timestamppb.Timestamp
 	To     *timestamppb.Timestamp
-	// At most timeline_page objects per answer.
+	// At most timeline_page laminae per answer.
 	Size  int32
 	After string
 }
 
-func (b0 ObjectTimelineRequest_builder) Build() *ObjectTimelineRequest {
-	m0 := &ObjectTimelineRequest{}
+func (b0 LaminaTimelineRequest_builder) Build() *LaminaTimelineRequest {
+	m0 := &LaminaTimelineRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Set = b.Set
@@ -4228,7 +4228,7 @@ func (b0 ObjectTimelineRequest_builder) Build() *ObjectTimelineRequest {
 	return m0
 }
 
-type ObjectTimelineResponse struct {
+type LaminaTimelineResponse struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Sources *[]*TimelineSource     `protobuf:"bytes,1,rep,name=sources"`
 	xxx_hidden_Next    string                 `protobuf:"bytes,2,opt,name=next"`
@@ -4236,21 +4236,21 @@ type ObjectTimelineResponse struct {
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *ObjectTimelineResponse) Reset() {
-	*x = ObjectTimelineResponse{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[22]
+func (x *LaminaTimelineResponse) Reset() {
+	*x = LaminaTimelineResponse{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ObjectTimelineResponse) String() string {
+func (x *LaminaTimelineResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ObjectTimelineResponse) ProtoMessage() {}
+func (*LaminaTimelineResponse) ProtoMessage() {}
 
-func (x *ObjectTimelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[22]
+func (x *LaminaTimelineResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4261,7 +4261,7 @@ func (x *ObjectTimelineResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ObjectTimelineResponse) GetSources() []*TimelineSource {
+func (x *LaminaTimelineResponse) GetSources() []*TimelineSource {
 	if x != nil {
 		if x.xxx_hidden_Sources != nil {
 			return *x.xxx_hidden_Sources
@@ -4270,30 +4270,30 @@ func (x *ObjectTimelineResponse) GetSources() []*TimelineSource {
 	return nil
 }
 
-func (x *ObjectTimelineResponse) GetNext() string {
+func (x *LaminaTimelineResponse) GetNext() string {
 	if x != nil {
 		return x.xxx_hidden_Next
 	}
 	return ""
 }
 
-func (x *ObjectTimelineResponse) SetSources(v []*TimelineSource) {
+func (x *LaminaTimelineResponse) SetSources(v []*TimelineSource) {
 	x.xxx_hidden_Sources = &v
 }
 
-func (x *ObjectTimelineResponse) SetNext(v string) {
+func (x *LaminaTimelineResponse) SetNext(v string) {
 	x.xxx_hidden_Next = v
 }
 
-type ObjectTimelineResponse_builder struct {
+type LaminaTimelineResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Sources []*TimelineSource
 	Next    string
 }
 
-func (b0 ObjectTimelineResponse_builder) Build() *ObjectTimelineResponse {
-	m0 := &ObjectTimelineResponse{}
+func (b0 LaminaTimelineResponse_builder) Build() *LaminaTimelineResponse {
+	m0 := &LaminaTimelineResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Sources = &b.Sources
@@ -4305,7 +4305,7 @@ type TimelineSource struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_SourceId []byte                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId"`
 	xxx_hidden_Ordinal  int32                  `protobuf:"varint,2,opt,name=ordinal"`
-	xxx_hidden_Objects  *[]*TimelineObject     `protobuf:"bytes,3,rep,name=objects"`
+	xxx_hidden_Laminae  *[]*TimelineLamina     `protobuf:"bytes,3,rep,name=laminae"`
 	xxx_hidden_Gaps     *[]*TimelineGap        `protobuf:"bytes,4,rep,name=gaps"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -4313,7 +4313,7 @@ type TimelineSource struct {
 
 func (x *TimelineSource) Reset() {
 	*x = TimelineSource{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[23]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4325,7 +4325,7 @@ func (x *TimelineSource) String() string {
 func (*TimelineSource) ProtoMessage() {}
 
 func (x *TimelineSource) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[23]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4350,10 +4350,10 @@ func (x *TimelineSource) GetOrdinal() int32 {
 	return 0
 }
 
-func (x *TimelineSource) GetObjects() []*TimelineObject {
+func (x *TimelineSource) GetLaminae() []*TimelineLamina {
 	if x != nil {
-		if x.xxx_hidden_Objects != nil {
-			return *x.xxx_hidden_Objects
+		if x.xxx_hidden_Laminae != nil {
+			return *x.xxx_hidden_Laminae
 		}
 	}
 	return nil
@@ -4379,8 +4379,8 @@ func (x *TimelineSource) SetOrdinal(v int32) {
 	x.xxx_hidden_Ordinal = v
 }
 
-func (x *TimelineSource) SetObjects(v []*TimelineObject) {
-	x.xxx_hidden_Objects = &v
+func (x *TimelineSource) SetLaminae(v []*TimelineLamina) {
+	x.xxx_hidden_Laminae = &v
 }
 
 func (x *TimelineSource) SetGaps(v []*TimelineGap) {
@@ -4392,7 +4392,7 @@ type TimelineSource_builder struct {
 
 	SourceId []byte
 	Ordinal  int32
-	Objects  []*TimelineObject
+	Laminae  []*TimelineLamina
 	Gaps     []*TimelineGap
 }
 
@@ -4402,14 +4402,14 @@ func (b0 TimelineSource_builder) Build() *TimelineSource {
 	_, _ = b, x
 	x.xxx_hidden_SourceId = b.SourceId
 	x.xxx_hidden_Ordinal = b.Ordinal
-	x.xxx_hidden_Objects = &b.Objects
+	x.xxx_hidden_Laminae = &b.Laminae
 	x.xxx_hidden_Gaps = &b.Gaps
 	return m0
 }
 
-type TimelineObject struct {
+type TimelineLamina struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_ObjectId         []byte                 `protobuf:"bytes,1,opt,name=object_id,json=objectId"`
+	xxx_hidden_LaminaId         []byte                 `protobuf:"bytes,1,opt,name=lamina_id,json=laminaId"`
 	xxx_hidden_DateStarted      *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_started,json=dateStarted"`
 	xxx_hidden_DateEnded        *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_ended,json=dateEnded"`
 	xxx_hidden_EndedEstimated   bool                   `protobuf:"varint,4,opt,name=ended_estimated,json=endedEstimated"`
@@ -4417,7 +4417,7 @@ type TimelineObject struct {
 	xxx_hidden_State            ReadState              `protobuf:"varint,6,opt,name=state,enum=shale.ReadState"`
 	xxx_hidden_Incomplete       bool                   `protobuf:"varint,7,opt,name=incomplete"`
 	xxx_hidden_SinkId           []byte                 `protobuf:"bytes,8,opt,name=sink_id,json=sinkId"`
-	xxx_hidden_ObjectKey        string                 `protobuf:"bytes,9,opt,name=object_key,json=objectKey"`
+	xxx_hidden_LaminaKey        string                 `protobuf:"bytes,9,opt,name=lamina_key,json=laminaKey"`
 	xxx_hidden_Endpoints        *[]*Endpoint           `protobuf:"bytes,10,rep,name=endpoints"`
 	xxx_hidden_Url              string                 `protobuf:"bytes,11,opt,name=url"`
 	xxx_hidden_Token            string                 `protobuf:"bytes,12,opt,name=token"`
@@ -4426,21 +4426,21 @@ type TimelineObject struct {
 	sizeCache                   protoimpl.SizeCache
 }
 
-func (x *TimelineObject) Reset() {
-	*x = TimelineObject{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[24]
+func (x *TimelineLamina) Reset() {
+	*x = TimelineLamina{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TimelineObject) String() string {
+func (x *TimelineLamina) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TimelineObject) ProtoMessage() {}
+func (*TimelineLamina) ProtoMessage() {}
 
-func (x *TimelineObject) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[24]
+func (x *TimelineLamina) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4451,70 +4451,70 @@ func (x *TimelineObject) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *TimelineObject) GetObjectId() []byte {
+func (x *TimelineLamina) GetLaminaId() []byte {
 	if x != nil {
-		return x.xxx_hidden_ObjectId
+		return x.xxx_hidden_LaminaId
 	}
 	return nil
 }
 
-func (x *TimelineObject) GetDateStarted() *timestamppb.Timestamp {
+func (x *TimelineLamina) GetDateStarted() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateStarted
 	}
 	return nil
 }
 
-func (x *TimelineObject) GetDateEnded() *timestamppb.Timestamp {
+func (x *TimelineLamina) GetDateEnded() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateEnded
 	}
 	return nil
 }
 
-func (x *TimelineObject) GetEndedEstimated() bool {
+func (x *TimelineLamina) GetEndedEstimated() bool {
 	if x != nil {
 		return x.xxx_hidden_EndedEstimated
 	}
 	return false
 }
 
-func (x *TimelineObject) GetSize() int64 {
+func (x *TimelineLamina) GetSize() int64 {
 	if x != nil {
 		return x.xxx_hidden_Size
 	}
 	return 0
 }
 
-func (x *TimelineObject) GetState() ReadState {
+func (x *TimelineLamina) GetState() ReadState {
 	if x != nil {
 		return x.xxx_hidden_State
 	}
 	return ReadState_READ_STATE_UNSPECIFIED
 }
 
-func (x *TimelineObject) GetIncomplete() bool {
+func (x *TimelineLamina) GetIncomplete() bool {
 	if x != nil {
 		return x.xxx_hidden_Incomplete
 	}
 	return false
 }
 
-func (x *TimelineObject) GetSinkId() []byte {
+func (x *TimelineLamina) GetSinkId() []byte {
 	if x != nil {
 		return x.xxx_hidden_SinkId
 	}
 	return nil
 }
 
-func (x *TimelineObject) GetObjectKey() string {
+func (x *TimelineLamina) GetLaminaKey() string {
 	if x != nil {
-		return x.xxx_hidden_ObjectKey
+		return x.xxx_hidden_LaminaKey
 	}
 	return ""
 }
 
-func (x *TimelineObject) GetEndpoints() []*Endpoint {
+func (x *TimelineLamina) GetEndpoints() []*Endpoint {
 	if x != nil {
 		if x.xxx_hidden_Endpoints != nil {
 			return *x.xxx_hidden_Endpoints
@@ -4523,122 +4523,122 @@ func (x *TimelineObject) GetEndpoints() []*Endpoint {
 	return nil
 }
 
-func (x *TimelineObject) GetUrl() string {
+func (x *TimelineLamina) GetUrl() string {
 	if x != nil {
 		return x.xxx_hidden_Url
 	}
 	return ""
 }
 
-func (x *TimelineObject) GetToken() string {
+func (x *TimelineLamina) GetToken() string {
 	if x != nil {
 		return x.xxx_hidden_Token
 	}
 	return ""
 }
 
-func (x *TimelineObject) GetDateTokenExpires() *timestamppb.Timestamp {
+func (x *TimelineLamina) GetDateTokenExpires() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateTokenExpires
 	}
 	return nil
 }
 
-func (x *TimelineObject) SetObjectId(v []byte) {
+func (x *TimelineLamina) SetLaminaId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_ObjectId = v
+	x.xxx_hidden_LaminaId = v
 }
 
-func (x *TimelineObject) SetDateStarted(v *timestamppb.Timestamp) {
+func (x *TimelineLamina) SetDateStarted(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateStarted = v
 }
 
-func (x *TimelineObject) SetDateEnded(v *timestamppb.Timestamp) {
+func (x *TimelineLamina) SetDateEnded(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateEnded = v
 }
 
-func (x *TimelineObject) SetEndedEstimated(v bool) {
+func (x *TimelineLamina) SetEndedEstimated(v bool) {
 	x.xxx_hidden_EndedEstimated = v
 }
 
-func (x *TimelineObject) SetSize(v int64) {
+func (x *TimelineLamina) SetSize(v int64) {
 	x.xxx_hidden_Size = v
 }
 
-func (x *TimelineObject) SetState(v ReadState) {
+func (x *TimelineLamina) SetState(v ReadState) {
 	x.xxx_hidden_State = v
 }
 
-func (x *TimelineObject) SetIncomplete(v bool) {
+func (x *TimelineLamina) SetIncomplete(v bool) {
 	x.xxx_hidden_Incomplete = v
 }
 
-func (x *TimelineObject) SetSinkId(v []byte) {
+func (x *TimelineLamina) SetSinkId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_SinkId = v
 }
 
-func (x *TimelineObject) SetObjectKey(v string) {
-	x.xxx_hidden_ObjectKey = v
+func (x *TimelineLamina) SetLaminaKey(v string) {
+	x.xxx_hidden_LaminaKey = v
 }
 
-func (x *TimelineObject) SetEndpoints(v []*Endpoint) {
+func (x *TimelineLamina) SetEndpoints(v []*Endpoint) {
 	x.xxx_hidden_Endpoints = &v
 }
 
-func (x *TimelineObject) SetUrl(v string) {
+func (x *TimelineLamina) SetUrl(v string) {
 	x.xxx_hidden_Url = v
 }
 
-func (x *TimelineObject) SetToken(v string) {
+func (x *TimelineLamina) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
-func (x *TimelineObject) SetDateTokenExpires(v *timestamppb.Timestamp) {
+func (x *TimelineLamina) SetDateTokenExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateTokenExpires = v
 }
 
-func (x *TimelineObject) HasDateStarted() bool {
+func (x *TimelineLamina) HasDateStarted() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateStarted != nil
 }
 
-func (x *TimelineObject) HasDateEnded() bool {
+func (x *TimelineLamina) HasDateEnded() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateEnded != nil
 }
 
-func (x *TimelineObject) HasDateTokenExpires() bool {
+func (x *TimelineLamina) HasDateTokenExpires() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateTokenExpires != nil
 }
 
-func (x *TimelineObject) ClearDateStarted() {
+func (x *TimelineLamina) ClearDateStarted() {
 	x.xxx_hidden_DateStarted = nil
 }
 
-func (x *TimelineObject) ClearDateEnded() {
+func (x *TimelineLamina) ClearDateEnded() {
 	x.xxx_hidden_DateEnded = nil
 }
 
-func (x *TimelineObject) ClearDateTokenExpires() {
+func (x *TimelineLamina) ClearDateTokenExpires() {
 	x.xxx_hidden_DateTokenExpires = nil
 }
 
-type TimelineObject_builder struct {
+type TimelineLamina_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	ObjectId       []byte
+	LaminaId       []byte
 	DateStarted    *timestamppb.Timestamp
 	DateEnded      *timestamppb.Timestamp
 	EndedEstimated bool
@@ -4646,7 +4646,7 @@ type TimelineObject_builder struct {
 	State          ReadState
 	Incomplete     bool
 	SinkId         []byte
-	ObjectKey      string
+	LaminaKey      string
 	Endpoints      []*Endpoint
 	// A presigned URL on the first endpoint, and the token on its own for
 	// clients that set headers.
@@ -4655,11 +4655,11 @@ type TimelineObject_builder struct {
 	DateTokenExpires *timestamppb.Timestamp
 }
 
-func (b0 TimelineObject_builder) Build() *TimelineObject {
-	m0 := &TimelineObject{}
+func (b0 TimelineLamina_builder) Build() *TimelineLamina {
+	m0 := &TimelineLamina{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_ObjectId = b.ObjectId
+	x.xxx_hidden_LaminaId = b.LaminaId
 	x.xxx_hidden_DateStarted = b.DateStarted
 	x.xxx_hidden_DateEnded = b.DateEnded
 	x.xxx_hidden_EndedEstimated = b.EndedEstimated
@@ -4667,7 +4667,7 @@ func (b0 TimelineObject_builder) Build() *TimelineObject {
 	x.xxx_hidden_State = b.State
 	x.xxx_hidden_Incomplete = b.Incomplete
 	x.xxx_hidden_SinkId = b.SinkId
-	x.xxx_hidden_ObjectKey = b.ObjectKey
+	x.xxx_hidden_LaminaKey = b.LaminaKey
 	x.xxx_hidden_Endpoints = &b.Endpoints
 	x.xxx_hidden_Url = b.Url
 	x.xxx_hidden_Token = b.Token
@@ -4686,7 +4686,7 @@ type TimelineGap struct {
 
 func (x *TimelineGap) Reset() {
 	*x = TimelineGap{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[25]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4698,7 +4698,7 @@ func (x *TimelineGap) String() string {
 func (*TimelineGap) ProtoMessage() {}
 
 func (x *TimelineGap) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[25]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4787,7 +4787,7 @@ type AttemptAddRequest struct {
 	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Tenant        *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Site          *SiteRef               `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Object        *ObjectRef             `protobuf:"bytes,8,opt,name=object"`
+	xxx_hidden_Lamina        *LaminaRef             `protobuf:"bytes,8,opt,name=lamina"`
 	xxx_hidden_Sink          *SinkRef               `protobuf:"bytes,9,opt,name=sink"`
 	xxx_hidden_Node          *NodeRef               `protobuf:"bytes,10,opt,name=node"`
 	xxx_hidden_State         AttemptState           `protobuf:"varint,11,opt,name=state,enum=shale.AttemptState"`
@@ -4804,7 +4804,7 @@ type AttemptAddRequest struct {
 
 func (x *AttemptAddRequest) Reset() {
 	*x = AttemptAddRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[26]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4816,7 +4816,7 @@ func (x *AttemptAddRequest) String() string {
 func (*AttemptAddRequest) ProtoMessage() {}
 
 func (x *AttemptAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[26]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4848,9 +4848,9 @@ func (x *AttemptAddRequest) GetSite() *SiteRef {
 	return nil
 }
 
-func (x *AttemptAddRequest) GetObject() *ObjectRef {
+func (x *AttemptAddRequest) GetLamina() *LaminaRef {
 	if x != nil {
-		return x.xxx_hidden_Object
+		return x.xxx_hidden_Lamina
 	}
 	return nil
 }
@@ -4927,8 +4927,8 @@ func (x *AttemptAddRequest) SetSite(v *SiteRef) {
 	x.xxx_hidden_Site = v
 }
 
-func (x *AttemptAddRequest) SetObject(v *ObjectRef) {
-	x.xxx_hidden_Object = v
+func (x *AttemptAddRequest) SetLamina(v *LaminaRef) {
+	x.xxx_hidden_Lamina = v
 }
 
 func (x *AttemptAddRequest) SetSink(v *SinkRef) {
@@ -4984,11 +4984,11 @@ func (x *AttemptAddRequest) HasSite() bool {
 	return x.xxx_hidden_Site != nil
 }
 
-func (x *AttemptAddRequest) HasObject() bool {
+func (x *AttemptAddRequest) HasLamina() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Object != nil
+	return x.xxx_hidden_Lamina != nil
 }
 
 func (x *AttemptAddRequest) HasSink() bool {
@@ -5039,8 +5039,8 @@ func (x *AttemptAddRequest) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
-func (x *AttemptAddRequest) ClearObject() {
-	x.xxx_hidden_Object = nil
+func (x *AttemptAddRequest) ClearLamina() {
+	x.xxx_hidden_Lamina = nil
 }
 
 func (x *AttemptAddRequest) ClearSink() {
@@ -5069,7 +5069,7 @@ type AttemptAddRequest_builder struct {
 	Id            []byte
 	Tenant        *TenantRef
 	Site          *SiteRef
-	Object        *ObjectRef
+	Lamina        *LaminaRef
 	Sink          *SinkRef
 	Node          *NodeRef
 	State         AttemptState
@@ -5090,7 +5090,7 @@ func (b0 AttemptAddRequest_builder) Build() *AttemptAddRequest {
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
-	x.xxx_hidden_Object = b.Object
+	x.xxx_hidden_Lamina = b.Lamina
 	x.xxx_hidden_Sink = b.Sink
 	x.xxx_hidden_Node = b.Node
 	x.xxx_hidden_State = b.State
@@ -5112,7 +5112,7 @@ type AttemptGetRequest struct {
 
 func (x *AttemptGetRequest) Reset() {
 	*x = AttemptGetRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[27]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5124,7 +5124,7 @@ func (x *AttemptGetRequest) String() string {
 func (*AttemptGetRequest) ProtoMessage() {}
 
 func (x *AttemptGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[27]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5200,7 +5200,7 @@ type AttemptSelect struct {
 	xxx_hidden_All           bool                   `protobuf:"varint,1,opt,name=all"`
 	xxx_hidden_Tenant        *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Site          *SiteSelect            `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Object        *ObjectSelect          `protobuf:"bytes,8,opt,name=object"`
+	xxx_hidden_Lamina        *LaminaSelect          `protobuf:"bytes,8,opt,name=lamina"`
 	xxx_hidden_Sink          *SinkSelect            `protobuf:"bytes,9,opt,name=sink"`
 	xxx_hidden_Node          *NodeSelect            `protobuf:"bytes,10,opt,name=node"`
 	xxx_hidden_State         bool                   `protobuf:"varint,11,opt,name=state"`
@@ -5218,7 +5218,7 @@ type AttemptSelect struct {
 
 func (x *AttemptSelect) Reset() {
 	*x = AttemptSelect{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[28]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5230,7 +5230,7 @@ func (x *AttemptSelect) String() string {
 func (*AttemptSelect) ProtoMessage() {}
 
 func (x *AttemptSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[28]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5262,9 +5262,9 @@ func (x *AttemptSelect) GetSite() *SiteSelect {
 	return nil
 }
 
-func (x *AttemptSelect) GetObject() *ObjectSelect {
+func (x *AttemptSelect) GetLamina() *LaminaSelect {
 	if x != nil {
-		return x.xxx_hidden_Object
+		return x.xxx_hidden_Lamina
 	}
 	return nil
 }
@@ -5345,8 +5345,8 @@ func (x *AttemptSelect) SetSite(v *SiteSelect) {
 	x.xxx_hidden_Site = v
 }
 
-func (x *AttemptSelect) SetObject(v *ObjectSelect) {
-	x.xxx_hidden_Object = v
+func (x *AttemptSelect) SetLamina(v *LaminaSelect) {
+	x.xxx_hidden_Lamina = v
 }
 
 func (x *AttemptSelect) SetSink(v *SinkSelect) {
@@ -5413,11 +5413,11 @@ func (x *AttemptSelect) HasSite() bool {
 	return x.xxx_hidden_Site != nil
 }
 
-func (x *AttemptSelect) HasObject() bool {
+func (x *AttemptSelect) HasLamina() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Object != nil
+	return x.xxx_hidden_Lamina != nil
 }
 
 func (x *AttemptSelect) HasSink() bool {
@@ -5496,8 +5496,8 @@ func (x *AttemptSelect) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
-func (x *AttemptSelect) ClearObject() {
-	x.xxx_hidden_Object = nil
+func (x *AttemptSelect) ClearLamina() {
+	x.xxx_hidden_Lamina = nil
 }
 
 func (x *AttemptSelect) ClearSink() {
@@ -5549,7 +5549,7 @@ type AttemptSelect_builder struct {
 	All           *bool
 	Tenant        *TenantSelect
 	Site          *SiteSelect
-	Object        *ObjectSelect
+	Lamina        *LaminaSelect
 	Sink          *SinkSelect
 	Node          *NodeSelect
 	State         *bool
@@ -5571,7 +5571,7 @@ func (b0 AttemptSelect_builder) Build() *AttemptSelect {
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
-	x.xxx_hidden_Object = b.Object
+	x.xxx_hidden_Lamina = b.Lamina
 	x.xxx_hidden_Sink = b.Sink
 	x.xxx_hidden_Node = b.Node
 	if b.State != nil {
@@ -5624,7 +5624,7 @@ type AttemptPatchRequest struct {
 
 func (x *AttemptPatchRequest) Reset() {
 	*x = AttemptPatchRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[29]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5636,7 +5636,7 @@ func (x *AttemptPatchRequest) String() string {
 func (*AttemptPatchRequest) ProtoMessage() {}
 
 func (x *AttemptPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[29]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5931,7 +5931,7 @@ type AttemptApplyRequest struct {
 
 func (x *AttemptApplyRequest) Reset() {
 	*x = AttemptApplyRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[30]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5943,7 +5943,7 @@ func (x *AttemptApplyRequest) String() string {
 func (*AttemptApplyRequest) ProtoMessage() {}
 
 func (x *AttemptApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[30]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6025,7 +6025,7 @@ type AttemptEraseResponse struct {
 
 func (x *AttemptEraseResponse) Reset() {
 	*x = AttemptEraseResponse{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[31]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6037,7 +6037,7 @@ func (x *AttemptEraseResponse) String() string {
 func (*AttemptEraseResponse) ProtoMessage() {}
 
 func (x *AttemptEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[31]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6105,7 +6105,7 @@ type AttemptListRequest struct {
 
 func (x *AttemptListRequest) Reset() {
 	*x = AttemptListRequest{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[32]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6117,7 +6117,7 @@ func (x *AttemptListRequest) String() string {
 func (*AttemptListRequest) ProtoMessage() {}
 
 func (x *AttemptListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[32]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6200,7 +6200,7 @@ type AttemptListResponse struct {
 
 func (x *AttemptListResponse) Reset() {
 	*x = AttemptListResponse{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[33]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6212,7 +6212,7 @@ func (x *AttemptListResponse) String() string {
 func (*AttemptListResponse) ProtoMessage() {}
 
 func (x *AttemptListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[33]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6274,7 +6274,7 @@ type AttemptFilter struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref    *AttemptRef            `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Tenant *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Object *ObjectRef             `protobuf:"bytes,3,opt,name=object"`
+	xxx_hidden_Lamina *LaminaRef             `protobuf:"bytes,3,opt,name=lamina"`
 	xxx_hidden_Sink   *SinkRef               `protobuf:"bytes,4,opt,name=sink"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -6282,7 +6282,7 @@ type AttemptFilter struct {
 
 func (x *AttemptFilter) Reset() {
 	*x = AttemptFilter{}
-	mi := &file_shale_object_svc_g_proto_msgTypes[34]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6294,7 +6294,7 @@ func (x *AttemptFilter) String() string {
 func (*AttemptFilter) ProtoMessage() {}
 
 func (x *AttemptFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_object_svc_g_proto_msgTypes[34]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6319,9 +6319,9 @@ func (x *AttemptFilter) GetTenant() *TenantRef {
 	return nil
 }
 
-func (x *AttemptFilter) GetObject() *ObjectRef {
+func (x *AttemptFilter) GetLamina() *LaminaRef {
 	if x != nil {
-		return x.xxx_hidden_Object
+		return x.xxx_hidden_Lamina
 	}
 	return nil
 }
@@ -6341,8 +6341,8 @@ func (x *AttemptFilter) SetTenant(v *TenantRef) {
 	x.xxx_hidden_Tenant = v
 }
 
-func (x *AttemptFilter) SetObject(v *ObjectRef) {
-	x.xxx_hidden_Object = v
+func (x *AttemptFilter) SetLamina(v *LaminaRef) {
+	x.xxx_hidden_Lamina = v
 }
 
 func (x *AttemptFilter) SetSink(v *SinkRef) {
@@ -6363,11 +6363,11 @@ func (x *AttemptFilter) HasTenant() bool {
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *AttemptFilter) HasObject() bool {
+func (x *AttemptFilter) HasLamina() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Object != nil
+	return x.xxx_hidden_Lamina != nil
 }
 
 func (x *AttemptFilter) HasSink() bool {
@@ -6385,8 +6385,8 @@ func (x *AttemptFilter) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *AttemptFilter) ClearObject() {
-	x.xxx_hidden_Object = nil
+func (x *AttemptFilter) ClearLamina() {
+	x.xxx_hidden_Lamina = nil
 }
 
 func (x *AttemptFilter) ClearSink() {
@@ -6398,7 +6398,7 @@ type AttemptFilter_builder struct {
 
 	Ref    *AttemptRef
 	Tenant *TenantRef
-	Object *ObjectRef
+	Lamina *LaminaRef
 	Sink   *SinkRef
 }
 
@@ -6408,17 +6408,17 @@ func (b0 AttemptFilter_builder) Build() *AttemptFilter {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Tenant = b.Tenant
-	x.xxx_hidden_Object = b.Object
+	x.xxx_hidden_Lamina = b.Lamina
 	x.xxx_hidden_Sink = b.Sink
 	return m0
 }
 
-var File_shale_object_svc_g_proto protoreflect.FileDescriptor
+var File_shale_lamina_svc_g_proto protoreflect.FileDescriptor
 
-const file_shale_object_svc_g_proto_rawDesc = "" +
+const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/object_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/object.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\x1a\x19shale/storage_svc.g.proto\"\xfa\a\n" +
-	"\x10ObjectAddRequest\x12\x0e\n" +
+	"\x18shale/lamina_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/lamina.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\x1a\x19shale/storage_svc.g.proto\"\xfa\a\n" +
+	"\x10LaminaAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1f\n" +
@@ -6427,8 +6427,8 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\x04sink\x18\n" +
 	" \x01(\v2\x0e.shale.SinkRefR\x04sink\x12$\n" +
 	"\n" +
-	"object_key\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\tobjectKey\x12/\n" +
-	"\x05state\x18\f \x01(\x0e2\x12.shale.ObjectStateB\x05\xaa\x01\x02\b\x02R\x05state\x12=\n" +
+	"lamina_key\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\tlaminaKey\x12/\n" +
+	"\x05state\x18\f \x01(\x0e2\x12.shale.LaminaStateB\x05\xaa\x01\x02\b\x02R\x05state\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12=\n" +
 	"\fdate_started\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\vdateStarted\x129\n" +
 	"\n" +
@@ -6446,13 +6446,13 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\rdate_finished\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\fdateFinished\x12\x1a\n" +
 	"\bchecksum\x18\x1b \x01(\fR\bchecksum\x12\x1b\n" +
 	"\x05epoch\x18\x1c \x01(\x03B\x05\xaa\x01\x02\b\x02R\x05epoch\"c\n" +
-	"\x10ObjectGetRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.shale.ObjectSelectR\x06select\"$\n" +
-	"\tObjectRef\x12\x10\n" +
+	"\x10LaminaGetRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12+\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.shale.LaminaSelectR\x06select\"$\n" +
+	"\tLaminaRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
 	"\x03key\"\x9a\x06\n" +
-	"\fObjectSelect\x12\x10\n" +
+	"\fLaminaSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
 	"\x04site\x18\x03 \x01(\v2\x11.shale.SiteSelectR\x04site\x12\"\n" +
@@ -6461,7 +6461,7 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\x04sink\x18\n" +
 	" \x01(\v2\x11.shale.SinkSelectR\x04sink\x12\x1d\n" +
 	"\n" +
-	"object_key\x18\v \x01(\bR\tobjectKey\x12\x14\n" +
+	"lamina_key\x18\v \x01(\bR\tlaminaKey\x12\x14\n" +
 	"\x05state\x18\f \x01(\bR\x05state\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12!\n" +
@@ -6481,13 +6481,13 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\rdate_finished\x18\x1a \x01(\bR\fdateFinished\x12\x1a\n" +
 	"\bchecksum\x18\x1b \x01(\bR\bchecksum\x12\x14\n" +
 	"\x05epoch\x18\x1c \x01(\bR\x05epoch\"\xbc\b\n" +
-	"\x12ObjectPatchRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\x12\"\n" +
+	"\x12LaminaPatchRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12\"\n" +
 	"\x04sink\x18\x14 \x01(\v2\x0e.shale.SinkRefR\x04sink\x12\x1b\n" +
 	"\tsink_null\x18\x15 \x01(\bR\bsinkNull\x12\x1d\n" +
 	"\n" +
-	"object_key\x18\x16 \x01(\tR\tobjectKey\x12(\n" +
-	"\x05state\x18\x18 \x01(\x0e2\x12.shale.ObjectStateR\x05state\x12=\n" +
+	"lamina_key\x18\x16 \x01(\tR\tlaminaKey\x12(\n" +
+	"\x05state\x18\x18 \x01(\x0e2\x12.shale.LaminaStateR\x05state\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12=\n" +
 	"\fdate_started\x18  \x01(\v2\x1a.google.protobuf.TimestampR\vdateStarted\x129\n" +
@@ -6510,55 +6510,55 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\x12date_finished_null\x185 \x01(\bR\x10dateFinishedNull\x12\x1a\n" +
 	"\bchecksum\x186 \x01(\fR\bchecksum\x12\x14\n" +
 	"\x05epoch\x188 \x01(\x03R\x05epoch\"\\\n" +
-	"\x12ObjectApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\x12\"\n" +
+	"\x12LaminaApplyRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
-	"\x13ObjectEraseResponse\x12\x16\n" +
+	"\x13LaminaEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"z\n" +
-	"\x11ObjectListRequest\x12-\n" +
-	"\afilters\x18\x01 \x03(\v2\x13.shale.ObjectFilterR\afilters\x12\x19\n" +
+	"\x11LaminaListRequest\x12-\n" +
+	"\afilters\x18\x01 \x03(\v2\x13.shale.LaminaFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"T\n" +
-	"\x12ObjectListResponse\x12#\n" +
-	"\x05items\x18\x01 \x03(\v2\r.shale.ObjectR\x05items\x12\x19\n" +
+	"\x12LaminaListResponse\x12#\n" +
+	"\x05items\x18\x01 \x03(\v2\r.shale.LaminaR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xcb\x01\n" +
-	"\fObjectFilter\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\x12(\n" +
+	"\fLaminaFilter\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\x1f\n" +
 	"\x03set\x18\x03 \x01(\v2\r.shale.SetRefR\x03set\x12(\n" +
 	"\x06source\x18\x04 \x01(\v2\x10.shale.SourceRefR\x06source\x12\"\n" +
 	"\x04sink\x18\x05 \x01(\v2\x0e.shale.SinkRefR\x04sink\"o\n" +
-	"\x12ObjectWatchRequest\x12-\n" +
-	"\afilters\x18\x01 \x03(\v2\x13.shale.ObjectFilterR\afilters\x12*\n" +
+	"\x12LaminaWatchRequest\x12-\n" +
+	"\afilters\x18\x01 \x03(\v2\x13.shale.LaminaFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"C\n" +
-	"\x13ObjectWatchResponse\x12,\n" +
-	"\x05items\x18\x01 \x03(\v2\x16.shale.ObjectWatchItemR\x05items\"e\n" +
-	"\x0fObjectWatchItem\x12\x0e\n" +
+	"\x13LaminaWatchResponse\x12,\n" +
+	"\x05items\x18\x01 \x03(\v2\x16.shale.LaminaWatchItemR\x05items\"e\n" +
+	"\x0fLaminaWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
-	"\x05value\x18\x02 \x01(\v2\r.shale.ObjectR\x05value\x12\x1d\n" +
+	"\x05value\x18\x02 \x01(\v2\r.shale.LaminaR\x05value\x12\x1d\n" +
 	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa8\x01\n" +
-	"\x15ObjectAllocateRequest\x12(\n" +
+	"\x15LaminaAllocateRequest\x12(\n" +
 	"\x06source\x18\x01 \x01(\v2\x10.shale.SourceRefR\x06source\x12=\n" +
 	"\fdate_started\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateStarted\x12&\n" +
-	"\x05after\x18\x03 \x01(\v2\x10.shale.ObjectRefR\x05after\"=\n" +
-	"\x17ObjectReallocateRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\"e\n" +
-	"\x12ObjectRenewRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\x12+\n" +
+	"\x05after\x18\x03 \x01(\v2\x10.shale.LaminaRefR\x05after\"=\n" +
+	"\x17LaminaReallocateRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\"e\n" +
+	"\x12LaminaRenewRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12+\n" +
 	"\aattempt\x18\x02 \x01(\v2\x11.shale.AttemptRefR\aattempt\"%\n" +
 	"\n" +
 	"AttemptRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
 	"\x03key\"\x9b\x01\n" +
-	"\x1aObjectReportAttemptRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\x12+\n" +
+	"\x1aLaminaReportAttemptRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12+\n" +
 	"\aattempt\x18\x02 \x01(\v2\x11.shale.AttemptRefR\aattempt\x12,\n" +
 	"\x0efailure_reason\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\rfailureReason\"_\n" +
-	"\x1aObjectReportFailureRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\x12\x1d\n" +
+	"\x1aLaminaReportFailureRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12\x1d\n" +
 	"\x06reason\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06reason\"\xa7\x03\n" +
-	"\x17ObjectRescheduleRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.shale.ObjectRefR\x03ref\x12\x1f\n" +
+	"\x17LaminaRescheduleRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12\x1f\n" +
 	"\x03set\x18\x02 \x01(\v2\r.shale.SetRefR\x03set\x12(\n" +
 	"\x06source\x18\x03 \x01(\v2\x10.shale.SourceRefR\x06source\x12.\n" +
 	"\x04from\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x04from\x12*\n" +
@@ -6568,26 +6568,26 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"delete_now\x18\b \x01(\bB\x05\xaa\x01\x02\b\x02R\tdeleteNow\x12\x1d\n" +
 	"\x06reason\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x06reason\"`\n" +
-	"\x18ObjectRescheduleResponse\x12\x1f\n" +
+	"\x18LaminaRescheduleResponse\x12\x1f\n" +
 	"\achanged\x18\x01 \x01(\x03B\x05\xaa\x01\x02\b\x02R\achanged\x12#\n" +
 	"\tremaining\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\tremaining\"\xf6\x01\n" +
-	"\x15ObjectTimelineRequest\x12\x1f\n" +
+	"\x15LaminaTimelineRequest\x12\x1f\n" +
 	"\x03set\x18\x01 \x01(\v2\r.shale.SetRefR\x03set\x12(\n" +
 	"\x06source\x18\x02 \x01(\v2\x10.shale.SourceRefR\x06source\x12.\n" +
 	"\x04from\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x04from\x12*\n" +
 	"\x02to\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x02to\x12\x19\n" +
 	"\x04size\x18\x05 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"d\n" +
-	"\x16ObjectTimelineResponse\x12/\n" +
+	"\x16LaminaTimelineResponse\x12/\n" +
 	"\asources\x18\x01 \x03(\v2\x15.shale.TimelineSourceR\asources\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xae\x01\n" +
 	"\x0eTimelineSource\x12\"\n" +
 	"\tsource_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\bsourceId\x12\x1f\n" +
 	"\aordinal\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\aordinal\x12/\n" +
-	"\aobjects\x18\x03 \x03(\v2\x15.shale.TimelineObjectR\aobjects\x12&\n" +
+	"\alaminae\x18\x03 \x03(\v2\x15.shale.TimelineLaminaR\alaminae\x12&\n" +
 	"\x04gaps\x18\x04 \x03(\v2\x12.shale.TimelineGapR\x04gaps\"\xc4\x04\n" +
-	"\x0eTimelineObject\x12\"\n" +
-	"\tobject_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\bobjectId\x12=\n" +
+	"\x0eTimelineLamina\x12\"\n" +
+	"\tlamina_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\blaminaId\x12=\n" +
 	"\fdate_started\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateStarted\x129\n" +
 	"\n" +
 	"date_ended\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tdateEnded\x12.\n" +
@@ -6599,7 +6599,7 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"incomplete\x12\x1e\n" +
 	"\asink_id\x18\b \x01(\fB\x05\xaa\x01\x02\b\x02R\x06sinkId\x12$\n" +
 	"\n" +
-	"object_key\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\tobjectKey\x12-\n" +
+	"lamina_key\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\tlaminaKey\x12-\n" +
 	"\tendpoints\x18\n" +
 	" \x03(\v2\x0f.shale.EndpointR\tendpoints\x12\x17\n" +
 	"\x03url\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\x03url\x12\x1b\n" +
@@ -6613,7 +6613,7 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
 	"\x04site\x18\x03 \x01(\v2\x0e.shale.SiteRefR\x04site\x12(\n" +
-	"\x06object\x18\b \x01(\v2\x10.shale.ObjectRefR\x06object\x12\"\n" +
+	"\x06lamina\x18\b \x01(\v2\x10.shale.LaminaRefR\x06lamina\x12\"\n" +
 	"\x04sink\x18\t \x01(\v2\x0e.shale.SinkRefR\x04sink\x12\"\n" +
 	"\x04node\x18\n" +
 	" \x01(\v2\x0e.shale.NodeRefR\x04node\x120\n" +
@@ -6630,7 +6630,7 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
 	"\x04site\x18\x03 \x01(\v2\x11.shale.SiteSelectR\x04site\x12+\n" +
-	"\x06object\x18\b \x01(\v2\x13.shale.ObjectSelectR\x06object\x12%\n" +
+	"\x06lamina\x18\b \x01(\v2\x13.shale.LaminaSelectR\x06lamina\x12%\n" +
 	"\x04sink\x18\t \x01(\v2\x11.shale.SinkSelectR\x04sink\x12%\n" +
 	"\x04node\x18\n" +
 	" \x01(\v2\x11.shale.NodeSelectR\x04node\x12\x14\n" +
@@ -6666,7 +6666,7 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\rAttemptFilter\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.shale.AttemptRefR\x03ref\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12(\n" +
-	"\x06object\x18\x03 \x01(\v2\x10.shale.ObjectRefR\x06object\x12\"\n" +
+	"\x06lamina\x18\x03 \x01(\v2\x10.shale.LaminaRefR\x06lamina\x12\"\n" +
 	"\x04sink\x18\x04 \x01(\v2\x0e.shale.SinkRefR\x04sink*\x8a\x01\n" +
 	"\tReadState\x12\x1a\n" +
 	"\x16READ_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
@@ -6681,23 +6681,23 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\x0fGAP_REASON_LOST\x10\x03\x12\x16\n" +
 	"\x12GAP_REASON_DELETED\x10\x04\x12\x1a\n" +
 	"\x16GAP_REASON_UNAVAILABLE\x10\x052\xdd\x06\n" +
-	"\rObjectService\x12-\n" +
-	"\x03Add\x12\x17.shale.ObjectAddRequest\x1a\r.shale.Object\x12-\n" +
-	"\x03Get\x12\x17.shale.ObjectGetRequest\x1a\r.shale.Object\x121\n" +
-	"\x05Patch\x12\x19.shale.ObjectPatchRequest\x1a\r.shale.Object\x121\n" +
-	"\x05Apply\x12\x19.shale.ObjectApplyRequest\x1a\r.shale.Object\x125\n" +
-	"\x05Erase\x12\x10.shale.ObjectRef\x1a\x1a.shale.ObjectEraseResponse\x12;\n" +
-	"\x04List\x12\x18.shale.ObjectListRequest\x1a\x19.shale.ObjectListResponse\x12@\n" +
-	"\x05Watch\x12\x19.shale.ObjectWatchRequest\x1a\x1a.shale.ObjectWatchResponse0\x01\x12;\n" +
-	"\bAllocate\x12\x1c.shale.ObjectAllocateRequest\x1a\x11.shale.Allocation\x12?\n" +
+	"\rLaminaService\x12-\n" +
+	"\x03Add\x12\x17.shale.LaminaAddRequest\x1a\r.shale.Lamina\x12-\n" +
+	"\x03Get\x12\x17.shale.LaminaGetRequest\x1a\r.shale.Lamina\x121\n" +
+	"\x05Patch\x12\x19.shale.LaminaPatchRequest\x1a\r.shale.Lamina\x121\n" +
+	"\x05Apply\x12\x19.shale.LaminaApplyRequest\x1a\r.shale.Lamina\x125\n" +
+	"\x05Erase\x12\x10.shale.LaminaRef\x1a\x1a.shale.LaminaEraseResponse\x12;\n" +
+	"\x04List\x12\x18.shale.LaminaListRequest\x1a\x19.shale.LaminaListResponse\x12@\n" +
+	"\x05Watch\x12\x19.shale.LaminaWatchRequest\x1a\x1a.shale.LaminaWatchResponse0\x01\x12;\n" +
+	"\bAllocate\x12\x1c.shale.LaminaAllocateRequest\x1a\x11.shale.Allocation\x12?\n" +
 	"\n" +
-	"Reallocate\x12\x1e.shale.ObjectReallocateRequest\x1a\x11.shale.Allocation\x125\n" +
-	"\x05Renew\x12\x19.shale.ObjectRenewRequest\x1a\x11.shale.Allocation\x12B\n" +
-	"\rReportAttempt\x12!.shale.ObjectReportAttemptRequest\x1a\x0e.shale.Attempt\x12A\n" +
-	"\rReportFailure\x12!.shale.ObjectReportFailureRequest\x1a\r.shale.Object\x12M\n" +
+	"Reallocate\x12\x1e.shale.LaminaReallocateRequest\x1a\x11.shale.Allocation\x125\n" +
+	"\x05Renew\x12\x19.shale.LaminaRenewRequest\x1a\x11.shale.Allocation\x12B\n" +
+	"\rReportAttempt\x12!.shale.LaminaReportAttemptRequest\x1a\x0e.shale.Attempt\x12A\n" +
+	"\rReportFailure\x12!.shale.LaminaReportFailureRequest\x1a\r.shale.Lamina\x12M\n" +
 	"\n" +
-	"Reschedule\x12\x1e.shale.ObjectRescheduleRequest\x1a\x1f.shale.ObjectRescheduleResponse\x12G\n" +
-	"\bTimeline\x12\x1c.shale.ObjectTimelineRequest\x1a\x1d.shale.ObjectTimelineResponse2\xd4\x02\n" +
+	"Reschedule\x12\x1e.shale.LaminaRescheduleRequest\x1a\x1f.shale.LaminaRescheduleResponse\x12G\n" +
+	"\bTimeline\x12\x1c.shale.LaminaTimelineRequest\x1a\x1d.shale.LaminaTimelineResponse2\xd4\x02\n" +
 	"\x0eAttemptService\x12/\n" +
 	"\x03Add\x12\x18.shale.AttemptAddRequest\x1a\x0e.shale.Attempt\x12/\n" +
 	"\x03Get\x12\x18.shale.AttemptGetRequest\x1a\x0e.shale.Attempt\x123\n" +
@@ -6706,36 +6706,36 @@ const file_shale_object_svc_g_proto_rawDesc = "" +
 	"\x05Erase\x12\x11.shale.AttemptRef\x1a\x1b.shale.AttemptEraseResponse\x12=\n" +
 	"\x04List\x12\x19.shale.AttemptListRequest\x1a\x1a.shale.AttemptListResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_object_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_shale_object_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
-var file_shale_object_svc_g_proto_goTypes = []any{
+var file_shale_lamina_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_shale_lamina_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_shale_lamina_svc_g_proto_goTypes = []any{
 	(ReadState)(0),                     // 0: shale.ReadState
 	(GapReason)(0),                     // 1: shale.GapReason
-	(*ObjectAddRequest)(nil),           // 2: shale.ObjectAddRequest
-	(*ObjectGetRequest)(nil),           // 3: shale.ObjectGetRequest
-	(*ObjectRef)(nil),                  // 4: shale.ObjectRef
-	(*ObjectSelect)(nil),               // 5: shale.ObjectSelect
-	(*ObjectPatchRequest)(nil),         // 6: shale.ObjectPatchRequest
-	(*ObjectApplyRequest)(nil),         // 7: shale.ObjectApplyRequest
-	(*ObjectEraseResponse)(nil),        // 8: shale.ObjectEraseResponse
-	(*ObjectListRequest)(nil),          // 9: shale.ObjectListRequest
-	(*ObjectListResponse)(nil),         // 10: shale.ObjectListResponse
-	(*ObjectFilter)(nil),               // 11: shale.ObjectFilter
-	(*ObjectWatchRequest)(nil),         // 12: shale.ObjectWatchRequest
-	(*ObjectWatchResponse)(nil),        // 13: shale.ObjectWatchResponse
-	(*ObjectWatchItem)(nil),            // 14: shale.ObjectWatchItem
-	(*ObjectAllocateRequest)(nil),      // 15: shale.ObjectAllocateRequest
-	(*ObjectReallocateRequest)(nil),    // 16: shale.ObjectReallocateRequest
-	(*ObjectRenewRequest)(nil),         // 17: shale.ObjectRenewRequest
+	(*LaminaAddRequest)(nil),           // 2: shale.LaminaAddRequest
+	(*LaminaGetRequest)(nil),           // 3: shale.LaminaGetRequest
+	(*LaminaRef)(nil),                  // 4: shale.LaminaRef
+	(*LaminaSelect)(nil),               // 5: shale.LaminaSelect
+	(*LaminaPatchRequest)(nil),         // 6: shale.LaminaPatchRequest
+	(*LaminaApplyRequest)(nil),         // 7: shale.LaminaApplyRequest
+	(*LaminaEraseResponse)(nil),        // 8: shale.LaminaEraseResponse
+	(*LaminaListRequest)(nil),          // 9: shale.LaminaListRequest
+	(*LaminaListResponse)(nil),         // 10: shale.LaminaListResponse
+	(*LaminaFilter)(nil),               // 11: shale.LaminaFilter
+	(*LaminaWatchRequest)(nil),         // 12: shale.LaminaWatchRequest
+	(*LaminaWatchResponse)(nil),        // 13: shale.LaminaWatchResponse
+	(*LaminaWatchItem)(nil),            // 14: shale.LaminaWatchItem
+	(*LaminaAllocateRequest)(nil),      // 15: shale.LaminaAllocateRequest
+	(*LaminaReallocateRequest)(nil),    // 16: shale.LaminaReallocateRequest
+	(*LaminaRenewRequest)(nil),         // 17: shale.LaminaRenewRequest
 	(*AttemptRef)(nil),                 // 18: shale.AttemptRef
-	(*ObjectReportAttemptRequest)(nil), // 19: shale.ObjectReportAttemptRequest
-	(*ObjectReportFailureRequest)(nil), // 20: shale.ObjectReportFailureRequest
-	(*ObjectRescheduleRequest)(nil),    // 21: shale.ObjectRescheduleRequest
-	(*ObjectRescheduleResponse)(nil),   // 22: shale.ObjectRescheduleResponse
-	(*ObjectTimelineRequest)(nil),      // 23: shale.ObjectTimelineRequest
-	(*ObjectTimelineResponse)(nil),     // 24: shale.ObjectTimelineResponse
+	(*LaminaReportAttemptRequest)(nil), // 19: shale.LaminaReportAttemptRequest
+	(*LaminaReportFailureRequest)(nil), // 20: shale.LaminaReportFailureRequest
+	(*LaminaRescheduleRequest)(nil),    // 21: shale.LaminaRescheduleRequest
+	(*LaminaRescheduleResponse)(nil),   // 22: shale.LaminaRescheduleResponse
+	(*LaminaTimelineRequest)(nil),      // 23: shale.LaminaTimelineRequest
+	(*LaminaTimelineResponse)(nil),     // 24: shale.LaminaTimelineResponse
 	(*TimelineSource)(nil),             // 25: shale.TimelineSource
-	(*TimelineObject)(nil),             // 26: shale.TimelineObject
+	(*TimelineLamina)(nil),             // 26: shale.TimelineLamina
 	(*TimelineGap)(nil),                // 27: shale.TimelineGap
 	(*AttemptAddRequest)(nil),          // 28: shale.AttemptAddRequest
 	(*AttemptGetRequest)(nil),          // 29: shale.AttemptGetRequest
@@ -6751,7 +6751,7 @@ var file_shale_object_svc_g_proto_goTypes = []any{
 	(*SetRef)(nil),                     // 39: shale.SetRef
 	(*SourceRef)(nil),                  // 40: shale.SourceRef
 	(*SinkRef)(nil),                    // 41: shale.SinkRef
-	(ObjectState)(0),                   // 42: shale.ObjectState
+	(LaminaState)(0),                   // 42: shale.LaminaState
 	(*timestamppb.Timestamp)(nil),      // 43: google.protobuf.Timestamp
 	(*TenantSelect)(nil),               // 44: shale.TenantSelect
 	(*SiteSelect)(nil),                 // 45: shale.SiteSelect
@@ -6759,7 +6759,7 @@ var file_shale_object_svc_g_proto_goTypes = []any{
 	(*SourceSelect)(nil),               // 47: shale.SourceSelect
 	(*SinkSelect)(nil),                 // 48: shale.SinkSelect
 	(*patchpb.Patch)(nil),              // 49: patch.Patch
-	(*Object)(nil),                     // 50: shale.Object
+	(*Lamina)(nil),                     // 50: shale.Lamina
 	(*Endpoint)(nil),                   // 51: shale.Endpoint
 	(*NodeRef)(nil),                    // 52: shale.NodeRef
 	(AttemptState)(0),                  // 53: shale.AttemptState
@@ -6767,83 +6767,83 @@ var file_shale_object_svc_g_proto_goTypes = []any{
 	(*Attempt)(nil),                    // 55: shale.Attempt
 	(*Allocation)(nil),                 // 56: shale.Allocation
 }
-var file_shale_object_svc_g_proto_depIdxs = []int32{
-	37,  // 0: shale.ObjectAddRequest.tenant:type_name -> shale.TenantRef
-	38,  // 1: shale.ObjectAddRequest.site:type_name -> shale.SiteRef
-	39,  // 2: shale.ObjectAddRequest.set:type_name -> shale.SetRef
-	40,  // 3: shale.ObjectAddRequest.source:type_name -> shale.SourceRef
-	41,  // 4: shale.ObjectAddRequest.sink:type_name -> shale.SinkRef
-	42,  // 5: shale.ObjectAddRequest.state:type_name -> shale.ObjectState
-	43,  // 6: shale.ObjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	43,  // 7: shale.ObjectAddRequest.date_started:type_name -> google.protobuf.Timestamp
-	43,  // 8: shale.ObjectAddRequest.date_ended:type_name -> google.protobuf.Timestamp
-	43,  // 9: shale.ObjectAddRequest.date_expired:type_name -> google.protobuf.Timestamp
-	43,  // 10: shale.ObjectAddRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	43,  // 11: shale.ObjectAddRequest.date_committed:type_name -> google.protobuf.Timestamp
-	43,  // 12: shale.ObjectAddRequest.date_finished:type_name -> google.protobuf.Timestamp
-	4,   // 13: shale.ObjectGetRequest.ref:type_name -> shale.ObjectRef
-	5,   // 14: shale.ObjectGetRequest.select:type_name -> shale.ObjectSelect
-	44,  // 15: shale.ObjectSelect.tenant:type_name -> shale.TenantSelect
-	45,  // 16: shale.ObjectSelect.site:type_name -> shale.SiteSelect
-	46,  // 17: shale.ObjectSelect.set:type_name -> shale.SetSelect
-	47,  // 18: shale.ObjectSelect.source:type_name -> shale.SourceSelect
-	48,  // 19: shale.ObjectSelect.sink:type_name -> shale.SinkSelect
-	4,   // 20: shale.ObjectPatchRequest.ref:type_name -> shale.ObjectRef
-	41,  // 21: shale.ObjectPatchRequest.sink:type_name -> shale.SinkRef
-	42,  // 22: shale.ObjectPatchRequest.state:type_name -> shale.ObjectState
-	43,  // 23: shale.ObjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	43,  // 24: shale.ObjectPatchRequest.date_started:type_name -> google.protobuf.Timestamp
-	43,  // 25: shale.ObjectPatchRequest.date_ended:type_name -> google.protobuf.Timestamp
-	43,  // 26: shale.ObjectPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
-	43,  // 27: shale.ObjectPatchRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	43,  // 28: shale.ObjectPatchRequest.date_committed:type_name -> google.protobuf.Timestamp
-	43,  // 29: shale.ObjectPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
-	4,   // 30: shale.ObjectApplyRequest.ref:type_name -> shale.ObjectRef
-	49,  // 31: shale.ObjectApplyRequest.patch:type_name -> patch.Patch
-	11,  // 32: shale.ObjectListRequest.filters:type_name -> shale.ObjectFilter
-	50,  // 33: shale.ObjectListResponse.items:type_name -> shale.Object
-	4,   // 34: shale.ObjectFilter.ref:type_name -> shale.ObjectRef
-	37,  // 35: shale.ObjectFilter.tenant:type_name -> shale.TenantRef
-	39,  // 36: shale.ObjectFilter.set:type_name -> shale.SetRef
-	40,  // 37: shale.ObjectFilter.source:type_name -> shale.SourceRef
-	41,  // 38: shale.ObjectFilter.sink:type_name -> shale.SinkRef
-	11,  // 39: shale.ObjectWatchRequest.filters:type_name -> shale.ObjectFilter
-	14,  // 40: shale.ObjectWatchResponse.items:type_name -> shale.ObjectWatchItem
-	50,  // 41: shale.ObjectWatchItem.value:type_name -> shale.Object
-	40,  // 42: shale.ObjectAllocateRequest.source:type_name -> shale.SourceRef
-	43,  // 43: shale.ObjectAllocateRequest.date_started:type_name -> google.protobuf.Timestamp
-	4,   // 44: shale.ObjectAllocateRequest.after:type_name -> shale.ObjectRef
-	4,   // 45: shale.ObjectReallocateRequest.ref:type_name -> shale.ObjectRef
-	4,   // 46: shale.ObjectRenewRequest.ref:type_name -> shale.ObjectRef
-	18,  // 47: shale.ObjectRenewRequest.attempt:type_name -> shale.AttemptRef
-	4,   // 48: shale.ObjectReportAttemptRequest.ref:type_name -> shale.ObjectRef
-	18,  // 49: shale.ObjectReportAttemptRequest.attempt:type_name -> shale.AttemptRef
-	4,   // 50: shale.ObjectReportFailureRequest.ref:type_name -> shale.ObjectRef
-	4,   // 51: shale.ObjectRescheduleRequest.ref:type_name -> shale.ObjectRef
-	39,  // 52: shale.ObjectRescheduleRequest.set:type_name -> shale.SetRef
-	40,  // 53: shale.ObjectRescheduleRequest.source:type_name -> shale.SourceRef
-	43,  // 54: shale.ObjectRescheduleRequest.from:type_name -> google.protobuf.Timestamp
-	43,  // 55: shale.ObjectRescheduleRequest.to:type_name -> google.protobuf.Timestamp
-	43,  // 56: shale.ObjectRescheduleRequest.date_expired:type_name -> google.protobuf.Timestamp
-	43,  // 57: shale.ObjectRescheduleRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	39,  // 58: shale.ObjectTimelineRequest.set:type_name -> shale.SetRef
-	40,  // 59: shale.ObjectTimelineRequest.source:type_name -> shale.SourceRef
-	43,  // 60: shale.ObjectTimelineRequest.from:type_name -> google.protobuf.Timestamp
-	43,  // 61: shale.ObjectTimelineRequest.to:type_name -> google.protobuf.Timestamp
-	25,  // 62: shale.ObjectTimelineResponse.sources:type_name -> shale.TimelineSource
-	26,  // 63: shale.TimelineSource.objects:type_name -> shale.TimelineObject
+var file_shale_lamina_svc_g_proto_depIdxs = []int32{
+	37,  // 0: shale.LaminaAddRequest.tenant:type_name -> shale.TenantRef
+	38,  // 1: shale.LaminaAddRequest.site:type_name -> shale.SiteRef
+	39,  // 2: shale.LaminaAddRequest.set:type_name -> shale.SetRef
+	40,  // 3: shale.LaminaAddRequest.source:type_name -> shale.SourceRef
+	41,  // 4: shale.LaminaAddRequest.sink:type_name -> shale.SinkRef
+	42,  // 5: shale.LaminaAddRequest.state:type_name -> shale.LaminaState
+	43,  // 6: shale.LaminaAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	43,  // 7: shale.LaminaAddRequest.date_started:type_name -> google.protobuf.Timestamp
+	43,  // 8: shale.LaminaAddRequest.date_ended:type_name -> google.protobuf.Timestamp
+	43,  // 9: shale.LaminaAddRequest.date_expired:type_name -> google.protobuf.Timestamp
+	43,  // 10: shale.LaminaAddRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	43,  // 11: shale.LaminaAddRequest.date_committed:type_name -> google.protobuf.Timestamp
+	43,  // 12: shale.LaminaAddRequest.date_finished:type_name -> google.protobuf.Timestamp
+	4,   // 13: shale.LaminaGetRequest.ref:type_name -> shale.LaminaRef
+	5,   // 14: shale.LaminaGetRequest.select:type_name -> shale.LaminaSelect
+	44,  // 15: shale.LaminaSelect.tenant:type_name -> shale.TenantSelect
+	45,  // 16: shale.LaminaSelect.site:type_name -> shale.SiteSelect
+	46,  // 17: shale.LaminaSelect.set:type_name -> shale.SetSelect
+	47,  // 18: shale.LaminaSelect.source:type_name -> shale.SourceSelect
+	48,  // 19: shale.LaminaSelect.sink:type_name -> shale.SinkSelect
+	4,   // 20: shale.LaminaPatchRequest.ref:type_name -> shale.LaminaRef
+	41,  // 21: shale.LaminaPatchRequest.sink:type_name -> shale.SinkRef
+	42,  // 22: shale.LaminaPatchRequest.state:type_name -> shale.LaminaState
+	43,  // 23: shale.LaminaPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	43,  // 24: shale.LaminaPatchRequest.date_started:type_name -> google.protobuf.Timestamp
+	43,  // 25: shale.LaminaPatchRequest.date_ended:type_name -> google.protobuf.Timestamp
+	43,  // 26: shale.LaminaPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
+	43,  // 27: shale.LaminaPatchRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	43,  // 28: shale.LaminaPatchRequest.date_committed:type_name -> google.protobuf.Timestamp
+	43,  // 29: shale.LaminaPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
+	4,   // 30: shale.LaminaApplyRequest.ref:type_name -> shale.LaminaRef
+	49,  // 31: shale.LaminaApplyRequest.patch:type_name -> patch.Patch
+	11,  // 32: shale.LaminaListRequest.filters:type_name -> shale.LaminaFilter
+	50,  // 33: shale.LaminaListResponse.items:type_name -> shale.Lamina
+	4,   // 34: shale.LaminaFilter.ref:type_name -> shale.LaminaRef
+	37,  // 35: shale.LaminaFilter.tenant:type_name -> shale.TenantRef
+	39,  // 36: shale.LaminaFilter.set:type_name -> shale.SetRef
+	40,  // 37: shale.LaminaFilter.source:type_name -> shale.SourceRef
+	41,  // 38: shale.LaminaFilter.sink:type_name -> shale.SinkRef
+	11,  // 39: shale.LaminaWatchRequest.filters:type_name -> shale.LaminaFilter
+	14,  // 40: shale.LaminaWatchResponse.items:type_name -> shale.LaminaWatchItem
+	50,  // 41: shale.LaminaWatchItem.value:type_name -> shale.Lamina
+	40,  // 42: shale.LaminaAllocateRequest.source:type_name -> shale.SourceRef
+	43,  // 43: shale.LaminaAllocateRequest.date_started:type_name -> google.protobuf.Timestamp
+	4,   // 44: shale.LaminaAllocateRequest.after:type_name -> shale.LaminaRef
+	4,   // 45: shale.LaminaReallocateRequest.ref:type_name -> shale.LaminaRef
+	4,   // 46: shale.LaminaRenewRequest.ref:type_name -> shale.LaminaRef
+	18,  // 47: shale.LaminaRenewRequest.attempt:type_name -> shale.AttemptRef
+	4,   // 48: shale.LaminaReportAttemptRequest.ref:type_name -> shale.LaminaRef
+	18,  // 49: shale.LaminaReportAttemptRequest.attempt:type_name -> shale.AttemptRef
+	4,   // 50: shale.LaminaReportFailureRequest.ref:type_name -> shale.LaminaRef
+	4,   // 51: shale.LaminaRescheduleRequest.ref:type_name -> shale.LaminaRef
+	39,  // 52: shale.LaminaRescheduleRequest.set:type_name -> shale.SetRef
+	40,  // 53: shale.LaminaRescheduleRequest.source:type_name -> shale.SourceRef
+	43,  // 54: shale.LaminaRescheduleRequest.from:type_name -> google.protobuf.Timestamp
+	43,  // 55: shale.LaminaRescheduleRequest.to:type_name -> google.protobuf.Timestamp
+	43,  // 56: shale.LaminaRescheduleRequest.date_expired:type_name -> google.protobuf.Timestamp
+	43,  // 57: shale.LaminaRescheduleRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	39,  // 58: shale.LaminaTimelineRequest.set:type_name -> shale.SetRef
+	40,  // 59: shale.LaminaTimelineRequest.source:type_name -> shale.SourceRef
+	43,  // 60: shale.LaminaTimelineRequest.from:type_name -> google.protobuf.Timestamp
+	43,  // 61: shale.LaminaTimelineRequest.to:type_name -> google.protobuf.Timestamp
+	25,  // 62: shale.LaminaTimelineResponse.sources:type_name -> shale.TimelineSource
+	26,  // 63: shale.TimelineSource.laminae:type_name -> shale.TimelineLamina
 	27,  // 64: shale.TimelineSource.gaps:type_name -> shale.TimelineGap
-	43,  // 65: shale.TimelineObject.date_started:type_name -> google.protobuf.Timestamp
-	43,  // 66: shale.TimelineObject.date_ended:type_name -> google.protobuf.Timestamp
-	0,   // 67: shale.TimelineObject.state:type_name -> shale.ReadState
-	51,  // 68: shale.TimelineObject.endpoints:type_name -> shale.Endpoint
-	43,  // 69: shale.TimelineObject.date_token_expires:type_name -> google.protobuf.Timestamp
+	43,  // 65: shale.TimelineLamina.date_started:type_name -> google.protobuf.Timestamp
+	43,  // 66: shale.TimelineLamina.date_ended:type_name -> google.protobuf.Timestamp
+	0,   // 67: shale.TimelineLamina.state:type_name -> shale.ReadState
+	51,  // 68: shale.TimelineLamina.endpoints:type_name -> shale.Endpoint
+	43,  // 69: shale.TimelineLamina.date_token_expires:type_name -> google.protobuf.Timestamp
 	43,  // 70: shale.TimelineGap.from:type_name -> google.protobuf.Timestamp
 	43,  // 71: shale.TimelineGap.to:type_name -> google.protobuf.Timestamp
 	1,   // 72: shale.TimelineGap.reason:type_name -> shale.GapReason
 	37,  // 73: shale.AttemptAddRequest.tenant:type_name -> shale.TenantRef
 	38,  // 74: shale.AttemptAddRequest.site:type_name -> shale.SiteRef
-	4,   // 75: shale.AttemptAddRequest.object:type_name -> shale.ObjectRef
+	4,   // 75: shale.AttemptAddRequest.lamina:type_name -> shale.LaminaRef
 	41,  // 76: shale.AttemptAddRequest.sink:type_name -> shale.SinkRef
 	52,  // 77: shale.AttemptAddRequest.node:type_name -> shale.NodeRef
 	53,  // 78: shale.AttemptAddRequest.state:type_name -> shale.AttemptState
@@ -6854,7 +6854,7 @@ var file_shale_object_svc_g_proto_depIdxs = []int32{
 	30,  // 83: shale.AttemptGetRequest.select:type_name -> shale.AttemptSelect
 	44,  // 84: shale.AttemptSelect.tenant:type_name -> shale.TenantSelect
 	45,  // 85: shale.AttemptSelect.site:type_name -> shale.SiteSelect
-	5,   // 86: shale.AttemptSelect.object:type_name -> shale.ObjectSelect
+	5,   // 86: shale.AttemptSelect.lamina:type_name -> shale.LaminaSelect
 	48,  // 87: shale.AttemptSelect.sink:type_name -> shale.SinkSelect
 	54,  // 88: shale.AttemptSelect.node:type_name -> shale.NodeSelect
 	18,  // 89: shale.AttemptPatchRequest.ref:type_name -> shale.AttemptRef
@@ -6868,42 +6868,42 @@ var file_shale_object_svc_g_proto_depIdxs = []int32{
 	55,  // 97: shale.AttemptListResponse.items:type_name -> shale.Attempt
 	18,  // 98: shale.AttemptFilter.ref:type_name -> shale.AttemptRef
 	37,  // 99: shale.AttemptFilter.tenant:type_name -> shale.TenantRef
-	4,   // 100: shale.AttemptFilter.object:type_name -> shale.ObjectRef
+	4,   // 100: shale.AttemptFilter.lamina:type_name -> shale.LaminaRef
 	41,  // 101: shale.AttemptFilter.sink:type_name -> shale.SinkRef
-	2,   // 102: shale.ObjectService.Add:input_type -> shale.ObjectAddRequest
-	3,   // 103: shale.ObjectService.Get:input_type -> shale.ObjectGetRequest
-	6,   // 104: shale.ObjectService.Patch:input_type -> shale.ObjectPatchRequest
-	7,   // 105: shale.ObjectService.Apply:input_type -> shale.ObjectApplyRequest
-	4,   // 106: shale.ObjectService.Erase:input_type -> shale.ObjectRef
-	9,   // 107: shale.ObjectService.List:input_type -> shale.ObjectListRequest
-	12,  // 108: shale.ObjectService.Watch:input_type -> shale.ObjectWatchRequest
-	15,  // 109: shale.ObjectService.Allocate:input_type -> shale.ObjectAllocateRequest
-	16,  // 110: shale.ObjectService.Reallocate:input_type -> shale.ObjectReallocateRequest
-	17,  // 111: shale.ObjectService.Renew:input_type -> shale.ObjectRenewRequest
-	19,  // 112: shale.ObjectService.ReportAttempt:input_type -> shale.ObjectReportAttemptRequest
-	20,  // 113: shale.ObjectService.ReportFailure:input_type -> shale.ObjectReportFailureRequest
-	21,  // 114: shale.ObjectService.Reschedule:input_type -> shale.ObjectRescheduleRequest
-	23,  // 115: shale.ObjectService.Timeline:input_type -> shale.ObjectTimelineRequest
+	2,   // 102: shale.LaminaService.Add:input_type -> shale.LaminaAddRequest
+	3,   // 103: shale.LaminaService.Get:input_type -> shale.LaminaGetRequest
+	6,   // 104: shale.LaminaService.Patch:input_type -> shale.LaminaPatchRequest
+	7,   // 105: shale.LaminaService.Apply:input_type -> shale.LaminaApplyRequest
+	4,   // 106: shale.LaminaService.Erase:input_type -> shale.LaminaRef
+	9,   // 107: shale.LaminaService.List:input_type -> shale.LaminaListRequest
+	12,  // 108: shale.LaminaService.Watch:input_type -> shale.LaminaWatchRequest
+	15,  // 109: shale.LaminaService.Allocate:input_type -> shale.LaminaAllocateRequest
+	16,  // 110: shale.LaminaService.Reallocate:input_type -> shale.LaminaReallocateRequest
+	17,  // 111: shale.LaminaService.Renew:input_type -> shale.LaminaRenewRequest
+	19,  // 112: shale.LaminaService.ReportAttempt:input_type -> shale.LaminaReportAttemptRequest
+	20,  // 113: shale.LaminaService.ReportFailure:input_type -> shale.LaminaReportFailureRequest
+	21,  // 114: shale.LaminaService.Reschedule:input_type -> shale.LaminaRescheduleRequest
+	23,  // 115: shale.LaminaService.Timeline:input_type -> shale.LaminaTimelineRequest
 	28,  // 116: shale.AttemptService.Add:input_type -> shale.AttemptAddRequest
 	29,  // 117: shale.AttemptService.Get:input_type -> shale.AttemptGetRequest
 	31,  // 118: shale.AttemptService.Patch:input_type -> shale.AttemptPatchRequest
 	32,  // 119: shale.AttemptService.Apply:input_type -> shale.AttemptApplyRequest
 	18,  // 120: shale.AttemptService.Erase:input_type -> shale.AttemptRef
 	34,  // 121: shale.AttemptService.List:input_type -> shale.AttemptListRequest
-	50,  // 122: shale.ObjectService.Add:output_type -> shale.Object
-	50,  // 123: shale.ObjectService.Get:output_type -> shale.Object
-	50,  // 124: shale.ObjectService.Patch:output_type -> shale.Object
-	50,  // 125: shale.ObjectService.Apply:output_type -> shale.Object
-	8,   // 126: shale.ObjectService.Erase:output_type -> shale.ObjectEraseResponse
-	10,  // 127: shale.ObjectService.List:output_type -> shale.ObjectListResponse
-	13,  // 128: shale.ObjectService.Watch:output_type -> shale.ObjectWatchResponse
-	56,  // 129: shale.ObjectService.Allocate:output_type -> shale.Allocation
-	56,  // 130: shale.ObjectService.Reallocate:output_type -> shale.Allocation
-	56,  // 131: shale.ObjectService.Renew:output_type -> shale.Allocation
-	55,  // 132: shale.ObjectService.ReportAttempt:output_type -> shale.Attempt
-	50,  // 133: shale.ObjectService.ReportFailure:output_type -> shale.Object
-	22,  // 134: shale.ObjectService.Reschedule:output_type -> shale.ObjectRescheduleResponse
-	24,  // 135: shale.ObjectService.Timeline:output_type -> shale.ObjectTimelineResponse
+	50,  // 122: shale.LaminaService.Add:output_type -> shale.Lamina
+	50,  // 123: shale.LaminaService.Get:output_type -> shale.Lamina
+	50,  // 124: shale.LaminaService.Patch:output_type -> shale.Lamina
+	50,  // 125: shale.LaminaService.Apply:output_type -> shale.Lamina
+	8,   // 126: shale.LaminaService.Erase:output_type -> shale.LaminaEraseResponse
+	10,  // 127: shale.LaminaService.List:output_type -> shale.LaminaListResponse
+	13,  // 128: shale.LaminaService.Watch:output_type -> shale.LaminaWatchResponse
+	56,  // 129: shale.LaminaService.Allocate:output_type -> shale.Allocation
+	56,  // 130: shale.LaminaService.Reallocate:output_type -> shale.Allocation
+	56,  // 131: shale.LaminaService.Renew:output_type -> shale.Allocation
+	55,  // 132: shale.LaminaService.ReportAttempt:output_type -> shale.Attempt
+	50,  // 133: shale.LaminaService.ReportFailure:output_type -> shale.Lamina
+	22,  // 134: shale.LaminaService.Reschedule:output_type -> shale.LaminaRescheduleResponse
+	24,  // 135: shale.LaminaService.Timeline:output_type -> shale.LaminaTimelineResponse
 	55,  // 136: shale.AttemptService.Add:output_type -> shale.Attempt
 	55,  // 137: shale.AttemptService.Get:output_type -> shale.Attempt
 	55,  // 138: shale.AttemptService.Patch:output_type -> shale.Attempt
@@ -6917,40 +6917,40 @@ var file_shale_object_svc_g_proto_depIdxs = []int32{
 	0,   // [0:102] is the sub-list for field type_name
 }
 
-func init() { file_shale_object_svc_g_proto_init() }
-func file_shale_object_svc_g_proto_init() {
-	if File_shale_object_svc_g_proto != nil {
+func init() { file_shale_lamina_svc_g_proto_init() }
+func file_shale_lamina_svc_g_proto_init() {
+	if File_shale_lamina_svc_g_proto != nil {
 		return
 	}
 	file_shale_common_proto_init()
 	file_shale_host_svc_g_proto_init()
-	file_shale_object_proto_init()
+	file_shale_lamina_proto_init()
 	file_shale_payday_tenant_svc_g_proto_init()
 	file_shale_set_svc_g_proto_init()
 	file_shale_site_svc_g_proto_init()
 	file_shale_storage_svc_g_proto_init()
-	file_shale_object_svc_g_proto_msgTypes[2].OneofWrappers = []any{
-		(*objectRef_Id)(nil),
+	file_shale_lamina_svc_g_proto_msgTypes[2].OneofWrappers = []any{
+		(*laminaRef_Id)(nil),
 	}
-	file_shale_object_svc_g_proto_msgTypes[16].OneofWrappers = []any{
+	file_shale_lamina_svc_g_proto_msgTypes[16].OneofWrappers = []any{
 		(*attemptRef_Id)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_object_svc_g_proto_rawDesc), len(file_shale_object_svc_g_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_lamina_svc_g_proto_rawDesc), len(file_shale_lamina_svc_g_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
-		GoTypes:           file_shale_object_svc_g_proto_goTypes,
-		DependencyIndexes: file_shale_object_svc_g_proto_depIdxs,
-		EnumInfos:         file_shale_object_svc_g_proto_enumTypes,
-		MessageInfos:      file_shale_object_svc_g_proto_msgTypes,
+		GoTypes:           file_shale_lamina_svc_g_proto_goTypes,
+		DependencyIndexes: file_shale_lamina_svc_g_proto_depIdxs,
+		EnumInfos:         file_shale_lamina_svc_g_proto_enumTypes,
+		MessageInfos:      file_shale_lamina_svc_g_proto_msgTypes,
 	}.Build()
-	File_shale_object_svc_g_proto = out.File
-	file_shale_object_svc_g_proto_goTypes = nil
-	file_shale_object_svc_g_proto_depIdxs = nil
+	File_shale_lamina_svc_g_proto = out.File
+	file_shale_lamina_svc_g_proto_goTypes = nil
+	file_shale_lamina_svc_g_proto_depIdxs = nil
 }

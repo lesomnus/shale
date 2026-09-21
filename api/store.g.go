@@ -36,10 +36,10 @@ type Server interface {
 	Reader() ReaderServiceServer
 	Device() DeviceServiceServer
 	Sink() SinkServiceServer
+	Lamina() LaminaServiceServer
+	Attempt() AttemptServiceServer
 	Holder() HolderServiceServer
 	SiteMember() SiteMemberServiceServer
-	Object() ObjectServiceServer
-	Attempt() AttemptServiceServer
 	Audit() AuditServiceServer
 	Outbox() OutboxServiceServer
 	SigningKey() SigningKeyServiceServer
@@ -63,10 +63,10 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterReaderServiceServer(g, s.Reader())
 	RegisterDeviceServiceServer(g, s.Device())
 	RegisterSinkServiceServer(g, s.Sink())
+	RegisterLaminaServiceServer(g, s.Lamina())
+	RegisterAttemptServiceServer(g, s.Attempt())
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterSiteMemberServiceServer(g, s.SiteMember())
-	RegisterObjectServiceServer(g, s.Object())
-	RegisterAttemptServiceServer(g, s.Attempt())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterOutboxServiceServer(g, s.Outbox())
 	RegisterSigningKeyServiceServer(g, s.SigningKey())
@@ -86,10 +86,10 @@ type UnimplementedServer struct {
 	ReaderServer          ReaderServiceServer
 	DeviceServer          DeviceServiceServer
 	SinkServer            SinkServiceServer
+	LaminaServer          LaminaServiceServer
+	AttemptServer         AttemptServiceServer
 	HolderServer          HolderServiceServer
 	SiteMemberServer      SiteMemberServiceServer
-	ObjectServer          ObjectServiceServer
-	AttemptServer         AttemptServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
 	SigningKeyServer      SigningKeyServiceServer
@@ -107,17 +107,17 @@ func (UnimplementedServer) Relay() RelayServiceServer   { return UnimplementedRe
 func (UnimplementedServer) Producer() ProducerServiceServer {
 	return UnimplementedProducerServiceServer{}
 }
-func (UnimplementedServer) Reader() ReaderServiceServer { return UnimplementedReaderServiceServer{} }
-func (UnimplementedServer) Device() DeviceServiceServer { return UnimplementedDeviceServiceServer{} }
-func (UnimplementedServer) Sink() SinkServiceServer     { return UnimplementedSinkServiceServer{} }
-func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
+func (UnimplementedServer) Reader() ReaderServiceServer   { return UnimplementedReaderServiceServer{} }
+func (UnimplementedServer) Device() DeviceServiceServer   { return UnimplementedDeviceServiceServer{} }
+func (UnimplementedServer) Sink() SinkServiceServer       { return UnimplementedSinkServiceServer{} }
+func (UnimplementedServer) Lamina() LaminaServiceServer   { return UnimplementedLaminaServiceServer{} }
+func (UnimplementedServer) Attempt() AttemptServiceServer { return UnimplementedAttemptServiceServer{} }
+func (UnimplementedServer) Holder() HolderServiceServer   { return UnimplementedHolderServiceServer{} }
 func (UnimplementedServer) SiteMember() SiteMemberServiceServer {
 	return UnimplementedSiteMemberServiceServer{}
 }
-func (UnimplementedServer) Object() ObjectServiceServer   { return UnimplementedObjectServiceServer{} }
-func (UnimplementedServer) Attempt() AttemptServiceServer { return UnimplementedAttemptServiceServer{} }
-func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
-func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
+func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAuditServiceServer{} }
+func (UnimplementedServer) Outbox() OutboxServiceServer { return UnimplementedOutboxServiceServer{} }
 func (UnimplementedServer) SigningKey() SigningKeyServiceServer {
 	return UnimplementedSigningKeyServiceServer{}
 }
@@ -142,10 +142,10 @@ type StaticServer struct {
 	ReaderServer          ReaderServiceServer
 	DeviceServer          DeviceServiceServer
 	SinkServer            SinkServiceServer
+	LaminaServer          LaminaServiceServer
+	AttemptServer         AttemptServiceServer
 	HolderServer          HolderServiceServer
 	SiteMemberServer      SiteMemberServiceServer
-	ObjectServer          ObjectServiceServer
-	AttemptServer         AttemptServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
 	SigningKeyServer      SigningKeyServiceServer
@@ -164,10 +164,10 @@ func (s StaticServer) Producer() ProducerServiceServer               { return s.
 func (s StaticServer) Reader() ReaderServiceServer                   { return s.ReaderServer }
 func (s StaticServer) Device() DeviceServiceServer                   { return s.DeviceServer }
 func (s StaticServer) Sink() SinkServiceServer                       { return s.SinkServer }
+func (s StaticServer) Lamina() LaminaServiceServer                   { return s.LaminaServer }
+func (s StaticServer) Attempt() AttemptServiceServer                 { return s.AttemptServer }
 func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) SiteMember() SiteMemberServiceServer           { return s.SiteMemberServer }
-func (s StaticServer) Object() ObjectServiceServer                   { return s.ObjectServer }
-func (s StaticServer) Attempt() AttemptServiceServer                 { return s.AttemptServer }
 func (s StaticServer) Audit() AuditServiceServer                     { return s.AuditServer }
 func (s StaticServer) Outbox() OutboxServiceServer                   { return s.OutboxServer }
 func (s StaticServer) SigningKey() SigningKeyServiceServer           { return s.SigningKeyServer }
@@ -186,10 +186,10 @@ type Client interface {
 	Reader() ReaderServiceClient
 	Device() DeviceServiceClient
 	Sink() SinkServiceClient
+	Lamina() LaminaServiceClient
+	Attempt() AttemptServiceClient
 	Holder() HolderServiceClient
 	SiteMember() SiteMemberServiceClient
-	Object() ObjectServiceClient
-	Attempt() AttemptServiceClient
 	Audit() AuditServiceClient
 	Outbox() OutboxServiceClient
 	SigningKey() SigningKeyServiceClient
@@ -210,10 +210,10 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Reader:          NewReaderServiceClient(c),
 		_Device:          NewDeviceServiceClient(c),
 		_Sink:            NewSinkServiceClient(c),
+		_Lamina:          NewLaminaServiceClient(c),
+		_Attempt:         NewAttemptServiceClient(c),
 		_Holder:          NewHolderServiceClient(c),
 		_SiteMember:      NewSiteMemberServiceClient(c),
-		_Object:          NewObjectServiceClient(c),
-		_Attempt:         NewAttemptServiceClient(c),
 		_Audit:           NewAuditServiceClient(c),
 		_Outbox:          NewOutboxServiceClient(c),
 		_SigningKey:      NewSigningKeyServiceClient(c),
@@ -234,10 +234,10 @@ type client struct {
 	_Reader          ReaderServiceClient
 	_Device          DeviceServiceClient
 	_Sink            SinkServiceClient
+	_Lamina          LaminaServiceClient
+	_Attempt         AttemptServiceClient
 	_Holder          HolderServiceClient
 	_SiteMember      SiteMemberServiceClient
-	_Object          ObjectServiceClient
-	_Attempt         AttemptServiceClient
 	_Audit           AuditServiceClient
 	_Outbox          OutboxServiceClient
 	_SigningKey      SigningKeyServiceClient
@@ -256,10 +256,10 @@ func (c *client) Producer() ProducerServiceClient               { return c._Prod
 func (c *client) Reader() ReaderServiceClient                   { return c._Reader }
 func (c *client) Device() DeviceServiceClient                   { return c._Device }
 func (c *client) Sink() SinkServiceClient                       { return c._Sink }
+func (c *client) Lamina() LaminaServiceClient                   { return c._Lamina }
+func (c *client) Attempt() AttemptServiceClient                 { return c._Attempt }
 func (c *client) Holder() HolderServiceClient                   { return c._Holder }
 func (c *client) SiteMember() SiteMemberServiceClient           { return c._SiteMember }
-func (c *client) Object() ObjectServiceClient                   { return c._Object }
-func (c *client) Attempt() AttemptServiceClient                 { return c._Attempt }
 func (c *client) Audit() AuditServiceClient                     { return c._Audit }
 func (c *client) Outbox() OutboxServiceClient                   { return c._Outbox }
 func (c *client) SigningKey() SigningKeyServiceClient           { return c._SigningKey }

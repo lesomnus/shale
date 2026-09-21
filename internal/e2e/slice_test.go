@@ -145,7 +145,7 @@ func put(t *testing.T, al *api.Allocation, body []byte, ended time.Time) int {
 	t.Helper()
 	cand := al.GetCandidates()[0]
 	ep := cand.GetEndpoints()[0]
-	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al.GetObjectKey())
+	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al.GetLaminaKey())
 	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Authorization", token.Scheme+" "+cand.GetToken())
@@ -172,7 +172,7 @@ func TestVerticalSlice(t *testing.T) {
 
 	sets := api.NewSetServiceClient(conn)
 	sources := api.NewSourceServiceClient(conn)
-	objects := api.NewObjectServiceClient(conn)
+	laminae := api.NewLaminaServiceClient(conn)
 
 	set, err := sets.Add(ctx, api.SetAddRequest_builder{
 		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(),
@@ -225,20 +225,20 @@ func TestVerticalSlice(t *testing.T) {
 	uploaded := 0
 	for _, s := range srcs {
 		for i := range perSource {
-			al, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+			al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 				Source:      api.SourceRef_builder{Id: s.GetId()}.Build(),
 				DateStarted: timestamppb.New(base.Add(time.Duration(i) * dur)),
 			}.Build())
 			require.NoError(t, err)
 			require.NotEmpty(t, al.GetCandidates())
 
-			// Idempotent per slot: the same object again.
-			again, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+			// Idempotent per slot: the same lamina again.
+			again, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 				Source:      api.SourceRef_builder{Id: s.GetId()}.Build(),
 				DateStarted: al.GetDateStarted(),
 			}.Build())
 			require.NoError(t, err)
-			require.Equal(t, al.GetObjectId(), again.GetObjectId())
+			require.Equal(t, al.GetLaminaId(), again.GetLaminaId())
 
 			body := make([]byte, 64<<10+i)
 			rand.Read(body)
@@ -257,15 +257,15 @@ func TestVerticalSlice(t *testing.T) {
 		n := 0
 		after := ""
 		for {
-			vs, err := objects.List(ctx, api.ObjectListRequest_builder{
-				Filters: []*api.ObjectFilter{api.ObjectFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
+			vs, err := laminae.List(ctx, api.LaminaListRequest_builder{
+				Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
 				Size:    1000, After: after,
 			}.Build())
 			if err != nil {
 				return false
 			}
 			for _, o := range vs.GetItems() {
-				if o.GetState() == api.ObjectState_OBJECT_STATE_COMMITTED {
+				if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED {
 					n++
 				}
 			}
@@ -284,14 +284,14 @@ func TestVerticalSlice(t *testing.T) {
 	after := ""
 	pages := 0
 	for {
-		tl, err := objects.Timeline(ctx, api.ObjectTimelineRequest_builder{
+		tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
 			Set: api.SetRef_builder{Id: set.GetId()}.Build(), From: timestamppb.New(from), To: timestamppb.New(to), Size: 30, After: after,
 		}.Build())
 		require.NoError(t, err)
 		pages++
 		for _, ts := range tl.GetSources() {
 			if g, ok := got[string(ts.GetSourceId())]; ok {
-				g.SetObjects(append(g.GetObjects(), ts.GetObjects()...))
+				g.SetLaminae(append(g.GetLaminae(), ts.GetLaminae()...))
 				g.SetGaps(append(g.GetGaps(), ts.GetGaps()...))
 			} else {
 				got[string(ts.GetSourceId())] = ts
@@ -302,7 +302,7 @@ func TestVerticalSlice(t *testing.T) {
 		}
 		after = tl.GetNext()
 	}
-	require.Greater(t, pages, 1, "a page of 30 over 100 objects is several pages")
+	require.Greater(t, pages, 1, "a page of 30 over 100 laminae is several pages")
 
 	for _, s := range srcs {
 		ts := got[string(s.GetId())]
@@ -314,9 +314,9 @@ func TestVerticalSlice(t *testing.T) {
 				want = append(want, sg)
 			}
 		}
-		require.Len(t, ts.GetObjects(), len(want), "every uploaded segment is listed")
-		for i, o := range ts.GetObjects() {
-			require.Equal(t, want[i].al.GetObjectId(), o.GetObjectId(), "in time order")
+		require.Len(t, ts.GetLaminae(), len(want), "every uploaded segment is listed")
+		for i, o := range ts.GetLaminae() {
+			require.Equal(t, want[i].al.GetLaminaId(), o.GetLaminaId(), "in time order")
 			require.Equal(t, api.ReadState_READ_STATE_AVAILABLE, o.GetState())
 			require.Equal(t, int64(len(want[i].body)), o.GetSize())
 			require.NotEmpty(t, o.GetUrl())
@@ -341,7 +341,7 @@ func TestVerticalSlice(t *testing.T) {
 		// The window before the first segment, when there is one, is
 		// NOT_RECEIVED; and no gap is a sliver, since every date is whole
 		// milliseconds.
-		if first := ts.GetObjects()[0].GetDateStarted().AsTime(); first.After(from) {
+		if first := ts.GetLaminae()[0].GetDateStarted().AsTime(); first.After(from) {
 			require.Equal(t, api.GapReason_GAP_REASON_NOT_RECEIVED, ts.GetGaps()[0].GetReason())
 			require.True(t, ts.GetGaps()[0].GetFrom().AsTime().Equal(from))
 			require.True(t, ts.GetGaps()[0].GetTo().AsTime().Equal(first))
@@ -352,7 +352,7 @@ func TestVerticalSlice(t *testing.T) {
 	}
 
 	// Read one back through its presigned URL, and a range of it.
-	first := got[string(srcs[0].GetId())].GetObjects()[0]
+	first := got[string(srcs[0].GetId())].GetLaminae()[0]
 	resp, err := http.Get(first.GetUrl())
 	require.NoError(t, err)
 	b, _ := io.ReadAll(resp.Body)
@@ -360,7 +360,7 @@ func TestVerticalSlice(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	var want []byte
 	for _, sg := range segs[string(srcs[0].GetId())] {
-		if sg.al.GetObjectId() != nil && string(sg.al.GetObjectId()) == string(first.GetObjectId()) {
+		if sg.al.GetLaminaId() != nil && string(sg.al.GetLaminaId()) == string(first.GetLaminaId()) {
 			want = sg.body
 		}
 	}
@@ -393,7 +393,7 @@ func TestResumeAndIdempotence(t *testing.T) {
 	conn := c.dial("@acme/admin")
 	sets := api.NewSetServiceClient(conn)
 	sources := api.NewSourceServiceClient(conn)
-	objects := api.NewObjectServiceClient(conn)
+	laminae := api.NewLaminaServiceClient(conn)
 
 	set, err := sets.Add(ctx, api.SetAddRequest_builder{Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "one"}.Build())
 	require.NoError(t, err)
@@ -403,13 +403,13 @@ func TestResumeAndIdempotence(t *testing.T) {
 	}.Build())
 	require.NoError(t, err)
 
-	al, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+	al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 		Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(time.Now().Add(-time.Hour)),
 	}.Build())
 	require.NoError(t, err)
 	cand := al.GetCandidates()[0]
 	ep := cand.GetEndpoints()[0]
-	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al.GetObjectKey())
+	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al.GetLaminaKey())
 	body := make([]byte, 200_000)
 	rand.Read(body)
 
@@ -462,12 +462,12 @@ func TestResumeAndIdempotence(t *testing.T) {
 	require.Equal(t, "?1", resp.Header.Get(storage.HdrUploadComplete))
 
 	// Beyond max_length is 413 on a fresh key.
-	al2, err := objects.Allocate(ctx, api.ObjectAllocateRequest_builder{
+	al2, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 		Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(time.Now().Add(-2 * time.Hour)),
 	}.Build())
 	require.NoError(t, err)
 	cand2 := al2.GetCandidates()[0]
-	url2 := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al2.GetObjectKey())
+	url2 := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), al2.GetLaminaKey())
 	req, _ := http.NewRequest(http.MethodPut, url2, bytes.NewReader([]byte("x")))
 	req.Header.Set("Authorization", token.Scheme+" "+cand2.GetToken())
 	req.Header.Set(storage.HdrUploadOffset, "0")

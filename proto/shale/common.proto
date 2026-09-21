@@ -8,7 +8,7 @@ option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
 
 // Messages shared by several contracts and by the data planes: what a token
-// says, what an object's xattr record holds, what an allocation hands a
+// says, what a lamina's xattr record holds, what an allocation hands a
 // producer, and what a host reports. None of them is an entity; they are
 // values carried inside rows, requests, and tokens.
 
@@ -80,14 +80,14 @@ message Candidate {
   repeated Endpoint endpoints = 4;
   string token = 5;
   // The key this candidate's token names: it carries the attempt id, so
-  // every candidate has its own (§23.2). The allocation's object_key is
+  // every candidate has its own (§23.2). The allocation's lamina_key is
   // the first candidate's.
-  string object_key = 6;
+  string lamina_key = 6;
 }
 
-// Allocation is an object and its ranked candidates (§12.1).
+// Allocation is a lamina and its ranked candidates (§12.1).
 message Allocation {
-  bytes object_id = 1;
+  bytes lamina_id = 1;
   bytes source_id = 2;
   int32 ordinal = 3;
   // The expected date_started this allocation was computed for.
@@ -97,7 +97,7 @@ message Allocation {
   google.protobuf.Timestamp date_expires = 7;
   int64 max_length = 8;
   int64 size_hint = 9;
-  string object_key = 10;
+  string lamina_key = 10;
   SegmentProfile profile = 11;
   LinkProfile link = 12;
 }
@@ -205,8 +205,8 @@ message SinkReport {
   SinkCapabilities capabilities = 8;
   repeated string warnings = 9;
   bool accept_writes = 10;
-  // Objects the node's index holds for this sink.
-  int64 objects = 11;
+  // Laminae the node's index holds for this sink.
+  int64 laminae = 11;
   // The newest date_committed in the node's index, for reconciliation.
   google.protobuf.Timestamp date_newest = 12;
 }
@@ -245,7 +245,7 @@ message NodeStatus {
   int32 sinks = 2;
   int32 devices = 3;
   int64 uploads_in_flight = 4;
-  int64 index_objects = 5;
+  int64 index_laminae = 5;
   repeated string warnings = 6;
 }
 
@@ -261,25 +261,25 @@ message RelayStatus {
   HostLoad load = 7;
 }
 
-// RecordState is the upload state an object file's xattr records (§23.1).
+// RecordState is the upload state a lamina file's xattr records (§23.1).
 enum RecordState {
   RECORD_STATE_UNSPECIFIED = 0;
   RECORD_STATE_OPEN = 1;
   RECORD_STATE_COMPLETE = 2;
 }
 
-// ObjectRecord is the self-describing record in an object file's `user.shale`
+// LaminaRecord is the self-describing record in a lamina file's `user.shale`
 // xattr (§23.1), at most 255 bytes encoded. Dates are UNIX milliseconds so
 // the record stays small; a Timestamp costs two more bytes per field.
 //
 // The ID and date fields arrive in the put token; the node fills in the rest.
-message ObjectRecord {
+message LaminaRecord {
   int32 format_version = 1;
   bytes tenant_id = 2;
   bytes site_id = 3;
   bytes set_id = 4;
   bytes source_id = 5;
-  bytes object_id = 6;
+  bytes lamina_id = 6;
   bytes attempt_id = 7;
   int64 date_started_ms = 8;
   int64 date_ended_ms = 9;
@@ -318,9 +318,9 @@ message TokenClaims {
   bytes aud = 4;
   TokenOp op = 5;
   bytes sink_id = 6;
-  string object_key = 7;
+  string lamina_key = 7;
   bytes attempt_id = 8;
-  ObjectRecord record = 9;
+  LaminaRecord record = 9;
   int64 max_length = 10;
   UploadMode mode = 11;
   int64 idle_timeout_seconds = 12;
@@ -334,12 +334,12 @@ message TokenClaims {
   bytes actor_tenant = 17;
 }
 
-// ObjectStored is a node's word that an upload committed (§12.4).
-message ObjectStored {
-  bytes object_id = 1;
+// LaminaStored is a node's word that an upload committed (§12.4).
+message LaminaStored {
+  bytes lamina_id = 1;
   bytes attempt_id = 2;
   bytes sink_id = 3;
-  string object_key = 4;
+  string lamina_key = 4;
   int64 size = 5;
   bool incomplete = 6;
   google.protobuf.Timestamp date_started = 7;
@@ -349,15 +349,15 @@ message ObjectStored {
   bytes checksum = 11;
   // The record as the node wrote it, so reconciliation and a late event carry
   // everything an index rebuild needs.
-  ObjectRecord record = 12;
+  LaminaRecord record = 12;
 }
 
-// ObjectDeleted is a node's word that an approved or ordered deletion is done
+// LaminaDeleted is a node's word that an approved or ordered deletion is done
 // (§21.2).
-message ObjectDeleted {
+message LaminaDeleted {
   bytes sink_id = 1;
-  string object_key = 2;
-  bytes object_id = 3;
+  string lamina_key = 2;
+  bytes lamina_id = 3;
   bytes attempt_id = 4;
   int64 size = 5;
   google.protobuf.Timestamp date_deleted = 6;
@@ -374,10 +374,10 @@ enum MissingReason {
   MISSING_REASON_ABANDONED = 3;
 }
 
-message ObjectMissing {
+message LaminaMissing {
   bytes sink_id = 1;
-  string object_key = 2;
-  bytes object_id = 3;
+  string lamina_key = 2;
+  bytes lamina_id = 3;
   bytes attempt_id = 4;
   MissingReason reason = 5;
   google.protobuf.Timestamp date_observed = 6;
@@ -386,9 +386,9 @@ message ObjectMissing {
 // Event is one entry of a node's outbox (§34.9).
 message Event {
   oneof event {
-    ObjectStored stored = 1;
-    ObjectDeleted deleted = 2;
-    ObjectMissing missing = 3;
+    LaminaStored stored = 1;
+    LaminaDeleted deleted = 2;
+    LaminaMissing missing = 3;
   }
 }
 
