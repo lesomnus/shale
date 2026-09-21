@@ -150,7 +150,7 @@ console.log('segments rows:', await page.locator('tbody tr').count())
 await page.goto(BASE + '/#/live')
 await pick('live')
 await page.waitForSelector('.player', { timeout: 30_000 })
-await page.waitForTimeout(12000)
+await page.waitForTimeout(Number(process.env.WAIT ?? 12) * 1000)
 await page.screenshot({ path: `${OUT}/live.png`, fullPage: true })
 const videos = await page.evaluate(() =>
 	Array.from(document.querySelectorAll('video')).map((v) => ({ w: v.videoWidth, h: v.videoHeight, t: Math.round(v.currentTime * 10) / 10, ready: v.readyState })),
@@ -159,13 +159,20 @@ console.log('live videos:', JSON.stringify(videos))
 const pcs = await page.evaluate(async () => {
 	const out = []
 	for (const pc of window.__pcs ?? []) {
-		const st = { ice: pc.iceConnectionState, conn: pc.connectionState, video: 0, packets: 0, candidate: '' }
-		for (const r of (await pc.getStats()).values()) {
+		const st = { ice: pc.iceConnectionState, conn: pc.connectionState, video: 0, packets: 0, frames: 0, decoded: 0, keys: 0, pli: 0, codec: '', decoder: '' }
+		const stats = await pc.getStats()
+		for (const r of stats.values()) {
 			if (r.type === 'inbound-rtp' && r.kind === 'video') {
 				st.video += r.bytesReceived ?? 0
 				st.packets += r.packetsReceived ?? 0
+				st.frames += r.framesReceived ?? 0
+				st.decoded += r.framesDecoded ?? 0
+				st.keys += r.keyFramesDecoded ?? 0
+				st.pli += r.pliCount ?? 0
+				st.decoder = r.decoderImplementation ?? ''
+				const c = r.codecId !== undefined ? stats.get(r.codecId) : undefined
+				if (c !== undefined) st.codec = `${c.mimeType} ${c.sdpFmtpLine ?? ''}`
 			}
-			if (r.type === 'candidate-pair' && r.state === 'succeeded') st.candidate = r.id
 		}
 		out.push(st)
 	}
