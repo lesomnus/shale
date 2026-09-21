@@ -282,6 +282,7 @@ shale init [--tenant t] [--admin a] [--operator o]   # CA, signing key, first te
 shale serve control|cluster|storage|producer|reader|relay|all [--dev <dir>]
 shale login [--cluster] [--password p] @tenant/alias # sign in as a person; keeps a session
 shale holder issue-password <holder>       # a fresh password, shown once; roster in this process only
+shale identity migrate                     # once, after upgrading a deployment that predates roster (§33.1)
 
 # Every entity has the generated verbs the schema declares: get|ls|watch|add|
 # patch|erase. Flags come before arguments. A custom verb takes a REF where

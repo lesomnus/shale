@@ -250,3 +250,86 @@ func (s *Store) lookupOwn(ctx context.Context, holder pdid.Id) (Person, error) {
 
 	return personOf(v)
 }
+
+// Adopt writes a tenant and its people, made before roster held them, into
+// the embedded roster with the identifiers they already have, and issues
+// each person a password: the upgrade of a deployment that predates roster
+// (§33.1). What roster has already is left alone, so it can be run again.
+// A person who sees every site is bound to the role that administers the
+// tenant at roster, as init's first person is. Answers the passwords by
+// alias, for the people it made.
+func (s *Store) Adopt(ctx context.Context, tenant pdid.Id, alias, name string, people []Adoptee) (map[string]string, error) {
+	if s.em == nil {
+		return nil, ErrExternal
+	}
+	own := s.em.rs.Ungated
+	tref := rstr.TenantRef_builder{Id: tenant.Bytes()}.Build()
+	if _, err := own.Tenant().Get(ctx, rstr.TenantGetRequest_builder{Ref: tref}.Build()); err != nil {
+		if status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+		if _, err := own.Tenant().Add(ctx, rstr.TenantAddRequest_builder{Id: tenant.Bytes(), Alias: alias, Name: name}.Build()); err != nil {
+			return nil, fmt.Errorf("tenant @%s: %w", alias, err)
+		}
+	}
+	passwords := map[string]string{}
+	for _, p := range people {
+		if _, err := own.Holder().Get(ctx, rstr.HolderGetRequest_builder{Ref: rstr.HolderRef_builder{Id: p.Id.Bytes()}.Build()}.Build()); err == nil {
+			continue
+		} else if status.Code(err) != codes.NotFound {
+			return nil, err
+		}
+		if _, err := own.Holder().Add(ctx, rstr.HolderAddRequest_builder{Id: p.Id.Bytes(), Tenant: tref, Alias: p.Alias, Name: p.Name}.Build()); err != nil {
+			return nil, fmt.Errorf("@%s/%s: %w", alias, p.Alias, err)
+		}
+		if p.Admin {
+			if err := s.em.everything(ctx, tref, p.Id); err != nil {
+				return nil, fmt.Errorf("@%s/%s: %w", alias, p.Alias, err)
+			}
+		}
+		secret, err := s.issue(ctx, p.Id)
+		if err != nil {
+			return nil, fmt.Errorf("@%s/%s: %w", alias, p.Alias, err)
+		}
+		passwords[p.Alias] = secret
+	}
+
+	return passwords, nil
+}
+
+// Adoptee is a person Adopt writes, as Shale knows them.
+type Adoptee struct {
+	Id    pdid.Id
+	Alias string
+	Name  string
+	// Admin binds them to the role that administers the tenant at roster.
+	Admin bool
+}
+
+// everything binds a person to the role that says everything roster
+// serves, made when the tenant has none: what roster's own init writes
+// for a tenant's first person.
+func (e *embedded) everything(ctx context.Context, tref *rstr.TenantRef, holder pdid.Id) error {
+	own := e.rs.Ungated
+	r, err := own.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref: rstr.RoleRef_builder{Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(rostercmd.Everyverb), Tenant: tref}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return err
+		}
+		r, err = own.Role().Add(ctx, rstr.RoleAddRequest_builder{
+			Tenant: tref, Alias: rostercmd.Everyverb, Methods: []string{rostercmd.EveryRosterMethod},
+		}.Build())
+		if err != nil {
+			return err
+		}
+	}
+	if _, err := own.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role: rstr.RoleRef_builder{Id: r.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
+	}.Build()); err != nil && status.Code(err) != codes.AlreadyExists {
+		return err
+	}
+
+	return nil
+}

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/lesomnus/payday/pdid"
 )
 
 // The embedded roster (§33.1): seeded people sign in with the password
@@ -94,4 +96,34 @@ func TestEmbeddedRoster(t *testing.T) {
 	vs, err := s.Tenants(ctx)
 	require.NoError(t, err)
 	require.ElementsMatch(t, []string{"cluster", "acme"}, vs)
+}
+
+// A deployment made before roster held its people brings them along with
+// their identifiers (§33.1): adopted once, verified with the password
+// issued, and left alone the second time.
+func TestAdopt(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s, err := Open(ctx, Config{}, t.TempDir(), nil)
+	require.NoError(t, err)
+	defer s.Close()
+
+	tenant, ops, viewer := pdid.New(1), pdid.New(2), pdid.New(2)
+	people := []Adoptee{{Id: ops, Alias: "ops", Name: "Ops", Admin: true}, {Id: viewer, Alias: "viewer"}}
+	passwords, err := s.Adopt(ctx, tenant, "legacy", "Legacy Ltd", people)
+	require.NoError(t, err)
+	require.Len(t, passwords, 2)
+	p, err := s.Verify(ctx, "legacy", "ops", passwords["ops"])
+	require.NoError(t, err)
+	require.Equal(t, ops, p.Id, "the identifier from before")
+	require.Equal(t, tenant, p.Tenant)
+	id, _, err := s.Tenant(ctx, "legacy")
+	require.NoError(t, err)
+	require.Equal(t, tenant, id)
+
+	again, err := s.Adopt(ctx, tenant, "legacy", "Legacy Ltd", people)
+	require.NoError(t, err)
+	require.Empty(t, again, "nothing made twice")
+	_, err = s.Verify(ctx, "legacy", "ops", passwords["ops"])
+	require.NoError(t, err, "and the password stands")
 }

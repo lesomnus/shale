@@ -67,7 +67,11 @@ holds a credential.
   operator minted for it (`auth.roster.keys`); tenants and people are made
   there, and a tenant Shale holds no key for is one it does not serve.
   Cluster operators are the people of the tenant `control.cluster_tenant`
-  (`cluster`), which the cluster API's policy lets see every tenant.
+  (`cluster`), which the cluster API's policy lets see every tenant. A
+  deployment made before roster held its people runs `shale identity
+  migrate` once after the upgrade: its tenants and people go into the
+  embedded roster with the identifiers they have, and everyone gets a new
+  password, shown once.
 - **Storage Nodes and Relays know nothing about tenants or people.** On
   their data planes they trust one thing: a valid CP signature on each
   request or stream. On its control API a node trusts one peer: the Control

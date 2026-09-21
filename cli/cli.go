@@ -50,6 +50,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			pdcmd.NewCmdVersion(),
 			pdcmd.NewCmdConfig(cmd.Loader, c),
 			NewCmdInit(c),
+			NewCmdIdentity(c),
 			NewCmdServe(c),
 			NewCmdLogin(c),
 			NewCmdLive(c),
