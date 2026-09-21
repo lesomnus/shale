@@ -75,6 +75,7 @@ deployment runs well on them, and changes them only for a reason.
 | Producer | `push` | off | `unix:/path`, `tcp://host:port`: the listener pushed sources are written to | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | `push_idle` | 30 s | — | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | a source's `kind` | `ts` | `ts`, `raw`; pushed sources only | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
+| Producer | a source's `content_type` | `video/mp2t`; `application/octet-stream` for `raw` | proposed at negotiation; a person's value on the source wins | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | encoder target | (ceiling − audio) ÷ 1.05; capped VBR with `bufsize` = 2 s at the ceiling | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Producer | start-up check | 10 s after a capture process starts | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Node | `gc_page` | 5,000 candidates | — | node | [§21.2](06-retention-gc.md#212-protocol) |

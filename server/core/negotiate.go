@@ -233,6 +233,9 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 	}
 
 	proposed := map[string]*api.SegmentProfile{}
+	// What the producer says the bytes are (§38.9), kept only where nobody
+	// set the source's content_type.
+	proposedType := map[string]string{}
 	for _, sp := range req.GetSources() {
 		src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{Ref: sp.GetSource()}.Build())
 		if err != nil {
@@ -242,6 +245,9 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 			return nil, invalid("sources", "a source of another set")
 		}
 		proposed[string(src.GetId())] = sp.GetProfile()
+		if ct := sp.GetContentType(); ct != "" && src.GetContentType() == "" {
+			proposedType[string(src.GetId())] = ct
+		}
 	}
 
 	// Clamp each, then the set's total cap, which scales every ceiling
@@ -302,14 +308,19 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 		}
 		for id, p := range agreed {
 			m := byId[id]
-			if equalSegment(m.GetProfile(), p) {
+			ct, fill := proposedType[id]
+			if equalSegment(m.GetProfile(), p) && !fill {
 				continue
 			}
-			if _, err := next.Source().Patch(ctx, api.SourcePatchRequest_builder{
+			patch := api.SourcePatchRequest_builder{
 				Ref:         api.SourceRef_builder{Id: m.GetId()}.Build(),
 				Profile:     p,
 				DateUpdated: m.GetDateUpdated(),
-			}.Build()); err != nil {
+			}
+			if fill {
+				patch.ContentType = &ct
+			}
+			if _, err := next.Source().Patch(ctx, patch.Build()); err != nil {
 				return err
 			}
 		}

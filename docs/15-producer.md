@@ -384,8 +384,14 @@ low-rate records belong multiplexed into one source.
   reads it as a file. An incomplete lamina
   ([§15](04-write-path.md#15-partial-laminae)) ends in whole records plus
   at most one torn one.
+- What the bytes are is the source's `content_type`
+  ([§7](02-data-model.md#7-source-set-zone-epoch)): a raw source's
+  configuration names it (`content_type: application/x-mcap`), the
+  producer proposes it when it negotiates, and the CP keeps it unless a
+  person set another. A TS source is `video/mp2t`; a raw source with no
+  name is `application/octet-stream`.
 - No live output ([§38.7](#387-live-output)): a raw source has nothing a
-  relay could show.
+  relay could show, and `Live` on one is refused with its content type.
 - A self-delimiting format needs one frame per record and one prefix
   frame per header. For MCAP: the magic, the Header and every Schema and
   Channel so far go in the prefix frame, resent whole when a channel is

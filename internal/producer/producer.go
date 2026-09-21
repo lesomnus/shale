@@ -471,8 +471,9 @@ func (p *Producer) negotiate(ctx context.Context) error {
 			prof.KeyframeIntervalMs = s.cfg.KeyframeInterval.Milliseconds()
 		}
 		proposals = append(proposals, api.SourceProposal_builder{
-			Source:  api.SourceRef_builder{Id: s.row.GetId()}.Build(),
-			Profile: prof.Build(),
+			Source:      api.SourceRef_builder{Id: s.row.GetId()}.Build(),
+			Profile:     prof.Build(),
+			ContentType: s.cfg.contentType(),
 		}.Build())
 	}
 	if p.cfg.Uplink > 0 && float64(total)*1.2 > float64(p.cfg.Uplink) {

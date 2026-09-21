@@ -32,6 +32,11 @@ type SourceConfig struct {
 	// Kind is what a pushed stream is: `ts` (the default) or `raw`,
 	// frames cut at frame boundaries (§38.9).
 	Kind string
+	// ContentType is what the laminae of a raw source are, for whoever
+	// reads them, e.g. `application/x-mcap`; proposed to the CP, which
+	// keeps it unless a person set another (§38.9). A TS source is
+	// `video/mp2t`.
+	ContentType string
 	// Format is what the camera delivers: mjpeg | yuyv | h264 | h265.
 	Format string
 	Size   string
@@ -102,6 +107,25 @@ func (c SourceConfig) audioCodec() string {
 
 // hasMic says a microphone is configured.
 func (c SourceConfig) hasMic() bool { return c.Audio != nil && c.Audio.Device != "" }
+
+// The content types a source proposes when its configuration names none
+// (§38.9).
+const (
+	ContentTypeTS  = "video/mp2t"
+	ContentTypeRaw = "application/octet-stream"
+)
+
+// contentType is what this source's laminae are (§38.9).
+func (c SourceConfig) contentType() string {
+	if c.ContentType != "" {
+		return c.ContentType
+	}
+	if c.Kind == KindRaw {
+		return ContentTypeRaw
+	}
+
+	return ContentTypeTS
+}
 
 // StartingCeiling is the table of §38.5: a ceiling from the mode, with no
 // measurement.

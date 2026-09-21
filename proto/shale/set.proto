@@ -161,6 +161,11 @@ message Source {
 
   // Seconds at the cap and episodes, as the producer reports them (§38.5).
   Starvation starvation = 16;
+  // What the bytes of this source's laminae are, for whoever reads them:
+  // `video/mp2t` for a camera, `application/x-mcap` for a robot's records
+  // (§38.9). Empty reads as `video/mp2t`. People set it; Negotiate fills
+  // it in from the producer when nobody did, and a person's value stays.
+  string content_type = 17;
 
   option (orm.message) = {
     rpc: {crud: true}

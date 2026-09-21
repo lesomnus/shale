@@ -114,6 +114,12 @@ func (_c *SourceCreate) SetStarvation(v *api.Starvation) *SourceCreate {
 	return _c
 }
 
+// SetContentType sets the "content_type" field.
+func (_c *SourceCreate) SetContentType(v string) *SourceCreate {
+	_c.mutation.SetContentType(v)
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *SourceCreate) SetTenantId(v uuid.UUID) *SourceCreate {
 	_c.mutation.SetTenantId(v)
@@ -212,6 +218,9 @@ func (_c *SourceCreate) check() error {
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Source.date_updated"`)}
+	}
+	if _, ok := _c.mutation.ContentType(); !ok {
+		return &ValidationError{Name: "content_type", err: errors.New(`ent: missing required field "Source.content_type"`)}
 	}
 	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Source.tenant_id"`)}
@@ -335,6 +344,10 @@ func (_c *SourceCreate) createSpec() (*Source, *sqlgraph.CreateSpec, error) {
 		}
 		_spec.SetField(source.FieldStarvation, field.TypeJson, vv)
 		_node.Starvation = value
+	}
+	if value, ok := _c.mutation.ContentType(); ok {
+		_spec.SetField(source.FieldContentType, field.TypeString, value)
+		_node.ContentType = value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

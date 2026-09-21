@@ -10,6 +10,8 @@ import (
 
 	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/shale/api"
@@ -58,7 +60,7 @@ func TestPushedSources(t *testing.T) {
 		PushIdle: 2 * time.Second,
 		Sources: []producer.SourceConfig{
 			{Alias: "door", Input: producer.InputPush, Fps: 30, MaxBitrate: 2_000_000, Format: "h264"},
-			{Alias: "telemetry", Input: producer.InputPush, Kind: producer.KindRaw, MaxBitrate: 1_000_000},
+			{Alias: "telemetry", Input: producer.InputPush, Kind: producer.KindRaw, MaxBitrate: 1_000_000, ContentType: "application/x-mcap"},
 		},
 		Mode:              api.UploadMode_UPLOAD_MODE_LIVE,
 		HeartbeatInterval: 2 * time.Second,
@@ -161,6 +163,9 @@ func TestPushedSources(t *testing.T) {
 
 		return len(byAlias) == 2
 	}, 10*time.Second, 100*time.Millisecond)
+	// Negotiation told the CP what the bytes are (§38.9, §7).
+	require.Equal(t, "video/mp2t", byAlias["door"].GetContentType())
+	require.Equal(t, "application/x-mcap", byAlias["telemetry"].GetContentType())
 
 	laminae := api.NewLaminaServiceClient(admin)
 	committed := func(src *api.Source, want int) []*api.Lamina {
@@ -253,6 +258,42 @@ func TestPushedSources(t *testing.T) {
 		require.True(t, !g.GetTo().AsTime().After(t0) || !g.GetFrom().AsTime().Before(t0.Add((records-1)*time.Second)),
 			"a gap inside the pushed minute: %s to %s", g.GetFrom().AsTime(), g.GetTo().AsTime())
 	}
+
+	// A raw source has nothing a relay could show.
+	_, err = sources.Live(ctx, api.SourceLiveRequest_builder{Ref: api.SourceRef_builder{Id: telemetry.GetId()}.Build()}.Build())
+	require.Error(t, err)
+	require.Equal(t, codes.FailedPrecondition, status.Code(err))
+	require.Contains(t, err.Error(), "nothing a relay could show")
+
+	// A person's content type outlives the producer's proposal, and labels
+	// are what a source is listed by.
+	custom := "application/x-robot-log"
+	// Commits keep touching the row (its observed rate), so the patch is
+	// made against the row as it is now.
+	current, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: telemetry.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	patched, err := sources.Patch(ctx, api.SourcePatchRequest_builder{
+		Ref: api.SourceRef_builder{Id: telemetry.GetId()}.Build(), ContentType: &custom,
+		Labels: map[string]string{"robot": "r7"}, DateUpdated: current.GetDateUpdated(),
+	}.Build())
+	require.NoError(t, err)
+	require.Equal(t, custom, patched.GetContentType())
+	_, err = api.NewSetServiceClient(admin).Negotiate(ctx, api.SetNegotiateRequest_builder{
+		Ref: api.SetRef_builder{Id: set.GetId()}.Build(),
+		Sources: []*api.SourceProposal{api.SourceProposal_builder{
+			Source: api.SourceRef_builder{Id: telemetry.GetId()}.Build(), Profile: patched.GetProfile(), ContentType: "application/x-mcap",
+		}.Build()},
+	}.Build())
+	require.NoError(t, err)
+	again, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: telemetry.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.Equal(t, custom, again.GetContentType(), "the person's value stays")
+	vs, err := sources.List(ctx, api.SourceListRequest_builder{
+		Filters: []*api.SourceFilter{api.SourceFilter_builder{Labels: map[string]string{"robot": "r7"}}.Build()},
+	}.Build())
+	require.NoError(t, err)
+	require.Len(t, vs.GetItems(), 1)
+	require.Equal(t, "telemetry", vs.GetItems()[0].GetAlias())
 
 	cancel()
 	select {

@@ -31,6 +31,7 @@ type Mutation struct {
 	date_erased   *time.Time
 	date_created  *time.Time
 	starvation    **api.Starvation
+	content_type  *string
 	clearedFields map[string]struct{}
 	tenant        *uuid.UUID
 	clearedtenant bool
@@ -381,6 +382,25 @@ func (m *Mutation) ResetStarvation() {
 	delete(m.clearedFields, FieldStarvation)
 }
 
+// SetContentType sets the "content_type" field.
+func (m *Mutation) SetContentType(s string) {
+	m.content_type = &s
+}
+
+// ContentType returns the value of the "content_type" field in the mutation.
+func (m *Mutation) ContentType() (r string, exists bool) {
+	v := m.content_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetContentType resets all changes to the "content_type" field.
+func (m *Mutation) ResetContentType() {
+	m.content_type = nil
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -566,7 +586,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -602,6 +622,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.starvation != nil {
 		fields = append(fields, FieldStarvation)
+	}
+	if m.content_type != nil {
+		fields = append(fields, FieldContentType)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -644,6 +667,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldStarvation:
 		return m.Starvation()
+	case FieldContentType:
+		return m.ContentType()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldSiteId:
@@ -749,6 +774,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStarvation(v)
+		return nil
+	case FieldContentType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContentType(v)
 		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
@@ -915,6 +947,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldStarvation:
 		m.ResetStarvation()
+		return nil
+	case FieldContentType:
+		m.ResetContentType()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

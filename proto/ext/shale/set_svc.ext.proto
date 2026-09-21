@@ -29,6 +29,10 @@ service SourceService {
 message SourceProposal {
   SourceRef source = 1;
   SegmentProfile profile = 2;
+  // What the producer sends for this source (§38.9): `video/mp2t` for a
+  // camera or a pushed TS stream, the writer's declared type for raw
+  // frames. Fills in the source's content_type when nobody set it.
+  string content_type = 3 [features.field_presence = IMPLICIT];
 }
 
 message SetNegotiateRequest {

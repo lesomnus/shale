@@ -14,7 +14,10 @@
 ```
 
 A time-range query returns explicit **gaps** for any part of the range that has
-no available lamina ([§19](#19-reader-semantics)). This is the path for
+no available lamina ([§19](#19-reader-semantics)). What the bytes are is
+the source's `content_type` ([§7](02-data-model.md#7-source-set-zone-epoch)):
+the node serves them as `application/octet-stream`, since it knows no
+sources, and the reader knows from the source what it is reading. This is the path for
 recordings. A camera *now* is watched through the relay instead
 ([§39](16-relay.md#39-relay)). It is paged like every
 `List` ([§35.1](12-api.md#351-conventions)): at most `timeline_page` laminae

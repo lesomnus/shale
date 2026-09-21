@@ -96,6 +96,11 @@ func DateCreated(v time.Time) predicate.Source {
 	return predicate.Source(sql.FieldEQ(FieldDateCreated, v))
 }
 
+// ContentType applies equality check predicate on the "content_type" field. It's identical to ContentTypeEQ.
+func ContentType(v string) predicate.Source {
+	return predicate.Source(sql.FieldEQ(FieldContentType, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Source {
 	return predicate.Source(sql.FieldEQ(FieldTenantId, v))
@@ -589,6 +594,71 @@ func StarvationIsNil() predicate.Source {
 // StarvationNotNil applies the NotNil predicate on the "starvation" field.
 func StarvationNotNil() predicate.Source {
 	return predicate.Source(sql.FieldNotNull(FieldStarvation))
+}
+
+// ContentTypeEQ applies the EQ predicate on the "content_type" field.
+func ContentTypeEQ(v string) predicate.Source {
+	return predicate.Source(sql.FieldEQ(FieldContentType, v))
+}
+
+// ContentTypeNEQ applies the NEQ predicate on the "content_type" field.
+func ContentTypeNEQ(v string) predicate.Source {
+	return predicate.Source(sql.FieldNEQ(FieldContentType, v))
+}
+
+// ContentTypeIn applies the In predicate on the "content_type" field.
+func ContentTypeIn(vs ...string) predicate.Source {
+	return predicate.Source(sql.FieldIn(FieldContentType, vs...))
+}
+
+// ContentTypeNotIn applies the NotIn predicate on the "content_type" field.
+func ContentTypeNotIn(vs ...string) predicate.Source {
+	return predicate.Source(sql.FieldNotIn(FieldContentType, vs...))
+}
+
+// ContentTypeGT applies the GT predicate on the "content_type" field.
+func ContentTypeGT(v string) predicate.Source {
+	return predicate.Source(sql.FieldGT(FieldContentType, v))
+}
+
+// ContentTypeGTE applies the GTE predicate on the "content_type" field.
+func ContentTypeGTE(v string) predicate.Source {
+	return predicate.Source(sql.FieldGTE(FieldContentType, v))
+}
+
+// ContentTypeLT applies the LT predicate on the "content_type" field.
+func ContentTypeLT(v string) predicate.Source {
+	return predicate.Source(sql.FieldLT(FieldContentType, v))
+}
+
+// ContentTypeLTE applies the LTE predicate on the "content_type" field.
+func ContentTypeLTE(v string) predicate.Source {
+	return predicate.Source(sql.FieldLTE(FieldContentType, v))
+}
+
+// ContentTypeContains applies the Contains predicate on the "content_type" field.
+func ContentTypeContains(v string) predicate.Source {
+	return predicate.Source(sql.FieldContains(FieldContentType, v))
+}
+
+// ContentTypeHasPrefix applies the HasPrefix predicate on the "content_type" field.
+func ContentTypeHasPrefix(v string) predicate.Source {
+	return predicate.Source(sql.FieldHasPrefix(FieldContentType, v))
+}
+
+// ContentTypeHasSuffix applies the HasSuffix predicate on the "content_type" field.
+func ContentTypeHasSuffix(v string) predicate.Source {
+	return predicate.Source(sql.FieldHasSuffix(FieldContentType, v))
+}
+
+// ContentTypeEqualFold applies the EqualFold predicate on the "content_type" field.
+func ContentTypeEqualFold(v string) predicate.Source {
+	return predicate.Source(sql.FieldEqualFold(FieldContentType, v))
+}
+
+// ContentTypeContainsFold applies the ContainsFold predicate on the "content_type" field.
+func ContentTypeContainsFold(v string) predicate.Source {
+	return predicate.Source(sql.FieldContainsFold(FieldContentType, v))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

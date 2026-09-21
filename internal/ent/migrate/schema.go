@@ -957,6 +957,7 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "starvation", Type: field.TypeJson, Nullable: true},
+		{Name: "content_type", Type: field.TypeString},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid},
@@ -969,19 +970,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "source_tenant_tenant",
-				Columns:    []*schema.Column{SourceColumns[13]},
+				Columns:    []*schema.Column{SourceColumns[14]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "source_site_site",
-				Columns:    []*schema.Column{SourceColumns[14]},
+				Columns:    []*schema.Column{SourceColumns[15]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "source_set_set",
-				Columns:    []*schema.Column{SourceColumns[15]},
+				Columns:    []*schema.Column{SourceColumns[16]},
 				RefColumns: []*schema.Column{SetColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -995,7 +996,7 @@ var (
 			{
 				Name:    "source_alias_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{SourceColumns[1], SourceColumns[13]},
+				Columns: []*schema.Column{SourceColumns[1], SourceColumns[14]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -1003,7 +1004,7 @@ var (
 			{
 				Name:    "source_ordinal_set_id",
 				Unique:  true,
-				Columns: []*schema.Column{SourceColumns[5], SourceColumns[15]},
+				Columns: []*schema.Column{SourceColumns[5], SourceColumns[16]},
 			},
 		},
 	}

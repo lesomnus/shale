@@ -289,6 +289,10 @@ message SetNegotiateResponse {
 message SourceProposal {
   SourceRef source = 1;
   SegmentProfile profile = 2;
+  // What the producer sends for this source (§38.9): `video/mp2t` for a
+  // camera or a pushed TS stream, the writer's declared type for raw
+  // frames. Fills in the source's content_type when nobody set it.
+  string content_type = 3 [features.field_presence = IMPLICIT];
 }
 
 message SourceRef {
@@ -374,6 +378,7 @@ message SourceAddRequest {
   ObservedRate observed = 12;
   google.protobuf.Timestamp date_created = 15;
   Starvation starvation = 16;
+  string content_type = 17 [features.field_presence = IMPLICIT];
 }
 
 message SourceGetRequest {
@@ -398,6 +403,7 @@ message SourceSelect {
   bool date_erased = 14;
   bool date_created = 15;
   bool starvation = 16;
+  bool content_type = 17;
 }
 
 message SourcePatchRequest {
@@ -439,6 +445,7 @@ message SourcePatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and starvation clears.
   bool starvation_null = 33;
+  string content_type = 34;
 }
 
 message SourceApplyRequest {

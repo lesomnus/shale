@@ -94,5 +94,6 @@ func (e *Source) Proto() *api.Source {
 	if e.Starvation != nil {
 		x.SetStarvation(e.Starvation)
 	}
+	x.SetContentType(e.ContentType)
 	return x
 }

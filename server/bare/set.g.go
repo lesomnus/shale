@@ -688,6 +688,7 @@ func (s SourceServiceServer) Add(ctx context.Context, req *api.SourceAddRequest)
 	if req.HasStarvation() {
 		q.SetStarvation(req.GetStarvation())
 	}
+	q.SetContentType(req.GetContentType())
 
 	u, err := q.Save(ctx)
 	if err != nil {
@@ -791,6 +792,9 @@ func SourceSelectedFields(m *api.SourceSelect) []string {
 	if m.GetStarvation() {
 		vs = append(vs, source.FieldStarvation)
 	}
+	if m.GetContentType() {
+		vs = append(vs, source.FieldContentType)
+	}
 
 	return vs
 }
@@ -876,7 +880,7 @@ func SourceGetKey(ctx context.Context, db *ent.Client, ref *api.SourceRef) (uuid
 var sourceOrmEntity = ormpatch.MustEntityOf(api.File_shale_set_proto, "Source")
 
 var sourcePatchColumns = entpatch.Columns{
-	1: source.FieldId, 2: source.TenantColumn, 3: source.SiteColumn, 4: source.FieldAlias, 5: source.FieldName, 6: source.FieldDesc, 7: source.FieldLabels, 8: source.SetColumn, 9: source.FieldOrdinal, 10: source.FieldZone, 11: source.FieldProfile, 12: source.FieldObserved, 13: source.FieldDateUpdated, 14: source.FieldDateErased, 15: source.FieldDateCreated, 16: source.FieldStarvation}
+	1: source.FieldId, 2: source.TenantColumn, 3: source.SiteColumn, 4: source.FieldAlias, 5: source.FieldName, 6: source.FieldDesc, 7: source.FieldLabels, 8: source.SetColumn, 9: source.FieldOrdinal, 10: source.FieldZone, 11: source.FieldProfile, 12: source.FieldObserved, 13: source.FieldDateUpdated, 14: source.FieldDateErased, 15: source.FieldDateCreated, 16: source.FieldStarvation, 17: source.FieldContentType}
 
 func (s SourceServiceServer) Apply(ctx context.Context, req *api.SourceApplyRequest) (*api.Source, error) {
 	if !req.HasPatch() {

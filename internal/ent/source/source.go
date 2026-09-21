@@ -38,6 +38,8 @@ const (
 	FieldDateCreated = "date_created"
 	// FieldStarvation holds the string denoting the starvation field in the database.
 	FieldStarvation = "starvation"
+	// FieldContentType holds the string denoting the content_type field in the database.
+	FieldContentType = "content_type"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
@@ -90,6 +92,7 @@ var Columns = []string{
 	FieldDateErased,
 	FieldDateCreated,
 	FieldStarvation,
+	FieldContentType,
 	FieldTenantId,
 	FieldSiteId,
 	FieldSetId,
@@ -160,6 +163,11 @@ func ByDateErased(opts ...sql.OrderTermOption) OrderOption {
 // ByDateCreated orders the results by the date_created field.
 func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
+}
+
+// ByContentType orders the results by the content_type field.
+func ByContentType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldContentType, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

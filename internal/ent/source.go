@@ -47,6 +47,8 @@ type Source struct {
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// Starvation holds the value of the "starvation" field.
 	Starvation *api.Starvation `json:"starvation,omitempty"`
+	// ContentType holds the value of the "content_type" field.
+	ContentType string `json:"content_type,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -114,7 +116,7 @@ func (*Source) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case source.FieldOrdinal:
 			values[i] = new(sql.NullInt64)
-		case source.FieldAlias, source.FieldName, source.FieldDesc, source.FieldZone:
+		case source.FieldAlias, source.FieldName, source.FieldDesc, source.FieldZone, source.FieldContentType:
 			values[i] = new(sql.NullString)
 		case source.FieldDateUpdated, source.FieldDateErased, source.FieldDateCreated:
 			values[i] = new(sql.NullTime)
@@ -224,6 +226,12 @@ func (_m *Source) assignValues(columns []string, values []any) error {
 			} else {
 				_m.Starvation = value
 			}
+		case source.FieldContentType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field content_type", values[i])
+			} else if value.Valid {
+				_m.ContentType = value.String
+			}
 		case source.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -330,6 +338,9 @@ func (_m *Source) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("starvation=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Starvation))
+	builder.WriteString(", ")
+	builder.WriteString("content_type=")
+	builder.WriteString(_m.ContentType)
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

@@ -168,6 +168,20 @@ func (_u *SourceUpdate) ClearStarvation() *SourceUpdate {
 	return _u
 }
 
+// SetContentType sets the "content_type" field.
+func (_u *SourceUpdate) SetContentType(v string) *SourceUpdate {
+	_u.mutation.SetContentType(v)
+	return _u
+}
+
+// SetNillableContentType sets the "content_type" field if the given value is not nil.
+func (_u *SourceUpdate) SetNillableContentType(v *string) *SourceUpdate {
+	if v != nil {
+		_u.SetContentType(*v)
+	}
+	return _u
+}
+
 // Mutation returns the SourceMutation object of the builder.
 func (_u *SourceUpdate) Mutation() *SourceMutation {
 	return _u.mutation
@@ -297,6 +311,9 @@ func (_u *SourceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.StarvationCleared() {
 		_spec.ClearField(source.FieldStarvation, field.TypeJson)
+	}
+	if value, ok := _u.mutation.ContentType(); ok {
+		_spec.SetField(source.FieldContentType, field.TypeString, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -455,6 +472,20 @@ func (_u *SourceUpdateOne) SetStarvation(v *api.Starvation) *SourceUpdateOne {
 // ClearStarvation clears the value of the "starvation" field.
 func (_u *SourceUpdateOne) ClearStarvation() *SourceUpdateOne {
 	_u.mutation.ClearStarvation()
+	return _u
+}
+
+// SetContentType sets the "content_type" field.
+func (_u *SourceUpdateOne) SetContentType(v string) *SourceUpdateOne {
+	_u.mutation.SetContentType(v)
+	return _u
+}
+
+// SetNillableContentType sets the "content_type" field if the given value is not nil.
+func (_u *SourceUpdateOne) SetNillableContentType(v *string) *SourceUpdateOne {
+	if v != nil {
+		_u.SetContentType(*v)
+	}
 	return _u
 }
 
@@ -617,6 +648,9 @@ func (_u *SourceUpdateOne) sqlSave(ctx context.Context) (_node *Source, err erro
 	}
 	if _u.mutation.StarvationCleared() {
 		_spec.ClearField(source.FieldStarvation, field.TypeJson)
+	}
+	if value, ok := _u.mutation.ContentType(); ok {
+		_spec.SetField(source.FieldContentType, field.TypeString, value)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Source{config: _u.config}

@@ -175,6 +175,9 @@ type SourceConfig struct {
 	// Kind of a pushed stream: `ts` (the default), or `raw` for frames
 	// that are not video, cut at frame boundaries (§38.9).
 	Kind string `yaml:"kind"`
+	// ContentType of a raw source's laminae, e.g. `application/x-mcap`,
+	// told to the CP for whoever reads them (§38.9).
+	ContentType string `yaml:"content_type"`
 	// Format is what the camera delivers: mjpeg | yuyv | h264 | h265.
 	Format string `yaml:"format"`
 	Size   string `yaml:"size"`

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -157,6 +158,12 @@ func (s Core) relayEndpoints(r *ent.Relay, addr, caller string, p *api.AddressPa
 // liveSources is the Live answer for these sources of a set: the relay of
 // the set's producer, a view token per source, and the WHEP URL (§39.4).
 func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sources []*api.Source) ([]*api.LiveSource, error) {
+	for _, src := range sources {
+		// A raw source (§38.9) has nothing a relay could show.
+		if ct := src.GetContentType(); ct != "" && !strings.HasPrefix(ct, "video/") {
+			return nil, status.Errorf(codes.FailedPrecondition, "%s is %s: nothing a relay could show", src.GetAlias(), ct)
+		}
+	}
 	now := s.d.now()
 	producers, err := s.d.Ent.Producer.Query().
 		Where(producer.SetIdEQ(mustId(set.GetId()).Uuid()), producer.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), producer.DateErasedIsNil()).
