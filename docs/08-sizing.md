@@ -131,8 +131,38 @@ failed attempts, 7 days:                3.4 M ×  7 × 1.0 KB ≈  24 GB
 audit trail:                            what operators do; a few rows a minute
 ```
 
-What the trail still lacks is a clock of its own for the rows it does
-keep: payday's audit retention policy, `audit:` in the configuration, a
-profile per kind of thing with an archive on disk for what leaves the
-table. Shale does not wire it yet (#74); at the rate people write, that is
-a compliance question rather than a sizing one.
+How long the rows it does keep stay is payday's retention policy, `audit:`
+in the control plane's configuration
+([§36.1](13-configuration.md#361-configuration-reference)), and at the rate
+people write it is a compliance question rather than a sizing one:
+
+```yaml
+audit:
+  profile: pipa                          # 90 days in the table, a year in the archive
+  archive: /var/lib/shale/control/audit  # what leaves the table is written here first
+  by:
+    object:                              # reschedules: the object's own row retention
+      retain: 720h
+```
+
+- `profile` names a regime and fills in two clocks, `retain` (in the
+  table) and `destroy` (in the archive): `pipa` is 90 days and a year, from
+  개인정보의 안전성 확보조치 기준; `pipa-sensitive` two years; `pci`,
+  `hipaa`, `sox` and `gdpr` are there with the sentence each comes from;
+  `forever` is what an empty policy is. A `retain` or `destroy` written
+  beside a profile wins.
+- `archive` is the one directory rows are written to on their way out, a
+  file per month and kind. A window with no archive is refused when the
+  process comes up, unless `discard: true` says the deployment means to
+  keep no copy.
+- `by:` sets a kind apart, keyed by the word the schema registered
+  (`object`, `set`, `source`, `holder`, `tenant`, `sink`, …). `site` is a
+  word roster registers too, so in this process it answers nobody and is
+  written as its number, `d19`. The kind worth setting apart is `object`:
+  a bulk reschedule ([§20.3](06-retention-gc.md#203-rescheduling)) writes a
+  row per object it changes, and the #73 drill left 184,000 of them for
+  48,000 objects, against a few hundred rows for everything else people
+  did in a day. Those rows are evidence of the object's dates, and the
+  object's own row retention is the natural window for them.
+- The leader applies the policy once a day (`every`), in batches of a
+  thousand rows ([§34.9](11-deployment.md#349-events-and-directives)).

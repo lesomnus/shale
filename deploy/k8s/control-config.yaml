@@ -44,3 +44,10 @@ data:
       # Nodes of this cluster are adopted as they join; producers and
       # readers still wait for an operator (§33.4).
       auto_adopt: true
+    audit:
+      # The trail's retention (§26.5). The state directory here is a
+      # Secret, so there is no volume for an archive: this keeps ninety
+      # days and no copy. A deployment that must keep its evidence mounts
+      # a volume and names it in `archive` instead of `discard`.
+      retain: 2160h
+      discard: true

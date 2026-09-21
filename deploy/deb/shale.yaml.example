@@ -16,6 +16,9 @@ state: /var/lib/shale
 # control:
 #   names: ["cp.example.com", "10.0.0.10"]   # every name a client dials
 #   auto_adopt: false
+# audit:                                  # the trail's retention (§26.5); empty keeps everything
+#   profile: pipa                         # 90 days in the table, a year in the archive
+#   archive: /var/lib/shale/control/audit
 
 # --- every other role: the cluster API to join (§33.4) ---------------------
 # cp: https://cp.example.com:7401

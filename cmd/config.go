@@ -61,6 +61,10 @@ type Config struct {
 	Client ClientConfig `yaml:"client"`
 	// Auth is who people are (§33.1): roster, in this process or elsewhere.
 	Auth AuthConfig `yaml:"auth"`
+	// Audit is how long the trail is kept and where what leaves it goes
+	// (§26.5): payday's policy, a window per kind of thing, applied by the
+	// leader. Empty keeps everything.
+	Audit config.AuditConfig `yaml:"audit"`
 
 	// Dev is development mode (`--dev <dir>`): everything in one directory,
 	// plaintext allowed, one directory sink (§34.7).

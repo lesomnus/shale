@@ -117,7 +117,10 @@ The audit trail keeps what people did and nothing the system did to
 itself: a write is on it when the caller is a person, so an operator's
 reschedule is there with its reason and an object's allocation, commit and
 collection are not ([§26.5](08-sizing.md#265-the-control-planes-database)).
-Its rows have no clock yet (#74).
+Its rows leave by the retention policy in `audit:`
+([§36.1](13-configuration.md#361-configuration-reference)): a window per
+kind of thing, with an archive on disk for what leaves the table, applied
+by the leader once a day. Empty keeps everything.
 
 A `Timeline` over a span older than any row answers from policy instead:
 `DELETED` for spans past the set's `retention.delete` (or `retention.expire`

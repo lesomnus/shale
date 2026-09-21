@@ -100,6 +100,11 @@ deployment runs well on them, and changes them only for a reason.
 | People | `auth.roster.addr` | none: roster in this process | an address | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.roster.keys` | none | tenant alias → `env:NAME`, `file:PATH` | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.roster.ca_file`, `auth.roster.insecure` | the system pool, TLS | — | control | [§33.1](10-security.md#331-trust-model) |
+| Trail | `audit.profile` | none: forever | `pipa`, `pipa-sensitive`, `pci`, `hipaa`, `sox`, `gdpr`, `forever` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
+| Trail | `audit.retain`, `audit.destroy` | the profile's | how long a row stays in the table, and in the archive | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
+| Trail | `audit.archive`, `audit.discard` | none | a directory; a window with neither is refused | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
+| Trail | `audit.every` | 24h | — | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
+| Trail | `audit.by.<kind>` | — | `profile`, `retain`, `destroy`, `discard` for one kind: `object`, `set`, `holder`, …, `d19` for `site` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | People | `auth.roster.db` | SQLite beside the control plane's state | a database every control plane shares | control | [§34.7](11-deployment.md#347-single-machine), [§34.5](11-deployment.md#345-kubernetes) |
 | Live | `view_token_ttl` | 1 h | — | cluster | [§39.4](16-relay.md#394-viewers) |
 | Live | `publish_token_ttl` | 24 h | — | cluster | [§39.3](16-relay.md#393-from-the-producer) |

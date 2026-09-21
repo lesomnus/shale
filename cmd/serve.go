@@ -135,6 +135,13 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// payday's blanket refusal of general writes is lifted.
 	c.Server.AllowGeneralWrites = true
 	c.Cluster.AllowGeneralWrites = true
+	// The trail's retention (§26.5), refused here rather than at the first
+	// pass a day later: a window with nowhere to put what leaves it, or a
+	// kind this app does not have, is found while somebody is watching.
+	policy, err := c.Audit.Policy()
+	if err != nil {
+		return nil, err
+	}
 	db, dia, err := c.Db.Open(ctx)
 	if err != nil {
 		return nil, err
@@ -256,6 +263,14 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	s.Spin = append(s.Spin, s.Jobs, s.Directives)
 	if c.Watch.Outbox && b != nil {
 		s.Spin = append(s.Spin, pd.Drain(client, b, c.Watch.Every()))
+	}
+	if policy.On() {
+		slog.Info("trail: retention", "policy", policy.String())
+		var leader func(context.Context) bool
+		if s.Leader != nil {
+			leader = s.Leader.Is
+		}
+		s.Spin = append(s.Spin, core.TrailSweep(pd.TrailStore(client), policy, leader))
 	}
 
 	// Who is calling: a session cookie, the certificate, and in development

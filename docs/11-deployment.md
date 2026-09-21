@@ -279,8 +279,9 @@ orphans, and objects stuck in `DELETING` because a node died between the
 unlink and its event are confirmed gone.
 
 **One leader.** Rotation waits, policy activation, directive delivery,
-reconciliation, DNS maintenance, and the row-retention sweeps are multi-step
-jobs. Exactly one CP replica runs them, elected by a PostgreSQL advisory
+reconciliation, DNS maintenance, the row-retention sweeps, and the trail's
+retention ([§26.5](08-sizing.md#265-the-control-planes-database)) are
+multi-step jobs. Exactly one CP replica runs them, elected by a PostgreSQL advisory
 lock, so two replicas never race on the same job.
 
 ### 34.10 Node addresses

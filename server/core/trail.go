@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/spin"
+	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/shale/server/bare"
 )
@@ -31,4 +33,30 @@ func (r trailOfPeople) Record(ctx context.Context, s bare.Server, c bare.Change)
 	}
 
 	return r.next.Record(ctx, s, c)
+}
+
+// TrailSweep applies the trail's retention policy (§26.5) on its clock,
+// on the leader (§34.9). payday's own sweep is safe on every replica, at
+// the cost of each one archiving the same rows; one leader sweeping keeps
+// the archive to one copy of each and the work to one process. A replica
+// that is not leading skips the pass and looks again at the next tick,
+// which is a day by default: a window that took a day longer to close
+// after a failover is not a row anybody was promised would be gone.
+//
+// A nil leader is a deployment with one control plane, which always
+// leads.
+func TrailSweep(store trail.Store, p trail.Policy, leader func(ctx context.Context) bool) spin.Spinner {
+	every := p.Every
+	if every <= 0 {
+		every = trail.Swept
+	}
+
+	return spin.Every(every, func(ctx context.Context) error {
+		if leader != nil && !leader(ctx) {
+			return nil
+		}
+		p.Pass(ctx, store)
+
+		return nil
+	})
 }
