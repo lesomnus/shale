@@ -53,6 +53,10 @@ service LaminaService {
   rpc ReportAttempt(LaminaReportAttemptRequest) returns (Attempt);
   // The producer gives up on a lamina; it becomes LOST (§13).
   rpc ReportFailure(LaminaReportFailureRequest) returns (Lamina);
+  // The producer stored nothing for a segment on purpose (the scene was
+  // dark, §38.10): the lamina becomes SKIPPED with the span and the
+  // reason, so the timeline tells it from a camera that died.
+  rpc Skip(LaminaSkipRequest) returns (Lamina);
   // Changes date_expired and/or date_deleted, for one lamina or in bulk by
   // set or source and a time range; a reason is required and audited. In
   // bulk it works in pages and stops short of its deadline, answering how
@@ -100,6 +104,7 @@ message LaminaAddRequest {
   google.protobuf.Timestamp date_finished = 26;
   bytes checksum = 27;
   int64 epoch = 28 [features.field_presence = IMPLICIT];
+  LaminaSkipReason skip_reason = 29 [features.field_presence = IMPLICIT];
 }
 
 message LaminaGetRequest {
@@ -137,6 +142,7 @@ message LaminaSelect {
   bool date_finished = 26;
   bool checksum = 27;
   bool epoch = 28;
+  bool skip_reason = 29;
 }
 
 message LaminaPatchRequest {
@@ -196,6 +202,7 @@ message LaminaPatchRequest {
   bool date_finished_null = 53;
   bytes checksum = 54;
   int64 epoch = 56;
+  LaminaSkipReason skip_reason = 58;
 }
 
 message LaminaApplyRequest {
@@ -334,6 +341,12 @@ message LaminaReportFailureRequest {
   string reason = 2 [features.field_presence = IMPLICIT];
 }
 
+message LaminaSkipRequest {
+  LaminaRef ref = 1;
+  google.protobuf.Timestamp date_ended = 2;
+  LaminaSkipReason reason = 3 [features.field_presence = IMPLICIT];
+}
+
 message LaminaRescheduleRequest {
   // Exactly one of ref, set, or source; set and source take the time range.
   LaminaRef ref = 1;
@@ -420,6 +433,9 @@ enum GapReason {
   GAP_REASON_LOST = 3;
   GAP_REASON_DELETED = 4;
   GAP_REASON_UNAVAILABLE = 5;
+  // Nothing was stored on purpose: the producer skipped the span because
+  // the scene was dark (§38.10).
+  GAP_REASON_DARK = 6;
 }
 
 message AttemptAddRequest {

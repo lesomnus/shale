@@ -2243,6 +2243,23 @@ func (m *LaminaMutation) OldEpoch(ctx context.Context) (v int64, err error) {
 	return oldValue.Epoch, nil
 }
 
+// OldSkipReason returns the old "skip_reason" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldSkipReason(ctx context.Context) (v int32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSkipReason is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSkipReason requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSkipReason: %w", err)
+	}
+	return oldValue.SkipReason, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the Lamina entity.
 // If the Lamina object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -2367,6 +2384,8 @@ func (m *LaminaMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldChecksum(ctx)
 	case lamina.FieldEpoch:
 		return m.OldEpoch(ctx)
+	case lamina.FieldSkipReason:
+		return m.OldSkipReason(ctx)
 	case lamina.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case lamina.FieldSiteId:

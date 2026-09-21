@@ -194,6 +194,7 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 		q.SetChecksum([]byte{})
 	}
 	q.SetEpoch(req.GetEpoch())
+	q.SetSkipReason(int32(req.GetSkipReason()))
 
 	u, err := q.Save(ctx)
 	if err != nil {
@@ -312,6 +313,9 @@ func LaminaSelectedFields(m *api.LaminaSelect) []string {
 	if m.GetEpoch() {
 		vs = append(vs, lamina.FieldEpoch)
 	}
+	if m.GetSkipReason() {
+		vs = append(vs, lamina.FieldSkipReason)
+	}
 
 	return vs
 }
@@ -421,7 +425,7 @@ func LaminaGetKey(ctx context.Context, db *ent.Client, ref *api.LaminaRef) (uuid
 var laminaOrmEntity = ormpatch.MustEntityOf(api.File_shale_lamina_proto, "Lamina")
 
 var laminaPatchColumns = entpatch.Columns{
-	1: lamina.FieldId, 2: lamina.TenantColumn, 3: lamina.SiteColumn, 8: lamina.SetColumn, 9: lamina.SourceColumn, 10: lamina.SinkColumn, 11: lamina.FieldLaminaKey, 12: lamina.FieldState, 13: lamina.FieldDateUpdated, 15: lamina.FieldDateCreated, 16: lamina.FieldDateStarted, 17: lamina.FieldDateEnded, 18: lamina.FieldEndedEstimated, 19: lamina.FieldSize, 20: lamina.FieldIncomplete, 21: lamina.FieldDateExpired, 22: lamina.FieldDateDeleted, 23: lamina.FieldDatesSynced, 24: lamina.FieldPlacementVersion, 25: lamina.FieldDateCommitted, 26: lamina.FieldDateFinished, 27: lamina.FieldChecksum, 28: lamina.FieldEpoch}
+	1: lamina.FieldId, 2: lamina.TenantColumn, 3: lamina.SiteColumn, 8: lamina.SetColumn, 9: lamina.SourceColumn, 10: lamina.SinkColumn, 11: lamina.FieldLaminaKey, 12: lamina.FieldState, 13: lamina.FieldDateUpdated, 15: lamina.FieldDateCreated, 16: lamina.FieldDateStarted, 17: lamina.FieldDateEnded, 18: lamina.FieldEndedEstimated, 19: lamina.FieldSize, 20: lamina.FieldIncomplete, 21: lamina.FieldDateExpired, 22: lamina.FieldDateDeleted, 23: lamina.FieldDatesSynced, 24: lamina.FieldPlacementVersion, 25: lamina.FieldDateCommitted, 26: lamina.FieldDateFinished, 27: lamina.FieldChecksum, 28: lamina.FieldEpoch, 29: lamina.FieldSkipReason}
 
 func (s LaminaServiceServer) Apply(ctx context.Context, req *api.LaminaApplyRequest) (*api.Lamina, error) {
 	if !req.HasPatch() {

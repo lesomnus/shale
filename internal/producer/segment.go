@@ -25,6 +25,10 @@ type Segment struct {
 
 	mu   sync.Mutex
 	cond *sync.Cond
+	// dark says the segment opened while the scene was dark past the
+	// source's threshold, and is skipped unless the scene is lit before
+	// it closes (§38.10).
+	dark bool
 	// buf holds the bytes from base on: under `retain: written` the bytes
 	// a node reported durable are released and base moves up (§12.2).
 	buf       []byte
@@ -67,6 +71,22 @@ func (s *Segment) Discard() {
 	s.discarded = true
 	s.base += int64(len(s.buf))
 	s.buf = nil
+	s.mu.Unlock()
+	s.cond.Broadcast()
+}
+
+// Dark says whether the segment is one to skip (§38.10).
+func (s *Segment) Dark() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.dark
+}
+
+// SetDark marks the segment as one to skip, or not any more.
+func (s *Segment) SetDark(v bool) {
+	s.mu.Lock()
+	s.dark = v
 	s.mu.Unlock()
 	s.cond.Broadcast()
 }

@@ -317,6 +317,27 @@ func (_u *LaminaUpdate) AddEpoch(v int64) *LaminaUpdate {
 	return _u
 }
 
+// SetSkipReason sets the "skip_reason" field.
+func (_u *LaminaUpdate) SetSkipReason(v int32) *LaminaUpdate {
+	_u.mutation.ResetSkipReason()
+	_u.mutation.SetSkipReason(v)
+	return _u
+}
+
+// SetNillableSkipReason sets the "skip_reason" field if the given value is not nil.
+func (_u *LaminaUpdate) SetNillableSkipReason(v *int32) *LaminaUpdate {
+	if v != nil {
+		_u.SetSkipReason(*v)
+	}
+	return _u
+}
+
+// AddSkipReason adds value to the "skip_reason" field.
+func (_u *LaminaUpdate) AddSkipReason(v int32) *LaminaUpdate {
+	_u.mutation.AddSkipReason(v)
+	return _u
+}
+
 // SetSinkId sets the "sink_id" field.
 func (_u *LaminaUpdate) SetSinkId(v uuid.UUID) *LaminaUpdate {
 	_u.mutation.SetSinkId(v)
@@ -495,6 +516,12 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedEpoch(); ok {
 		_spec.AddField(lamina.FieldEpoch, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.SkipReason(); ok {
+		_spec.SetField(lamina.FieldSkipReason, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedSkipReason(); ok {
+		_spec.AddField(lamina.FieldSkipReason, field.TypeInt32, value)
 	}
 	if _u.mutation.SinkCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -833,6 +860,27 @@ func (_u *LaminaUpdateOne) AddEpoch(v int64) *LaminaUpdateOne {
 	return _u
 }
 
+// SetSkipReason sets the "skip_reason" field.
+func (_u *LaminaUpdateOne) SetSkipReason(v int32) *LaminaUpdateOne {
+	_u.mutation.ResetSkipReason()
+	_u.mutation.SetSkipReason(v)
+	return _u
+}
+
+// SetNillableSkipReason sets the "skip_reason" field if the given value is not nil.
+func (_u *LaminaUpdateOne) SetNillableSkipReason(v *int32) *LaminaUpdateOne {
+	if v != nil {
+		_u.SetSkipReason(*v)
+	}
+	return _u
+}
+
+// AddSkipReason adds value to the "skip_reason" field.
+func (_u *LaminaUpdateOne) AddSkipReason(v int32) *LaminaUpdateOne {
+	_u.mutation.AddSkipReason(v)
+	return _u
+}
+
 // SetSinkId sets the "sink_id" field.
 func (_u *LaminaUpdateOne) SetSinkId(v uuid.UUID) *LaminaUpdateOne {
 	_u.mutation.SetSinkId(v)
@@ -1041,6 +1089,12 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	}
 	if value, ok := _u.mutation.AddedEpoch(); ok {
 		_spec.AddField(lamina.FieldEpoch, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.SkipReason(); ok {
+		_spec.SetField(lamina.FieldSkipReason, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedSkipReason(); ok {
+		_spec.AddField(lamina.FieldSkipReason, field.TypeInt32, value)
 	}
 	if _u.mutation.SinkCleared() {
 		edge := &sqlgraph.EdgeSpec{

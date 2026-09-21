@@ -97,6 +97,8 @@ PENDING ──► COMMITTED ──► DELETING ──► DELETED
    │            └──┼──► LOST     (file found missing on read / device declared dead)
    ├──► LOST ──────┘             (producer gave up; a late LaminaStored still
    │                              brings the lamina back, §14)
+   ├──► SKIPPED                 (the producer stored nothing on purpose: the
+   │                              scene was dark, §38.10; the row keeps the span)
    └──► (removed)                (no attempt stored anything within its TTL
                                   plus abandon_grace; recreated by a late event)
 ```

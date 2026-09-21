@@ -22,6 +22,17 @@ enum LaminaState {
   LAMINA_STATE_DELETING = 3;
   LAMINA_STATE_DELETED = 4;
   LAMINA_STATE_LOST = 5;
+  // Nothing was stored on purpose: the producer skipped the segment, and
+  // the row keeps the span and the reason so the timeline can say why
+  // (§38.10).
+  LAMINA_STATE_SKIPPED = 6;
+}
+
+// LaminaSkipReason is why a SKIPPED lamina holds nothing.
+enum LaminaSkipReason {
+  LAMINA_SKIP_REASON_UNSPECIFIED = 0;
+  // The scene was dark for longer than the source allows (§38.10).
+  LAMINA_SKIP_REASON_DARK = 1;
 }
 
 // Lamina is the immutable unit of storage, a video segment (§23). Its row is
@@ -74,6 +85,8 @@ message Lamina {
   // The epoch bucket date_started falls in, in seconds since the epoch, so
   // one index answers "the laminae of this source in this epoch".
   int64 epoch = 28;
+  // Why a SKIPPED lamina holds nothing; unspecified otherwise.
+  LaminaSkipReason skip_reason = 29;
 
   option (orm.message) = {
     rpc: {crud: true}

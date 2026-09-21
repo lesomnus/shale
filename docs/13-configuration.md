@@ -76,6 +76,8 @@ deployment runs well on them, and changes them only for a reason.
 | Producer | `push_idle` | 30 s | — | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | a source's `kind` | `ts` | `ts`, `raw`; pushed sources only | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | a source's `controls` | none | V4L2 control names and values; set before every capture start | producer | [§38.3](15-producer.md#383-managed-capture) |
+| Producer | a source's `idle.dark_after` | none (absent: every segment stored); 10 min when `idle:` is given | how long the scene stays dark before its segments are skipped; sources the producer encodes only | producer | [§38.10](15-producer.md#3810-dark-scenes) |
+| Producer | a source's `idle.threshold` | 0.10 | luma, 0..1, at or below which a pixel is dark; a frame is dark at 98 % dark pixels | producer | [§38.10](15-producer.md#3810-dark-scenes) |
 | Producer | a source's `content_type` | `video/mp2t`; `application/octet-stream` for `raw` | proposed at negotiation; a person's value on the source wins | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | encoder target | (ceiling − audio) ÷ 1.05; capped VBR with `bufsize` = 2 s at the ceiling | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Producer | start-up check | 10 s after a capture process starts | — | producer | [§38.3](15-producer.md#383-managed-capture) |

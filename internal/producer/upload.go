@@ -13,6 +13,8 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/storage"
 	"github.com/lesomnus/shale/internal/token"
@@ -181,6 +183,18 @@ func (u *Uploader) GiveUp(ctx context.Context, al *api.Allocation, reason string
 	}.Build()); err != nil {
 		u.Log.Warn("report failure", "key", al.GetLaminaKey(), "err", err.Error())
 	}
+}
+
+// Skip tells the CP nothing was stored for a segment on purpose (§38.10):
+// its lamina becomes SKIPPED with the span and the reason.
+func (u *Uploader) Skip(ctx context.Context, al *api.Allocation, ended time.Time, reason api.LaminaSkipReason) error {
+	rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	_, err := u.Laminae.Skip(rctx, api.LaminaSkipRequest_builder{
+		Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build(), DateEnded: timestamppb.New(ended), Reason: reason,
+	}.Build())
+
+	return err
 }
 
 func mustId(b []byte) pdid.Id {

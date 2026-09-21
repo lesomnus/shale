@@ -126,6 +126,7 @@ sources:
     keyframe_interval: 2s
     audio: {device: alsa:hw:1, bitrate: 64kbps}   # a microphone; absent: a USB camera has no audio
     controls: {exposure_dynamic_framerate: 0}     # V4L2 controls, set before every start
+    idle: {dark_after: 10m}   # skip the segments of a dark scene (§38.10); absent: store everything
 
   - alias: yard
     input: rtsp://10.1.2.40/stream1
@@ -289,8 +290,9 @@ configuration.
 The producer sends `ProducerService.Heartbeat` every
 `producer_heartbeat_interval` (30 s): per source its input state (`up`,
 `down`, `starting`), frame rate, measured rate over the last minute,
-keyframe interval, encoder, restarts, early cuts, and the seconds at the
-cap and episodes since the last heartbeat ([§38.5](#385-choosing-the-ceiling));
+keyframe interval, encoder, restarts, early cuts, the seconds at the
+cap and episodes since the last heartbeat ([§38.5](#385-choosing-the-ceiling)),
+and whether its scene is dark and its segments skipped ([§38.10](#3810-dark-scenes));
 for the host, CPU, temperature, and uplink usage. Consoles show a camera
 that went dark, and the Control Plane's `date_seen` on the `Producer` row
 comes from it ([§35.3](12-api.md#353-entities), [§31](09-operations.md#31-observability)).
@@ -433,3 +435,63 @@ sends a file, or stdin, in requests of a part each, resumes from `HEAD`,
 and completes the stream at the end (`--open` leaves it open). A pushed
 source is not probed ([§38.4](#384-discovery-and-registration)); whatever
 pushes it is not the producer's process.
+
+### 38.10 Dark scenes
+
+A camera without infrared sees nothing once the lights are off, and in an
+office or a lab ten dark minutes mean everybody left and forgot the
+camera. Storing that video is cost without a reader: the night is most of
+the day. A source with `idle:` skips it.
+
+```yaml
+sources:
+  - alias: bench
+    input: v4l2:/dev/video0
+    format: mjpeg
+    size: 1280x720
+    fps: 30
+    idle:
+      dark_after: 10m      # this long dark, and the segments are skipped
+      threshold: 0.10      # a pixel is dark at or below this luma (0..1)
+```
+
+- **Lit: everything is stored**, as without `idle:`. There is no motion
+  gating: a lit, static scene is stored.
+- **Dark for `dark_after`: storing stops.** Capture goes on, so live
+  viewing works and the measurement runs; the segments that open while
+  the scene is dark are held in RAM and, at their close, skipped instead
+  of uploaded. The CP is told (`LaminaService.Skip`): the lamina becomes
+  `SKIPPED` with the span and the reason, and the timeline shows the span
+  as a `DARK` gap ([§19](05-read-path.md#19-reader-semantics)), not
+  `NOT_RECEIVED`, so a camera nobody is watching is told from a camera
+  that died. Skipping is not failing: nothing is `LOST`, no attempt is
+  reported, and the row leaves with row retention
+  ([§20.4](06-retention-gc.md#204-row-retention)).
+- **Lit again: storing resumes at once**, with the segment that is open,
+  so up to one segment of what came before the light is stored with it:
+  the pre-roll costs nothing, the producer held the segment anyway. The
+  next dark spell starts the clock again. Brightness alone decides: the
+  lights coming on, a torch, a door opening are all lit frames, and a
+  webcam cannot see motion in the dark anyway.
+- **What measures it** is the capture's own ffmpeg: a one-frame-per-second
+  branch of the video runs through `blackframe` (98 % of the pixels at or
+  below `threshold`) into nothing, `-vf split[v][m];[m]fps=1,blackframe,nullsink;[v]null`,
+  and it prints a line per dark second on stderr, which the producer reads
+  like every other line the process writes. The process runs at info
+  level for that, and the lines ffmpeg prints about its inputs and
+  outputs are dropped from the log. A second without a line is lit. Only
+  a source the producer encodes can be measured: a copied stream
+  (`format: h264`, `encoder: copy`) is never decoded, and `idle:` on one
+  is refused. An `extra_output_args` with its own `-vf` replaces the
+  measuring branch, and the scene is never dark.
+- **What it does not do.** A covered lens is dark too; live view is the
+  tell. A camera whose exposure stretches in low light halves its frame
+  rate before the scene is dark, which is `controls:`
+  ([§38.3](#383-managed-capture)), and the encoder keeps running at its
+  rate while dark: lowering it needs a restart both ways and is not done.
+- **What shows.** The heartbeat's `dark` per source
+  ([§38.6](#386-health-and-heartbeats)), `shale.producer.dark{source}`
+  and `shale.producer.segments{outcome=skipped}` on the producer,
+  `shale.cp.laminae_skipped{reason}` on the CP
+  ([§31](09-operations.md#31-observability)), and the log at the two
+  transitions: `dark: storing suspended` and `lit: storing resumed`.

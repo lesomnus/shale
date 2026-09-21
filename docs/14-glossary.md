@@ -94,6 +94,8 @@
 | **Gap** | A time span with no available lamina, with a reason |
 | **NOT_RECEIVED** | Gap reason: no upload was ever attempted for the span |
 | **IN_PROGRESS** | Gap reason: an attempt is open for the span right now |
+| **DARK** | Gap reason: the producer skipped the span on purpose, the scene being dark (§38.10) |
+| **SKIPPED** | Lamina state: nothing was stored on purpose; the row keeps the span and the reason |
 | **Unavailable** | Lamina may exist but cannot be reached now |
 | **Quarantine** | Device/node excluded from new writes due to failures |
 | **Failure Score** | Decaying failure count driving quarantine |

@@ -245,7 +245,7 @@ service ReaderService {
   `size` (at most `timeline_page`, default 1,000 laminae) and `after`.
   `LaminaTimelineResponse` lists, per source, the laminae of the page with
   their states and read tokens, the gaps with their reasons
-  (`NOT_RECEIVED`, `IN_PROGRESS`, `LOST`, `DELETED`, `UNAVAILABLE`), and
+  (`NOT_RECEIVED`, `IN_PROGRESS`, `DARK`, `LOST`, `DELETED`, `UNAVAILABLE`), and
   `next`.
 - `LaminaService.Watch` filtered by a set is how a console shows segments
   arriving. Watch requires filters, so no caller watches the whole table.

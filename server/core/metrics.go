@@ -16,6 +16,7 @@ type Metrics struct {
 	Lost            metric.Int64Counter
 	DirectiveErrors metric.Int64Counter
 	Reconciled      metric.Int64Counter
+	Skipped         metric.Int64Counter
 	Deleting        metric.Int64Gauge
 	PendingHosts    metric.Int64Gauge
 	StoredBytes     metric.Int64Gauge
@@ -49,6 +50,7 @@ func NewMetrics(ctx context.Context) *Metrics {
 	return &Metrics{
 		Allocations:     o.Int64Counter("shale.cp.allocations", metric.WithDescription("allocations answered")),
 		Lost:            o.Int64Counter("shale.cp.laminae_lost", metric.WithDescription("laminae that became LOST")),
+		Skipped:         o.Int64Counter("shale.cp.laminae_skipped", metric.WithDescription("laminae a producer stored nothing for on purpose, by reason")),
 		DirectiveErrors: o.Int64Counter("shale.cp.directive_errors", metric.WithDescription("rounds of directives a node did not take")),
 		Reconciled:      o.Int64Counter("shale.cp.reconciliations", metric.WithDescription("sinks reconciled")),
 		Deleting:        o.Int64Gauge("shale.cp.laminae_deleting", metric.WithDescription("laminae waiting for their node to unlink them")),

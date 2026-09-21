@@ -31,6 +31,7 @@ const (
 	LaminaService_Renew_FullMethodName         = "/shale.LaminaService/Renew"
 	LaminaService_ReportAttempt_FullMethodName = "/shale.LaminaService/ReportAttempt"
 	LaminaService_ReportFailure_FullMethodName = "/shale.LaminaService/ReportFailure"
+	LaminaService_Skip_FullMethodName          = "/shale.LaminaService/Skip"
 	LaminaService_Reschedule_FullMethodName    = "/shale.LaminaService/Reschedule"
 	LaminaService_Timeline_FullMethodName      = "/shale.LaminaService/Timeline"
 )
@@ -78,6 +79,10 @@ type LaminaServiceClient interface {
 	ReportAttempt(ctx context.Context, in *LaminaReportAttemptRequest, opts ...grpc.CallOption) (*Attempt, error)
 	// The producer gives up on a lamina; it becomes LOST (§13).
 	ReportFailure(ctx context.Context, in *LaminaReportFailureRequest, opts ...grpc.CallOption) (*Lamina, error)
+	// The producer stored nothing for a segment on purpose (the scene was
+	// dark, §38.10): the lamina becomes SKIPPED with the span and the
+	// reason, so the timeline tells it from a camera that died.
+	Skip(ctx context.Context, in *LaminaSkipRequest, opts ...grpc.CallOption) (*Lamina, error)
 	// Changes date_expired and/or date_deleted, for one lamina or in bulk by
 	// set or source and a time range; a reason is required and audited. In
 	// bulk it works in pages and stops short of its deadline, answering how
@@ -224,6 +229,16 @@ func (c *laminaServiceClient) ReportFailure(ctx context.Context, in *LaminaRepor
 	return out, nil
 }
 
+func (c *laminaServiceClient) Skip(ctx context.Context, in *LaminaSkipRequest, opts ...grpc.CallOption) (*Lamina, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Lamina)
+	err := c.cc.Invoke(ctx, LaminaService_Skip_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *laminaServiceClient) Reschedule(ctx context.Context, in *LaminaRescheduleRequest, opts ...grpc.CallOption) (*LaminaRescheduleResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LaminaRescheduleResponse)
@@ -287,6 +302,10 @@ type LaminaServiceServer interface {
 	ReportAttempt(context.Context, *LaminaReportAttemptRequest) (*Attempt, error)
 	// The producer gives up on a lamina; it becomes LOST (§13).
 	ReportFailure(context.Context, *LaminaReportFailureRequest) (*Lamina, error)
+	// The producer stored nothing for a segment on purpose (the scene was
+	// dark, §38.10): the lamina becomes SKIPPED with the span and the
+	// reason, so the timeline tells it from a camera that died.
+	Skip(context.Context, *LaminaSkipRequest) (*Lamina, error)
 	// Changes date_expired and/or date_deleted, for one lamina or in bulk by
 	// set or source and a time range; a reason is required and audited. In
 	// bulk it works in pages and stops short of its deadline, answering how
@@ -339,6 +358,9 @@ func (UnimplementedLaminaServiceServer) ReportAttempt(context.Context, *LaminaRe
 }
 func (UnimplementedLaminaServiceServer) ReportFailure(context.Context, *LaminaReportFailureRequest) (*Lamina, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReportFailure not implemented")
+}
+func (UnimplementedLaminaServiceServer) Skip(context.Context, *LaminaSkipRequest) (*Lamina, error) {
+	return nil, status.Error(codes.Unimplemented, "method Skip not implemented")
 }
 func (UnimplementedLaminaServiceServer) Reschedule(context.Context, *LaminaRescheduleRequest) (*LaminaRescheduleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reschedule not implemented")
@@ -576,6 +598,24 @@ func _LaminaService_ReportFailure_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LaminaService_Skip_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaSkipRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LaminaServiceServer).Skip(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LaminaService_Skip_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LaminaServiceServer).Skip(ctx, req.(*LaminaSkipRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _LaminaService_Reschedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LaminaRescheduleRequest)
 	if err := dec(in); err != nil {
@@ -662,6 +702,10 @@ var LaminaService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReportFailure",
 			Handler:    _LaminaService_ReportFailure_Handler,
+		},
+		{
+			MethodName: "Skip",
+			Handler:    _LaminaService_Skip_Handler,
 		},
 		{
 			MethodName: "Reschedule",

@@ -299,6 +299,7 @@ var (
 		{Name: "date_finished", Type: field.TypeTime, Nullable: true},
 		{Name: "checksum", Type: field.TypeBytes, Nullable: true},
 		{Name: "epoch", Type: field.TypeInt64},
+		{Name: "skip_reason", Type: field.TypeInt32},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid},
@@ -313,31 +314,31 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "lamina_tenant_tenant",
-				Columns:    []*schema.Column{LaminaColumns[18]},
+				Columns:    []*schema.Column{LaminaColumns[19]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "lamina_site_site",
-				Columns:    []*schema.Column{LaminaColumns[19]},
+				Columns:    []*schema.Column{LaminaColumns[20]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "lamina_set_set",
-				Columns:    []*schema.Column{LaminaColumns[20]},
+				Columns:    []*schema.Column{LaminaColumns[21]},
 				RefColumns: []*schema.Column{SetColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "lamina_source_source",
-				Columns:    []*schema.Column{LaminaColumns[21]},
+				Columns:    []*schema.Column{LaminaColumns[22]},
 				RefColumns: []*schema.Column{SourceColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "lamina_sink_sink",
-				Columns:    []*schema.Column{LaminaColumns[22]},
+				Columns:    []*schema.Column{LaminaColumns[23]},
 				RefColumns: []*schema.Column{SinkColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -351,22 +352,22 @@ var (
 			{
 				Name:    "lamina_date_started_source_id",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[5], LaminaColumns[21]},
+				Columns: []*schema.Column{LaminaColumns[5], LaminaColumns[22]},
 			},
 			{
 				Name:    "lamina_date_started_set_id",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[5], LaminaColumns[20]},
+				Columns: []*schema.Column{LaminaColumns[5], LaminaColumns[21]},
 			},
 			{
 				Name:    "lamina_lamina_key_sink_id",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[1], LaminaColumns[22]},
+				Columns: []*schema.Column{LaminaColumns[1], LaminaColumns[23]},
 			},
 			{
 				Name:    "lamina_date_expired_sink_id",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[10], LaminaColumns[22]},
+				Columns: []*schema.Column{LaminaColumns[10], LaminaColumns[23]},
 			},
 			{
 				Name:    "lamina_state_date_finished",

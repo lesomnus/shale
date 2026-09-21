@@ -1760,6 +1760,7 @@ type SourceReport struct {
 	xxx_hidden_Episodes           int64                  `protobuf:"varint,10,opt,name=episodes"`
 	xxx_hidden_SecondsTotal       int64                  `protobuf:"varint,11,opt,name=seconds_total,json=secondsTotal"`
 	xxx_hidden_Error              string                 `protobuf:"bytes,12,opt,name=error"`
+	xxx_hidden_Dark               bool                   `protobuf:"varint,13,opt,name=dark"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -1873,6 +1874,13 @@ func (x *SourceReport) GetError() string {
 	return ""
 }
 
+func (x *SourceReport) GetDark() bool {
+	if x != nil {
+		return x.xxx_hidden_Dark
+	}
+	return false
+}
+
 func (x *SourceReport) SetSourceId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1924,6 +1932,10 @@ func (x *SourceReport) SetError(v string) {
 	x.xxx_hidden_Error = v
 }
 
+func (x *SourceReport) SetDark(v bool) {
+	x.xxx_hidden_Dark = v
+}
+
 type SourceReport_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1939,6 +1951,9 @@ type SourceReport_builder struct {
 	Episodes           int64
 	SecondsTotal       int64
 	Error              string
+	// Dark says the source's scene has been dark past `idle.dark_after`
+	// and its segments are being skipped (§38.10).
+	Dark bool
 }
 
 func (b0 SourceReport_builder) Build() *SourceReport {
@@ -1957,6 +1972,7 @@ func (b0 SourceReport_builder) Build() *SourceReport {
 	x.xxx_hidden_Episodes = b.Episodes
 	x.xxx_hidden_SecondsTotal = b.SecondsTotal
 	x.xxx_hidden_Error = b.Error
+	x.xxx_hidden_Dark = b.Dark
 	return m0
 }
 
@@ -4796,7 +4812,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\vtemperature\x18\x02 \x01(\x01R\vtemperature\x12\x1d\n" +
 	"\n" +
 	"uplink_bps\x18\x03 \x01(\x03R\tuplinkBps\x12!\n" +
-	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\xaa\x03\n" +
+	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\xbe\x03\n" +
 	"\fSourceReport\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12\x19\n" +
 	"\binput_up\x18\x02 \x01(\bR\ainputUp\x12\x1d\n" +
@@ -4813,7 +4829,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\bepisodes\x18\n" +
 	" \x01(\x03R\bepisodes\x12#\n" +
 	"\rseconds_total\x18\v \x01(\x03R\fsecondsTotal\x12\x14\n" +
-	"\x05error\x18\f \x01(\tR\x05error\"\xa5\x01\n" +
+	"\x05error\x18\f \x01(\tR\x05error\x12\x12\n" +
+	"\x04dark\x18\r \x01(\bR\x04dark\"\xa5\x01\n" +
 	"\x0eProducerStatus\x12-\n" +
 	"\asources\x18\x01 \x03(\v2\x13.shale.SourceReportR\asources\x12#\n" +
 	"\x04load\x18\x02 \x01(\v2\x0f.shale.HostLoadR\x04load\x12?\n" +

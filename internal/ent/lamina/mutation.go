@@ -38,6 +38,8 @@ type Mutation struct {
 	checksum             *[]byte
 	epoch                *int64
 	addepoch             *int64
+	skip_reason          *int32
+	addskip_reason       *int32
 	clearedFields        map[string]struct{}
 	tenant               *uuid.UUID
 	clearedtenant        bool
@@ -573,6 +575,45 @@ func (m *Mutation) ResetEpoch() {
 	m.addepoch = nil
 }
 
+// SetSkipReason sets the "skip_reason" field.
+func (m *Mutation) SetSkipReason(i int32) {
+	m.skip_reason = &i
+	m.addskip_reason = nil
+}
+
+// SkipReason returns the value of the "skip_reason" field in the mutation.
+func (m *Mutation) SkipReason() (r int32, exists bool) {
+	v := m.skip_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddSkipReason adds i to the "skip_reason" field.
+func (m *Mutation) AddSkipReason(i int32) {
+	if m.addskip_reason != nil {
+		*m.addskip_reason += i
+	} else {
+		m.addskip_reason = &i
+	}
+}
+
+// AddedSkipReason returns the value that was added to the "skip_reason" field in this mutation.
+func (m *Mutation) AddedSkipReason() (r int32, exists bool) {
+	v := m.addskip_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSkipReason resets all changes to the "skip_reason" field.
+func (m *Mutation) ResetSkipReason() {
+	m.skip_reason = nil
+	m.addskip_reason = nil
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -863,7 +904,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 22)
+	fields := make([]string, 0, 23)
 	if m.lamina_key != nil {
 		fields = append(fields, FieldLaminaKey)
 	}
@@ -914,6 +955,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.epoch != nil {
 		fields = append(fields, FieldEpoch)
+	}
+	if m.skip_reason != nil {
+		fields = append(fields, FieldSkipReason)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -972,6 +1016,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Checksum()
 	case FieldEpoch:
 		return m.Epoch()
+	case FieldSkipReason:
+		return m.SkipReason()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldSiteId:
@@ -1117,6 +1163,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEpoch(v)
 		return nil
+	case FieldSkipReason:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSkipReason(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -1172,6 +1225,9 @@ func (m *Mutation) AddedFields() []string {
 	if m.addepoch != nil {
 		fields = append(fields, FieldEpoch)
 	}
+	if m.addskip_reason != nil {
+		fields = append(fields, FieldSkipReason)
+	}
 	return fields
 }
 
@@ -1188,6 +1244,8 @@ func (m *Mutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedPlacementVersion()
 	case FieldEpoch:
 		return m.AddedEpoch()
+	case FieldSkipReason:
+		return m.AddedSkipReason()
 	}
 	return nil, false
 }
@@ -1224,6 +1282,13 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddEpoch(v)
+		return nil
+	case FieldSkipReason:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSkipReason(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Lamina numeric field %s", name)
@@ -1365,6 +1430,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldEpoch:
 		m.ResetEpoch()
+		return nil
+	case FieldSkipReason:
+		m.ResetSkipReason()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

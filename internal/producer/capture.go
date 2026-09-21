@@ -53,6 +53,10 @@ type SourceConfig struct {
 	// Controls are V4L2 controls set on a `v4l2:` device by name before
 	// every capture start, e.g. exposure_dynamic_framerate: "0" (§38.3).
 	Controls map[string]string
+	// Idle, when set, skips the segments of a scene dark for longer than
+	// it allows (§38.10); only a source the producer encodes can be
+	// measured.
+	Idle *IdleConfig
 	// Tier 2: options passed through.
 	EncoderOptions  map[string]string
 	ExtraInputArgs  []string
@@ -188,7 +192,13 @@ const TsOverhead = 1.05
 // `ceiling` is the agreed max_bitrate and `keyframe` the agreed interval.
 func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration) []string {
 	var args []string
-	args = append(args, "-hide_banner", "-loglevel", "warning", "-nostats")
+	level := "warning"
+	if c.Idle != nil {
+		// blackframe reports at info level (§38.10); the lines the level
+		// lets through are filtered where they are read.
+		level = "info"
+	}
+	args = append(args, "-hide_banner", "-loglevel", level, "-nostats")
 	args = append(args, c.ExtraInputArgs...)
 
 	input := c.Input
@@ -266,6 +276,9 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		// Every encoder here takes yuv420p; a camera's MJPEG decodes to
 		// yuvj422p, which h264_v4l2m2m refuses outright.
 		args = append(args, "-pix_fmt", "yuv420p")
+		if c.Idle != nil {
+			args = append(args, "-vf", c.Idle.filter())
+		}
 	}
 	switch {
 	case silent:
@@ -428,6 +441,10 @@ type Capture struct {
 	Profile func() (ceiling int64, keyframe time.Duration)
 	// RawLoops is how many times a `raw:` input is played; 0 is forever.
 	RawLoops int
+	// OnLine sees every line the process writes to stderr first, and
+	// answers true for one it consumed, which is then neither logged nor
+	// kept as the last error (§38.10).
+	OnLine func(line string) bool
 
 	mu       sync.Mutex
 	restarts int64
@@ -628,6 +645,14 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		for sc.Scan() {
 			line := strings.TrimSpace(sc.Text())
 			if line == "" {
+				continue
+			}
+			if c.OnLine != nil && c.OnLine(line) {
+				continue
+			}
+			if c.Source.Idle != nil && !strings.HasPrefix(line, "[") {
+				// At info level ffmpeg also describes its inputs and
+				// outputs at the start; what a component says is tagged.
 				continue
 			}
 			c.mu.Lock()

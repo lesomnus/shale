@@ -113,6 +113,8 @@ NOT_RECEIVED  no upload was ever attempted for this span:
               the camera or set was off, or the producer failed before upload
 IN_PROGRESS   an attempt is open for this span right now: a live upload
               in progress, or a segment not yet committed
+DARK          the producer stored nothing on purpose: the scene was dark
+              for longer than the source allows (§38.10)
 LOST / DELETED / UNAVAILABLE   as above, for spans covered by such laminae
 ```
 
@@ -120,7 +122,9 @@ For CCTV the difference between "the camera was not recording" and "the
 storage lost it" matters, e.g. when footage is used as evidence. Shale derives
 it without any extra reporting from the producer: a span is `LOST` only if an
 attempt exists for it. A `NOT_RECEIVED` gap that covers every member of a set
-at once almost always means the set was off. Spans older than any row the
+at once almost always means the set was off. `DARK` is the one gap the
+producer reports itself, as a `SKIPPED` lamina with the span
+([§38.10](15-producer.md#3810-dark-scenes)): it was there, and chose not to. Spans older than any row the
 index still holds are answered from policy
 ([§20.4](06-retention-gc.md#204-row-retention)).
 

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/z"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -401,6 +403,91 @@ func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFail
 	return out, nil
 }
 
+// Skip is a producer saying it stored nothing for a segment on purpose
+// (§38.10): the scene was dark. The lamina becomes SKIPPED with the span
+// and the reason, its open attempts are abandoned, and the timeline tells
+// it from a camera that died. A lamina past PENDING is answered as it is.
+func (s coreLamina) Skip(ctx context.Context, req *api.LaminaSkipRequest) (*api.Lamina, error) {
+	if _, err := actor(ctx); err != nil {
+		return nil, err
+	}
+	if req.GetReason() == api.LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED {
+		return nil, invalid("reason", "why the segment was skipped")
+	}
+
+	obj, err := s.LaminaRow(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	if obj.GetState() != api.LaminaState_LAMINA_STATE_PENDING {
+		return obj, nil
+	}
+	now := s.d.now()
+	ended := now
+	if req.HasDateEnded() {
+		ended = req.GetDateEnded().AsTime()
+	}
+	started := obj.GetDateStarted().AsTime()
+	// A producer's clock may run a little ahead of the CP's (§10).
+	if ended.Before(started) || ended.After(now.Add(5*time.Minute)) {
+		return nil, invalid("date_ended", "between the lamina's start and now")
+	}
+
+	var out *api.Lamina
+	err = s.tx(ctx, func(nx api.Server) error {
+		open, err := s.d.Ent.Attempt.Query().
+			Where(attempt.LaminaIdEQ(mustId(obj.GetId()).Uuid()), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED))).
+			All(ctx)
+		if err != nil {
+			return err
+		}
+		for _, a := range open {
+			st := api.AttemptState_ATTEMPT_STATE_ABANDONED
+			reason := "skipped: " + skipWord(req.GetReason())
+			if _, err := nx.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
+				Ref:              api.AttemptRef_builder{Id: a.Id[:]}.Build(),
+				State:            &st,
+				FailureReason:    &reason,
+				DateFinished:     timestamppb.New(now),
+				DateUpdatedForce: z.Ptr(true),
+			}.Build()); err != nil {
+				return err
+			}
+		}
+
+		st := api.LaminaState_LAMINA_STATE_SKIPPED
+		why := req.GetReason()
+		v, err := nx.Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
+			Ref:            api.LaminaRef_builder{Id: obj.GetId()}.Build(),
+			State:          &st,
+			SkipReason:     &why,
+			DateEnded:      timestamppb.New(ended),
+			EndedEstimated: z.Ptr(false),
+			DateFinished:   timestamppb.New(now),
+			DateUpdated:    obj.GetDateUpdated(),
+		}.Build())
+		out = v
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	s.d.metrics().Skipped.Add(ctx, 1, metric.WithAttributes(attribute.String("reason", skipWord(req.GetReason()))))
+
+	return out, nil
+}
+
+// skipWord is a skip reason as a word, for attributes and reasons.
+func skipWord(r api.LaminaSkipReason) string {
+	switch r {
+	case api.LaminaSkipReason_LAMINA_SKIP_REASON_DARK:
+		return "dark"
+	}
+
+	return "unspecified"
+}
+
 // Reschedule changes a lamina's dates, one or in bulk (§20.3). A delete-now
 // sets both to now; the node hears about it through its control API.
 //
@@ -779,6 +866,12 @@ func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest
 			}
 		case api.LaminaState_LAMINA_STATE_LOST:
 			reason = api.GapReason_GAP_REASON_LOST
+		case api.LaminaState_LAMINA_STATE_SKIPPED:
+			// Nothing was stored on purpose; the row says why (§38.10).
+			reason = api.GapReason_GAP_REASON_NOT_RECEIVED
+			if api.LaminaSkipReason(r.SkipReason) == api.LaminaSkipReason_LAMINA_SKIP_REASON_DARK {
+				reason = api.GapReason_GAP_REASON_DARK
+			}
 		case api.LaminaState_LAMINA_STATE_DELETING, api.LaminaState_LAMINA_STATE_DELETED:
 			reason = api.GapReason_GAP_REASON_DELETED
 		case api.LaminaState_LAMINA_STATE_COMMITTED:

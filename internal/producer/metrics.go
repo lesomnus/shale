@@ -17,6 +17,7 @@ type metrics struct {
 	keyframe   metric.Int64Gauge
 	restarts   metric.Int64Gauge
 	segments   metric.Int64Counter
+	dark       metric.Int64Gauge
 	dropped    metric.Int64Gauge
 	transcodes metric.Int64Gauge
 
@@ -40,7 +41,8 @@ func newMetrics(ctx context.Context) *metrics {
 		fps:        o.Float64Gauge("shale.producer.frame_rate", metric.WithDescription("frames per second per source")),
 		keyframe:   o.Int64Gauge("shale.producer.keyframe_interval_ms", metric.WithDescription("keyframe interval per source"), metric.WithUnit("ms")),
 		restarts:   o.Int64Gauge("shale.producer.capture_restarts", metric.WithDescription("capture restarts per source")),
-		segments:   o.Int64Counter("shale.producer.segments", metric.WithDescription("segments by outcome: stored, lost, or cut short at a node's offset (§12.2)")),
+		segments:   o.Int64Counter("shale.producer.segments", metric.WithDescription("segments by outcome: stored, lost, cut short at a node's offset (§12.2), or skipped for a dark scene (§38.10)")),
+		dark:       o.Int64Gauge("shale.producer.dark", metric.WithDescription("1 while a source's scene has been dark past idle.dark_after and its segments are skipped (§38.10)")),
 		dropped:    o.Int64Gauge("shale.producer.live_dropped", metric.WithDescription("live batches dropped because the relay lagged")),
 		transcodes: o.Int64Gauge("shale.producer.live_transcodes", metric.WithDescription("live helpers running: watched sources whose audio is encoded as Opus")),
 

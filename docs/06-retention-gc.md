@@ -109,7 +109,7 @@ Rows are kept only as long as readers can use them:
 
 | Row | Pruned |
 |---|---|
-| `DELETED` or `LOST` lamina | `row_retention` (default 30 days) after its `date_deleted`, or after it was deleted or lost, whichever is later |
+| `DELETED`, `LOST` or `SKIPPED` lamina | `row_retention` (default 30 days) after its `date_deleted`, or after it was deleted, lost or skipped, whichever is later |
 | attempt in a terminal state other than `STORED` | with its lamina, or 7 days after it ended |
 | lamina with no stored attempt | `abandon_grace` (1 hour) after its last attempt expired |
 

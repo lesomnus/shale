@@ -280,7 +280,8 @@ scrape endpoint. The names, by the process that measures them:
 | resumes, idle timeouts, per-actor limit hits | `shale.node.upload_resumes`, `shale.node.uploads_abandoned{outcome,why}`, `shale.node.refused{reason=upload_limit,read_limit}` |
 | live lag | `shale.node.oldest_upload_age_ms{sink}` |
 | abandoned uploads | `shale.node.uploads_abandoned{outcome=finalized_incomplete,deleted}` |
-| producer segments by outcome, cuts | `shale.producer.segments{outcome}`, `shale.producer.early_cuts{source}` |
+| producer segments by outcome, cuts | `shale.producer.segments{outcome=stored,lost,cut,skipped}`, `shale.producer.early_cuts{source}` |
+| dark scenes (§38.10) | `shale.producer.dark{source}` (1 while skipping), `shale.cp.laminae_skipped{reason}` |
 | upload duration by producer | `shale.producer.upload_duration_ms` |
 | retry counts, lost laminae | `shale.producer.retries{kind=same_target,placement}`, `shale.cp.laminae_lost` |
 | duplicates, orphans, recovered | `shale.cp.duplicates`, `shale.node.gc_approved{reason}`, `shale.cp.recovered{sink}` |

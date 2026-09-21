@@ -9609,6 +9609,11 @@ func (s interceptLamina) ReportFailure(ctx context.Context, req *api.LaminaRepor
 		api.LaminaService_ReportFailure_FullMethodName, req, s.LaminaServiceServer.ReportFailure)
 }
 
+func (s interceptLamina) Skip(ctx context.Context, req *api.LaminaSkipRequest) (*api.Lamina, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Skip_FullMethodName, req, s.LaminaServiceServer.Skip)
+}
+
 func (s interceptLamina) Reschedule(ctx context.Context, req *api.LaminaRescheduleRequest) (*api.LaminaRescheduleResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
 		api.LaminaService_Reschedule_FullMethodName, req, s.LaminaServiceServer.Reschedule)
@@ -11846,6 +11851,19 @@ func dispatch(ctx context.Context, s api.Server, op *pdpb.Op) (*anypb.Any, error
 		}
 
 		res, err := s.Lamina().ReportFailure(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.LaminaService_Skip_FullMethodName:
+		v := &api.LaminaSkipRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Lamina().Skip(ctx, v)
 		if err != nil {
 			return nil, err
 		}

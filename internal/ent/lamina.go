@@ -57,6 +57,8 @@ type Lamina struct {
 	Checksum []byte `json:"checksum,omitempty"`
 	// Epoch holds the value of the "epoch" field.
 	Epoch int64 `json:"epoch,omitempty"`
+	// SkipReason holds the value of the "skip_reason" field.
+	SkipReason int32 `json:"skip_reason,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -154,7 +156,7 @@ func (*Lamina) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case lamina.FieldEndedEstimated, lamina.FieldIncomplete, lamina.FieldDatesSynced:
 			values[i] = new(sql.NullBool)
-		case lamina.FieldState, lamina.FieldSize, lamina.FieldPlacementVersion, lamina.FieldEpoch:
+		case lamina.FieldState, lamina.FieldSize, lamina.FieldPlacementVersion, lamina.FieldEpoch, lamina.FieldSkipReason:
 			values[i] = new(sql.NullInt64)
 		case lamina.FieldLaminaKey:
 			values[i] = new(sql.NullString)
@@ -290,6 +292,12 @@ func (_m *Lamina) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field epoch", values[i])
 			} else if value.Valid {
 				_m.Epoch = value.Int64
+			}
+		case lamina.FieldSkipReason:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field skip_reason", values[i])
+			} else if value.Valid {
+				_m.SkipReason = int32(value.Int64)
 			}
 		case lamina.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -440,6 +448,9 @@ func (_m *Lamina) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("epoch=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Epoch))
+	builder.WriteString(", ")
+	builder.WriteString("skip_reason=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SkipReason))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

@@ -109,3 +109,20 @@ func TestCaptureAudioFallback(t *testing.T) {
 	require.Equal(t, "aac", c.AudioFallback())
 	require.Equal(t, int64(0), c.Restarts(), "a restart on purpose is not a restart")
 }
+
+// A source with `idle:` runs ffmpeg at info level with a measuring branch
+// beside the encoder (§38.10).
+func TestArgsIdle(t *testing.T) {
+	src := SourceConfig{Alias: "a", Input: "v4l2:/dev/video0", Format: "mjpeg", Size: "1280x720", Fps: 30, Idle: &IdleConfig{}}
+	args := strings.Join(Args(src, "libx264", 2_000_000, 2*time.Second), " ")
+	for _, want := range []string{"-loglevel info", "-vf split[v][m];[m]fps=1,blackframe=amount=98:threshold=26,nullsink;[v]null", "-pix_fmt yuv420p"} {
+		if !strings.Contains(args, want) {
+			t.Fatalf("args lack %q: %s", want, args)
+		}
+	}
+	src.Idle = nil
+	args = strings.Join(Args(src, "libx264", 2_000_000, 2*time.Second), " ")
+	if strings.Contains(args, "-vf") || !strings.Contains(args, "-loglevel warning") {
+		t.Fatalf("args without idle: %s", args)
+	}
+}

@@ -165,6 +165,9 @@ message SourceReport {
   int64 episodes = 10;
   int64 seconds_total = 11;
   string error = 12;
+  // Dark says the source's scene has been dark past `idle.dark_after`
+  // and its segments are being skipped (§38.10).
+  bool dark = 13;
 }
 
 // ProducerStatus is the last heartbeat the CP kept on a producer row.

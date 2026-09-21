@@ -33,6 +33,10 @@ const (
 	LaminaState_LAMINA_STATE_DELETING    LaminaState = 3
 	LaminaState_LAMINA_STATE_DELETED     LaminaState = 4
 	LaminaState_LAMINA_STATE_LOST        LaminaState = 5
+	// Nothing was stored on purpose: the producer skipped the segment, and
+	// the row keeps the span and the reason so the timeline can say why
+	// (§38.10).
+	LaminaState_LAMINA_STATE_SKIPPED LaminaState = 6
 )
 
 // Enum value maps for LaminaState.
@@ -44,6 +48,7 @@ var (
 		3: "LAMINA_STATE_DELETING",
 		4: "LAMINA_STATE_DELETED",
 		5: "LAMINA_STATE_LOST",
+		6: "LAMINA_STATE_SKIPPED",
 	}
 	LaminaState_value = map[string]int32{
 		"LAMINA_STATE_UNSPECIFIED": 0,
@@ -52,6 +57,7 @@ var (
 		"LAMINA_STATE_DELETING":    3,
 		"LAMINA_STATE_DELETED":     4,
 		"LAMINA_STATE_LOST":        5,
+		"LAMINA_STATE_SKIPPED":     6,
 	}
 )
 
@@ -74,6 +80,49 @@ func (LaminaState) Type() protoreflect.EnumType {
 }
 
 func (x LaminaState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// LaminaSkipReason is why a SKIPPED lamina holds nothing.
+type LaminaSkipReason int32
+
+const (
+	LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED LaminaSkipReason = 0
+	// The scene was dark for longer than the source allows (§38.10).
+	LaminaSkipReason_LAMINA_SKIP_REASON_DARK LaminaSkipReason = 1
+)
+
+// Enum value maps for LaminaSkipReason.
+var (
+	LaminaSkipReason_name = map[int32]string{
+		0: "LAMINA_SKIP_REASON_UNSPECIFIED",
+		1: "LAMINA_SKIP_REASON_DARK",
+	}
+	LaminaSkipReason_value = map[string]int32{
+		"LAMINA_SKIP_REASON_UNSPECIFIED": 0,
+		"LAMINA_SKIP_REASON_DARK":        1,
+	}
+)
+
+func (x LaminaSkipReason) Enum() *LaminaSkipReason {
+	p := new(LaminaSkipReason)
+	*p = x
+	return p
+}
+
+func (x LaminaSkipReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LaminaSkipReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_shale_lamina_proto_enumTypes[1].Descriptor()
+}
+
+func (LaminaSkipReason) Type() protoreflect.EnumType {
+	return &file_shale_lamina_proto_enumTypes[1]
+}
+
+func (x LaminaSkipReason) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
@@ -120,11 +169,11 @@ func (x AttemptState) String() string {
 }
 
 func (AttemptState) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_lamina_proto_enumTypes[1].Descriptor()
+	return file_shale_lamina_proto_enumTypes[2].Descriptor()
 }
 
 func (AttemptState) Type() protoreflect.EnumType {
-	return &file_shale_lamina_proto_enumTypes[1]
+	return &file_shale_lamina_proto_enumTypes[2]
 }
 
 func (x AttemptState) Number() protoreflect.EnumNumber {
@@ -161,6 +210,7 @@ type Lamina struct {
 	xxx_hidden_DateFinished     *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_finished,json=dateFinished"`
 	xxx_hidden_Checksum         []byte                 `protobuf:"bytes,27,opt,name=checksum"`
 	xxx_hidden_Epoch            int64                  `protobuf:"varint,28,opt,name=epoch"`
+	xxx_hidden_SkipReason       LaminaSkipReason       `protobuf:"varint,29,opt,name=skip_reason,json=skipReason,enum=shale.LaminaSkipReason"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -351,6 +401,13 @@ func (x *Lamina) GetEpoch() int64 {
 	return 0
 }
 
+func (x *Lamina) GetSkipReason() LaminaSkipReason {
+	if x != nil {
+		return x.xxx_hidden_SkipReason
+	}
+	return LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED
+}
+
 func (x *Lamina) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -447,6 +504,10 @@ func (x *Lamina) SetChecksum(v []byte) {
 
 func (x *Lamina) SetEpoch(v int64) {
 	x.xxx_hidden_Epoch = v
+}
+
+func (x *Lamina) SetSkipReason(v LaminaSkipReason) {
+	x.xxx_hidden_SkipReason = v
 }
 
 func (x *Lamina) HasTenant() bool {
@@ -626,6 +687,8 @@ type Lamina_builder struct {
 	// The epoch bucket date_started falls in, in seconds since the epoch, so
 	// one index answers "the laminae of this source in this epoch".
 	Epoch int64
+	// Why a SKIPPED lamina holds nothing; unspecified otherwise.
+	SkipReason LaminaSkipReason
 }
 
 func (b0 Lamina_builder) Build() *Lamina {
@@ -655,6 +718,7 @@ func (b0 Lamina_builder) Build() *Lamina {
 	x.xxx_hidden_DateFinished = b.DateFinished
 	x.xxx_hidden_Checksum = b.Checksum
 	x.xxx_hidden_Epoch = b.Epoch
+	x.xxx_hidden_SkipReason = b.SkipReason
 	return m0
 }
 
@@ -995,7 +1059,7 @@ var File_shale_lamina_proto protoreflect.FileDescriptor
 
 const file_shale_lamina_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xb6\v\n" +
+	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xf0\v\n" +
 	"\x06Lamina\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -1025,7 +1089,9 @@ const file_shale_lamina_proto_rawDesc = "" +
 	"\x0edate_committed\x18\x19 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\rdateCommitted\x12G\n" +
 	"\rdate_finished\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateFinished\x12#\n" +
 	"\bchecksum\x18\x1b \x01(\fB\a\xea\x82\x16\x03\x82\x01\x00R\bchecksum\x12\x14\n" +
-	"\x05epoch\x18\x1c \x01(\x03R\x05epoch:\xc5\x02\xca\xfc\x15\xe9\x01\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\x05epoch\x18\x1c \x01(\x03R\x05epoch\x128\n" +
+	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonR\n" +
+	"skipReason:\xc5\x02\xca\xfc\x15\xe9\x01\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a+\x12\vsource_time\x1a\n" +
 	"\n" +
@@ -1087,14 +1153,18 @@ const file_shale_lamina_proto_rawDesc = "" +
 	"\x06tenant\x1a\b\n" +
 	"\x06lamina\x1a\x06\n" +
 	"\x04sink 2(\xf4\x03B\x02\n" +
-	"\x00*\xad\x01\n" +
+	"\x00*\xc7\x01\n" +
 	"\vLaminaState\x12\x1c\n" +
 	"\x18LAMINA_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14LAMINA_STATE_PENDING\x10\x01\x12\x1a\n" +
 	"\x16LAMINA_STATE_COMMITTED\x10\x02\x12\x19\n" +
 	"\x15LAMINA_STATE_DELETING\x10\x03\x12\x18\n" +
 	"\x14LAMINA_STATE_DELETED\x10\x04\x12\x15\n" +
-	"\x11LAMINA_STATE_LOST\x10\x05*\xb8\x01\n" +
+	"\x11LAMINA_STATE_LOST\x10\x05\x12\x18\n" +
+	"\x14LAMINA_STATE_SKIPPED\x10\x06*S\n" +
+	"\x10LaminaSkipReason\x12\"\n" +
+	"\x1eLAMINA_SKIP_REASON_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17LAMINA_SKIP_REASON_DARK\x10\x01*\xb8\x01\n" +
 	"\fAttemptState\x12\x1d\n" +
 	"\x19ATTEMPT_STATE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17ATTEMPT_STATE_ALLOCATED\x10\x01\x12\x18\n" +
@@ -1103,51 +1173,53 @@ const file_shale_lamina_proto_rawDesc = "" +
 	"\x17ATTEMPT_STATE_ABANDONED\x10\x04\x12\x1b\n" +
 	"\x17ATTEMPT_STATE_DUPLICATE\x10\x05B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_lamina_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_shale_lamina_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_shale_lamina_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_shale_lamina_proto_goTypes = []any{
 	(LaminaState)(0),              // 0: shale.LaminaState
-	(AttemptState)(0),             // 1: shale.AttemptState
-	(*Lamina)(nil),                // 2: shale.Lamina
-	(*Attempt)(nil),               // 3: shale.Attempt
-	(*Tenant)(nil),                // 4: shale.Tenant
-	(*Site)(nil),                  // 5: shale.Site
-	(*Set)(nil),                   // 6: shale.Set
-	(*Source)(nil),                // 7: shale.Source
-	(*Sink)(nil),                  // 8: shale.Sink
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
-	(*Node)(nil),                  // 10: shale.Node
+	(LaminaSkipReason)(0),         // 1: shale.LaminaSkipReason
+	(AttemptState)(0),             // 2: shale.AttemptState
+	(*Lamina)(nil),                // 3: shale.Lamina
+	(*Attempt)(nil),               // 4: shale.Attempt
+	(*Tenant)(nil),                // 5: shale.Tenant
+	(*Site)(nil),                  // 6: shale.Site
+	(*Set)(nil),                   // 7: shale.Set
+	(*Source)(nil),                // 8: shale.Source
+	(*Sink)(nil),                  // 9: shale.Sink
+	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
+	(*Node)(nil),                  // 11: shale.Node
 }
 var file_shale_lamina_proto_depIdxs = []int32{
-	4,  // 0: shale.Lamina.tenant:type_name -> shale.Tenant
-	5,  // 1: shale.Lamina.site:type_name -> shale.Site
-	6,  // 2: shale.Lamina.set:type_name -> shale.Set
-	7,  // 3: shale.Lamina.source:type_name -> shale.Source
-	8,  // 4: shale.Lamina.sink:type_name -> shale.Sink
+	5,  // 0: shale.Lamina.tenant:type_name -> shale.Tenant
+	6,  // 1: shale.Lamina.site:type_name -> shale.Site
+	7,  // 2: shale.Lamina.set:type_name -> shale.Set
+	8,  // 3: shale.Lamina.source:type_name -> shale.Source
+	9,  // 4: shale.Lamina.sink:type_name -> shale.Sink
 	0,  // 5: shale.Lamina.state:type_name -> shale.LaminaState
-	9,  // 6: shale.Lamina.date_updated:type_name -> google.protobuf.Timestamp
-	9,  // 7: shale.Lamina.date_created:type_name -> google.protobuf.Timestamp
-	9,  // 8: shale.Lamina.date_started:type_name -> google.protobuf.Timestamp
-	9,  // 9: shale.Lamina.date_ended:type_name -> google.protobuf.Timestamp
-	9,  // 10: shale.Lamina.date_expired:type_name -> google.protobuf.Timestamp
-	9,  // 11: shale.Lamina.date_deleted:type_name -> google.protobuf.Timestamp
-	9,  // 12: shale.Lamina.date_committed:type_name -> google.protobuf.Timestamp
-	9,  // 13: shale.Lamina.date_finished:type_name -> google.protobuf.Timestamp
-	4,  // 14: shale.Attempt.tenant:type_name -> shale.Tenant
-	5,  // 15: shale.Attempt.site:type_name -> shale.Site
-	2,  // 16: shale.Attempt.lamina:type_name -> shale.Lamina
-	8,  // 17: shale.Attempt.sink:type_name -> shale.Sink
-	10, // 18: shale.Attempt.node:type_name -> shale.Node
-	1,  // 19: shale.Attempt.state:type_name -> shale.AttemptState
-	9,  // 20: shale.Attempt.date_updated:type_name -> google.protobuf.Timestamp
-	9,  // 21: shale.Attempt.date_created:type_name -> google.protobuf.Timestamp
-	9,  // 22: shale.Attempt.date_expires:type_name -> google.protobuf.Timestamp
-	9,  // 23: shale.Attempt.date_finished:type_name -> google.protobuf.Timestamp
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	10, // 6: shale.Lamina.date_updated:type_name -> google.protobuf.Timestamp
+	10, // 7: shale.Lamina.date_created:type_name -> google.protobuf.Timestamp
+	10, // 8: shale.Lamina.date_started:type_name -> google.protobuf.Timestamp
+	10, // 9: shale.Lamina.date_ended:type_name -> google.protobuf.Timestamp
+	10, // 10: shale.Lamina.date_expired:type_name -> google.protobuf.Timestamp
+	10, // 11: shale.Lamina.date_deleted:type_name -> google.protobuf.Timestamp
+	10, // 12: shale.Lamina.date_committed:type_name -> google.protobuf.Timestamp
+	10, // 13: shale.Lamina.date_finished:type_name -> google.protobuf.Timestamp
+	1,  // 14: shale.Lamina.skip_reason:type_name -> shale.LaminaSkipReason
+	5,  // 15: shale.Attempt.tenant:type_name -> shale.Tenant
+	6,  // 16: shale.Attempt.site:type_name -> shale.Site
+	3,  // 17: shale.Attempt.lamina:type_name -> shale.Lamina
+	9,  // 18: shale.Attempt.sink:type_name -> shale.Sink
+	11, // 19: shale.Attempt.node:type_name -> shale.Node
+	2,  // 20: shale.Attempt.state:type_name -> shale.AttemptState
+	10, // 21: shale.Attempt.date_updated:type_name -> google.protobuf.Timestamp
+	10, // 22: shale.Attempt.date_created:type_name -> google.protobuf.Timestamp
+	10, // 23: shale.Attempt.date_expires:type_name -> google.protobuf.Timestamp
+	10, // 24: shale.Attempt.date_finished:type_name -> google.protobuf.Timestamp
+	25, // [25:25] is the sub-list for method output_type
+	25, // [25:25] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_shale_lamina_proto_init() }
@@ -1165,7 +1237,7 @@ func file_shale_lamina_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_lamina_proto_rawDesc), len(file_shale_lamina_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,

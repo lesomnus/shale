@@ -111,6 +111,7 @@ var producerMay = map[string]bool{
 	api.LaminaService_Get_FullMethodName: true, api.LaminaService_Allocate_FullMethodName: true,
 	api.LaminaService_Reallocate_FullMethodName: true, api.LaminaService_Renew_FullMethodName: true,
 	api.LaminaService_ReportAttempt_FullMethodName: true, api.LaminaService_ReportFailure_FullMethodName: true,
+	api.LaminaService_Skip_FullMethodName:  true,
 	api.AttemptService_Get_FullMethodName:  true,
 	api.ProducerService_Get_FullMethodName: true, api.ProducerService_Heartbeat_FullMethodName: true,
 	api.ProducerService_Relay_FullMethodName: true, api.ProducerService_RenewCertificate_FullMethodName: true,

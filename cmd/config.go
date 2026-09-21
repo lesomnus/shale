@@ -194,6 +194,10 @@ type SourceConfig struct {
 	// capture start, by v4l2-ctl's names, e.g. `exposure_dynamic_framerate:
 	// 0` so a Logitech camera keeps its frame rate in low light (§38.3).
 	Controls map[string]string `yaml:"controls"`
+	// Idle skips the segments of a scene that has been dark for
+	// `dark_after` (10 min) until it is lit again (§38.10); absent, every
+	// segment is stored.
+	Idle *IdleConfig `yaml:"idle"`
 	// Tier 2.
 	EncoderOptions  map[string]string `yaml:"encoder_options"`
 	ExtraInputArgs  []string          `yaml:"extra_input_args"`
@@ -202,6 +206,17 @@ type SourceConfig struct {
 	Command string `yaml:"command"`
 	// Zone label (§7).
 	Zone string `yaml:"zone"`
+}
+
+// IdleConfig is a source's `idle:` (§38.10).
+type IdleConfig struct {
+	// DarkAfter is how long the scene stays dark before its segments are
+	// skipped; 10 minutes by default.
+	DarkAfter time.Duration `yaml:"dark_after"`
+	// Threshold is the luma, as a fraction of full scale (0.10 by
+	// default), at or below which a pixel is dark; a frame is dark when
+	// 98% of its pixels are.
+	Threshold float64 `yaml:"threshold"`
 }
 
 // AudioConfig is a source's audio (§38.3): absent, a camera's own audio is

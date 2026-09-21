@@ -141,6 +141,11 @@ func Epoch(v int64) predicate.Lamina {
 	return predicate.Lamina(sql.FieldEQ(FieldEpoch, v))
 }
 
+// SkipReason applies equality check predicate on the "skip_reason" field. It's identical to SkipReasonEQ.
+func SkipReason(v int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldEQ(FieldSkipReason, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Lamina {
 	return predicate.Lamina(sql.FieldEQ(FieldTenantId, v))
@@ -859,6 +864,46 @@ func EpochLT(v int64) predicate.Lamina {
 // EpochLTE applies the LTE predicate on the "epoch" field.
 func EpochLTE(v int64) predicate.Lamina {
 	return predicate.Lamina(sql.FieldLTE(FieldEpoch, v))
+}
+
+// SkipReasonEQ applies the EQ predicate on the "skip_reason" field.
+func SkipReasonEQ(v int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldEQ(FieldSkipReason, v))
+}
+
+// SkipReasonNEQ applies the NEQ predicate on the "skip_reason" field.
+func SkipReasonNEQ(v int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldNEQ(FieldSkipReason, v))
+}
+
+// SkipReasonIn applies the In predicate on the "skip_reason" field.
+func SkipReasonIn(vs ...int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldIn(FieldSkipReason, vs...))
+}
+
+// SkipReasonNotIn applies the NotIn predicate on the "skip_reason" field.
+func SkipReasonNotIn(vs ...int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldNotIn(FieldSkipReason, vs...))
+}
+
+// SkipReasonGT applies the GT predicate on the "skip_reason" field.
+func SkipReasonGT(v int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldGT(FieldSkipReason, v))
+}
+
+// SkipReasonGTE applies the GTE predicate on the "skip_reason" field.
+func SkipReasonGTE(v int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldGTE(FieldSkipReason, v))
+}
+
+// SkipReasonLT applies the LT predicate on the "skip_reason" field.
+func SkipReasonLT(v int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldLT(FieldSkipReason, v))
+}
+
+// SkipReasonLTE applies the LTE predicate on the "skip_reason" field.
+func SkipReasonLTE(v int32) predicate.Lamina {
+	return predicate.Lamina(sql.FieldLTE(FieldSkipReason, v))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

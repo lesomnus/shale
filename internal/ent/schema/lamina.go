@@ -51,6 +51,7 @@ func (Lamina) Fields() []ent.Field {
 		field.Bytes("checksum").
 			Optional(),
 		field.Int64("epoch"),
+		field.Int32("skip_reason"),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").

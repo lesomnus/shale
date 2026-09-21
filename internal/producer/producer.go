@@ -192,6 +192,9 @@ type source struct {
 	// prefix is a raw source's last prefix frame, what its laminae start
 	// with (§38.9), kept across streams.
 	prefix []byte
+	// dark is the source's dark-scene state when it has an `idle:`
+	// (§38.10); nil otherwise.
+	dark *darkTracker
 
 	mu      sync.Mutex
 	profile *api.SegmentProfile
@@ -220,6 +223,7 @@ type source struct {
 	lost       int64
 	stored     int64
 	cut        int64
+	skipped    int64
 	lastReport time.Time
 	raise      bool
 }
@@ -265,11 +269,54 @@ func New(cfg Config) (*Producer, error) {
 				return nil, fmt.Errorf("source %s: a raw source declares max_bitrate; there is no camera mode to guess it from", sc.Alias)
 			}
 		}
+		if sc.Idle != nil {
+			// A copied stream is never decoded, so there is nothing to
+			// measure; a `raw:` replay (tests) is fed its measurements.
+			copied := !strings.HasPrefix(sc.Input, "raw:") && (sc.Format == "h264" || sc.Format == "h265" || sc.Encoder == "copy")
+			if sc.Input == InputPush || sc.Command != "" || copied {
+				return nil, fmt.Errorf("source %s: idle needs a source the producer encodes, to measure its frames (§38.10)", sc.Alias)
+			}
+			s.dark = newDarkTracker(sc.Idle.darkAfter(), p.now)
+			s.dark.onChange = func(suppressed bool) { p.darkChanged(s, suppressed) }
+		}
 		p.sources[sc.Alias] = s
 		p.order = append(p.order, s)
 	}
 
 	return p, nil
+}
+
+// Observe takes one line of a source's capture output, as the capture
+// does for the process it runs (§38.10); exported so a test can be the
+// process.
+func (p *Producer) Observe(alias, line string) bool {
+	s := p.sources[alias]
+	if s == nil || s.dark == nil {
+		return false
+	}
+
+	return s.dark.observe(line)
+}
+
+// darkChanged is a source's scene going dark for good, or lit again: from
+// here on its segments are skipped, or stored again from the one that is
+// open (§38.10).
+func (p *Producer) darkChanged(s *source, suppressed bool) {
+	if suppressed {
+		p.log.Info("dark: storing suspended", "source", s.cfg.Alias, "since", s.dark.Since())
+
+		return
+	}
+	s.mu.Lock()
+	for _, seg := range s.pending {
+		seg.SetDark(false)
+	}
+	s.mu.Unlock()
+	select {
+	case s.wake <- struct{}{}:
+	default:
+	}
+	p.log.Info("lit: storing resumed", "source", s.cfg.Alias)
 }
 
 // The ways a source reaches the producer (§38.1) that are not a capture
@@ -550,6 +597,7 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 		Source:   s.cfg,
 		Log:      p.log,
 		RawLoops: s.cfg.RawLoops,
+		OnLine:   func(line string) bool { return s.dark != nil && s.dark.observe(line) },
 		Profile: func() (int64, time.Duration) {
 			s.mu.Lock()
 			defer s.mu.Unlock()
@@ -573,6 +621,11 @@ func (p *Producer) newCutter(s *source, reader *Reader) *Cutter {
 			return s.sched
 		},
 		Open: func(seg *Segment) {
+			if s.dark != nil && s.dark.Suppressed() {
+				// Opened in the dark: skipped unless the scene is lit
+				// before it closes (§38.10).
+				seg.SetDark(true)
+			}
 			if p.cfg.Mode == api.UploadMode_UPLOAD_MODE_LIVE {
 				p.enqueue(s, seg)
 			}
@@ -580,6 +633,12 @@ func (p *Producer) newCutter(s *source, reader *Reader) *Cutter {
 		Out: func(seg *Segment) {
 			if p.cfg.Mode != api.UploadMode_UPLOAD_MODE_LIVE {
 				p.enqueue(s, seg)
+			} else {
+				// Already queued at open; a dark one waits for its close.
+				select {
+				case s.wake <- struct{}{}:
+				default:
+				}
 			}
 			if seg.Early {
 				p.m.earlyCuts.Add(context.Background(), 1, sourceAttr(s.cfg.Alias))
@@ -808,6 +867,42 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 			continue
 		}
 
+		if seg.Dark() {
+			// A dark segment is held until it closes, in case the scene is
+			// lit meanwhile, then skipped (§38.10).
+			if !seg.Closed() {
+				select {
+				case <-ctx.Done():
+					return nil
+				case <-s.wake:
+				}
+				continue
+			}
+			if al == nil {
+				var err error
+				al, err = p.allocationFor(ctx, s, seg)
+				if err != nil {
+					if permanent(err) {
+						p.skip(ctx, s, seg, nil)
+						backoff = 0
+						continue
+					}
+					backoff = nextBackoff(backoff)
+					p.log.Warn("no allocation for a skipped segment; keeping it", "source", s.cfg.Alias, "started", seg.Started, "err", err.Error(), "retry_in", backoff.String())
+					if !sleep(ctx, backoff) {
+						return nil
+					}
+					continue
+				}
+				s.mu.Lock()
+				s.headAlloc = al
+				s.mu.Unlock()
+			}
+			p.skip(ctx, s, seg, al)
+			backoff = 0
+			continue
+		}
+
 		if p.overBudget() {
 			// The oldest unstored segment is this one: dropped (§16).
 			p.drop(ctx, s, seg, "over the RAM budget")
@@ -895,6 +990,25 @@ func (p *Producer) drop(ctx context.Context, s *source, seg *Segment, why string
 	}
 	p.log.Warn("lost", "source", s.cfg.Alias, "started", seg.Started, "key", key, "why", why)
 	p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "lost")))
+}
+
+// skip lets a dark segment go (§38.10): the CP is told its lamina holds
+// nothing on purpose, when it has one, and the count says so.
+func (p *Producer) skip(ctx context.Context, s *source, seg *Segment, al *api.Allocation) {
+	seg.Discard()
+	s.mu.Lock()
+	s.finish(seg)
+	s.skipped++
+	s.mu.Unlock()
+	key := ""
+	if al != nil {
+		key = al.GetLaminaKey()
+		if err := p.uploader.Skip(ctx, al, seg.Ended, api.LaminaSkipReason_LAMINA_SKIP_REASON_DARK); err != nil {
+			p.log.Warn("skip not recorded", "source", s.cfg.Alias, "key", key, "err", err.Error())
+		}
+	}
+	p.log.Info("skipped", "source", s.cfg.Alias, "started", seg.Started, "key", key, "why", "dark")
+	p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "skipped")))
 }
 
 // finish takes the head segment off the queue and remembers its lamina as
@@ -1060,7 +1174,11 @@ func (p *Producer) ticks(ctx context.Context) error {
 		case <-t.C:
 		}
 		raise := false
+		now := p.now()
 		for _, s := range p.order {
+			if s.dark != nil {
+				s.dark.tick(now)
+			}
 			s.mu.Lock()
 			if s.raise {
 				raise = true
@@ -1119,6 +1237,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 			SecondsAtCap:       s.atCap,
 			Episodes:           s.episodes,
 			SecondsTotal:       s.seconds,
+			Dark:               s.dark != nil && s.dark.Suppressed(),
 		}
 		if in != nil {
 			r.CaptureRestarts = in.Restarts()
@@ -1138,6 +1257,11 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		p.m.fps.Record(ctx, r.FrameRate, sourceAttr(s.cfg.Alias))
 		p.m.keyframe.Record(ctx, r.KeyframeIntervalMs, sourceAttr(s.cfg.Alias))
 		p.m.restarts.Record(ctx, r.CaptureRestarts, sourceAttr(s.cfg.Alias))
+		dark := int64(0)
+		if r.Dark {
+			dark = 1
+		}
+		p.m.dark.Record(ctx, dark, sourceAttr(s.cfg.Alias))
 	}
 	p.relay.mu.Lock()
 	p.m.dropped.Record(ctx, p.relay.dropped)

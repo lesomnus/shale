@@ -402,6 +402,9 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 			ExtraInputArgs: sc.ExtraInputArgs, ExtraOutputArgs: sc.ExtraOutputArgs, Command: sc.Command, Zone: sc.Zone,
 			Controls: sc.Controls,
 		}
+		if sc.Idle != nil {
+			src.Idle = &producer.IdleConfig{DarkAfter: sc.Idle.DarkAfter, Threshold: sc.Idle.Threshold}
+		}
 		if sc.MaxBitrate == "" || strings.EqualFold(sc.MaxBitrate, "auto") {
 			src.MaxBitrateAuto = true
 		} else {

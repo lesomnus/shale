@@ -118,10 +118,10 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 	}
 
-	// Row retention (§20.4): DELETED and LOST laminae a month after they
-	// ended.
+	// Row retention (§20.4): DELETED, LOST and SKIPPED laminae a month
+	// after they ended.
 	old, err := j.d.Ent.Lamina.Query().
-		Where(lamina.StateIn(int32(api.LaminaState_LAMINA_STATE_DELETED), int32(api.LaminaState_LAMINA_STATE_LOST)), lamina.DateFinishedLT(now.Add(-DefaultRowRetention))).
+		Where(lamina.StateIn(int32(api.LaminaState_LAMINA_STATE_DELETED), int32(api.LaminaState_LAMINA_STATE_LOST), int32(api.LaminaState_LAMINA_STATE_SKIPPED)), lamina.DateFinishedLT(now.Add(-DefaultRowRetention))).
 		Limit(1000).All(ctx)
 	if err != nil {
 		return err
