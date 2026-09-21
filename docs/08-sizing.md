@@ -98,20 +98,29 @@ reports for a sink start once that sink's scan is complete.
 
 The database holds a row per object, a row per attempt (three per
 allocation, [§13](04-write-path.md#13-failure-handling)), and payday's audit
-trail, which records every write inside the transaction that makes it. The
-#56 load run (48 sources, small objects, three sinks) measured what each
-costs, as PostgreSQL stores it, indexes included:
+trail. The #56 load run (48 sources, small objects, three sinks) measured
+what each costs, as PostgreSQL stores it, indexes included:
 
 ```text
 object row                       ~1.2 KB, kept as long as the object (§20.4)
 attempt row                      ~0.5 KB; the stored one with its object,
                                  the two others for 7 days
-audit row                        ~0.9 KB, and about 13 per object over its life:
-                                   allocation 4 (the object, three attempts)
-                                   the node's events ~6 (stored, superseded attempts)
-                                   GC 3 (the proposal, DELETING, DELETED)
-                                 plus ~10,000 an hour of heartbeats, whatever the load
+audit row                        ~0.9 KB: ~350 B of values, the rest the row's
+                                 columns and seven indexes
 ```
+
+payday's recorder is told about every write inside the transaction that
+makes it, and on that run the trail was thirteen rows an object over its
+life (allocation 4, the node's events ~6, GC 3) plus the heartbeats and the
+tenant's byte counter: 5.7 GB of a 6.9 GB database after twenty hours,
+with no clock to leave by. Almost none of it was a decision anybody made.
+So the trail here **records what people do**: a write lands on it when
+the caller is a person, and the system's own writes, the hosts', the
+leader's and the deployment's, do not ([§20.4](06-retention-gc.md#204-row-retention)).
+An operator's reschedule, a quarantine, a policy activated, a person made:
+those are on the trail with who, what, from what, to what, and why; an
+object allocated, stored and collected is not, and the object's row and its
+attempts say what happened to it.
 
 For the fleet of [§26.3](#263-worked-example-cctv), 5,000 cameras at 4 Mbps
 and 64 MB objects make ~3.4 M objects a day:
@@ -119,14 +128,11 @@ and 64 MB objects make ~3.4 M objects a day:
 ```text
 objects and stored attempts, 30 days:   3.4 M × 30 × 1.7 KB ≈ 170 GB
 failed attempts, 7 days:                3.4 M ×  7 × 1.0 KB ≈  24 GB
-audit trail:                            3.4 M × 13 × 0.9 KB ≈  40 GB a day
+audit trail:                            what operators do; a few rows a minute
 ```
 
-The trail is the largest table from the first day and the only one without
-a clock of its own: rows are pruned with their object, the trail is not.
-What bounds it is payday's audit retention policy, `audit:` in the
-configuration, a profile per kind of thing with an archive on disk for what
-leaves the table; what a machine did to an object is an operating record
-that can go with the object, what a person did is not. Shale does not wire
-that policy yet (#74). Until it does, budget the trail at ~40 GB a day for
-this fleet, and at ~10 KB an object for any other.
+What the trail still lacks is a clock of its own for the rows it does
+keep: payday's audit retention policy, `audit:` in the configuration, a
+profile per kind of thing with an archive on disk for what leaves the
+table. Shale does not wire it yet (#74); at the rate people write, that is
+a compliance question rather than a sizing one.

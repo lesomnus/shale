@@ -150,7 +150,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 	w := watch.New(b)
 
-	rec := bare.Recorders{pd.Recorder(), pd.WatchRecorder(w)}
+	// The trail records what people do; the system's own writes are not
+	// evidence of anybody's decision (§26.5).
+	rec := bare.Recorders{core.TrailOfPeople(pd.Recorder()), pd.WatchRecorder(w)}
 	if c.Watch.Outbox {
 		rec = append(rec, pd.OutboxRecorder())
 	}
