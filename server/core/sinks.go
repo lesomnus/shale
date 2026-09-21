@@ -91,6 +91,11 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 		}
 		if isZero(row.NodeId) || row.NodeId == nodeId.Uuid() || !s.nodeAlive(ctx, pdid.Id(row.NodeId), now) {
 			patch.Node = api.NodeRef_builder{Id: nodeId.Bytes()}.Build()
+		} else {
+			// Another live node holds it: what this node says about the
+			// device, its SMART above all, is not taken (§33.7). Its sinks
+			// are refused below for the same reason.
+			continue
 		}
 		if _, err := srv.Device().Patch(ctx, patch.Build()); err != nil {
 			return nil, err
@@ -128,7 +133,10 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 		clamped := capacity > clamp
 		warnings := append([]string(nil), sr.GetWarnings()...)
 		if clamped {
+			// The row holds the clamped value (§27, §33.7): a node's word
+			// about its size goes no further than max_sink_capacity.
 			warnings = append(warnings, "capacity clamped by max_sink_capacity")
+			capacity = clamp
 		}
 
 		if row == nil {
@@ -184,9 +192,12 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 			patch.DateSeen = timestamppb.New(now)
 			attachment = api.SinkAttachment_SINK_ATTACHMENT_ATTACHED
 		case s.nodeAlive(ctx, pdid.Id(row.NodeId), now):
-			// Another node still serves it: the claim is refused (§28.3).
-			serve = false
-			patch.Path = nil
+			// Another node still serves it: the claim is refused (§28.3),
+			// and so is the rest of the report; a node's word about a sink
+			// it does not hold changes nothing (§33.7).
+			answers = append(answers, api.SinkAnswer_builder{SinkId: sid.Bytes(), Attachment: attachment, Serve: false}.Build())
+
+			continue
 		default:
 			// Its node is down: pending adoption; auto-adopt after a while
 			// is the leader's job.

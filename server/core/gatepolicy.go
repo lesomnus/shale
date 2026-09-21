@@ -211,7 +211,12 @@ func (p ClusterPolicy) May(_ context.Context, c gate.Call) error {
 			return denied(m, "not something a relay does")
 		}
 	case DomHolder:
-		if !p.ClusterTenant.IsZero() && c.Tenant != p.ClusterTenant {
+		if p.ClusterTenant.IsZero() {
+			// No cluster tenant is known here yet: nobody is an operator,
+			// rather than everybody (§33.7).
+			return denied(m, "the cluster tenant is not known yet; there are no cluster operators until it is")
+		}
+		if c.Tenant != p.ClusterTenant {
 			return denied(m, "the cluster API serves cluster operators")
 		}
 		if strings.HasPrefix(m, "/shale.SigningKeyService/") && (strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply")) {

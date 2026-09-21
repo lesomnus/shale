@@ -178,14 +178,17 @@ type pushSource struct {
 }
 
 // Run hands each stream to read, as Capture.Run hands a capture's stdout,
-// until the context ends. A stream ends when a request completed it.
+// until the context ends. A stream ends when a request completed it, or
+// when the producer stops: a reader blocked on a silent stream is let go.
 func (s *pushSource) Run(ctx context.Context, read func(st *pushStream)) error {
 	for {
 		st := s.await(ctx)
 		if st == nil {
 			return nil
 		}
+		stop := context.AfterFunc(ctx, st.abort)
 		read(st)
+		stop()
 		s.mu.Lock()
 		if s.stream == st {
 			// The reader gave up on a stream nobody completed (the
@@ -216,7 +219,7 @@ func (s *pushSource) await(ctx context.Context) *pushStream {
 // current answers the open stream, opening one when there is none.
 func (s *pushSource) current() *pushStream {
 	if s.stream == nil {
-		s.stream = &pushStream{ch: make(chan []byte), idle: s.idle}
+		s.stream = &pushStream{ch: make(chan []byte), stop: make(chan struct{}), idle: s.idle}
 		select {
 		case s.wake <- struct{}{}:
 		default:
@@ -318,6 +321,8 @@ func (s *pushSource) put(w http.ResponseWriter, r *http.Request, log *slog.Logge
 			case st.ch <- chunk:
 			case <-r.Context().Done():
 				rerr = r.Context().Err()
+			case <-st.stop:
+				rerr = errStopped
 			}
 			if rerr != nil {
 				break
@@ -375,12 +380,21 @@ type pushStream struct {
 	OnIdle func()
 	idled  bool
 	once   sync.Once
+	// stop is closed when the producer stops: Read answers errStopped
+	// and a request in flight is ended.
+	stop     chan struct{}
+	stopOnce sync.Once
 }
+
+// errStopped is a stream left because the producer is stopping.
+var errStopped = errors.New("push: the producer is stopping")
 
 func (s *pushStream) close() { s.once.Do(func() { close(s.ch) }) }
 
+func (s *pushStream) abort() { s.stopOnce.Do(func() { close(s.stop) }) }
+
 // Read blocks for the next bytes; it answers io.EOF once the stream was
-// completed and drained.
+// completed and drained, and errStopped once the producer stops.
 func (s *pushStream) Read(p []byte) (int, error) {
 	for len(s.rest) == 0 {
 		timer := time.NewTimer(s.idle)
@@ -392,6 +406,10 @@ func (s *pushStream) Read(p []byte) (int, error) {
 			}
 			s.rest = b
 			s.idled = false
+		case <-s.stop:
+			timer.Stop()
+
+			return 0, errStopped
 		case <-timer.C:
 			if !s.idled && s.OnIdle != nil {
 				s.idled = true

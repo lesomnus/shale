@@ -154,6 +154,8 @@ check that a set plays.
 ## Not here yet
 
 - The reader agent: no manifests until it exists.
-- A Helm chart: the kustomization is the deliverable for now.
+- A Helm chart: none, on purpose. The kustomization is the deliverable;
+  a deployment overlays it (`kustomize edit`, a patch for its names,
+  storage class and node selector) rather than templating it.
 - An Ingress with TLS passthrough: this cluster has no ingress controller;
   the NodePort stands in for it.

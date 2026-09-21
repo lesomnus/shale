@@ -653,19 +653,18 @@ func defaultHttpAddr(apiAddr string) string {
 }
 
 // ListenAddr is where a surface listens: the configuration, or the
-// defaults of §34.1 (7400 for the tenant API, 7401 for the cluster API,
-// on localhost when `all` serves both).
+// defaults of §34.1 (7400 for the tenant API on every interface, 7401 for
+// the cluster API on localhost). The cluster API is internal (§33.7): a
+// deployment whose nodes are on other machines names an internal
+// interface in `cluster.addr`, and nothing else opens it to the world.
 func (c Config) ListenAddr(surface Surface, all bool) string {
 	switch surface {
 	case SurfaceCluster:
 		if c.Cluster.Addr != "" {
 			return c.Cluster.Addr
 		}
-		if all {
-			return "127.0.0.1:7401"
-		}
 
-		return ":7401"
+		return "127.0.0.1:7401"
 	default:
 		if c.Server.Addr != "" {
 			return c.Server.Addr

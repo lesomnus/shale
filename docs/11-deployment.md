@@ -22,7 +22,10 @@ shale serve all [--dev <dir>]     control, cluster, one Storage Node, and one Re
   ([§35.2](12-api.md#352-two-api-surfaces)). Both are stateless and share the
   metadata DB.
 - `shale serve all` serves both APIs on **separate listeners**. The cluster
-  listener binds to localhost by default.
+  listener binds to localhost by default, under `serve all` and `serve
+  cluster` alike ([§33.7](10-security.md#337-what-a-compromise-costs)); a
+  deployment whose nodes are on other machines names an internal
+  interface in `cluster.addr`, and nothing else opens it.
 - A host needs one setting, the Control Plane's address. Everything else about
   its identity is done by joining and adoption
   ([§33.4](10-security.md#334-joining-and-adoption)).

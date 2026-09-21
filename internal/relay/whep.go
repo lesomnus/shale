@@ -223,6 +223,15 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	w.mu.Unlock()
 	w.r.m.sessions.Add(req.Context(), 1, outcomeAttr("started"))
 	src.addViewer(key, v)
+	// The session lasts as long as its token (§33.7): a viewer who is still
+	// watching asks for a new one.
+	if exp := claims.GetExp().AsTime(); !exp.IsZero() {
+		time.AfterFunc(time.Until(exp), func() {
+			if w.end(key) {
+				w.r.log.Info("viewer's token expired", "source", sourceId.String(), "session", key[:8])
+			}
+		})
+	}
 	w.r.log.Info("viewer", "source", sourceId.String(), "actor", actor, "session", key[:8])
 
 	rw.Header().Set("Content-Type", "application/sdp")

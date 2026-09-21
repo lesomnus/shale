@@ -17,11 +17,12 @@ per sink:   sink_id, device_id, total/free bytes (§22.2), pressure state,
             (e.g. several sinks on one device)
 ```
 
-The CP believes a node only about what is attached to it: reports about a
-device or sink attached to another node are rejected, and a reported sink
-capacity above `max_sink_capacity` (64 TB) is clamped for placement and
-flagged, so neither a typo nor a compromised node can capture the cluster's
-writes ([§11](03-placement.md#11-placement), [§33.7](10-security.md#337-what-a-compromise-costs)).
+The CP believes a node only about what is attached to it: a report about a
+device or sink another live node holds changes nothing, its SMART and its
+pressure included, and a reported sink capacity above `max_sink_capacity`
+(64 TB) is stored clamped and flagged, so neither a typo nor a compromised
+node can capture the cluster's writes or empty another node's sink out of
+placement ([§11](03-placement.md#11-placement), [§33.7](10-security.md#337-what-a-compromise-costs)).
 
 Health is tracked where failures actually happen:
 

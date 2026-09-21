@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -63,6 +64,10 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 		return status.Error(codes.Unauthenticated, err.Error())
 	}
 	actor, _ := pdid.From(claims.GetActor())
+	// The token is good for as long as it says (§33.7): a stream that
+	// outlives it ends, and the producer attaches again with the token its
+	// next heartbeat brought.
+	exp := claims.GetExp().AsTime()
 
 	a := &attachment{r: g.r, stream: stream, sources: map[pdid.Id]*source{}, actor: actor}
 	var accepted [][]byte
@@ -107,6 +112,9 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 		d := msg.GetData()
 		if d == nil {
 			continue
+		}
+		if time.Now().After(exp) {
+			return status.Error(codes.PermissionDenied, "the publish token expired; attach again with a fresh one")
 		}
 		id, err := pdid.From(d.GetSourceId())
 		if err != nil {

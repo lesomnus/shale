@@ -306,14 +306,14 @@ fetches laminae directly. The media server itself manages no keys.
 
 | Leaked | Attacker can | Response |
 |---|---|---|
-| One access token | one operation on one lamina until it expires; a view token, one camera for an hour | none needed |
-| A publish token | feed false video for that producer's cameras to viewers, for up to a day | erase the producer; the relay refuses it at its next attach |
+| One access token | one operation on one lamina until it expires; a view token, one camera for an hour, and the relay ends the session when the token does | none needed |
+| A publish token | feed false video for that producer's cameras to viewers, for up to a day: the relay ends a stream when its token expires, and learns nothing else about a producer | erase the producer; the token expires within `publish_token_ttl`, or rotate the signing key at once ([§33.3](#333-signing-keys-and-rotation)) |
 | A relay's key | serve any stream it carries to anyone, and feed viewers anything; it holds no token for any Storage Node, so recordings are out of reach | erase the relay and adopt the machine again; its producers are reassigned |
 | A producer's key | negotiate and allocate for that producer's set, and write laminae into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
 | A reader's key | read the laminae of its sites | erase the reader; effective at once for new tokens, within `read_token_ttl` for issued ones |
 | A person's session | anything that person may do, inside **their tenant only**; the wall holds | end the session, reset the password |
-| A node's key | act as that node: serve or drop its own sinks' data, report its own devices and sinks (the CP rejects reports for sinks and devices not attached to that node, and clamps reported capacity, [§27](09-operations.md#27-node--device--sink-health-and-quarantine)) | erase the node and adopt the machine again under a new key |
+| A node's key | act as that node: serve or drop its own sinks' data, report its own devices and sinks. A report about a sink or a device another live node holds changes nothing, its SMART and pressure included, and a sink's capacity is stored clamped to `max_sink_capacity` ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) | erase the node and adopt the machine again under a new key |
 | A hardware identity | request adoption as a known host | nothing until an operator adopts it; with `readopt: auto`, impersonate that host, which is why the default is `manual` |
-| A cluster operator's session | manage the cluster and read across tenants, **from the internal network** | end the session; the cluster API is not reachable from outside |
-| The CP signing key | read and write any lamina on any node | rotate the key at once ([§33.3](#333-signing-keys-and-rotation)) |
+| A cluster operator's session | manage the cluster and read across tenants, **from the internal network**: the cluster API binds to localhost unless `cluster.addr` names an interface, and until the cluster tenant is known it serves no person at all | end the session; the cluster API is not reachable from outside |
+| The CP signing key | read and write any lamina on any node | rotate the key at once ([§33.3](#333-signing-keys-and-rotation)); hosts drop the retired key within their next poll, 30 s |
 | The CA key | impersonate nodes or the CP to clients | re-initialize the CA and adopt every host again; protect it accordingly |
