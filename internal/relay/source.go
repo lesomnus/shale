@@ -80,9 +80,22 @@ func (s *source) detach(f feeder) {
 	if s.feeder == f {
 		s.feeder = nil
 		s.started = false
-		s.demux = mpegts.New()
+		s.demux = s.freshDemux()
 		s.gop = nil
 	}
+}
+
+// freshDemux is a demuxer for the stream to come, which knows the
+// parameter sets the last one saw: a producer that attaches again sends
+// the same camera, and one whose encoder wrote them once will not write
+// them again (#84).
+func (s *source) freshDemux() *mpegts.Demuxer {
+	d := mpegts.New()
+	if s.demux != nil {
+		d.SetParams(s.demux.Params())
+	}
+
+	return d
 }
 
 // feed takes TS bytes from the producer.
@@ -93,7 +106,7 @@ func (s *source) feed(b []byte) {
 	units, audio, err := s.demux.WriteAll(b)
 	if err != nil {
 		s.r.log.Warn("ingest", "source", s.id.String(), "err", err.Error())
-		s.demux = mpegts.New()
+		s.demux = s.freshDemux()
 		return
 	}
 	for _, u := range audio {

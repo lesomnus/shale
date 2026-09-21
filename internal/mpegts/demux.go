@@ -54,6 +54,13 @@ type Demuxer struct {
 	open    bool
 	pending []AccessUnit
 
+	// params are the last parameter sets the video stream carried, with
+	// their start codes: H.264's SPS and PPS, H.265's VPS, SPS and PPS. A
+	// keyframe that arrives without them gets them, so a viewer joining at
+	// any point decodes from the first keyframe it is handed (§39.4): some
+	// encoders write them once and never again (#84).
+	params []byte
+
 	abuf     []byte
 	apts     int64
 	aopen    bool
@@ -350,10 +357,141 @@ func (d *Demuxer) finish() {
 		d.open = false
 		return
 	}
-	au := AccessUnit{Data: append([]byte(nil), d.buf...), PTS: d.pts, Keyframe: keyframe(d.buf, d.codec)}
+	key := keyframe(d.buf, d.codec)
+	var data []byte
+	if ps := ParamSets(d.buf, d.codec); ps != nil {
+		d.params = append(d.params[:0], ps...)
+	} else if key && len(d.params) > 0 {
+		data = WithParams(d.buf, d.params)
+	}
+	if data == nil {
+		data = append([]byte(nil), d.buf...)
+	}
+	au := AccessUnit{Data: data, PTS: d.pts, Keyframe: key}
 	d.pending = append(d.pending, au)
 	d.open = false
 	d.buf = d.buf[:0]
+}
+
+// Params is the last complete set of parameter sets seen, or nil.
+func (d *Demuxer) Params() []byte { return d.params }
+
+// SetParams hands a new demuxer what an earlier one saw, for a stream that
+// continues from where the last one left off.
+func (d *Demuxer) SetParams(ps []byte) { d.params = append([]byte(nil), ps...) }
+
+// NALUnits splits Annex B bytes into NAL units, each with the start code
+// in front of it, so that joining them gives the bytes back.
+func NALUnits(es []byte) [][]byte {
+	var out [][]byte
+	start := -1
+	for i := 0; i+2 < len(es); i++ {
+		if es[i] != 0 || es[i+1] != 0 || es[i+2] != 1 {
+			continue
+		}
+		s := i
+		if s > 0 && es[s-1] == 0 {
+			s--
+		}
+		if start >= 0 && s > start {
+			out = append(out, es[start:s])
+		}
+		start = s
+		i += 2
+	}
+	if start >= 0 {
+		out = append(out, es[start:])
+	}
+
+	return out
+}
+
+// NALType is the type of a NAL unit with its start code in front: the
+// five low bits of the header for H.264, the six after the first for
+// H.265; -1 for a unit too short to have one.
+func NALType(nal []byte, codec byte) int {
+	i := 0
+	for i+2 < len(nal) && !(nal[i] == 0 && nal[i+1] == 0 && nal[i+2] == 1) {
+		i++
+	}
+	i += 3
+	if i >= len(nal) {
+		return -1
+	}
+	if codec == StreamH265 {
+		return int(nal[i]>>1) & 0x3f
+	}
+
+	return int(nal[i] & 0x1f)
+}
+
+// isParam says whether a NAL type is a parameter set of the codec.
+func isParam(t int, codec byte) bool {
+	if codec == StreamH265 {
+		return t >= 32 && t <= 34
+	}
+
+	return t == 7 || t == 8
+}
+
+// isAUD says whether a NAL type is an access unit delimiter.
+func isAUD(t int, codec byte) bool {
+	if codec == StreamH265 {
+		return t == 35
+	}
+
+	return t == 9
+}
+
+// ParamSets is the parameter sets an access unit carries, with their
+// start codes, or nil unless it carries the whole set the codec needs
+// (SPS and PPS; VPS, SPS and PPS for H.265): half of one is no use in
+// front of a keyframe.
+func ParamSets(es []byte, codec byte) []byte {
+	var out []byte
+	seen := map[int]bool{}
+	for _, nal := range NALUnits(es) {
+		t := NALType(nal, codec)
+		if !isParam(t, codec) {
+			continue
+		}
+		seen[t] = true
+		out = append(out, nal...)
+	}
+	need := []int{7, 8}
+	if codec == StreamH265 {
+		need = []int{32, 33, 34}
+	}
+	for _, t := range need {
+		if !seen[t] {
+			return nil
+		}
+	}
+
+	return out
+}
+
+// WithParams is an access unit with parameter sets put in front of its
+// first picture: after its access unit delimiter when it has one, so the
+// unit still begins the way it did.
+func WithParams(es, params []byte, codec ...byte) []byte {
+	c := byte(StreamH264)
+	if len(codec) > 0 {
+		c = codec[0]
+	}
+	units := NALUnits(es)
+	out := make([]byte, 0, len(es)+len(params))
+	if len(units) > 0 && isAUD(NALType(units[0], c), c) {
+		out = append(out, units[0]...)
+		out = append(out, params...)
+		out = append(out, es[len(units[0]):]...)
+
+		return out
+	}
+	out = append(out, params...)
+	out = append(out, es...)
+
+	return out
 }
 
 // keyframe scans the NAL units of an access unit for a decodable picture.

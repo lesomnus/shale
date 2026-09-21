@@ -105,6 +105,12 @@ Relay     Stop {source}                  nobody has watched for relay_idle_stop
 - **No keyframe on request.** A viewer joining mid-stream cannot make the
   encoder produce a keyframe (ffmpeg gives no way to), so the relay keeps
   the current group of pictures in memory instead ([§39.4](#394-viewers)).
+  A keyframe is of no use without its parameter sets, and an encoder may
+  write those once and never again ([§38.2](15-producer.md#382-segments)):
+  the producer puts the last ones it saw in front of the keyframe an
+  attachment starts at, and the relay keeps the last ones it saw and puts
+  them in front of any keyframe that arrives without, across
+  re-attachments — so what a joining viewer gets first decodes.
 - The publish token lives `publish_token_ttl` (24 h) and is checked at
   `Hello`. A producer re-attaching after that asks the CP for a fresh one.
 

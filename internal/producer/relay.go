@@ -319,6 +319,9 @@ func (l *relayLink) feed(s *source, pk *Packet, reader *Reader) {
 		}
 		t.keyed = true
 		t.buf = append(t.buf[:0], reader.Tables()...)
+		// The keyframe the relay starts from carries its parameter sets
+		// or is given the last ones seen (§39.3, #84).
+		t.buf = append(t.buf, reader.ParamSets(pk)...)
 		if t.h == nil && !t.raw && needsOpus(reader.Streams()) {
 			h, err := l.startHelper(id, s)
 			t.h = h

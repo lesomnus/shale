@@ -53,7 +53,15 @@ the video PID from the PMT. A segment boundary is the first video packet with
 `payload_unit_start_indicator` and `random_access_indicator` set, i.e. the
 start of a keyframe, at or after the moment the boundary is due. The new
 segment starts with the cached PAT and PMT followed by that keyframe, so each
-lamina plays on its own.
+lamina plays on its own — provided the keyframe carries its parameter sets
+(H.264's SPS and PPS; a VPS too for H.265). Not every encoder writes them
+with every keyframe: ffmpeg 8's `h264_v4l2m2m` writes them for the first
+ten seconds of a run and never again, so the producer also keeps the last
+complete set it saw on the stream, and a segment whose first keyframe comes
+without them gets them right after the tables, as one PES packet of their
+own on the video PID, stamped like the keyframe. A keyframe without them
+before any were seen is counted (`NoParams`) and said once in the log: those
+laminae do not play on their own.
 
 A boundary is due:
 

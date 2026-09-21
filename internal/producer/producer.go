@@ -723,6 +723,9 @@ func (p *Producer) startupCheck(s *source) {
 	if st.KeyInterval > 2500*time.Millisecond {
 		p.log.Warn("keyframe interval above 2 s; expect early cuts", "source", s.cfg.Alias, "interval", st.KeyInterval.String())
 	}
+	if r := s.cutter.Reader; r != nil && r.NoParams > 0 {
+		p.log.Warn("keyframes without parameter sets and none seen yet: laminae cut there will not play on their own (§38.2)", "source", s.cfg.Alias, "keyframes", r.NoParams)
+	}
 	s.mu.Lock()
 	rate := s.rate(10)
 	ceiling := s.ceiling

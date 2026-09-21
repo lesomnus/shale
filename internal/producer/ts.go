@@ -9,6 +9,8 @@ import (
 	"bufio"
 	"errors"
 	"io"
+
+	"github.com/lesomnus/shale/internal/mpegts"
 )
 
 // PacketSize is an MPEG-TS packet.
@@ -29,6 +31,8 @@ type Packet struct {
 	RAI bool
 	// Payload is where the payload starts, or PacketSize when there is none.
 	Payload int
+	// CC is the continuity counter.
+	CC byte
 }
 
 // Streams is what the tables say: the PMT's PID and the elementary streams.
@@ -65,6 +69,15 @@ type Reader struct {
 	r      *bufio.Reader
 	s      Streams
 	synced bool
+
+	// params are the last parameter sets the video stream carried (an SPS
+	// and a PPS; a VPS too for H.265), with their start codes, taken from
+	// the first packet of a PES that had them. A keyframe that arrives
+	// without them can be given them (§38.2, #84).
+	params []byte
+	// NoParams counts keyframes that came without parameter sets while
+	// none had been seen: laminae cut there do not play on their own.
+	NoParams int64
 }
 
 // NewReader reads TS from r.
@@ -113,6 +126,7 @@ func (r *Reader) parse(p *Packet) {
 	d := p.Data[:]
 	p.PID = uint16(d[1]&0x1f)<<8 | uint16(d[2])
 	p.PUSI = d[1]&0x40 != 0
+	p.CC = d[3] & 0x0f
 	afc := (d[3] >> 4) & 3
 	p.RAI = false
 	p.Payload = 4
@@ -131,6 +145,10 @@ func (r *Reader) parse(p *Packet) {
 	}
 
 	switch {
+	case r.s.VideoPID != 0 && p.PID == r.s.VideoPID && p.PUSI:
+		if ps := packetParams(p.Data[p.Payload:], r.s.Video); ps != nil {
+			r.params = append(r.params[:0], ps...)
+		}
 	case p.PID == 0 && p.PUSI:
 		r.parsePAT(p)
 	case r.s.PmtPID != 0 && p.PID == r.s.PmtPID && p.PUSI:
@@ -316,6 +334,137 @@ func nalKeyframe(pl []byte, streamType byte) int {
 	}
 
 	return 0
+}
+
+// pesES is the elementary stream bytes a PES packet's first TS packet
+// carries, after the PES header, or nil when the payload is not one.
+func pesES(pl []byte) []byte {
+	if len(pl) < 9 || pl[0] != 0 || pl[1] != 0 || pl[2] != 1 {
+		return nil
+	}
+	hdl := int(pl[8])
+	if 9+hdl > len(pl) {
+		return nil
+	}
+
+	return pl[9+hdl:]
+}
+
+// packetParams is the parameter sets the first packet of a video PES
+// carries, complete: a unit is complete when another start code follows
+// it in the packet, so the one the packet cuts off is left out. Nil unless
+// the whole set is there (§38.2).
+func packetParams(pl []byte, streamType byte) []byte {
+	es := pesES(pl)
+	if es == nil {
+		return nil
+	}
+	units := mpegts.NALUnits(es)
+	if len(units) == 0 {
+		return nil
+	}
+	whole := units[:len(units)-1]
+	var b []byte
+	for _, u := range whole {
+		b = append(b, u...)
+	}
+
+	return mpegts.ParamSets(b, streamCodec(streamType))
+}
+
+// streamCodec maps a PMT stream type to the demuxer's codec.
+func streamCodec(streamType byte) byte {
+	if streamType == mpegts.StreamH265 {
+		return mpegts.StreamH265
+	}
+
+	return mpegts.StreamH264
+}
+
+// Params is the last complete parameter sets seen, or nil.
+func (r *Reader) Params() []byte { return r.params }
+
+// ParamSets is what a segment or a relay attachment starting at this
+// keyframe needs in front of it: nothing when the keyframe's own packet
+// carries its parameter sets, else the last ones seen as TS packets of
+// their own -- one PES on the video PID stamped like the keyframe,
+// continuity counters running up to the keyframe's -- and nil when none
+// were ever seen, which NoParams counts (§38.2, #84).
+func (r *Reader) ParamSets(p *Packet) []byte {
+	if !r.IsKeyframe(p) {
+		return nil
+	}
+	pl := p.Data[p.Payload:]
+	if packetParams(pl, r.s.Video) != nil {
+		return nil
+	}
+	if es := pesES(pl); es != nil {
+		// A set split across packets is still a set: its first unit is
+		// here, whole or not.
+		for _, u := range mpegts.NALUnits(es) {
+			if t := mpegts.NALType(u, streamCodec(r.s.Video)); t == 7 || (r.s.Video == mpegts.StreamH265 && t == 32) {
+				return nil
+			}
+		}
+	}
+	if len(r.params) == 0 {
+		r.NoParams++
+		return nil
+	}
+
+	return paramPackets(r.s.VideoPID, p, r.params)
+}
+
+// paramPackets is one PES holding the parameter sets, on the video PID,
+// with the keyframe packet's PTS when it has one, as TS packets whose
+// continuity counters end just before the keyframe packet's.
+func paramPackets(pid uint16, key *Packet, params []byte) []byte {
+	pl := key.Data[key.Payload:]
+	var pts []byte
+	if len(pl) >= 14 && pl[0] == 0 && pl[1] == 0 && pl[2] == 1 && pl[7]&0x80 != 0 && pl[8] >= 5 {
+		pts = pl[9:14]
+	}
+	pes := []byte{0, 0, 1, 0xe0, 0, 0, 0x80, 0, 0}
+	if pts != nil {
+		pes[7] = 0x80
+		pes[8] = 5
+		pes = append(pes, pts...)
+	}
+	pes = append(pes, params...)
+	n := len(pes) - 6
+	pes[4], pes[5] = byte(n>>8), byte(n)
+
+	count := (len(pes) + PacketSize - 5) / (PacketSize - 4)
+	// The first packet's counter is the keyframe's less the count, so the
+	// last one's is the keyframe's less one.
+	cc := int(key.CC) - count - 1
+	var out []byte
+	for i := 0; len(pes) > 0; i++ {
+		cc++
+		hdr := []byte{syncByte, byte(pid >> 8 & 0x1f), byte(pid), 0x10 | byte(cc&0x0f)}
+		if i == 0 {
+			hdr[1] |= 0x40
+		}
+		room := PacketSize - 4
+		if len(pes) < room {
+			// Stuffing: an adaptation field fills what the payload does not.
+			afl := room - len(pes) - 1
+			hdr[3] |= 0x20
+			hdr = append(hdr, byte(afl))
+			if afl > 0 {
+				hdr = append(hdr, 0)
+				for j := 1; j < afl; j++ {
+					hdr = append(hdr, 0xff)
+				}
+			}
+			room = len(pes)
+		}
+		out = append(out, hdr...)
+		out = append(out, pes[:room]...)
+		pes = pes[room:]
+	}
+
+	return out
 }
 
 // IsVideoFrame says whether this packet starts a video PES packet, which

@@ -271,6 +271,9 @@ type CutStats struct {
 	LastKey   time.Time
 	// KeyInterval is the last measured keyframe interval.
 	KeyInterval time.Duration
+	// ParamsAdded counts segments given the parameter sets their first
+	// keyframe came without (§38.2).
+	ParamsAdded int64
 }
 
 // Stats is a copy of the counters.
@@ -290,6 +293,15 @@ func (c *Cutter) Feed(p *Packet) {
 		c.stats.LastKey = now
 		if due, early := c.Schedule().Due(c.cur, now); due {
 			c.cut(now, early)
+			if c.cur != nil {
+				// A keyframe without its parameter sets: the last ones
+				// seen go in front, or the lamina would not play on its
+				// own (§38.2).
+				if ps := c.Reader.ParamSets(p); ps != nil {
+					c.cur.Write(ps)
+					c.stats.ParamsAdded++
+				}
+			}
 		}
 	}
 	if c.cur == nil {
