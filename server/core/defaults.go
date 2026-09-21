@@ -212,7 +212,7 @@ func (s Core) policies(ctx context.Context) (Bounds, *api.PlacementParams, int64
 		return p.upload, p.place, p.placeV, p.address, nil
 	}
 
-	up, err := s.d.Own.UploadPolicy().List(ctx, api.UploadPolicyListRequest_builder{Size: 100}.Build())
+	up, err := s.own(ctx).UploadPolicy().List(ctx, api.UploadPolicyListRequest_builder{Size: 100}.Build())
 	if err != nil {
 		return Bounds{}, nil, 0, nil, err
 	}
@@ -223,7 +223,7 @@ func (s Core) policies(ctx context.Context) (Bounds, *api.PlacementParams, int64
 		}
 	}
 
-	pl, err := s.d.Own.PlacementPolicy().List(ctx, api.PlacementPolicyListRequest_builder{Size: 100}.Build())
+	pl, err := s.own(ctx).PlacementPolicy().List(ctx, api.PlacementPolicyListRequest_builder{Size: 100}.Build())
 	if err != nil {
 		return Bounds{}, nil, 0, nil, err
 	}
@@ -234,7 +234,7 @@ func (s Core) policies(ctx context.Context) (Bounds, *api.PlacementParams, int64
 		}
 	}
 
-	ad, err := s.d.Own.AddressPolicy().List(ctx, api.AddressPolicyListRequest_builder{Size: 100}.Build())
+	ad, err := s.own(ctx).AddressPolicy().List(ctx, api.AddressPolicyListRequest_builder{Size: 100}.Build())
 	if err != nil {
 		return Bounds{}, nil, 0, nil, err
 	}

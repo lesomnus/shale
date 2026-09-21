@@ -387,7 +387,7 @@ func (s *Directives) deletes(ctx context.Context, client api.NodeControlClient, 
 				continue
 			}
 			core := Core{d: s.d}
-			if err := core.ownTx(ctx, func(own api.Server) error {
+			if err := core.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 				return core.applyMissing(ctx, own, nodeId, api.LaminaMissing_builder{
 					SinkId: sk.Id[:], LaminaKey: r.GetKey(), Reason: api.MissingReason_MISSING_REASON_NOT_FOUND,
 				}.Build())
@@ -537,7 +537,7 @@ func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient
 			if err == nil && (known.State == int32(api.AttemptState_ATTEMPT_STATE_STORED) || known.State == int32(api.AttemptState_ATTEMPT_STATE_DUPLICATE)) {
 				continue
 			}
-			if err := core.ownTx(ctx, func(own api.Server) error {
+			if err := core.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 				return core.applyStored(ctx, own, nodeId, rec)
 			}); err != nil {
 				s.log().Warn("reconcile record", "sink", sk.Alias, "key", rec.GetLaminaKey(), "err", err.Error())
@@ -546,7 +546,7 @@ func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient
 			learned++
 		case item.HasAbsent():
 			absent++
-			if err := core.ownTx(ctx, func(own api.Server) error {
+			if err := core.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 				return core.applyMissing(ctx, own, nodeId, api.LaminaMissing_builder{
 					SinkId: sk.Id[:], LaminaKey: item.GetAbsent(), Reason: api.MissingReason_MISSING_REASON_NOT_FOUND,
 				}.Build())

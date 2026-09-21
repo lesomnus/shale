@@ -45,8 +45,8 @@ func (s coreSource) Add(ctx context.Context, req *api.SourceAddRequest) (*api.So
 	}
 
 	var out *api.Source
-	err = s.tx(ctx, func(nx api.Server) error {
-		last, err := s.d.Ent.Source.Query().
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+		last, err := s.ent(ctx).Source.Query().
 			Where(source.SetIdEQ(mustId(set.GetId()).Uuid())).
 			Order(ent.Desc(source.FieldOrdinal)).
 			First(ctx)

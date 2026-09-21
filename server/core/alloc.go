@@ -115,7 +115,7 @@ func (s Core) allocCtx(ctx context.Context, set *api.Set) (*allocCtx, error) {
 // snapshot reads every sink with its device and node and decides
 // eligibility (D7).
 func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementParams) error {
-	sinks, err := s.d.Ent.Sink.Query().
+	sinks, err := s.ent(ctx).Sink.Query().
 		Where(sink.DateErasedIsNil()).
 		WithDevice().
 		WithNode().
@@ -258,14 +258,14 @@ func (s Core) forecastOk(ctx context.Context, a *allocCtx, v *ent.Sink, place *a
 		return ok
 	}
 
-	incoming, err := s.d.Ent.Lamina.Query().
+	incoming, err := s.ent(ctx).Lamina.Query().
 		Where(lamina.SinkIdEQ(v.Id), lamina.DateCommittedGT(a.now.Add(-epoch))).
 		Aggregate(ent.Sum(lamina.FieldSize)).
 		Int(ctx)
 	if err != nil {
 		return true
 	}
-	expiring, err := s.d.Ent.Lamina.Query().
+	expiring, err := s.ent(ctx).Lamina.Query().
 		Where(lamina.SinkIdEQ(v.Id), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_COMMITTED)), lamina.DateExpiredLT(start.Add(epoch))).
 		Aggregate(ent.Sum(lamina.FieldSize)).
 		Int(ctx)
@@ -328,7 +328,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 	// at the slot's start and stored at its first keyframe.
 	srcId := mustId(src.GetId())
 	slotStart := slotOf(started, a.set.GetId(), int(src.GetOrdinal()), len(a.members), duration)
-	inSlot, err := s.d.Ent.Lamina.Query().
+	inSlot, err := s.ent(ctx).Lamina.Query().
 		Where(lamina.SourceIdEQ(srcId.Uuid()), lamina.DateStartedGTE(slotStart.UTC()), lamina.DateStartedLT(slotStart.UTC().Add(duration))).
 		Order(ent.Asc(lamina.FieldDateStarted)).
 		WithSink().
@@ -382,7 +382,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		}
 
 		// Unexpired attempts are answered again, with fresh tokens.
-		open, err := s.d.Ent.Attempt.Query().
+		open, err := s.ent(ctx).Attempt.Query().
 			Where(attempt.LaminaIdEQ(existing.Id), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now)).
 			Order(ent.Asc(attempt.FieldRank)).
 			All(ctx)
@@ -400,7 +400,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			// new laminae. A lamina already allocated whose attempts all
 			// failed gets fresh ones regardless, so a segment being retried
 			// is never held back by the allocations ahead of it (§16).
-			n, err := s.d.Ent.Attempt.Query().
+			n, err := s.ent(ctx).Attempt.Query().
 				Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now),
 					attempt.HasLaminaWith(lamina.SourceIdEQ(srcId.Uuid()))).
 				Count(ctx)
@@ -624,7 +624,7 @@ func (s coreSet) Allocate(ctx context.Context, req *api.SetAllocateRequest) (*ap
 	}
 
 	var out []*api.Allocation
-	err = s.tx(ctx, func(next api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, next api.Server) error {
 		for _, m := range a.members {
 			prof := segmentOf(m, set, a.bounds)
 			if prof == nil {

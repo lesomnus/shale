@@ -28,13 +28,13 @@ import (
 // set's site (§39.2). Nil when no relay is available.
 func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.Set) (*api.RelayAssignment, error) {
 	now := s.d.now()
-	p, err := s.d.Ent.Producer.Get(ctx, producerId.Uuid())
+	p, err := s.ent(ctx).Producer.Get(ctx, producerId.Uuid())
 	if err != nil {
 		return nil, err
 	}
 	var chosen *ent.Relay
 	if !isZero(p.RelayId) {
-		if r, err := s.d.Ent.Relay.Get(ctx, p.RelayId); err == nil && relayAlive(r, now) {
+		if r, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(r, now) {
 			chosen = r
 		}
 	}
@@ -43,7 +43,7 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 		if err != nil || chosen == nil {
 			return nil, err
 		}
-		if _, err := s.d.Own.Producer().Patch(ctx, api.ProducerPatchRequest_builder{
+		if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 			Ref:              api.ProducerRef_builder{Id: producerId.Bytes()}.Build(),
 			Relay:            api.RelayRef_builder{Id: chosen.Id[:]}.Build(),
 			DateUpdatedForce: z.Ptr(true),
@@ -93,20 +93,20 @@ func relayAlive(r *ent.Relay, now time.Time) bool {
 // pickRelay is the live relay with the least attached bitrate among those
 // whose labels match the set's site (§39.2).
 func (s Core) pickRelay(ctx context.Context, set *api.Set, now time.Time) (*ent.Relay, error) {
-	relays, err := s.d.Ent.Relay.Query().Where(relay.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), relay.DateErasedIsNil()).All(ctx)
+	relays, err := s.ent(ctx).Relay.Query().Where(relay.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), relay.DateErasedIsNil()).All(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var selector map[string]string
 	if len(set.GetSite().GetId()) > 0 {
-		if site, err := s.d.Ent.Site.Get(ctx, mustId(set.GetSite().GetId()).Uuid()); err == nil {
+		if site, err := s.ent(ctx).Site.Get(ctx, mustId(set.GetSite().GetId()).Uuid()); err == nil {
 			selector = site.RelaySelector
 		}
 	}
 	// Attached bitrate per relay: the max_bitrate_total of every set whose
 	// producers it carries.
 	load := map[[16]byte]int64{}
-	producers, err := s.d.Ent.Producer.Query().Where(producer.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), producer.DateErasedIsNil()).All(ctx)
+	producers, err := s.ent(ctx).Producer.Query().Where(producer.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), producer.DateErasedIsNil()).All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (s Core) pickRelay(ctx context.Context, set *api.Set, now time.Time) (*ent.
 		if isZero(p.RelayId) || isZero(p.SetId) {
 			continue
 		}
-		if st, err := s.d.Ent.Set.Get(ctx, p.SetId); err == nil {
+		if st, err := s.ent(ctx).Set.Get(ctx, p.SetId); err == nil {
 			load[p.RelayId] += max(st.MaxBitrateTotal, 1)
 		}
 	}
@@ -167,7 +167,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 		}
 	}
 	now := s.d.now()
-	producers, err := s.d.Ent.Producer.Query().
+	producers, err := s.ent(ctx).Producer.Query().
 		Where(producer.SetIdEQ(mustId(set.GetId()).Uuid()), producer.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), producer.DateErasedIsNil()).
 		All(ctx)
 	if err != nil {
@@ -178,7 +178,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 		if isZero(p.RelayId) {
 			continue
 		}
-		if v, err := s.d.Ent.Relay.Get(ctx, p.RelayId); err == nil && relayAlive(v, now) {
+		if v, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(v, now) {
 			r = v
 			break
 		}
@@ -285,7 +285,7 @@ func (s Core) starvation(ctx context.Context, p *api.Producer, reports []*api.So
 	}
 	var set *api.Set
 	if len(p.GetSet().GetId()) > 0 {
-		set, _ = s.d.Own.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: p.GetSet().GetId()}.Build()}.Build())
+		set, _ = s.own(ctx).Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: p.GetSet().GetId()}.Build()}.Build())
 	}
 	now := s.d.now()
 
@@ -294,7 +294,7 @@ func (s Core) starvation(ctx context.Context, p *api.Producer, reports []*api.So
 		if len(r.GetSourceId()) == 0 {
 			continue
 		}
-		src, err := s.d.Own.Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: r.GetSourceId()}.Build()}.Build())
+		src, err := s.own(ctx).Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: r.GetSourceId()}.Build()}.Build())
 		if err != nil {
 			continue
 		}
@@ -339,7 +339,7 @@ func (s Core) starvation(ctx context.Context, p *api.Producer, reports []*api.So
 			}
 			out = append(out, sg.Build())
 		}
-		if _, err := s.d.Own.Source().Patch(ctx, patch.Build()); err != nil {
+		if _, err := s.own(ctx).Source().Patch(ctx, patch.Build()); err != nil {
 			s.d.log().Warn("starvation", "source", src.GetAlias(), "err", err.Error())
 		}
 	}

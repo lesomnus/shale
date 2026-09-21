@@ -189,7 +189,7 @@ func (s Core) scoreDevice(ctx context.Context, srv api.Server, d *ent.Device, de
 // setDeviceHealth moves a device and, with it, every sink on it (§27).
 // The directive to the node follows from the sinks' state.
 func (s Core) setDeviceHealth(ctx context.Context, srv api.Server, id pdid.Id, h api.DeviceHealth, reason string, operator bool, score float64, now time.Time) error {
-	d, err := s.d.Ent.Device.Get(ctx, id.Uuid())
+	d, err := s.ent(ctx).Device.Get(ctx, id.Uuid())
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (s Core) setDeviceHealth(ctx context.Context, srv api.Server, id pdid.Id, h
 	}.Build()); err != nil {
 		return err
 	}
-	sinks, err := s.d.Ent.Sink.Query().Where(sink.DeviceIdEQ(id.Uuid()), sink.DateErasedIsNil()).All(ctx)
+	sinks, err := s.ent(ctx).Sink.Query().Where(sink.DeviceIdEQ(id.Uuid()), sink.DateErasedIsNil()).All(ctx)
 	if err != nil {
 		return err
 	}
@@ -238,12 +238,12 @@ func (s Core) producerReport(ctx context.Context, nodeId, producer pdid.Id, now 
 	if !s.d.allowReport(nodeId, producer, now) {
 		return nil
 	}
-	n, err := s.d.Ent.Node.Get(ctx, nodeId.Uuid())
+	n, err := s.ent(ctx).Node.Get(ctx, nodeId.Uuid())
 	if err != nil {
 		return err
 	}
 	score := nodeScore(n, now) + ScoreProducerReport
-	_, err = s.d.Own.Node().Patch(ctx, api.NodePatchRequest_builder{
+	_, err = s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
 		Ref:              api.NodeRef_builder{Id: nodeId.Bytes()}.Build(),
 		FailureScore:     z.Ptr(score),
 		DateScored:       timestamppb.New(now),
@@ -256,7 +256,7 @@ func (s Core) producerReport(ctx context.Context, nodeId, producer pdid.Id, now 
 // healthSweep re-evaluates every device on decay alone, so a quarantined
 // device is released after its cool-down and a SUSPECT one returns.
 func (s Core) healthSweep(ctx context.Context, srv api.Server, now time.Time) error {
-	devices, err := s.d.Ent.Device.Query().
+	devices, err := s.ent(ctx).Device.Query().
 		Where(device.DateErasedIsNil(), device.HealthIn(int32(api.DeviceHealth_DEVICE_HEALTH_SUSPECT), int32(api.DeviceHealth_DEVICE_HEALTH_QUARANTINED))).
 		All(ctx)
 	if err != nil {

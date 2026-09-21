@@ -45,7 +45,7 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 
 	deviceIds := map[string]pdid.Id{}
 	for hid, dr := range reports {
-		row, err := s.d.Ent.Device.Query().Where(device.HardwareIdEQ(hid)).First(ctx)
+		row, err := s.ent(ctx).Device.Query().Where(device.HardwareIdEQ(hid)).First(ctx)
 		if err != nil && !ent.IsNotFound(err) {
 			return nil, err
 		}
@@ -127,7 +127,7 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 			continue
 		}
 
-		row, err := s.d.Ent.Sink.Query().Where(sink.IdEQ(sid.Uuid())).First(ctx)
+		row, err := s.ent(ctx).Sink.Query().Where(sink.IdEQ(sid.Uuid())).First(ctx)
 		if err != nil && !ent.IsNotFound(err) {
 			return nil, err
 		}
@@ -226,7 +226,7 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 	// placement skips it, and no token names it on a node that would
 	// answer "this node does not serve that sink". Its next report, or an
 	// adoption by another node, attaches it again.
-	stale, err := s.d.Ent.Sink.Query().
+	stale, err := s.ent(ctx).Sink.Query().
 		Where(sink.NodeIdEQ(nodeId.Uuid()), sink.AttachmentEQ(int32(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED)), sink.DateErasedIsNil()).
 		All(ctx)
 	if err != nil {

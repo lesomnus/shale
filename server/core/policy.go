@@ -33,7 +33,7 @@ func (s coreSigningKey) Rotate(ctx context.Context, req *api.SigningKeyRotateReq
 	}
 
 	var out *api.SigningKey
-	err := s.ownTx(ctx, func(own api.Server) error {
+	err := s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 		if req.GetImmediate() {
 			vs, err := own.SigningKey().List(ctx, api.SigningKeyListRequest_builder{Size: 100}.Build())
 			if err != nil {
@@ -83,7 +83,7 @@ func (s corePlacementPolicy) Activate(ctx context.Context, req *api.PlacementPol
 		return nil, err
 	}
 	var out *api.PlacementPolicy
-	err = s.tx(ctx, func(nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		vs, err := nx.PlacementPolicy().List(ctx, api.PlacementPolicyListRequest_builder{Size: 100}.Build())
 		if err != nil {
 			return err
@@ -131,7 +131,7 @@ func (s coreUploadPolicy) Activate(ctx context.Context, req *api.UploadPolicyAct
 		return nil, err
 	}
 	var out *api.UploadPolicy
-	err = s.tx(ctx, func(nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		vs, err := nx.UploadPolicy().List(ctx, api.UploadPolicyListRequest_builder{Size: 100}.Build())
 		if err != nil {
 			return err
@@ -160,11 +160,11 @@ func (s coreUploadPolicy) Activate(ctx context.Context, req *api.UploadPolicyAct
 
 	// Stored profiles are re-clamped on the next Negotiate: bumping every
 	// set's profile_version makes producers negotiate again (§12.6).
-	sets, err := s.d.Own.Set().List(ctx, api.SetListRequest_builder{Size: 100}.Build())
+	sets, err := s.own(ctx).Set().List(ctx, api.SetListRequest_builder{Size: 100}.Build())
 	if err == nil {
 		for _, st := range sets.GetItems() {
 			v := st.GetProfileVersion() + 1
-			s.d.Own.Set().Patch(ctx, api.SetPatchRequest_builder{
+			s.own(ctx).Set().Patch(ctx, api.SetPatchRequest_builder{
 				Ref: api.SetRef_builder{Id: st.GetId()}.Build(), ProfileVersion: &v, DateUpdatedForce: z.Ptr(true),
 			}.Build())
 		}
@@ -191,7 +191,7 @@ func (s coreAddressPolicy) Activate(ctx context.Context, req *api.AddressPolicyA
 		return nil, err
 	}
 	var out *api.AddressPolicy
-	err = s.tx(ctx, func(nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		vs, err := nx.AddressPolicy().List(ctx, api.AddressPolicyListRequest_builder{Size: 100}.Build())
 		if err != nil {
 			return err

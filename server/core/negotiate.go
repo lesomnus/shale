@@ -295,7 +295,7 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 		version++
 	}
 
-	err = s.tx(ctx, func(next api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, next api.Server) error {
 		if changed || version != set.GetProfileVersion() {
 			if _, err := next.Set().Patch(ctx, api.SetPatchRequest_builder{
 				Ref:            api.SetRef_builder{Id: set.GetId()}.Build(),
@@ -406,7 +406,7 @@ func (s Core) members(ctx context.Context, setId []byte) ([]*api.Source, error) 
 
 // producerOwns refuses a producer acting on a set that is not its own.
 func (s Core) producerOwns(ctx context.Context, producer pdid.Id, set *api.Set) error {
-	p, err := s.d.Own.Producer().Get(ctx, api.ProducerGetRequest_builder{
+	p, err := s.own(ctx).Producer().Get(ctx, api.ProducerGetRequest_builder{
 		Ref: api.ProducerRef_builder{Id: producer.Bytes()}.Build(),
 	}.Build())
 	if err != nil {

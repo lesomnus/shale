@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/lesomnus/otx/log"
@@ -129,6 +130,12 @@ type Server struct {
 	httpAddrs map[Surface]string
 }
 
+// noFile says a file is not there, or could not be there: a platform
+// without a file system answers ENOSYS to every open.
+func noFile(err error) bool {
+	return errors.Is(err, os.ErrNotExist) || errors.Is(err, syscall.ENOSYS)
+}
+
 // Build opens the database and stacks the servers.
 func Build(ctx context.Context, c Config) (*Server, error) {
 	// Patch is an API here, for the rows §32 says people and operators edit
@@ -186,15 +193,18 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 
 	// The CA and the KEK, when `shale init` has made them.
 	dir := c.StateDir("control")
+	// Neither is there before `shale init`, and neither can be where
+	// there is no file system at all (the sandbox, §40): both are "not
+	// yet" rather than errors.
 	if ca, err := pki.Load(filepath.Join(dir, CaCertFile), filepath.Join(dir, CaKeyFile)); err == nil {
 		s.CA = ca
-	} else if !errors.Is(err, os.ErrNotExist) {
+	} else if !noFile(err) {
 		db.Close()
 		return nil, err
 	}
 	if kek, err := core.LoadKek(dir); err == nil {
 		s.Kek = kek
-	} else if !errors.Is(err, os.ErrNotExist) {
+	} else if !noFile(err) {
 		db.Close()
 		return nil, err
 	}

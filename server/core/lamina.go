@@ -97,7 +97,7 @@ func (s coreLamina) Allocate(ctx context.Context, req *api.LaminaAllocateRequest
 	}
 
 	var out *api.Allocation
-	err = s.tx(ctx, func(next api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, next api.Server) error {
 		v, err := s.allocateSlot(ctx, next, a, src, t, after, f.Actor, f.Tenant)
 		out = v
 
@@ -155,7 +155,7 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	}
 
 	objId := mustId(obj.GetId())
-	tried, err := s.d.Ent.Attempt.Query().Where(attempt.LaminaIdEQ(objId.Uuid())).All(ctx)
+	tried, err := s.ent(ctx).Attempt.Query().Where(attempt.LaminaIdEQ(objId.Uuid())).All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 		siteRef = api.SiteRef_builder{Id: set.GetSite().GetId()}.Build()
 	}
 	at := pdid.New(DomAttempt)
-	err = s.tx(ctx, func(nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		_, err := nx.Attempt().Add(ctx, api.AttemptAddRequest_builder{
 			Id:          at.Bytes(),
 			Tenant:      tenantRef(f.Tenant),
@@ -218,7 +218,7 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	// Answer through the ordinary path, which signs tokens for every open
 	// attempt including the new one.
 	var out *api.Allocation
-	err = s.tx(ctx, func(nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		v, err := s.allocateSlot(ctx, nx, a, src, started, pdid.Nil, f.Actor, f.Tenant)
 		out = v
 
@@ -284,7 +284,7 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 	}
 
 	var out *api.Allocation
-	err = s.tx(ctx, func(nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		v, err := s.allocateSlot(ctx, nx, a, src, obj.GetDateStarted().AsTime(), pdid.Nil, f.Actor, f.Tenant)
 		out = v
 
@@ -364,8 +364,8 @@ func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFail
 
 	now := s.d.now()
 	var out *api.Lamina
-	err = s.tx(ctx, func(nx api.Server) error {
-		open, err := s.d.Ent.Attempt.Query().
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+		open, err := s.ent(ctx).Attempt.Query().
 			Where(attempt.LaminaIdEQ(mustId(obj.GetId()).Uuid()), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED))).
 			All(ctx)
 		if err != nil {
@@ -434,8 +434,8 @@ func (s coreLamina) Skip(ctx context.Context, req *api.LaminaSkipRequest) (*api.
 	}
 
 	var out *api.Lamina
-	err = s.tx(ctx, func(nx api.Server) error {
-		open, err := s.d.Ent.Attempt.Query().
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+		open, err := s.ent(ctx).Attempt.Query().
 			Where(attempt.LaminaIdEQ(mustId(obj.GetId()).Uuid()), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED))).
 			All(ctx)
 		if err != nil {
@@ -529,7 +529,7 @@ func (s coreLamina) Reschedule(ctx context.Context, req *api.LaminaRescheduleReq
 	// is left alone.
 	apply := func(rows []*ent.Lamina, one bool) (int64, error) {
 		var changed int64
-		err := s.tx(ctx, func(nx api.Server) error {
+		err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 			for _, r := range rows {
 				if r.State == int32(api.LaminaState_LAMINA_STATE_DELETING) || r.State == int32(api.LaminaState_LAMINA_STATE_DELETED) {
 					if one {
@@ -580,7 +580,7 @@ func (s coreLamina) Reschedule(ctx context.Context, req *api.LaminaRescheduleReq
 		if err != nil {
 			return nil, err
 		}
-		r, err := s.d.Ent.Lamina.Get(ctx, mustId(obj.GetId()).Uuid())
+		r, err := s.ent(ctx).Lamina.Get(ctx, mustId(obj.GetId()).Uuid())
 		if err != nil {
 			return nil, err
 		}
@@ -614,7 +614,7 @@ func (s coreLamina) Reschedule(ctx context.Context, req *api.LaminaRescheduleReq
 		}
 		pending = lamina.Or(ps...)
 	}
-	q := s.d.Ent.Lamina.Query().Where(
+	q := s.ent(ctx).Lamina.Query().Where(
 		lamina.TenantIdEQ(f.Tenant.Uuid()),
 		lamina.DateStartedLT(req.GetTo().AsTime()),
 		lamina.Or(lamina.DateEndedGT(req.GetFrom().AsTime()), lamina.DateEndedIsNil()),
@@ -751,7 +751,7 @@ func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest
 		byId[mustId(m.GetId())] = m
 	}
 
-	q := s.d.Ent.Lamina.Query().Where(
+	q := s.ent(ctx).Lamina.Query().Where(
 		lamina.TenantIdEQ(f.Tenant.Uuid()),
 		lamina.DateStartedLT(to),
 		lamina.Or(lamina.DateEndedGT(from), lamina.DateEndedIsNil()),
@@ -794,7 +794,7 @@ func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest
 		for id := range pending {
 			pids = append(pids, id)
 		}
-		open, err := s.d.Ent.Attempt.Query().
+		open, err := s.ent(ctx).Attempt.Query().
 			Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(now), attempt.HasLaminaWith(lamina.IdIn(uuidsOf(pids, pdid.Id.Uuid)...))).
 			All(ctx)
 		if err != nil {

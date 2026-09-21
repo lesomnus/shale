@@ -159,12 +159,12 @@ func aliasFor(hostname string, taken func(string) bool) string {
 // only tenant there is besides the cluster's (§7).
 func (s Core) tenantFor(ctx context.Context, alias string) (*api.Tenant, error) {
 	if alias != "" {
-		return s.d.Own.Tenant().Get(ctx, api.TenantGetRequest_builder{
+		return s.own(ctx).Tenant().Get(ctx, api.TenantGetRequest_builder{
 			Ref: api.TenantRef_builder{Alias: z.Ptr(alias)}.Build(),
 		}.Build())
 	}
 
-	vs, err := s.d.Own.Tenant().List(ctx, api.TenantListRequest_builder{Size: 100}.Build())
+	vs, err := s.own(ctx).Tenant().List(ctx, api.TenantListRequest_builder{Size: 100}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 	}
 	tid := mustId(t.GetId())
 
-	row, err := s.d.Ent.Producer.Query().
+	row, err := s.ent(ctx).Producer.Query().
 		Where(producer.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), producer.TenantIdEQ(tid.Uuid()), producer.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -231,10 +231,10 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 	case decCreate:
 		id := pdid.New(DomProducer)
 		alias := aliasFor(hj.GetHostname(), func(a string) bool {
-			n, _ := s.d.Ent.Producer.Query().Where(producer.AliasEQ(a), producer.TenantIdEQ(tid.Uuid()), producer.DateErasedIsNil()).Count(ctx)
+			n, _ := s.ent(ctx).Producer.Query().Where(producer.AliasEQ(a), producer.TenantIdEQ(tid.Uuid()), producer.DateErasedIsNil()).Count(ctx)
 			return n > 0
 		})
-		if _, err := s.d.Own.Producer().Add(ctx, api.ProducerAddRequest_builder{
+		if _, err := s.own(ctx).Producer().Add(ctx, api.ProducerAddRequest_builder{
 			Id:         id.Bytes(),
 			Tenant:     tenantRef(tid),
 			Alias:      alias,
@@ -250,7 +250,7 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 		answer.Alias = alias
 		answer.Message = "waiting for adoption: shale producer adopt " + alias + " --set <set>"
 	case decPending:
-		if _, err := s.d.Own.Producer().Patch(ctx, api.ProducerPatchRequest_builder{
+		if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 			Ref:              api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
 			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
 			Hostname:         z.Ptr(hj.GetHostname()),
@@ -276,7 +276,7 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 				return nil, err
 			}
 			rec.SetCertificate(pem)
-			if _, err := s.d.Own.Producer().Patch(ctx, api.ProducerPatchRequest_builder{
+			if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 				Ref:              api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
 				Join:             rec,
 				CertSerial:       z.Ptr(serial),
@@ -290,7 +290,7 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
 		} else {
-			if _, err := s.d.Own.Producer().Patch(ctx, api.ProducerPatchRequest_builder{
+			if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 				Ref:              api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),
 				Join:             rec,
 				Hostname:         z.Ptr(hj.GetHostname()),
@@ -334,7 +334,7 @@ func (s coreProducer) Adopt(ctx context.Context, req *api.ProducerAdoptRequest) 
 	}
 
 	// One producer per set.
-	others, err := s.d.Ent.Producer.Query().
+	others, err := s.ent(ctx).Producer.Query().
 		Where(producer.SetIdEQ(mustId(set.GetId()).Uuid()), producer.DateErasedIsNil(), producer.IdNEQ(mustId(p.GetId()).Uuid())).
 		Count(ctx)
 	if err != nil {
@@ -389,7 +389,7 @@ func (s coreProducer) RenewCertificate(ctx context.Context, req *api.ProducerRen
 		return nil, invalid("csr", err.Error())
 	}
 
-	p, err := s.d.Own.Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	p, err := s.own(ctx).Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +403,7 @@ func (s coreProducer) RenewCertificate(ctx context.Context, req *api.ProducerRen
 		return nil, err
 	}
 	rec.SetCertificate(pem)
-	if _, err := s.d.Own.Producer().Patch(ctx, api.ProducerPatchRequest_builder{
+	if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 		Ref:              api.ProducerRef_builder{Id: p.GetId()}.Build(),
 		Join:             rec,
 		CertSerial:       z.Ptr(serial),
@@ -425,7 +425,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 		return nil, status.Error(codes.PermissionDenied, "only a producer heartbeats")
 	}
 
-	p, err := s.d.Own.Producer().Get(ctx, api.ProducerGetRequest_builder{
+	p, err := s.own(ctx).Producer().Get(ctx, api.ProducerGetRequest_builder{
 		Ref: api.ProducerRef_builder{Id: f.Actor.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
@@ -433,7 +433,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 	}
 
 	now := s.d.now()
-	if _, err := s.d.Own.Producer().Patch(ctx, api.ProducerPatchRequest_builder{
+	if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 		Ref:      api.ProducerRef_builder{Id: p.GetId()}.Build(),
 		DateSeen: timestamppb.New(now),
 		Status: api.ProducerStatus_builder{
@@ -455,7 +455,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 
 	resp := api.ProducerHeartbeatResponse_builder{Suggestions: suggestions}
 	if len(p.GetSet().GetId()) > 0 {
-		if set, err := s.d.Own.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: p.GetSet().GetId()}.Build()}.Build()); err == nil {
+		if set, err := s.own(ctx).Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: p.GetSet().GetId()}.Build()}.Build()); err == nil {
 			resp.ProfileVersion = set.GetProfileVersion()
 			if ra, err := s.relayAssignment(ctx, f.Actor, set); err == nil && ra != nil {
 				resp.Relay = ra
@@ -488,14 +488,14 @@ func (s coreProducer) Relay(ctx context.Context, req *api.ProducerRelayRequest) 
 	if kindOf(f.Actor) != DomProducer {
 		return nil, status.Error(codes.PermissionDenied, "only a producer asks for its relay")
 	}
-	p, err := s.d.Own.Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	p, err := s.own(ctx).Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
 	if len(p.GetSet().GetId()) == 0 {
 		return nil, failed("this producer has no set")
 	}
-	set, err := s.d.Own.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: p.GetSet().GetId()}.Build()}.Build())
+	set, err := s.own(ctx).Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: p.GetSet().GetId()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -534,7 +534,7 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 	}
 	tid := mustId(t.GetId())
 
-	row, err := s.d.Ent.Reader.Query().
+	row, err := s.ent(ctx).Reader.Query().
 		Where(reader.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), reader.TenantIdEQ(tid.Uuid()), reader.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -550,10 +550,10 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 	case decCreate:
 		id := pdid.New(DomReader)
 		alias := aliasFor(hj.GetHostname(), func(a string) bool {
-			n, _ := s.d.Ent.Reader.Query().Where(reader.AliasEQ(a), reader.TenantIdEQ(tid.Uuid()), reader.DateErasedIsNil()).Count(ctx)
+			n, _ := s.ent(ctx).Reader.Query().Where(reader.AliasEQ(a), reader.TenantIdEQ(tid.Uuid()), reader.DateErasedIsNil()).Count(ctx)
 			return n > 0
 		})
-		if _, err := s.d.Own.Reader().Add(ctx, api.ReaderAddRequest_builder{
+		if _, err := s.own(ctx).Reader().Add(ctx, api.ReaderAddRequest_builder{
 			Id:         id.Bytes(),
 			Tenant:     tenantRef(tid),
 			Alias:      alias,
@@ -569,7 +569,7 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 		answer.Alias = alias
 		answer.Message = "waiting for adoption: shale reader adopt " + alias
 	case decPending:
-		if _, err := s.d.Own.Reader().Patch(ctx, api.ReaderPatchRequest_builder{
+		if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
 			Ref:              api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
 			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
 			Hostname:         z.Ptr(hj.GetHostname()),
@@ -593,7 +593,7 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 				return nil, err
 			}
 			rec.SetCertificate(pem)
-			if _, err := s.d.Own.Reader().Patch(ctx, api.ReaderPatchRequest_builder{
+			if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
 				Ref:              api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
 				Join:             rec,
 				CertSerial:       z.Ptr(serial),
@@ -605,7 +605,7 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
 		} else {
-			if _, err := s.d.Own.Reader().Patch(ctx, api.ReaderPatchRequest_builder{
+			if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
 				Ref:              api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
 				Join:             rec,
 				DateUpdatedForce: z.Ptr(true),
@@ -646,7 +646,7 @@ func (s coreReader) Adopt(ctx context.Context, req *api.ReaderAdoptRequest) (*ap
 	rec.SetRejoin(false)
 
 	var out *api.Reader
-	err = s.tx(ctx, func(nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		patch := api.ReaderPatchRequest_builder{
 			Ref:             api.ReaderRef_builder{Id: r.GetId()}.Build(),
 			State:           z.Ptr(api.HostState_HOST_STATE_ADOPTED),
@@ -700,7 +700,7 @@ func (s coreReader) RenewCertificate(ctx context.Context, req *api.ReaderRenewCe
 	if _, err := x509.ParseCertificateRequest(req.GetCsr()); err != nil {
 		return nil, invalid("csr", err.Error())
 	}
-	r, err := s.d.Own.Reader().Get(ctx, api.ReaderGetRequest_builder{Ref: api.ReaderRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	r, err := s.own(ctx).Reader().Get(ctx, api.ReaderGetRequest_builder{Ref: api.ReaderRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -714,7 +714,7 @@ func (s coreReader) RenewCertificate(ctx context.Context, req *api.ReaderRenewCe
 		return nil, err
 	}
 	rec.SetCertificate(pem)
-	if _, err := s.d.Own.Reader().Patch(ctx, api.ReaderPatchRequest_builder{
+	if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
 		Ref:              api.ReaderRef_builder{Id: r.GetId()}.Build(),
 		Join:             rec,
 		CertSerial:       z.Ptr(serial),
@@ -735,12 +735,12 @@ func (s coreReader) Heartbeat(ctx context.Context, req *api.ReaderHeartbeatReque
 	if kindOf(f.Actor) != DomReader {
 		return nil, status.Error(codes.PermissionDenied, "only a reader heartbeats")
 	}
-	r, err := s.d.Own.Reader().Get(ctx, api.ReaderGetRequest_builder{Ref: api.ReaderRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	r, err := s.own(ctx).Reader().Get(ctx, api.ReaderGetRequest_builder{Ref: api.ReaderRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
 	now := s.d.now()
-	if _, err := s.d.Own.Reader().Patch(ctx, api.ReaderPatchRequest_builder{
+	if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
 		Ref:              api.ReaderRef_builder{Id: r.GetId()}.Build(),
 		DateSeen:         timestamppb.New(now),
 		Version:          z.Ptr(req.GetVersion()),
@@ -784,7 +784,7 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 	}
 	from, _ := peerAddr(ctx)
 
-	row, err := s.d.Ent.Node.Query().
+	row, err := s.ent(ctx).Node.Query().
 		Where(node.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), node.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -803,10 +803,10 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 	case decCreate:
 		id := pdid.New(DomNode)
 		alias := aliasFor(hj.GetHostname(), func(a string) bool {
-			n, _ := s.d.Ent.Node.Query().Where(node.AliasEQ(a), node.DateErasedIsNil()).Count(ctx)
+			n, _ := s.ent(ctx).Node.Query().Where(node.AliasEQ(a), node.DateErasedIsNil()).Count(ctx)
 			return n > 0
 		})
-		v, err := s.d.Own.Node().Add(ctx, api.NodeAddRequest_builder{
+		v, err := s.own(ctx).Node().Add(ctx, api.NodeAddRequest_builder{
 			Id:             id.Bytes(),
 			Alias:          alias,
 			HardwareId:     strings.ToLower(hj.GetHardwareId()),
@@ -825,7 +825,7 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 		answer.Alias = alias
 		answer.Message = "waiting for adoption: shale node adopt " + alias
 		if auto {
-			v, err = s.adoptNode(ctx, s.d.Own, v, "", req.GetSinks(), req.GetDevices())
+			v, err = s.adoptNode(ctx, s.own(ctx), v, "", req.GetSinks(), req.GetDevices())
 			if err != nil {
 				return nil, err
 			}
@@ -834,7 +834,7 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 			answer.Message = ""
 		}
 	case decPending:
-		v, err := s.d.Own.Node().Patch(ctx, api.NodePatchRequest_builder{
+		v, err := s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
 			Ref:              api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
 			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
 			Hostname:         z.Ptr(hj.GetHostname()),
@@ -852,7 +852,7 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 		answer.Message = "waiting for adoption"
 		answer.Rejoin = js.join.GetRejoin()
 		if auto {
-			v, err = s.adoptNode(ctx, s.d.Own, v, "", req.GetSinks(), req.GetDevices())
+			v, err = s.adoptNode(ctx, s.own(ctx), v, "", req.GetSinks(), req.GetDevices())
 			if err != nil {
 				return nil, err
 			}
@@ -873,7 +873,7 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 				return nil, err
 			}
 			rec.SetCertificate(pem)
-			if _, err := s.d.Own.Node().Patch(ctx, api.NodePatchRequest_builder{
+			if _, err := s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
 				Ref:              api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
 				Join:             rec,
 				CertSerial:       z.Ptr(serial),
@@ -889,7 +889,7 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
 		} else {
-			if _, err := s.d.Own.Node().Patch(ctx, api.NodePatchRequest_builder{
+			if _, err := s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
 				Ref:              api.NodeRef_builder{Id: js.id.Bytes()}.Build(),
 				Join:             rec,
 				Interfaces:       req.GetInterfaces(),
@@ -969,7 +969,7 @@ func (s coreNode) Adopt(ctx context.Context, req *api.NodeAdoptRequest) (*api.No
 	}
 
 	var out *api.Node
-	err = s.tx(ctx, func(nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		v, err := s.adoptNode(ctx, nx, n, strings.TrimSpace(req.GetAlias()), nil, nil)
 		out = v
 
@@ -993,7 +993,7 @@ func (s coreNode) RenewCertificate(ctx context.Context, req *api.NodeRenewCertif
 	if _, err := x509.ParseCertificateRequest(req.GetCsr()); err != nil {
 		return nil, invalid("csr", err.Error())
 	}
-	n, err := s.d.Own.Node().Get(ctx, api.NodeGetRequest_builder{Ref: api.NodeRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	n, err := s.own(ctx).Node().Get(ctx, api.NodeGetRequest_builder{Ref: api.NodeRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -1007,7 +1007,7 @@ func (s coreNode) RenewCertificate(ctx context.Context, req *api.NodeRenewCertif
 		return nil, err
 	}
 	rec.SetCertificate(pem)
-	if _, err := s.d.Own.Node().Patch(ctx, api.NodePatchRequest_builder{
+	if _, err := s.own(ctx).Node().Patch(ctx, api.NodePatchRequest_builder{
 		Ref:              api.NodeRef_builder{Id: n.GetId()}.Build(),
 		Join:             rec,
 		CertSerial:       z.Ptr(serial),
@@ -1029,7 +1029,7 @@ func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) 
 		return nil, status.Error(codes.PermissionDenied, "only a node heartbeats")
 	}
 
-	n, err := s.d.Own.Node().Get(ctx, api.NodeGetRequest_builder{
+	n, err := s.own(ctx).Node().Get(ctx, api.NodeGetRequest_builder{
 		Ref: api.NodeRef_builder{Id: f.Actor.Bytes()}.Build(),
 	}.Build())
 	if err != nil {
@@ -1076,12 +1076,12 @@ func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) 
 	if req.GetDataAddress() != "" {
 		patch.DataAddress = z.Ptr(req.GetDataAddress())
 	}
-	if _, err := s.d.Own.Node().Patch(ctx, patch.Build()); err != nil {
+	if _, err := s.own(ctx).Node().Patch(ctx, patch.Build()); err != nil {
 		return nil, err
 	}
 
 	var answers []*api.SinkAnswer
-	err = s.ownTx(ctx, func(own api.Server) error {
+	err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 		vs, err := s.registerSinks(ctx, own, f.Actor, req.GetDevices(), req.GetSinks())
 		answers = vs
 
@@ -1158,7 +1158,7 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 	}
 	from, _ := peerAddr(ctx)
 
-	row, err := s.d.Ent.Relay.Query().
+	row, err := s.ent(ctx).Relay.Query().
 		Where(relay.HardwareIdEQ(strings.ToLower(hj.GetHardwareId())), relay.DateErasedIsNil()).
 		First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -1177,10 +1177,10 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 	case decCreate:
 		id := pdid.New(DomRelay)
 		alias := aliasFor(hj.GetHostname(), func(a string) bool {
-			n, _ := s.d.Ent.Relay.Query().Where(relay.AliasEQ(a), relay.DateErasedIsNil()).Count(ctx)
+			n, _ := s.ent(ctx).Relay.Query().Where(relay.AliasEQ(a), relay.DateErasedIsNil()).Count(ctx)
 			return n > 0
 		})
-		v, err := s.d.Own.Relay().Add(ctx, api.RelayAddRequest_builder{
+		v, err := s.own(ctx).Relay().Add(ctx, api.RelayAddRequest_builder{
 			Id:            id.Bytes(),
 			Alias:         alias,
 			HardwareId:    strings.ToLower(hj.GetHardwareId()),
@@ -1199,7 +1199,7 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 		answer.Alias = alias
 		answer.Message = "waiting for adoption: shale relay adopt " + alias
 		if auto {
-			v, err = s.adoptRelay(ctx, s.d.Own, v, "")
+			v, err = s.adoptRelay(ctx, s.own(ctx), v, "")
 			if err != nil {
 				return nil, err
 			}
@@ -1208,7 +1208,7 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 			answer.Message = ""
 		}
 	case decPending:
-		v, err := s.d.Own.Relay().Patch(ctx, api.RelayPatchRequest_builder{
+		v, err := s.own(ctx).Relay().Patch(ctx, api.RelayPatchRequest_builder{
 			Ref:              api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
 			Join:             s.joinRecord(hj, from, js.join.GetRejoin()),
 			Hostname:         z.Ptr(hj.GetHostname()),
@@ -1225,7 +1225,7 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 		answer.Alias = row.Alias
 		answer.Message = "waiting for adoption"
 		if auto {
-			v, err = s.adoptRelay(ctx, s.d.Own, v, "")
+			v, err = s.adoptRelay(ctx, s.own(ctx), v, "")
 			if err != nil {
 				return nil, err
 			}
@@ -1246,7 +1246,7 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 				return nil, err
 			}
 			rec.SetCertificate(pem)
-			if _, err := s.d.Own.Relay().Patch(ctx, api.RelayPatchRequest_builder{
+			if _, err := s.own(ctx).Relay().Patch(ctx, api.RelayPatchRequest_builder{
 				Ref:              api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
 				Join:             rec,
 				CertSerial:       z.Ptr(serial),
@@ -1261,7 +1261,7 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 			answer.State = api.HostState_HOST_STATE_ADOPTED
 			answer.Certificate = pem
 		} else {
-			if _, err := s.d.Own.Relay().Patch(ctx, api.RelayPatchRequest_builder{
+			if _, err := s.own(ctx).Relay().Patch(ctx, api.RelayPatchRequest_builder{
 				Ref:              api.RelayRef_builder{Id: js.id.Bytes()}.Build(),
 				Join:             rec,
 				DateUpdatedForce: z.Ptr(true),
@@ -1340,7 +1340,7 @@ func (s coreRelay) RenewCertificate(ctx context.Context, req *api.RelayRenewCert
 	if _, err := x509.ParseCertificateRequest(req.GetCsr()); err != nil {
 		return nil, invalid("csr", err.Error())
 	}
-	r, err := s.d.Own.Relay().Get(ctx, api.RelayGetRequest_builder{Ref: api.RelayRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	r, err := s.own(ctx).Relay().Get(ctx, api.RelayGetRequest_builder{Ref: api.RelayRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -1354,7 +1354,7 @@ func (s coreRelay) RenewCertificate(ctx context.Context, req *api.RelayRenewCert
 		return nil, err
 	}
 	rec.SetCertificate(pem)
-	if _, err := s.d.Own.Relay().Patch(ctx, api.RelayPatchRequest_builder{
+	if _, err := s.own(ctx).Relay().Patch(ctx, api.RelayPatchRequest_builder{
 		Ref:              api.RelayRef_builder{Id: r.GetId()}.Build(),
 		Join:             rec,
 		CertSerial:       z.Ptr(serial),
@@ -1375,7 +1375,7 @@ func (s coreRelay) Heartbeat(ctx context.Context, req *api.RelayHeartbeatRequest
 	if kindOf(f.Actor) != DomRelay {
 		return nil, status.Error(codes.PermissionDenied, "only a relay heartbeats")
 	}
-	r, err := s.d.Own.Relay().Get(ctx, api.RelayGetRequest_builder{Ref: api.RelayRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	r, err := s.own(ctx).Relay().Get(ctx, api.RelayGetRequest_builder{Ref: api.RelayRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -1406,7 +1406,7 @@ func (s coreRelay) Heartbeat(ctx context.Context, req *api.RelayHeartbeatRequest
 	if req.GetWhepAddress() != "" {
 		patch.WhepAddress = z.Ptr(req.GetWhepAddress())
 	}
-	if _, err := s.d.Own.Relay().Patch(ctx, patch.Build()); err != nil {
+	if _, err := s.own(ctx).Relay().Patch(ctx, patch.Build()); err != nil {
 		return nil, err
 	}
 	resp := api.RelayHeartbeatResponse_builder{}
@@ -1425,11 +1425,11 @@ func (s coreRelay) Assign(ctx context.Context, req *api.RelayAssignRequest) (*ap
 	if err != nil {
 		return nil, err
 	}
-	p, err := s.d.Own.Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: req.GetProducer()}.Build())
+	p, err := s.own(ctx).Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: req.GetProducer()}.Build())
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.d.Own.Producer().Patch(ctx, api.ProducerPatchRequest_builder{
+	if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 		Ref:              api.ProducerRef_builder{Id: p.GetId()}.Build(),
 		Relay:            api.RelayRef_builder{Id: r.GetId()}.Build(),
 		DateUpdatedForce: z.Ptr(true),
@@ -1442,7 +1442,7 @@ func (s coreRelay) Assign(ctx context.Context, req *api.RelayAssignRequest) (*ap
 
 // tenantName is the alias of a tenant by id, for messages.
 func (s Core) tenantName(ctx context.Context, id pdid.Id) string {
-	t, err := s.d.Ent.Tenant.Query().Where(tenant.IdEQ(id.Uuid())).Only(ctx)
+	t, err := s.ent(ctx).Tenant.Query().Where(tenant.IdEQ(id.Uuid())).Only(ctx)
 	if err != nil {
 		return id.String()
 	}

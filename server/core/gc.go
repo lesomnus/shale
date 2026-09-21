@@ -65,7 +65,7 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 	var cands []*cand
 	for _, c := range req.GetCandidates() {
 		cc := &cand{c: c}
-		obj, err := s.d.Ent.Lamina.Query().Where(lamina.SinkIdEQ(sid.Uuid()), lamina.LaminaKeyEQ(c.GetLaminaKey())).First(ctx)
+		obj, err := s.ent(ctx).Lamina.Query().Where(lamina.SinkIdEQ(sid.Uuid()), lamina.LaminaKeyEQ(c.GetLaminaKey())).First(ctx)
 		if err != nil && !ent.IsNotFound(err) {
 			return nil, err
 		}
@@ -131,7 +131,7 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 	target := req.GetBytesNeeded()
 	var approved int64
 	var decisions []*api.GcDecision
-	err = s.ownTx(ctx, func(own api.Server) error {
+	err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
 		for _, c := range cands {
 			d := api.GcDecision_builder{LaminaKey: c.c.GetLaminaKey()}
 			if c.obj != nil && c.dates {
@@ -171,7 +171,7 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 // (§21.4). Equal shares unless capacity_share says otherwise.
 func (s Core) overShare(ctx context.Context) map[pdid.Id]bool {
 	out := map[pdid.Id]bool{}
-	ts, err := s.d.Own.Tenant().List(ctx, api.TenantListRequest_builder{Size: 100}.Build())
+	ts, err := s.own(ctx).Tenant().List(ctx, api.TenantListRequest_builder{Size: 100}.Build())
 	if err != nil {
 		return out
 	}
@@ -326,7 +326,7 @@ func (s coreSink) Retire(ctx context.Context, req *api.SinkRetireRequest) (*api.
 
 // nodeAlive says whether a node's heartbeats are fresh (§27).
 func (s Core) nodeAlive(ctx context.Context, id pdid.Id, now time.Time) bool {
-	n, err := s.d.Ent.Node.Get(ctx, id.Uuid())
+	n, err := s.ent(ctx).Node.Get(ctx, id.Uuid())
 	if err != nil || n.DateSeen == nil || n.DateErased != nil {
 		return false
 	}
@@ -361,7 +361,7 @@ func (s coreDevice) setHealth(ctx context.Context, ref *api.DeviceRef, h api.Dev
 	if h == api.DeviceHealth_DEVICE_HEALTH_HEALTHY {
 		score = 0
 	}
-	if err := s.tx(ctx, func(nx api.Server) error {
+	if err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		return s.setDeviceHealth(ctx, nx, id, h, reason, operator, score, now)
 	}); err != nil {
 		return nil, err
@@ -390,13 +390,13 @@ func (s coreDevice) DeclareDead(ctx context.Context, req *api.DeviceDeclareDeadR
 		return nil, err
 	}
 	now := s.d.now()
-	err = s.ownTx(ctx, func(own api.Server) error {
-		sinks, err := s.d.Ent.Sink.Query().Where(sink.DeviceIdEQ(mustId(d.GetId()).Uuid())).All(ctx)
+	err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+		sinks, err := s.ent(ctx).Sink.Query().Where(sink.DeviceIdEQ(mustId(d.GetId()).Uuid())).All(ctx)
 		if err != nil {
 			return err
 		}
 		for _, sk := range sinks {
-			objs, err := s.d.Ent.Lamina.Query().
+			objs, err := s.ent(ctx).Lamina.Query().
 				Where(lamina.SinkIdEQ(sk.Id), lamina.StateIn(int32(api.LaminaState_LAMINA_STATE_COMMITTED), int32(api.LaminaState_LAMINA_STATE_DELETING))).
 				All(ctx)
 			if err != nil {

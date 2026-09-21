@@ -206,7 +206,7 @@ func (s Core) WithDriver(drv dialect.Driver) (api.Server, error) {
 
 // tx runs `fn` with the stack below this layer rebound onto one transaction,
 // so several writes land or fail together.
-func (s Core) tx(ctx context.Context, fn func(next api.Server) error) error {
+func (s Core) tx(ctx context.Context, fn func(ctx context.Context, next api.Server) error) error {
 	drv, tx, err := dialect.BeginTx(ctx, s.d.Drv)
 	if err != nil {
 		return err
@@ -217,8 +217,13 @@ func (s Core) tx(ctx context.Context, fn func(next api.Server) error) error {
 		tx.Rollback()
 		return err
 	}
+	ctx, err = s.inTx(ctx, drv)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	if err := fn(next); err != nil {
+	if err := fn(ctx, next); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -226,8 +231,50 @@ func (s Core) tx(ctx context.Context, fn func(next api.Server) error) error {
 	return tx.Commit()
 }
 
+// inTx is the context of a transaction: what is read through `ent` and
+// `own` inside it reads through the transaction rather than the pool, so
+// a read sees the writes before it and no second connection is taken. A
+// database that lets one writer exclude every reader (SQLite's memdb, the
+// sandbox's) would refuse the pool's read outright; the others would
+// answer from before the transaction began.
+func (s Core) inTx(ctx context.Context, drv dialect.Driver) (context.Context, error) {
+	own, err := enttx.Rebind(s.d.Own, drv)
+	if err != nil {
+		return nil, err
+	}
+
+	return context.WithValue(ctx, txKey{}, txBound{ent: ent.NewClient(ent.Driver(drv)), own: own}), nil
+}
+
+type txKey struct{}
+
+type txBound struct {
+	ent *ent.Client
+	own api.Server
+}
+
+// ent is the rows, through the transaction the context is in, else the
+// pool.
+func (s Core) ent(ctx context.Context) *ent.Client {
+	if v, ok := ctx.Value(txKey{}).(txBound); ok {
+		return v.ent
+	}
+
+	return s.d.Ent
+}
+
+// own is the server with no wall, through the transaction the context is
+// in, else the pool.
+func (s Core) own(ctx context.Context) api.Server {
+	if v, ok := ctx.Value(txKey{}).(txBound); ok {
+		return v.own
+	}
+
+	return s.d.Own
+}
+
 // ownTx is the same over the server with no wall.
-func (s Core) ownTx(ctx context.Context, fn func(own api.Server) error) error {
+func (s Core) ownTx(ctx context.Context, fn func(ctx context.Context, own api.Server) error) error {
 	drv, tx, err := dialect.BeginTx(ctx, s.d.Drv)
 	if err != nil {
 		return err
@@ -238,8 +285,13 @@ func (s Core) ownTx(ctx context.Context, fn func(own api.Server) error) error {
 		tx.Rollback()
 		return err
 	}
+	ctx, err = s.inTx(ctx, drv)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	if err := fn(own); err != nil {
+	if err := fn(ctx, own); err != nil {
 		tx.Rollback()
 		return err
 	}

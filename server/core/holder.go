@@ -41,7 +41,7 @@ func (s coreHolder) Add(ctx context.Context, req *api.HolderAddRequest) (*api.Ho
 	if err != nil {
 		return nil, err
 	}
-	t, err := s.d.Own.Tenant().Get(ctx, api.TenantGetRequest_builder{Ref: api.TenantRef_builder{Id: f.Tenant.Bytes()}.Build()}.Build())
+	t, err := s.own(ctx).Tenant().Get(ctx, api.TenantGetRequest_builder{Ref: api.TenantRef_builder{Id: f.Tenant.Bytes()}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}

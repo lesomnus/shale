@@ -37,11 +37,17 @@ func (s coreNode) PushEvents(ctx context.Context, req *api.NodePushEventsRequest
 		var err error
 		switch {
 		case ev.GetStored() != nil:
-			err = s.ownTx(ctx, func(own api.Server) error { return s.applyStored(ctx, own, f.Actor, ev.GetStored()) })
+			err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+				return s.applyStored(ctx, own, f.Actor, ev.GetStored())
+			})
 		case ev.GetDeleted() != nil:
-			err = s.ownTx(ctx, func(own api.Server) error { return s.applyDeleted(ctx, own, f.Actor, ev.GetDeleted()) })
+			err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+				return s.applyDeleted(ctx, own, f.Actor, ev.GetDeleted())
+			})
 		case ev.GetMissing() != nil:
-			err = s.ownTx(ctx, func(own api.Server) error { return s.applyMissing(ctx, own, f.Actor, ev.GetMissing()) })
+			err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+				return s.applyMissing(ctx, own, f.Actor, ev.GetMissing())
+			})
 		default:
 			continue
 		}
@@ -71,7 +77,7 @@ func (s Core) sinkOnNode(ctx context.Context, nodeId pdid.Id, sinkId []byte, at 
 			return nil
 		}
 	}
-	row, err := s.d.Ent.Sink.Query().Where(sink.IdEQ(sid.Uuid())).Only(ctx)
+	row, err := s.ent(ctx).Sink.Query().Where(sink.IdEQ(sid.Uuid())).Only(ctx)
 	if err != nil {
 		return err
 	}
@@ -93,7 +99,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 	}
 	now := s.d.now()
 
-	at, err := s.d.Ent.Attempt.Query().Where(attempt.IdEQ(atId.Uuid())).First(ctx)
+	at, err := s.ent(ctx).Attempt.Query().Where(attempt.IdEQ(atId.Uuid())).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	}
@@ -101,7 +107,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 		return err
 	}
 
-	obj, err := s.d.Ent.Lamina.Query().Where(lamina.IdEQ(objId.Uuid())).First(ctx)
+	obj, err := s.ent(ctx).Lamina.Query().Where(lamina.IdEQ(objId.Uuid())).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	}
@@ -184,7 +190,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 	if obj.State == int32(api.LaminaState_LAMINA_STATE_COMMITTED) && !isZero(obj.SinkId) {
 		if obj.Incomplete && !ev.GetIncomplete() {
 			// The truncated one becomes the duplicate.
-			old, err := s.d.Ent.Attempt.Query().
+			old, err := s.ent(ctx).Attempt.Query().
 				Where(attempt.LaminaIdEQ(objId.Uuid()), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_STORED))).
 				All(ctx)
 			if err != nil {
@@ -262,7 +268,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 	}
 
 	// Other open attempts of the lamina are superseded.
-	open, err := s.d.Ent.Attempt.Query().
+	open, err := s.ent(ctx).Attempt.Query().
 		Where(attempt.LaminaIdEQ(objId.Uuid()), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.IdNEQ(at.Id)).
 		All(ctx)
 	if err != nil {
@@ -387,15 +393,15 @@ func (s Core) applyDeleted(ctx context.Context, own api.Server, nodeId pdid.Id, 
 	sid := mustId(ev.GetSinkId())
 	now := s.d.now()
 
-	obj, err := s.d.Ent.Lamina.Query().Where(lamina.SinkIdEQ(sid.Uuid()), lamina.LaminaKeyEQ(ev.GetLaminaKey())).First(ctx)
+	obj, err := s.ent(ctx).Lamina.Query().Where(lamina.SinkIdEQ(sid.Uuid()), lamina.LaminaKeyEQ(ev.GetLaminaKey())).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	}
 	if obj == nil {
 		// A duplicate's or an orphan's file: nothing in the index changes.
 		if len(ev.GetAttemptId()) > 0 {
-			if at, err := s.d.Ent.Attempt.Query().Where(attempt.IdEQ(mustId(ev.GetAttemptId()).Uuid())).First(ctx); err == nil && at.State == int32(api.AttemptState_ATTEMPT_STATE_DUPLICATE) {
-				if o, err := s.d.Ent.Lamina.Query().Where(lamina.IdEQ(at.LaminaId)).First(ctx); err == nil {
+			if at, err := s.ent(ctx).Attempt.Query().Where(attempt.IdEQ(mustId(ev.GetAttemptId()).Uuid())).First(ctx); err == nil && at.State == int32(api.AttemptState_ATTEMPT_STATE_DUPLICATE) {
+				if o, err := s.ent(ctx).Lamina.Query().Where(lamina.IdEQ(at.LaminaId)).First(ctx); err == nil {
 					return s.storedBytes(ctx, own, pdid.Id(o.TenantId), -ev.GetSize())
 				}
 			}
@@ -431,14 +437,14 @@ func (s Core) applyMissing(ctx context.Context, own api.Server, nodeId pdid.Id, 
 	}
 	sid := mustId(ev.GetSinkId())
 
-	obj, err := s.d.Ent.Lamina.Query().Where(lamina.SinkIdEQ(sid.Uuid()), lamina.LaminaKeyEQ(ev.GetLaminaKey())).First(ctx)
+	obj, err := s.ent(ctx).Lamina.Query().Where(lamina.SinkIdEQ(sid.Uuid()), lamina.LaminaKeyEQ(ev.GetLaminaKey())).First(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	}
 	if obj == nil {
 		// An abandoned buffered upload the node removed: the attempt fails.
 		if len(ev.GetAttemptId()) > 0 {
-			at, err := s.d.Ent.Attempt.Query().Where(attempt.IdEQ(mustId(ev.GetAttemptId()).Uuid())).First(ctx)
+			at, err := s.ent(ctx).Attempt.Query().Where(attempt.IdEQ(mustId(ev.GetAttemptId()).Uuid())).First(ctx)
 			if err == nil && at.State == int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED) {
 				st := api.AttemptState_ATTEMPT_STATE_FAILED
 				reason := ev.GetReason().String()
