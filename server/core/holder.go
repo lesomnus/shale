@@ -99,7 +99,7 @@ func rosterErr(err error) error {
 	case errors.Is(err, identity.ErrNoTenant), errors.Is(err, identity.ErrNoPerson):
 		return status.Error(codes.NotFound, err.Error())
 	}
-	if st, ok := status.FromError(errors.Unwrap(err)); ok {
+	if st, ok := status.FromError(err); ok && st.Code() != codes.OK {
 		return status.Error(st.Code(), "roster: "+st.Message())
 	}
 

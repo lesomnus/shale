@@ -71,7 +71,11 @@ func TestPeopleFromRoster(t *testing.T) {
 	}.Build())
 	require.Equal(t, codes.InvalidArgument, status.Code(err), "an identifier of one's own is refused")
 
-	// The admin issues Carol a password; Carol may not issue one.
+	// The admin issues Carol a password, and their own; Carol may not
+	// issue one.
+	own, err := holders.IssuePassword(ctx, api.HolderIssuePasswordRequest_builder{Ref: api.HolderRef_builder{Id: me.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.NotEmpty(t, own.GetPassword(), "the deployment's act, not a person asking for their own")
 	issued, err := holders.IssuePassword(ctx, api.HolderIssuePasswordRequest_builder{Ref: api.HolderRef_builder{Id: carol.GetId()}.Build()}.Build())
 	require.NoError(t, err)
 	require.NotEmpty(t, issued.GetPassword())

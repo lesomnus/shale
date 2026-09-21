@@ -41,6 +41,20 @@ type embedded struct {
 // plane's.
 const RosterDbFile = "roster.db"
 
+// unframed is a context for the deployment's own door at the embedded
+// roster. Both apps read payday's one frame type, so a request's frame
+// here would be a frame there, and roster would take Shale's actor for
+// one of its own: the person asking for a password would be refused as
+// asking for their own. What the deployment does through that door is
+// nobody's request, so the frame stays behind; the deadline comes along.
+func unframed(ctx context.Context) (context.Context, context.CancelFunc) {
+	if d, ok := ctx.Deadline(); ok {
+		return context.WithDeadline(context.Background(), d)
+	}
+
+	return context.WithCancel(context.Background())
+}
+
 func openEmbedded(ctx context.Context, cfg Config, stateDir string, log *slog.Logger) (*embedded, error) {
 	rc := rostercmd.Config{Db: cfg.Db}
 	if rc.Db.Driver == "" {
@@ -97,6 +111,8 @@ func (e *embedded) Close() error {
 // a tenant, through the deployment's own door; it refuses a tenant that is
 // not there rather than making one, since a tenant is a customer.
 func (e *embedded) agent(ctx context.Context, tenant string) error {
+	ctx, cancel := unframed(ctx)
+	defer cancel()
 	own := e.rs.Ungated
 	t, err := own.Tenant().Get(ctx, rstr.TenantGetRequest_builder{Ref: rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()}.Build())
 	if err != nil {
@@ -154,6 +170,8 @@ func (e *embedded) agent(ctx context.Context, tenant string) error {
 }
 
 func (e *embedded) tenants(ctx context.Context) ([]string, error) {
+	ctx, cancel := unframed(ctx)
+	defer cancel()
 	var vs []string
 	after := ""
 	for {
@@ -179,6 +197,8 @@ func (s *Store) Seed(ctx context.Context, tenant, holder string) (Person, string
 	if s.em == nil {
 		return Person{}, "", ErrExternal
 	}
+	ctx, cancel := unframed(ctx)
+	defer cancel()
 	seeded, err := rostercmd.Seed(ctx, s.em.rs, rostercmd.Seeding{Tenant: tenant, Holder: holder})
 	if err != nil {
 		return Person{}, "", err
@@ -211,6 +231,8 @@ func (s *Store) IssuePassword(ctx context.Context, tenant, alias string) (string
 }
 
 func (s *Store) issue(ctx context.Context, holder pdid.Id) (string, error) {
+	ctx, cancel := unframed(ctx)
+	defer cancel()
 	res, err := s.em.rs.Ungated.Credential().Issue(ctx, rstr.CredentialIssueRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(), Kind: "password",
 	}.Build())
@@ -232,6 +254,8 @@ func (s *Store) SetPassword(ctx context.Context, tenant, alias, password string)
 	if err != nil {
 		return err
 	}
+	ctx, cancel := unframed(ctx)
+	defer cancel()
 	_, err = s.em.rs.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: p.Id.Bytes()}.Build(), Kind: "password", Secret: []byte(password),
 	}.Build())
@@ -240,6 +264,8 @@ func (s *Store) SetPassword(ctx context.Context, tenant, alias, password string)
 }
 
 func (s *Store) lookupOwn(ctx context.Context, holder pdid.Id) (Person, error) {
+	ctx, cancel := unframed(ctx)
+	defer cancel()
 	v, err := s.em.rs.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
 		Ref:    rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
 		Select: rstr.HolderSelect_builder{All: z.Ptr(true), Tenant: rstr.TenantSelect_builder{All: z.Ptr(true)}.Build()}.Build(),
@@ -262,6 +288,8 @@ func (s *Store) Adopt(ctx context.Context, tenant pdid.Id, alias, name string, p
 	if s.em == nil {
 		return nil, ErrExternal
 	}
+	ctx, cancel := unframed(ctx)
+	defer cancel()
 	own := s.em.rs.Ungated
 	tref := rstr.TenantRef_builder{Id: tenant.Bytes()}.Build()
 	if _, err := own.Tenant().Get(ctx, rstr.TenantGetRequest_builder{Ref: tref}.Build()); err != nil {
