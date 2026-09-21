@@ -190,6 +190,10 @@ type SourceConfig struct {
 	// KeyframeInterval, e.g. "2s"; negotiated, 2 s by default.
 	KeyframeInterval time.Duration `yaml:"keyframe_interval"`
 	Audio            *AudioConfig  `yaml:"audio"`
+	// Controls are V4L2 controls set on a `v4l2:` device before every
+	// capture start, by v4l2-ctl's names, e.g. `exposure_dynamic_framerate:
+	// 0` so a Logitech camera keeps its frame rate in low light (§38.3).
+	Controls map[string]string `yaml:"controls"`
 	// Tier 2.
 	EncoderOptions  map[string]string `yaml:"encoder_options"`
 	ExtraInputArgs  []string          `yaml:"extra_input_args"`

@@ -26,12 +26,29 @@ type Scan struct {
 	Encoders []string
 }
 
-// Camera is one V4L2 device with its modes.
+// Camera is one V4L2 device with its modes and controls.
 type Camera struct {
 	Device string
 	Name   string
 	Modes  []string
 	H264   bool
+	// Controls is what the device offers, with the current values.
+	Controls []V4L2Control
+}
+
+// dynamicFramerate is the control a Logitech camera halves its frame rate
+// with in low light; the skeleton turns it off (§38.3).
+const dynamicFramerate = "exposure_dynamic_framerate"
+
+// hasControl says whether the camera offers a control.
+func (c Camera) hasControl(name string) bool {
+	for _, v := range c.Controls {
+		if v.Name == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ScanHost enumerates cameras, ONVIF devices, audio devices, and encoders.
@@ -49,6 +66,7 @@ func ScanHost(ctx context.Context, ffmpeg string) Scan {
 			// A metadata node or an output device: nothing to record from.
 			continue
 		}
+		c.Controls, _ = V4L2Controls(d)
 		s.Cameras = append(s.Cameras, c)
 	}
 	s.Onvif = onvifDiscover(ctx, 2*time.Second)
@@ -194,6 +212,13 @@ func (s Scan) WriteSkeleton(w io.Writer) {
 		for _, m := range c.Modes {
 			fmt.Fprintf(w, "      # %s\n", m)
 		}
+		if len(c.Controls) > 0 {
+			var cs []string
+			for _, v := range c.Controls {
+				cs = append(cs, fmt.Sprintf("%s=%d", v.Name, v.Value))
+			}
+			fmt.Fprintf(w, "      # controls: %s\n", strings.Join(cs, " "))
+		}
 		if c.H264 {
 			fmt.Fprintln(w, "      format: h264         # the camera encodes; remuxed with -c copy")
 		} else {
@@ -203,6 +228,10 @@ func (s Scan) WriteSkeleton(w io.Writer) {
 		fmt.Fprintf(w, "      size: %s\n", c.suggestedSize())
 		fmt.Fprintln(w, "      fps: 30")
 		fmt.Fprintln(w, "      max_bitrate: auto")
+		if c.hasControl(dynamicFramerate) {
+			fmt.Fprintln(w, "      controls:")
+			fmt.Fprintf(w, "        %s: 0   # or the camera halves the frame rate in low light\n", dynamicFramerate)
+		}
 	}
 	for _, x := range s.Onvif {
 		fmt.Fprintf(w, "    - alias: onvif           # %s\n", x)

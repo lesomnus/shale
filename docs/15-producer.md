@@ -125,6 +125,7 @@ sources:
     max_bitrate: auto       # or 4Mbps; the ceiling of §12.6
     keyframe_interval: 2s
     audio: {device: alsa:hw:1, bitrate: 64kbps}   # a microphone; absent: a USB camera has no audio
+    controls: {exposure_dynamic_framerate: 0}     # V4L2 controls, set before every start
 
   - alias: yard
     input: rtsp://10.1.2.40/stream1
@@ -161,9 +162,20 @@ sources:
 | `keyframe_interval` | `-g <fps × interval> -force_key_frames expr:gte(t,n_forced*<interval>)`, with the agreed interval ([§12.6](04-write-path.md#126-upload-profile-negotiation)), 2 s by default |
 | `audio` | a camera's own audio: `-c:a copy`, or `-c:a aac` / `-c:a libopus -b:a <bitrate>` when `codec` says so, `-an` for `none`; a microphone (`device`): `-f alsa -i <device>` as a second input, `-map 0:v:0 -map 1:a:0 -c:a aac -b:a <bitrate>` (`libopus` for `codec: opus`); a USB camera without one: `-an`. Audio that TS has no type for, G.711 from an IP camera above all, comes out of ffmpeg as a private stream nothing names, which no player finds; the first PMT shows it, and the capture is restarted once encoding it as AAC, with a log line saying so |
 | output (fixed) | `-f mpegts -` |
+| `controls` | not ffmpeg: V4L2 controls set on the device through the ioctls `v4l2-ctl -c` uses, by v4l2-ctl's names, before every start of the capture, since a re-plugged camera forgets them. A control the device does not have, or a value outside its range, is a warning in the log and the rest are set |
 
 The producer records which encoder `auto` chose and shows it in its
 heartbeat ([§38.6](#386-health-and-heartbeats)).
+
+**Controls worth setting.** A Logitech camera ships with
+`exposure_dynamic_framerate: 1` and halves its frame rate in low light to
+lengthen the exposure: a source configured at 30 fps records 15 in the
+evening, and nothing but the heartbeat's `frame_rate` says so. `0` keeps
+the frame rate and lets the picture darken instead, which is what a
+recording wants. `power_line_frequency` (1 for 50 Hz, 2 for 60 Hz) stops
+the flicker under mains lighting; `focus_automatic_continuous: 0` stops a
+camera hunting for focus. `shale producer scan` prints every control a
+camera has with its current value ([§38.4](#384-discovery-and-registration)).
 
 **Supervision.** The producer starts each capture process, reads its output,
 restarts it with backoff when it exits, and logs its standard error. While a
@@ -180,9 +192,12 @@ early cuts or poor motion quality.
 skeleton to edit:
 
 - **USB and CSI cameras**: every `/dev/video*` device with its formats,
-  frame sizes, and frame rates (V4L2 enumeration), and whether it delivers
-  H.264 itself. The `size` proposed is the largest of 1080p, 720p, and
-  480p the camera lists, so the skeleton runs as printed.
+  frame sizes, and frame rates (V4L2 enumeration), whether it delivers
+  H.264 itself, and its controls with their current values. The `size`
+  proposed is the largest of 1080p, 720p, and 480p the camera lists, so
+  the skeleton runs as printed, and a camera with
+  `exposure_dynamic_framerate` gets it turned off in the skeleton
+  ([§38.3](#383-managed-capture)).
 - **IP cameras**: ONVIF WS-Discovery on the local network. With credentials,
   each camera's media profiles: stream URL, resolution, frame rate, the
   configured bitrate limit, and the GOP length, which are exactly the values

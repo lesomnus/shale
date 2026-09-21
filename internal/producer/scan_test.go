@@ -19,6 +19,7 @@ func TestSkeletonSize(t *testing.T) {
 		{"no mjpeg", Camera{Modes: []string{"yuyv422: 640x480"}}, "640x480", nil},
 		{"h264 camera", Camera{H264: true, Modes: []string{"mjpeg: 1920x1080", "h264: 640x480 1280x720"}}, "1280x720", []string{"format: h264"}},
 		{"unparsed", Camera{Modes: []string{"mjpeg: "}}, "1920x1080", nil},
+		{"logitech", Camera{Modes: []string{"mjpeg: 1280x720"}, Controls: []V4L2Control{{Name: "brightness", Value: 128}, {Name: "exposure_dynamic_framerate", Value: 1}}}, "1280x720", []string{"# controls: brightness=128 exposure_dynamic_framerate=1", "controls:\n        exposure_dynamic_framerate: 0"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

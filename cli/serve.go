@@ -400,6 +400,7 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 			Alias: sc.Alias, Name: sc.Name, Input: sc.Input, Kind: sc.Kind, ContentType: sc.ContentType, Format: sc.Format, Size: sc.Size, Fps: sc.Fps,
 			Encoder: sc.Encoder, KeyframeInterval: sc.KeyframeInterval, EncoderOptions: sc.EncoderOptions,
 			ExtraInputArgs: sc.ExtraInputArgs, ExtraOutputArgs: sc.ExtraOutputArgs, Command: sc.Command, Zone: sc.Zone,
+			Controls: sc.Controls,
 		}
 		if sc.MaxBitrate == "" || strings.EqualFold(sc.MaxBitrate, "auto") {
 			src.MaxBitrateAuto = true

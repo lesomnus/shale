@@ -50,6 +50,9 @@ type SourceConfig struct {
 	MaxBitrateAuto   bool
 	KeyframeInterval time.Duration
 	Audio            *AudioConfig
+	// Controls are V4L2 controls set on a `v4l2:` device by name before
+	// every capture start, e.g. exposure_dynamic_framerate: "0" (§38.3).
+	Controls map[string]string
 	// Tier 2: options passed through.
 	EncoderOptions  map[string]string
 	ExtraInputArgs  []string
@@ -537,6 +540,23 @@ func (c *Capture) Run(ctx context.Context, read func(r io.Reader)) error {
 	}
 }
 
+// applyControls sets the source's V4L2 controls on its device before a
+// start (§38.3): a camera forgets them when re-plugged, and a restart is
+// when that shows.
+func (c *Capture) applyControls() {
+	dev, ok := strings.CutPrefix(c.Source.Input, "v4l2:")
+	if !ok || len(c.Source.Controls) == 0 {
+		return
+	}
+	set, errs := setControls(dev, c.Source.Controls)
+	if len(set) > 0 {
+		c.Log.Info("controls", "source", c.Source.Alias, "set", strings.Join(set, " "))
+	}
+	for _, err := range errs {
+		c.Log.Warn("control not set", "source", c.Source.Alias, "err", err.Error())
+	}
+}
+
 // errKicked is a process ended by CheckAudio, to be started again at once.
 var errKicked = errors.New("capture restarted with the audio encoded")
 
@@ -585,6 +605,7 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		cmd = exec.CommandContext(ctx, c.Ffmpeg, args...)
 	}
 	cmd.Env = append(os.Environ(), "AV_LOG_FORCE_NOCOLOR=1")
+	c.applyControls()
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
