@@ -53,12 +53,17 @@ func ScanHost(ctx context.Context, ffmpeg string) Scan {
 	}
 	s.Onvif = onvifDiscover(ctx, 2*time.Second)
 	s.Audio = alsaDevices()
+	// What opens, in the order `auto` tries them, not what ffmpeg was
+	// built with: a build lists h264_nvenc on a Pi and h264_v4l2m2m on a
+	// laptop.
 	if vs, err := AvailableEncoders(ctx, ffmpeg); err == nil {
+		have := map[string]bool{}
 		for _, v := range vs {
-			for _, e := range EncoderOrder {
-				if v == e {
-					s.Encoders = append(s.Encoders, v)
-				}
+			have[v] = true
+		}
+		for _, e := range EncoderOrder {
+			if have[e] && encoderOpens(ctx, ffmpeg, e) {
+				s.Encoders = append(s.Encoders, e)
 			}
 		}
 	}
@@ -174,9 +179,9 @@ func xaddrs(b []byte) []string {
 func (s Scan) WriteSkeleton(w io.Writer) {
 	fmt.Fprintln(w, "# what this host can see; edit into `producer.sources`")
 	if len(s.Encoders) > 0 {
-		fmt.Fprintf(w, "# encoders: %s\n", strings.Join(s.Encoders, ", "))
+		fmt.Fprintf(w, "# encoders: %s   (what opens here; auto takes the first)\n", strings.Join(s.Encoders, ", "))
 	} else {
-		fmt.Fprintln(w, "# encoders: none found (is ffmpeg installed?)")
+		fmt.Fprintln(w, "# encoders: none open (is ffmpeg installed?)")
 	}
 	for _, a := range s.Audio {
 		fmt.Fprintf(w, "# audio: %s\n", a)

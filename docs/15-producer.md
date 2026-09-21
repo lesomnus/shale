@@ -188,7 +188,9 @@ skeleton to edit:
   configured bitrate limit, and the GOP length, which are exactly the values
   the producer would otherwise have to guess.
 - **Audio devices**: ALSA capture devices.
-- **Encoders**: which hardware encoders ffmpeg on this host can open.
+- **Encoders**: which encoders ffmpeg on this host can open, in the order
+  `auto` tries them ([§38.3](#383-encoding)). A build lists encoders for
+  hardware it does not have; only those that open are printed.
 
 `shale producer probe [--sources …]` runs each configured source for 30
 seconds and reports sustained frame rate, CPU per stream, SoC temperature,
