@@ -251,7 +251,10 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		switch encoder {
 		case "h264_v4l2m2m":
 			// Takes a target only: CBR at the video ceiling (§38.3, bench).
-			args = append(args, "-b:v", strconv.FormatInt(videoCeiling, 10))
+			// Its four default capture buffers run out whenever the pipe is
+			// read a moment late ("All capture buffers returned to
+			// userspace"), which drops frames on a Pi carrying three cameras.
+			args = append(args, "-b:v", strconv.FormatInt(videoCeiling, 10), "-num_capture_buffers", "16")
 		case "libx264":
 			args = append(args, "-preset", "veryfast", "-crf", "23", "-maxrate", strconv.FormatInt(videoCeiling, 10), "-bufsize", strconv.FormatInt(2*videoCeiling, 10))
 		default:
