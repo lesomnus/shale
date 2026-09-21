@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"crypto/x509"
+	"errors"
 	"fmt"
 
 	"github.com/lesomnus/z"
@@ -40,13 +41,29 @@ func Resolver(s *Server) auth.Resolver {
 			if id.Tenant == "" || id.Alias == "" {
 				return nil, fmt.Errorf("names nobody: %w", auth.ErrNoCredential)
 			}
-
-			return holderFrame(ctx, own, api.HolderRef_builder{
+			ref := api.HolderRef_builder{
 				Slug: api.HolderRefBySlug_builder{
 					Alias:  z.Ptr(id.Alias),
 					Tenant: api.TenantRef_builder{Alias: z.Ptr(id.Tenant)}.Build(),
 				}.Build(),
-			}.Build())
+			}.Build()
+			f, err := holderFrame(ctx, own, ref)
+			if err == nil || !errors.Is(err, auth.ErrNoCredential) || s.Identity == nil {
+				return f, err
+			}
+			// Nobody here by that name: somebody roster knows arriving for
+			// the first time gets their rows now (§33.1). The credential
+			// itself was believed by whoever handed it over, which for a
+			// name is the plain header of development mode.
+			p, err := s.Identity.Lookup(ctx, id.Tenant, id.Alias)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
+			}
+			if _, err := s.Provision(ctx, p); err != nil {
+				return nil, err
+			}
+
+			return holderFrame(ctx, own, ref)
 		}
 
 		k, err := pdid.Parse(id.Id)

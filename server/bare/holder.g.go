@@ -125,14 +125,6 @@ func (s HolderServiceServer) Add(ctx context.Context, req *api.HolderAddRequest)
 	} else {
 		q.SetDateCreated(st.now())
 	}
-	if req.HasIdpSubject() {
-		q.SetIdpSubject(req.GetIdpSubject())
-	}
-	if req.HasPassword() {
-		q.SetPassword(req.GetPassword())
-	} else {
-		q.SetPassword([]byte{})
-	}
 	q.SetAllSites(req.GetAllSites())
 
 	u, err := q.Save(ctx)
@@ -222,12 +214,6 @@ func HolderSelectedFields(m *api.HolderSelect) []string {
 	if m.GetDateCreated() {
 		vs = append(vs, holder.FieldDateCreated)
 	}
-	if m.GetIdpSubject() {
-		vs = append(vs, holder.FieldIdpSubject)
-	}
-	if m.GetPassword() {
-		vs = append(vs, holder.FieldPassword)
-	}
 	if m.GetAllSites() {
 		vs = append(vs, holder.FieldAllSites)
 	}
@@ -302,7 +288,7 @@ func HolderGetKey(ctx context.Context, db *ent.Client, ref *api.HolderRef) (uuid
 var holderOrmEntity = ormpatch.MustEntityOf(api.File_shale_payday_holder_proto, "Holder")
 
 var holderPatchColumns = entpatch.Columns{
-	1: holder.FieldId, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 8: holder.FieldIdpSubject, 9: holder.FieldPassword, 10: holder.FieldAllSites}
+	1: holder.FieldId, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 10: holder.FieldAllSites}
 
 func (s HolderServiceServer) Apply(ctx context.Context, req *api.HolderApplyRequest) (*api.Holder, error) {
 	if !req.HasPatch() {
@@ -503,8 +489,6 @@ func pickHolder(req *api.HolderRef) (predicate.Holder, error) {
 		} else {
 			return holder.IdEQ(v), nil
 		}
-	case api.HolderRef_IdpSubject_case:
-		return holder.IdpSubjectEQ(req.GetIdpSubject()), nil
 	case api.HolderRef_Slug_case:
 		k := req.GetSlug()
 		ps := make([]predicate.Holder, 0, 2)

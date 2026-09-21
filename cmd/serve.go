@@ -42,6 +42,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
+	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/internal/proxyproto"
 	"github.com/lesomnus/shale/server/bare"
@@ -111,6 +112,13 @@ type Server struct {
 	// init, when there is no KEK to seal them under.
 	Sessions *authsession.Sessions
 
+	// Identity is roster, where people and tenants are (§33.1): in this
+	// process or elsewhere, as `auth.roster` says.
+	Identity *identity.Store
+	// provisionMu serializes making rows for people, so two first sign-ins
+	// of a tenant do not both become its admin.
+	provisionMu sync.Mutex
+
 	// Spin is whatever this deployment has to run besides answering.
 	Spin []any
 
@@ -177,11 +185,16 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 
-	// The cluster tenant, once there is one.
-	alias := c.Control.ClusterTenant
-	if alias == "" {
-		alias = "cluster"
+	// Who people are: roster, in this process or elsewhere (§33.1).
+	s.Identity, err = identity.Open(ctx, c.Auth.Roster, dir, slog.Default())
+	if err != nil {
+		db.Close()
+		return nil, err
 	}
+
+	// The cluster tenant, once there is one here; Prepare asks roster
+	// for it otherwise, once the database can hold the answer.
+	alias := s.clusterAlias()
 	if t, err := ungated.Tenant().Get(ctx, api.TenantGetRequest_builder{Ref: api.TenantRef_builder{Alias: &alias}.Build()}.Build()); err == nil {
 		s.ClusterTenant, _ = pdid.From(t.GetId())
 	}
@@ -193,6 +206,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		Keys:          core.NewKeys(s.Kek, ungated, nil),
 		CA:            s.CA,
 		ClusterTenant: s.ClusterTenant,
+		Identity:      s.Identity,
 		Readopt:       c.Control.Readopt,
 		Dev:           c.IsDev(),
 		Log:           slog.Default(),
@@ -286,17 +300,32 @@ func (s *Server) login(ctx context.Context, r *http.Request) (authsession.Sessio
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&body); err != nil {
 		return authsession.Session{}, err
 	}
-	who, tenant, err := core.Core{}.WithDeps(s.Deps).VerifyPassword(ctx, body.Tenant, body.Alias, body.Password)
+	if body.Tenant == "" || body.Alias == "" || body.Password == "" {
+		return authsession.Session{}, errors.New("tenant, alias, and password are required")
+	}
+	// roster checks the password (§33.1); the person it vouches for gets
+	// their rows here if this is their first time.
+	p, err := s.Identity.Verify(ctx, body.Tenant, body.Alias, body.Password)
 	if err != nil {
+		if errors.Is(err, identity.ErrRefused) || errors.Is(err, identity.ErrNoTenant) || errors.Is(err, identity.ErrNoPerson) {
+			return authsession.Session{}, errors.New("no such person, or wrong password")
+		}
+
+		return authsession.Session{}, err
+	}
+	if _, err := s.Provision(ctx, p); err != nil {
 		return authsession.Session{}, err
 	}
 
-	return authsession.Session{Id: who.String(), TenantId: tenant.String(), Grant: frame.Whole()}, nil
+	return authsession.Session{Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole()}, nil
 }
 
 func (s *Server) Close() error {
 	if s.Leader != nil {
 		s.Leader.Close()
+	}
+	if s.Identity != nil {
+		s.Identity.Close()
 	}
 
 	return s.Db.Close()

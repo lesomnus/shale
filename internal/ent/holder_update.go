@@ -117,38 +117,6 @@ func (_u *HolderUpdate) ClearDateErased() *HolderUpdate {
 	return _u
 }
 
-// SetIdpSubject sets the "idp_subject" field.
-func (_u *HolderUpdate) SetIdpSubject(v string) *HolderUpdate {
-	_u.mutation.SetIdpSubject(v)
-	return _u
-}
-
-// SetNillableIdpSubject sets the "idp_subject" field if the given value is not nil.
-func (_u *HolderUpdate) SetNillableIdpSubject(v *string) *HolderUpdate {
-	if v != nil {
-		_u.SetIdpSubject(*v)
-	}
-	return _u
-}
-
-// ClearIdpSubject clears the value of the "idp_subject" field.
-func (_u *HolderUpdate) ClearIdpSubject() *HolderUpdate {
-	_u.mutation.ClearIdpSubject()
-	return _u
-}
-
-// SetPassword sets the "password" field.
-func (_u *HolderUpdate) SetPassword(v []byte) *HolderUpdate {
-	_u.mutation.SetPassword(v)
-	return _u
-}
-
-// ClearPassword clears the value of the "password" field.
-func (_u *HolderUpdate) ClearPassword() *HolderUpdate {
-	_u.mutation.ClearPassword()
-	return _u
-}
-
 // SetAllSites sets the "all_sites" field.
 func (_u *HolderUpdate) SetAllSites(v bool) *HolderUpdate {
 	_u.mutation.SetAllSites(v)
@@ -247,18 +215,6 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(holder.FieldDateCreated, field.TypeTime)
-	}
-	if value, ok := _u.mutation.IdpSubject(); ok {
-		_spec.SetField(holder.FieldIdpSubject, field.TypeString, value)
-	}
-	if _u.mutation.IdpSubjectCleared() {
-		_spec.ClearField(holder.FieldIdpSubject, field.TypeString)
-	}
-	if value, ok := _u.mutation.Password(); ok {
-		_spec.SetField(holder.FieldPassword, field.TypeBytes, value)
-	}
-	if _u.mutation.PasswordCleared() {
-		_spec.ClearField(holder.FieldPassword, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.AllSites(); ok {
 		_spec.SetField(holder.FieldAllSites, field.TypeBool, value)
@@ -370,38 +326,6 @@ func (_u *HolderUpdateOne) SetNillableDateErased(v *time.Time) *HolderUpdateOne 
 // ClearDateErased clears the value of the "date_erased" field.
 func (_u *HolderUpdateOne) ClearDateErased() *HolderUpdateOne {
 	_u.mutation.ClearDateErased()
-	return _u
-}
-
-// SetIdpSubject sets the "idp_subject" field.
-func (_u *HolderUpdateOne) SetIdpSubject(v string) *HolderUpdateOne {
-	_u.mutation.SetIdpSubject(v)
-	return _u
-}
-
-// SetNillableIdpSubject sets the "idp_subject" field if the given value is not nil.
-func (_u *HolderUpdateOne) SetNillableIdpSubject(v *string) *HolderUpdateOne {
-	if v != nil {
-		_u.SetIdpSubject(*v)
-	}
-	return _u
-}
-
-// ClearIdpSubject clears the value of the "idp_subject" field.
-func (_u *HolderUpdateOne) ClearIdpSubject() *HolderUpdateOne {
-	_u.mutation.ClearIdpSubject()
-	return _u
-}
-
-// SetPassword sets the "password" field.
-func (_u *HolderUpdateOne) SetPassword(v []byte) *HolderUpdateOne {
-	_u.mutation.SetPassword(v)
-	return _u
-}
-
-// ClearPassword clears the value of the "password" field.
-func (_u *HolderUpdateOne) ClearPassword() *HolderUpdateOne {
-	_u.mutation.ClearPassword()
 	return _u
 }
 
@@ -533,18 +457,6 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(holder.FieldDateCreated, field.TypeTime)
-	}
-	if value, ok := _u.mutation.IdpSubject(); ok {
-		_spec.SetField(holder.FieldIdpSubject, field.TypeString, value)
-	}
-	if _u.mutation.IdpSubjectCleared() {
-		_spec.ClearField(holder.FieldIdpSubject, field.TypeString)
-	}
-	if value, ok := _u.mutation.Password(); ok {
-		_spec.SetField(holder.FieldPassword, field.TypeBytes, value)
-	}
-	if _u.mutation.PasswordCleared() {
-		_spec.ClearField(holder.FieldPassword, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.AllSites(); ok {
 		_spec.SetField(holder.FieldAllSites, field.TypeBool, value)

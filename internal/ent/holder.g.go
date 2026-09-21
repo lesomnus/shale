@@ -28,10 +28,6 @@ func (e *Holder) Proto() *api.Holder {
 		x.SetDateErased(timestamppb.New(*e.DateErased))
 	}
 	x.SetDateCreated(timestamppb.New(e.DateCreated))
-	if e.IdpSubject != nil {
-		x.SetIdpSubject(*e.IdpSubject)
-	}
-	x.SetPassword(e.Password)
 	x.SetAllSites(e.AllSites)
 	return x
 }

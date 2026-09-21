@@ -12,6 +12,18 @@ stringData:
   POSTGRES_DB: shale
   # What the CP and the init job read (§36.1: db.dsn).
   SHALE_DB_DSN: postgres://shale:change-me-before-applying@shale-postgres:5432/shale?sslmode=disable
+  # roster, which runs inside every control-plane pod, on a database of
+  # its own that they all share (§33.1, auth.roster.db.dsn).
+  SHALE_AUTH_ROSTER_DB_DSN: postgres://shale:change-me-before-applying@shale-postgres:5432/roster?sslmode=disable
+---
+# The second database, made when the volume is first initialized.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shale-postgres-init
+data:
+  01-roster.sql: |
+    CREATE DATABASE roster OWNER shale;
 ---
 apiVersion: v1
 kind: Service
@@ -57,10 +69,16 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", "shale"]
             periodSeconds: 5
+      volumes:
+        - name: init
+          configMap:
+            name: shale-postgres-init
   volumeClaimTemplates:
     - metadata:
         name: data

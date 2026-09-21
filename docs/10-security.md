@@ -4,7 +4,8 @@
 
 ### 33.1 Trust model
 
-Two kinds of principal exist. **People** sign in and are payday Holders.
+Two kinds of principal exist. **People** sign in and are payday Holders,
+known by roster.
 **Hosts** are machines the operator owns; each is a row of its own, identified
 by its hardware and authenticated by a certificate the Control Plane issues
 when an operator adopts it ([§33.4](#334-joining-and-adoption)). Nothing else
@@ -14,10 +15,10 @@ holds a credential.
 |---|---|---|---|---|
 | **Producer** | host, tenant entity | tenant API | host certificate (mTLS) | negotiate and allocate for its set; upload with the access tokens it is given |
 | **Reader** | host, tenant entity | tenant API | host certificate (mTLS) | query and read objects of its sites |
-| **Tenant admin** | person (Holder) | tenant API | payday sign-in | manage its tenant's sites, sets, sources, producers, readers, and retention dates |
+| **Tenant admin** | person (Holder) | tenant API | a session, after roster verified the password | manage its tenant's sites, sets, sources, producers, readers, and retention dates |
 | **Storage Node** | host, global entity | cluster API | host certificate (mTLS) | report its own devices and sinks; push events; propose GC |
 | **Relay** | host, global entity | cluster API | host certificate (mTLS) | report its load; serve producers and viewers that carry tokens ([§39](16-relay.md#39-relay)) |
-| **Cluster operator** | person (Holder) | cluster API | payday sign-in | adopt nodes; manage tenants, sinks, keys, policies |
+| **Cluster operator** | person (Holder) | cluster API | a session, after roster verified the password | adopt nodes; manage tenants, sinks, keys, policies |
 | **Control Plane** | — | everyone | CP certificate, signing key | placement, authorization, metadata; calls nodes ([§35.7](12-api.md#357-storage-node-control-api)) |
 
 - **The tenant wall.** Every tenant-owned entity is behind payday's wall: a
@@ -34,12 +35,39 @@ holds a credential.
   operators) uses the cluster API, which is a separate entry point on the
   internal network. The tenant API contains no path that sees more than one
   tenant ([§35.2](12-api.md#352-two-api-surfaces)).
-- **People sign in** with payday's session login (alias and password), or
-  through an external identity provider over OIDC. `shale init` creates the
-  first cluster operator and the first tenant admin and prints their one-time
-  credentials. The `shale` CLI signs in the same way (`shale login`) and keeps
-  a session; automation uses a Holder API token. Cluster operators are Holders
-  whose tenant the cluster API's policy lets see every tenant.
+- **People are roster's.** Who somebody is, the tenant they are in, and how
+  they sign in are rows of [roster](https://github.com/lesomnus/roster), the
+  payday app that holds people: it verifies a password (with lockout and a
+  second factor), links the identities an external provider knows them by,
+  and owns `sub`. Shale keeps a `Tenant` and a `Holder` row of its own for
+  what is Shale's about them, the sites they may see, **anchored on roster's
+  identifiers**: payday's Tenant and Holder are the same entities in both
+  apps, so `Holder.id` here is the `sub` every product knows the person by.
+  The rows are made **on demand**, the first time a credential roster
+  vouched for names the person, and no other way: `holder add` makes the
+  person at roster and then here, and a tenant is made at roster and its
+  row here follows its first person. The first person of a tenant sees every
+  site; everyone after sees what a Shale admin gives them.
+- **Signing in** is `POST /session {tenant, alias, password}` on the tenant
+  API's HTTP listener: Shale asks roster (`VouchService.Verify`), and mints
+  its own session cookie once roster said yes. Shale holds no password and
+  no verifier. The `shale` CLI signs in the same way (`shale login`) and
+  keeps the session. A person who signs in through an external identity
+  provider does so at roster with Hydra in front, and Shale is a relying
+  party of that flow; nothing in Shale implements OIDC.
+- **roster runs in the control plane's process or elsewhere.** With nothing
+  configured, `shale serve all` and `shale serve control` run roster inside
+  the process on a database of its own, reachable from that process only,
+  the way the node and the relay are run in one process ([§34.7](11-deployment.md#347-single-machine));
+  `shale init` then makes the cluster operators' tenant and the first tenant
+  there, each with its first person and a password shown once, and gives
+  people passwords through `shale holder issue-password`. With
+  `auth.roster.addr` set, roster is a deployment of its own and Shale acts on
+  it as the holder `shale` of each tenant it serves, with the tenant key its
+  operator minted for it (`auth.roster.keys`); tenants and people are made
+  there, and a tenant Shale holds no key for is one it does not serve.
+  Cluster operators are the people of the tenant `control.cluster_tenant`
+  (`cluster`), which the cluster API's policy lets see every tenant.
 - **Storage Nodes and Relays know nothing about tenants or people.** On
   their data planes they trust one thing: a valid CP signature on each
   request or stream. On its control API a node trusts one peer: the Control

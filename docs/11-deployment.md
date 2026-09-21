@@ -181,6 +181,14 @@ one Relay in one process, with SQLite and an in-memory watch broker.
   cluster later changes no client.
 - With one node, set spread falls back to spreading across devices
   ([§11](03-placement.md#11-placement)).
+- roster, where people and tenants are ([§33.1](10-security.md#331-trust-model)),
+  runs inside the process, on `roster.db` beside the control plane's
+  database, served on an in-process listener nothing outside can dial. It
+  has no listener of its own, so people are made through Shale: `shale
+  init` makes the first ones, `shale holder add` the rest, and `shale holder
+  issue-password` gives them a password. A deployment that already runs
+  roster names it with `auth.roster.addr` instead, and then nothing is
+  embedded.
 - `shale serve all --dev <dir>` is development mode: one directory sink,
   plaintext allowed, and the multi-sink warning suppressed.
 

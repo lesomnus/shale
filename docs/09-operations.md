@@ -281,7 +281,7 @@ in as a person (`shale login`) and keeps a session.
 shale init [--tenant t] [--admin a] [--operator o]   # CA, signing key, first tenant, first operator and admin
 shale serve control|cluster|storage|producer|reader|relay|all [--dev <dir>]
 shale login [--cluster] [--password p] @tenant/alias # sign in as a person; keeps a session
-shale holder set-password <holder>
+shale holder issue-password <holder>       # a fresh password, shown once; roster in this process only
 
 # Every entity has the generated verbs the schema declares: get|ls|watch|add|
 # patch|erase. Flags come before arguments. A custom verb takes a REF where
@@ -303,7 +303,7 @@ shale reader ls|pending|get|erase|watch                      # tenant API
 shale reader adopt <reader> '{"sites":[{"id":"<site>"}]}'
 
 # cluster setup (cluster API)
-shale tenant add|ls|erase|patch          # patch: capacity_share
+shale tenant ls|erase|patch              # patch: capacity_share; tenants come from roster (§33.1)
 shale signing-key ls|watch|rotate
 shale placement-policy add|ls|activate
 shale address-policy add|ls|activate     # how nodes are named to clients (§34.10)
@@ -325,7 +325,7 @@ shale set negotiate|allocate|live <set>
 shale source add|ls|get|patch|erase|live
 shale site add|ls|erase
 shale site-member add|ls|erase           # which people and readers may see which site
-shale holder add|ls|patch|erase          # people
+shale holder add|ls|patch|erase          # people: `add` makes them at roster first (§33.1)
 shale object get|ls|watch
 shale object reschedule <object> --expired <t> --deleted <t> --reason <text>
 shale object reschedule --set <set>|--source <source> --from <t> --to <t> --expired <t> --reason <text>

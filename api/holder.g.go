@@ -14,9 +14,6 @@ func (x *Holder) Ref() *HolderRef {
 	if v := x.GetId(); len(v) > 0 {
 		return HolderById(v)
 	}
-	if v := x.GetIdpSubject(); len(v) > 0 {
-		return HolderByIdpSubject(v)
-	}
 	{
 		v1 := x.GetAlias()
 		v2 := x.GetTenant()
@@ -36,8 +33,6 @@ func (x *HolderRef) Picks(v *Holder) bool {
 	switch x.WhichKey() {
 	case HolderRef_Id_case:
 		return bytes.Equal(x.GetId(), v.GetId())
-	case HolderRef_IdpSubject_case:
-		return x.GetIdpSubject() == v.GetIdpSubject()
 	case HolderRef_Slug_case:
 		x := x.GetSlug()
 		return (x.GetAlias() == v.GetAlias()) &&
@@ -61,18 +56,8 @@ func HolderById(v []byte) *HolderRef {
 	return x
 }
 
-func HolderByIdpSubject(v string) *HolderRef {
-	x := &HolderRef{}
-	x.SetIdpSubject(v)
-	return x
-}
-
 func HolderGetById(v []byte) *HolderGetRequest {
 	return HolderGetRequest_builder{Ref: HolderById(v)}.Build()
-}
-
-func HolderGetByIdpSubject(v string) *HolderGetRequest {
-	return HolderGetRequest_builder{Ref: HolderByIdpSubject(v)}.Build()
 }
 
 func HolderBySlug(alias string, tenant *TenantRef) *HolderRef {

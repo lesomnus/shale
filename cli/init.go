@@ -8,18 +8,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
 	"github.com/lesomnus/z"
 
-	"github.com/lesomnus/payday/pdid"
-
-	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
+	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/k8s"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
@@ -73,7 +73,11 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 					return fmt.Errorf("secret %s/%s already exists", k.Namespace(), secret)
 				}
 				// The state directory is scratch here: what a failed run
-				// (the database not up yet) left behind is not state.
+				// (the database not up yet) left behind is not state. So
+				// roster cannot live in it either (§34.5).
+				if c.Auth.Roster.Embedded() && c.Auth.Roster.Db.Driver == "" {
+					return errors.New("--k8s-secret: roster in this process needs a database every control plane shares; set auth.roster.db, or auth.roster.addr")
+				}
 				if err := os.RemoveAll(c.StateDir("control")); err != nil {
 					return err
 				}
@@ -167,36 +171,38 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 		return err
 	}
 
-	ct, err := s.Ungated.Tenant().Add(ctx, api.TenantAddRequest_builder{Alias: clusterAlias, Name: "cluster operators"}.Build())
-	if err != nil {
-		return fmt.Errorf("tenant %q: %w", clusterAlias, err)
+	// The people (§33.1). Where roster runs in this process they are made
+	// now, with the passwords shown once; where it runs elsewhere its
+	// operator made them, and the rows here come when they first sign in.
+	type seeded struct {
+		person   identity.Person
+		password string
 	}
-	opPass := core.RandomPassword()
-	opHash, err := core.HashPassword(opPass)
-	if err != nil {
+	var ops, adm *seeded
+	if s.Identity.Embedded() {
+		p, secret, err := s.Identity.Seed(ctx, clusterAlias, operator)
+		if err != nil {
+			return fmt.Errorf("@%s/%s: %w", clusterAlias, operator, err)
+		}
+		ops = &seeded{p, secret}
+		q, secret, err := s.Identity.Seed(ctx, tenant, admin)
+		if err != nil {
+			return fmt.Errorf("@%s/%s: %w", tenant, admin, err)
+		}
+		adm = &seeded{q, secret}
+		for _, v := range []*seeded{ops, adm} {
+			if _, err := s.Provision(ctx, v.person); err != nil {
+				return err
+			}
+		}
+	}
+	ct, err := s.ProvisionTenant(ctx, clusterAlias)
+	if err != nil && !errors.Is(err, identity.ErrNoTenant) {
 		return err
 	}
-	op, err := s.Ungated.Holder().Add(ctx, api.HolderAddRequest_builder{
-		Tenant: api.TenantRef_builder{Id: ct.GetId()}.Build(), Alias: operator, AllSites: true, Password: opHash,
-	}.Build())
-	if err != nil {
-		return fmt.Errorf("operator %q: %w", operator, err)
-	}
-
-	t, err := s.Ungated.Tenant().Add(ctx, api.TenantAddRequest_builder{Alias: tenant}.Build())
-	if err != nil {
-		return fmt.Errorf("tenant %q: %w", tenant, err)
-	}
-	adminPass := core.RandomPassword()
-	adminHash, err := core.HashPassword(adminPass)
-	if err != nil {
-		return err
-	}
-	h, err := s.Ungated.Holder().Add(ctx, api.HolderAddRequest_builder{
-		Tenant: api.TenantRef_builder{Id: t.GetId()}.Build(), Alias: admin, AllSites: true, Password: adminHash,
-	}.Build())
-	if err != nil {
-		return fmt.Errorf("admin %q: %w", admin, err)
+	t, terr := s.ProvisionTenant(ctx, tenant)
+	if terr != nil && !errors.Is(terr, identity.ErrNoTenant) {
+		return terr
 	}
 
 	// The first signing key (§33.3).
@@ -213,15 +219,28 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 		return err
 	}
 
-	pv := func(b []byte) string { id, _ := pdid.From(b); return id.String() }
 	fmt.Fprintf(out, "state       %s\n", dir)
 	fmt.Fprintf(out, "ca          %s\n", pki.Fingerprint(ca.Cert))
 	fmt.Fprintf(out, "signing key %s\n", sk.GetAlias())
-	fmt.Fprintf(out, "tenant      @%s   %s\n", clusterAlias, pv(ct.GetId()))
-	fmt.Fprintf(out, "operator    @%s/%s   %s   password: %s\n", clusterAlias, operator, pv(op.GetId()), opPass)
-	fmt.Fprintf(out, "tenant      @%s   %s\n", tenant, pv(t.GetId()))
-	fmt.Fprintf(out, "admin       @%s/%s   %s   password: %s\n", tenant, admin, pv(h.GetId()), adminPass)
-	fmt.Fprintf(out, "\nthe passwords are printed once; sign in with `shale login @%s/%s` and change them with `shale holder set-password`\n", tenant, admin)
+	if ops != nil {
+		fmt.Fprintf(out, "tenant      @%s   %s\n", clusterAlias, ct)
+		fmt.Fprintf(out, "operator    @%s/%s   %s   password: %s\n", clusterAlias, operator, ops.person.Id, ops.password)
+		fmt.Fprintf(out, "tenant      @%s   %s\n", tenant, t)
+		fmt.Fprintf(out, "admin       @%s/%s   %s   password: %s\n", tenant, admin, adm.person.Id, adm.password)
+		fmt.Fprintf(out, "\nthe passwords are printed once; sign in with `shale login @%s/%s`, and give somebody a new one with `shale holder issue-password`\n", tenant, admin)
+	} else {
+		fmt.Fprintf(out, "people      at roster %s: the tenants it holds keys for are", c.Auth.Roster.Addr)
+		for _, v := range slices.Sorted(maps.Keys(c.Auth.Roster.Keys)) {
+			fmt.Fprintf(out, " @%s", v)
+		}
+		fmt.Fprintf(out, "\n            @%s", clusterAlias)
+		if err != nil {
+			fmt.Fprintf(out, " has no key here yet, so there are no cluster operators until it does")
+		} else {
+			fmt.Fprintf(out, " is %s", ct)
+		}
+		fmt.Fprintf(out, "\n            a person signs in with the password roster holds, and gets their rows here then\n")
+	}
 	if c.IsDev() {
 		fmt.Fprintf(out, "\ndevelopment mode: call as @%s/%s on the tenant API and @%s/%s on the cluster API\n", tenant, admin, clusterAlias, operator)
 	}

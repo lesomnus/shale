@@ -26,10 +26,6 @@ const (
 	FieldDateErased = "date_erased"
 	// FieldDateCreated holds the string denoting the date_created field in the database.
 	FieldDateCreated = "date_created"
-	// FieldIdpSubject holds the string denoting the idp_subject field in the database.
-	FieldIdpSubject = "idp_subject"
-	// FieldPassword holds the string denoting the password field in the database.
-	FieldPassword = "password"
 	// FieldAllSites holds the string denoting the all_sites field in the database.
 	FieldAllSites = "all_sites"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
@@ -57,8 +53,6 @@ var Columns = []string{
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
-	FieldIdpSubject,
-	FieldPassword,
 	FieldAllSites,
 	FieldTenantId,
 }
@@ -109,11 +103,6 @@ func ByDateErased(opts ...sql.OrderTermOption) OrderOption {
 // ByDateCreated orders the results by the date_created field.
 func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
-}
-
-// ByIdpSubject orders the results by the idp_subject field.
-func ByIdpSubject(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIdpSubject, opts...).ToFunc()
 }
 
 // ByAllSites orders the results by the all_sites field.

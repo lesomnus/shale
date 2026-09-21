@@ -52,6 +52,13 @@ kubectl apply -k deploy/k8s
   kubectl -n shale delete job shale-init      # afterwards
   ```
 
+- roster, where people and tenants are (§33.1), runs inside the init job
+  and every API pod, on the `roster` database the PostgreSQL manifest makes
+  beside `shale`; nothing else reaches it. New people come from `shale
+  holder add` and get a password from `shale holder issue-password`. A
+  deployment that runs roster of its own sets `auth.roster.addr` and its
+  tenant keys in `control-config.yaml` instead.
+
 - Both API Deployments mount that Secret as their state directory and
   come up once it exists. Several CP processes share the database: one of
   them, elected through an advisory lock, runs the jobs and the directives

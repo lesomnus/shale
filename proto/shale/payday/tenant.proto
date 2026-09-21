@@ -39,7 +39,9 @@ message Tenant {
   // deltas, so two answers about one row have to be orderable or a late one
   // overwrites an early one that was newer. It is here rather than added when
   // that is built because adding it later is every app's migration.
-  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {
+    version: {}
+  }];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
     immutable: true
     default: ""
@@ -48,7 +50,9 @@ message Tenant {
   // trail: every row of it names the Holder that acted, so a deleted Holder
   // would leave the trail saying who while nobody could find out who. Nothing
   // names a tenant that way, so there is nothing for its row to outlive.
-  option (orm.message) = {rpc: {crud: true}};
+  option (orm.message) = {
+    rpc: {crud: true}
+  };
   option (payday.entity) = {
     // payday's own, so that generation finds it whatever an app called the
     // proto package. An app never writes this; see `Own` in entity.proto.
@@ -62,7 +66,9 @@ message Tenant {
     // it is barely erased at all: every tenanted row holds a foreign key to
     // one, so a tenant with anything in it cannot go, and the gate does not
     // serve the RPC.
-    erase: {hard: {}}
+    erase: {
+      hard: {}
+    }
 
     // A tenant can be listed, and the wall is what makes that safe rather than
     // alarming.
@@ -80,10 +86,16 @@ message Tenant {
     // knew the name of and could not find out which ones there were.
     list: {
       order: [
-        {field: {name: "date_created"}},
-        {field: {name: "id"}}
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
       ]
-      by: [{name: "ref"}]
+      by: [
+        {name: "ref"}
+      ]
       size: 20
       max: 100
     }

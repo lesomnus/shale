@@ -9,12 +9,12 @@
 package core
 
 import (
-	"sync"
-
 	"context"
-	"google.golang.org/grpc"
 	"log/slog"
+	"sync"
 	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -27,6 +27,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
+	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
 )
 
@@ -84,6 +85,9 @@ type Deps struct {
 	// (§34.9): over mTLS with the CP's certificate, checking that the
 	// peer's certificate names `id`. Nil where no directives run.
 	DialNode func(ctx context.Context, addr string, id pdid.Id) (*grpc.ClientConn, error)
+	// Identity is roster, where people and tenants are (§33.1); nil in a
+	// test that has none.
+	Identity *identity.Store
 	// Now is the clock.
 	Now func() time.Time
 	Log *slog.Logger

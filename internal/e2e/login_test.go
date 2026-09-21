@@ -20,24 +20,17 @@ import (
 	"github.com/lesomnus/shale/cmd"
 )
 
-// TestSignIn covers §33.1's people: a password set at init, a session
-// minted by the sign-in endpoint, the cookie carried as metadata on gRPC,
-// the wall holding for the tenant it names, and SetPassword.
+// TestSignIn covers §33.1's people: a password held at roster, a session
+// minted by the sign-in endpoint once roster vouched for it, the cookie
+// carried as metadata on gRPC, and the wall holding for the tenant it
+// names.
 func TestSignIn(t *testing.T) {
 	c := start(t)
 	ctx := context.Background()
 
-	// The admin's password is whatever init printed; the test sets one it
-	// knows through the plain header first.
-	admin := c.dial("@acme/admin")
-	holders := api.NewHolderServiceClient(admin)
-	_, err := holders.SetPassword(ctx, api.HolderSetPasswordRequest_builder{
-		Ref: api.HolderRef_builder{Slug: api.HolderRefBySlug_builder{
-			Alias: z.Ptr("admin"), Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(),
-		}.Build()}.Build(),
-		Password: "correct horse battery",
-	}.Build())
-	require.NoError(t, err)
+	// The admin's password is whatever init printed; the test gives them
+	// one it knows at roster, as the deployment would.
+	require.NoError(t, c.running.CP.Identity.SetPassword(ctx, "acme", "admin", "correct horse battery"))
 
 	// The HTTP listener beside the tenant API.
 	var httpAddr string

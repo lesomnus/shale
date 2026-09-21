@@ -143,9 +143,13 @@ func serveControlPlane(ctx context.Context, c *cmd.Config, surfaces []cmd.Surfac
 	if s.Kek == nil || s.CA == nil {
 		return errNotInit
 	}
+	if err := s.Prepare(ctx); err != nil {
+		return err
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return spin.Run(ctx, slices.Values(s.Spin)) })
+	g.Go(func() error { return s.Identity.Run(ctx) })
 	for _, surface := range surfaces {
 		surface := surface
 		l, err := net.Listen("tcp", c.ListenAddr(surface, all))
@@ -195,9 +199,13 @@ func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 	if s.Kek == nil || s.CA == nil {
 		return errNotInit
 	}
+	if err := s.Prepare(ctx); err != nil {
+		return err
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return spin.Run(ctx, slices.Values(s.Spin)) })
+	g.Go(func() error { return s.Identity.Run(ctx) })
 
 	tl, err := net.Listen("tcp", c.ListenAddr(cmd.SurfaceTenant, true))
 	if err != nil {

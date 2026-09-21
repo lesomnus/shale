@@ -9,6 +9,7 @@
 package cmd
 
 import (
+	"github.com/lesomnus/shale/internal/identity"
 	"path/filepath"
 	"time"
 
@@ -58,6 +59,8 @@ type Config struct {
 
 	// Client is how this binary reaches a deployment when it is the CLI.
 	Client ClientConfig `yaml:"client"`
+	// Auth is who people are (§33.1): roster, in this process or elsewhere.
+	Auth AuthConfig `yaml:"auth"`
 
 	// Dev is development mode (`--dev <dir>`): everything in one directory,
 	// plaintext allowed, one directory sink (§34.7).
@@ -197,6 +200,14 @@ type AudioConfig struct {
 	// Codec: copy (the default for a camera's audio), aac (the default for
 	// a microphone), opus (plays live as it is), or none.
 	Codec string `yaml:"codec"`
+}
+
+// AuthConfig is how people are known (§33.1).
+type AuthConfig struct {
+	// Roster is the identity store: an external roster's address and the
+	// tenant keys this deployment acts with, or nothing, which runs roster
+	// in the control plane's process on its own database (§34.7).
+	Roster identity.Config `yaml:"roster"`
 }
 
 // ProducerConfig is a producer's own settings (§36.1, producer scope).

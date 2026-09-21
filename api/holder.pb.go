@@ -44,8 +44,6 @@ type Holder struct {
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_IdpSubject  string                 `protobuf:"bytes,8,opt,name=idp_subject,json=idpSubject"`
-	xxx_hidden_Password    []byte                 `protobuf:"bytes,9,opt,name=password"`
 	xxx_hidden_AllSites    bool                   `protobuf:"varint,10,opt,name=all_sites,json=allSites"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -139,20 +137,6 @@ func (x *Holder) GetDateCreated() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *Holder) GetIdpSubject() string {
-	if x != nil {
-		return x.xxx_hidden_IdpSubject
-	}
-	return ""
-}
-
-func (x *Holder) GetPassword() []byte {
-	if x != nil {
-		return x.xxx_hidden_Password
-	}
-	return nil
-}
-
 func (x *Holder) GetAllSites() bool {
 	if x != nil {
 		return x.xxx_hidden_AllSites
@@ -197,17 +181,6 @@ func (x *Holder) SetDateErased(v *timestamppb.Timestamp) {
 
 func (x *Holder) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
-}
-
-func (x *Holder) SetIdpSubject(v string) {
-	x.xxx_hidden_IdpSubject = v
-}
-
-func (x *Holder) SetPassword(v []byte) {
-	if v == nil {
-		v = []byte{}
-	}
-	x.xxx_hidden_Password = v
 }
 
 func (x *Holder) SetAllSites(v bool) {
@@ -290,13 +263,9 @@ type Holder_builder struct {
 	// the alias comes free again.
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
-	// The subject an identity provider knows this holder by. Nullable so that
-	// "unset" does not collide with "unset" under the unique index.
-	IdpSubject string
-	// The password verifier (argon2id), written and never answered with.
-	Password []byte
 	// A tenant admin sees every site; a person without this sees only the
-	// sites they are a member of (§33.1).
+	// sites they are a member of (§33.1). The first person of a tenant gets
+	// it.
 	AllSites bool
 }
 
@@ -313,8 +282,6 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
-	x.xxx_hidden_IdpSubject = b.IdpSubject
-	x.xxx_hidden_Password = b.Password
 	x.xxx_hidden_AllSites = b.AllSites
 	return m0
 }
@@ -323,7 +290,7 @@ var File_shale_payday_holder_proto protoreflect.FileDescriptor
 
 const file_shale_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/payday/holder.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\"\xbb\x05\n" +
+	"\x19shale/payday/holder.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\"\xe5\x04\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -334,10 +301,7 @@ const file_shale_payday_holder_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12)\n" +
-	"\vidp_subject\x18\b \x01(\tB\b\xea\x82\x16\x040\x018\x01R\n" +
-	"idpSubject\x12)\n" +
-	"\bpassword\x18\t \x01(\fB\r\xea\x82\x16\x03\x82\x01\x00\xaa\xc1\x16\x02\b\x01R\bpassword\x12\x1b\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12\x1b\n" +
 	"\tall_sites\x18\n" +
 	" \x01(\bR\ballSites\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

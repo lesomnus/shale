@@ -125,7 +125,7 @@ var readerMay = map[string]bool{
 	api.ReaderService_RenewCertificate_FullMethodName: true,
 }
 
-func (TenantPolicy) May(_ context.Context, c gate.Call) error {
+func (TenantPolicy) May(ctx context.Context, c gate.Call) error {
 	m := c.Action
 	if strings.HasPrefix(m, "/payday.BatchService/") {
 		return nil
@@ -147,12 +147,28 @@ func (TenantPolicy) May(_ context.Context, c gate.Call) error {
 			return denied(m, "not something a reader does")
 		}
 	case DomHolder:
-		// A person may do the rest, inside their tenant.
+		// A person may do the rest, inside their tenant; giving somebody a
+		// password is an administrator's act (§33.1).
+		if m == api.HolderService_IssuePassword_FullMethodName && !seesEverySite(ctx) {
+			return denied(m, "only a person who sees every site issues a password")
+		}
 	default:
 		return denied(m, "not served to this kind of host")
 	}
 
 	return nil
+}
+
+// seesEverySite says whether the caller is a person with all_sites, from
+// the row the resolver put in the frame.
+func seesEverySite(ctx context.Context) bool {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return false
+	}
+	row, ok := f.Row.(*api.Holder)
+
+	return ok && row.GetAllSites()
 }
 
 func (TenantPolicy) Where(_ context.Context, c gate.Call) (frame.Tenants, error) {

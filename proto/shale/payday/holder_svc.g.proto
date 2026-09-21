@@ -33,9 +33,11 @@ service HolderService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(HolderWatchRequest) returns (stream HolderWatchResponse);
-  // SetPassword replaces a person's password. A person may set their own;
-  // anyone in the tenant may set another's until roles arrive.
-  rpc SetPassword(HolderSetPasswordRequest) returns (Holder);
+  // IssuePassword gives a person a fresh password, replacing whatever they
+  // had, and answers it once. Only a person who sees every site may, and
+  // only where roster runs in this process; at an external roster the
+  // operator does it there.
+  rpc IssuePassword(HolderIssuePasswordRequest) returns (HolderIssuePasswordResponse);
 }
 
 message HolderAddRequest {
@@ -46,8 +48,6 @@ message HolderAddRequest {
   string desc = 6 [features.field_presence = IMPLICIT];
   map<string, string> labels = 7;
   google.protobuf.Timestamp date_created = 15;
-  string idp_subject = 8;
-  bytes password = 9;
   bool all_sites = 10 [features.field_presence = IMPLICIT];
 }
 
@@ -60,7 +60,6 @@ message HolderRef {
   oneof key {
     bytes id = 1;
     HolderRefBySlug slug = 4;
-    string idp_subject = 8;
   }
 }
 
@@ -79,8 +78,6 @@ message HolderSelect {
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
-  bool idp_subject = 8;
-  bool password = 9;
   bool all_sites = 10;
 }
 
@@ -104,13 +101,6 @@ message HolderPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-  string idp_subject = 16;
-  // Clear idp_subject instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and idp_subject clears.
-  bool idp_subject_null = 17;
-  bytes password = 18;
   bool all_sites = 20;
 }
 
@@ -212,7 +202,10 @@ message HolderWatchItem {
   string action = 3 [features.field_presence = IMPLICIT];
 }
 
-message HolderSetPasswordRequest {
+message HolderIssuePasswordRequest {
   HolderRef ref = 1;
-  string password = 2 [features.field_presence = IMPLICIT];
+}
+
+message HolderIssuePasswordResponse {
+  string password = 1 [features.field_presence = IMPLICIT];
 }

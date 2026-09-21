@@ -81,26 +81,6 @@ func (_c *HolderCreate) SetNillableDateCreated(v *time.Time) *HolderCreate {
 	return _c
 }
 
-// SetIdpSubject sets the "idp_subject" field.
-func (_c *HolderCreate) SetIdpSubject(v string) *HolderCreate {
-	_c.mutation.SetIdpSubject(v)
-	return _c
-}
-
-// SetNillableIdpSubject sets the "idp_subject" field if the given value is not nil.
-func (_c *HolderCreate) SetNillableIdpSubject(v *string) *HolderCreate {
-	if v != nil {
-		_c.SetIdpSubject(*v)
-	}
-	return _c
-}
-
-// SetPassword sets the "password" field.
-func (_c *HolderCreate) SetPassword(v []byte) *HolderCreate {
-	_c.mutation.SetPassword(v)
-	return _c
-}
-
 // SetAllSites sets the "all_sites" field.
 func (_c *HolderCreate) SetAllSites(v bool) *HolderCreate {
 	_c.mutation.SetAllSites(v)
@@ -245,14 +225,6 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DateCreated(); ok {
 		_spec.SetField(holder.FieldDateCreated, field.TypeTime, value)
 		_node.DateCreated = value
-	}
-	if value, ok := _c.mutation.IdpSubject(); ok {
-		_spec.SetField(holder.FieldIdpSubject, field.TypeString, value)
-		_node.IdpSubject = &value
-	}
-	if value, ok := _c.mutation.Password(); ok {
-		_spec.SetField(holder.FieldPassword, field.TypeBytes, value)
-		_node.Password = value
 	}
 	if value, ok := _c.mutation.AllSites(); ok {
 		_spec.SetField(holder.FieldAllSites, field.TypeBool, value)

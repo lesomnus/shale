@@ -36,6 +36,11 @@ spec:
                 secretKeyRef:
                   name: shale-db
                   key: SHALE_DB_DSN
+            - name: SHALE_AUTH_ROSTER_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: shale-db
+                  key: SHALE_AUTH_ROSTER_DB_DSN
           ports:
             - containerPort: 7401
               name: grpc

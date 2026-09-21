@@ -77,7 +77,7 @@ A single machine for development:
 
 ```sh
 go build ./cmd/shale
-./shale init --dev ./dev                       # CA, keys, first tenant and people
+./shale init --dev ./dev                       # CA, keys, first tenant and people (at roster, in the process)
 ./shale serve all --dev ./dev                  # both APIs, a node, plaintext
 ./shale --dev ./dev --as @acme/admin set add @acme/cam-set
 ```

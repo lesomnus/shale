@@ -36,7 +36,9 @@ message Holder {
   string desc = 6;
   map<string, string> labels = 7;
   // See [Tenant.date_updated].
-  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {
+    version: {}
+  }];
   // When this holder was erased, and null for as long as it is here.
   //
   // A holder is erased **softly** and a tenant is not, and the difference is
@@ -51,7 +53,9 @@ message Holder {
   // every read is narrowed by this column and `auth` reads one to work out who
   // is calling. The index below covers only the rows that are still here, so
   // the alias comes free again.
-  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {
+    erased: {}
+  }];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
     immutable: true
     default: ""
@@ -110,8 +114,12 @@ message Holder {
     // through never sees one twice or misses one.
     list: {
       order: [
-        {field: {name: "date_created"}},
-        {field: {name: "id"}}
+        {
+          field: {name: "date_created"}
+        },
+        {
+          field: {name: "id"}
+        }
       ]
 
       // `tenant` as well as `ref`, because "who is in this tenant" is the
@@ -135,18 +143,8 @@ message Holder {
       max: 100
     }
   };
-  // The subject an identity provider knows this holder by. Nullable so that
-  // "unset" does not collide with "unset" under the unique index.
-  string idp_subject = 8 [(orm.field) = {
-    unique: true
-    nullable: true
-  }];
-  // The password verifier (argon2id), written and never answered with.
-  bytes password = 9 [
-    (orm.field) = {default: ""},
-    (payday.field) = {secret: true}
-  ];
   // A tenant admin sees every site; a person without this sees only the
-  // sites they are a member of (§33.1).
+  // sites they are a member of (§33.1). The first person of a tenant gets
+  // it.
   bool all_sites = 10;
 }

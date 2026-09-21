@@ -34,10 +34,6 @@ type Holder struct {
 	DateErased *time.Time `json:"date_erased,omitempty"`
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
-	// IdpSubject holds the value of the "idp_subject" field.
-	IdpSubject *string `json:"idp_subject,omitempty"`
-	// Password holds the value of the "password" field.
-	Password []byte `json:"password,omitempty"`
 	// AllSites holds the value of the "all_sites" field.
 	AllSites bool `json:"all_sites,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
@@ -73,11 +69,11 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case holder.FieldLabels, holder.FieldPassword:
+		case holder.FieldLabels:
 			values[i] = new([]byte)
 		case holder.FieldAllSites:
 			values[i] = new(sql.NullBool)
-		case holder.FieldAlias, holder.FieldName, holder.FieldDesc, holder.FieldIdpSubject:
+		case holder.FieldAlias, holder.FieldName, holder.FieldDesc:
 			values[i] = new(sql.NullString)
 		case holder.FieldDateUpdated, holder.FieldDateErased, holder.FieldDateCreated:
 			values[i] = new(sql.NullTime)
@@ -148,19 +144,6 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field date_created", values[i])
 			} else if value.Valid {
 				_m.DateCreated = value.Time
-			}
-		case holder.FieldIdpSubject:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field idp_subject", values[i])
-			} else if value.Valid {
-				_m.IdpSubject = new(string)
-				*_m.IdpSubject = value.String
-			}
-		case holder.FieldPassword:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field password", values[i])
-			} else if value != nil {
-				_m.Password = *value
 			}
 		case holder.FieldAllSites:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -237,14 +220,6 @@ func (_m *Holder) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("date_created=")
 	builder.WriteString(_m.DateCreated.Format(time.ANSIC))
-	builder.WriteString(", ")
-	if v := _m.IdpSubject; v != nil {
-		builder.WriteString("idp_subject=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	builder.WriteString("password=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Password))
 	builder.WriteString(", ")
 	builder.WriteString("all_sites=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AllSites))

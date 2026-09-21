@@ -24,8 +24,6 @@ type Mutation struct {
 	date_updated  *time.Time
 	date_erased   *time.Time
 	date_created  *time.Time
-	idp_subject   *string
-	password      *[]byte
 	all_sites     *bool
 	clearedFields map[string]struct{}
 	tenant        *uuid.UUID
@@ -219,70 +217,6 @@ func (m *Mutation) ResetDateCreated() {
 	delete(m.clearedFields, FieldDateCreated)
 }
 
-// SetIdpSubject sets the "idp_subject" field.
-func (m *Mutation) SetIdpSubject(s string) {
-	m.idp_subject = &s
-}
-
-// IdpSubject returns the value of the "idp_subject" field in the mutation.
-func (m *Mutation) IdpSubject() (r string, exists bool) {
-	v := m.idp_subject
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearIdpSubject clears the value of the "idp_subject" field.
-func (m *Mutation) ClearIdpSubject() {
-	m.idp_subject = nil
-	m.clearedFields[FieldIdpSubject] = struct{}{}
-}
-
-// IdpSubjectCleared returns if the "idp_subject" field was cleared in this mutation.
-func (m *Mutation) IdpSubjectCleared() bool {
-	_, ok := m.clearedFields[FieldIdpSubject]
-	return ok
-}
-
-// ResetIdpSubject resets all changes to the "idp_subject" field.
-func (m *Mutation) ResetIdpSubject() {
-	m.idp_subject = nil
-	delete(m.clearedFields, FieldIdpSubject)
-}
-
-// SetPassword sets the "password" field.
-func (m *Mutation) SetPassword(b []byte) {
-	m.password = &b
-}
-
-// Password returns the value of the "password" field in the mutation.
-func (m *Mutation) Password() (r []byte, exists bool) {
-	v := m.password
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearPassword clears the value of the "password" field.
-func (m *Mutation) ClearPassword() {
-	m.password = nil
-	m.clearedFields[FieldPassword] = struct{}{}
-}
-
-// PasswordCleared returns if the "password" field was cleared in this mutation.
-func (m *Mutation) PasswordCleared() bool {
-	_, ok := m.clearedFields[FieldPassword]
-	return ok
-}
-
-// ResetPassword resets all changes to the "password" field.
-func (m *Mutation) ResetPassword() {
-	m.password = nil
-	delete(m.clearedFields, FieldPassword)
-}
-
 // SetAllSites sets the "all_sites" field.
 func (m *Mutation) SetAllSites(b bool) {
 	m.all_sites = &b
@@ -382,7 +316,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 9)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -403,12 +337,6 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_created != nil {
 		fields = append(fields, FieldDateCreated)
-	}
-	if m.idp_subject != nil {
-		fields = append(fields, FieldIdpSubject)
-	}
-	if m.password != nil {
-		fields = append(fields, FieldPassword)
 	}
 	if m.all_sites != nil {
 		fields = append(fields, FieldAllSites)
@@ -438,10 +366,6 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateErased()
 	case FieldDateCreated:
 		return m.DateCreated()
-	case FieldIdpSubject:
-		return m.IdpSubject()
-	case FieldPassword:
-		return m.Password()
 	case FieldAllSites:
 		return m.AllSites()
 	case FieldTenantId:
@@ -511,20 +435,6 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateCreated(v)
 		return nil
-	case FieldIdpSubject:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetIdpSubject(v)
-		return nil
-	case FieldPassword:
-		v, ok := value.([]byte)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPassword(v)
-		return nil
 	case FieldAllSites:
 		v, ok := value.(bool)
 		if !ok {
@@ -578,12 +488,6 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
-	if m.FieldCleared(FieldIdpSubject) {
-		fields = append(fields, FieldIdpSubject)
-	}
-	if m.FieldCleared(FieldPassword) {
-		fields = append(fields, FieldPassword)
-	}
 	return fields
 }
 
@@ -606,12 +510,6 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
-		return nil
-	case FieldIdpSubject:
-		m.ClearIdpSubject()
-		return nil
-	case FieldPassword:
-		m.ClearPassword()
 		return nil
 	}
 	return fmt.Errorf("unknown Holder nullable field %s", name)
@@ -641,12 +539,6 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ResetDateCreated()
-		return nil
-	case FieldIdpSubject:
-		m.ResetIdpSubject()
-		return nil
-	case FieldPassword:
-		m.ResetPassword()
 		return nil
 	case FieldAllSites:
 		m.ResetAllSites()

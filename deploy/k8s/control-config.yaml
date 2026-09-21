@@ -14,6 +14,12 @@ data:
       migrate: true
     watch:
       broker: postgres
+    auth:
+      roster:
+        # roster in this process (§33.1), on its own database, which every
+        # control plane shares: dsn comes from SHALE_AUTH_ROSTER_DB_DSN.
+        db:
+          driver: pgx
     server:
       addr: ":7400"
       http:

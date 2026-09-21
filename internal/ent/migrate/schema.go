@@ -252,8 +252,6 @@ var (
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
-		{Name: "idp_subject", Type: field.TypeString, Nullable: true},
-		{Name: "password", Type: field.TypeBytes, Nullable: true},
 		{Name: "all_sites", Type: field.TypeBool},
 		{Name: "tenant_id", Type: field.TypeUuid},
 	}
@@ -265,7 +263,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "holder_tenant_tenant",
-				Columns:    []*schema.Column{HolderColumns[11]},
+				Columns:    []*schema.Column{HolderColumns[9]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -274,15 +272,7 @@ var (
 			{
 				Name:    "holder_alias_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{HolderColumns[1], HolderColumns[11]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "date_erased IS NULL",
-				},
-			},
-			{
-				Name:    "holder_idp_subject",
-				Unique:  true,
-				Columns: []*schema.Column{HolderColumns[8]},
+				Columns: []*schema.Column{HolderColumns[1], HolderColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

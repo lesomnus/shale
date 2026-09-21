@@ -5,18 +5,12 @@ package payday;
 import "orm.proto";
 import "payday.proto";
 
-// What Shale adds to payday's Holder: people are Holders (§33.1), and they
-// sign in with a password or through an identity provider.
+// What Shale adds to payday's Holder: people are Holders (§33.1). Who they
+// are, and how they sign in, is roster's; a row here is anchored on
+// roster's identifier and made when the person first arrives.
 message Holder {
-  // The subject an identity provider knows this holder by. Nullable so that
-  // "unset" does not collide with "unset" under the unique index.
-  string idp_subject = 8 [(orm.field) = {unique: true, nullable: true}];
-  // The password verifier (argon2id), written and never answered with.
-  bytes password = 9 [
-    (orm.field) = {default: ""},
-    (payday.field) = {secret: true}
-  ];
   // A tenant admin sees every site; a person without this sees only the
-  // sites they are a member of (§33.1).
+  // sites they are a member of (§33.1). The first person of a tenant gets
+  // it.
   bool all_sites = 10;
 }

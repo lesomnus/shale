@@ -33,11 +33,6 @@ func (Holder) Fields() []ent.Field {
 		field.Time("date_created").
 			Immutable().
 			Optional(),
-		field.String("idp_subject").
-			Nillable().
-			Optional(),
-		field.Bytes("password").
-			Optional(),
 		field.Bool("all_sites"),
 		field.Uuid("tenant_id").
 			Immutable(),
@@ -58,9 +53,6 @@ func (Holder) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("alias").
 			Edges("tenant").
-			Unique().
-			Annotations(entsql.IndexWhere("date_erased IS NULL")),
-		index.Fields("idp_subject").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

@@ -56,6 +56,11 @@ spec:
                 secretKeyRef:
                   name: shale-db
                   key: SHALE_DB_DSN
+            - name: SHALE_AUTH_ROSTER_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: shale-db
+                  key: SHALE_AUTH_ROSTER_DB_DSN
           volumeMounts:
             - name: config
               mountPath: /etc/shale
