@@ -71,10 +71,15 @@ type Reader struct {
 	synced bool
 
 	// params are the last parameter sets the video stream carried (an SPS
-	// and a PPS; a VPS too for H.265), with their start codes, taken from
-	// the first packet of a PES that had them. A keyframe that arrives
-	// without them can be given them (§38.2, #84).
+	// and a PPS; a VPS too for H.265), with their start codes. They come
+	// in the keyframe's own PES packet, or in a PES packet of their own
+	// just before it (ffmpeg writes what its encoder answered as a packet
+	// of its own that way), and either PES is assembled in pes until it
+	// ends or grows past pesMax. A keyframe that arrives without them can
+	// be given them (§38.2, #84).
 	params []byte
+	pes    []byte
+	pesOn  bool
 	// NoParams counts keyframes that came without parameter sets while
 	// none had been seen: laminae cut there do not play on their own.
 	NoParams int64
@@ -145,10 +150,8 @@ func (r *Reader) parse(p *Packet) {
 	}
 
 	switch {
-	case r.s.VideoPID != 0 && p.PID == r.s.VideoPID && p.PUSI:
-		if ps := packetParams(p.Data[p.Payload:], r.s.Video); ps != nil {
-			r.params = append(r.params[:0], ps...)
-		}
+	case r.s.VideoPID != 0 && p.PID == r.s.VideoPID:
+		r.assemble(p)
 	case p.PID == 0 && p.PUSI:
 		r.parsePAT(p)
 	case r.s.PmtPID != 0 && p.PID == r.s.PmtPID && p.PUSI:
@@ -350,6 +353,69 @@ func pesES(pl []byte) []byte {
 	return pl[9+hdl:]
 }
 
+// pesMax is how much of a video PES packet is assembled looking for its
+// parameter sets: they lead the packet when they are in it at all.
+const pesMax = 16 * 1024
+
+// assemble follows the video PES packets that carry parameter sets: one
+// starts on a unit-start packet whose first bytes hold one, is appended
+// to until the next unit start ends it or it grows past pesMax, and the
+// complete set it held, if any, becomes the last seen.
+func (r *Reader) assemble(p *Packet) {
+	pl := p.Data[p.Payload:]
+	if p.PUSI {
+		if r.pesOn {
+			r.take(r.pes)
+		}
+		r.pesOn = false
+		es := pesES(pl)
+		if es == nil {
+			return
+		}
+		codec := streamCodec(r.s.Video)
+		for _, u := range mpegts.NALUnits(es) {
+			if isParamStart(mpegts.NALType(u, codec), codec) {
+				r.pes = append(r.pes[:0], es...)
+				r.pesOn = true
+
+				break
+			}
+		}
+
+		return
+	}
+	if !r.pesOn {
+		return
+	}
+	r.pes = append(r.pes, pl...)
+	if len(r.pes) > pesMax {
+		// Past the lead: whatever the whole units so far hold.
+		units := mpegts.NALUnits(r.pes)
+		var b []byte
+		for _, u := range units[:len(units)-1] {
+			b = append(b, u...)
+		}
+		r.take(b)
+		r.pesOn = false
+	}
+}
+
+// take remembers the parameter sets of an assembled PES, when whole.
+func (r *Reader) take(es []byte) {
+	if ps := mpegts.ParamSets(es, streamCodec(r.s.Video)); ps != nil {
+		r.params = append(r.params[:0], ps...)
+	}
+}
+
+// isParamStart says whether a NAL type begins a set of parameter sets.
+func isParamStart(t int, codec byte) bool {
+	if codec == mpegts.StreamH265 {
+		return t == 32 || t == 33
+	}
+
+	return t == 7
+}
+
 // packetParams is the parameter sets the first packet of a video PES
 // carries, complete: a unit is complete when another start code follows
 // it in the packet, so the one the packet cuts off is left out. Nil unless
@@ -401,8 +467,9 @@ func (r *Reader) ParamSets(p *Packet) []byte {
 	if es := pesES(pl); es != nil {
 		// A set split across packets is still a set: its first unit is
 		// here, whole or not.
+		codec := streamCodec(r.s.Video)
 		for _, u := range mpegts.NALUnits(es) {
-			if t := mpegts.NALType(u, streamCodec(r.s.Video)); t == 7 || (r.s.Video == mpegts.StreamH265 && t == 32) {
+			if isParamStart(mpegts.NALType(u, codec), codec) {
 				return nil
 			}
 		}

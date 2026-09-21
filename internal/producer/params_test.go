@@ -32,6 +32,21 @@ func readAll(t *testing.T, r *Reader, path string) []*Packet {
 	return ps
 }
 
+// packets reads a stream one packet at a time, so a reader's view is the
+// one it has at each packet, as in the capture loop.
+func (r *Reader) packets(t *testing.T, path string) []*Packet {
+	return readAll(t, r, path)
+}
+
+func nalTypes(es []byte) []int {
+	var ts []int
+	for _, u := range mpegts.NALUnits(es) {
+		ts = append(ts, mpegts.NALType(u, mpegts.StreamH264))
+	}
+
+	return ts
+}
+
 // TestParamSets is §38.2's parameter sets: a keyframe that comes without
 // them gets the last ones seen, as TS packets in front of it that a
 // demuxer reads as one PES stamped like the keyframe (#84).
@@ -63,6 +78,27 @@ func TestParamSets(t *testing.T) {
 	}
 	require.GreaterOrEqual(t, bareKeys, 1)
 	require.Equal(t, int64(bareKeys), bare.NoParams)
+
+	// ffmpeg writes what its encoder answered as a packet of its own: the
+	// Pi 400's camera capture starts with a PES holding AUD, SPS and PPS,
+	// then the keyframe's PES without them, and no set ever again. The
+	// reader takes the set from that first PES, and the keyframe right
+	// after it wants them in front.
+	sep := NewReader(bytes.NewReader(nil))
+	var sepKeys, sepAdded int
+	for _, p := range sep.packets(t, "sepsps.ts") {
+		if sep.IsKeyframe(p) {
+			sepKeys++
+			if sep.ParamSets(p) != nil {
+				sepAdded++
+			}
+		}
+	}
+	require.Equal(t, 1, sepKeys)
+	require.Equal(t, 1, sepAdded)
+	require.NotNil(t, sep.Params())
+	require.Equal(t, []int{7, 8}, nalTypes(sep.Params()))
+	require.Zero(t, sep.NoParams)
 
 	// The same bare stream through the reader that remembers: the
 	// keyframe gets a PES of its own in front, on the video PID, whose
