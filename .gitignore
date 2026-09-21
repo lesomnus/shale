@@ -1,5 +1,6 @@
 .gen/
-dist/
+/dist/
+/ts/dist/
 node_modules/
 *.db
 /shale
@@ -9,3 +10,7 @@ node_modules/
 ts/public/app.wasm
 ts/public/app.wasm.br
 ts/public/wasm_exec.js
+
+# the console, built into web/console/dist by `npm run build` in ts/
+web/console/dist/*
+!web/console/dist/.gitkeep

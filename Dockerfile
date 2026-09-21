@@ -1,10 +1,21 @@
 # The image holds the static binary only (§34.8). Every role runs from it:
 #   shale serve control|cluster|storage|producer|reader|relay|all
+# The console (§40) is built into the binary: the control plane serves it
+# at the root of its tenant HTTP listener.
+FROM node:24-bookworm-slim AS console
+WORKDIR /src/ts
+COPY ts/package.json ts/package-lock.json ./
+COPY ts/vendor ./vendor
+RUN npm ci --no-audit --no-fund
+COPY ts .
+RUN npm run build
+
 FROM golang:1.27 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+COPY --from=console /src/web/console/dist ./web/console/dist
 ARG VERSION=dev
 RUN CGO_ENABLED=0 go build -tags grpcnotrace -trimpath \
     -ldflags="-s -w -X github.com/lesomnus/shale/internal/hostagent.Version=${VERSION}" \

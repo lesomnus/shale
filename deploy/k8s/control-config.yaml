@@ -24,10 +24,21 @@ data:
       addr: ":7400"
       http:
         addr: ":7402"
+        # The console (§40) is served here, at the root, and calls the
+        # tenant API through this listener: same origin, nothing to name.
+        allow_web: true
     cluster:
       addr: ":7401"
       http:
         addr: ":7403"
+        # The console's operator half signs in here, cross-origin from
+        # where the page was opened: every origin the console is opened
+        # by, which without an Ingress is a node IP on the NodePort.
+        allow_web: true
+        origins:
+          - https://10.1.2.73:30402
+          - https://10.1.2.74:30402
+          - https://10.1.2.75:30402
     control:
       # Every name a client dials the APIs by: the Services, and the node
       # addresses the NodePort is reached on from outside the cluster.

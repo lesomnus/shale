@@ -146,7 +146,10 @@ next start and is recognized by its hardware identity
     PROXY protocol.
   - Without an Ingress or a LoadBalancer, a NodePort on the tenant API is
     how the outside reaches it; the sign-in listener is the API port plus
-    two, on a NodePort too. The cluster API stays a ClusterIP Service.
+    two, on a NodePort too, and it serves the console
+    ([§40.4](17-console.md#404-serving-it)). The cluster API stays a
+    ClusterIP Service; only its sign-in listener has a NodePort beside the
+    tenant one (30403), for the console's operator half.
   - Sinks are hostPath mounts of the HDD mount points, listed in the node's
     configuration. Finding and formatting unused disks on labeled nodes is
     an idea, not a plan ([§36.2](13-configuration.md#362-open-decisions)).

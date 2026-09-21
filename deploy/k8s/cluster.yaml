@@ -1,6 +1,8 @@
-# The cluster API (§35.2): nodes, relays, and operators. Internal only: a
+# The cluster API (§35.2): nodes, relays, and operators. Internal: a
 # ClusterIP Service, which the Storage Nodes reach from the host network
-# through the kube-proxy replacement.
+# through the kube-proxy replacement. Its sign-in listener alone is also a
+# NodePort, for the operator half of the console (§40.4): a person with a
+# password, never a host, and only what the gate lets that person do.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -79,3 +81,20 @@ spec:
     - name: http
       port: 7403
       targetPort: 7403
+---
+# The sign-in listener for browsers, where the console reaches the cluster
+# API from outside (§40.4): the port beside the tenant API's (30402), which
+# is where the page guesses it. The gRPC port stays inside.
+apiVersion: v1
+kind: Service
+metadata:
+  name: shale-cluster-web
+spec:
+  type: NodePort
+  selector:
+    app: shale-cluster
+  ports:
+    - name: http
+      port: 7403
+      targetPort: 7403
+      nodePort: 30403

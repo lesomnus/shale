@@ -31,6 +31,10 @@ script cannot read (payday's `auth/authsession`); every call after that
 carries the cookie. Both listeners need `http.allow_web: true`, and a page
 served from anywhere but the listener itself needs its origin in
 `http.origins` ([§36.1](13-configuration.md#361-configuration-reference)).
+Each surface's cookie has a name of its own (`__Host-shale_tenant`,
+`__Host-shale_cluster`): the two listeners are neighbouring ports of one
+host, and a browser keeps cookies by host rather than by port, so under one
+name the second sign-in would overwrite the first.
 
 | page | surface | what it shows, and does |
 |---|---|---|
@@ -102,10 +106,22 @@ contract needs one today.
 
 ### 40.4 Serving it
 
-`npm run build` writes `ts/dist/`, a static page, served by anything that
-serves files. A deployment that serves it from the control plane's own
-HTTP listener is one origin and needs no `origins:`; served elsewhere, the
-two listeners name the page's origin. The cluster API's listener is a
-different origin from the tenant API's in either case (7402 and 7403), so
-the console reaches the cluster API cross-origin and that listener names
-the console's origin.
+The control plane serves the console itself, at the root of the tenant
+API's HTTP listener: `https://<cp>:7402/`. `npm run build` in `ts/` writes
+the page into `web/console/dist`, which the binary embeds; the Dockerfile
+and `deploy/deb/build.sh` do that before `go build`, so the image and the
+package carry it, and a binary built without it (a checkout with no node)
+answers that path with a line saying so. The page opened this way is the
+listener's own origin, so the tenant API needs only `allow_web: true`.
+
+The cluster API's listener is another origin (7403 beside 7402, or 30403
+beside 30402 on a NodePort), so the console reaches it cross-origin and
+that listener names the console's origin in `origins:` — every name the
+page is opened by. The two must be the same *site* (the same host, or one
+registrable domain): the cookie is `SameSite=Lax`, which a browser sends
+across ports but not across sites. A cluster API reachable only from
+inside the network keeps the operator half of the console inside too; the
+tenant half works on its own, and the pages that need the other say so.
+
+`npm run build:sandbox` is the page with the sandbox in it, `ts/dist/`, for
+a static host: a demo that needs no server at all.

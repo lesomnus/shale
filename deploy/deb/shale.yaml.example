@@ -11,8 +11,13 @@ state: /var/lib/shale
 #   broker: memory                        # postgres with several processes
 # server:
 #   addr: ":7400"
+#   http:                                 # sign-in and the console (§40), :7402 by default
+#     allow_web: true                     # the console calls the API through here
 # cluster:
 #   addr: ":7401"
+#   http:                                 # the operator's sign-in, :7403 by default
+#     allow_web: true
+#     origins: ["https://cp.example.com:7402"]   # where the console is opened from
 # control:
 #   names: ["cp.example.com", "10.0.0.10"]   # every name a client dials
 #   auto_adopt: false

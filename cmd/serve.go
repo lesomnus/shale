@@ -51,6 +51,7 @@ import (
 	"github.com/lesomnus/shale/server/bare"
 	"github.com/lesomnus/shale/server/core"
 	"github.com/lesomnus/shale/server/pd"
+	"github.com/lesomnus/shale/web/console"
 )
 
 // Surface is which API a listener serves (§35.2).
@@ -108,12 +109,15 @@ type Server struct {
 	// ClusterTenant holds the cluster operators; Nil before init.
 	ClusterTenant pdid.Id
 
-	// Auth is how a credential is read: a session cookie, mTLS, and in
-	// development the plain header.
-	Auth auth.Handler
-	// Sessions mints and reads the cookies people sign in with; nil before
+	// Auth is how a credential is read on each surface: that surface's
+	// session cookie, mTLS, and in development the plain header.
+	Auth map[Surface]auth.Handler
+	// Sessions mints and reads the cookies people sign in with, one per
+	// surface. The two listeners are neighbouring ports of one host and a
+	// browser keeps cookies by host, not by port, so under one name the
+	// cluster sign-in would overwrite the tenant one (§40.1). Empty before
 	// init, when there is no KEK to seal them under.
-	Sessions *authsession.Sessions
+	Sessions map[Surface]*authsession.Sessions
 
 	// Identity is roster, where people and tenants are (§33.1): in this
 	// process or elsewhere, as `auth.roster` says.
@@ -291,29 +295,55 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// Who is calling: a session cookie, the certificate, and in development
 	// the plain header (§33.1). Sessions are sealed into the cookie under a
 	// key derived from the KEK, so every CP process reads them alike.
+	s.Sessions = map[Surface]*authsession.Sessions{}
+	s.Auth = map[Surface]auth.Handler{}
 	if s.Kek != nil {
 		sealed, err := authsession.NewSealed(sessionKey(s.Kek))
 		if err != nil {
 			db.Close()
 			return nil, err
 		}
-		opts := []authsession.Option{authsession.WithLifetime(24 * time.Hour), authsession.WithIdle(0)}
-		if c.IsDev() {
-			opts = append(opts, authsession.Insecure())
+		for _, surface := range []Surface{SurfaceTenant, SurfaceCluster} {
+			opts := []authsession.Option{
+				authsession.WithCookie(sessionCookie(surface, c.IsDev())),
+				authsession.WithLifetime(24 * time.Hour),
+				authsession.WithIdle(0),
+			}
+			if c.IsDev() {
+				opts = append(opts, authsession.Insecure())
+			}
+			s.Sessions[surface] = authsession.New(sealed, opts...)
 		}
-		s.Sessions = authsession.New(sealed, opts...)
 	}
-	var hs []auth.Handler
-	if s.Sessions != nil {
-		hs = append(hs, s.Sessions.Handler())
+	for _, surface := range []Surface{SurfaceTenant, SurfaceCluster} {
+		var hs []auth.Handler
+		if ss := s.Sessions[surface]; ss != nil {
+			hs = append(hs, ss.Handler())
+		}
+		hs = append(hs, auth.MTls())
+		if c.IsDev() {
+			hs = append(hs, auth.Plain())
+		}
+		s.Auth[surface] = auth.Seq(hs...)
 	}
-	hs = append(hs, auth.MTls())
-	if c.IsDev() {
-		hs = append(hs, auth.Plain())
-	}
-	s.Auth = auth.Seq(hs...)
 
 	return s, nil
+}
+
+// sessionCookie names one surface's session cookie. The `__Host-` prefix
+// is what makes a browser refuse the cookie unless it is Secure, without a
+// Domain and pathed at `/`; development mode serves plain HTTP, where a
+// browser would not store one, so it goes without.
+func sessionCookie(surface Surface, dev bool) string {
+	name := "shale_tenant"
+	if surface == SurfaceCluster {
+		name = "shale_cluster"
+	}
+	if dev {
+		return name
+	}
+
+	return "__Host-" + name
 }
 
 // sessionKey derives the session sealing key from the KEK, so the KEK
@@ -480,8 +510,8 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 	}
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(sc.CallTimeout())).
-		WithUnary(auth.InterceptorUnary(s.Auth, Resolver(s), core.Public)).
-		WithStream(auth.InterceptorStream(s.Auth, Resolver(s), core.Public)).
+		WithUnary(auth.InterceptorUnary(s.Auth[surface], Resolver(s), core.Public)).
+		WithStream(auth.InterceptorStream(s.Auth[surface], Resolver(s), core.Public)).
 		WithUnary(grpcx.LimitUnary(sc.Limiter(), gate.ByTenant())).
 		WithUnary(grpcx.LimitUnary(s.actorLimiter(), byActor)).
 		With(gate.Interceptor(policy)).
@@ -592,10 +622,11 @@ func (s *Server) serveHttp(ctx context.Context, surface Surface, g *grpc.Server)
 	if surface == SurfaceCluster {
 		sc = s.cfg.Cluster
 	}
+	sessions := s.Sessions[surface]
 	if !sc.Http.Serves() {
 		// The sign-in endpoint needs a listener: two ports up from the
 		// API by default (7402 beside 7400, 7403 beside 7401).
-		if s.Sessions == nil {
+		if sessions == nil {
 			return func() {}, nil
 		}
 		sc.Http.Addr = defaultHttpAddr(s.cfg.ListenAddr(surface, true))
@@ -606,9 +637,17 @@ func (s *Server) serveHttp(ctx context.Context, surface Surface, g *grpc.Server)
 		return nil, err
 	}
 	// Signing in and out (§33.1).
-	if s.Sessions != nil {
-		h.Handle("POST /session", s.Sessions.Serve(s.login))
-		h.Handle("DELETE /session", s.Sessions.Serve(s.login))
+	if sessions != nil {
+		h.Handle("POST /session", sessions.Serve(s.login))
+		h.Handle("DELETE /session", sessions.Serve(s.login))
+	}
+	if surface == SurfaceTenant {
+		// The console (§40.4), when it was built into this binary: at the
+		// root of the tenant API's listener, which is the one origin a
+		// browser then needs to be told about. The page routes by its
+		// hash, so `/` is every route it has, and the patterns above win
+		// over it by being longer.
+		h.Handle("/", console.Handler())
 	}
 
 	l, err := net.Listen("tcp", sc.Http.Addr)

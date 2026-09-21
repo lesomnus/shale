@@ -22,6 +22,19 @@ PKG="$OUT/shale_${VERSION}_${ARCH}"
 rm -rf "$PKG"
 mkdir -p "$PKG/DEBIAN" "$PKG/usr/bin" "$PKG/lib/systemd/system" "$PKG/etc/shale" "$PKG/usr/share/doc/shale"
 
+# The console (§40.4) goes into the binary, so it is built first -- once per
+# invocation, not per architecture, since it is the same page for both.
+# Without npm the package still works; the control plane then answers with
+# a line saying the console was not built in, where the console would be.
+if [ "${SHALE_NO_CONSOLE:-}" != 1 ]; then
+  if command -v npm >/dev/null 2>&1; then
+    [ -d ts/node_modules ] || (cd ts && npm ci --no-audit --no-fund >/dev/null)
+    (cd ts && npm run build >/dev/null)
+  else
+    echo "npm not found: building without the console (§40.4)" >&2
+  fi
+fi
+
 CGO_ENABLED=0 GOOS=linux GOARCH=$GOARCH go build -tags grpcnotrace -trimpath \
   -ldflags="-s -w -X github.com/lesomnus/shale/internal/hostagent.Version=$VERSION" \
   -o "$PKG/usr/bin/shale" ./cmd/shale

@@ -29,6 +29,8 @@ services:
     command: ["--config", "/etc/shale/shale.yaml", "init", "--if-needed", "--tenant", "${SHALE_TENANT:-acme}"]
     environment:
       SHALE_DB_DSN: postgres://shale:${SHALE_DB_PASSWORD:-shale}@postgres:5432/shale?sslmode=disable
+      # The CP certificate names it (§34.5), so it is set at init too.
+      SHALE_CONSOLE_HOST: ${SHALE_CONSOLE_HOST:-localhost}
     configs:
       - source: shale_yaml
         target: /etc/shale/shale.yaml
@@ -47,6 +49,8 @@ services:
       # since 7410 is published there.
       SHALE_STORAGE_ADVERTISE: ${SHALE_ADVERTISE:-}
       SINK_CAPACITY: ${SHALE_SINK_CAPACITY:-100GiB}
+      # The name the console is opened by (§40.4): https://<it>:7402/.
+      SHALE_CONSOLE_HOST: ${SHALE_CONSOLE_HOST:-localhost}
     configs:
       - source: shale_yaml
         target: /etc/shale/shale.yaml
@@ -55,6 +59,8 @@ services:
       - ${SHALE_SINK:-sink}:/srv/shale/sink
     ports:
       - "7400:7400"   # tenant API (producers, readers, admins)
+      - "7402:7402"   # sign-in and the console (§40)
+      - "7403:7403"   # the operator's sign-in, for the console's cluster half
       - "7410:7410"   # Storage Node data plane
     depends_on:
       init:
@@ -75,11 +81,21 @@ configs:
         broker: memory
       server:
         addr: ":7400"
+        http:
+          addr: ":7402"
+          allow_web: true
       cluster:
         addr: "127.0.0.1:7401"
+        http:
+          # Listening on every interface where the API itself does not:
+          # a person with a password, for the console (§40.4), which
+          # opens at https://<host>:7402/ and names that origin here.
+          addr: ":7403"
+          allow_web: true
+          origins: ["https://$${env:SHALE_CONSOLE_HOST:-localhost}:7402"]
       control:
         auto_adopt: true
-        names: ["shale"]
+        names: ["shale", "$${env:SHALE_CONSOLE_HOST:-localhost}"]
       storage:
         addr: ":7410"
         control_addr: "127.0.0.1:7411"

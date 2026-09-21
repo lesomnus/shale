@@ -27,10 +27,15 @@ watch:
   broker: memory
 server:
   addr: ":7400"
+  http:
+    allow_web: true       # the console, at https://cp.example.com:7402/ (§40)
 cluster:
   addr: ":7401"           # the other nodes dial this
+  http:
+    allow_web: true
+    origins: ["https://cp.example.com:7402"]   # where the console is opened from
 control:
-  auto_adopt: false       # adopt each node once: shale node adopt <alias>
+  auto_adopt: false       # adopt each node once: shale node adopt <alias>, or from the console
   names: ["cp.example.com"]
 storage:
   sinks:

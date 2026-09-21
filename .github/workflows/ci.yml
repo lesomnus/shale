@@ -16,8 +16,21 @@ jobs:
           cache: true
       - name: generation is in step
         run: go tool pd gen --check .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ts/package-lock.json
+      - name: console
+        # The page the control plane embeds (§40.4): type-checked and built,
+        # so what `go build` embeds below is a real one.
+        run: cd ts && npm ci --no-audit --no-fund && npm run build
       - name: build
         run: go build ./...
+      - name: sandbox compiles
+        # The control plane as the page runs it (§40.3); nothing else builds
+        # for js/wasm.
+        run: GOOS=js GOARCH=wasm go build -tags grpcnotrace -o /dev/null ./wasm
       - name: vet
         run: go vet ./...
       - name: ffmpeg
@@ -45,7 +58,13 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ts/package-lock.json
       - name: debian package
+        # build.sh builds the console into the binary when npm is there.
         run: deploy/deb/build.sh 0.0.0+${GITHUB_SHA::7} ${{ matrix.arch }}
       - uses: actions/upload-artifact@v4
         with:

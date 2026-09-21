@@ -6,7 +6,8 @@
 	"scripts": {
 		"gen": "cd .. && go tool pd gen --ts .",
 		"dev": "vite",
-		"build": "tsc -p tsconfig.json && vite build",
+		"build": "tsc -p tsconfig.json && vite build --mode console",
+		"build:sandbox": "tsc -p tsconfig.json && vite build",
 		"preview": "vite preview",
 		"check": "tsc -p tsconfig.json",
 		"sandbox:build": "cd .. && mkdir -p ts/public && cp \"$(go env GOROOT)/lib/wasm/wasm_exec.js\" ts/public/ && GOOS=js GOARCH=wasm go build -tags grpcnotrace -o ts/public/app.wasm ./wasm",

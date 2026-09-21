@@ -25,13 +25,19 @@ container's. The CA is `state/control/ca.crt` in the volume:
 docker compose cp shale:/var/lib/shale/control/ca.crt ./ca.crt
 ```
 
-The CLI from the same image, as the tenant admin:
+The CLI from the same image, signed in as the tenant admin with the
+password `init` printed (§33.1):
 
 ```sh
 docker compose exec shale shale --config /etc/shale/shale.yaml \
-    --addr https://127.0.0.1:7400 --as @acme/admin set ls
+    --addr https://127.0.0.1:7400 --cluster-addr https://127.0.0.1:7401 \
+    login --password @acme/admin
+docker compose exec shale shale --config /etc/shale/shale.yaml \
+    --addr https://127.0.0.1:7400 set ls
 ```
 
-`--as` is the plain header, which the container refuses; a session sign-in
-replaces it when #28 lands. Until then, administer through `--dev` on a
-machine you trust or through the cluster API's operator.
+The console (§40) is at `https://<host>:7402/`, with the same sign-in for
+the tenant half and the operator's (`@cluster/ops`, also in the init log)
+for the cluster half. Set `SHALE_CONSOLE_HOST=<host>` before the first
+`up`: the CP certificate names it, and the cluster listener names the
+page's origin as one it answers ([§40.4](../../docs/17-console.md#404-serving-it)).

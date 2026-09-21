@@ -1,8 +1,13 @@
 .git
 docs
-ts/node_modules
 *.md
 !README.md
 /shale
 .github
 deploy
+# the console's dependencies and builds: the image builds its own
+ts/node_modules
+ts/dist
+ts/public
+ts/test
+web/console/dist

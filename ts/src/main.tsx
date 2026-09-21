@@ -13,7 +13,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { Console } from './app.js'
-import { start, type Sandbox } from './sandbox.js'
+import type { Sandbox } from './sandbox.js'
 import { addrs } from './session.js'
 import { restore, type Mode, type Opened } from './surface.js'
 import './style.css'
@@ -41,6 +41,10 @@ async function boot(): Promise<void> {
 		root.render(<Progress text="starting the sandbox: the whole server, compiled into this page…" />)
 		let box: Sandbox
 		try {
+			// Loaded here rather than above: the console a server serves
+			// (§40.4) never starts a sandbox, and this keeps the SQLite and
+			// message-port machinery out of what it downloads.
+			const { start } = await import('./sandbox.js')
 			box = await start('/app.wasm', (v) => {
 				const mb = (n: number) => (n / 1048576).toFixed(0)
 				const text =

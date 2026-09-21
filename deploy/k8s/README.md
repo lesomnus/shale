@@ -24,7 +24,10 @@ kubectl apply -k deploy/k8s
 2. **Names.** `control-config.yaml` lists every name the APIs are dialed
    by: the CP certificate names them, and a producer outside the cluster
    verifies the one it dials. With no Ingress or LoadBalancer, the tenant
-   API is a NodePort (30400, sign-in HTTP on 30402), so list the node IPs.
+   API is a NodePort (30400, sign-in HTTP and the console on 30402, the
+   operator's sign-in on 30403), so list the node IPs — and, under
+   `cluster.http.origins`, every `https://<node IP>:30402` the console is
+   opened by (§40.4).
 
 3. **Sinks.** `storage-config.yaml` and `storage.yaml` describe one sink
    per node at `/srv/shale/k8s/sinks/0`, a directory on the OS disk with a
@@ -103,10 +106,17 @@ shale --addr https://10.1.2.74:30400 --cluster-addr https://10.1.2.74:30400 \
       --config /dev/null login --password @acme/admin
 ```
 
-The cluster API is not exposed: operate it from inside the cluster, or
-port-forward `svc/shale-cluster` 7401 and dial `https://127.0.0.1:7401`
+The cluster API's gRPC is not exposed: operate it from inside the cluster,
+or port-forward `svc/shale-cluster` 7401 and dial `https://127.0.0.1:7401`
 (its certificate does not name `127.0.0.1`; add a name to
 `control-config.yaml` or use `client.ca_file` with a name that resolves).
+Its sign-in listener is (`shale-cluster-web`, NodePort 30403), for the
+console.
+
+The console (§40) is at `https://10.1.2.74:30402/` — any node, with the CA
+above imported or its warning clicked through: the tenant half signs in as
+`@acme/admin`, the cluster half (hosts to adopt, devices) as `@cluster/ops`,
+both with the passwords the init job printed.
 
 A producer outside the cluster:
 

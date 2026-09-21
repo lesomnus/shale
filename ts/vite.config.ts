@@ -73,6 +73,31 @@ function brotli(): Plugin {
 	}
 }
 
+/**
+ * keep puts `.gitkeep` back after the console build emptied its directory.
+ *
+ * The console is served by the control plane itself (§40.4), which embeds
+ * `web/console/dist` -- and `go:embed` refuses a directory that is not there,
+ * so a checkout without node has to hold one. That is the one tracked file in
+ * it, and `emptyOutDir` sweeps it with the rest.
+ */
+function keep(): Plugin {
+	let dir = 'dist'
+
+	return {
+		name: 'console-keep',
+		apply: 'build',
+
+		configResolved(c) {
+			dir = c.build.outDir
+		},
+
+		async closeBundle() {
+			await writeFile(join(dir, '.gitkeep'), '# `npm run build` in ts/ writes the console here; the binary embeds it (§40.4).\n')
+		},
+	}
+}
+
 async function walk(at: string): Promise<string[]> {
 	const vs: string[] = []
 	for (const name of await readdir(at)) {
@@ -94,30 +119,40 @@ async function walk(at: string): Promise<string[]> {
  * list rather than a wildcard on purpose.
  *
  * A deployment that serves `dist/` from the app itself is one origin and needs
- * none of it.
+ * none of it. That is what Shale's control plane does (§40.4): `npm run build`
+ * is `--mode console`, which writes into the Go package that embeds it and
+ * leaves `public/` -- the sandbox's wasm, tens of megabytes -- out of it.
+ * `npm run build:sandbox` is the whole page for a static host, sandbox in.
  *
  * The rest of this file is what it takes to serve the sandbox, which is two
  * things and neither is payday's to fix. Both fail confusingly, which is why
  * they are written out rather than left to a README -- and `pd doctor` checks
  * that they are still here.
  */
-export default defineConfig({
-	plugins: [react(), brotli()],
+export default defineConfig(({ command, mode }) => {
+	const forServer = command === 'build' && mode === 'console'
 
-	// The worker `@lesomnus/grpc-dgram` starts is
-	// `new URL("./wasm/worker.mjs", import.meta.url)`, and dependency
-	// pre-bundling rewrites the module into `.vite/deps/` -- where that
-	// relative URL resolves to nothing. The failure is "the worker itself
-	// failed", which does not mention bundling.
-	optimizeDeps: { exclude: ['@lesomnus/grpc-dgram'] },
+	return {
+		plugins: [react(), brotli(), forServer && keep()],
 
-	server: {
-		// SQLite in a Worker cancels work with a `SharedArrayBuffer`, which
-		// does not exist without cross-origin isolation. The symptom is "it
-		// works on the other dev server".
-		headers: {
-			'Cross-Origin-Opener-Policy': 'same-origin',
-			'Cross-Origin-Embedder-Policy': 'require-corp',
+		publicDir: forServer ? false : 'public',
+		build: forServer ? { outDir: '../web/console/dist', emptyOutDir: true } : {},
+
+		// The worker `@lesomnus/grpc-dgram` starts is
+		// `new URL("./wasm/worker.mjs", import.meta.url)`, and dependency
+		// pre-bundling rewrites the module into `.vite/deps/` -- where that
+		// relative URL resolves to nothing. The failure is "the worker itself
+		// failed", which does not mention bundling.
+		optimizeDeps: { exclude: ['@lesomnus/grpc-dgram'] },
+
+		server: {
+			// SQLite in a Worker cancels work with a `SharedArrayBuffer`, which
+			// does not exist without cross-origin isolation. The symptom is "it
+			// works on the other dev server".
+			headers: {
+				'Cross-Origin-Opener-Policy': 'same-origin',
+				'Cross-Origin-Embedder-Policy': 'require-corp',
+			},
 		},
-	},
+	}
 })

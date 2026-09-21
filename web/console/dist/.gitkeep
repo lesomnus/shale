@@ -1,0 +1,1 @@
+# `npm run build` in ts/ writes the console here; the binary embeds it (§40.4).
