@@ -195,7 +195,7 @@ func (s Scan) WriteSkeleton(w io.Writer) {
 			fmt.Fprintln(w, "      format: mjpeg")
 			fmt.Fprintln(w, "      encoder: auto")
 		}
-		fmt.Fprintln(w, "      size: 1920x1080")
+		fmt.Fprintf(w, "      size: %s\n", c.suggestedSize())
 		fmt.Fprintln(w, "      fps: 30")
 		fmt.Fprintln(w, "      max_bitrate: auto")
 	}
@@ -209,6 +209,56 @@ func (s Scan) WriteSkeleton(w io.Writer) {
 	if len(s.Cameras) == 0 && len(s.Onvif) == 0 {
 		fmt.Fprintln(w, "    []   # no camera found")
 	}
+}
+
+// suggestedSize is the size the skeleton proposes: the largest of the
+// usual ones (1080p, 720p, 480p) the camera lists for the format the
+// skeleton picked, else the largest it lists that fits in 1080p. A camera
+// whose modes did not parse gets 1080p, as before there were modes.
+func (c Camera) suggestedSize() string {
+	format := "mjpeg"
+	if c.H264 {
+		format = "h264"
+	}
+	sizes := c.sizes(format)
+	if len(sizes) == 0 {
+		sizes = c.sizes("")
+	}
+	for _, want := range []string{"1920x1080", "1280x720", "640x480"} {
+		for _, s := range sizes {
+			if s == want {
+				return s
+			}
+		}
+	}
+	best, area := "", 0
+	for _, s := range sizes {
+		var w, h int
+		if _, err := fmt.Sscanf(s, "%dx%d", &w, &h); err != nil || w > 1920 || h > 1080 || w*h <= area {
+			continue
+		}
+		best, area = s, w*h
+	}
+	if best == "" {
+		return "1920x1080"
+	}
+
+	return best
+}
+
+// sizes is what the camera lists for one format, or for every format when
+// format is empty.
+func (c Camera) sizes(format string) []string {
+	var out []string
+	for _, m := range c.Modes {
+		f, rest, ok := strings.Cut(m, ": ")
+		if !ok || (format != "" && f != format) {
+			continue
+		}
+		out = append(out, strings.Fields(rest)...)
+	}
+
+	return out
 }
 
 // ProbeResult is what a 30-second run of one source showed (§38.4).

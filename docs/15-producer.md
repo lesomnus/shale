@@ -181,7 +181,8 @@ skeleton to edit:
 
 - **USB and CSI cameras**: every `/dev/video*` device with its formats,
   frame sizes, and frame rates (V4L2 enumeration), and whether it delivers
-  H.264 itself.
+  H.264 itself. The `size` proposed is the largest of 1080p, 720p, and
+  480p the camera lists, so the skeleton runs as printed.
 - **IP cameras**: ONVIF WS-Discovery on the local network. With credentials,
   each camera's media profiles: stream URL, resolution, frame rate, the
   configured bitrate limit, and the GOP length, which are exactly the values
