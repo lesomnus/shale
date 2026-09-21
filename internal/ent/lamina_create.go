@@ -191,6 +191,14 @@ func (_c *LaminaCreate) SetSkipReason(v int32) *LaminaCreate {
 	return _c
 }
 
+// SetNillableSkipReason sets the "skip_reason" field if the given value is not nil.
+func (_c *LaminaCreate) SetNillableSkipReason(v *int32) *LaminaCreate {
+	if v != nil {
+		_c.SetSkipReason(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *LaminaCreate) SetTenantId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetTenantId(v)
@@ -328,9 +336,6 @@ func (_c *LaminaCreate) check() error {
 	}
 	if _, ok := _c.mutation.Epoch(); !ok {
 		return &ValidationError{Name: "epoch", err: errors.New(`ent: missing required field "Lamina.epoch"`)}
-	}
-	if _, ok := _c.mutation.SkipReason(); !ok {
-		return &ValidationError{Name: "skip_reason", err: errors.New(`ent: missing required field "Lamina.skip_reason"`)}
 	}
 	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Lamina.tenant_id"`)}

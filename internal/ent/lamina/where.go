@@ -906,6 +906,16 @@ func SkipReasonLTE(v int32) predicate.Lamina {
 	return predicate.Lamina(sql.FieldLTE(FieldSkipReason, v))
 }
 
+// SkipReasonIsNil applies the IsNil predicate on the "skip_reason" field.
+func SkipReasonIsNil() predicate.Lamina {
+	return predicate.Lamina(sql.FieldIsNull(FieldSkipReason))
+}
+
+// SkipReasonNotNil applies the NotNil predicate on the "skip_reason" field.
+func SkipReasonNotNil() predicate.Lamina {
+	return predicate.Lamina(sql.FieldNotNull(FieldSkipReason))
+}
+
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Lamina {
 	return predicate.Lamina(sql.FieldEQ(FieldTenantId, v))

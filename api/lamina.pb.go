@@ -687,7 +687,8 @@ type Lamina_builder struct {
 	// The epoch bucket date_started falls in, in seconds since the epoch, so
 	// one index answers "the laminae of this source in this epoch".
 	Epoch int64
-	// Why a SKIPPED lamina holds nothing; unspecified otherwise.
+	// Why a SKIPPED lamina holds nothing; unspecified otherwise. The default
+	// is what the rows from before the column get.
 	SkipReason LaminaSkipReason
 }
 
@@ -1059,7 +1060,7 @@ var File_shale_lamina_proto protoreflect.FileDescriptor
 
 const file_shale_lamina_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xf0\v\n" +
+	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xf9\v\n" +
 	"\x06Lamina\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -1089,8 +1090,8 @@ const file_shale_lamina_proto_rawDesc = "" +
 	"\x0edate_committed\x18\x19 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\rdateCommitted\x12G\n" +
 	"\rdate_finished\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateFinished\x12#\n" +
 	"\bchecksum\x18\x1b \x01(\fB\a\xea\x82\x16\x03\x82\x01\x00R\bchecksum\x12\x14\n" +
-	"\x05epoch\x18\x1c \x01(\x03R\x05epoch\x128\n" +
-	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonR\n" +
+	"\x05epoch\x18\x1c \x01(\x03R\x05epoch\x12A\n" +
+	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonB\a\xea\x82\x16\x03\x82\x01\x00R\n" +
 	"skipReason:\xc5\x02\xca\xfc\x15\xe9\x01\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a+\x12\vsource_time\x1a\n" +

@@ -104,7 +104,7 @@ message LaminaAddRequest {
   google.protobuf.Timestamp date_finished = 26;
   bytes checksum = 27;
   int64 epoch = 28 [features.field_presence = IMPLICIT];
-  LaminaSkipReason skip_reason = 29 [features.field_presence = IMPLICIT];
+  LaminaSkipReason skip_reason = 29;
 }
 
 message LaminaGetRequest {

@@ -194,7 +194,11 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 		q.SetChecksum([]byte{})
 	}
 	q.SetEpoch(req.GetEpoch())
-	q.SetSkipReason(int32(req.GetSkipReason()))
+	if req.HasSkipReason() {
+		q.SetSkipReason(int32(req.GetSkipReason()))
+	} else {
+		q.SetSkipReason(0)
+	}
 
 	u, err := q.Save(ctx)
 	if err != nil {

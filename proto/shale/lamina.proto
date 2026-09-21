@@ -85,8 +85,9 @@ message Lamina {
   // The epoch bucket date_started falls in, in seconds since the epoch, so
   // one index answers "the laminae of this source in this epoch".
   int64 epoch = 28;
-  // Why a SKIPPED lamina holds nothing; unspecified otherwise.
-  LaminaSkipReason skip_reason = 29;
+  // Why a SKIPPED lamina holds nothing; unspecified otherwise. The default
+  // is what the rows from before the column get.
+  LaminaSkipReason skip_reason = 29 [(orm.field) = {default: ""}];
 
   option (orm.message) = {
     rpc: {crud: true}

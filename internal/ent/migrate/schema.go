@@ -299,7 +299,7 @@ var (
 		{Name: "date_finished", Type: field.TypeTime, Nullable: true},
 		{Name: "checksum", Type: field.TypeBytes, Nullable: true},
 		{Name: "epoch", Type: field.TypeInt64},
-		{Name: "skip_reason", Type: field.TypeInt32},
+		{Name: "skip_reason", Type: field.TypeInt32, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid},

@@ -608,10 +608,24 @@ func (m *Mutation) AddedSkipReason() (r int32, exists bool) {
 	return *v, true
 }
 
+// ClearSkipReason clears the value of the "skip_reason" field.
+func (m *Mutation) ClearSkipReason() {
+	m.skip_reason = nil
+	m.addskip_reason = nil
+	m.clearedFields[FieldSkipReason] = struct{}{}
+}
+
+// SkipReasonCleared returns if the "skip_reason" field was cleared in this mutation.
+func (m *Mutation) SkipReasonCleared() bool {
+	_, ok := m.clearedFields[FieldSkipReason]
+	return ok
+}
+
 // ResetSkipReason resets all changes to the "skip_reason" field.
 func (m *Mutation) ResetSkipReason() {
 	m.skip_reason = nil
 	m.addskip_reason = nil
+	delete(m.clearedFields, FieldSkipReason)
 }
 
 // SetTenantId sets the "tenant_id" field.
@@ -1322,6 +1336,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldChecksum) {
 		fields = append(fields, FieldChecksum)
 	}
+	if m.FieldCleared(FieldSkipReason) {
+		fields = append(fields, FieldSkipReason)
+	}
 	if m.FieldCleared(FieldSiteId) {
 		fields = append(fields, FieldSiteId)
 	}
@@ -1365,6 +1382,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldChecksum:
 		m.ClearChecksum()
+		return nil
+	case FieldSkipReason:
+		m.ClearSkipReason()
 		return nil
 	case FieldSiteId:
 		m.ClearSiteId()

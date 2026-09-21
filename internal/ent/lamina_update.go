@@ -338,6 +338,12 @@ func (_u *LaminaUpdate) AddSkipReason(v int32) *LaminaUpdate {
 	return _u
 }
 
+// ClearSkipReason clears the value of the "skip_reason" field.
+func (_u *LaminaUpdate) ClearSkipReason() *LaminaUpdate {
+	_u.mutation.ClearSkipReason()
+	return _u
+}
+
 // SetSinkId sets the "sink_id" field.
 func (_u *LaminaUpdate) SetSinkId(v uuid.UUID) *LaminaUpdate {
 	_u.mutation.SetSinkId(v)
@@ -522,6 +528,9 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedSkipReason(); ok {
 		_spec.AddField(lamina.FieldSkipReason, field.TypeInt32, value)
+	}
+	if _u.mutation.SkipReasonCleared() {
+		_spec.ClearField(lamina.FieldSkipReason, field.TypeInt32)
 	}
 	if _u.mutation.SinkCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -881,6 +890,12 @@ func (_u *LaminaUpdateOne) AddSkipReason(v int32) *LaminaUpdateOne {
 	return _u
 }
 
+// ClearSkipReason clears the value of the "skip_reason" field.
+func (_u *LaminaUpdateOne) ClearSkipReason() *LaminaUpdateOne {
+	_u.mutation.ClearSkipReason()
+	return _u
+}
+
 // SetSinkId sets the "sink_id" field.
 func (_u *LaminaUpdateOne) SetSinkId(v uuid.UUID) *LaminaUpdateOne {
 	_u.mutation.SetSinkId(v)
@@ -1095,6 +1110,9 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	}
 	if value, ok := _u.mutation.AddedSkipReason(); ok {
 		_spec.AddField(lamina.FieldSkipReason, field.TypeInt32, value)
+	}
+	if _u.mutation.SkipReasonCleared() {
+		_spec.ClearField(lamina.FieldSkipReason, field.TypeInt32)
 	}
 	if _u.mutation.SinkCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -344,7 +344,9 @@ func (x *LaminaAddRequest) GetEpoch() int64 {
 
 func (x *LaminaAddRequest) GetSkipReason() LaminaSkipReason {
 	if x != nil {
-		return x.xxx_hidden_SkipReason
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 22) {
+			return x.xxx_hidden_SkipReason
+		}
 	}
 	return LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED
 }
@@ -447,6 +449,7 @@ func (x *LaminaAddRequest) SetEpoch(v int64) {
 
 func (x *LaminaAddRequest) SetSkipReason(v LaminaSkipReason) {
 	x.xxx_hidden_SkipReason = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 23)
 }
 
 func (x *LaminaAddRequest) HasId() bool {
@@ -547,6 +550,13 @@ func (x *LaminaAddRequest) HasChecksum() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
 }
 
+func (x *LaminaAddRequest) HasSkipReason() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
+}
+
 func (x *LaminaAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -605,6 +615,11 @@ func (x *LaminaAddRequest) ClearChecksum() {
 	x.xxx_hidden_Checksum = nil
 }
 
+func (x *LaminaAddRequest) ClearSkipReason() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 22)
+	x.xxx_hidden_SkipReason = LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED
+}
+
 type LaminaAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -630,7 +645,7 @@ type LaminaAddRequest_builder struct {
 	DateFinished     *timestamppb.Timestamp
 	Checksum         []byte
 	Epoch            int64
-	SkipReason       LaminaSkipReason
+	SkipReason       *LaminaSkipReason
 }
 
 func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
@@ -665,7 +680,10 @@ func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
 		x.xxx_hidden_Checksum = b.Checksum
 	}
 	x.xxx_hidden_Epoch = b.Epoch
-	x.xxx_hidden_SkipReason = b.SkipReason
+	if b.SkipReason != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 23)
+		x.xxx_hidden_SkipReason = *b.SkipReason
+	}
 	return m0
 }
 
@@ -6605,7 +6623,7 @@ var File_shale_lamina_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/lamina_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/lamina.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\x1a\x19shale/storage_svc.g.proto\"\xbb\b\n" +
+	"\x18shale/lamina_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/lamina.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\x1a\x19shale/storage_svc.g.proto\"\xb4\b\n" +
 	"\x10LaminaAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -6633,8 +6651,8 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\x0edate_committed\x18\x19 \x01(\v2\x1a.google.protobuf.TimestampR\rdateCommitted\x12?\n" +
 	"\rdate_finished\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\fdateFinished\x12\x1a\n" +
 	"\bchecksum\x18\x1b \x01(\fR\bchecksum\x12\x1b\n" +
-	"\x05epoch\x18\x1c \x01(\x03B\x05\xaa\x01\x02\b\x02R\x05epoch\x12?\n" +
-	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonB\x05\xaa\x01\x02\b\x02R\n" +
+	"\x05epoch\x18\x1c \x01(\x03B\x05\xaa\x01\x02\b\x02R\x05epoch\x128\n" +
+	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonR\n" +
 	"skipReason\"c\n" +
 	"\x10LaminaGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12+\n" +
