@@ -168,6 +168,7 @@ func (s Core) scoreDevice(ctx context.Context, srv api.Server, d *ent.Device, de
 		Quarantine:       q,
 		DateUpdatedForce: z.Ptr(true),
 	}
+	s.d.metrics().DeviceScore.Record(ctx, score, idAttr("device", pdid.Id(d.Id).String()))
 	next, why := nextHealth(api.DeviceHealth(d.Health), score, q, delta > 0, now)
 	if next == api.DeviceHealth(d.Health) {
 		_, err := srv.Device().Patch(ctx, patch.Build())
@@ -178,6 +179,9 @@ func (s Core) scoreDevice(ctx context.Context, srv api.Server, d *ent.Device, de
 		return err
 	}
 	s.d.log().Info("device health", "device", d.Alias, "from", api.DeviceHealth(d.Health).String(), "to", next.String(), "why", why)
+	if next == api.DeviceHealth_DEVICE_HEALTH_QUARANTINED {
+		s.d.metrics().Quarantines.Add(ctx, 1, kindAttr("device"))
+	}
 
 	return s.setDeviceHealth(ctx, srv, pdid.Id(d.Id), next, why, false, score, now)
 }

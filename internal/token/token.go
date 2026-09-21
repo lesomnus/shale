@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -236,4 +237,20 @@ func FromHeader(v string) string {
 	}
 
 	return strings.TrimSpace(rest)
+}
+
+// RedactURL is a URL as a log line may carry it: a token in its query is
+// replaced, so a presigned URL never reaches a log whole (§31).
+func RedactURL(v string) string {
+	u, err := url.Parse(v)
+	if err != nil {
+		return "<unparseable url>"
+	}
+	q := u.Query()
+	if q.Has("token") {
+		q.Set("token", "<redacted>")
+		u.RawQuery = q.Encode()
+	}
+
+	return u.String()
 }

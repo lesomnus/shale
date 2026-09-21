@@ -151,6 +151,7 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 			gcs = append(gcs, c.Build())
 		}
 		st.proposed += int64(len(gcs))
+		n.m.gcProposed.Add(ctx, int64(len(gcs)), gcAttr(s, gcReasonLabel(reason)))
 
 		cctx, cancel := context.WithTimeout(ctx, time.Minute)
 		resp, err := client.ProposeGc(cctx, api.SinkProposeGcRequest_builder{
@@ -171,6 +172,7 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 				if n.unlink(s, d.GetLaminaKey()) == api.DeleteResult_DELETE_RESULT_DELETED {
 					st.deleted++
 					st.reclaimed += e.Size
+					n.m.gcApproved.Add(ctx, 1, gcAttr(s, gcReasonLabel(reason)))
 				}
 				continue
 			}
@@ -196,4 +198,17 @@ func (n *Node) gcRound(ctx context.Context, s *Sink, reason api.GcReason, force 
 	n.m.reclaimed.Add(ctx, st.reclaimed, sinkAttr(s))
 
 	return st, nil
+}
+
+// gcReasonLabel is the reason as a label: pressure, sweep, or what the
+// operator asked for.
+func gcReasonLabel(r api.GcReason) string {
+	switch r {
+	case api.GcReason_GC_REASON_PRESSURE:
+		return "pressure"
+	case api.GcReason_GC_REASON_SWEEP:
+		return "sweep"
+	}
+
+	return "demand"
 }

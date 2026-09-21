@@ -13,8 +13,11 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -123,8 +126,14 @@ type Node struct {
 	m        *metrics
 	// queues is one Device Queue per device, shared by its sinks (§24).
 	queues map[string]*Queue
-	outbox *Outbox
-	dp     *DataPlane
+	// For the heartbeat's rates (§31): what was committed and what the
+	// NICs carried since the last one.
+	committedBytes atomic.Int64
+	lastCommitted  int64
+	lastNet        map[string][2]int64
+	lastAt         time.Time
+	outbox         *Outbox
+	dp             *DataPlane
 
 	connMu sync.Mutex
 	conn   *grpc.ClientConn
@@ -222,6 +231,10 @@ func (n *Node) Run(ctx context.Context) error {
 	for _, s := range n.sinks {
 		if _, ok := n.queues[s.DeviceId]; !ok {
 			q := NewQueue(n.cfg.Quanta, n.cfg.Caps)
+			device := s.DeviceId
+			q.Observe = func(c Class, wait time.Duration) {
+				n.m.queueWait.Record(context.Background(), float64(wait.Microseconds())/1000, classAttr(device, c))
+			}
 			n.queues[s.DeviceId] = q
 			g.Go(func() error { q.Run(ctx); return nil })
 		}
@@ -557,7 +570,13 @@ func (n *Node) heartbeat(ctx context.Context) error {
 		n.m.free.Record(ctx, rep.GetFree(), sinkAttr(s))
 		n.m.pressure.Record(ctx, int64(rep.GetPressure()), sinkAttr(s))
 		n.m.indexed.Record(ctx, int64(s.Index.Len()), sinkAttr(s))
+		scanned := int64(0)
+		if s.Index.Scanned() {
+			scanned = 1
+		}
+		n.m.scanDone.Record(ctx, scanned, sinkAttr(s))
 	}
+	n.rates(ctx)
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	resp, err := api.NewNodeServiceClient(conn).Heartbeat(cctx, api.NodeHeartbeatRequest_builder{
@@ -954,3 +973,43 @@ func (c *control) InstallCertificate(ctx context.Context, req *api.NodeInstallCe
 }
 
 var _ = x509.ParseCertificate
+
+// rates are the gauges the heartbeat derives from what happened since the
+// last one (§31): the ingest rate, the NICs, the buffer pool, the device
+// queues, and the age of the oldest open upload per sink.
+func (n *Node) rates(ctx context.Context) {
+	now := time.Now()
+	if !n.lastAt.IsZero() {
+		if dt := now.Sub(n.lastAt).Seconds(); dt > 0 {
+			committed := n.committedBytes.Load()
+			n.m.ingestBps.Record(ctx, int64(float64(committed-n.lastCommitted)*8/dt))
+			n.lastCommitted = committed
+			if cur := netDev(); cur != nil && n.lastNet != nil {
+				for name, v := range cur {
+					prev, ok := n.lastNet[name]
+					if !ok {
+						continue
+					}
+					attr := metric.WithAttributes(attribute.String("interface", name))
+					n.m.nicRx.Record(ctx, int64(float64(v[0]-prev[0])*8/dt), attr)
+					n.m.nicTx.Record(ctx, int64(float64(v[1]-prev[1])*8/dt), attr)
+				}
+			}
+		}
+	} else {
+		n.lastCommitted = n.committedBytes.Load()
+	}
+	n.lastNet = netDev()
+	n.lastAt = now
+	if n.dp != nil {
+		n.m.poolUsed.Record(ctx, n.dp.pool.Used())
+		for s, age := range n.dp.uploadAges(now) {
+			n.m.uploadAge.Record(ctx, age.Milliseconds(), sinkAttr(s))
+		}
+	}
+	for device, q := range n.queues {
+		for _, c := range []Class{ClassWrite, ClassRead, ClassMaint} {
+			n.m.queueDepth.Record(ctx, int64(q.Depth(c)), classAttr(device, c))
+		}
+	}
+}

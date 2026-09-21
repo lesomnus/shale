@@ -565,6 +565,7 @@ func (s *Directives) reconcile(ctx context.Context, client api.NodeControlClient
 	s.Reconciled++
 	s.mu.Unlock()
 	s.d.metrics().Reconciled.Add(ctx, 1)
+	s.d.metrics().Recovered.Add(ctx, int64(learned), idAttr("sink", pdid.Id(sk.Id).String()))
 	s.log().Info("reconciled", "sink", sk.Alias, "full", full, "since", since.Format(time.RFC3339), "files", total, "records", records, "learned", learned, "confirmed_absent", absent)
 
 	return nil

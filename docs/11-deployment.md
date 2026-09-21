@@ -302,7 +302,11 @@ lock, so two replicas never race on the same job.
 
 Producers and Readers connect directly to the node that placement chose.
 **How that node is named to a client is a replaceable policy**, kept apart
-from the node itself.
+from the node itself. What a node or a relay reports about where it
+listens is checked for shape when it arrives, an address being a host and
+a port and a host an IP or a name, and the URLs clients are handed are
+assembled by the URL package, never by pasting strings
+([§33.7](10-security.md#337-what-a-compromise-costs)).
 
 ```text
 Node       reports facts:     node_id, alias, interfaces and IPs it listens on

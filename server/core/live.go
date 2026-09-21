@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -50,6 +49,9 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 			DateUpdatedForce: z.Ptr(true),
 		}.Build()); err != nil {
 			return nil, err
+		}
+		if !isZero(p.RelayId) {
+			s.d.metrics().Reassignments.Add(ctx, 1)
 		}
 		s.d.log().Info("relay assigned", "producer", p.Alias, "relay", chosen.Alias)
 	}
@@ -209,7 +211,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 			Ordinal:     src.GetOrdinal(),
 			RelayId:     r.Id[:],
 			Endpoints:   eps,
-			WhepUrl:     fmt.Sprintf("%s://%s:%d/whep/%s", eps[0].GetScheme(), eps[0].GetHost(), eps[0].GetPort(), mustId(src.GetId()).String()),
+			WhepUrl:     endpointURL(eps[0], "whep/"+mustId(src.GetId()).String(), nil),
 			ViewToken:   tok,
 			DateExpires: timestamppb.New(exp),
 		}.Build())

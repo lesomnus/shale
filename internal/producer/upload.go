@@ -59,6 +59,8 @@ func (c *UploadConfig) defaults() {
 
 // Uploader uploads segments with the allocations it is given.
 type Uploader struct {
+	// m counts what the upload path finds out (§31); nil in tests.
+	m       *metrics
 	Cfg     UploadConfig
 	Laminae api.LaminaServiceClient
 	Log     *slog.Logger
@@ -100,6 +102,7 @@ var (
 // Upload sends one segment: live while it grows, buffered once closed. It
 // answers when the segment is durable somewhere, or lost.
 func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment) Result {
+	began := time.Now()
 	u.Cfg.defaults()
 	res := Result{}
 	tried := map[string]bool{}
@@ -116,6 +119,9 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 			err := u.attempt(ctx, al, cand, seg)
 			if err == nil {
 				res.Stored = true
+				if u.m != nil {
+					u.m.uploadDuration.Record(context.Background(), float64(time.Since(began).Microseconds())/1000)
+				}
 				return res
 			}
 			if ctx.Err() != nil {
@@ -145,6 +151,9 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 
 		// Every candidate tried: ask for the next one.
 		rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		if u.m != nil {
+			u.m.retries.Add(context.Background(), 1, kindAttr("placement"))
+		}
 		next, err := u.Laminae.Reallocate(rctx, api.LaminaReallocateRequest_builder{Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build()}.Build())
 		cancel()
 		if err != nil {
@@ -262,6 +271,9 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 				return errBusy
 			}
 			wait := u.retryAfter(newOffset)
+			if u.m != nil {
+				u.m.retries.Add(context.Background(), 1, kindAttr("same_target"))
+			}
 			u.Log.Info("node busy", "key", al.GetLaminaKey(), "wait", wait.String())
 			select {
 			case <-ctx.Done():
@@ -277,7 +289,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 
 		// A transport error or a 5xx: HEAD for the offset and resume.
 		if err != nil {
-			u.Log.Warn("upload interrupted", "key", al.GetLaminaKey(), "url", url, "err", err.Error())
+			u.Log.Warn("upload interrupted", "key", al.GetLaminaKey(), "url", token.RedactURL(url), "err", err.Error())
 		}
 		cur, herr := u.head(ctx, url, cand.GetToken())
 		if herr == nil {

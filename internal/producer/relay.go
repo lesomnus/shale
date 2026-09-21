@@ -73,8 +73,10 @@ func (l *relayLink) set(ra *api.RelayAssignment) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	// The same relay with a fresher token is the same assignment: the
-	// token is used at the next dial, the stream stays.
-	same := l.assignment != nil && string(l.assignment.GetRelayId()) == string(ra.GetRelayId())
+	// token is used at the next dial, the stream stays. The same relay at
+	// other endpoints is a relay that restarted (§39.6): the stream to the
+	// old ones is ended and the new ones dialed.
+	same := l.assignment != nil && string(l.assignment.GetRelayId()) == string(ra.GetRelayId()) && sameEndpoints(l.assignment.GetEndpoints(), ra.GetEndpoints())
 	l.assignment = ra
 	if !same {
 		select {
@@ -82,6 +84,20 @@ func (l *relayLink) set(ra *api.RelayAssignment) {
 		default:
 		}
 	}
+}
+
+// sameEndpoints says whether two assignments name the same listeners.
+func sameEndpoints(a, b []*api.Endpoint) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].GetScheme() != b[i].GetScheme() || a[i].GetHost() != b[i].GetHost() || a[i].GetPort() != b[i].GetPort() {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (l *relayLink) current() *api.RelayAssignment {

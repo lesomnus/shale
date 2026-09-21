@@ -192,6 +192,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 			}
 			for _, o := range old {
 				st := api.AttemptState_ATTEMPT_STATE_DUPLICATE
+				s.d.metrics().Duplicates.Add(ctx, 1)
 				if _, err := own.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
 					Ref: api.AttemptRef_builder{Id: o.Id[:]}.Build(), State: &st, DateUpdatedForce: z.Ptr(true),
 				}.Build()); err != nil {
@@ -211,6 +212,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 	st := api.AttemptState_ATTEMPT_STATE_STORED
 	if !winner {
 		st = api.AttemptState_ATTEMPT_STATE_DUPLICATE
+		s.d.metrics().Duplicates.Add(ctx, 1)
 	}
 	if _, err := own.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
 		Ref:              api.AttemptRef_builder{Id: at.Id[:]}.Build(),
@@ -228,6 +230,10 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 	if ev.GetDateCommitted() != nil {
 		committed = ev.GetDateCommitted().AsTime()
 	}
+	// The latencies of §31: the allocation to here, and the node's commit
+	// to here.
+	s.d.metrics().WriteLatency.Record(ctx, float64(now.Sub(at.DateCreated).Microseconds())/1000)
+	s.d.metrics().CommitLatency.Record(ctx, float64(now.Sub(committed).Microseconds())/1000)
 	patch := api.LaminaPatchRequest_builder{
 		Ref:              api.LaminaRef_builder{Id: objId.Bytes()}.Build(),
 		Sink:             api.SinkRef_builder{Id: ev.GetSinkId()}.Build(),

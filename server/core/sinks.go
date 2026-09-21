@@ -102,6 +102,9 @@ func (s Core) registerSinks(ctx context.Context, srv api.Server, nodeId pdid.Id,
 		}
 		// What the report adds to the failure score (§27): counters that
 		// rose since the last report, and SMART.
+		if n := dr.GetIoErrors() - row.Report.GetIoErrors(); n > 0 {
+			s.d.metrics().IoErrors.Add(ctx, n, idAttr("device", id.String()))
+		}
 		if delta, reasons := reportDelta(row.Report, dr); delta > 0 {
 			if err := s.scoreDevice(ctx, srv, row, delta, reasons, now); err != nil {
 				return nil, err

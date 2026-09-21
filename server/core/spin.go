@@ -113,6 +113,8 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 		if err := j.eraseLamina(ctx, o.Id); err != nil {
 			j.log().Warn("remove lamina", "err", err.Error())
+		} else {
+			j.d.metrics().Pruned.Add(ctx, 1, kindAttr("lamina_unused"))
 		}
 	}
 
@@ -130,6 +132,8 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 		if err := j.eraseLamina(ctx, o.Id); err != nil {
 			j.log().Warn("prune lamina", "err", err.Error())
+		} else {
+			j.d.metrics().Pruned.Add(ctx, 1, kindAttr("lamina"))
 		}
 	}
 	// Attempts in a terminal state other than STORED, a week after they
@@ -144,8 +148,11 @@ func (j *Jobs) Once(ctx context.Context) error {
 		if _, err := j.d.Ent.Lamina.Get(ctx, a.LaminaId); err == nil {
 			continue
 		}
-		own.Attempt().Erase(ctx, api.AttemptRef_builder{Id: a.Id[:]}.Build())
+		if _, err := own.Attempt().Erase(ctx, api.AttemptRef_builder{Id: a.Id[:]}.Build()); err == nil {
+			j.d.metrics().Pruned.Add(ctx, 1, kindAttr("attempt"))
+		}
 	}
+	j.gauges(ctx, now)
 
 	// Key rotation (§33.3): an ACTIVE key becomes the signing key once every
 	// live node holds it; a key demoted from signing is retired after the

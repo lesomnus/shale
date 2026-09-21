@@ -268,7 +268,43 @@ ceilings (§26)
   current ingest vs. NIC / HDD / capacity ceilings per node
 ```
 
-Structured logs and distributed tracing are also useful.
+Every line above is an instrument every process exports over OTLP, to
+wherever `otel:` in its configuration says
+([§36.1](13-configuration.md#361-configuration-reference)); there is no
+scrape endpoint. The names, by the process that measures them:
+
+| §31 line | Instrument |
+|---|---|
+| write, commit, allocation latency | `shale.cp.write_latency_ms`, `shale.cp.commit_latency_ms`, `shale.cp.allocation_latency_ms` |
+| uploads in flight, part buffer pool, 503 rate | `shale.node.uploads_in_flight`, `shale.node.part_buffer_used_bytes`, `shale.node.refused{reason}` |
+| resumes, idle timeouts, per-actor limit hits | `shale.node.upload_resumes`, `shale.node.uploads_abandoned{outcome,why}`, `shale.node.refused{reason=upload_limit,read_limit}` |
+| live lag | `shale.node.oldest_upload_age_ms{sink}` |
+| abandoned uploads | `shale.node.uploads_abandoned{outcome=finalized_incomplete,deleted}` |
+| producer segments by outcome, cuts | `shale.producer.segments{outcome}`, `shale.producer.early_cuts{source}` |
+| upload duration by producer | `shale.producer.upload_duration_ms` |
+| retry counts, lost laminae | `shale.producer.retries{kind=same_target,placement}`, `shale.cp.laminae_lost` |
+| duplicates, orphans, recovered | `shale.cp.duplicates`, `shale.node.gc_approved{reason}`, `shale.cp.recovered{sink}` |
+| device queue depth and wait per class | `shale.node.device_queue_depth{device,class}`, `shale.node.device_wait_ms{class}` |
+| I/O errors, failure score, quarantines | `shale.cp.device_io_errors{device}`, `shale.cp.device_failure_score{device}`, `shale.cp.quarantines{kind}` |
+| sink free, pressure | `shale.node.sink_free_bytes{sink}`, `shale.node.sink_pressure{sink}` |
+| GC proposed, approved, reclaimed; sweep | `shale.node.gc_proposed{reason}`, `shale.node.gc_approved{reason}`, `shale.node.gc_reclaimed_bytes`, `shale.cp.gc_approved_bytes{sink,reason}`; the sweep is `reason=sweep` |
+| forecast, time until the cluster runs out | `shale.cp.capacity_runway_s` |
+| stored bytes per tenant | `shale.cp.stored_bytes{tenant}` |
+| read latency, sessions, aborted | `shale.node.read_latency_ms{sink}`, `shale.node.read_sessions`, `shale.node.reads_aborted{sink}` |
+| NIC utilization, RAM buffer, index size, scan | `shale.node.nic_rx_bps{interface}`, `shale.node.nic_tx_bps{interface}`, `shale.node.part_buffer_used_bytes`, `shale.node.index_laminae{sink}`, `shale.node.scan_done{sink}` |
+| ingest per node | `shale.node.ingest_bps` |
+| producer per source | `shale.producer.input_up`, `frame_rate`, `rate_bps`, `keyframe_interval_ms`, `capture_restarts`, `early_cuts`, all `{source}` |
+| producer host, uplink, live helpers | `shale.producer.cpu`, `temperature`, `uplink_bps`, `live_transcodes`, `live_dropped` |
+| relay | `shale.relay.attached_producers`, `active_sources`, `viewers`, `egress_bytes`, `sessions{outcome}`, `first_frame_ms`, `cpu` |
+| hosts pending, certificates due | `shale.cp.hosts_pending{kind}`, `shale.cp.certs_due{kind}` |
+| producers per relay, reassignments | `shale.cp.producers_per_relay{relay}`, `shale.cp.relay_reassignments` |
+| directives pending, reconciliation lag | `shale.cp.laminae_dates_unsynced`, `shale.cp.reconcile_lag_s{sink}`, `shale.cp.directive_errors` |
+| laminae in DELETING, rows pruned | `shale.cp.laminae_deleting`, `shale.cp.rows_pruned{kind}` |
+| watch streams, broker reconnects | payday's, when it exports them; none here yet |
+
+Logs are structured (`slog`), and a presigned URL never reaches one whole:
+what is logged is the key, and where a URL is logged its `token` is
+replaced (`token.RedactURL`). Tracing rides on the same `otel:` block.
 
 ## 32. CLI / Processes
 

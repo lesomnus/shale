@@ -69,6 +69,14 @@ func validateJoin(hj *api.HostJoin) error {
 	if strings.TrimSpace(hj.GetHardwareId()) == "" {
 		return invalid("host.hardware_id", "required")
 	}
+	// What a host says about itself lands in an alias, in rows and in
+	// logs before anybody adopted it (§33.7): a short printable line.
+	if id := hj.GetHardwareId(); len(id) > 128 || strings.ContainsFunc(id, unprintable) || strings.ContainsAny(id, " \t") {
+		return invalid("host.hardware_id", "at most 128 printable characters, no whitespace")
+	}
+	if h := hj.GetHostname(); len(h) > 253 || strings.ContainsFunc(h, unprintable) {
+		return invalid("host.hostname", "at most 253 printable characters")
+	}
 	if len(hj.GetCsr()) == 0 {
 		return invalid("host.csr", "required")
 	}
@@ -771,6 +779,9 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 	if err := validateJoin(hj); err != nil {
 		return nil, err
 	}
+	if err := validateNodeAddresses(req.GetInterfaces(), req.GetControlAddress(), req.GetDataAddress()); err != nil {
+		return nil, err
+	}
 	from, _ := peerAddr(ctx)
 
 	row, err := s.d.Ent.Node.Query().
@@ -1027,6 +1038,9 @@ func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) 
 	if n.GetState() != api.HostState_HOST_STATE_ADOPTED {
 		return nil, status.Error(codes.PermissionDenied, "this node is not adopted")
 	}
+	if err := validateNodeAddresses(req.GetInterfaces(), req.GetControlAddress(), req.GetDataAddress()); err != nil {
+		return nil, err
+	}
 
 	now := s.d.now()
 	patch := api.NodePatchRequest_builder{
@@ -1137,6 +1151,9 @@ func (s Core) relayNames(ctx context.Context, id pdid.Id, alias string, ifs []*a
 func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.RelayJoinResponse, error) {
 	hj := req.GetHost()
 	if err := validateJoin(hj); err != nil {
+		return nil, err
+	}
+	if err := validateRelayAddresses(req.GetInterfaces(), req.GetIngestAddress(), req.GetWhepAddress()); err != nil {
 		return nil, err
 	}
 	from, _ := peerAddr(ctx)
@@ -1368,6 +1385,9 @@ func (s coreRelay) Heartbeat(ctx context.Context, req *api.RelayHeartbeatRequest
 		st = &api.RelayStatus{}
 	}
 	st.SetDateReported(timestamppb.New(now))
+	if err := validateRelayAddresses(req.GetInterfaces(), req.GetIngestAddress(), req.GetWhepAddress()); err != nil {
+		return nil, err
+	}
 	patch := api.RelayPatchRequest_builder{
 		Ref:              api.RelayRef_builder{Id: r.GetId()}.Build(),
 		DateSeen:         timestamppb.New(now),

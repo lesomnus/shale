@@ -177,7 +177,12 @@ func (r *Relay) Run(ctx context.Context) error {
 	g.Go(func() error { return gs.Serve(il) })
 	g.Go(func() error {
 		<-ctx.Done()
+		// Graceful for a moment, then not: an attached producer's stream
+		// is open for as long as the producer likes, and a relay that
+		// waited for it would never stop (§39.6).
+		hard := time.AfterFunc(2*time.Second, gs.Stop)
 		gs.GracefulStop()
+		hard.Stop()
 
 		return nil
 	})
@@ -338,6 +343,7 @@ func (r *Relay) heartbeat(ctx context.Context) error {
 	r.m.viewers.Record(ctx, int64(st.GetViewers()))
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	r.m.cpu.Record(ctx, hostagent.Load())
 	resp, err := api.NewRelayServiceClient(conn).Heartbeat(cctx, api.RelayHeartbeatRequest_builder{
 		CertSerial:    serial,
 		CaHash:        r.agent.BundleHash(),

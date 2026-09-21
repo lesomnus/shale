@@ -162,6 +162,8 @@ func (s coreSink) ProposeGc(ctx context.Context, req *api.SinkProposeGcRequest) 
 		return nil, err
 	}
 
+	s.d.metrics().GcApprovedBytes.Add(ctx, approved, pairAttr("sink", mustId(req.GetRef().GetId()).String(), "reason", req.GetReason().String()))
+
 	return api.SinkProposeGcResponse_builder{Decisions: decisions, ApprovedBytes: approved}.Build(), nil
 }
 

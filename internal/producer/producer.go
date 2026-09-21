@@ -10,7 +10,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -320,7 +319,7 @@ func (p *Producer) Run(ctx context.Context) error {
 		return err
 	}
 
-	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(conn), Log: p.log, Mode: p.cfg.Mode, Written: p.cfg.Retain == RetainWritten}
+	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(conn), Log: p.log, Mode: p.cfg.Mode, Written: p.cfg.Retain == RetainWritten, m: p.m}
 	if p.uploader.Cfg.Client == nil {
 		// The data planes speak TLS from the same CA the producer pinned.
 		hc, err := p.agent.HTTPClient()
@@ -583,6 +582,7 @@ func (p *Producer) newCutter(s *source, reader *Reader) *Cutter {
 				p.enqueue(s, seg)
 			}
 			if seg.Early {
+				p.m.earlyCuts.Add(context.Background(), 1, sourceAttr(s.cfg.Alias))
 				s.mu.Lock()
 				s.raise = true
 				s.mu.Unlock()
@@ -1143,6 +1143,15 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 	p.m.dropped.Record(ctx, p.relay.dropped)
 	p.relay.mu.Unlock()
 	p.m.transcodes.Record(ctx, p.relay.transcodes())
+	p.m.cpu.Record(ctx, cpuLoad())
+	p.m.temperature.Record(ctx, socTemperature())
+	var uplink int64
+	for _, s := range p.order {
+		s.mu.Lock()
+		uplink += s.rate(60)
+		s.mu.Unlock()
+	}
+	p.m.uplink.Record(ctx, uplink)
 
 	hctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -1187,36 +1196,9 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 	return nil
 }
 
-// cpuLoad is the one-minute load average over the CPU count.
-func cpuLoad() float64 {
-	b, err := os.ReadFile("/proc/loadavg")
-	if err != nil {
-		return 0
-	}
-	f := strings.Fields(string(b))
-	if len(f) == 0 {
-		return 0
-	}
-	v, _ := strconv.ParseFloat(f[0], 64)
+func cpuLoad() float64 { return hostagent.Load() }
 
-	return v / float64(runtime.NumCPU())
-}
-
-// socTemperature is the SoC temperature in °C, where Linux offers one.
-func socTemperature() float64 {
-	for _, p := range []string{"/sys/class/thermal/thermal_zone0/temp"} {
-		b, err := os.ReadFile(p)
-		if err != nil {
-			continue
-		}
-		v, err := strconv.ParseFloat(strings.TrimSpace(string(b)), 64)
-		if err == nil {
-			return v / 1000
-		}
-	}
-
-	return 0
-}
+func socTemperature() float64 { return hostagent.Temperature() }
 
 // ParseBitrate reads "4Mbps", "64kbps", "4000000".
 func ParseBitrate(v string) (int64, error) {

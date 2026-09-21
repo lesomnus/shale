@@ -297,7 +297,12 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 
 	var hint int64
 	if v := r.Header.Get(HdrSizeHint); v != "" {
-		hint, _ = strconv.ParseInt(v, 10, 64)
+		h, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || h < 0 {
+			http.Error(w, HdrSizeHint+": bytes expected, as a number", http.StatusBadRequest)
+			return
+		}
+		hint = h
 	}
 	if length >= 0 {
 		hint = length
@@ -369,6 +374,9 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 			return
 		}
 		cur = st.Size()
+		if offset > 0 {
+			d.node.m.resumes.Add(r.Context(), 1, sinkAttr(sink))
+		}
 		if length >= 0 && rec.GetSizeHint() > 0 && r.Header.Get(HdrUploadLength) != "" && rec.GetSizeHint() != length && rec.GetMode() == api.UploadMode_UPLOAD_MODE_BUFFERED {
 			f.Close()
 			http.Error(w, "a different Upload-Length for the same key", http.StatusConflict)
@@ -647,6 +655,7 @@ func (d *DataPlane) commit(u *upload, f *os.File, size int64, ended *time.Time, 
 	rec := u.record
 	d.node.m.committed.Add(context.Background(), 1, metric.WithAttributes(attribute.String("sink", sink.Id.String()), attribute.Bool("incomplete", incomplete)))
 	d.node.m.bytes.Add(context.Background(), size, sinkAttr(sink))
+	d.node.committedBytes.Add(size)
 	if err := f.Truncate(size); err != nil {
 		return err
 	}
@@ -732,6 +741,7 @@ func (d *DataPlane) abandon(u *upload, f *os.File, size int64, why string) {
 			DateObserved: timestamppb.Now(),
 		}.Build()}.Build())
 		d.log.Info("abandoned buffered upload deleted", "key", u.key, "why", why)
+		d.node.m.abandoned.Add(context.Background(), 1, abandonAttr("deleted", why))
 		return
 	}
 
@@ -753,6 +763,7 @@ func (d *DataPlane) abandon(u *upload, f *os.File, size int64, why string) {
 		return
 	}
 	d.log.Info("abandoned live upload finalized incomplete", "key", u.key, "size", size, "why", why)
+	d.node.m.abandoned.Add(context.Background(), 1, abandonAttr("finalized_incomplete", why))
 }
 
 // head answers the upload offset and completeness, or the lamina's
@@ -872,10 +883,16 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return n, err
 	}}
 
-	w.Header().Set("Content-Type", "video/mp2t")
+	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Cache-Control", "private, max-age=0")
+	began := time.Now()
 	http.ServeContent(w, r, "", mod, cr)
+	d.node.m.readLatency.Record(context.Background(), float64(time.Since(began).Microseconds())/1000, sinkAttr(sink))
+	if r.Context().Err() != nil {
+		// The client went away before the end: a read it gave up on.
+		d.node.m.readsAborted.Add(context.Background(), 1, sinkAttr(sink))
+	}
 }
 
 // castagnoli is CRC32C's polynomial table.
@@ -1065,4 +1082,24 @@ func (d *DataPlane) adoptOpen(sink *Sink, open []OpenFile) {
 		d.uploads[d.uploadKey(sink, o.Key)] = u
 		d.mu.Unlock()
 	}
+}
+
+// uploadAges is, per sink, how far behind the wall clock the data time of
+// its oldest open upload is (§31): the live lag.
+func (d *DataPlane) uploadAges(now time.Time) map[*Sink]time.Duration {
+	out := map[*Sink]time.Duration{}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for _, u := range d.uploads {
+		ms := u.record.GetDateStartedMs()
+		if ms <= 0 {
+			continue
+		}
+		age := now.Sub(time.UnixMilli(ms))
+		if age > out[u.sink] {
+			out[u.sink] = age
+		}
+	}
+
+	return out
 }

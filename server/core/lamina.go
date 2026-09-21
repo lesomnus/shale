@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -41,6 +42,9 @@ func (s Core) setOf(ctx context.Context, id []byte) (*api.Set, error) {
 
 // Allocate is one allocation for one segment of one source (§12.1).
 func (s coreLamina) Allocate(ctx context.Context, req *api.LaminaAllocateRequest) (*api.Allocation, error) {
+	defer func(began time.Time) {
+		s.d.metrics().AllocLatency.Record(ctx, float64(time.Since(began).Microseconds())/1000)
+	}(time.Now())
 	f, err := actor(ctx)
 	if err != nil {
 		return nil, err
@@ -820,7 +824,7 @@ func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest
 			eps := s.endpoints(r.Edges.Sink.Edges.Node, callerOf(ctx), address)
 			to.Endpoints = eps
 			if len(eps) > 0 {
-				to.Url = fmt.Sprintf("%s://%s:%d/%s?token=%s", eps[0].GetScheme(), eps[0].GetHost(), eps[0].GetPort(), r.LaminaKey, tok)
+				to.Url = endpointURL(eps[0], r.LaminaKey, url.Values{"token": {tok}})
 			}
 			ts.SetLaminae(append(ts.GetLaminae(), to.Build()))
 		} else {

@@ -176,7 +176,7 @@ Nodes as they are today ([§17](05-read-path.md#17-read-path)).
 
 | Failure | Effect | Recovery |
 |---|---|---|
-| Relay process restarts | every session and attachment drops; the relay has no state to recover | producers re-attach (they were dialing anyway); viewers ask `Live` again |
+| Relay process restarts | every session and attachment drops; the relay has no state to recover. A stopping relay is graceful for two seconds, then ends what is still open, so an attached producer never keeps a dying relay alive | producers re-attach: the same relay at other endpoints is a restart, and the link moves as soon as a heartbeat brings the new ones; viewers ask `Live` again |
 | Relay down | as above, and the CP reassigns its producers | a few seconds of no live picture; recording unaffected |
 | Producer's uplink saturated by viewers | live bytes and recording compete | the link check counts watched cameras; the operator sizes the uplink or limits which cameras are watchable |
 | Producer down | its cameras are off for viewers and for recording alike | as in [§15](04-write-path.md#15-partial-laminae) |

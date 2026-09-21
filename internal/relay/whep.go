@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"io"
@@ -39,11 +40,13 @@ type viewer struct {
 	key    string
 	actor  string
 	source *source
-	pc     *webrtc.PeerConnection
-	track  *webrtc.TrackLocalStaticSample
-	audio  *webrtc.TrackLocalStaticSample
-	once   sync.Once
-	done   chan struct{}
+	// started is when the offer came, for the first-frame time (§31).
+	started time.Time
+	pc      *webrtc.PeerConnection
+	track   *webrtc.TrackLocalStaticSample
+	audio   *webrtc.TrackLocalStaticSample
+	once    sync.Once
+	done    chan struct{}
 	// caught says the group of pictures was handed over after connecting.
 	caught bool
 	mu     sync.Mutex
@@ -180,7 +183,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	}
 
 	key := newSessionKey(actor)
-	v := &viewer{key: key, actor: actor, source: src, pc: pc, track: track, audio: audio, done: make(chan struct{})}
+	v := &viewer{key: key, actor: actor, source: src, pc: pc, track: track, audio: audio, done: make(chan struct{}), started: time.Now()}
 	pc.OnConnectionStateChange(func(st webrtc.PeerConnectionState) {
 		switch st {
 		case webrtc.PeerConnectionStateConnected:
@@ -189,6 +192,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 			v.caught = true
 			v.mu.Unlock()
 			if first {
+				w.r.m.firstFrame.Record(context.Background(), float64(time.Since(v.started).Microseconds())/1000)
 				src.catchUp(v)
 			}
 		case webrtc.PeerConnectionStateFailed, webrtc.PeerConnectionStateClosed, webrtc.PeerConnectionStateDisconnected:
@@ -289,6 +293,7 @@ func (v *viewer) write(au mpegts.AccessUnit, d time.Duration) {
 	if err := v.track.WriteSample(sampleOf(au, d)); err != nil {
 		return
 	}
+	v.source.r.m.egress.Add(context.Background(), int64(len(au.Data)))
 }
 
 // writeAudio is one Opus packet as one sample.

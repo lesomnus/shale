@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 )
 
 // The Device Queue (§24): one worker per physical device, shared by every
@@ -55,14 +56,18 @@ type Caps [classes]int
 var DefaultCaps = Caps{256, 64, 4096}
 
 type job struct {
-	class Class
-	cost  int64
-	fn    func() error
-	done  chan error
+	class  Class
+	cost   int64
+	fn     func() error
+	done   chan error
+	queued time.Time
 }
 
 // Queue is one device's worker.
 type Queue struct {
+	// Observe is told how long each job waited before it ran (§31).
+	Observe func(Class, time.Duration)
+
 	mu      sync.Mutex
 	cond    *sync.Cond
 	queues  [classes][]*job
@@ -100,7 +105,7 @@ func (q *Queue) Submit(ctx context.Context, class Class, cost int64, fn func() e
 	if cost < 0 {
 		cost = 0
 	}
-	j := &job{class: class, cost: cost, fn: fn, done: make(chan error, 1)}
+	j := &job{class: class, cost: cost, fn: fn, done: make(chan error, 1), queued: time.Now()}
 	q.mu.Lock()
 	if q.closed {
 		q.mu.Unlock()
@@ -162,6 +167,9 @@ func (q *Queue) Run(ctx context.Context) {
 		j := q.next()
 		if j == nil {
 			return
+		}
+		if q.Observe != nil {
+			q.Observe(j.class, time.Since(j.queued))
 		}
 		err := j.fn()
 		j.done <- err
