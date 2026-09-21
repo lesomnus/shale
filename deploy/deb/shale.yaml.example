@@ -5,7 +5,7 @@ state: /var/lib/shale
 # --- the control plane (shale@all, shale@control, shale@cluster) ---------
 # db:
 #   driver: sqlite3                       # one machine; pgx for several
-#   dsn: "file:/var/lib/shale/control/shale.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+#   dsn: "file:/var/lib/shale/control/shale.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_timefmt=unixepoch_nano"
 #   migrate: true
 # watch:
 #   broker: memory                        # postgres with several processes

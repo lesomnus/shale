@@ -41,6 +41,7 @@ import (
 	"github.com/lesomnus/payday/web"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/dsn"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
@@ -142,6 +143,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Time values in SQLite sort as text only in a fixed-width format
+	// (§34.2); a DSN that names none gets it.
+	c.Db.Dsn = dsn.Normalize(c.Db.Driver, c.Db.Dsn)
 	db, dia, err := c.Db.Open(ctx)
 	if err != nil {
 		return nil, err

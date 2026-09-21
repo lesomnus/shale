@@ -22,6 +22,8 @@ import (
 	rostercli "github.com/lesomnus/roster/cli"
 	rostercmd "github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/rstr"
+
+	"github.com/lesomnus/shale/internal/dsn"
 )
 
 // embedded is roster in this process: its server on an in-process
@@ -64,6 +66,10 @@ func openEmbedded(ctx context.Context, cfg Config, stateDir string, log *slog.Lo
 		rc.Db.Driver = "sqlite3"
 		rc.Db.Dsn = "file:" + filepath.Join(stateDir, RosterDbFile) + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
 	}
+	// roster's rows are dated too, and compared (a lockout's end): the
+	// same fixed-width time format as the control plane's own database
+	// (§34.2).
+	rc.Db.Dsn = dsn.Normalize(rc.Db.Driver, rc.Db.Dsn)
 	// Nothing watches roster's rows from here, and a broker would be the
 	// wrong one for a second control plane on the same database anyway.
 	rc.Watch.Broker = config.BrokerNone

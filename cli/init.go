@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/shale/cmd"
+	"github.com/lesomnus/shale/internal/dsn"
 	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/k8s"
 	"github.com/lesomnus/shale/internal/pki"
@@ -271,7 +272,7 @@ func ApplyDev(c *cmd.Config, dir string) {
 	}
 	if c.Db.Driver == "" || c.Db.Dsn == "" {
 		c.Db.Driver = "sqlite3"
-		c.Db.Dsn = "file:" + filepath.Join(dir, "control", "shale.db") + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+		c.Db.Dsn = "file:" + filepath.Join(dir, "control", "shale.db") + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&" + dsn.SQLiteTimeFormat
 	}
 	c.Db.Migrate = true
 	if c.Watch.Broker == "" {
