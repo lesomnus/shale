@@ -8,15 +8,19 @@
 		"dev": "vite",
 		"build": "tsc -p tsconfig.json && vite build",
 		"preview": "vite preview",
-		"check": "tsc -p tsconfig.json"
+		"check": "tsc -p tsconfig.json",
+		"sandbox:build": "cd .. && mkdir -p ts/public && cp \"$(go env GOROOT)/lib/wasm/wasm_exec.js\" ts/public/ && GOOS=js GOARCH=wasm go build -tags grpcnotrace -o ts/public/app.wasm ./wasm",
+		"test:sandbox": "node test/sandbox.mjs"
 	},
 	"dependencies": {
 		"@bufbuild/protobuf": "^2.12.1",
 		"@connectrpc/connect": "^2.1.2",
 		"@connectrpc/connect-web": "^2.1.2",
-		"@lesomnus/payday": "^0.0.3",
+		"@lesomnus/grpc-dgram": "^0.1.0",
+		"@lesomnus/payday": "file:vendor/lesomnus-payday-0.1.0.tgz",
 		"react": "^19.2.0",
-		"react-dom": "^19.2.0"
+		"react-dom": "^19.2.0",
+		"sqlite3-wasm-go": "^0.0.1"
 	},
 	"devDependencies": {
 		"@bufbuild/protoc-gen-es": "^2.12.1",
@@ -24,6 +28,7 @@
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
 		"@vitejs/plugin-react": "^5.0.4",
+		"playwright": "^1.63.0",
 		"typescript": "~5.9.3",
 		"vite": "^7.1.14"
 	}

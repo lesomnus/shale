@@ -4,3 +4,8 @@ node_modules/
 *.db
 /shale
 /bin/
+
+# the sandbox build: the app compiled to wasm and the toolchain's JS half of it
+ts/public/app.wasm
+ts/public/app.wasm.br
+ts/public/wasm_exec.js

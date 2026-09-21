@@ -161,6 +161,12 @@ holds a password. Two consequences for a change:
   token; `internal/placement` the HRW scheduler; `internal/pki` the CA.
 - Development mode (`--dev <dir>`) is plaintext with the plain header; the
   e2e harness in `internal/e2e` starts `serve all --dev` in-process.
+- `ts/` is the console (§40): Vite + React over payday's client layer,
+  `ts/gen` from `pd gen --ts`, payday's TypeScript package vendored in
+  `ts/vendor` at the commit `go.mod` pins. `wasm/main.go` is the sandbox,
+  the control plane compiled into the page, and `internal/sandbox` the
+  hosts it plays; `npm run sandbox:build`, `npm run dev`, then `?sandbox`.
+  Node lives in `~/sdk/node` here, beside Go.
 - The design documents in `docs/` are the specification; a `§` in a comment
   points at them. Keep them in step when behavior changes.
 - Korean in chat, English in code and documents.

@@ -247,8 +247,11 @@ service ReaderService {
   their states and read tokens, the gaps with their reasons
   (`NOT_RECEIVED`, `IN_PROGRESS`, `DARK`, `LOST`, `DELETED`, `UNAVAILABLE`), and
   `next`.
-- `LaminaService.Watch` filtered by a set is how a console shows segments
-  arriving. Watch requires filters, so no caller watches the whole table.
+- `LaminaService.Watch` keeps the laminae a console drew current: a watch
+  names rows, so it carries a commit, a skip, a loss of a row already on the
+  screen, and never a row that was not there when it opened. Segments
+  arriving come from reading the list again ([§40.2](17-console.md#402-how-a-page-stays-current)).
+  Watch requires filters, so no caller watches the whole table.
 - `Holder` has no custom RPCs. People sign in through payday
   ([§33.1](10-security.md#331-trust-model)).
 
@@ -315,8 +318,9 @@ service AddressPolicyService {
 - Nodes **poll** `SigningKey` every 30 s; a rotation waits for every live
   node to report the new key before it signs
   ([§33.3](10-security.md#333-signing-keys-and-rotation)).
-- Consoles watch `Node`, `Device`, `Sink`, `Producer`, and `Reader` for live
-  state, including hosts waiting to be adopted.
+- Consoles watch `Node`, `Device`, `Sink`, `Producer`, and `Reader` rows for
+  live state, and read the lists again for what arrives, hosts waiting to
+  be adopted above all ([§40](17-console.md#40-console)).
 - Operator actions with an effect on a node (`Quarantine`, `Retire`,
   `Locate`, GC on demand) are carried out by the CP through the node's
   control API ([§35.7](#357-storage-node-control-api)).

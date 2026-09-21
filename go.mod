@@ -16,6 +16,7 @@ tool (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
+	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
 	github.com/lesomnus/mkot/otlp v0.0.0-20260911021409-f5f7b88768d9
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
 	github.com/lesomnus/payday v0.0.0-20260921021149-ba8be43f5730
@@ -76,6 +77,7 @@ require (
 	github.com/lesomnus/mkot/mkotx v0.0.0-20260801183340-9c83100aa7c2 // indirect
 	github.com/lesomnus/mkot/pretty v0.0.0-20260907012347-f3fd02e2da01 // indirect
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20260807173743-977a5687d6ba // indirect
+	github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.23 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect

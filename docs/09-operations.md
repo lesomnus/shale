@@ -102,9 +102,10 @@ Every one of these reaches the node through its control API. A replaced HDD
 joins as a new device with a new sink ([§9](02-data-model.md#9-identity)). An
 operator can also retire a single sink.
 
-Consoles watch `Device` to show the quarantine queue live, and `Node`,
-`Producer`, and `Reader` to show hosts waiting to be adopted
-([§33.4](10-security.md#334-joining-and-adoption)).
+The console shows the quarantine queue and the hosts waiting to be adopted
+([§33.4](10-security.md#334-joining-and-adoption), [§40](17-console.md#40-console)):
+the rows it drew are watched, and the lists are read again for what
+arrives.
 
 ## 28. Failure Semantics
 

@@ -1,120 +1,77 @@
 /**
  * Where the page starts.
  *
- * Two things happen before React does, and both have to: the transport is
- * decided -- a real server here, and a Go server compiled to wasm in a sandbox
- * -- and the store is opened for **this** credential and filled from its
- * mirror. Rendering over a store that has not been hydrated is rendering a
- * spinner for something the tab already had.
+ * Two things happen before React does: the server is found -- a real one on
+ * the network, or the app compiled to wasm and started inside this page when
+ * the address says `?sandbox` -- and the sessions a reload can restore are
+ * restored, so a page that had a store draws it rather than a spinner.
  *
  * @module
  */
 
-import { createConnectTransport } from '@connectrpc/connect-web'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
-import { Provider } from '@lesomnus/payday/react'
-
-import { open } from './store.js'
-import { Page } from './page.js'
+import { Console } from './app.js'
+import { start, type Sandbox } from './sandbox.js'
+import { addrs } from './session.js'
+import { restore, type Mode, type Opened } from './surface.js'
 import './style.css'
-
-/**
- * Where the app answers.
- *
- * `npm run dev` is a different origin from the server, so the server has to say
- * this page may call it -- `origins:` under `server.http`. A build served by
- * the app itself is same-origin and needs none of that.
- */
-const ADDR = import.meta.env['VITE_ADDR'] ?? 'http://localhost:8080'
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
 
-/**
- * The credential, which this app believes because the server does.
- *
- * `auth.Plain` reads `@tenant/holder` and takes the caller's word for it, which
- * is right for a sandbox and for tests and is **not** something to serve where
- * anyone can reach it. A real one is a cookie this script cannot read rather
- * than a string it keeps: `auth/authsession` is the endpoint that mints it and
- * the handler that reads it back, and what this app supplies is what checking
- * a secret means. See `serve.go`.
- */
-function credential(): string | null {
-	return localStorage.getItem('credential')
+function wantsSandbox(): boolean {
+	const env = import.meta.env as Record<string, string | undefined>
+
+	return new URLSearchParams(location.search).has('sandbox') || env['VITE_SANDBOX'] === '1'
 }
 
-function SignIn(): React.ReactNode {
+function Progress(props: { text: string }): React.ReactNode {
 	return (
-		<form
-			className="sign-in"
-			onSubmit={(e) => {
-				e.preventDefault()
-				const v = new FormData(e.currentTarget).get('credential')
-				if (typeof v !== 'string' || v === '') return
-
-				localStorage.setItem('credential', v)
-				void boot()
-			}}
-		>
+		<div className="sign-in">
 			<h1>shale</h1>
-			<label>
-				sign in as
-				<input name="credential" defaultValue="@acme/admin" autoFocus />
-			</label>
-			<button type="submit">go</button>
-			<p>
-				Run <code>go run ./cmd/shale init</code> first; it prints who to sign in as.
-			</p>
-		</form>
+			<p className="hint">{props.text}</p>
+		</div>
 	)
 }
 
 async function boot(): Promise<void> {
-	const who = credential()
-	if (who === null) {
-		root.render(
-			<StrictMode>
-				<SignIn />
-			</StrictMode>,
-		)
+	let mode: Mode
+	if (wantsSandbox()) {
+		root.render(<Progress text="starting the sandbox: the whole server, compiled into this page…" />)
+		let box: Sandbox
+		try {
+			box = await start('/app.wasm', (v) => {
+				const mb = (n: number) => (n / 1048576).toFixed(0)
+				const text =
+					v.total > 0 && v.loaded >= v.total
+						? 'compiling the server…'
+						: `fetching the server: ${mb(v.loaded)} MB${v.total > 0 ? ` of ${mb(v.total)}` : ''}${v.from === 'cache' ? ' (from the last visit)' : ''}${v.keeping ? '' : ' — not kept: this origin cannot cache it'}`
+				root.render(<Progress text={text} />)
+			})
+		} catch (err) {
+			root.render(<Progress text={`the sandbox did not start: ${String(err)}`} />)
 
-		return
+			return
+		}
+		mode = { kind: 'sandbox', box }
+	} else {
+		mode = { kind: 'real', addrs: addrs() }
 	}
 
-	const transport = createConnectTransport({
-		baseUrl: ADDR,
-		interceptors: [
-			(next) => (req) => {
-				req.header.set('authorization', `Plain ${who}`)
-
-				return next(req)
-			},
-		],
-	})
-
-	const app = await open(transport, who)
-
-	/**
-	 * Signing out drops this caller's copy -- the rows, the answers and the
-	 * mirror. Nothing there is a secret, since the server only ever sent what
-	 * that caller could see, but it is *that caller's*, and leaving it where
-	 * the next one opens the same page is the kind of thing that looks like a
-	 * leak whether or not it is one.
-	 */
-	const out = (): void => {
-		app.store.forget()
-		app.store.close()
-		localStorage.removeItem('credential')
-		void boot()
+	const initial: Partial<Record<'tenant' | 'cluster', Opened>> = {}
+	for (const surface of ['tenant', 'cluster'] as const) {
+		try {
+			const v = await restore(mode, surface)
+			if (v !== null) initial[surface] = v
+		} catch {
+			// Restored later, by signing in again.
+		}
 	}
 
 	root.render(
 		<StrictMode>
-			<Provider app={app}>
-				<Page who={who} onSignOut={out} />
-			</Provider>
+			<Console mode={mode} initial={initial} />
 		</StrictMode>,
 	)
 }

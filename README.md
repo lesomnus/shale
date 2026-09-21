@@ -38,6 +38,7 @@ you know the overview and data model.
 | 14 | [Glossary](docs/14-glossary.md) | §37 | Definitions of all terms. |
 | 15 | [Producer](docs/15-producer.md) | §38 | The producer program: inputs and the TS contract, cutting at keyframes, managed capture with ffmpeg and its three tiers of tuning, camera discovery and registration, choosing the bitrate ceiling as a feedback loop, heartbeats, live output. The client side Shale ships; the storage design does not depend on it. |
 | 16 | [Relay](docs/16-relay.md) | §39 | Live viewing: a stateless host that takes a producer's streams on demand and serves viewers over WebRTC (WHEP); assignment of producers to relays, tokens, instant start, capacity, failures. Never touches storage. |
+| 17 | [Console](docs/17-console.md) | §40 | The operator's page: adoption, the quarantine queue, cameras and their state, segments arriving, live view; how it stays current; the sandbox it is developed against, the control plane compiled into the page with simulated hosts. |
 | — | [Placement Decisions](docs/placement-decisions.md) | D1–D9 | Decision report behind §11: scenario, requirements, the options considered, and why each one was chosen or rejected. |
 | — | [Producer Bench](docs/producer-bench.md) | — | Measurements of a Raspberry Pi 400 recording one camera: encoder quality and bitrate, audio in the same segment, CPU load and temperature. Reference for producer hardware; not part of the storage design. |
 
