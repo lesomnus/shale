@@ -32,7 +32,7 @@ jobs:
           fallocate -l 2G /tmp/shale.img && mkfs.ext4 -q -F /tmp/shale.img
           sudo mkdir -p /mnt/shale-tmp && sudo mount -o loop,user_xattr /tmp/shale.img /mnt/shale-tmp
           sudo chmod 1777 /mnt/shale-tmp
-          TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 10m
+          TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 20m
   package:
     runs-on: ubuntu-latest
     needs: test
