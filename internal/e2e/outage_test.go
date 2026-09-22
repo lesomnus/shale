@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -12,8 +13,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/shale/api"
-	"github.com/lesomnus/shale/server/core"
+	"github.com/lesomnus/shale/cmd"
 )
+
+// downAfter is what these drills set `node_down_after` to: three of the
+// harness's heartbeats, so a node that stops counts as down in seconds
+// rather than in §36.1's half minute.
+const downAfter = 3 * time.Second
 
 // timelineAround answers the set's timeline over an hour around a slot,
 // which for one source is one entry or one gap (§19).
@@ -37,7 +43,7 @@ func timelineAround(t *testing.T, ctx context.Context, laminae api.LaminaService
 // serve, the row stays COMMITTED, and the same node back makes it readable
 // again with nothing else changed.
 func TestReadsWhileNodeDown(t *testing.T) {
-	c := start(t)
+	c := start(t, func(c *cmd.Config) { c.Control.NodeDownAfter = downAfter })
 	ctx := context.Background()
 
 	stateB := filepath.Join(t.TempDir(), "node-b")
@@ -93,7 +99,7 @@ func TestReadsWhileNodeDown(t *testing.T) {
 	// are somewhere unreachable, not that they are gone.
 	stopB()
 	t.Log("waiting for the CP to consider node B down")
-	time.Sleep(core.DefaultNodeDownAfter + 2*time.Second)
+	time.Sleep(downAfter + 2*time.Second)
 	require.Eventually(t, func() bool {
 		ts := timelineAround(t, ctx, laminae, set, started)
 		if len(ts.GetLaminae()) > 0 {
@@ -219,4 +225,114 @@ func TestSinkClaimRefusedWhileOwnerAlive(t *testing.T) {
 	ts := timelineAround(t, ctx, laminae, set, al.GetDateStarted().AsTime())
 	require.Len(t, ts.GetLaminae(), 1)
 	require.Equal(t, body, fetch(t, ts.GetLaminae()[0].GetUrl()))
+}
+
+// TestSinkAutoAdopted is §28.3's step 4 without an operator: a sink whose
+// node has been down for `sink_auto_adopt_after` and that another node
+// reports is adopted there by the leader, and its laminae are readable
+// again through the new node with nothing copied.
+func TestSinkAutoAdopted(t *testing.T) {
+	c := start(t, func(c *cmd.Config) {
+		c.Control.NodeDownAfter = downAfter
+		c.Control.SinkAutoAdoptAfter = 5 * time.Second
+		c.Control.JobsEvery = time.Second
+	})
+	ctx := context.Background()
+	ops := c.dialCluster("@cluster/ops")
+	sinks := api.NewSinkServiceClient(ops)
+
+	sinkDir := filepath.Join(t.TempDir(), "sink-b")
+	nodeB, stopB := c.startNodeAt("b", filepath.Join(t.TempDir(), "node-b"), sinkDir)
+	var sinkId []byte
+	require.Eventually(t, func() bool {
+		vs, err := sinks.List(ctx, api.SinkListRequest_builder{}.Build())
+		if err != nil {
+			return false
+		}
+		for _, s := range vs.GetItems() {
+			if string(s.GetNode().GetId()) == string(nodeB.Id().Bytes()) && s.GetAttachment() == api.SinkAttachment_SINK_ATTACHMENT_ATTACHED && s.GetDateSeen() != nil {
+				sinkId = s.GetId()
+				return true
+			}
+		}
+
+		return false
+	}, 30*time.Second, 200*time.Millisecond, "node B's sink is attached")
+
+	conn := c.dial("@acme/admin")
+	laminae := api.NewLaminaServiceClient(conn)
+	set, allocate := camera(t, ctx, conn, "adopt", nil)
+	al := allocate(time.Hour)
+	var cand *api.Candidate
+	for _, cd := range al.GetCandidates() {
+		if string(cd.GetSinkId()) == string(sinkId) {
+			cand = cd
+			break
+		}
+	}
+	require.NotNil(t, cand, "node B's sink is a candidate")
+	body := make([]byte, 64<<10)
+	rand.Read(body)
+	code, _ := putAt(t, al, cand, body, "?1")
+	require.Equal(t, http.StatusCreated, code)
+	require.Eventually(t, func() bool {
+		o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build()}.Build())
+
+		return err == nil && o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED
+	}, 20*time.Second, 200*time.Millisecond, "the upload commits")
+
+	// The machine dies and its disk is put in another one, which reports
+	// the sink: while the old node is only recently down the sink waits.
+	stopB()
+	time.Sleep(downAfter + time.Second)
+	nodeC, _ := c.startNodeAt("c", filepath.Join(t.TempDir(), "node-c"), sinkDir)
+	state := func() (*api.Sink, error) {
+		return sinks.Get(ctx, api.SinkGetRequest_builder{Ref: api.SinkRef_builder{Id: sinkId}.Build()}.Build())
+	}
+	require.Eventually(t, func() bool {
+		s, err := state()
+
+		return err == nil && s.GetAttachment() == api.SinkAttachment_SINK_ATTACHMENT_PENDING_ADOPTION
+	}, 20*time.Second, 200*time.Millisecond, "the sink is pending adoption first")
+
+	// Nobody runs `sink adopt`: past sink_auto_adopt_after the leader hands
+	// it to the node that reports it.
+	require.Eventually(t, func() bool {
+		s, err := state()
+
+		return err == nil && s.GetAttachment() == api.SinkAttachment_SINK_ATTACHMENT_ATTACHED && string(s.GetNode().GetId()) == string(nodeC.Id().Bytes())
+	}, 30*time.Second, 500*time.Millisecond, "the sink is adopted by the node reporting it")
+	require.Eventually(t, func() bool {
+		s, err := state()
+
+		return err == nil && s.GetDateReconciled() != nil
+	}, 20*time.Second, 200*time.Millisecond, "and reconciled where it now is")
+
+	// The lamina reads again, from the new node, with the same bytes.
+	var url string
+	require.Eventually(t, func() bool {
+		ts := timelineAround(t, ctx, laminae, set, al.GetDateStarted().AsTime())
+		if len(ts.GetLaminae()) != 1 {
+			return false
+		}
+		url = ts.GetLaminae()[0].GetUrl()
+
+		return ts.GetLaminae()[0].GetState() == api.ReadState_READ_STATE_AVAILABLE
+	}, 30*time.Second, 500*time.Millisecond, "the lamina is available again")
+	require.Contains(t, url, fmt.Sprintf(":%d/", portOf(t, nodeC.DataAddr)), "served by the node that adopted the sink")
+	// The row moves at the leader's job; the new node answers for the sink
+	// from its next heartbeat, when the CP tells it the sink is its own.
+	require.Eventually(t, func() bool {
+		resp, err := http.Get(url)
+		if err != nil {
+			return false
+		}
+		resp.Body.Close()
+
+		return resp.StatusCode == http.StatusOK
+	}, 20*time.Second, 200*time.Millisecond, "the node that adopted the sink serves it")
+	require.Equal(t, body, fetch(t, url))
+	o, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.Equal(t, sinkId, o.GetSink().GetId(), "the lamina did not move: its sink did")
 }

@@ -128,7 +128,7 @@ func (s Core) snapshot(ctx context.Context, a *allocCtx, place *api.PlacementPar
 	a.sinks = map[pdid.Id]*ent.Sink{}
 	a.why = map[pdid.Id]string{}
 	clamp := maxSinkCapacity(place)
-	downAfter := DefaultNodeDownAfter
+	downAfter := s.d.nodeDownAfter()
 
 	for _, v := range sinks {
 		n, d := v.Edges.Node, v.Edges.Device

@@ -34,7 +34,7 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 	}
 	var chosen *ent.Relay
 	if !isZero(p.RelayId) {
-		if r, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(r, now) {
+		if r, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(r, now, s.d.nodeDownAfter()) {
 			chosen = r
 		}
 	}
@@ -85,9 +85,11 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 	}.Build(), nil
 }
 
-func relayAlive(r *ent.Relay, now time.Time) bool {
+// relayAlive says whether a relay still counts as up: `downAfter` is
+// `node_down_after`, which relays are held to as nodes are (§39.2).
+func relayAlive(r *ent.Relay, now time.Time, downAfter time.Duration) bool {
 	return r != nil && r.DateErased == nil && r.State == int32(api.HostState_HOST_STATE_ADOPTED) &&
-		r.DateSeen != nil && now.Sub(*r.DateSeen) <= DefaultNodeDownAfter
+		r.DateSeen != nil && now.Sub(*r.DateSeen) <= downAfter
 }
 
 // pickRelay is the live relay with the least attached bitrate among those
@@ -121,7 +123,7 @@ func (s Core) pickRelay(ctx context.Context, set *api.Set, now time.Time) (*ent.
 
 	var best *ent.Relay
 	for _, r := range relays {
-		if !relayAlive(r, now) || !matches(r.Labels, selector) || r.IngestAddress == "" {
+		if !relayAlive(r, now, s.d.nodeDownAfter()) || !matches(r.Labels, selector) || r.IngestAddress == "" {
 			continue
 		}
 		if best == nil || load[r.Id] < load[best.Id] {
@@ -178,7 +180,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 		if isZero(p.RelayId) {
 			continue
 		}
-		if v, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(v, now) {
+		if v, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(v, now, s.d.nodeDownAfter()) {
 			r = v
 			break
 		}

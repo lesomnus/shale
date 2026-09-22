@@ -331,7 +331,7 @@ func (s Core) nodeAlive(ctx context.Context, id pdid.Id, now time.Time) bool {
 		return false
 	}
 
-	return now.Sub(*n.DateSeen) <= DefaultNodeDownAfter
+	return now.Sub(*n.DateSeen) <= s.d.nodeDownAfter()
 }
 
 // ---- Device ------------------------------------------------------------

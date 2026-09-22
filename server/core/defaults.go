@@ -53,6 +53,9 @@ const (
 	DefaultNodeDownAfter     = 30 * time.Second
 	DefaultProducerDownAfter = 90 * time.Second
 	DefaultJoinPendingTTL    = 24 * time.Hour
+	// DefaultSinkAutoAdoptAfter is how long a sink whose node is down waits
+	// before the node that reports it adopts it (§28.3).
+	DefaultSinkAutoAdoptAfter = 10 * time.Minute
 
 	DefaultMaxSinkCapacity int64 = 64_000_000_000_000
 	DefaultForecastMargin        = 1.5

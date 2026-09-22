@@ -239,6 +239,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		Dev:           c.IsDev(),
 		Log:           slog.Default(),
 		M:             core.NewMetrics(ctx),
+
+		NodeDownAfter:      c.Control.NodeDownAfter,
+		SinkAutoAdoptAfter: c.Control.SinkAutoAdoptAfter,
 	}
 	if c.Control.AutoAdopt {
 		deps.AutoAdopt = func(kind pdid.Domain, _ *api.HostJoin, _ string) bool {

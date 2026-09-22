@@ -88,6 +88,11 @@ type Deps struct {
 	// Identity is roster, where people and tenants are (§33.1); nil in a
 	// test that has none.
 	Identity *identity.Store
+	// NodeDownAfter is how long a host may go unheard before it is down
+	// (§27), and SinkAutoAdoptAfter how long its sinks wait before the node
+	// that reports them takes them over (§28.3). Zero is §36.1's default.
+	NodeDownAfter      time.Duration
+	SinkAutoAdoptAfter time.Duration
 	// Now is the clock.
 	Now func() time.Time
 	Log *slog.Logger
@@ -158,6 +163,25 @@ func (d *Deps) now() time.Time {
 	}
 
 	return time.Now()
+}
+
+// nodeDownAfter is §27's `node_down_after`, which says when a host stops
+// counting as alive: nodes, and relays with them (§39.2).
+func (d *Deps) nodeDownAfter() time.Duration {
+	if d.NodeDownAfter > 0 {
+		return d.NodeDownAfter
+	}
+
+	return DefaultNodeDownAfter
+}
+
+// sinkAutoAdoptAfter is §28.3's `sink_auto_adopt_after`.
+func (d *Deps) sinkAutoAdoptAfter() time.Duration {
+	if d.SinkAutoAdoptAfter > 0 {
+		return d.SinkAutoAdoptAfter
+	}
+
+	return DefaultSinkAutoAdoptAfter
 }
 
 func (d *Deps) log() *slog.Logger {

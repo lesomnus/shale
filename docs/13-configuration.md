@@ -92,8 +92,8 @@ deployment runs well on them, and changes them only for a reason.
 | Health | score half-life | 24 h | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
 | Health | suspect / quarantine / exit thresholds | 10 / 30 / 5 | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
 | Health | cool-down / probation | 24 h / 7 days at weight × 0.5 | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
-| Health | `node_down_after` | 30 s | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
-| Health | `sink_auto_adopt_after` | 10 min | — | cluster | [§28.3](09-operations.md#283-node-failure-and-device-re-homing) |
+| Health | `control.node_down_after` | 30 s | how long a host may go unheard before it is down: nodes and relays alike | control | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
+| Health | `control.sink_auto_adopt_after` | 10 min | how long a sink whose node is down waits before the node reporting it takes it over | control | [§28.3](09-operations.md#283-node-failure-and-device-re-homing) |
 | Health | `reconcile_interval` | 24 h | — | cluster | [§34.9](11-deployment.md#349-events-and-directives) |
 | Health | `control.directives_every` | 5 s | — | control | [§34.9](11-deployment.md#349-events-and-directives) |
 | Listeners | `server.http.addr` / `cluster.http.addr` | the API's port plus two (7402, 7403) | — | control | [§40.4](17-console.md#404-serving-it) |

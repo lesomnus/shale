@@ -189,7 +189,7 @@ func (j *Jobs) Once(ctx context.Context) error {
 				// A newer key waiting: promote it once every live node holds it.
 				held := true
 				for _, n := range nodes {
-					if n.State != int32(api.HostState_HOST_STATE_ADOPTED) || n.DateSeen == nil || now.Sub(*n.DateSeen) > DefaultNodeDownAfter {
+					if n.State != int32(api.HostState_HOST_STATE_ADOPTED) || n.DateSeen == nil || now.Sub(*n.DateSeen) > j.d.nodeDownAfter() {
 						continue
 					}
 					if !contains(n.KeyIds, k.Alias) {
@@ -253,7 +253,7 @@ func (j *Jobs) Once(ctx context.Context) error {
 		if err != nil {
 			continue
 		}
-		if n.DateSeen != nil && now.Sub(*n.DateSeen) < 10*time.Minute {
+		if n.DateSeen != nil && now.Sub(*n.DateSeen) < j.d.sinkAutoAdoptAfter() {
 			continue
 		}
 		j.log().Info("sink adopted by the node reporting it; its node has been down", "sink", sk.Alias, "node", pdid.Id(*sk.ReportedBy).String())

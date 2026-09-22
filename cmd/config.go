@@ -113,6 +113,14 @@ type ControlConfig struct {
 	// DirectivesEvery is how often the leader compares the state with what
 	// the nodes were told (§34.9); default 5 s.
 	DirectivesEvery time.Duration `yaml:"directives_every"`
+	// NodeDownAfter is how long a host may go unheard before it is down
+	// (§27); default 30 s. Its laminae read as unavailable from then on and
+	// placement stops offering its sinks, so a cluster whose heartbeats
+	// cross a slow link raises it rather than flap.
+	NodeDownAfter time.Duration `yaml:"node_down_after"`
+	// SinkAutoAdoptAfter is how long a sink whose node is down waits before
+	// the node that reports it takes it over (§28.3); default 10 min.
+	SinkAutoAdoptAfter time.Duration `yaml:"sink_auto_adopt_after"`
 }
 
 // SinkConfig is one sink a node serves (§22.2).

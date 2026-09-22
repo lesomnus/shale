@@ -880,7 +880,7 @@ func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest
 				break
 			}
 			state = api.ReadState_READ_STATE_AVAILABLE
-			if sk := r.Edges.Sink; sk == nil || sk.Edges.Node == nil || sk.Edges.Node.DateSeen == nil || now.Sub(*sk.Edges.Node.DateSeen) > DefaultNodeDownAfter || sk.Attachment != int32(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED) {
+			if sk := r.Edges.Sink; sk == nil || sk.Edges.Node == nil || sk.Edges.Node.DateSeen == nil || now.Sub(*sk.Edges.Node.DateSeen) > s.d.nodeDownAfter() || sk.Attachment != int32(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED) {
 				state = api.ReadState_READ_STATE_UNAVAILABLE
 				reason = api.GapReason_GAP_REASON_UNAVAILABLE
 			}

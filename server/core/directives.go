@@ -143,7 +143,7 @@ func (s *Directives) Once(ctx context.Context) error {
 
 	for _, n := range nodes {
 		id := pdid.Id(n.Id)
-		alive := n.DateSeen != nil && now.Sub(*n.DateSeen) <= DefaultNodeDownAfter && n.ControlAddress != ""
+		alive := n.DateSeen != nil && now.Sub(*n.DateSeen) <= s.d.nodeDownAfter() && n.ControlAddress != ""
 		s.mu.Lock()
 		was := s.alive[id]
 		s.alive[id] = alive
