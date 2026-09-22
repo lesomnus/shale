@@ -70,34 +70,11 @@ func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 		db.Close()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
 	require.NoError(t, cli.Init(ctx, c, "acme", "admin", "ops", io.Discard))
 
-	ready := make(chan cli.Running, 1)
-	done := make(chan error, 1)
-	go func() { done <- cli.ServeAll(ctx, c, func(r cli.Running) { ready <- r }) }()
-
-	var r cli.Running
-	select {
-	case r = <-ready:
-	case err := <-done:
-		cancel()
-		t.Fatalf("serve all: %v", err)
-	case <-time.After(30 * time.Second):
-		cancel()
-		t.Fatal("serve all did not come up")
-	}
-	select {
-	case <-r.Node.Ready:
-	case err := <-done:
-		cancel()
-		t.Fatalf("serve all: %v", err)
-	case <-time.After(30 * time.Second):
-		cancel()
-		t.Fatal("the node did not come up")
-	}
-
-	cl := &cluster{t: t, cfg: c, running: r, cancel: cancel, done: done}
+	cl := &cluster{t: t, cfg: c}
+	cl.serve()
 	// The node is up once its first heartbeat registered its sink.
 	ops := api.NewSinkServiceClient(cl.dialCluster("@cluster/ops"))
 	require.Eventually(t, func() bool {
@@ -113,15 +90,66 @@ func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 
 		return false
 	}, 30*time.Second, 100*time.Millisecond, "the node's sink is registered")
-	t.Cleanup(func() {
-		cancel()
-		select {
-		case <-done:
-		case <-time.After(10 * time.Second):
-		}
-	})
+	t.Cleanup(cl.stopCP)
 
 	return cl
+}
+
+// serve runs `serve all` on the cluster's configuration until both APIs
+// and the built-in node answer. startCP calls it again on the same
+// configuration, which is why the listeners a restart needs are pinned by
+// the caller rather than taken at random.
+func (c *cluster) serve() {
+	c.t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	ready := make(chan cli.Running, 1)
+	done := make(chan error, 1)
+	go func() { done <- cli.ServeAll(ctx, c.cfg, func(r cli.Running) { ready <- r }) }()
+
+	var r cli.Running
+	select {
+	case r = <-ready:
+	case err := <-done:
+		cancel()
+		c.t.Fatalf("serve all: %v", err)
+	case <-time.After(30 * time.Second):
+		cancel()
+		c.t.Fatal("serve all did not come up")
+	}
+	select {
+	case <-r.Node.Ready:
+	case err := <-done:
+		cancel()
+		c.t.Fatalf("serve all: %v", err)
+	case <-time.After(30 * time.Second):
+		cancel()
+		c.t.Fatal("the node did not come up")
+	}
+	c.running, c.cancel, c.done = r, cancel, done
+}
+
+// stopCP ends the process that serves both APIs, the built-in node and the
+// relay: §12.1's control plane outage. Nodes and producers started beside
+// it keep running, which is the point of the drill.
+func (c *cluster) stopCP() {
+	c.t.Helper()
+	if c.cancel == nil {
+		return
+	}
+	c.cancel()
+	select {
+	case <-c.done:
+	case <-time.After(20 * time.Second):
+		c.t.Fatal("the control plane did not stop")
+	}
+	c.cancel, c.done = nil, nil
+}
+
+// startCP brings it back on the same addresses, state and database, as
+// restarting the process would.
+func (c *cluster) startCP() {
+	c.t.Helper()
+	c.serve()
 }
 
 // dial is the tenant API as somebody, with the plain header of development
