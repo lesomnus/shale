@@ -132,7 +132,7 @@ func (h *heldUpload) finish(t *testing.T, rest []byte) {
 // when there is one, and a way to allocate one slot at a time. Slots are
 // asked for by how long ago they started, so two calls with different ages
 // are two keys.
-func camera(t *testing.T, ctx context.Context, conn *grpc.ClientConn, alias string, link *api.LinkProfile) (*api.Set, func(ago time.Duration) *api.Allocation) {
+func camera(t *testing.T, ctx context.Context, conn *grpc.ClientConn, alias string, link *api.LinkProfile) (*api.Set, *api.Source, func(ago time.Duration) *api.Allocation) {
 	t.Helper()
 	sets := api.NewSetServiceClient(conn)
 	sources := api.NewSourceServiceClient(conn)
@@ -157,7 +157,7 @@ func camera(t *testing.T, ctx context.Context, conn *grpc.ClientConn, alias stri
 		require.Equal(t, link.GetMode(), neg.GetLink().GetMode(), "the mode is the one asked for")
 	}
 
-	return set, func(ago time.Duration) *api.Allocation {
+	return set, src, func(ago time.Duration) *api.Allocation {
 		al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 			Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(time.Now().Add(-ago).Truncate(time.Second)),
 		}.Build())
@@ -176,7 +176,7 @@ func TestUploadLimitPerSink(t *testing.T) {
 	c := start(t, func(c *cmd.Config) { c.Storage.MaxUploads = 1 })
 	ctx := context.Background()
 	conn := c.dial("@acme/admin")
-	_, allocate := camera(t, ctx, conn, "admit", nil)
+	_, _, allocate := camera(t, ctx, conn, "admit", nil)
 
 	first, second := allocate(2*time.Hour), allocate(time.Hour)
 	held, next := first.GetCandidates()[0], second.GetCandidates()[0]
@@ -240,7 +240,7 @@ func TestUploadLimitPerActor(t *testing.T) {
 	}, 30*time.Second, 200*time.Millisecond, "the node reported both of its sinks")
 
 	conn := c.dial("@acme/admin")
-	_, allocate := camera(t, ctx, conn, "actor", nil)
+	_, _, allocate := camera(t, ctx, conn, "actor", nil)
 	first, second := allocate(2*time.Hour), allocate(time.Hour)
 	held := first.GetCandidates()[0]
 	var next *api.Candidate
@@ -319,7 +319,7 @@ func TestAbandonedBufferedUpload(t *testing.T) {
 	conn := c.dial("@acme/admin")
 	laminae := api.NewLaminaServiceClient(conn)
 	attempts := api.NewAttemptServiceClient(conn)
-	_, allocate := camera(t, ctx, conn, "abandon", api.LinkProfile_builder{
+	_, _, allocate := camera(t, ctx, conn, "abandon", api.LinkProfile_builder{
 		Mode:                  api.UploadMode_UPLOAD_MODE_BUFFERED,
 		IdleTimeoutSeconds:    1,
 		AbandonTimeoutSeconds: 2,

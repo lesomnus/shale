@@ -378,9 +378,27 @@ func TestSinkNoLongerReported(t *testing.T) {
 	// the first sink returns alone.)
 	vs, err := sinks.List(ctx, api.SinkListRequest_builder{}.Build())
 	require.NoError(t, err)
+	var pending []byte
 	for _, s := range vs.GetItems() {
 		if s.GetPath() == sinkB1 {
 			require.Equal(t, nodeB.Id().Bytes(), s.GetNode().GetId(), "the pending sink still names its node")
+			pending = s.GetId()
 		}
 	}
+	require.NotNil(t, pending)
+
+	// Nothing is written there while it waits: placement passes it over and
+	// no candidate carries a token for it (§28.3).
+	conn := c.dial("@acme/admin")
+	_, _, allocate := camera(t, ctx, conn, "unreported", nil)
+	seen := 0
+	for i := 1; i <= 5; i++ {
+		al := allocate(time.Duration(i) * time.Hour)
+		for _, cd := range al.GetCandidates() {
+			require.NotEqual(t, pending, cd.GetSinkId(), "a sink pending adoption is not a candidate")
+			require.NotEmpty(t, cd.GetToken())
+			seen++
+		}
+	}
+	require.Greater(t, seen, 0, "there are other sinks to write to")
 }

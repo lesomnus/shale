@@ -67,7 +67,7 @@ func TestReadsWhileNodeDown(t *testing.T) {
 
 	conn := c.dial("@acme/admin")
 	laminae := api.NewLaminaServiceClient(conn)
-	set, allocate := camera(t, ctx, conn, "down", nil)
+	set, _, allocate := camera(t, ctx, conn, "down", nil)
 
 	al := allocate(time.Hour)
 	var cand *api.Candidate
@@ -168,7 +168,7 @@ func TestSinkClaimRefusedWhileOwnerAlive(t *testing.T) {
 	// One lamina on that sink, so there is something to serve.
 	conn := c.dial("@acme/admin")
 	laminae := api.NewLaminaServiceClient(conn)
-	set, allocate := camera(t, ctx, conn, "claim", nil)
+	set, _, allocate := camera(t, ctx, conn, "claim", nil)
 	al := allocate(time.Hour)
 	cand := al.GetCandidates()[0]
 	require.Equal(t, own.GetId(), cand.GetSinkId(), "the one sink takes it")
@@ -261,7 +261,7 @@ func TestSinkAutoAdopted(t *testing.T) {
 
 	conn := c.dial("@acme/admin")
 	laminae := api.NewLaminaServiceClient(conn)
-	set, allocate := camera(t, ctx, conn, "adopt", nil)
+	set, _, allocate := camera(t, ctx, conn, "adopt", nil)
 	al := allocate(time.Hour)
 	var cand *api.Candidate
 	for _, cd := range al.GetCandidates() {

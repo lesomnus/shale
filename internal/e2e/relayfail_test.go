@@ -70,6 +70,17 @@ func TestRelayFailover(t *testing.T) {
 	ops := c.dialCluster("@cluster/ops")
 	relays := api.NewRelayServiceClient(ops)
 
+	// Segments of a few MB, so the recording is seen to go on across the
+	// relay outage rather than sit in one long segment.
+	policies := api.NewUploadPolicyServiceClient(ops)
+	up, err := policies.Add(ctx, api.UploadPolicyAddRequest_builder{
+		Alias: "short-laminae", Version: 1,
+		Bounds: api.UploadBounds_builder{MinLamina: 1 << 20, TargetLamina: 4 << 20, MaxLamina: 16 << 20}.Build(),
+	}.Build())
+	require.NoError(t, err)
+	_, err = policies.Activate(ctx, api.UploadPolicyActivateRequest_builder{Ref: api.UploadPolicyRef_builder{Id: up.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+
 	r1, stop1 := c.startRelay("r1")
 	r2, stop2 := c.startRelay("r2")
 	defer stop2()
@@ -156,6 +167,12 @@ func TestRelayFailover(t *testing.T) {
 
 	// That relay goes; heartbeats stop; the producer is reassigned to the
 	// other one, and Live names it.
+	// §39.6's recovery for a relay that goes: live stops for a few seconds
+	// and the recording is untouched, so the count of stored laminae keeps
+	// climbing across the outage.
+	require.Eventually(t, func() bool { return p.Stats().Stored >= 1 }, 90*time.Second, 500*time.Millisecond, "recording before the relay goes")
+	stored := p.Stats().Stored
+
 	var other []byte
 	if string(first) == string(r1.Id().Bytes()) {
 		stop1()
@@ -169,4 +186,8 @@ func TestRelayFailover(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, live.GetSources(), 1)
 	require.Equal(t, other, live.GetSources()[0].GetRelayId())
+
+	// The recording never depended on the relay.
+	require.Eventually(t, func() bool { return p.Stats().Stored > stored }, 90*time.Second, 500*time.Millisecond, "the recording went on across the relay outage: %+v", p.Stats())
+	require.Zero(t, p.Stats().Lost, "and nothing was lost to it")
 }
