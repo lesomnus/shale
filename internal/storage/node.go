@@ -61,7 +61,12 @@ type Config struct {
 	EventReplayWindow time.Duration
 	SweepInterval     time.Duration
 	// GcInterval is how often a sink under pressure gets a round (§21).
-	GcInterval       time.Duration
+	GcInterval time.Duration
+	// AbandonEvery is how often open uploads are looked over for the
+	// abandon rule (§12.2, §15). It is not the timeout: an upload is
+	// abandoned when it has been idle for its own `abandon_timeout`, and
+	// this only says how soon after that the node notices.
+	AbandonEvery     time.Duration
 	TokenSkew        time.Duration
 	GcPage           int
 	GcProposalFactor float64
@@ -108,6 +113,9 @@ func (c *Config) defaults() {
 	}
 	if c.GcInterval == 0 {
 		c.GcInterval = time.Minute
+	}
+	if c.AbandonEvery == 0 {
+		c.AbandonEvery = 30 * time.Second
 	}
 }
 
@@ -165,6 +173,11 @@ func (n *Node) Id() pdid.Id { return n.id }
 func (n *Node) Verifier() *token.Verifier { return n.verifier }
 
 func (n *Node) sinkOf(id pdid.Id) *Sink { return n.byId[id] }
+
+// Sinks are the sinks this node opened, whether or not the CP let it serve
+// them (§28.3): a sink another live node holds is opened and reported, and
+// answers nothing until the CP says it is this node's.
+func (n *Node) Sinks() []*Sink { return n.sinks }
 
 // Run opens the sinks, joins, and serves until the context is done.
 func (n *Node) Run(ctx context.Context) error {
@@ -691,7 +704,7 @@ func (n *Node) scan(ctx context.Context, s *Sink) {
 }
 
 func (n *Node) sweeps(ctx context.Context) error {
-	t := time.NewTicker(30 * time.Second)
+	t := time.NewTicker(n.cfg.AbandonEvery)
 	defer t.Stop()
 	for {
 		select {
