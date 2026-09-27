@@ -9,23 +9,19 @@ import (
 
 	"github.com/lesomnus/shale/cli"
 	"github.com/lesomnus/shale/cmd"
-	"github.com/lesomnus/shale/internal/dsn"
 )
 
-// Time values in SQLite are text, and they must sort as they read
-// (§34.2). The driver's default trims fractional seconds, so a row dated
-// on the second sorted after a bound a few milliseconds into that same
-// second, and the slot lookup of an allocation missed the lamina it had
-// just made when the slot's end fell in the same second as the segment's
-// start. That was TestVerticalSlice's flake, one run in fifty.
+// Time values in SQLite must sort as they read (§34.2). The driver's text
+// default trims fractional seconds, so a row dated on the second sorted
+// after a bound a few milliseconds into that same second, and the slot
+// lookup of an allocation missed the lamina it had just made: that was
+// TestVerticalSlice's flake, one run in fifty. payday opens a SQLite DSN
+// that names no format with the integer one its driver spells, and this
+// is that reaching the rows of an app that says nothing about it.
 func TestSQLiteTimesSortAsText(t *testing.T) {
 	c := &cmd.Config{}
 	cli.ApplyDev(c, t.TempDir())
-	require.Contains(t, c.Db.Dsn, dsn.SQLiteTimeFormat)
-	require.Equal(t, c.Db.Dsn, dsn.SQLite(c.Db.Dsn), "already carries it")
-	require.Contains(t, dsn.SQLite("file:x.db"), "?"+dsn.SQLiteTimeFormat)
-	require.Contains(t, dsn.SQLite("file:x.db?a=1"), "&"+dsn.SQLiteTimeFormat)
-	require.Equal(t, "postgres://x", dsn.Normalize("pgx", "postgres://x"))
+	require.NotContains(t, c.Db.Dsn, "_timefmt", "the app names no time format; the driver's default is payday's business")
 
 	ctx := context.Background()
 	s, err := cmd.Build(ctx, *c)

@@ -69,16 +69,17 @@ optional.
 - One CP replica at a time runs the background jobs, under a PostgreSQL
   advisory lock ([§34.9](#349-events-and-directives)).
 
-**SQLite.** Time values must compare as times there, so every SQLite DSN
-carries `_timefmt=unixepoch_nano`: nanoseconds since the epoch as an
-integer, which compare numerically, keep every digit and carry no zone.
-The control plane adds it to a DSN that names none, for its own database
-and for roster's beside it. The driver's default is RFC 3339 text with
-the fractional seconds trimmed, which puts `…:42Z` after `…:42.093Z`, and
-a row dated on the second slipped out of any window ending a few
-milliseconds later in that same second. A database written before this
-format was set does not read under it: recreate it, or rewrite its
-datetime columns as integers first.
+**SQLite.** Time values must compare as times there, so a SQLite DSN
+that names no time format is opened with the integer one: nanoseconds
+since the epoch, which compare numerically, keep every digit and carry no
+zone. payday's driver packages register the spelling each driver knows
+(`_timefmt=unixepoch_nano` for `sqlite3`), and this deployment names none
+in its own database or in roster's beside it, so both get it. The
+driver's text default trims the fractional seconds, which puts `…:42Z`
+after `…:42.093Z`, and a row dated on the second slipped out of any
+window ending a few milliseconds later in that same second. A database
+written in text does not read under this format: recreate it, or rewrite
+its datetime columns as integers first.
 
 ### 34.3 State on disk
 
