@@ -34,7 +34,11 @@ served from anywhere but the listener itself needs its origin in
 Each surface's cookie has a name of its own (`__Host-shale_tenant`,
 `__Host-shale_cluster`): the two listeners are neighbouring ports of one
 host, and a browser keeps cookies by host rather than by port, so under one
-name the second sign-in would overwrite the first.
+name the second sign-in would overwrite the first. A session the server no
+longer holds, one that idled out or was minted before an upgrade, does not
+strand the page: the call carrying it is served as nobody where nobody is
+asked for, so the sign-in is reachable, and it is answered with the cookie
+that clears the dead one.
 
 | page | surface | what it shows, and does |
 |---|---|---|
