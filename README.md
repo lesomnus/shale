@@ -15,6 +15,85 @@ camera live to viewers over WebRTC without touching the store.
 This file is the entry point to the design. The design itself lives in
 [`docs/`](docs/).
 
+## Quick start
+
+One machine, no camera and no spare disk: the store is a directory on this
+filesystem, and the three cameras are patterns ffmpeg draws for itself. It
+needs Go, ffmpeg, and Node for the console
+([§40.4](docs/17-console.md#404-serving-it)); a binary built without the
+console is the same deployment with that one page missing.
+
+```sh
+cd ts && npm install && npm run build && cd ..   # the console, into web/console/dist
+go build ./cmd/shale                             # which the binary embeds
+./shale init --dev ./dev                         # CA, keys, the first tenant, two people
+./shale serve all --dev ./dev                    # both APIs, a Storage Node, a Relay, roster
+```
+
+`init` prints two passwords once; keep them, the console asks for them.
+`--dev <dir>` is [§34.7](docs/11-deployment.md#347-single-machine)'s single
+machine: SQLite, plaintext on loopback, everything under `./dev`, and the
+node's one sink is `./dev/sink`. A directory is a sink like any other
+([§22.2](docs/07-storage-node.md#222-sinks-and-devices)); to keep the
+recordings somewhere larger, say where and how much of it is Shale's, in a
+`shale.yaml` beside the binary:
+
+```yaml
+storage:
+  sinks:
+    - path: /srv/shale
+      capacity: 200GiB   # what Shale may fill; required when anything else shares the filesystem
+```
+
+Then a set to record into, and a smaller segment so they land while you are
+watching — the default 64 MB target is four minutes of a 2 Mbps camera,
+where 4 MiB is seventeen seconds ([§25](docs/07-storage-node.md#25-lamina-size)):
+
+```sh
+./shale --dev ./dev --as @acme/admin set add @acme/cam-set
+./shale --dev ./dev --as @cluster/ops upload-policy add @quick '{"version":1,"bounds":{"min_lamina":1048576,"target_lamina":4194304,"max_lamina":16777216}}'
+./shale --dev ./dev --as @cluster/ops upload-policy activate @quick
+./shale serve producer --demo 3 --dev ./dev      # a second terminal; the rest go in a third
+```
+
+`--demo 3` is a producer with nothing attached
+([§38.1](docs/15-producer.md#381-inputs)): ffmpeg draws `testsrc2`,
+`cellauto` and Conway's `life` at 1280×720 30 fps and plays a 440, 554 or
+659 Hz tone under each, so the three are told apart on sight and by ear.
+Nothing is read from a file, and every pattern moves — a still image encodes
+to under a tenth of the bitrate, which would fill a segment in a day and
+teach the wrong numbers. Everything downstream is what a camera gets:
+registration, a negotiated ceiling, cutting on the phase, the upload, the
+relay.
+
+It joins and waits to be adopted, as every host does
+([§33.4](docs/10-security.md#334-joining-and-adoption)). Adopt it for the set
+from the console's Hosts page, or here:
+
+```sh
+./shale --dev ./dev --as @acme/admin producer pending
+./shale --dev ./dev --as @acme/admin producer adopt @acme/<alias> '{"set":{"slug":{"alias":"cam-set","tenant":{"alias":"acme"}}}}'
+```
+
+The console is <http://127.0.0.1:7402/>, served by the control plane itself.
+Sign in to the tenant surface as `acme` / `admin` with the password `init`
+printed; **Hosts** and **Devices** ask for the cluster one as well, `cluster`
+/ `ops` ([§40.1](docs/17-console.md#401-two-surfaces-two-sign-ins)). Within a
+minute there is something on every page:
+
+- **Cameras** — three cards, each recording at 2.0 Mbps of its 2.0 Mbps
+  ceiling, 30 fps, a keyframe every 2 s, under the producer's last heartbeat.
+- **Segments** — laminae as they are cut and committed, about 4 MB every
+  seventeen seconds, and the last hour of each camera as a strip of what is
+  stored and what is missing.
+- **Live** — the three patterns playing over WebRTC through the relay, which
+  never touches the store ([§39](docs/16-relay.md#39-relay)).
+- **Hosts**, **Devices** — the node, the relay and the producer, and the one
+  sink with its free space and health.
+
+`./dev` holds all of it, recordings included: stop both processes and delete
+it to start over.
+
 ## Reading order
 
 Read top to bottom for the full picture. Each document stands on its own once
@@ -73,36 +152,16 @@ you know the overview and data model.
 
 ## Running it
 
-The binary is `cmd/shale`; the design's commands are its subcommands (§34.1).
-A single machine for development:
+The binary is `cmd/shale` and the design's commands are its subcommands
+([§34.1](docs/11-deployment.md#341-one-binary-one-command-per-role)); the
+quick start above is all of them on one machine, and `./shale config env`
+prints every variable a deployment can be told through.
 
-```sh
-go build ./cmd/shale
-./shale init --dev ./dev                       # CA, keys, first tenant and people (at roster, in the process)
-./shale serve all --dev ./dev                  # both APIs, a node, plaintext
-./shale --dev ./dev --as @acme/admin set add @acme/cam-set
-```
-
-With no camera to hand, `--demo` records what ffmpeg draws for itself
-([§38.1](docs/15-producer.md#381-inputs)): three moving patterns at 720p30,
-a tone each, which is a real producer in every other respect. In a second
-terminal, and the producer waits to be adopted as any host does:
-
-```sh
-./shale serve producer --demo 3 --dev ./dev    # demo-01, demo-02, demo-03
-./shale --dev ./dev --as @acme/admin producer pending
-./shale --dev ./dev --as @acme/admin producer adopt @acme/<alias> '{"set":{"id":"<set>"}}'
-./shale --dev ./dev --as @acme/admin live --for 8s @acme/cam-set
-```
-
-The console at <http://127.0.0.1:7402/> shows the three of them, and the
-first laminae land once a segment fills, which at 2 Mbps and the default
-64 MB target is about four minutes.
-
-`shale serve all` also runs a relay (§39): `./shale --dev ./dev live
-@acme/cam-set` watches a set as a WebRTC viewer and reports what arrived,
-and `web/live.html` plays one source in a browser from what `Live`
-answers. `deploy/compose/` is the same single machine as containers beside
+Without a browser, `./shale --dev ./dev --as @acme/admin live --for 8s
+@acme/cam-set` watches a set through the relay that `shale serve all` runs
+(§39) and reports what arrived, and `web/live.html` plays one source in a
+browser from what `Live` answers.
+`deploy/compose/` is the same single machine as containers beside
 PostgreSQL, with TLS on; `deploy/systemd/` is several machines under
 systemd; `deploy/k8s/` is the Kubernetes deployment of §34.5. `go test
 ./...` runs the end-to-end harness (`internal/e2e`), which allocates,

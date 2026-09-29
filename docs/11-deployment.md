@@ -217,7 +217,8 @@ one Relay in one process, with SQLite and an in-memory watch broker.
   roster names it with `auth.roster.addr` instead, and then nothing is
   embedded.
 - `shale serve all --dev <dir>` is development mode: one directory sink,
-  plaintext allowed, and the multi-sink warning suppressed.
+  plaintext allowed, the multi-sink warning suppressed, and the console's
+  origins written down for it ([§40.4](17-console.md#404-serving-it)).
 
 ### 34.8 Containers
 

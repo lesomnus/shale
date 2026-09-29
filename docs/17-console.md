@@ -127,5 +127,12 @@ across ports but not across sites. A cluster API reachable only from
 inside the network keeps the operator half of the console inside too; the
 tenant half works on its own, and the pages that need the other say so.
 
+Development mode (`--dev <dir>`) writes all of that down for itself: both
+listeners answer what a page speaks, and each names loopback at the
+console's port and at vite's, by both spellings, since a browser tells
+`localhost` from `127.0.0.1`. It is already plaintext on loopback, and a
+console that loads and then cannot call anything is not a mode worth
+having.
+
 `npm run build:sandbox` is the page with the sandbox in it, `ts/dist/`, for
 a static host: a demo that needs no server at all.

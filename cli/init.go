@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net"
 	"os"
 	"path/filepath"
 	"slices"
@@ -290,6 +291,22 @@ func ApplyDev(c *cmd.Config, dir string) {
 	if c.Cluster.Http.Addr == "" || c.Cluster.Http.Addr == ":8080" {
 		c.Cluster.Http.Addr = "127.0.0.1:7403"
 	}
+	// A browser (§40.4). The console is served at the root of the tenant
+	// API's HTTP listener, so both listeners have to answer what a page can
+	// speak, and each has to name the origins a page calls it from: the
+	// console's own origin for the cluster listener, since 7403 is a
+	// different origin than 7402, and vite's dev server for both, which is
+	// where the console itself is worked on. Production writes these down;
+	// development mode is already plaintext on loopback, and a console that
+	// loads and then cannot call anything is not a mode worth having.
+	c.Server.Http.AllowWeb = true
+	c.Cluster.Http.AllowWeb = true
+	if len(c.Server.Http.Origins) == 0 {
+		c.Server.Http.Origins = devOrigins(c.Server.Http.Addr)
+	}
+	if len(c.Cluster.Http.Origins) == 0 {
+		c.Cluster.Http.Origins = devOrigins(c.Server.Http.Addr)
+	}
 	if len(c.Storage.Sinks) == 0 {
 		c.Storage.Sinks = []cmd.SinkConfig{{Path: filepath.Join(dir, "sink")}}
 	}
@@ -300,6 +317,31 @@ func ApplyDev(c *cmd.Config, dir string) {
 		c.Client.ClusterAddr = "http://127.0.0.1:7401"
 	}
 	os.MkdirAll(filepath.Join(dir, "control"), 0o700)
+}
+
+// devConsolePort is where `npm run dev` serves the console (vite's default).
+const devConsolePort = "5173"
+
+// devOrigins are the origins a page reaches a development listener from,
+// given the address the console is served on: that address by either
+// spelling of loopback, since a browser tells `localhost` and `127.0.0.1`
+// apart, and vite's dev server beside it. A host named in the address that
+// is neither is kept as well, for a development mode reached over a LAN.
+func devOrigins(addr string) []string {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil
+	}
+	hosts := []string{"127.0.0.1", "localhost"}
+	if host != "" && host != "0.0.0.0" && host != "::" && !slices.Contains(hosts, host) {
+		hosts = append(hosts, host)
+	}
+	out := make([]string, 0, 2*len(hosts))
+	for _, h := range hosts {
+		out = append(out, "http://"+net.JoinHostPort(h, port), "http://"+net.JoinHostPort(h, devConsolePort))
+	}
+
+	return out
 }
 
 var errNotInit = errors.New("not initialized: run `shale init`")
