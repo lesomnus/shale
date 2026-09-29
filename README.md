@@ -83,6 +83,22 @@ go build ./cmd/shale
 ./shale --dev ./dev --as @acme/admin set add @acme/cam-set
 ```
 
+With no camera to hand, `--demo` records what ffmpeg draws for itself
+([§38.1](docs/15-producer.md#381-inputs)): three moving patterns at 720p30,
+a tone each, which is a real producer in every other respect. In a second
+terminal, and the producer waits to be adopted as any host does:
+
+```sh
+./shale serve producer --demo 3 --dev ./dev    # demo-01, demo-02, demo-03
+./shale --dev ./dev --as @acme/admin producer pending
+./shale --dev ./dev --as @acme/admin producer adopt @acme/<alias> '{"set":{"id":"<set>"}}'
+./shale --dev ./dev --as @acme/admin live --for 8s @acme/cam-set
+```
+
+The console at <http://127.0.0.1:7402/> shows the three of them, and the
+first laminae land once a segment fills, which at 2 Mbps and the default
+64 MB target is about four minutes.
+
 `shale serve all` also runs a relay (§39): `./shale --dev ./dev live
 @acme/cam-set` watches a set as a WebRTC viewer and reports what arrived,
 and `web/live.html` plays one source in a browser from what `Live`

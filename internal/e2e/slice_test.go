@@ -46,6 +46,10 @@ func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 	cli.ApplyDev(c, dir)
 	c.Server.Addr = "127.0.0.1:0"
 	c.Cluster.Addr = "127.0.0.1:0"
+	// The sign-in listeners too, which development mode puts on fixed
+	// ports: the suite runs beside whatever else is on this machine.
+	c.Server.Http.Addr = "127.0.0.1:0"
+	c.Cluster.Http.Addr = "127.0.0.1:0"
 	c.Storage.Addr = "127.0.0.1:0"
 	c.Storage.ControlAddr = "127.0.0.1:0"
 	// A declared capacity: the sink is a directory on a shared filesystem,

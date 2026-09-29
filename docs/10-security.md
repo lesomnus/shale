@@ -222,10 +222,10 @@ shale serve reader   --cp https://cp.example.com:7400 [--tenant acme]
    row it will continue:
 
    ```text
-   shale node ls --pending
+   shale node pending
    shale node adopt <node>
-   shale producer adopt <producer> --set <set>          # site follows the set
-   shale reader adopt <reader> [--site <site>]...       # none: the whole tenant
+   shale producer adopt <producer> '{"set":{"alias":"<set>"}}'   # site follows the set
+   shale reader adopt <reader> '{"sites":[{"id":"<site>"}]}'     # none: the whole tenant
    ```
 
 6. The CP issues the **host certificate** from its built-in CA

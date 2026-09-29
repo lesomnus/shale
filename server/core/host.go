@@ -248,7 +248,14 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 		}
 		answer.Id = id.Bytes()
 		answer.Alias = alias
-		answer.Message = "waiting for adoption: shale producer adopt " + alias + " --set <set>"
+		// The command as it is typed (§32): a tenanted row is named
+		// `@tenant/alias`, and the set is the rest of the request, as it is
+		// for every custom verb.
+		who := alias
+		if t, err := s.ent(ctx).Tenant.Get(ctx, tid.Uuid()); err == nil && t.Alias != "" {
+			who = "@" + t.Alias + "/" + alias
+		}
+		answer.Message = `waiting for adoption: shale producer adopt ` + who + ` '{"set":{"id":"<set>"}}'`
 	case decPending:
 		if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 			Ref:              api.ProducerRef_builder{Id: js.id.Bytes()}.Build(),

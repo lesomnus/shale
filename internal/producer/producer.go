@@ -261,6 +261,16 @@ func New(cfg Config) (*Producer, error) {
 			}
 			s.push = p.push.Add(sc.Alias)
 		}
+		if isDemo(sc.Input) {
+			if _, err := demoOf(sc.Input); err != nil {
+				return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+			}
+			switch sc.audioCodec() {
+			case "", "aac", "opus", "none":
+			default:
+				return nil, fmt.Errorf("source %s: a demo source's sound is made here, so audio.codec is aac, opus or none, not %q", sc.Alias, sc.audioCodec())
+			}
+		}
 		if sc.Kind == KindRaw {
 			if sc.Input != InputPush {
 				return nil, fmt.Errorf("source %s: a raw source is pushed (input: push)", sc.Alias)

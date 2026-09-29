@@ -319,6 +319,7 @@ in as a person (`shale login`) and keeps a session.
 # processes (§34.1)
 shale init [--tenant t] [--admin a] [--operator o]   # CA, signing key, first tenant, first operator and admin
 shale serve control|cluster|storage|producer|reader|relay|all [--dev <dir>]
+shale serve producer --demo 3              # three cameras ffmpeg draws for itself (§38.1)
 shale login [--cluster] [--password p] @tenant/alias # sign in as a person; keeps a session
 shale holder issue-password <holder>       # a fresh password, shown once; roster in this process only
 shale identity migrate                     # once, after upgrading a deployment that predates roster (§33.1)

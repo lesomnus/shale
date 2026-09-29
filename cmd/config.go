@@ -279,6 +279,11 @@ type ProducerConfig struct {
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	// Ffmpeg is the capture binary; `ffmpeg` on PATH by default.
 	Ffmpeg string `yaml:"ffmpeg"`
+	// Demo records this many sources of a picture and a tone ffmpeg draws
+	// for itself, beside whatever `sources` lists (§38.1): a tutorial or a
+	// walk-through that has no camera to hand. `--demo` on `serve producer`
+	// sets it.
+	Demo int `yaml:"demo"`
 	// Push is the listener pushed sources are written to (§38.9):
 	// `unix:/run/shale/push.sock` or `tcp://127.0.0.1:7450`. Off when
 	// empty. PushIdle is how long a pushed stream may carry nothing

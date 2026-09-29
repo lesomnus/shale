@@ -222,6 +222,12 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 	case strings.HasPrefix(input, "file:"):
 		// A recording played at its own pace, for tests.
 		args = append(args, "-re", "-stream_loop", "-1", "-i", strings.TrimPrefix(input, "file:"))
+	case isDemo(input):
+		// A picture ffmpeg draws for itself, paced to the clock so it
+		// records like a camera (§38.1). New refused an unknown pattern
+		// before any of this ran.
+		d, _ := demoOf(input)
+		args = append(args, "-re", "-f", "lavfi", "-i", d.Filter(c.Size, c.Fps))
 	default:
 		args = append(args, "-i", input)
 	}
@@ -233,9 +239,16 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 	mic := c.hasMic()
 	codec := c.audioCodec()
 	usb := strings.HasPrefix(input, "v4l2:")
+	demo := isDemo(input)
 	silent := codec == "none" || (usb && !mic)
-	if mic {
+	switch {
+	case mic:
 		args = append(args, "-f", "alsa", "-i", strings.TrimPrefix(c.Audio.Device, "alsa:"))
+	case demo && !silent:
+		// A demo source's tone is a second input, as a microphone is:
+		// there is no camera stream to copy it from.
+		d, _ := demoOf(input)
+		args = append(args, "-f", "lavfi", "-i", fmt.Sprintf("sine=frequency=%d:sample_rate=%d", d.Tone, DemoSampleRate))
 	}
 
 	// Video.
@@ -283,9 +296,9 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 	switch {
 	case silent:
 		args = append(args, "-an")
-	case mic:
-		// The microphone's sound with the camera's picture, whatever else
-		// either carries; raw PCM has to be encoded.
+	case mic, demo:
+		// The second input's sound with the first input's picture,
+		// whatever else either carries; raw PCM has to be encoded.
 		enc := "aac"
 		if codec == "opus" {
 			enc = "libopus"
@@ -465,7 +478,7 @@ type Capture struct {
 // It answers true when it restarted; the caller stops reading the stream.
 func (c *Capture) CheckAudio(st Streams) bool {
 	in := c.Source.Input
-	if !st.AudioAnon || c.Source.Command != "" || strings.HasPrefix(in, "raw:") || strings.HasPrefix(in, "v4l2:") || c.Source.hasMic() {
+	if !st.AudioAnon || c.Source.Command != "" || strings.HasPrefix(in, "raw:") || strings.HasPrefix(in, "v4l2:") || isDemo(in) || c.Source.hasMic() {
 		return false
 	}
 	if codec := c.Source.audioCodec(); codec != "" && codec != "copy" {

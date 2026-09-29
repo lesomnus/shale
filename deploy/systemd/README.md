@@ -114,4 +114,4 @@ producer:
 
 Run `shale init` on the first machine before its unit starts, then adopt
 each host after its first join: `shale node adopt <alias>`, `shale producer
-adopt <alias> --set <set>`.
+adopt <alias> '{"set":{"alias":"<set>"}}'`.

@@ -21,6 +21,7 @@ stream comes from is the only difference:
 | **Managed capture** | the producer spawns and supervises a capture process per source ([§38.3](#383-managed-capture)) | USB cameras, IP cameras, CSI cameras on a Pi |
 | **Push** (`input: push`) | a process on the host writes the stream to the producer's listener, `producer.push`, in the node's upload contract ([§38.9](#389-pushed-sources-and-raw-frames)): TS by default, or raw frames (`kind: raw`) for what is not video | recording software the operator already runs; vendor SDKs; a robot's sensor streams |
 | **File** | `file:` plays a recording through ffmpeg, `raw:` replays one without it, both looped | tests |
+| **Demo** (`demo:`) | the producer spawns ffmpeg on a picture and a tone it draws for itself, no device and no file | a tutorial, a walk-through, a bench with no camera to hand |
 
 The contract is the same for all three:
 
@@ -40,6 +41,17 @@ The contract is the same for all three:
 
 The producer never decodes or encodes. It reads packet headers, nothing
 inside them.
+
+**A demo source.** `shale serve producer --demo 3` records three cameras
+that are not there: `demo:testsrc2`, `demo:cellauto` and `demo:life`, at
+720p30 with a tone each (440, 554 and 659 Hz), which is a producer doing
+everything it ever does — registering its cameras, negotiating a ceiling,
+cutting on the phase, uploading, feeding the relay — with nothing attached.
+Every pattern **moves**: a still image encodes to a tenth of what a camera
+sends, so a demo drawn from colour bars would teach the wrong numbers.
+`demo:` alone is the first pattern, and the size and rate a source declares
+are the ones drawn. The sound is made here, so `audio.codec` is `aac`,
+`opus` or `none`, never `copy`.
 
 A segment is the producer's word for what it sends. The cluster keeps it as
 a lamina, with the state [§8](02-data-model.md#8-state-model) gives it, and

@@ -74,6 +74,7 @@ deployment runs well on them, and changes them only for a reason.
 | Producer | `uplink` | none | — | producer | [§38.5](15-producer.md#385-choosing-the-ceiling) |
 | Producer | `push` | off | `unix:/path`, `tcp://host:port`: the listener pushed sources are written to | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | `push_idle` | 30 s | — | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
+| Producer | `demo` | 0 | how many sources of a picture and a tone ffmpeg draws for itself, beside `sources`; `--demo` on `serve producer` | producer | [§38.1](15-producer.md#381-inputs) |
 | Producer | a source's `kind` | `ts` | `ts`, `raw`; pushed sources only | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | a source's `controls` | none | V4L2 control names and values; set before every capture start | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Producer | a source's `idle.dark_after` | none (absent: every segment stored); 10 min when `idle:` is given | how long the scene stays dark before its segments are skipped; sources the producer encodes only | producer | [§38.10](15-producer.md#3810-dark-scenes) |

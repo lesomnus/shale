@@ -85,9 +85,13 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				}),
 			},
 			{
-				Name: "producer", Brief: "a Producer: records the cameras of one set and uploads them", Flags: common(),
+				Name: "producer", Brief: "a Producer: records the cameras of one set and uploads them",
+				Flags: append(common(), &flg.Int{Name: "demo", Brief: "no cameras: record this many patterns ffmpeg draws for itself (§38.1)"}),
 				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 					apply(self)
+					if v, ok := flg.Find[int](self, "demo"); ok && v > 0 {
+						c.Producer.Demo = v
+					}
 					return serveProducer(ctx, c)
 				}),
 			},
@@ -394,6 +398,15 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 			return cfg, err
 		}
 		cfg.Buffer = v
+	}
+	// A producer with nothing attached: the sources are made here (§38.1).
+	if pc.Demo > 0 {
+		cfg.Sources = append(cfg.Sources, producer.DemoSources(pc.Demo)...)
+	}
+	// In development the control plane is the one `--dev` describes, so a
+	// producer started beside it needs no address of its own.
+	if cfg.Cp == "" && c.IsDev() {
+		cfg.Cp = c.Client.Addr
 	}
 	for _, sc := range pc.Sources {
 		src := producer.SourceConfig{
