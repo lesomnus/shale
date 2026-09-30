@@ -4,7 +4,8 @@
 
 The console is the page an operator works from: what waits to be adopted,
 which disks are quarantined, what every camera is doing, the segments as
-they arrive, and the cameras live. It does nothing the CLI cannot
+they arrive, the cameras live, and any camera at any moment
+([§40.5](#405-playback)). It does nothing the CLI cannot
 ([§32](09-operations.md#32-cli--processes)); it is the same calls with the
 rows in view, so the decision of [§33.4](10-security.md#334-joining-and-adoption)
 — *is this host mine?* — is made with the hostname, the hardware identity
@@ -104,9 +105,9 @@ Two things the sandbox settles that a deployment would not have shown:
   is what a busy handler would have done without a thread to wait on.
 
 Fidelity has a boundary: bytes. The sandbox's nodes report sizes and
-commit laminae but store nothing, so a page that reads a recording (none
-yet) would need a node in the page too, on OPFS; nothing in the console's
-contract needs one today.
+commit laminae but store nothing, so the Playback page ([§40.5](#405-playback))
+shows the axis in the sandbox and plays nothing; a node in the page, on
+OPFS, would be what it takes, and nothing needs one today.
 
 ### 40.4 Serving it
 
@@ -136,3 +137,44 @@ having.
 
 `npm run build:sandbox` is the page with the sandbox in it, `ts/dist/`, for
 a static host: a demo that needs no server at all.
+
+### 40.5 Playback
+
+Playback is one camera at any moment: a time axis with what is stored and
+what is missing (the strip of [§19](05-read-path.md#19-reader-semantics)),
+a playhead, and a video that plays what the axis points at. Everything it
+plays is fragmented MP4 as Shale stores it ([§38.1](15-producer.md#381-inputs)),
+which the browser's Media Source Extensions take as it is: nothing is
+transmuxed, and the page holds no player library.
+
+- **A moment in the store.** `Timeline` ([§17](05-read-path.md#17-read-path))
+  names the lamina covering it and its URL, with the token in the URL. The
+  page reads the lamina's last 16 bytes (`mfro`), then its index (`mfra`:
+  every keyframe's decode time and byte offset,
+  [§23.1](07-storage-node.md#231-self-describing-laminae)), then the init
+  segment, and appends the init segment and a Range from the keyframe at
+  or before the moment; fragments stream in a megabyte at a time, twenty
+  seconds ahead of the playhead, and the next lamina follows with its own
+  init segment. A lamina's first key fragment came at its `date_started`,
+  and that is where its decode times sit on the wall clock
+  (`timestampOffset`); the axis is the wall clock, so a lamina from
+  another encoder session, whose decode times start again, lands where it
+  belongs. A gap is shown as one and skipped to the next recording.
+- **The last minutes.** Past the last committed lamina the page asks the
+  relay's `recent_url` ([§39.4](16-relay.md#394-viewers)) for the window
+  since the moment, which is the same shape with the init segment first,
+  placed by `Shale-Recent-Start`; when the playhead reaches the window's
+  end the page hands the element to WHEP, and the camera is live. "10 s
+  ago" is that, for the last ten seconds.
+- **Export.** Two marks on the axis become one MP4: the init segment and
+  the fragments from the keyframe at or before the first mark to the
+  keyframe after the second, across laminae, concatenated in the page and
+  downloaded. A range that crosses an encoder session carries a second
+  init segment, which MSE takes and ffmpeg reads to the first.
+- The Storage Node's data plane answers a browser's `OPTIONS` and marks
+  its `GET` for any origin, since the token is in the URL and a Range is
+  what a player asks for ([§17](05-read-path.md#17-read-path)).
+
+`test/playback.mjs` drives it in headless Chromium against a deployment:
+two minutes back plays, ten seconds ago comes from the relay, live takes
+over, and a range downloads as an MP4 ffprobe reads whole.

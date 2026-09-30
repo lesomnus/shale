@@ -89,6 +89,9 @@ minute there is something on every page:
   stored and what is missing.
 - **Live** — the three patterns playing over WebRTC through the relay, which
   never touches the store ([§39](docs/16-relay.md#39-relay)).
+- **Playback** — any camera at any moment: pick a time on the axis and the
+  recording plays from there, "10 s ago" comes from the relay's window, and
+  two marks download as one MP4 ([§40.5](docs/17-console.md#405-playback)).
 - **Hosts**, **Devices** — the node, the relay and the producer, and the one
   sink with its free space and health.
 

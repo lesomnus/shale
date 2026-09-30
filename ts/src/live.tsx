@@ -39,7 +39,7 @@ export function Live(props: { set: string | undefined }): ReactNode {
 }
 
 /** useLive asks `Live` for a set, and again before its tokens lapse. */
-function useLive(id: Uint8Array): { sources: LiveSource[] | undefined; error: unknown } {
+export function useLive(id: Uint8Array): { sources: LiveSource[] | undefined; error: unknown } {
 	const s = useSurfaces()
 	const transport = s.sessions.tenant?.session.transport
 	const [state, setState] = useState<{ sources: LiveSource[] | undefined; error: unknown }>({ sources: undefined, error: null })
@@ -88,17 +88,17 @@ function Wall(props: { id: Uint8Array }): ReactNode {
 				{[...live.sources]
 					.sort((a, b) => a.ordinal - b.ordinal)
 					.map((v) => (
-						<Player key={key(v.sourceId)} source={v} />
+						<Player key={key(v.sourceId)} set={props.id} source={v} />
 					))}
 			</div>
 		</>
 	)
 }
 
-type Status = { tone: Tone; text: string }
+export type Status = { tone: Tone; text: string }
 
 /** Player is one camera: WHEP against the relay, or the sandbox's own scene. */
-function Player(props: { source: LiveSource }): ReactNode {
+function Player(props: { set: Uint8Array; source: LiveSource }): ReactNode {
 	const v = props.source
 	const src = useRow<Source>(SourceEntity.typeName, v.sourceId)
 	const video = useRef<HTMLVideoElement>(null)
@@ -126,13 +126,16 @@ function Player(props: { source: LiveSource }): ReactNode {
 					<span className="dim"> #{v.ordinal}</span>
 				</b>
 				<Badge tone={status.tone}>{status.text}</Badge>
+				<a className="dim" href={`#/playback/${hex(props.set)}/${hex(v.sourceId)}`} title="the last minutes, and the recordings">
+					rewind
+				</a>
 			</div>
 		</div>
 	)
 }
 
 /** whep plays one source through the relay, as web/live.html does. */
-function whep(el: HTMLVideoElement, url: string, token: string, setStatus: (s: Status) => void): () => void {
+export function whep(el: HTMLVideoElement, url: string, token: string, setStatus: (s: Status) => void): () => void {
 	const pc = new RTCPeerConnection()
 	let session: string | null = null
 	let closed = false

@@ -147,6 +147,19 @@ func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	key := strings.TrimPrefix(r.URL.Path, "/")
 
+	// A browser reads laminae from a page the CP served (§40): the token
+	// is in the URL, so any origin may ask, and Range and the headers a
+	// player reads back are allowed through.
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Last-Modified, "+HdrIncomplete)
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Range")
+		w.Header().Set("Access-Control-Max-Age", "600")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	tok := token.FromHeader(r.Header.Get("Authorization"))
 	if tok == "" {
 		tok = r.URL.Query().Get("token")

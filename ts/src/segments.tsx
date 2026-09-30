@@ -218,7 +218,7 @@ function Strips(props: { set: Uint8Array }): ReactNode {
 	)
 }
 
-function gapClass(r: GapReason): string {
+export function gapClass(r: GapReason): string {
 	switch (r) {
 		case GapReason.IN_PROGRESS:
 			return 'gap-in-progress'

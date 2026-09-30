@@ -12,6 +12,7 @@ import { Cameras } from './cameras.js'
 import { Devices } from './devices.js'
 import { Hosts } from './hosts.js'
 import { Live } from './live.js'
+import { Playback } from './playback.js'
 import { Segments } from './segments.js'
 import { SurfacesProvider, useSurfaces, type Mode, type Opened } from './surface.js'
 
@@ -33,6 +34,7 @@ const PAGES: ReadonlyArray<{ path: string; title: string }> = [
 	{ path: 'cameras', title: 'Cameras' },
 	{ path: 'segments', title: 'Segments' },
 	{ path: 'live', title: 'Live' },
+	{ path: 'playback', title: 'Playback' },
 	{ path: 'hosts', title: 'Hosts' },
 	{ path: 'devices', title: 'Devices' },
 ]
@@ -63,6 +65,9 @@ function Shell(): ReactNode {
 			break
 		case 'live':
 			body = <Live set={parts[1]} />
+			break
+		case 'playback':
+			body = <Playback set={parts[1]} source={parts[2]} />
 			break
 		default:
 			body = <Cameras />
