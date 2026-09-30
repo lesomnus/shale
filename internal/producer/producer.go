@@ -77,6 +77,8 @@ type Stats struct {
 	Lost        int64
 	Cut         int64
 	LiveDropped int64
+	// LiveTranscodes is the live helpers running (§38.7).
+	LiveTranscodes int64
 	// Held is the bytes of unstored segments in RAM, what the budget
 	// counts (§16); Released the bytes of those segments a node reported
 	// durable and `retain: written` let go (§12.2).
@@ -100,6 +102,11 @@ func (p *Producer) Stats() Stats {
 	}
 	p.relay.mu.Lock()
 	st.LiveDropped = p.relay.dropped
+	for _, t := range p.relay.active {
+		if t.h != nil {
+			st.LiveTranscodes++
+		}
+	}
 	p.relay.mu.Unlock()
 
 	return st

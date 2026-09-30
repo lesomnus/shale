@@ -23,22 +23,25 @@ func TestArgsAudio(t *testing.T) {
 		want    []string
 		not     []string
 	}{
-		{"a camera's audio is copied", SourceConfig{Input: "rtsp://cam/1", Format: "h264"}, "copy",
-			[]string{"-c:v copy", "-c:a copy"}, []string{"-an", "-map"}},
+		// The archive's track and Opus beside it for live (§38.7): the
+		// camera's audio is mapped twice, copied once and encoded once.
+		{"a camera's audio is copied, and Opus beside it", SourceConfig{Input: "rtsp://cam/1", Format: "h264"}, "copy",
+			[]string{"-c:v copy", "-map 0:v:0 -map 0:a:0? -map 0:a:0?", "-c:a:0 copy", "-c:a:1 libopus -b:a:1 64000"}, []string{"-an", "-c:a copy", "-b:a:0"}},
 		{"a camera re-encoded keeps its audio", SourceConfig{Input: "rtsp://cam/1", Format: "mjpeg"}, "libx264",
-			[]string{"-c:v libx264", "-c:a copy"}, []string{"-an"}},
+			[]string{"-c:v libx264", "-c:a:0 copy", "-c:a:1 libopus"}, []string{"-an"}},
 		{"a USB camera has no audio", SourceConfig{Input: "v4l2:/dev/video0", Format: "mjpeg"}, "libx264",
-			[]string{"-an"}, []string{"-c:a"}},
-		{"a microphone is encoded and mapped", SourceConfig{Input: "v4l2:/dev/video0", Format: "mjpeg", Audio: &AudioConfig{Device: "alsa:hw:1"}}, "libx264",
-			[]string{"-f alsa -i hw:1", "-map 0:v:0 -map 1:a:0", "-c:a aac -b:a 64000"}, []string{"-an"}},
+			[]string{"-an"}, []string{"-c:a", "-map"}},
+		{"a microphone is encoded and mapped, twice", SourceConfig{Input: "v4l2:/dev/video0", Format: "mjpeg", Audio: &AudioConfig{Device: "alsa:hw:1"}}, "libx264",
+			[]string{"-f alsa -i hw:1", "-map 0:v:0 -map 1:a:0 -map 1:a:0", "-c:a:0 aac -b:a:0 64000", "-c:a:1 libopus -b:a:1 64000"}, []string{"-an"}},
+		// Opus is what live plays: one track does for both.
 		{"a microphone as Opus", SourceConfig{Input: "v4l2:/dev/video0", Format: "mjpeg", Audio: &AudioConfig{Device: "alsa:hw:1", Codec: "opus", Bitrate: 48000}}, "libx264",
-			[]string{"-c:a libopus -b:a 48000"}, []string{"-an"}},
-		{"a camera's audio as AAC", SourceConfig{Input: "rtsp://cam/1", Format: "h264", Audio: &AudioConfig{Codec: "aac", Bitrate: 32000}}, "copy",
-			[]string{"-c:a aac -b:a 32000"}, []string{"-map", "-an"}},
+			[]string{"-map 0:v:0 -map 1:a:0 -c:a libopus -b:a 48000"}, []string{"-an", "-c:a:1", "-map 1:a:0 -map 1:a:0"}},
+		{"a camera's audio as AAC, and Opus beside it", SourceConfig{Input: "rtsp://cam/1", Format: "h264", Audio: &AudioConfig{Codec: "aac", Bitrate: 32000}}, "copy",
+			[]string{"-c:a:0 aac -b:a:0 32000", "-c:a:1 libopus -b:a:1 32000"}, []string{"-an"}},
 		{"a camera's audio as Opus", SourceConfig{Input: "rtsp://cam/1", Format: "h264", Audio: &AudioConfig{Codec: "opus"}}, "copy",
-			[]string{"-c:a libopus -b:a 64000"}, []string{"-an"}},
+			[]string{"-c:a libopus -b:a 64000"}, []string{"-an", "-map", "-c:a:1"}},
 		{"none drops it", SourceConfig{Input: "rtsp://cam/1", Format: "h264", Audio: &AudioConfig{Codec: "none"}}, "copy",
-			[]string{"-an"}, []string{"-c:a"}},
+			[]string{"-an"}, []string{"-c:a", "-map"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -104,8 +107,9 @@ func TestCaptureAudioFallback(t *testing.T) {
 	require.Len(t, runs, 2)
 	require.True(t, runs[0].AudioAnon, "G.711 copied into TS is a private stream nothing names")
 	require.True(t, runs[0].HasAudio())
-	require.Equal(t, []byte{0x0f}, runs[1].AudioTypes, "the restart encodes it as AAC")
+	require.Equal(t, []byte{0x0f, 0x06}, runs[1].AudioTypes, "the restart encodes it as AAC, with Opus beside it for live (§38.7)")
 	require.False(t, runs[1].AudioAnon)
+	require.True(t, runs[1].AudioOpus)
 	require.Equal(t, "aac", c.AudioFallback())
 	require.Equal(t, int64(0), c.Restarts(), "a restart on purpose is not a restart")
 }

@@ -179,9 +179,9 @@ sources:
 | `input: v4l2:…`, `format`, `size`, `fps` | `-f v4l2 -input_format <format> -video_size <size> -framerate <fps> -i <device>` |
 | `input: rtsp://…` | `-rtsp_transport tcp -i <url>`, with a socket timeout, and `-c:v copy` when `format: h264` |
 | `encoder: auto` | the first that works on this host: `h264_v4l2m2m`, `h264_vaapi`, `h264_qsv`, `h264_nvenc`, else `libx264 -preset veryfast` with a warning about CPU |
-| `max_bitrate` | encoders with rate control (`libx264`, VAAPI, NVENC, QSV): capped VBR, `-maxrate <video ceiling> -bufsize <2 × ceiling>` around a quality target; encoders that only take a target (`h264_v4l2m2m`): CBR at `-b:v <video ceiling>`. The video ceiling is `max_bitrate` minus the audio bitrate, divided by 1.05 for TS overhead, so the muxed stream stays under the ceiling |
+| `max_bitrate` | encoders with rate control (`libx264`, VAAPI, NVENC, QSV): capped VBR, `-maxrate <video ceiling> -bufsize <2 × ceiling>` around a quality target; encoders that only take a target (`h264_v4l2m2m`): CBR at `-b:v <video ceiling>`. The video ceiling is `max_bitrate` minus the audio bitrate for each audio track (two, unless the archive's is Opus), divided by 1.05 for TS overhead, so the muxed stream stays under the ceiling |
 | `keyframe_interval` | `-g <fps × interval> -force_key_frames expr:gte(t,n_forced*<interval>)`, with the agreed interval ([§12.6](04-write-path.md#126-upload-profile-negotiation)), 2 s by default |
-| `audio` | a camera's own audio: `-c:a copy`, or `-c:a aac` / `-c:a libopus -b:a <bitrate>` when `codec` says so, `-an` for `none`; a microphone (`device`): `-f alsa -i <device>` as a second input, `-map 0:v:0 -map 1:a:0 -c:a aac -b:a <bitrate>` (`libopus` for `codec: opus`); a USB camera without one: `-an`. Audio that TS has no type for, G.711 from an IP camera above all, comes out of ffmpeg as a private stream nothing names, which no player finds; the first PMT shows it, and the capture is restarted once encoding it as AAC, with a log line saying so |
+| `audio` | two tracks ([§38.7](#387-live-output)): the archive's, and Opus beside it for live. A camera's own audio: `-map 0:v:0 -map 0:a:0? -map 0:a:0? -c:a:0 copy -c:a:1 libopus -b:a:1 <bitrate>`, with `-c:a:0 aac -b:a:0 <bitrate>` when `codec: aac`; a microphone (`device`): `-f alsa -i <device>` as a second input, mapped twice, `-c:a:0 aac`; `codec: opus` is one track, `-c:a libopus -b:a <bitrate>`, since Opus is what live plays; `-an` for `none`, and for a USB camera without a microphone. Audio that TS has no type for, G.711 from an IP camera above all, comes out of ffmpeg as a private stream nothing names, which no player finds; the first PMT shows it, and the capture is restarted once encoding it as AAC, with a log line saying so |
 | output (fixed) | `-f mpegts -` |
 | `controls` | not ffmpeg: V4L2 controls set on the device through the ioctls `v4l2-ctl -c` uses, by v4l2-ctl's names, before every start of the capture, since a re-plugged camera forgets them. A control the device does not have, or a value outside its range, is a warning in the log and the rest are set |
 
@@ -341,28 +341,35 @@ the CP assigned it ([§39.2](16-relay.md#392-assignment)), and:
   stream breaks;
 - on `Start {source}`, tees that source's TS stream
   ([§38.1](#381-inputs)) into the relay stream, beginning at the next
-  keyframe, and stops on `Stop {source}`. The video is the one it stores,
-  never encoded twice. Audio that is not Opus goes through the **live
-  helper** first: one `ffmpeg -i pipe:0 -c:v copy -c:a libopus` per watched
-  source, fed from the tee, whose output is what the relay gets, since
-  browsers play no audio but Opus over WebRTC
-  ([§39.4](16-relay.md#394-viewers)). It runs only while the source is
-  watched, costs one audio decode and one Opus encode (a percent or two of
-  a core), and adds about half a second before the first frame. It is
-  supervised like a capture process: started again at the next keyframe
-  when it exits, and after three exits the bytes go as they are, silent
-  for the viewer but alive; a stream with no audio, or with Opus already,
-  needs no helper, and a host without ffmpeg sends the bytes as they are;
+  keyframe, and stops on `Stop {source}`. The bytes are the ones it
+  stores, never encoded twice: the video, and the audio as **two tracks**,
+  the archive's (the camera's audio as it sends it, or the AAC of
+  [§38.3](#383-managed-capture)) and **Opus beside it**, encoded in the
+  capture process, because browsers play no audio but Opus over WebRTC
+  ([§39.4](16-relay.md#394-viewers)) and HLS players take no Opus. The
+  second track costs the audio bitrate once more in the lamina (64 kbps by
+  default) and one audio decode and one Opus encode per source, a percent
+  or two of a core, whether or not anyone watches; the relay takes the
+  Opus and never looks at the other, and a recording plays in an HLS
+  player from its AAC. `audio.codec: opus` makes one track do for both, at
+  the price of a recording HLS players do not take. A stream the producer
+  does not encode, a `command:` source or a `raw:` input, carries whatever
+  it carries, and audio in it that is not Opus goes through the **live
+  helper**: one `ffmpeg -i pipe:0 -c:v copy -c:a libopus` per watched
+  source, fed from the tee, whose output is what the relay gets. It runs
+  only while the source is watched, adds about half a second before the
+  first frame, and is supervised like a capture process: started again at
+  the next keyframe when it exits, and after three exits the bytes go as
+  they are, silent for the viewer but alive; a host without ffmpeg sends
+  the bytes as they are;
 - counts the cameras usually watched into its uplink budget
   ([§38.5](#385-choosing-the-ceiling)), since each watched camera costs its
   bitrate once more.
 
 A camera meant to be watched live records H.264 Main or High profile, which
 browsers play without transcoding. Its audio is recorded as the camera
-sends it, AAC or whatever else, and plays live through the helper;
-recording Opus (`audio: {codec: opus}`) makes the helper unnecessary, at
-the price of a recording that HLS players do not take
-([§39.3](16-relay.md#393-from-the-producer)).
+sends it, with the Opus track beside it, so it plays live with sound and
+in an HLS player alike ([§39.3](16-relay.md#393-from-the-producer)).
 
 ### 38.8 What the producer does not do
 

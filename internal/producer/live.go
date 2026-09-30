@@ -13,12 +13,15 @@ import (
 	"github.com/lesomnus/payday/pdid"
 )
 
-// The live helper (§38.7): browsers play no audio but Opus over WebRTC,
-// and a camera sends AAC or G.711. While such a camera is watched, the
-// producer runs one ffmpeg that takes the tee, copies the video and encodes
-// the audio as Opus, and sends its output to the relay in place of the
-// bytes it stores. Nothing is decoded in this binary, nothing runs while
-// nobody watches, and the recording keeps the camera's audio.
+// The live helper (§38.7): browsers play no audio but Opus over WebRTC.
+// A stream the producer encodes carries an Opus track of its own beside
+// the archive's (capture.go), so this is the fallback for one it does not,
+// a `command:` source or a `raw:` input, whose audio is not Opus. While
+// such a source is watched, the producer runs one ffmpeg that takes the
+// tee, copies the video and encodes the audio as Opus, and sends its
+// output to the relay in place of the bytes it stores. Nothing is decoded
+// in this binary, nothing runs while nobody watches, and the recording
+// keeps the source's audio.
 
 const (
 	// helperQueue bounds the chunks waiting for the helper's input; bytes

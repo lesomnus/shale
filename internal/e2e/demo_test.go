@@ -122,7 +122,8 @@ func TestDemoProducer(t *testing.T) {
 		require.NotZero(t, st.VideoPID, "a picture")
 		require.Equal(t, byte(0x1B), st.Video, "H.264")
 		require.NotEmpty(t, st.AudioPIDs, "and a sound")
-		require.Equal(t, []byte{0x0F}, st.AudioTypes, "AAC, which every player finds")
+		require.Equal(t, []byte{0x0F, 0x06}, st.AudioTypes, "AAC, which every player finds, and Opus beside it for live (§38.7)")
 		require.False(t, st.AudioAnon)
+		require.True(t, st.AudioOpus)
 	}
 }

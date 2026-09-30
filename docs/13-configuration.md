@@ -80,7 +80,7 @@ deployment runs well on them, and changes them only for a reason.
 | Producer | a source's `idle.dark_after` | none (absent: every segment stored); 10 min when `idle:` is given | how long the scene stays dark before its segments are skipped; sources the producer encodes only | producer | [§38.10](15-producer.md#3810-dark-scenes) |
 | Producer | a source's `idle.threshold` | 0.10 | luma, 0..1, at or below which a pixel is dark; a frame is dark at 98 % dark pixels | producer | [§38.10](15-producer.md#3810-dark-scenes) |
 | Producer | a source's `content_type` | `video/mp2t`; `application/octet-stream` for `raw` | proposed at negotiation; a person's value on the source wins | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
-| Producer | encoder target | (ceiling − audio) ÷ 1.05; capped VBR with `bufsize` = 2 s at the ceiling | — | producer | [§38.3](15-producer.md#383-managed-capture) |
+| Producer | encoder target | (ceiling − audio per track) ÷ 1.05; capped VBR with `bufsize` = 2 s at the ceiling | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Producer | start-up check | 10 s after a capture process starts | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Node | `gc_page` | 5,000 candidates | — | node | [§21.2](06-retention-gc.md#212-protocol) |
 | Node | `token_skew` | 1 min | — | node | [§33.2](10-security.md#332-access-tokens) |
@@ -163,8 +163,10 @@ out:
   and playing recordings through the relay ([§39.5](16-relay.md#395-capacity)).
 - **Encoding inside Shale's binary.** The producer supervises capture
   processes and never touches a frame ([§38.3](15-producer.md#383-managed-capture)).
-  The producer's live helper, an ffmpeg it runs while a camera is watched,
-  transcodes audio to Opus and nothing else ([§38.7](15-producer.md#387-live-output)).
+  The Opus that live needs is a second audio track the producer's capture
+  ffmpeg writes, or its live helper's output for a stream it did not
+  encode ([§38.7](15-producer.md#387-live-output)); either transcodes audio
+  and nothing else.
 
 Ideas recorded, not planned:
 

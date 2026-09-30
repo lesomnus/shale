@@ -18,8 +18,9 @@ import (
 // The live tee (§39.3, §38.7): the producer keeps one stream to the relay
 // the CP assigned it, sends nothing until the relay says Start for a
 // source, then forwards that source's TS bytes from the next keyframe on
-// with the tables prepended, until Stop. The video is the one it stores;
-// audio that is not Opus goes through the live helper (live.go) first.
+// with the tables prepended, until Stop. The bytes are the ones it stores,
+// an Opus track among them (§38.7); a stream the producer did not encode
+// whose audio is not Opus goes through the live helper (live.go) first.
 
 // relayLink is the producer's side of the relay stream.
 type relayLink struct {

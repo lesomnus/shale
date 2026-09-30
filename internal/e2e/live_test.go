@@ -97,9 +97,56 @@ func TestLiveTranscode(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	admin := c.dial("@acme/admin")
+	smallLaminae(t, ctx, c)
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "aac.ts"))
+	require.NoError(t, err)
+	set, live, p := liveProducer(t, ctx, c, admin, producer.SourceConfig{Alias: "door", Input: "raw:" + sample, Fps: 30, MaxBitrate: 2_000_000, Format: "h264"})
 
-	// Small laminae, so a segment commits while the test watches: an
-	// UploadPolicy of the test's own, activated before the set negotiates.
+	v := watch(t, live)
+	defer v.close()
+	v.video(t, 100, 20*time.Second)
+	v.audio(t, 50, 15*time.Second)
+	require.Equal(t, int64(1), p.Stats().LiveTranscodes, "the helper runs while the camera is watched")
+	v.leave(t)
+
+	// The stored segment carries the camera's AAC, not Opus.
+	st := committedStreams(t, ctx, admin, set)
+	require.Equal(t, []byte{0x0f}, st.AudioTypes, "the recording keeps the camera's AAC")
+	require.False(t, st.AudioOpus)
+}
+
+// TestLiveTwoTracks is the second audio track (§38.7): a source the
+// producer encodes records AAC for the archive and Opus beside it, so it
+// is watched with sound while no live helper runs, and its lamina carries
+// both; the relay takes the Opus and never looks at the AAC.
+func TestLiveTwoTracks(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("no ffmpeg on this host")
+	}
+	c := start(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	admin := c.dial("@acme/admin")
+	smallLaminae(t, ctx, c)
+	set, live, p := liveProducer(t, ctx, c, admin, producer.DemoSources(1)[0])
+
+	v := watch(t, live)
+	defer v.close()
+	v.video(t, 100, 20*time.Second)
+	v.audio(t, 50, 15*time.Second)
+	require.Zero(t, p.Stats().LiveTranscodes, "the Opus is the capture's own: no helper")
+	v.leave(t)
+
+	st := committedStreams(t, ctx, admin, set)
+	require.Equal(t, []byte{0x0f, 0x06}, st.AudioTypes, "AAC for the archive, Opus for live")
+	require.True(t, st.AudioOpus)
+	require.False(t, st.AudioAnon)
+}
+
+// smallLaminae activates an UploadPolicy of laminae of a few MB, so a
+// segment commits while a test watches; before the set negotiates.
+func smallLaminae(t *testing.T, ctx context.Context, c *cluster) {
+	t.Helper()
 	ops := c.dialCluster("@cluster/ops")
 	up, err := api.NewUploadPolicyServiceClient(ops).Add(ctx, api.UploadPolicyAddRequest_builder{
 		Alias: "small", Version: 1,
@@ -110,15 +157,12 @@ func TestLiveTranscode(t *testing.T) {
 		Ref: api.UploadPolicyRef_builder{Id: up.GetId()}.Build(),
 	}.Build())
 	require.NoError(t, err)
-	set, live := liveSource(t, ctx, c, admin, "aac.ts")
+}
 
-	v := watch(t, live)
-	defer v.close()
-	v.video(t, 100, 20*time.Second)
-	v.audio(t, 50, 15*time.Second)
-	v.leave(t)
-
-	// The stored segment carries the camera's AAC, not Opus.
+// committedStreams waits for the set's one source to commit a lamina,
+// fetches it, and answers what its tables say.
+func committedStreams(t *testing.T, ctx context.Context, admin *grpc.ClientConn, set *api.Set) producer.Streams {
+	t.Helper()
 	sources, err := api.NewSourceServiceClient(admin).List(ctx, api.SourceListRequest_builder{
 		Filters: []*api.SourceFilter{api.SourceFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
 	}.Build())
@@ -163,9 +207,8 @@ func TestLiveTranscode(t *testing.T) {
 	var pk producer.Packet
 	for r.Next(&pk) == nil {
 	}
-	st := r.Streams()
-	require.Equal(t, []byte{0x0f}, st.AudioTypes, "the recording keeps the camera's AAC")
-	require.False(t, st.AudioOpus)
+
+	return r.Streams()
 }
 
 // liveSource sets up one set with one producer playing a recording from
@@ -175,7 +218,16 @@ func liveSource(t *testing.T, ctx context.Context, c *cluster, admin *grpc.Clien
 	t.Helper()
 	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", recording))
 	require.NoError(t, err)
+	set, live, _ := liveProducer(t, ctx, c, admin, producer.SourceConfig{Alias: "door", Input: "raw:" + sample, Fps: 30, MaxBitrate: 2_000_000, Format: "h264"})
 
+	return set, live
+}
+
+// liveProducer sets up one set with one producer of the given source,
+// adopted and assigned a relay, and answers what Live says about its
+// source, and the producer.
+func liveProducer(t *testing.T, ctx context.Context, c *cluster, admin *grpc.ClientConn, src producer.SourceConfig) (*api.Set, *api.LiveSource, *producer.Producer) {
+	t.Helper()
 	set, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{
 		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "live",
 	}.Build())
@@ -201,7 +253,7 @@ func liveSource(t *testing.T, ctx context.Context, c *cluster, admin *grpc.Clien
 		StateDir:          filepath.Join(t.TempDir(), "producer"),
 		Cp:                "http://" + c.running.TenantAddr,
 		Dev:               true,
-		Sources:           []producer.SourceConfig{{Alias: "door", Input: "raw:" + sample, Fps: 30, MaxBitrate: 2_000_000, Format: "h264"}},
+		Sources:           []producer.SourceConfig{src},
 		Mode:              api.UploadMode_UPLOAD_MODE_LIVE,
 		SegmentDuration:   8 * time.Second,
 		HeartbeatInterval: 2 * time.Second,
@@ -248,7 +300,7 @@ func liveSource(t *testing.T, ctx context.Context, c *cluster, admin *grpc.Clien
 	require.NotEmpty(t, live.GetWhepUrl())
 	require.NotEmpty(t, live.GetViewToken())
 
-	return set, live
+	return set, live, p
 }
 
 // viewer is one WHEP session: a WebRTC peer receiving video and audio.

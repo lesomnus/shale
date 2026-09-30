@@ -76,10 +76,10 @@ type AudioConfig struct {
 	// camera's own audio, if it sends any.
 	Device string
 	// Bitrate is the encoded rate in bits per second, 64 kbps by default;
-	// it also sizes the live helper's Opus (§38.7).
+	// it also sizes the Opus track for live (§38.7).
 	Bitrate int64
 	// Codec is one of AudioCodecs; empty is `copy` for a camera's audio and
-	// `aac` for a microphone.
+	// `aac` for a microphone. Either gets an Opus track beside it (§38.7).
 	Codec string
 }
 
@@ -87,7 +87,7 @@ type AudioConfig struct {
 var AudioCodecs = map[string]string{
 	"copy": "the camera's audio as it sends it, the default for a camera",
 	"aac":  "encoded as AAC, the default for a microphone",
-	"opus": "encoded as Opus, which the relay passes through as it is (§39.4)",
+	"opus": "encoded as Opus only, one track for the archive and live both (§38.7)",
 	"none": "no audio",
 }
 
@@ -251,10 +251,14 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		args = append(args, "-f", "lavfi", "-i", fmt.Sprintf("sine=frequency=%d:sample_rate=%d", d.Tone, DemoSampleRate))
 	}
 
-	// Video.
+	// Video. The audio's share of the ceiling is its track, and the Opus
+	// track beside it unless the archive's is Opus already (§38.7).
 	audioBps := int64(0)
 	if !silent {
 		audioBps = c.audioBitrate()
+		if codec != "opus" {
+			audioBps *= 2
+		}
 	}
 	videoCeiling := int64(float64(ceiling-audioBps) / TsOverhead)
 	if videoCeiling < 100_000 {
@@ -293,24 +297,36 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 			args = append(args, "-vf", c.Idle.filter())
 		}
 	}
+	bps := strconv.FormatInt(c.audioBitrate(), 10)
 	switch {
 	case silent:
 		args = append(args, "-an")
-	case mic, demo:
-		// The second input's sound with the first input's picture,
-		// whatever else either carries; raw PCM has to be encoded.
-		enc := "aac"
-		if codec == "opus" {
-			enc = "libopus"
-		}
-		args = append(args, "-map", "0:v:0", "-map", "1:a:0", "-c:a", enc, "-b:a", strconv.FormatInt(audioBps, 10))
-	case codec == "aac":
-		args = append(args, "-c:a", "aac", "-b:a", strconv.FormatInt(audioBps, 10))
 	case codec == "opus":
-		args = append(args, "-c:a", "libopus", "-b:a", strconv.FormatInt(audioBps, 10))
+		// Opus is what live plays, so one track does for both (§38.7).
+		if mic || demo {
+			args = append(args, "-map", "0:v:0", "-map", "1:a:0")
+		}
+		args = append(args, "-c:a", "libopus", "-b:a", bps)
 	default:
-		// `copy`, or nothing said: the camera's audio as it sends it.
-		args = append(args, "-c:a", "copy")
+		// Two tracks (§38.7): the archive's, which is the camera's audio
+		// as it sends it or AAC when `codec` or a microphone says so, and
+		// Opus beside it for the relay, so nothing runs while a camera is
+		// watched. The audio is mapped twice; a camera without any matches
+		// neither map and records silent.
+		audio := "0:a:0?"
+		if mic || demo {
+			// The second input's sound with the first input's picture,
+			// whatever else either carries; raw PCM has to be encoded.
+			audio = "1:a:0"
+		}
+		args = append(args, "-map", "0:v:0", "-map", audio, "-map", audio)
+		if codec == "aac" || mic || demo {
+			args = append(args, "-c:a:0", "aac", "-b:a:0", bps)
+		} else {
+			// `copy`, or nothing said: the camera's audio as it sends it.
+			args = append(args, "-c:a:0", "copy")
+		}
+		args = append(args, "-c:a:1", "libopus", "-b:a:1", bps)
 	}
 	for k, v := range c.EncoderOptions {
 		args = append(args, "-"+k, v)

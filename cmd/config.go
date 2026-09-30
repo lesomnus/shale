@@ -234,10 +234,11 @@ type AudioConfig struct {
 	// camera's audio.
 	Device string `yaml:"device"`
 	// Bitrate, e.g. "64kbps": what a microphone is encoded at, and the
-	// Opus the live helper makes for the relay (§38.7).
+	// Opus track written beside the archive's for live (§38.7).
 	Bitrate string `yaml:"bitrate"`
 	// Codec: copy (the default for a camera's audio), aac (the default for
-	// a microphone), opus (plays live as it is), or none.
+	// a microphone), opus (one track for the archive and live both), or
+	// none. copy and aac get an Opus track beside them (§38.7).
 	Codec string `yaml:"codec"`
 }
 

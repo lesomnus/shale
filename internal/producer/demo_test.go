@@ -60,7 +60,7 @@ func TestArgsDemo(t *testing.T) {
 			[]string{
 				"-re -f lavfi -i testsrc2=size=1280x720:rate=30",
 				"-f lavfi -i sine=frequency=440:sample_rate=48000",
-				"-map 0:v:0 -map 1:a:0", "-c:a aac -b:a 64000", "-c:v libx264",
+				"-map 0:v:0 -map 1:a:0 -map 1:a:0", "-c:a:0 aac -b:a:0 64000", "-c:a:1 libopus -b:a:1 64000", "-c:v libx264",
 			},
 			[]string{"-an", "-c:a copy"}},
 		{"the second pattern has a tone of its own", DemoSources(2)[1],
