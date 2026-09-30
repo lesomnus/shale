@@ -101,6 +101,11 @@ func ContentType(v string) predicate.Source {
 	return predicate.Source(sql.FieldEQ(FieldContentType, v))
 }
 
+// LiveCapable applies equality check predicate on the "live_capable" field. It's identical to LiveCapableEQ.
+func LiveCapable(v bool) predicate.Source {
+	return predicate.Source(sql.FieldEQ(FieldLiveCapable, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Source {
 	return predicate.Source(sql.FieldEQ(FieldTenantId, v))
@@ -659,6 +664,26 @@ func ContentTypeEqualFold(v string) predicate.Source {
 // ContentTypeContainsFold applies the ContainsFold predicate on the "content_type" field.
 func ContentTypeContainsFold(v string) predicate.Source {
 	return predicate.Source(sql.FieldContainsFold(FieldContentType, v))
+}
+
+// LiveCapableEQ applies the EQ predicate on the "live_capable" field.
+func LiveCapableEQ(v bool) predicate.Source {
+	return predicate.Source(sql.FieldEQ(FieldLiveCapable, v))
+}
+
+// LiveCapableNEQ applies the NEQ predicate on the "live_capable" field.
+func LiveCapableNEQ(v bool) predicate.Source {
+	return predicate.Source(sql.FieldNEQ(FieldLiveCapable, v))
+}
+
+// LiveCapableIsNil applies the IsNil predicate on the "live_capable" field.
+func LiveCapableIsNil() predicate.Source {
+	return predicate.Source(sql.FieldIsNull(FieldLiveCapable))
+}
+
+// LiveCapableNotNil applies the NotNil predicate on the "live_capable" field.
+func LiveCapableNotNil() predicate.Source {
+	return predicate.Source(sql.FieldNotNull(FieldLiveCapable))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

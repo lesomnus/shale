@@ -170,13 +170,13 @@ type StorageConfig struct {
 
 // SourceConfig is one camera a producer records (§38.3): tier 1 is the
 // structured fields, tier 2 the options passed through, tier 3 a command of
-// your own whose stdout is MPEG-TS.
+// your own whose stdout is fragmented MP4.
 type SourceConfig struct {
 	// Alias of the Source row; registered from this configuration when
 	// missing (§38.4).
 	Alias string `yaml:"alias"`
 	Name  string `yaml:"name"`
-	// Input: `v4l2:/dev/video0`, `rtsp://...`, `file:/path.ts`, or `push`
+	// Input: `v4l2:/dev/video0`, `rtsp://...`, `file:/path.mp4`, or `push`
 	// for a stream a process on this host writes to `producer.push`
 	// (§38.9).
 	Input string `yaml:"input"`
@@ -210,7 +210,7 @@ type SourceConfig struct {
 	EncoderOptions  map[string]string `yaml:"encoder_options"`
 	ExtraInputArgs  []string          `yaml:"extra_input_args"`
 	ExtraOutputArgs []string          `yaml:"extra_output_args"`
-	// Tier 3: run with `sh -c`; stdout must be MPEG-TS.
+	// Tier 3: run with `sh -c`; stdout must be fragmented MP4 (§38.3).
 	Command string `yaml:"command"`
 	// Zone label (§7).
 	Zone string `yaml:"zone"`

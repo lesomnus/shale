@@ -21,7 +21,7 @@ import (
 // makes an incomplete lamina of what it holds (§15). The segments after
 // it wait whole, and drain when the node returns.
 func TestBacklogAfterOutageWritten(t *testing.T) {
-	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.mp4"))
 	require.NoError(t, err)
 	c := start(t)
 	ctx, cancel := context.WithCancel(context.Background())

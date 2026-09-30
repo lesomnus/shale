@@ -7282,6 +7282,23 @@ func (m *SourceMutation) OldContentType(ctx context.Context) (v string, err erro
 	return oldValue.ContentType, nil
 }
 
+// OldLiveCapable returns the old "live_capable" field's value of the Source entity.
+// If the Source object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SourceMutation) OldLiveCapable(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLiveCapable is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLiveCapable requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLiveCapable: %w", err)
+	}
+	return oldValue.LiveCapable, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the Source entity.
 // If the Source object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -7364,6 +7381,8 @@ func (m *SourceMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldStarvation(ctx)
 	case source.FieldContentType:
 		return m.OldContentType(ctx)
+	case source.FieldLiveCapable:
+		return m.OldLiveCapable(ctx)
 	case source.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case source.FieldSiteId:

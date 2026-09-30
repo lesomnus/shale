@@ -638,6 +638,7 @@ type Source struct {
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Starvation  *Starvation            `protobuf:"bytes,16,opt,name=starvation"`
 	xxx_hidden_ContentType string                 `protobuf:"bytes,17,opt,name=content_type,json=contentType"`
+	xxx_hidden_LiveCapable bool                   `protobuf:"varint,18,opt,name=live_capable,json=liveCapable"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -786,6 +787,13 @@ func (x *Source) GetContentType() string {
 	return ""
 }
 
+func (x *Source) GetLiveCapable() bool {
+	if x != nil {
+		return x.xxx_hidden_LiveCapable
+	}
+	return false
+}
+
 func (x *Source) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -855,6 +863,10 @@ func (x *Source) SetStarvation(v *Starvation) {
 
 func (x *Source) SetContentType(v string) {
 	x.xxx_hidden_ContentType = v
+}
+
+func (x *Source) SetLiveCapable(v bool) {
+	x.xxx_hidden_LiveCapable = v
 }
 
 func (x *Source) HasTenant() bool {
@@ -984,10 +996,14 @@ type Source_builder struct {
 	// Seconds at the cap and episodes, as the producer reports them (§38.5).
 	Starvation *Starvation
 	// What the bytes of this source's laminae are, for whoever reads them:
-	// `video/mp2t` for a camera, `application/x-mcap` for a robot's records
-	// (§38.9). Empty reads as `video/mp2t`. People set it; Negotiate fills
+	// `video/mp4` for a camera, `application/x-mcap` for a robot's records
+	// (§38.9). Empty reads as `video/mp4`. People set it; Negotiate fills
 	// it in from the producer when nobody did, and a person's value stays.
 	ContentType string
+	// Whether the producer can feed this source to a relay (§39.3), as it
+	// said at negotiation: `Live` and the publish token go by this, since
+	// only the producer knows what it reads.
+	LiveCapable bool
 }
 
 func (b0 Source_builder) Build() *Source {
@@ -1011,6 +1027,7 @@ func (b0 Source_builder) Build() *Source {
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Starvation = b.Starvation
 	x.xxx_hidden_ContentType = b.ContentType
+	x.xxx_hidden_LiveCapable = b.LiveCapable
 	return m0
 }
 
@@ -1066,7 +1083,7 @@ const file_shale_set_proto_rawDesc = "" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\x06\n" +
 	"\x04site\x1a\b\n" +
-	"\x06labels \x14(d:\x00\"\xdc\a\n" +
+	"\x06labels \x14(d:\x00\"\x88\b\n" +
 	"\x06Source\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -1089,7 +1106,8 @@ const file_shale_set_proto_rawDesc = "" +
 	"\n" +
 	"starvation\x18\x10 \x01(\v2\x11.shale.StarvationR\n" +
 	"starvation\x12!\n" +
-	"\fcontent_type\x18\x11 \x01(\tR\vcontentType\x1a9\n" +
+	"\fcontent_type\x18\x11 \x01(\tR\vcontentType\x12*\n" +
+	"\flive_capable\x18\x12 \x01(\bB\a\xea\x82\x16\x03\x82\x01\x00R\vliveCapable\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xc2\x01\xca\xfc\x15k\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +

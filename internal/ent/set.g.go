@@ -95,5 +95,6 @@ func (e *Source) Proto() *api.Source {
 		x.SetStarvation(e.Starvation)
 	}
 	x.SetContentType(e.ContentType)
+	x.SetLiveCapable(e.LiveCapable)
 	return x
 }

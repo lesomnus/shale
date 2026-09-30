@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
 	"os"
@@ -12,17 +13,17 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
-	"github.com/lesomnus/shale/internal/mpegts"
+	"github.com/lesomnus/shale/internal/fmp4"
 )
 
-// The live helper (§38.7): the tee of a camera recording AAC goes through
-// ffmpeg, and what reaches the relay's queue is the same video with the
-// audio as Opus, starting at a keyframe, in whole packets.
+// The live helper (§38.7): a stream whose audio is AAC goes in, the same
+// video comes out with the audio as Opus, as an init segment and
+// fragments the relay takes as they are, from a key fragment.
 func TestLiveHelperTranscodes(t *testing.T) {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		t.Skip("no ffmpeg on this host")
 	}
-	b, err := os.ReadFile("testdata/aac.ts")
+	b, err := os.ReadFile("testdata/aac.mp4")
 	require.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -38,9 +39,15 @@ func TestLiveHelperTranscodes(t *testing.T) {
 	l.active[id].h = h
 	require.Equal(t, int64(1), l.transcodes())
 
-	// The tee's batches, as feed hands them over.
-	for i := 0; i < len(b); i += tapFlush {
-		require.True(t, h.write(b[i:min(i+tapFlush, len(b))]), "the helper keeps up")
+	// The tee's units, as feed hands them over: the init segment, then
+	// the fragments.
+	r := fmp4.NewReader(bytes.NewReader(b))
+	for {
+		u, err := r.Next()
+		if err != nil {
+			break
+		}
+		require.True(t, h.write(u.Bytes()), "the helper keeps up")
 	}
 	l.stop(id)
 	select {
@@ -49,31 +56,46 @@ func TestLiveHelperTranscodes(t *testing.T) {
 		t.Fatal("the helper did not exit after its input ended")
 	}
 
-	d := mpegts.New()
-	video, audio := 0, 0
-	keyFirst, first := false, true
+	// One unit per message: the messages read back as as many units.
+	var all []byte
+	messages := 0
 	for done := false; !done; {
 		select {
 		case msg := <-l.send:
-			units, au, err := d.WriteAll(msg.GetData().GetPayload())
-			require.NoError(t, err, "whole packets")
-			for _, u := range units {
-				if first {
-					keyFirst, first = u.Keyframe, false
-				}
-				video++
-			}
-			audio += len(au)
+			all = append(all, msg.GetData().GetPayload()...)
+			messages++
 		default:
 			done = true
 		}
 	}
-	require.True(t, d.HasOpus(), "the helper's output names an Opus stream")
-	require.True(t, keyFirst, "the output starts at a keyframe")
-	// 4 s at 30 fps is 120 frames and 200 packets of 20 ms; the probe must
-	// not eat the start (the keyframe above says so), and an ffmpeg may
-	// hold back a few frames at the tail when its input ends.
+	out := fmp4.NewReader(bytes.NewReader(all))
+	var init *fmp4.Init
+	units, video, keyFirst, first := 0, 0, false, true
+	for {
+		u, err := out.Next()
+		if err != nil {
+			break
+		}
+		units++
+		if u.Init != nil {
+			init = u.Init
+			continue
+		}
+		require.NotNil(t, init, "the init segment comes first")
+		if v := u.Frag.Video(init); v != nil {
+			if first {
+				keyFirst, first = v.Key(), false
+			}
+			video += len(v.Samples)
+		}
+	}
+	require.Equal(t, messages, units, "a whole unit per message")
+	require.NotNil(t, init)
+	require.NotNil(t, init.Opus(), "the helper's output has an Opus track")
+	require.Len(t, init.Audio(), 1, "and only that: the AAC was replaced")
+	require.True(t, keyFirst, "the output starts at a key fragment")
+	// 4 s at 30 fps is 120 frames; an ffmpeg may hold back a few at the
+	// tail when its input ends.
 	require.GreaterOrEqual(t, video, 105, "4 s at 30 fps, none lost to the probe")
-	require.GreaterOrEqual(t, audio, 170, "4 s of 20 ms packets")
 	require.Equal(t, int64(0), l.transcodes())
 }

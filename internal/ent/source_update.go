@@ -182,6 +182,26 @@ func (_u *SourceUpdate) SetNillableContentType(v *string) *SourceUpdate {
 	return _u
 }
 
+// SetLiveCapable sets the "live_capable" field.
+func (_u *SourceUpdate) SetLiveCapable(v bool) *SourceUpdate {
+	_u.mutation.SetLiveCapable(v)
+	return _u
+}
+
+// SetNillableLiveCapable sets the "live_capable" field if the given value is not nil.
+func (_u *SourceUpdate) SetNillableLiveCapable(v *bool) *SourceUpdate {
+	if v != nil {
+		_u.SetLiveCapable(*v)
+	}
+	return _u
+}
+
+// ClearLiveCapable clears the value of the "live_capable" field.
+func (_u *SourceUpdate) ClearLiveCapable() *SourceUpdate {
+	_u.mutation.ClearLiveCapable()
+	return _u
+}
+
 // Mutation returns the SourceMutation object of the builder.
 func (_u *SourceUpdate) Mutation() *SourceMutation {
 	return _u.mutation
@@ -314,6 +334,12 @@ func (_u *SourceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.ContentType(); ok {
 		_spec.SetField(source.FieldContentType, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LiveCapable(); ok {
+		_spec.SetField(source.FieldLiveCapable, field.TypeBool, value)
+	}
+	if _u.mutation.LiveCapableCleared() {
+		_spec.ClearField(source.FieldLiveCapable, field.TypeBool)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -489,6 +515,26 @@ func (_u *SourceUpdateOne) SetNillableContentType(v *string) *SourceUpdateOne {
 	return _u
 }
 
+// SetLiveCapable sets the "live_capable" field.
+func (_u *SourceUpdateOne) SetLiveCapable(v bool) *SourceUpdateOne {
+	_u.mutation.SetLiveCapable(v)
+	return _u
+}
+
+// SetNillableLiveCapable sets the "live_capable" field if the given value is not nil.
+func (_u *SourceUpdateOne) SetNillableLiveCapable(v *bool) *SourceUpdateOne {
+	if v != nil {
+		_u.SetLiveCapable(*v)
+	}
+	return _u
+}
+
+// ClearLiveCapable clears the value of the "live_capable" field.
+func (_u *SourceUpdateOne) ClearLiveCapable() *SourceUpdateOne {
+	_u.mutation.ClearLiveCapable()
+	return _u
+}
+
 // Mutation returns the SourceMutation object of the builder.
 func (_u *SourceUpdateOne) Mutation() *SourceMutation {
 	return _u.mutation
@@ -651,6 +697,12 @@ func (_u *SourceUpdateOne) sqlSave(ctx context.Context) (_node *Source, err erro
 	}
 	if value, ok := _u.mutation.ContentType(); ok {
 		_spec.SetField(source.FieldContentType, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LiveCapable(); ok {
+		_spec.SetField(source.FieldLiveCapable, field.TypeBool, value)
+	}
+	if _u.mutation.LiveCapableCleared() {
+		_spec.ClearField(source.FieldLiveCapable, field.TypeBool)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Source{config: _u.config}

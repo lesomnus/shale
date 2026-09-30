@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lesomnus/shale/internal/fmp4"
 )
 
 // Managed capture (§38.3): one capture process per source, ffmpeg by
@@ -25,7 +27,7 @@ import (
 type SourceConfig struct {
 	Alias string
 	Name  string
-	// Input: `v4l2:/dev/video0`, `rtsp://...`, `file:/path.ts` (tests),
+	// Input: `v4l2:/dev/video0`, `rtsp://...`, `file:/path.mp4` (tests),
 	// or `push` for a stream a process writes to the producer's listener
 	// (§38.1, §38.9).
 	Input string
@@ -34,8 +36,8 @@ type SourceConfig struct {
 	Kind string
 	// ContentType is what the laminae of a raw source are, for whoever
 	// reads them, e.g. `application/x-mcap`; proposed to the CP, which
-	// keeps it unless a person set another (§38.9). A TS source is
-	// `video/mp2t`.
+	// keeps it unless a person set another (§38.9). A stream source is
+	// `video/mp4`.
 	ContentType string
 	// Format is what the camera delivers: mjpeg | yuyv | h264 | h265.
 	Format string
@@ -118,7 +120,7 @@ func (c SourceConfig) hasMic() bool { return c.Audio != nil && c.Audio.Device !=
 // The content types a source proposes when its configuration names none
 // (§38.9).
 const (
-	ContentTypeTS  = "video/mp2t"
+	ContentTypeMP4 = "video/mp4"
 	ContentTypeRaw = "application/octet-stream"
 )
 
@@ -131,7 +133,22 @@ func (c SourceConfig) contentType() string {
 		return ContentTypeRaw
 	}
 
-	return ContentTypeTS
+	return ContentTypeMP4
+}
+
+// FragDuration bounds a fragment of a capture's stream (§38.2): the live
+// tee sends whole fragments, so it is how far behind the recording a
+// viewer is at most; every keyframe starts a fragment too.
+const FragDuration = 500 * time.Millisecond
+
+// MuxArgs are the muxer's arguments: fragmented MP4 that plays as it
+// streams (an init segment first, fragments with offsets of their own).
+func MuxArgs() []string {
+	return []string{
+		"-f", "mp4",
+		"-movflags", "frag_keyframe+empty_moov+default_base_moof",
+		"-frag_duration", strconv.FormatInt(FragDuration.Microseconds(), 10),
+	}
 }
 
 // StartingCeiling is the table of §38.5: a ceiling from the mode, with no
@@ -332,23 +349,55 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		args = append(args, "-"+k, v)
 	}
 	args = append(args, c.ExtraOutputArgs...)
-	args = append(args, "-f", "mpegts", "-")
+	if Remuxed(encoder) {
+		// The second stage muxes (§38.3): this one writes TS for it.
+		args = append(args, "-f", "mpegts")
+	} else {
+		args = append(args, MuxArgs()...)
+	}
+	args = append(args, "-")
 
 	return args
 }
 
-// raw is the file input of §38.1 with no capture process: the recording is
-// read at its own frame rate, looped `RawLoops` times (forever when 0),
-// which is what tests use where there is no ffmpeg.
+// RemuxEncoders are the encoders whose output goes through a second ffmpeg
+// before it is fragmented MP4 (§38.3): they hand ffmpeg no parameter sets,
+// so its mp4 muxer writes an empty `avcC` and leaves the samples in Annex
+// B, and they flag every frame a keyframe. A TS in between fixes both: the
+// demuxer's parser finds the parameter sets and the keyframes.
+var RemuxEncoders = map[string]bool{"h264_v4l2m2m": true}
+
+// Remuxed says whether an encoder's output goes through the second stage.
+func Remuxed(encoder string) bool { return RemuxEncoders[encoder] }
+
+// RemuxArgs is the second stage: the first's TS in, the same streams out
+// as fragmented MP4. AAC out of a TS is ADTS-framed and MP4 wants it raw
+// (`aac_adtstoasc`); the probe is kept short since it is what the first
+// keyframe waits for.
+func RemuxArgs(aac bool) []string {
+	args := []string{
+		"-hide_banner", "-loglevel", "warning", "-nostats",
+		"-probesize", "262144", "-analyzeduration", "500000",
+		"-f", "mpegts", "-i", "pipe:0",
+		"-map", "0", "-c", "copy",
+	}
+	if aac {
+		args = append(args, "-bsf:a:0", "aac_adtstoasc")
+	}
+	args = append(args, MuxArgs()...)
+
+	return append(args, "pipe:1")
+}
+
+// raw is the file input of §38.1 with no capture process: the recording,
+// fragmented MP4, is read at its own pace, a fragment's duration between
+// fragments, looped `RawLoops` times (forever when 0), which is what tests
+// use where there is no ffmpeg.
 func (c *Capture) raw(ctx context.Context, read func(r io.Reader)) error {
 	path := strings.TrimPrefix(c.Source.Input, "raw:")
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
-	}
-	fps := c.Source.Fps
-	if fps <= 0 {
-		fps = 30
 	}
 	pr, pw := io.Pipe()
 	c.mu.Lock()
@@ -357,18 +406,18 @@ func (c *Capture) raw(ctx context.Context, read func(r io.Reader)) error {
 	c.mu.Unlock()
 	go func() {
 		defer pw.Close()
-		r := NewReader(bytes.NewReader(b))
-		var p Packet
-		frame := time.Second / time.Duration(fps)
 		next := time.Now()
 		for loop := 0; c.RawLoops == 0 || loop < c.RawLoops; loop++ {
-			r = NewReader(bytes.NewReader(b))
+			r := fmp4.NewReader(bytes.NewReader(b))
 			for {
-				if err := r.Next(&p); err != nil {
+				u, err := r.Next()
+				if err != nil {
 					break
 				}
-				if r.IsVideoFrame(&p) {
-					next = next.Add(frame)
+				if u.Frag != nil {
+					if v := u.Frag.Video(r.Init()); v != nil && r.Init().Video().Timescale > 0 {
+						next = next.Add(time.Duration(v.Duration()) * time.Second / time.Duration(r.Init().Video().Timescale))
+					}
 					if d := time.Until(next); d > 0 {
 						select {
 						case <-ctx.Done():
@@ -377,7 +426,7 @@ func (c *Capture) raw(ctx context.Context, read func(r io.Reader)) error {
 						}
 					}
 				}
-				if _, err := pw.Write(p.Data[:]); err != nil {
+				if _, err := pw.Write(u.Bytes()); err != nil {
 					return
 				}
 			}
@@ -470,6 +519,8 @@ type Capture struct {
 	Profile func() (ceiling int64, keyframe time.Duration)
 	// RawLoops is how many times a `raw:` input is played; 0 is forever.
 	RawLoops int
+	// Remux runs the second stage whatever the encoder (tests).
+	Remux bool
 	// OnLine sees every line the process writes to stderr first, and
 	// answers true for one it consumed, which is then neither logged nor
 	// kept as the last error (§38.10).
@@ -488,13 +539,16 @@ type Capture struct {
 	kicked bool
 }
 
-// CheckAudio looks at what the tables say a capture produces (§38.3): a
-// camera's audio copied into a private stream nothing names is audio no
-// player will find, so the capture is restarted encoding it as AAC, once.
-// It answers true when it restarted; the caller stops reading the stream.
-func (c *Capture) CheckAudio(st Streams) bool {
+// audioRefused looks at what the capture says on stderr (§38.3): a
+// camera's audio in a codec MP4 has no entry for (G.711 above all) makes
+// the muxer refuse at start, and the capture is restarted encoding it as
+// AAC, once. It answers true when the line was that refusal.
+func (c *Capture) audioRefused(line string) bool {
+	if !strings.Contains(line, "Could not find tag for codec") || !strings.Contains(line, "codec not currently supported in container") {
+		return false
+	}
 	in := c.Source.Input
-	if !st.AudioAnon || c.Source.Command != "" || strings.HasPrefix(in, "raw:") || strings.HasPrefix(in, "v4l2:") || isDemo(in) || c.Source.hasMic() {
+	if c.Source.Command != "" || strings.HasPrefix(in, "raw:") || strings.HasPrefix(in, "v4l2:") || isDemo(in) || c.Source.hasMic() {
 		return false
 	}
 	if codec := c.Source.audioCodec(); codec != "" && codec != "copy" {
@@ -507,12 +561,8 @@ func (c *Capture) CheckAudio(st Streams) bool {
 	}
 	c.audioFallback = "aac"
 	c.kicked = true
-	cancel := c.cancel
 	c.mu.Unlock()
-	c.Log.Warn("the camera's audio cannot be stored as it is (TS has no type for it); encoding it as AAC from now on, or set audio.codec", "source", c.Source.Alias)
-	if cancel != nil {
-		cancel()
-	}
+	c.Log.Warn("the camera's audio cannot be stored as it is (MP4 has no entry for it); encoding it as AAC from now on, or set audio.codec", "source", c.Source.Alias, "said", line)
 
 	return true
 }
@@ -603,7 +653,8 @@ func (c *Capture) applyControls() {
 	}
 }
 
-// errKicked is a process ended by CheckAudio, to be started again at once.
+// errKicked is a process ended, or that ended, for the audio to be
+// encoded (audioRefused): started again at once.
 var errKicked = errors.New("capture restarted with the audio encoded")
 
 // healthyRun is how long a capture has to run for its exit to count as an
@@ -631,6 +682,7 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		src.Audio = &a
 	}
 	var cmd *exec.Cmd
+	remux := c.Remux
 	if c.Source.Command != "" {
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", c.Source.Command)
 	} else {
@@ -646,8 +698,18 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 				encoder = c.Encoder
 			}
 		}
+		if c.Remux && !Remuxed(encoder) {
+			// Forced: the first stage writes TS as a remuxed encoder's does.
+			RemuxEncoders[encoder] = true
+			defer delete(RemuxEncoders, encoder)
+		}
+		remux = Remuxed(encoder)
 		args := Args(src, encoder, ceiling, keyframe)
-		c.Log.Info("capture", "source", c.Source.Alias, "cmd", c.Ffmpeg+" "+strings.Join(args, " "))
+		cmdline := c.Ffmpeg + " " + strings.Join(args, " ")
+		if remux {
+			cmdline += " | " + c.Ffmpeg + " " + strings.Join(RemuxArgs(src.aacArchive()), " ")
+		}
+		c.Log.Info("capture", "source", c.Source.Alias, "cmd", cmdline)
 		cmd = exec.CommandContext(ctx, c.Ffmpeg, args...)
 	}
 	cmd.Env = append(os.Environ(), "AV_LOG_FORCE_NOCOLOR=1")
@@ -660,39 +722,48 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	if err != nil {
 		return err
 	}
+	// The second stage (§38.3), when the encoder needs one: the first's
+	// TS in, fragmented MP4 out.
+	var second *exec.Cmd
+	if remux {
+		second = exec.CommandContext(ctx, c.Ffmpeg, RemuxArgs(src.aacArchive())...)
+		second.Env = cmd.Env
+		second.Stdin = stdout
+		out, err := second.StdoutPipe()
+		if err != nil {
+			return err
+		}
+		errs, err := second.StderrPipe()
+		if err != nil {
+			return err
+		}
+		stdout = out
+		go c.scanStderr(errs)
+	}
 	if err := cmd.Start(); err != nil {
 		return err
+	}
+	if second != nil {
+		if err := second.Start(); err != nil {
+			cancel()
+			cmd.Wait()
+
+			return err
+		}
 	}
 	c.mu.Lock()
 	c.up = true
 	c.started = time.Now()
 	c.mu.Unlock()
-
-	go func() {
-		sc := bufio.NewScanner(stderr)
-		sc.Buffer(make([]byte, 64<<10), 1<<20)
-		for sc.Scan() {
-			line := strings.TrimSpace(sc.Text())
-			if line == "" {
-				continue
-			}
-			if c.OnLine != nil && c.OnLine(line) {
-				continue
-			}
-			if c.Source.Idle != nil && !strings.HasPrefix(line, "[") {
-				// At info level ffmpeg also describes its inputs and
-				// outputs at the start; what a component says is tagged.
-				continue
-			}
-			c.mu.Lock()
-			c.lastErr = line
-			c.mu.Unlock()
-			c.Log.Info("ffmpeg", "source", c.Source.Alias, "line", line)
-		}
-	}()
+	go c.scanStderr(stderr)
 
 	read(stdout)
 	err = cmd.Wait()
+	if second != nil {
+		if err2 := second.Wait(); err == nil {
+			err = err2
+		}
+	}
 	c.mu.Lock()
 	c.up = false
 	c.cancel = nil
@@ -708,24 +779,61 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	return fmt.Errorf("capture ended")
 }
 
-// LiveArgs is the ffmpeg command of the live helper (§38.7): a source's TS
-// in, the same video and its audio as Opus out, flushed packet by packet
-// so a viewer is a few frames behind the recording. The probe is kept
-// short, since it is what a viewer waits for; `nobuffer` would shorten it
-// further but discards the packets it probed, the keyframe the tee began
-// with among them.
+// scanStderr reads what a stage says on stderr: the dark detector's lines,
+// the muxer's refusal of the audio, and the rest as the last error.
+func (c *Capture) scanStderr(stderr io.Reader) {
+	sc := bufio.NewScanner(stderr)
+	sc.Buffer(make([]byte, 64<<10), 1<<20)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" {
+			continue
+		}
+		if c.OnLine != nil && c.OnLine(line) {
+			continue
+		}
+		if c.audioRefused(line) {
+			continue
+		}
+		if c.Source.Idle != nil && !strings.HasPrefix(line, "[") {
+			// At info level ffmpeg also describes its inputs and
+			// outputs at the start; what a component says is tagged.
+			continue
+		}
+		c.mu.Lock()
+		c.lastErr = line
+		c.mu.Unlock()
+		c.Log.Info("ffmpeg", "source", c.Source.Alias, "line", line)
+	}
+}
+
+// aacArchive says the archive's audio track is AAC: what a camera's copied
+// audio is taken to be, or what `codec: aac` and a microphone make.
+func (c SourceConfig) aacArchive() bool {
+	codec := c.audioCodec()
+	usb := strings.HasPrefix(c.Input, "v4l2:")
+	silent := codec == "none" || (usb && !c.hasMic())
+
+	return !silent && codec != "opus"
+}
+
+// LiveArgs is the ffmpeg command of the live helper (§38.7): a source's
+// fragmented MP4 in, the same video and its audio as Opus out, in
+// fragments of its own, so a viewer is a fragment behind the recording.
+// The probe is kept short, since it is what a viewer waits for.
 func LiveArgs(bitrate int64) []string {
 	if bitrate <= 0 {
 		bitrate = DefaultAudioBitrate
 	}
-
-	return []string{
+	args := []string{
 		"-hide_banner", "-loglevel", "warning", "-nostats",
 		"-probesize", "262144", "-analyzeduration", "500000",
-		"-f", "mpegts", "-i", "pipe:0",
+		"-f", "mp4", "-i", "pipe:0",
 		"-map", "0:v:0", "-map", "0:a:0?",
 		"-c:v", "copy", "-c:a", "libopus", "-b:a", strconv.FormatInt(bitrate, 10),
-		"-muxdelay", "0", "-muxpreload", "0", "-flush_packets", "1",
-		"-f", "mpegts", "pipe:1",
+		"-flush_packets", "1",
 	}
+	args = append(args, MuxArgs()...)
+
+	return append(args, "pipe:1")
 }

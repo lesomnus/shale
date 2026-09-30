@@ -33,12 +33,26 @@ const (
 // that lost its framing, not a frame.
 const MaxFrame = 64 << 20
 
-// Frame is one frame of a raw stream.
+// Frame is one frame of a stream: what a raw source sends, and what the
+// MP4 reader makes of a capture's stream (§38.2).
 type Frame struct {
 	Kind FrameKind
 	// Time is the writer's timestamp, zero when it gave none.
 	Time    time.Time
 	Payload []byte
+	// Key says a lamina may be cut before this data frame: any raw frame,
+	// a fragment whose video begins at a sync sample.
+	Key bool
+	// Frames is how many video frames the data holds, for the counters:
+	// one for a raw frame.
+	Frames int
+	// Ticks is the video's decode time in Track's timescale and Track the
+	// video track, for the index a lamina ends with; zero for a raw
+	// frame, which has none.
+	Ticks int64
+	Track uint32
+	// Seq numbers a fragment, so a dropped one shows.
+	Seq uint32
 }
 
 var (
@@ -88,6 +102,7 @@ func (r *FrameReader) Next(f *Frame) error {
 	if ns != 0 {
 		f.Time = time.Unix(0, ns).UTC()
 	}
+	f.Key, f.Frames, f.Ticks, f.Track, f.Seq = kind == FrameData, 1, 0, 0, 0
 
 	return nil
 }

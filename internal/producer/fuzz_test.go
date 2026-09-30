@@ -2,32 +2,24 @@ package producer
 
 import (
 	"bytes"
-	"io"
+	"os"
 	"testing"
 )
 
-// The TS reader takes any bytes without panicking (§57).
+// The MP4 reader takes any bytes without panicking (§57).
 func FuzzReader(f *testing.F) {
 	f.Add([]byte{})
-	f.Add([]byte{0x47, 0x40, 0x00, 0x10})
-	pkt := make([]byte, PacketSize*3)
-	for i := 0; i < len(pkt); i += PacketSize {
-		pkt[i] = 0x47
+	f.Add([]byte("\x00\x00\x00\x08free"))
+	if b, err := os.ReadFile("testdata/aac.mp4"); err == nil {
+		f.Add(b[:2000])
 	}
-	f.Add(pkt)
 	f.Fuzz(func(t *testing.T, b []byte) {
-		r := NewReader(bytes.NewReader(b))
-		var pk Packet
+		r := NewMP4Reader(bytes.NewReader(b))
+		var fr Frame
 		for range 64 {
-			if err := r.Next(&pk); err != nil {
-				if err != io.EOF && err != ErrSync && err != io.ErrUnexpectedEOF {
-					_ = err
-				}
+			if err := r.Next(&fr); err != nil {
 				break
 			}
-			r.IsKeyframe(&pk)
-			r.IsVideoFrame(&pk)
-			r.Tables()
 		}
 	})
 }

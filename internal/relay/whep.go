@@ -18,14 +18,14 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
-	"github.com/lesomnus/shale/internal/mpegts"
 	"github.com/lesomnus/shale/internal/token"
 )
 
 // The WHEP side (§35.8, §39.4): POST /whep/{source} with a view token and
 // an SDP offer answers 201 with the SDP answer and a session Location;
-// DELETE /whep/{session} ends it. Video only, never transcoded: an H.264
-// (or H.265) track packetized from the access units the producer sends.
+// DELETE /whep/{session} ends it. Never transcoded: an H.264 (or H.265)
+// track packetized from the samples of the fragments the producer sends,
+// and the Opus track beside it.
 
 type whepServer struct {
 	r   *Relay
@@ -134,7 +134,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 
 	src := w.r.sources.get(sourceId)
 	mime := webrtc.MimeTypeH264
-	if src.codec() == mpegts.StreamH265 {
+	if src.h265() {
 		mime = webrtc.MimeTypeH265
 	}
 	pc, err := w.api.NewPeerConnection(webrtc.Configuration{ICEServers: w.ice})
@@ -287,7 +287,7 @@ func (w *whepServer) recent(rw http.ResponseWriter, req *http.Request, sourceRef
 		return
 	}
 	w.r.m.recent.Add(req.Context(), int64(len(b)))
-	rw.Header().Set("Content-Type", "video/mp2t")
+	rw.Header().Set("Content-Type", "video/mp4")
 	rw.Header().Set("Content-Length", strconv.Itoa(len(b)))
 	rw.Header().Set("Cache-Control", "no-store")
 	rw.Header().Set("Shale-Recent-Start", start.UTC().Format(time.RFC3339Nano))
@@ -338,19 +338,19 @@ func (w *whepServer) closeAll() {
 
 // write is the sink of a viewer: one access unit as one sample, which the
 // track packetizes into RTP.
-func (v *viewer) write(au mpegts.AccessUnit, d time.Duration) {
-	if err := v.track.WriteSample(sampleOf(au, d)); err != nil {
+func (v *viewer) write(data []byte, d time.Duration) {
+	if err := v.track.WriteSample(media.Sample{Data: data, Duration: d}); err != nil {
 		return
 	}
-	v.source.r.m.egress.Add(context.Background(), int64(len(au.Data)))
+	v.source.r.m.egress.Add(context.Background(), int64(len(data)))
 }
 
 // writeAudio is one Opus packet as one sample.
-func (v *viewer) writeAudio(u mpegts.AudioUnit, d time.Duration) {
+func (v *viewer) writeAudio(data []byte, d time.Duration) {
 	if v.audio == nil {
 		return
 	}
-	v.audio.WriteSample(media.Sample{Data: u.Data, Duration: d})
+	v.audio.WriteSample(media.Sample{Data: data, Duration: d})
 }
 
 // A session key is random, prefixed by the actor for the per-actor limit.
@@ -367,14 +367,6 @@ func actorOf(key string) string {
 	}
 
 	return ""
-}
-
-// codec is the source's video stream type, once its tables were seen.
-func (s *source) codec() byte {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return s.demux.Codec()
 }
 
 var _ = net.JoinHostPort

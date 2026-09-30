@@ -120,6 +120,20 @@ func (_c *SourceCreate) SetContentType(v string) *SourceCreate {
 	return _c
 }
 
+// SetLiveCapable sets the "live_capable" field.
+func (_c *SourceCreate) SetLiveCapable(v bool) *SourceCreate {
+	_c.mutation.SetLiveCapable(v)
+	return _c
+}
+
+// SetNillableLiveCapable sets the "live_capable" field if the given value is not nil.
+func (_c *SourceCreate) SetNillableLiveCapable(v *bool) *SourceCreate {
+	if v != nil {
+		_c.SetLiveCapable(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *SourceCreate) SetTenantId(v uuid.UUID) *SourceCreate {
 	_c.mutation.SetTenantId(v)
@@ -348,6 +362,10 @@ func (_c *SourceCreate) createSpec() (*Source, *sqlgraph.CreateSpec, error) {
 	if value, ok := _c.mutation.ContentType(); ok {
 		_spec.SetField(source.FieldContentType, field.TypeString, value)
 		_node.ContentType = value
+	}
+	if value, ok := _c.mutation.LiveCapable(); ok {
+		_spec.SetField(source.FieldLiveCapable, field.TypeBool, value)
+		_node.LiveCapable = value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -114,6 +114,8 @@ func (Source) Fields() []ent.Field {
 		field.Json("starvation", &api.Starvation{}).ValueScanner(entpb.ValueScanner[*api.Starvation]{}).
 			Optional(),
 		field.String("content_type"),
+		field.Bool("live_capable").
+			Optional(),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").

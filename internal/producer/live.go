@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
+
+	"github.com/lesomnus/shale/internal/fmp4"
 )
 
 // The live helper (§38.7): browsers play no audio but Opus over WebRTC.
@@ -34,10 +36,6 @@ const (
 	// started again before the tap sends the camera's bytes as they are.
 	helperTries = 3
 )
-
-// needsOpus says whether a stream's audio has to be transcoded for the
-// relay: there is audio, and it is not Opus.
-func needsOpus(st Streams) bool { return st.HasAudio() && !st.AudioOpus }
 
 // helper is one running transcoder.
 type helper struct {
@@ -114,27 +112,20 @@ func (l *relayLink) startHelper(id pdid.Id, s *source) (*helper, error) {
 			}
 		}
 	}()
-	// The helper's output to the relay, whole packets at a time, until the
-	// process is gone and the pipe is drained.
+	// The helper's output to the relay, its init segment and then a
+	// fragment at a time, until the process is gone and the pipe is
+	// drained.
 	drained := make(chan struct{})
 	go func() {
 		defer close(drained)
 		defer pr.Close()
-		var buf []byte
-		chunk := make([]byte, tapFlush)
+		r := fmp4.NewReader(pr)
 		for {
-			n, err := pr.Read(chunk)
-			if n > 0 {
-				buf = append(buf, chunk[:n]...)
-				whole := len(buf) - len(buf)%PacketSize
-				if whole > 0 {
-					l.sendData(id, buf[:whole])
-					buf = append(buf[:0], buf[whole:]...)
-				}
-			}
+			u, err := r.Next()
 			if err != nil {
 				return
 			}
+			l.sendData(id, u.Bytes())
 		}
 	}()
 	go func() {

@@ -2833,6 +2833,7 @@ type SourceProposal struct {
 	xxx_hidden_Source      *SourceRef             `protobuf:"bytes,1,opt,name=source"`
 	xxx_hidden_Profile     *SegmentProfile        `protobuf:"bytes,2,opt,name=profile"`
 	xxx_hidden_ContentType string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType"`
+	xxx_hidden_LiveCapable bool                   `protobuf:"varint,4,opt,name=live_capable,json=liveCapable"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2883,6 +2884,13 @@ func (x *SourceProposal) GetContentType() string {
 	return ""
 }
 
+func (x *SourceProposal) GetLiveCapable() bool {
+	if x != nil {
+		return x.xxx_hidden_LiveCapable
+	}
+	return false
+}
+
 func (x *SourceProposal) SetSource(v *SourceRef) {
 	x.xxx_hidden_Source = v
 }
@@ -2893,6 +2901,10 @@ func (x *SourceProposal) SetProfile(v *SegmentProfile) {
 
 func (x *SourceProposal) SetContentType(v string) {
 	x.xxx_hidden_ContentType = v
+}
+
+func (x *SourceProposal) SetLiveCapable(v bool) {
+	x.xxx_hidden_LiveCapable = v
 }
 
 func (x *SourceProposal) HasSource() bool {
@@ -2922,10 +2934,13 @@ type SourceProposal_builder struct {
 
 	Source  *SourceRef
 	Profile *SegmentProfile
-	// What the producer sends for this source (§38.9): `video/mp2t` for a
-	// camera or a pushed TS stream, the writer's declared type for raw
+	// What the producer sends for this source (§38.9): `video/mp4` for a
+	// camera or a pushed MP4 stream, the writer's declared type for raw
 	// frames. Fills in the source's content_type when nobody set it.
 	ContentType string
+	// Whether the producer can feed this source to a relay (§39.3): a
+	// stream it reads, not raw frames. Only the producer knows.
+	LiveCapable bool
 }
 
 func (b0 SourceProposal_builder) Build() *SourceProposal {
@@ -2935,6 +2950,7 @@ func (b0 SourceProposal_builder) Build() *SourceProposal {
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_Profile = b.Profile
 	x.xxx_hidden_ContentType = b.ContentType
+	x.xxx_hidden_LiveCapable = b.LiveCapable
 	return m0
 }
 
@@ -4090,6 +4106,7 @@ type SourceAddRequest struct {
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Starvation  *Starvation            `protobuf:"bytes,16,opt,name=starvation"`
 	xxx_hidden_ContentType string                 `protobuf:"bytes,17,opt,name=content_type,json=contentType"`
+	xxx_hidden_LiveCapable bool                   `protobuf:"varint,18,opt,name=live_capable,json=liveCapable"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -4226,12 +4243,19 @@ func (x *SourceAddRequest) GetContentType() string {
 	return ""
 }
 
+func (x *SourceAddRequest) GetLiveCapable() bool {
+	if x != nil {
+		return x.xxx_hidden_LiveCapable
+	}
+	return false
+}
+
 func (x *SourceAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 16)
 }
 
 func (x *SourceAddRequest) SetTenant(v *TenantRef) {
@@ -4290,6 +4314,11 @@ func (x *SourceAddRequest) SetContentType(v string) {
 	x.xxx_hidden_ContentType = v
 }
 
+func (x *SourceAddRequest) SetLiveCapable(v bool) {
+	x.xxx_hidden_LiveCapable = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 16)
+}
+
 func (x *SourceAddRequest) HasId() bool {
 	if x == nil {
 		return false
@@ -4346,6 +4375,13 @@ func (x *SourceAddRequest) HasStarvation() bool {
 	return x.xxx_hidden_Starvation != nil
 }
 
+func (x *SourceAddRequest) HasLiveCapable() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 15)
+}
+
 func (x *SourceAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -4379,6 +4415,11 @@ func (x *SourceAddRequest) ClearStarvation() {
 	x.xxx_hidden_Starvation = nil
 }
 
+func (x *SourceAddRequest) ClearLiveCapable() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
+	x.xxx_hidden_LiveCapable = false
+}
+
 type SourceAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -4397,6 +4438,7 @@ type SourceAddRequest_builder struct {
 	DateCreated *timestamppb.Timestamp
 	Starvation  *Starvation
 	ContentType string
+	LiveCapable *bool
 }
 
 func (b0 SourceAddRequest_builder) Build() *SourceAddRequest {
@@ -4404,7 +4446,7 @@ func (b0 SourceAddRequest_builder) Build() *SourceAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 16)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -4421,6 +4463,10 @@ func (b0 SourceAddRequest_builder) Build() *SourceAddRequest {
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Starvation = b.Starvation
 	x.xxx_hidden_ContentType = b.ContentType
+	if b.LiveCapable != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 16)
+		x.xxx_hidden_LiveCapable = *b.LiveCapable
+	}
 	return m0
 }
 
@@ -4536,6 +4582,7 @@ type SourceSelect struct {
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_Starvation  bool                   `protobuf:"varint,16,opt,name=starvation"`
 	xxx_hidden_ContentType bool                   `protobuf:"varint,17,opt,name=content_type,json=contentType"`
+	xxx_hidden_LiveCapable bool                   `protobuf:"varint,18,opt,name=live_capable,json=liveCapable"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -4686,9 +4733,16 @@ func (x *SourceSelect) GetContentType() bool {
 	return false
 }
 
+func (x *SourceSelect) GetLiveCapable() bool {
+	if x != nil {
+		return x.xxx_hidden_LiveCapable
+	}
+	return false
+}
+
 func (x *SourceSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 18)
 }
 
 func (x *SourceSelect) SetTenant(v *TenantSelect) {
@@ -4701,22 +4755,22 @@ func (x *SourceSelect) SetSite(v *SiteSelect) {
 
 func (x *SourceSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 18)
 }
 
 func (x *SourceSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 18)
 }
 
 func (x *SourceSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 18)
 }
 
 func (x *SourceSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 18)
 }
 
 func (x *SourceSelect) SetSet(v *SetSelect) {
@@ -4725,47 +4779,52 @@ func (x *SourceSelect) SetSet(v *SetSelect) {
 
 func (x *SourceSelect) SetOrdinal(v bool) {
 	x.xxx_hidden_Ordinal = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 18)
 }
 
 func (x *SourceSelect) SetZone(v bool) {
 	x.xxx_hidden_Zone = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 18)
 }
 
 func (x *SourceSelect) SetProfile(v bool) {
 	x.xxx_hidden_Profile = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 18)
 }
 
 func (x *SourceSelect) SetObserved(v bool) {
 	x.xxx_hidden_Observed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 18)
 }
 
 func (x *SourceSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 18)
 }
 
 func (x *SourceSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 18)
 }
 
 func (x *SourceSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 18)
 }
 
 func (x *SourceSelect) SetStarvation(v bool) {
 	x.xxx_hidden_Starvation = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 18)
 }
 
 func (x *SourceSelect) SetContentType(v bool) {
 	x.xxx_hidden_ContentType = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 18)
+}
+
+func (x *SourceSelect) SetLiveCapable(v bool) {
+	x.xxx_hidden_LiveCapable = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 18)
 }
 
 func (x *SourceSelect) HasAll() bool {
@@ -4887,6 +4946,13 @@ func (x *SourceSelect) HasContentType() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 16)
 }
 
+func (x *SourceSelect) HasLiveCapable() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
+}
+
 func (x *SourceSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -4969,6 +5035,11 @@ func (x *SourceSelect) ClearContentType() {
 	x.xxx_hidden_ContentType = false
 }
 
+func (x *SourceSelect) ClearLiveCapable() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 17)
+	x.xxx_hidden_LiveCapable = false
+}
+
 type SourceSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -4989,6 +5060,7 @@ type SourceSelect_builder struct {
 	DateCreated *bool
 	Starvation  *bool
 	ContentType *bool
+	LiveCapable *bool
 }
 
 func (b0 SourceSelect_builder) Build() *SourceSelect {
@@ -4996,63 +5068,67 @@ func (b0 SourceSelect_builder) Build() *SourceSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 18)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 18)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 18)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 18)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 18)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	x.xxx_hidden_Set = b.Set
 	if b.Ordinal != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 18)
 		x.xxx_hidden_Ordinal = *b.Ordinal
 	}
 	if b.Zone != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 18)
 		x.xxx_hidden_Zone = *b.Zone
 	}
 	if b.Profile != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 18)
 		x.xxx_hidden_Profile = *b.Profile
 	}
 	if b.Observed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 18)
 		x.xxx_hidden_Observed = *b.Observed
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 18)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 18)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 18)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.Starvation != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 18)
 		x.xxx_hidden_Starvation = *b.Starvation
 	}
 	if b.ContentType != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 18)
 		x.xxx_hidden_ContentType = *b.ContentType
+	}
+	if b.LiveCapable != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 18)
+		x.xxx_hidden_LiveCapable = *b.LiveCapable
 	}
 	return m0
 }
@@ -5074,6 +5150,7 @@ type SourcePatchRequest struct {
 	xxx_hidden_Starvation       *Starvation            `protobuf:"bytes,32,opt,name=starvation"`
 	xxx_hidden_StarvationNull   bool                   `protobuf:"varint,33,opt,name=starvation_null,json=starvationNull"`
 	xxx_hidden_ContentType      *string                `protobuf:"bytes,34,opt,name=content_type,json=contentType"`
+	xxx_hidden_LiveCapable      bool                   `protobuf:"varint,36,opt,name=live_capable,json=liveCapable"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -5225,23 +5302,30 @@ func (x *SourcePatchRequest) GetContentType() string {
 	return ""
 }
 
+func (x *SourcePatchRequest) GetLiveCapable() bool {
+	if x != nil {
+		return x.xxx_hidden_LiveCapable
+	}
+	return false
+}
+
 func (x *SourcePatchRequest) SetRef(v *SourceRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *SourcePatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 16)
 }
 
 func (x *SourcePatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 16)
 }
 
 func (x *SourcePatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 16)
 }
 
 func (x *SourcePatchRequest) SetLabels(v map[string]string) {
@@ -5250,7 +5334,7 @@ func (x *SourcePatchRequest) SetLabels(v map[string]string) {
 
 func (x *SourcePatchRequest) SetZone(v string) {
 	x.xxx_hidden_Zone = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 16)
 }
 
 func (x *SourcePatchRequest) SetProfile(v *SegmentProfile) {
@@ -5259,7 +5343,7 @@ func (x *SourcePatchRequest) SetProfile(v *SegmentProfile) {
 
 func (x *SourcePatchRequest) SetProfileNull(v bool) {
 	x.xxx_hidden_ProfileNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 16)
 }
 
 func (x *SourcePatchRequest) SetObserved(v *ObservedRate) {
@@ -5268,7 +5352,7 @@ func (x *SourcePatchRequest) SetObserved(v *ObservedRate) {
 
 func (x *SourcePatchRequest) SetObservedNull(v bool) {
 	x.xxx_hidden_ObservedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 16)
 }
 
 func (x *SourcePatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -5277,7 +5361,7 @@ func (x *SourcePatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *SourcePatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 16)
 }
 
 func (x *SourcePatchRequest) SetStarvation(v *Starvation) {
@@ -5286,12 +5370,17 @@ func (x *SourcePatchRequest) SetStarvation(v *Starvation) {
 
 func (x *SourcePatchRequest) SetStarvationNull(v bool) {
 	x.xxx_hidden_StarvationNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 16)
 }
 
 func (x *SourcePatchRequest) SetContentType(v string) {
 	x.xxx_hidden_ContentType = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 16)
+}
+
+func (x *SourcePatchRequest) SetLiveCapable(v bool) {
+	x.xxx_hidden_LiveCapable = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 16)
 }
 
 func (x *SourcePatchRequest) HasRef() bool {
@@ -5392,6 +5481,13 @@ func (x *SourcePatchRequest) HasContentType() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
 }
 
+func (x *SourcePatchRequest) HasLiveCapable() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 15)
+}
+
 func (x *SourcePatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -5457,6 +5553,11 @@ func (x *SourcePatchRequest) ClearContentType() {
 	x.xxx_hidden_ContentType = nil
 }
 
+func (x *SourcePatchRequest) ClearLiveCapable() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
+	x.xxx_hidden_LiveCapable = false
+}
+
 type SourcePatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -5499,6 +5600,7 @@ type SourcePatchRequest_builder struct {
 	// outright: setting both this and starvation clears.
 	StarvationNull *bool
 	ContentType    *string
+	LiveCapable    *bool
 }
 
 func (b0 SourcePatchRequest_builder) Build() *SourcePatchRequest {
@@ -5507,45 +5609,49 @@ func (b0 SourcePatchRequest_builder) Build() *SourcePatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 16)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 16)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 16)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	if b.Zone != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 16)
 		x.xxx_hidden_Zone = b.Zone
 	}
 	x.xxx_hidden_Profile = b.Profile
 	if b.ProfileNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 16)
 		x.xxx_hidden_ProfileNull = *b.ProfileNull
 	}
 	x.xxx_hidden_Observed = b.Observed
 	if b.ObservedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 16)
 		x.xxx_hidden_ObservedNull = *b.ObservedNull
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 16)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_Starvation = b.Starvation
 	if b.StarvationNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 16)
 		x.xxx_hidden_StarvationNull = *b.StarvationNull
 	}
 	if b.ContentType != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 16)
 		x.xxx_hidden_ContentType = b.ContentType
+	}
+	if b.LiveCapable != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 16)
+		x.xxx_hidden_LiveCapable = *b.LiveCapable
 	}
 	return m0
 }
@@ -6591,11 +6697,12 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\x04link\x18\x02 \x01(\v2\x12.shale.LinkProfileR\x04link\x12-\n" +
 	"\asources\x18\x03 \x03(\v2\x13.shale.SourceAgreedR\asources\x123\n" +
 	"\vadjustments\x18\x04 \x03(\v2\x11.shale.AdjustmentR\vadjustments\x12,\n" +
-	"\x05relay\x18\x05 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\"\x95\x01\n" +
+	"\x05relay\x18\x05 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\"\xbf\x01\n" +
 	"\x0eSourceProposal\x12(\n" +
 	"\x06source\x18\x01 \x01(\v2\x10.shale.SourceRefR\x06source\x12/\n" +
 	"\aprofile\x18\x02 \x01(\v2\x15.shale.SegmentProfileR\aprofile\x12(\n" +
-	"\fcontent_type\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\vcontentType\"\x86\x01\n" +
+	"\fcontent_type\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\vcontentType\x12(\n" +
+	"\flive_capable\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\vliveCapable\"\x86\x01\n" +
 	"\tSourceRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12,\n" +
 	"\x04slug\x18\x04 \x01(\v2\x16.shale.SourceRefBySlugH\x00R\x04slug\x122\n" +
@@ -6642,7 +6749,7 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"view_token\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\tviewToken\x12=\n" +
 	"\fdate_expires\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12$\n" +
 	"\n" +
-	"recent_url\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\trecentUrl\"\x96\x05\n" +
+	"recent_url\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\trecentUrl\"\xb9\x05\n" +
 	"\x10SourceAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -6661,13 +6768,14 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"starvation\x18\x10 \x01(\v2\x11.shale.StarvationR\n" +
 	"starvation\x12(\n" +
-	"\fcontent_type\x18\x11 \x01(\tB\x05\xaa\x01\x02\b\x02R\vcontentType\x1a9\n" +
+	"\fcontent_type\x18\x11 \x01(\tB\x05\xaa\x01\x02\b\x02R\vcontentType\x12!\n" +
+	"\flive_capable\x18\x12 \x01(\bR\vliveCapable\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"c\n" +
 	"\x10SourceGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.SourceRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.shale.SourceSelectR\x06select\"\xfc\x03\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.shale.SourceSelectR\x06select\"\x9f\x04\n" +
 	"\fSourceSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -6689,7 +6797,8 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"starvation\x18\x10 \x01(\bR\n" +
 	"starvation\x12!\n" +
-	"\fcontent_type\x18\x11 \x01(\bR\vcontentType\"\x9a\x05\n" +
+	"\fcontent_type\x18\x11 \x01(\bR\vcontentType\x12!\n" +
+	"\flive_capable\x18\x12 \x01(\bR\vliveCapable\"\xbd\x05\n" +
 	"\x12SourcePatchRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.SourceRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -6708,7 +6817,8 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"starvation\x18  \x01(\v2\x11.shale.StarvationR\n" +
 	"starvation\x12'\n" +
 	"\x0fstarvation_null\x18! \x01(\bR\x0estarvationNull\x12!\n" +
-	"\fcontent_type\x18\" \x01(\tR\vcontentType\x1a9\n" +
+	"\fcontent_type\x18\" \x01(\tR\vcontentType\x12!\n" +
+	"\flive_capable\x18$ \x01(\bR\vliveCapable\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +

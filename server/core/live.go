@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -133,13 +132,10 @@ func livePolicy(v api.LivePolicy) api.LivePolicy {
 	return api.LivePolicy_LIVE_POLICY_ALWAYS
 }
 
-// showable says whether a relay could show a source: video, not a raw
-// stream (§38.9).
-func showable(src *api.Source) bool {
-	ct := src.GetContentType()
-
-	return ct == "" || strings.HasPrefix(ct, "video/")
-}
+// showable says whether a relay could show a source (§39.3): what its
+// producer said at negotiation, since only the producer knows whether it
+// reads the stream or takes raw frames it cannot show (§38.9).
+func showable(src *api.Source) bool { return src.GetLiveCapable() }
 
 // relayAlive says whether a relay still counts as up: `downAfter` is
 // `node_down_after`, which relays are held to as nodes are (§39.2).
@@ -236,7 +232,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 	for _, src := range sources {
 		// A raw source (§38.9) has nothing a relay could show.
 		if !showable(src) {
-			return nil, status.Errorf(codes.FailedPrecondition, "%s is %s: nothing a relay could show", src.GetAlias(), src.GetContentType())
+			return nil, status.Errorf(codes.FailedPrecondition, "%s: nothing a relay could show; its producer takes raw frames, or never negotiated", src.GetAlias())
 		}
 	}
 	now := s.d.now()

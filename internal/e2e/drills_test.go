@@ -49,7 +49,7 @@ func adoptProducer(t *testing.T, ctx context.Context, producers api.ProducerServ
 // allow is refused, never clamped, so its segments are lost and say so;
 // once the clock is right, recording resumes.
 func TestClockSkew(t *testing.T) {
-	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.mp4"))
 	require.NoError(t, err)
 	c := start(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -136,7 +136,7 @@ func TestRelayRestart(t *testing.T) {
 	}.Build())
 	require.NoError(t, err)
 
-	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.mp4"))
 	require.NoError(t, err)
 	pctx, pcancel := context.WithCancel(ctx)
 	defer pcancel()
@@ -186,7 +186,7 @@ func TestRelayRestart(t *testing.T) {
 // the backlog is uploaded in order, accepted with its past data times, and
 // nothing is lost while the RAM budget holds.
 func TestBacklogAfterOutage(t *testing.T) {
-	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.mp4"))
 	require.NoError(t, err)
 	c := start(t)
 	ctx, cancel := context.WithCancel(context.Background())

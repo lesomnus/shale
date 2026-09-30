@@ -22,7 +22,7 @@ import (
 	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/shale/api"
-	"github.com/lesomnus/shale/internal/mpegts"
+	"github.com/lesomnus/shale/internal/fmp4"
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/token"
 )
@@ -37,7 +37,7 @@ func TestLive(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	admin := c.dial("@acme/admin")
-	set, live := liveSource(t, ctx, c, admin, "av.ts")
+	set, live := liveSource(t, ctx, c, admin, "av.mp4")
 	relays := api.NewRelayServiceClient(c.dialCluster("@cluster/ops"))
 
 	// On demand (§39.3): the producer attached under the default, `always`,
@@ -93,7 +93,7 @@ func TestLiveAlways(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	admin := c.dial("@acme/admin")
-	set, _ := liveSource(t, ctx, c, admin, "av.ts")
+	set, _ := liveSource(t, ctx, c, admin, "av.mp4")
 	relays := api.NewRelayServiceClient(c.dialCluster("@cluster/ops"))
 
 	awaitActive(t, ctx, relays, 1, "always: the source is active with no viewer")
@@ -173,7 +173,7 @@ func TestLiveTranscode(t *testing.T) {
 	defer cancel()
 	admin := c.dial("@acme/admin")
 	smallLaminae(t, ctx, c)
-	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "aac.ts"))
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "aac.mp4"))
 	require.NoError(t, err)
 	set, live, p := liveProducer(t, ctx, c, admin, producer.SourceConfig{Alias: "door", Input: "raw:" + sample, Fps: 30, MaxBitrate: 2_000_000, Format: "h264"})
 
@@ -185,9 +185,8 @@ func TestLiveTranscode(t *testing.T) {
 	v.leave(t)
 
 	// The stored segment carries the camera's AAC, not Opus.
-	st := committedStreams(t, ctx, admin, set)
-	require.Equal(t, []byte{0x0f}, st.AudioTypes, "the recording keeps the camera's AAC")
-	require.False(t, st.AudioOpus)
+	init := committedInit(t, ctx, admin, set)
+	require.Equal(t, []string{"mp4a"}, audioEntries(init), "the recording keeps the camera's AAC")
 }
 
 // TestLiveTwoTracks is the second audio track (§38.7): a source the
@@ -212,10 +211,8 @@ func TestLiveTwoTracks(t *testing.T) {
 	require.Zero(t, p.Stats().LiveTranscodes, "the Opus is the capture's own: no helper")
 	v.leave(t)
 
-	st := committedStreams(t, ctx, admin, set)
-	require.Equal(t, []byte{0x0f, 0x06}, st.AudioTypes, "AAC for the archive, Opus for live")
-	require.True(t, st.AudioOpus)
-	require.False(t, st.AudioAnon)
+	init := committedInit(t, ctx, admin, set)
+	require.Equal(t, []string{"mp4a", "Opus"}, audioEntries(init), "AAC for the archive, Opus for live")
 }
 
 // smallLaminae activates an UploadPolicy of laminae of a few MB, so a
@@ -234,18 +231,14 @@ func smallLaminae(t *testing.T, ctx context.Context, c *cluster) {
 	require.NoError(t, err)
 }
 
-// committedStreams waits for the set's one source to commit a lamina,
-// fetches it, and answers what its tables say.
-func committedStreams(t *testing.T, ctx context.Context, admin *grpc.ClientConn, set *api.Set) producer.Streams {
+// committedInit waits for the set's one source to commit a lamina,
+// fetches it, checks it plays on its own, and answers its init segment.
+func committedInit(t *testing.T, ctx context.Context, admin *grpc.ClientConn, set *api.Set) *fmp4.Init {
 	t.Helper()
 	_, url := committedLamina(t, ctx, admin, set)
-	b := fetch(t, url)
-	r := producer.NewReader(bytesReader(b))
-	var pk producer.Packet
-	for r.Next(&pk) == nil {
-	}
+	init, _ := playsOnItsOwn(t, fetch(t, url))
 
-	return r.Streams()
+	return init
 }
 
 // committedLamina waits for the set's one source to commit a lamina and
@@ -321,33 +314,35 @@ func TestLiveRecent(t *testing.T) {
 	require.NoError(t, err)
 	ended := committed.GetDateEnded().AsTime()
 	require.False(t, start.After(ended), "the window starts at %s, after the last lamina ended at %s", start, ended)
-	require.Equal(t, "video/mp2t", hdr.Get("Content-Type"))
+	require.Equal(t, "video/mp4", hdr.Get("Content-Type"))
 	secs, err := strconv.ParseFloat(hdr.Get("Shale-Recent-Seconds"), 64)
 	require.NoError(t, err)
 	require.Greater(t, secs, 2.0)
 
-	// The tables first, a keyframe first, and the frames of a window.
-	require.Zero(t, len(b)%188)
-	require.Equal(t, uint16(0), uint16(b[1]&0x1f)<<8|uint16(b[2]), "the PAT first")
-	d := mpegts.New()
-	units, err := d.Write(b)
-	require.NoError(t, err)
-	units = append(units, d.Flush()...)
-	require.NotEmpty(t, units)
-	require.True(t, units[0].Keyframe, "the window starts at a keyframe")
-	require.GreaterOrEqual(t, len(units), 60, "at least two seconds of frames")
-	require.True(t, d.HasOpus(), "the Opus track is in it, as in the lamina")
-	require.Zero(t, d.Gaps(), "nothing torn")
+	// The init segment first, a key fragment first, the fragments of a
+	// window in a row, and the Opus track in it, as in the lamina.
+	require.Equal(t, "ftyp", string(b[4:8]), "the init segment first")
+	init, frags := laminaOf(t, b)
+	require.NotEmpty(t, frags)
+	require.True(t, frags[0].Key(init), "the window starts at a key fragment")
+	frames := 0
+	for i, f := range frags {
+		if v := f.Video(init); v != nil {
+			frames += len(v.Samples)
+		}
+		if i > 0 {
+			require.Equal(t, frags[i-1].Seq+1, f.Seq, "nothing torn")
+		}
+	}
+	require.GreaterOrEqual(t, frames, 60, "at least two seconds of frames")
+	require.NotNil(t, init.Opus(), "the Opus track is in it, as in the lamina")
 
 	// The last second only is less than the whole, and starts decodable too.
 	tail, _ := getRecent(t, live.GetRecentUrl(), live.GetViewToken(), "1.5", http.StatusOK)
 	require.Less(t, len(tail), len(b))
-	d2 := mpegts.New()
-	units2, err := d2.Write(tail)
-	require.NoError(t, err)
-	units2 = append(units2, d2.Flush()...)
-	require.NotEmpty(t, units2)
-	require.True(t, units2[0].Keyframe)
+	init2, frags2 := laminaOf(t, tail)
+	require.NotEmpty(t, frags2)
+	require.True(t, frags2[0].Key(init2))
 
 	// The heartbeat says what the windows hold and what bounds them.
 	st := relayStatus(t, ctx, relays)

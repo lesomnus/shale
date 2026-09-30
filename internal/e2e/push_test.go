@@ -164,7 +164,9 @@ func TestPushedSources(t *testing.T) {
 		return len(byAlias) == 2
 	}, 10*time.Second, 100*time.Millisecond)
 	// Negotiation told the CP what the bytes are (§38.9, §7).
-	require.Equal(t, "video/mp2t", byAlias["door"].GetContentType())
+	require.Equal(t, "video/mp4", byAlias["door"].GetContentType())
+	require.True(t, byAlias["door"].GetLiveCapable(), "a stream the producer reads it can show live")
+	require.False(t, byAlias["telemetry"].GetLiveCapable(), "raw frames it cannot (§39.3)")
 	require.Equal(t, "application/x-mcap", byAlias["telemetry"].GetContentType())
 
 	laminae := api.NewLaminaServiceClient(admin)
@@ -209,14 +211,7 @@ func TestPushedSources(t *testing.T) {
 	require.GreaterOrEqual(t, len(doorTl.GetSources()[0].GetLaminae()), 3)
 	for _, o := range doorTl.GetSources()[0].GetLaminae()[:3] {
 		require.Equal(t, api.ReadState_READ_STATE_AVAILABLE, o.GetState())
-		b := fetch(t, o.GetUrl())
-		r := producer.NewReader(bytesReader(b))
-		var pk producer.Packet
-		require.NoError(t, r.Next(&pk))
-		require.Equal(t, uint16(0), pk.PID, "starts with the PAT")
-		require.NoError(t, r.Next(&pk))
-		require.NoError(t, r.Next(&pk))
-		require.True(t, r.IsKeyframe(&pk), "then a keyframe")
+		playsOnItsOwn(t, fetch(t, o.GetUrl()))
 	}
 
 	// Raw: laminae cut at record boundaries on the schedule, each starting

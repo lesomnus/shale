@@ -62,12 +62,12 @@ func TestCutterFrames(t *testing.T) {
 		OnPrefix: func(b []byte) { prefix = b },
 		Out:      func(s *Segment) { out = append(out, s) },
 	}
-	c.FeedFrame(&Frame{Kind: FramePrefix, Payload: []byte("HDR")})
-	c.FeedFrame(&Frame{Kind: FrameData, Time: t0, Payload: []byte("aaaa")})
-	c.FeedFrame(&Frame{Kind: FrameData, Time: t0.Add(500 * time.Millisecond), Payload: []byte("bbbb")})
-	c.FeedFrame(&Frame{Kind: FrameData, Time: t0.Add(1200 * time.Millisecond), Payload: []byte("cccc")})
-	c.FeedFrame(&Frame{Kind: FramePrefix, Payload: []byte("HDR2")})
-	c.FeedFrame(&Frame{Kind: FrameData, Time: t0.Add(2100 * time.Millisecond), Payload: []byte("dddd")})
+	c.Feed(&Frame{Kind: FramePrefix, Payload: []byte("HDR")})
+	c.Feed(&Frame{Kind: FrameData, Time: t0, Payload: []byte("aaaa")})
+	c.Feed(&Frame{Kind: FrameData, Time: t0.Add(500 * time.Millisecond), Payload: []byte("bbbb")})
+	c.Feed(&Frame{Kind: FrameData, Time: t0.Add(1200 * time.Millisecond), Payload: []byte("cccc")})
+	c.Feed(&Frame{Kind: FramePrefix, Payload: []byte("HDR2")})
+	c.Feed(&Frame{Kind: FrameData, Time: t0.Add(2100 * time.Millisecond), Payload: []byte("dddd")})
 	c.Stop()
 
 	require.Len(t, out, 3)

@@ -2,21 +2,20 @@ package relay
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
-
-	"github.com/pion/webrtc/v4/pkg/media"
 
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
-	"github.com/lesomnus/shale/internal/mpegts"
+	"github.com/lesomnus/shale/internal/fmp4"
 )
 
 // A source is one camera as the relay sees it (§39.3, §39.4): the producer
-// stream that feeds it, the group of pictures since the last keyframe, and
-// the viewers watching. Bytes flow at all times or only while someone
-// watches, as the producer's live policy says.
+// stream that feeds it, the group of pictures since the last keyframe, the
+// recent window, and the viewers watching. Bytes flow at all times or only
+// while someone watches, as the producer's live policy says.
 
 // feeder is what a source asks of the producer attached to it.
 type feeder interface {
@@ -24,10 +23,18 @@ type feeder interface {
 	stop(source pdid.Id)
 }
 
-// sink is where a source's access units go: one per viewer.
+// sink is where a source's samples go: one per viewer. A video sample is
+// Annex B, a keyframe with its parameter sets in front; an audio sample
+// is one Opus packet.
 type sink interface {
-	write(au mpegts.AccessUnit, d time.Duration)
-	writeAudio(u mpegts.AudioUnit, d time.Duration)
+	write(data []byte, d time.Duration)
+	writeAudio(data []byte, d time.Duration)
+}
+
+// sample is one video access unit kept for a joining viewer.
+type sample struct {
+	data []byte
+	d    time.Duration
 }
 
 type source struct {
@@ -40,26 +47,27 @@ type source struct {
 	// attach, and never stopped for want of viewers.
 	always  bool
 	started bool
-	demux   *mpegts.Demuxer
-	gop     []mpegts.AccessUnit
+	// init is the stream's init segment, once it came; params the video
+	// track's parameter sets in Annex B, put in front of every keyframe a
+	// viewer gets.
+	init   *fmp4.Init
+	params []byte
+	gop    []sample
 	// The recent window (§39.4): as long as the token said, none when it
 	// said nothing.
 	window time.Duration
 	ring   *ring
-	lastPTS  int64
-	lastAPTS int64
-	viewers  map[string]sink
-	idle     *time.Timer
+	// seq is the last fragment's number, 0 before the first.
+	seq     uint32
+	viewers map[string]sink
+	idle    *time.Timer
 	// Bytes and units, for the heartbeat.
 	bytes int64
 }
 
 func newSource(r *Relay, id pdid.Id) *source {
-	return &source{id: id, r: r, demux: mpegts.New(), lastPTS: -1, lastAPTS: -1, viewers: map[string]sink{}, ring: newRing()}
+	return &source{id: id, r: r, viewers: map[string]sink{}, ring: newRing()}
 }
-
-// fallbackDuration is a frame's duration when the stamps do not say.
-const fallbackDuration = 40 * time.Millisecond
 
 // attach makes a producer stream the feeder of this source; a stream
 // already feeding it is superseded (the producer re-attached). `always`
@@ -76,8 +84,10 @@ func (s *source) attach(f feeder, always bool, window time.Duration) {
 	s.feeder = f
 	s.always = always
 	s.window = window
-	// A new stream begins at offset 0: what the ring holds is another's.
+	// A new stream begins with its own init segment: what the ring holds
+	// is another's.
 	s.ring.reset()
+	s.seq = 0
 	if s.idle != nil {
 		s.idle.Stop()
 		s.idle = nil
@@ -92,63 +102,76 @@ func (s *source) attach(f feeder, always bool, window time.Duration) {
 }
 
 // detach forgets a feeder that went away; viewers stay and get bytes again
-// when the producer is back.
+// when the producer is back. The init segment stays: a producer that
+// attaches again sends the same camera.
 func (s *source) detach(f feeder) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.feeder == f {
 		s.feeder = nil
 		s.started = false
-		s.demux = s.freshDemux()
 		s.gop = nil
 		s.ring.reset()
+		s.seq = 0
 	}
 }
 
-// freshDemux is a demuxer for the stream to come, which knows the
-// parameter sets the last one saw: a producer that attaches again sends
-// the same camera, and one whose encoder wrote them once will not write
-// them again (#84).
-func (s *source) freshDemux() *mpegts.Demuxer {
-	d := mpegts.New()
-	if s.demux != nil {
-		d.SetParams(s.demux.Params())
-	}
+var errNoInit = errors.New("a fragment before any init segment")
 
-	return d
-}
-
-// feed takes TS bytes from the producer.
+// feed takes one unit from the producer (§39.3): an init segment, or one
+// fragment as it came.
 func (s *source) feed(b []byte) {
 	s.r.m.ingress.Add(context.Background(), int64(len(b)))
 	now := time.Now()
 	s.mu.Lock()
 	s.bytes += int64(len(b))
-	off := s.demux.Pos()
-	units, audio, err := s.demux.WriteAll(b)
-	if err != nil {
-		s.r.log.Warn("ingest", "source", s.id.String(), "err", err.Error())
-		s.demux = s.freshDemux()
+	if _, ok := fmp4.Find(b, "moov"); ok {
+		init, err := fmp4.ParseInit(b)
+		if err != nil {
+			s.r.log.Warn("ingest", "source", s.id.String(), "err", err.Error())
+			s.mu.Unlock()
+			return
+		}
+		s.init = init
+		s.params = nil
+		if v := init.Video(); v != nil {
+			s.params = v.ParamSets()
+		}
+		// A new stream: what came before it does not join what follows.
 		s.ring.reset()
+		s.seq = 0
 		s.mu.Unlock()
 		return
 	}
+	if s.init == nil {
+		s.r.log.Warn("ingest", "source", s.id.String(), "err", errNoInit.Error())
+		s.mu.Unlock()
+		return
+	}
+	frag, err := fmp4.ParseFragment(b, s.init)
+	if err != nil {
+		s.r.log.Warn("ingest", "source", s.id.String(), "err", err.Error())
+		s.mu.Unlock()
+		return
+	}
+	torn := s.seq != 0 && frag.Seq != s.seq+1
+	s.seq = frag.Seq
 	if s.window > 0 {
-		// The recent window (§39.4): the bytes as they came, the
-		// keyframes to start from, and the tears to start after.
-		s.ring.add(b, off, now)
-		for _, au := range units {
-			if au.Torn {
-				s.ring.tear(au.Offset)
+		// The recent window (§39.4): the fragments as they came, the
+		// keys to start from, and the tears to start after.
+		off := s.ring.add(b, now)
+		if torn {
+			s.ring.tear(off)
+		}
+		if v := frag.Video(s.init); v != nil {
+			if frag.Key(s.init) {
+				s.ring.key(off, v.Time, now)
 			}
-			if au.Keyframe {
-				s.ring.key(au.Offset, au.PTS, au.CC, now, au.HasParams)
-			}
-			s.ring.unit(au.PTS)
+			s.ring.unit(v.Time + v.Duration())
 		}
 		s.ring.trim(now.Add(-s.window))
 	}
-	s.fanOut(units, audio)
+	s.fanOut(frag)
 	s.mu.Unlock()
 	if s.window > 0 {
 		s.r.sources.enforce()
@@ -156,11 +179,15 @@ func (s *source) feed(b []byte) {
 }
 
 // recent is the recent window from the oldest keyframe that came within
-// `since` of now (the whole window when zero), as one TS, with when that
-// keyframe came and how long the window from it is (§39.4).
+// `since` of now (the whole window when zero), as one fragmented MP4 with
+// the init segment first, with when that keyframe came and how long the
+// window from it is (§39.4).
 func (s *source) recent(since time.Duration) ([]byte, time.Time, float64, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.init == nil {
+		return nil, time.Time{}, 0, false
+	}
 	var from time.Time
 	if since > 0 {
 		from = time.Now().Add(-since)
@@ -169,43 +196,67 @@ func (s *source) recent(since time.Duration) ([]byte, time.Time, float64, bool) 
 	if !ok {
 		return nil, time.Time{}, 0, false
 	}
-	tables := s.demux.Tables()
-	if tables == nil {
-		return nil, time.Time{}, 0, false
+	var scale int64
+	if v := s.init.Video(); v != nil {
+		scale = int64(v.Timescale)
 	}
 
-	end := s.demux.OpenAt()
-	if end >= 0 && end <= k.off {
-		// The keyframe itself is still being assembled: nothing whole yet.
-		return nil, time.Time{}, 0, false
-	}
-
-	return s.ring.snapshot(k, end, tables, s.demux.Params(), s.demux.VideoPID()), k.at, s.ring.seconds(k), true
+	return s.ring.snapshot(k, s.init.Bytes), k.at, s.ring.seconds(k, scale), true
 }
 
-// fanOut hands the units to the viewers and keeps the group of pictures;
-// with the lock held.
-func (s *source) fanOut(units []mpegts.AccessUnit, audio []mpegts.AudioUnit) {
-	for _, u := range audio {
-		d := mpegts.Duration(s.lastAPTS, u.PTS, 20*time.Millisecond)
-		s.lastAPTS = u.PTS
-		for _, v := range s.viewers {
-			v.writeAudio(u, d)
+// fanOut hands a fragment's samples to the viewers and keeps the group of
+// pictures; with the lock held.
+func (s *source) fanOut(frag *fmp4.Fragment) {
+	if opus := s.init.Opus(); opus != nil {
+		if tr := frag.Traf(opus.ID); tr != nil {
+			for _, sm := range tr.Samples {
+				d := ticks(sm.Duration, opus.Timescale, 20*time.Millisecond)
+				for _, v := range s.viewers {
+					v.writeAudio(frag.Bytes[sm.Off:sm.Off+sm.Size], d)
+				}
+			}
 		}
 	}
-	for _, au := range units {
-		d := mpegts.Duration(s.lastPTS, au.PTS, fallbackDuration)
-		s.lastPTS = au.PTS
-		if au.Keyframe {
+	video := s.init.Video()
+	if video == nil {
+		return
+	}
+	tr := frag.Traf(video.ID)
+	if tr == nil {
+		return
+	}
+	n := video.LengthSize()
+	for _, sm := range tr.Samples {
+		raw := frag.Bytes[sm.Off : sm.Off+sm.Size]
+		key := video.SampleKey(raw, sm)
+		data := fmp4.AnnexB(raw, n)
+		if key && len(s.params) > 0 {
+			data = append(append([]byte(nil), s.params...), data...)
+		}
+		d := ticks(sm.Duration, video.Timescale, fallbackDuration)
+		if key {
 			s.gop = s.gop[:0]
 		}
-		if au.Keyframe || len(s.gop) > 0 {
-			s.gop = append(s.gop, au)
+		if key || len(s.gop) > 0 {
+			s.gop = append(s.gop, sample{data: data, d: d})
 		}
 		for _, v := range s.viewers {
-			v.write(au, d)
+			v.write(data, d)
 		}
 	}
+}
+
+// fallbackDuration is a frame's duration when the stream does not say.
+const fallbackDuration = 40 * time.Millisecond
+
+// ticks is a duration in a track's timescale as time, or the fallback
+// when the stream does not say.
+func ticks(n uint32, timescale uint32, fallback time.Duration) time.Duration {
+	if n == 0 || timescale == 0 {
+		return fallback
+	}
+
+	return time.Duration(n) * time.Second / time.Duration(timescale)
 }
 
 // addViewer starts the feed when this is the first viewer, and hands the
@@ -222,16 +273,14 @@ func (s *source) addViewer(key string, v sink) {
 	if first {
 		s.started = true
 	}
-	gop := append([]mpegts.AccessUnit(nil), s.gop...)
+	gop := append([]sample(nil), s.gop...)
 	s.mu.Unlock()
 
 	if first {
 		f.start(s.id)
 	}
-	var prev int64 = -1
-	for _, au := range gop {
-		v.write(au, mpegts.Duration(prev, au.PTS, fallbackDuration))
-		prev = au.PTS
+	for _, sm := range gop {
+		v.write(sm.data, sm.d)
 	}
 }
 
@@ -268,13 +317,23 @@ func (s *source) removeViewer(key string) {
 // connection came up after it was added.
 func (s *source) catchUp(v sink) {
 	s.mu.Lock()
-	gop := append([]mpegts.AccessUnit(nil), s.gop...)
+	gop := append([]sample(nil), s.gop...)
 	s.mu.Unlock()
-	var prev int64 = -1
-	for _, au := range gop {
-		v.write(au, mpegts.Duration(prev, au.PTS, fallbackDuration))
-		prev = au.PTS
+	for _, sm := range gop {
+		v.write(sm.data, sm.d)
 	}
+}
+
+// h265 says the source's video is H.265, once its init segment came.
+func (s *source) h265() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.init == nil {
+		return false
+	}
+	v := s.init.Video()
+
+	return v != nil && v.H265()
 }
 
 // ---- the registry ---------------------------------------------------------
@@ -393,9 +452,4 @@ func (ss *sources) viewerCount(actor string) (total, mine int) {
 	}
 
 	return total, mine
-}
-
-// sampleOf is an access unit as a track sample.
-func sampleOf(au mpegts.AccessUnit, d time.Duration) media.Sample {
-	return media.Sample{Data: au.Data, Duration: d}
 }

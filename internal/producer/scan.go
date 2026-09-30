@@ -328,22 +328,22 @@ func Probe(ctx context.Context, ffmpeg string, sources []SourceConfig, d time.Du
 		}
 		cap := &Capture{Ffmpeg: ffmpeg, Source: sc, Log: slogOf(log), Profile: func() (int64, time.Duration) { return ceiling, 2 * time.Second }}
 		pctx, cancel := context.WithTimeout(ctx, d)
-		r := NewReader(nil)
 		var frames, bytes int64
 		var keys []time.Time
 		start := time.Now()
 		cap.Run(pctx, func(rd io.Reader) {
-			r = NewReader(rd)
-			var p Packet
+			r := NewMP4Reader(rd)
+			var f Frame
 			for {
-				if err := r.Next(&p); err != nil {
+				if err := r.Next(&f); err != nil {
 					return
 				}
-				bytes += PacketSize
-				if r.IsVideoFrame(&p) {
-					frames++
+				bytes += int64(len(f.Payload))
+				if f.Kind == FramePrefix {
+					continue
 				}
-				if r.IsKeyframe(&p) {
+				frames += int64(f.Frames)
+				if f.Key {
 					keys = append(keys, time.Now())
 				}
 			}

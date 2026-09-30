@@ -5,6 +5,8 @@ import (
 	"io"
 	"sync"
 	"time"
+
+	"github.com/lesomnus/shale/internal/fmp4"
 )
 
 // Segment is one lamina in the making: bytes that grow while the capture
@@ -218,9 +220,9 @@ func (s Schedule) SlotOf(t time.Time) time.Time {
 	return t.Add(-s.Phase).Truncate(s.Duration).Add(s.Phase)
 }
 
-// Due says whether a keyframe arriving at t should start a new segment
-// (§38.2): the current segment's slot has passed, or it is over its
-// ceiling.
+// Due says whether a frame arriving at t that a segment may start at
+// should start one (§38.2): the current segment's slot has passed, or it
+// is over its ceiling.
 func (s Schedule) Due(cur *Segment, t time.Time) (due bool, early bool) {
 	if cur == nil {
 		return true, false
@@ -238,17 +240,16 @@ func (s Schedule) Due(cur *Segment, t time.Time) (due bool, early bool) {
 	return false, false
 }
 
-// Cutter turns packets into segments for one source.
+// Cutter turns frames into segments for one source (§38.2, §38.9): the
+// prefix frame in front of every lamina, a cut only at a frame a lamina
+// may start at, and the index at the end of a lamina that has one.
 type Cutter struct {
-	// Reader is the TS stream; nil for a raw source, whose frames come
-	// through FeedFrame (§38.9).
-	Reader   *Reader
 	Schedule func() Schedule
 	// Out receives every closed segment; Open every segment as it opens.
 	Out  func(*Segment)
 	Open func(*Segment)
 	Now  func() time.Time
-	// Prefix is what a raw source's laminae start with, the last prefix
+	// Prefix is what the source's laminae start with, the last prefix
 	// frame; OnPrefix is told when a new one arrives, so the source keeps
 	// it across streams.
 	Prefix   func() []byte
@@ -259,6 +260,10 @@ type Cutter struct {
 	// last is the data time of the last frame of a raw source, which is
 	// where its segment ends when the source stops.
 	last time.Time
+	// keys are the current segment's key fragments and track the video
+	// track they belong to: the index the segment ends with (§23.1).
+	keys  []fmp4.KeyAt
+	track uint32
 }
 
 // CutStats is what the heartbeat reports about the cutting (§38.6).
@@ -271,46 +276,10 @@ type CutStats struct {
 	LastKey   time.Time
 	// KeyInterval is the last measured keyframe interval.
 	KeyInterval time.Duration
-	// ParamsAdded counts segments given the parameter sets their first
-	// keyframe came without (§38.2).
-	ParamsAdded int64
 }
 
 // Stats is a copy of the counters.
 func (c *Cutter) Stats() CutStats { return c.stats }
-
-// Feed handles one packet.
-func (c *Cutter) Feed(p *Packet) {
-	now := c.now()
-	if c.Reader.IsVideoFrame(p) {
-		c.stats.Frames++
-	}
-	if c.Reader.IsKeyframe(p) {
-		c.stats.Keyframes++
-		if !c.stats.LastKey.IsZero() {
-			c.stats.KeyInterval = now.Sub(c.stats.LastKey)
-		}
-		c.stats.LastKey = now
-		if due, early := c.Schedule().Due(c.cur, now); due {
-			c.cut(now, early)
-			if c.cur != nil {
-				// A keyframe without its parameter sets: the last ones
-				// seen go in front, or the lamina would not play on its
-				// own (§38.2).
-				if ps := c.Reader.ParamSets(p); ps != nil {
-					c.cur.Write(ps)
-					c.stats.ParamsAdded++
-				}
-			}
-		}
-	}
-	if c.cur == nil {
-		// Before the first keyframe: nothing playable to keep.
-		return
-	}
-	c.cur.Write(p.Data[:])
-	c.stats.Bytes += PacketSize
-}
 
 func (c *Cutter) now() time.Time {
 	if c.Now != nil {
@@ -320,10 +289,10 @@ func (c *Cutter) now() time.Time {
 	return time.Now()
 }
 
-// FeedFrame handles one frame of a raw source (§38.9): a prefix frame is
-// kept for the laminae to come, a data frame may start a lamina, and its
-// timestamp is the data time when the writer gave one.
-func (c *Cutter) FeedFrame(f *Frame) {
+// Feed handles one frame: a prefix frame is kept for the laminae to come,
+// a data frame a lamina may start at may start one, and its timestamp is
+// the data time when the writer gave one.
+func (c *Cutter) Feed(f *Frame) {
 	t := f.Time
 	if t.IsZero() {
 		t = c.now()
@@ -335,54 +304,85 @@ func (c *Cutter) FeedFrame(f *Frame) {
 
 		return
 	}
-	c.stats.Frames++
-	c.stats.Keyframes++
-	c.stats.LastKey = c.now()
-	if due, early := c.Schedule().Due(c.cur, t); due {
-		c.cut(t, early)
+	key, frames := f.Key, f.Frames
+	if f.Track == 0 {
+		// A raw frame: a place the lamina may be cut before, and one
+		// frame of the writer's (§38.9).
+		key, frames = true, max(frames, 1)
+	}
+	c.stats.Frames += int64(max(frames, 0))
+	if key {
+		c.stats.Keyframes++
+		now := c.now()
+		if !c.stats.LastKey.IsZero() {
+			c.stats.KeyInterval = now.Sub(c.stats.LastKey)
+		}
+		c.stats.LastKey = now
+		if due, early := c.Schedule().Due(c.cur, t); due {
+			c.cut(f, t, early)
+		}
+	}
+	if c.cur == nil {
+		// Before the first frame a lamina may start at, or before the
+		// prefix it needs: nothing playable to keep.
+		return
 	}
 	c.last = t
+	if f.Track != 0 {
+		c.track = f.Track
+		if key {
+			c.keys = append(c.keys, fmp4.KeyAt{Time: f.Ticks, Offset: c.cur.Len()})
+		}
+	}
 	c.cur.Write(f.Payload)
 	c.stats.Bytes += int64(len(f.Payload))
 }
 
-// prefix is what a new segment starts with: the TS tables, or a raw
-// source's prefix frame. A TS segment without tables could not play on its
-// own and is not started; a raw source may have no prefix at all.
-func (c *Cutter) prefix() ([]byte, bool) {
-	if c.Reader != nil {
-		tables := c.Reader.Tables()
-
-		return tables, tables != nil
-	}
+// prefix is what a new segment starts with: the last prefix frame. A
+// fragmented stream's lamina without its init segment could not play on
+// its own and is not started; a raw source may have no prefix at all.
+func (c *Cutter) prefix(f *Frame) ([]byte, bool) {
+	var p []byte
 	if c.Prefix != nil {
-		return c.Prefix(), true
+		p = c.Prefix()
+	}
+	if f.Track != 0 && len(p) == 0 {
+		return nil, false
 	}
 
-	return nil, true
+	return p, true
 }
 
-// cut closes the current segment and opens the next one at this keyframe.
-func (c *Cutter) cut(now time.Time, early bool) {
-	tables, ok := c.prefix()
+// cut closes the current segment and opens the next one at this frame.
+func (c *Cutter) cut(f *Frame, now time.Time, early bool) {
+	prefix, ok := c.prefix(f)
 	if !ok {
-		// No PAT/PMT yet: the segment could not play on its own.
 		return
 	}
 	if c.cur != nil {
 		c.cur.Early = early
-		c.cur.Close(now)
 		if early {
 			c.stats.EarlyCuts++
 		}
-		if c.Out != nil {
-			c.Out(c.cur)
-		}
+		c.finish(c.cur, now)
 	}
-	c.cur = newSegment(now, c.Schedule().SlotOf(now), tables)
+	c.cur = newSegment(now, c.Schedule().SlotOf(now), prefix)
 	c.stats.Segments++
 	if c.Open != nil {
 		c.Open(c.cur)
+	}
+}
+
+// finish ends a segment: the index of its key fragments when it has a
+// video track, then the close, so a live upload streams the index last.
+func (c *Cutter) finish(seg *Segment, ended time.Time) {
+	if c.track != 0 {
+		seg.Write(fmp4.Mfra(c.track, c.keys))
+	}
+	c.keys = c.keys[:0]
+	seg.Close(ended)
+	if c.Out != nil {
+		c.Out(seg)
 	}
 }
 
@@ -393,14 +393,11 @@ func (c *Cutter) Stop() {
 	}
 	c.cur.Stopped = true
 	ended := c.now()
-	if c.Reader == nil && !c.last.IsZero() {
+	if c.track == 0 && !c.last.IsZero() {
 		// A raw source's data ended where its last frame said.
 		ended = c.last
 	}
-	c.cur.Close(ended)
-	if c.Out != nil {
-		c.Out(c.cur)
-	}
+	c.finish(c.cur, ended)
 	c.cur = nil
 }
 

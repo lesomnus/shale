@@ -255,8 +255,8 @@ func New(cfg Config) (*Producer, error) {
 		if _, dup := p.sources[sc.Alias]; dup {
 			return nil, fmt.Errorf("source %s is listed twice", sc.Alias)
 		}
-		if sc.Kind != "" && sc.Kind != KindTS && sc.Kind != KindRaw {
-			return nil, fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindTS, KindRaw)
+		if sc.Kind != "" && sc.Kind != KindMP4 && sc.Kind != KindRaw {
+			return nil, fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindMP4, KindRaw)
 		}
 		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, wake: make(chan struct{}, 1)}
 		if sc.Input == InputPush {
@@ -343,7 +343,7 @@ const InputPush = "push"
 // A source's kind (§38.9): TS, cut at keyframes, or raw frames, cut at
 // frame boundaries.
 const (
-	KindTS  = "ts"
+	KindMP4 = "mp4"
 	KindRaw = "raw"
 )
 
@@ -537,6 +537,9 @@ func (p *Producer) negotiate(ctx context.Context) error {
 			Source:      api.SourceRef_builder{Id: s.row.GetId()}.Build(),
 			Profile:     prof.Build(),
 			ContentType: s.cfg.contentType(),
+			// A stream the producer reads it can show live; raw frames it
+			// cannot (§39.3).
+			LiveCapable: s.cfg.Kind != KindRaw,
 		}.Build())
 	}
 
@@ -613,7 +616,7 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 			if s.cfg.Kind == KindRaw {
 				p.readFrames(ctx, s, st)
 			} else {
-				p.readTS(ctx, s, st)
+				p.readMP4(ctx, s, st)
 			}
 		})
 	}
@@ -631,15 +634,14 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 		},
 	}
 
-	return s.capture.Run(ctx, func(r io.Reader) { p.readTS(ctx, s, r) })
+	return s.capture.Run(ctx, func(r io.Reader) { p.readMP4(ctx, s, r) })
 }
 
 // newCutter is the source's cutter for one stream, handing segments to
 // the uploads as the mode says.
-func (p *Producer) newCutter(s *source, reader *Reader) *Cutter {
+func (p *Producer) newCutter(s *source) *Cutter {
 	return &Cutter{
-		Reader: reader,
-		Now:    p.now,
+		Now: p.now,
 		Schedule: func() Schedule {
 			s.mu.Lock()
 			defer s.mu.Unlock()
@@ -685,33 +687,24 @@ func (p *Producer) newCutter(s *source, reader *Reader) *Cutter {
 	}
 }
 
-// readTS cuts one TS stream, a capture's stdout or a pushed stream, until
-// it ends.
-func (p *Producer) readTS(ctx context.Context, s *source, r io.Reader) {
-	reader := NewReader(r)
-	s.cutter = p.newCutter(s, reader)
-	var pk Packet
+// readMP4 cuts one fragmented MP4 stream, a capture's stdout or a pushed
+// stream, until it ends (§38.2).
+func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
+	reader := NewMP4Reader(r)
+	s.cutter = p.newCutter(s)
+	var f Frame
 	started := time.Now()
-	checked, tables := false, false
+	checked := false
 	for {
-		if err := reader.Next(&pk); err != nil {
+		if err := reader.Next(&f); err != nil {
 			if !errors.Is(err, io.EOF) && ctx.Err() == nil {
 				p.log.Warn("stream", "source", s.cfg.Alias, "err", err.Error())
 			}
 			break
 		}
-		if !tables && len(reader.Streams().PMT) > 0 {
-			// The first PMT says what the capture produces; audio TS
-			// cannot carry restarts it encoding (§38.3), before any
-			// segment opened. A pushed stream is what it is.
-			tables = true
-			if s.capture != nil && s.capture.CheckAudio(reader.Streams()) {
-				break
-			}
-		}
-		s.cutter.Feed(&pk)
-		p.relay.feed(s, &pk, reader)
-		s.account(&pk, reader)
+		s.cutter.Feed(&f)
+		p.relay.feed(s, &f, reader.Init())
+		s.accountFrame(&f, 0)
 		if !checked && time.Since(started) > 10*time.Second {
 			checked = true
 			p.startupCheck(s)
@@ -725,7 +718,7 @@ func (p *Producer) readTS(ctx context.Context, s *source, r io.Reader) {
 // frame boundaries, the last prefix frame in front of every lamina.
 func (p *Producer) readFrames(ctx context.Context, s *source, r io.Reader) {
 	reader := NewFrameReader(r)
-	s.cutter = p.newCutter(s, nil)
+	s.cutter = p.newCutter(s)
 	var f Frame
 	for {
 		if err := reader.Next(&f); err != nil {
@@ -734,10 +727,8 @@ func (p *Producer) readFrames(ctx context.Context, s *source, r io.Reader) {
 			}
 			break
 		}
-		s.cutter.FeedFrame(&f)
-		if f.Kind == FrameData {
-			s.accountBytes(FrameHeader + len(f.Payload))
-		}
+		s.cutter.Feed(&f)
+		s.accountFrame(&f, FrameHeader)
 	}
 	s.cutter.Stop()
 }
@@ -747,9 +738,6 @@ func (p *Producer) startupCheck(s *source) {
 	st := s.cutter.Stats()
 	if st.KeyInterval > 2500*time.Millisecond {
 		p.log.Warn("keyframe interval above 2 s; expect early cuts", "source", s.cfg.Alias, "interval", st.KeyInterval.String())
-	}
-	if r := s.cutter.Reader; r != nil && r.NoParams > 0 {
-		p.log.Warn("keyframes without parameter sets and none seen yet: laminae cut there will not play on their own (§38.2)", "source", s.cfg.Alias, "keyframes", r.NoParams)
 	}
 	s.mu.Lock()
 	rate := s.rate(10)
@@ -762,7 +750,9 @@ func (p *Producer) startupCheck(s *source) {
 
 // account keeps the per-second counters (§38.5): bytes and frames per
 // second, and whether the trailing keyframe interval sat at the cap.
-func (s *source) account(pk *Packet, r *Reader) {
+// accountFrame counts a frame into the second: its bytes, with `header`
+// more for a raw frame's own header, and its video frames.
+func (s *source) accountFrame(f *Frame, header int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now()
@@ -777,30 +767,10 @@ func (s *source) account(pk *Packet, r *Reader) {
 		s.secBytes[s.secIdx] = 0
 		s.secFrames[s.secIdx] = 0
 	}
-	s.secBytes[s.secIdx] += PacketSize
-	if r.IsVideoFrame(pk) {
-		s.secFrames[s.secIdx]++
+	s.secBytes[s.secIdx] += int64(header + len(f.Payload))
+	if f.Kind == FrameData {
+		s.secFrames[s.secIdx] += int64(f.Frames)
 	}
-}
-
-// accountBytes is account for a raw source: bytes per second, and a
-// frame per data frame.
-func (s *source) accountBytes(n int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	now := time.Now()
-	if s.lastTick.IsZero() {
-		s.lastTick = now.Truncate(time.Second)
-	}
-	for now.Sub(s.lastTick) >= time.Second {
-		s.closeSecond()
-		s.lastTick = s.lastTick.Add(time.Second)
-		s.secIdx = (s.secIdx + 1) % 60
-		s.secBytes[s.secIdx] = 0
-		s.secFrames[s.secIdx] = 0
-	}
-	s.secBytes[s.secIdx] += int64(n)
-	s.secFrames[s.secIdx]++
 }
 
 func (s *source) closeSecond() {

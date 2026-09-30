@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"context"
-	"io"
 	"path/filepath"
 	"testing"
 	"time"
@@ -109,21 +108,9 @@ func TestDemoProducer(t *testing.T) {
 	require.Len(t, tl.GetSources(), cameras)
 	for _, ts := range tl.GetSources() {
 		require.NotEmpty(t, ts.GetLaminae())
-		b := fetch(t, ts.GetLaminae()[0].GetUrl())
-		r := producer.NewReader(bytesReader(b))
-		for {
-			var pk producer.Packet
-			if err := r.Next(&pk); err != nil {
-				require.ErrorIs(t, err, io.EOF)
-				break
-			}
-		}
-		st := r.Streams()
-		require.NotZero(t, st.VideoPID, "a picture")
-		require.Equal(t, byte(0x1B), st.Video, "H.264")
-		require.NotEmpty(t, st.AudioPIDs, "and a sound")
-		require.Equal(t, []byte{0x0F, 0x06}, st.AudioTypes, "AAC, which every player finds, and Opus beside it for live (§38.7)")
-		require.False(t, st.AudioAnon)
-		require.True(t, st.AudioOpus)
+		init, _ := playsOnItsOwn(t, fetch(t, ts.GetLaminae()[0].GetUrl()))
+		require.NotNil(t, init.Video(), "a picture")
+		require.Equal(t, "avc1", init.Video().Entry, "H.264")
+		require.Equal(t, []string{"mp4a", "Opus"}, audioEntries(init), "AAC, which every player finds, and Opus beside it for live (§38.7)")
 	}
 }

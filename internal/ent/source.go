@@ -49,6 +49,8 @@ type Source struct {
 	Starvation *api.Starvation `json:"starvation,omitempty"`
 	// ContentType holds the value of the "content_type" field.
 	ContentType string `json:"content_type,omitempty"`
+	// LiveCapable holds the value of the "live_capable" field.
+	LiveCapable bool `json:"live_capable,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -114,6 +116,8 @@ func (*Source) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case source.FieldLabels:
 			values[i] = new([]byte)
+		case source.FieldLiveCapable:
+			values[i] = new(sql.NullBool)
 		case source.FieldOrdinal:
 			values[i] = new(sql.NullInt64)
 		case source.FieldAlias, source.FieldName, source.FieldDesc, source.FieldZone, source.FieldContentType:
@@ -232,6 +236,12 @@ func (_m *Source) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ContentType = value.String
 			}
+		case source.FieldLiveCapable:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field live_capable", values[i])
+			} else if value.Valid {
+				_m.LiveCapable = value.Bool
+			}
 		case source.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -341,6 +351,9 @@ func (_m *Source) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("content_type=")
 	builder.WriteString(_m.ContentType)
+	builder.WriteString(", ")
+	builder.WriteString("live_capable=")
+	builder.WriteString(fmt.Sprintf("%v", _m.LiveCapable))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

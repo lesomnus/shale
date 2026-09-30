@@ -222,7 +222,7 @@ func TestControlPlaneDownWhileWatching(t *testing.T) {
 	}.Build())
 	require.NoError(t, err)
 
-	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.mp4"))
 	require.NoError(t, err)
 	p, err := producer.New(producer.Config{
 		StateDir: filepath.Join(t.TempDir(), "producer"), Cp: "http://" + c.running.TenantAddr, Dev: true,

@@ -32,6 +32,7 @@ type Mutation struct {
 	date_created  *time.Time
 	starvation    **api.Starvation
 	content_type  *string
+	live_capable  *bool
 	clearedFields map[string]struct{}
 	tenant        *uuid.UUID
 	clearedtenant bool
@@ -401,6 +402,38 @@ func (m *Mutation) ResetContentType() {
 	m.content_type = nil
 }
 
+// SetLiveCapable sets the "live_capable" field.
+func (m *Mutation) SetLiveCapable(b bool) {
+	m.live_capable = &b
+}
+
+// LiveCapable returns the value of the "live_capable" field in the mutation.
+func (m *Mutation) LiveCapable() (r bool, exists bool) {
+	v := m.live_capable
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLiveCapable clears the value of the "live_capable" field.
+func (m *Mutation) ClearLiveCapable() {
+	m.live_capable = nil
+	m.clearedFields[FieldLiveCapable] = struct{}{}
+}
+
+// LiveCapableCleared returns if the "live_capable" field was cleared in this mutation.
+func (m *Mutation) LiveCapableCleared() bool {
+	_, ok := m.clearedFields[FieldLiveCapable]
+	return ok
+}
+
+// ResetLiveCapable resets all changes to the "live_capable" field.
+func (m *Mutation) ResetLiveCapable() {
+	m.live_capable = nil
+	delete(m.clearedFields, FieldLiveCapable)
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -586,7 +619,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -625,6 +658,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.content_type != nil {
 		fields = append(fields, FieldContentType)
+	}
+	if m.live_capable != nil {
+		fields = append(fields, FieldLiveCapable)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -669,6 +705,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Starvation()
 	case FieldContentType:
 		return m.ContentType()
+	case FieldLiveCapable:
+		return m.LiveCapable()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldSiteId:
@@ -782,6 +820,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetContentType(v)
 		return nil
+	case FieldLiveCapable:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLiveCapable(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -866,6 +911,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldStarvation) {
 		fields = append(fields, FieldStarvation)
 	}
+	if m.FieldCleared(FieldLiveCapable) {
+		fields = append(fields, FieldLiveCapable)
+	}
 	if m.FieldCleared(FieldSiteId) {
 		fields = append(fields, FieldSiteId)
 	}
@@ -900,6 +948,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldStarvation:
 		m.ClearStarvation()
+		return nil
+	case FieldLiveCapable:
+		m.ClearLiveCapable()
 		return nil
 	case FieldSiteId:
 		m.ClearSiteId()
@@ -950,6 +1001,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldContentType:
 		m.ResetContentType()
+		return nil
+	case FieldLiveCapable:
+		m.ResetLiveCapable()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

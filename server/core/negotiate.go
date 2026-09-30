@@ -234,8 +234,10 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 
 	proposed := map[string]*api.SegmentProfile{}
 	// What the producer says the bytes are (§38.9), kept only where nobody
-	// set the source's content_type.
+	// set the source's content_type; and whether it can show the source
+	// live (§39.3), which is its to say.
 	proposedType := map[string]string{}
+	liveCapable := map[string]bool{}
 	for _, sp := range req.GetSources() {
 		src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{Ref: sp.GetSource()}.Build())
 		if err != nil {
@@ -248,6 +250,7 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 		if ct := sp.GetContentType(); ct != "" && src.GetContentType() == "" {
 			proposedType[string(src.GetId())] = ct
 		}
+		liveCapable[string(src.GetId())] = sp.GetLiveCapable()
 	}
 
 	// Clamp each, then the set's total cap, which scales every ceiling
@@ -309,7 +312,8 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 		for id, p := range agreed {
 			m := byId[id]
 			ct, fill := proposedType[id]
-			if equalSegment(m.GetProfile(), p) && !fill {
+			live, said := liveCapable[id]
+			if equalSegment(m.GetProfile(), p) && !fill && (!said || live == m.GetLiveCapable()) {
 				continue
 			}
 			patch := api.SourcePatchRequest_builder{
@@ -319,6 +323,9 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 			}
 			if fill {
 				patch.ContentType = &ct
+			}
+			if said {
+				patch.LiveCapable = &live
 			}
 			if _, err := next.Source().Patch(ctx, patch.Build()); err != nil {
 				return err

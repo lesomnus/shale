@@ -21,7 +21,7 @@ import (
 // restart starts a new segment in the same slot, and each gets a lamina
 // of its own, none refused for a slot "already stored".
 func TestSegmentsAfterStops(t *testing.T) {
-	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.ts"))
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.mp4"))
 	require.NoError(t, err)
 	c := start(t)
 	ctx, cancel := context.WithCancel(context.Background())

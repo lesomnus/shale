@@ -40,6 +40,8 @@ const (
 	FieldStarvation = "starvation"
 	// FieldContentType holds the string denoting the content_type field in the database.
 	FieldContentType = "content_type"
+	// FieldLiveCapable holds the string denoting the live_capable field in the database.
+	FieldLiveCapable = "live_capable"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
@@ -93,6 +95,7 @@ var Columns = []string{
 	FieldDateCreated,
 	FieldStarvation,
 	FieldContentType,
+	FieldLiveCapable,
 	FieldTenantId,
 	FieldSiteId,
 	FieldSetId,
@@ -168,6 +171,11 @@ func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 // ByContentType orders the results by the content_type field.
 func ByContentType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldContentType, opts...).ToFunc()
+}
+
+// ByLiveCapable orders the results by the live_capable field.
+func ByLiveCapable(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLiveCapable, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

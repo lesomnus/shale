@@ -13,14 +13,16 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/fmp4"
 )
 
 // The live tee (§39.3, §38.7): the producer keeps one stream to the relay
 // the CP assigned it, sends nothing until the relay says Start for a
-// source, then forwards that source's TS bytes from the next keyframe on
-// with the tables prepended, until Stop. The bytes are the ones it stores,
-// an Opus track among them (§38.7); a stream the producer did not encode
-// whose audio is not Opus goes through the live helper (live.go) first.
+// source, then forwards that source's fragments from the next one a lamina
+// may start at on, the init segment first, one message per fragment, until
+// Stop. The bytes are the ones it stores, an Opus track among them (§38.7);
+// a stream the producer did not encode whose audio is not Opus goes through
+// the live helper (live.go) first.
 
 // relayLink is the producer's side of the relay stream.
 type relayLink struct {
@@ -40,10 +42,9 @@ type relayLink struct {
 	noFfmpeg bool
 }
 
-// tap is one started source: bytes accumulate from the keyframe on.
+// tap is one started source: sent from the first key fragment on.
 type tap struct {
 	keyed bool
-	buf   []byte
 	// h is the live helper while the source's audio is not Opus (§38.7);
 	// nil when the bytes go as they are.
 	h *helper
@@ -53,13 +54,9 @@ type tap struct {
 	fails int
 }
 
-const (
-	// tapFlush is how many bytes a Data message carries at most.
-	tapFlush = 32 * PacketSize
-	// sendQueue bounds what waits for the relay; live bytes are dropped
-	// beyond it rather than held.
-	sendQueue = 256
-)
+// sendQueue bounds what waits for the relay, in fragments; live bytes are
+// dropped beyond it rather than held.
+const sendQueue = 32
 
 func newRelayLink(p *Producer) *relayLink {
 	return &relayLink{p: p, changed: make(chan struct{}, 1), active: map[pdid.Id]*tap{}, send: make(chan *api.AttachRequest, sendQueue)}
@@ -298,10 +295,10 @@ func (l *relayLink) transcodes() int64 {
 	return n
 }
 
-// feed is the tap in the capture loop: a started source's packets go to
-// the relay from the next keyframe on, the tables first, in batches,
-// through the live helper when the audio is not Opus (§38.7).
-func (l *relayLink) feed(s *source, pk *Packet, reader *Reader) {
+// feed is the tap in the capture loop: a started source's fragments go to
+// the relay from the first one a lamina may start at on, the init segment
+// first, through the live helper when the audio is not Opus (§38.7).
+func (l *relayLink) feed(s *source, f *Frame, init *fmp4.Init) {
 	if s.row == nil {
 		return
 	}
@@ -315,17 +312,21 @@ func (l *relayLink) feed(s *source, pk *Packet, reader *Reader) {
 		l.mu.Unlock()
 		return
 	}
+	if f.Kind == FramePrefix {
+		// A new init segment: the capture started over, and so does the
+		// tee, from the next key fragment with the new segment in front.
+		t.keyed = false
+		l.mu.Unlock()
+		return
+	}
+	var prefix []byte
 	if !t.keyed {
-		if !reader.IsKeyframe(pk) {
+		if !f.Key {
 			l.mu.Unlock()
 			return
 		}
 		t.keyed = true
-		t.buf = append(t.buf[:0], reader.Tables()...)
-		// The keyframe the relay starts from carries its parameter sets
-		// or is given the last ones seen (§39.3, #84).
-		t.buf = append(t.buf, reader.ParamSets(pk)...)
-		if t.h == nil && !t.raw && needsOpus(reader.Streams()) {
+		if t.h == nil && !t.raw && needsOpus(init) {
 			h, err := l.startHelper(id, s)
 			t.h = h
 			switch {
@@ -342,24 +343,25 @@ func (l *relayLink) feed(s *source, pk *Packet, reader *Reader) {
 				l.p.log.Warn("live helper could not start; sending the camera's bytes as they are", "source", s.cfg.Alias, "err", err.Error())
 			}
 		}
+		if init != nil {
+			prefix = init.Bytes
+		}
 	}
-	t.buf = append(t.buf, pk.Data[:]...)
-	if len(t.buf) < tapFlush {
-		l.mu.Unlock()
-		return
-	}
-	chunk := append([]byte(nil), t.buf...)
-	t.buf = t.buf[:0]
 	h := t.h
 	l.mu.Unlock()
-	if h != nil {
-		if !h.write(chunk) {
-			l.drop()
+	for _, b := range [][]byte{prefix, f.Payload} {
+		if len(b) == 0 {
+			continue
 		}
+		if h != nil {
+			if !h.write(b) {
+				l.drop()
+			}
 
-		return
+			continue
+		}
+		l.sendData(id, b)
 	}
-	l.sendData(id, chunk)
 }
 
 // sendData queues one Data message for the relay, dropping it when the

@@ -31,6 +31,10 @@ import (
 // DomRelay is the domain byte of a Relay (§35.3).
 const DomRelay pdid.Domain = 24
 
+// MaxFragment bounds one ingest message, a fragment as the producer sends
+// it (§39.3).
+const MaxFragment = 32 << 20
+
 // Config is a relay's own settings (§36.1, relay scope).
 type Config struct {
 	StateDir   string
@@ -171,8 +175,9 @@ func (r *Relay) Run(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Ingest: producers dial with a publish token; TLS with the host
-	// certificate, no client certificate needed (§39.7).
-	opts := hostagent.KeepaliveServer()
+	// certificate, no client certificate needed (§39.7). A message is one
+	// fragment, which a busy 4K camera makes a few megabytes.
+	opts := append(hostagent.KeepaliveServer(), grpc.MaxRecvMsgSize(MaxFragment))
 	if tlsCfg != nil {
 		c := tlsCfg.Clone()
 		c.NextProtos = []string{"h2"}

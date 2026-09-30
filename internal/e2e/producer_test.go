@@ -17,7 +17,7 @@ import (
 
 func samplePath(t *testing.T) string {
 	t.Helper()
-	for _, p := range []string{os.Getenv("SHALE_SAMPLE_TS"), filepath.Join("..", "producer", "testdata", "sample.ts")} {
+	for _, p := range []string{os.Getenv("SHALE_SAMPLE_MP4"), filepath.Join("..", "producer", "testdata", "sample.mp4")} {
 		if p == "" {
 			continue
 		}
@@ -185,14 +185,7 @@ func TestProducerRecords(t *testing.T) {
 		}
 		b := fetch(t, o.GetUrl())
 		require.Equal(t, int64(len(b)), o.GetSize())
-		require.Equal(t, byte(0x47), b[0])
-		r := producer.NewReader(bytesReader(b))
-		var pk producer.Packet
-		require.NoError(t, r.Next(&pk))
-		require.Equal(t, uint16(0), pk.PID, "starts with the PAT")
-		require.NoError(t, r.Next(&pk))
-		require.NoError(t, r.Next(&pk))
-		require.True(t, r.IsKeyframe(&pk), "then a keyframe")
+		playsOnItsOwn(t, b)
 	}
 
 	cancel()

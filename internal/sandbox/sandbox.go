@@ -734,7 +734,8 @@ func (b *Sandbox) runProducer(ctx context.Context, admin context.Context, name s
 		proposals = append(proposals, api.SourceProposal_builder{
 			Source:      api.SourceRef_builder{Id: c.row.GetId()}.Build(),
 			Profile:     api.SegmentProfile_builder{MaxBitrate: c.ceiling, KeyframeIntervalMs: 2000}.Build(),
-			ContentType: "video/mp2t",
+			ContentType: "video/mp4",
+			LiveCapable: true,
 		}.Build())
 	}
 	neg, err := retry(ctx, func() (*api.SetNegotiateResponse, error) {
