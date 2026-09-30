@@ -119,6 +119,7 @@ you know the overview and data model.
 | 16 | [Relay](docs/16-relay.md) | §39 | Live viewing: a stateless host that takes a producer's streams on demand and serves viewers over WebRTC (WHEP); assignment of producers to relays, tokens, instant start, capacity, failures. Never touches storage. |
 | 17 | [Console](docs/17-console.md) | §40 | The operator's page: adoption, the quarantine queue, cameras and their state, segments arriving, live view; how it stays current; the sandbox it is developed against, the control plane compiled into the page with simulated hosts. |
 | — | [Placement Decisions](docs/placement-decisions.md) | D1–D9 | Decision report behind §11: scenario, requirements, the options considered, and why each one was chosen or rejected. |
+| — | [Kubernetes Tutorial](docs/tutorial-k8s.md) | — | A walk-through of §34.5 and §28.4: standing a deployment up on storage borrowed from a file server, recording into it, and changing the disk under it when the one you ordered arrives. |
 | — | [Producer Bench](docs/producer-bench.md) | — | Measurements of a Raspberry Pi 400 recording one camera: encoder quality and bitrate, audio in the same segment, CPU load and temperature. Reference for producer hardware; not part of the storage design. |
 
 ## Reading paths by role
@@ -163,8 +164,9 @@ Without a browser, `./shale --dev ./dev --as @acme/admin live --for 8s
 browser from what `Live` answers.
 `deploy/compose/` is the same single machine as containers beside
 PostgreSQL, with TLS on; `deploy/systemd/` is several machines under
-systemd; `deploy/k8s/` is the Kubernetes deployment of §34.5. `go test
-./...` runs the end-to-end harness (`internal/e2e`), which allocates,
-uploads, and reads back through `Timeline`, on SQLite, or on PostgreSQL
-with `SHALE_E2E_DB_DSN` set. `CLAUDE.md` says how the generated code and
+systemd; `deploy/k8s/` is the Kubernetes deployment of §34.5, walked
+through in [the Kubernetes tutorial](docs/tutorial-k8s.md). `go test ./...`
+runs the end-to-end harness (`internal/e2e`), which allocates, uploads, and
+reads back through `Timeline`, on SQLite, or on PostgreSQL with
+`SHALE_E2E_DB_DSN` set. `CLAUDE.md` says how the generated code and
 the hand-written layers fit.

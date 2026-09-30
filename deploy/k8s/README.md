@@ -9,6 +9,11 @@ storage. Applied with kustomize:
 kubectl apply -k deploy/k8s
 ```
 
+This file is the reference for these manifests. For a walk-through —
+storage borrowed from a file server, cameras recording into it, and the
+disk changed under the node when the real one arrives — see [the
+tutorial](../../docs/tutorial-k8s.md).
+
 ## Before applying
 
 1. **The image.** `deploy/k8s/kustomization.yaml` names
@@ -234,7 +239,7 @@ producer:
       input: v4l2:/dev/video0
 ```
 
-It appears in `shale producer ls --pending`, and `shale producer adopt`
+It appears in `shale producer pending`, and `shale producer adopt`
 binds it to a set. Its uploads go straight to the Storage Nodes on the
 host network (port 7420), never through the cluster's Services.
 

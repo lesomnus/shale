@@ -171,7 +171,7 @@ next start and is recognized by its hardware identity
   - The pod needs the devices behind its sinks and `CAP_SYS_RAWIO`, for SMART
     and bay LEDs ([§34.8](#348-containers)). A privileged pod also works.
   - Each new machine joins on its first start and appears in
-    `shale node ls --pending`; an operator adopts it once. The node's state
+    `shale node pending`; an operator adopts it once. The node's state
     directory is a hostPath, so it keeps its key and identity across pod
     restarts, and its hardware identity across reinstalls
     ([§33.4](10-security.md#334-joining-and-adoption)).
