@@ -170,6 +170,37 @@ allocated to that sink on that node, even after the sink moved
 
 Shale isolates and accepts failures rather than repairing them.
 
+### 28.4 Changing the disk under a node
+
+A sink is a directory, and a disk is exchanged by adding the new sink and
+taking the old one away; nothing is moved
+([§28.1](#281-no-draining-no-migration)). The order is what keeps the
+recording going, and each step is one an operator can stop after:
+
+```text
+1. mount the new disk and list it beside the old one; restart the node
+   → both sinks are registered, and placement writes to both
+2. shale sink retire <old>
+   → the node takes no more writes there; its laminae stay readable
+3. wait as long as the recordings are worth keeping (their retention, or
+   not at all)
+4. shale device declare-dead <old device>   # only when the data goes
+   → its laminae become LOST, and the timeline says so (§19)
+5. take the sink out of the node's configuration; restart the node
+   → the row keeps its `RETIRED` attachment, and nothing asks for it again
+6. the disk is now Shale's business no longer: unmount, wipe, return
+```
+
+Steps 4 and 5 are the ones with a choice in them. Skipping 4 keeps the rows
+of laminae nobody can read, which a reader sees as `UNAVAILABLE` rather than
+as a gap — right while a disk is away for repair, wrong for a disk that is
+not coming back. Doing 5 before 4 is allowed and answers the same way.
+
+A node refuses to start when a sink it is told to open is not there, so the
+configuration and the mounts are changed together. This is deliberate: a
+node that quietly came up without one of its disks would look healthy while
+its laminae read as gaps.
+
 ## 29. Metadata Index
 
 The index is a **cache of truth that lives in the sinks**. Losing it is an

@@ -11,6 +11,8 @@ import (
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdid"
@@ -239,6 +241,16 @@ func (s *Directives) node(ctx context.Context, n *ent.Node, resume bool, now tim
 		sid := pdid.Id(sk.Id)
 		attached := sk.Attachment == int32(api.SinkAttachment_SINK_ATTACHMENT_ATTACHED)
 
+		// A sink this node no longer reports has nothing to be told: the
+		// disk was pulled, or it was retired and then taken out of the
+		// node's configuration (§28.3). The row keeps its node, so without
+		// this every pass would ask a node about a sink it does not have,
+		// and one absent sink would stop the directives of the sinks that
+		// are there — the deletes of the disk that replaced it among them.
+		if sk.DateSeen == nil || now.Sub(*sk.DateSeen) > s.d.nodeDownAfter() {
+			continue
+		}
+
 		// Writes on or off: quarantine, retirement, release (§27).
 		want := attached && sk.AcceptWrites
 		s.mu.Lock()
@@ -248,14 +260,23 @@ func (s *Directives) node(ctx context.Context, n *ent.Node, resume bool, now tim
 			cctx, cancel := context.WithTimeout(ctx, directiveTimeout)
 			_, err := client.SetSinkState(cctx, api.NodeSetSinkStateRequest_builder{SinkId: sid.Bytes(), AcceptWrites: want}.Build())
 			cancel()
-			if err != nil {
+			switch {
+			case err == nil:
+				s.mu.Lock()
+				s.accept[sid] = want
+				s.mu.Unlock()
+				if told && last != want {
+					s.log().Info("sink writes", "sink", sk.Alias, "accept", want)
+				}
+			case status.Code(err) == codes.NotFound:
+				// The node answers for itself: it does not have this sink,
+				// which is the same case a heartbeat later. Definitive, so
+				// it is not retried, and not a reason to drop the rest.
+				s.log().Info("sink not on its node, so nothing to tell it", "sink", sk.Alias, "node", nodeId.String())
+
+				continue
+			default:
 				return fmt.Errorf("SetSinkState %s: %w", sk.Alias, err)
-			}
-			s.mu.Lock()
-			s.accept[sid] = want
-			s.mu.Unlock()
-			if told && last != want {
-				s.log().Info("sink writes", "sink", sk.Alias, "accept", want)
 			}
 		}
 		if !attached {
