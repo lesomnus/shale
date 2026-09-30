@@ -18,6 +18,8 @@ type metrics struct {
 	// frame, and the host.
 	ingress    metric.Int64Counter
 	egress     metric.Int64Counter
+	recent     metric.Int64Counter
+	rewind     metric.Int64Gauge
 	firstFrame metric.Float64Histogram
 	cpu        metric.Float64Gauge
 }
@@ -32,6 +34,8 @@ func newMetrics(ctx context.Context) *metrics {
 		sessions:   o.Int64Counter("shale.relay.sessions", metric.WithDescription("sessions by outcome: started, or refused with the reason")),
 		ingress:    o.Int64Counter("shale.relay.ingress_bytes", metric.WithDescription("TS bytes taken from producers"), metric.WithUnit("By")),
 		egress:     o.Int64Counter("shale.relay.egress_bytes", metric.WithDescription("media bytes handed to viewers' tracks"), metric.WithUnit("By")),
+		recent:     o.Int64Counter("shale.relay.recent_bytes", metric.WithDescription("bytes of the recent window handed out"), metric.WithUnit("By")),
+		rewind:     o.Int64Gauge("shale.relay.rewind_bytes", metric.WithDescription("bytes the recent windows hold together"), metric.WithUnit("By")),
 		firstFrame: o.Float64Histogram("shale.relay.first_frame_ms", metric.WithDescription("from a session's offer to the connection over which its first frame goes"), metric.WithUnit("ms")),
 		cpu:        o.Float64Gauge("shale.relay.cpu", metric.WithDescription("one-minute load average over the CPU count")),
 	}

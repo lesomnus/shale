@@ -3073,6 +3073,8 @@ type RelayStatus struct {
 	xxx_hidden_AttachedBitrate   int64                  `protobuf:"varint,6,opt,name=attached_bitrate,json=attachedBitrate"`
 	xxx_hidden_Load              *HostLoad              `protobuf:"bytes,7,opt,name=load"`
 	xxx_hidden_IngressBytes      int64                  `protobuf:"varint,8,opt,name=ingress_bytes,json=ingressBytes"`
+	xxx_hidden_RewindBytes       int64                  `protobuf:"varint,9,opt,name=rewind_bytes,json=rewindBytes"`
+	xxx_hidden_RewindBudget      int64                  `protobuf:"varint,10,opt,name=rewind_budget,json=rewindBudget"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -3158,6 +3160,20 @@ func (x *RelayStatus) GetIngressBytes() int64 {
 	return 0
 }
 
+func (x *RelayStatus) GetRewindBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_RewindBytes
+	}
+	return 0
+}
+
+func (x *RelayStatus) GetRewindBudget() int64 {
+	if x != nil {
+		return x.xxx_hidden_RewindBudget
+	}
+	return 0
+}
+
 func (x *RelayStatus) SetDateReported(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateReported = v
 }
@@ -3188,6 +3204,14 @@ func (x *RelayStatus) SetLoad(v *HostLoad) {
 
 func (x *RelayStatus) SetIngressBytes(v int64) {
 	x.xxx_hidden_IngressBytes = v
+}
+
+func (x *RelayStatus) SetRewindBytes(v int64) {
+	x.xxx_hidden_RewindBytes = v
+}
+
+func (x *RelayStatus) SetRewindBudget(v int64) {
+	x.xxx_hidden_RewindBudget = v
 }
 
 func (x *RelayStatus) HasDateReported() bool {
@@ -3225,6 +3249,10 @@ type RelayStatus_builder struct {
 	Load            *HostLoad
 	// Bytes taken from producers since the relay started.
 	IngressBytes int64
+	// What the recent windows hold together, and the budget that bounds
+	// them (§39.5).
+	RewindBytes  int64
+	RewindBudget int64
 }
 
 func (b0 RelayStatus_builder) Build() *RelayStatus {
@@ -3239,6 +3267,8 @@ func (b0 RelayStatus_builder) Build() *RelayStatus {
 	x.xxx_hidden_AttachedBitrate = b.AttachedBitrate
 	x.xxx_hidden_Load = b.Load
 	x.xxx_hidden_IngressBytes = b.IngressBytes
+	x.xxx_hidden_RewindBytes = b.RewindBytes
+	x.xxx_hidden_RewindBudget = b.RewindBudget
 	return m0
 }
 
@@ -3615,6 +3645,7 @@ type TokenClaims struct {
 	xxx_hidden_Actor                 []byte                 `protobuf:"bytes,16,opt,name=actor"`
 	xxx_hidden_ActorTenant           []byte                 `protobuf:"bytes,17,opt,name=actor_tenant,json=actorTenant"`
 	xxx_hidden_Live                  LivePolicy             `protobuf:"varint,18,opt,name=live,enum=shale.LivePolicy"`
+	xxx_hidden_RewindSeconds         int64                  `protobuf:"varint,19,opt,name=rewind_seconds,json=rewindSeconds"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -3770,6 +3801,13 @@ func (x *TokenClaims) GetLive() LivePolicy {
 	return LivePolicy_LIVE_POLICY_UNSPECIFIED
 }
 
+func (x *TokenClaims) GetRewindSeconds() int64 {
+	if x != nil {
+		return x.xxx_hidden_RewindSeconds
+	}
+	return 0
+}
+
 func (x *TokenClaims) SetKid(v string) {
 	x.xxx_hidden_Kid = v
 }
@@ -3860,6 +3898,10 @@ func (x *TokenClaims) SetLive(v LivePolicy) {
 	x.xxx_hidden_Live = v
 }
 
+func (x *TokenClaims) SetRewindSeconds(v int64) {
+	x.xxx_hidden_RewindSeconds = v
+}
+
 func (x *TokenClaims) HasExp() bool {
 	if x == nil {
 		return false
@@ -3920,6 +3962,11 @@ type TokenClaims_builder struct {
 	// publish: the producer's live policy, which the relay applies at Hello
 	// (§39.3); unspecified reads as `always`.
 	Live LivePolicy
+	// publish: how many seconds of each source the relay keeps for the
+	// recent window (§39.4): the longest segment duration among the
+	// producer's sources plus the commit's lag, so the window reaches back
+	// past the last committed lamina. Zero keeps none.
+	RewindSeconds int64
 }
 
 func (b0 TokenClaims_builder) Build() *TokenClaims {
@@ -3944,6 +3991,7 @@ func (b0 TokenClaims_builder) Build() *TokenClaims {
 	x.xxx_hidden_Actor = b.Actor
 	x.xxx_hidden_ActorTenant = b.ActorTenant
 	x.xxx_hidden_Live = b.Live
+	x.xxx_hidden_RewindSeconds = b.RewindSeconds
 	return m0
 }
 
@@ -4995,7 +5043,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\adevices\x18\x03 \x01(\x05R\adevices\x12*\n" +
 	"\x11uploads_in_flight\x18\x04 \x01(\x03R\x0fuploadsInFlight\x12#\n" +
 	"\rindex_laminae\x18\x05 \x01(\x03R\findexLaminae\x12\x1a\n" +
-	"\bwarnings\x18\x06 \x03(\tR\bwarnings\"\xd2\x02\n" +
+	"\bwarnings\x18\x06 \x03(\tR\bwarnings\"\x9a\x03\n" +
 	"\vRelayStatus\x12?\n" +
 	"\rdate_reported\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\fdateReported\x12-\n" +
 	"\x12attached_producers\x18\x02 \x01(\x05R\x11attachedProducers\x12%\n" +
@@ -5005,7 +5053,10 @@ const file_shale_common_proto_rawDesc = "" +
 	"egress_bps\x18\x05 \x01(\x03R\tegressBps\x12)\n" +
 	"\x10attached_bitrate\x18\x06 \x01(\x03R\x0fattachedBitrate\x12#\n" +
 	"\x04load\x18\a \x01(\v2\x0f.shale.HostLoadR\x04load\x12#\n" +
-	"\ringress_bytes\x18\b \x01(\x03R\fingressBytes\"\xb2\x05\n" +
+	"\ringress_bytes\x18\b \x01(\x03R\fingressBytes\x12!\n" +
+	"\frewind_bytes\x18\t \x01(\x03R\vrewindBytes\x12#\n" +
+	"\rrewind_budget\x18\n" +
+	" \x01(\x03R\frewindBudget\"\xb2\x05\n" +
 	"\fLaminaRecord\x12%\n" +
 	"\x0eformat_version\x18\x01 \x01(\x05R\rformatVersion\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\fR\btenantId\x12\x17\n" +
@@ -5030,7 +5081,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x0fdate_deleted_ms\x18\x11 \x01(\x03R\rdateDeletedMs\x12\x1a\n" +
 	"\bchecksum\x18\x12 \x01(\fR\bchecksum\x12+\n" +
 	"\x11placement_version\x18\x13 \x01(\x03R\x10placementVersion\x12\x16\n" +
-	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xf3\x04\n" +
+	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\x9a\x05\n" +
 	"\vTokenClaims\x12\x10\n" +
 	"\x03kid\x18\x01 \x01(\tR\x03kid\x12,\n" +
 	"\x03exp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12,\n" +
@@ -5053,7 +5104,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x06source\x18\x0f \x01(\fR\x06source\x12\x14\n" +
 	"\x05actor\x18\x10 \x01(\fR\x05actor\x12!\n" +
 	"\factor_tenant\x18\x11 \x01(\fR\vactorTenant\x12%\n" +
-	"\x04live\x18\x12 \x01(\x0e2\x11.shale.LivePolicyR\x04live\"\xd9\x03\n" +
+	"\x04live\x18\x12 \x01(\x0e2\x11.shale.LivePolicyR\x04live\x12%\n" +
+	"\x0erewind_seconds\x18\x13 \x01(\x03R\rrewindSeconds\"\xd9\x03\n" +
 	"\fLaminaStored\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1d\n" +
 	"\n" +

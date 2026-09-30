@@ -3906,6 +3906,7 @@ type LiveSource struct {
 	xxx_hidden_WhepUrl     string                 `protobuf:"bytes,5,opt,name=whep_url,json=whepUrl"`
 	xxx_hidden_ViewToken   string                 `protobuf:"bytes,6,opt,name=view_token,json=viewToken"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_RecentUrl   string                 `protobuf:"bytes,8,opt,name=recent_url,json=recentUrl"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3986,6 +3987,13 @@ func (x *LiveSource) GetDateExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *LiveSource) GetRecentUrl() string {
+	if x != nil {
+		return x.xxx_hidden_RecentUrl
+	}
+	return ""
+}
+
 func (x *LiveSource) SetSourceId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -4020,6 +4028,10 @@ func (x *LiveSource) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
 }
 
+func (x *LiveSource) SetRecentUrl(v string) {
+	x.xxx_hidden_RecentUrl = v
+}
+
 func (x *LiveSource) HasDateExpires() bool {
 	if x == nil {
 		return false
@@ -4041,6 +4053,9 @@ type LiveSource_builder struct {
 	WhepUrl     string
 	ViewToken   string
 	DateExpires *timestamppb.Timestamp
+	// GET here with the view token for the recent window: the last minutes
+	// of the source as one TS, tables first, a keyframe first (§39.4).
+	RecentUrl string
 }
 
 func (b0 LiveSource_builder) Build() *LiveSource {
@@ -4054,6 +4069,7 @@ func (b0 LiveSource_builder) Build() *LiveSource {
 	x.xxx_hidden_WhepUrl = b.WhepUrl
 	x.xxx_hidden_ViewToken = b.ViewToken
 	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_RecentUrl = b.RecentUrl
 	return m0
 }
 
@@ -6614,7 +6630,7 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\x0eSetLiveRequest\x12\x1f\n" +
 	"\x03ref\x18\x01 \x01(\v2\r.shale.SetRefR\x03ref\">\n" +
 	"\x0fSetLiveResponse\x12+\n" +
-	"\asources\x18\x01 \x03(\v2\x11.shale.LiveSourceR\asources\"\xa9\x02\n" +
+	"\asources\x18\x01 \x03(\v2\x11.shale.LiveSourceR\asources\"\xcf\x02\n" +
 	"\n" +
 	"LiveSource\x12\"\n" +
 	"\tsource_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\bsourceId\x12\x1f\n" +
@@ -6624,7 +6640,9 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\bwhep_url\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\awhepUrl\x12$\n" +
 	"\n" +
 	"view_token\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\tviewToken\x12=\n" +
-	"\fdate_expires\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"\x96\x05\n" +
+	"\fdate_expires\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12$\n" +
+	"\n" +
+	"recent_url\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\trecentUrl\"\x96\x05\n" +
 	"\x10SourceAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +

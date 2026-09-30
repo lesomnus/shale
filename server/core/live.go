@@ -61,6 +61,7 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 		return nil, err
 	}
 	var sources [][]byte
+	var shown []*api.Source
 	for _, m := range members {
 		// A raw source (§38.9) has nothing a relay could show, and a
 		// policy of `always` would start it for nothing.
@@ -68,6 +69,7 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 			continue
 		}
 		sources = append(sources, m.GetId())
+		shown = append(shown, m)
 	}
 	b, _, _, address, err := s.policies(ctx)
 	if err != nil {
@@ -78,7 +80,7 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 	tok, err := s.d.Keys.Sign(ctx, api.TokenClaims_builder{
 		Exp: timestamppb.New(exp), Iat: timestamppb.New(now),
 		Aud: chosen.Id[:], Op: api.TokenOp_TOKEN_OP_PUBLISH, Sources: sources, Actor: producerId.Bytes(),
-		Live: live,
+		Live: live, RewindSeconds: rewindSeconds(shown, b),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -91,6 +93,33 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 		DateExpires:  timestamppb.New(exp),
 		Live:         live,
 	}.Build(), nil
+}
+
+// rewindMargin is what the recent window reaches back past the segment
+// duration: the last part's upload and the commit (§39.4).
+const rewindMargin = 15
+
+// rewindSeconds is how much of each source the relay keeps (§39.4): the
+// longest segment duration among the sources plus the commit's lag, so
+// that what the relay holds reaches back past the end of the last lamina
+// a Storage Node can serve. A source that never negotiated is sized as
+// negotiation would size it, from the target lamina and its ceiling.
+func rewindSeconds(sources []*api.Source, b Bounds) int64 {
+	var longest int64
+	for _, src := range sources {
+		d := src.GetProfile().GetDurationSeconds()
+		if d <= 0 {
+			if br := src.GetProfile().GetMaxBitrate(); br > 0 {
+				d = int64(float64(b.TargetLamina) / (float64(br) / 8))
+			}
+		}
+		longest = max(longest, d)
+	}
+	if longest <= 0 {
+		return 0
+	}
+
+	return longest + rewindMargin
 }
 
 // livePolicy is a producer's policy as the relay is told it: unspecified
@@ -148,17 +177,32 @@ func (s Core) pickRelay(ctx context.Context, set *api.Set, now time.Time) (*ent.
 		}
 	}
 
+	// The least loaded among those whose recent windows still fit their
+	// budget (§39.5); one that is over it only when there is no other.
 	var best *ent.Relay
-	for _, r := range relays {
-		if !relayAlive(r, now, s.d.nodeDownAfter()) || !matches(r.Labels, selector) || r.IngestAddress == "" {
-			continue
+	for _, full := range []bool{false, true} {
+		for _, r := range relays {
+			if !relayAlive(r, now, s.d.nodeDownAfter()) || !matches(r.Labels, selector) || r.IngestAddress == "" {
+				continue
+			}
+			if !full && rewindFull(r.Status) {
+				continue
+			}
+			if best == nil || load[r.Id] < load[best.Id] {
+				best = r
+			}
 		}
-		if best == nil || load[r.Id] < load[best.Id] {
-			best = r
+		if best != nil {
+			break
 		}
 	}
 
 	return best, nil
+}
+
+// rewindFull says a relay's recent windows are at their budget.
+func rewindFull(st *api.RelayStatus) bool {
+	return st != nil && st.GetRewindBudget() > 0 && st.GetRewindBytes() >= st.GetRewindBudget()
 }
 
 // matches says whether the labels carry every pair of the selector.
@@ -241,6 +285,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 			RelayId:     r.Id[:],
 			Endpoints:   eps,
 			WhepUrl:     endpointURL(eps[0], "whep/"+mustId(src.GetId()).String(), nil),
+			RecentUrl:   endpointURL(eps[0], "recent/"+mustId(src.GetId()).String(), nil),
 			ViewToken:   tok,
 			DateExpires: timestamppb.New(exp),
 		}.Build())

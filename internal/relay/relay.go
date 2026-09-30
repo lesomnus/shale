@@ -48,6 +48,9 @@ type Config struct {
 	IdleStop        time.Duration
 	MaxViewers      int
 	ViewersPerActor int
+	// RewindBudget bounds what the recent windows of every source hold
+	// together, in bytes (§39.5).
+	RewindBudget int64
 	// Ice servers, e.g. "stun:stun.l.google.com:19302".
 	Ice []string
 	// Nat1To1 are public IPs to announce as host candidates.
@@ -75,6 +78,9 @@ func (c *Config) defaults() {
 	}
 	if c.ViewersPerActor == 0 {
 		c.ViewersPerActor = 16
+	}
+	if c.RewindBudget == 0 {
+		c.RewindBudget = 1 << 30
 	}
 	if c.HeartbeatInterval == 0 {
 		c.HeartbeatInterval = 5 * time.Second
@@ -341,6 +347,7 @@ func (r *Relay) heartbeat(ctx context.Context) error {
 	r.m.attached.Record(ctx, int64(st.GetAttachedProducers()))
 	r.m.active.Record(ctx, int64(st.GetActiveSources()))
 	r.m.viewers.Record(ctx, int64(st.GetViewers()))
+	r.m.rewind.Record(ctx, st.GetRewindBytes())
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	r.m.cpu.Record(ctx, hostagent.Load())

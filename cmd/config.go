@@ -307,6 +307,9 @@ type RelayConfig struct {
 	IdleStop        time.Duration `yaml:"idle_stop"`
 	MaxViewers      int           `yaml:"max_viewers"`
 	ViewersPerActor int           `yaml:"viewers_per_actor"`
+	// RewindBudget bounds what the recent windows of every source hold
+	// together, e.g. "1GiB", the default (§39.5).
+	RewindBudget string `yaml:"rewind_budget"`
 	// Ice servers, e.g. "stun:stun.l.google.com:19302".
 	Ice []string `yaml:"ice"`
 	// Public IPs to announce as host candidates, for a relay behind NAT.

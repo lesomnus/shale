@@ -491,47 +491,8 @@ func paramPackets(pid uint16, key *Packet, params []byte) []byte {
 	if len(pl) >= 14 && pl[0] == 0 && pl[1] == 0 && pl[2] == 1 && pl[7]&0x80 != 0 && pl[8] >= 5 {
 		pts = pl[9:14]
 	}
-	pes := []byte{0, 0, 1, 0xe0, 0, 0, 0x80, 0, 0}
-	if pts != nil {
-		pes[7] = 0x80
-		pes[8] = 5
-		pes = append(pes, pts...)
-	}
-	pes = append(pes, params...)
-	n := len(pes) - 6
-	pes[4], pes[5] = byte(n>>8), byte(n)
 
-	count := (len(pes) + PacketSize - 5) / (PacketSize - 4)
-	// The first packet's counter is the keyframe's less the count, so the
-	// last one's is the keyframe's less one.
-	cc := int(key.CC) - count - 1
-	var out []byte
-	for i := 0; len(pes) > 0; i++ {
-		cc++
-		hdr := []byte{syncByte, byte(pid >> 8 & 0x1f), byte(pid), 0x10 | byte(cc&0x0f)}
-		if i == 0 {
-			hdr[1] |= 0x40
-		}
-		room := PacketSize - 4
-		if len(pes) < room {
-			// Stuffing: an adaptation field fills what the payload does not.
-			afl := room - len(pes) - 1
-			hdr[3] |= 0x20
-			hdr = append(hdr, byte(afl))
-			if afl > 0 {
-				hdr = append(hdr, 0)
-				for j := 1; j < afl; j++ {
-					hdr = append(hdr, 0xff)
-				}
-			}
-			room = len(pes)
-		}
-		out = append(out, hdr...)
-		out = append(out, pes[:room]...)
-		pes = pes[room:]
-	}
-
-	return out
+	return mpegts.ParamPackets(pid, pts, key.CC, params)
 }
 
 // IsVideoFrame says whether this packet starts a video PES packet, which

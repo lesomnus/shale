@@ -108,6 +108,10 @@ mode, idle_timeout, abandon_timeout
 sources      (publish: the source IDs this producer may feed)
 live         (publish: the producer's live policy, which the relay applies
               at Hello, §39.3)
+rewind_seconds
+             (publish: how much of each source the relay keeps for the
+              recent window, sized by the CP from the segment duration,
+              §39.4)
 source       (view: the one source this viewer may watch)
 actor        the Producer, Reader, or person the token was issued to, and
              its tenant

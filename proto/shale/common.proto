@@ -279,6 +279,10 @@ message RelayStatus {
   HostLoad load = 7;
   // Bytes taken from producers since the relay started.
   int64 ingress_bytes = 8;
+  // What the recent windows hold together, and the budget that bounds
+  // them (§39.5).
+  int64 rewind_bytes = 9;
+  int64 rewind_budget = 10;
 }
 
 // RecordState is the upload state a lamina file's xattr records (§23.1).
@@ -355,6 +359,11 @@ message TokenClaims {
   // publish: the producer's live policy, which the relay applies at Hello
   // (§39.3); unspecified reads as `always`.
   LivePolicy live = 18;
+  // publish: how many seconds of each source the relay keeps for the
+  // recent window (§39.4): the longest segment duration among the
+  // producer's sources plus the commit's lag, so the window reaches back
+  // past the last committed lamina. Zero keeps none.
+  int64 rewind_seconds = 19;
 }
 
 // LaminaStored is a node's word that an upload committed (§12.4).

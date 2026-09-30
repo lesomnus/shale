@@ -88,11 +88,15 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 	// `always` starts every source now and stops none; on demand starts
 	// them as viewers come. Unspecified is `always`, as the CP reads it.
 	always := claims.GetLive() != api.LivePolicy_LIVE_POLICY_ON_DEMAND
+	// And how much of each source to keep for the recent window (§39.4):
+	// what the CP sized from the source's segment duration, nothing for a
+	// token that predates it.
+	window := time.Duration(claims.GetRewindSeconds()) * time.Second
 	for _, s := range a.sources {
-		s.attach(a, always)
+		s.attach(a, always, window)
 	}
 	g.r.sources.attached(1)
-	g.r.log.Info("producer attached", "producer", actor.String(), "sources", len(accepted), "always", always)
+	g.r.log.Info("producer attached", "producer", actor.String(), "sources", len(accepted), "always", always, "window", window.String())
 	defer func() {
 		for _, s := range a.sources {
 			s.detach(a)

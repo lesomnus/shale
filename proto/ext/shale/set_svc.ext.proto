@@ -93,6 +93,9 @@ message LiveSource {
   string whep_url = 5 [features.field_presence = IMPLICIT];
   string view_token = 6 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_expires = 7;
+  // GET here with the view token for the recent window: the last minutes
+  // of the source as one TS, tables first, a keyframe first (§39.4).
+  string recent_url = 8 [features.field_presence = IMPLICIT];
 }
 
 message SetLiveResponse {

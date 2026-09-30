@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -83,9 +84,11 @@ func (w *whepServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		w.post(rw, req, path)
 	case req.Method == http.MethodDelete && path != "":
 		w.del(rw, path)
+	case req.Method == http.MethodGet && strings.HasPrefix(req.URL.Path, "/recent/"):
+		w.recent(rw, req, strings.TrimPrefix(req.URL.Path, "/recent/"))
 	case req.Method == http.MethodOptions:
 		rw.Header().Set("Access-Control-Allow-Origin", "*")
-		rw.Header().Set("Access-Control-Allow-Methods", "POST, DELETE, OPTIONS")
+		rw.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		rw.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		rw.WriteHeader(http.StatusNoContent)
 	default:
@@ -245,6 +248,52 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	}
 	rw.WriteHeader(http.StatusCreated)
 	io.WriteString(rw, pc.LocalDescription().SDP)
+}
+
+// recent hands out the recent window of a source (§39.4): GET
+// /recent/{source}?since=<seconds> with a view token, answered as one TS
+// from the oldest keyframe kept within `since` (the whole window without
+// it), the tables first, with when that keyframe came and how long the
+// window from it is in headers. 404 while nothing is kept yet.
+func (w *whepServer) recent(rw http.ResponseWriter, req *http.Request, sourceRef string) {
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
+	rw.Header().Set("Access-Control-Expose-Headers", "Shale-Recent-Start, Shale-Recent-Seconds")
+	tok := token.FromHeader(req.Header.Get("Authorization"))
+	if tok == "" {
+		tok = req.URL.Query().Get("token")
+	}
+	claims, err := w.r.verify(tok, api.TokenOp_TOKEN_OP_VIEW)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	sourceId, err := pdid.Parse(sourceRef)
+	if err != nil || string(claims.GetSource()) != string(sourceId.Bytes()) {
+		http.Error(rw, "the token names another source", http.StatusForbidden)
+		return
+	}
+	var since time.Duration
+	if v := req.URL.Query().Get("since"); v != "" {
+		n, err := strconv.ParseFloat(v, 64)
+		if err != nil || n < 0 {
+			http.Error(rw, "since: seconds", http.StatusBadRequest)
+			return
+		}
+		since = time.Duration(n * float64(time.Second))
+	}
+	b, start, seconds, ok := w.r.sources.get(sourceId).recent(since)
+	if !ok {
+		http.Error(rw, "nothing kept yet: no keyframe of this source has come within the window", http.StatusNotFound)
+		return
+	}
+	w.r.m.recent.Add(req.Context(), int64(len(b)))
+	rw.Header().Set("Content-Type", "video/mp2t")
+	rw.Header().Set("Content-Length", strconv.Itoa(len(b)))
+	rw.Header().Set("Cache-Control", "no-store")
+	rw.Header().Set("Shale-Recent-Start", start.UTC().Format(time.RFC3339Nano))
+	rw.Header().Set("Shale-Recent-Seconds", strconv.FormatFloat(seconds, 'f', 1, 64))
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(b)
 }
 
 func (w *whepServer) del(rw http.ResponseWriter, session string) {

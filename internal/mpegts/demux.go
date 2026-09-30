@@ -30,6 +30,19 @@ type AccessUnit struct {
 	// Keyframe says whether the unit starts with a decodable picture (an
 	// IDR, or an IRAP for H.265).
 	Keyframe bool
+	// Offset is where the unit's first TS packet begins, in bytes from
+	// the start of what the demuxer was fed (Pos); CC that packet's
+	// continuity counter. Both are for keeping the bytes as they came and
+	// handing them out from a keyframe on (§39.4).
+	Offset int64
+	CC     byte
+	// HasParams says the unit carries its parameter sets in-band; Data has
+	// them either way for a keyframe, from the last ones seen when not.
+	HasParams bool
+	// Torn says packets went missing around this unit: the continuity
+	// counter of the video stream skipped, so the bytes as they came are
+	// not to be trusted until the next keyframe.
+	Torn bool
 }
 
 // AudioUnit is one Opus packet with its presentation time (§39.3): the
@@ -65,10 +78,55 @@ type Demuxer struct {
 	apts     int64
 	aopen    bool
 	apending []AudioUnit
+
+	// The bytes as they came (§39.4): pos counts what was fed, cur is the
+	// packet being read, auStart the packet the open unit began at, and
+	// pat and pmt are the last table packets, for a stream handed out from
+	// the middle. vcc is the video stream's last continuity counter, -1
+	// before the first, and a skip marks the unit around it torn.
+	pos, cur, auStart int64
+	auCC              byte
+	auTorn, nextTorn  bool
+	vcc               int
+	gaps              int64
+	pat, pmt          []byte
 }
 
 // New makes a demuxer that learns the streams from the tables.
-func New() *Demuxer { return &Demuxer{} }
+func New() *Demuxer { return &Demuxer{vcc: -1} }
+
+// Pos is how many bytes were fed so far: the offset the next packet gets.
+func (d *Demuxer) Pos() int64 { return d.pos }
+
+// Gaps is how many times the video stream's continuity counter skipped.
+func (d *Demuxer) Gaps() int64 { return d.gaps }
+
+// VideoPID is the video stream's PID once the PMT was seen, else 0.
+func (d *Demuxer) VideoPID() uint16 { return d.videoPID }
+
+// OpenAt is the offset the video unit being assembled began at, so a
+// stream handed out as it came can end with whole frames, or -1 when no
+// unit is open.
+func (d *Demuxer) OpenAt() int64 {
+	if !d.open {
+		return -1
+	}
+
+	return d.auStart
+}
+
+// Tables is the last PAT and PMT packets seen, in that order, or nil until
+// both were: what a stream handed out from the middle starts with.
+func (d *Demuxer) Tables() []byte {
+	if len(d.pat) == 0 || len(d.pmt) == 0 {
+		return nil
+	}
+	out := make([]byte, 0, len(d.pat)+len(d.pmt))
+	out = append(out, d.pat...)
+	out = append(out, d.pmt...)
+
+	return out
+}
 
 // Codec is the video stream type once the PMT was seen: StreamH264 or
 // StreamH265, else 0.
@@ -93,9 +151,11 @@ func (d *Demuxer) WriteAll(b []byte) ([]AccessUnit, []AudioUnit, error) {
 	d.pending = d.pending[:0]
 	d.apending = d.apending[:0]
 	for i := 0; i+PacketSize <= len(b); i += PacketSize {
+		d.cur = d.pos
 		if err := d.packet(b[i : i+PacketSize]); err != nil {
 			return nil, nil, err
 		}
+		d.pos += PacketSize
 	}
 	out := make([]AccessUnit, len(d.pending))
 	copy(out, d.pending)
@@ -141,11 +201,22 @@ func (d *Demuxer) packet(p []byte) error {
 
 	switch {
 	case pid == 0 && pusi:
+		d.pat = append(d.pat[:0], p...)
 		d.parsePAT(section(body))
 	case d.pmtPID != 0 && pid == d.pmtPID && pusi:
+		d.pmt = append(d.pmt[:0], p...)
 		d.parsePMT(section(body))
 	case d.videoPID != 0 && pid == d.videoPID:
-		d.video(body, pusi)
+		cc := int(p[3] & 0x0f)
+		if d.vcc >= 0 && cc != d.vcc && cc != (d.vcc+1)&0x0f {
+			// A skip: packets went missing between the unit open and
+			// this one, so both are torn. The same counter twice is a
+			// duplicate the standard allows, not a gap.
+			d.gaps++
+			d.auTorn, d.nextTorn = true, true
+		}
+		d.vcc = cc
+		d.video(body, pusi, p[3]&0x0f)
 	case d.audioPID != 0 && pid == d.audioPID:
 		d.audio(body, pusi)
 	}
@@ -326,9 +397,11 @@ func (d *Demuxer) finishAudio() {
 
 // video collects the PES packets of the video stream: a packet with the
 // unit start closes the previous access unit and opens the next.
-func (d *Demuxer) video(body []byte, pusi bool) {
+func (d *Demuxer) video(body []byte, pusi bool, cc byte) {
 	if pusi {
 		d.finish()
+		d.auStart, d.auCC = d.cur, cc
+		d.auTorn, d.nextTorn = d.nextTorn, false
 		if len(body) < 9 || body[0] != 0 || body[1] != 0 || body[2] != 1 {
 			return
 		}
@@ -359,7 +432,8 @@ func (d *Demuxer) finish() {
 	}
 	key := keyframe(d.buf, d.codec)
 	var data []byte
-	if ps := ParamSets(d.buf, d.codec); ps != nil {
+	ps := ParamSets(d.buf, d.codec)
+	if ps != nil {
 		d.params = append(d.params[:0], ps...)
 	} else if key && len(d.params) > 0 {
 		data = WithParams(d.buf, d.params)
@@ -367,10 +441,11 @@ func (d *Demuxer) finish() {
 	if data == nil {
 		data = append([]byte(nil), d.buf...)
 	}
-	au := AccessUnit{Data: data, PTS: d.pts, Keyframe: key}
+	au := AccessUnit{Data: data, PTS: d.pts, Keyframe: key, Offset: d.auStart, CC: d.auCC, HasParams: ps != nil, Torn: d.auTorn}
 	d.pending = append(d.pending, au)
 	d.open = false
 	d.buf = d.buf[:0]
+	d.auTorn = false
 }
 
 // Params is the last complete set of parameter sets seen, or nil.

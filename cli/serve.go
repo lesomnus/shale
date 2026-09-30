@@ -495,6 +495,18 @@ var (
 	}
 )
 
+// rewindBudget is `relay.rewind_budget` in bytes; 0, the default, when
+// nothing or nothing parseable was written.
+func rewindBudget(v string) int64 {
+	n, err := storage.ParseCapacity(v)
+	if err != nil {
+		slog.Warn("relay.rewind_budget is not a size; the default applies", "value", v, "err", err.Error())
+		return 0
+	}
+
+	return n
+}
+
 // relayConfig maps the file onto the relay's settings (§36.1).
 func relayConfig(c *cmd.Config) relay.Config {
 	rc := c.Relay
@@ -509,6 +521,7 @@ func relayConfig(c *cmd.Config) relay.Config {
 		IdleStop:          rc.IdleStop,
 		MaxViewers:        rc.MaxViewers,
 		ViewersPerActor:   rc.ViewersPerActor,
+		RewindBudget:      rewindBudget(rc.RewindBudget),
 		Ice:               rc.Ice,
 		Nat1To1:           rc.Nat1To1,
 		UdpPortMin:        rc.UdpPortMin,

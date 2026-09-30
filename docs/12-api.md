@@ -428,6 +428,11 @@ POST   /whep/{source_id}       Content-Type: application/sdp, body: offer
                                Authorization: Shale <view token>
        → 201  Location: /whep/{session}   body: SDP answer
 DELETE /whep/{session}         end the session
+GET    /recent/{source_id}     ?since=<seconds>, Authorization: Shale <view token>
+       → 200  video/mp2t: the recent window as one TS, tables first, from a
+              keyframe; Shale-Recent-Start and Shale-Recent-Seconds say
+              where it begins and how long it is (§39.4)
+       → 404  nothing kept yet
 ```
 
 ICE servers are announced in the answer's candidates and, when configured,

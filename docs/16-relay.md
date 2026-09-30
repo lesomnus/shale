@@ -167,6 +167,45 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   4 Mbps). A joining viewer receives that group of pictures at once and
   starts within a fraction of a second instead of waiting for the next
   keyframe.
+- **The recent window.** Nothing is read from a Storage Node before it
+  commits ([§17](05-read-path.md#17-read-path)), so the one stretch of a
+  camera nobody can read is the open lamina's, and that is what the relay
+  keeps: per source, the last `rewind_seconds` of the TS bytes as the
+  producer sent them, where `rewind_seconds` is what the publish token
+  says ([§33.2](10-security.md#332-access-tokens)) and the CP sized it
+  from the longest segment duration among the producer's sources plus
+  15 s for the last part and the commit, so the window always reaches
+  back past the end of the last lamina a Storage Node can serve. It is not
+  a setting: at 2 Mbps and the default 64 MB target that is 256 s + 15 s,
+  at a 4 MiB target 17 s + 15 s, and in bytes always about one lamina.
+
+  ```text
+  GET <relay>/recent/<source>?since=<seconds>   Authorization: Shale <view token>
+      → 200  Content-Type: video/mp2t
+             Shale-Recent-Start: <when the first keyframe came, RFC 3339>
+             Shale-Recent-Seconds: <how long the window from it is>
+      → 404  nothing kept yet
+  ```
+
+  The answer is one TS in the shape of a lamina: the PAT and PMT first,
+  the parameter sets when the keyframe has none in-band (as
+  [§38.2](15-producer.md#382-segments) puts them), then the stream from
+  the oldest keyframe kept, or from the oldest that came within `since`
+  seconds. It is a snapshot, not a stream: a viewer plays it, then joins
+  live over WHEP, or asks again. The same encoder wrote it and the
+  laminae, so the presentation stamps run on across them, and a player
+  that has the laminae from `Timeline` and this blob has the camera from
+  the archive to now with nothing between. `Live` hands out the URL as
+  `recent_url` beside `whep_url`, good for the same view token. The relay
+  never grows into a playback server: what is older than the window is the
+  Storage Nodes' to serve, as it is today.
+
+  What was never sent is not in it: under `on_demand` the window fills
+  from the first viewer on. Packets the producer dropped for a slow relay,
+  or a stream that broke, leave a tear, which the relay sees as a skip of
+  the video stream's continuity counter, and the window is handed out from
+  the next keyframe after the last tear, never across one. A relay that
+  restarts, or a producer that attaches again, begins an empty window.
 - **Latency** is the producer's pipe, one TCP hop, and the browser's jitter
   buffer: one to two seconds glass to glass. Enough for CCTV. If a wireless
   producer ever needs less, the producer-to-relay hop can move to QUIC
@@ -195,20 +234,32 @@ example  = 100 viewers × 4 Mbps = 400 Mbps, a fraction of one 10 GbE port
 
 Hundreds of viewers per relay are ordinary. A relay per site is the usual
 shape, both for the labels in [§39.2](#392-assignment) and so that a
-site's viewers and producers share a network. What the **first relay leaves out**:
-relay-to-relay cascades for one camera watched from many regions, a
-lower-resolution sub-stream for viewers on poor links (many IP cameras
-produce one; the producer could forward it), multi-track sessions, and
-playing recordings through the relay. Recordings are read from Storage
-Nodes as they are today ([§17](05-read-path.md#17-read-path)).
+site's viewers and producers share a network.
+
+Memory is the recent windows ([§39.4](#394-viewers)): per source, its
+bitrate × its window, which is about one lamina, 64 MB at the default
+target; sixteen cameras are a gigabyte. `rewind_budget` (1 GiB) bounds
+what the windows hold together: over it, the largest window loses its
+oldest bytes, so a relay never grows past what it was given, and its
+heartbeat reports both numbers (`rewind_bytes`, `rewind_budget`). The CP
+passes over a relay whose windows are at their budget when another fits
+([§39.2](#392-assignment)), and takes it only when there is no other.
+
+What the **first relay leaves out**: relay-to-relay cascades for one camera
+watched from many regions, a lower-resolution sub-stream for viewers on
+poor links (many IP cameras produce one; the producer could forward it),
+multi-track sessions, and playing recordings through the relay. Recordings
+are read from Storage Nodes as they are today
+([§17](05-read-path.md#17-read-path)); the relay serves the one stretch
+they cannot, the open lamina's.
 
 ### 39.6 Failures
 
 | Failure | Effect | Recovery |
 |---|---|---|
-| Relay process restarts | every session and attachment drops; the relay has no state to recover. A stopping relay is graceful for two seconds, then ends what is still open, so an attached producer never keeps a dying relay alive | producers re-attach: the same relay at other endpoints is a restart, and the link moves as soon as a heartbeat brings the new ones; viewers ask `Live` again |
+| Relay process restarts | every session and attachment drops; the relay has no state to recover, and the recent windows start empty. A stopping relay is graceful for two seconds, then ends what is still open, so an attached producer never keeps a dying relay alive | producers re-attach: the same relay at other endpoints is a restart, and the link moves as soon as a heartbeat brings the new ones; viewers ask `Live` again; the windows fill again from the re-attach on |
 | Relay down | as above, and the CP reassigns its producers | a few seconds of no live picture; recording unaffected |
-| Producer's uplink saturated by live | live bytes and recording compete; the tee drops live bytes rather than hold the recording, and the producer's heartbeat counts them | the uplink budget counts every camera once more under `always` ([§38.5](15-producer.md#385-choosing-the-ceiling)); the operator sizes the uplink, or sets the producer `on_demand` ([§39.2](#392-assignment)) |
+| Producer's uplink saturated by live | live bytes and recording compete; the tee drops live bytes rather than hold the recording, the producer's heartbeat counts them, and each drop tears the recent window, which is handed out from the next keyframe after it | the uplink budget counts every camera once more under `always` ([§38.5](15-producer.md#385-choosing-the-ceiling)); the operator sizes the uplink, or sets the producer `on_demand` ([§39.2](#392-assignment)) |
 | Producer down | its cameras are off for viewers and for recording alike | as in [§15](04-write-path.md#15-partial-laminae) |
 | CP down | no new `Live` and no new publish tokens; open sessions and attachments continue | as for reads ([§12.1](04-write-path.md#121-flow)): run the CP highly available |
 
@@ -230,7 +281,9 @@ Nodes as they are today ([§17](05-read-path.md#17-read-path)).
 
 ### 39.8 What the relay does not do
 
-- Record, replay, or read laminae.
+- Record, replay, or read laminae. It keeps the open lamina's bytes as the
+  recent window and hands them out as one TS ([§39.4](#394-viewers)), and
+  nothing older.
 - Transcode video, or change resolution or frame rate.
 - Talk to cameras or producers on its own initiative: it only answers
   connections that carry a token.

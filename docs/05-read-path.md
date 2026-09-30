@@ -112,7 +112,8 @@ Time-range queries return **gaps** with a reason:
 NOT_RECEIVED  no upload was ever attempted for this span:
               the camera or set was off, or the producer failed before upload
 IN_PROGRESS   an attempt is open for this span right now: a live upload
-              in progress, or a segment not yet committed
+              in progress, or a segment not yet committed; the relay holds
+              this stretch as the recent window (§39.4)
 DARK          the producer stored nothing on purpose: the scene was dark
               for longer than the source allows (§38.10)
 LOST / DELETED / UNAVAILABLE   as above, for spans covered by such laminae

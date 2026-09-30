@@ -38,10 +38,14 @@ type source struct {
 	feeder feeder
 	// always says the feeder's policy is `always` (§39.3): started at
 	// attach, and never stopped for want of viewers.
-	always   bool
-	started  bool
-	demux    *mpegts.Demuxer
-	gop      []mpegts.AccessUnit
+	always  bool
+	started bool
+	demux   *mpegts.Demuxer
+	gop     []mpegts.AccessUnit
+	// The recent window (§39.4): as long as the token said, none when it
+	// said nothing.
+	window time.Duration
+	ring   *ring
 	lastPTS  int64
 	lastAPTS int64
 	viewers  map[string]sink
@@ -51,7 +55,7 @@ type source struct {
 }
 
 func newSource(r *Relay, id pdid.Id) *source {
-	return &source{id: id, r: r, demux: mpegts.New(), lastPTS: -1, lastAPTS: -1, viewers: map[string]sink{}}
+	return &source{id: id, r: r, demux: mpegts.New(), lastPTS: -1, lastAPTS: -1, viewers: map[string]sink{}, ring: newRing()}
 }
 
 // fallbackDuration is a frame's duration when the stamps do not say.
@@ -59,8 +63,9 @@ const fallbackDuration = 40 * time.Millisecond
 
 // attach makes a producer stream the feeder of this source; a stream
 // already feeding it is superseded (the producer re-attached). `always`
-// is the producer's live policy for this attachment (§39.3).
-func (s *source) attach(f feeder, always bool) {
+// is the producer's live policy for this attachment (§39.3) and `window`
+// how much of the stream is kept for the recent window (§39.4).
+func (s *source) attach(f feeder, always bool, window time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.feeder != nil && s.feeder != f {
@@ -70,6 +75,9 @@ func (s *source) attach(f feeder, always bool) {
 	}
 	s.feeder = f
 	s.always = always
+	s.window = window
+	// A new stream begins at offset 0: what the ring holds is another's.
+	s.ring.reset()
 	if s.idle != nil {
 		s.idle.Stop()
 		s.idle = nil
@@ -93,6 +101,7 @@ func (s *source) detach(f feeder) {
 		s.started = false
 		s.demux = s.freshDemux()
 		s.gop = nil
+		s.ring.reset()
 	}
 }
 
@@ -112,15 +121,71 @@ func (s *source) freshDemux() *mpegts.Demuxer {
 // feed takes TS bytes from the producer.
 func (s *source) feed(b []byte) {
 	s.r.m.ingress.Add(context.Background(), int64(len(b)))
+	now := time.Now()
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.bytes += int64(len(b))
+	off := s.demux.Pos()
 	units, audio, err := s.demux.WriteAll(b)
 	if err != nil {
 		s.r.log.Warn("ingest", "source", s.id.String(), "err", err.Error())
 		s.demux = s.freshDemux()
+		s.ring.reset()
+		s.mu.Unlock()
 		return
 	}
+	if s.window > 0 {
+		// The recent window (§39.4): the bytes as they came, the
+		// keyframes to start from, and the tears to start after.
+		s.ring.add(b, off, now)
+		for _, au := range units {
+			if au.Torn {
+				s.ring.tear(au.Offset)
+			}
+			if au.Keyframe {
+				s.ring.key(au.Offset, au.PTS, au.CC, now, au.HasParams)
+			}
+			s.ring.unit(au.PTS)
+		}
+		s.ring.trim(now.Add(-s.window))
+	}
+	s.fanOut(units, audio)
+	s.mu.Unlock()
+	if s.window > 0 {
+		s.r.sources.enforce()
+	}
+}
+
+// recent is the recent window from the oldest keyframe that came within
+// `since` of now (the whole window when zero), as one TS, with when that
+// keyframe came and how long the window from it is (§39.4).
+func (s *source) recent(since time.Duration) ([]byte, time.Time, float64, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var from time.Time
+	if since > 0 {
+		from = time.Now().Add(-since)
+	}
+	k, ok := s.ring.start(from)
+	if !ok {
+		return nil, time.Time{}, 0, false
+	}
+	tables := s.demux.Tables()
+	if tables == nil {
+		return nil, time.Time{}, 0, false
+	}
+
+	end := s.demux.OpenAt()
+	if end >= 0 && end <= k.off {
+		// The keyframe itself is still being assembled: nothing whole yet.
+		return nil, time.Time{}, 0, false
+	}
+
+	return s.ring.snapshot(k, end, tables, s.demux.Params(), s.demux.VideoPID()), k.at, s.ring.seconds(k), true
+}
+
+// fanOut hands the units to the viewers and keeps the group of pictures;
+// with the lock held.
+func (s *source) fanOut(units []mpegts.AccessUnit, audio []mpegts.AudioUnit) {
 	for _, u := range audio {
 		d := mpegts.Duration(s.lastAPTS, u.PTS, 20*time.Millisecond)
 		s.lastAPTS = u.PTS
@@ -261,8 +326,55 @@ func (ss *sources) status() *api.RelayStatus {
 	st.ActiveSources = active
 	st.Viewers = viewers
 	st.IngressBytes = ingress
+	st.RewindBytes = ss.held()
+	st.RewindBudget = ss.r.cfg.RewindBudget
 
 	return st.Build()
+}
+
+// held is the bytes the recent windows hold together; with the registry
+// locked.
+func (ss *sources) held() int64 {
+	var n int64
+	for _, s := range ss.byId {
+		s.mu.Lock()
+		n += s.ring.bytes
+		s.mu.Unlock()
+	}
+
+	return n
+}
+
+// enforce keeps the recent windows together within the budget (§39.5):
+// over it, the largest window loses its oldest bytes, until they fit.
+func (ss *sources) enforce() {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+	budget := ss.r.cfg.RewindBudget
+	if budget <= 0 {
+		return
+	}
+	for range 64 {
+		over := ss.held() - budget
+		if over <= 0 {
+			return
+		}
+		var largest *source
+		var most int64
+		for _, s := range ss.byId {
+			s.mu.Lock()
+			if s.ring.bytes > most {
+				largest, most = s, s.ring.bytes
+			}
+			s.mu.Unlock()
+		}
+		if largest == nil {
+			return
+		}
+		largest.mu.Lock()
+		largest.ring.evict(min(over, most))
+		largest.mu.Unlock()
+	}
 }
 
 // viewerCount is how many sessions are open, and how many for one actor.

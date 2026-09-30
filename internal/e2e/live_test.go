@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -17,9 +18,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/mpegts"
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/token"
 )
@@ -235,6 +238,20 @@ func smallLaminae(t *testing.T, ctx context.Context, c *cluster) {
 // fetches it, and answers what its tables say.
 func committedStreams(t *testing.T, ctx context.Context, admin *grpc.ClientConn, set *api.Set) producer.Streams {
 	t.Helper()
+	_, url := committedLamina(t, ctx, admin, set)
+	b := fetch(t, url)
+	r := producer.NewReader(bytesReader(b))
+	var pk producer.Packet
+	for r.Next(&pk) == nil {
+	}
+
+	return r.Streams()
+}
+
+// committedLamina waits for the set's one source to commit a lamina and
+// answers the row and the URL Timeline hands out for it.
+func committedLamina(t *testing.T, ctx context.Context, admin *grpc.ClientConn, set *api.Set) (*api.Lamina, string) {
+	t.Helper()
 	sources, err := api.NewSourceServiceClient(admin).List(ctx, api.SourceListRequest_builder{
 		Filters: []*api.SourceFilter{api.SourceFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
 	}.Build())
@@ -274,13 +291,93 @@ func committedStreams(t *testing.T, ctx context.Context, admin *grpc.ClientConn,
 		}
 	}
 	require.NotEmpty(t, url)
-	b := fetch(t, url)
-	r := producer.NewReader(bytesReader(b))
-	var pk producer.Packet
-	for r.Next(&pk) == nil {
-	}
 
-	return r.Streams()
+	return committed, url
+}
+
+// TestLiveRecent is the recent window (§39.4): with live always on, the
+// relay keeps the last while of a source as it came and GET /recent hands
+// it out as one TS, the tables first, from a keyframe, reaching back past
+// the end of the last committed lamina, so nothing is unreadable between
+// the store and now; a token for another source is refused.
+func TestLiveRecent(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("no ffmpeg on this host")
+	}
+	c := start(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	admin := c.dial("@acme/admin")
+	smallLaminae(t, ctx, c)
+	set, live, _ := liveProducer(t, ctx, c, admin, producer.DemoSources(1)[0])
+	require.NotEmpty(t, live.GetRecentUrl())
+	relays := api.NewRelayServiceClient(c.dialCluster("@cluster/ops"))
+	awaitActive(t, ctx, relays, 1, "always: the source is fed with no viewer")
+
+	// Once a lamina committed, the window reaches back past its end.
+	committed, _ := committedLamina(t, ctx, admin, set)
+	b, hdr := getRecent(t, live.GetRecentUrl(), live.GetViewToken(), "", http.StatusOK)
+	start, err := time.Parse(time.RFC3339Nano, hdr.Get("Shale-Recent-Start"))
+	require.NoError(t, err)
+	ended := committed.GetDateEnded().AsTime()
+	require.False(t, start.After(ended), "the window starts at %s, after the last lamina ended at %s", start, ended)
+	require.Equal(t, "video/mp2t", hdr.Get("Content-Type"))
+	secs, err := strconv.ParseFloat(hdr.Get("Shale-Recent-Seconds"), 64)
+	require.NoError(t, err)
+	require.Greater(t, secs, 2.0)
+
+	// The tables first, a keyframe first, and the frames of a window.
+	require.Zero(t, len(b)%188)
+	require.Equal(t, uint16(0), uint16(b[1]&0x1f)<<8|uint16(b[2]), "the PAT first")
+	d := mpegts.New()
+	units, err := d.Write(b)
+	require.NoError(t, err)
+	units = append(units, d.Flush()...)
+	require.NotEmpty(t, units)
+	require.True(t, units[0].Keyframe, "the window starts at a keyframe")
+	require.GreaterOrEqual(t, len(units), 60, "at least two seconds of frames")
+	require.True(t, d.HasOpus(), "the Opus track is in it, as in the lamina")
+	require.Zero(t, d.Gaps(), "nothing torn")
+
+	// The last second only is less than the whole, and starts decodable too.
+	tail, _ := getRecent(t, live.GetRecentUrl(), live.GetViewToken(), "1.5", http.StatusOK)
+	require.Less(t, len(tail), len(b))
+	d2 := mpegts.New()
+	units2, err := d2.Write(tail)
+	require.NoError(t, err)
+	units2 = append(units2, d2.Flush()...)
+	require.NotEmpty(t, units2)
+	require.True(t, units2[0].Keyframe)
+
+	// The heartbeat says what the windows hold and what bounds them.
+	st := relayStatus(t, ctx, relays)
+	require.Greater(t, st.GetRewindBytes(), int64(0))
+	require.Equal(t, int64(1<<30), st.GetRewindBudget())
+
+	// Refused: a bad token, and a token for another source.
+	getRecent(t, live.GetRecentUrl(), "nope", "", http.StatusUnauthorized)
+	other := whepBase(live.GetWhepUrl()) + "/recent/" + pdid.New(pdid.Domain(8)).String()
+	getRecent(t, other, live.GetViewToken(), "", http.StatusForbidden)
+}
+
+// getRecent fetches a source's recent window with a view token and the
+// `since` given, expecting a status.
+func getRecent(t *testing.T, url, tok, since string, want int) ([]byte, http.Header) {
+	t.Helper()
+	if since != "" {
+		url += "?since=" + since
+	}
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", token.Scheme+" "+tok)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, want, resp.StatusCode, string(b[:min(len(b), 200)]))
+
+	return b, resp.Header
 }
 
 // liveSource sets up one set with one producer playing a recording from

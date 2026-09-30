@@ -122,6 +122,7 @@ deployment runs well on them, and changes them only for a reason.
 | Live | `relay_idle_stop` | 10 s after the last viewer leaves | — | relay | [§39.3](16-relay.md#393-from-the-producer) |
 | Live | `max_viewers` per relay | 500 | — | relay | [§39.4](16-relay.md#394-viewers) |
 | Live | `viewers_per_actor` | 16 | — | relay | [§39.4](16-relay.md#394-viewers) |
+| Live | `relay.rewind_budget` | 1 GiB | what the recent windows of every source hold together; about one lamina per source | relay | [§39.5](16-relay.md#395-capacity) |
 | Live | `ice` (STUN / TURN servers) | none (host candidates only) | — | relay | [§39.4](16-relay.md#394-viewers) |
 | Live | `relay_selector` | none (any relay) | labels | site | [§39.2](16-relay.md#392-assignment) |
 | Security | `rpc_rate` | 20 calls/s per actor, burst 100; 2,000/s per tenant | — | cluster | [§35.1](12-api.md#351-conventions) |
