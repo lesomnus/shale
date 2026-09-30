@@ -11,6 +11,10 @@
 2. CP       one page of laminae with states, gaps with reasons, read tokens
             (GET URLs), and a cursor for the next page
 3. Reader   GET <node>/laminae/<key>   (Range supported), members in parallel
+            a lamina plays from its first byte; to start in the middle, the
+            last 16 bytes say where its index is, the index where every
+            keyframe is, and a Range from there with the init segment in
+            front plays from that keyframe (§23.1)
 ```
 
 A time-range query returns explicit **gaps** for any part of the range that has

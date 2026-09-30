@@ -13,34 +13,46 @@ it negotiates.
 
 ### 38.1 Inputs
 
-Every source reaches the producer as **one MPEG-TS byte stream**. Where the
-stream comes from is the only difference:
+Every source reaches the producer as **one byte stream of fragmented MP4**,
+or as raw frames of something else ([§38.9](#389-pushed-sources-and-raw-frames)).
+Where the stream comes from is the only difference:
 
 | Kind | Who runs it | Typical use |
 |---|---|---|
 | **Managed capture** | the producer spawns and supervises a capture process per source ([§38.3](#383-managed-capture)) | USB cameras, IP cameras, CSI cameras on a Pi |
-| **Push** (`input: push`) | a process on the host writes the stream to the producer's listener, `producer.push`, in the node's upload contract ([§38.9](#389-pushed-sources-and-raw-frames)): TS by default, or raw frames (`kind: raw`) for what is not video | recording software the operator already runs; vendor SDKs; a robot's sensor streams |
+| **Push** (`input: push`) | a process on the host writes the stream to the producer's listener, `producer.push`, in the node's upload contract ([§38.9](#389-pushed-sources-and-raw-frames)): fragmented MP4 (`kind: mp4`, the default), or raw frames (`kind: raw`) for what is not video | recording software the operator already runs; vendor SDKs; a robot's sensor streams |
 | **File** | `file:` plays a recording through ffmpeg, `raw:` replays one without it, both looped | tests |
 | **Demo** (`demo:`) | the producer spawns ffmpeg on a picture and a tone it draws for itself, no device and no file | a tutorial, a walk-through, a bench with no camera to hand |
 
 The contract is the same for all three:
 
-- MPEG-TS, with the `random_access_indicator` set on keyframes, as every
-  standard muxer does. Fragmented MP4 is accepted too; it is cut at fragment
-  boundaries with the init segment prepended to each lamina. TS is the
-  default because any prefix of a TS segment plays up to its last complete
-  packet, which is what an incomplete lamina needs
-  ([§15](04-write-path.md#15-partial-laminae)).
+- **Fragmented MP4** (ISO BMFF): an init segment, `ftyp` and a `moov` with
+  `mvex` and no samples, then fragments, each a `moof` and its `mdat`,
+  with sample offsets that count from the fragment's own `moof`
+  (`default-base-is-moof`). That is what `ffmpeg -f mp4 -movflags
+  frag_keyframe+empty_moov+default_base_moof` writes, and what a browser's
+  Media Source Extensions take as they are. Every keyframe starts a
+  fragment, and no fragment lasts longer than `frag_duration` (500 ms), so
+  the live tee, which sends whole fragments, is never further behind than
+  that. Any prefix of such a stream plays up to its last whole fragment,
+  which is what an incomplete lamina needs
+  ([§15](04-write-path.md#15-partial-laminae)). The first producer wrote
+  MPEG-TS; it moved to fragmented MP4 because the consumer is a browser,
+  which plays it without transmuxing, seeks inside a lamina by the index
+  the lamina ends with ([§23.1](07-storage-node.md#231-self-describing-laminae)),
+  and exports a range by concatenation. A tool that emits TS goes through
+  `ffmpeg -f mpegts -i - -c copy` and the muxer flags above, in front of
+  the producer ([§38.3](#383-managed-capture)).
 - A keyframe at least every 2 seconds ([§12.6](04-write-path.md#126-upload-profile-negotiation)).
 - All streams together at or below the source's `max_bitrate`. Audio goes in
-  the same TS when a source has it: a camera's own audio as the camera
+  the same stream when a source has it: a camera's own audio as the camera
   sends it, a microphone only when configured, since recording sound in
   public places is restricted in many jurisdictions
   ([producer bench](producer-bench.md)); `audio: {codec: none}` drops it
   ([§38.3](#383-managed-capture)).
 
-The producer never decodes or encodes. It reads packet headers, nothing
-inside them.
+The producer never decodes or encodes. It reads box headers and the tables
+of `moov` and `moof`, nothing inside a sample.
 
 **A demo source.** `shale serve producer --demo 3` records three cameras
 that are not there: `demo:testsrc2`, `demo:cellauto` and `demo:life`, at
@@ -60,26 +72,37 @@ and then forgets it.
 
 ### 38.2 Cutting segments
 
-The producer keeps, per source, the last PAT and PMT packets it has seen and
-the video PID from the PMT. A segment boundary is the first video packet with
-`payload_unit_start_indicator` and `random_access_indicator` set, i.e. the
-start of a keyframe, at or after the moment the boundary is due. The new
-segment starts with the cached PAT and PMT followed by that keyframe, so each
-lamina plays on its own — provided the keyframe carries its parameter sets
-(H.264's SPS and PPS; a VPS too for H.265). Not every encoder writes them
-with every keyframe: ffmpeg 8's `h264_v4l2m2m` writes them for the first
-ten seconds of a run and never again, so the producer also keeps the last
-complete set it saw on the stream, and a segment whose first keyframe comes
-without them gets them right after the tables, as one PES packet of their
-own on the video PID, stamped like the keyframe. A keyframe without them
-before any were seen is counted (`NoParams`) and said once in the log: those
-laminae do not play on their own.
+The producer keeps, per source, the init segment it last saw. A segment
+boundary is the first fragment whose video begins with a sync sample, a
+keyframe, at or after the moment the boundary is due; `trun`'s first sample
+flags say so. The new segment starts with the init segment followed by that
+fragment, so each lamina plays on its own. The parameter sets (H.264's SPS
+and PPS; a VPS too for H.265) live in the init segment's `avcC` or `hvcC`,
+written once by the muxer for the whole stream, so an encoder's habit of
+writing them into the bitstream once and never again (ffmpeg 8's
+`h264_v4l2m2m`, #84) no longer touches the archive; what matters is that
+the muxer got them, which ffmpeg takes from the encoder.
+
+The reader turns the stream into the frames a raw source sends
+([§38.9](#389-pushed-sources-and-raw-frames)): the init segment is the
+prefix frame, a fragment a data frame, a key fragment one a lamina may be
+cut before. From there the cutter, the uploader and the tee know one
+shape; the container is known in the reader and nowhere after it.
+
+When a segment closes the producer appends its **index**: an `mfra` with
+one `tfra` entry per key fragment, its `tfdt` and its byte offset in the
+lamina, and the `mfro` that says how big the index is, so a reader takes
+the last 16 bytes, then the index, then any keyframe by HTTP Range
+([§23.1](07-storage-node.md#231-self-describing-laminae)). The index is
+last because a live upload streams the lamina as it grows. A lamina cut
+short has none ([§15](04-write-path.md#15-partial-laminae)) and reads
+sequentially.
 
 A boundary is due:
 
 - at the source's staggered phase ([§12.2](04-write-path.md#122-resumable-part-uploads)),
   every agreed segment duration;
-- **early**, at the first keyframe after the segment has produced
+- **early**, at the first key fragment after the segment has produced
   `max_bitrate × duration` bytes while its phase boundary is still ahead. A
   stream running at its ceiling reaches that amount exactly at the phase,
   so it is never cut early; one running above it is. The bytes that arrive
@@ -91,10 +114,10 @@ A boundary is due:
   point as usual. This is the safety net for a ceiling guessed too low
   ([§38.5](#385-choosing-the-ceiling)).
 
-`date_started` is the wall-clock time at which the segment's first keyframe
-arrived. `date_ended` is the arrival time of the next segment's first
-keyframe, so consecutive segments tile the timeline exactly, or the time of
-the last packet when the source stops. Both go into the upload's headers
+`date_started` is the wall-clock time at which the segment's first key
+fragment arrived. `date_ended` is the arrival time of the next segment's
+first key fragment, so consecutive segments tile the timeline exactly, or
+the time of the last fragment when the source stops. Both go into the upload's headers
 ([§12.2](04-write-path.md#122-resumable-part-uploads)). Wall-clock stamping
 is accurate to the pipe's latency, tens of milliseconds, which is enough.
 
@@ -107,11 +130,12 @@ buffered mode the segment is complete at the next cut and uploaded then.
 
 ### 38.3 Managed capture
 
-The producer runs one **capture process** per managed source and reads TS
-from its standard output. The default tool is **ffmpeg**. Any program that
-writes TS to its standard output satisfies the contract, so a GStreamer
-pipeline ending in `mpegtsmux ! fdsink`, or a vendor tool, can take its
-place per source.
+The producer runs one **capture process** per managed source and reads
+fragmented MP4 from its standard output. The default tool is **ffmpeg**.
+Any program that writes fragmented MP4 to its standard output satisfies
+the contract ([§38.1](#381-inputs)), so a GStreamer pipeline ending in
+`mp4mux fragment-duration=500 streamable=true ! fdsink`, or a vendor tool,
+can take its place per source.
 
 **Why ffmpeg.** One binary covers V4L2 and RTSP inputs, ALSA audio, and
 every hardware encoder the producer is likely to meet (`h264_v4l2m2m` on a
@@ -165,10 +189,10 @@ sources:
     extra_input_args: [-thread_queue_size, "512"]
     extra_output_args: [-x264-params, "nal-hrd=cbr"]
 
-  - alias: roof             # tier 3: your own command; stdout must be TS
+  - alias: roof             # tier 3: your own command; stdout must be fragmented MP4
     command: >
       rpicam-vid -t 0 --codec h264 --inline --intra 60 --bitrate 4000000 -o -
-      | ffmpeg -f h264 -i - -c copy -f mpegts -
+      | ffmpeg -f h264 -i - -c copy -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration 500000 -
     max_bitrate: 4.5Mbps
 ```
 
@@ -179,14 +203,29 @@ sources:
 | `input: v4l2:…`, `format`, `size`, `fps` | `-f v4l2 -input_format <format> -video_size <size> -framerate <fps> -i <device>` |
 | `input: rtsp://…` | `-rtsp_transport tcp -i <url>`, with a socket timeout, and `-c:v copy` when `format: h264` |
 | `encoder: auto` | the first that works on this host: `h264_v4l2m2m`, `h264_vaapi`, `h264_qsv`, `h264_nvenc`, else `libx264 -preset veryfast` with a warning about CPU |
-| `max_bitrate` | encoders with rate control (`libx264`, VAAPI, NVENC, QSV): capped VBR, `-maxrate <video ceiling> -bufsize <2 × ceiling>` around a quality target; encoders that only take a target (`h264_v4l2m2m`): CBR at `-b:v <video ceiling>`. The video ceiling is `max_bitrate` minus the audio bitrate for each audio track (two, unless the archive's is Opus), divided by 1.05 for TS overhead, so the muxed stream stays under the ceiling |
+| `max_bitrate` | encoders with rate control (`libx264`, VAAPI, NVENC, QSV): capped VBR, `-maxrate <video ceiling> -bufsize <2 × ceiling>` around a quality target; encoders that only take a target (`h264_v4l2m2m`): CBR at `-b:v <video ceiling>`. The video ceiling is `max_bitrate` minus the audio bitrate for each audio track (two, unless the archive's is Opus), divided by 1.05 for the container and the muxer's slack, so the muxed stream stays under the ceiling |
 | `keyframe_interval` | `-g <fps × interval> -force_key_frames expr:gte(t,n_forced*<interval>)`, with the agreed interval ([§12.6](04-write-path.md#126-upload-profile-negotiation)), 2 s by default |
-| `audio` | two tracks ([§38.7](#387-live-output)): the archive's, and Opus beside it for live. A camera's own audio: `-map 0:v:0 -map 0:a:0? -map 0:a:0? -c:a:0 copy -c:a:1 libopus -b:a:1 <bitrate>`, with `-c:a:0 aac -b:a:0 <bitrate>` when `codec: aac`; a microphone (`device`): `-f alsa -i <device>` as a second input, mapped twice, `-c:a:0 aac`; `codec: opus` is one track, `-c:a libopus -b:a <bitrate>`, since Opus is what live plays; `-an` for `none`, and for a USB camera without a microphone. Audio that TS has no type for, G.711 from an IP camera above all, comes out of ffmpeg as a private stream nothing names, which no player finds; the first PMT shows it, and the capture is restarted once encoding it as AAC, with a log line saying so |
-| output (fixed) | `-f mpegts -` |
+| `audio` | two tracks ([§38.7](#387-live-output)): the archive's, and Opus beside it for live. A camera's own audio: `-map 0:v:0 -map 0:a:0? -map 0:a:0? -c:a:0 copy -c:a:1 libopus -b:a:1 <bitrate>`, with `-c:a:0 aac -b:a:0 <bitrate>` when `codec: aac`; a microphone (`device`): `-f alsa -i <device>` as a second input, mapped twice, `-c:a:0 aac`; `codec: opus` is one track, `-c:a libopus -b:a <bitrate>`, since Opus is what live plays; `-an` for `none`, and for a USB camera without a microphone. Audio in a codec MP4 has no entry for, G.711 from an IP camera above all, makes the muxer refuse at start (`Could not find tag for codec pcm_mulaw`); that line on stderr restarts the capture once, encoding the audio as AAC, with a log line saying so |
+| output (fixed) | `-f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration 500000 -`: fragmented MP4, every keyframe a fragment and none longer than 500 ms ([§38.1](#381-inputs)). `h264_v4l2m2m` writes `-f mpegts -` instead, into a second ffmpeg (below) |
 | `controls` | not ffmpeg: V4L2 controls set on the device through the ioctls `v4l2-ctl -c` uses, by v4l2-ctl's names, before every start of the capture, since a re-plugged camera forgets them. A control the device does not have, or a value outside its range, is a warning in the log and the rest are set |
 
 The producer records which encoder `auto` chose and shows it in its
 heartbeat ([§38.6](#386-health-and-heartbeats)).
+
+**A second stage for the Raspberry Pi's encoder.** `h264_v4l2m2m` hands
+ffmpeg no parameter sets, so ffmpeg's mp4 muxer writes an empty `avcC`
+and leaves the samples in Annex B, a file nothing decodes; and it flags
+every frame a keyframe, so `frag_keyframe` would make a fragment per
+frame and mark each a sync sample. The producer runs that encoder as two
+processes: the first writes MPEG-TS, the second reads it and writes
+fragmented MP4 with `-c copy` (`-map 0 -c copy -bsf:a:0 aac_adtstoasc`,
+then the muxer flags above). The TS demuxer's parser finds the parameter
+sets and decides the keyframes from the slices, so what comes out is what
+`libx264` writes: `avcC` with the SPS, a fragment per 500 ms and per real
+keyframe, AAC re-framed for MP4 (`aac_adtstoasc`, which a TS's ADTS
+needs). It costs a process and no CPU. Either stage's stderr is read as
+one: the muxer's refusal of an audio codec restarts both with AAC, as it
+does the one-stage capture.
 
 **Controls worth setting.** A Logitech camera ships with
 `exposure_dynamic_framerate: 1` and halves its frame rate in low light to
@@ -255,7 +294,7 @@ is a loop with three parts.
    | Source | Starting ceiling |
    |---|---|
    | managed capture | from the mode: 640×480@30 → 1 Mbps, 1280×720@30 → 2 Mbps, 1920×1080@15 → 2.5 Mbps, 1920×1080@30 → 4 Mbps, 2560×1440@30 → 8 Mbps, 3840×2160@30 → 12 Mbps; H.265 × 0.6. The table lives in the producer's configuration and comes from the bench, where hardware H.264 at these rates met its target within 5% |
-   | `onvif` | the bitrate limit the camera is configured with ([§38.4](#384-discovery-and-registration)), × 1.05 for TS overhead, plus the audio bitrate: the camera's limit is the encoder's, and the ceiling covers the container |
+   | `onvif` | the bitrate limit the camera is configured with ([§38.4](#384-discovery-and-registration)), × 1.05 for the container, plus the audio bitrate: the camera's limit is the encoder's, and the ceiling covers the container |
    | any other pass-through stream | the peak one-second rate over the first 60 s × 1.5, logged as a guess |
 
 2. **A guard that costs no bytes.** A segment that has produced
@@ -340,9 +379,10 @@ the CP assigned it ([§39.2](16-relay.md#392-assignment)), and:
 - attaches with the publish token from its `Negotiate` or heartbeat answer,
   and asks `ProducerService.Relay` for a fresh assignment the moment the
   stream breaks;
-- on `Start {source}`, tees that source's TS stream
-  ([§38.1](#381-inputs)) into the relay stream, beginning at the next
-  keyframe, and stops on `Stop {source}`. The bytes are the ones it
+- on `Start {source}`, tees that source's fragments
+  ([§38.1](#381-inputs)) into the relay stream, the init segment first,
+  beginning at the next key fragment, one message per fragment, and stops
+  on `Stop {source}`. The bytes are the ones it
   stores, never encoded twice: the video, and the audio as **two tracks**,
   the archive's (the camera's audio as it sends it, or the AAC of
   [§38.3](#383-managed-capture)) and **Opus beside it**, encoded in the
@@ -425,9 +465,11 @@ kind   0  data     a lamina may be cut before this frame
                    replaced by the next prefix frame
 ```
 
-This is TS with the video taken out: a prefix frame is the PAT and PMT,
-every data frame boundary is a keyframe, the timestamp is the PCR. The
-schedule stays the producer's, as for a camera: the staggered phase, the
+This is the shape the producer reads a camera's own stream into
+([§38.2](#382-cutting-segments)): a prefix frame is what the init segment
+is, a data frame boundary what a key fragment is, the timestamp what the
+stream's own clock is, and the producer knows one shape after its reader.
+The schedule stays the producer's, as for a camera: the staggered phase, the
 epoch rule and the early cut past `max_bitrate × duration`
 ([§38.2](#382-cutting-segments), [§25](07-storage-node.md#25-lamina-size)),
 with the cut moved to the next frame boundary. A raw source declares
@@ -449,10 +491,13 @@ low-rate records belong multiplexed into one source.
   ([§7](02-data-model.md#7-source-set-zone-epoch)): a raw source's
   configuration names it (`content_type: application/x-mcap`), the
   producer proposes it when it negotiates, and the CP keeps it unless a
-  person set another. A TS source is `video/mp2t`; a raw source with no
-  name is `application/octet-stream`.
+  person set another. A stream source is `video/mp4`; a raw source with
+  no name is `application/octet-stream`.
 - No live output ([§38.7](#387-live-output)): a raw source has nothing a
-  relay could show, and `Live` on one is refused with its content type.
+  relay could show. The producer says at negotiation which of its sources
+  it can show (`live_capable`: a stream it reads, not frames it takes),
+  and `Live` and the publish token go by that rather than by the content
+  type, which a writer can call anything ([§39.3](16-relay.md#393-from-the-producer)).
 - A self-delimiting format needs one frame per record and one prefix
   frame per header. For MCAP: the magic, the Header and every Schema and
   Channel so far go in the prefix frame, resent whole when a channel is

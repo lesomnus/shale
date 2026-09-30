@@ -79,7 +79,7 @@ deployment runs well on them, and changes them only for a reason.
 | Producer | a source's `controls` | none | V4L2 control names and values; set before every capture start | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Producer | a source's `idle.dark_after` | none (absent: every segment stored); 10 min when `idle:` is given | how long the scene stays dark before its segments are skipped; sources the producer encodes only | producer | [§38.10](15-producer.md#3810-dark-scenes) |
 | Producer | a source's `idle.threshold` | 0.10 | luma, 0..1, at or below which a pixel is dark; a frame is dark at 98 % dark pixels | producer | [§38.10](15-producer.md#3810-dark-scenes) |
-| Producer | a source's `content_type` | `video/mp2t`; `application/octet-stream` for `raw` | proposed at negotiation; a person's value on the source wins | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
+| Producer | a source's `content_type` | `video/mp4`; `application/octet-stream` for `raw` | proposed at negotiation; a person's value on the source wins | producer | [§38.9](15-producer.md#389-pushed-sources-and-raw-frames) |
 | Producer | encoder target | (ceiling − audio per track) ÷ 1.05; capped VBR with `bufsize` = 2 s at the ceiling | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Producer | start-up check | 10 s after a capture process starts | — | producer | [§38.3](15-producer.md#383-managed-capture) |
 | Node | `gc_page` | 5,000 candidates | — | node | [§21.2](06-retention-gc.md#212-protocol) |
@@ -213,9 +213,10 @@ Control Plane calls them ([§35.7](12-api.md#357-storage-node-control-api)).
 
 **WebRTC on the producer.** Publishing from the producer over WebRTC (WHIP)
 or serving viewers from it would put ICE, DTLS, and RTP on a small machine
-and let viewers load its uplink. The producer sends plain MPEG-TS over one
-stream to its relay, only while someone watches, and WebRTC exists only
-between the relay and the viewer ([§39.3](16-relay.md#393-from-the-producer)).
+and let viewers load its uplink. The producer sends its fragments over one
+stream to its relay, at all times or only while someone watches
+([§39.2](16-relay.md#392-assignment)), and WebRTC exists only between the
+relay and the viewer ([§39.3](16-relay.md#393-from-the-producer)).
 
 **An external live server.** A ready-made media server could serve WebRTC,
 but it cannot tell the producer to start and stop sending, and it would

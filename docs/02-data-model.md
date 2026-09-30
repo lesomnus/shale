@@ -12,7 +12,7 @@ later needs no change to code, schema, or clients. Storage infrastructure
 
 A **Source** is what produces laminae: one camera, or more generally one
 stream of data. Its `content_type` says what the bytes of its laminae are
-to whoever reads them: `video/mp2t` for a camera, which an empty value
+to whoever reads them: `video/mp4` for a camera, which an empty value
 means, or what a pushed stream of records declares
 ([§38.9](15-producer.md#389-pushed-sources-and-raw-frames)). Sets and
 sources carry `labels`, payday's field 7, for whatever an operator groups

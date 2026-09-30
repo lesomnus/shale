@@ -15,7 +15,7 @@ lamina, and is never between a producer and a Storage Node
                      │  signs publish tokens and view tokens  │
                      └───────┬───────────────────────┬────────┘
                              │                       │
-        the same TS bytes    ▼                       ▼
+        the same fragments   ▼                       ▼
 Producer ──────────────► Relay ═══ WebRTC ═══► viewers: people (a browser)
    │      gRPC stream, at all        WHEP           and Reader hosts
    │      times or on demand
@@ -93,7 +93,7 @@ for as long as it runs (`RelayIngest.Attach`,
 ```text
 Producer  Hello {publish token}          aud = relay, the producer's sources, its live policy
 Relay     Start {source}                 at once under `always`; when someone watches, on demand
-Producer  Data {source, bytes} ...       the TS it stores, Opus among its audio
+Producer  Data {source, bytes} ...       the fragments it stores, Opus among their audio
 Relay     Stop {source}                  on demand only: nobody has watched for relay_idle_stop
 ```
 
@@ -107,11 +107,15 @@ Relay     Stop {source}                  on demand only: nobody has watched for 
   bytes are playable, and when the last viewer leaves the relay waits
   `relay_idle_stop` (10 s), which absorbs a page reload, then sends
   `Stop`.
-- **The same bytes.** The producer tees the source's TS stream
-  ([§38.1](15-producer.md#381-inputs)): what goes to the relay is what goes
-  into the lamina, never encoded twice: the video, the archive's audio, and
-  the Opus track its capture writes beside it for this purpose
-  ([§38.7](15-producer.md#387-live-output)). Only a stream the producer
+- **The same bytes.** The producer tees the source's fragments
+  ([§38.1](15-producer.md#381-inputs)), the init segment first and then one
+  message per fragment: what goes to the relay is what goes into the
+  lamina, never encoded twice: the video, the archive's audio, and the
+  Opus track its capture writes beside it for this purpose
+  ([§38.7](15-producer.md#387-live-output)). The relay takes the samples
+  out of each fragment for WebRTC, with the parameter sets from the init
+  segment in front of every keyframe; a fragment the tee dropped for a
+  slow relay is a skipped fragment number (`mfhd`), which the relay sees. Only a stream the producer
   does not encode is remuxed on its way, by the live helper, when its audio
   is not Opus. On the uplink it costs a camera's bitrate on top of
   recording, every camera under `always` and the watched ones on demand,
@@ -162,7 +166,7 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   (1 h). A session already open outlives its token; a new session needs a
   fresh `Live`. The wall and site membership decide who gets one
   ([§33.1](10-security.md#331-trust-model)).
-- **Instant start.** The relay keeps, per active source, every packet since
+- **Instant start.** The relay keeps, per active source, every sample since
   the last keyframe (at most one keyframe interval, about a megabyte at
   4 Mbps). A joining viewer receives that group of pictures at once and
   starts within a fraction of a second instead of waiting for the next
@@ -170,7 +174,7 @@ certificate ([§33.1](10-security.md#331-trust-model)).
 - **The recent window.** Nothing is read from a Storage Node before it
   commits ([§17](05-read-path.md#17-read-path)), so the one stretch of a
   camera nobody can read is the open lamina's, and that is what the relay
-  keeps: per source, the last `rewind_seconds` of the TS bytes as the
+  keeps: per source, the last `rewind_seconds` of the fragments as the
   producer sent them, where `rewind_seconds` is what the publish token
   says ([§33.2](10-security.md#332-access-tokens)) and the CP sized it
   from the longest segment duration among the producer's sources plus
@@ -181,30 +185,30 @@ certificate ([§33.1](10-security.md#331-trust-model)).
 
   ```text
   GET <relay>/recent/<source>?since=<seconds>   Authorization: Shale <view token>
-      → 200  Content-Type: video/mp2t
+      → 200  Content-Type: video/mp4
              Shale-Recent-Start: <when the first keyframe came, RFC 3339>
              Shale-Recent-Seconds: <how long the window from it is>
       → 404  nothing kept yet
   ```
 
-  The answer is one TS in the shape of a lamina: the PAT and PMT first,
-  the parameter sets when the keyframe has none in-band (as
-  [§38.2](15-producer.md#382-segments) puts them), then the stream from
-  the oldest keyframe kept, or from the oldest that came within `since`
-  seconds. It is a snapshot, not a stream: a viewer plays it, then joins
-  live over WHEP, or asks again. The same encoder wrote it and the
-  laminae, so the presentation stamps run on across them, and a player
-  that has the laminae from `Timeline` and this blob has the camera from
-  the archive to now with nothing between. `Live` hands out the URL as
+  The answer is one fragmented MP4 in the shape of a lamina: the init
+  segment first, then the fragments from the oldest key fragment kept, or
+  from the oldest that came within `since` seconds, without the index a
+  closed lamina ends with; a browser's Media Source Extensions take it as
+  it is, and so does ffmpeg. It is a snapshot, not a stream: a viewer
+  plays it, then joins live over WHEP, or asks again. The same encoder
+  wrote it and the laminae, so the decode times run on across them, and a
+  player that has the laminae from `Timeline` and this blob has the camera
+  from the archive to now with nothing between. `Live` hands out the URL as
   `recent_url` beside `whep_url`, good for the same view token. The relay
   never grows into a playback server: what is older than the window is the
   Storage Nodes' to serve, as it is today.
 
   What was never sent is not in it: under `on_demand` the window fills
-  from the first viewer on. Packets the producer dropped for a slow relay,
-  or a stream that broke, leave a tear, which the relay sees as a skip of
-  the video stream's continuity counter, and the window is handed out from
-  the next keyframe after the last tear, never across one. A relay that
+  from the first viewer on. A fragment the producer dropped for a slow
+  relay, or a stream that broke, leaves a tear, which the relay sees as a
+  skipped fragment number, and the window is handed out from the next key
+  fragment after the last tear, never across one. A relay that
   restarts, or a producer that attaches again, begins an empty window.
 - **Latency** is the producer's pipe, one TCP hop, and the browser's jitter
   buffer: one to two seconds glass to glass. Enough for CCTV. If a wireless
@@ -281,9 +285,9 @@ they cannot, the open lamina's.
 
 ### 39.8 What the relay does not do
 
-- Record, replay, or read laminae. It keeps the open lamina's bytes as the
-  recent window and hands them out as one TS ([§39.4](#394-viewers)), and
-  nothing older.
+- Record, replay, or read laminae. It keeps the open lamina's fragments as
+  the recent window and hands them out as one fragmented MP4
+  ([§39.4](#394-viewers)), and nothing older.
 - Transcode video, or change resolution or frame rate.
 - Talk to cameras or producers on its own initiative: it only answers
   connections that carry a token.

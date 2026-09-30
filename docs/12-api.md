@@ -143,6 +143,8 @@ Set              site, epoch, set_spread, retention (expire, delete), checksum,
                  max_bitrate_total (optional cap, §12.6), auto_raise (§38.5),
                  agreed link profile (mode, timeouts, horizon), profile_version
 Source           set, ordinal (assigned by Add, immutable), zone,
+                 content_type and live_capable (what its producer proposed,
+                 §38.9, §39.3),
                  agreed segment profile (max_bitrate, segment duration,
                  keyframe interval), observed rate (recent, expected;
                  derived, §12.6), seconds at the cap and episodes (§38.5)
@@ -411,8 +413,9 @@ producer:
 service RelayIngest {
   rpc Attach(stream AttachRequest) returns (stream AttachResponse);
 }
-// AttachRequest:  Hello {publish_token} once, then Data {source, bytes}
-//                 for every source the relay has started
+// AttachRequest:  Hello {publish_token} once, then Data {source, bytes},
+//                 one init segment or one whole fragment, for every source
+//                 the relay has started
 // AttachResponse: Start {source} | Stop {source}
 ```
 
@@ -429,9 +432,9 @@ POST   /whep/{source_id}       Content-Type: application/sdp, body: offer
        → 201  Location: /whep/{session}   body: SDP answer
 DELETE /whep/{session}         end the session
 GET    /recent/{source_id}     ?since=<seconds>, Authorization: Shale <view token>
-       → 200  video/mp2t: the recent window as one TS, tables first, from a
-              keyframe; Shale-Recent-Start and Shale-Recent-Seconds say
-              where it begins and how long it is (§39.4)
+       → 200  video/mp4: the recent window as one fragmented MP4, the init
+              segment first, from a key fragment; Shale-Recent-Start and
+              Shale-Recent-Seconds say where it begins and how long it is (§39.4)
        → 404  nothing kept yet
 ```
 

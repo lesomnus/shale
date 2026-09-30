@@ -211,8 +211,8 @@ of keep-alive connections, one per node it is currently writing to. It also
 keeps one stream to its relay, and sends a camera's bytes down it only while
 someone is watching ([§39.3](16-relay.md#393-from-the-producer)).
 
-What a producer takes in is an **encoded stream** in a streamable container
-(MPEG-TS, fragmented MP4). It never decodes or encodes; the camera or a
+What a producer takes in is an **encoded stream** in a streamable container,
+fragmented MP4 ([§38.1](15-producer.md#381-inputs)). It never decodes or encodes; the camera or a
 capture process in front of it does. The producer can run and supervise
 those capture processes itself, find cameras on the host and the network,
 and choose its bitrate ceilings, which is the producer's own design

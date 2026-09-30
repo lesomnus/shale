@@ -147,9 +147,11 @@ holds a password. Two consequences for a change:
 ## Shale specifics
 
 - `internal/relay` is the live path (§39): `RelayIngest` from producers,
-  WHEP to viewers through pion; `internal/mpegts` takes the access units
-  out of the TS. The producer's tee is `internal/producer/relay.go`; the
-  CP's assignment and tokens are `server/core/live.go`.
+  WHEP to viewers through pion. `internal/fmp4` reads fragmented MP4, the
+  one container laminae are (§38.1): the producer cuts by its fragments and
+  writes the index a lamina ends with, the relay takes the samples out of
+  them. The producer's tee is `internal/producer/relay.go`; the CP's
+  assignment and tokens are `server/core/live.go`.
 
 - `server/core` is the hand-written layer: every custom RPC of §35.4 and
   §35.5, plus rules on a few generated verbs (a Source's ordinal, a

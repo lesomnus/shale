@@ -17,7 +17,7 @@
 | **WHEP** | WebRTC HTTP egress protocol: the viewer posts an SDP offer to the relay and gets the answer |
 | **GOP Cache** | The relay's copy of the current group of pictures per source, so a joining viewer starts at once |
 | **Producer** | Host that receives a set's streams, cuts them into segments, and uploads them; owns a segment until commit |
-| **Capture Process** | A process the producer runs per managed source, whose standard output is the source's MPEG-TS stream; ffmpeg by default |
+| **Capture Process** | A process the producer runs per managed source, whose standard output is the source's fragmented MP4 stream; ffmpeg by default |
 | **Managed Capture** | The producer spawning, configuring, and supervising capture processes from its own configuration |
 | **Early Cut** | Closing a segment at the next keyframe once it has produced `max_bitrate` × duration bytes ahead of its phase; the sign of a ceiling set too low |
 | **Episode** | 3 to 60 consecutive seconds with a source at its ceiling; counted by the producer to tell starvation from noise |

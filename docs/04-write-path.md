@@ -646,9 +646,12 @@ candidate, and the complete copy replaces the incomplete one
 ([§14](#14-duplicates-and-orphans)).
 
 The node does not parse media. Producers that use live upload must use a
-**streamable container** (MPEG-TS, fragmented MP4) so that any prefix is
-playable up to its last complete unit. The media server works out the real
-duration when it reads the lamina; the index carries an estimate
+**streamable container**, fragmented MP4 ([§38.1](15-producer.md#381-inputs)),
+so that any prefix is playable up to its last whole fragment. A lamina cut
+short lacks the index its closing would have written
+([§23.1](07-storage-node.md#231-self-describing-laminae)) and reads
+sequentially. The media server works out the real duration when it reads
+the lamina; the index carries an estimate
 ([§19](05-read-path.md#19-reader-semantics)).
 
 A buffered upload that is abandoned is deleted instead, and the node reports

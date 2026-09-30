@@ -188,8 +188,17 @@ Each lamina file carries its own metadata in an **inline extended attribute**
   while its value fits in one byte of length, whatever the inode size. The
   inode sizes in [§22.1](#221-hdd-layout) then keep it inline with the
   file's extent list.
-- The file content stays the raw segment, so a mounted sink can be inspected
-  with ordinary tools (e.g. `ffprobe`).
+- The file content stays the segment as the producer sent it, so a mounted
+  sink can be inspected with ordinary tools (`ffprobe`). For a camera that
+  is fragmented MP4 ([§38.1](15-producer.md#381-inputs)): the init segment
+  (`ftyp`, `moov`), fragments from one that begins with a keyframe, and at
+  the end an **index**, an `mfra` with the `tfdt` and the byte offset of
+  every key fragment and the `mfro` that says its size, so a reader takes
+  the last 16 bytes, then the index, then any keyframe by HTTP Range
+  ([§17](05-read-path.md#17-read-path)), and a browser's Media Source
+  Extensions take the file as it is. A lamina finalized from an abandoned
+  upload has no index ([§15](04-write-path.md#15-partial-laminae)). The
+  record below carries no codec: the file describes itself.
 
 Record fields:
 
@@ -361,6 +370,10 @@ One more rule: a segment lasts at most a quarter of the set's `epoch`, so every
 epoch holds several laminae per source and epoch-based placement keeps its
 meaning. When the two rules conflict, for a ceiling under about 0.28 Mbps at
 a one-hour epoch, the epoch rule wins and the lamina is smaller than 32 MB.
+
+The container costs about 1%: a `moof` of a few hundred bytes per 500 ms
+fragment ([§38.1](15-producer.md#381-inputs)), and 19 bytes per keyframe in
+the index a lamina ends with ([§23.1](#231-self-describing-laminae)).
 
 The segment size also sets the **loss granularity** and the **upload
 duration** of a live upload. With live upload, what a destroyed producer
