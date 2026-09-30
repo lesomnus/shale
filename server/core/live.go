@@ -62,16 +62,23 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 	}
 	var sources [][]byte
 	for _, m := range members {
+		// A raw source (§38.9) has nothing a relay could show, and a
+		// policy of `always` would start it for nothing.
+		if !showable(m) {
+			continue
+		}
 		sources = append(sources, m.GetId())
 	}
 	b, _, _, address, err := s.policies(ctx)
 	if err != nil {
 		return nil, err
 	}
+	live := livePolicy(api.LivePolicy(p.Live))
 	exp := now.Add(b.PublishTokenTTL)
 	tok, err := s.d.Keys.Sign(ctx, api.TokenClaims_builder{
 		Exp: timestamppb.New(exp), Iat: timestamppb.New(now),
 		Aud: chosen.Id[:], Op: api.TokenOp_TOKEN_OP_PUBLISH, Sources: sources, Actor: producerId.Bytes(),
+		Live: live,
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -82,7 +89,27 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 		Endpoints:    s.relayEndpoints(chosen, chosen.IngestAddress, callerOf(ctx), address),
 		PublishToken: tok,
 		DateExpires:  timestamppb.New(exp),
+		Live:         live,
 	}.Build(), nil
+}
+
+// livePolicy is a producer's policy as the relay is told it: unspecified
+// is `always`, since the case Shale is for wants the recent window of
+// every camera there whether or not anyone watches (§39.3).
+func livePolicy(v api.LivePolicy) api.LivePolicy {
+	if v == api.LivePolicy_LIVE_POLICY_ON_DEMAND {
+		return v
+	}
+
+	return api.LivePolicy_LIVE_POLICY_ALWAYS
+}
+
+// showable says whether a relay could show a source: video, not a raw
+// stream (§38.9).
+func showable(src *api.Source) bool {
+	ct := src.GetContentType()
+
+	return ct == "" || strings.HasPrefix(ct, "video/")
 }
 
 // relayAlive says whether a relay still counts as up: `downAfter` is
@@ -164,8 +191,8 @@ func (s Core) relayEndpoints(r *ent.Relay, addr, caller string, p *api.AddressPa
 func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sources []*api.Source) ([]*api.LiveSource, error) {
 	for _, src := range sources {
 		// A raw source (§38.9) has nothing a relay could show.
-		if ct := src.GetContentType(); ct != "" && !strings.HasPrefix(ct, "video/") {
-			return nil, status.Errorf(codes.FailedPrecondition, "%s is %s: nothing a relay could show", src.GetAlias(), ct)
+		if !showable(src) {
+			return nil, status.Errorf(codes.FailedPrecondition, "%s is %s: nothing a relay could show", src.GetAlias(), src.GetContentType())
 		}
 	}
 	now := s.d.now()

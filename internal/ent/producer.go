@@ -58,6 +58,8 @@ type Producer struct {
 	Status *api.ProducerStatus `json:"status,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
+	// Live holds the value of the "live" field.
+	Live int32 `json:"live,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -138,7 +140,7 @@ func (*Producer) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case producer.FieldLabels:
 			values[i] = new([]byte)
-		case producer.FieldState:
+		case producer.FieldState, producer.FieldLive:
 			values[i] = new(sql.NullInt64)
 		case producer.FieldAlias, producer.FieldName, producer.FieldDesc, producer.FieldHardwareId, producer.FieldHostname, producer.FieldCertSerial, producer.FieldVersion:
 			values[i] = new(sql.NullString)
@@ -281,6 +283,12 @@ func (_m *Producer) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Version = value.String
 			}
+		case producer.FieldLive:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field live", values[i])
+			} else if value.Valid {
+				_m.Live = int32(value.Int64)
+			}
 		case producer.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -419,6 +427,9 @@ func (_m *Producer) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("version=")
 	builder.WriteString(_m.Version)
+	builder.WriteString(", ")
+	builder.WriteString("live=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Live))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

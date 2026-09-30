@@ -283,6 +283,33 @@ func (_u *ProducerUpdate) SetNillableVersion(v *string) *ProducerUpdate {
 	return _u
 }
 
+// SetLive sets the "live" field.
+func (_u *ProducerUpdate) SetLive(v int32) *ProducerUpdate {
+	_u.mutation.ResetLive()
+	_u.mutation.SetLive(v)
+	return _u
+}
+
+// SetNillableLive sets the "live" field if the given value is not nil.
+func (_u *ProducerUpdate) SetNillableLive(v *int32) *ProducerUpdate {
+	if v != nil {
+		_u.SetLive(*v)
+	}
+	return _u
+}
+
+// AddLive adds value to the "live" field.
+func (_u *ProducerUpdate) AddLive(v int32) *ProducerUpdate {
+	_u.mutation.AddLive(v)
+	return _u
+}
+
+// ClearLive clears the value of the "live" field.
+func (_u *ProducerUpdate) ClearLive() *ProducerUpdate {
+	_u.mutation.ClearLive()
+	return _u
+}
+
 // SetSiteId sets the "site_id" field.
 func (_u *ProducerUpdate) SetSiteId(v uuid.UUID) *ProducerUpdate {
 	_u.mutation.SetSiteId(v)
@@ -522,6 +549,15 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(producer.FieldVersion, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Live(); ok {
+		_spec.SetField(producer.FieldLive, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedLive(); ok {
+		_spec.AddField(producer.FieldLive, field.TypeInt32, value)
+	}
+	if _u.mutation.LiveCleared() {
+		_spec.ClearField(producer.FieldLive, field.TypeInt32)
 	}
 	if _u.mutation.SiteCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -881,6 +917,33 @@ func (_u *ProducerUpdateOne) SetNillableVersion(v *string) *ProducerUpdateOne {
 	return _u
 }
 
+// SetLive sets the "live" field.
+func (_u *ProducerUpdateOne) SetLive(v int32) *ProducerUpdateOne {
+	_u.mutation.ResetLive()
+	_u.mutation.SetLive(v)
+	return _u
+}
+
+// SetNillableLive sets the "live" field if the given value is not nil.
+func (_u *ProducerUpdateOne) SetNillableLive(v *int32) *ProducerUpdateOne {
+	if v != nil {
+		_u.SetLive(*v)
+	}
+	return _u
+}
+
+// AddLive adds value to the "live" field.
+func (_u *ProducerUpdateOne) AddLive(v int32) *ProducerUpdateOne {
+	_u.mutation.AddLive(v)
+	return _u
+}
+
+// ClearLive clears the value of the "live" field.
+func (_u *ProducerUpdateOne) ClearLive() *ProducerUpdateOne {
+	_u.mutation.ClearLive()
+	return _u
+}
+
 // SetSiteId sets the "site_id" field.
 func (_u *ProducerUpdateOne) SetSiteId(v uuid.UUID) *ProducerUpdateOne {
 	_u.mutation.SetSiteId(v)
@@ -1150,6 +1213,15 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(producer.FieldVersion, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Live(); ok {
+		_spec.SetField(producer.FieldLive, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedLive(); ok {
+		_spec.AddField(producer.FieldLive, field.TypeInt32, value)
+	}
+	if _u.mutation.LiveCleared() {
+		_spec.ClearField(producer.FieldLive, field.TypeInt32)
 	}
 	if _u.mutation.SiteCleared() {
 		edge := &sqlgraph.EdgeSpec{

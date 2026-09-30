@@ -84,11 +84,15 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 		return status.Error(codes.PermissionDenied, "the token names no source")
 	}
 	a.send(api.AttachResponse_builder{Welcome: api.AttachResponse_Welcome_builder{Sources: accepted}.Build()}.Build())
+	// The producer's live policy, as the CP put it in the token (§39.3):
+	// `always` starts every source now and stops none; on demand starts
+	// them as viewers come. Unspecified is `always`, as the CP reads it.
+	always := claims.GetLive() != api.LivePolicy_LIVE_POLICY_ON_DEMAND
 	for _, s := range a.sources {
-		s.attach(a)
+		s.attach(a, always)
 	}
 	g.r.sources.attached(1)
-	g.r.log.Info("producer attached", "producer", actor.String(), "sources", len(accepted))
+	g.r.log.Info("producer attached", "producer", actor.String(), "sources", len(accepted), "always", always)
 	defer func() {
 		for _, s := range a.sources {
 			s.detach(a)

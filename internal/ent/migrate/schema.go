@@ -518,6 +518,7 @@ var (
 		{Name: "date_cert_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "status", Type: field.TypeJson, Nullable: true},
 		{Name: "version", Type: field.TypeString},
+		{Name: "live", Type: field.TypeInt32, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid, Nullable: true},
@@ -531,25 +532,25 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "producer_tenant_tenant",
-				Columns:    []*schema.Column{ProducerColumns[18]},
+				Columns:    []*schema.Column{ProducerColumns[19]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "producer_site_site",
-				Columns:    []*schema.Column{ProducerColumns[19]},
+				Columns:    []*schema.Column{ProducerColumns[20]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "producer_set_set",
-				Columns:    []*schema.Column{ProducerColumns[20]},
+				Columns:    []*schema.Column{ProducerColumns[21]},
 				RefColumns: []*schema.Column{SetColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "producer_relay_relay",
-				Columns:    []*schema.Column{ProducerColumns[21]},
+				Columns:    []*schema.Column{ProducerColumns[22]},
 				RefColumns: []*schema.Column{RelayColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -563,7 +564,7 @@ var (
 			{
 				Name:    "producer_alias_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{ProducerColumns[1], ProducerColumns[18]},
+				Columns: []*schema.Column{ProducerColumns[1], ProducerColumns[19]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -571,7 +572,7 @@ var (
 			{
 				Name:    "producer_hardware_id_tenant_id",
 				Unique:  false,
-				Columns: []*schema.Column{ProducerColumns[5], ProducerColumns[18]},
+				Columns: []*schema.Column{ProducerColumns[5], ProducerColumns[19]},
 			},
 		},
 	}

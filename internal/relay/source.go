@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -14,7 +15,8 @@ import (
 
 // A source is one camera as the relay sees it (§39.3, §39.4): the producer
 // stream that feeds it, the group of pictures since the last keyframe, and
-// the viewers watching. Bytes flow only while someone watches.
+// the viewers watching. Bytes flow at all times or only while someone
+// watches, as the producer's live policy says.
 
 // feeder is what a source asks of the producer attached to it.
 type feeder interface {
@@ -32,8 +34,11 @@ type source struct {
 	id pdid.Id
 	r  *Relay
 
-	mu       sync.Mutex
-	feeder   feeder
+	mu     sync.Mutex
+	feeder feeder
+	// always says the feeder's policy is `always` (§39.3): started at
+	// attach, and never stopped for want of viewers.
+	always   bool
 	started  bool
 	demux    *mpegts.Demuxer
 	gop      []mpegts.AccessUnit
@@ -53,8 +58,9 @@ func newSource(r *Relay, id pdid.Id) *source {
 const fallbackDuration = 40 * time.Millisecond
 
 // attach makes a producer stream the feeder of this source; a stream
-// already feeding it is superseded (the producer re-attached).
-func (s *source) attach(f feeder) {
+// already feeding it is superseded (the producer re-attached). `always`
+// is the producer's live policy for this attachment (§39.3).
+func (s *source) attach(f feeder, always bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.feeder != nil && s.feeder != f {
@@ -63,8 +69,13 @@ func (s *source) attach(f feeder) {
 		s.r.log.Info("producer re-attached", "source", s.id.String())
 	}
 	s.feeder = f
-	// A viewer was waiting: ask for bytes right away.
-	if len(s.viewers) > 0 {
+	s.always = always
+	if s.idle != nil {
+		s.idle.Stop()
+		s.idle = nil
+	}
+	// `always`, or a viewer was waiting: ask for bytes right away.
+	if always || len(s.viewers) > 0 {
 		s.started = true
 		go f.start(s.id)
 	} else {
@@ -100,6 +111,7 @@ func (s *source) freshDemux() *mpegts.Demuxer {
 
 // feed takes TS bytes from the producer.
 func (s *source) feed(b []byte) {
+	s.r.m.ingress.Add(context.Background(), int64(len(b)))
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.bytes += int64(len(b))
@@ -159,12 +171,13 @@ func (s *source) addViewer(key string, v sink) {
 }
 
 // removeViewer stops the feed relay_idle_stop after the last viewer left,
-// which absorbs a page reload (§39.3).
+// which absorbs a page reload (§39.3); a source fed under `always` is
+// never stopped for want of viewers.
 func (s *source) removeViewer(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.viewers, key)
-	if len(s.viewers) > 0 || !s.started {
+	if len(s.viewers) > 0 || !s.started || s.always {
 		return
 	}
 	if s.idle != nil {
@@ -172,7 +185,7 @@ func (s *source) removeViewer(key string) {
 	}
 	s.idle = time.AfterFunc(s.r.cfg.IdleStop, func() {
 		s.mu.Lock()
-		if len(s.viewers) > 0 || !s.started {
+		if len(s.viewers) > 0 || !s.started || s.always {
 			s.mu.Unlock()
 			return
 		}
@@ -235,16 +248,19 @@ func (ss *sources) status() *api.RelayStatus {
 	defer ss.mu.Unlock()
 	st := api.RelayStatus_builder{AttachedProducers: int32(ss.producers)}
 	var active, viewers int32
+	var ingress int64
 	for _, s := range ss.byId {
 		s.mu.Lock()
 		if s.started {
 			active++
 		}
 		viewers += int32(len(s.viewers))
+		ingress += s.bytes
 		s.mu.Unlock()
 	}
 	st.ActiveSources = active
 	st.Viewers = viewers
+	st.IngressBytes = ingress
 
 	return st.Build()
 }

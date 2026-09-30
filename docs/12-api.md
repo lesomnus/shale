@@ -46,9 +46,11 @@ rate is answered `RESOURCE_EXHAUSTED` with a retry delay.
 they can write anything the schema has. Shale serves `Patch` for the rows
 [§32](09-operations.md#32-cli--processes) says people and operators edit
 (a set's retention and placement, a source, a site, a person, a tenant's
-share, a relay's labels, the policies) and keeps it closed for what the
-system writes (laminae, attempts) and for hosts, devices, sinks, and keys,
-whose states move only through their own verbs. `Apply` stays closed.
+share, a relay's labels, a producer's live policy, the policies) and keeps
+it closed for what the system writes (laminae, attempts) and for readers,
+nodes, devices, sinks, and keys, whose states move only through their own
+verbs; a producer's or a relay's `Patch` takes the fields a person owns and
+refuses the rest of the row. `Apply` stays closed.
 
 ### 35.2 Two API surfaces
 
@@ -127,7 +129,9 @@ never reused.
 - **Generated `Patch` stays closed on `Lamina`, `Attempt`, and the global
   entities**, and on the state and identity fields of hosts. State there
   changes only through the custom RPCs below, each of which means one thing.
-  `Patch` on a host changes its alias, name, and labels.
+  `Patch` on a producer or a relay changes its alias, name, and labels,
+  and a producer's live policy ([§39.3](16-relay.md#393-from-the-producer));
+  the rest of a host's row is refused.
 
 Key fields, beyond payday's `id`, `tenant`, `alias`, and `date_*`:
 
@@ -144,7 +148,8 @@ Source           set, ordinal (assigned by Add, immutable), zone,
                  derived, §12.6), seconds at the cap and episodes (§38.5)
 Producer         set, site (copied from the set), hardware_id, hostname,
                  state (pending | adopted | erased), certificate serial,
-                 date_adopted, date_seen, relay (assigned, §39.2)
+                 date_adopted, date_seen, relay (assigned, §39.2),
+                 live (always | on_demand, §39.3)
 Reader           hardware_id, hostname, state, certificate serial,
                  date_adopted, date_seen; sites through SiteMember
 Lamina           source, set, sink, lamina_key, date_started, date_ended, size,
@@ -411,9 +416,10 @@ service RelayIngest {
 // AttachResponse: Start {source} | Stop {source}
 ```
 
-The publish token names the relay and the producer's sources
-([§33.2](10-security.md#332-access-tokens)); the relay starts and stops
-sources as viewers come and go ([§39.3](16-relay.md#393-from-the-producer)).
+The publish token names the relay, the producer's sources, and its live
+policy ([§33.2](10-security.md#332-access-tokens)); the relay starts every
+source at once under `always`, and starts and stops them as viewers come
+and go under `on_demand` ([§39.3](16-relay.md#393-from-the-producer)).
 
 **WHEP**, over HTTPS, for viewers:
 

@@ -1063,6 +1063,7 @@ type Producer struct {
 	xxx_hidden_Relay           *Relay                 `protobuf:"bytes,20,opt,name=relay"`
 	xxx_hidden_Status          *ProducerStatus        `protobuf:"bytes,21,opt,name=status"`
 	xxx_hidden_Version         string                 `protobuf:"bytes,22,opt,name=version"`
+	xxx_hidden_Live            LivePolicy             `protobuf:"varint,23,opt,name=live,enum=shale.LivePolicy"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -1246,6 +1247,13 @@ func (x *Producer) GetVersion() string {
 	return ""
 }
 
+func (x *Producer) GetLive() LivePolicy {
+	if x != nil {
+		return x.xxx_hidden_Live
+	}
+	return LivePolicy_LIVE_POLICY_UNSPECIFIED
+}
+
 func (x *Producer) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1335,6 +1343,10 @@ func (x *Producer) SetStatus(v *ProducerStatus) {
 
 func (x *Producer) SetVersion(v string) {
 	x.xxx_hidden_Version = v
+}
+
+func (x *Producer) SetLive(v LivePolicy) {
+	x.xxx_hidden_Live = v
 }
 
 func (x *Producer) HasTenant() bool {
@@ -1502,6 +1514,10 @@ type Producer_builder struct {
 	Relay   *Relay
 	Status  *ProducerStatus
 	Version string
+	// Whether its cameras are on the relay at all times or only while
+	// watched (§39.3); unspecified is `always`. A default, so the column is
+	// added to a database that predates it.
+	Live LivePolicy
 }
 
 func (b0 Producer_builder) Build() *Producer {
@@ -1530,6 +1546,7 @@ func (b0 Producer_builder) Build() *Producer {
 	x.xxx_hidden_Relay = b.Relay
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Version = b.Version
+	x.xxx_hidden_Live = b.Live
 	return m0
 }
 
@@ -2032,7 +2049,8 @@ const file_shale_host_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06labels 2(\xf4\x03:\x00*\x00\"\xec\t\n" +
+	"\x06labels 2(\xf4\x03:\x00*\x00\"\x9c\n" +
+	"\n" +
 	"\bProducer\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12'\n" +
@@ -2060,7 +2078,8 @@ const file_shale_host_proto_rawDesc = "" +
 	"\x11date_cert_expires\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateCertExpires\x12*\n" +
 	"\x05relay\x18\x14 \x01(\v2\f.shale.RelayB\x06\xf2\x82\x16\x028\x01R\x05relay\x12-\n" +
 	"\x06status\x18\x15 \x01(\v2\x15.shale.ProducerStatusR\x06status\x12\x18\n" +
-	"\aversion\x18\x16 \x01(\tR\aversion\x1a9\n" +
+	"\aversion\x18\x16 \x01(\tR\aversion\x12.\n" +
+	"\x04live\x18\x17 \x01(\x0e2\x11.shale.LivePolicyB\a\xea\x82\x16\x03\x82\x01\x00R\x04live\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xc6\x01\xca\xfc\x15p\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
@@ -2153,6 +2172,7 @@ var file_shale_host_proto_goTypes = []any{
 	(*Site)(nil),                  // 15: shale.Site
 	(*Set)(nil),                   // 16: shale.Set
 	(*ProducerStatus)(nil),        // 17: shale.ProducerStatus
+	(LivePolicy)(0),               // 18: shale.LivePolicy
 }
 var file_shale_host_proto_depIdxs = []int32{
 	5,  // 0: shale.Node.labels:type_name -> shale.Node.LabelsEntry
@@ -2192,21 +2212,22 @@ var file_shale_host_proto_depIdxs = []int32{
 	10, // 34: shale.Producer.date_cert_expires:type_name -> google.protobuf.Timestamp
 	2,  // 35: shale.Producer.relay:type_name -> shale.Relay
 	17, // 36: shale.Producer.status:type_name -> shale.ProducerStatus
-	14, // 37: shale.Reader.tenant:type_name -> shale.Tenant
-	8,  // 38: shale.Reader.labels:type_name -> shale.Reader.LabelsEntry
-	0,  // 39: shale.Reader.state:type_name -> shale.HostState
-	9,  // 40: shale.Reader.join:type_name -> shale.HostJoin
-	10, // 41: shale.Reader.date_updated:type_name -> google.protobuf.Timestamp
-	10, // 42: shale.Reader.date_erased:type_name -> google.protobuf.Timestamp
-	10, // 43: shale.Reader.date_created:type_name -> google.protobuf.Timestamp
-	10, // 44: shale.Reader.date_adopted:type_name -> google.protobuf.Timestamp
-	10, // 45: shale.Reader.date_seen:type_name -> google.protobuf.Timestamp
-	10, // 46: shale.Reader.date_cert_expires:type_name -> google.protobuf.Timestamp
-	47, // [47:47] is the sub-list for method output_type
-	47, // [47:47] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	18, // 37: shale.Producer.live:type_name -> shale.LivePolicy
+	14, // 38: shale.Reader.tenant:type_name -> shale.Tenant
+	8,  // 39: shale.Reader.labels:type_name -> shale.Reader.LabelsEntry
+	0,  // 40: shale.Reader.state:type_name -> shale.HostState
+	9,  // 41: shale.Reader.join:type_name -> shale.HostJoin
+	10, // 42: shale.Reader.date_updated:type_name -> google.protobuf.Timestamp
+	10, // 43: shale.Reader.date_erased:type_name -> google.protobuf.Timestamp
+	10, // 44: shale.Reader.date_created:type_name -> google.protobuf.Timestamp
+	10, // 45: shale.Reader.date_adopted:type_name -> google.protobuf.Timestamp
+	10, // 46: shale.Reader.date_seen:type_name -> google.protobuf.Timestamp
+	10, // 47: shale.Reader.date_cert_expires:type_name -> google.protobuf.Timestamp
+	48, // [48:48] is the sub-list for method output_type
+	48, // [48:48] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_shale_host_proto_init() }

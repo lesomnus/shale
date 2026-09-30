@@ -106,6 +106,8 @@ max_length   (put: upper bound on the upload's size, from the agreed profile)
 mode, idle_timeout, abandon_timeout
              (put: the agreed upload profile, §12.6; enforced within node caps)
 sources      (publish: the source IDs this producer may feed)
+live         (publish: the producer's live policy, which the relay applies
+              at Hello, §39.3)
 source       (view: the one source this viewer may watch)
 actor        the Producer, Reader, or person the token was issued to, and
              its tenant

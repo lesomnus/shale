@@ -36,6 +36,8 @@ type Mutation struct {
 	date_cert_expires *time.Time
 	status            **api.ProducerStatus
 	version           *string
+	live              *int32
+	addlive           *int32
 	clearedFields     map[string]struct{}
 	tenant            *uuid.UUID
 	clearedtenant     bool
@@ -509,6 +511,59 @@ func (m *Mutation) ResetVersion() {
 	m.version = nil
 }
 
+// SetLive sets the "live" field.
+func (m *Mutation) SetLive(i int32) {
+	m.live = &i
+	m.addlive = nil
+}
+
+// Live returns the value of the "live" field in the mutation.
+func (m *Mutation) Live() (r int32, exists bool) {
+	v := m.live
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddLive adds i to the "live" field.
+func (m *Mutation) AddLive(i int32) {
+	if m.addlive != nil {
+		*m.addlive += i
+	} else {
+		m.addlive = &i
+	}
+}
+
+// AddedLive returns the value that was added to the "live" field in this mutation.
+func (m *Mutation) AddedLive() (r int32, exists bool) {
+	v := m.addlive
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLive clears the value of the "live" field.
+func (m *Mutation) ClearLive() {
+	m.live = nil
+	m.addlive = nil
+	m.clearedFields[FieldLive] = struct{}{}
+}
+
+// LiveCleared returns if the "live" field was cleared in this mutation.
+func (m *Mutation) LiveCleared() bool {
+	_, ok := m.clearedFields[FieldLive]
+	return ok
+}
+
+// ResetLive resets all changes to the "live" field.
+func (m *Mutation) ResetLive() {
+	m.live = nil
+	m.addlive = nil
+	delete(m.clearedFields, FieldLive)
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -766,7 +821,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 22)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -817,6 +872,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.version != nil {
 		fields = append(fields, FieldVersion)
+	}
+	if m.live != nil {
+		fields = append(fields, FieldLive)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -872,6 +930,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Status()
 	case FieldVersion:
 		return m.Version()
+	case FieldLive:
+		return m.Live()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldSiteId:
@@ -1015,6 +1075,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetVersion(v)
 		return nil
+	case FieldLive:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLive(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -1054,6 +1121,9 @@ func (m *Mutation) AddedFields() []string {
 	if m.addstate != nil {
 		fields = append(fields, FieldState)
 	}
+	if m.addlive != nil {
+		fields = append(fields, FieldLive)
+	}
 	return fields
 }
 
@@ -1064,6 +1134,8 @@ func (m *Mutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case FieldState:
 		return m.AddedState()
+	case FieldLive:
+		return m.AddedLive()
 	}
 	return nil, false
 }
@@ -1079,6 +1151,13 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddState(v)
+		return nil
+	case FieldLive:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLive(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Producer numeric field %s", name)
@@ -1111,6 +1190,9 @@ func (m *Mutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(FieldStatus) {
 		fields = append(fields, FieldStatus)
+	}
+	if m.FieldCleared(FieldLive) {
+		fields = append(fields, FieldLive)
 	}
 	if m.FieldCleared(FieldSiteId) {
 		fields = append(fields, FieldSiteId)
@@ -1158,6 +1240,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldStatus:
 		m.ClearStatus()
+		return nil
+	case FieldLive:
+		m.ClearLive()
 		return nil
 	case FieldSiteId:
 		m.ClearSiteId()
@@ -1226,6 +1311,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldVersion:
 		m.ResetVersion()
+		return nil
+	case FieldLive:
+		m.ResetLive()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

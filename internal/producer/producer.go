@@ -539,9 +539,6 @@ func (p *Producer) negotiate(ctx context.Context) error {
 			ContentType: s.cfg.contentType(),
 		}.Build())
 	}
-	if p.cfg.Uplink > 0 && float64(total)*1.2 > float64(p.cfg.Uplink) {
-		p.log.Warn("the sum of the ceilings × 1.2 exceeds the uplink", "ceilings", total, "uplink", p.cfg.Uplink)
-	}
 
 	link := api.LinkProfile_builder{Mode: p.cfg.Mode}
 	if p.cfg.IdleTimeout > 0 {
@@ -565,6 +562,17 @@ func (p *Producer) negotiate(ctx context.Context) error {
 	}
 	p.profileV = resp.GetProfileVersion()
 	p.relay.set(resp.GetRelay())
+	// The uplink budget (§38.5): the ceilings with 20% headroom, and once
+	// more when the relay carries every camera at all times (§39.3).
+	if p.cfg.Uplink > 0 {
+		need := float64(total) * 1.2
+		if ra := resp.GetRelay(); ra != nil && ra.GetLive() != api.LivePolicy_LIVE_POLICY_ON_DEMAND {
+			need += float64(total)
+		}
+		if need > float64(p.cfg.Uplink) {
+			p.log.Warn("the ceilings exceed the uplink: 20% headroom, and once more for live at all times", "ceilings", total, "need", int64(need), "uplink", p.cfg.Uplink)
+		}
+	}
 	p.set.SetLink(resp.GetLink())
 	p.cfg.Mode = resp.GetLink().GetMode()
 	if p.uploader != nil {

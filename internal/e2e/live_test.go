@@ -13,6 +13,8 @@ import (
 	"github.com/pion/webrtc/v4"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/z"
@@ -32,8 +34,14 @@ func TestLive(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	admin := c.dial("@acme/admin")
-	_, live := liveSource(t, ctx, c, admin, "av.ts")
+	set, live := liveSource(t, ctx, c, admin, "av.ts")
 	relays := api.NewRelayServiceClient(c.dialCluster("@cluster/ops"))
+
+	// On demand (§39.3): the producer attached under the default, `always`,
+	// so its one source is active with nobody watching; the patch reaches
+	// it with the next heartbeat's assignment and it attaches again.
+	setLive(t, ctx, admin, set, api.LivePolicy_LIVE_POLICY_ON_DEMAND)
+	awaitActive(t, ctx, relays, 0, "on demand: no viewer, no active source")
 
 	claims, err := token.Parse(live.GetViewToken())
 	require.NoError(t, err)
@@ -70,20 +78,84 @@ func TestLive(t *testing.T) {
 	// Leaving ends the session; the relay stops the producer after
 	// relay_idle_stop, which the relay's heartbeat reflects.
 	v.leave(t)
-	require.Eventually(t, func() bool {
-		vs, err := relays.List(ctx, api.RelayListRequest_builder{}.Build())
-		if err != nil {
-			return false
-		}
-		for _, r := range vs.GetItems() {
-			st := r.GetStatus()
-			if st != nil && st.GetViewers() == 0 && st.GetActiveSources() == 0 && st.GetAttachedProducers() == 1 {
-				return true
-			}
-		}
+	awaitActive(t, ctx, relays, 0, "no viewer, no active source, the producer still attached")
+}
 
-		return false
-	}, 20*time.Second, 300*time.Millisecond, "no viewer, no active source, the producer still attached")
+// TestLiveAlways is the default policy (§39.3): the relay starts every
+// source of a producer at Hello and stops none, so bytes flow with nobody
+// watching; a patch to on demand stops them within a heartbeat, and back.
+// A patch of what is the system's is refused.
+func TestLiveAlways(t *testing.T) {
+	c := start(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	admin := c.dial("@acme/admin")
+	set, _ := liveSource(t, ctx, c, admin, "av.ts")
+	relays := api.NewRelayServiceClient(c.dialCluster("@cluster/ops"))
+
+	awaitActive(t, ctx, relays, 1, "always: the source is active with no viewer")
+	before := relayStatus(t, ctx, relays).GetIngressBytes()
+	require.Eventually(t, func() bool {
+		return relayStatus(t, ctx, relays).GetIngressBytes() > before+100_000
+	}, 20*time.Second, 300*time.Millisecond, "bytes keep coming with no viewer")
+
+	setLive(t, ctx, admin, set, api.LivePolicy_LIVE_POLICY_ON_DEMAND)
+	awaitActive(t, ctx, relays, 0, "on demand: nothing flows until a viewer")
+	setLive(t, ctx, admin, set, api.LivePolicy_LIVE_POLICY_ALWAYS)
+	awaitActive(t, ctx, relays, 1, "always again")
+
+	p := producerOf(t, ctx, admin, set)
+	_, err := api.NewProducerServiceClient(admin).Patch(ctx, api.ProducerPatchRequest_builder{
+		Ref: api.ProducerRef_builder{Id: p.GetId()}.Build(), State: z.Ptr(api.HostState_HOST_STATE_PENDING), DateUpdatedForce: z.Ptr(true),
+	}.Build())
+	require.Error(t, err, "the state is the system's")
+	require.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+// producerOf is the producer adopted for a set.
+func producerOf(t *testing.T, ctx context.Context, admin *grpc.ClientConn, set *api.Set) *api.Producer {
+	t.Helper()
+	vs, err := api.NewProducerServiceClient(admin).List(ctx, api.ProducerListRequest_builder{Size: 50}.Build())
+	require.NoError(t, err)
+	for _, p := range vs.GetItems() {
+		if string(p.GetSet().GetId()) == string(set.GetId()) {
+			return p
+		}
+	}
+	t.Fatalf("no producer for set %s", set.GetAlias())
+
+	return nil
+}
+
+// setLive patches the live policy of a set's producer (§39.3).
+func setLive(t *testing.T, ctx context.Context, admin *grpc.ClientConn, set *api.Set, v api.LivePolicy) {
+	t.Helper()
+	p := producerOf(t, ctx, admin, set)
+	_, err := api.NewProducerServiceClient(admin).Patch(ctx, api.ProducerPatchRequest_builder{
+		Ref: api.ProducerRef_builder{Id: p.GetId()}.Build(), Live: z.Ptr(v), DateUpdatedForce: z.Ptr(true),
+	}.Build())
+	require.NoError(t, err)
+}
+
+// relayStatus is the one relay's last heartbeat.
+func relayStatus(t *testing.T, ctx context.Context, relays api.RelayServiceClient) *api.RelayStatus {
+	t.Helper()
+	vs, err := relays.List(ctx, api.RelayListRequest_builder{}.Build())
+	require.NoError(t, err)
+	require.Len(t, vs.GetItems(), 1)
+
+	return vs.GetItems()[0].GetStatus()
+}
+
+// awaitActive waits until the relay reports n active sources, no viewer,
+// and the producer attached.
+func awaitActive(t *testing.T, ctx context.Context, relays api.RelayServiceClient, n int32, why string) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		st := relayStatus(t, ctx, relays)
+
+		return st != nil && st.GetViewers() == 0 && st.GetActiveSources() == n && st.GetAttachedProducers() == 1
+	}, 25*time.Second, 300*time.Millisecond, why)
 }
 
 // TestLiveTranscode is the live helper (§38.7): a camera recording AAC is

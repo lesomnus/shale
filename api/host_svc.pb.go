@@ -8443,6 +8443,7 @@ type ProducerAddRequest struct {
 	xxx_hidden_Relay           *RelayRef              `protobuf:"bytes,20,opt,name=relay"`
 	xxx_hidden_Status          *ProducerStatus        `protobuf:"bytes,21,opt,name=status"`
 	xxx_hidden_Version         string                 `protobuf:"bytes,22,opt,name=version"`
+	xxx_hidden_Live            LivePolicy             `protobuf:"varint,23,opt,name=live,enum=shale.LivePolicy"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -8614,12 +8615,21 @@ func (x *ProducerAddRequest) GetVersion() string {
 	return ""
 }
 
+func (x *ProducerAddRequest) GetLive() LivePolicy {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 20) {
+			return x.xxx_hidden_Live
+		}
+	}
+	return LivePolicy_LIVE_POLICY_UNSPECIFIED
+}
+
 func (x *ProducerAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 20)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 21)
 }
 
 func (x *ProducerAddRequest) SetTenant(v *TenantRef) {
@@ -8696,6 +8706,11 @@ func (x *ProducerAddRequest) SetStatus(v *ProducerStatus) {
 
 func (x *ProducerAddRequest) SetVersion(v string) {
 	x.xxx_hidden_Version = v
+}
+
+func (x *ProducerAddRequest) SetLive(v LivePolicy) {
+	x.xxx_hidden_Live = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 21)
 }
 
 func (x *ProducerAddRequest) HasId() bool {
@@ -8775,6 +8790,13 @@ func (x *ProducerAddRequest) HasStatus() bool {
 	return x.xxx_hidden_Status != nil
 }
 
+func (x *ProducerAddRequest) HasLive() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
+}
+
 func (x *ProducerAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -8820,6 +8842,11 @@ func (x *ProducerAddRequest) ClearStatus() {
 	x.xxx_hidden_Status = nil
 }
 
+func (x *ProducerAddRequest) ClearLive() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 20)
+	x.xxx_hidden_Live = LivePolicy_LIVE_POLICY_UNSPECIFIED
+}
+
 type ProducerAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -8843,6 +8870,7 @@ type ProducerAddRequest_builder struct {
 	Relay           *RelayRef
 	Status          *ProducerStatus
 	Version         string
+	Live            *LivePolicy
 }
 
 func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
@@ -8850,7 +8878,7 @@ func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 20)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 21)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -8872,6 +8900,10 @@ func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
 	x.xxx_hidden_Relay = b.Relay
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Version = b.Version
+	if b.Live != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 21)
+		x.xxx_hidden_Live = *b.Live
+	}
 	return m0
 }
 
@@ -8992,6 +9024,7 @@ type ProducerSelect struct {
 	xxx_hidden_Relay           *RelaySelect           `protobuf:"bytes,20,opt,name=relay"`
 	xxx_hidden_Status          bool                   `protobuf:"varint,21,opt,name=status"`
 	xxx_hidden_Version         bool                   `protobuf:"varint,22,opt,name=version"`
+	xxx_hidden_Live            bool                   `protobuf:"varint,23,opt,name=live"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -9177,9 +9210,16 @@ func (x *ProducerSelect) GetVersion() bool {
 	return false
 }
 
+func (x *ProducerSelect) GetLive() bool {
+	if x != nil {
+		return x.xxx_hidden_Live
+	}
+	return false
+}
+
 func (x *ProducerSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 23)
 }
 
 func (x *ProducerSelect) SetTenant(v *TenantSelect) {
@@ -9192,22 +9232,22 @@ func (x *ProducerSelect) SetSite(v *SiteSelect) {
 
 func (x *ProducerSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 23)
 }
 
 func (x *ProducerSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 23)
 }
 
 func (x *ProducerSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 23)
 }
 
 func (x *ProducerSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 23)
 }
 
 func (x *ProducerSelect) SetSet(v *SetSelect) {
@@ -9216,57 +9256,57 @@ func (x *ProducerSelect) SetSet(v *SetSelect) {
 
 func (x *ProducerSelect) SetHardwareId(v bool) {
 	x.xxx_hidden_HardwareId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 23)
 }
 
 func (x *ProducerSelect) SetHostname(v bool) {
 	x.xxx_hidden_Hostname = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 23)
 }
 
 func (x *ProducerSelect) SetState(v bool) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 23)
 }
 
 func (x *ProducerSelect) SetCertSerial(v bool) {
 	x.xxx_hidden_CertSerial = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 23)
 }
 
 func (x *ProducerSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 23)
 }
 
 func (x *ProducerSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 23)
 }
 
 func (x *ProducerSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 23)
 }
 
 func (x *ProducerSelect) SetJoin(v bool) {
 	x.xxx_hidden_Join = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 23)
 }
 
 func (x *ProducerSelect) SetDateAdopted(v bool) {
 	x.xxx_hidden_DateAdopted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 23)
 }
 
 func (x *ProducerSelect) SetDateSeen(v bool) {
 	x.xxx_hidden_DateSeen = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 23)
 }
 
 func (x *ProducerSelect) SetDateCertExpires(v bool) {
 	x.xxx_hidden_DateCertExpires = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 23)
 }
 
 func (x *ProducerSelect) SetRelay(v *RelaySelect) {
@@ -9275,12 +9315,17 @@ func (x *ProducerSelect) SetRelay(v *RelaySelect) {
 
 func (x *ProducerSelect) SetStatus(v bool) {
 	x.xxx_hidden_Status = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 23)
 }
 
 func (x *ProducerSelect) SetVersion(v bool) {
 	x.xxx_hidden_Version = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 23)
+}
+
+func (x *ProducerSelect) SetLive(v bool) {
+	x.xxx_hidden_Live = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 23)
 }
 
 func (x *ProducerSelect) HasAll() bool {
@@ -9437,6 +9482,13 @@ func (x *ProducerSelect) HasVersion() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
 }
 
+func (x *ProducerSelect) HasLive() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
+}
+
 func (x *ProducerSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -9543,6 +9595,11 @@ func (x *ProducerSelect) ClearVersion() {
 	x.xxx_hidden_Version = false
 }
 
+func (x *ProducerSelect) ClearLive() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 22)
+	x.xxx_hidden_Live = false
+}
+
 type ProducerSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -9568,6 +9625,7 @@ type ProducerSelect_builder struct {
 	Relay           *RelaySelect
 	Status          *bool
 	Version         *bool
+	Live            *bool
 }
 
 func (b0 ProducerSelect_builder) Build() *ProducerSelect {
@@ -9575,80 +9633,84 @@ func (b0 ProducerSelect_builder) Build() *ProducerSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 23)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 23)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 23)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 23)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 23)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	x.xxx_hidden_Set = b.Set
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 23)
 		x.xxx_hidden_HardwareId = *b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 23)
 		x.xxx_hidden_Hostname = *b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 23)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 23)
 		x.xxx_hidden_CertSerial = *b.CertSerial
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 23)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 23)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 23)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.Join != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 23)
 		x.xxx_hidden_Join = *b.Join
 	}
 	if b.DateAdopted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 23)
 		x.xxx_hidden_DateAdopted = *b.DateAdopted
 	}
 	if b.DateSeen != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 23)
 		x.xxx_hidden_DateSeen = *b.DateSeen
 	}
 	if b.DateCertExpires != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 23)
 		x.xxx_hidden_DateCertExpires = *b.DateCertExpires
 	}
 	x.xxx_hidden_Relay = b.Relay
 	if b.Status != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 23)
 		x.xxx_hidden_Status = *b.Status
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 23)
 		x.xxx_hidden_Version = *b.Version
+	}
+	if b.Live != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 23)
+		x.xxx_hidden_Live = *b.Live
 	}
 	return m0
 }
@@ -9683,6 +9745,7 @@ type ProducerPatchRequest struct {
 	xxx_hidden_Status              *ProducerStatus        `protobuf:"bytes,42,opt,name=status"`
 	xxx_hidden_StatusNull          bool                   `protobuf:"varint,43,opt,name=status_null,json=statusNull"`
 	xxx_hidden_Version             *string                `protobuf:"bytes,44,opt,name=version"`
+	xxx_hidden_Live                LivePolicy             `protobuf:"varint,46,opt,name=live,enum=shale.LivePolicy"`
 	XXX_raceDetectHookData         protoimpl.RaceDetectHookData
 	XXX_presence                   [1]uint32
 	unknownFields                  protoimpl.UnknownFields
@@ -9933,6 +9996,15 @@ func (x *ProducerPatchRequest) GetVersion() string {
 	return ""
 }
 
+func (x *ProducerPatchRequest) GetLive() LivePolicy {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 28) {
+			return x.xxx_hidden_Live
+		}
+	}
+	return LivePolicy_LIVE_POLICY_UNSPECIFIED
+}
+
 func (x *ProducerPatchRequest) SetRef(v *ProducerRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -9943,22 +10015,22 @@ func (x *ProducerPatchRequest) SetSite(v *SiteRef) {
 
 func (x *ProducerPatchRequest) SetSiteNull(v bool) {
 	x.xxx_hidden_SiteNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 29)
 }
 
 func (x *ProducerPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 29)
 }
 
 func (x *ProducerPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 29)
 }
 
 func (x *ProducerPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 29)
 }
 
 func (x *ProducerPatchRequest) SetLabels(v map[string]string) {
@@ -9971,27 +10043,27 @@ func (x *ProducerPatchRequest) SetSet(v *SetRef) {
 
 func (x *ProducerPatchRequest) SetSetNull(v bool) {
 	x.xxx_hidden_SetNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 29)
 }
 
 func (x *ProducerPatchRequest) SetHardwareId(v string) {
 	x.xxx_hidden_HardwareId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 29)
 }
 
 func (x *ProducerPatchRequest) SetHostname(v string) {
 	x.xxx_hidden_Hostname = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 29)
 }
 
 func (x *ProducerPatchRequest) SetState(v HostState) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 29)
 }
 
 func (x *ProducerPatchRequest) SetCertSerial(v string) {
 	x.xxx_hidden_CertSerial = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 29)
 }
 
 func (x *ProducerPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -10000,7 +10072,7 @@ func (x *ProducerPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 29)
 }
 
 func (x *ProducerPatchRequest) SetJoin(v *HostJoin) {
@@ -10009,7 +10081,7 @@ func (x *ProducerPatchRequest) SetJoin(v *HostJoin) {
 
 func (x *ProducerPatchRequest) SetJoinNull(v bool) {
 	x.xxx_hidden_JoinNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 29)
 }
 
 func (x *ProducerPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
@@ -10018,7 +10090,7 @@ func (x *ProducerPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateAdoptedNull(v bool) {
 	x.xxx_hidden_DateAdoptedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 29)
 }
 
 func (x *ProducerPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
@@ -10027,7 +10099,7 @@ func (x *ProducerPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateSeenNull(v bool) {
 	x.xxx_hidden_DateSeenNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 29)
 }
 
 func (x *ProducerPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
@@ -10036,7 +10108,7 @@ func (x *ProducerPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateCertExpiresNull(v bool) {
 	x.xxx_hidden_DateCertExpiresNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 29)
 }
 
 func (x *ProducerPatchRequest) SetRelay(v *RelayRef) {
@@ -10045,7 +10117,7 @@ func (x *ProducerPatchRequest) SetRelay(v *RelayRef) {
 
 func (x *ProducerPatchRequest) SetRelayNull(v bool) {
 	x.xxx_hidden_RelayNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 29)
 }
 
 func (x *ProducerPatchRequest) SetStatus(v *ProducerStatus) {
@@ -10054,12 +10126,17 @@ func (x *ProducerPatchRequest) SetStatus(v *ProducerStatus) {
 
 func (x *ProducerPatchRequest) SetStatusNull(v bool) {
 	x.xxx_hidden_StatusNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 29)
 }
 
 func (x *ProducerPatchRequest) SetVersion(v string) {
 	x.xxx_hidden_Version = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 27, 28)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 27, 29)
+}
+
+func (x *ProducerPatchRequest) SetLive(v LivePolicy) {
+	x.xxx_hidden_Live = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 28, 29)
 }
 
 func (x *ProducerPatchRequest) HasRef() bool {
@@ -10251,6 +10328,13 @@ func (x *ProducerPatchRequest) HasVersion() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 27)
 }
 
+func (x *ProducerPatchRequest) HasLive() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 28)
+}
+
 func (x *ProducerPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -10376,6 +10460,11 @@ func (x *ProducerPatchRequest) ClearVersion() {
 	x.xxx_hidden_Version = nil
 }
 
+func (x *ProducerPatchRequest) ClearLive() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 28)
+	x.xxx_hidden_Live = LivePolicy_LIVE_POLICY_UNSPECIFIED
+}
+
 type ProducerPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -10451,6 +10540,7 @@ type ProducerPatchRequest_builder struct {
 	// outright: setting both this and status clears.
 	StatusNull *bool
 	Version    *string
+	Live       *LivePolicy
 }
 
 func (b0 ProducerPatchRequest_builder) Build() *ProducerPatchRequest {
@@ -10460,81 +10550,85 @@ func (b0 ProducerPatchRequest_builder) Build() *ProducerPatchRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Site = b.Site
 	if b.SiteNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 29)
 		x.xxx_hidden_SiteNull = *b.SiteNull
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 29)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 29)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 29)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Set = b.Set
 	if b.SetNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 29)
 		x.xxx_hidden_SetNull = *b.SetNull
 	}
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 29)
 		x.xxx_hidden_HardwareId = b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 29)
 		x.xxx_hidden_Hostname = b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 29)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 29)
 		x.xxx_hidden_CertSerial = b.CertSerial
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 29)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_Join = b.Join
 	if b.JoinNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 29)
 		x.xxx_hidden_JoinNull = *b.JoinNull
 	}
 	x.xxx_hidden_DateAdopted = b.DateAdopted
 	if b.DateAdoptedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 29)
 		x.xxx_hidden_DateAdoptedNull = *b.DateAdoptedNull
 	}
 	x.xxx_hidden_DateSeen = b.DateSeen
 	if b.DateSeenNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 29)
 		x.xxx_hidden_DateSeenNull = *b.DateSeenNull
 	}
 	x.xxx_hidden_DateCertExpires = b.DateCertExpires
 	if b.DateCertExpiresNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 29)
 		x.xxx_hidden_DateCertExpiresNull = *b.DateCertExpiresNull
 	}
 	x.xxx_hidden_Relay = b.Relay
 	if b.RelayNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 29)
 		x.xxx_hidden_RelayNull = *b.RelayNull
 	}
 	x.xxx_hidden_Status = b.Status
 	if b.StatusNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 29)
 		x.xxx_hidden_StatusNull = *b.StatusNull
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 27, 28)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 27, 29)
 		x.xxx_hidden_Version = b.Version
+	}
+	if b.Live != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 28, 29)
+		x.xxx_hidden_Live = *b.Live
 	}
 	return m0
 }
@@ -15850,7 +15944,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x03key\"S\n" +
 	"\x11ProducerRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12(\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\x9d\a\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xc4\a\n" +
 	"\x12ProducerAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -15874,13 +15968,14 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x11date_cert_expires\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateCertExpires\x12%\n" +
 	"\x05relay\x18\x14 \x01(\v2\x0f.shale.RelayRefR\x05relay\x12-\n" +
 	"\x06status\x18\x15 \x01(\v2\x15.shale.ProducerStatusR\x06status\x12\x1f\n" +
-	"\aversion\x18\x16 \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x1a9\n" +
+	"\aversion\x18\x16 \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x12%\n" +
+	"\x04live\x18\x17 \x01(\x0e2\x11.shale.LivePolicyR\x04live\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"i\n" +
 	"\x12ProducerGetRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.shale.ProducerRefR\x03ref\x12-\n" +
-	"\x06select\x18\x02 \x01(\v2\x15.shale.ProducerSelectR\x06select\"\xa7\x05\n" +
+	"\x06select\x18\x02 \x01(\v2\x15.shale.ProducerSelectR\x06select\"\xbb\x05\n" +
 	"\x0eProducerSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -15907,7 +16002,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x11date_cert_expires\x18\x13 \x01(\bR\x0fdateCertExpires\x12(\n" +
 	"\x05relay\x18\x14 \x01(\v2\x12.shale.RelaySelectR\x05relay\x12\x16\n" +
 	"\x06status\x18\x15 \x01(\bR\x06status\x12\x18\n" +
-	"\aversion\x18\x16 \x01(\bR\aversion\"\x9f\t\n" +
+	"\aversion\x18\x16 \x01(\bR\aversion\x12\x12\n" +
+	"\x04live\x18\x17 \x01(\bR\x04live\"\xc6\t\n" +
 	"\x14ProducerPatchRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.shale.ProducerRefR\x03ref\x12\"\n" +
 	"\x04site\x18\x06 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
@@ -15941,7 +16037,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x06status\x18* \x01(\v2\x15.shale.ProducerStatusR\x06status\x12\x1f\n" +
 	"\vstatus_null\x18+ \x01(\bR\n" +
 	"statusNull\x12\x18\n" +
-	"\aversion\x18, \x01(\tR\aversion\x1a9\n" +
+	"\aversion\x18, \x01(\tR\aversion\x12%\n" +
+	"\x04live\x18. \x01(\x0e2\x11.shale.LivePolicyR\x04live\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"`\n" +
@@ -16324,14 +16421,15 @@ var file_shale_host_svc_g_proto_goTypes = []any{
 	(*SiteRef)(nil),                          // 120: shale.SiteRef
 	(*SetRef)(nil),                           // 121: shale.SetRef
 	(*ProducerStatus)(nil),                   // 122: shale.ProducerStatus
-	(*TenantSelect)(nil),                     // 123: shale.TenantSelect
-	(*SiteSelect)(nil),                       // 124: shale.SiteSelect
-	(*SetSelect)(nil),                        // 125: shale.SetSelect
-	(*Producer)(nil),                         // 126: shale.Producer
-	(*SourceReport)(nil),                     // 127: shale.SourceReport
-	(*HostLoad)(nil),                         // 128: shale.HostLoad
-	(*RelayAssignment)(nil),                  // 129: shale.RelayAssignment
-	(*Reader)(nil),                           // 130: shale.Reader
+	(LivePolicy)(0),                          // 123: shale.LivePolicy
+	(*TenantSelect)(nil),                     // 124: shale.TenantSelect
+	(*SiteSelect)(nil),                       // 125: shale.SiteSelect
+	(*SetSelect)(nil),                        // 126: shale.SetSelect
+	(*Producer)(nil),                         // 127: shale.Producer
+	(*SourceReport)(nil),                     // 128: shale.SourceReport
+	(*HostLoad)(nil),                         // 129: shale.HostLoad
+	(*RelayAssignment)(nil),                  // 130: shale.RelayAssignment
+	(*Reader)(nil),                           // 131: shale.Reader
 }
 var file_shale_host_svc_g_proto_depIdxs = []int32{
 	92,  // 0: shale.NodeAddRequest.labels:type_name -> shale.NodeAddRequest.LabelsEntry
@@ -16435,181 +16533,183 @@ var file_shale_host_svc_g_proto_depIdxs = []int32{
 	106, // 98: shale.ProducerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
 	28,  // 99: shale.ProducerAddRequest.relay:type_name -> shale.RelayRef
 	122, // 100: shale.ProducerAddRequest.status:type_name -> shale.ProducerStatus
-	47,  // 101: shale.ProducerGetRequest.ref:type_name -> shale.ProducerRef
-	51,  // 102: shale.ProducerGetRequest.select:type_name -> shale.ProducerSelect
-	123, // 103: shale.ProducerSelect.tenant:type_name -> shale.TenantSelect
-	124, // 104: shale.ProducerSelect.site:type_name -> shale.SiteSelect
-	125, // 105: shale.ProducerSelect.set:type_name -> shale.SetSelect
-	29,  // 106: shale.ProducerSelect.relay:type_name -> shale.RelaySelect
-	47,  // 107: shale.ProducerPatchRequest.ref:type_name -> shale.ProducerRef
-	120, // 108: shale.ProducerPatchRequest.site:type_name -> shale.SiteRef
-	99,  // 109: shale.ProducerPatchRequest.labels:type_name -> shale.ProducerPatchRequest.LabelsEntry
-	121, // 110: shale.ProducerPatchRequest.set:type_name -> shale.SetRef
-	104, // 111: shale.ProducerPatchRequest.state:type_name -> shale.HostState
-	106, // 112: shale.ProducerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	105, // 113: shale.ProducerPatchRequest.join:type_name -> shale.HostJoin
-	106, // 114: shale.ProducerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 115: shale.ProducerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 116: shale.ProducerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	28,  // 117: shale.ProducerPatchRequest.relay:type_name -> shale.RelayRef
-	122, // 118: shale.ProducerPatchRequest.status:type_name -> shale.ProducerStatus
-	47,  // 119: shale.ProducerApplyRequest.ref:type_name -> shale.ProducerRef
-	109, // 120: shale.ProducerApplyRequest.patch:type_name -> patch.Patch
-	57,  // 121: shale.ProducerListRequest.filters:type_name -> shale.ProducerFilter
-	126, // 122: shale.ProducerListResponse.items:type_name -> shale.Producer
-	47,  // 123: shale.ProducerFilter.ref:type_name -> shale.ProducerRef
-	119, // 124: shale.ProducerFilter.tenant:type_name -> shale.TenantRef
-	121, // 125: shale.ProducerFilter.set:type_name -> shale.SetRef
-	120, // 126: shale.ProducerFilter.site:type_name -> shale.SiteRef
-	100, // 127: shale.ProducerFilter.labels:type_name -> shale.ProducerFilter.LabelsEntry
-	57,  // 128: shale.ProducerWatchRequest.filters:type_name -> shale.ProducerFilter
-	60,  // 129: shale.ProducerWatchResponse.items:type_name -> shale.ProducerWatchItem
-	126, // 130: shale.ProducerWatchItem.value:type_name -> shale.Producer
-	105, // 131: shale.ProducerJoinRequest.host:type_name -> shale.HostJoin
-	15,  // 132: shale.ProducerJoinResponse.answer:type_name -> shale.JoinAnswer
-	47,  // 133: shale.ProducerAdoptRequest.ref:type_name -> shale.ProducerRef
-	121, // 134: shale.ProducerAdoptRequest.set:type_name -> shale.SetRef
-	127, // 135: shale.ProducerHeartbeatRequest.sources:type_name -> shale.SourceReport
-	128, // 136: shale.ProducerHeartbeatRequest.load:type_name -> shale.HostLoad
-	129, // 137: shale.ProducerHeartbeatResponse.relay:type_name -> shale.RelayAssignment
-	68,  // 138: shale.ProducerHeartbeatResponse.suggestions:type_name -> shale.Suggestion
-	129, // 139: shale.ProducerRelayResponse.relay:type_name -> shale.RelayAssignment
-	119, // 140: shale.ReaderAddRequest.tenant:type_name -> shale.TenantRef
-	101, // 141: shale.ReaderAddRequest.labels:type_name -> shale.ReaderAddRequest.LabelsEntry
-	104, // 142: shale.ReaderAddRequest.state:type_name -> shale.HostState
-	105, // 143: shale.ReaderAddRequest.join:type_name -> shale.HostJoin
-	106, // 144: shale.ReaderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	106, // 145: shale.ReaderAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 146: shale.ReaderAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 147: shale.ReaderAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	73,  // 148: shale.ReaderGetRequest.ref:type_name -> shale.ReaderRef
-	75,  // 149: shale.ReaderGetRequest.select:type_name -> shale.ReaderSelect
-	74,  // 150: shale.ReaderRef.slug:type_name -> shale.ReaderRefBySlug
-	119, // 151: shale.ReaderRefBySlug.tenant:type_name -> shale.TenantRef
-	123, // 152: shale.ReaderSelect.tenant:type_name -> shale.TenantSelect
-	73,  // 153: shale.ReaderPatchRequest.ref:type_name -> shale.ReaderRef
-	102, // 154: shale.ReaderPatchRequest.labels:type_name -> shale.ReaderPatchRequest.LabelsEntry
-	104, // 155: shale.ReaderPatchRequest.state:type_name -> shale.HostState
-	105, // 156: shale.ReaderPatchRequest.join:type_name -> shale.HostJoin
-	106, // 157: shale.ReaderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	106, // 158: shale.ReaderPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 159: shale.ReaderPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 160: shale.ReaderPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	73,  // 161: shale.ReaderApplyRequest.ref:type_name -> shale.ReaderRef
-	109, // 162: shale.ReaderApplyRequest.patch:type_name -> patch.Patch
-	81,  // 163: shale.ReaderListRequest.filters:type_name -> shale.ReaderFilter
-	130, // 164: shale.ReaderListResponse.items:type_name -> shale.Reader
-	73,  // 165: shale.ReaderFilter.ref:type_name -> shale.ReaderRef
-	119, // 166: shale.ReaderFilter.tenant:type_name -> shale.TenantRef
-	103, // 167: shale.ReaderFilter.labels:type_name -> shale.ReaderFilter.LabelsEntry
-	81,  // 168: shale.ReaderWatchRequest.filters:type_name -> shale.ReaderFilter
-	84,  // 169: shale.ReaderWatchResponse.items:type_name -> shale.ReaderWatchItem
-	130, // 170: shale.ReaderWatchItem.value:type_name -> shale.Reader
-	105, // 171: shale.ReaderJoinRequest.host:type_name -> shale.HostJoin
-	15,  // 172: shale.ReaderJoinResponse.answer:type_name -> shale.JoinAnswer
-	73,  // 173: shale.ReaderAdoptRequest.ref:type_name -> shale.ReaderRef
-	120, // 174: shale.ReaderAdoptRequest.sites:type_name -> shale.SiteRef
-	0,   // 175: shale.NodeService.Add:input_type -> shale.NodeAddRequest
-	1,   // 176: shale.NodeService.Get:input_type -> shale.NodeGetRequest
-	4,   // 177: shale.NodeService.Patch:input_type -> shale.NodePatchRequest
-	5,   // 178: shale.NodeService.Apply:input_type -> shale.NodeApplyRequest
-	2,   // 179: shale.NodeService.Erase:input_type -> shale.NodeRef
-	7,   // 180: shale.NodeService.List:input_type -> shale.NodeListRequest
-	10,  // 181: shale.NodeService.Watch:input_type -> shale.NodeWatchRequest
-	13,  // 182: shale.NodeService.Join:input_type -> shale.NodeJoinRequest
-	16,  // 183: shale.NodeService.Adopt:input_type -> shale.NodeAdoptRequest
-	17,  // 184: shale.NodeService.RenewCertificate:input_type -> shale.NodeRenewCertificateRequest
-	19,  // 185: shale.NodeService.Heartbeat:input_type -> shale.NodeHeartbeatRequest
-	22,  // 186: shale.NodeService.PushEvents:input_type -> shale.NodePushEventsRequest
-	24,  // 187: shale.NodeService.Resolve:input_type -> shale.NodeResolveRequest
-	26,  // 188: shale.RelayService.Add:input_type -> shale.RelayAddRequest
-	27,  // 189: shale.RelayService.Get:input_type -> shale.RelayGetRequest
-	30,  // 190: shale.RelayService.Patch:input_type -> shale.RelayPatchRequest
-	31,  // 191: shale.RelayService.Apply:input_type -> shale.RelayApplyRequest
-	28,  // 192: shale.RelayService.Erase:input_type -> shale.RelayRef
-	33,  // 193: shale.RelayService.List:input_type -> shale.RelayListRequest
-	36,  // 194: shale.RelayService.Watch:input_type -> shale.RelayWatchRequest
-	39,  // 195: shale.RelayService.Join:input_type -> shale.RelayJoinRequest
-	41,  // 196: shale.RelayService.Adopt:input_type -> shale.RelayAdoptRequest
-	42,  // 197: shale.RelayService.RenewCertificate:input_type -> shale.RelayRenewCertificateRequest
-	44,  // 198: shale.RelayService.Heartbeat:input_type -> shale.RelayHeartbeatRequest
-	46,  // 199: shale.RelayService.Assign:input_type -> shale.RelayAssignRequest
-	49,  // 200: shale.ProducerService.Add:input_type -> shale.ProducerAddRequest
-	50,  // 201: shale.ProducerService.Get:input_type -> shale.ProducerGetRequest
-	52,  // 202: shale.ProducerService.Patch:input_type -> shale.ProducerPatchRequest
-	53,  // 203: shale.ProducerService.Apply:input_type -> shale.ProducerApplyRequest
-	47,  // 204: shale.ProducerService.Erase:input_type -> shale.ProducerRef
-	55,  // 205: shale.ProducerService.List:input_type -> shale.ProducerListRequest
-	58,  // 206: shale.ProducerService.Watch:input_type -> shale.ProducerWatchRequest
-	61,  // 207: shale.ProducerService.Join:input_type -> shale.ProducerJoinRequest
-	63,  // 208: shale.ProducerService.Adopt:input_type -> shale.ProducerAdoptRequest
-	64,  // 209: shale.ProducerService.RenewCertificate:input_type -> shale.ProducerRenewCertificateRequest
-	66,  // 210: shale.ProducerService.Heartbeat:input_type -> shale.ProducerHeartbeatRequest
-	69,  // 211: shale.ProducerService.Relay:input_type -> shale.ProducerRelayRequest
-	71,  // 212: shale.ReaderService.Add:input_type -> shale.ReaderAddRequest
-	72,  // 213: shale.ReaderService.Get:input_type -> shale.ReaderGetRequest
-	76,  // 214: shale.ReaderService.Patch:input_type -> shale.ReaderPatchRequest
-	77,  // 215: shale.ReaderService.Apply:input_type -> shale.ReaderApplyRequest
-	73,  // 216: shale.ReaderService.Erase:input_type -> shale.ReaderRef
-	79,  // 217: shale.ReaderService.List:input_type -> shale.ReaderListRequest
-	82,  // 218: shale.ReaderService.Watch:input_type -> shale.ReaderWatchRequest
-	85,  // 219: shale.ReaderService.Join:input_type -> shale.ReaderJoinRequest
-	87,  // 220: shale.ReaderService.Adopt:input_type -> shale.ReaderAdoptRequest
-	88,  // 221: shale.ReaderService.RenewCertificate:input_type -> shale.ReaderRenewCertificateRequest
-	90,  // 222: shale.ReaderService.Heartbeat:input_type -> shale.ReaderHeartbeatRequest
-	110, // 223: shale.NodeService.Add:output_type -> shale.Node
-	110, // 224: shale.NodeService.Get:output_type -> shale.Node
-	110, // 225: shale.NodeService.Patch:output_type -> shale.Node
-	110, // 226: shale.NodeService.Apply:output_type -> shale.Node
-	6,   // 227: shale.NodeService.Erase:output_type -> shale.NodeEraseResponse
-	8,   // 228: shale.NodeService.List:output_type -> shale.NodeListResponse
-	11,  // 229: shale.NodeService.Watch:output_type -> shale.NodeWatchResponse
-	14,  // 230: shale.NodeService.Join:output_type -> shale.NodeJoinResponse
-	110, // 231: shale.NodeService.Adopt:output_type -> shale.Node
-	18,  // 232: shale.NodeService.RenewCertificate:output_type -> shale.NodeRenewCertificateResponse
-	20,  // 233: shale.NodeService.Heartbeat:output_type -> shale.NodeHeartbeatResponse
-	23,  // 234: shale.NodeService.PushEvents:output_type -> shale.NodePushEventsResponse
-	25,  // 235: shale.NodeService.Resolve:output_type -> shale.NodeResolveResponse
-	118, // 236: shale.RelayService.Add:output_type -> shale.Relay
-	118, // 237: shale.RelayService.Get:output_type -> shale.Relay
-	118, // 238: shale.RelayService.Patch:output_type -> shale.Relay
-	118, // 239: shale.RelayService.Apply:output_type -> shale.Relay
-	32,  // 240: shale.RelayService.Erase:output_type -> shale.RelayEraseResponse
-	34,  // 241: shale.RelayService.List:output_type -> shale.RelayListResponse
-	37,  // 242: shale.RelayService.Watch:output_type -> shale.RelayWatchResponse
-	40,  // 243: shale.RelayService.Join:output_type -> shale.RelayJoinResponse
-	118, // 244: shale.RelayService.Adopt:output_type -> shale.Relay
-	43,  // 245: shale.RelayService.RenewCertificate:output_type -> shale.RelayRenewCertificateResponse
-	45,  // 246: shale.RelayService.Heartbeat:output_type -> shale.RelayHeartbeatResponse
-	118, // 247: shale.RelayService.Assign:output_type -> shale.Relay
-	126, // 248: shale.ProducerService.Add:output_type -> shale.Producer
-	126, // 249: shale.ProducerService.Get:output_type -> shale.Producer
-	126, // 250: shale.ProducerService.Patch:output_type -> shale.Producer
-	126, // 251: shale.ProducerService.Apply:output_type -> shale.Producer
-	54,  // 252: shale.ProducerService.Erase:output_type -> shale.ProducerEraseResponse
-	56,  // 253: shale.ProducerService.List:output_type -> shale.ProducerListResponse
-	59,  // 254: shale.ProducerService.Watch:output_type -> shale.ProducerWatchResponse
-	62,  // 255: shale.ProducerService.Join:output_type -> shale.ProducerJoinResponse
-	126, // 256: shale.ProducerService.Adopt:output_type -> shale.Producer
-	65,  // 257: shale.ProducerService.RenewCertificate:output_type -> shale.ProducerRenewCertificateResponse
-	67,  // 258: shale.ProducerService.Heartbeat:output_type -> shale.ProducerHeartbeatResponse
-	70,  // 259: shale.ProducerService.Relay:output_type -> shale.ProducerRelayResponse
-	130, // 260: shale.ReaderService.Add:output_type -> shale.Reader
-	130, // 261: shale.ReaderService.Get:output_type -> shale.Reader
-	130, // 262: shale.ReaderService.Patch:output_type -> shale.Reader
-	130, // 263: shale.ReaderService.Apply:output_type -> shale.Reader
-	78,  // 264: shale.ReaderService.Erase:output_type -> shale.ReaderEraseResponse
-	80,  // 265: shale.ReaderService.List:output_type -> shale.ReaderListResponse
-	83,  // 266: shale.ReaderService.Watch:output_type -> shale.ReaderWatchResponse
-	86,  // 267: shale.ReaderService.Join:output_type -> shale.ReaderJoinResponse
-	130, // 268: shale.ReaderService.Adopt:output_type -> shale.Reader
-	89,  // 269: shale.ReaderService.RenewCertificate:output_type -> shale.ReaderRenewCertificateResponse
-	91,  // 270: shale.ReaderService.Heartbeat:output_type -> shale.ReaderHeartbeatResponse
-	223, // [223:271] is the sub-list for method output_type
-	175, // [175:223] is the sub-list for method input_type
-	175, // [175:175] is the sub-list for extension type_name
-	175, // [175:175] is the sub-list for extension extendee
-	0,   // [0:175] is the sub-list for field type_name
+	123, // 101: shale.ProducerAddRequest.live:type_name -> shale.LivePolicy
+	47,  // 102: shale.ProducerGetRequest.ref:type_name -> shale.ProducerRef
+	51,  // 103: shale.ProducerGetRequest.select:type_name -> shale.ProducerSelect
+	124, // 104: shale.ProducerSelect.tenant:type_name -> shale.TenantSelect
+	125, // 105: shale.ProducerSelect.site:type_name -> shale.SiteSelect
+	126, // 106: shale.ProducerSelect.set:type_name -> shale.SetSelect
+	29,  // 107: shale.ProducerSelect.relay:type_name -> shale.RelaySelect
+	47,  // 108: shale.ProducerPatchRequest.ref:type_name -> shale.ProducerRef
+	120, // 109: shale.ProducerPatchRequest.site:type_name -> shale.SiteRef
+	99,  // 110: shale.ProducerPatchRequest.labels:type_name -> shale.ProducerPatchRequest.LabelsEntry
+	121, // 111: shale.ProducerPatchRequest.set:type_name -> shale.SetRef
+	104, // 112: shale.ProducerPatchRequest.state:type_name -> shale.HostState
+	106, // 113: shale.ProducerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	105, // 114: shale.ProducerPatchRequest.join:type_name -> shale.HostJoin
+	106, // 115: shale.ProducerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	106, // 116: shale.ProducerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	106, // 117: shale.ProducerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	28,  // 118: shale.ProducerPatchRequest.relay:type_name -> shale.RelayRef
+	122, // 119: shale.ProducerPatchRequest.status:type_name -> shale.ProducerStatus
+	123, // 120: shale.ProducerPatchRequest.live:type_name -> shale.LivePolicy
+	47,  // 121: shale.ProducerApplyRequest.ref:type_name -> shale.ProducerRef
+	109, // 122: shale.ProducerApplyRequest.patch:type_name -> patch.Patch
+	57,  // 123: shale.ProducerListRequest.filters:type_name -> shale.ProducerFilter
+	127, // 124: shale.ProducerListResponse.items:type_name -> shale.Producer
+	47,  // 125: shale.ProducerFilter.ref:type_name -> shale.ProducerRef
+	119, // 126: shale.ProducerFilter.tenant:type_name -> shale.TenantRef
+	121, // 127: shale.ProducerFilter.set:type_name -> shale.SetRef
+	120, // 128: shale.ProducerFilter.site:type_name -> shale.SiteRef
+	100, // 129: shale.ProducerFilter.labels:type_name -> shale.ProducerFilter.LabelsEntry
+	57,  // 130: shale.ProducerWatchRequest.filters:type_name -> shale.ProducerFilter
+	60,  // 131: shale.ProducerWatchResponse.items:type_name -> shale.ProducerWatchItem
+	127, // 132: shale.ProducerWatchItem.value:type_name -> shale.Producer
+	105, // 133: shale.ProducerJoinRequest.host:type_name -> shale.HostJoin
+	15,  // 134: shale.ProducerJoinResponse.answer:type_name -> shale.JoinAnswer
+	47,  // 135: shale.ProducerAdoptRequest.ref:type_name -> shale.ProducerRef
+	121, // 136: shale.ProducerAdoptRequest.set:type_name -> shale.SetRef
+	128, // 137: shale.ProducerHeartbeatRequest.sources:type_name -> shale.SourceReport
+	129, // 138: shale.ProducerHeartbeatRequest.load:type_name -> shale.HostLoad
+	130, // 139: shale.ProducerHeartbeatResponse.relay:type_name -> shale.RelayAssignment
+	68,  // 140: shale.ProducerHeartbeatResponse.suggestions:type_name -> shale.Suggestion
+	130, // 141: shale.ProducerRelayResponse.relay:type_name -> shale.RelayAssignment
+	119, // 142: shale.ReaderAddRequest.tenant:type_name -> shale.TenantRef
+	101, // 143: shale.ReaderAddRequest.labels:type_name -> shale.ReaderAddRequest.LabelsEntry
+	104, // 144: shale.ReaderAddRequest.state:type_name -> shale.HostState
+	105, // 145: shale.ReaderAddRequest.join:type_name -> shale.HostJoin
+	106, // 146: shale.ReaderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	106, // 147: shale.ReaderAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	106, // 148: shale.ReaderAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	106, // 149: shale.ReaderAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	73,  // 150: shale.ReaderGetRequest.ref:type_name -> shale.ReaderRef
+	75,  // 151: shale.ReaderGetRequest.select:type_name -> shale.ReaderSelect
+	74,  // 152: shale.ReaderRef.slug:type_name -> shale.ReaderRefBySlug
+	119, // 153: shale.ReaderRefBySlug.tenant:type_name -> shale.TenantRef
+	124, // 154: shale.ReaderSelect.tenant:type_name -> shale.TenantSelect
+	73,  // 155: shale.ReaderPatchRequest.ref:type_name -> shale.ReaderRef
+	102, // 156: shale.ReaderPatchRequest.labels:type_name -> shale.ReaderPatchRequest.LabelsEntry
+	104, // 157: shale.ReaderPatchRequest.state:type_name -> shale.HostState
+	105, // 158: shale.ReaderPatchRequest.join:type_name -> shale.HostJoin
+	106, // 159: shale.ReaderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	106, // 160: shale.ReaderPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	106, // 161: shale.ReaderPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	106, // 162: shale.ReaderPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	73,  // 163: shale.ReaderApplyRequest.ref:type_name -> shale.ReaderRef
+	109, // 164: shale.ReaderApplyRequest.patch:type_name -> patch.Patch
+	81,  // 165: shale.ReaderListRequest.filters:type_name -> shale.ReaderFilter
+	131, // 166: shale.ReaderListResponse.items:type_name -> shale.Reader
+	73,  // 167: shale.ReaderFilter.ref:type_name -> shale.ReaderRef
+	119, // 168: shale.ReaderFilter.tenant:type_name -> shale.TenantRef
+	103, // 169: shale.ReaderFilter.labels:type_name -> shale.ReaderFilter.LabelsEntry
+	81,  // 170: shale.ReaderWatchRequest.filters:type_name -> shale.ReaderFilter
+	84,  // 171: shale.ReaderWatchResponse.items:type_name -> shale.ReaderWatchItem
+	131, // 172: shale.ReaderWatchItem.value:type_name -> shale.Reader
+	105, // 173: shale.ReaderJoinRequest.host:type_name -> shale.HostJoin
+	15,  // 174: shale.ReaderJoinResponse.answer:type_name -> shale.JoinAnswer
+	73,  // 175: shale.ReaderAdoptRequest.ref:type_name -> shale.ReaderRef
+	120, // 176: shale.ReaderAdoptRequest.sites:type_name -> shale.SiteRef
+	0,   // 177: shale.NodeService.Add:input_type -> shale.NodeAddRequest
+	1,   // 178: shale.NodeService.Get:input_type -> shale.NodeGetRequest
+	4,   // 179: shale.NodeService.Patch:input_type -> shale.NodePatchRequest
+	5,   // 180: shale.NodeService.Apply:input_type -> shale.NodeApplyRequest
+	2,   // 181: shale.NodeService.Erase:input_type -> shale.NodeRef
+	7,   // 182: shale.NodeService.List:input_type -> shale.NodeListRequest
+	10,  // 183: shale.NodeService.Watch:input_type -> shale.NodeWatchRequest
+	13,  // 184: shale.NodeService.Join:input_type -> shale.NodeJoinRequest
+	16,  // 185: shale.NodeService.Adopt:input_type -> shale.NodeAdoptRequest
+	17,  // 186: shale.NodeService.RenewCertificate:input_type -> shale.NodeRenewCertificateRequest
+	19,  // 187: shale.NodeService.Heartbeat:input_type -> shale.NodeHeartbeatRequest
+	22,  // 188: shale.NodeService.PushEvents:input_type -> shale.NodePushEventsRequest
+	24,  // 189: shale.NodeService.Resolve:input_type -> shale.NodeResolveRequest
+	26,  // 190: shale.RelayService.Add:input_type -> shale.RelayAddRequest
+	27,  // 191: shale.RelayService.Get:input_type -> shale.RelayGetRequest
+	30,  // 192: shale.RelayService.Patch:input_type -> shale.RelayPatchRequest
+	31,  // 193: shale.RelayService.Apply:input_type -> shale.RelayApplyRequest
+	28,  // 194: shale.RelayService.Erase:input_type -> shale.RelayRef
+	33,  // 195: shale.RelayService.List:input_type -> shale.RelayListRequest
+	36,  // 196: shale.RelayService.Watch:input_type -> shale.RelayWatchRequest
+	39,  // 197: shale.RelayService.Join:input_type -> shale.RelayJoinRequest
+	41,  // 198: shale.RelayService.Adopt:input_type -> shale.RelayAdoptRequest
+	42,  // 199: shale.RelayService.RenewCertificate:input_type -> shale.RelayRenewCertificateRequest
+	44,  // 200: shale.RelayService.Heartbeat:input_type -> shale.RelayHeartbeatRequest
+	46,  // 201: shale.RelayService.Assign:input_type -> shale.RelayAssignRequest
+	49,  // 202: shale.ProducerService.Add:input_type -> shale.ProducerAddRequest
+	50,  // 203: shale.ProducerService.Get:input_type -> shale.ProducerGetRequest
+	52,  // 204: shale.ProducerService.Patch:input_type -> shale.ProducerPatchRequest
+	53,  // 205: shale.ProducerService.Apply:input_type -> shale.ProducerApplyRequest
+	47,  // 206: shale.ProducerService.Erase:input_type -> shale.ProducerRef
+	55,  // 207: shale.ProducerService.List:input_type -> shale.ProducerListRequest
+	58,  // 208: shale.ProducerService.Watch:input_type -> shale.ProducerWatchRequest
+	61,  // 209: shale.ProducerService.Join:input_type -> shale.ProducerJoinRequest
+	63,  // 210: shale.ProducerService.Adopt:input_type -> shale.ProducerAdoptRequest
+	64,  // 211: shale.ProducerService.RenewCertificate:input_type -> shale.ProducerRenewCertificateRequest
+	66,  // 212: shale.ProducerService.Heartbeat:input_type -> shale.ProducerHeartbeatRequest
+	69,  // 213: shale.ProducerService.Relay:input_type -> shale.ProducerRelayRequest
+	71,  // 214: shale.ReaderService.Add:input_type -> shale.ReaderAddRequest
+	72,  // 215: shale.ReaderService.Get:input_type -> shale.ReaderGetRequest
+	76,  // 216: shale.ReaderService.Patch:input_type -> shale.ReaderPatchRequest
+	77,  // 217: shale.ReaderService.Apply:input_type -> shale.ReaderApplyRequest
+	73,  // 218: shale.ReaderService.Erase:input_type -> shale.ReaderRef
+	79,  // 219: shale.ReaderService.List:input_type -> shale.ReaderListRequest
+	82,  // 220: shale.ReaderService.Watch:input_type -> shale.ReaderWatchRequest
+	85,  // 221: shale.ReaderService.Join:input_type -> shale.ReaderJoinRequest
+	87,  // 222: shale.ReaderService.Adopt:input_type -> shale.ReaderAdoptRequest
+	88,  // 223: shale.ReaderService.RenewCertificate:input_type -> shale.ReaderRenewCertificateRequest
+	90,  // 224: shale.ReaderService.Heartbeat:input_type -> shale.ReaderHeartbeatRequest
+	110, // 225: shale.NodeService.Add:output_type -> shale.Node
+	110, // 226: shale.NodeService.Get:output_type -> shale.Node
+	110, // 227: shale.NodeService.Patch:output_type -> shale.Node
+	110, // 228: shale.NodeService.Apply:output_type -> shale.Node
+	6,   // 229: shale.NodeService.Erase:output_type -> shale.NodeEraseResponse
+	8,   // 230: shale.NodeService.List:output_type -> shale.NodeListResponse
+	11,  // 231: shale.NodeService.Watch:output_type -> shale.NodeWatchResponse
+	14,  // 232: shale.NodeService.Join:output_type -> shale.NodeJoinResponse
+	110, // 233: shale.NodeService.Adopt:output_type -> shale.Node
+	18,  // 234: shale.NodeService.RenewCertificate:output_type -> shale.NodeRenewCertificateResponse
+	20,  // 235: shale.NodeService.Heartbeat:output_type -> shale.NodeHeartbeatResponse
+	23,  // 236: shale.NodeService.PushEvents:output_type -> shale.NodePushEventsResponse
+	25,  // 237: shale.NodeService.Resolve:output_type -> shale.NodeResolveResponse
+	118, // 238: shale.RelayService.Add:output_type -> shale.Relay
+	118, // 239: shale.RelayService.Get:output_type -> shale.Relay
+	118, // 240: shale.RelayService.Patch:output_type -> shale.Relay
+	118, // 241: shale.RelayService.Apply:output_type -> shale.Relay
+	32,  // 242: shale.RelayService.Erase:output_type -> shale.RelayEraseResponse
+	34,  // 243: shale.RelayService.List:output_type -> shale.RelayListResponse
+	37,  // 244: shale.RelayService.Watch:output_type -> shale.RelayWatchResponse
+	40,  // 245: shale.RelayService.Join:output_type -> shale.RelayJoinResponse
+	118, // 246: shale.RelayService.Adopt:output_type -> shale.Relay
+	43,  // 247: shale.RelayService.RenewCertificate:output_type -> shale.RelayRenewCertificateResponse
+	45,  // 248: shale.RelayService.Heartbeat:output_type -> shale.RelayHeartbeatResponse
+	118, // 249: shale.RelayService.Assign:output_type -> shale.Relay
+	127, // 250: shale.ProducerService.Add:output_type -> shale.Producer
+	127, // 251: shale.ProducerService.Get:output_type -> shale.Producer
+	127, // 252: shale.ProducerService.Patch:output_type -> shale.Producer
+	127, // 253: shale.ProducerService.Apply:output_type -> shale.Producer
+	54,  // 254: shale.ProducerService.Erase:output_type -> shale.ProducerEraseResponse
+	56,  // 255: shale.ProducerService.List:output_type -> shale.ProducerListResponse
+	59,  // 256: shale.ProducerService.Watch:output_type -> shale.ProducerWatchResponse
+	62,  // 257: shale.ProducerService.Join:output_type -> shale.ProducerJoinResponse
+	127, // 258: shale.ProducerService.Adopt:output_type -> shale.Producer
+	65,  // 259: shale.ProducerService.RenewCertificate:output_type -> shale.ProducerRenewCertificateResponse
+	67,  // 260: shale.ProducerService.Heartbeat:output_type -> shale.ProducerHeartbeatResponse
+	70,  // 261: shale.ProducerService.Relay:output_type -> shale.ProducerRelayResponse
+	131, // 262: shale.ReaderService.Add:output_type -> shale.Reader
+	131, // 263: shale.ReaderService.Get:output_type -> shale.Reader
+	131, // 264: shale.ReaderService.Patch:output_type -> shale.Reader
+	131, // 265: shale.ReaderService.Apply:output_type -> shale.Reader
+	78,  // 266: shale.ReaderService.Erase:output_type -> shale.ReaderEraseResponse
+	80,  // 267: shale.ReaderService.List:output_type -> shale.ReaderListResponse
+	83,  // 268: shale.ReaderService.Watch:output_type -> shale.ReaderWatchResponse
+	86,  // 269: shale.ReaderService.Join:output_type -> shale.ReaderJoinResponse
+	131, // 270: shale.ReaderService.Adopt:output_type -> shale.Reader
+	89,  // 271: shale.ReaderService.RenewCertificate:output_type -> shale.ReaderRenewCertificateResponse
+	91,  // 272: shale.ReaderService.Heartbeat:output_type -> shale.ReaderHeartbeatResponse
+	225, // [225:273] is the sub-list for method output_type
+	177, // [177:225] is the sub-list for method input_type
+	177, // [177:177] is the sub-list for extension type_name
+	177, // [177:177] is the sub-list for extension extendee
+	0,   // [0:177] is the sub-list for field type_name
 }
 
 func init() { file_shale_host_svc_g_proto_init() }

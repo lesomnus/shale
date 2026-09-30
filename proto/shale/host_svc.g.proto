@@ -784,6 +784,7 @@ message ProducerAddRequest {
   RelayRef relay = 20;
   ProducerStatus status = 21;
   string version = 22 [features.field_presence = IMPLICIT];
+  LivePolicy live = 23;
 }
 
 message ProducerGetRequest {
@@ -814,6 +815,7 @@ message ProducerSelect {
   RelaySelect relay = 20;
   bool status = 21;
   bool version = 22;
+  bool live = 23;
 }
 
 message ProducerPatchRequest {
@@ -889,6 +891,7 @@ message ProducerPatchRequest {
   // outright: setting both this and status clears.
   bool status_null = 43;
   string version = 44;
+  LivePolicy live = 46;
 }
 
 message ProducerApplyRequest {

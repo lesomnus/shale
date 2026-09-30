@@ -295,7 +295,8 @@ is a loop with three parts.
 
 Every step stays inside the `UploadPolicy` cap, the set's
 `max_bitrate_total`, and the producer's `uplink` when one is declared: the
-sum of the set's ceilings × 1.2 must fit it
+sum of the set's ceilings × 1.2, plus the sum once more when the producer's
+live policy is `always` ([§39.2](16-relay.md#392-assignment)), must fit it
 ([§12.2](04-write-path.md#122-resumable-part-uploads)). When a raise would
 break one of these, the loop stops and warns instead.
 
@@ -362,9 +363,10 @@ the CP assigned it ([§39.2](16-relay.md#392-assignment)), and:
   the next keyframe when it exits, and after three exits the bytes go as
   they are, silent for the viewer but alive; a host without ffmpeg sends
   the bytes as they are;
-- counts the cameras usually watched into its uplink budget
-  ([§38.5](#385-choosing-the-ceiling)), since each watched camera costs its
-  bitrate once more.
+- counts live into its uplink budget ([§38.5](#385-choosing-the-ceiling)):
+  every camera once more under the `always` policy, the cameras usually
+  watched under `on_demand` ([§39.2](16-relay.md#392-assignment)), since a
+  camera on the relay costs its bitrate once more.
 
 A camera meant to be watched live records H.264 Main or High profile, which
 browsers play without transcoding. Its audio is recorded as the camera

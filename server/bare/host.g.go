@@ -1248,6 +1248,11 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 		q.SetStatus(req.GetStatus())
 	}
 	q.SetVersion(req.GetVersion())
+	if req.HasLive() {
+		q.SetLive(int32(req.GetLive()))
+	} else {
+		q.SetLive(0)
+	}
 
 	u, err := q.Save(ctx)
 	if err != nil {
@@ -1366,6 +1371,9 @@ func ProducerSelectedFields(m *api.ProducerSelect) []string {
 	if m.GetVersion() {
 		vs = append(vs, producer.FieldVersion)
 	}
+	if m.GetLive() {
+		vs = append(vs, producer.FieldLive)
+	}
 
 	return vs
 }
@@ -1480,7 +1488,7 @@ func ProducerGetKey(ctx context.Context, db *ent.Client, ref *api.ProducerRef) (
 var producerOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Producer")
 
 var producerPatchColumns = entpatch.Columns{
-	1: producer.FieldId, 2: producer.TenantColumn, 3: producer.SiteColumn, 4: producer.FieldAlias, 5: producer.FieldName, 6: producer.FieldDesc, 7: producer.FieldLabels, 8: producer.SetColumn, 9: producer.FieldHardwareId, 10: producer.FieldHostname, 11: producer.FieldState, 12: producer.FieldCertSerial, 13: producer.FieldDateUpdated, 14: producer.FieldDateErased, 15: producer.FieldDateCreated, 16: producer.FieldJoin, 17: producer.FieldDateAdopted, 18: producer.FieldDateSeen, 19: producer.FieldDateCertExpires, 20: producer.RelayColumn, 21: producer.FieldStatus, 22: producer.FieldVersion}
+	1: producer.FieldId, 2: producer.TenantColumn, 3: producer.SiteColumn, 4: producer.FieldAlias, 5: producer.FieldName, 6: producer.FieldDesc, 7: producer.FieldLabels, 8: producer.SetColumn, 9: producer.FieldHardwareId, 10: producer.FieldHostname, 11: producer.FieldState, 12: producer.FieldCertSerial, 13: producer.FieldDateUpdated, 14: producer.FieldDateErased, 15: producer.FieldDateCreated, 16: producer.FieldJoin, 17: producer.FieldDateAdopted, 18: producer.FieldDateSeen, 19: producer.FieldDateCertExpires, 20: producer.RelayColumn, 21: producer.FieldStatus, 22: producer.FieldVersion, 23: producer.FieldLive}
 
 func (s ProducerServiceServer) Apply(ctx context.Context, req *api.ProducerApplyRequest) (*api.Producer, error) {
 	if !req.HasPatch() {

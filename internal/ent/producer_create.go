@@ -169,6 +169,20 @@ func (_c *ProducerCreate) SetVersion(v string) *ProducerCreate {
 	return _c
 }
 
+// SetLive sets the "live" field.
+func (_c *ProducerCreate) SetLive(v int32) *ProducerCreate {
+	_c.mutation.SetLive(v)
+	return _c
+}
+
+// SetNillableLive sets the "live" field if the given value is not nil.
+func (_c *ProducerCreate) SetNillableLive(v *int32) *ProducerCreate {
+	if v != nil {
+		_c.SetLive(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *ProducerCreate) SetTenantId(v uuid.UUID) *ProducerCreate {
 	_c.mutation.SetTenantId(v)
@@ -433,6 +447,10 @@ func (_c *ProducerCreate) createSpec() (*Producer, *sqlgraph.CreateSpec, error) 
 	if value, ok := _c.mutation.Version(); ok {
 		_spec.SetField(producer.FieldVersion, field.TypeString, value)
 		_node.Version = value
+	}
+	if value, ok := _c.mutation.Live(); ok {
+		_spec.SetField(producer.FieldLive, field.TypeInt32, value)
+		_node.Live = value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

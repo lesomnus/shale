@@ -48,6 +48,8 @@ const (
 	FieldStatus = "status"
 	// FieldVersion holds the string denoting the version field in the database.
 	FieldVersion = "version"
+	// FieldLive holds the string denoting the live field in the database.
+	FieldLive = "live"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
@@ -116,6 +118,7 @@ var Columns = []string{
 	FieldDateCertExpires,
 	FieldStatus,
 	FieldVersion,
+	FieldLive,
 	FieldTenantId,
 	FieldSiteId,
 	FieldSetId,
@@ -216,6 +219,11 @@ func ByDateCertExpires(opts ...sql.OrderTermOption) OrderOption {
 // ByVersion orders the results by the version field.
 func ByVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldVersion, opts...).ToFunc()
+}
+
+// ByLive orders the results by the live field.
+func ByLive(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLive, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

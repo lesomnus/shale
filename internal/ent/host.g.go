@@ -151,6 +151,7 @@ func (e *Producer) Proto() *api.Producer {
 		x.SetStatus(e.Status)
 	}
 	x.SetVersion(e.Version)
+	x.SetLive(api.LivePolicy(e.Live))
 	return x
 }
 func (e *Reader) Proto() *api.Reader {

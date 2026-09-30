@@ -108,6 +108,21 @@ message RelayAssignment {
   repeated Endpoint endpoints = 2;
   string publish_token = 3;
   google.protobuf.Timestamp date_expires = 4;
+  // The producer's live policy, so a change makes it attach again (§39.2).
+  LivePolicy live = 5;
+}
+
+// LivePolicy is whether a producer's cameras are on the relay at all times
+// or only while someone watches (§39.3). Unspecified reads as `always`.
+enum LivePolicy {
+  LIVE_POLICY_UNSPECIFIED = 0;
+  // Every source is started at Hello and never stopped: the relay holds the
+  // recent window of each camera whether or not anyone watches, at the
+  // cost of the cameras' bitrate on the producer's uplink once more.
+  LIVE_POLICY_ALWAYS = 1;
+  // A source is started when a viewer arrives and stopped `relay_idle_stop`
+  // after the last one leaves; no viewer, no bytes.
+  LIVE_POLICY_ON_DEMAND = 2;
 }
 
 // HardwareIdKind says where a host's hardware identity was read from (§33.4).
@@ -262,6 +277,8 @@ message RelayStatus {
   // The sum of its producers' max_bitrate_total, which assignment balances.
   int64 attached_bitrate = 6;
   HostLoad load = 7;
+  // Bytes taken from producers since the relay started.
+  int64 ingress_bytes = 8;
 }
 
 // RecordState is the upload state a lamina file's xattr records (§23.1).
@@ -335,6 +352,9 @@ message TokenClaims {
   // The Producer, Reader, or person the token was issued to, and its tenant.
   bytes actor = 16;
   bytes actor_tenant = 17;
+  // publish: the producer's live policy, which the relay applies at Hello
+  // (§39.3); unspecified reads as `always`.
+  LivePolicy live = 18;
 }
 
 // LaminaStored is a node's word that an upload committed (§12.4).

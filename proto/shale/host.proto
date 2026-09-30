@@ -228,6 +228,10 @@ message Producer {
   Relay relay = 20 [(orm.edge) = {nullable: true}];
   ProducerStatus status = 21;
   string version = 22;
+  // Whether its cameras are on the relay at all times or only while
+  // watched (§39.3); unspecified is `always`. A default, so the column is
+  // added to a database that predates it.
+  LivePolicy live = 23 [(orm.field) = {default: ""}];
 
   option (orm.message) = {
     rpc: {crud: true}

@@ -318,6 +318,25 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 
 // Adopt accepts a pending producer and assigns its set; the site follows the
 // set (§33.4).
+// Patch is a person's for the alias, the name, the description, the
+// labels, and the live policy (§39.3). The rest of the row is the system's
+// and the custom verbs' (adopt, erase, the heartbeat), and a patch naming
+// any of it is refused rather than let set a state nothing else agrees
+// with.
+func (s coreProducer) Patch(ctx context.Context, req *api.ProducerPatchRequest) (*api.Producer, error) {
+	if _, err := actor(ctx); err != nil {
+		return nil, err
+	}
+	if req.HasSite() || req.HasSiteNull() || req.HasSet() || req.HasSetNull() || req.HasHardwareId() || req.HasHostname() ||
+		req.HasState() || req.HasCertSerial() || req.HasJoin() || req.HasJoinNull() || req.HasDateAdopted() || req.HasDateAdoptedNull() ||
+		req.HasDateSeen() || req.HasDateSeenNull() || req.HasDateCertExpires() || req.HasDateCertExpiresNull() ||
+		req.HasRelay() || req.HasRelayNull() || req.HasStatus() || req.HasStatusNull() || req.HasVersion() {
+		return nil, status.Error(codes.PermissionDenied, "a producer's alias, name, desc, labels and live are a person's to patch; the rest of the row is the system's")
+	}
+
+	return s.ProducerServiceServer.Patch(ctx, req)
+}
+
 func (s coreProducer) Adopt(ctx context.Context, req *api.ProducerAdoptRequest) (*api.Producer, error) {
 	if _, err := actor(ctx); err != nil {
 		return nil, err

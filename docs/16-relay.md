@@ -17,8 +17,8 @@ lamina, and is never between a producer and a Storage Node
                              │                       │
         the same TS bytes    ▼                       ▼
 Producer ──────────────► Relay ═══ WebRTC ═══► viewers: people (a browser)
-   │      gRPC stream,             WHEP           and Reader hosts
-   │      on demand
+   │      gRPC stream, at all        WHEP           and Reader hosts
+   │      times or on demand
    └──────────────────► Storage Node   (recording, unchanged, §12)
 ```
 
@@ -59,6 +59,23 @@ an operator moves the producer, or when a relay is erased.
   ([§34.10](11-deployment.md#3410-node-addresses)) and a **publish token**.
   `ProducerService.Relay` asks for it on demand, which a producer does the
   moment its relay connection breaks.
+- **Live policy.** The `Producer` row carries `live`: **`always`**, the
+  default, has the relay start every source of the producer the moment it
+  attaches and stop none, so the relay holds each camera's recent window
+  ([§39.4](#394-viewers)) whether or not anyone watches; **`on_demand`**
+  starts a source when a viewer arrives and stops it `relay_idle_stop`
+  after the last one leaves, for a producer whose uplink cannot carry its
+  cameras twice ([§38.5](15-producer.md#385-choosing-the-ceiling)). The CP
+  writes the policy into the publish token, which is how the relay learns
+  it without asking ([§39.7](#397-security)), and into the assignment, so
+  a producer whose policy changed attaches again within a heartbeat. A
+  tenant admin sets it with `shale producer patch`, with the row's
+  `date_updated` as any patch takes it:
+
+  ```sh
+  V=$(shale producer get -o json @acme/lobby-pi | jq -r .dateUpdated)
+  shale producer patch @acme/lobby-pi "{\"live\":\"LIVE_POLICY_ON_DEMAND\",\"date_updated\":\"$V\"}"
+  ```
 - **Relay down.** Relays heartbeat like nodes (`heartbeat_interval`,
   `node_down_after`, [§27](09-operations.md#27-node--device--sink-health-and-quarantine)).
   When one is down the CP reassigns its producers at once. A producer whose
@@ -74,27 +91,32 @@ for as long as it runs (`RelayIngest.Attach`,
 [§35.8](12-api.md#358-relay-ingest-and-whep)):
 
 ```text
-Producer  Hello {publish token}          aud = relay, the producer's sources
-Relay     Start {source}                 someone is watching this camera
+Producer  Hello {publish token}          aud = relay, the producer's sources, its live policy
+Relay     Start {source}                 at once under `always`; when someone watches, on demand
 Producer  Data {source, bytes} ...       the TS it stores, Opus among its audio
-Relay     Stop {source}                  nobody has watched for relay_idle_stop
+Relay     Stop {source}                  on demand only: nobody has watched for relay_idle_stop
 ```
 
-- **Only while someone watches.** No viewer, no bytes: a producer's uplink
-  carries its recordings and nothing else. When a viewer arrives the relay
-  sends `Start`; the producer begins at the next keyframe, so the first
-  bytes are playable. When the last viewer leaves the relay waits
-  `relay_idle_stop` (10 s), which absorbs a page reload, then sends `Stop`.
+- **Start and Stop follow the policy** ([§39.2](#392-assignment)). Under
+  `always` the relay says `Start` for every source the token names as soon
+  as it has welcomed the producer, and never `Stop`: the producer's uplink
+  carries its cameras twice, once to the store and once to the relay, and
+  the relay has every camera's recent window at all times. Under
+  `on_demand` no viewer means no bytes: when a viewer arrives the relay
+  sends `Start`, the producer begins at the next keyframe so the first
+  bytes are playable, and when the last viewer leaves the relay waits
+  `relay_idle_stop` (10 s), which absorbs a page reload, then sends
+  `Stop`.
 - **The same bytes.** The producer tees the source's TS stream
   ([§38.1](15-producer.md#381-inputs)): what goes to the relay is what goes
   into the lamina, never encoded twice: the video, the archive's audio, and
   the Opus track its capture writes beside it for this purpose
   ([§38.7](15-producer.md#387-live-output)). Only a stream the producer
   does not encode is remuxed on its way, by the live helper, when its audio
-  is not Opus. On the uplink it costs the watched cameras'
-  bitrate on top of recording, and the link check in
-  [§12.2](04-write-path.md#122-resumable-part-uploads) must allow for the
-  cameras that are usually watched.
+  is not Opus. On the uplink it costs a camera's bitrate on top of
+  recording, every camera under `always` and the watched ones on demand,
+  and the uplink budget of [§38.5](15-producer.md#385-choosing-the-ceiling)
+  counts it.
 - **Codecs for live.** A camera that will be watched live should record
   H.264 Main or High profile, which every browser plays; the relay serves
   H.265 only to a viewer whose offer includes it and refuses the others.
@@ -186,7 +208,7 @@ Nodes as they are today ([§17](05-read-path.md#17-read-path)).
 |---|---|---|
 | Relay process restarts | every session and attachment drops; the relay has no state to recover. A stopping relay is graceful for two seconds, then ends what is still open, so an attached producer never keeps a dying relay alive | producers re-attach: the same relay at other endpoints is a restart, and the link moves as soon as a heartbeat brings the new ones; viewers ask `Live` again |
 | Relay down | as above, and the CP reassigns its producers | a few seconds of no live picture; recording unaffected |
-| Producer's uplink saturated by viewers | live bytes and recording compete | the link check counts watched cameras; the operator sizes the uplink or limits which cameras are watchable |
+| Producer's uplink saturated by live | live bytes and recording compete; the tee drops live bytes rather than hold the recording, and the producer's heartbeat counts them | the uplink budget counts every camera once more under `always` ([§38.5](15-producer.md#385-choosing-the-ceiling)); the operator sizes the uplink, or sets the producer `on_demand` ([§39.2](#392-assignment)) |
 | Producer down | its cameras are off for viewers and for recording alike | as in [§15](04-write-path.md#15-partial-laminae) |
 | CP down | no new `Live` and no new publish tokens; open sessions and attachments continue | as for reads ([§12.1](04-write-path.md#121-flow)): run the CP highly available |
 

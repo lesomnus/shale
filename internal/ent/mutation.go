@@ -3958,6 +3958,23 @@ func (m *ProducerMutation) OldVersion(ctx context.Context) (v string, err error)
 	return oldValue.Version, nil
 }
 
+// OldLive returns the old "live" field's value of the Producer entity.
+// If the Producer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProducerMutation) OldLive(ctx context.Context) (v int32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLive is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLive requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLive: %w", err)
+	}
+	return oldValue.Live, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the Producer entity.
 // If the Producer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -4065,6 +4082,8 @@ func (m *ProducerMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldStatus(ctx)
 	case producer.FieldVersion:
 		return m.OldVersion(ctx)
+	case producer.FieldLive:
+		return m.OldLive(ctx)
 	case producer.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case producer.FieldSiteId:

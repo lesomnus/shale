@@ -66,6 +66,57 @@ func (x UploadMode) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+// LivePolicy is whether a producer's cameras are on the relay at all times
+// or only while someone watches (§39.3). Unspecified reads as `always`.
+type LivePolicy int32
+
+const (
+	LivePolicy_LIVE_POLICY_UNSPECIFIED LivePolicy = 0
+	// Every source is started at Hello and never stopped: the relay holds the
+	// recent window of each camera whether or not anyone watches, at the
+	// cost of the cameras' bitrate on the producer's uplink once more.
+	LivePolicy_LIVE_POLICY_ALWAYS LivePolicy = 1
+	// A source is started when a viewer arrives and stopped `relay_idle_stop`
+	// after the last one leaves; no viewer, no bytes.
+	LivePolicy_LIVE_POLICY_ON_DEMAND LivePolicy = 2
+)
+
+// Enum value maps for LivePolicy.
+var (
+	LivePolicy_name = map[int32]string{
+		0: "LIVE_POLICY_UNSPECIFIED",
+		1: "LIVE_POLICY_ALWAYS",
+		2: "LIVE_POLICY_ON_DEMAND",
+	}
+	LivePolicy_value = map[string]int32{
+		"LIVE_POLICY_UNSPECIFIED": 0,
+		"LIVE_POLICY_ALWAYS":      1,
+		"LIVE_POLICY_ON_DEMAND":   2,
+	}
+)
+
+func (x LivePolicy) Enum() *LivePolicy {
+	p := new(LivePolicy)
+	*p = x
+	return p
+}
+
+func (x LivePolicy) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LivePolicy) Descriptor() protoreflect.EnumDescriptor {
+	return file_shale_common_proto_enumTypes[1].Descriptor()
+}
+
+func (LivePolicy) Type() protoreflect.EnumType {
+	return &file_shale_common_proto_enumTypes[1]
+}
+
+func (x LivePolicy) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // HardwareIdKind says where a host's hardware identity was read from (§33.4).
 type HardwareIdKind int32
 
@@ -104,11 +155,11 @@ func (x HardwareIdKind) String() string {
 }
 
 func (HardwareIdKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[1].Descriptor()
+	return file_shale_common_proto_enumTypes[2].Descriptor()
 }
 
 func (HardwareIdKind) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[1]
+	return &file_shale_common_proto_enumTypes[2]
 }
 
 func (x HardwareIdKind) Number() protoreflect.EnumNumber {
@@ -152,11 +203,11 @@ func (x Pressure) String() string {
 }
 
 func (Pressure) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[2].Descriptor()
+	return file_shale_common_proto_enumTypes[3].Descriptor()
 }
 
 func (Pressure) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[2]
+	return &file_shale_common_proto_enumTypes[3]
 }
 
 func (x Pressure) Number() protoreflect.EnumNumber {
@@ -197,11 +248,11 @@ func (x RecordState) String() string {
 }
 
 func (RecordState) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[3].Descriptor()
+	return file_shale_common_proto_enumTypes[4].Descriptor()
 }
 
 func (RecordState) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[3]
+	return &file_shale_common_proto_enumTypes[4]
 }
 
 func (x RecordState) Number() protoreflect.EnumNumber {
@@ -248,11 +299,11 @@ func (x TokenOp) String() string {
 }
 
 func (TokenOp) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[4].Descriptor()
+	return file_shale_common_proto_enumTypes[5].Descriptor()
 }
 
 func (TokenOp) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[4]
+	return &file_shale_common_proto_enumTypes[5]
 }
 
 func (x TokenOp) Number() protoreflect.EnumNumber {
@@ -299,11 +350,11 @@ func (x MissingReason) String() string {
 }
 
 func (MissingReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[5].Descriptor()
+	return file_shale_common_proto_enumTypes[6].Descriptor()
 }
 
 func (MissingReason) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[5]
+	return &file_shale_common_proto_enumTypes[6]
 }
 
 func (x MissingReason) Number() protoreflect.EnumNumber {
@@ -1259,6 +1310,7 @@ type RelayAssignment struct {
 	xxx_hidden_Endpoints    *[]*Endpoint           `protobuf:"bytes,2,rep,name=endpoints"`
 	xxx_hidden_PublishToken string                 `protobuf:"bytes,3,opt,name=publish_token,json=publishToken"`
 	xxx_hidden_DateExpires  *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_Live         LivePolicy             `protobuf:"varint,5,opt,name=live,enum=shale.LivePolicy"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -1318,6 +1370,13 @@ func (x *RelayAssignment) GetDateExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *RelayAssignment) GetLive() LivePolicy {
+	if x != nil {
+		return x.xxx_hidden_Live
+	}
+	return LivePolicy_LIVE_POLICY_UNSPECIFIED
+}
+
 func (x *RelayAssignment) SetRelayId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1335,6 +1394,10 @@ func (x *RelayAssignment) SetPublishToken(v string) {
 
 func (x *RelayAssignment) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
+}
+
+func (x *RelayAssignment) SetLive(v LivePolicy) {
+	x.xxx_hidden_Live = v
 }
 
 func (x *RelayAssignment) HasDateExpires() bool {
@@ -1355,6 +1418,8 @@ type RelayAssignment_builder struct {
 	Endpoints    []*Endpoint
 	PublishToken string
 	DateExpires  *timestamppb.Timestamp
+	// The producer's live policy, so a change makes it attach again (§39.2).
+	Live LivePolicy
 }
 
 func (b0 RelayAssignment_builder) Build() *RelayAssignment {
@@ -1365,6 +1430,7 @@ func (b0 RelayAssignment_builder) Build() *RelayAssignment {
 	x.xxx_hidden_Endpoints = &b.Endpoints
 	x.xxx_hidden_PublishToken = b.PublishToken
 	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_Live = b.Live
 	return m0
 }
 
@@ -3006,6 +3072,7 @@ type RelayStatus struct {
 	xxx_hidden_EgressBps         int64                  `protobuf:"varint,5,opt,name=egress_bps,json=egressBps"`
 	xxx_hidden_AttachedBitrate   int64                  `protobuf:"varint,6,opt,name=attached_bitrate,json=attachedBitrate"`
 	xxx_hidden_Load              *HostLoad              `protobuf:"bytes,7,opt,name=load"`
+	xxx_hidden_IngressBytes      int64                  `protobuf:"varint,8,opt,name=ingress_bytes,json=ingressBytes"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -3084,6 +3151,13 @@ func (x *RelayStatus) GetLoad() *HostLoad {
 	return nil
 }
 
+func (x *RelayStatus) GetIngressBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_IngressBytes
+	}
+	return 0
+}
+
 func (x *RelayStatus) SetDateReported(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateReported = v
 }
@@ -3110,6 +3184,10 @@ func (x *RelayStatus) SetAttachedBitrate(v int64) {
 
 func (x *RelayStatus) SetLoad(v *HostLoad) {
 	x.xxx_hidden_Load = v
+}
+
+func (x *RelayStatus) SetIngressBytes(v int64) {
+	x.xxx_hidden_IngressBytes = v
 }
 
 func (x *RelayStatus) HasDateReported() bool {
@@ -3145,6 +3223,8 @@ type RelayStatus_builder struct {
 	// The sum of its producers' max_bitrate_total, which assignment balances.
 	AttachedBitrate int64
 	Load            *HostLoad
+	// Bytes taken from producers since the relay started.
+	IngressBytes int64
 }
 
 func (b0 RelayStatus_builder) Build() *RelayStatus {
@@ -3158,6 +3238,7 @@ func (b0 RelayStatus_builder) Build() *RelayStatus {
 	x.xxx_hidden_EgressBps = b.EgressBps
 	x.xxx_hidden_AttachedBitrate = b.AttachedBitrate
 	x.xxx_hidden_Load = b.Load
+	x.xxx_hidden_IngressBytes = b.IngressBytes
 	return m0
 }
 
@@ -3533,6 +3614,7 @@ type TokenClaims struct {
 	xxx_hidden_Source                []byte                 `protobuf:"bytes,15,opt,name=source"`
 	xxx_hidden_Actor                 []byte                 `protobuf:"bytes,16,opt,name=actor"`
 	xxx_hidden_ActorTenant           []byte                 `protobuf:"bytes,17,opt,name=actor_tenant,json=actorTenant"`
+	xxx_hidden_Live                  LivePolicy             `protobuf:"varint,18,opt,name=live,enum=shale.LivePolicy"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -3681,6 +3763,13 @@ func (x *TokenClaims) GetActorTenant() []byte {
 	return nil
 }
 
+func (x *TokenClaims) GetLive() LivePolicy {
+	if x != nil {
+		return x.xxx_hidden_Live
+	}
+	return LivePolicy_LIVE_POLICY_UNSPECIFIED
+}
+
 func (x *TokenClaims) SetKid(v string) {
 	x.xxx_hidden_Kid = v
 }
@@ -3767,6 +3856,10 @@ func (x *TokenClaims) SetActorTenant(v []byte) {
 	x.xxx_hidden_ActorTenant = v
 }
 
+func (x *TokenClaims) SetLive(v LivePolicy) {
+	x.xxx_hidden_Live = v
+}
+
 func (x *TokenClaims) HasExp() bool {
 	if x == nil {
 		return false
@@ -3824,6 +3917,9 @@ type TokenClaims_builder struct {
 	// The Producer, Reader, or person the token was issued to, and its tenant.
 	Actor       []byte
 	ActorTenant []byte
+	// publish: the producer's live policy, which the relay applies at Hello
+	// (§39.3); unspecified reads as `always`.
+	Live LivePolicy
 }
 
 func (b0 TokenClaims_builder) Build() *TokenClaims {
@@ -3847,6 +3943,7 @@ func (b0 TokenClaims_builder) Build() *TokenClaims {
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_Actor = b.Actor
 	x.xxx_hidden_ActorTenant = b.ActorTenant
+	x.xxx_hidden_Live = b.Live
 	return m0
 }
 
@@ -4784,12 +4881,13 @@ const file_shale_common_proto_rawDesc = "" +
 	"lamina_key\x18\n" +
 	" \x01(\tR\tlaminaKey\x12/\n" +
 	"\aprofile\x18\v \x01(\v2\x15.shale.SegmentProfileR\aprofile\x12&\n" +
-	"\x04link\x18\f \x01(\v2\x12.shale.LinkProfileR\x04link\"\xbf\x01\n" +
+	"\x04link\x18\f \x01(\v2\x12.shale.LinkProfileR\x04link\"\xe6\x01\n" +
 	"\x0fRelayAssignment\x12\x19\n" +
 	"\brelay_id\x18\x01 \x01(\fR\arelayId\x12-\n" +
 	"\tendpoints\x18\x02 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12#\n" +
 	"\rpublish_token\x18\x03 \x01(\tR\fpublishToken\x12=\n" +
-	"\fdate_expires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"\xfb\x02\n" +
+	"\fdate_expires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12%\n" +
+	"\x04live\x18\x05 \x01(\x0e2\x11.shale.LivePolicyR\x04live\"\xfb\x02\n" +
 	"\bHostJoin\x12\x1f\n" +
 	"\vhardware_id\x18\x01 \x01(\tR\n" +
 	"hardwareId\x12?\n" +
@@ -4897,7 +4995,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\adevices\x18\x03 \x01(\x05R\adevices\x12*\n" +
 	"\x11uploads_in_flight\x18\x04 \x01(\x03R\x0fuploadsInFlight\x12#\n" +
 	"\rindex_laminae\x18\x05 \x01(\x03R\findexLaminae\x12\x1a\n" +
-	"\bwarnings\x18\x06 \x03(\tR\bwarnings\"\xad\x02\n" +
+	"\bwarnings\x18\x06 \x03(\tR\bwarnings\"\xd2\x02\n" +
 	"\vRelayStatus\x12?\n" +
 	"\rdate_reported\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\fdateReported\x12-\n" +
 	"\x12attached_producers\x18\x02 \x01(\x05R\x11attachedProducers\x12%\n" +
@@ -4906,7 +5004,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\n" +
 	"egress_bps\x18\x05 \x01(\x03R\tegressBps\x12)\n" +
 	"\x10attached_bitrate\x18\x06 \x01(\x03R\x0fattachedBitrate\x12#\n" +
-	"\x04load\x18\a \x01(\v2\x0f.shale.HostLoadR\x04load\"\xb2\x05\n" +
+	"\x04load\x18\a \x01(\v2\x0f.shale.HostLoadR\x04load\x12#\n" +
+	"\ringress_bytes\x18\b \x01(\x03R\fingressBytes\"\xb2\x05\n" +
 	"\fLaminaRecord\x12%\n" +
 	"\x0eformat_version\x18\x01 \x01(\x05R\rformatVersion\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\fR\btenantId\x12\x17\n" +
@@ -4931,7 +5030,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x0fdate_deleted_ms\x18\x11 \x01(\x03R\rdateDeletedMs\x12\x1a\n" +
 	"\bchecksum\x18\x12 \x01(\fR\bchecksum\x12+\n" +
 	"\x11placement_version\x18\x13 \x01(\x03R\x10placementVersion\x12\x16\n" +
-	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xcc\x04\n" +
+	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xf3\x04\n" +
 	"\vTokenClaims\x12\x10\n" +
 	"\x03kid\x18\x01 \x01(\tR\x03kid\x12,\n" +
 	"\x03exp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12,\n" +
@@ -4953,7 +5052,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\asources\x18\x0e \x03(\fR\asources\x12\x16\n" +
 	"\x06source\x18\x0f \x01(\fR\x06source\x12\x14\n" +
 	"\x05actor\x18\x10 \x01(\fR\x05actor\x12!\n" +
-	"\factor_tenant\x18\x11 \x01(\fR\vactorTenant\"\xd9\x03\n" +
+	"\factor_tenant\x18\x11 \x01(\fR\vactorTenant\x12%\n" +
+	"\x04live\x18\x12 \x01(\x0e2\x11.shale.LivePolicyR\x04live\"\xd9\x03\n" +
 	"\fLaminaStored\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1d\n" +
 	"\n" +
@@ -5005,7 +5105,12 @@ const file_shale_common_proto_rawDesc = "" +
 	"UploadMode\x12\x1b\n" +
 	"\x17UPLOAD_MODE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10UPLOAD_MODE_LIVE\x10\x01\x12\x18\n" +
-	"\x14UPLOAD_MODE_BUFFERED\x10\x02*\x8f\x01\n" +
+	"\x14UPLOAD_MODE_BUFFERED\x10\x02*\\\n" +
+	"\n" +
+	"LivePolicy\x12\x1b\n" +
+	"\x17LIVE_POLICY_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12LIVE_POLICY_ALWAYS\x10\x01\x12\x19\n" +
+	"\x15LIVE_POLICY_ON_DEMAND\x10\x02*\x8f\x01\n" +
 	"\x0eHardwareIdKind\x12 \n" +
 	"\x1cHARDWARE_ID_KIND_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14HARDWARE_ID_KIND_DMI\x10\x01\x12 \n" +
@@ -5032,90 +5137,93 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x16MISSING_REASON_DAMAGED\x10\x02\x12\x1c\n" +
 	"\x18MISSING_REASON_ABANDONED\x10\x03B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_shale_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_shale_common_proto_goTypes = []any{
 	(UploadMode)(0),               // 0: shale.UploadMode
-	(HardwareIdKind)(0),           // 1: shale.HardwareIdKind
-	(Pressure)(0),                 // 2: shale.Pressure
-	(RecordState)(0),              // 3: shale.RecordState
-	(TokenOp)(0),                  // 4: shale.TokenOp
-	(MissingReason)(0),            // 5: shale.MissingReason
-	(*LinkProfile)(nil),           // 6: shale.LinkProfile
-	(*SegmentProfile)(nil),        // 7: shale.SegmentProfile
-	(*ObservedRate)(nil),          // 8: shale.ObservedRate
-	(*Starvation)(nil),            // 9: shale.Starvation
-	(*Endpoint)(nil),              // 10: shale.Endpoint
-	(*Candidate)(nil),             // 11: shale.Candidate
-	(*Allocation)(nil),            // 12: shale.Allocation
-	(*RelayAssignment)(nil),       // 13: shale.RelayAssignment
-	(*HostJoin)(nil),              // 14: shale.HostJoin
-	(*HostInterface)(nil),         // 15: shale.HostInterface
-	(*HostLoad)(nil),              // 16: shale.HostLoad
-	(*SourceReport)(nil),          // 17: shale.SourceReport
-	(*ProducerStatus)(nil),        // 18: shale.ProducerStatus
-	(*SinkCapabilities)(nil),      // 19: shale.SinkCapabilities
-	(*SinkReport)(nil),            // 20: shale.SinkReport
-	(*SmartSummary)(nil),          // 21: shale.SmartSummary
-	(*DeviceReport)(nil),          // 22: shale.DeviceReport
-	(*NodeStatus)(nil),            // 23: shale.NodeStatus
-	(*RelayStatus)(nil),           // 24: shale.RelayStatus
-	(*LaminaRecord)(nil),          // 25: shale.LaminaRecord
-	(*TokenClaims)(nil),           // 26: shale.TokenClaims
-	(*LaminaStored)(nil),          // 27: shale.LaminaStored
-	(*LaminaDeleted)(nil),         // 28: shale.LaminaDeleted
-	(*LaminaMissing)(nil),         // 29: shale.LaminaMissing
-	(*Event)(nil),                 // 30: shale.Event
-	(*KeyEntry)(nil),              // 31: shale.KeyEntry
-	(*timestamppb.Timestamp)(nil), // 32: google.protobuf.Timestamp
+	(LivePolicy)(0),               // 1: shale.LivePolicy
+	(HardwareIdKind)(0),           // 2: shale.HardwareIdKind
+	(Pressure)(0),                 // 3: shale.Pressure
+	(RecordState)(0),              // 4: shale.RecordState
+	(TokenOp)(0),                  // 5: shale.TokenOp
+	(MissingReason)(0),            // 6: shale.MissingReason
+	(*LinkProfile)(nil),           // 7: shale.LinkProfile
+	(*SegmentProfile)(nil),        // 8: shale.SegmentProfile
+	(*ObservedRate)(nil),          // 9: shale.ObservedRate
+	(*Starvation)(nil),            // 10: shale.Starvation
+	(*Endpoint)(nil),              // 11: shale.Endpoint
+	(*Candidate)(nil),             // 12: shale.Candidate
+	(*Allocation)(nil),            // 13: shale.Allocation
+	(*RelayAssignment)(nil),       // 14: shale.RelayAssignment
+	(*HostJoin)(nil),              // 15: shale.HostJoin
+	(*HostInterface)(nil),         // 16: shale.HostInterface
+	(*HostLoad)(nil),              // 17: shale.HostLoad
+	(*SourceReport)(nil),          // 18: shale.SourceReport
+	(*ProducerStatus)(nil),        // 19: shale.ProducerStatus
+	(*SinkCapabilities)(nil),      // 20: shale.SinkCapabilities
+	(*SinkReport)(nil),            // 21: shale.SinkReport
+	(*SmartSummary)(nil),          // 22: shale.SmartSummary
+	(*DeviceReport)(nil),          // 23: shale.DeviceReport
+	(*NodeStatus)(nil),            // 24: shale.NodeStatus
+	(*RelayStatus)(nil),           // 25: shale.RelayStatus
+	(*LaminaRecord)(nil),          // 26: shale.LaminaRecord
+	(*TokenClaims)(nil),           // 27: shale.TokenClaims
+	(*LaminaStored)(nil),          // 28: shale.LaminaStored
+	(*LaminaDeleted)(nil),         // 29: shale.LaminaDeleted
+	(*LaminaMissing)(nil),         // 30: shale.LaminaMissing
+	(*Event)(nil),                 // 31: shale.Event
+	(*KeyEntry)(nil),              // 32: shale.KeyEntry
+	(*timestamppb.Timestamp)(nil), // 33: google.protobuf.Timestamp
 }
 var file_shale_common_proto_depIdxs = []int32{
 	0,  // 0: shale.LinkProfile.mode:type_name -> shale.UploadMode
-	32, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
-	32, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
-	10, // 3: shale.Candidate.endpoints:type_name -> shale.Endpoint
-	32, // 4: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
-	11, // 5: shale.Allocation.candidates:type_name -> shale.Candidate
-	32, // 6: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
-	7,  // 7: shale.Allocation.profile:type_name -> shale.SegmentProfile
-	6,  // 8: shale.Allocation.link:type_name -> shale.LinkProfile
-	10, // 9: shale.RelayAssignment.endpoints:type_name -> shale.Endpoint
-	32, // 10: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
-	1,  // 11: shale.HostJoin.hardware_id_kind:type_name -> shale.HardwareIdKind
-	32, // 12: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
-	17, // 13: shale.ProducerStatus.sources:type_name -> shale.SourceReport
-	16, // 14: shale.ProducerStatus.load:type_name -> shale.HostLoad
-	32, // 15: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
-	2,  // 16: shale.SinkReport.pressure:type_name -> shale.Pressure
-	19, // 17: shale.SinkReport.capabilities:type_name -> shale.SinkCapabilities
-	32, // 18: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
-	32, // 19: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
-	21, // 20: shale.DeviceReport.smart:type_name -> shale.SmartSummary
-	32, // 21: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
-	32, // 22: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
-	16, // 23: shale.RelayStatus.load:type_name -> shale.HostLoad
-	3,  // 24: shale.LaminaRecord.state:type_name -> shale.RecordState
-	0,  // 25: shale.LaminaRecord.mode:type_name -> shale.UploadMode
-	32, // 26: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
-	32, // 27: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
-	4,  // 28: shale.TokenClaims.op:type_name -> shale.TokenOp
-	25, // 29: shale.TokenClaims.record:type_name -> shale.LaminaRecord
-	0,  // 30: shale.TokenClaims.mode:type_name -> shale.UploadMode
-	32, // 31: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
-	32, // 32: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
-	32, // 33: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
-	25, // 34: shale.LaminaStored.record:type_name -> shale.LaminaRecord
-	32, // 35: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
-	5,  // 36: shale.LaminaMissing.reason:type_name -> shale.MissingReason
-	32, // 37: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
-	27, // 38: shale.Event.stored:type_name -> shale.LaminaStored
-	28, // 39: shale.Event.deleted:type_name -> shale.LaminaDeleted
-	29, // 40: shale.Event.missing:type_name -> shale.LaminaMissing
-	41, // [41:41] is the sub-list for method output_type
-	41, // [41:41] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	33, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
+	33, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
+	11, // 3: shale.Candidate.endpoints:type_name -> shale.Endpoint
+	33, // 4: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
+	12, // 5: shale.Allocation.candidates:type_name -> shale.Candidate
+	33, // 6: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
+	8,  // 7: shale.Allocation.profile:type_name -> shale.SegmentProfile
+	7,  // 8: shale.Allocation.link:type_name -> shale.LinkProfile
+	11, // 9: shale.RelayAssignment.endpoints:type_name -> shale.Endpoint
+	33, // 10: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
+	1,  // 11: shale.RelayAssignment.live:type_name -> shale.LivePolicy
+	2,  // 12: shale.HostJoin.hardware_id_kind:type_name -> shale.HardwareIdKind
+	33, // 13: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
+	18, // 14: shale.ProducerStatus.sources:type_name -> shale.SourceReport
+	17, // 15: shale.ProducerStatus.load:type_name -> shale.HostLoad
+	33, // 16: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
+	3,  // 17: shale.SinkReport.pressure:type_name -> shale.Pressure
+	20, // 18: shale.SinkReport.capabilities:type_name -> shale.SinkCapabilities
+	33, // 19: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
+	33, // 20: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
+	22, // 21: shale.DeviceReport.smart:type_name -> shale.SmartSummary
+	33, // 22: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
+	33, // 23: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
+	17, // 24: shale.RelayStatus.load:type_name -> shale.HostLoad
+	4,  // 25: shale.LaminaRecord.state:type_name -> shale.RecordState
+	0,  // 26: shale.LaminaRecord.mode:type_name -> shale.UploadMode
+	33, // 27: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
+	33, // 28: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
+	5,  // 29: shale.TokenClaims.op:type_name -> shale.TokenOp
+	26, // 30: shale.TokenClaims.record:type_name -> shale.LaminaRecord
+	0,  // 31: shale.TokenClaims.mode:type_name -> shale.UploadMode
+	1,  // 32: shale.TokenClaims.live:type_name -> shale.LivePolicy
+	33, // 33: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
+	33, // 34: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
+	33, // 35: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
+	26, // 36: shale.LaminaStored.record:type_name -> shale.LaminaRecord
+	33, // 37: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
+	6,  // 38: shale.LaminaMissing.reason:type_name -> shale.MissingReason
+	33, // 39: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
+	28, // 40: shale.Event.stored:type_name -> shale.LaminaStored
+	29, // 41: shale.Event.deleted:type_name -> shale.LaminaDeleted
+	30, // 42: shale.Event.missing:type_name -> shale.LaminaMissing
+	43, // [43:43] is the sub-list for method output_type
+	43, // [43:43] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_shale_common_proto_init() }
@@ -5133,7 +5241,7 @@ func file_shale_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_common_proto_rawDesc), len(file_shale_common_proto_rawDesc)),
-			NumEnums:      6,
+			NumEnums:      7,
 			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   0,

@@ -76,8 +76,10 @@ func (l *relayLink) set(ra *api.RelayAssignment) {
 	// The same relay with a fresher token is the same assignment: the
 	// token is used at the next dial, the stream stays. The same relay at
 	// other endpoints is a relay that restarted (§39.6): the stream to the
-	// old ones is ended and the new ones dialed.
-	same := l.assignment != nil && string(l.assignment.GetRelayId()) == string(ra.GetRelayId()) && sameEndpoints(l.assignment.GetEndpoints(), ra.GetEndpoints())
+	// old ones is ended and the new ones dialed. A changed live policy is
+	// applied by the relay at Hello, so it is a new stream too (§39.3).
+	same := l.assignment != nil && string(l.assignment.GetRelayId()) == string(ra.GetRelayId()) &&
+		sameEndpoints(l.assignment.GetEndpoints(), ra.GetEndpoints()) && l.assignment.GetLive() == ra.GetLive()
 	l.assignment = ra
 	if !same {
 		select {

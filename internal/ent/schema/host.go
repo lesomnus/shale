@@ -187,6 +187,8 @@ func (Producer) Fields() []ent.Field {
 		field.Json("status", &api.ProducerStatus{}).ValueScanner(entpb.ValueScanner[*api.ProducerStatus]{}).
 			Optional(),
 		field.String("version"),
+		field.Int32("live").
+			Optional(),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").

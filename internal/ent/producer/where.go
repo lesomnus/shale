@@ -126,6 +126,11 @@ func Version(v string) predicate.Producer {
 	return predicate.Producer(sql.FieldEQ(FieldVersion, v))
 }
 
+// Live applies equality check predicate on the "live" field. It's identical to LiveEQ.
+func Live(v int32) predicate.Producer {
+	return predicate.Producer(sql.FieldEQ(FieldLive, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Producer {
 	return predicate.Producer(sql.FieldEQ(FieldTenantId, v))
@@ -959,6 +964,56 @@ func VersionEqualFold(v string) predicate.Producer {
 // VersionContainsFold applies the ContainsFold predicate on the "version" field.
 func VersionContainsFold(v string) predicate.Producer {
 	return predicate.Producer(sql.FieldContainsFold(FieldVersion, v))
+}
+
+// LiveEQ applies the EQ predicate on the "live" field.
+func LiveEQ(v int32) predicate.Producer {
+	return predicate.Producer(sql.FieldEQ(FieldLive, v))
+}
+
+// LiveNEQ applies the NEQ predicate on the "live" field.
+func LiveNEQ(v int32) predicate.Producer {
+	return predicate.Producer(sql.FieldNEQ(FieldLive, v))
+}
+
+// LiveIn applies the In predicate on the "live" field.
+func LiveIn(vs ...int32) predicate.Producer {
+	return predicate.Producer(sql.FieldIn(FieldLive, vs...))
+}
+
+// LiveNotIn applies the NotIn predicate on the "live" field.
+func LiveNotIn(vs ...int32) predicate.Producer {
+	return predicate.Producer(sql.FieldNotIn(FieldLive, vs...))
+}
+
+// LiveGT applies the GT predicate on the "live" field.
+func LiveGT(v int32) predicate.Producer {
+	return predicate.Producer(sql.FieldGT(FieldLive, v))
+}
+
+// LiveGTE applies the GTE predicate on the "live" field.
+func LiveGTE(v int32) predicate.Producer {
+	return predicate.Producer(sql.FieldGTE(FieldLive, v))
+}
+
+// LiveLT applies the LT predicate on the "live" field.
+func LiveLT(v int32) predicate.Producer {
+	return predicate.Producer(sql.FieldLT(FieldLive, v))
+}
+
+// LiveLTE applies the LTE predicate on the "live" field.
+func LiveLTE(v int32) predicate.Producer {
+	return predicate.Producer(sql.FieldLTE(FieldLive, v))
+}
+
+// LiveIsNil applies the IsNil predicate on the "live" field.
+func LiveIsNil() predicate.Producer {
+	return predicate.Producer(sql.FieldIsNull(FieldLive))
+}
+
+// LiveNotNil applies the NotNil predicate on the "live" field.
+func LiveNotNil() predicate.Producer {
+	return predicate.Producer(sql.FieldNotNull(FieldLive))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
