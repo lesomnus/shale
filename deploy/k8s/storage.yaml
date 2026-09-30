@@ -77,5 +77,9 @@ spec:
         - name: sink-0
           hostPath:
             # The mount point of the disk; a directory on the OS disk in a lab.
+            # A real disk takes `type: Directory`: `DirectoryOrCreate` makes an
+            # empty directory on the OS disk when the mount is missing, and the
+            # node registers that as a new, empty sink (README, "Which disk, on
+            # which machine").
             path: /srv/shale/k8s/sinks/0
             type: DirectoryOrCreate

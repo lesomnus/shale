@@ -32,7 +32,8 @@ kubectl apply -k deploy/k8s
 3. **Sinks.** `storage-config.yaml` and `storage.yaml` describe one sink
    per node at `/srv/shale/k8s/sinks/0`, a directory on the OS disk with a
    declared capacity, which is a lab. A real node mounts each HDD at a path
-   and lists it with no capacity; the device is detected (§22.2).
+   and lists it with no capacity; the device is detected (§22.2). See
+   [Which disk, on which machine](#which-disk-on-which-machine) below.
 
 4. **The database password** in `postgres.yaml`, twice.
 
@@ -71,6 +72,110 @@ kubectl apply -k deploy/k8s
   once (`auto_adopt: true` in `control-config.yaml`; set it to `false` and
   `shale node adopt` each one to keep the operator in the loop), and
   reports its sinks. Its state lives in `/var/lib/shale-k8s` on the host.
+
+## Which disk, on which machine
+
+Kubernetes has no idea of a disk, so "this disk on that machine" is said in
+three places that have to agree:
+
+| | where | what it says |
+|---|---|---|
+| 1 | `kubectl label node <node> shale.io/storage=true` | which machines run a Storage Node — the DaemonSet's `nodeSelector` |
+| 2 | `storage.yaml`, the `hostPath` volume | where the disk is mounted **on that machine** |
+| 3 | `storage-config.yaml`, `storage.sinks[].path` | where that volume is mounted **in the pod**, which is what Shale calls the sink |
+
+Mount the disk on the machine first, in `/etc/fstab` or as the ZFS dataset's
+`mountpoint`; Shale never mounts anything. Then:
+
+```yaml
+# storage.yaml
+volumeMounts:
+  - { name: sink-0, mountPath: /srv/shale/sinks/0 }
+volumes:
+  - name: sink-0
+    hostPath:
+      path: /mnt/hdd01      # the mount point on the machine
+      type: Directory       # not DirectoryOrCreate: see below
+```
+
+```yaml
+# storage-config.yaml
+storage:
+  sinks:
+    - path: /srv/shale/sinks/0     # a whole disk: capacity and device detected
+```
+
+Three things are worth knowing before the first apply:
+
+- **`type: Directory`, not `DirectoryOrCreate`, for a real disk.** With
+  `DirectoryOrCreate` a missing mount is created as an empty directory on the
+  OS disk, and the node registers it as a new, empty sink and starts filling
+  the system's own filesystem. With `Directory` the pod refuses to start,
+  which is the answer you want. The manifests here ship
+  `DirectoryOrCreate` because their sink is a lab directory.
+- **One DaemonSet describes one layout.** The DaemonSet and the ConfigMap are
+  shared by every node that matches the label, so every one of them must have
+  the disk at the same path. Machines whose disks differ get their own label,
+  DaemonSet and ConfigMap (`shale.io/storage: ssd-box`, and so on).
+- **A shared filesystem needs `capacity`** — a directory on a volume Shale
+  does not own, an NFS or iSCSI mount, a ZFS dataset without a quota
+  ([§22.2](../../docs/07-storage-node.md#222-sinks-and-devices)). Whatever the
+  filesystem, it must support **user xattrs**: the node refuses a sink
+  without them, because a lamina's record lives there. `setfattr -n user.x -v
+  1 <dir>` on the machine answers that in one line. NFS carries them only
+  from NFSv4.2, and an export that does not is a sink that never registers;
+  a zvol over iSCSI formatted ext4 or XFS behaves like a local disk.
+
+### A disk that is not on a Kubernetes node
+
+Storage that lives on a machine of its own — a NAS, a file server with a ZFS
+pool — has three shapes, in the order they are worth trying:
+
+1. **Make that machine a node of the cluster** and label it: the disk is then
+   a hostPath like any other, the filesystem is local, and the device is the
+   pool or the disk itself.
+2. **Run `shale serve storage` on it outside Kubernetes**, from the deb
+   package (§34.6), with the control plane in the cluster. A Storage Node
+   speaks to the cluster API and the cluster API's gRPC port is a ClusterIP
+   here, so it needs a NodePort or an internal LoadBalancer of its own, and
+   the address the node dials has to be a name the CP certificate carries
+   (`control-config.yaml`). The CP dials back to the node's control API
+   (7421), so that has to be reachable from the CP pods.
+3. **Attach the volume to a Kubernetes node** and treat it as a disk there —
+   a zvol over iSCSI formatted ext4 or XFS behaves like one. An NFS export is
+   the weakest of the three: user xattrs need NFSv4.2, `O_DIRECT` and
+   `fallocate` mean nothing over it, and every lamina's bytes cross the
+   network twice.
+
+### Changing the disk under a node
+
+[§28.4](../../docs/09-operations.md#284-changing-the-disk-under-a-node) in
+Kubernetes terms. Nothing moves: the new sink is added, the old one is
+retired and then taken away.
+
+```sh
+# 1. mount the new disk on each storage node, then add the volume and the
+#    path to storage.yaml and storage-config.yaml, and roll.
+kubectl apply -k deploy/k8s
+kubectl -n shale rollout restart daemonset/shale-storage   # one node at a time
+shale sink ls                                             # both sinks, both attached
+
+# 2. stop writing to the old one; what is on it stays readable.
+shale sink retire @sink-<old>
+
+# 3. when the recordings on it are not being kept: their rows go too, and
+#    readers see gaps rather than laminae that never arrive.
+shale device declare-dead @dev-<old> '{"reason":"the volume goes back"}'
+
+# 4. take it out of both files and roll again; then unmount it.
+kubectl apply -k deploy/k8s && kubectl -n shale rollout restart daemonset/shale-storage
+```
+
+The old sink's row stays, retired, and nothing asks for it again. A sink
+that is taken away **without** being retired first is "pending adoption"
+instead ([§28.3](../../docs/09-operations.md#283-node-failure-and-device-re-homing)),
+which is the right answer for a disk that was pulled and the wrong one for a
+disk that was given back.
 
 ## Behind an Ingress
 

@@ -152,8 +152,22 @@ next start and is recognized by its hardware identity
     ClusterIP Service; only its sign-in listener has a NodePort beside the
     tenant one (30403), for the console's operator half.
   - Sinks are hostPath mounts of the HDD mount points, listed in the node's
-    configuration. Finding and formatting unused disks on labeled nodes is
-    an idea, not a plan ([§36.2](13-configuration.md#362-open-decisions)).
+    configuration. Kubernetes has no idea of a disk, so a particular disk on
+    a particular machine is said in three places that have to agree: the
+    **node label** the DaemonSet selects on, the **hostPath** of the disk's
+    mount point on that machine, and the **path in the node's configuration**
+    where the volume is mounted in the pod. A hostPath is `type: Directory`
+    for a real disk — `DirectoryOrCreate` would make an empty directory on
+    the OS disk when the mount is missing, and the node would register it as
+    a new, empty sink. One DaemonSet and one ConfigMap describe one layout,
+    so machines whose disks are laid out differently get a DaemonSet, a
+    ConfigMap and a label of their own. Finding and formatting unused disks
+    on labeled nodes is an idea, not a plan
+    ([§36.2](13-configuration.md#362-open-decisions)).
+  - Changing the disk under a node is
+    [§28.4](09-operations.md#284-changing-the-disk-under-a-node): edit the
+    ConfigMap and the DaemonSet, `kubectl rollout restart` it, and the
+    rolling update takes the nodes one at a time.
   - The pod needs the devices behind its sinks and `CAP_SYS_RAWIO`, for SMART
     and bay LEDs ([§34.8](#348-containers)). A privileged pod also works.
   - Each new machine joins on its first start and appears in
