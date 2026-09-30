@@ -36,7 +36,8 @@ machine: SQLite, plaintext on loopback, everything under `./dev`, and the
 node's one sink is `./dev/sink`. A directory is a sink like any other
 ([§22.2](docs/07-storage-node.md#222-sinks-and-devices)); to keep the
 recordings somewhere larger, say where and how much of it is Shale's, in a
-`shale.yaml` beside the binary:
+`shale.yaml` in the directory you run it from (or wherever `--config` says;
+[§34.1](docs/11-deployment.md#341-one-binary-one-command-per-role)):
 
 ```yaml
 storage:
