@@ -87,3 +87,43 @@ func TestWhepEndpoints(t *testing.T) {
 	require.Equal(t, "10.1.2.80", eps[0].GetHost())
 	require.Equal(t, int32(7441), eps[0].GetPort())
 }
+
+// A name a node reports for its data plane (`storage.advertise`) is handed
+// out as it is, to producers, readers and the browser alike, for the
+// certificate that names it (§34.10, §33.5); an IP, or every interface,
+// goes through the resolver as before.
+func TestNodeEndpointsByName(t *testing.T) {
+	ifs := []*api.HostInterface{api.HostInterface_builder{Name: "eth0", Addresses: []string{"10.1.2.80/24"}}.Build()}
+	n := &ent.Node{Alias: "n1", Interfaces: ifs, DataAddress: "storage.example.com:7420"}
+	s := Core{d: &Deps{}}
+
+	eps := s.endpoints(n, "203.0.113.9", nil)
+	require.Len(t, eps, 1)
+	require.Equal(t, "https://storage.example.com:7420/k/1", endpointURL(eps[0], "k/1", nil))
+	// Even under a template: the node's own name wins.
+	tmpl := api.AddressParams_builder{Resolver: "template", Template: "{alias}.nodes.example.com"}.Build()
+	eps = s.endpoints(n, "203.0.113.9", tmpl)
+	require.Equal(t, "storage.example.com", eps[0].GetHost())
+	// Its host certificate names it too, for a client that trusts only
+	// the shale CA.
+	dns, _ := NamesFor(NodeAddresses{Alias: n.Alias, Interfaces: ifs, DataAddress: n.DataAddress}, nil)
+	require.Contains(t, dns, "storage.example.com")
+	// Plaintext in development mode, as every endpoint.
+	require.Equal(t, "http", Core{d: &Deps{Dev: true}}.endpoints(n, "203.0.113.9", nil)[0].GetScheme())
+
+	for _, c := range []struct{ addr, want string }{
+		{":7420", "10.1.2.80"},
+		{"[::]:7420", "10.1.2.80"},
+		{"0.0.0.0:7420", "10.1.2.80"},
+		{"10.9.9.9:7420", "10.9.9.9"},
+	} {
+		n.DataAddress = c.addr
+		eps = s.endpoints(n, "10.1.2.9", nil)
+		require.Len(t, eps, 1, c.addr)
+		require.Equal(t, c.want, eps[0].GetHost(), c.addr)
+		require.Equal(t, int32(7420), eps[0].GetPort(), c.addr)
+	}
+	// An IP under a template is the template's, as before.
+	n.DataAddress = ":7420"
+	require.Equal(t, "n1.nodes.example.com", s.endpoints(n, "10.1.2.9", tmpl)[0].GetHost())
+}

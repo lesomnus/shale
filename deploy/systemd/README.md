@@ -54,6 +54,12 @@ storage:
     # - path: /srv/shale/sink
     #   capacity: 50GiB
     #   device: lab-davy-1
+  # for the console's Playback in a browser: a certificate from a public CA
+  # on the data plane, and the name it carries (§40.5); renewed files are
+  # read again, and producers upload to the same name
+  # cert_file: /etc/letsencrypt/live/hdd1.example.com/fullchain.pem
+  # key_file: /etc/letsencrypt/live/hdd1.example.com/privkey.pem
+  # advertise: hdd1.example.com:7410
 ```
 
 ## The package

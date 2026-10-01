@@ -60,6 +60,18 @@ func (Template) Endpoints(n NodeAddresses, _ string, p *api.AddressParams) []*ap
 	return []*api.Endpoint{endpoint(host, port, n.Dev)}
 }
 
+// named is the endpoint of an address a host reports by name and port,
+// handed out as it is rather than resolved: an operator wrote it, for a
+// certificate that names it (§34.10). Nil for an IP, or no host or port.
+func named(addr string, dev bool) *api.Endpoint {
+	host, port := splitAddr(addr)
+	if host == "" || port == 0 || net.ParseIP(host) != nil {
+		return nil
+	}
+
+	return endpoint(host, port, dev)
+}
+
 func endpoint(host string, port int, dev bool) *api.Endpoint {
 	scheme := "https"
 	if dev {

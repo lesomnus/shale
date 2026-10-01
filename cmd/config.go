@@ -140,9 +140,16 @@ type StorageConfig struct {
 	// ControlAddr is the control API listener the CP dials (§35.7).
 	ControlAddr string `yaml:"control_addr"`
 	// Advertise overrides the address a node reports for its data plane, for
-	// a container whose interfaces are not the host's.
-	Advertise string       `yaml:"advertise"`
-	Sinks     []SinkConfig `yaml:"sinks"`
+	// a container whose interfaces are not the host's. A name here is handed
+	// out as it is (§34.10).
+	Advertise string `yaml:"advertise"`
+	// External certificate for the data plane, instead of the host
+	// certificate, e.g. one a browser trusts for the console's Playback
+	// (§33.5); both or neither, read again when the files change. The
+	// control API keeps the host certificate.
+	CertFile string       `yaml:"cert_file"`
+	KeyFile  string       `yaml:"key_file"`
+	Sinks    []SinkConfig `yaml:"sinks"`
 
 	PartSize        string `yaml:"part_size"`
 	MaxUploads      int    `yaml:"max_uploads"`

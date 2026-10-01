@@ -282,6 +282,20 @@ at it; the commented lines in `relay.yaml` are that. A renewal is picked
 up without a restart. Ingest keeps the host certificate, which producers
 verify against the shale CA.
 
+Playback and Export read laminae straight from the Storage Nodes (§40.5),
+so the data plane needs a certificate from a public CA as well. Issue
+one that covers a name per node (a wildcard such as
+`*.storage.example.com`, each `<node>.storage.example.com` resolving to
+that node's address), mount its Secret, set `storage.cert_file` and
+`storage.key_file`, and advertise the node by that name
+(`SHALE_STORAGE_ADVERTISE`); the commented lines in `storage.yaml` and
+`storage-config.yaml` are that. The CP hands the name out as it is, to
+producers too, which upload to the same listener and trust the public
+CAs as well as the shale CA (§33.5). A client that dials the node by IP
+still gets the host certificate, and so does the CP on the control API.
+Upgrade producers before switching a node to a name: an older producer
+trusts the shale CA alone.
+
 ## Not here yet
 
 - The reader agent: no manifests until it exists.

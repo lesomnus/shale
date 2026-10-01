@@ -97,11 +97,14 @@ type liveResult struct {
 	status               string
 }
 
-// liveHTTPClient trusts the CP's CA, which signs the relay's certificate.
+// liveHTTPClient trusts the CP's CA, which signs the relay's host
+// certificate, and the system's roots, for a WHEP listener serving one from
+// a public CA (§33.5).
 func liveHTTPClient(c *cmd.Config) (*http.Client, error) {
-	pool, err := caPool(c)
+	pool, err := peerPool(c)
 	if err != nil {
-		// Plaintext relays (development) need no pool.
+		// Plaintext relays (development) need no pool; a relay serving a
+		// public certificate verifies against the system's roots.
 		return http.DefaultClient, nil
 	}
 

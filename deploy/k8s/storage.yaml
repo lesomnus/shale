@@ -45,6 +45,19 @@ spec:
               value: "$(HOST_IP):7421"
             - name: SHALE_STORAGE_ADVERTISE
               value: "$(HOST_IP):7420"
+            # For the console's Playback and Export in a browser (§40.5):
+            # the data plane serves a certificate from a public CA (see
+            # cert_file in storage-config.yaml), and the node is named as
+            # that certificate names it, a name the CP hands out as it is
+            # (§34.10). One name per node: with a wildcard certificate,
+            # the Kubernetes node's name under it, each resolving to that
+            # node's address. Producers upload to the same name.
+            # - name: NODE_NAME
+            #   valueFrom:
+            #     fieldRef:
+            #       fieldPath: spec.nodeName
+            # - name: SHALE_STORAGE_ADVERTISE
+            #   value: "$(NODE_NAME).storage.example.com:7420"
           securityContext:
             # SMART and bay LEDs need the devices (§34.8); a node with
             # directory sinks does without.
@@ -66,6 +79,11 @@ spec:
               mountPath: /var/lib/shale
             - name: sink-0
               mountPath: /srv/shale/sinks/0
+            # A certificate browsers trust for the data plane (§33.5),
+            # from cert-manager; see cert_file in storage-config.yaml.
+            # - name: data-cert
+            #   mountPath: /etc/shale/data
+            #   readOnly: true
       volumes:
         - name: config
           configMap:
@@ -83,3 +101,18 @@ spec:
             # which machine").
             path: /srv/shale/k8s/sinks/0
             type: DirectoryOrCreate
+        # - name: data-cert
+        #   secret:
+        #     secretName: shale-storage-tls
+# ---
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: shale-storage
+# spec:
+#   secretName: shale-storage-tls
+#   # A wildcard takes a DNS-01 solver with Let's Encrypt.
+#   dnsNames: ["*.storage.example.com"]
+#   issuerRef:
+#     kind: ClusterIssuer
+#     name: letsencrypt

@@ -14,6 +14,13 @@ data:
     storage:
       addr: ":7420"
       control_addr: ":7421"
+      # The data plane serves this instead of the host certificate, to a
+      # client that asks for a name it carries, and reads it again when
+      # cert-manager renews it; with SHALE_STORAGE_ADVERTISE a name it
+      # carries (storage.yaml). The control API keeps the host
+      # certificate the CP verifies (§33.5).
+      # cert_file: /etc/shale/data/tls.crt
+      # key_file: /etc/shale/data/tls.key
       sinks:
         # A whole HDD mounted at this path: capacity and device detected.
         # A directory on the OS disk (a lab) needs a declared capacity.

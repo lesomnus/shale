@@ -651,21 +651,33 @@ func (s coreSet) Allocate(ctx context.Context, req *api.SetAllocateRequest) (*ap
 	return api.SetAllocateResponse_builder{ProfileVersion: set.GetProfileVersion(), Allocations: out}.Build(), nil
 }
 
-// endpoints runs the address resolver for a node (§34.10).
+// endpoints resolves a node's data plane for a caller (§34.10).
 func (s Core) endpoints(n *ent.Node, caller string, p *api.AddressParams) []*api.Endpoint {
 	if n == nil {
 		return nil
 	}
-	r := s.d.Resolve
-	if r == nil {
-		r = Advertised{}
-	}
 
-	return r.Endpoints(NodeAddresses{
+	return s.nodeEndpoints(NodeAddresses{
 		Id:          pdid.Id(n.Id),
 		Alias:       n.Alias,
 		Interfaces:  n.Interfaces,
 		DataAddress: n.DataAddress,
 		Dev:         s.d.Dev,
 	}, caller, p)
+}
+
+// nodeEndpoints is a name the node reports for its data plane as it is,
+// since only an operator writes one (`storage.advertise`), for a
+// certificate a browser trusts, which names that and no IP (§34.10,
+// §33.5); an IP, or every interface, goes through the address resolver.
+func (s Core) nodeEndpoints(n NodeAddresses, caller string, p *api.AddressParams) []*api.Endpoint {
+	if ep := named(n.DataAddress, n.Dev); ep != nil {
+		return []*api.Endpoint{ep}
+	}
+	r := s.d.Resolve
+	if r == nil {
+		r = Advertised{}
+	}
+
+	return r.Endpoints(n, caller, p)
 }

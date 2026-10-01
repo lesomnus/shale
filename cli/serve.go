@@ -276,6 +276,8 @@ func storageConfig(c *cmd.Config) storage.Config {
 		Addr:              sc.Addr,
 		ControlAddr:       sc.ControlAddr,
 		Advertise:         sc.Advertise,
+		CertFile:          sc.CertFile,
+		KeyFile:           sc.KeyFile,
 		HeartbeatInterval: sc.HeartbeatInterval,
 		EventReplayWindow: sc.EventReplayWindow,
 		SweepInterval:     sc.SweepInterval,
