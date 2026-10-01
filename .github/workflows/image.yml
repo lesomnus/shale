@@ -13,8 +13,9 @@
 #
 # A deployment pins the digest; `crane digest ghcr.io/lesomnus/shale:<sha>`
 # names it, and the `org.opencontainers.image.revision` label says which
-# commit a digest is. A pull request touching the build runs both steps and
-# pushes nothing.
+# commit a digest is. The same binaries go to the `edge` release (below) for
+# hosts that do not run containers. A pull request touching the build runs
+# both steps and pushes nothing.
 name: image
 
 on:
@@ -57,6 +58,15 @@ jobs:
             build.cache-from=type=gha
             build.cache-to=type=gha,mode=max
 
+      # The same bytes the image carries, for the `edge` release below.
+      - name: Keep the binaries
+        uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          name: binaries
+          path: output/
+          retention-days: 1
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -72,3 +82,54 @@ jobs:
           targets: package
           set: |
             package.output=${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && 'type=registry' || 'type=cacheonly' }}
+
+  # main's binaries on one `edge` release, replaced on every push: the tag
+  # moves to the new commit and the assets of the same names are swapped, so
+  # the download address does not change. A host without Docker -- a
+  # Raspberry Pi producer -- takes the binary from here:
+  #
+  #   https://github.com/lesomnus/shale/releases/download/edge/shale-linux-arm64
+  #
+  # These are the bytes the image of the same commit carries, built once.
+  edge:
+    needs: image
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: edge-release
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: output
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A run that finishes late must not put an older binary over a newer
+          # one: publish only while main is still this commit.
+          head="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "main is at $head now, not $GITHUB_SHA; leaving edge to that run"
+            exit 0
+          fi
+
+          mkdir dist
+          install -m 0755 output/amd64 dist/shale-linux-amd64
+          install -m 0755 output/arm64 dist/shale-linux-arm64
+          (cd dist && sha256sum -- * > SHA256SUMS)
+
+          git tag -f edge "$GITHUB_SHA"
+          git push -f origin refs/tags/edge
+
+          notes="Built from ${GITHUB_SHA} on main by ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}; \`shale version\` says 0.0.0+${GITHUB_SHA::7}. Replaced on every push to main. The image of the same commit: ghcr.io/lesomnus/shale:${GITHUB_SHA}."
+          if ! gh release view edge >/dev/null 2>&1; then
+            gh release create edge --prerelease --latest=false --title edge --notes "$notes"
+          fi
+          gh release edit edge --prerelease --latest=false --notes "$notes"
+          gh release upload edge dist/* --clobber
