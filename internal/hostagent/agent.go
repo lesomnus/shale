@@ -252,18 +252,49 @@ func (a *Agent) Dial(ctx context.Context) (*grpc.ClientConn, error) {
 	return grpc.NewClient(addr, opts...)
 }
 
-// DialAddr opens a gRPC connection to another host (a relay) with the
-// pinned CA; `plain` is development mode.
+// DialAddr opens a gRPC connection to another host (a relay) that trusts
+// the pinned CA and the system's roots (§33.5) and presents the host
+// certificate; `plain` is development mode.
 func (a *Agent) DialAddr(ctx context.Context, addr string, plain bool) (*grpc.ClientConn, error) {
 	if plain {
 		return grpc.NewClient(addr, Keepalive(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
-	cfg, err := a.tlsConfig()
+	cfg, err := a.PeerTLS()
 	if err != nil {
 		return nil, err
 	}
+	if cfg == nil {
+		// Never first contact: that pins the CP's CA, not another host's.
+		return nil, errors.New("no CA pinned yet to verify another host against; join the control plane first")
+	}
 
 	return grpc.NewClient(addr, Keepalive(), grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
+}
+
+// PeerTLS is the client TLS toward another host's server, a node's data
+// plane or a relay: it trusts the pinned CA and the system's roots, so a
+// node or relay serving a certificate from a public CA verifies as well as
+// one serving its host certificate (§33.5), and it presents the host
+// certificate. Nil before a CA is pinned. The CP connection is not this:
+// it trusts the pinned bundle alone, or pins on first contact (tlsConfig).
+func (a *Agent) PeerTLS() (*tls.Config, error) {
+	bundle, err := a.Store.Bundle()
+	if err != nil {
+		return nil, err
+	}
+	if len(bundle) == 0 {
+		return nil, nil
+	}
+	pool, err := pki.PeerPool(bundle)
+	if err != nil {
+		return nil, err
+	}
+	cfg := &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}
+	if cert, err := a.Certificate(); err == nil && cert != nil {
+		cfg.Certificates = []tls.Certificate{*cert}
+	}
+
+	return cfg, nil
 }
 
 // The keepalive between hosts and the CP, and producers and relays
@@ -292,27 +323,19 @@ func KeepaliveServer() []grpc.ServerOption {
 }
 
 // HTTPClient is a client for the data planes: it trusts the pinned CA and
-// presents the host certificate, since a node verifies a client
-// certificate when one is given (§33.5).
+// the system's roots, and presents the host certificate, since a node
+// verifies a client certificate when one is given (§33.5).
 func (a *Agent) HTTPClient() (*http.Client, error) {
 	tr := &http.Transport{
 		MaxIdleConnsPerHost: 8,
 		IdleConnTimeout:     90 * time.Second,
 		ForceAttemptHTTP2:   true,
 	}
-	bundle, err := a.Store.Bundle()
+	cfg, err := a.PeerTLS()
 	if err != nil {
 		return nil, err
 	}
-	if len(bundle) > 0 {
-		pool, err := pki.Pool(bundle)
-		if err != nil {
-			return nil, err
-		}
-		cfg := &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}
-		if cert, err := a.Certificate(); err == nil && cert != nil {
-			cfg.Certificates = []tls.Certificate{*cert}
-		}
+	if cfg != nil {
 		tr.TLSClientConfig = cfg
 	}
 

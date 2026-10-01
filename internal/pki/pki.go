@@ -455,6 +455,29 @@ func Pool(bundle []byte) (*x509.CertPool, error) {
 	return p, nil
 }
 
+// SystemRoots is the system's root pool, the public CAs a browser trusts as
+// well; tests replace it rather than touch the real store. Go reads it from
+// /etc/ssl/certs/ca-certificates.crt on Debian, Raspberry Pi OS and the
+// distroless image alike.
+var SystemRoots = x509.SystemCertPool
+
+// PeerPool is what a host verifies another host's server certificate
+// against, a node's data plane or a relay (§33.5): the shale CA bundle and
+// the system's roots, since a node or a relay may serve a certificate from
+// a public CA a browser also trusts. The bundle alone when the system has
+// none. The CP connection does not use it: it stays pinned to the bundle.
+func PeerPool(bundle []byte) (*x509.CertPool, error) {
+	p, err := SystemRoots()
+	if err != nil || p == nil {
+		p = x509.NewCertPool()
+	}
+	if !p.AppendCertsFromPEM(bundle) {
+		return nil, errors.New("pki: no certificate in the bundle")
+	}
+
+	return p, nil
+}
+
 // EncodeCerts writes certificates as PEM.
 func EncodeCerts(cs ...*x509.Certificate) []byte {
 	var b []byte

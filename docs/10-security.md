@@ -286,16 +286,44 @@ fetches laminae directly. The media server itself manages no keys.
   nothing it signs can be trusted: the operator re-initializes the CA and
   every host is adopted again ([§33.7](#337-what-a-compromise-costs)).
 - **External certificates** (cert-manager, ACME, a corporate CA) can replace
-  the built-in CA's output for the CP and for nodes: configure certificate and
-  key paths, and they are loaded instead. Host adoption still issues the
-  client certificates producers and readers use.
+  the built-in CA's output for the CP (`control.cert_file`,
+  `control.key_file`) and for a node's data plane (`storage.cert_file`,
+  `storage.key_file`): configure certificate and key paths, and they are
+  loaded instead. Host adoption still issues the client certificates
+  producers and readers use, and the node still verifies them against the
+  shale CA when they are presented.
+- A node serves its external certificate to a client that asks for a name
+  the certificate carries: a browser reading laminae for Playback and
+  Export ([§40.5](17-console.md#405-playback)), and producers and readers,
+  once the node is advertised by that name
+  ([§34.10](11-deployment.md#3410-node-addresses)). A client that dials an
+  IP asks for no name and gets the host certificate. The control API keeps
+  the host certificate: the CP dials it on an IP and verifies it against
+  the shale CA by the node's identity ([§35.7](12-api.md#357-storage-node-control-api)).
 - The relay's **WHEP listener** takes one too (`relay.whep_cert_file`,
   `relay.whep_key_file`), since browsers trust only the public CAs
-  ([§39.4](16-relay.md#394-viewers)). The files are read again when they
-  change, as a mounted Secret does when cert-manager renews it, and a pair
-  that does not load leaves the last good one serving. Ingest keeps the
-  host certificate: producers verify it against the shale CA, and nothing
-  else of theirs changes.
+  ([§39.4](16-relay.md#394-viewers)). Ingest keeps the host certificate.
+- Either kind of file is read again when it changes, as a mounted Secret
+  does when cert-manager renews it, and a pair that does not load leaves
+  the last good one serving.
+- **Hosts trust the public CAs as well as the shale CA** for the servers of
+  other hosts: a producer or a reader verifies a node's data plane, and a
+  producer a relay, against the pinned bundle and the system's roots
+  (`/etc/ssl/certs/ca-certificates.crt` in the image and on Debian or
+  Raspberry Pi OS; the bundle alone where there are none), and the CLI
+  does the same toward a relay. That is a wider trust, and the same one a
+  browser places: whoever can have a public CA issue a certificate for the
+  name a node or relay is advertised by, in practice whoever controls that
+  name's DNS, can answer as that host to producers and readers too, and
+  receives what is uploaded to it and the access tokens sent with it.
+  Advertise by names in a zone you control. With the shale CA alone such a
+  host would fail the handshake; the token does not stop it, since it
+  names the node and binds no key. The **CP connection is not widened**: a
+  host pins the CP's CA on first contact (or checks `ca_hash`) and trusts
+  that bundle alone from then on ([§33.4](#334-joining-and-adoption)), and
+  the CP pins a node's control API to the shale CA and the node's
+  identity. A media server beside a reader that fetches laminae itself
+  needs the system's roots beside the bundle the agent writes for it.
 - TLS is on everywhere, the data-center LAN included. With AES-NI it costs
   about one core per several GB/s, which is small next to HDD-bound ingest.
 - **Plaintext only in development mode** (`shale serve all --dev`) and on the

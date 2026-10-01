@@ -50,8 +50,14 @@ type Config struct {
 	// Addr is the data plane listener; ControlAddr the control API (§35.7).
 	Addr        string
 	ControlAddr string
-	// Advertise overrides the data address reported to the CP.
+	// Advertise overrides the data address reported to the CP; a name
+	// here is what clients are handed (§34.10).
 	Advertise string
+	// CertFile and KeyFile are an external certificate the data plane
+	// serves in place of the host certificate, both or neither, read again
+	// when they change (§33.5). The control API keeps the host's.
+	CertFile string
+	KeyFile  string
 
 	Sinks  []SinkConfig
 	Limits Limits
@@ -142,6 +148,9 @@ type Node struct {
 	lastAt         time.Time
 	outbox         *Outbox
 	dp             *DataPlane
+	// dataCert is the external certificate of the data plane, nil when it
+	// serves the host's.
+	dataCert *pki.KeyPairFile
 
 	connMu sync.Mutex
 	conn   *grpc.ClientConn
@@ -155,7 +164,24 @@ type Node struct {
 // New prepares a node; Run does the work.
 func New(cfg Config) (*Node, error) {
 	cfg.defaults()
+	if (cfg.CertFile == "") != (cfg.KeyFile == "") {
+		return nil, errors.New("storage.cert_file and storage.key_file go together: set both, or neither")
+	}
 	n := &Node{cfg: cfg, log: cfg.Log, byId: map[pdid.Id]*Sink{}, keys: hostagent.NewKeyRing(cfg.StateDir), Ready: make(chan struct{})}
+	if cfg.CertFile != "" {
+		if cfg.Dev {
+			// The CP hands out http:// in development mode (§34.7), so a
+			// certificate here would only break the URLs.
+			cfg.Log.Warn("development mode is plaintext: storage.cert_file is not served")
+		} else {
+			k, err := pki.LoadKeyPairFile(cfg.CertFile, cfg.KeyFile)
+			if err != nil {
+				return nil, fmt.Errorf("storage.cert_file: %w", err)
+			}
+			k.Log = cfg.Log
+			n.dataCert = k
+		}
+	}
 	n.verifier = n.keys.Verifier
 	n.verifier.Skew = cfg.TokenSkew
 	n.m = newMetrics(context.Background())
@@ -280,7 +306,7 @@ func (n *Node) Run(ctx context.Context) error {
 	n.id = n.agent.Id()
 	n.log.Info("node", "id", n.id.String())
 
-	tlsCfg, err := n.tlsConfig()
+	tlsCfg, ctlTls, err := n.tlsConfigs()
 	if err != nil {
 		return err
 	}
@@ -308,7 +334,7 @@ func (n *Node) Run(ctx context.Context) error {
 		return httpSrv.Shutdown(shut)
 	})
 
-	gs := n.controlServer(tlsCfg)
+	gs := n.controlServer(ctlTls)
 	g.Go(func() error { return gs.Serve(cl) })
 	g.Go(func() error {
 		<-ctx.Done()
@@ -317,7 +343,7 @@ func (n *Node) Run(ctx context.Context) error {
 		return nil
 	})
 
-	n.log.Info("serving", "data", dl.Addr().String(), "control", cl.Addr().String(), "tls", tlsCfg != nil)
+	n.log.Info("serving", "data", dl.Addr().String(), "control", cl.Addr().String(), "tls", tlsCfg != nil, "cert_file", n.cfg.CertFile)
 	close(n.Ready)
 
 	g.Go(func() error { return n.heartbeats(ctx) })
@@ -344,52 +370,82 @@ func (w httpNoise) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// tlsConfig is the node's server TLS for both listeners: its host
-// certificate; the control API also requires a client certificate that
-// chains to the CA (§33.5). Nil is plaintext, development only.
-func (n *Node) tlsConfig() (*tls.Config, error) {
+// tlsConfigs are the listeners' TLS. Both verify a client certificate
+// against the shale CA, the control API requiring one (§33.5). The control
+// API serves the host certificate, which the CP verifies against the shale
+// CA by the node's identity, whatever address it dials (§35.7). The data
+// plane serves the external certificate when one is configured, to a client
+// that asks for a name it carries (a browser, for Playback and Export,
+// §40.5), and the host certificate to any other: a client that dials an IP
+// sends no name. Nil, nil is plaintext, development only.
+func (n *Node) tlsConfigs() (data, control *tls.Config, err error) {
 	if n.cfg.Dev {
 		// Development mode is plaintext everywhere (§33.5).
-		return nil, nil
+		return nil, nil, nil
 	}
 	cert, err := n.agent.Certificate()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if cert == nil {
-		if n.cfg.Dev {
-			return nil, nil
-		}
-
-		return nil, errors.New("no host certificate")
+		return nil, nil, errors.New("no host certificate")
 	}
 	bundle, err := n.agent.Store.Bundle()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	cfg := &tls.Config{
+	host := func() *tls.Certificate {
+		// Re-read so a renewed certificate is served without a restart.
+		c, err := n.agent.Certificate()
+		if err != nil || c == nil {
+			return cert
+		}
+
+		return c
+	}
+	control = &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		NextProtos: []string{"h2", "http/1.1"},
 		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-			// Re-read so a renewed certificate is served without a restart.
-			c, err := n.agent.Certificate()
-			if err != nil || c == nil {
-				return cert, nil
-			}
-
-			return c, nil
+			return host(), nil
 		},
 	}
 	if len(bundle) > 0 {
 		pool, err := pki.Pool(bundle)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		cfg.ClientCAs = pool
-		cfg.ClientAuth = tls.VerifyClientCertIfGiven
+		control.ClientCAs = pool
+		control.ClientAuth = tls.VerifyClientCertIfGiven
+	}
+	if n.dataCert == nil {
+		return control, control, nil
 	}
 
-	return cfg, nil
+	data = control.Clone()
+	data.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		if c := n.dataCert.Certificate(); c != nil && carries(c, hello.ServerName) {
+			return c, nil
+		}
+
+		return host(), nil
+	}
+
+	return data, control, nil
+}
+
+// carries says whether the certificate is good for the name a client asked
+// for; an empty name, from a client that dialed an IP, is none.
+func carries(c *tls.Certificate, name string) bool {
+	if name == "" {
+		return false
+	}
+	leaf := c.Leaf
+	if leaf == nil && len(c.Certificate) > 0 {
+		leaf, _ = x509.ParseCertificate(c.Certificate[0])
+	}
+
+	return leaf != nil && leaf.VerifyHostname(name) == nil
 }
 
 // controlServer is the NodeControl gRPC service: over mTLS it accepts one
@@ -984,8 +1040,6 @@ func (c *control) InstallCertificate(ctx context.Context, req *api.NodeInstallCe
 
 	return api.NodeInstallCertificateResponse_builder{CertSerial: pki.Serial(certs[0])}.Build(), nil
 }
-
-var _ = x509.ParseCertificate
 
 // rates are the gauges the heartbeat derives from what happened since the
 // last one (§31): the ingest rate, the NICs, the buffer pool, the device

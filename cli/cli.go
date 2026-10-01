@@ -205,7 +205,29 @@ func cookieProvider(cookie string) auth.Provider {
 	})
 }
 
+// caPool is the CA the control plane is verified against, alone.
 func caPool(c *cmd.Config) (*x509.CertPool, error) {
+	b, err := caBundle(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return pki.Pool(b)
+}
+
+// peerPool is what a node or a relay is verified against: the same CA and
+// the system's roots, since either may serve a certificate from a public
+// CA (§33.5).
+func peerPool(c *cmd.Config) (*x509.CertPool, error) {
+	b, err := caBundle(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return pki.PeerPool(b)
+}
+
+func caBundle(c *cmd.Config) ([]byte, error) {
 	path := c.Client.CaFile
 	if path == "" {
 		path = filepath.Join(c.StateDir("control"), cmd.CaCertFile)
@@ -215,7 +237,7 @@ func caPool(c *cmd.Config) (*x509.CertPool, error) {
 		return nil, errors.New("no CA to verify the control plane against; set client.ca_file")
 	}
 
-	return pki.Pool(b)
+	return b, nil
 }
 
 var _ = core.DomNode

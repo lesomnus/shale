@@ -174,6 +174,16 @@ transmuxed, and the page holds no player library.
 - The Storage Node's data plane answers a browser's `OPTIONS` and marks
   its `GET` for any origin, since the token is in the URL and a Range is
   what a player asks for ([§17](05-read-path.md#17-read-path)).
+- A browser trusts the public CAs, not the shale CA, so for the page to
+  read a lamina at all the data plane serves a certificate from one
+  (`storage.cert_file`, `storage.key_file`) and the node names itself as
+  that certificate does (`storage.advertise: storage.example.com:7410`),
+  which `Timeline` hands out as it is
+  ([§34.10](11-deployment.md#3410-node-addresses)). It is the listener and
+  the address producers upload to: they trust the public CAs as well as
+  the shale CA ([§33.5](10-security.md#335-tls)). The relay's WHEP
+  listener needs the same for the last minutes and live
+  ([§39.4](16-relay.md#394-viewers)).
 
 `test/playback.mjs` drives it in headless Chromium against a deployment:
 two minutes back plays, ten seconds ago comes from the relay, live takes

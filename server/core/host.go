@@ -1141,12 +1141,8 @@ func (s coreNode) Resolve(ctx context.Context, req *api.NodeResolveRequest) (*ap
 	if from == "" {
 		from, _ = peerAddr(ctx)
 	}
-	r := s.d.Resolve
-	if r == nil {
-		r = Advertised{}
-	}
 
-	return api.NodeResolveResponse_builder{Endpoints: r.Endpoints(NodeAddresses{
+	return api.NodeResolveResponse_builder{Endpoints: s.nodeEndpoints(NodeAddresses{
 		Id: mustId(n.GetId()), Alias: n.GetAlias(), Interfaces: n.GetInterfaces(), DataAddress: n.GetDataAddress(), Dev: s.d.Dev,
 	}, from, address)}.Build(), nil
 }

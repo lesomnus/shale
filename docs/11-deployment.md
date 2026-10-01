@@ -360,6 +360,21 @@ global, versioned entity that operators activate through the cluster API
 | `template` | a name built from the node, e.g. `{alias}.nodes.example.com` | DNS records managed outside Shale |
 | `dns` | the same template names, and the CP **maintains the records itself** in a DNS server it is given (RFC 2136 dynamic update, or a provider plugin) | DNS that follows the cluster: records appear when a node joins, change when its IPs change, and disappear when it leaves |
 
+**A name the host reports is handed out as it is.** A node whose data
+address is a name and a port (`storage.advertise:
+storage.example.com:7410`), like a relay's WHEP address
+([§39.4](16-relay.md#394-viewers)), is given to every caller by that
+name, ahead of the active resolver, template included: only an operator
+writes one, for a certificate that names it and no IP, the one a browser
+trusts for Playback ([§40.5](17-console.md#405-playback),
+[§33.5](10-security.md#335-tls)). Producers, readers and `Timeline` alike
+get it, so it must resolve for all of them, split-horizon where they sit
+on different networks; the caller's network rules no longer choose an
+interface for that node. An IP, or an address with no host (`:7410`),
+goes through the resolver as before. The node's host certificate carries
+the name as well, so a client that trusts only the shale CA still
+verifies it.
+
 Further resolvers (per-site or per-region names, a load-aware name, a
 service-mesh address) implement the same interface: given a node, the caller
 (its network, tenant, and site), and the protocol (HTTP/1.1, HTTP/2, or HTTP/3),

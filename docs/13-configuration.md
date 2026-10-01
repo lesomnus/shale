@@ -69,6 +69,8 @@ deployment runs well on them, and changes them only for a reason.
 | Node | scheduler weights WRITE : READ : MAINT | 1 : 1 : 0.1; `maint_quantum` 1 MB | — | node | [§24.1](07-storage-node.md#241-starvation-free-scheduling) |
 | Node | `event_replay_window` | 10 min | — | node | [§12.4](04-write-path.md#124-commit-semantics) |
 | Node | `heartbeat_interval` | 5 s | — | node | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
+| Node | `storage.cert_file`, `storage.key_file` | none (the host certificate) | both or neither; the data plane only, read again when the files change | node | [§33.5](10-security.md#335-tls), [§40.5](17-console.md#405-playback) |
+| Node | `storage.advertise` | the bound data address, through the resolver | host:port; a name is handed out as it is | node | [§34.10](11-deployment.md#3410-node-addresses) |
 | Producer | `producer_heartbeat_interval` | 30 s | — | producer | [§38.6](15-producer.md#386-health-and-heartbeats) |
 | Producer | `producer_down_after` | 90 s (three heartbeats) | — | cluster | [§38.6](15-producer.md#386-health-and-heartbeats) |
 | Producer | `uplink` | none | — | producer | [§38.5](15-producer.md#385-choosing-the-ceiling) |

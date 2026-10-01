@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"net"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -235,8 +234,8 @@ func (s Core) whepEndpoints(r *ent.Relay, caller string, p *api.AddressParams) [
 	if r == nil {
 		return nil
 	}
-	if host, port := splitAddr(r.WhepAddress); host != "" && port != 0 && net.ParseIP(host) == nil {
-		return []*api.Endpoint{endpoint(host, port, s.d.Dev)}
+	if ep := named(r.WhepAddress, s.d.Dev); ep != nil {
+		return []*api.Endpoint{ep}
 	}
 
 	return s.relayEndpoints(r, r.WhepAddress, caller, p)
