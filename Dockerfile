@@ -1,8 +1,19 @@
-# The image holds the static binary only (§34.8). Every role runs from it:
+# The binaries, not the image (§34.8). Every role runs from the one static
+# binary:
 #   shale serve control|cluster|storage|producer|reader|relay|all
-# The console (§40) is built into the binary: the control plane serves it
-# at the root of its tenant HTTP listener.
-FROM node:24-bookworm-slim AS console
+# The console (§40) is built into it: the control plane serves it at the
+# root of its tenant HTTP listener.
+#
+# Everything here runs on the builder's own platform and cross-compiles: the
+# binary is CGO_ENABLED=0 and the console is JavaScript, so neither needs to
+# run on the target. The last stage is the two binaries and nothing else,
+# `/amd64` and `/arm64`; docker-bake.hcl takes them out (`build`) and wraps
+# them into the multi-platform image (`package`) with no compiler and no
+# emulation:
+#
+#   docker buildx bake build      # ./output/{amd64,arm64}
+#   docker buildx bake package    # ghcr.io/lesomnus/shale, both platforms
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS console
 WORKDIR /src/ts
 COPY ts/package.json ts/package-lock.json ./
 COPY ts/vendor ./vendor
@@ -10,24 +21,30 @@ RUN npm ci --no-audit --no-fund
 COPY ts .
 RUN npm run build
 
-FROM golang:1.27 AS build
+FROM --platform=$BUILDPLATFORM golang:1.27 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .
 COPY --from=console /src/web/console/dist ./web/console/dist
+# What heartbeats report (internal/hostagent) and `shale version` prints
+# (payday/version). The context has no .git, so the toolchain stamps no
+# revision; the image's revision label carries it instead (docker-bake.hcl).
 ARG VERSION=dev
-RUN CGO_ENABLED=0 go build -tags grpcnotrace -trimpath \
-    -ldflags="-s -w -X github.com/lesomnus/shale/internal/hostagent.Version=${VERSION}" \
-    -o /out/shale ./cmd/shale
+ENV CGO_ENABLED=0 GOOS=linux
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    mkdir /dist \
+    && for arch in amd64 arm64; do \
+         GOARCH=$arch go build -tags grpcnotrace -trimpath \
+           -ldflags="-s -w \
+             -X github.com/lesomnus/shale/internal/hostagent.Version=${VERSION} \
+             -X github.com/lesomnus/payday/version.version=${VERSION}" \
+           -o /dist/$arch ./cmd/shale || exit 1; \
+       done
+# The one this builder can run says the build is a working binary with the
+# version in it; the other is the same source for another GOARCH.
+RUN /dist/$(go env GOHOSTARCH) version
 
-# Root rather than nonroot: the state directory and the sinks are volumes
-# and bind mounts whose ownership the image cannot know, and a node that
-# reads SMART needs the devices (§34.8). Drop to a user with the mounts
-# prepared for it where that matters.
-FROM gcr.io/distroless/static-debian12
-COPY --from=build /out/shale /usr/bin/shale
-# State and sinks are volumes (§34.8); the working directory holds nothing.
-VOLUME ["/var/lib/shale"]
-ENTRYPOINT ["/usr/bin/shale"]
-CMD ["--config", "/etc/shale/shale.yaml", "serve", "all"]
+FROM scratch AS binaries
+COPY --from=builder /dist /

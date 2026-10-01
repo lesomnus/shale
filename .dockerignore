@@ -12,3 +12,4 @@ ts/public
 ts/test
 web/console/dist
 /dist
+/output
