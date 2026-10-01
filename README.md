@@ -157,6 +157,11 @@ you know the overview and data model.
 
 ## Running it
 
+Every push to `main` publishes the binary as the
+[`edge` release](https://github.com/lesomnus/shale/releases/tag/edge)
+(`shale-linux-amd64`, `shale-linux-arm64`, `SHA256SUMS`) and as the image
+`ghcr.io/lesomnus/shale:edge` (and `:<commit>`), the same bytes in both.
+
 The binary is `cmd/shale` and the design's commands are its subcommands
 ([§34.1](docs/11-deployment.md#341-one-binary-one-command-per-role)); the
 quick start above is all of them on one machine, and `./shale config env`
