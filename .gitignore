@@ -14,3 +14,6 @@ ts/public/wasm_exec.js
 # the console, built into web/console/dist by `npm run build` in ts/
 web/console/dist/*
 !web/console/dist/.gitkeep
+
+# docker buildx bake build: the binaries out of the image build
+/output

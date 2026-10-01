@@ -17,12 +17,14 @@ tutorial](../../docs/tutorial-k8s.md).
 ## Before applying
 
 1. **The image.** `deploy/k8s/kustomization.yaml` names
-   `ghcr.io/lesomnus/shale:dev`. Build it from the repository root and
-   push it to a registry the nodes pull from, or load it into each node's
-   containerd:
+   `ghcr.io/lesomnus/shale:dev`. Every push to `main` publishes
+   `ghcr.io/lesomnus/shale:edge` and `:<commit>` for amd64 and arm64; point
+   the kustomization at one of those (a digest, preferably), or build it
+   from the repository root and load it into each node's containerd:
 
    ```sh
-   docker build -t ghcr.io/lesomnus/shale:dev .
+   docker buildx bake build                         # ./output/{amd64,arm64}
+   TAG=dev docker buildx bake package --load --set package.platform=linux/amd64
    docker save ghcr.io/lesomnus/shale:dev | ssh node 'sudo k3s ctr -n k8s.io images import -'
    ```
 

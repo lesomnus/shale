@@ -25,7 +25,9 @@ jobs:
           cluster_name: shale
       - name: image
         run: |
-          docker build -t ghcr.io/lesomnus/shale:ci .
+          # Two invocations: package copies what build wrote into ./output.
+          docker buildx bake build
+          TAG=ci docker buildx bake package --load --set package.platform=linux/amd64
           kind load docker-image ghcr.io/lesomnus/shale:ci --name shale
       - name: apply
         run: |

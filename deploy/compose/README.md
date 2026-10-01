@@ -14,8 +14,10 @@ docker compose logs init          # the first operator and admin
 docker compose logs shale         # the node joining and serving
 ```
 
-Build the image yourself with `docker build -t shale:dev .` at the
-repository root and `SHALE_IMAGE=shale:dev docker compose up -d`.
+Build the image yourself at the repository root — `docker buildx bake
+build`, then `REPO=shale TAG=dev docker buildx bake package --load --set
+package.platform=linux/amd64` — and `SHALE_IMAGE=shale:dev docker compose
+up -d`.
 
 Producers on the network dial `https://<host>:7400`; set `SHALE_ADVERTISE`
 to `<host>:7410` so the node hands out the host's address rather than the
