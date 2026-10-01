@@ -301,9 +301,21 @@ type ReaderConfig struct {
 
 // RelayConfig is a relay's own settings (§39).
 type RelayConfig struct {
-	IngestAddr      string        `yaml:"ingest_addr"`
-	WhepAddr        string        `yaml:"whep_addr"`
-	Advertise       string        `yaml:"advertise"`
+	IngestAddr string `yaml:"ingest_addr"`
+	WhepAddr   string `yaml:"whep_addr"`
+	// Advertise overrides the host of both addresses the relay reports,
+	// keeping the ports bound.
+	Advertise string `yaml:"advertise"`
+	// WhepAdvertise is the WHEP address reported instead, a host or
+	// host:port, e.g. the name a browser-trusted certificate carries
+	// (§39.4). Its port, when it has one, is the one handed out.
+	WhepAdvertise string `yaml:"whep_advertise"`
+	// External certificate for the WHEP listener, instead of the host
+	// certificate, which browsers do not trust; both or neither, read
+	// again when the files change. Ingest keeps the host certificate
+	// (§33.5).
+	WhepCertFile    string        `yaml:"whep_cert_file"`
+	WhepKeyFile     string        `yaml:"whep_key_file"`
 	IdleStop        time.Duration `yaml:"idle_stop"`
 	MaxViewers      int           `yaml:"max_viewers"`
 	ViewersPerActor int           `yaml:"viewers_per_actor"`

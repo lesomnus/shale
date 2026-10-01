@@ -289,6 +289,13 @@ fetches laminae directly. The media server itself manages no keys.
   the built-in CA's output for the CP and for nodes: configure certificate and
   key paths, and they are loaded instead. Host adoption still issues the
   client certificates producers and readers use.
+- The relay's **WHEP listener** takes one too (`relay.whep_cert_file`,
+  `relay.whep_key_file`), since browsers trust only the public CAs
+  ([§39.4](16-relay.md#394-viewers)). The files are read again when they
+  change, as a mounted Secret does when cert-manager renews it, and a pair
+  that does not load leaves the last good one serving. Ingest keeps the
+  host certificate: producers verify it against the shale CA, and nothing
+  else of theirs changes.
 - TLS is on everywhere, the data-center LAN included. With AES-NI it costs
   about one core per several GB/s, which is small next to HDD-bound ingest.
 - **Plaintext only in development mode** (`shale serve all --dev`) and on the

@@ -4,9 +4,12 @@ import (
 	"net"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/placement"
 )
 
@@ -57,4 +60,30 @@ func TestReadmitForecast(t *testing.T) {
 	if readmitForecast(sinks, why) || sinks[1].Eligible {
 		t.Fatal("readmitted beside an eligible sink")
 	}
+}
+
+// A name the relay reports for WHEP is handed out as it is, for the
+// certificate a browser trusts (§39.4); an IP, or every interface, goes
+// through the resolver as ingest does.
+func TestWhepEndpoints(t *testing.T) {
+	ifs := []*api.HostInterface{api.HostInterface_builder{Name: "eth0", Addresses: []string{"10.1.2.80/24"}}.Build()}
+	r := &ent.Relay{Alias: "r1", Interfaces: ifs, IngestAddress: ":7440", WhepAddress: "live.example.com:443"}
+	s := Core{d: &Deps{}}
+
+	eps := s.whepEndpoints(r, "203.0.113.9", nil)
+	require.Len(t, eps, 1)
+	require.Equal(t, "https://live.example.com:443/whep/x", endpointURL(eps[0], "whep/x", nil))
+	// Even under a template: the relay's own name wins.
+	tmpl := api.AddressParams_builder{Resolver: "template", Template: "{alias}.nodes.example.com"}.Build()
+	eps = s.whepEndpoints(r, "203.0.113.9", tmpl)
+	require.Equal(t, "live.example.com", eps[0].GetHost())
+	// Ingest is unchanged by it.
+	eps = s.relayEndpoints(r, r.IngestAddress, "10.1.2.9", nil)
+	require.Equal(t, "10.1.2.80", eps[0].GetHost())
+
+	r.WhepAddress = ":7441"
+	eps = s.whepEndpoints(r, "10.1.2.9", nil)
+	require.Len(t, eps, 1)
+	require.Equal(t, "10.1.2.80", eps[0].GetHost())
+	require.Equal(t, int32(7441), eps[0].GetPort())
 }

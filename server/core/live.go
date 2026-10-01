@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -226,6 +227,21 @@ func (s Core) relayEndpoints(r *ent.Relay, addr, caller string, p *api.AddressPa
 	return res.Endpoints(NodeAddresses{Id: pdid.Id(r.Id), Alias: r.Alias, Interfaces: r.Interfaces, DataAddress: addr, Dev: s.d.Dev}, caller, p)
 }
 
+// whepEndpoints resolves a relay's WHEP listener for a caller: a name the
+// relay reports is handed out as it is, since only an operator writes one
+// (`relay.whep_advertise`), for a certificate a browser trusts, which names
+// that and no IP (§39.4). An IP goes through the resolver like ingest.
+func (s Core) whepEndpoints(r *ent.Relay, caller string, p *api.AddressParams) []*api.Endpoint {
+	if r == nil {
+		return nil
+	}
+	if host, port := splitAddr(r.WhepAddress); host != "" && port != 0 && net.ParseIP(host) == nil {
+		return []*api.Endpoint{endpoint(host, port, s.d.Dev)}
+	}
+
+	return s.relayEndpoints(r, r.WhepAddress, caller, p)
+}
+
 // liveSources is the Live answer for these sources of a set: the relay of
 // the set's producer, a view token per source, and the WHEP URL (§39.4).
 func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sources []*api.Source) ([]*api.LiveSource, error) {
@@ -259,7 +275,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 	if err != nil {
 		return nil, err
 	}
-	eps := s.relayEndpoints(r, r.WhepAddress, callerOf(ctx), address)
+	eps := s.whepEndpoints(r, callerOf(ctx), address)
 	if len(eps) == 0 {
 		return nil, status.Error(codes.FailedPrecondition, "the relay has no WHEP address for this caller")
 	}

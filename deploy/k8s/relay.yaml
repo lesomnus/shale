@@ -47,6 +47,11 @@ spec:
               mountPath: /etc/shale
             - name: state
               mountPath: /var/lib/shale
+            # A certificate browsers trust for WHEP (§39.4), from
+            # cert-manager; see whep_cert_file below.
+            # - name: whep-cert
+            #   mountPath: /etc/shale/whep
+            #   readOnly: true
       volumes:
         - name: config
           configMap:
@@ -55,6 +60,9 @@ spec:
           hostPath:
             path: /var/lib/shale-k8s-relay
             type: DirectoryOrCreate
+        # - name: whep-cert
+        #   secret:
+        #     secretName: shale-relay-whep-tls
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -68,3 +76,20 @@ data:
       ingest_addr: ":7440"
       whep_addr: ":7441"
       # ice: ["stun:stun.example.com:3478"]
+      # The WHEP listener serves this instead of the host certificate, and
+      # the CP hands browsers this name; read again when cert-manager
+      # renews it. Ingest keeps the host certificate (§33.5).
+      # whep_cert_file: /etc/shale/whep/tls.crt
+      # whep_key_file: /etc/shale/whep/tls.key
+      # whep_advertise: live.example.com:7441
+# ---
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: shale-relay-whep
+# spec:
+#   secretName: shale-relay-whep-tls
+#   dnsNames: [live.example.com]
+#   issuerRef:
+#     kind: ClusterIssuer
+#     name: letsencrypt
