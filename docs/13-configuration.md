@@ -124,6 +124,8 @@ deployment runs well on them, and changes them only for a reason.
 | Live | `viewers_per_actor` | 16 | — | relay | [§39.4](16-relay.md#394-viewers) |
 | Live | `relay.rewind_budget` | 1 GiB | what the recent windows of every source hold together; about one lamina per source | relay | [§39.5](16-relay.md#395-capacity) |
 | Live | `ice` (STUN / TURN servers) | none (host candidates only) | — | relay | [§39.4](16-relay.md#394-viewers) |
+| Live | `relay.whep_cert_file`, `relay.whep_key_file` | none (the host certificate) | both or neither; read again when the files change | relay | [§39.4](16-relay.md#394-viewers), [§33.5](10-security.md#335-tls) |
+| Live | `relay.whep_advertise` | `relay.advertise` and the bound port | a host, or host:port | relay | [§39.4](16-relay.md#394-viewers) |
 | Live | `relay_selector` | none (any relay) | labels | site | [§39.2](16-relay.md#392-assignment) |
 | Security | `rpc_rate` | 20 calls/s per actor, burst 100; 2,000/s per tenant | — | cluster | [§35.1](12-api.md#351-conventions) |
 | Security | `timeline_page` | 1,000 laminae | — | cluster | [§17.1](05-read-path.md#171-flow) |

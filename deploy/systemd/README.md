@@ -91,6 +91,11 @@ relay:
   ingest_addr: ":7430"
   whep_addr: ":7431"
   # ice: ["stun:stun.example.com:3478"]   # for viewers behind NAT
+  # for the console in a browser: a certificate from a public CA on WHEP
+  # only, and the name it carries (§39.4); renewed files are read again
+  # whep_cert_file: /etc/letsencrypt/live/live.example.com/fullchain.pem
+  # whep_key_file: /etc/letsencrypt/live/live.example.com/privkey.pem
+  # whep_advertise: live.example.com
 ```
 
 ```yaml

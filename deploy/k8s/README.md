@@ -271,6 +271,15 @@ The relay (`relay.yaml`) runs on the host network of one amd64 node;
 `shale live @acme/<set>` from a machine that reaches it is the quickest
 check that a set plays.
 
+A browser does not trust the shale CA, so the console's Live and the
+last minutes of Playback need the WHEP listener to serve a certificate
+from a public CA (§39.4). With cert-manager, issue one for a name that
+resolves to the relay's node, mount its Secret, and point
+`relay.whep_cert_file`, `relay.whep_key_file` and `relay.whep_advertise`
+at it; the commented lines in `relay.yaml` are that. A renewal is picked
+up without a restart. Ingest keeps the host certificate, which producers
+verify against the shale CA.
+
 ## Not here yet
 
 - The reader agent: no manifests until it exists.

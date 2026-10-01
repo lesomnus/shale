@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,10 +45,19 @@ type Config struct {
 	HardwareId string
 
 	// IngestAddr is the gRPC listener producers dial; WhepAddr the HTTPS
-	// listener viewers dial. Advertise overrides the addresses reported.
+	// listener viewers dial. Advertise overrides the host of the addresses
+	// reported.
 	IngestAddr string
 	WhepAddr   string
 	Advertise  string
+	// WhepAdvertise is the WHEP address reported instead, a host or
+	// host:port: the name a browser-trusted certificate carries (§39.4).
+	WhepAdvertise string
+	// WhepCertFile and WhepKeyFile are an external certificate the WHEP
+	// listener serves in place of the host certificate, both or neither,
+	// read again when they change (§33.5). Ingest keeps the host's.
+	WhepCertFile string
+	WhepKeyFile  string
 
 	IdleStop        time.Duration
 	MaxViewers      int
@@ -108,6 +118,9 @@ type Relay struct {
 	sources *sources
 	whep    *whepServer
 	m       *metrics
+	// whepCert is the external certificate of the WHEP listener, nil when
+	// it serves the host's.
+	whepCert *pki.KeyPairFile
 
 	// IngestAddr and WhepAddr are the addresses bound, once Run listens.
 	IngestAddr string
@@ -119,7 +132,24 @@ type Relay struct {
 // New prepares a relay; Run does the work.
 func New(cfg Config) (*Relay, error) {
 	cfg.defaults()
+	if (cfg.WhepCertFile == "") != (cfg.WhepKeyFile == "") {
+		return nil, errors.New("relay.whep_cert_file and relay.whep_key_file go together: set both, or neither")
+	}
 	r := &Relay{cfg: cfg, log: cfg.Log, keys: hostagent.NewKeyRing(cfg.StateDir), Ready: make(chan struct{})}
+	if cfg.WhepCertFile != "" {
+		if cfg.Dev {
+			// The CP hands out http:// in development mode (§34.7), so a
+			// certificate here would only break the URLs.
+			cfg.Log.Warn("development mode is plaintext: relay.whep_cert_file is not served")
+		} else {
+			k, err := pki.LoadKeyPairFile(cfg.WhepCertFile, cfg.WhepKeyFile)
+			if err != nil {
+				return nil, fmt.Errorf("relay.whep_cert_file: %w", err)
+			}
+			k.Log = cfg.Log
+			r.whepCert = k
+		}
+	}
 	r.keys.Verifier.Skew = cfg.TokenSkew
 	r.m = newMetrics(context.Background())
 	r.agent = &hostagent.Agent{Kind: DomRelay, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, HardwareId: cfg.HardwareId, Log: cfg.Log}
@@ -167,7 +197,7 @@ func (r *Relay) Run(ctx context.Context) error {
 	r.id = r.agent.Id()
 	r.log.Info("relay", "id", r.id.String())
 
-	tlsCfg, err := r.tlsConfig()
+	tlsCfg, whepTls, err := r.tlsConfigs()
 	if err != nil {
 		return err
 	}
@@ -207,8 +237,8 @@ func (r *Relay) Run(ctx context.Context) error {
 	httpSrv := &http.Server{Handler: w, ReadHeaderTimeout: 30 * time.Second}
 	g.Go(func() error {
 		var err error
-		if tlsCfg != nil {
-			httpSrv.TLSConfig = tlsCfg
+		if whepTls != nil {
+			httpSrv.TLSConfig = whepTls
 			err = httpSrv.ServeTLS(wl, "", "")
 		} else {
 			err = httpSrv.Serve(wl)
@@ -228,7 +258,7 @@ func (r *Relay) Run(ctx context.Context) error {
 		return httpSrv.Shutdown(shut)
 	})
 
-	r.log.Info("serving", "ingest", r.IngestAddr, "whep", r.WhepAddr, "tls", tlsCfg != nil)
+	r.log.Info("serving", "ingest", r.IngestAddr, "whep", r.WhepAddr, "tls", tlsCfg != nil, "whep_cert", r.cfg.WhepCertFile)
 	close(r.Ready)
 
 	g.Go(func() error { return r.heartbeats(ctx) })
@@ -239,19 +269,23 @@ func (r *Relay) Run(ctx context.Context) error {
 	return g.Wait()
 }
 
-func (r *Relay) tlsConfig() (*tls.Config, error) {
+// tlsConfigs are the listeners' TLS: the host certificate for ingest,
+// which producers verify against the shale CA (§39.7), and for WHEP the
+// external certificate when one is configured, for browsers that trust
+// only the public CAs (§33.5). Nil, nil in development mode.
+func (r *Relay) tlsConfigs() (ingest, whep *tls.Config, err error) {
 	if r.cfg.Dev {
-		return nil, nil
+		return nil, nil, nil
 	}
 	cert, err := r.agent.Certificate()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if cert == nil {
-		return nil, errors.New("no host certificate")
+		return nil, nil, errors.New("no host certificate")
 	}
 
-	return &tls.Config{
+	ingest = &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		NextProtos: []string{"h2", "http/1.1"},
 		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -262,7 +296,17 @@ func (r *Relay) tlsConfig() (*tls.Config, error) {
 
 			return c, nil
 		},
-	}, nil
+	}
+	if r.whepCert == nil {
+		return ingest, ingest, nil
+	}
+	whep = &tls.Config{
+		MinVersion:     tls.VersionTLS12,
+		NextProtos:     []string{"h2", "http/1.1"},
+		GetCertificate: r.whepCert.GetCertificate,
+	}
+
+	return ingest, whep, nil
 }
 
 // ---- the CP connection --------------------------------------------------
@@ -308,12 +352,36 @@ func (r *Relay) advertised(bound string) string {
 	return bound
 }
 
+// advertisedWhep is the WHEP address as the CP should hand it out:
+// `whep_advertise` with its own port when it has one and the bound port
+// when not, else what `advertise` makes of it.
+func (r *Relay) advertisedWhep(bound string) string {
+	v := r.cfg.WhepAdvertise
+	if v == "" {
+		return r.advertised(bound)
+	}
+	h, p, err := net.SplitHostPort(v)
+	if err == nil && h != "" && p != "" {
+		return v
+	}
+	if err != nil {
+		// A host alone, an IPv6 one maybe in brackets.
+		h = strings.TrimSuffix(strings.TrimPrefix(v, "["), "]")
+	}
+	_, port, err := net.SplitHostPort(bound)
+	if err != nil || h == "" {
+		return r.advertised(bound)
+	}
+
+	return net.JoinHostPort(h, port)
+}
+
 func (r *Relay) joinCall(ctx context.Context, conn *grpc.ClientConn, hj *api.HostJoin) (hostagent.Answer, error) {
 	resp, err := api.NewRelayServiceClient(conn).Join(ctx, api.RelayJoinRequest_builder{
 		Host:          hj,
 		Interfaces:    hostagent.Interfaces(),
 		IngestAddress: r.advertised(r.IngestAddr),
-		WhepAddress:   r.advertised(r.WhepAddr),
+		WhepAddress:   r.advertisedWhep(r.WhepAddr),
 	}.Build())
 	if err != nil {
 		return hostagent.Answer{}, err
@@ -363,7 +431,7 @@ func (r *Relay) heartbeat(ctx context.Context) error {
 		Status:        st,
 		Interfaces:    hostagent.Interfaces(),
 		IngestAddress: r.advertised(r.IngestAddr),
-		WhepAddress:   r.advertised(r.WhepAddr),
+		WhepAddress:   r.advertisedWhep(r.WhepAddr),
 		Version:       hostagent.Version,
 	}.Build())
 	if err != nil {

@@ -99,7 +99,12 @@ func (w *whepServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 // post opens a session: the token must name this relay, the source, and
 // the operation; the offer must carry a video codec the source uses.
 func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef string) {
+	// Any origin, as the data plane (§40.5): the view token is the
+	// credential, not a cookie. A page on another origin reads Location
+	// to end the session, and Link for the ICE servers, only when they
+	// are exposed.
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
+	rw.Header().Set("Access-Control-Expose-Headers", "Location, Link")
 	tok := token.FromHeader(req.Header.Get("Authorization"))
 	if tok == "" {
 		tok = req.URL.Query().Get("token")

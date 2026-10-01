@@ -221,6 +221,26 @@ certificate ([§33.1](10-security.md#331-trust-model)).
 - **Limits.** `max_viewers` per relay (500) and `viewers_per_actor` (16,
   from the token's actor), like a node's read sessions
   ([§17.4](05-read-path.md#174-read-locality-and-parallelism)).
+- **Browsers.** A browser trusts the public CAs, not the shale CA, and a
+  page's `fetch` to a certificate it does not trust fails without a word.
+  So the WHEP listener, which serves `/whep/` and `/recent/` both, can
+  serve an **external certificate** instead of the host's
+  (`whep_cert_file`, `whep_key_file`, e.g. Let's Encrypt from cert-manager
+  mounted as files), read again when the files change, so a renewal needs
+  no restart ([§33.5](10-security.md#335-tls)). `whep_advertise` names the
+  listener as that certificate does, a host or host:port, and the CP hands
+  a name out as it is rather than through the address resolver
+  ([§34.10](11-deployment.md#3410-node-addresses)): `Live` answers
+  `https://live.example.com:7441/whep/<source>`. Ingest keeps the host
+  certificate and its own address, since producers verify it against the
+  shale CA ([§39.7](#397-security)).
+- **Cross-origin.** The console is on another origin than the relay. The
+  WHEP listener answers any origin, as the data plane does
+  ([§40.5](17-console.md#405-playback)): the view token is the credential,
+  not a cookie. The preflight allows `Authorization` and `Content-Type`,
+  and a `POST` exposes `Location` and `Link`, so a page can end its
+  session; `/recent/` exposes `Shale-Recent-Start` and
+  `Shale-Recent-Seconds`.
 
 Watching a set of eight cameras is eight WHEP sessions to one relay. That
 is cheap for a browser and shares one ICE path. A single session carrying
@@ -272,7 +292,9 @@ they cannot, the open lamina's.
 - The relay authenticates to the cluster API with its host certificate and
   serves producers and viewers over TLS with the same certificate, whose
   names follow the address resolver like a node's
-  ([§33.5](10-security.md#335-tls)).
+  ([§33.5](10-security.md#335-tls)). The WHEP listener may serve an
+  external certificate instead, for browsers ([§39.4](#394-viewers));
+  ingest always serves the host certificate.
 - Producers and viewers are authorized by CP-signed tokens only. The relay
   never asks the CP anything about them.
 - What a leaked view token buys is one camera for one hour. What a leaked
