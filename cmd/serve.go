@@ -47,6 +47,7 @@ import (
 	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/internal/proxyproto"
+	"github.com/lesomnus/shale/internal/sso"
 	"github.com/lesomnus/shale/server/bare"
 	"github.com/lesomnus/shale/server/core"
 	"github.com/lesomnus/shale/server/pd"
@@ -124,6 +125,9 @@ type Server struct {
 	// Operators is the team at roster the cluster operators are, when
 	// `auth.operators` names one; nil is the cluster tenant's people.
 	Operators *identity.Operators
+	// Sso is the relying party of `auth.oidc`'s issuer; nil when there is
+	// none, or before init, when there is no KEK to seal its flows under.
+	Sso *sso.RP
 	// provisionMu serializes making rows for people, so two first sign-ins
 	// of a tenant do not both become its admin.
 	provisionMu sync.Mutex
@@ -227,6 +231,12 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		}
 	}
 
+	if c.Auth.SsoOnly && !c.Auth.Oidc.On() {
+		s.Identity.Close()
+		db.Close()
+		return nil, errors.New("auth.sso_only: there is no issuer to sign in through (auth.oidc.issuer), so nobody could sign in")
+	}
+
 	// The cluster tenant, once there is one here; Prepare asks roster
 	// for it otherwise, once the database can hold the answer.
 	alias := s.clusterAlias()
@@ -325,6 +335,16 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 			}
 			s.Sessions[surface] = authsession.New(sealed, opts...)
 		}
+		if c.Auth.Oidc.On() {
+			s.Sso, err = sso.New(c.Auth.Oidc, sessionKey(s.Kek), slog.Default())
+			if err != nil {
+				db.Close()
+				return nil, err
+			}
+			if !c.IsDev() && (c.Auth.Oidc.TenantOrigin == "" || c.Auth.Oidc.ClusterOrigin == "") {
+				slog.Warn("sso: auth.oidc.tenant_origin or cluster_origin is not set, so the callback is read off each request's Host; behind a proxy, name them")
+			}
+		}
 	}
 	for _, surface := range []Surface{SurfaceTenant, SurfaceCluster} {
 		var hs []auth.Handler
@@ -379,6 +399,11 @@ func sessionKey(kek core.Kek) []byte {
 // login is what checking a secret means here (§33.1): the person's
 // argon2id verifier on their row.
 func (s *Server) login(ctx context.Context, r *http.Request) (authsession.Session, error) {
+	if !s.passwordOn() {
+		// SSO only (`auth.sso_only`): a password is refused before it is
+		// read, so nothing here learns whether it was right.
+		return authsession.Session{}, errors.New("password sign-in is off here: sign in through SSO")
+	}
 	var body struct{ Tenant, Alias, Password string }
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&body); err != nil {
 		return authsession.Session{}, err
@@ -661,6 +686,9 @@ func (s *Server) serveHttp(ctx context.Context, surface Surface, g *grpc.Server)
 	if sessions != nil {
 		h.Handle("POST /session", sessions.Serve(s.login))
 		h.Handle("DELETE /session", sessions.Serve(s.login))
+		// Who is signed in, how one signs in, and the issuer's routes when
+		// there is one (cmd/sso.go).
+		s.mountSso(surface, h)
 	}
 	if surface == SurfaceTenant {
 		// The console (§40.4), when it was built into this binary: at the

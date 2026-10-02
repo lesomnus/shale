@@ -318,3 +318,33 @@ trusts the shale CA alone.
   storage class and node selector) rather than templating it.
 - An Ingress with TLS passthrough: this cluster has no ingress controller;
   the NodePort stands in for it.
+
+## Signing in through a company's issuer
+
+Where people already sign in through their company's roster with Ory Hydra
+in front (§33.1), Shale runs no roster of its own and takes no password:
+
+1. **At roster**, the company's operator makes, in the company's tenant:
+   a holder `shale` with a role allowing `/roster.HolderService/Get`,
+   `/roster.TenantService/Get`, `/roster.TeamService/Get`,
+   `/roster.TeamService/List` and `/roster.TeamMembershipService/List`,
+   bound tenant-wide, and a tenant key for it (`roster key add --tenant
+   <tenant> --holder shale --allow …`); a team of the operators
+   (`shale-ops`); `Host` rows for the two names below; and two OAuth
+   clients -- the console's (confidential, authorization code, both
+   callbacks) and the CLI's (public, device grant).
+2. **Two Secrets** in the `shale` namespace: the tenant key, and the
+   console client's secret, each mounted as a file in both API
+   Deployments (`/run/shale/roster/<tenant>`, `/run/shale/oidc/client-secret`).
+3. **`control-config.yaml`**: the commented `auth` block in place of the
+   embedded roster, `cluster.http.origins` naming the console's origin, and
+   an Ingress per HTTP listener: the tenant one (7402) at the console's
+   name, the cluster one (7403) at the operators' name.
+4. **`shale init --k8s-secret shale-control`** as before: it makes the CA,
+   the KEK, the CP certificate and the signing key, and nobody at roster;
+   it says whether roster answered for the tenant and the team.
+
+Then `https://<console>/` offers *Sign in with SSO*, and an operator's CLI
+signs in with `shale login --sso` (with `client.web` and
+`client.cluster_web` naming the two listeners).
+

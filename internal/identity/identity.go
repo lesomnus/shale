@@ -25,9 +25,11 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
+	"uuid"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc"
@@ -332,6 +334,42 @@ func (s *Store) Lookup(ctx context.Context, tenant, alias string) (Person, error
 	return s.person(as, rstr.HolderRef_builder{
 		Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(alias), Tenant: rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()}.Build(),
 	}.Build())
+}
+
+// ById is the person an issuer's `sub` names (§33.1): roster's `sub` is a
+// `Holder.id`, so it is looked up as one, with the key of each tenant this
+// deployment serves until one of them has it. Somebody in no tenant served
+// here is nobody, whatever the issuer vouched for: ErrNoPerson. A tenant
+// key that does not see them answers NotFound through the wall, which is
+// the same answer.
+func (s *Store) ById(ctx context.Context, sub string) (Person, error) {
+	id, err := uuid.Parse(sub)
+	if err != nil {
+		return Person{}, fmt.Errorf("%w: %q is not roster's identifier", ErrNoPerson, sub)
+	}
+	tenants, err := s.Tenants(ctx)
+	if err != nil {
+		return Person{}, err
+	}
+	slices.Sort(tenants)
+	for _, t := range tenants {
+		as, err := s.as(ctx, t)
+		if err != nil {
+			if errors.Is(err, ErrNoTenant) {
+				continue
+			}
+
+			return Person{}, err
+		}
+		p, err := s.person(as, rstr.HolderRef_builder{Id: id[:]}.Build())
+		if errors.Is(err, ErrNoPerson) {
+			continue
+		}
+
+		return p, err
+	}
+
+	return Person{}, ErrNoPerson
 }
 
 func (s *Store) person(as context.Context, ref *rstr.HolderRef) (Person, error) {

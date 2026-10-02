@@ -57,7 +57,7 @@ func savedSession(addr string) string {
 	return strings.TrimSpace(string(b))
 }
 
-// NewCmdLogin is `shale login [@tenant/alias]`.
+// NewCmdLogin is `shale login [@tenant/alias]`, or `shale login --sso`.
 func NewCmdLogin(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "login",
@@ -65,11 +65,16 @@ func NewCmdLogin(c *cmd.Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.String{Name: "password", Brief: "the password; prompted when absent"},
 			&flg.Switch{Name: "cluster", Brief: "sign in to the cluster API (operators)"},
+			&flg.Switch{Name: "sso", Brief: "sign in through the deployment's issuer, with a code to confirm in a browser (operators)"},
 		},
 		Args: arg.Args{
 			&arg.String{Name: "WHO", Brief: "@tenant/alias"},
 		},
 		Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
+			cluster, _ := flg.Find[bool](self, "cluster")
+			if v, _ := flg.Find[bool](self, "sso"); v {
+				return LoginSso(ctx, c, self, cluster)
+			}
 			who, _ := arg.Get[string](self, "WHO")
 			if who == "" {
 				who = c.Client.As
@@ -97,31 +102,12 @@ func NewCmdLogin(c *cmd.Config) *xli.Command {
 				password = string(b)
 			}
 
-			cluster, _ := flg.Find[bool](self, "cluster")
-			addr := c.Client.Addr
-			if cluster {
-				addr = c.Client.ClusterAddr
-			}
-			if addr == "" {
-				if cluster {
-					addr = "127.0.0.1:7401"
-				} else {
-					addr = "127.0.0.1:7400"
-				}
-			}
-
-			cookie, err := signIn(ctx, c, addr, tenant, alias, password)
+			addr := apiAddr(c, cluster)
+			cookie, err := signIn(ctx, c, addr, cluster, tenant, alias, password)
 			if err != nil {
 				return err
 			}
-			p, err := sessionFile(addr)
-			if err != nil {
-				return err
-			}
-			if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
-				return err
-			}
-			if err := os.WriteFile(p, []byte(cookie+"\n"), 0o600); err != nil {
+			if err := keepSession(addr, cookie); err != nil {
 				return err
 			}
 			fmt.Fprintf(self, "signed in as %s at %s\n", who, addr)
@@ -129,6 +115,82 @@ func NewCmdLogin(c *cmd.Config) *xli.Command {
 			return nil
 		}),
 	}
+}
+
+// apiAddr is the API a surface is reached at, as the CLI is configured.
+func apiAddr(c *cmd.Config, cluster bool) string {
+	addr := c.Client.Addr
+	if cluster {
+		addr = c.Client.ClusterAddr
+	}
+	if addr == "" {
+		if cluster {
+			addr = "127.0.0.1:7401"
+		} else {
+			addr = "127.0.0.1:7400"
+		}
+	}
+
+	return addr
+}
+
+// keepSession writes the cookie a sign-in answered for an API address,
+// where every later call reads it.
+func keepSession(addr, cookie string) error {
+	p, err := sessionFile(addr)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+
+	return os.WriteFile(p, []byte(cookie+"\n"), 0o600)
+}
+
+// SavedSession is the session cookie kept for an API address, or "".
+func SavedSession(addr string) string { return savedSession(addr) }
+
+// webBase is the HTTP listener of a surface: `client.web` or
+// `client.cluster_web` when configured, else the API's host two ports up
+// (§34.1). plain says it is spoken without TLS.
+func webBase(c *cmd.Config, addr string, cluster bool) (base string, plain bool, err error) {
+	v := c.Client.Web
+	if cluster {
+		v = c.Client.ClusterWeb
+	}
+	if v != "" {
+		u, err := url.Parse(v)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return "", false, fmt.Errorf("%q is not a URL of an HTTP listener", v)
+		}
+
+		return u.Scheme + "://" + u.Host, u.Scheme == "http", nil
+	}
+	u, plain, err := loginURL(c, addr, cluster)
+	if err != nil {
+		return "", false, err
+	}
+
+	return strings.TrimSuffix(u, "/session"), plain, nil
+}
+
+// webClient speaks to an HTTP listener: the CP's CA and the system's roots,
+// since an Ingress in front may well present a public certificate.
+func webClient(c *cmd.Config, plain bool) (*http.Client, error) {
+	if plain {
+		return &http.Client{}, nil
+	}
+	cfg := &tls.Config{MinVersion: tls.VersionTLS12}
+	if b, err := caBundle(c); err == nil {
+		pool, err := pki.PeerPool(b)
+		if err != nil {
+			return nil, err
+		}
+		cfg.RootCAs = pool
+	}
+
+	return &http.Client{Transport: &http.Transport{TLSClientConfig: cfg}}, nil
 }
 
 // loginURL is the sign-in endpoint beside an API address: the HTTP
@@ -183,25 +245,28 @@ func loginURL(c *cmd.Config, addr string, cluster bool) (string, bool, error) {
 	return fmt.Sprintf("%s://%s/session", scheme, net.JoinHostPort(h, port)), plain, nil
 }
 
-func signIn(ctx context.Context, c *cmd.Config, addr, tenant, alias, password string) (string, error) {
-	u, plain, err := loginURL(c, addr, strings.Contains(addr, "7401") || addr == c.Client.ClusterAddr && c.Client.ClusterAddr != "")
+func signIn(ctx context.Context, c *cmd.Config, addr string, cluster bool, tenant, alias, password string) (string, error) {
+	body, _ := json.Marshal(map[string]string{"tenant": tenant, "alias": alias, "password": password})
+
+	return postForSession(ctx, c, addr, cluster, "/session", body)
+}
+
+// postForSession posts to a surface's HTTP listener and answers the session
+// cookie it set.
+func postForSession(ctx context.Context, c *cmd.Config, addr string, cluster bool, path string, body []byte) (string, error) {
+	base, plain, err := webBase(c, addr, cluster)
 	if err != nil {
 		return "", err
 	}
-	body, _ := json.Marshal(map[string]string{"tenant": tenant, "alias": alias, "password": password})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+path, bytes.NewReader(body))
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	if !plain {
-		pool, err := caPool(c)
-		if err != nil {
-			return "", err
-		}
-		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}}
+	client, err := webClient(c, plain)
+	if err != nil {
+		return "", err
 	}
 	resp, err := client.Do(req)
 	if err != nil {
