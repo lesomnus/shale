@@ -1,5 +1,5 @@
 // Package k8s is the little of the Kubernetes API that `shale init` needs
-// inside a cluster: putting what it made into a Secret (§34.5). It speaks
+// inside a cluster: putting what it made into Secrets (§34.5). It speaks
 // to the API server with the pod's service account and needs no client
 // library.
 package k8s
@@ -58,6 +58,12 @@ func InCluster() (*Client, bool) {
 	}, true
 }
 
+// New is a client of the API server at base, as the holder of token, in
+// namespace: what [InCluster] reads from the pod, given instead.
+func New(base, namespace, token string, hc *http.Client) *Client {
+	return &Client{base: strings.TrimSuffix(base, "/"), namespace: namespace, token: token, http: hc}
+}
+
 // Namespace is the pod's namespace.
 func (c *Client) Namespace() string { return c.namespace }
 
@@ -105,19 +111,49 @@ func (c *Client) SecretExists(ctx context.Context, name string) (bool, error) {
 	return false, fmt.Errorf("GET secret %s: %d: %s", name, code, strings.TrimSpace(string(b)))
 }
 
+// ErrExists is a Secret that is already there.
+var ErrExists = errors.New("already exists")
+
+// Secret is an Opaque Secret to make.
+type Secret struct {
+	Name        string
+	Labels      map[string]string
+	Annotations map[string]string
+	Data        map[string][]byte
+}
+
 // CreateSecret makes an Opaque Secret from the files; it refuses one that
 // is already there, since that is somebody else's state.
 func (c *Client) CreateSecret(ctx context.Context, name string, files map[string][]byte) error {
+	return c.Create(ctx, Secret{Name: name, Data: files}, false)
+}
+
+// Create makes the Secret, and never replaces one: one that is there is
+// [ErrExists]. A dry run is the API server's (`dryRun=All`): everything a
+// create is checked against -- the name, the keys, the service account's
+// right to it, a Secret by that name -- with nothing written.
+func (c *Client) Create(ctx context.Context, s Secret, dryRun bool) error {
 	data := map[string]string{}
-	for k, v := range files {
+	for k, v := range s.Data {
 		data[k] = base64.StdEncoding.EncodeToString(v)
+	}
+	meta := map[string]any{"name": s.Name, "namespace": c.namespace}
+	if len(s.Labels) > 0 {
+		meta["labels"] = s.Labels
+	}
+	if len(s.Annotations) > 0 {
+		meta["annotations"] = s.Annotations
 	}
 	body := map[string]any{
 		"apiVersion": "v1", "kind": "Secret", "type": "Opaque",
-		"metadata": map[string]any{"name": name, "namespace": c.namespace},
+		"metadata": meta,
 		"data":     data,
 	}
-	code, b, err := c.do(ctx, http.MethodPost, "/api/v1/namespaces/"+c.namespace+"/secrets", body)
+	path := "/api/v1/namespaces/" + c.namespace + "/secrets"
+	if dryRun {
+		path += "?dryRun=All"
+	}
+	code, b, err := c.do(ctx, http.MethodPost, path, body)
 	if err != nil {
 		return err
 	}
@@ -125,8 +161,8 @@ func (c *Client) CreateSecret(ctx context.Context, name string, files map[string
 	case http.StatusCreated, http.StatusOK:
 		return nil
 	case http.StatusConflict:
-		return errors.New("secret " + name + " already exists")
+		return fmt.Errorf("secret %s/%s: %w", c.namespace, s.Name, ErrExists)
 	}
 
-	return fmt.Errorf("POST secret %s: %d: %s", name, code, strings.TrimSpace(string(b)))
+	return fmt.Errorf("POST secret %s: %d: %s", s.Name, code, strings.TrimSpace(string(b)))
 }
