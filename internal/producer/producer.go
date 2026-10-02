@@ -340,8 +340,8 @@ func (p *Producer) darkChanged(s *source, suppressed bool) {
 // process: a stream a process on the host pushes to the listener.
 const InputPush = "push"
 
-// A source's kind (§38.9): TS, cut at keyframes, or raw frames, cut at
-// frame boundaries.
+// A source's kind (§38.9): fragmented MP4, cut at keyframes, or raw
+// frames, cut at frame boundaries.
 const (
 	KindMP4 = "mp4"
 	KindRaw = "raw"

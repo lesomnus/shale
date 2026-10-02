@@ -9,11 +9,11 @@ import (
 	"time"
 )
 
-// A raw source's stream is a sequence of frames (§38.9): TS with the video
-// taken out. A prefix frame is what PAT and PMT are to TS, kept and
-// prepended to every lamina that starts after it; a data frame is a place
-// the lamina may be cut before, as a keyframe is; the timestamp is the PCR,
-// the data time the writer knows and the producer does not.
+// A raw source's stream is a sequence of frames (§38.9): fragmented MP4
+// with the video taken out. A prefix frame is what the init segment is to
+// MP4, kept and prepended to every lamina that starts after it; a data
+// frame is a place the lamina may be cut before, as a keyframe is; the
+// timestamp is the data time the writer knows and the producer does not.
 //
 //	frame = kind (1) | timestamp (8, unix ns, big-endian, 0 = none) | length (4, big-endian) | bytes
 const FrameHeader = 1 + 8 + 4
