@@ -5,13 +5,26 @@
  * @module
  */
 
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
 import { Provider, type App } from '@lesomnus/payday/react'
 
 import { app } from './client.js'
 import type { Sandbox } from './sandbox.js'
-import { addrs, plain, signIn as signInReal, signOut as signOutReal, type Addrs, type Session, type Surface } from './session.js'
+import {
+	addrs,
+	current,
+	plain,
+	signIn as signInReal,
+	signOut as signOutReal,
+	ssoSignIn,
+	transportFor,
+	ways as waysOf,
+	type Addrs,
+	type Session,
+	type Surface,
+	type Ways,
+} from './session.js'
 import { open } from './store.js'
 
 /** Mode is where the server is: somewhere on the network, or in this page. */
@@ -78,18 +91,33 @@ export async function openSession(mode: Mode, surface: Surface, tenant: string, 
 }
 
 /**
- * restore reopens a real session the browser still has the cookie for; a
- * cookie that lapsed shows as the first call refused, which the page treats
- * as signed out. The sandbox has nothing to restore: it is new each load.
+ * restore reopens a real session the browser still has the cookie for. The
+ * listener is asked who its cookie names (`GET /session`), which is also how
+ * a page that comes back from the issuer learns it is signed in; a server
+ * too old to say falls back to who was signed in here last, and a cookie
+ * that lapsed then shows as the first call refused. The sandbox has nothing
+ * to restore: it is new each load.
  */
 export async function restore(mode: Mode, surface: Surface): Promise<Opened | null> {
 	if (mode.kind === 'sandbox') return null
-	const r = remembered(surface)
-	if (r === null) return null
-	const who = `@${r.tenant}/${r.alias}`
 	const base = surface === 'tenant' ? mode.addrs.tenant : mode.addrs.cluster
-	const { transportFor } = await import('./session.js')
-	const session: Session = { surface, who, transport: transportFor(base), base, sandbox: false }
+	const w = await current(base)
+	let who: string
+	let sso = false
+	if (w === null) {
+		remember(surface, null)
+
+		return null
+	} else if (w !== undefined) {
+		who = w.who
+		sso = w.sso
+		remember(surface, who)
+	} else {
+		const r = remembered(surface)
+		if (r === null) return null
+		who = `@${r.tenant}/${r.alias}`
+	}
+	const session: Session = { surface, who, transport: transportFor(base), base, sandbox: false, sso }
 	const app = await open(session.transport, `${surface}:${who}`)
 
 	return { session, app }
@@ -112,6 +140,23 @@ export function SurfacesProvider(props: { mode: Mode; initial: Partial<Record<Su
 		async signOut(surface) {
 			const v = sessions[surface]
 			if (v === undefined) return
+			if (v.session.sso === true) {
+				// Signing out of the issuer is signing out of everything it
+				// signed in: the other surface's session ends here first,
+				// then this one's two hops take the page away (§33.1).
+				const other: Surface = surface === 'tenant' ? 'cluster' : 'tenant'
+				const o = sessions[other]
+				if (o !== undefined) {
+					await signOutReal({ ...o.session, sso: false })
+					o.app.store.forget()
+					remember(other, null)
+				}
+				v.app.store.forget()
+				remember(surface, null)
+				await signOutReal(v.session)
+
+				return
+			}
 			await signOutReal(v.session)
 			v.app.store.forget()
 			v.app.store.close()
@@ -140,10 +185,27 @@ export function On(props: { surface: Surface; children: ReactNode; note?: string
 	return <Provider app={v.app}>{props.children}</Provider>
 }
 
-/** SignIn is the form for one surface. */
+/**
+ * SignIn is the way in for one surface: the issuer's button where the
+ * listener signs in through one (§40.1), the form where it takes a password,
+ * both where it takes both.
+ */
 export function SignIn(props: { surface: Surface; note?: string }): ReactNode {
 	const s = useSurfaces()
 	const sandbox = s.mode.kind === 'sandbox'
+	const base = s.mode.kind === 'real' ? (props.surface === 'tenant' ? s.mode.addrs.tenant : s.mode.addrs.cluster) : ''
+	const [ways, setWays] = useState<Ways | undefined>(sandbox ? { password: true, sso: false } : undefined)
+	useEffect(() => {
+		if (sandbox) return
+		let live = true
+		void waysOf(base).then((v) => {
+			if (live) setWays(v)
+		})
+
+		return () => {
+			live = false
+		}
+	}, [sandbox, base])
 	const defaults = props.surface === 'cluster' ? { tenant: 'cluster', alias: 'ops' } : { tenant: 'acme', alias: 'admin' }
 	const [tenant, setTenant] = useState(remembered(props.surface)?.tenant ?? defaults.tenant)
 	const [alias, setAlias] = useState(remembered(props.surface)?.alias ?? defaults.alias)
@@ -151,6 +213,30 @@ export function SignIn(props: { surface: Surface; note?: string }): ReactNode {
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const where = props.surface === 'cluster' ? 'the cluster API, as an operator' : 'the tenant API, as somebody in a tenant'
+
+	if (ways === undefined) {
+		return (
+			<div className="sign-in">
+				<h1>sign in</h1>
+				<p className="hint">…</p>
+			</div>
+		)
+	}
+	if (!ways.password) {
+		return (
+			<div className="sign-in">
+				<h1>sign in</h1>
+				<p className="hint">{props.note ?? `This page needs ${where}.`}</p>
+				{ways.sso ? (
+					<button type="button" className="primary" onClick={() => ssoSignIn(base, ways.login)}>
+						Sign in with SSO
+					</button>
+				) : (
+					<p className="bad">This server offers no way to sign in here.</p>
+				)}
+			</div>
+		)
+	}
 
 	return (
 		<form
@@ -169,6 +255,14 @@ export function SignIn(props: { surface: Surface; note?: string }): ReactNode {
 				{props.note ?? `This page needs ${where}.`}
 				{sandbox ? ' The sandbox believes whoever you say you are.' : ''}
 			</p>
+			{ways.sso && (
+				<>
+					<button type="button" className="primary" onClick={() => ssoSignIn(base, ways.login)}>
+						Sign in with SSO
+					</button>
+					<p className="hint">or with a password:</p>
+				</>
+			)}
 			<label>
 				tenant
 				<input value={tenant} onChange={(e) => setTenant(e.target.value)} autoComplete="organization" />

@@ -172,3 +172,29 @@ func TestOperatorsEmbedded(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, is)
 }
+
+// An issuer's `sub` is a Holder.id at roster: found with the key of a tenant
+// served here, nobody when no key sees them, and an error -- not nobody --
+// when roster does not answer.
+func TestById(t *testing.T) {
+	ctx := context.Background()
+	f := newFakeRoster(t, "hday", "rk_test")
+	alice := f.addHolder("alice")
+	s := f.open(t)
+
+	p, err := s.ById(ctx, pdid.Id(alice).String())
+	require.NoError(t, err)
+	require.Equal(t, "alice", p.Alias)
+	require.Equal(t, "hday", p.TenantAlias)
+	require.Equal(t, pdid.Id(f.tenant.GetId()), p.Tenant)
+
+	_, err = s.ById(ctx, pdid.New(2).String())
+	require.ErrorIs(t, err, ErrNoPerson)
+	_, err = s.ById(ctx, "alice")
+	require.ErrorIs(t, err, ErrNoPerson)
+
+	f.down.Store(true)
+	_, err = s.ById(ctx, pdid.Id(alice).String())
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrNoPerson)
+}

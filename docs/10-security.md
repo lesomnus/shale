@@ -49,13 +49,51 @@ holds a credential.
   person at roster and then here, and a tenant is made at roster and its
   row here follows its first person. The first person of a tenant sees every
   site; everyone after sees what a Shale admin gives them.
-- **Signing in** is `POST /session {tenant, alias, password}` on the tenant
-  API's HTTP listener: Shale asks roster (`VouchService.Verify`), and mints
-  its own session cookie once roster said yes. Shale holds no password and
-  no verifier. The `shale` CLI signs in the same way (`shale login`) and
-  keeps the session. A person who signs in through an external identity
-  provider does so at roster with Hydra in front, and Shale is a relying
-  party of that flow; nothing in Shale implements OIDC.
+- **Signing in with a password** is `POST /session {tenant, alias,
+  password}` on the tenant API's HTTP listener: Shale asks roster
+  (`VouchService.Verify`), and mints its own session cookie once roster said
+  yes. Shale holds no password and no verifier. The `shale` CLI signs in the
+  same way (`shale login`) and keeps the session.
+- **Signing in through the issuer (single sign-on).** A company whose people
+  have no roster password -- they arrive at roster through their own
+  directory (an Entra `Connection`), and roster with Ory Hydra in front is
+  the OIDC issuer -- signs them in to Shale through that issuer. With
+  `auth.oidc` set (§36.1) each HTTP listener is a **relying party** of it,
+  in the shape roster's `examples/product` is (roster's
+  `docs/relying-party.md`): the control plane runs the authorization code
+  flow itself and ends it in **the same session cookie** a password mints.
+
+  | route (both listeners) | what it does |
+  |---|---|
+  | `GET /sso/login?next=` | a flow begins: a random `state`, a `nonce` and a PKCE verifier (S256), sealed under a key derived from the KEK into a short-lived `__Host-shale_sso_<surface>` cookie (so any control plane can finish what another began); the browser goes to the issuer's `authorization_endpoint` with the redirect `<origin>/sso/callback` |
+  | `GET /sso/callback` | the cookie's `state` compared with the query's, the code exchanged with the verifier and the client secret (`client_secret_basic`), the `id_token` verified against the issuer's discovery document and JWKS -- signature, `iss`, `aud` (this client), expiry -- and its `nonce` compared. `sub` is the identity and nothing else: roster's `sub` is a `Holder.id`, looked up at roster with the tenant key of each tenant served here (`HolderService.Get`); somebody in no tenant served here, or disabled, is refused. On the cluster listener the person must be an operator. Their rows are made or refreshed (`Provision`), and the session is minted, keeping the `id_token` for one thing: the logout hint |
+  | `GET /sso/logout?next=` | **two hops**: this listener's session ends, then the browser goes to the issuer's `end_session_endpoint` (`https://sso.hday.dev/oauth2/sessions/logout`) with `id_token_hint` and `post_logout_redirect_uri` = the origin it came from plus `/`, so the issuer forgets the browser too and sends it back. Without a hint, nothing is asked back and the browser ends on the issuer's page |
+  | `POST /sso/token {id_token}` | the CLI's sign-in, below |
+  | `GET /session`, `GET /session/ways` | who this browser's cookie names here; whether this listener takes a password, and the issuer |
+
+  `next` is followed only to an origin this deployment answers at or names
+  (`auth.oidc.*_origin`, `http.origins`), so a sign-in is not an open
+  redirect. A refusal shows a person one sentence and the log the reason,
+  never the token. **`auth.sso_only`** turns the password off: `POST /session`
+  with one is refused before it is read, `GET /session/ways` says so, and the
+  console draws only *Sign in with SSO*. It is refused at start without an
+  issuer, since then nobody could sign in.
+
+  **The CLI** has no browser and holds no secret, so it uses the device
+  grant (RFC 8628) against the issuer, with a public client
+  (`auth.oidc.device_client_id`): `shale login --sso` asks the control plane
+  for the issuer and the client (`GET /session/ways`), asks the issuer for a
+  code, prints the address and the code to confirm in any browser, polls
+  until somebody has, and posts the `id_token` it is handed **once** to
+  `POST /sso/token` on each surface it is configured for. The control plane
+  verifies it for the CLI's client, requires it to be at most 10 minutes old,
+  maps `sub` as above, and mints the ordinary session, which the CLI keeps as
+  it keeps a password's. It is **operators only** for now: anybody else is
+  refused. A session rather than the bearer token on every call, because
+  that is the design every other credential here follows -- the token is used
+  once to learn who this is, which is roster's guidance, and Hydra's access
+  tokens are opaque to anybody without its admin API -- and a session is
+  what Shale already knows how to end.
 - **roster runs in the control plane's process or elsewhere.** With nothing
   configured, `shale serve all` and `shale serve control` run roster inside
   the process on a database of its own, reachable from that process only,

@@ -6,10 +6,14 @@
  * an operator sees nodes, devices, sinks and relays. The console signs in to
  * each on its own, and a page that needs one it does not have asks for it.
  *
- * Against a real server a sign-in is `POST /session` with the person's tenant,
- * alias and password, answered with a cookie this script cannot read
- * (`auth/authsession`); every call after that carries the cookie. In the
- * sandbox there is nobody to lie to, so the credential is the plain header of
+ * Against a real server a sign-in is one of two things (§40.1). With a
+ * password, `POST /session` with the person's tenant, alias and password; with
+ * the deployment's issuer (single sign-on, §33.1), the browser itself goes to
+ * `/sso/login` on the surface's listener and comes back signed in. Either way
+ * the answer is a cookie this script cannot read (`auth/authsession`), every
+ * call after that carries it, and `GET /session` says who it names.
+ * `GET /session/ways` says which of the two a listener offers. In the sandbox
+ * there is nobody to lie to, so the credential is the plain header of
  * development mode on the one transport the page has.
  *
  * @module
@@ -29,6 +33,62 @@ export interface Session {
 	/** The HTTP origin of this surface; empty in the sandbox. */
 	readonly base: string
 	readonly sandbox: boolean
+	/** Signed in through the issuer, so signing out is two hops. */
+	readonly sso?: boolean
+}
+
+/** How a listener signs people in (`GET /session/ways`). */
+export interface Ways {
+	readonly password: boolean
+	readonly sso: boolean
+	readonly login?: string
+}
+
+/**
+ * ways asks a listener how it signs people in. A server from before single
+ * sign-on has no such route and takes a password.
+ */
+export async function ways(base: string): Promise<Ways> {
+	try {
+		const r = await withCredentials(base + '/session/ways', { cache: 'no-store' })
+		if (!r.ok) return { password: true, sso: false }
+
+		return (await r.json()) as Ways
+	} catch {
+		return { password: true, sso: false }
+	}
+}
+
+/** Who a listener's cookie names (`GET /session`). */
+export interface Who {
+	readonly who: string
+	readonly sso: boolean
+	readonly operator: boolean
+}
+
+/**
+ * current is who this browser is signed in as on a listener: null for
+ * nobody, undefined when the listener cannot say (a server from before
+ * `GET /session`, or one that is not answering).
+ */
+export async function current(base: string): Promise<Who | null | undefined> {
+	try {
+		const r = await withCredentials(base + '/session', { cache: 'no-store' })
+		if (r.status === 401) return null
+		if (!r.ok) return undefined
+
+		return (await r.json()) as Who
+	} catch {
+		return undefined
+	}
+}
+
+/**
+ * ssoSignIn sends the browser to a listener's sign-in with the issuer, to
+ * come back to this page. It does not return: the page goes.
+ */
+export function ssoSignIn(base: string, path = '/sso/login'): void {
+	location.assign(`${base}${path}?next=${encodeURIComponent(location.href)}`)
 }
 
 /** Where each surface answers, for a page served away from the server. */
@@ -97,9 +157,19 @@ export async function signIn(base: string, tenant: string, alias: string, passwo
 	}
 }
 
-/** signOut ends the session on the server and forgets it here. */
+/**
+ * signOut ends the session on the server and forgets it here. A session
+ * from the issuer is ended in two hops (§33.1): `/sso/logout` ends this
+ * listener's session and sends the browser to the issuer, which sends it
+ * back here -- so for one of those this navigates away and does not return.
+ */
 export async function signOut(s: Session): Promise<void> {
 	if (s.sandbox) return
+	if (s.sso === true) {
+		location.assign(`${s.base}/sso/logout?next=${encodeURIComponent(location.href)}`)
+
+		return
+	}
 	try {
 		await withCredentials(s.base + '/session', { method: 'DELETE' })
 	} catch {

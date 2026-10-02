@@ -181,6 +181,49 @@ next start and is recognized by its hardware identity
   a public address or a TURN server (`ice`,
   [§36.1](13-configuration.md#361-configuration-reference)). A relay is
   stateless, so replicas are simply more relays for the CP to assign.
+- **A company's issuer.** A deployment whose people sign in through their
+  company's roster and Hydra ([§33.1](10-security.md#331-trust-model)) runs
+  no roster of its own: `auth.roster.addr` is roster's data plane in the
+  cluster, with the tenant key in a Secret mounted as a file; the operators
+  are a team there (`auth.operators`); and both HTTP listeners are relying
+  parties of the issuer (`auth.oidc`), each behind an Ingress under a name
+  of its own -- the tenant listener (7402, the console) and the cluster
+  listener (7403, the console's operator half) -- with `cluster.http.origins`
+  naming the console's origin. `shale init --k8s-secret` then makes the CA,
+  the KEK, the CP certificate and the first signing key, and the Secret
+  holding them, and **makes nobody** at roster ([§33.4](10-security.md#334-joining-and-adoption)).
+  For the wed cluster:
+
+  ```yaml
+  auth:
+    roster:
+      addr: roster-data.app-roster.svc.cluster.local:8080
+      insecure: true                 # in-cluster; TLS ends at the ingress
+      keys:
+        hday: file:/run/shale/roster/hday   # an rt_ for @hday/shale
+    operators:
+      tenant: hday
+      team: shale-ops
+    oidc:
+      issuer: https://sso.hday.dev
+      client_id: shale
+      client_secret: file:/run/shale/oidc/client-secret
+      device_client_id: shale-cli
+      tenant_origin: https://shale.hday.dev
+      cluster_origin: https://ops.shale.hday.dev
+    sso_only: true
+  server:
+    http: { addr: ":7402", allow_web: true }
+  cluster:
+    http:
+      addr: ":7403"
+      allow_web: true
+      origins: [https://shale.hday.dev]
+  ```
+
+  and for an operator's CLI, `client.addr: cp.shale.hday.dev:443`,
+  `client.web: https://shale.hday.dev`, `client.cluster_web:
+  https://ops.shale.hday.dev`, then `shale login --sso`.
 - **Upgrades** roll one Storage Node at a time. While a node is down, its
   laminae are UNAVAILABLE and placement skips it through missed heartbeats.
   No data moves, so no disruption budget beyond "one at a time" is needed.

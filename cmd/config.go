@@ -10,6 +10,7 @@ package cmd
 
 import (
 	"github.com/lesomnus/shale/internal/identity"
+	"github.com/lesomnus/shale/internal/sso"
 	"path/filepath"
 	"time"
 
@@ -85,6 +86,13 @@ type ClientConfig struct {
 	// CaFile is the CA to verify the CP against; the state directory's
 	// bundle when empty.
 	CaFile string `yaml:"ca_file"`
+	// Web and ClusterWeb are where the two HTTP listeners answer -- the
+	// sign-in endpoints -- when that is not the API's host two ports up:
+	// an Ingress in front, e.g. https://shale.hday.dev and
+	// https://ops.shale.hday.dev. Verified against the system's roots and
+	// the CP's CA.
+	Web        string `yaml:"web"`
+	ClusterWeb string `yaml:"cluster_web"`
 }
 
 // ControlConfig is the Control Plane's own settings.
@@ -260,6 +268,14 @@ type AuthConfig struct {
 	// (§33.1). Set, every other person of a tenant reads and only an
 	// operator changes anything.
 	Operators identity.OperatorsConfig `yaml:"operators"`
+	// Oidc is the issuer people sign in through (§33.1): each HTTP listener
+	// is a relying party of it, and the CLI signs operators in with its
+	// device flow.
+	Oidc sso.Config `yaml:"oidc"`
+	// SsoOnly refuses a password: `POST /session` with one is answered
+	// with a refusal, and the console draws only the issuer's button.
+	// Requires `auth.oidc`.
+	SsoOnly bool `yaml:"sso_only"`
 }
 
 // ProducerConfig is a producer's own settings (§36.1, producer scope).

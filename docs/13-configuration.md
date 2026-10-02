@@ -116,6 +116,13 @@ deployment runs well on them, and changes them only for a reason.
 | People | `auth.operators.team` | none: operators are the people of `control.cluster_tenant`, and every person administers their tenant | a team's alias, or its identifier; set, operators are its members and everybody else reads | control | [§33.1](10-security.md#331-trust-model), [§35.2](12-api.md#352-two-api-surfaces) |
 | People | `auth.operators.tenant` | the one tenant `auth.roster.keys` names | a tenant this deployment serves | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.operators.site` | none: a team in no site | the alias of the team's site | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.oidc.issuer` | none: no single sign-on | the OIDC issuer, e.g. `https://sso.hday.dev` | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.oidc.client_id`, `auth.oidc.client_secret` | none | the browser's confidential client at the issuer; the secret as `env:NAME`, `file:PATH` or itself, sent as `client_secret_basic` | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.oidc.device_client_id` | none: no single sign-on from the CLI | the CLI's public client, with the device grant | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.oidc.tenant_origin`, `auth.oidc.cluster_origin` | the request's own origin (development) | where a browser reaches each HTTP listener: the callback is `<origin>/sso/callback`, a logout comes back to `<origin>/` | control | [§33.1](10-security.md#331-trust-model), [§40.1](17-console.md#401-two-surfaces-two-sign-ins) |
+| People | `auth.oidc.scopes`, `auth.oidc.ca_file` | `openid profile email`; the system pool | — | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.sso_only` | off | on: a password is refused and the console draws only the issuer's button; requires `auth.oidc.issuer` | control | [§33.1](10-security.md#331-trust-model) |
+| People | `client.web`, `client.cluster_web` | the API's host two ports up | the CLI's sign-in endpoints, when an Ingress is in front: e.g. `https://shale.hday.dev`; verified against the system's roots and the CP's CA | CLI | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.operators.ttl` | 30 s | how long roster's answer is kept; a failure is kept 5 s and is no | control | [§33.1](10-security.md#331-trust-model) |
 | Trail | `audit.profile` | none: forever | `pipa`, `pipa-sensitive`, `pci`, `hipaa`, `sox`, `gdpr`, `forever` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.retain`, `audit.destroy` | the profile's | how long a row stays in the table, and in the archive | control | [§26.5](08-sizing.md#265-the-control-planes-database) |

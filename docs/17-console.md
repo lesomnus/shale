@@ -26,10 +26,24 @@ Shale has two APIs ([§35](12-api.md#35-api)): the **tenant** API, where a
 tenant's admin sees its sets, cameras, producers and laminae, and the
 **cluster** API, where an operator sees nodes, devices, sinks and relays.
 The console signs in to each on its own, and a page that needs one it does
-not have asks for it. Against a real server a sign-in is `POST /session`
-with the person's tenant, alias and password, answered with a cookie the
-script cannot read (payday's `auth/authsession`); every call after that
-carries the cookie. Both listeners need `http.allow_web: true`, and a page
+not have asks for it. It first asks the surface's listener how
+(`GET /session/ways`): where the deployment signs people in through its
+issuer ([§33.1](10-security.md#331-trust-model), `auth.oidc`), the page
+offers **Sign in with SSO**, which sends the browser to `/sso/login` on
+that listener with the page as `next`, and the browser comes back signed
+in; where it takes a password, the form posts `POST /session` with the
+person's tenant, alias and password; where it takes both, both are drawn,
+and with `auth.sso_only` only the button is. Either way the answer is a
+cookie the script cannot read (payday's `auth/authsession`); every call
+after that carries the cookie, and on load the page asks each listener who
+its cookie names (`GET /session`) rather than trusting what it remembered,
+which is also how a page coming back from the issuer knows it is signed
+in. Signing out of a session the issuer made signs out of both surfaces:
+the other surface's session ends with `DELETE /session`, and this one goes
+the two hops of `/sso/logout`, through the issuer and back to the page. The
+operator half is signed in on the cluster listener's own origin
+(`ops.shale.hday.dev` beside `shale.hday.dev`): cross-origin, but the same
+site, so the cluster cookie still goes with the page's calls. Both listeners need `http.allow_web: true`, and a page
 served from anywhere but the listener itself needs its origin in
 `http.origins` ([§36.1](13-configuration.md#361-configuration-reference)).
 Each surface's cookie has a name of its own (`__Host-shale_tenant`,

@@ -20,6 +20,28 @@ data:
         # control plane shares: dsn comes from SHALE_AUTH_ROSTER_DB_DSN.
         db:
           driver: pgx
+      # A company's own roster and issuer instead (§33.1, §34.5): replace
+      # `roster` above with its data plane and the tenant key, make the
+      # operators a team there, sign people in through the issuer, and
+      # mount the two Secrets the `file:` references name in both API
+      # Deployments. README, "Signing in through a company's issuer".
+      #
+      # roster:
+      #   addr: roster-data.app-roster.svc.cluster.local:8080
+      #   insecure: true
+      #   keys:
+      #     hday: file:/run/shale/roster/hday
+      # operators:
+      #   tenant: hday
+      #   team: shale-ops
+      # oidc:
+      #   issuer: https://sso.hday.dev
+      #   client_id: shale
+      #   client_secret: file:/run/shale/oidc/client-secret
+      #   device_client_id: shale-cli
+      #   tenant_origin: https://shale.hday.dev
+      #   cluster_origin: https://ops.shale.hday.dev
+      # sso_only: true
     server:
       addr: ":7400"
       http:
