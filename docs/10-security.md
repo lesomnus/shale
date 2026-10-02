@@ -99,7 +99,9 @@ holds a credential.
   the process on a database of its own, reachable from that process only,
   the way the node and the relay are run in one process ([§34.7](11-deployment.md#347-single-machine));
   `shale init` then makes the cluster operators' tenant and the first tenant
-  there, each with its first person and a password shown once, and gives
+  there, each with its first person and a password shown once (inside
+  Kubernetes, put into a Secret of its own instead of the Job's log,
+  [§34.5](11-deployment.md#345-kubernetes)), and gives
   people passwords through `shale holder issue-password`. With
   `auth.roster.addr` set, roster is a deployment of its own and Shale acts on
   it as the holder `shale` of each tenant it serves, with the tenant key its
