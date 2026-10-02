@@ -1,13 +1,15 @@
 # `shale init` once: the CA, the KEK, the CP certificate, the first tenant
 # and its admin, the cluster operators, and the first signing key. Inside
 # the cluster the files go into the `shale-control` Secret through the
-# job's service account (§34.5); the passwords are printed once, in the
-# job's log:
+# job's service account (§34.5). The first passwords go into a Secret of
+# their own, `shale-control-passwords`, one key per person, and not into the
+# job's log, which a log collector would keep and a recreated job loses:
 #
-#   kubectl -n shale logs job/shale-init
+#   kubectl -n shale get secret shale-control-passwords -o jsonpath='{.data.cluster\.ops}' | base64 -d
+#   kubectl -n shale get secret shale-control-passwords -o jsonpath='{.data.acme\.admin}' | base64 -d
 #
-# Delete the job afterwards. Running it again does nothing while the
-# Secret exists.
+# Keep them, then delete that Secret and the job. Running it again does
+# nothing while `shale-control` exists.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -18,6 +20,9 @@ kind: Role
 metadata:
   name: shale-init
 rules:
+  # get: whether `shale-control` is there. create: it and
+  # `shale-control-passwords`, each asked first as a dry run. Never update
+  # or delete: neither is ever written over.
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "create"]

@@ -75,7 +75,7 @@ func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 	}
 
 	ctx := context.Background()
-	require.NoError(t, cli.Init(ctx, c, "acme", "admin", "ops", io.Discard))
+	require.NoError(t, cli.Init(ctx, c, "acme", "admin", "ops", io.Discard, nil))
 
 	cl := &cluster{t: t, cfg: c}
 	cl.serve()

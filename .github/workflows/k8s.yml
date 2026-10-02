@@ -1,6 +1,6 @@
 # The Kubernetes deployment on a kind cluster (§34.5, #69): the manifests
 # of deploy/k8s applied as they are, with the image built here; the init
-# job makes the Secret, the storage node joins and is adopted, the CLI
+# job makes the Secrets, the storage node joins and is adopted, the CLI
 # signs in through port-forwards, and a rolling restart of the storage
 # DaemonSet leaves the sink attached.
 name: k8s
@@ -44,8 +44,13 @@ jobs:
           set -eu
           go build -o shale ./cmd/shale
           kubectl -n shale get secret shale-control -o jsonpath='{.data.ca\.crt}' | base64 -d > ca.crt
-          OPS=$(kubectl -n shale logs job/shale-init | awk '/^operator /{print $NF}')
-          ADMIN=$(kubectl -n shale logs job/shale-init | awk '/^admin /{print $NF}')
+          # The passwords are in a Secret of their own, and not in the log.
+          OPS=$(kubectl -n shale get secret shale-control-passwords -o jsonpath='{.data.cluster\.ops}' | base64 -d)
+          ADMIN=$(kubectl -n shale get secret shale-control-passwords -o jsonpath='{.data.acme\.admin}' | base64 -d)
+          test -n "$OPS" && test -n "$ADMIN"
+          if kubectl -n shale logs job/shale-init | grep -qF -e "$OPS" -e "$ADMIN"; then
+            echo "a password is in the init job's log" >&2; exit 1
+          fi
           echo "127.0.0.1 shale-cluster.shale.svc shale-control.shale.svc" | sudo tee -a /etc/hosts >/dev/null
           kubectl -n shale port-forward svc/shale-cluster 7401:7401 7403:7403 >/dev/null 2>&1 &
           kubectl -n shale port-forward svc/shale-control 7400:7400 7402:7402 >/dev/null 2>&1 &

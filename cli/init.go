@@ -46,6 +46,7 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "dev", Brief: "development mode: everything under this directory"},
 			&flg.Switch{Name: "if-needed", Brief: "do nothing when already initialized, instead of refusing"},
 			&flg.String{Name: "k8s-secret", Brief: "inside a cluster: put the KEK, CA, and CP certificate into this Secret (§34.5)"},
+			&flg.String{Name: "k8s-password-secret", Brief: "inside a cluster: put the first passwords into this Secret instead of printing them (default: the --k8s-secret name with -passwords)"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, next xli.Next) error {
@@ -53,11 +54,13 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				ApplyDev(c, v)
 			}
 			ifNeeded, _ := flg.Find[bool](self, "if-needed")
+			tenant, admin, operator := flagOr(self, "tenant", "acme"), flagOr(self, "admin", "admin"), flagOr(self, "operator", "ops")
 			secret := flagOr(self, "k8s-secret", "")
+			var stash Stash
 			if secret != "" {
 				// The Secret is the state directory of every CP pod (§34.5):
 				// its presence is what "initialized" means here.
-				k, ok := k8s.InCluster()
+				k, ok := inCluster()
 				if !ok {
 					return errors.New("--k8s-secret: not inside a cluster (no service account)")
 				}
@@ -79,6 +82,19 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				if c.Auth.Roster.Embedded() && c.Auth.Roster.Db.Driver == "" {
 					return errors.New("--k8s-secret: roster in this process needs a database every control plane shares; set auth.roster.db, or auth.roster.addr")
 				}
+				// A pod's output is its log, and a log is read by whatever
+				// collects logs, for as long as it keeps them: the passwords
+				// go into a Secret of their own instead (§34.5). Whether it
+				// can be made is asked before anything is, so a Secret that
+				// is in the way, or a role that does not allow it, stops
+				// init while there is nothing yet to lose.
+				if c.Auth.Roster.Embedded() {
+					ps := &secretStash{k: k, name: flagOr(self, "k8s-password-secret", secret+PasswordSecretSuffix)}
+					if err := ps.check(ctx, []Password{{Tenant: clusterTenant(c), Alias: operator}, {Tenant: tenant, Alias: admin}}); err != nil {
+						return err
+					}
+					stash = ps
+				}
 				if err := os.RemoveAll(c.StateDir("control")); err != nil {
 					return err
 				}
@@ -89,13 +105,13 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				}
 			}
 
-			if err := Init(ctx, c, flagOr(self, "tenant", "acme"), flagOr(self, "admin", "admin"), flagOr(self, "operator", "ops"), self); err != nil {
+			if err := Init(ctx, c, tenant, admin, operator, self, stash); err != nil {
 				return err
 			}
 			if secret == "" {
 				return nil
 			}
-			k, _ := k8s.InCluster()
+			k, _ := inCluster()
 			dir := c.StateDir("control")
 			files := map[string][]byte{}
 			for _, name := range []string{"kek", cmd.CaCertFile, cmd.CaKeyFile, cmd.CpCertFile, cmd.CpKeyFile} {
@@ -115,12 +131,40 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 	}
 }
 
-// Init does the work of `shale init`, writing what it made to `out`.
-func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, out io.Writer) error {
-	clusterAlias := c.Control.ClusterTenant
-	if clusterAlias == "" {
-		clusterAlias = "cluster"
+// inCluster is the API server as this pod; a test answers its own.
+var inCluster = k8s.InCluster
+
+// clusterTenant is the alias of the cluster operators' tenant.
+func clusterTenant(c *cmd.Config) string {
+	if c.Control.ClusterTenant == "" {
+		return "cluster"
 	}
+
+	return c.Control.ClusterTenant
+}
+
+// Password is a first password `init` made: whose, and the password.
+type Password struct {
+	Tenant, Alias, Secret string
+}
+
+// Stash keeps the first passwords somewhere other than init's output
+// (§34.5), which is somebody's log.
+type Stash interface {
+	// Put keeps them, all or none. Where it fails they are printed after
+	// all: a password nobody has is a deployment nobody can sign in to.
+	Put(ctx context.Context, ps []Password) error
+	// Where is what is printed in place of a kept password.
+	Where(p Password) string
+	// Read is what is printed after them, a sentence with no full stop:
+	// how to get p's back.
+	Read(p Password) string
+}
+
+// Init does the work of `shale init`, writing what it made to `out`. The
+// first passwords are printed there too, once, unless stash keeps them.
+func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, out io.Writer, stash Stash) error {
+	clusterAlias := clusterTenant(c)
 
 	dir := c.StateDir("control")
 	if _, err := os.Stat(filepath.Join(dir, "kek")); err == nil {
@@ -220,15 +264,44 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 		return err
 	}
 
+	// Kept before anything is printed, so that a failure is said first.
+	var opsPw, admPw Password
+	kept := false
+	if ops != nil {
+		opsPw = Password{Tenant: clusterAlias, Alias: operator, Secret: ops.password}
+		admPw = Password{Tenant: tenant, Alias: admin, Secret: adm.password}
+		if stash != nil {
+			if err := stash.Put(ctx, []Password{opsPw, admPw}); err != nil {
+				fmt.Fprintf(out, "WARNING: the passwords could not be kept where they belong: %v\n", err)
+				fmt.Fprintf(out, "WARNING: they are printed below instead, once, and whatever collects this output keeps them too;\n")
+				fmt.Fprintf(out, "WARNING: sign in, then give both people new ones with `shale holder issue-password`\n\n")
+			} else {
+				kept = true
+			}
+		}
+	}
+	shown := func(p Password) string {
+		if kept {
+			return stash.Where(p)
+		}
+
+		return p.Secret
+	}
+
 	fmt.Fprintf(out, "state       %s\n", dir)
 	fmt.Fprintf(out, "ca          %s\n", pki.Fingerprint(ca.Cert))
 	fmt.Fprintf(out, "signing key %s\n", sk.GetAlias())
 	if ops != nil {
 		fmt.Fprintf(out, "tenant      @%s   %s\n", clusterAlias, ct)
-		fmt.Fprintf(out, "operator    @%s/%s   %s   password: %s\n", clusterAlias, operator, ops.person.Id, ops.password)
+		fmt.Fprintf(out, "operator    @%s/%s   %s   password: %s\n", clusterAlias, operator, ops.person.Id, shown(opsPw))
 		fmt.Fprintf(out, "tenant      @%s   %s\n", tenant, t)
-		fmt.Fprintf(out, "admin       @%s/%s   %s   password: %s\n", tenant, admin, adm.person.Id, adm.password)
-		fmt.Fprintf(out, "\nthe passwords are printed once; sign in with `shale login @%s/%s`, and give somebody a new one with `shale holder issue-password`\n", tenant, admin)
+		fmt.Fprintf(out, "admin       @%s/%s   %s   password: %s\n", tenant, admin, adm.person.Id, shown(admPw))
+		if kept {
+			fmt.Fprintf(out, "\n%s; ", stash.Read(admPw))
+			fmt.Fprintf(out, "sign in with `shale login @%s/%s`, and give somebody a new one with `shale holder issue-password`\n", tenant, admin)
+		} else {
+			fmt.Fprintf(out, "\nthe passwords are printed once; sign in with `shale login @%s/%s`, and give somebody a new one with `shale holder issue-password`\n", tenant, admin)
+		}
 	} else {
 		fmt.Fprintf(out, "people      at roster %s: the tenants it holds keys for are", c.Auth.Roster.Addr)
 		for _, v := range slices.Sorted(maps.Keys(c.Auth.Roster.Keys)) {
