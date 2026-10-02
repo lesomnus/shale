@@ -109,11 +109,16 @@ the database password — is
 ```sh
 kubectl apply -k deploy/k8s
 kubectl -n shale get pods -w
-kubectl -n shale logs job/shale-init      # the two passwords, printed once
+kubectl -n shale logs job/shale-init      # the CA fingerprint, and where the passwords are
+kubectl -n shale get secret shale-control-passwords -o jsonpath='{.data.cluster\.ops}' | base64 -d
+kubectl -n shale get secret shale-control-passwords -o jsonpath='{.data.acme\.admin}' | base64 -d
 ```
 
-Keep the passwords and the CA fingerprint from that log; the console and
-every producer want them. Then sign in from a machine that reaches a node:
+The two passwords are in a Secret of their own and not in the log, which
+whatever collects logs would keep. Keep them and the CA fingerprint; the
+console and every producer want them. Then delete the Secret
+(`kubectl -n shale delete secret shale-control-passwords`), which nothing
+reads, and sign in from a machine that reaches a node:
 
 ```sh
 kubectl -n shale get secret shale-control -o jsonpath='{.data.ca\.crt}' | base64 -d > ca.crt

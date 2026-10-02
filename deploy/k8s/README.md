@@ -55,13 +55,27 @@ tutorial](../../docs/tutorial-k8s.md).
 - The `shale-init` Job runs `shale init` against PostgreSQL once it
   answers, and puts the KEK, the CA, and the CP certificate into the
   `shale-control` Secret through its service account. The passwords of the
-  first cluster operator and the first tenant admin are in its log,
-  printed once:
+  first cluster operator and the first tenant admin are not in its log:
+  a log collector would keep them for as long as it keeps logs, and a job
+  that is recreated takes its log with it. They are in a Secret of their
+  own, `shale-control-passwords`, one key per person (`<tenant>.<alias>`;
+  the annotation `shale.io/holders` says who each is), made once and never
+  overwritten. The log says where they are:
 
   ```sh
-  kubectl -n shale logs job/shale-init
-  kubectl -n shale delete job shale-init      # afterwards
+  kubectl -n shale get secret shale-control-passwords -o jsonpath='{.data.cluster\.ops}' | base64 -d
+  kubectl -n shale get secret shale-control-passwords -o jsonpath='{.data.acme\.admin}' | base64 -d
+  kubectl -n shale delete secret shale-control-passwords   # once they are kept
+  kubectl -n shale delete job shale-init                   # afterwards
   ```
+
+  Nothing reads that Secret; `shale holder issue-password` gives somebody
+  a new password and leaves it as it is. Should the init job fail to make
+  it after the people were made, it prints the passwords in its log after
+  all, under a `WARNING`, since a rerun cannot make them again: read them
+  there, then give both people new ones. A `shale-control-passwords` left
+  from an earlier deployment stops the job before it makes anything; keep
+  what is in it and delete it.
 
 - roster, where people and tenants are (§33.1), runs inside the init job
   and every API pod, on the `roster` database the PostgreSQL manifest makes
@@ -228,7 +242,7 @@ console.
 The console (§40) is at `https://10.1.2.74:30402/` — any node, with the CA
 above imported or its warning clicked through: the tenant half signs in as
 `@acme/admin`, the cluster half (hosts to adopt, devices) as `@cluster/ops`,
-both with the passwords the init job printed.
+both with the passwords in `shale-control-passwords`.
 
 A producer outside the cluster:
 

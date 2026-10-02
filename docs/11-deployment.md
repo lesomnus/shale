@@ -128,7 +128,16 @@ next start and is recognized by its hardware identity
 - Both share the PostgreSQL DB, the KEK, and the CA through Secrets. A Job
   runs `shale init --k8s-secret` once: it initializes the database and puts
   the KEK, the CA, and the CP certificate into the Secret through its
-  service account, so every CP pod mounts the same state directory. Exactly
+  service account, so every CP pod mounts the same state directory. The
+  first passwords go into a second Secret, `<name>-passwords`
+  (`--k8s-password-secret`), one key per person (`<tenant>.<alias>`), and
+  not into the Job's log: a pod's output is gone with the pod and kept by
+  whatever collects logs. Init asks for it as a dry run before it makes
+  anything, so one already there (it is never overwritten) or a role that
+  does not allow it stops init with nothing lost; failing after the people
+  were made, init prints the passwords under a warning instead, since a
+  rerun cannot make them again. The log says where they are; somebody
+  reads them, then deletes that Secret, which nothing reads. Exactly
   one CP process runs the jobs and the directives, elected through an
   advisory lock on the database ([§34.9](#349-events-and-directives)).
 - **Storage Nodes**: a DaemonSet restricted by a node selector to machines with
