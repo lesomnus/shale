@@ -121,6 +121,9 @@ type Server struct {
 	// Identity is roster, where people and tenants are (§33.1): in this
 	// process or elsewhere, as `auth.roster` says.
 	Identity *identity.Store
+	// Operators is the team at roster the cluster operators are, when
+	// `auth.operators` names one; nil is the cluster tenant's people.
+	Operators *identity.Operators
 	// provisionMu serializes making rows for people, so two first sign-ins
 	// of a tenant do not both become its admin.
 	provisionMu sync.Mutex
@@ -215,6 +218,14 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		db.Close()
 		return nil, err
 	}
+	if c.Auth.Operators.On() {
+		s.Operators, err = identity.NewOperators(s.Identity, c.Auth.Operators, slog.Default())
+		if err != nil {
+			s.Identity.Close()
+			db.Close()
+			return nil, err
+		}
+	}
 
 	// The cluster tenant, once there is one here; Prepare asks roster
 	// for it otherwise, once the database can hold the answer.
@@ -246,6 +257,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 	s.Deps = deps
 	s.Sites = core.NewSites(deps)
+	s.Sites.Operators = s.operators()
 
 	// The stack a caller reaches: the wall and the site axis on the sink,
 	// then Shale's own layer, the trail, secrets cleared on the way out, and
@@ -327,6 +339,16 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 
 	return s, nil
+}
+
+// operators is the team lookup as the policies take it: nil, and not a
+// nil pointer inside an interface, where operators are a tenant.
+func (s *Server) operators() core.Operators {
+	if s.Operators == nil {
+		return nil
+	}
+
+	return s.Operators
 }
 
 // sessionCookie names one surface's session cookie. The `__Host-` prefix
@@ -502,10 +524,10 @@ func (s *Server) nodeDialer() func(ctx context.Context, addr string, id pdid.Id)
 func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerOption) (*grpc.Server, error) {
 	c := s.cfg
 	sc := c.Server
-	var policy gate.Policy = core.TenantPolicy{}
+	var policy gate.Policy = core.TenantPolicy{Operators: s.operators()}
 	if surface == SurfaceCluster {
 		sc = c.Cluster
-		policy = core.ClusterPolicy{ClusterTenant: s.ClusterTenant}
+		policy = core.ClusterPolicy{ClusterTenant: s.ClusterTenant, Operators: s.operators()}
 	}
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(sc.CallTimeout())).

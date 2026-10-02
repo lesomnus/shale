@@ -255,6 +255,11 @@ type AuthConfig struct {
 	// tenant keys this deployment acts with, or nothing, which runs roster
 	// in the control plane's process on its own database (§34.7).
 	Roster identity.Config `yaml:"roster"`
+	// Operators are the members of a team at roster, in a tenant this
+	// deployment serves, rather than the people of `control.cluster_tenant`
+	// (§33.1). Set, every other person of a tenant reads and only an
+	// operator changes anything.
+	Operators identity.OperatorsConfig `yaml:"operators"`
 }
 
 // ProducerConfig is a producer's own settings (§36.1, producer scope).

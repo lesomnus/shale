@@ -19,6 +19,8 @@ import (
 	"github.com/lesomnus/xli/flg"
 	"github.com/lesomnus/z"
 
+	"github.com/lesomnus/payday/pdid"
+
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/k8s"
@@ -197,13 +199,52 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 			}
 		}
 	}
-	ct, err := s.ProvisionTenant(ctx, clusterAlias)
-	if err != nil && !errors.Is(err, identity.ErrNoTenant) {
-		return err
+	// Where operators are a team (§33.1), the first admin is put on it at
+	// the embedded roster, so the deployment has an operator to begin
+	// with; at an external one its operator made the team and its members.
+	var team pdid.Id
+	if s.Operators != nil && adm != nil && s.Operators.TenantAlias() == tenant {
+		team, err = s.Identity.AddTeam(ctx, tenant, c.Auth.Operators.Team)
+		if err != nil {
+			return err
+		}
+		if err := s.Identity.JoinTeam(ctx, team, adm.person.Id); err != nil {
+			return fmt.Errorf("@%s/%s on %s: %w", tenant, admin, s.Operators.Team(), err)
+		}
 	}
-	t, terr := s.ProvisionTenant(ctx, tenant)
-	if terr != nil && !errors.Is(terr, identity.ErrNoTenant) {
-		return terr
+
+	var ct, t pdid.Id
+	var terr error
+	if s.Identity.Embedded() {
+		ct, err = s.ProvisionTenant(ctx, clusterAlias)
+		if err != nil && !errors.Is(err, identity.ErrNoTenant) {
+			return err
+		}
+		t, terr = s.ProvisionTenant(ctx, tenant)
+		if terr != nil && !errors.Is(terr, identity.ErrNoTenant) {
+			return terr
+		}
+	} else {
+		// At an external roster nothing is made: its operator made the
+		// tenants and the people, and Shale's rows follow the first
+		// sign-in. Asking now only says early whether the keys work, so a
+		// roster that does not answer yet is said and is not a failure:
+		// the CA, the KEK and the CP certificate do not depend on it.
+		alias := clusterAlias
+		if s.Operators != nil {
+			alias = s.Operators.TenantAlias()
+		}
+		ct, err = s.ProvisionTenant(ctx, alias)
+		if err != nil && !errors.Is(err, identity.ErrNoTenant) {
+			fmt.Fprintf(out, "warning     roster at %s did not answer for @%s: %v\n            the rows follow the first sign-in; check auth.roster before anybody signs in\n", c.Auth.Roster.Addr, alias, err)
+		}
+		if s.Operators != nil && err == nil {
+			// Whether the team is there, which is a question about the key
+			// as much as about the team: it needs TeamService.
+			if oerr := s.Operators.Check(ctx); oerr != nil {
+				fmt.Fprintf(out, "warning     the operators' team %s: %v\n            nobody is an operator until roster answers for it\n", s.Operators.Team(), oerr)
+			}
+		}
 	}
 
 	// The first signing key (§33.3).
@@ -228,19 +269,24 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 		fmt.Fprintf(out, "operator    @%s/%s   %s   password: %s\n", clusterAlias, operator, ops.person.Id, ops.password)
 		fmt.Fprintf(out, "tenant      @%s   %s\n", tenant, t)
 		fmt.Fprintf(out, "admin       @%s/%s   %s   password: %s\n", tenant, admin, adm.person.Id, adm.password)
+		if !team.IsZero() {
+			fmt.Fprintf(out, "operators   the members of %s   %s: @%s/%s\n", s.Operators.Team(), team, tenant, admin)
+		}
 		fmt.Fprintf(out, "\nthe passwords are printed once; sign in with `shale login @%s/%s`, and give somebody a new one with `shale holder issue-password`\n", tenant, admin)
 	} else {
 		fmt.Fprintf(out, "people      at roster %s: the tenants it holds keys for are", c.Auth.Roster.Addr)
 		for _, v := range slices.Sorted(maps.Keys(c.Auth.Roster.Keys)) {
 			fmt.Fprintf(out, " @%s", v)
 		}
-		fmt.Fprintf(out, "\n            @%s", clusterAlias)
-		if err != nil {
-			fmt.Fprintf(out, " has no key here yet, so there are no cluster operators until it does")
-		} else {
-			fmt.Fprintf(out, " is %s", ct)
+		switch {
+		case s.Operators != nil:
+			fmt.Fprintf(out, "\n            operators are the members of %s, by roster's word", s.Operators.Team())
+		case err != nil:
+			fmt.Fprintf(out, "\n            @%s has no key here yet, so there are no cluster operators until it does", clusterAlias)
+		default:
+			fmt.Fprintf(out, "\n            @%s is %s", clusterAlias, ct)
 		}
-		fmt.Fprintf(out, "\n            a person signs in with the password roster holds, and gets their rows here then\n")
+		fmt.Fprintf(out, "\n            nobody was made at roster; a person gets their rows here the first time they sign in\n")
 	}
 	if c.IsDev() {
 		fmt.Fprintf(out, "\ndevelopment mode: call as @%s/%s on the tenant API and @%s/%s on the cluster API\n", tenant, admin, clusterAlias, operator)

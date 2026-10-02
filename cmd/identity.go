@@ -20,8 +20,10 @@ import (
 // the tenant and the holder, anchored on roster's identifiers, so that
 // `Holder.id` is the `sub` every product knows them by. The first person
 // of a tenant sees every site; the rest see what a Shale admin gives
-// them. A row that is there already is refreshed where its names drifted.
-// Rows are made no other way.
+// them -- unless operators are a team (`auth.operators`), where everybody
+// reads the whole tenant by default and an operator narrows somebody by
+// clearing all_sites and giving them sites. A row that is there already is
+// refreshed where its names drifted. Rows are made no other way.
 func (s *Server) Provision(ctx context.Context, p identity.Person) (*api.Holder, error) {
 	s.provisionMu.Lock()
 	defer s.provisionMu.Unlock()
@@ -60,17 +62,18 @@ func (s *Server) Provision(ctx context.Context, p identity.Person) (*api.Holder,
 		return nil, err
 	}
 	first := len(others.GetItems()) == 0
+	all := first || s.cfg.Auth.Operators.On()
 	h, err = own.Holder().Add(ctx, api.HolderAddRequest_builder{
 		Id:       p.Id.Bytes(),
 		Tenant:   api.TenantRef_builder{Id: p.Tenant.Bytes()}.Build(),
 		Alias:    p.Alias,
 		Name:     p.Name,
-		AllSites: first,
+		AllSites: all,
 	}.Build())
 	if err != nil {
 		return nil, fmt.Errorf("provision @%s/%s: %w", p.TenantAlias, p.Alias, err)
 	}
-	slog.Default().InfoContext(ctx, "provisioned person", "tenant", p.TenantAlias, "alias", p.Alias, "all_sites", first)
+	slog.Default().InfoContext(ctx, "provisioned person", "tenant", p.TenantAlias, "alias", p.Alias, "all_sites", all)
 
 	return h, nil
 }

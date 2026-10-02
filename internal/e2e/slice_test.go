@@ -79,8 +79,13 @@ func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 
 	cl := &cluster{t: t, cfg: c}
 	cl.serve()
-	// The node is up once its first heartbeat registered its sink.
-	ops := api.NewSinkServiceClient(cl.dialCluster("@cluster/ops"))
+	// The node is up once its first heartbeat registered its sink. Where
+	// operators are a team, init put the first admin on it (§33.1).
+	operator := "@cluster/ops"
+	if c.Auth.Operators.On() {
+		operator = "@acme/admin"
+	}
+	ops := api.NewSinkServiceClient(cl.dialCluster(operator))
 	require.Eventually(t, func() bool {
 		vs, err := ops.List(ctx, api.SinkListRequest_builder{}.Build())
 		if err != nil {

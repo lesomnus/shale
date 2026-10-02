@@ -71,13 +71,18 @@ func (c Config) Embedded() bool { return c.Addr == "" }
 const Agent = "shale"
 
 // AgentMethods is what that holder may call: checking a password, reading
-// a person and the tenant, making a person.
+// a person and the tenant, making a person, and finding out who is on the
+// operators' team (`auth.operators`). On an external roster this is the
+// role the tenant key's holder needs; the embedded one is given it.
 var AgentMethods = []string{
 	"/roster.VouchService/Verify",
 	"/roster.HolderService/Get",
 	"/roster.HolderService/Add",
 	"/roster.TenantService/Get",
 	"/roster.MeService/Get",
+	"/roster.TeamService/Get",
+	"/roster.TeamService/List",
+	"/roster.TeamMembershipService/List",
 }
 
 // Person is who roster said somebody is: the identifiers Shale's rows are
