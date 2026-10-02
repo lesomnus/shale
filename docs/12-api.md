@@ -61,8 +61,23 @@ in the public server at all
 
 | Surface | Entry point | Callers | Tenant wall | Exposure |
 |---|---|---|---|---|
-| **Tenant API** | `shale serve control` | producers, readers, tenant admins | **on**: a caller sees only its own tenant | may face the internet |
+| **Tenant API** | `shale serve control` | producers, readers, people, tenant admins | **on**: a caller sees only its own tenant | may face the internet |
 | **Cluster API** | `shale serve cluster` | Storage Nodes, cluster operators | spans all tenants; writes global entities | **internal network only** |
+
+Who may call what on each surface is `server/core/gatepolicy.go`, and it is
+code rather than configuration, with one switch
+([§33.1](10-security.md#331-trust-model)):
+
+| Caller | Tenant API | Cluster API |
+|---|---|---|
+| producer, reader | the calls of its own work | — |
+| node, relay | — | the calls of its own work |
+| person, operators a **tenant** (default) | everything in their tenant but what the system writes; a password only by one who sees every site | the people of `control.cluster_tenant`: everything but writing a key |
+| person, operators a **team** (`auth.operators`) | the reads behind the console (`Get`/`List`/`Watch` of sets, sources, laminae, sites, producers, readers; `Get`/`List` of attempts; `Set.Live`, `Source.Live`, `Lamina.Timeline`) | — |
+| operator, operators a **team** | everything in their tenant but what the system writes | the members of the team: everything but writing a key |
+
+An operator check that roster cannot answer is refused with `UNAVAILABLE`,
+never allowed.
 
 No flag mounts cluster services into `shale serve control`. A single-machine
 `shale serve all` serves both, on separate listeners, with the cluster

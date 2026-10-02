@@ -113,6 +113,10 @@ deployment runs well on them, and changes them only for a reason.
 | People | `auth.roster.addr` | none: roster in this process | an address | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.roster.keys` | none | tenant alias → `env:NAME`, `file:PATH` | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.roster.ca_file`, `auth.roster.insecure` | the system pool, TLS | — | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.operators.team` | none: operators are the people of `control.cluster_tenant`, and every person administers their tenant | a team's alias, or its identifier; set, operators are its members and everybody else reads | control | [§33.1](10-security.md#331-trust-model), [§35.2](12-api.md#352-two-api-surfaces) |
+| People | `auth.operators.tenant` | the one tenant `auth.roster.keys` names | a tenant this deployment serves | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.operators.site` | none: a team in no site | the alias of the team's site | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.operators.ttl` | 30 s | how long roster's answer is kept; a failure is kept 5 s and is no | control | [§33.1](10-security.md#331-trust-model) |
 | Trail | `audit.profile` | none: forever | `pipa`, `pipa-sensitive`, `pci`, `hipaa`, `sox`, `gdpr`, `forever` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.retain`, `audit.destroy` | the profile's | how long a row stays in the table, and in the archive | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.archive`, `audit.discard` | none | a directory; a window with neither is refused | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
