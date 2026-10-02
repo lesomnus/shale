@@ -53,12 +53,18 @@ export interface Init {
 	/** The video track's ID and timescale, ticks per second. */
 	track: number
 	timescale: number
+	/**
+	 * The codecs of every track, as a MIME `codecs` parameter: what a
+	 * SourceBuffer is made for. A browser refuses an init segment that lacks
+	 * a track its SourceBuffer was promised, so it is what the segment holds.
+	 */
+	codecs: string
 }
 
 /**
  * parseInit reads the init segment at the start of a lamina: its length is
- * where the first `moof` begins, and the video track's timescale is in its
- * `mdhd`.
+ * where the first `moof` begins, the video track's timescale is in its
+ * `mdhd`, and each track's codec in its `stsd`.
  */
 export function parseInit(b: Bytes): Init | undefined {
 	const v = new DataView(b.buffer, b.byteOffset, b.byteLength)
@@ -70,6 +76,12 @@ export function parseInit(b: Bytes): Init | undefined {
 		end = x.end
 	}
 	if (moov === undefined) return undefined
+	const codecs: string[] = []
+	for (const trak of boxes(b, moov.off + moov.hdr, moov.end)) {
+		if (trak.type !== 'trak') continue
+		const c = codecOf(b, trak)
+		if (c !== undefined && !codecs.includes(c)) codecs.push(c)
+	}
 	for (const trak of boxes(b, moov.off + moov.hdr, moov.end)) {
 		if (trak.type !== 'trak') continue
 		const tkhd = find(b, trak.off + trak.hdr, trak.end, 'tkhd')
@@ -85,10 +97,92 @@ export function parseInit(b: Bytes): Init | undefined {
 		const mv = b[mdhd.off + mdhd.hdr]
 		const timescale = v.getUint32(mdhd.off + mdhd.hdr + (mv === 1 ? 20 : 12))
 
-		return { bytes: b.subarray(0, end), track, timescale }
+		return { bytes: b.subarray(0, end), track, timescale, codecs: codecs.join(',') }
 	}
 
 	return undefined
+}
+
+/** at walks down a path of boxes from a box, or undefined. */
+function at(b: Uint8Array, from: Box, ...path: string[]): Box | undefined {
+	let x: Box | undefined = from
+	for (const type of path) {
+		x = find(b, x.off + x.hdr, x.end, type)
+		if (x === undefined) return undefined
+	}
+
+	return x
+}
+
+/**
+ * codecOf is a track's codec as RFC 6381 names it: `avc1.PPCCLL` from the
+ * `avcC`, `mp4a.40.N` from the `esds`, `opus`; the sample entry's type for
+ * anything else.
+ */
+function codecOf(b: Uint8Array, trak: Box): string | undefined {
+	const stsd = at(b, trak, 'mdia', 'minf', 'stbl', 'stsd')
+	if (stsd === undefined) return undefined
+	// Version and flags, then the entry count; the first entry is the one.
+	const entry = boxes(b, stsd.off + stsd.hdr + 8, stsd.end)[0]
+	if (entry === undefined) return undefined
+	const hex = (n: number): string => n.toString(16).padStart(2, '0')
+	switch (entry.type) {
+		case 'avc1':
+		case 'avc3': {
+			// A visual sample entry: 8 bytes of reserved and the reference
+			// index, 70 of picture fields, then its boxes.
+			const avcC = find(b, entry.off + entry.hdr + 78, entry.end, 'avcC')
+			if (avcC === undefined) return entry.type
+			const p = avcC.off + avcC.hdr
+			return `${entry.type}.${hex(b[p + 1]!)}${hex(b[p + 2]!)}${hex(b[p + 3]!)}`
+		}
+		case 'mp4a': {
+			// An audio sample entry: 8 bytes of reserved and the reference
+			// index, 20 of sound fields, then its boxes.
+			const esds = find(b, entry.off + entry.hdr + 28, entry.end, 'esds')
+			const object = esds === undefined ? undefined : audioObject(b, esds.off + esds.hdr + 4, esds.end)
+			return object === undefined ? 'mp4a.40.2' : `mp4a.${hex(object.type)}${object.audio === undefined ? '' : `.${object.audio}`}`
+		}
+		case 'Opus':
+			return 'opus'
+		default:
+			return entry.type
+	}
+}
+
+/**
+ * audioObject reads an `esds` descriptor: the object type of its decoder
+ * config and, for MPEG-4 audio (0x40), the audio object type in the first
+ * five bits of its specific info.
+ */
+function audioObject(b: Uint8Array, p: number, end: number): { type: number; audio: number | undefined } | undefined {
+	const descriptor = (): { tag: number; body: number; end: number } | undefined => {
+		if (p + 2 > end) return undefined
+		const tag = b[p++]!
+		let size = 0
+		for (let i = 0; i < 4; i++) {
+			const x = b[p++]!
+			size = (size << 7) | (x & 0x7f)
+			if ((x & 0x80) === 0) break
+		}
+		return { tag, body: p, end: Math.min(end, p + size) }
+	}
+	const es = descriptor()
+	if (es === undefined || es.tag !== 0x03) return undefined
+	const flags = b[p + 2]!
+	p += 3
+	if (flags & 0x80) p += 2
+	if (flags & 0x40) p += 1 + b[p]!
+	if (flags & 0x20) p += 2
+	const config = descriptor()
+	if (config === undefined || config.tag !== 0x04) return undefined
+	const type = b[config.body]!
+	if (type !== 0x40) return { type, audio: undefined }
+	p = config.body + 13
+	const specific = descriptor()
+	if (specific === undefined || specific.tag !== 0x05) return { type, audio: undefined }
+
+	return { type, audio: b[specific.body]! >> 3 }
 }
 
 /** Key is one entry of a lamina's index: a keyframe's decode time and offset. */
