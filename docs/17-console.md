@@ -138,7 +138,12 @@ beside 30402 on a NodePort), so the console reaches it cross-origin and
 that listener names the console's origin in `origins:` — every name the
 page is opened by. The two must be the same *site* (the same host, or one
 registrable domain): the cookie is `SameSite=Lax`, which a browser sends
-across ports but not across sites. A cluster API reachable only from
+across ports but not across sites. Where the cluster listener is, the page asks the tenant listener first:
+`GET /session/ways` names it in `cluster` when the deployment says
+(`auth.oidc.cluster_origin`), and the port beside is only the guess for a
+server that names nothing. Behind an Ingress the two listeners are two names
+on 443, and the guess -- the tenant listener's host on 444 -- is a port
+nothing answers on: a call that hangs until it times out. A cluster API reachable only from
 inside the network keeps the operator half of the console inside too; the
 tenant half works on its own, and the pages that need the other say so.
 

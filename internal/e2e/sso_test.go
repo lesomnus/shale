@@ -256,3 +256,27 @@ func TestSsoCli(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, post(idp.Sign(t, claims("shale-cli", now.Add(-time.Hour)))), "stale")
 	require.Equal(t, http.StatusUnauthorized, post(idp.Sign(t, claims("shale-cli", now))[:40]+"x"), "garbage")
 }
+
+// Behind an Ingress the cluster listener is another name on 443, and the
+// console's guess -- the tenant listener's host one port up -- is a port
+// nothing answers on (§40.4). `GET /session/ways` names it instead.
+func TestWaysNamesTheClusterListener(t *testing.T) {
+	idp := ssotest.New(t, "shale", "s3cret", "shale-cli")
+	c := start(t, func(c *cmd.Config) {
+		c.Auth.Oidc.Issuer = idp.URL
+		c.Auth.Oidc.ClientId = "shale"
+		c.Auth.Oidc.ClientSecret = "s3cret"
+		c.Auth.Oidc.ClusterOrigin = "https://ops.shale.example"
+	})
+	var tenant string
+	require.Eventually(t, func() bool {
+		tenant = c.running.CP.HttpAddr(cmd.SurfaceTenant)
+		return tenant != ""
+	}, 10*time.Second, 50*time.Millisecond)
+
+	resp, b := get(t, http.DefaultClient, "http://"+tenant+"/session/ways")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	var ways cmd.Ways
+	require.NoError(t, json.Unmarshal(b, &ways))
+	require.Equal(t, "https://ops.shale.example", ways.Cluster)
+}

@@ -160,6 +160,10 @@ type Ways struct {
 	// DeviceClientId is the CLI's client at the issuer; empty is no single
 	// sign-on from the CLI.
 	DeviceClientId string `json:"device_client_id,omitempty"`
+	// Cluster is where the cluster API's HTTP listener answers browsers, when
+	// that is not this listener's host one port up -- an Ingress in front
+	// (§40.4). The console asks for it before it opens the operators' half.
+	Cluster string `json:"cluster,omitempty"`
 }
 
 func (s *Server) ways(w http.ResponseWriter, _ *http.Request) {
@@ -167,6 +171,7 @@ func (s *Server) ways(w http.ResponseWriter, _ *http.Request) {
 	if s.Sso != nil {
 		v.Sso, v.Issuer, v.Login, v.DeviceClientId = true, s.cfg.Auth.Oidc.Issuer, sso.PathLogin, s.cfg.Auth.Oidc.DeviceClientId
 	}
+	v.Cluster = s.cfg.Auth.Oidc.ClusterOrigin
 	writeJson(w, http.StatusOK, v)
 }
 
