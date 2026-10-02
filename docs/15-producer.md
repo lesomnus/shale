@@ -131,11 +131,12 @@ buffered mode the segment is complete at the next cut and uploaded then.
 ### 38.3 Managed capture
 
 The producer runs one **capture process** per managed source and reads
-fragmented MP4 from its standard output. The default tool is **ffmpeg**.
-Any program that writes fragmented MP4 to its standard output satisfies
-the contract ([§38.1](#381-inputs)), so a GStreamer pipeline ending in
-`mp4mux fragment-duration=500 streamable=true ! fdsink`, or a vendor tool,
-can take its place per source.
+fragmented MP4 from its standard output. The default tool is **ffmpeg**;
+`capture: gstreamer` runs a V4L2 camera through **GStreamer** instead
+(below), which is what a Raspberry Pi's encoder wants. Any program that
+writes fragmented MP4 to its standard output satisfies the contract
+([§38.1](#381-inputs)), so a vendor tool can take its place per source as
+a command (tier 3).
 
 **Why ffmpeg.** One binary covers V4L2 and RTSP inputs, ALSA audio, and
 every hardware encoder the producer is likely to meet (`h264_v4l2m2m` on a
@@ -149,6 +150,20 @@ make the cut simpler, since its application sink hands over each buffer with
 its keyframe flag, but only when embedded in the process, which costs the
 static binary; as a subprocess it has no advantage over ffmpeg.
 
+**Why GStreamer too.** That held until a Pi carried three USB cameras
+([producer bench](producer-bench.md#three-cameras-gstreamer-against-ffmpeg)).
+Through ffmpeg the Pi's encoder is constant-rate (`h264_v4l2m2m` cannot
+select its variable-rate mode), and decoding three MJPEG streams and
+converting them for it took 3.35 of the Pi 400's four cores. GStreamer's
+`v4l2h264enc` reaches the variable-rate mode through a V4L2 control, and the
+same three cameras took about one core, at 30 frames a second each. So
+`capture: gstreamer` exists for one case, a V4L2 camera encoded by the
+host, and does not try to be ffmpeg: no audio, no RTSP, no tier 2, and no
+dark detection ([§38.10](#3810-dark-scenes)), each refused at start
+rather than ignored. Its pipeline writes MPEG-TS, and the second stage
+below turns that into fragmented MP4, so ffmpeg is still on the host and
+what the producer reads is the same.
+
 **Configuration, in three tiers.** The producer translates the first tier
 into ffmpeg arguments, passes the second through, and leaves the third alone.
 
@@ -158,6 +173,7 @@ producer:
   set: lobby                # the set this host is adopted for
   uplink: 40Mbps            # optional; bounds the sum of the ceilings (§38.5)
   ffmpeg: /usr/bin/ffmpeg   # default: from PATH
+  gstreamer: /usr/bin/gst-launch-1.0   # for capture: gstreamer; default: from PATH
 
 sources:
   - alias: door             # tier 1: structured, portable
@@ -189,6 +205,16 @@ sources:
     extra_input_args: [-thread_queue_size, "512"]
     extra_output_args: [-x264-params, "nal-hrd=cbr"]
 
+  - alias: porch            # a Raspberry Pi's camera through GStreamer: video only
+    capture: gstreamer
+    input: v4l2:/dev/v4l/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-video-index0
+    format: mjpeg
+    size: 1280x720
+    fps: 30
+    encoder: auto           # under gstreamer: auto | v4l2h264enc | x264enc | copy
+    max_bitrate: 2.2Mbps
+    controls: {exposure_dynamic_framerate: 0}
+
   - alias: roof             # tier 3: your own command; stdout must be fragmented MP4
     command: >
       rpicam-vid -t 0 --codec h264 --inline --intra 60 --bitrate 4000000 -o -
@@ -212,7 +238,20 @@ sources:
 The producer records which encoder `auto` chose and shows it in its
 heartbeat ([§38.6](#386-health-and-heartbeats)).
 
-**A second stage for the Raspberry Pi's encoder.** `h264_v4l2m2m` hands
+**Translation** under `capture: gstreamer`, into `gst-launch-1.0 -q -e …`:
+
+| Field | GStreamer |
+|---|---|
+| `input: v4l2:…`, `size`, `fps` | `v4l2src device=<device> ! <caps>,width=<w>,height=<h>,framerate=<fps>/1`, 1280×720 at 30 fps when unsaid |
+| `format` | `mjpeg` (the default): `image/jpeg … ! jpegdec`, in software, since the Pi's JPEG decoder takes two streams at most and a third leaves it wedged until a reboot; `yuyv`: `video/x-raw,format=YUY2`; `h264`: `video/x-h264`, copied, or decoded (`avdec_h264`) when an encoder is named. Then `videoconvert ! video/x-raw,format=I420` for the encoder |
+| `encoder: auto` | `v4l2h264enc` when this host's GStreamer has it (`gst-inspect-1.0 --exists`), else `x264enc`; `copy` only with `format: h264` |
+| `max_bitrate` | `v4l2h264enc extra-controls=controls,video_bitrate=<target>,video_bitrate_mode=0,…`: variable-rate, averaging the target, which is 90% of the video ceiling (as above), since the encoder takes no peak cap and averaged 5% over its target; `x264enc bitrate=<target in kbit/s> vbv-buf-capacity=1000` |
+| `keyframe_interval` | `h264_i_frame_period=<fps × interval>` (`key-int-max` for x264), and `repeat_sequence_header=1` so every keyframe carries its parameter sets; then `video/x-h264,level=(string)4.1` (4.2 above 1080p30), as the encoder otherwise picks a level too low for 720p30 |
+| output (fixed) | `h264parse config-interval=-1 ! mpegtsmux ! fdsink fd=1`, into the second stage below |
+| `controls` | as with ffmpeg: set on the device before every start |
+
+**A second stage for the Raspberry Pi's encoder.** It also serves
+`capture: gstreamer`, whose pipeline writes MPEG-TS for it. `h264_v4l2m2m` hands
 ffmpeg no parameter sets, so ffmpeg's mp4 muxer writes an empty `avcC`
 and leaves the samples in Annex B, a file nothing decodes; and it flags
 every frame a keyframe, so `frag_keyframe` would make a fragment per
@@ -238,7 +277,18 @@ camera hunting for focus. `shale producer scan` prints every control a
 camera has with its current value ([§38.4](#384-discovery-and-registration)).
 
 **Supervision.** The producer starts each capture process, reads its output,
-restarts it with backoff when it exits, and logs its standard error. While a
+restarts it with backoff when it exits, and logs its standard error.
+**It stops one gracefully:** an interrupt (SIGINT) to the process's own
+process group, so both sides of a tier-3 pipeline hear it, and a kill to
+the group if it has not ended within 5 seconds. A second stage is sent
+nothing and ends at the end of its input, after the first stage flushed
+into it. ffmpeg on an interrupt writes its trailer and exits;
+`gst-launch -e` sends end-of-stream through the pipeline, which drains the
+encoder. That matters on a Pi: a GStreamer pipeline killed mid-stream can
+leave the codec wedged (`mmal … timed out`) until a reboot, and every
+capture after it fails. The producer itself ends this way on SIGTERM as on
+Ctrl-C, and its systemd unit sends the stop to the producer alone
+(`KillMode=mixed`), so the captures are not killed beside it. While a
 process is down the source's segment is closed as "the camera stopped"
 ([§15](04-write-path.md#15-partial-laminae)) and the next one starts when
 frames return. Ten seconds after a start the producer checks what it is

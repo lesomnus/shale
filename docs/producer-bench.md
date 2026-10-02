@@ -167,6 +167,54 @@ camera, output discarded; 3 min cooldown. Sampled every 5 s.
   aluminium plate inside the keyboard. A bare Pi 4 board in an enclosure runs
   hotter and should be measured the same way before deployment.
 
+## Three cameras: GStreamer against ffmpeg
+
+The same Pi 400 two weeks on, recording for a deployment: three Logitech
+C270 (MJPEG 1280×720 at 30 fps, no microphone) on its USB ports, each at a
+2.2 Mbps ceiling. Holiday Linux 26.04 (Ubuntu), kernel 7.0.0-raspi,
+ffmpeg 8.0.1, GStreamer 1.28.2. 2026-10-03, at night.
+
+| Capture | CPU, three cameras | Frame rate | Bitrate, asked → measured |
+|---|---:|---|---|
+| ffmpeg, `h264_v4l2m2m` (two stages, §38.3) | 3.35 cores | 30 fps | 1.9 → up to 2.57 Mbps (one camera) |
+| GStreamer, `v4l2h264enc` constant-rate | — | **about 12 fps** | — |
+| GStreamer, `v4l2h264enc` variable-rate, `jpegdec` (a command, tier 3) | 0.85 cores | 29.9 fps | 1.9 → 1.99 Mbps |
+| the same, run by the producer (`capture: gstreamer`) | 1.0 core, with the remux; the producer itself 0.25 more | 29.9–30.0 fps | 1.886 → 1.88 Mbps |
+
+CPU is the processes' own, over a minute, of the four cores. The last row
+is the producer's pipeline: 90% of the 2.2 Mbps ceiling's video share.
+
+Findings:
+
+- **The encoder's constant-rate mode costs frames.** With
+  `video_bitrate_mode=1` three cameras each delivered about 12 frames a
+  second; with `0` (variable), 30. Through ffmpeg the mode cannot be chosen
+  at all, so this run's ffmpeg rows are the encoder ffmpeg gets.
+- **ffmpeg's cost is in front of the encoder.** Decoding the camera's
+  MJPEG and converting it to `yuv420p` for `h264_v4l2m2m`, as the first
+  bench found, took 3.35 cores for three 720p30 cameras; GStreamer's
+  `jpegdec` into the same encoder took about one. Three cameras through ffmpeg left the Pi no
+  room; through GStreamer it idles at 60–70%.
+- **ffmpeg's encoder overshot, once.** One camera averaged 2.57 Mbps
+  against a 1.9 Mbps target, which made its laminae end early and the
+  control plane raise its ceiling twice (§38.2, 2 → 2.5 → 3.125 Mbps). The
+  other two stayed within 5%, as the first bench measured.
+- **Variable-rate averages a little over its target.** 1.9 Mbps asked gave
+  1.99 (+5%) on the busiest camera, which is why the producer asks for 90%
+  of the video ceiling. The rate follows the scene: the same cameras at
+  1.84–1.88 Mbps in quieter minutes.
+- **The Pi's JPEG decoder takes two streams.** With `v4l2jpegdec` a third
+  pipeline failed to start, and after the three were killed the codec
+  stayed wedged (`mmal … timed out`, every new pipeline failing) until a
+  reboot. Software `jpegdec` is the producer's choice.
+- **A killed pipeline can wedge the codec too.** A GStreamer process sent
+  SIGTERM or SIGKILL mid-stream, by systemd's stop or by `needrestart`
+  after an unattended upgrade, left the encoder in the same state. Sent
+  SIGINT with `gst-launch -e`, it drains and closes it: three restarts of
+  the producer in a row, each stopping in under a second, left no
+  pipeline behind and no codec error (§38.3, Supervision).
+- **Temperature held at 52–54 °C** with all three running.
+
 ## Caveats
 
 - Neither scene moved much, and nothing crossed the view during the long
@@ -181,6 +229,7 @@ camera, output discarded; 3 min cooldown. Sampled every 5 s.
 - One frame per recording was compared, 8 s in. Frames between keyframes (every
   2 s here) can look worse.
 - 640×480 is a 4:3 mode with a different field of view.
-- The hardware encoder was only driven through ffmpeg, where it is
-  constant-rate. Whether its variable-bitrate mode can be reached another
-  way (a V4L2 control on the encoder's own file descriptor) was not tried.
+- In the first runs the hardware encoder was only driven through ffmpeg,
+  where it is constant-rate. Its variable-bitrate mode is reached through
+  GStreamer's `extra-controls` ([above](#three-cameras-gstreamer-against-ffmpeg)
+  is the run that did).

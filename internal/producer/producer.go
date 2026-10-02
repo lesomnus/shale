@@ -43,6 +43,9 @@ type Config struct {
 
 	Sources []SourceConfig
 	Ffmpeg  string
+	// Gst is gst-launch, for the sources captured through GStreamer
+	// (§38.3); `gst-launch-1.0` on PATH by default.
+	Gst string
 	// Push is the listener pushed sources are written to (§38.9),
 	// `unix:/path` or `tcp://host:port`; PushIdle how long a pushed
 	// stream may carry nothing before its segment closes (30 s).
@@ -257,6 +260,9 @@ func New(cfg Config) (*Producer, error) {
 		}
 		if sc.Kind != "" && sc.Kind != KindMP4 && sc.Kind != KindRaw {
 			return nil, fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindMP4, KindRaw)
+		}
+		if err := sc.checkGst(); err != nil {
+			return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
 		}
 		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, wake: make(chan struct{}, 1)}
 		if sc.Input == InputPush {
@@ -622,6 +628,7 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 	}
 	s.capture = &Capture{
 		Ffmpeg:   p.cfg.Ffmpeg,
+		Gst:      p.cfg.Gst,
 		Source:   s.cfg,
 		Log:      p.log,
 		RawLoops: s.cfg.RawLoops,

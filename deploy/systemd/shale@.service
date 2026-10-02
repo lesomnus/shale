@@ -15,6 +15,12 @@ Group=shale
 ExecStart=/usr/bin/shale --config /etc/shale/shale.yaml serve %i
 Restart=always
 RestartSec=5
+# The stop goes to shale alone, which ends a producer's capture processes
+# itself (§38.3): a GStreamer pipeline sent SIGTERM with the rest of the
+# group can leave a Raspberry Pi's codec wedged until a reboot. Whatever is
+# still running when the timeout runs out is killed.
+KillMode=mixed
+TimeoutStopSec=30
 # Many concurrent uploads (§34.6).
 LimitNOFILE=65536
 StateDirectory=shale
