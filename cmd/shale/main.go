@@ -12,13 +12,17 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/lesomnus/shale/cli"
 	"github.com/lesomnus/shale/cmd"
 )
 
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	// SIGTERM is how systemd, Docker and Kubernetes ask a process to stop:
+	// it ends as Ctrl-C does, so a producer ends its captures gracefully
+	// (§38.3) and a role closes what it holds.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	var c cmd.Config

@@ -43,8 +43,11 @@ type SourceConfig struct {
 	Format string
 	Size   string
 	Fps    int
+	// Capture is the tool that runs the camera: ffmpeg (the default) or
+	// gstreamer, for a V4L2 camera on the Raspberry Pi's encoder (§38.3).
+	Capture string
 	// Encoder: auto | h264_v4l2m2m | h264_vaapi | h264_qsv | h264_nvenc |
-	// libx264 | copy.
+	// libx264 | copy; under gstreamer auto | v4l2h264enc | x264enc | copy.
 	Encoder string
 	// MaxBitrate is the declared ceiling in bits per second; 0 is auto.
 	MaxBitrate int64
@@ -277,10 +280,7 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 			audioBps *= 2
 		}
 	}
-	videoCeiling := int64(float64(ceiling-audioBps) / TsOverhead)
-	if videoCeiling < 100_000 {
-		videoCeiling = 100_000
-	}
+	videoCeiling := videoCeiling(ceiling, audioBps)
 
 	if encoder == "copy" || ((c.Format == "h264" || c.Format == "h265") && encoder == "") {
 		args = append(args, "-c:v", "copy")
@@ -510,6 +510,8 @@ func encoderOpens(ctx context.Context, ffmpeg, encoder string) bool {
 // reader function until the context ends.
 type Capture struct {
 	Ffmpeg string
+	// Gst is gst-launch, for a source captured through GStreamer.
+	Gst    string
 	Source SourceConfig
 	Log    *slog.Logger
 	// Encoder is what auto chose, once it did.
@@ -657,6 +659,19 @@ func (c *Capture) applyControls() {
 // encoded (audioRefused): started again at once.
 var errKicked = errors.New("capture restarted with the audio encoded")
 
+// stopGrace is how long a capture process has, once interrupted, to end
+// on its own before its process group is killed (§38.3).
+const stopGrace = 5 * time.Second
+
+// gst is gst-launch: as configured, else on PATH.
+func (c *Capture) gst() string {
+	if c.Gst != "" {
+		return c.Gst
+	}
+
+	return "gst-launch-1.0"
+}
+
 // healthyRun is how long a capture has to run for its exit to count as an
 // ordinary stop rather than the next turn of a crash loop.
 const healthyRun = time.Minute
@@ -685,6 +700,25 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	remux := c.Remux
 	if c.Source.Command != "" {
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", c.Source.Command)
+	} else if c.Source.gstreamer() {
+		encoder := c.Source.Encoder
+		if encoder == "" || encoder == "auto" {
+			if c.Source.Format == "h264" {
+				encoder = "copy"
+			} else {
+				if c.Encoder == "" {
+					c.Encoder = PickGstEncoder(ctx, c.gst())
+					c.Log.Info("encoder", "source", c.Source.Alias, "chosen", c.Encoder)
+				}
+				encoder = c.Encoder
+			}
+		}
+		// The pipeline writes TS, which the second stage makes fragmented
+		// MP4, as for h264_v4l2m2m (§38.3).
+		remux = true
+		args := GstArgs(src, encoder, ceiling, keyframe)
+		c.Log.Info("capture", "source", c.Source.Alias, "cmd", c.gst()+" "+strings.Join(args, " ")+" | "+c.Ffmpeg+" "+strings.Join(RemuxArgs(false), " "))
+		cmd = exec.CommandContext(ctx, c.gst(), args...)
 	} else {
 		encoder := c.Source.Encoder
 		if encoder == "" || encoder == "auto" {
@@ -713,6 +747,8 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		cmd = exec.CommandContext(ctx, c.Ffmpeg, args...)
 	}
 	cmd.Env = append(os.Environ(), "AV_LOG_FORCE_NOCOLOR=1")
+	stopped := stopGracefully(cmd, true, stopGrace)
+	defer stopped()
 	c.applyControls()
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -726,8 +762,12 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	// TS in, fragmented MP4 out.
 	var second *exec.Cmd
 	if remux {
-		second = exec.CommandContext(ctx, c.Ffmpeg, RemuxArgs(src.aacArchive())...)
+		second = exec.CommandContext(ctx, c.Ffmpeg, RemuxArgs(src.aacArchive() && !src.gstreamer())...)
 		second.Env = cmd.Env
+		// It ends when the first stage does, having written what that
+		// flushed on its way out.
+		secondStopped := stopGracefully(second, false, stopGrace)
+		defer secondStopped()
 		second.Stdin = stdout
 		out, err := second.StdoutPipe()
 		if err != nil {

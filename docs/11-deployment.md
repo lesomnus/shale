@@ -258,6 +258,11 @@ next start and is recognized by its hardware identity
 - Services run as a dedicated `shale` user that owns the sink directories.
 - Host settings: swap off ([§22.4](07-storage-node.md#224-bypass-the-page-cache)),
   NTP on, and a raised `LimitNOFILE` for many concurrent uploads.
+- A stop is sent to shale alone (`KillMode=mixed`, 30 s before the rest is
+  killed). shale ends on SIGTERM as on Ctrl-C, and a producer interrupts its
+  capture processes itself ([§38.3](15-producer.md#383-managed-capture)),
+  since a GStreamer pipeline killed with the group can wedge a Raspberry
+  Pi's codec.
 
 ### 34.7 Single machine
 

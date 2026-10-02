@@ -195,7 +195,7 @@ type SourceConfig struct {
 	// for a stream a process on this host writes to `producer.push`
 	// (§38.9).
 	Input string `yaml:"input"`
-	// Kind of a pushed stream: `ts` (the default), or `raw` for frames
+	// Kind of a pushed stream: `mp4` (the default), or `raw` for frames
 	// that are not video, cut at frame boundaries (§38.9).
 	Kind string `yaml:"kind"`
 	// ContentType of a raw source's laminae, e.g. `application/x-mcap`,
@@ -205,8 +205,13 @@ type SourceConfig struct {
 	Format string `yaml:"format"`
 	Size   string `yaml:"size"`
 	Fps    int    `yaml:"fps"`
+	// Capture is the tool that runs the camera: `ffmpeg` (the default) or
+	// `gstreamer`, for a V4L2 camera on the Raspberry Pi's encoder, video
+	// only (§38.3).
+	Capture string `yaml:"capture"`
 	// Encoder: auto | h264_v4l2m2m | h264_vaapi | h264_qsv | h264_nvenc |
-	// libx264 | copy.
+	// libx264 | copy; under `capture: gstreamer` auto | v4l2h264enc |
+	// x264enc | copy.
 	Encoder string `yaml:"encoder"`
 	// MaxBitrate is the declared ceiling, e.g. "4Mbps", or "auto" (§38.5).
 	MaxBitrate string `yaml:"max_bitrate"`
@@ -308,6 +313,9 @@ type ProducerConfig struct {
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	// Ffmpeg is the capture binary; `ffmpeg` on PATH by default.
 	Ffmpeg string `yaml:"ffmpeg"`
+	// Gstreamer is gst-launch, for the sources with `capture: gstreamer`
+	// (§38.3); `gst-launch-1.0` on PATH by default.
+	Gstreamer string `yaml:"gstreamer"`
 	// Demo records this many sources of a picture and a tone ffmpeg draws
 	// for itself, beside whatever `sources` lists (§38.1): a tutorial or a
 	// walk-through that has no camera to hand. `--demo` on `serve producer`
