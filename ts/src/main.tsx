@@ -14,7 +14,7 @@ import { createRoot } from 'react-dom/client'
 
 import { Console } from './app.js'
 import type { Sandbox } from './sandbox.js'
-import { addrs } from './session.js'
+import { resolveAddrs } from './session.js'
 import { restore, type Mode, type Opened } from './surface.js'
 import './style.css'
 
@@ -60,7 +60,7 @@ async function boot(): Promise<void> {
 		}
 		mode = { kind: 'sandbox', box }
 	} else {
-		mode = { kind: 'real', addrs: addrs() }
+		mode = { kind: 'real', addrs: await resolveAddrs() }
 	}
 
 	const initial: Partial<Record<'tenant' | 'cluster', Opened>> = {}

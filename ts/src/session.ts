@@ -42,6 +42,11 @@ export interface Ways {
 	readonly password: boolean
 	readonly sso: boolean
 	readonly login?: string
+	/**
+	 * Where the cluster API's HTTP listener answers browsers, when the server
+	 * names it -- behind an Ingress, where "the port beside" is nothing.
+	 */
+	readonly cluster?: string
 }
 
 /**
@@ -100,10 +105,17 @@ export interface Addrs {
 /**
  * addrs is where the two surfaces are: `VITE_TENANT_ADDR` and
  * `VITE_CLUSTER_ADDR` when the page is `npm run dev`, else the origin the page
- * came from for the tenant API and the port beside it for the cluster API
- * (7402 and 7403 by default, §34.1).
+ * came from for the tenant API and, for the cluster API, the origin the server
+ * named ({@link resolveAddrs}) or else the port beside it (7402 and 7403 by
+ * default, §34.1).
  */
 export function addrs(): Addrs {
+	return resolved ?? guessed()
+}
+
+let resolved: Addrs | undefined
+
+function guessed(): Addrs {
 	const env = import.meta.env as Record<string, string | undefined>
 	const tenant = env['VITE_TENANT_ADDR'] ?? location.origin
 	let cluster = env['VITE_CLUSTER_ADDR']
@@ -119,6 +131,27 @@ export function addrs(): Addrs {
 	}
 
 	return { tenant, cluster }
+}
+
+/**
+ * resolveAddrs asks the tenant listener where the cluster listener is, once,
+ * and keeps the answer for {@link addrs}. Behind an Ingress the two are
+ * different names on 443 (§40.4), and guessing the port beside -- `:444` --
+ * would be a connection that hangs until it times out. A server that names
+ * nothing, or a page from `npm run dev`, keeps the guess.
+ */
+export async function resolveAddrs(): Promise<Addrs> {
+	if (resolved !== undefined) return resolved
+	const g = guessed()
+	const env = import.meta.env as Record<string, string | undefined>
+	let cluster = g.cluster
+	if (env['VITE_CLUSTER_ADDR'] === undefined) {
+		const w = await ways(g.tenant)
+		if (w.cluster !== undefined && w.cluster !== '') cluster = new URL(w.cluster).origin
+	}
+	resolved = { tenant: g.tenant, cluster }
+
+	return resolved
 }
 
 /** The cookie goes with every call, which `fetch` does not do on its own. */
