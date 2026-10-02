@@ -20,8 +20,8 @@ import (
 )
 
 // Managed capture (§38.3): one capture process per source, ffmpeg by
-// default, its standard output the source's TS stream, restarted with
-// backoff when it exits.
+// default, its standard output the source's fragmented MP4 stream,
+// restarted with backoff when it exits.
 
 // SourceConfig is one source as configured (§38.3, the three tiers).
 type SourceConfig struct {
@@ -31,8 +31,8 @@ type SourceConfig struct {
 	// or `push` for a stream a process writes to the producer's listener
 	// (§38.1, §38.9).
 	Input string
-	// Kind is what a pushed stream is: `ts` (the default) or `raw`,
-	// frames cut at frame boundaries (§38.9).
+	// Kind is what a pushed stream is: `mp4` (the default), cut at
+	// keyframes, or `raw`, frames cut at frame boundaries (§38.9).
 	Kind string
 	// ContentType is what the laminae of a raw source are, for whoever
 	// reads them, e.g. `application/x-mcap`; proposed to the CP, which
@@ -63,7 +63,8 @@ type SourceConfig struct {
 	EncoderOptions  map[string]string
 	ExtraInputArgs  []string
 	ExtraOutputArgs []string
-	// Tier 3: a whole command, run with `sh -c`; its stdout is TS.
+	// Tier 3: a whole command, run with `sh -c`; its stdout is fragmented
+	// MP4 (§38.1).
 	Command string
 	Zone    string
 	// RawLoops is how many times a `raw:` input plays before the capture
@@ -72,7 +73,7 @@ type SourceConfig struct {
 }
 
 // AudioConfig is a source's audio (§38.3): a microphone beside the camera,
-// and what the TS carries.
+// and what the stream carries.
 type AudioConfig struct {
 	// Device is an ALSA capture device, `alsa:hw:1`; empty means the
 	// camera's own audio, if it sends any.
@@ -251,8 +252,8 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 
 	// Audio (§38.3): a microphone is a second input and is encoded; a
 	// camera's own audio is copied as it is unless `audio.codec` says to
-	// encode or drop it; a USB camera has none. What a camera sends and TS
-	// cannot carry is caught by CheckAudio once the stream shows it.
+	// encode or drop it; a USB camera has none. What a camera sends and MP4
+	// cannot carry is caught by audioRefused once the muxer says so.
 	mic := c.hasMic()
 	codec := c.audioCodec()
 	usb := strings.HasPrefix(input, "v4l2:")

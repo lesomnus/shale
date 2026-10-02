@@ -28,7 +28,7 @@ import (
 // The offset counts the bytes of the stream the producer has taken, so a
 // writer keeps only what is above the last 204 and resumes from HEAD after
 // a disconnect. What the bytes are is the source's kind in the producer's
-// configuration, TS or frames (§38.9); the request does not say.
+// configuration, fragmented MP4 or frames (§38.9); the request does not say.
 type Push struct {
 	// Addr is `unix:/path` or `tcp://host:port`.
 	Addr string
