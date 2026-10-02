@@ -130,6 +130,11 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 		if (el === null || sandbox) return
 		if (mode === 'live') el.srcObject = null
 		setMode('playback')
+		if (engine.current?.stopped === true) {
+			// The last one's source closed under it: a fresh one for this pick.
+			engine.current.destroy()
+			engine.current = null
+		}
 		if (engine.current === null) {
 			engine.current = new Engine(el, {
 				status: setStatus,
@@ -364,7 +369,9 @@ class Engine {
 	private laminae: Lamina[] = []
 	private recent: { url: string; token: string } | undefined
 	private gen = 0
-	private queue: Array<{ bytes: Bytes; offset: number | undefined; done: () => void; fail: (e: unknown) => void }> = []
+	/** codecs is what the SourceBuffer was last made or changed for. */
+	private codecs = ''
+	private queue: Array<{ bytes: Bytes; place: { offset: number; codecs: string } | undefined; done: () => void; fail: (e: unknown) => void }> = []
 	private stream: { lamina: Lamina; meta: Meta; next: number } | { recentEnd: number } | undefined
 	private pumping = false
 	private closed = false
@@ -378,13 +385,19 @@ class Engine {
 		this.ms.addEventListener('sourceopen', () => {
 			if (this.sb !== undefined) return
 			this.ms.duration = (Date.now() + HOUR - this.base) / 1000
-			// The tracks a capture writes: H.264, AAC, and Opus beside it.
-			const sb = this.ms.addSourceBuffer('video/mp4; codecs="avc1.640028,mp4a.40.2,opus"')
-			sb.mode = 'segments'
-			sb.addEventListener('updateend', () => this.next())
-			sb.addEventListener('error', () => this.hooks.status({ tone: 'bad', text: 'the browser refused the bytes' }))
-			this.sb = sb
+			// The SourceBuffer waits for the first init segment: the tracks a
+			// capture writes differ (video alone, or AAC or Opus beside it),
+			// and a browser refuses a segment that lacks a promised one.
 			this.next()
+		})
+		this.ms.addEventListener('sourceclose', () => {
+			// The element let go of the source, an error most likely: its
+			// SourceBuffer is gone, and nothing more can be played through it.
+			if (this.closed) return
+			this.closed = true
+			this.gen++
+			this.queue = []
+			this.hooks.status({ tone: 'bad', text: `the player stopped${video.error === null ? '' : `: ${video.error.message}`}`.slice(0, 120) })
 		})
 		video.srcObject = null
 		video.src = this.url
@@ -410,6 +423,11 @@ class Engine {
 		this.recent = live === undefined || live.recentUrl === '' ? undefined : { url: live.recentUrl, token: live.viewToken }
 	}
 
+	/** stopped is when the engine plays nothing more: destroyed, or its source closed. */
+	get stopped(): boolean {
+		return this.closed
+	}
+
 	destroy(): void {
 		this.closed = true
 		this.gen++
@@ -433,6 +451,7 @@ class Engine {
 
 	/** seek plays from a moment: what is buffered, a lamina, or the recent window. */
 	async seek(wall: number): Promise<void> {
+		if (this.closed) return
 		const gen = ++this.gen
 		const t = this.media(wall)
 		this.hooks.head(wall)
@@ -495,8 +514,13 @@ class Engine {
 		this.evict(t)
 	}
 
+	/** live is the SourceBuffer while it is still the source's: none once that closed. */
+	private live(): SourceBuffer | undefined {
+		return this.closed ? undefined : this.sb
+	}
+
 	private buffered(t: number): boolean {
-		const sb = this.sb
+		const sb = this.live()
 		if (sb === undefined) return false
 		for (let i = 0; i < sb.buffered.length; i++) {
 			if (sb.buffered.start(i) - 0.3 <= t && t < sb.buffered.end(i) - 0.3) return true
@@ -507,7 +531,7 @@ class Engine {
 
 	/** bufferedAhead is how many seconds are buffered past the playhead. */
 	private bufferedAhead(): number {
-		const sb = this.sb
+		const sb = this.live()
 		if (sb === undefined) return 0
 		const t = this.video.currentTime
 		for (let i = 0; i < sb.buffered.length; i++) {
@@ -518,7 +542,7 @@ class Engine {
 	}
 
 	private evict(t: number): void {
-		const sb = this.sb
+		const sb = this.live()
 		if (sb === undefined || sb.updating || sb.buffered.length === 0) return
 		const start = sb.buffered.start(0)
 		if (t - start > 180) sb.remove(start, t - 90)
@@ -543,7 +567,7 @@ class Engine {
 		// The lamina's first key fragment came at date_started: that is where
 		// its decode time sits on the wall clock.
 		const offset = this.media(l.start) - first.time / meta.init.timescale
-		await this.append(meta.init.bytes, offset)
+		await this.append(meta.init.bytes, { offset, codecs: meta.init.codecs })
 		if (gen !== this.gen) return
 		this.stream = { lamina: l, meta, next: k.offset }
 		this.setTime(Math.max(this.media(wall), this.media(l.start) + (k.time - first.time) / meta.init.timescale))
@@ -570,7 +594,7 @@ class Engine {
 			return true
 		}
 		const offset = this.media(start) - time / init.timescale
-		await this.append(b, offset)
+		await this.append(b, { offset, codecs: init.codecs })
 		if (gen !== this.gen) return true
 		this.stream = { recentEnd: start + seconds * 1000 }
 		this.setTime(Math.max(this.media(wall), this.media(start)))
@@ -594,7 +618,7 @@ class Engine {
 						const meta = await metaOf(after)
 						if (gen !== this.gen) return
 						const first = meta.keys[0]!
-						await this.append(meta.init.bytes, this.media(after.start) - first.time / meta.init.timescale)
+						await this.append(meta.init.bytes, { offset: this.media(after.start) - first.time / meta.init.timescale, codecs: meta.init.codecs })
 						if (gen !== this.gen) return
 						this.stream = { lamina: after, meta, next: first.offset }
 						continue
@@ -626,26 +650,44 @@ class Engine {
 		}
 	}
 
-	/** append queues bytes for the SourceBuffer, with a timestamp offset to set first. */
-	private append(bytes: Bytes, offset?: number): Promise<void> {
+	/**
+	 * append queues bytes for the SourceBuffer; an init segment comes placed:
+	 * the timestamp offset to set first, and the codecs it holds.
+	 */
+	private append(bytes: Bytes, place?: { offset: number; codecs: string }): Promise<void> {
 		return new Promise((done, fail) => {
-			this.queue.push({ bytes, offset, done, fail })
+			this.queue.push({ bytes, place, done, fail })
 			this.next()
 		})
 	}
 
 	private next(): void {
-		const sb = this.sb
-		if (sb === undefined || sb.updating || this.closed) return
+		if (this.closed) return
+		let sb = this.sb
+		// Before the first init segment the source must be open to take a SourceBuffer.
+		if (sb === undefined ? this.ms.readyState !== 'open' : sb.updating) return
 		const job = this.queue.shift()
 		if (job === undefined) return
 		try {
-			if (job.offset !== undefined) {
-				// A new placement begins a new segment: whatever the parser
-				// held of the last one goes, so the offset may be set.
-				if (this.ms.readyState === 'open') sb.abort()
-				sb.timestampOffset = job.offset
+			if (job.place !== undefined) {
+				const type = `video/mp4; codecs="${job.place.codecs}"`
+				if (sb === undefined) {
+					sb = this.ms.addSourceBuffer(type)
+					sb.mode = 'segments'
+					sb.addEventListener('updateend', () => this.next())
+					sb.addEventListener('error', () => this.hooks.status({ tone: 'bad', text: 'the browser refused the bytes' }))
+					this.sb = sb
+				} else {
+					// A new placement begins a new segment: whatever the parser
+					// held of the last one goes, so the offset may be set.
+					if (this.ms.readyState === 'open') sb.abort()
+					// A lamina of another encoder: High before, Baseline now.
+					if (job.place.codecs !== this.codecs) sb.changeType(type)
+				}
+				this.codecs = job.place.codecs
+				sb.timestampOffset = job.place.offset
 			}
+			if (sb === undefined) throw new Error('media before an init segment')
 			sb.appendBuffer(job.bytes)
 			job.done()
 		} catch (err) {
