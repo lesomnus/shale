@@ -34,7 +34,7 @@ func TestGstArgsPi(t *testing.T) {
 		"-hide_banner", "-loglevel", "warning", "-nostats", "-probesize", "262144", "-analyzeduration", "500000",
 		"-f", "mpegts", "-i", "pipe:0", "-map", "0:v:0", "-map", "0:a?", "-c", "copy",
 		"-f", "mp4", "-movflags", "frag_keyframe+empty_moov+delay_moov+default_base_moof", "-frag_duration", "500000", "pipe:1",
-	}, GstRemuxArgs(false, false))
+	}, GstRemuxArgs(false, false, FragDuration))
 }
 
 // A camera's microphone (§38.3, §38.7): AAC for the archive and Opus beside
@@ -50,7 +50,7 @@ func TestGstArgsAudio(t *testing.T) {
 		"mic. ! queue ! voaacenc bitrate=64000 ! aacparse ! queue ! mux.sink_66 "+
 		"mic. ! queue ! opusenc bitrate=64000 ! queue ! mux.sink_67")
 	require.True(t, strings.HasSuffix(got, "mux.sink_67"))
-	remux := strings.Join(GstRemuxArgs(true, true), " ")
+	remux := strings.Join(GstRemuxArgs(true, true, FragDuration), " ")
 	require.Contains(t, remux, "-probesize 5000000 -analyzeduration 3000000", "the sound starts before the picture")
 	require.Contains(t, remux, "-map 0:v:0 -map 0:a? -c copy -bsf:a:0 aac_adtstoasc")
 
@@ -61,7 +61,7 @@ func TestGstArgsAudio(t *testing.T) {
 	require.Contains(t, got, "audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=32000 ! queue ! mux.sink_67")
 	require.NotContains(t, got, "tee")
 	require.NotContains(t, got, "voaacenc")
-	require.NotContains(t, strings.Join(GstRemuxArgs(false, true), " "), "aac_adtstoasc")
+	require.NotContains(t, strings.Join(GstRemuxArgs(false, true, FragDuration), " "), "aac_adtstoasc")
 
 	// `none`: the microphone is not opened.
 	c.Audio = &AudioConfig{Device: "alsa:hw:2,0", Codec: "none"}
@@ -314,4 +314,23 @@ while :; do sleep 0.05; done`)
 	<-done
 	require.Equal(t, int64(3), n.Load(), "the lit one is not")
 	require.Equal(t, "v4l2h264enc", c.Encoder)
+}
+
+// fragment_duration reaches every muxer a source's stream goes through:
+// the capture's, the second stage's, and the live helper's (§38.2).
+func TestFragmentDuration(t *testing.T) {
+	c := SourceConfig{Alias: "a", Input: "v4l2:/dev/video0", Format: "mjpeg", Fps: 30}
+	require.Contains(t, strings.Join(Args(c, "libx264", 2_000_000, 2*time.Second), " "), "-frag_duration 500000 -")
+	c.Fragment = 200 * time.Millisecond
+	require.Contains(t, strings.Join(Args(c, "libx264", 2_000_000, 2*time.Second), " "), "-frag_duration 200000 -")
+	require.Contains(t, strings.Join(RemuxArgs(false, c.fragment()), " "), "-frag_duration 200000 pipe:1")
+	require.Contains(t, strings.Join(GstRemuxArgs(false, false, c.fragment()), " "), "-frag_duration 200000 pipe:1")
+	require.Contains(t, strings.Join(LiveArgs(64_000, c.fragment()), " "), "-frag_duration 200000 pipe:1")
+
+	for _, f := range []time.Duration{10 * time.Millisecond, 3 * time.Second} {
+		_, err := New(Config{Sources: []SourceConfig{{Alias: "a", Input: "v4l2:/dev/video0", Fragment: f}}})
+		require.ErrorContains(t, err, "fragment_duration", f.String())
+	}
+	_, err := New(Config{Sources: []SourceConfig{{Alias: "a", Input: "v4l2:/dev/video0", Fragment: 100 * time.Millisecond}}})
+	require.NoError(t, err)
 }
