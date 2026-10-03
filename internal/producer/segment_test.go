@@ -47,3 +47,66 @@ func TestSegmentRelease(t *testing.T) {
 	require.Equal(t, int64(156), d.Len())
 	require.Zero(t, d.Held())
 }
+
+// A segment larger than a chunk reads back as it was written, across chunk
+// boundaries and from any offset, and releasing below an offset lets the
+// whole chunks under it go.
+func TestSegmentChunks(t *testing.T) {
+	want := make([]byte, 2*segChunk+segChunk/2+7)
+	for i := range want {
+		want[i] = byte(i * 7)
+	}
+	s := NewSegment(time.Now(), want[:100])
+	for off := 100; off < len(want); {
+		n := min(len(want)-off, 300_001)
+		s.Write(want[off : off+n])
+		off += n
+	}
+	require.Equal(t, int64(len(want)), s.Len())
+	require.Equal(t, int64(len(want)), s.Held())
+	require.Len(t, s.chunks, 3)
+	s.Close(time.Now())
+
+	b, err := io.ReadAll(s.ReaderFrom(0))
+	require.NoError(t, err)
+	require.Equal(t, want, b)
+	b, err = io.ReadAll(s.ReaderFrom(segChunk - 3))
+	require.NoError(t, err)
+	require.Equal(t, want[segChunk-3:], b, "from inside the first chunk, across the second")
+	require.Equal(t, want, s.Bytes())
+
+	upTo := int64(segChunk + segChunk/2)
+	s.Release(upTo)
+	require.Len(t, s.chunks, 2, "the first chunk went")
+	require.Equal(t, int64(len(want))-upTo, s.Held())
+	require.Equal(t, upTo, s.Released())
+	b, err = io.ReadAll(s.ReaderFrom(upTo))
+	require.NoError(t, err)
+	require.Equal(t, want[upTo:], b)
+	require.Equal(t, want[upTo:], s.Bytes())
+	_, err = s.ReaderFrom(upTo - 1).Read(make([]byte, 1))
+	require.ErrorIs(t, err, errReleased)
+
+	// Everything released, then more written: it goes on from there.
+	s2 := NewSegment(time.Now(), []byte("ab"))
+	s2.Release(2)
+	require.Zero(t, s2.Held())
+	s2.Write([]byte("cd"))
+	require.Equal(t, int64(4), s2.Len())
+	require.Equal(t, "cd", string(s2.Bytes()))
+}
+
+// Writing a lamina's worth allocates about what it holds, in chunks, not
+// the repeated doubling of one slice.
+func TestSegmentWriteAllocations(t *testing.T) {
+	frag := make([]byte, 120_000)
+	var s *Segment
+	allocs := testing.AllocsPerRun(1, func() {
+		s = NewSegment(time.Now(), nil)
+		for i := 0; i < 500; i++ { // 60 MB, a 244 s lamina at 2 Mbps
+			s.Write(frag)
+		}
+	})
+	require.Less(t, allocs, float64(120), "about one allocation per MiB")
+	require.Equal(t, int64(500*len(frag)), s.Held())
+}
