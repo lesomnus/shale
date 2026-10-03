@@ -264,6 +264,9 @@ func New(cfg Config) (*Producer, error) {
 		if err := sc.checkGst(); err != nil {
 			return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
 		}
+		if f := sc.Fragment; f != 0 && (f < MinFragDuration || f > MaxFragDuration) {
+			return nil, fmt.Errorf("fragment_duration %s is outside %s to %s", f, MinFragDuration, MaxFragDuration)
+		}
 		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, wake: make(chan struct{}, 1)}
 		if sc.Input == InputPush {
 			if cfg.Push == "" {

@@ -314,6 +314,10 @@ type ProducerConfig struct {
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	// Ffmpeg is the capture binary; `ffmpeg` on PATH by default.
 	Ffmpeg string `yaml:"ffmpeg"`
+	// FragmentDuration bounds a fragment of every source's stream, e.g.
+	// "200ms" (500 ms when unset): the live tee sends whole fragments, so
+	// it is about how far behind the camera a live viewer is (§38.2).
+	FragmentDuration time.Duration `yaml:"fragment_duration"`
 	// Gstreamer is gst-launch, for the sources with `capture: gstreamer`
 	// (§38.3); `gst-launch-1.0` on PATH by default.
 	Gstreamer string `yaml:"gstreamer"`

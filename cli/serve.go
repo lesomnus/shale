@@ -443,6 +443,9 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		}
 		cfg.Sources = append(cfg.Sources, src)
 	}
+	for i := range cfg.Sources {
+		cfg.Sources[i].Fragment = pc.FragmentDuration
+	}
 
 	return cfg, nil
 }

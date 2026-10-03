@@ -32,7 +32,8 @@ The contract is the same for all three:
   (`default-base-is-moof`). That is what `ffmpeg -f mp4 -movflags
   frag_keyframe+empty_moov+default_base_moof` writes, and what a browser's
   Media Source Extensions take as they are. Every keyframe starts a
-  fragment, and no fragment lasts longer than `frag_duration` (500 ms), so
+  fragment, and no fragment lasts longer than `frag_duration`
+  (`producer.fragment_duration`, 500 ms unless set; 20 ms to 2 s), so
   the live tee, which sends whole fragments, is never further behind than
   that. Any prefix of such a stream plays up to its last whole fragment,
   which is what an incomplete lamina needs
@@ -174,6 +175,7 @@ producer:
   uplink: 40Mbps            # optional; bounds the sum of the ceilings (§38.5)
   ffmpeg: /usr/bin/ffmpeg   # default: from PATH
   gstreamer: /usr/bin/gst-launch-1.0   # for capture: gstreamer; default: from PATH
+  fragment_duration: 200ms  # the longest fragment, 500ms by default: about how far a live viewer is behind (§38.1)
 
 sources:
   - alias: door             # tier 1: structured, portable
@@ -234,7 +236,7 @@ sources:
 | `max_bitrate` | encoders with rate control (`libx264`, VAAPI, NVENC, QSV): capped VBR, `-maxrate <video ceiling> -bufsize <2 × ceiling>` around a quality target; encoders that only take a target (`h264_v4l2m2m`): CBR at `-b:v <video ceiling>`. The video ceiling is `max_bitrate` minus the audio bitrate for each audio track (two, unless the archive's is Opus), divided by 1.05 for the container and the muxer's slack, so the muxed stream stays under the ceiling |
 | `keyframe_interval` | `-g <fps × interval> -force_key_frames expr:gte(t,n_forced*<interval>)`, with the agreed interval ([§12.6](04-write-path.md#126-upload-profile-negotiation)), 2 s by default |
 | `audio` | two tracks ([§38.7](#387-live-output)): the archive's, and Opus beside it for live. A camera's own audio: `-map 0:v:0 -map 0:a:0? -map 0:a:0? -c:a:0 copy -c:a:1 libopus -b:a:1 <bitrate>`, with `-c:a:0 aac -b:a:0 <bitrate>` when `codec: aac`; a microphone (`device`): `-f alsa -i <device>` as a second input, mapped twice, `-c:a:0 aac`, where the device is ALSA's name (`alsa:hw:1`) or a path under `/dev/snd` (`alsa:/dev/snd/by-path/…`) resolved to its card (`hw:<card>,0`) at every start, since a card's number follows the order the USB devices came up in and identical webcams share one name; `codec: opus` is one track, `-c:a libopus -b:a <bitrate>`, since Opus is what live plays; `-an` for `none`, and for a USB camera without a microphone. Audio in a codec MP4 has no entry for, G.711 from an IP camera above all, makes the muxer refuse at start (`Could not find tag for codec pcm_mulaw`); that line on stderr restarts the capture once, encoding the audio as AAC, with a log line saying so |
-| output (fixed) | `-f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration 500000 -`: fragmented MP4, every keyframe a fragment and none longer than 500 ms ([§38.1](#381-inputs)). `h264_v4l2m2m` writes `-f mpegts -` instead, into a second ffmpeg (below) |
+| output (fixed) | `-f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration <fragment_duration in µs> -`: fragmented MP4, every keyframe a fragment and none longer than 500 ms ([§38.1](#381-inputs)). `h264_v4l2m2m` writes `-f mpegts -` instead, into a second ffmpeg (below) |
 | `controls` | not ffmpeg: V4L2 controls set on the device through the ioctls `v4l2-ctl -c` uses, by v4l2-ctl's names, before every start of the capture, since a re-plugged camera forgets them. A control the device does not have, or a value outside its range, is a warning in the log and the rest are set |
 
 The producer records which encoder `auto` chose and shows it in its
@@ -264,7 +266,7 @@ processes: the first writes MPEG-TS, the second reads it and writes
 fragmented MP4 with `-c copy` (`-map 0 -c copy -bsf:a:0 aac_adtstoasc`,
 then the muxer flags above with `delay_moov`). The TS demuxer's parser finds the parameter
 sets and decides the keyframes from the slices, so what comes out is what
-`libx264` writes: `avcC` with the SPS, a fragment per 500 ms and per real
+`libx264` writes: `avcC` with the SPS, a fragment per `fragment_duration` and per real
 keyframe, AAC re-framed for MP4 (`aac_adtstoasc`, which a TS's ADTS
 needs). The AAC's configuration is known only once that filter has seen a
 packet, and `empty_moov` alone writes the init segment before then, with

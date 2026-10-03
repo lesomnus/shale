@@ -231,7 +231,7 @@ func gstAudioArgs(c SourceConfig, aacEnc string) []string {
 // pipeline's TS in, the video first and then its audio out as fragmented
 // MP4. With a microphone the probe is longer, since the sound starts before
 // the camera's first frame and a short probe ends with no picture in it.
-func GstRemuxArgs(aac, audio bool) []string {
+func GstRemuxArgs(aac, audio bool, frag time.Duration) []string {
 	probe := []string{"-probesize", "262144", "-analyzeduration", "500000"}
 	if audio {
 		probe = []string{"-probesize", "5000000", "-analyzeduration", "3000000"}
@@ -242,7 +242,7 @@ func GstRemuxArgs(aac, audio bool) []string {
 	if aac {
 		args = append(args, "-bsf:a:0", "aac_adtstoasc")
 	}
-	args = append(args, RemuxMuxArgs()...)
+	args = append(args, RemuxMuxArgs(frag)...)
 
 	return append(args, "pipe:1")
 }

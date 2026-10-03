@@ -43,6 +43,9 @@ type SourceConfig struct {
 	Format string
 	Size   string
 	Fps    int
+	// Fragment bounds a fragment of the stream, FragDuration when zero:
+	// the producer's `fragment_duration` (§38.2).
+	Fragment time.Duration
 	// Capture is the tool that runs the camera: ffmpeg (the default) or
 	// gstreamer, for a V4L2 camera on the Raspberry Pi's encoder (§38.3).
 	Capture string
@@ -151,18 +154,36 @@ func (c SourceConfig) contentType() string {
 	return ContentTypeMP4
 }
 
-// FragDuration bounds a fragment of a capture's stream (§38.2): the live
-// tee sends whole fragments, so it is how far behind the recording a
-// viewer is at most; every keyframe starts a fragment too.
+// FragDuration is the default bound on a fragment of a capture's stream
+// (§38.2): the live tee sends whole fragments, so it is about how far
+// behind the camera a viewer is; every keyframe starts a fragment too.
+// `producer.fragment_duration` sets another.
 const FragDuration = 500 * time.Millisecond
 
+// The bounds `fragment_duration` is held to: a frame or two at the least,
+// and no more than a keyframe interval's worth.
+const (
+	MinFragDuration = 20 * time.Millisecond
+	MaxFragDuration = 2 * time.Second
+)
+
+// fragment is the source's fragment duration, FragDuration unless set.
+func (c SourceConfig) fragment() time.Duration {
+	if c.Fragment > 0 {
+		return c.Fragment
+	}
+
+	return FragDuration
+}
+
 // MuxArgs are the muxer's arguments: fragmented MP4 that plays as it
-// streams (an init segment first, fragments with offsets of their own).
-func MuxArgs() []string {
+// streams (an init segment first, fragments with offsets of their own),
+// no fragment longer than `frag`.
+func MuxArgs(frag time.Duration) []string {
 	return []string{
 		"-f", "mp4",
 		"-movflags", "frag_keyframe+empty_moov+default_base_moof",
-		"-frag_duration", strconv.FormatInt(FragDuration.Microseconds(), 10),
+		"-frag_duration", strconv.FormatInt(frag.Microseconds(), 10),
 	}
 }
 
@@ -171,11 +192,11 @@ func MuxArgs() []string {
 // TS has its configuration only once `aac_adtstoasc` saw a packet, and an
 // init segment written before that has an `esds` without it, which no
 // browser decodes; `delay_moov` writes it once the configuration is known.
-func RemuxMuxArgs() []string {
+func RemuxMuxArgs(frag time.Duration) []string {
 	return []string{
 		"-f", "mp4",
 		"-movflags", "frag_keyframe+empty_moov+delay_moov+default_base_moof",
-		"-frag_duration", strconv.FormatInt(FragDuration.Microseconds(), 10),
+		"-frag_duration", strconv.FormatInt(frag.Microseconds(), 10),
 	}
 }
 
@@ -375,7 +396,7 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		// The second stage muxes (§38.3): this one writes TS for it.
 		args = append(args, "-f", "mpegts")
 	} else {
-		args = append(args, MuxArgs()...)
+		args = append(args, MuxArgs(c.fragment())...)
 	}
 	args = append(args, "-")
 
@@ -396,7 +417,7 @@ func Remuxed(encoder string) bool { return RemuxEncoders[encoder] }
 // as fragmented MP4. AAC out of a TS is ADTS-framed and MP4 wants it raw
 // (`aac_adtstoasc`); the probe is kept short since it is what the first
 // keyframe waits for.
-func RemuxArgs(aac bool) []string {
+func RemuxArgs(aac bool, frag time.Duration) []string {
 	args := []string{
 		"-hide_banner", "-loglevel", "warning", "-nostats",
 		"-probesize", "262144", "-analyzeduration", "500000",
@@ -406,7 +427,7 @@ func RemuxArgs(aac bool) []string {
 	if aac {
 		args = append(args, "-bsf:a:0", "aac_adtstoasc")
 	}
-	args = append(args, RemuxMuxArgs()...)
+	args = append(args, RemuxMuxArgs(frag)...)
 
 	return append(args, "pipe:1")
 }
@@ -763,7 +784,7 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		// The pipeline writes TS, which the second stage makes fragmented
 		// MP4, as for h264_v4l2m2m (§38.3).
 		remux = true
-		remuxArgs = GstRemuxArgs(aac, aac || opus)
+		remuxArgs = GstRemuxArgs(aac, aac || opus, src.fragment())
 		args := GstArgs(src, encoder, ceiling, keyframe, c.aacEnc)
 		c.Log.Info("capture", "source", c.Source.Alias, "cmd", c.gst()+" "+strings.Join(args, " ")+" | "+c.Ffmpeg+" "+strings.Join(remuxArgs, " "))
 		cmd = exec.CommandContext(ctx, c.gst(), args...)
@@ -808,7 +829,7 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		args := Args(src, encoder, ceiling, keyframe)
 		cmdline := c.Ffmpeg + " " + strings.Join(args, " ")
 		if remux {
-			cmdline += " | " + c.Ffmpeg + " " + strings.Join(RemuxArgs(src.aacArchive()), " ")
+			cmdline += " | " + c.Ffmpeg + " " + strings.Join(RemuxArgs(src.aacArchive(), src.fragment()), " ")
 		}
 		c.Log.Info("capture", "source", c.Source.Alias, "cmd", cmdline)
 		cmd = exec.CommandContext(ctx, c.Ffmpeg, args...)
@@ -830,7 +851,7 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	var second *exec.Cmd
 	if remux {
 		if remuxArgs == nil {
-			remuxArgs = RemuxArgs(src.aacArchive())
+			remuxArgs = RemuxArgs(src.aacArchive(), src.fragment())
 		}
 		second = exec.CommandContext(ctx, c.Ffmpeg, remuxArgs...)
 		second.Env = cmd.Env
@@ -935,7 +956,7 @@ func (c SourceConfig) aacArchive() bool {
 // fragmented MP4 in, the same video and its audio as Opus out, in
 // fragments of its own, so a viewer is a fragment behind the recording.
 // The probe is kept short, since it is what a viewer waits for.
-func LiveArgs(bitrate int64) []string {
+func LiveArgs(bitrate int64, frag time.Duration) []string {
 	if bitrate <= 0 {
 		bitrate = DefaultAudioBitrate
 	}
@@ -947,7 +968,7 @@ func LiveArgs(bitrate int64) []string {
 		"-c:v", "copy", "-c:a", "libopus", "-b:a", strconv.FormatInt(bitrate, 10),
 		"-flush_packets", "1",
 	}
-	args = append(args, MuxArgs()...)
+	args = append(args, MuxArgs(frag)...)
 
 	return append(args, "pipe:1")
 }

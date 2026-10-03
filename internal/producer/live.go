@@ -71,7 +71,7 @@ func (l *relayLink) startHelper(id pdid.Id, s *source) (*helper, error) {
 	}
 
 	hctx, cancel := context.WithCancel(ctx)
-	cmd := exec.CommandContext(hctx, ffmpeg, LiveArgs(s.cfg.audioBitrate())...)
+	cmd := exec.CommandContext(hctx, ffmpeg, LiveArgs(s.cfg.audioBitrate(), s.cfg.fragment())...)
 	cmd.Env = append(os.Environ(), "AV_LOG_FORCE_NOCOLOR=1")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

@@ -206,12 +206,12 @@ func TestArgsRemux(t *testing.T) {
 	first := strings.Join(Args(src, "h264_v4l2m2m", 2_000_000, 2*time.Second), " ")
 	require.True(t, strings.HasSuffix(first, "-f mpegts -"), first)
 	require.NotContains(t, first, "movflags")
-	second := strings.Join(RemuxArgs(src.aacArchive()), " ")
+	second := strings.Join(RemuxArgs(src.aacArchive(), FragDuration), " ")
 	require.Contains(t, second, "-f mpegts -i pipe:0 -map 0 -c copy -bsf:a:0 aac_adtstoasc -f mp4 -movflags frag_keyframe+empty_moov+delay_moov+default_base_moof -frag_duration 500000 pipe:1")
 	t.Logf("pi pipeline: ffmpeg %s | ffmpeg %s", first, second)
 	// Opus alone needs no re-framing; a silent source has no audio to re-frame.
 	src.Audio = &AudioConfig{Codec: "opus"}
-	require.NotContains(t, strings.Join(RemuxArgs(src.aacArchive()), " "), "aac_adtstoasc")
+	require.NotContains(t, strings.Join(RemuxArgs(src.aacArchive(), FragDuration), " "), "aac_adtstoasc")
 	usb := SourceConfig{Input: "v4l2:/dev/video0"}
 	require.False(t, usb.aacArchive())
 	// Every other encoder muxes in one stage.
