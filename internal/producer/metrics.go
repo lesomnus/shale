@@ -30,6 +30,10 @@ type metrics struct {
 	uploadDuration metric.Float64Histogram
 	retries        metric.Int64Counter
 	earlyCuts      metric.Int64Counter
+	// Frames a camera sent that the recording does not have: a gap longer
+	// than one and three quarters frames, and the frames that fit in it.
+	frameGaps    metric.Int64Counter
+	framesMissed metric.Int64Counter
 }
 
 func newMetrics(ctx context.Context) *metrics {
@@ -52,6 +56,8 @@ func newMetrics(ctx context.Context) *metrics {
 		uploadDuration: o.Float64Histogram("shale.producer.upload_duration_ms", metric.WithDescription("from a segment's first upload attempt to its 201, per source"), metric.WithUnit("ms")),
 		retries:        o.Int64Counter("shale.producer.retries", metric.WithDescription("upload retries by kind: same_target after a 503, placement after a failed candidate (§13)")),
 		earlyCuts:      o.Int64Counter("shale.producer.early_cuts", metric.WithDescription("segments cut early for running over their ceiling, per source (§38.2)")),
+		frameGaps:      o.Int64Counter("shale.producer.frame_gaps", metric.WithDescription("gaps between a source's recorded frames longer than one and three quarters frames, per source")),
+		framesMissed:   o.Int64Counter("shale.producer.frames_missed", metric.WithDescription("frames that would have filled those gaps at the source's frame rate, per source")),
 	}
 }
 

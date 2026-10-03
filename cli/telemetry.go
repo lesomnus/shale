@@ -55,6 +55,9 @@ func Telemetry(ctx context.Context, c *cmd.Config) (context.Context, func(), err
 	if err := o.Start(ctx); err != nil {
 		return nil, nil, err
 	}
+	if err := registerRuntimeMetrics(ctx); err != nil {
+		return nil, nil, err
+	}
 
 	// Shutdown and not ForceFlush: shutting the providers down is what flushes
 	// the last batch, and a process that exits without it loses whatever that

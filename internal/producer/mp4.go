@@ -2,6 +2,7 @@ package producer
 
 import (
 	"io"
+	"time"
 
 	"github.com/lesomnus/shale/internal/fmp4"
 )
@@ -56,6 +57,13 @@ func (r *MP4Reader) Next(f *Frame) error {
 			f.Key = u.Frag.Key(r.init)
 			f.Frames = len(tr.Samples)
 			f.Ticks = tr.Time
+			if v.Timescale > 0 {
+				var longest uint32
+				for _, s := range tr.Samples {
+					longest = max(longest, s.Duration)
+				}
+				f.Longest = time.Duration(longest) * time.Second / time.Duration(v.Timescale)
+			}
 		}
 	}
 

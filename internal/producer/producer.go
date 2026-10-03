@@ -717,6 +717,7 @@ func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 		s.cutter.Feed(&f)
 		p.relay.feed(s, &f, reader.Init())
 		s.accountFrame(&f, 0)
+		p.accountGap(s, &f)
 		if !checked && time.Since(started) > 10*time.Second {
 			checked = true
 			p.startupCheck(s)
@@ -743,6 +744,28 @@ func (p *Producer) readFrames(ctx context.Context, s *source, r io.Reader) {
 		s.accountFrame(&f, FrameHeader)
 	}
 	s.cutter.Stop()
+}
+
+// accountGap counts a fragment whose longest frame stands for frames that
+// never arrived (§38.6): the camera's, dropped because nothing took them in
+// time. A source with no frame rate configured is taken at 30.
+func (p *Producer) accountGap(s *source, f *Frame) {
+	if f.Longest <= 0 {
+		return
+	}
+	fps := s.cfg.Fps
+	if fps <= 0 {
+		fps = 30
+	}
+	frame := time.Second / time.Duration(fps)
+	// Past one and three quarters of a frame: a camera's own jitter stays
+	// under one and a half, and one frame missing makes two.
+	if f.Longest*4 <= frame*7 {
+		return
+	}
+	attr := sourceAttr(s.cfg.Alias)
+	p.m.frameGaps.Add(context.Background(), 1, attr)
+	p.m.framesMissed.Add(context.Background(), int64((f.Longest+frame/2)/frame)-1, attr)
 }
 
 // startupCheck is the ten-second look at what a capture produces (§38.3).
