@@ -31,9 +31,17 @@ type Segment struct {
 	// source's threshold, and is skipped unless the scene is lit before
 	// it closes (§38.10).
 	dark bool
-	// buf holds the bytes from base on: under `retain: written` the bytes
-	// a node reported durable are released and base moves up (§12.2).
-	buf       []byte
+	// chunks hold the bytes from base on, segChunk at a time: under
+	// `retain: written` the bytes a node reported durable are released and
+	// base moves up (§12.2). held is how many there are.
+	//
+	// Not one slice grown by append: a lamina is tens of megabytes, and
+	// growing one slice to that copies it over and over, allocates twice
+	// what it holds, and makes the capture's reader, which does the
+	// writing, pay for the collector's work (GC assist) for seconds while
+	// the camera's frames are dropped. A chunk is allocated once and filled.
+	chunks    [][]byte
+	held      int64
 	base      int64
 	closed    bool
 	discarded bool
@@ -47,10 +55,13 @@ func NewSegment(started time.Time, tables []byte) *Segment {
 func newSegment(started, slot time.Time, tables []byte) *Segment {
 	s := &Segment{Started: started, Slot: slot}
 	s.cond = sync.NewCond(&s.mu)
-	s.buf = append(s.buf, tables...)
+	s.write(tables)
 
 	return s
 }
+
+// segChunk is how much of a segment one allocation holds.
+const segChunk = 1 << 20
 
 // Write appends bytes. A discarded segment counts them and keeps none.
 func (s *Segment) Write(b []byte) {
@@ -58,10 +69,40 @@ func (s *Segment) Write(b []byte) {
 	if s.discarded {
 		s.base += int64(len(b))
 	} else {
-		s.buf = append(s.buf, b...)
+		s.write(b)
 	}
 	s.mu.Unlock()
 	s.cond.Broadcast()
+}
+
+// write copies bytes into the last chunk and new ones as it fills.
+func (s *Segment) write(b []byte) {
+	s.held += int64(len(b))
+	for len(b) > 0 {
+		n := len(s.chunks)
+		if n == 0 || len(s.chunks[n-1]) == cap(s.chunks[n-1]) {
+			s.chunks = append(s.chunks, make([]byte, 0, segChunk))
+			n++
+		}
+		last := s.chunks[n-1]
+		k := min(len(b), cap(last)-len(last))
+		s.chunks[n-1] = append(last, b[:k]...)
+		b = b[k:]
+	}
+}
+
+// at is the held bytes from an offset at or above base to the end of the
+// chunk it falls in; empty at the end.
+func (s *Segment) at(off int64) []byte {
+	rel := off - s.base
+	for _, c := range s.chunks {
+		if rel < int64(len(c)) {
+			return c[rel:]
+		}
+		rel -= int64(len(c))
+	}
+
+	return nil
 }
 
 // Discard lets every byte go, now and as they keep arriving: the segment
@@ -71,8 +112,8 @@ func (s *Segment) Write(b []byte) {
 func (s *Segment) Discard() {
 	s.mu.Lock()
 	s.discarded = true
-	s.base += int64(len(s.buf))
-	s.buf = nil
+	s.base += s.held
+	s.chunks, s.held = nil, 0
 	s.mu.Unlock()
 	s.cond.Broadcast()
 }
@@ -107,7 +148,7 @@ func (s *Segment) Len() int64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.base + int64(len(s.buf))
+	return s.base + s.held
 }
 
 // Held is the bytes still in RAM: what the budget counts (§16).
@@ -115,7 +156,7 @@ func (s *Segment) Held() int64 {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return int64(len(s.buf))
+	return s.held
 }
 
 // Released is the offset below which the bytes were let go (§12.2).
@@ -127,20 +168,37 @@ func (s *Segment) Released() int64 {
 }
 
 // Release lets the bytes below `upTo` go: a node reported them durable and
-// `retain: written` keeps only what is above (§12.2). The rest is copied
-// out so the memory really goes. A reader below the offset then fails, so
-// the segment can no longer be sent from its start to anyone else.
+// `retain: written` keeps only what is above (§12.2). The chunks wholly
+// below go, so the memory really does; the one the offset falls in stays
+// until the bytes after it go too. A reader below the offset then fails,
+// so the segment can no longer be sent from its start to anyone else.
 func (s *Segment) Release(upTo int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if upTo <= s.base {
 		return
 	}
-	if end := s.base + int64(len(s.buf)); upTo > end {
+	if end := s.base + s.held; upTo > end {
 		upTo = end
 	}
-	rest := s.buf[upTo-s.base:]
-	s.buf = append(make([]byte, 0, max(2*len(rest), 64<<10)), rest...)
+	drop := upTo - s.base
+	for len(s.chunks) > 0 && drop > 0 {
+		c := s.chunks[0]
+		if drop < int64(len(c)) {
+			// The rest of this chunk is still held; the last chunk, which
+			// writes go on into, keeps its capacity.
+			s.chunks[0] = c[drop:]
+			break
+		}
+		drop -= int64(len(c))
+		if len(s.chunks) == 1 && len(c) < cap(c) {
+			s.chunks[0] = c[len(c):]
+			break
+		}
+		s.chunks[0] = nil
+		s.chunks = s.chunks[1:]
+	}
+	s.held -= upTo - s.base
 	s.base = upTo
 }
 
@@ -153,12 +211,17 @@ func (s *Segment) Closed() bool {
 }
 
 // Bytes is the segment, for a buffered upload after Close: what is held,
-// which is the whole of it unless bytes were released.
+// which is the whole of it unless bytes were released, copied out of the
+// chunks.
 func (s *Segment) Bytes() []byte {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	out := make([]byte, 0, s.held)
+	for _, c := range s.chunks {
+		out = append(out, c...)
+	}
 
-	return s.buf
+	return out
 }
 
 // ReaderFrom reads the segment from an offset, blocking for bytes that have
@@ -185,9 +248,9 @@ func (r *segReader) Read(p []byte) (int, error) {
 	if r.off < s.base {
 		return 0, errReleased
 	}
-	for s.base+int64(len(s.buf)) <= r.off {
+	for s.base+s.held <= r.off {
 		if s.closed {
-			if s.base+int64(len(s.buf)) < r.off {
+			if s.base+s.held < r.off {
 				return 0, errPastEnd
 			}
 
@@ -195,7 +258,7 @@ func (r *segReader) Read(p []byte) (int, error) {
 		}
 		s.cond.Wait()
 	}
-	n := copy(p, s.buf[r.off-s.base:])
+	n := copy(p, s.at(r.off))
 	r.off += int64(n)
 
 	return n, nil
