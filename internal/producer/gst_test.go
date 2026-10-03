@@ -1,11 +1,13 @@
 package producer
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -105,7 +107,6 @@ func TestCheckGst(t *testing.T) {
 		"rtsp":      func(c *SourceConfig) { c.Input = "rtsp://10.0.0.1/s" },
 		"no device": func(c *SourceConfig) { c.Audio = &AudioConfig{Codec: "aac"} },
 		"mic copy":  func(c *SourceConfig) { c.Audio = &AudioConfig{Device: "alsa:hw:1", Codec: "copy"} },
-		"idle":      func(c *SourceConfig) { c.Idle = &IdleConfig{} },
 		"tier2":     func(c *SourceConfig) { c.ExtraOutputArgs = []string{"-x"} },
 		"format":    func(c *SourceConfig) { c.Format = "h265" },
 		"encoder":   func(c *SourceConfig) { c.Encoder = "h264_v4l2m2m" },
@@ -222,4 +223,95 @@ func TestCaptureKilledAfterGrace(t *testing.T) {
 		t.Fatal("the capture outlived its kill")
 	}
 	require.GreaterOrEqual(t, time.Since(began), stopGrace-100*time.Millisecond, "the interrupt was ignored, so the kill ended it")
+}
+
+// A source with `idle:` (§38.10): the picture the encoder takes, teed, one
+// a second, grey and 160 wide, to fd 3; none of it without.
+func TestGstArgsDark(t *testing.T) {
+	c := SourceConfig{Capture: CaptureGStreamer, Input: "v4l2:/dev/video0", Format: "mjpeg", Size: "1280x720", Fps: 30, Idle: &IdleConfig{}}
+	got := strings.Join(GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second, ""), " ")
+	require.Contains(t, got, "videoconvert ! video/x-raw,format=I420 ! tee name=pic pic. ! queue ! identity drop-allocation=true ! v4l2h264enc ")
+	require.True(t, strings.HasSuffix(got, " pic. ! queue leaky=downstream max-size-buffers=2 ! videorate drop-only=true ! video/x-raw,framerate=1/1 ! "+
+		"videoscale ! videoconvert ! video/x-raw,format=GRAY8,width=160,height=90 ! fdsink fd=3"), got)
+
+	// With a microphone the measuring branch still comes last.
+	c.Audio = &AudioConfig{Device: "alsa:hw:1,0"}
+	got = strings.Join(GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second, "voaacenc"), " ")
+	require.Contains(t, got, "mux.sink_67 pic. ! queue leaky=downstream")
+
+	c = SourceConfig{Capture: CaptureGStreamer, Input: "v4l2:/dev/video0"}
+	got = strings.Join(GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second, ""), " ")
+	require.NotContains(t, got, "tee")
+	require.NotContains(t, got, "fd=3")
+
+	_, err := New(Config{Sources: []SourceConfig{{Alias: "a", Capture: CaptureGStreamer, Input: "v4l2:/dev/video0", Idle: &IdleConfig{}}}})
+	require.NoError(t, err, "idle is measured under GStreamer now")
+}
+
+func TestDarkFrame(t *testing.T) {
+	for size, want := range map[string][2]int{"1280x720": {160, 90}, "": {160, 90}, "1920x1080": {160, 90}, "640x480": {160, 120}, "800x600": {160, 120}, "1024x576": {160, 90}} {
+		w, h := darkSize(size)
+		require.Equal(t, want, [2]int{w, h}, size)
+	}
+	pic := make([]byte, 100)
+	for i := range pic {
+		pic[i] = 20
+	}
+	require.True(t, darkFrame(pic, 26), "every pixel at or below")
+	pic[0], pic[1] = 200, 200
+	require.True(t, darkFrame(pic, 26), "98% is dark")
+	pic[2] = 27
+	require.False(t, darkFrame(pic, 26), "97% is not")
+	require.False(t, darkFrame(nil, 26))
+}
+
+// The pictures arrive whole or not at all: a pipe that ends inside one
+// counts the ones before it.
+func TestReadDark(t *testing.T) {
+	dark, lit := make([]byte, 160*90), bytes.Repeat([]byte{0xff}, 160*90)
+	stream := append(append(append(append([]byte{}, dark...), lit...), dark...), dark[:100]...)
+	n := 0
+	readDark(bytes.NewReader(stream), 160, 90, 26, func() { n++ })
+	require.Equal(t, 2, n)
+}
+
+// A GStreamer capture with `idle:` reads the measured pictures from fd 3
+// of the process it runs, and tells every dark one (§38.10). gst-launch,
+// gst-inspect and the second stage are scripts here: three dark pictures
+// and a lit one, then a wait for the interrupt.
+func TestCaptureGstDark(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) string {
+		p := filepath.Join(dir, name)
+		require.NoError(t, os.WriteFile(p, []byte("#!/bin/sh\n"+body+"\n"), 0o755))
+		return p
+	}
+	write("gst-inspect-1.0", "exit 0")
+	gst := write("gst-launch-1.0", `
+dark() { head -c 14400 /dev/zero; }
+lit() { head -c 14400 /dev/zero | tr '\000' '\377'; }
+{ dark; dark; dark; lit; } >&3
+trap 'exit 0' INT
+while :; do sleep 0.05; done`)
+	remux := write("remux", "cat >/dev/null")
+	var n atomic.Int64
+	c := &Capture{
+		Ffmpeg:  remux,
+		Gst:     gst,
+		Log:     slogOf(nil),
+		Source:  SourceConfig{Alias: "a", Capture: CaptureGStreamer, Input: "v4l2:/dev/video0", Size: "1280x720", Idle: &IdleConfig{}},
+		Profile: func() (int64, time.Duration) { return 2_000_000, 2 * time.Second },
+		OnDark:  func() { n.Add(1) },
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		c.Run(ctx, func(r io.Reader) { io.Copy(io.Discard, r) })
+	}()
+	require.Eventually(t, func() bool { return n.Load() == 3 }, 5*time.Second, 20*time.Millisecond)
+	cancel()
+	<-done
+	require.Equal(t, int64(3), n.Load(), "the lit one is not")
+	require.Equal(t, "v4l2h264enc", c.Encoder)
 }

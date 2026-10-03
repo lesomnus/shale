@@ -633,6 +633,11 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 		Log:      p.log,
 		RawLoops: s.cfg.RawLoops,
 		OnLine:   func(line string) bool { return s.dark != nil && s.dark.observe(line) },
+		OnDark: func() {
+			if s.dark != nil {
+				s.dark.darkSecond()
+			}
+		},
 		Profile: func() (int64, time.Duration) {
 			s.mu.Lock()
 			defer s.mu.Unlock()

@@ -551,6 +551,9 @@ type Capture struct {
 	// answers true for one it consumed, which is then neither logged nor
 	// kept as the last error (§38.10).
 	OnLine func(line string) bool
+	// OnDark is told every dark second a GStreamer capture measured, for a
+	// source with `idle:` (§38.10); ffmpeg's are lines, for OnLine.
+	OnDark func()
 
 	mu       sync.Mutex
 	restarts int64
@@ -730,6 +733,9 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		src.Audio = &a
 	}
 	var cmd *exec.Cmd
+	// darkPipe, when set, starts reading a GStreamer capture's measured
+	// pictures once the process holds its end of the pipe.
+	var darkPipe func()
 	remux := c.Remux
 	// remuxArgs is the second stage's command line, when it differs from
 	// the one RemuxArgs makes for ffmpeg's TS.
@@ -761,6 +767,25 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		args := GstArgs(src, encoder, ceiling, keyframe, c.aacEnc)
 		c.Log.Info("capture", "source", c.Source.Alias, "cmd", c.gst()+" "+strings.Join(args, " ")+" | "+c.Ffmpeg+" "+strings.Join(remuxArgs, " "))
 		cmd = exec.CommandContext(ctx, c.gst(), args...)
+		if src.Idle != nil && encoder != "copy" {
+			// The measured pictures come on fd 3 (§38.10).
+			r, w, err := os.Pipe()
+			if err != nil {
+				return err
+			}
+			cmd.ExtraFiles = []*os.File{w}
+			defer r.Close()
+			dw, dh := darkSize(src.Size)
+			darkPipe = func() {
+				w.Close()
+				go readDark(r, dw, dh, src.Idle.threshold(), func() {
+					if c.OnDark != nil {
+						c.OnDark()
+					}
+				})
+			}
+			defer w.Close()
+		}
 	} else {
 		encoder := c.Source.Encoder
 		if encoder == "" || encoder == "auto" {
@@ -828,6 +853,9 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
+	if darkPipe != nil {
+		darkPipe()
+	}
 	if second != nil {
 		if err := second.Start(); err != nil {
 			cancel()
@@ -880,9 +908,10 @@ func (c *Capture) scanStderr(stderr io.Reader) {
 		if c.audioRefused(line) {
 			continue
 		}
-		if c.Source.Idle != nil && !strings.HasPrefix(line, "[") {
+		if c.Source.Idle != nil && !c.Source.gstreamer() && !strings.HasPrefix(line, "[") {
 			// At info level ffmpeg also describes its inputs and
 			// outputs at the start; what a component says is tagged.
+			// GStreamer measures elsewhere and says only what is wrong.
 			continue
 		}
 		c.mu.Lock()
