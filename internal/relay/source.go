@@ -58,7 +58,12 @@ type source struct {
 	window time.Duration
 	ring   *ring
 	// seq is the last fragment's number, 0 before the first.
-	seq     uint32
+	seq uint32
+	// The samples fanOut found, sent to the viewers when their timestamps
+	// say (pace.go); pacing says a pacer runs.
+	paced   []pacedSample
+	clock   playout
+	pacing  bool
 	viewers map[string]sink
 	idle    *time.Timer
 	// Bytes and units, for the heartbeat.
@@ -88,6 +93,7 @@ func (s *source) attach(f feeder, always bool, window time.Duration) {
 	// is another's.
 	s.ring.reset()
 	s.seq = 0
+	s.restartPacing()
 	if s.idle != nil {
 		s.idle.Stop()
 		s.idle = nil
@@ -113,6 +119,7 @@ func (s *source) detach(f feeder) {
 		s.gop = nil
 		s.ring.reset()
 		s.seq = 0
+		s.restartPacing()
 	}
 }
 
@@ -140,6 +147,7 @@ func (s *source) feed(b []byte) {
 		// A new stream: what came before it does not join what follows.
 		s.ring.reset()
 		s.seq = 0
+		s.restartPacing()
 		s.mu.Unlock()
 		return
 	}
@@ -204,50 +212,54 @@ func (s *source) recent(since time.Duration) ([]byte, time.Time, float64, bool) 
 	return s.ring.snapshot(k, s.init.Bytes), k.at, s.ring.seconds(k, scale), true
 }
 
-// fanOut hands a fragment's samples to the viewers and keeps the group of
-// pictures; with the lock held.
+// fanOut takes a fragment's samples, each with when it plays, to be sent
+// to the viewers when that comes (pace.go); with the lock held.
 func (s *source) fanOut(frag *fmp4.Fragment) {
+	var out []pacedSample
 	if opus := s.init.Opus(); opus != nil {
 		if tr := frag.Traf(opus.ID); tr != nil {
+			t := ticks64(tr.Time, opus.Timescale)
 			for _, sm := range tr.Samples {
 				d := ticks(sm.Duration, opus.Timescale, 20*time.Millisecond)
-				for _, v := range s.viewers {
-					v.writeAudio(frag.Bytes[sm.Off:sm.Off+sm.Size], d)
-				}
+				out = append(out, pacedSample{media: t, audio: true, data: frag.Bytes[sm.Off : sm.Off+sm.Size], d: d})
+				t += d
 			}
 		}
 	}
-	video := s.init.Video()
-	if video == nil {
-		return
-	}
-	tr := frag.Traf(video.ID)
-	if tr == nil {
-		return
-	}
-	n := video.LengthSize()
-	for _, sm := range tr.Samples {
-		raw := frag.Bytes[sm.Off : sm.Off+sm.Size]
-		key := video.SampleKey(raw, sm)
-		data := fmp4.AnnexB(raw, n)
-		if key && len(s.params) > 0 {
-			data = append(append([]byte(nil), s.params...), data...)
-		}
-		d := ticks(sm.Duration, video.Timescale, fallbackDuration)
-		if key {
-			s.gop = s.gop[:0]
-		}
-		if key || len(s.gop) > 0 {
-			s.gop = append(s.gop, sample{data: data, d: d})
-		}
-		for _, v := range s.viewers {
-			v.write(data, d)
+	if video := s.init.Video(); video != nil {
+		if tr := frag.Traf(video.ID); tr != nil {
+			n := video.LengthSize()
+			t := ticks64(tr.Time, video.Timescale)
+			for _, sm := range tr.Samples {
+				raw := frag.Bytes[sm.Off : sm.Off+sm.Size]
+				key := video.SampleKey(raw, sm)
+				data := fmp4.AnnexB(raw, n)
+				if key && len(s.params) > 0 {
+					data = append(append([]byte(nil), s.params...), data...)
+				}
+				d := ticks(sm.Duration, video.Timescale, fallbackDuration)
+				out = append(out, pacedSample{media: t, key: key, data: data, d: d})
+				t += d
+			}
 		}
 	}
+	s.pace(out)
 }
 
 // fallbackDuration is a frame's duration when the stream does not say.
 const fallbackDuration = 40 * time.Millisecond
+
+// ticks64 is a decode time in a track's timescale as time.
+func ticks64(n int64, timescale uint32) time.Duration {
+	if timescale == 0 {
+		return 0
+	}
+
+	ts := int64(timescale)
+	// Whole seconds first: a stream's decode time in 90 kHz ticks times a
+	// nanosecond's second overflows in about a day.
+	return time.Duration(n/ts)*time.Second + time.Duration(n%ts)*time.Second/time.Duration(ts)
+}
 
 // ticks is a duration in a track's timescale as time, or the fallback
 // when the stream does not say.

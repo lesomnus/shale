@@ -171,6 +171,16 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   4 Mbps). A joining viewer receives that group of pictures at once and
   starts within a fraction of a second instead of waiting for the next
   keyframe.
+- **Paced.** A producer sends a fragment at a time, half a second of
+  frames, and the relay sends each sample to the viewers when its
+  timestamp says, not the fragment's frames at once. A burst every half
+  second made a browser's jitter buffer, which starts small, stall at the
+  fragments' pace until it had grown to a fragment: the picture stopped and
+  went, worst right after joining. The clock is set by the first sample
+  sent; a sample more than 100 ms late goes at once and the clock keeps its
+  pace from there, and a jump of more than 3 s starts it over. With nobody
+  watching nothing is paced. Measured by a WHEP viewer, arrival minus
+  timestamp spread over 468 ms unpaced and 2 ms paced.
 - **The recent window.** Nothing is read from a Storage Node before it
   commits ([§17](05-read-path.md#17-read-path)), so the one stretch of a
   camera nobody can read is the open lamina's, and that is what the relay
