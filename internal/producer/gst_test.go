@@ -230,9 +230,18 @@ func TestCaptureKilledAfterGrace(t *testing.T) {
 func TestGstArgsDark(t *testing.T) {
 	c := SourceConfig{Capture: CaptureGStreamer, Input: "v4l2:/dev/video0", Format: "mjpeg", Size: "1280x720", Fps: 30, Idle: &IdleConfig{}}
 	got := strings.Join(GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second, ""), " ")
-	require.Contains(t, got, "videoconvert ! video/x-raw,format=I420 ! tee name=pic pic. ! queue ! identity drop-allocation=true ! v4l2h264enc ")
-	require.True(t, strings.HasSuffix(got, " pic. ! queue leaky=downstream max-size-buffers=2 ! videorate drop-only=true ! video/x-raw,framerate=1/1 ! "+
+	// Split before the decoder: the encoder's input is what it is without idle.
+	require.Contains(t, got, "v4l2src device=/dev/video0 ! image/jpeg,width=1280,height=720,framerate=30/1 ! tee name=pic pic. ! queue max-size-buffers=2 ! jpegdec ! videoconvert ! video/x-raw,format=I420 ! v4l2h264enc ")
+	require.NotContains(t, got, "drop-allocation")
+	require.True(t, strings.HasSuffix(got, " pic. ! queue leaky=downstream max-size-buffers=1 ! videorate drop-only=true ! image/jpeg,framerate=1/1 ! jpegdec ! "+
 		"videoscale ! videoconvert ! video/x-raw,format=GRAY8,width=160,height=90 ! fdsink fd=3"), got)
+
+	// YUYV: split after the camera, rate cut, nothing to decode.
+	y := c
+	y.Format = "yuyv"
+	got = strings.Join(GstArgs(y, "v4l2h264enc", 2_200_000, 2*time.Second, ""), " ")
+	require.Contains(t, got, "video/x-raw,format=YUY2,width=1280,height=720,framerate=30/1 ! tee name=pic pic. ! queue max-size-buffers=2 ! videoconvert ! video/x-raw,format=I420 ! v4l2h264enc ")
+	require.True(t, strings.HasSuffix(got, " videorate drop-only=true ! video/x-raw,framerate=1/1 ! videoscale ! videoconvert ! video/x-raw,format=GRAY8,width=160,height=90 ! fdsink fd=3"), got)
 
 	// With a microphone the measuring branch still comes last.
 	c.Audio = &AudioConfig{Device: "alsa:hw:1,0"}
