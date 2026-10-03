@@ -44,8 +44,8 @@ func (c SourceConfig) gstreamer() bool {
 }
 
 // checkGst is what a GStreamer source may say (§38.3): a V4L2 camera, a
-// microphone beside it or none, the tier-1 fields; what only ffmpeg
-// understands is refused rather than ignored.
+// microphone beside it or none, `idle:`, the tier-1 fields; what only
+// ffmpeg understands is refused rather than ignored.
 func (c SourceConfig) checkGst() error {
 	switch strings.ToLower(strings.TrimSpace(c.Capture)) {
 	case "", CaptureFFmpeg:
@@ -63,8 +63,6 @@ func (c SourceConfig) checkGst() error {
 		return fmt.Errorf("capture: %s records a camera's microphone by its device (audio.device: alsa:…); a V4L2 camera sends no audio of its own", CaptureGStreamer)
 	case c.hasMic() && c.audioCodec() != "" && c.audioCodec() != "aac" && c.audioCodec() != "opus" && c.audioCodec() != "none":
 		return fmt.Errorf("capture: %s encodes a microphone as aac or opus, not %q", CaptureGStreamer, c.audioCodec())
-	case c.Idle != nil:
-		return fmt.Errorf("capture: %s cannot measure a dark scene; idle needs capture: %s", CaptureGStreamer, CaptureFFmpeg)
 	case len(c.EncoderOptions) > 0 || len(c.ExtraInputArgs) > 0 || len(c.ExtraOutputArgs) > 0:
 		return fmt.Errorf("capture: %s has no ffmpeg to pass encoder_options or extra_*_args to", CaptureGStreamer)
 	}
@@ -141,6 +139,14 @@ func GstArgs(c SourceConfig, encoder string, ceiling int64, keyframe time.Durati
 		args = append(args, "image/jpeg,"+mode, "!", "jpegdec", "!")
 	}
 	args = append(args, "videoconvert", "!", "video/x-raw,format=I420", "!")
+	if c.Idle != nil {
+		// The picture the encoder takes is also what is measured (§38.10).
+		// The encoder's allocation query is kept from the tee: answered
+		// through it, the Pi's v4l2h264enc made gst-launch abort asking
+		// for 4 GiB; without it the encoder copies each picture into its
+		// own buffers, 6% of a core at 720p30.
+		args = append(args, "tee", "name=pic", "pic.", "!", "queue", "!", "identity", "drop-allocation=true", "!")
+	}
 
 	if keyframe <= 0 {
 		keyframe = 2 * time.Second
@@ -171,7 +177,25 @@ func GstArgs(c SourceConfig, encoder string, ceiling int64, keyframe time.Durati
 			"video/x-h264,level=(string)"+level, "!")
 	}
 
-	return append(append(args, gstVideoTail()...), gstAudioArgs(c, aacEnc)...)
+	args = append(append(args, gstVideoTail()...), gstAudioArgs(c, aacEnc)...)
+
+	return append(args, gstDarkArgs(c)...)
+}
+
+// gstDarkArgs is the measuring branch of a source with `idle:` (§38.10):
+// one picture a second, grey and darkWidth wide, to fd 3, which the
+// producer reads (readDark). Its queue drops rather than holds the
+// recording up should the reader fall behind.
+func gstDarkArgs(c SourceConfig) []string {
+	if c.Idle == nil {
+		return nil
+	}
+	w, h := darkSize(c.Size)
+
+	return []string{"pic.", "!", "queue", "leaky=downstream", "max-size-buffers=2", "!",
+		"videorate", "drop-only=true", "!", "video/x-raw,framerate=1/1", "!",
+		"videoscale", "!", "videoconvert", "!", fmt.Sprintf("video/x-raw,format=GRAY8,width=%d,height=%d", w, h), "!",
+		"fdsink", "fd=3"}
 }
 
 // gstVideoTail parses the H.264 so every keyframe carries its parameter

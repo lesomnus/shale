@@ -220,6 +220,12 @@ Findings:
   the capture took 4.6% of a core, `voaacenc` 3% more, `opusenc` 7% more
   (9% at `complexity=0`, so lowering it saves little). All three tracks
   started together and lasted the same to within 30 ms.
+- **Measuring dark scenes costs 5% of a core per camera.** One picture a
+  second teed off to the producer (§38.10) took a 720p30 pipeline from 36%
+  to 42% of a core, most of it the encoder copying pictures into its own
+  buffers now that the tee is in front of it; the frame rate and bitrate
+  did not move. With every pixel counted dark (`threshold: 1.0`) it told
+  25 dark seconds in 25; in the lit room at the default 0.10, none.
 
 ## Caveats
 

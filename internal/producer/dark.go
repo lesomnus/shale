@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -98,6 +99,14 @@ func (d *darkTracker) observe(line string) bool {
 	if !darkLine(line) {
 		return false
 	}
+	d.darkSecond()
+
+	return true
+}
+
+// darkSecond is one dark second, however it was measured: a blackframe
+// line, or a GStreamer capture's picture (darkFrame).
+func (d *darkTracker) darkSecond() {
 	now := d.now()
 	d.mu.Lock()
 	d.lastDark = now
@@ -107,8 +116,6 @@ func (d *darkTracker) observe(line string) bool {
 	d.seconds++
 	d.mu.Unlock()
 	d.tick(now)
-
-	return true
 }
 
 // tick runs every second: a scene is lit again when the lines stop, and
@@ -156,4 +163,58 @@ func (d *darkTracker) Since() time.Time {
 	defer d.mu.Unlock()
 
 	return d.darkSince
+}
+
+// A GStreamer capture has no blackframe (§38.10). Its pipeline sends one
+// picture a second, scaled down to darkWidth and grey, to a pipe of its own
+// (fd 3), and the producer counts its dark pixels as blackframe would: the
+// same share, the same threshold on the luma.
+
+// darkWidth is how wide the measured picture is: enough pixels for a share,
+// few enough that the scaling costs nothing.
+const darkWidth = 160
+
+// darkSize is the measured picture's size for a source's mode: darkWidth
+// wide, as tall as its aspect makes it, rounded to an even number.
+func darkSize(size string) (w, h int) {
+	sw, sh := parseSize(size)
+	if size == "" {
+		sw, sh = 1280, 720
+	}
+	h = (darkWidth*sh/sw + 1) &^ 1
+	if h < 2 {
+		h = 2
+	}
+
+	return darkWidth, h
+}
+
+// darkFrame says whether a grey picture is dark: darkShare percent of its
+// pixels at or below the threshold.
+func darkFrame(pic []byte, threshold int) bool {
+	if len(pic) == 0 {
+		return false
+	}
+	n := 0
+	for _, y := range pic {
+		if int(y) <= threshold {
+			n++
+		}
+	}
+
+	return n*100 >= darkShare*len(pic)
+}
+
+// readDark reads a pipeline's pictures of w×h grey bytes until the pipe
+// ends, telling dark for every dark one.
+func readDark(r io.Reader, w, h, threshold int, dark func()) {
+	pic := make([]byte, w*h)
+	for {
+		if _, err := io.ReadFull(r, pic); err != nil {
+			return
+		}
+		if darkFrame(pic, threshold) {
+			dark()
+		}
+	}
 }

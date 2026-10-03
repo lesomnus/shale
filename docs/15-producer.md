@@ -159,8 +159,8 @@ converting them for it took 3.35 of the Pi 400's four cores. GStreamer's
 same three cameras took about one core, at 30 frames a second each. So
 `capture: gstreamer` exists for one case, a V4L2 camera encoded by the
 host with the microphone beside it if it has one, and does not try to be
-ffmpeg: no RTSP, no tier 2, and no dark detection
-([§38.10](#3810-dark-scenes)), each refused at start rather than ignored. Its pipeline writes MPEG-TS, and the second stage
+ffmpeg: no RTSP and no tier 2, each refused at start rather than ignored.
+Dark scenes ([§38.10](#3810-dark-scenes)) are measured its own way. Its pipeline writes MPEG-TS, and the second stage
 below turns that into fragmented MP4, so ffmpeg is still on the host and
 what the producer reads is the same.
 
@@ -252,6 +252,7 @@ heartbeat ([§38.6](#386-health-and-heartbeats)).
 | `audio` | a microphone only (`device`, named as for ffmpeg): `alsasrc device=<hw:…> ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1`, then AAC (`avenc_aac`, `fdkaacenc` or `voaacenc`, the first this host has) with `opusenc` beside it for live ([§38.7](#387-live-output)), or `opusenc` alone for `codec: opus`, at `bitrate`; both out of the video ceiling as with ffmpeg. A V4L2 camera sends no audio of its own, so `copy`, or a codec without a `device`, is refused. On a Pi 400 a microphone costs about a quarter of a core: AAC and Opus at 64 kbps, 16–20% of a core in the encoders, the rest in the pipeline ([bench](producer-bench.md#three-cameras-gstreamer-against-ffmpeg)) |
 | output (fixed) | `mpegtsmux name=mux ! fdsink fd=1`, the video into it at PID 65 after `h264parse config-interval=-1`, the AAC at 66 and the Opus at 67, so the streams come out of the second stage video first; into the second stage below, which maps `0:v:0` then `0:a?` and, with a microphone, probes 3 s, since the sound starts before the camera's first frame |
 | `controls` | as with ffmpeg: set on the device before every start |
+| `idle` | the picture the encoder takes, teed (`tee name=pic`), one a second, grey and 160 pixels wide, to fd 3 (`videorate drop-only=true ! video/x-raw,framerate=1/1 ! videoscale ! videoconvert ! video/x-raw,format=GRAY8,… ! fdsink fd=3`), which the producer reads and measures as blackframe would ([§38.10](#3810-dark-scenes)). The encoder's branch drops the allocation query (`identity drop-allocation=true`): answered through the tee, the Pi's `v4l2h264enc` made gst-launch abort asking for 4 GiB. It costs about 5% of a core at 720p30, most of it the encoder copying each picture into its own buffers |
 
 **A second stage for the Raspberry Pi's encoder.** It also serves
 `capture: gstreamer`, whose pipeline writes MPEG-TS for it. `h264_v4l2m2m` hands
@@ -610,7 +611,12 @@ sources:
   and it prints a line per dark second on stderr, which the producer reads
   like every other line the process writes. The process runs at info
   level for that, and the lines ffmpeg prints about its inputs and
-  outputs are dropped from the log. A second without a line is lit. Only
+  outputs are dropped from the log. A second without a line is lit.
+  Under `capture: gstreamer` there is no blackframe: the pipeline sends
+  one picture a second, grey and 160 pixels wide, to a pipe of its own
+  (fd 3), and the producer counts its pixels at or below `threshold`, 98 %
+  of them for a dark second, as blackframe does on the full picture
+  ([§38.3](#383-managed-capture)). Only
   a source the producer encodes can be measured: a copied stream
   (`format: h264`, `encoder: copy`) is never decoded, and `idle:` on one
   is refused. An `extra_output_args` with its own `-vf` replaces the
