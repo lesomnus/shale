@@ -4,7 +4,10 @@ import (
 	"context"
 
 	"github.com/lesomnus/payday/config"
-	// The OTLP exporter, so `otel:` can name it (§31).
+	// The exporters `otel:` can name (§31): OTLP to a collector, and debug,
+	// JSON lines to a file, for a host with no collector to reach (a
+	// producer on a soak test reads its own numbers from a tmpfs).
+	_ "github.com/lesomnus/mkot/debug"
 	_ "github.com/lesomnus/mkot/otlp"
 
 	"github.com/lesomnus/shale/cmd"
@@ -53,6 +56,9 @@ func Telemetry(ctx context.Context, c *cmd.Config) (context.Context, func(), err
 	}
 
 	if err := o.Start(ctx); err != nil {
+		return nil, nil, err
+	}
+	if err := registerRuntimeMetrics(ctx); err != nil {
 		return nil, nil, err
 	}
 

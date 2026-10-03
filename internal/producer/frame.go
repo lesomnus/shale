@@ -53,6 +53,9 @@ type Frame struct {
 	Track uint32
 	// Seq numbers a fragment, so a dropped one shows.
 	Seq uint32
+	// Longest is the longest video frame in a fragment: a camera's frames
+	// that never arrived show as one frame lasting their time (§38.6).
+	Longest time.Duration
 }
 
 var (

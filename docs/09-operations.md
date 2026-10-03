@@ -328,6 +328,8 @@ scrape endpoint. The names, by the process that measures them:
 | ingest per node | `shale.node.ingest_bps` |
 | producer per source | `shale.producer.input_up`, `frame_rate`, `rate_bps`, `keyframe_interval_ms`, `capture_restarts`, `early_cuts`, all `{source}` |
 | producer host, uplink, live helpers | `shale.producer.cpu`, `temperature`, `uplink_bps`, `live_transcodes`, `live_dropped` |
+| frames the recording lost: gaps over one and three quarters frames | `shale.producer.frame_gaps{source}`, `shale.producer.frames_missed{source}` |
+| the Go runtime, every process: collections and their CPU, assists, heap, goroutines, scheduling | `shale.runtime.gc.cycles`, `gc.cpu`, `gc.assist`, `heap.live`, `heap.goal`, `memory`, `goroutines`, `sched.latency_max` |
 | relay | `shale.relay.attached_producers`, `active_sources`, `viewers`, `egress_bytes`, `sessions{outcome}`, `first_frame_ms`, `cpu` |
 | hosts pending, certificates due | `shale.cp.hosts_pending{kind}`, `shale.cp.certs_due{kind}` |
 | producers per relay, reassignments | `shale.cp.producers_per_relay{relay}`, `shale.cp.relay_reassignments` |

@@ -165,6 +165,20 @@ otel:
       exporters: [otlp]
 ```
 
+A host with no collector to reach writes its metrics to a file instead, as
+JSON lines, once every `OTEL_METRIC_EXPORT_INTERVAL` milliseconds (60 s by
+default); on a tmpfs, nothing reaches the disk:
+
+```yaml
+otel:
+  exporters:
+    debug:
+      output_paths: [/tmp/shale-metrics.jsonl]
+  providers:
+    meter:
+      exporters: [debug]
+```
+
 ### 36.2 Open decisions
 
 None at the moment. Every question raised during the design has either been
