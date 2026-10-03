@@ -214,6 +214,12 @@ Findings:
   the producer in a row, each stopping in under a second, left no
   pipeline behind and no codec error (§38.3, Supervision).
 - **Temperature held at 52–54 °C** with all three running.
+- **A microphone costs about a quarter of a core.** Each C270's own
+  microphone (48 kHz mono) encoded as AAC with Opus beside it, 64 kbps
+  each, took the three pipelines from about one core to about two. Alone,
+  the capture took 4.6% of a core, `voaacenc` 3% more, `opusenc` 7% more
+  (9% at `complexity=0`, so lowering it saves little). All three tracks
+  started together and lasted the same to within 30 ms.
 
 ## Caveats
 
