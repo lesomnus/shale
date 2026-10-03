@@ -185,6 +185,7 @@ func TestCaptureRemux(t *testing.T) {
 		}
 		return out
 	}())
+	require.NotEmpty(t, audioSpecificConfig(init.Audio()[0].Config), "the AAC's configuration is in its esds: a browser decodes nothing without it")
 	require.GreaterOrEqual(t, len(frames), 6)
 	require.True(t, frames[0].Key, "the first fragment starts at a keyframe")
 	keys := 0
@@ -206,7 +207,7 @@ func TestArgsRemux(t *testing.T) {
 	require.True(t, strings.HasSuffix(first, "-f mpegts -"), first)
 	require.NotContains(t, first, "movflags")
 	second := strings.Join(RemuxArgs(src.aacArchive()), " ")
-	require.Contains(t, second, "-f mpegts -i pipe:0 -map 0 -c copy -bsf:a:0 aac_adtstoasc -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration 500000 pipe:1")
+	require.Contains(t, second, "-f mpegts -i pipe:0 -map 0 -c copy -bsf:a:0 aac_adtstoasc -f mp4 -movflags frag_keyframe+empty_moov+delay_moov+default_base_moof -frag_duration 500000 pipe:1")
 	t.Logf("pi pipeline: ffmpeg %s | ffmpeg %s", first, second)
 	// Opus alone needs no re-framing; a silent source has no audio to re-frame.
 	src.Audio = &AudioConfig{Codec: "opus"}
@@ -215,4 +216,57 @@ func TestArgsRemux(t *testing.T) {
 	require.False(t, usb.aacArchive())
 	// Every other encoder muxes in one stage.
 	require.Contains(t, strings.Join(Args(src, "libx264", 2_000_000, 2*time.Second), " "), "-f mp4 -movflags")
+}
+
+// audioSpecificConfig is the DecoderSpecificInfo of an esds payload (ISO
+// 14496-1): the ES descriptor, its decoder configuration, and the
+// configuration inside that; nil when there is none.
+func audioSpecificConfig(esds []byte) []byte {
+	p := 4 // version and flags
+	next := func() (tag byte, body []byte) {
+		if p+2 > len(esds) {
+			return 0, nil
+		}
+		tag = esds[p]
+		p++
+		n := 0
+		for i := 0; i < 4 && p < len(esds); i++ {
+			x := esds[p]
+			p++
+			n = n<<7 | int(x&0x7f)
+			if x&0x80 == 0 {
+				break
+			}
+		}
+		end := min(len(esds), p+n)
+		body = esds[p:end]
+
+		return tag, body
+	}
+	tag, es := next()
+	if tag != 0x03 || len(es) < 3 {
+		return nil
+	}
+	flags := es[2]
+	p += 3
+	if flags&0x80 != 0 {
+		p += 2
+	}
+	if flags&0x40 != 0 && p < len(esds) {
+		p += 1 + int(esds[p])
+	}
+	if flags&0x20 != 0 {
+		p += 2
+	}
+	tag, _ = next()
+	if tag != 0x04 {
+		return nil
+	}
+	p += 13
+	tag, dsi := next()
+	if tag != 0x05 {
+		return nil
+	}
+
+	return dsi
 }

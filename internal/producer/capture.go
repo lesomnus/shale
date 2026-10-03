@@ -78,8 +78,9 @@ type SourceConfig struct {
 // AudioConfig is a source's audio (§38.3): a microphone beside the camera,
 // and what the stream carries.
 type AudioConfig struct {
-	// Device is an ALSA capture device, `alsa:hw:1`; empty means the
-	// camera's own audio, if it sends any.
+	// Device is an ALSA capture device, `alsa:hw:1`, or a path under
+	// /dev/snd, `alsa:/dev/snd/by-path/…`, resolved to its card at every
+	// start; empty means the camera's own audio, if it sends any.
 	Device string
 	// Bitrate is the encoded rate in bits per second, 64 kbps by default;
 	// it also sizes the Opus track for live (§38.7).
@@ -118,6 +119,16 @@ func (c SourceConfig) audioCodec() string {
 	return strings.ToLower(strings.TrimSpace(c.Audio.Codec))
 }
 
+// audioShare is what a source's audio takes of its ceiling: its track, and
+// the Opus track beside it unless the archive's is Opus already (§38.7).
+func (c SourceConfig) audioShare() int64 {
+	if c.audioCodec() == "opus" {
+		return c.audioBitrate()
+	}
+
+	return 2 * c.audioBitrate()
+}
+
 // hasMic says a microphone is configured.
 func (c SourceConfig) hasMic() bool { return c.Audio != nil && c.Audio.Device != "" }
 
@@ -151,6 +162,19 @@ func MuxArgs() []string {
 	return []string{
 		"-f", "mp4",
 		"-movflags", "frag_keyframe+empty_moov+default_base_moof",
+		"-frag_duration", strconv.FormatInt(FragDuration.Microseconds(), 10),
+	}
+}
+
+// RemuxMuxArgs are the muxer's arguments in a second stage (§38.3): the
+// same, with the init segment held until the first fragment. AAC out of a
+// TS has its configuration only once `aac_adtstoasc` saw a packet, and an
+// init segment written before that has an `esds` without it, which no
+// browser decodes; `delay_moov` writes it once the configuration is known.
+func RemuxMuxArgs() []string {
+	return []string{
+		"-f", "mp4",
+		"-movflags", "frag_keyframe+empty_moov+delay_moov+default_base_moof",
 		"-frag_duration", strconv.FormatInt(FragDuration.Microseconds(), 10),
 	}
 }
@@ -276,10 +300,7 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 	// track beside it unless the archive's is Opus already (§38.7).
 	audioBps := int64(0)
 	if !silent {
-		audioBps = c.audioBitrate()
-		if codec != "opus" {
-			audioBps *= 2
-		}
+		audioBps = c.audioShare()
 	}
 	videoCeiling := videoCeiling(ceiling, audioBps)
 
@@ -385,7 +406,7 @@ func RemuxArgs(aac bool) []string {
 	if aac {
 		args = append(args, "-bsf:a:0", "aac_adtstoasc")
 	}
-	args = append(args, MuxArgs()...)
+	args = append(args, RemuxMuxArgs()...)
 
 	return append(args, "pipe:1")
 }
@@ -517,6 +538,8 @@ type Capture struct {
 	Log    *slog.Logger
 	// Encoder is what auto chose, once it did.
 	Encoder string
+	// aacEnc is the AAC encoder a GStreamer capture chose, once it did.
+	aacEnc string
 	// Profile answers the agreed ceiling and keyframe interval when a
 	// process starts, so a new cap takes effect at the next start (§38.5).
 	Profile func() (ceiling int64, keyframe time.Duration)
@@ -689,6 +712,15 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	fallback := c.audioFallback
 	c.mu.Unlock()
 	src := c.Source
+	if src.hasMic() {
+		dev, err := alsaDevice(src.Audio.Device)
+		if err != nil {
+			return err
+		}
+		a := *src.Audio
+		a.Device = "alsa:" + dev
+		src.Audio = &a
+	}
 	if fallback != "" {
 		a := AudioConfig{}
 		if src.Audio != nil {
@@ -699,6 +731,9 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	}
 	var cmd *exec.Cmd
 	remux := c.Remux
+	// remuxArgs is the second stage's command line, when it differs from
+	// the one RemuxArgs makes for ffmpeg's TS.
+	var remuxArgs []string
 	if c.Source.Command != "" {
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", c.Source.Command)
 	} else if c.Source.gstreamer() {
@@ -714,11 +749,17 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 				encoder = c.Encoder
 			}
 		}
+		aac, opus := src.gstAudio()
+		if aac && c.aacEnc == "" {
+			c.aacEnc = PickGstAAC(ctx, c.gst())
+			c.Log.Info("audio encoder", "source", c.Source.Alias, "chosen", c.aacEnc)
+		}
 		// The pipeline writes TS, which the second stage makes fragmented
 		// MP4, as for h264_v4l2m2m (§38.3).
 		remux = true
-		args := GstArgs(src, encoder, ceiling, keyframe)
-		c.Log.Info("capture", "source", c.Source.Alias, "cmd", c.gst()+" "+strings.Join(args, " ")+" | "+c.Ffmpeg+" "+strings.Join(RemuxArgs(false), " "))
+		remuxArgs = GstRemuxArgs(aac, aac || opus)
+		args := GstArgs(src, encoder, ceiling, keyframe, c.aacEnc)
+		c.Log.Info("capture", "source", c.Source.Alias, "cmd", c.gst()+" "+strings.Join(args, " ")+" | "+c.Ffmpeg+" "+strings.Join(remuxArgs, " "))
 		cmd = exec.CommandContext(ctx, c.gst(), args...)
 	} else {
 		encoder := c.Source.Encoder
@@ -763,7 +804,10 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	// TS in, fragmented MP4 out.
 	var second *exec.Cmd
 	if remux {
-		second = exec.CommandContext(ctx, c.Ffmpeg, RemuxArgs(src.aacArchive() && !src.gstreamer())...)
+		if remuxArgs == nil {
+			remuxArgs = RemuxArgs(src.aacArchive())
+		}
+		second = exec.CommandContext(ctx, c.Ffmpeg, remuxArgs...)
 		second.Env = cmd.Env
 		// It ends when the first stage does, having written what that
 		// flushed on its way out.

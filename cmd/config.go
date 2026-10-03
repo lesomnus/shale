@@ -206,8 +206,8 @@ type SourceConfig struct {
 	Size   string `yaml:"size"`
 	Fps    int    `yaml:"fps"`
 	// Capture is the tool that runs the camera: `ffmpeg` (the default) or
-	// `gstreamer`, for a V4L2 camera on the Raspberry Pi's encoder, video
-	// only (§38.3).
+	// `gstreamer`, for a V4L2 camera on the Raspberry Pi's encoder, with
+	// its microphone (`audio.device`) or without (§38.3).
 	Capture string `yaml:"capture"`
 	// Encoder: auto | h264_v4l2m2m | h264_vaapi | h264_qsv | h264_nvenc |
 	// libx264 | copy; under `capture: gstreamer` auto | v4l2h264enc |
@@ -250,8 +250,9 @@ type IdleConfig struct {
 // AudioConfig is a source's audio (§38.3): absent, a camera's own audio is
 // recorded as the camera sends it, and a USB camera has none.
 type AudioConfig struct {
-	// Device is a microphone, e.g. `alsa:hw:1`, recorded in place of the
-	// camera's audio.
+	// Device is a microphone, e.g. `alsa:hw:1`, or the path of its USB
+	// port, `alsa:/dev/snd/by-path/…`, resolved to its card at every start;
+	// recorded in place of the camera's audio.
 	Device string `yaml:"device"`
 	// Bitrate, e.g. "64kbps": what a microphone is encoded at, and the
 	// Opus track written beside the archive's for live (§38.7).

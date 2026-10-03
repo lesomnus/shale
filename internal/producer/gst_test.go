@@ -17,41 +17,79 @@ import (
 // ceiling, a keyframe every 60 frames with its parameter sets, TS out.
 func TestGstArgsPi(t *testing.T) {
 	c := SourceConfig{Alias: "cam-1", Capture: CaptureGStreamer, Input: "v4l2:/dev/v4l/by-path/usb-0:1.1:1.0-video-index0", Format: "mjpeg", Size: "1280x720", Fps: 30}
-	args := GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second)
+	args := GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second, "voaacenc")
 	require.Equal(t, []string{
-		"-q", "-e",
+		"-q", "-e", "mpegtsmux", "name=mux", "!", "fdsink", "fd=1",
 		"v4l2src", "device=/dev/v4l/by-path/usb-0:1.1:1.0-video-index0", "!",
 		"image/jpeg,width=1280,height=720,framerate=30/1", "!",
 		"jpegdec", "!", "videoconvert", "!", "video/x-raw,format=I420", "!",
 		// (2.2 Mbps / 1.05) × 0.9
 		"v4l2h264enc", "extra-controls=controls,video_bitrate=1885714,video_bitrate_mode=0,h264_i_frame_period=60,repeat_sequence_header=1", "!",
 		"video/x-h264,level=(string)4.1", "!",
-		"h264parse", "config-interval=-1", "!", "mpegtsmux", "!", "fdsink", "fd=1",
+		"h264parse", "config-interval=-1", "!", "queue", "!", "mux.sink_65",
 	}, args)
+	require.Equal(t, []string{
+		"-hide_banner", "-loglevel", "warning", "-nostats", "-probesize", "262144", "-analyzeduration", "500000",
+		"-f", "mpegts", "-i", "pipe:0", "-map", "0:v:0", "-map", "0:a?", "-c", "copy",
+		"-f", "mp4", "-movflags", "frag_keyframe+empty_moov+delay_moov+default_base_moof", "-frag_duration", "500000", "pipe:1",
+	}, GstRemuxArgs(false, false))
+}
+
+// A camera's microphone (§38.3, §38.7): AAC for the archive and Opus beside
+// it, each at its own PID after the video, and both out of the ceiling.
+func TestGstArgsAudio(t *testing.T) {
+	c := SourceConfig{Capture: CaptureGStreamer, Input: "v4l2:/dev/video0", Format: "mjpeg", Size: "1280x720", Fps: 30,
+		Audio: &AudioConfig{Device: "alsa:hw:2,0"}}
+	got := strings.Join(GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second, "voaacenc"), " ")
+	// (2.2 Mbps − 2 × 64 kbps) / 1.05 × 0.9
+	require.Contains(t, got, "video_bitrate=1775999,")
+	require.Contains(t, got, "h264parse config-interval=-1 ! queue ! mux.sink_65 "+
+		"alsasrc device=hw:2,0 ! queue ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! tee name=mic "+
+		"mic. ! queue ! voaacenc bitrate=64000 ! aacparse ! queue ! mux.sink_66 "+
+		"mic. ! queue ! opusenc bitrate=64000 ! queue ! mux.sink_67")
+	require.True(t, strings.HasSuffix(got, "mux.sink_67"))
+	remux := strings.Join(GstRemuxArgs(true, true), " ")
+	require.Contains(t, remux, "-probesize 5000000 -analyzeduration 3000000", "the sound starts before the picture")
+	require.Contains(t, remux, "-map 0:v:0 -map 0:a? -c copy -bsf:a:0 aac_adtstoasc")
+
+	// Opus alone, at 32 kbps: one track, one share.
+	c.Audio = &AudioConfig{Device: "alsa:hw:2,0", Codec: "opus", Bitrate: 32_000}
+	got = strings.Join(GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second, "voaacenc"), " ")
+	require.Contains(t, got, "video_bitrate=1858284,")
+	require.Contains(t, got, "audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=32000 ! queue ! mux.sink_67")
+	require.NotContains(t, got, "tee")
+	require.NotContains(t, got, "voaacenc")
+	require.NotContains(t, strings.Join(GstRemuxArgs(false, true), " "), "aac_adtstoasc")
+
+	// `none`: the microphone is not opened.
+	c.Audio = &AudioConfig{Device: "alsa:hw:2,0", Codec: "none"}
+	got = strings.Join(GstArgs(c, "v4l2h264enc", 2_200_000, 2*time.Second, "voaacenc"), " ")
+	require.NotContains(t, got, "alsasrc")
+	require.Contains(t, got, "video_bitrate=1885714,")
 }
 
 func TestGstArgsOthers(t *testing.T) {
 	// YUYV, x264 in software, a keyframe every 4 s at 15 fps.
 	c := SourceConfig{Capture: CaptureGStreamer, Input: "v4l2:/dev/video0", Format: "yuyv", Size: "640x480", Fps: 15}
-	got := strings.Join(GstArgs(c, "x264enc", 1_050_000, 4*time.Second), " ")
+	got := strings.Join(GstArgs(c, "x264enc", 1_050_000, 4*time.Second, ""), " ")
 	require.Contains(t, got, "video/x-raw,format=YUY2,width=640,height=480,framerate=15/1 ! videoconvert")
 	require.Contains(t, got, "x264enc speed-preset=veryfast tune=zerolatency bitrate=900 vbv-buf-capacity=1000 key-int-max=60 !")
 	require.NotContains(t, got, "jpegdec")
 
 	// A camera's own H.264, copied: parsed and muxed, nothing decoded.
 	c = SourceConfig{Capture: CaptureGStreamer, Input: "v4l2:/dev/video2", Format: "h264", Size: "1920x1080", Fps: 30}
-	got = strings.Join(GstArgs(c, "copy", 4_000_000, 2*time.Second), " ")
-	require.Equal(t, "-q -e v4l2src device=/dev/video2 ! video/x-h264,width=1920,height=1080,framerate=30/1 ! h264parse config-interval=-1 ! mpegtsmux ! fdsink fd=1", got)
+	got = strings.Join(GstArgs(c, "copy", 4_000_000, 2*time.Second, ""), " ")
+	require.Equal(t, "-q -e mpegtsmux name=mux ! fdsink fd=1 v4l2src device=/dev/video2 ! video/x-h264,width=1920,height=1080,framerate=30/1 ! h264parse config-interval=-1 ! queue ! mux.sink_65", got)
 
 	// No size or rate said: 720p30, as the Pi's cameras run.
 	c = SourceConfig{Capture: CaptureGStreamer, Input: "v4l2:/dev/video0"}
-	got = strings.Join(GstArgs(c, "v4l2h264enc", 2_000_000, 0), " ")
+	got = strings.Join(GstArgs(c, "v4l2h264enc", 2_000_000, 0, ""), " ")
 	require.Contains(t, got, "image/jpeg,width=1280,height=720,framerate=30/1")
 	require.Contains(t, got, "h264_i_frame_period=60,")
 
 	// Above 1080p30 the level rises with it.
 	c = SourceConfig{Capture: CaptureGStreamer, Input: "v4l2:/dev/video0", Size: "1920x1080", Fps: 60}
-	require.Contains(t, strings.Join(GstArgs(c, "v4l2h264enc", 8_000_000, 0), " "), "level=(string)4.2")
+	require.Contains(t, strings.Join(GstArgs(c, "v4l2h264enc", 8_000_000, 0, ""), " "), "level=(string)4.2")
 }
 
 // What a GStreamer source may say, refused at start rather than ignored.
@@ -62,27 +100,68 @@ func TestCheckGst(t *testing.T) {
 	require.NoError(t, SourceConfig{Capture: "ffmpeg", Input: "rtsp://x"}.checkGst())
 
 	for name, mut := range map[string]func(*SourceConfig){
-		"tool":     func(c *SourceConfig) { c.Capture = "vlc" },
-		"command":  func(c *SourceConfig) { c.Command = "true" },
-		"rtsp":     func(c *SourceConfig) { c.Input = "rtsp://10.0.0.1/s" },
-		"mic":      func(c *SourceConfig) { c.Audio = &AudioConfig{Device: "alsa:hw:1"} },
-		"codec":    func(c *SourceConfig) { c.Audio = &AudioConfig{Codec: "aac"} },
-		"idle":     func(c *SourceConfig) { c.Idle = &IdleConfig{} },
-		"tier2":    func(c *SourceConfig) { c.ExtraOutputArgs = []string{"-x"} },
-		"format":   func(c *SourceConfig) { c.Format = "h265" },
-		"encoder":  func(c *SourceConfig) { c.Encoder = "h264_v4l2m2m" },
-		"copy raw": func(c *SourceConfig) { c.Encoder = "copy" },
+		"tool":      func(c *SourceConfig) { c.Capture = "vlc" },
+		"command":   func(c *SourceConfig) { c.Command = "true" },
+		"rtsp":      func(c *SourceConfig) { c.Input = "rtsp://10.0.0.1/s" },
+		"no device": func(c *SourceConfig) { c.Audio = &AudioConfig{Codec: "aac"} },
+		"mic copy":  func(c *SourceConfig) { c.Audio = &AudioConfig{Device: "alsa:hw:1", Codec: "copy"} },
+		"idle":      func(c *SourceConfig) { c.Idle = &IdleConfig{} },
+		"tier2":     func(c *SourceConfig) { c.ExtraOutputArgs = []string{"-x"} },
+		"format":    func(c *SourceConfig) { c.Format = "h265" },
+		"encoder":   func(c *SourceConfig) { c.Encoder = "h264_v4l2m2m" },
+		"copy raw":  func(c *SourceConfig) { c.Encoder = "copy" },
 	} {
 		c := ok
 		mut(&c)
 		require.Error(t, c.checkGst(), name)
 	}
-	silent := ok
-	silent.Audio = &AudioConfig{Codec: "none"}
-	require.NoError(t, silent.checkGst(), "audio: none is what it does anyway")
+	for name, a := range map[string]*AudioConfig{
+		"none":      {Codec: "none"},
+		"mic":       {Device: "alsa:hw:1"},
+		"mic aac":   {Device: "alsa:/dev/snd/by-path/usb-0:1.1:1.2", Codec: "AAC"},
+		"mic opus":  {Device: "alsa:hw:1", Codec: "opus"},
+		"mic, none": {Device: "alsa:hw:1", Codec: "none"},
+	} {
+		c := ok
+		c.Audio = a
+		require.NoError(t, c.checkGst(), name)
+	}
 
 	_, err := New(Config{Sources: []SourceConfig{{Alias: "a", Capture: CaptureGStreamer, Input: "rtsp://x"}}})
 	require.ErrorContains(t, err, "source a: capture: gstreamer takes a V4L2 camera")
+}
+
+// A microphone by the path of its USB port (§38.3): the card's control or
+// capture node, wherever the port's link points this time; ALSA's own names
+// pass as they are.
+func TestAlsaDevice(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "controlC2"), nil, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pcmC1D3c"), nil, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "timer"), nil, 0o644))
+	byPath := filepath.Join(dir, "by-path")
+	require.NoError(t, os.Mkdir(byPath, 0o755))
+	link := func(name, target string) string {
+		p := filepath.Join(byPath, name)
+		require.NoError(t, os.Symlink("../"+target, p))
+		return p
+	}
+
+	for in, want := range map[string]string{
+		"alsa:hw:1":                            "hw:1",
+		"alsa:hw:CARD=WEBCAM,DEV=0":            "hw:CARD=WEBCAM,DEV=0",
+		"plughw:0":                             "plughw:0",
+		"alsa:" + link("usb-1.3", "controlC2"): "hw:2,0",
+		link("usb-1.1", "pcmC1D3c"):            "hw:1,3",
+	} {
+		got, err := alsaDevice(in)
+		require.NoError(t, err, in)
+		require.Equal(t, want, got, in)
+	}
+	_, err := alsaDevice("alsa:" + link("hdmi", "timer"))
+	require.ErrorContains(t, err, "not a sound card's control or capture node")
+	_, err = alsaDevice("alsa:" + filepath.Join(byPath, "unplugged"))
+	require.Error(t, err)
 }
 
 // A capture is stopped with an interrupt to its process group, and a

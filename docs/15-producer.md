@@ -158,9 +158,9 @@ converting them for it took 3.35 of the Pi 400's four cores. GStreamer's
 `v4l2h264enc` reaches the variable-rate mode through a V4L2 control, and the
 same three cameras took about one core, at 30 frames a second each. So
 `capture: gstreamer` exists for one case, a V4L2 camera encoded by the
-host, and does not try to be ffmpeg: no audio, no RTSP, no tier 2, and no
-dark detection ([§38.10](#3810-dark-scenes)), each refused at start
-rather than ignored. Its pipeline writes MPEG-TS, and the second stage
+host with the microphone beside it if it has one, and does not try to be
+ffmpeg: no RTSP, no tier 2, and no dark detection
+([§38.10](#3810-dark-scenes)), each refused at start rather than ignored. Its pipeline writes MPEG-TS, and the second stage
 below turns that into fragmented MP4, so ffmpeg is still on the host and
 what the producer reads is the same.
 
@@ -184,7 +184,7 @@ sources:
     encoder: auto           # auto | h264_v4l2m2m | h264_vaapi | h264_nvenc | libx264 | ...
     max_bitrate: auto       # or 4Mbps; the ceiling of §12.6
     keyframe_interval: 2s
-    audio: {device: alsa:hw:1, bitrate: 64kbps}   # a microphone; absent: a USB camera has no audio
+    audio: {device: alsa:hw:1, bitrate: 64kbps}   # a microphone, or alsa:/dev/snd/by-path/…; absent: a USB camera has no audio
     controls: {exposure_dynamic_framerate: 0}     # V4L2 controls, set before every start
     idle: {dark_after: 10m}   # skip the segments of a dark scene (§38.10); absent: store everything
 
@@ -205,7 +205,7 @@ sources:
     extra_input_args: [-thread_queue_size, "512"]
     extra_output_args: [-x264-params, "nal-hrd=cbr"]
 
-  - alias: porch            # a Raspberry Pi's camera through GStreamer: video only
+  - alias: porch            # a Raspberry Pi's camera through GStreamer
     capture: gstreamer
     input: v4l2:/dev/v4l/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-video-index0
     format: mjpeg
@@ -214,6 +214,8 @@ sources:
     encoder: auto           # under gstreamer: auto | v4l2h264enc | x264enc | copy
     max_bitrate: 2.2Mbps
     controls: {exposure_dynamic_framerate: 0}
+    # the camera's microphone, by its USB port as the camera is: aac (+ Opus) | opus | none
+    audio: {device: "alsa:/dev/snd/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.2"}
 
   - alias: roof             # tier 3: your own command; stdout must be fragmented MP4
     command: >
@@ -231,7 +233,7 @@ sources:
 | `encoder: auto` | the first that works on this host: `h264_v4l2m2m`, `h264_vaapi`, `h264_qsv`, `h264_nvenc`, else `libx264 -preset veryfast` with a warning about CPU |
 | `max_bitrate` | encoders with rate control (`libx264`, VAAPI, NVENC, QSV): capped VBR, `-maxrate <video ceiling> -bufsize <2 × ceiling>` around a quality target; encoders that only take a target (`h264_v4l2m2m`): CBR at `-b:v <video ceiling>`. The video ceiling is `max_bitrate` minus the audio bitrate for each audio track (two, unless the archive's is Opus), divided by 1.05 for the container and the muxer's slack, so the muxed stream stays under the ceiling |
 | `keyframe_interval` | `-g <fps × interval> -force_key_frames expr:gte(t,n_forced*<interval>)`, with the agreed interval ([§12.6](04-write-path.md#126-upload-profile-negotiation)), 2 s by default |
-| `audio` | two tracks ([§38.7](#387-live-output)): the archive's, and Opus beside it for live. A camera's own audio: `-map 0:v:0 -map 0:a:0? -map 0:a:0? -c:a:0 copy -c:a:1 libopus -b:a:1 <bitrate>`, with `-c:a:0 aac -b:a:0 <bitrate>` when `codec: aac`; a microphone (`device`): `-f alsa -i <device>` as a second input, mapped twice, `-c:a:0 aac`; `codec: opus` is one track, `-c:a libopus -b:a <bitrate>`, since Opus is what live plays; `-an` for `none`, and for a USB camera without a microphone. Audio in a codec MP4 has no entry for, G.711 from an IP camera above all, makes the muxer refuse at start (`Could not find tag for codec pcm_mulaw`); that line on stderr restarts the capture once, encoding the audio as AAC, with a log line saying so |
+| `audio` | two tracks ([§38.7](#387-live-output)): the archive's, and Opus beside it for live. A camera's own audio: `-map 0:v:0 -map 0:a:0? -map 0:a:0? -c:a:0 copy -c:a:1 libopus -b:a:1 <bitrate>`, with `-c:a:0 aac -b:a:0 <bitrate>` when `codec: aac`; a microphone (`device`): `-f alsa -i <device>` as a second input, mapped twice, `-c:a:0 aac`, where the device is ALSA's name (`alsa:hw:1`) or a path under `/dev/snd` (`alsa:/dev/snd/by-path/…`) resolved to its card (`hw:<card>,0`) at every start, since a card's number follows the order the USB devices came up in and identical webcams share one name; `codec: opus` is one track, `-c:a libopus -b:a <bitrate>`, since Opus is what live plays; `-an` for `none`, and for a USB camera without a microphone. Audio in a codec MP4 has no entry for, G.711 from an IP camera above all, makes the muxer refuse at start (`Could not find tag for codec pcm_mulaw`); that line on stderr restarts the capture once, encoding the audio as AAC, with a log line saying so |
 | output (fixed) | `-f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration 500000 -`: fragmented MP4, every keyframe a fragment and none longer than 500 ms ([§38.1](#381-inputs)). `h264_v4l2m2m` writes `-f mpegts -` instead, into a second ffmpeg (below) |
 | `controls` | not ffmpeg: V4L2 controls set on the device through the ioctls `v4l2-ctl -c` uses, by v4l2-ctl's names, before every start of the capture, since a re-plugged camera forgets them. A control the device does not have, or a value outside its range, is a warning in the log and the rest are set |
 
@@ -247,7 +249,8 @@ heartbeat ([§38.6](#386-health-and-heartbeats)).
 | `encoder: auto` | `v4l2h264enc` when this host's GStreamer has it (`gst-inspect-1.0 --exists`), else `x264enc`; `copy` only with `format: h264` |
 | `max_bitrate` | `v4l2h264enc extra-controls=controls,video_bitrate=<target>,video_bitrate_mode=0,…`: variable-rate, averaging the target, which is 90% of the video ceiling (as above), since the encoder takes no peak cap and averaged 5% over its target; `x264enc bitrate=<target in kbit/s> vbv-buf-capacity=1000` |
 | `keyframe_interval` | `h264_i_frame_period=<fps × interval>` (`key-int-max` for x264), and `repeat_sequence_header=1` so every keyframe carries its parameter sets; then `video/x-h264,level=(string)4.1` (4.2 above 1080p30), as the encoder otherwise picks a level too low for 720p30 |
-| output (fixed) | `h264parse config-interval=-1 ! mpegtsmux ! fdsink fd=1`, into the second stage below |
+| `audio` | a microphone only (`device`, named as for ffmpeg): `alsasrc device=<hw:…> ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1`, then AAC (`avenc_aac`, `fdkaacenc` or `voaacenc`, the first this host has) with `opusenc` beside it for live ([§38.7](#387-live-output)), or `opusenc` alone for `codec: opus`, at `bitrate`; both out of the video ceiling as with ffmpeg. A V4L2 camera sends no audio of its own, so `copy`, or a codec without a `device`, is refused. On a Pi 400 a microphone costs about a quarter of a core: AAC and Opus at 64 kbps, 16–20% of a core in the encoders, the rest in the pipeline ([bench](producer-bench.md#three-cameras-gstreamer-against-ffmpeg)) |
+| output (fixed) | `mpegtsmux name=mux ! fdsink fd=1`, the video into it at PID 65 after `h264parse config-interval=-1`, the AAC at 66 and the Opus at 67, so the streams come out of the second stage video first; into the second stage below, which maps `0:v:0` then `0:a?` and, with a microphone, probes 3 s, since the sound starts before the camera's first frame |
 | `controls` | as with ffmpeg: set on the device before every start |
 
 **A second stage for the Raspberry Pi's encoder.** It also serves
@@ -258,11 +261,15 @@ every frame a keyframe, so `frag_keyframe` would make a fragment per
 frame and mark each a sync sample. The producer runs that encoder as two
 processes: the first writes MPEG-TS, the second reads it and writes
 fragmented MP4 with `-c copy` (`-map 0 -c copy -bsf:a:0 aac_adtstoasc`,
-then the muxer flags above). The TS demuxer's parser finds the parameter
+then the muxer flags above with `delay_moov`). The TS demuxer's parser finds the parameter
 sets and decides the keyframes from the slices, so what comes out is what
 `libx264` writes: `avcC` with the SPS, a fragment per 500 ms and per real
 keyframe, AAC re-framed for MP4 (`aac_adtstoasc`, which a TS's ADTS
-needs). It costs a process and no CPU. Either stage's stderr is read as
+needs). The AAC's configuration is known only once that filter has seen a
+packet, and `empty_moov` alone writes the init segment before then, with
+an `esds` that has none, which a browser refuses to decode; `delay_moov`
+holds the init segment until the first fragment, by when it is known. It
+costs a process and no CPU. Either stage's stderr is read as
 one: the muxer's refusal of an audio codec restarts both with AAC, as it
 does the one-stage capture.
 
