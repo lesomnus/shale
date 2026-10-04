@@ -266,13 +266,14 @@ type AudioConfig struct {
 // AuthConfig is how people are known (§33.1).
 type AuthConfig struct {
 	// Roster is the identity store: an external roster's address and the
-	// tenant keys this deployment acts with, or nothing, which runs roster
-	// in the control plane's process on its own database (§34.7).
+	// key -- or the tenant keys -- this deployment acts with, or nothing,
+	// which runs roster in the control plane's process on its own database
+	// (§34.7).
 	Roster identity.Config `yaml:"roster"`
-	// Operators are the members of a team at roster, in a tenant this
-	// deployment serves, rather than the people of `control.cluster_tenant`
-	// (§33.1). Set, every other person of a tenant reads and only an
-	// operator changes anything.
+	// Operators says that what people may change is what roster grants
+	// them, and whose people operate the cluster, rather than the people of
+	// `control.cluster_tenant` (§33.1). Set, every person of a tenant
+	// reads, and calls the rest as far as a role at roster covers it.
 	Operators identity.OperatorsConfig `yaml:"operators"`
 	// Oidc is the issuer people sign in through (§33.1): each HTTP listener
 	// is a relying party of it, and the CLI signs operators in with its

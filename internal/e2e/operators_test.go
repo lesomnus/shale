@@ -15,13 +15,15 @@ import (
 	"github.com/lesomnus/shale/internal/identity"
 )
 
-// Operators are a team at roster, not a tenant (§33.1): init puts the
-// first admin on it; everybody else in the tenant reads every site and
-// changes nothing; the cluster tenant's people are no longer operators;
-// and putting somebody on the team makes them one on both surfaces.
-func TestOperatorsAreATeam(t *testing.T) {
+// Operators are what roster grants, not a tenant (§33.1): init grants the
+// first admin all of Shale; everybody else in the tenant reads every site
+// and changes nothing; the cluster tenant's people are no longer
+// operators; a grant of one service is that service, on the tenant API
+// and nothing on the cluster's; and a grant of all of Shale makes somebody
+// an operator on both surfaces once the answer about them lapses.
+func TestOperatorsAreWhatRosterGrants(t *testing.T) {
 	c := start(t, func(c *cmd.Config) {
-		c.Auth.Operators = identity.OperatorsConfig{Tenant: "acme", Team: "shale-ops", Ttl: time.Second}
+		c.Auth.Operators = identity.OperatorsConfig{Tenant: "acme", Ttl: time.Second}
 	})
 	ctx := context.Background()
 	acme := api.TenantRef_builder{Alias: z.Ptr("acme")}.Build()
@@ -52,7 +54,7 @@ func TestOperatorsAreATeam(t *testing.T) {
 	_, err = api.NewSetServiceClient(asBob).Add(ctx, api.SetAddRequest_builder{Tenant: acme, Alias: "mine"}.Build())
 	require.Equal(t, codes.PermissionDenied, status.Code(err))
 	_, err = api.NewHolderServiceClient(asBob).List(ctx, api.HolderListRequest_builder{}.Build())
-	require.Equal(t, codes.PermissionDenied, status.Code(err), "people are an operator's to read")
+	require.Equal(t, codes.PermissionDenied, status.Code(err), "people are what roster grants to read")
 	_, err = api.NewNodeServiceClient(c.dialCluster("@acme/bob")).List(ctx, api.NodeListRequest_builder{}.Build())
 	require.Equal(t, codes.PermissionDenied, status.Code(err))
 
@@ -60,14 +62,31 @@ func TestOperatorsAreATeam(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, row.GetAllSites(), "read is tenant-wide by default")
 
-	// On the team, Bob is an operator once the answer about him lapses.
-	team, err := c.running.CP.Operators.TeamId(ctx)
+	// Granted the set service, Bob makes sets once the answer about him
+	// lapses -- and still nothing else, and nothing on the cluster API.
+	_, err = c.running.CP.Identity.Grant(ctx, "acme", "sets", []string{"/shale.SetService/*"}, bob.Id)
 	require.NoError(t, err)
-	require.NoError(t, c.running.CP.Identity.JoinTeam(ctx, team, bob.Id))
 	require.Eventually(t, func() bool {
 		_, err := api.NewSetServiceClient(asBob).Add(ctx, api.SetAddRequest_builder{Tenant: acme, Alias: "mine"}.Build())
 		return err == nil
 	}, 10*time.Second, 200*time.Millisecond)
+	_, err = api.NewSourceServiceClient(asBob).Add(ctx, api.SourceAddRequest_builder{Set: api.SetRef_builder{Slug: api.SetRefBySlug_builder{Alias: z.Ptr("mine"), Tenant: acme}.Build()}.Build()}.Build())
+	require.Equal(t, codes.PermissionDenied, status.Code(err), "one service is that service")
 	_, err = api.NewNodeServiceClient(c.dialCluster("@acme/bob")).List(ctx, api.NodeListRequest_builder{}.Build())
+	require.Equal(t, codes.PermissionDenied, status.Code(err))
+
+	// Granted all of Shale, he is an operator on both surfaces.
+	op, err := c.running.CP.Identity.Grant(ctx, "acme", identity.OperatorRole, []string{identity.Everything}, bob.Id)
 	require.NoError(t, err)
+	require.Eventually(t, func() bool {
+		_, err := api.NewNodeServiceClient(c.dialCluster("@acme/bob")).List(ctx, api.NodeListRequest_builder{}.Build())
+		return err == nil
+	}, 10*time.Second, 200*time.Millisecond)
+
+	// Taken away, he is not, once the answer about him lapses.
+	require.NoError(t, c.running.CP.Identity.Ungrant(ctx, op))
+	require.Eventually(t, func() bool {
+		_, err := api.NewNodeServiceClient(c.dialCluster("@acme/bob")).List(ctx, api.NodeListRequest_builder{}.Build())
+		return status.Code(err) == codes.PermissionDenied
+	}, 10*time.Second, 200*time.Millisecond)
 }

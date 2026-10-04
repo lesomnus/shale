@@ -111,11 +111,11 @@ deployment runs well on them, and changes them only for a reason.
 | Hosts | CA lifetime | 10 years, rollover starts 1 year before | — | cluster | [§33.5](10-security.md#335-tls) |
 | Security | `read_token_ttl` | 1 h | — | cluster | [§33.2](10-security.md#332-access-tokens) |
 | People | `auth.roster.addr` | none: roster in this process | an address | control | [§33.1](10-security.md#331-trust-model) |
-| People | `auth.roster.keys` | none | tenant alias → `env:NAME`, `file:PATH` | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.roster.key` | none | `env:NAME`, `file:PATH`, or the key: an `rk_` serves the tenants that nominated it, an `rt_` its own | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.roster.keys` | none | tenant alias → `env:NAME`, `file:PATH`: a tenant key (`rt_`) each, not with `key` | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.roster.ca_file`, `auth.roster.insecure` | the system pool, TLS | — | control | [§33.1](10-security.md#331-trust-model) |
-| People | `auth.operators.team` | none: operators are the people of `control.cluster_tenant`, and every person administers their tenant | a team's alias, or its identifier; set, operators are its members and everybody else reads | control | [§33.1](10-security.md#331-trust-model), [§35.2](12-api.md#352-two-api-surfaces) |
-| People | `auth.operators.tenant` | the one tenant `auth.roster.keys` names | a tenant this deployment serves | control | [§33.1](10-security.md#331-trust-model) |
-| People | `auth.operators.site` | none: a team in no site | the alias of the team's site | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.operators.tenant` | none: operators are the people of `control.cluster_tenant`, and every person administers their tenant | a tenant this deployment serves; set, what a person may change is what roster grants them, and the cluster API serves that tenant's people | control | [§33.1](10-security.md#331-trust-model), [§35.2](12-api.md#352-two-api-surfaces) |
+| People | `auth.operators.team`, `auth.operators.site` | — | refused at start: operators are a grant at roster, not a team | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.oidc.issuer` | none: no single sign-on | the OIDC issuer, e.g. `https://sso.hday.dev` | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.oidc.client_id`, `auth.oidc.client_secret` | none | the browser's confidential client at the issuer; the secret as `env:NAME`, `file:PATH` or itself, sent as `client_secret_basic` | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.oidc.device_client_id` | none: no single sign-on from the CLI | the CLI's public client, with the device grant | control | [§33.1](10-security.md#331-trust-model) |
@@ -123,7 +123,7 @@ deployment runs well on them, and changes them only for a reason.
 | People | `auth.oidc.scopes`, `auth.oidc.ca_file` | `openid profile email`; the system pool | — | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.sso_only` | off | on: a password is refused and the console draws only the issuer's button; requires `auth.oidc.issuer` | control | [§33.1](10-security.md#331-trust-model) |
 | People | `client.web`, `client.cluster_web` | the API's host two ports up | the CLI's sign-in endpoints, when an Ingress is in front: e.g. `https://shale.hday.dev`; verified against the system's roots and the CP's CA | CLI | [§33.1](10-security.md#331-trust-model) |
-| People | `auth.operators.ttl` | 30 s | how long roster's answer is kept; a failure is kept 5 s and is no | control | [§33.1](10-security.md#331-trust-model) |
+| People | `auth.operators.ttl` | 30 s | how long roster's answer about a person is kept; a failure is kept 5 s and is no | control | [§33.1](10-security.md#331-trust-model) |
 | Trail | `audit.profile` | none: forever | `pipa`, `pipa-sensitive`, `pci`, `hipaa`, `sox`, `gdpr`, `forever` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.retain`, `audit.destroy` | the profile's | how long a row stays in the table, and in the archive | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.archive`, `audit.discard` | none | a directory; a window with neither is refused | control | [§26.5](08-sizing.md#265-the-control-planes-database) |

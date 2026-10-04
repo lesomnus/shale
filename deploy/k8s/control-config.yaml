@@ -21,19 +21,19 @@ data:
         db:
           driver: pgx
       # A company's own roster and issuer instead (§33.1, §34.5): replace
-      # `roster` above with its data plane and the tenant key, make the
-      # operators a team there, sign people in through the issuer, and
-      # mount the two Secrets the `file:` references name in both API
-      # Deployments. README, "Signing in through a company's issuer".
+      # `roster` above with its data plane and the deployment key roster's
+      # operator minted for Shale, let roster say what people may change
+      # and whose people operate the cluster, sign people in through the
+      # issuer, and mount the two Secrets the `file:` references name in
+      # both API Deployments. README, "Signing in through a company's
+      # issuer".
       #
       # roster:
       #   addr: roster-data.app-roster.svc.cluster.local:8080
       #   insecure: true
-      #   keys:
-      #     hday: file:/run/shale/roster/hday
+      #   key: file:/run/shale/roster/key
       # operators:
       #   tenant: hday
-      #   team: shale-ops
       # oidc:
       #   issuer: https://sso.hday.dev
       #   client_id: shale

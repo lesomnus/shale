@@ -193,8 +193,11 @@ next start and is recognized by its hardware identity
 - **A company's issuer.** A deployment whose people sign in through their
   company's roster and Hydra ([§33.1](10-security.md#331-trust-model)) runs
   no roster of its own: `auth.roster.addr` is roster's data plane in the
-  cluster, with the tenant key in a Secret mounted as a file; the operators
-  are a team there (`auth.operators`); and both HTTP listeners are relying
+  cluster, with the deployment key roster's operator minted for it in a
+  Secret mounted as a file -- it serves the tenants that nominated it, each
+  set up with `roster app install` at roster; what people may change is
+  what roster grants them, and the cluster's operators are the people of
+  one tenant (`auth.operators`); and both HTTP listeners are relying
   parties of the issuer (`auth.oidc`), each behind an Ingress under a name
   of its own -- the tenant listener (7402, the console) and the cluster
   listener (7403, the console's operator half) -- with `cluster.http.origins`
@@ -208,11 +211,12 @@ next start and is recognized by its hardware identity
     roster:
       addr: roster-data.app-roster.svc.cluster.local:8080
       insecure: true                 # in-cluster; TLS ends at the ingress
-      keys:
-        hday: file:/run/shale/roster/hday   # an rt_ for @hday/shale
+      # An rk_ on roster's control plane, minted with
+      #   roster control key add --allow /roster.NominationService/List shale
+      # and answered in each tenant that nominated it (roster app install).
+      key: file:/run/shale/roster/key
     operators:
-      tenant: hday
-      team: shale-ops
+      tenant: hday                   # whose people operate the cluster
     oidc:
       issuer: https://sso.hday.dev
       client_id: shale

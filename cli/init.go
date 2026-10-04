@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net"
 	"os"
 	"path/filepath"
@@ -243,18 +242,16 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 			}
 		}
 	}
-	// Where operators are a team (§33.1), the first admin is put on it at
-	// the embedded roster, so the deployment has an operator to begin
-	// with; at an external one its operator made the team and its members.
-	var team pdid.Id
+	// Where roster says what people may change (§33.1), the first admin is
+	// granted all of Shale at the embedded roster, so the deployment has an
+	// operator to begin with; at an external one its operator, or the
+	// tenant's administrator, grants it there.
+	granted := false
 	if s.Operators != nil && adm != nil && s.Operators.TenantAlias() == tenant {
-		team, err = s.Identity.AddTeam(ctx, tenant, c.Auth.Operators.Team)
-		if err != nil {
-			return err
+		if _, err := s.Identity.Grant(ctx, tenant, identity.OperatorRole, []string{identity.Everything}, adm.person.Id); err != nil {
+			return fmt.Errorf("@%s/%s as %s: %w", tenant, admin, identity.OperatorRole, err)
 		}
-		if err := s.Identity.JoinTeam(ctx, team, adm.person.Id); err != nil {
-			return fmt.Errorf("@%s/%s on %s: %w", tenant, admin, s.Operators.Team(), err)
-		}
+		granted = true
 	}
 
 	var ct, t pdid.Id
@@ -283,10 +280,11 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 			fmt.Fprintf(out, "warning     roster at %s did not answer for @%s: %v\n            the rows follow the first sign-in; check auth.roster before anybody signs in\n", c.Auth.Roster.Addr, alias, err)
 		}
 		if s.Operators != nil && err == nil {
-			// Whether the team is there, which is a question about the key
-			// as much as about the team: it needs TeamService.
+			// Whether the operators' tenant is one the key serves, which
+			// is the question about the key that can be asked before
+			// anybody signs in.
 			if oerr := s.Operators.Check(ctx); oerr != nil {
-				fmt.Fprintf(out, "warning     the operators' team %s: %v\n            nobody is an operator until roster answers for it\n", s.Operators.Team(), oerr)
+				fmt.Fprintf(out, "warning     the operators' tenant @%s: %v\n            nobody is an operator until roster answers for it\n", s.Operators.TenantAlias(), oerr)
 			}
 		}
 	}
@@ -337,8 +335,8 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 		fmt.Fprintf(out, "operator    @%s/%s   %s   password: %s\n", clusterAlias, operator, ops.person.Id, shown(opsPw))
 		fmt.Fprintf(out, "tenant      @%s   %s\n", tenant, t)
 		fmt.Fprintf(out, "admin       @%s/%s   %s   password: %s\n", tenant, admin, adm.person.Id, shown(admPw))
-		if !team.IsZero() {
-			fmt.Fprintf(out, "operators   the members of %s   %s: @%s/%s\n", s.Operators.Team(), team, tenant, admin)
+		if granted {
+			fmt.Fprintf(out, "operators   whoever roster grants %s in @%s: @%s/%s, as %s\n", identity.Everything, tenant, tenant, admin, identity.OperatorRole)
 		}
 		if kept {
 			fmt.Fprintf(out, "\n%s; ", stash.Read(admPw))
@@ -347,13 +345,17 @@ func Init(ctx context.Context, c *cmd.Config, tenant, admin, operator string, ou
 			fmt.Fprintf(out, "\nthe passwords are printed once; sign in with `shale login @%s/%s`, and give somebody a new one with `shale holder issue-password`\n", tenant, admin)
 		}
 	} else {
-		fmt.Fprintf(out, "people      at roster %s: the tenants it holds keys for are", c.Auth.Roster.Addr)
-		for _, v := range slices.Sorted(maps.Keys(c.Auth.Roster.Keys)) {
-			fmt.Fprintf(out, " @%s", v)
+		if served, serr := s.Identity.Tenants(ctx); serr != nil {
+			fmt.Fprintf(out, "people      at roster %s, which did not say which tenants this deployment serves: %v", c.Auth.Roster.Addr, serr)
+		} else {
+			fmt.Fprintf(out, "people      at roster %s: the tenants this deployment serves are", c.Auth.Roster.Addr)
+			for _, v := range slices.Sorted(slices.Values(served)) {
+				fmt.Fprintf(out, " @%s", v)
+			}
 		}
 		switch {
 		case s.Operators != nil:
-			fmt.Fprintf(out, "\n            operators are the members of %s, by roster's word", s.Operators.Team())
+			fmt.Fprintf(out, "\n            operators are the people of @%s roster grants %s, or as much of it as they look after", s.Operators.TenantAlias(), identity.Everything)
 		case err != nil:
 			fmt.Fprintf(out, "\n            @%s has no key here yet, so there are no cluster operators until it does", clusterAlias)
 		default:

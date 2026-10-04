@@ -63,7 +63,7 @@ func cookieOf(c *http.Client, base, name string) string {
 func ssoCluster(t *testing.T) (*cluster, *ssotest.Idp, string, string) {
 	idp := ssotest.New(t, "shale", "s3cret", "shale-cli")
 	c := start(t, func(c *cmd.Config) {
-		c.Auth.Operators = identity.OperatorsConfig{Tenant: "acme", Team: "shale-ops", Ttl: time.Second}
+		c.Auth.Operators = identity.OperatorsConfig{Tenant: "acme", Ttl: time.Second}
 		c.Auth.Oidc.Issuer = idp.URL
 		c.Auth.Oidc.ClientId = "shale"
 		c.Auth.Oidc.ClientSecret = "s3cret"

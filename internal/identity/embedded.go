@@ -334,63 +334,56 @@ func (s *Store) Adopt(ctx context.Context, tenant pdid.Id, alias, name string, p
 	return passwords, nil
 }
 
-// AddTeam makes a team in no site in a tenant of the embedded roster, as
-// the deployment, and answers its identifier: for `shale init` and tests
-// of `auth.operators`. At an external roster its operator makes teams.
-func (s *Store) AddTeam(ctx context.Context, tenant, alias string) (pdid.Id, error) {
+// OperatorRole is the role `shale init` writes at the embedded roster for
+// whoever operates the cluster: [Everything], all of Shale.
+const OperatorRole = "shale-operator"
+
+// Grant binds a person of a tenant of the embedded roster to a role naming
+// methods, made in the tenant when it has none by that alias, as the
+// deployment, and answers the binding: what `shale init` does for the
+// first operator where `auth.operators` is set, and what the tests grant
+// with. A role already there is bound as the tenant has it. At an external
+// roster its operator, or a tenant administrator, binds roles there.
+func (s *Store) Grant(ctx context.Context, tenant, role string, methods []string, holder pdid.Id) (pdid.Id, error) {
 	if s.em == nil {
 		return pdid.Nil, ErrExternal
 	}
 	ctx, cancel := unframed(ctx)
 	defer cancel()
-	v, err := s.em.rs.Ungated.Team().Add(ctx, rstr.TeamAddRequest_builder{
-		Tenant: rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build(), Alias: alias, Name: alias,
+	own := s.em.rs.Ungated
+	tref := rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()
+	r, err := own.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref: rstr.RoleRef_builder{Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(role), Tenant: tref}.Build()}.Build(),
 	}.Build())
 	if err != nil {
-		return pdid.Nil, fmt.Errorf("team @%s/%s: %w", tenant, alias, err)
+		if status.Code(err) != codes.NotFound {
+			return pdid.Nil, err
+		}
+		r, err = own.Role().Add(ctx, rstr.RoleAddRequest_builder{Tenant: tref, Alias: role, Name: role, Methods: methods}.Build())
+		if err != nil {
+			return pdid.Nil, fmt.Errorf("role @%s/%s: %w", tenant, role, err)
+		}
+	}
+	b, err := own.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role: rstr.RoleRef_builder{Id: r.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, fmt.Errorf("binding @%s/%s: %w", tenant, role, err)
 	}
 
-	return pdid.Id(v.GetId()), nil
+	return pdid.Id(b.GetId()), nil
 }
 
-// JoinTeam puts a person on a team of the embedded roster, with no role:
-// a plain member, which is what `auth.operators` asks about.
-func (s *Store) JoinTeam(ctx context.Context, team, holder pdid.Id) error {
+// Ungrant takes a binding [Grant] made away.
+func (s *Store) Ungrant(ctx context.Context, binding pdid.Id) error {
 	if s.em == nil {
 		return ErrExternal
 	}
 	ctx, cancel := unframed(ctx)
 	defer cancel()
-	_, err := s.em.rs.Ungated.TeamMembership().Add(ctx, rstr.TeamMembershipAddRequest_builder{
-		Holder: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(), Team: rstr.TeamRef_builder{Id: team.Bytes()}.Build(),
-	}.Build())
+	_, err := s.em.rs.Ungated.Binding().Erase(ctx, rstr.BindingRef_builder{Id: binding.Bytes()}.Build())
 
 	return err
-}
-
-// LeaveTeam takes a person off a team of the embedded roster.
-func (s *Store) LeaveTeam(ctx context.Context, team, holder pdid.Id) error {
-	if s.em == nil {
-		return ErrExternal
-	}
-	ctx, cancel := unframed(ctx)
-	defer cancel()
-	vs, err := s.em.rs.Ungated.TeamMembership().List(ctx, rstr.TeamMembershipListRequest_builder{
-		Filters: []*rstr.TeamMembershipFilter{rstr.TeamMembershipFilter_builder{Holder: rstr.HolderRef_builder{Id: holder.Bytes()}.Build()}.Build()},
-	}.Build())
-	if err != nil {
-		return err
-	}
-	for _, m := range vs.GetItems() {
-		if string(m.GetTeam().GetId()) != string(team.Bytes()) {
-			continue
-		}
-		if _, err := s.em.rs.Ungated.TeamMembership().Erase(ctx, rstr.TeamMembershipRef_builder{Id: m.GetId()}.Build()); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // Adoptee is a person Adopt writes, as Shale knows them.

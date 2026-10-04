@@ -224,17 +224,32 @@ func (s *Server) who(surface Surface, w http.ResponseWriter, r *http.Request) {
 }
 
 // mayOperate says whether a person may change things on a surface: where
-// operators are a team, whether they are on it; otherwise, on the cluster
-// surface, whether they are of the cluster tenant, and on the tenant
-// surface, yes.
+// roster says what people may change, whether it grants them all of Shale
+// -- on the cluster surface as a person of the operators' tenant -- and
+// otherwise, on the cluster surface, whether they are of the cluster
+// tenant, and on the tenant surface, yes.
+//
+// A narrower grant is still a grant: what a call may do is decided per
+// method by the policy, and this is only who signs in to the cluster
+// surface and the CLI, and whom the console shows as an operator.
 func (s *Server) mayOperate(ctx context.Context, surface Surface, tenant, holder pdid.Id) error {
 	if s.Operators != nil {
-		is, err := s.Operators.Is(ctx, tenant, holder)
+		var is bool
+		var err error
+		if surface == SurfaceCluster {
+			is, err = s.Operators.Operates(ctx, tenant, holder)
+		} else {
+			is, err = s.Operators.Administers(ctx, tenant, holder)
+		}
 		if err != nil {
-			return fmt.Errorf("cannot tell whether you are an operator right now: %w", err)
+			return fmt.Errorf("cannot tell what roster grants you right now: %w", err)
 		}
 		if !is {
-			return errors.New("not an operator: not on " + s.Operators.Team())
+			if surface == SurfaceCluster {
+				return fmt.Errorf("not an operator: roster does not grant you %s as a person of @%s", identity.Everything, s.Operators.TenantAlias())
+			}
+
+			return fmt.Errorf("not an operator: roster does not grant you %s", identity.Everything)
 		}
 
 		return nil
@@ -307,7 +322,7 @@ func (s *Server) ssoCallback(surface Surface, w http.ResponseWriter, r *http.Req
 	}
 	if surface == SurfaceCluster {
 		if err := s.mayOperate(ctx, surface, p.Tenant, p.Id); err != nil {
-			no(http.StatusForbidden, "Operators only", "The cluster API serves the members of the operators' team.", err)
+			no(http.StatusForbidden, "Operators only", "The cluster API serves the people roster grants all of Shale to.", err)
 			return
 		}
 	}

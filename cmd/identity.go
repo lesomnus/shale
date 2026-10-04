@@ -20,9 +20,9 @@ import (
 // the tenant and the holder, anchored on roster's identifiers, so that
 // `Holder.id` is the `sub` every product knows them by. The first person
 // of a tenant sees every site; the rest see what a Shale admin gives
-// them -- unless operators are a team (`auth.operators`), where everybody
-// reads the whole tenant by default and an operator narrows somebody by
-// clearing all_sites and giving them sites. A row that is there already is
+// them -- unless roster says what people may change (`auth.operators`),
+// where everybody reads the whole tenant by default and an administrator
+// narrows somebody by clearing all_sites and giving them sites. A row that is there already is
 // refreshed where its names drifted. Rows are made no other way.
 func (s *Server) Provision(ctx context.Context, p identity.Person) (*api.Holder, error) {
 	s.provisionMu.Lock()

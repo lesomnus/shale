@@ -5,46 +5,43 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
+	"slices"
 	"sync"
 	"time"
-	"uuid"
 
-	"github.com/lesomnus/z"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
-
-	"github.com/lesomnus/roster/rstr"
 )
 
-// OperatorsConfig is `auth.operators` (§33.1): who the cluster operators
-// are, said as a team at roster rather than as a tenant of their own.
+// OperatorsConfig is `auth.operators` (§33.1): that what a person may
+// change here is what roster grants them, and whose people operate the
+// cluster.
 //
 // Empty is the rule a deployment had before it: the people of
 // `control.cluster_tenant` operate the cluster, and every person
 // administers their own tenant.
 type OperatorsConfig struct {
-	// Tenant is the alias of the tenant the team is in, which is a tenant
-	// this deployment serves. Empty is the one tenant `auth.roster.keys`
-	// names, when it names one.
+	// Tenant is the alias of the tenant whose people the cluster API
+	// serves, which is a tenant this deployment serves: a person of it may
+	// call there what roster grants them in it.
 	Tenant string `yaml:"tenant"`
-	// Team is the team: its alias, or its identifier. A team in no site is
-	// found by alias among the tenant's teams; one in a site needs Site.
-	Team string `yaml:"team"`
-	// Site is the alias of the site the team is in, when it is in one.
-	Site string `yaml:"site"`
-	// Ttl is how long an answer is believed before roster is asked again;
-	// 30 s by default. A person taken off the team stops being an operator
-	// within it.
+	// Ttl is how long an answer about a person is believed before roster
+	// is asked again; 30 s by default. A grant taken away at roster stops
+	// working within it.
 	Ttl time.Duration `yaml:"ttl"`
+
+	// Team and Site named the team operators were, before a team stopped
+	// being how this is said. Set, they are refused with what to write
+	// instead, rather than ignored into a deployment where nobody is an
+	// operator.
+	Team string `yaml:"team"`
+	Site string `yaml:"site"`
 }
 
-// On says whether operators are a team here.
-func (c OperatorsConfig) On() bool { return c.Team != "" }
+// On says whether what people may change here is roster's to say.
+func (c OperatorsConfig) On() bool { return c.Tenant != "" || c.Team != "" || c.Site != "" }
 
-// OperatorsTtl is how long a membership answer is kept when nothing says.
+// OperatorsTtl is how long an answer is kept when nothing says.
 const OperatorsTtl = 30 * time.Second
 
 // operatorsRetry is how long a failure to ask is remembered: the answer
@@ -52,13 +49,29 @@ const OperatorsTtl = 30 * time.Second
 // is not asked once per call and the log says so once per person.
 const operatorsRetry = 5 * time.Second
 
-// ErrNoTeam is a team roster does not have, or one named ambiguously.
-var ErrNoTeam = errors.New("no such team")
+// Everything is every method Shale serves, as a pattern. Whoever roster
+// grants it -- or a pattern covering it, such as `/*.*/*` -- administers:
+// sees every site of their tenant, is shown as an operator, and on the
+// cluster API, when they are of the operators' tenant, may sign in.
+const Everything = "/shale.*/*"
 
-// Operators answers whether a person is a cluster operator: a member of
-// the team `auth.operators` names, by roster's word, asked with the
-// tenant's key (§33.1). Answers are kept for Ttl; when roster cannot be
-// asked the answer is no, and the log says why.
+// ErrTeam is `auth.operators.team`, which is refused.
+var ErrTeam = errors.New("auth.operators.team: operators are not a team any more")
+
+// Operators answers what a person may change, by roster's grant (§33.1):
+// a role at roster naming Shale's methods, bound to them or to a group
+// they are in, asked with `HolderService.Reaches` and read from its
+// `everywhere`. Answers are kept for Ttl; when roster cannot be asked the
+// answer is no, and the log says why.
+//
+// # Not a team any more
+//
+// This used to be the members of a team at roster. A team membership is
+// organisation and not permission there -- one with no role grants
+// nothing -- so roster lets anybody who may write memberships write one,
+// and reading it as "may operate the cluster" was a permission roster did
+// not know existed and could not guard. A grant is guarded: nobody binds
+// a role naming methods they do not hold themselves.
 type Operators struct {
 	s   *Store
 	cfg OperatorsConfig
@@ -68,32 +81,30 @@ type Operators struct {
 
 	mu     sync.Mutex
 	tenant pdid.Id
-	team   []byte
-	cache  map[pdid.Id]opEntry
+	cache  map[grantKey]grantEntry
 }
 
-type opEntry struct {
-	at  time.Time
-	is  bool
-	err error
+type grantKey struct{ tenant, holder pdid.Id }
+
+type grantEntry struct {
+	at   time.Time
+	held []string
+	err  error
 }
 
-// NewOperators is the team lookup over a store. The tenant and the team
-// are resolved on first use, so a roster that is not up yet does not stop
-// the control plane from starting.
+// NewOperators is the grant lookup over a store. The operators' tenant is
+// resolved on first use, so a roster that is not up yet does not stop the
+// control plane from starting.
 func NewOperators(s *Store, cfg OperatorsConfig, log *slog.Logger) (*Operators, error) {
-	if !cfg.On() {
-		return nil, errors.New("auth.operators.team: say which team the operators are")
+	if cfg.Team != "" || cfg.Site != "" {
+		return nil, fmt.Errorf("%w: a membership is not a permission at roster, so anybody who may add one could make an operator. "+
+			"What a person may change is what roster grants them -- bind a role naming %s, or the services they look after, "+
+			"to them or to a group they are in -- and drop team and site (§33.1)", ErrTeam, Everything)
 	}
 	if cfg.Tenant == "" {
-		if len(s.keys) != 1 {
-			return nil, errors.New("auth.operators.tenant: say which tenant the team is in")
-		}
-		for t := range s.keys {
-			cfg.Tenant = t
-		}
+		return nil, errors.New("auth.operators.tenant: say whose people operate the cluster")
 	}
-	if s.em == nil {
+	if s.em == nil && len(s.keys) > 0 {
 		if _, ok := s.keys[cfg.Tenant]; !ok {
 			return nil, fmt.Errorf("auth.operators.tenant: %s is not a tenant this deployment holds a key for (auth.roster.keys)", cfg.Tenant)
 		}
@@ -105,73 +116,57 @@ func NewOperators(s *Store, cfg OperatorsConfig, log *slog.Logger) (*Operators, 
 		log = slog.Default()
 	}
 
-	return &Operators{s: s, cfg: cfg, log: log, Now: time.Now, cache: map[pdid.Id]opEntry{}}, nil
+	return &Operators{s: s, cfg: cfg, log: log, Now: time.Now, cache: map[grantKey]grantEntry{}}, nil
 }
 
-// TenantAlias is the tenant the operators are people of.
+// TenantAlias is the tenant the cluster's operators are people of.
 func (o *Operators) TenantAlias() string { return o.cfg.Tenant }
 
-// Team says the team as configured, for the log and for `shale init`.
-func (o *Operators) Team() string {
-	if o.cfg.Site != "" {
-		return "@" + o.cfg.Tenant + "/" + o.cfg.Site + "/" + o.cfg.Team
+// May says whether holder of tenant may call method there: whether one
+// pattern roster grants them across the tenant covers it.
+func (o *Operators) May(ctx context.Context, tenant, holder pdid.Id, method string) (bool, error) {
+	held, err := o.held(ctx, tenant, holder)
+	if err != nil {
+		return false, err
 	}
 
-	return "@" + o.cfg.Tenant + "/" + o.cfg.Team
+	return covers(held, method), nil
 }
 
-// Is says whether `holder` of `tenant` is on the operators' team. A person
-// of any other tenant is not.
-func (o *Operators) Is(ctx context.Context, tenant, holder pdid.Id) (bool, error) {
-	t, team, err := o.resolve(ctx)
+// Administers says whether holder of tenant holds all of Shale there.
+func (o *Operators) Administers(ctx context.Context, tenant, holder pdid.Id) (bool, error) {
+	return o.May(ctx, tenant, holder, Everything)
+}
+
+// MayOperate says whether holder may call method on the cluster API: a
+// person of the operators' tenant, granted it there. A person of any other
+// tenant may not, whatever their own tenant grants them -- the cluster API
+// sees every tenant.
+func (o *Operators) MayOperate(ctx context.Context, tenant, holder pdid.Id, method string) (bool, error) {
+	t, err := o.resolve(ctx)
 	if err != nil {
-		o.log.WarnContext(ctx, "operators: cannot find the team at roster; nobody is an operator until it is found", "team", o.Team(), "err", err.Error())
+		o.log.WarnContext(ctx, "operators: cannot find the operators' tenant at roster; nobody is an operator until it is found", "tenant", o.cfg.Tenant, "err", err.Error())
 		return false, err
 	}
 	if tenant != t {
 		return false, nil
 	}
 
-	now := o.Now()
-	o.mu.Lock()
-	e, ok := o.cache[holder]
-	o.mu.Unlock()
-	if ok {
-		if e.err == nil && now.Sub(e.at) < o.cfg.Ttl {
-			return e.is, nil
-		}
-		if e.err != nil && now.Sub(e.at) < operatorsRetry {
-			return false, e.err
-		}
-	}
-
-	is, err := o.member(ctx, holder, team)
-	if err != nil {
-		o.log.WarnContext(ctx, "operators: roster did not answer; this person is not an operator until it does", "holder", holder.String(), "team", o.Team(), "err", err.Error())
-	}
-	o.mu.Lock()
-	o.cache[holder] = opEntry{at: now, is: is, err: err}
-	o.mu.Unlock()
-
-	return is, err
+	return o.May(ctx, tenant, holder, method)
 }
 
-// Check finds the tenant and the team at roster, which is what a key that
-// cannot read teams fails at: for `shale init` to say so early.
+// Operates says whether holder is a cluster operator: of the operators'
+// tenant, and granted all of Shale there.
+func (o *Operators) Operates(ctx context.Context, tenant, holder pdid.Id) (bool, error) {
+	return o.MayOperate(ctx, tenant, holder, Everything)
+}
+
+// Check finds the operators' tenant at roster, which is what a key that
+// does not serve it fails at: for `shale init` to say so early.
 func (o *Operators) Check(ctx context.Context) error {
-	_, _, err := o.resolve(ctx)
+	_, err := o.resolve(ctx)
 
 	return err
-}
-
-// TeamId is the team's identifier at roster.
-func (o *Operators) TeamId(ctx context.Context) (pdid.Id, error) {
-	_, team, err := o.resolve(ctx)
-	if err != nil {
-		return pdid.Nil, err
-	}
-
-	return pdid.Id(team), nil
 }
 
 // Forget drops what is known about a person, or about everybody.
@@ -179,133 +174,67 @@ func (o *Operators) Forget(holder pdid.Id) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	if holder.IsZero() {
-		o.cache = map[pdid.Id]opEntry{}
+		o.cache = map[grantKey]grantEntry{}
 		return
 	}
-	delete(o.cache, holder)
-}
-
-func (o *Operators) member(ctx context.Context, holder pdid.Id, team []byte) (bool, error) {
-	as, err := o.s.as(ctx, o.cfg.Tenant)
-	if err != nil {
-		return false, err
-	}
-	c := rstr.NewTeamMembershipServiceClient(o.s.conn)
-	after := ""
-	for {
-		// By the person alone, and the team compared here: a person is on a
-		// handful of teams, and the question does not then depend on how a
-		// filter of two fields is read.
-		res, err := c.List(as, rstr.TeamMembershipListRequest_builder{
-			Filters: []*rstr.TeamMembershipFilter{rstr.TeamMembershipFilter_builder{
-				Holder: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
-			}.Build()},
-			Size:  100,
-			After: after,
-		}.Build())
-		if err != nil {
-			return false, fmt.Errorf("roster: %w", err)
-		}
-		for _, m := range res.GetItems() {
-			if string(m.GetTeam().GetId()) == string(team) && m.GetDateErased() == nil {
-				return true, nil
-			}
-		}
-		if after = res.GetNext(); after == "" || len(res.GetItems()) == 0 {
-			return false, nil
+	for k := range o.cache {
+		if k.holder == holder {
+			delete(o.cache, k)
 		}
 	}
 }
 
-// resolve finds the tenant and the team at roster, once.
-func (o *Operators) resolve(ctx context.Context) (pdid.Id, []byte, error) {
+// held is what roster grants a person across their tenant, kept for Ttl.
+func (o *Operators) held(ctx context.Context, tenant, holder pdid.Id) ([]string, error) {
+	k := grantKey{tenant: tenant, holder: holder}
+	now := o.Now()
 	o.mu.Lock()
-	t, team := o.tenant, o.team
+	e, ok := o.cache[k]
 	o.mu.Unlock()
-	if !t.IsZero() && team != nil {
-		return t, team, nil
+	if ok {
+		if e.err == nil && now.Sub(e.at) < o.cfg.Ttl {
+			return e.held, nil
+		}
+		if e.err != nil && now.Sub(e.at) < operatorsRetry {
+			return nil, e.err
+		}
+	}
+
+	held, err := o.s.Reaches(ctx, tenant, holder)
+	if err != nil {
+		o.log.WarnContext(ctx, "operators: roster did not answer; this person changes nothing until it does", "holder", holder.String(), "err", err.Error())
+	}
+	o.mu.Lock()
+	o.cache[k] = grantEntry{at: now, held: held, err: err}
+	o.mu.Unlock()
+
+	return held, err
+}
+
+// resolve finds the operators' tenant at roster, once.
+func (o *Operators) resolve(ctx context.Context) (pdid.Id, error) {
+	o.mu.Lock()
+	t := o.tenant
+	o.mu.Unlock()
+	if !t.IsZero() {
+		return t, nil
 	}
 
 	t, _, err := o.s.Tenant(ctx, o.cfg.Tenant)
 	if err != nil {
-		return pdid.Nil, nil, err
-	}
-	team, err = o.findTeam(ctx)
-	if err != nil {
-		return pdid.Nil, nil, err
+		return pdid.Nil, err
 	}
 	o.mu.Lock()
-	o.tenant, o.team = t, team
+	o.tenant = t
 	o.mu.Unlock()
-	o.log.InfoContext(ctx, "operators: the members of a team at roster", "team", o.Team(), "id", uuid.UUID(team).String())
+	o.log.InfoContext(ctx, "operators: the people roster grants Shale's methods to", "tenant", o.cfg.Tenant)
 
-	return t, team, nil
+	return t, nil
 }
 
-func (o *Operators) findTeam(ctx context.Context) ([]byte, error) {
-	if v, err := uuid.Parse(o.cfg.Team); err == nil {
-		return v[:], nil
-	}
-	as, err := o.s.as(ctx, o.cfg.Tenant)
-	if err != nil {
-		return nil, err
-	}
-	teams := rstr.NewTeamServiceClient(o.s.conn)
-	if o.cfg.Site != "" {
-		v, err := teams.Get(as, rstr.TeamGetRequest_builder{
-			Ref: rstr.TeamRef_builder{Slug: rstr.TeamRefBySlug_builder{
-				Alias: z.Ptr(o.cfg.Team),
-				Site: rstr.SiteRef_builder{Slug: rstr.SiteRefBySlug_builder{
-					Alias: z.Ptr(o.cfg.Site), Tenant: rstr.TenantRef_builder{Alias: z.Ptr(o.cfg.Tenant)}.Build(),
-				}.Build()}.Build(),
-			}.Build()}.Build(),
-		}.Build())
-		if err != nil {
-			if status.Code(err) == codes.NotFound {
-				return nil, fmt.Errorf("%w: %s", ErrNoTeam, o.Team())
-			}
-
-			return nil, fmt.Errorf("roster: %w", err)
-		}
-
-		return v.GetId(), nil
-	}
-
-	// A team in no site has no slug at roster, so it is found among the
-	// tenant's teams by its alias.
-	var siteless, sited [][]byte
-	after := ""
-	for {
-		res, err := teams.List(as, rstr.TeamListRequest_builder{
-			Filters: []*rstr.TeamFilter{rstr.TeamFilter_builder{Tenant: rstr.TenantRef_builder{Alias: z.Ptr(o.cfg.Tenant)}.Build()}.Build()},
-			Size:    100,
-			After:   after,
-		}.Build())
-		if err != nil {
-			return nil, fmt.Errorf("roster: %w", err)
-		}
-		for _, v := range res.GetItems() {
-			if !strings.EqualFold(v.GetAlias(), o.cfg.Team) {
-				continue
-			}
-			if len(v.GetSite().GetId()) == 0 {
-				siteless = append(siteless, v.GetId())
-			} else {
-				sited = append(sited, v.GetId())
-			}
-		}
-		if after = res.GetNext(); after == "" || len(res.GetItems()) == 0 {
-			break
-		}
-	}
-	switch {
-	case len(siteless) == 1:
-		return siteless[0], nil
-	case len(siteless) == 0 && len(sited) == 1:
-		return sited[0], nil
-	case len(siteless)+len(sited) == 0:
-		return nil, fmt.Errorf("%w: %s", ErrNoTeam, o.Team())
-	default:
-		return nil, fmt.Errorf("%w: %s names %d teams; say auth.operators.site, or the team's identifier", ErrNoTeam, o.Team(), len(siteless)+len(sited))
-	}
+// covers says whether one held pattern covers want on its own, which is
+// `frame.Covers`' rule: a union of narrower patterns does not add up to a
+// wider one, so a grant made before a service existed does not reach it.
+func covers(held []string, want string) bool {
+	return slices.ContainsFunc(held, func(h string) bool { return frame.Covers(h, want) })
 }
