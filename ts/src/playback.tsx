@@ -6,7 +6,8 @@
  * fragments stream in ahead of the playhead, the next lamina follows, and
  * the last minutes come from the relay until the playhead reaches now and
  * the player hands over to live. A range of the axis exports as one MP4:
- * the init segment and the fragments between two keyframes, concatenated.
+ * one init segment and the fragments between two keyframes, each placed on
+ * the wall clock.
  *
  * @module
  */
@@ -22,6 +23,7 @@ import type { LiveSource } from '../gen/shale/set_svc_pb.js'
 import type { Source } from '../gen/shale/set_pb.js'
 import { SetService, SourceService } from '../gen/shale/set_svc_pb.js'
 
+import { Changed, join, joins, type Piece } from './export.js'
 import { concat, firstFragment, fragmentTime, indexSize, parseIndex, parseInit, type Bytes, type Init, type Key } from './fmp4.js'
 import { useLive, whep, type Status } from './live.js'
 import { PickSet, gapClass, unhex } from './segments.js'
@@ -696,10 +698,12 @@ class Engine {
 	}
 }
 
-/** exportRange is the init segment and the fragments of a range, as one MP4. */
+/**
+ * exportRange is the fragments of a range, each lamina's placed where it
+ * sits on the wall clock, behind one init segment (export.ts).
+ */
 async function exportRange(laminae: TimelineLamina[], a: number, b: number, progress: (bytes: number) => void): Promise<Bytes> {
-	const parts: Uint8Array[] = []
-	let init: Bytes | undefined
+	const pieces: Piece[] = []
 	let n = 0
 	const rows: Lamina[] = laminae
 		.map((l) => ({
@@ -713,14 +717,14 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 		.filter((l) => l.available && l.end > a && l.start < b)
 		.sort((x, y) => x.start - y.start)
 	if (rows.length === 0) throw new Error('nothing stored in that range')
-	for (const l of rows) {
-		const meta = await metaOf(l)
+	const changed = (i: number): Error => new Error(`the camera's encoder changed at ${new Date(rows[i]!.start).toLocaleTimeString()}; export up to there and from there separately`)
+	// Every lamina's init segment first: a change refuses the range before its megabytes come.
+	const metas = await Promise.all(rows.map(metaOf))
+	const i = metas.findIndex((m) => !joins(metas[0]!.init.bytes, m.init.bytes))
+	if (i >= 0) throw changed(i)
+	for (const [j, l] of rows.entries()) {
+		const meta = metas[j]!
 		const first = meta.keys[0]!
-		if (init === undefined || !same(init, meta.init.bytes)) {
-			init = meta.init.bytes
-			parts.push(init)
-			n += init.length
-		}
 		let from = first.offset
 		let to = meta.dataEnd
 		for (const k of meta.keys) {
@@ -731,20 +735,20 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 				break
 			}
 		}
+		const parts: Uint8Array[] = []
 		for (let off = from; off < to; off += chunk) {
 			const bytes = await range(l.url, off, Math.min(to, off + chunk) - 1)
 			parts.push(bytes)
 			n += bytes.length
 			progress(n)
 		}
+		// The lamina's first key fragment came at date_started (as in play).
+		pieces.push({ init: meta.init.bytes, fragments: concat(parts), zero: l.start - (first.time / meta.init.timescale) * 1000 })
 	}
 
-	return concat(parts)
-}
-
-function same(a: Uint8Array, b: Uint8Array): boolean {
-	if (a.length !== b.length) return false
-	for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
-
-	return true
+	try {
+		return join(pieces).bytes
+	} catch (err) {
+		throw err instanceof Changed ? changed(err.piece) : err
+	}
 }

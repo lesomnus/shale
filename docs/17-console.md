@@ -185,11 +185,23 @@ transmuxed, and the page holds no player library.
   placed by `Shale-Recent-Start`; when the playhead reaches the window's
   end the page hands the element to WHEP, and the camera is live. "10 s
   ago" is that, for the last ten seconds.
-- **Export.** Two marks on the axis become one MP4: the init segment and
+- **Export.** Two marks on the axis become one MP4: one init segment and
   the fragments from the keyframe at or before the first mark to the
-  keyframe after the second, across laminae, concatenated in the page and
-  downloaded. A range that crosses an encoder session carries a second
-  init segment, which MSE takes and ffmpeg reads to the first.
+  keyframe after the second, across laminae, joined in the page and
+  downloaded. What `timestampOffset` does in play is written into the
+  file: every fragment's `tfdt` is moved to where its lamina sits on the
+  wall clock, the first sample at zero, so a lamina of another encoder
+  session, whose decode times start again, follows the one before it
+  instead of overlapping it. A lamina that goes on from the one before it
+  in the same session keeps the session's own decode times, which are
+  exact where `date_started` is not. A gap stays a gap in the file, a jump
+  in `tfdt` that costs no bytes, and a player that reads `tfdt` shows it
+  as one. The file says when it begins (`mvhd`'s creation time, the first
+  sample's) and how long it is (`mehd` and the track durations, which an
+  `empty_moov` leaves out). A range across a change of the encoder's
+  configuration (another codec, profile or picture size) would need two
+  init segments in one track, which is not a portable MP4, so the export
+  refuses it and says where the change is: the two sides export apart.
 - The Storage Node's data plane answers a browser's `OPTIONS` and marks
   its `GET` for any origin, since the token is in the URL and a Range is
   what a player asks for ([§17](05-read-path.md#17-read-path)).
@@ -207,3 +219,7 @@ transmuxed, and the page holds no player library.
 `test/playback.mjs` drives it in headless Chromium against a deployment:
 two minutes back plays, ten seconds ago comes from the relay, live takes
 over, and a range downloads as an MP4 ffprobe reads whole.
+`test/export.mjs` joins recordings ffmpeg makes on the spot, with no
+deployment: an encoder restart, a gap, one session cut in two with a late
+`date_started`, a range from the middle, and a changed picture size; ffprobe
+reads the decode times and Chromium plays the files through.

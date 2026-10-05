@@ -17,3 +17,6 @@ web/console/dist/*
 
 # docker buildx bake build: the binaries out of the image build
 /output
+
+# what the console's browser tests leave: screenshots, exported files
+ts/test/shots*/
