@@ -122,8 +122,8 @@ type Server struct {
 	// Identity is roster, where people and tenants are (§33.1): in this
 	// process or elsewhere, as `auth.roster` says.
 	Identity *identity.Store
-	// Operators is the team at roster the cluster operators are, when
-	// `auth.operators` names one; nil is the cluster tenant's people.
+	// Operators is what roster grants people, when `auth.operators` says
+	// so; nil is the rule before it, the cluster tenant's people.
 	Operators *identity.Operators
 	// Sso is the relying party of `auth.oidc`'s issuer; nil when there is
 	// none, or before init, when there is no KEK to seal its flows under.
@@ -361,7 +361,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	return s, nil
 }
 
-// operators is the team lookup as the policies take it: nil, and not a
+// operators is the grant lookup as the policies take it: nil, and not a
 // nil pointer inside an interface, where operators are a tenant.
 func (s *Server) operators() core.Operators {
 	if s.Operators == nil {

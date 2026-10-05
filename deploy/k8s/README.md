@@ -81,8 +81,8 @@ tutorial](../../docs/tutorial-k8s.md).
   and every API pod, on the `roster` database the PostgreSQL manifest makes
   beside `shale`; nothing else reaches it. New people come from `shale
   holder add` and get a password from `shale holder issue-password`. A
-  deployment that runs roster of its own sets `auth.roster.addr` and its
-  tenant keys in `control-config.yaml` instead.
+  deployment that runs roster of its own sets `auth.roster.addr` and the
+  key roster's operator minted for Shale in `control-config.yaml` instead.
 
 - Both API Deployments mount that Secret as their state directory and
   come up once it exists. Several CP processes share the database: one of
@@ -324,25 +324,35 @@ trusts the shale CA alone.
 Where people already sign in through their company's roster with Ory Hydra
 in front (§33.1), Shale runs no roster of its own and takes no password:
 
-1. **At roster**, the company's operator makes, in the company's tenant:
-   a holder `shale` with a role allowing `/roster.HolderService/Get`,
-   `/roster.TenantService/Get`, `/roster.TeamService/Get`,
-   `/roster.TeamService/List` and `/roster.TeamMembershipService/List`,
-   bound tenant-wide, and a tenant key for it (`roster key add --tenant
-   <tenant> --holder shale --allow …`); a team of the operators
-   (`shale-ops`); `Host` rows for the two names below; and two OAuth
-   clients -- the console's (confidential, authorization code, both
-   callbacks) and the CLI's (public, device grant).
-2. **Two Secrets** in the `shale` namespace: the tenant key, and the
-   console client's secret, each mounted as a file in both API
-   Deployments (`/run/shale/roster/<tenant>`, `/run/shale/oidc/client-secret`).
+1. **At roster**, the company's operator mints Shale a deployment key and
+   installs Shale in each tenant it serves:
+
+   ```sh
+   roster control key add --allow /roster.NominationService/List shale
+   roster app install --tenant <tenant> \
+     --role /roster.HolderService/Get,/roster.HolderService/Reaches,/roster.TenantService/Get \
+     shale
+   ```
+
+   The key holds one method as itself -- listing the tenants that
+   nominated it -- and is answered in each of them as the holder that
+   tenant nominated (roster's `docs/apps.md`). Then a role naming
+   `/shale.*/*` (all of Shale) or the services somebody looks after, bound
+   to the operators or to a group they are in; `Host` rows for the two
+   names below; and two OAuth clients -- the console's (confidential,
+   authorization code, both callbacks) and the CLI's (public, device
+   grant).
+2. **Two Secrets** in the `shale` namespace: the key, and the console
+   client's secret, each mounted as a file in both API Deployments
+   (`/run/shale/roster/key`, `/run/shale/oidc/client-secret`).
 3. **`control-config.yaml`**: the commented `auth` block in place of the
    embedded roster, `cluster.http.origins` naming the console's origin, and
    an Ingress per HTTP listener: the tenant one (7402) at the console's
    name, the cluster one (7403) at the operators' name.
 4. **`shale init --k8s-secret shale-control`** as before: it makes the CA,
    the KEK, the CP certificate and the signing key, and nobody at roster;
-   it says whether roster answered for the tenant and the team.
+   it says whether roster answered for the operators' tenant, and which
+   tenants the key serves.
 
 Then `https://<console>/` offers *Sign in with SSO*, and an operator's CLI
 signs in with `shale login --sso` (with `client.web` and

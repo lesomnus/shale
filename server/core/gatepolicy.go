@@ -103,24 +103,31 @@ func closedToEveryone(m string) bool {
 	return false
 }
 
-// Operators says whether a person is a cluster operator (§33.1): a member
-// of the team `auth.operators` names at roster. `identity.Operators` is
-// the one a deployment runs; an answer it could not get is an error, and
-// an error is no.
+// Operators says what a person may change (§33.1), by what roster grants
+// them: `identity.Operators` is the one a deployment runs, which asks
+// `HolderService.Reaches`. An answer it could not get is an error, and an
+// error is no.
 type Operators interface {
-	Is(ctx context.Context, tenant, holder pdid.Id) (bool, error)
+	// May says whether holder of tenant may call method there.
+	May(ctx context.Context, tenant, holder pdid.Id, method string) (bool, error)
+	// MayOperate says whether holder may call method on the cluster API:
+	// a person of the operators' tenant, granted it there.
+	MayOperate(ctx context.Context, tenant, holder pdid.Id, method string) (bool, error)
+	// Administers says whether holder of tenant holds all of Shale there,
+	// which is what sees every site.
+	Administers(ctx context.Context, tenant, holder pdid.Id) (bool, error)
 }
 
-// operator asks, failing closed: a lookup that failed is a refusal that
+// granted asks, failing closed: a lookup that failed is a refusal that
 // says so, as Unavailable, so a caller retries rather than concluding it
 // lost the right.
-func operator(ctx context.Context, ops Operators, c gate.Call) error {
-	is, err := ops.Is(ctx, c.Tenant, c.Actor)
+func granted(ctx context.Context, may func(context.Context, pdid.Id, pdid.Id, string) (bool, error), c gate.Call) error {
+	ok, err := may(ctx, c.Tenant, c.Actor, c.Action)
 	if err != nil {
-		return status.Errorf(codes.Unavailable, "%s: cannot tell whether you are an operator right now: %v", c.Action, err)
+		return status.Errorf(codes.Unavailable, "%s: cannot tell what roster grants you right now: %v", c.Action, err)
 	}
-	if !is {
-		return denied(c.Action, "operators only: this is for the members of the operators' team")
+	if !ok {
+		return denied(c.Action, "roster grants you nothing that covers this; a role at roster naming it does")
 	}
 
 	return nil
@@ -130,8 +137,8 @@ func operator(ctx context.Context, ops Operators, c gate.Call) error {
 // reader sees its tenant and only the calls it needs.
 //
 // With Operators, a person reads what the console's pages read (personMay)
-// and only an operator changes anything; without, the rule before it: a
-// person may do anything inside their tenant.
+// and calls the rest as far as roster grants them; without, the rule
+// before it: a person may do anything inside their tenant.
 type TenantPolicy struct {
 	Operators Operators
 }
@@ -159,12 +166,12 @@ var readerMay = map[string]bool{
 	api.ReaderService_RenewCertificate_FullMethodName: true,
 }
 
-// personMay is what every person of a tenant may call where operators are
-// a team (§33.1): the reads behind the console's pages -- sets, cameras,
-// live, the laminae and their timeline (which is playback and export),
-// sites, producers and readers, attempts -- and the Watch that keeps each
-// current. Not people, site membership, the trail, a password, or any
-// write: those are an operator's.
+// personMay is what every person of a tenant may call where roster says
+// what people may change (§33.1): the reads behind the console's pages --
+// sets, cameras, live, the laminae and their timeline (which is playback
+// and export), sites, producers and readers, attempts -- and the Watch
+// that keeps each current. Not people, site membership, the trail, a
+// password, or any write: those are what roster grants.
 var personMay = map[string]bool{
 	api.SetService_Get_FullMethodName:         true,
 	api.SetService_List_FullMethodName:        true,
@@ -192,7 +199,7 @@ var personMay = map[string]bool{
 }
 
 // PersonMay says whether every person may call a method on the tenant API
-// where operators are a team.
+// where roster says what people may change.
 func PersonMay(method string) bool { return personMay[method] }
 
 func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
@@ -218,12 +225,13 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 		}
 	case DomHolder:
 		if p.Operators != nil {
-			// Reading is everybody's; the rest is an operator's (§33.1).
+			// Reading is everybody's; the rest is what roster grants
+			// (§33.1).
 			if personMay[m] {
 				return nil
 			}
 
-			return operator(ctx, p.Operators, c)
+			return granted(ctx, p.Operators.May, c)
 		}
 		// A person may do the rest, inside their tenant; giving somebody a
 		// password is an administrator's act (§33.1).
@@ -256,8 +264,9 @@ func (TenantPolicy) Where(_ context.Context, c gate.Call) (frame.Tenants, error)
 // ClusterPolicy is the cluster API: operators see everything; nodes and
 // relays do their own work and nothing more.
 //
-// Operators are the members of a team at roster when Operators is set, and
-// the people of ClusterTenant when it is not (§33.1).
+// Operators are the people of the operators' tenant, as far as roster
+// grants them, when Operators is set; the people of ClusterTenant when it
+// is not (§33.1).
 type ClusterPolicy struct {
 	ClusterTenant pdid.Id
 	Operators     Operators
@@ -295,7 +304,7 @@ func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	case DomHolder:
 		switch {
 		case p.Operators != nil:
-			if err := operator(ctx, p.Operators, c); err != nil {
+			if err := granted(ctx, p.Operators.MayOperate, c); err != nil {
 				return err
 			}
 		case p.ClusterTenant.IsZero():
@@ -321,11 +330,12 @@ func (ClusterPolicy) Where(_ context.Context, c gate.Call) (frame.Tenants, error
 
 // Sites answers which sites a caller may see (§33.1): a person or a reader
 // with all_sites, or a node, sees every site; otherwise the SiteMember
-// rows; a producer sees its set's site. Where operators are a team, an
-// operator sees every site whatever their row says.
+// rows; a producer sees its set's site. Where roster says what people may
+// change, a person it grants all of Shale sees every site whatever their
+// row says.
 type Sites struct {
 	d *Deps
-	// Operators, when operators are a team.
+	// Operators, where roster says what people may change.
 	Operators Operators
 
 	mu    sync.Mutex
@@ -369,9 +379,9 @@ func (s *Sites) Of(ctx context.Context) (vs []uuid.UUID, all bool, err error) {
 			break
 		}
 		if s.Operators != nil {
-			// An operator administers the tenant, so sees all of it; a
-			// failed lookup is no, as everywhere (§33.1).
-			if is, _ := s.Operators.Is(ctx, f.Tenant, f.Actor); is {
+			// Whoever holds all of Shale administers the tenant, so sees
+			// all of it; a failed lookup is no, as everywhere (§33.1).
+			if is, _ := s.Operators.Administers(ctx, f.Tenant, f.Actor); is {
 				e.all = true
 				break
 			}

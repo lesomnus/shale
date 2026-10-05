@@ -15,11 +15,11 @@ holds a credential.
 |---|---|---|---|---|
 | **Producer** | host, tenant entity | tenant API | host certificate (mTLS) | negotiate and allocate for its set; upload with the access tokens it is given |
 | **Reader** | host, tenant entity | tenant API | host certificate (mTLS) | query and read laminae of its sites |
-| **Person** | person (Holder) | tenant API | a session, after roster vouched for them | read its tenant's sets, cameras, live video, laminae, sites and hosts; where operators are a team (below), nothing more |
-| **Tenant admin** | person (Holder) | tenant API | a session, after roster vouched for them | manage its tenant's sites, sets, sources, producers, readers, and retention dates: every person of the tenant where operators are a tenant, an operator where they are a team |
+| **Person** | person (Holder) | tenant API | a session, after roster vouched for them | read its tenant's sets, cameras, live video, laminae, sites and hosts; where roster says what people may change (below), the rest as far as roster grants them |
+| **Tenant admin** | person (Holder) | tenant API | a session, after roster vouched for them | manage its tenant's sites, sets, sources, producers, readers, and retention dates: every person of the tenant where operators are a tenant; where roster says, a person it grants all of Shale (`/shale.*/*`) |
 | **Storage Node** | host, global entity | cluster API | host certificate (mTLS) | report its own devices and sinks; push events; propose GC |
 | **Relay** | host, global entity | cluster API | host certificate (mTLS) | report its load; serve producers and viewers that carry tokens ([§39](16-relay.md#39-relay)) |
-| **Cluster operator** | person (Holder) | cluster API | a session, after roster vouched for them | adopt nodes; manage tenants, sinks, keys, policies: the people of `control.cluster_tenant`, or the members of the team `auth.operators` names |
+| **Cluster operator** | person (Holder) | cluster API | a session, after roster vouched for them | adopt nodes; manage tenants, sinks, keys, policies: the people of `control.cluster_tenant`, or the people of the tenant `auth.operators` names, as far as roster grants them there |
 | **Control Plane** | — | everyone | CP certificate, signing key | placement, authorization, metadata; calls nodes ([§35.7](12-api.md#357-storage-node-control-api)) |
 
 - **The tenant wall.** Every tenant-owned entity is behind payday's wall: a
@@ -66,7 +66,7 @@ holds a credential.
   | route (both listeners) | what it does |
   |---|---|
   | `GET /sso/login?next=` | a flow begins: a random `state`, a `nonce` and a PKCE verifier (S256), sealed under a key derived from the KEK into a short-lived `__Host-shale_sso_<surface>` cookie (so any control plane can finish what another began); the browser goes to the issuer's `authorization_endpoint` with the redirect `<origin>/sso/callback` |
-  | `GET /sso/callback` | the cookie's `state` compared with the query's, the code exchanged with the verifier and the client secret (`client_secret_basic`), the `id_token` verified against the issuer's discovery document and JWKS -- signature, `iss`, `aud` (this client), expiry -- and its `nonce` compared. `sub` is the identity and nothing else: roster's `sub` is a `Holder.id`, looked up at roster with the tenant key of each tenant served here (`HolderService.Get`); somebody in no tenant served here, or disabled, is refused. On the cluster listener the person must be an operator. Their rows are made or refreshed (`Provision`), and the session is minted, keeping the `id_token` for one thing: the logout hint |
+  | `GET /sso/callback` | the cookie's `state` compared with the query's, the code exchanged with the verifier and the client secret (`client_secret_basic`), the `id_token` verified against the issuer's discovery document and JWKS -- signature, `iss`, `aud` (this client), expiry -- and its `nonce` compared. `sub` is the identity and nothing else: roster's `sub` is a `Holder.id`, looked up at roster in each tenant served here, with the key it serves it with (`HolderService.Get`); somebody in no tenant served here, or disabled, is refused. On the cluster listener the person must be an operator. Their rows are made or refreshed (`Provision`), and the session is minted, keeping the `id_token` for one thing: the logout hint |
   | `GET /sso/logout?next=` | **two hops**: this listener's session ends, then the browser goes to the issuer's `end_session_endpoint` (`https://sso.hday.dev/oauth2/sessions/logout`) with `id_token_hint` and `post_logout_redirect_uri` = the origin it came from plus `/`, so the issuer forgets the browser too and sends it back. Without a hint, nothing is asked back and the browser ends on the issuer's page |
   | `POST /sso/token {id_token}` | the CLI's sign-in, below |
   | `GET /session`, `GET /session/ways` | who this browser's cookie names here; whether this listener takes a password, and the issuer |
@@ -104,60 +104,91 @@ holds a credential.
   [§34.5](11-deployment.md#345-kubernetes)), and gives
   people passwords through `shale holder issue-password`. With
   `auth.roster.addr` set, roster is a deployment of its own and Shale acts on
-  it as the holder `shale` of each tenant it serves, with the tenant key its
-  operator minted for it (`auth.roster.keys`); tenants and people are made
-  there, and a tenant Shale holds no key for is one it does not serve.
+  it as the holder each tenant it serves gave it there, with the key its
+  operator minted for it (`auth.roster.key`): a **deployment key** (`rk_`)
+  is answered in every tenant that **nominated** it -- Shale lists the
+  key's own nominations (`NominationService.List`, which answers a key
+  about itself and nobody else) and names the tenant beside every other
+  call with `roster-at` -- so a tenant is served by `roster app install`
+  at roster and not by anything here; a **tenant key** (`rt_`) is its own
+  tenant alone. A deployment holding a tenant key from each of several
+  tenants lists them by alias instead (`auth.roster.keys`). Tenants and
+  people are made at roster, and a tenant this deployment has no way into
+  is one it does not serve.
   Cluster operators are the people of the tenant `control.cluster_tenant`
   (`cluster`), which the cluster API's policy lets see every tenant, unless
-  operators are a team (below). A
+  roster says what people may change (below). A
   deployment made before roster held its people runs `shale identity
   migrate` once after the upgrade: its tenants and people go into the
   embedded roster with the identifiers they have, and everyone gets a new
   password, shown once.
-- **Operators may be a team instead of a tenant.** A company that signs its
-  people in through its own roster tenant has no second tenant to put
-  operators in, and should not need one: roster already says who does what
-  with **teams** (`TeamMembership`), and its roles derive from them. With
-  `auth.operators` set (§36.1) -- a tenant this deployment serves and a
-  team in it, by alias (with `site` when the team is in one) or by
-  identifier -- a person is a cluster operator **if and only if roster says
-  they are a member of that team**. Shale asks roster's data plane with the
-  tenant's key (`TeamMembershipService.List` by the person, and
-  `TeamService.Get`/`List` once to find the team), keeps the answer for
-  `auth.operators.ttl` (30 s), and **fails closed**: while roster cannot be
-  asked, nobody is an operator, the call is refused as `UNAVAILABLE` with
-  the reason, the log says why, and the failure is remembered for 5 s so a
-  roster that is down is not asked once per call. Taking somebody off the
-  team ends their operator rights within the TTL. `control.cluster_tenant`
-  is then not consulted at all: its people are not operators.
+- **What people may change is what roster grants them.** A company that
+  signs its people in through its own roster tenant has no second tenant to
+  put operators in, and should not need one: roster already says who may do
+  what, as **roles** naming methods, bound to a person or to a group they
+  are in. With `auth.operators` set (§36.1) -- the tenant whose people
+  operate the cluster, which is one this deployment serves -- a person may
+  call a method **if and only if a pattern roster grants them across their
+  tenant covers it on its own**: Shale asks roster's data plane
+  (`HolderService.Reaches`) and reads `everywhere`, not `methods`, since
+  `methods` is roster's gate's union, which roster's own wall narrows for
+  a grant bound at one of its sites or held in a team, and Shale has no
+  such narrowing to apply. A role naming `/shale.*/*` is all of Shale; one
+  naming `/shale.SourceService/*` is the cameras and nothing else. Shale
+  keeps the answer for `auth.operators.ttl` (30 s), and **fails closed**:
+  while roster cannot be asked, nobody changes anything, the call is
+  refused as `UNAVAILABLE` with the reason, the log says why, and the
+  failure is remembered for 5 s so a roster that is down is not asked once
+  per call. Taking a role away ends it within the TTL.
+
+  On the **cluster API** the person must also be of the operators'
+  tenant: a customer's administrator granted all of Shale in their own
+  tenant is not an operator of the cluster, which sees every tenant.
+  `control.cluster_tenant` is then not consulted at all: its people are
+  not operators. Signing in to the cluster listener, and through the CLI,
+  takes all of Shale in the operators' tenant; a narrower grant is used
+  on the tenant API.
+
+  **It is a grant and not a team on purpose.** This used to be the members
+  of a team at roster. A team membership is organisation there and not
+  permission -- one with no role grants nothing -- so roster lets anybody
+  who may write memberships write one, and reading it as "may operate the
+  cluster" was a permission roster did not know existed and could not
+  guard. A grant is guarded: nobody binds a role naming methods they do not
+  hold. `auth.operators.team` is refused at start with what to do instead.
 
   The same setting changes the **tenant API** for people. Every person of
   a tenant reads what the console's pages read -- sets, sources and their
   live video, laminae and their timeline (playback and export), attempts,
   sites, producers and readers, and the `Watch` that keeps each current --
-  and nothing else: not people, site membership, the trail or passwords,
-  and no write of any kind. Every write on the tenant API (adopting a
-  producer, a set, a source, a retention date, a site, a person) is an
-  operator's. Hosts are unchanged. Without `auth.operators` the rule is the
-  one before it, and it is what an embedded roster, `--dev` and the tests
-  run by default: every person administers their own tenant, and only one
-  who sees every site issues a password.
+  and anything else (adopting a producer, a set, a source, a retention
+  date, a site, a person; people, site membership, the trail, passwords)
+  only as far as roster grants them. Hosts are unchanged. Without
+  `auth.operators` the rule is the one before it, and it is what an
+  embedded roster, `--dev` and the tests run by default: every person
+  administers their own tenant, and only one who sees every site issues a
+  password.
 
-  **Sites, where operators are a team.** Reading is tenant-wide by default:
-  a person's row is made with `all_sites` on (not only the tenant's first
-  person's), so a new person reads every site. An operator narrows somebody
-  the way it is done anywhere else -- `all_sites` off and `SiteMember` rows
-  for the sites they may see -- and the wall then narrows their reads to
-  those sites; it never widens what they may call. An operator sees every
-  site whatever their own row says.
+  **Sites, where roster says.** Reading is tenant-wide by default: a
+  person's row is made with `all_sites` on (not only the tenant's first
+  person's), so a new person reads every site. An administrator narrows
+  somebody the way it is done anywhere else -- `all_sites` off and
+  `SiteMember` rows for the sites they may see -- and the wall then narrows
+  their reads to those sites; it never widens what they may call. A person
+  roster grants all of Shale sees every site whatever their own row says.
 
-  With an external roster, the key Shale holds for the tenant
-  (`auth.roster.keys`) is a holder of a role at roster that must allow
-  `/roster.HolderService/Get`, `/roster.TenantService/Get`,
-  `/roster.TeamService/Get`, `/roster.TeamService/List` and
-  `/roster.TeamMembershipService/List`, plus `/roster.VouchService/Verify`
-  where people still sign in with a password; the embedded roster's
-  `shale` holder is given these itself.
+  With an external roster, the holder Shale is answered as in a tenant --
+  the one the tenant nominated for a deployment key, or the one a tenant
+  key hangs on -- needs a role at roster allowing
+  `/roster.HolderService/Get`, `/roster.HolderService/Reaches` and
+  `/roster.TenantService/Get` (and `/roster.MeService/Get` for a tenant
+  key, which is how Shale learns the key's tenant), plus
+  `/roster.VouchService/Verify` where people still sign in with a
+  password. A deployment key itself holds `/roster.NominationService/List`
+  and nothing else: `roster control key add --allow
+  /roster.NominationService/List shale`, then `roster app install
+  --tenant <tenant> --role … shale` for each tenant. The embedded roster's
+  `shale` holder is given what it needs itself.
 - **Storage Nodes and Relays know nothing about tenants or people.** On
   their data planes they trust one thing: a valid CP signature on each
   request or stream. On its control API a node trusts one peer: the Control
@@ -282,16 +313,16 @@ shale init
 That is with roster in the process. With an **external roster**
 (`auth.roster.addr`) `shale init` makes the CA, the CP certificate, the KEK
 and the first signing key -- and, with `--k8s-secret`, the Secret that
-holds them -- and **makes nobody**: no tenant, person, password or team is
+holds them -- and **makes nobody**: no tenant, person, password or role is
 written at roster, which is the company's and already has them. It asks
 roster for the tenant (the operators' tenant with `auth.operators`, the
 cluster tenant otherwise) to make its row here early and to check the key,
-and for the operators' team, and prints what it found; a roster that does
+and which tenants it serves, and prints what it found; a roster that does
 not answer yet is a warning rather than a failure, since nothing it made
 depends on roster, and the rows follow the first sign-in. With roster in
-the process and `auth.operators` naming the first tenant, init also makes
-the team there and puts the first admin on it, so the deployment begins
-with an operator.
+the process and `auth.operators` naming the first tenant, init also grants
+the first admin all of Shale there (the role `shale-operator`, naming
+`/shale.*/*`), so the deployment begins with an operator.
 
 **A host joins on its first run.** Every host runs the Shale binary and is
 given only the Control Plane's address:
@@ -455,6 +486,6 @@ fetches laminae directly. The media server itself manages no keys.
 | A person's session | anything that person may do, inside **their tenant only**; the wall holds | end the session, reset the password |
 | A node's key | act as that node: serve or drop its own sinks' data, report its own devices and sinks. A report about a sink or a device another live node holds changes nothing, its SMART and pressure included, and a sink's capacity is stored clamped to `max_sink_capacity` ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) | erase the node and adopt the machine again under a new key |
 | A hardware identity | request adoption as a known host | nothing until an operator adopts it; with `readopt: auto`, impersonate that host, which is why the default is `manual` |
-| A cluster operator's session | manage the cluster and read across tenants, **from wherever the cluster API's sign-in listener answers**: the API binds to localhost unless `cluster.addr` names an interface, until the cluster tenant (or, with `auth.operators`, the team) is known it serves no person at all, and a deployment that exposes the sign-in listener for the console ([§40.4](17-console.md#404-serving-it)) exposes exactly that — a person with a password, behind the gate | end the session; keep the listener where the operators are |
+| A cluster operator's session | manage the cluster and read across tenants, **from wherever the cluster API's sign-in listener answers**: the API binds to localhost unless `cluster.addr` names an interface, until the cluster tenant (or, with `auth.operators`, the operators' tenant) is known it serves no person at all, and a deployment that exposes the sign-in listener for the console ([§40.4](17-console.md#404-serving-it)) exposes exactly that — a person with a password, behind the gate | end the session; keep the listener where the operators are |
 | The CP signing key | read and write any lamina on any node | rotate the key at once ([§33.3](#333-signing-keys-and-rotation)); hosts drop the retired key within their next poll, 30 s |
 | The CA key | impersonate nodes or the CP to clients | re-initialize the CA and adopt every host again; protect it accordingly |

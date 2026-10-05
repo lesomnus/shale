@@ -73,11 +73,10 @@ code rather than configuration, with one switch
 | producer, reader | the calls of its own work | — |
 | node, relay | — | the calls of its own work |
 | person, operators a **tenant** (default) | everything in their tenant but what the system writes; a password only by one who sees every site | the people of `control.cluster_tenant`: everything but writing a key |
-| person, operators a **team** (`auth.operators`) | the reads behind the console (`Get`/`List`/`Watch` of sets, sources, laminae, sites, producers, readers; `Get`/`List` of attempts; `Set.Live`, `Source.Live`, `Lamina.Timeline`) | — |
-| operator, operators a **team** | everything in their tenant but what the system writes | the members of the team: everything but writing a key |
+| person, roster says (`auth.operators`) | the reads behind the console (`Get`/`List`/`Watch` of sets, sources, laminae, sites, producers, readers; `Get`/`List` of attempts; `Set.Live`, `Source.Live`, `Lamina.Timeline`), and every other call a pattern roster grants them covers, but what the system writes | the people of the tenant `auth.operators` names, each call a pattern roster grants them there covers: everything but writing a key for `/shale.*/*` |
 
-An operator check that roster cannot answer is refused with `UNAVAILABLE`,
-never allowed.
+A grant roster cannot be asked about is refused with `UNAVAILABLE`, never
+allowed.
 
 No flag mounts cluster services into `shale serve control`. A single-machine
 `shale serve all` serves both, on separate listeners, with the cluster

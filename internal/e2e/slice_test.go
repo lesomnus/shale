@@ -80,7 +80,8 @@ func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 	cl := &cluster{t: t, cfg: c}
 	cl.serve()
 	// The node is up once its first heartbeat registered its sink. Where
-	// operators are a team, init put the first admin on it (§33.1).
+	// roster says who operates, init granted the first admin all of Shale
+	// (§33.1).
 	operator := "@cluster/ops"
 	if c.Auth.Operators.On() {
 		operator = "@acme/admin"
