@@ -25,7 +25,7 @@ import { SetService, SourceService } from '../gen/shale/set_svc_pb.js'
 
 import { Changed, join, joins, type Piece } from './export.js'
 import { concat, firstFragment, fragmentTime, indexSize, parseIndex, parseInit, type Bytes, type Init, type Key } from './fmp4.js'
-import { useLive, whep, type Status } from './live.js'
+import { useLive, useWhep, type Status } from './live.js'
 import { PickSet, gapClass, unhex } from './segments.js'
 import { On, useSurfaces } from './surface.js'
 import { Badge, Err, Loading, byId, date, hex, sameId, usePolled } from './ui.js'
@@ -118,15 +118,13 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 	// Live: WHEP on the same element, the engine gone; back to playback on
 	// the next pick.
 	useEffect(() => {
-		const el = video.current
-		if (mode !== 'live' || el === null || props.live === undefined) return
+		if (mode !== 'live' || video.current === null || props.live === undefined) return
 		engine.current?.destroy()
 		engine.current = null
 		setHead(undefined)
-
-		// A fresh token is a new session: the relay ends one with its token (§39.4).
-		return whep(el, props.live.whepUrl, props.live.viewToken, setStatus)
-	}, [mode, props.live?.whepUrl, props.live?.viewToken])
+	}, [mode, props.live?.whepUrl])
+	// After the recording's engine lets go of the element.
+	useWhep(video, props.live?.whepUrl, props.live?.viewToken, setStatus, mode === 'live' && props.live !== undefined)
 
 	const seek = (wall: number): void => {
 		const el = video.current

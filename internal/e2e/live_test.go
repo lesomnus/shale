@@ -78,6 +78,18 @@ func TestLive(t *testing.T) {
 	resp2.Body.Close()
 	require.Equal(t, http.StatusUnauthorized, resp2.StatusCode)
 
+	// A fresh token from `Live` renews the session in place (§39.4): it
+	// names the same source and actor, and the video goes on.
+	fresh, err := api.NewSetServiceClient(admin).Live(ctx, api.SetLiveRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	renew, _ := http.NewRequest(http.MethodPatch, v.base+v.session, nil)
+	renew.Header.Set("Authorization", token.Scheme+" "+fresh.GetSources()[0].GetViewToken())
+	resp3, err := http.DefaultClient.Do(renew)
+	require.NoError(t, err)
+	resp3.Body.Close()
+	require.Equal(t, http.StatusNoContent, resp3.StatusCode)
+	v.video(t, 50, 10*time.Second)
+
 	// Leaving ends the session; the relay stops the producer after
 	// relay_idle_stop, which the relay's heartbeat reflects.
 	v.leave(t)

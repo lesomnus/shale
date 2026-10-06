@@ -255,8 +255,9 @@ actor        the Producer, Reader, or person the token was issued to, and
   `LaminaService.Renew` issues a fresh one for an attempt still in progress.
   Get tokens live `read_token_ttl` (default 1 hour) and view tokens
   `view_token_ttl` (1 hour); the relay ends a session when its token
-  expires, so a viewer still watching asks for a fresh one and opens a new
-  session ([§39.4](16-relay.md#394-viewers)). A
+  expires, so a viewer still watching asks for a fresh one and renews the
+  session with it, which takes a token for the same source and actor
+  ([§39.4](16-relay.md#394-viewers)). A
   publish token lives `publish_token_ttl` (24 hours) and is checked when the
   producer attaches ([§39.3](16-relay.md#393-from-the-producer)).
 - **Replay** gains nothing. A put token names one key and one attempt, uploads

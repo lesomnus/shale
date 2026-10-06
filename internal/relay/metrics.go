@@ -31,7 +31,7 @@ func newMetrics(ctx context.Context) *metrics {
 		attached:   o.Int64Gauge("shale.relay.attached_producers", metric.WithDescription("producers with a stream open")),
 		active:     o.Int64Gauge("shale.relay.active_sources", metric.WithDescription("sources being sent")),
 		viewers:    o.Int64Gauge("shale.relay.viewers", metric.WithDescription("WHEP sessions open")),
-		sessions:   o.Int64Counter("shale.relay.sessions", metric.WithDescription("sessions by outcome: started, or refused with the reason")),
+		sessions:   o.Int64Counter("shale.relay.sessions", metric.WithDescription("sessions by outcome: started, renewed with a fresh token, or refused with the reason")),
 		ingress:    o.Int64Counter("shale.relay.ingress_bytes", metric.WithDescription("TS bytes taken from producers"), metric.WithUnit("By")),
 		egress:     o.Int64Counter("shale.relay.egress_bytes", metric.WithDescription("media bytes handed to viewers' tracks"), metric.WithUnit("By")),
 		recent:     o.Int64Counter("shale.relay.recent_bytes", metric.WithDescription("bytes of the recent window handed out"), metric.WithUnit("By")),

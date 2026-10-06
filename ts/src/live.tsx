@@ -11,7 +11,7 @@
  * @module
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 
 import { useQuery, useRow } from '@lesomnus/payday/react'
 import { key } from '@lesomnus/payday/store'
@@ -109,13 +109,11 @@ function Player(props: { set: Uint8Array; source: LiveSource }): ReactNode {
 
 	useEffect(() => {
 		const el = video.current
-		if (el === null) return
-		if (fake) return fakeScene(el, src?.alias ?? hex(v.sourceId).slice(0, 8), setStatus)
+		if (el === null || !fake) return
 
-		return whep(el, v.whepUrl, v.viewToken, setStatus)
-		// The relay ends a session when its token expires (§39.4), so a fresh
-		// token, which comes a minute before, is a new session.
-	}, [v.whepUrl, v.viewToken, fake])
+		return fakeScene(el, src?.alias ?? hex(v.sourceId).slice(0, 8), setStatus)
+	}, [fake])
+	useWhep(video, v.whepUrl, v.viewToken, setStatus, !fake)
 
 	return (
 		<div className="player">
@@ -134,11 +132,51 @@ function Player(props: { set: Uint8Array; source: LiveSource }): ReactNode {
 	)
 }
 
+/**
+ * useWhep keeps one WHEP session on a video element while `on`: opened for
+ * the URL, renewed with each fresh token the page is handed (§39.4), and
+ * opened again only when the relay will not renew it -- the session ended,
+ * or a relay that does not take renewals -- since the relay ends a session
+ * with its token.
+ */
+export function useWhep(video: RefObject<HTMLVideoElement | null>, url: string | undefined, token: string | undefined, setStatus: (s: Status) => void, on: boolean): void {
+	const session = useRef<Whep | null>(null)
+	const latest = useRef(token)
+	latest.current = token
+	const [again, setAgain] = useState(0)
+	useEffect(() => {
+		const el = video.current
+		if (!on || el === null || url === undefined || latest.current === undefined) return
+		const s = whep(el, url, latest.current, setStatus)
+		session.current = s
+
+		return () => {
+			s.close()
+			if (session.current === s) session.current = null
+		}
+	}, [on, url, again])
+	useEffect(() => {
+		const s = session.current
+		if (s === null || token === undefined) return
+		void s.renew(token).then((ok) => {
+			if (!ok && session.current === s) setAgain((n) => n + 1)
+		})
+	}, [token])
+}
+
+/** Whep is one WHEP session. */
+export interface Whep {
+	close: () => void
+	/** renew hands the session a fresh token; false when the relay would not take it. */
+	renew: (token: string) => Promise<boolean>
+}
+
 /** whep plays one source through the relay, as web/live.html does. */
-export function whep(el: HTMLVideoElement, url: string, token: string, setStatus: (s: Status) => void): () => void {
+export function whep(el: HTMLVideoElement, url: string, token: string, setStatus: (s: Status) => void): Whep {
 	const pc = new RTCPeerConnection()
 	let session: string | null = null
 	let closed = false
+	let current = token
 	const base = url.slice(0, url.indexOf('/whep/'))
 	pc.addTransceiver('video', { direction: 'recvonly' })
 	pc.addTransceiver('audio', { direction: 'recvonly' })
@@ -159,7 +197,7 @@ export function whep(el: HTMLVideoElement, url: string, token: string, setStatus
 				setStatus({ tone: 'dim', text: pc.connectionState })
 		}
 	}
-	void (async () => {
+	const opened = (async (): Promise<void> => {
 		try {
 			const offer = await pc.createOffer()
 			await pc.setLocalDescription(offer)
@@ -186,13 +224,29 @@ export function whep(el: HTMLVideoElement, url: string, token: string, setStatus
 		}
 	})()
 
-	return () => {
-		closed = true
-		if (session !== null) {
-			void fetch(base + session, { method: 'DELETE' }).catch(() => {})
-		}
-		pc.close()
-		el.srcObject = null
+	return {
+		close: () => {
+			closed = true
+			if (session !== null) {
+				void fetch(base + session, { method: 'DELETE' }).catch(() => {})
+			}
+			pc.close()
+			el.srcObject = null
+		},
+		renew: async (token) => {
+			if (token === current) return true
+			await opened
+			if (closed || session === null) return false
+			try {
+				const resp = await fetch(base + session, { method: 'PATCH', headers: { Authorization: 'Shale ' + token } })
+				if (resp.status !== 204) return false
+			} catch {
+				return false
+			}
+			current = token
+
+			return true
+		},
 	}
 }
 
