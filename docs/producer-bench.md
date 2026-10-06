@@ -225,15 +225,19 @@ Findings:
   a 720p30 pipeline at 36.9% against 36.1% without it. With every pixel
   counted dark (`threshold: 1.0`) it told 20 dark seconds in 20; in the lit
   room at the default 0.10, none.
-- **Split after the decoder, it broke the recording.** The first version
-  teed the decoded picture in front of `v4l2h264enc`. That made gst-launch
-  abort asking for 4 GiB until the encoder's allocation query was dropped
-  (`identity drop-allocation=true`), and then one camera of three recorded
-  rows of other pictures, shifted sideways, in most frames, and lost frames
-  in bursts (43 gaps of 68–100 ms in one 244 s lamina), at 42% of a core.
-  The camera's own MJPEG was clean, decoded alone or with all three
-  streaming; with the split moved in front of the decoder the same camera
-  recorded 30.00 fps with no gaps and no such rows.
+- **Split after the decoder, it cost more and needed a workaround.** The
+  first version teed the decoded picture in front of `v4l2h264enc`. That
+  made gst-launch abort asking for 4 GiB until the encoder's allocation
+  query was dropped (`identity drop-allocation=true`), and the pipeline
+  took 42% of a core, the encoder copying every picture into its own
+  buffers. While it ran, one camera of three recorded rows of other
+  pictures shifted sideways and lost frames in bursts, and the split was
+  suspected; it was not the cause. The same camera did the same with
+  `idle:` off, by day and not by night, and the loss followed the camera
+  from port to port: USB isochronous packets lost on the bus
+  (`USB isochronous frame lost (-18)` in uvcvideo's trace), the holes in
+  each JPEG decoding as the shifted rows, and a frame dropped where a JPEG
+  did not decode at all (Holiday-Robot/wed.hday.dev#387).
 
 ## Caveats
 
