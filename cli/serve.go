@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 	entschema "github.com/protobuf-orm/ent/dialect/sql/schema"
 	"golang.org/x/sync/errgroup"
@@ -29,23 +30,18 @@ import (
 // role. `control` and `cluster` are separate entry points, not one server
 // with a flag; `all` serves both on separate listeners with a node and a
 // relay in the same process.
-func NewCmdServe(c *cmd.Config) *xli.Command {
+func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 	common := func() flg.Flags {
 		return flg.Flags{
-			&flg.String{Name: "cp", Brief: "the control plane address this host dials"},
+			cfg.Bind(l, &c.Cp, &flg.String{Name: "cp", Brief: "the control plane address this host dials"}),
 			&flg.String{Name: "dev", Brief: "development mode: everything under this directory, plaintext allowed"},
-			&flg.String{Name: "state", Brief: "the state directory (/var/lib/shale)"},
+			cfg.Bind(l, &c.State, &flg.String{Name: "state", Brief: "the state directory (/var/lib/shale)"}),
 		}
 	}
 	apply := func(self *xli.Command) {
+		// Not bound: ApplyDev fills many fields, most only where they are empty.
 		if v, ok := flg.Find[string](self, "dev"); ok && v != "" {
 			ApplyDev(c, v)
-		}
-		if v, ok := flg.Find[string](self, "cp"); ok && v != "" {
-			c.Cp = v
-		}
-		if v, ok := flg.Find[string](self, "state"); ok && v != "" {
-			c.State = v
 		}
 	}
 
@@ -86,12 +82,9 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			},
 			{
 				Name: "producer", Brief: "a Producer: records the cameras of one set and uploads them",
-				Flags: append(common(), &flg.Int{Name: "demo", Brief: "no cameras: record this many patterns ffmpeg draws for itself (§38.1)"}),
+				Flags: append(common(), cfg.Bind(l, &c.Producer.Demo, &flg.Int{Name: "demo", Brief: "no cameras: record this many patterns ffmpeg draws for itself (§38.1)"})),
 				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 					apply(self)
-					if v, ok := flg.Find[int](self, "demo"); ok && v > 0 {
-						c.Producer.Demo = v
-					}
 					return serveProducer(ctx, c)
 				}),
 			},

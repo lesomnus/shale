@@ -41,10 +41,11 @@ const protoPackage = "shale"
 //
 // The configuration is read on the root, so it has been read whichever
 // command runs (`version` aside, below): a file, then the environment over
-// the top of it (§34.1), into `c`. What `c` holds when the loader is made
-// is the defaults, and every load starts from them. The loader is here
-// rather than in `cmd` because a file and an environment are a process's;
-// the sandbox writes its `Config` out whole.
+// the top of it, then the flags bound to its fields over both, whichever
+// command of the line they belong to (§34.1), into `c`. What `c` holds when
+// the loader is made is the defaults, and every load starts from them. The
+// loader is here rather than in `cmd` because a file and an environment
+// are a process's; the sandbox writes its `Config` out whole.
 func Cmd(c *cmd.Config) *xli.Command {
 	l := cfg.New(cmd.Name, c)
 
@@ -58,9 +59,9 @@ func Cmd(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			cfg.ConfigFlag(),
-			&flg.String{Name: "as", Brief: "call as @tenant/alias with the plain header (development)"},
-			&flg.String{Name: "addr", Brief: "the tenant API address"},
-			&flg.String{Name: "cluster-addr", Brief: "the cluster API address"},
+			cfg.Bind(l, &c.Client.As, &flg.String{Name: "as", Brief: "call as @tenant/alias with the plain header (development)"}),
+			cfg.Bind(l, &c.Client.Addr, &flg.String{Name: "addr", Brief: "the tenant API address"}),
+			cfg.Bind(l, &c.Client.ClusterAddr, &flg.String{Name: "cluster-addr", Brief: "the cluster API address"}),
 			&flg.String{Name: "dev", Brief: "development mode: the directory `serve all --dev` runs in"},
 		},
 
@@ -69,7 +70,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			cfg.NewCmdConfig(l),
 			NewCmdInit(c),
 			NewCmdIdentity(c),
-			NewCmdServe(c),
+			NewCmdServe(c, l),
 			NewCmdLogin(c),
 			NewCmdLive(c),
 		},
@@ -89,7 +90,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 	addCustom(t, c, false)
 	addLaminaCommands(t, c)
 	addStateCommands(t, c, false)
-	addProducerCommands(t, c)
+	addProducerCommands(t, c, l)
 	root.Commands = append(root.Commands, t.Commands()...)
 
 	t = pdcmd.NewIn(&connector{c: c, cluster: true}, protoPackage)
@@ -104,19 +105,13 @@ func Cmd(c *cmd.Config) *xli.Command {
 	return root
 }
 
+// applyClientFlags applies what the root's flags say that the load does
+// not: the flags bound to a field were read with the configuration.
 func applyClientFlags(c *cmd.Config) xli.Handler {
 	return xli.OnRunPass(func(ctx context.Context, self *xli.Command, next xli.Next) error {
+		// Not bound: ApplyDev fills many fields, most only where they are empty.
 		if v, ok := flg.Find[string](self, "dev"); ok && v != "" {
 			ApplyDev(c, v)
-		}
-		if v, ok := flg.Find[string](self, "as"); ok && v != "" {
-			c.Client.As = v
-		}
-		if v, ok := flg.Find[string](self, "addr"); ok && v != "" {
-			c.Client.Addr = v
-		}
-		if v, ok := flg.Find[string](self, "cluster-addr"); ok && v != "" {
-			c.Client.ClusterAddr = v
 		}
 
 		return next(ctx)

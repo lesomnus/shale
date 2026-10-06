@@ -382,6 +382,10 @@ func flagOr(self *xli.Command, name, def string) string {
 // ApplyDev turns a configuration into development mode (§34.7): everything
 // under one directory, SQLite, an in-memory broker, plaintext, the local
 // node and relay adopted automatically.
+//
+// It is what `--dev` does, by hand once the configuration is read rather
+// than bound to a field as `--cp` is (§34.1): it fills many fields, most
+// only where they are empty and the rest regardless.
 func ApplyDev(c *cmd.Config, dir string) {
 	abs, err := filepath.Abs(dir)
 	if err == nil {
