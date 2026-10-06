@@ -410,7 +410,7 @@ func liveProducer(t *testing.T, ctx context.Context, c *cluster, admin *grpc.Cli
 	require.NoError(t, err)
 
 	// The relay in the same process is adopted by the time it heartbeats.
-	relays := api.NewRelayServiceClient(c.dialCluster("@cluster/ops"))
+	relays := api.NewRelayServiceClient(c.dialCluster(c.operator()))
 	require.Eventually(t, func() bool {
 		vs, err := relays.List(ctx, api.RelayListRequest_builder{}.Build())
 		if err != nil {

@@ -282,11 +282,11 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 
 	var out []*api.LiveSource
 	for _, src := range sources {
-		tok, err := s.d.Keys.Sign(ctx, api.TokenClaims_builder{
-			Exp: timestamppb.New(exp), Iat: timestamppb.New(now),
-			Aud: r.Id[:], Op: api.TokenOp_TOKEN_OP_VIEW, Source: src.GetId(),
-			Actor: f.Actor.Bytes(), ActorTenant: f.Tenant.Bytes(),
-		}.Build())
+		claims := api.TokenClaims_builder{
+			Iat: timestamppb.New(now), Aud: r.Id[:], Op: api.TokenOp_TOKEN_OP_VIEW, Source: src.GetId(),
+		}
+		claimsFor(ctx, f, &claims, now, exp)
+		tok, err := s.d.Keys.Sign(ctx, claims.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -298,7 +298,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 			WhepUrl:     endpointURL(eps[0], "whep/"+mustId(src.GetId()).String(), nil),
 			RecentUrl:   endpointURL(eps[0], "recent/"+mustId(src.GetId()).String(), nil),
 			ViewToken:   tok,
-			DateExpires: timestamppb.New(exp),
+			DateExpires: claims.Exp,
 		}.Build())
 	}
 

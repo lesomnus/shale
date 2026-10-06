@@ -17,6 +17,7 @@ import (
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/pdpb"
 
 	"github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
@@ -41,6 +42,14 @@ type fakeRoster struct {
 	holders   map[string]*rstr.Holder
 	grants    map[string][]string
 
+	// exchanged is the holder each exchange token names, issued to Shale.
+	exchanged map[string][]byte
+	// sync is what the sync stream says next; a nil event ends the stream,
+	// and noSync refuses it the way roster does a key not allowed it.
+	sync   chan *rstr.SyncEvent
+	noSync atomic.Bool
+	syncs  atomic.Int32
+
 	down  atomic.Bool
 	calls atomic.Int32
 	lists atomic.Int32
@@ -58,6 +67,8 @@ func newFakeRoster(t *testing.T, tenantAlias string) *fakeRoster {
 		nominated: map[string]bool{},
 		holders:   map[string]*rstr.Holder{},
 		grants:    map[string][]string{},
+		exchanged: map[string][]byte{},
+		sync:      make(chan *rstr.SyncEvent, 16),
 	}
 	f.tenant = f.addTenant(tenantAlias)
 	l, err := net.Listen("tcp", "127.0.0.1:0")
@@ -67,6 +78,8 @@ func newFakeRoster(t *testing.T, tenantAlias string) *fakeRoster {
 	rstr.RegisterHolderServiceServer(g, holders{fakeRoster: f})
 	rstr.RegisterNominationServiceServer(g, nominations{fakeRoster: f})
 	rstr.RegisterMeServiceServer(g, me{fakeRoster: f})
+	pdpb.RegisterTokenServiceServer(g, tokens{fakeRoster: f})
+	rstr.RegisterSyncServiceServer(g, syncs{fakeRoster: f})
 	go g.Serve(l)
 	t.Cleanup(g.Stop)
 	f.addr = l.Addr().String()
@@ -269,4 +282,49 @@ func (f *fakeRoster) addHolderIn(t *rstr.Tenant, alias string) []byte {
 	f.holders[string(id)] = rstr.Holder_builder{Id: id, Alias: alias, Name: alias, Tenant: t}.Build()
 
 	return id
+}
+
+type tokens struct {
+	pdpb.UnimplementedTokenServiceServer
+	*fakeRoster
+}
+
+// Introspect answers an exchange token to the tenant's Shale, in the
+// tenant it was issued in, and NotFound to anybody else.
+func (f tokens) Introspect(ctx context.Context, req *pdpb.TokenIntrospectRequest) (*pdpb.TokenIntrospectResponse, error) {
+	f.mu.Lock()
+	holder, ok := f.exchanged[req.GetToken()]
+	in := f.holders[string(holder)].GetTenant().GetId()
+	f.mu.Unlock()
+	t := walled(ctx)
+	if !ok || t == nil || string(in) != string(t.GetId()) {
+		return nil, status.Error(codes.NotFound, "no such token")
+	}
+
+	return pdpb.TokenIntrospectResponse_builder{Id: holder, TenantId: t.GetId()}.Build(), nil
+}
+
+type syncs struct {
+	rstr.UnimplementedSyncServiceServer
+	*fakeRoster
+}
+
+func (f syncs) Watch(_ *rstr.SyncWatchRequest, st rstr.SyncService_WatchServer) error {
+	if f.noSync.Load() {
+		return status.Error(codes.Unimplemented, "no broker")
+	}
+	f.syncs.Add(1)
+	for {
+		select {
+		case <-st.Context().Done():
+			return nil
+		case e := <-f.sync:
+			if e == nil {
+				return status.Error(codes.Unavailable, "the stream broke")
+			}
+			if err := st.Send(e); err != nil {
+				return err
+			}
+		}
+	}
 }

@@ -82,11 +82,7 @@ func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 	// The node is up once its first heartbeat registered its sink. Where
 	// roster says who operates, init granted the first admin all of Shale
 	// (§33.1).
-	operator := "@cluster/ops"
-	if c.Auth.Operators.On() {
-		operator = "@acme/admin"
-	}
-	ops := api.NewSinkServiceClient(cl.dialCluster(operator))
+	ops := api.NewSinkServiceClient(cl.dialCluster(cl.operator()))
 	require.Eventually(t, func() bool {
 		vs, err := ops.List(ctx, api.SinkListRequest_builder{}.Build())
 		if err != nil {
@@ -103,6 +99,16 @@ func start(t *testing.T, opts ...func(*cmd.Config)) *cluster {
 	t.Cleanup(cl.stopCP)
 
 	return cl
+}
+
+// operator is who operates the cluster: where roster says, the admin init
+// granted all of Shale (§33.1); otherwise the cluster tenant's person.
+func (c *cluster) operator() string {
+	if c.cfg.Auth.Operators.On() {
+		return "@acme/admin"
+	}
+
+	return "@cluster/ops"
 }
 
 // serve runs `serve all` on the cluster's configuration until both APIs

@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/audit"
+	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
 	"github.com/lesomnus/shale/internal/ent/lamina"
@@ -46,6 +47,7 @@ const (
 	TypeAddressPolicy   = "AddressPolicy"
 	TypeAttempt         = "Attempt"
 	TypeAudit           = "Audit"
+	TypeDelegation      = "Delegation"
 	TypeDevice          = "Device"
 	TypeHolder          = "Holder"
 	TypeLamina          = "Lamina"
@@ -1069,6 +1071,449 @@ func (m *AuditMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldDomain(ctx)
 	}
 	return nil, fmt.Errorf("unknown Audit field %s", name)
+}
+
+// DelegationMutation represents an operation that mutates the Delegation nodes in the graph.
+type DelegationMutation struct {
+	delegation.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*Delegation, error)
+}
+
+var _ ent.Mutation = (*DelegationMutation)(nil)
+
+// delegationOption allows management of the mutation configuration using functional options.
+type delegationOption func(*DelegationMutation)
+
+// newDelegationMutation creates new mutation for the Delegation entity.
+func newDelegationMutation(c config, op Op, opts ...delegationOption) *DelegationMutation {
+	m := &DelegationMutation{
+		Mutation: *delegation.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of Delegation entities.
+func (m *DelegationMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DelegationMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withDelegationId sets the Id field of the mutation.
+func withDelegationId(id uuid.UUID) delegationOption {
+	return func(m *DelegationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Delegation
+		)
+		m.oldValue = func(ctx context.Context) (*Delegation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Delegation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDelegation sets the old Delegation of the mutation.
+func withDelegation(node *Delegation) delegationOption {
+	return func(m *DelegationMutation) {
+		m.oldValue = func(context.Context) (*Delegation, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DelegationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DelegationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DelegationMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().Delegation.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldApp returns the old "app" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldApp(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldApp is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldApp requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApp: %w", err)
+	}
+	return oldValue.App, nil
+}
+
+// OldClientId returns the old "client_id" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldClientId(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldClientId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldClientId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClientId: %w", err)
+	}
+	return oldValue.ClientId, nil
+}
+
+// OldSecretHash returns the old "secret_hash" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldSecretHash(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSecretHash is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSecretHash requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecretHash: %w", err)
+	}
+	return oldValue.SecretHash, nil
+}
+
+// OldLive returns the old "live" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldLive(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLive is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLive requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLive: %w", err)
+	}
+	return oldValue.Live, nil
+}
+
+// OldRecordings returns the old "recordings" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldRecordings(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldRecordings is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldRecordings requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRecordings: %w", err)
+	}
+	return oldValue.Recordings, nil
+}
+
+// OldSets returns the old "sets" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldSets(ctx context.Context) (v [][]uint8, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSets is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSets requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSets: %w", err)
+	}
+	return oldValue.Sets, nil
+}
+
+// OldSources returns the old "sources" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldSources(ctx context.Context) (v [][]uint8, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSources is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSources requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSources: %w", err)
+	}
+	return oldValue.Sources, nil
+}
+
+// OldRecordingsFrom returns the old "recordings_from" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldRecordingsFrom(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldRecordingsFrom is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldRecordingsFrom requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRecordingsFrom: %w", err)
+	}
+	return oldValue.RecordingsFrom, nil
+}
+
+// OldRecordingsTo returns the old "recordings_to" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldRecordingsTo(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldRecordingsTo is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldRecordingsTo requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRecordingsTo: %w", err)
+	}
+	return oldValue.RecordingsTo, nil
+}
+
+// OldDateEnds returns the old "date_ends" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateEnds(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateEnds is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateEnds requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateEnds: %w", err)
+	}
+	return oldValue.DateEnds, nil
+}
+
+// OldDateRevoked returns the old "date_revoked" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateRevoked(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateRevoked is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateRevoked requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateRevoked: %w", err)
+	}
+	return oldValue.DateRevoked, nil
+}
+
+// OldDateUsed returns the old "date_used" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateUsed(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUsed is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUsed requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUsed: %w", err)
+	}
+	return oldValue.DateUsed, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateErased returns the old "date_erased" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldTenantId returns the old "tenant_id" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldTenantId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTenantId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTenantId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantId: %w", err)
+	}
+	return oldValue.TenantId, nil
+}
+
+// OldHolderId returns the old "holder_id" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldHolderId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldHolderId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldHolderId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHolderId: %w", err)
+	}
+	return oldValue.HolderId, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DelegationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case delegation.FieldApp:
+		return m.OldApp(ctx)
+	case delegation.FieldClientId:
+		return m.OldClientId(ctx)
+	case delegation.FieldSecretHash:
+		return m.OldSecretHash(ctx)
+	case delegation.FieldLive:
+		return m.OldLive(ctx)
+	case delegation.FieldRecordings:
+		return m.OldRecordings(ctx)
+	case delegation.FieldSets:
+		return m.OldSets(ctx)
+	case delegation.FieldSources:
+		return m.OldSources(ctx)
+	case delegation.FieldRecordingsFrom:
+		return m.OldRecordingsFrom(ctx)
+	case delegation.FieldRecordingsTo:
+		return m.OldRecordingsTo(ctx)
+	case delegation.FieldDateEnds:
+		return m.OldDateEnds(ctx)
+	case delegation.FieldDateRevoked:
+		return m.OldDateRevoked(ctx)
+	case delegation.FieldDateUsed:
+		return m.OldDateUsed(ctx)
+	case delegation.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case delegation.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case delegation.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case delegation.FieldTenantId:
+		return m.OldTenantId(ctx)
+	case delegation.FieldHolderId:
+		return m.OldHolderId(ctx)
+	}
+	return nil, fmt.Errorf("unknown Delegation field %s", name)
 }
 
 // DeviceMutation represents an operation that mutates the Device nodes in the graph.

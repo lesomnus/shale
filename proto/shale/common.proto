@@ -364,6 +364,10 @@ message TokenClaims {
   // producer's sources plus the commit's lag, so the window reaches back
   // past the last committed lamina. Zero keeps none.
   int64 rewind_seconds = 19;
+  // view and get: the app that asked for the token on the actor's behalf
+  // (§33.8), its holder at roster; empty when the actor asked for itself.
+  // Like actor it grants nothing: it is for limits and logs.
+  bytes delegator = 20;
 }
 
 // LaminaStored is a node's word that an upload committed (§12.4).

@@ -21,6 +21,9 @@ export const AttemptDomain = 10
 /** The domain identifiers of shale.Audit carry. */
 export const AuditDomain = 3
 
+/** The domain identifiers of shale.Delegation carry. */
+export const DelegationDomain = 25
+
 /** The domain identifiers of shale.Device carry. */
 export const DeviceDomain = 13
 
@@ -77,6 +80,7 @@ export const UploadPolicyDomain = 18
 pdid.register("shale.AddressPolicy", AddressPolicyDomain, "address-policy")
 pdid.register("shale.Attempt", AttemptDomain, "attempt")
 pdid.register("shale.Audit", AuditDomain, "audit")
+pdid.register("shale.Delegation", DelegationDomain, "delegation")
 pdid.register("shale.Device", DeviceDomain, "device")
 pdid.register("shale.Holder", HolderDomain, "holder")
 pdid.register("shale.Lamina", LaminaDomain, "lamina")

@@ -163,7 +163,11 @@ holds a credential.
   sites, producers and readers, and the `Watch` that keeps each current --
   and anything else (adopting a producer, a set, a source, a retention
   date, a site, a person; people, site membership, the trail, passwords)
-  only as far as roster grants them. Hosts are unchanged. Without
+  only as far as roster grants them. With `auth.operators.reads: granted`
+  the reads are as far as roster grants them too, so a person granted
+  nothing reads nothing; that is how people who should see cameras only
+  through an app beside Shale are kept to it
+  ([§33.8](#338-viewing-on-a-persons-behalf)). Hosts are unchanged. Without
   `auth.operators` the rule is the one before it, and it is what an
   embedded roster, `--dev` and the tests run by default: every person
   administers their own tenant, and only one who sees every site issues a
@@ -184,8 +188,11 @@ holds a credential.
   `/roster.TenantService/Get` (and `/roster.MeService/Get` for a tenant
   key, which is how Shale learns the key's tenant), plus
   `/roster.VouchService/Verify` where people still sign in with a
-  password. A deployment key itself holds `/roster.NominationService/List`
-  and nothing else: `roster control key add --allow
+  password, and `/payday.TokenService/Introspect` where apps view on
+  people's behalf ([§33.8](#338-viewing-on-a-persons-behalf)). A
+  deployment key itself holds `/roster.NominationService/List` -- and
+  `/roster.SyncService/Watch` where apps view on people's behalf -- and
+  nothing else: `roster control key add --allow
   /roster.NominationService/List shale`, then `roster app install
   --tenant <tenant> --role … shale` for each tenant. The embedded roster's
   `shale` holder is given what it needs itself.
@@ -482,7 +489,9 @@ fetches laminae directly. The media server itself manages no keys.
 
 | Leaked | Attacker can | Response |
 |---|---|---|
-| One access token | one operation on one lamina until it expires; a view token, one camera for an hour, and the relay ends the session when the token does | none needed |
+| One access token | one operation on one lamina until it expires; a view token, one camera for an hour, and the relay ends the session when the token does; one issued on a person's behalf, for `auth.delegation.token_ttl` (5 min) | none needed |
+| An app's delegation handle | nothing alone: every use needs a fresh exchange token from roster for that app ([§33.8](#338-viewing-on-a-persons-behalf)) | the app revokes it, or the person is signed out everywhere at roster |
+| An app's key at roster | mint exchange tokens and, with a handle the app holds, view what the app's delegations name, within what roster grants the app; a new delegation also needs a person's fresh access token for Shale | end the app's nomination at roster, or unbind its role; effective at the next renewal |
 | A publish token | feed false video for that producer's cameras to viewers, for up to a day: the relay ends a stream when its token expires, and learns nothing else about a producer | erase the producer; the token expires within `publish_token_ttl`, or rotate the signing key at once ([§33.3](#333-signing-keys-and-rotation)) |
 | A relay's key | serve any stream it carries to anyone, and feed viewers anything; it holds no token for any Storage Node, so recordings are out of reach | erase the relay and adopt the machine again; its producers are reassigned |
 | A producer's key | negotiate and allocate for that producer's set, and write laminae into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
@@ -493,3 +502,105 @@ fetches laminae directly. The media server itself manages no keys.
 | A cluster operator's session | manage the cluster and read across tenants, **from wherever the cluster API's sign-in listener answers**: the API binds to localhost unless `cluster.addr` names an interface, until the cluster tenant (or, with `auth.operators`, the operators' tenant) is known it serves no person at all, and a deployment that exposes the sign-in listener for the console ([§40.4](17-console.md#404-serving-it)) exposes exactly that — a person with a password, behind the gate | end the session; keep the listener where the operators are |
 | The CP signing key | read and write any lamina on any node | rotate the key at once ([§33.3](#333-signing-keys-and-rotation)); hosts drop the retired key within their next poll, 30 s |
 | The CA key | impersonate nodes or the CP to clients | re-initialize the CA and adopt every host again; protect it accordingly |
+
+### 33.8 Viewing on a person's behalf
+
+An app beside Shale -- a viewing portal with its own pages and its own
+idea of who may see which cameras -- signs its people in at the same
+roster and shows them Shale's video, live and recorded, with the bytes
+going from the browser to the relay and the nodes as they always do. What
+it needs from Shale is credentials for those bytes on behalf of the person
+in front of it, narrowed to what the portal says and never wider than what
+roster grants the portal or the person. This is roster's contract for *an
+app acting as a person at another app* (roster's `docs/apps.md`, *As a
+person*), and Shale is the receiving app.
+
+```text
+portal ─ authorize, audience = Shale's API ─▶ issuer          (the person's browser)
+       ◀─ JWT {sub: person, aud: Shale's API, client_id: portal}   minutes old
+portal ─ DelegationService/Exchange {audience: @<tenant>/shale} ─▶ roster
+       ◀─ rd_…   (about the portal, issued to Shale, 15 min)
+portal ─ DelegationService.Start {access_token, live, recordings, sets,
+         sources, recordings_from/to}   authorization: Bearer rd_… ─▶ Shale
+       ◀─ handle, until date_ends
+portal ─ DelegationService.Live / Timeline {handle, …}
+         authorization: Bearer rd_… (fresh) ─▶ Shale
+       ◀─ view tokens and WHEP URLs / laminae and signed URLs,
+          for the person, naming the portal
+browser ─ WHEP, Range ─▶ relay, nodes                          (unchanged)
+portal ─ DelegationService.Revoke {handle} ─▶ Shale            (its own sign-out)
+```
+
+- **Two proofs, bound.** `Start` takes the person's access token -- a JWT
+  the issuer signed, unexpired, whose audience is `auth.delegation.audience`
+  -- and the portal's exchange token, which roster answers only to Shale's
+  holder in the tenant it was issued in. The token's `client_id` must be a
+  client `auth.delegation.clients` maps to an app, the exchange token must
+  name that app's holder (by its alias, the app's name at roster), and the
+  person must be of that tenant. Either proof alone is nothing; the person's
+  token is accepted at `Start` and nowhere else, so it is not the person's
+  whole credential at Shale in the portal's hands.
+- **The handle** is Shale's session of "this app, acting for this person":
+  a `Delegation` row, written as the person, and a secret only the portal's
+  server is told. It ends at `date_ends` -- at most `auth.delegation.max_ttl`,
+  12 h, and renewing does not move it -- when the portal revokes it, or when
+  roster says the person was signed out everywhere, suspended or erased.
+- **Every use asks again.** `Live` and `Timeline` take the handle and a
+  fresh exchange token for the same app, ask roster again what it grants the
+  app's holder and the person (kept `auth.operators.ttl`, 30 s), and serve
+  the person as the gate would -- their tenant, their sites -- narrowed to
+  the handle. Asking `Live` again before its tokens lapse is the renewal, and
+  an open WHEP session takes the fresh token in place
+  ([§39.4](16-relay.md#394-viewers)).
+- **What the portal may do** is what a tenant binds to the app's holder at
+  roster: a role naming `/shale.DelegationService/Live`,
+  `/shale.DelegationService/Timeline`, or both. Live and recordings are
+  granted apart. Nothing the portal says widens it.
+- **What the person may do** is what they may read themselves: every
+  person of the tenant, by default. With `auth.operators.reads: granted`,
+  reads are as far as roster grants them like any other call, and a role
+  naming the delegated methods (`/shale.DelegationService/*`) is as good as
+  one naming the reads -- which is how somebody views through a portal and
+  reads nothing here with a session of their own, since `DelegationService`
+  serves no session and no certificate.
+- **What the handle names**, at `Start`: live, recordings, or both; sets
+  and sources, none meaning all the person sees; and a window of recordings.
+  A request naming a camera outside it is refused at the CP. The window is
+  kept to the lamina: a lamina crossing its edge comes whole, since a lamina
+  is what a read token reads.
+- **The tokens** are the person's -- `actor`, `actor_tenant` -- and name
+  the portal in `delegator`; they live at most `auth.delegation.token_ttl`,
+  5 min, so a live view or a signed URL outlives the delegation by no more
+  than that. They grant nothing more than the person's would.
+- **What is kept.** The trail has each `Delegation` row as the person
+  wrote it: started, last used (at most once a minute) and ended. The CP
+  logs every hand-out (`delegation: issued`, with the person, the app and
+  the method) and the relay logs `delegator` beside `actor` when a session
+  opens.
+
+**How soon an ending takes effect.**
+
+| What happens | Stops new tokens | Stops what was issued |
+|---|---|---|
+| The portal revokes the handle | at once | within `token_ttl` |
+| The app's role unbound, its nomination ended, or the person's grant removed at roster | at the next renewal, within `auth.operators.ttl` | within `token_ttl` |
+| The person signed out everywhere, suspended or erased | as fast as roster's sync stream says it | within `token_ttl` |
+| roster cannot be asked | at once: a renewal is refused | within `token_ttl` |
+
+Roster's sync stream (`SyncService.Watch`) is what makes a sign-out reach a
+delegation, since it changes nothing roster grants. Shale follows it on its
+key, which needs `/roster.SyncService/Watch` allowed; where it cannot -- a
+key not allowed it, or the roster in Shale's own process, which has no
+broker -- it says so at start, and a sign-out ends a delegation only when
+it runs its time. A suspension or an erasure still ends it at the next
+renewal, which asks roster about the person.
+
+**At the issuer**, the portal's client asks for Shale's API among its
+audiences, gets access tokens that live minutes
+(`authorization_code_grant_access_token_lifespan`), and no refresh token:
+no `offline` scope, no `refresh_token` grant. A top-level redirect with
+`prompt=none` when the portal's page loads is how it gets the minutes-old
+token `Start` takes; after that it renews with the handle.
+
+A separate permission to export cannot be enforced: a person who may read a
+recording has its bytes, and saving them is the browser's.

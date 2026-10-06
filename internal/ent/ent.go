@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/audit"
+	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
 	"github.com/lesomnus/shale/internal/ent/lamina"
@@ -95,6 +96,7 @@ func checkColumn(t, c string) error {
 			addresspolicy.Table:   addresspolicy.ValidColumn,
 			attempt.Table:         attempt.ValidColumn,
 			audit.Table:           audit.ValidColumn,
+			delegation.Table:      delegation.ValidColumn,
 			device.Table:          device.ValidColumn,
 			holder.Table:          holder.ValidColumn,
 			lamina.Table:          lamina.ValidColumn,

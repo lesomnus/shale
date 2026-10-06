@@ -1,0 +1,80 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "shale/delegation.proto";
+import "shale/lamina_svc.g.proto";
+import "shale/set.proto";
+import "shale/set_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+// Viewing on behalf of a person (§33.8). An app -- a portal that signs its
+// people in at the same roster -- calls these with its own exchange token
+// (`DelegationService/Exchange` at roster, issued to Shale) as
+// `authorization: Bearer rd_…`, and nothing else authenticates them: no
+// session, no certificate. Start takes the person's access token once;
+// the rest take the handle Start answered.
+//
+// Live and Timeline are also the permission methods: a tenant binds a role
+// naming `/shale.DelegationService/Live`, `/shale.DelegationService/Timeline`
+// or both to the app's holder at roster, and that is the most the app may
+// ever do for anybody.
+service DelegationService {
+  // Start proves the person and the app together and answers a handle:
+  // what the app renews with from then on, until `date_ends`.
+  rpc Start(DelegationStartRequest) returns (DelegationStartResponse);
+  // Live is `SetService.Live` or `SourceService.Live` for the person,
+  // within the handle, its tokens naming the app beside the person. Asking
+  // again before they lapse is the renewal.
+  rpc Live(DelegationLiveRequest) returns (SetLiveResponse);
+  // Timeline is `LaminaService.Timeline` for the person, within the
+  // handle.
+  rpc Timeline(DelegationTimelineRequest) returns (LaminaTimelineResponse);
+  // Revoke ends a handle: what the app does when its own session ends.
+  rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
+}
+
+message DelegationStartRequest {
+  // The person's access token from the issuer: a JWT whose audience is
+  // Shale's API, issued to the app's OAuth client, minutes old.
+  string access_token = 1 [features.field_presence = IMPLICIT];
+
+  // What the app will ask for: live view, recordings, or both.
+  bool live = 2 [features.field_presence = IMPLICIT];
+  bool recordings = 3 [features.field_presence = IMPLICIT];
+  // Of these sets and sources; none is every one the person sees.
+  repeated SetRef sets = 4;
+  repeated SourceRef sources = 5;
+  // Recordings from and to these times; unset is without that bound.
+  google.protobuf.Timestamp recordings_from = 6;
+  google.protobuf.Timestamp recordings_to = 7;
+  // When the app wants it to end, at most `delegation_max_ttl` from now;
+  // unset is that.
+  google.protobuf.Timestamp date_ends = 8;
+}
+
+message DelegationStartResponse {
+  // What the app renews with; told once, and only to the app's server.
+  string handle = 1 [features.field_presence = IMPLICIT];
+  Delegation delegation = 2;
+}
+
+message DelegationLiveRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+  // Exactly one of set or source.
+  SetRef set = 2;
+  SourceRef source = 3;
+}
+
+message DelegationTimelineRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+  LaminaTimelineRequest timeline = 2;
+}
+
+message DelegationRevokeRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+}
+
+message DelegationRevokeResponse {}

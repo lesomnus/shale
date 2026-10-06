@@ -473,3 +473,38 @@ func resolveRef(ref string) (string, error) {
 
 	return strings.TrimSpace(ref), nil
 }
+
+// ErrIssuerDown is an issuer that could not be asked for its keys: no
+// answer about the token, rather than a no.
+var ErrIssuerDown = errors.New("the issuer cannot be asked")
+
+// AccessToken verifies a person's access token for an API (§33.8): a JWT the
+// issuer signed, unexpired, whose audience names `audience` -- the API's own
+// name, never another's, or a token minted for one API would be spent at
+// another. It answers the person, by `sub`, and the OAuth client the token
+// was issued to, by `client_id`; identity is `sub` and nothing else
+// (`authoidc.Subject`'s rule).
+func (rp *RP) AccessToken(ctx context.Context, token, audience string) (sub, client string, err error) {
+	if audience == "" {
+		return "", "", errors.New("no audience to verify an access token for")
+	}
+	p, err := rp.Provider(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("%w: %w", ErrIssuerDown, err)
+	}
+	v, err := p.Verifier(&oidc.Config{ClientID: audience, Now: rp.Now}).Verify(rp.ctx(ctx), token)
+	if err != nil {
+		return "", "", err
+	}
+	var claims struct {
+		ClientId string `json:"client_id"`
+	}
+	if err := v.Claims(&claims); err != nil {
+		return "", "", err
+	}
+	if v.Subject == "" || claims.ClientId == "" {
+		return "", "", errors.New("the access token names no person or no client")
+	}
+
+	return v.Subject, claims.ClientId, nil
+}

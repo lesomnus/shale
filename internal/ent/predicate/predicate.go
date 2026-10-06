@@ -26,6 +26,9 @@ type Attempt func(*sql.Selector)
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
 
+// Delegation is the predicate function for delegation builders.
+type Delegation func(*sql.Selector)
+
 // Device is the predicate function for device builders.
 type Device func(*sql.Selector)
 

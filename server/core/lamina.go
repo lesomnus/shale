@@ -898,22 +898,20 @@ func (s coreLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRequest
 				SinkId:         r.SinkId[:],
 				LaminaKey:      r.LaminaKey,
 			}
-			exp := now.Add(b.ReadTokenTTL)
-			tok, err := s.d.Keys.Sign(ctx, api.TokenClaims_builder{
-				Exp:         timestamppb.New(exp),
-				Iat:         timestamppb.New(now),
-				Aud:         r.Edges.Sink.Edges.Node.Id[:],
-				Op:          api.TokenOp_TOKEN_OP_GET,
-				SinkId:      r.SinkId[:],
-				LaminaKey:   r.LaminaKey,
-				Actor:       f.Actor.Bytes(),
-				ActorTenant: f.Tenant.Bytes(),
-			}.Build())
+			claims := api.TokenClaims_builder{
+				Iat:       timestamppb.New(now),
+				Aud:       r.Edges.Sink.Edges.Node.Id[:],
+				Op:        api.TokenOp_TOKEN_OP_GET,
+				SinkId:    r.SinkId[:],
+				LaminaKey: r.LaminaKey,
+			}
+			claimsFor(ctx, f, &claims, now, now.Add(b.ReadTokenTTL))
+			tok, err := s.d.Keys.Sign(ctx, claims.Build())
 			if err != nil {
 				return nil, err
 			}
 			to.Token = tok
-			to.DateTokenExpires = timestamppb.New(exp)
+			to.DateTokenExpires = claims.Exp
 			eps := s.endpoints(r.Edges.Sink.Edges.Node, callerOf(ctx), address)
 			to.Endpoints = eps
 			if len(eps) > 0 {

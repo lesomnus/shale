@@ -283,6 +283,9 @@ type AuthConfig struct {
 	// with a refusal, and the console draws only the issuer's button.
 	// Requires `auth.oidc`.
 	SsoOnly bool `yaml:"sso_only"`
+	// Delegation is which apps may view on their people's behalf (§33.8).
+	// Requires `auth.oidc` and `auth.operators`.
+	Delegation DelegationConfig `yaml:"delegation"`
 }
 
 // ProducerConfig is a producer's own settings (§36.1, producer scope).
