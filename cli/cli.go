@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -37,13 +38,26 @@ const protoPackage = "shale"
 
 // Cmd is this app's own command line: what payday supplies, what the app
 // has of its own, and the generated verbs of every entity (§32).
+//
+// The configuration is read on the root, so it has been read whichever
+// command runs (`version` aside, below): a file, then the environment over
+// the top of it (§34.1), into `c`. What `c` holds when the loader is made
+// is the defaults, and every load starts from them. The loader is here
+// rather than in `cmd` because a file and an environment are a process's;
+// the sandbox writes its `Config` out whole.
 func Cmd(c *cmd.Config) *xli.Command {
+	l := cfg.New(cmd.Name, c)
+
+	// `version` needs no configuration, and is what somebody runs to ask a
+	// deployment whose configuration is wrong what build it is.
+	version := pdcmd.NewCmdVersion()
+
 	root := &xli.Command{
 		Name:  cmd.Name,
 		Brief: "a loss-tolerant lamina store for CCTV",
 
 		Flags: flg.Flags{
-			pdcmd.ConfigFlag(),
+			cfg.ConfigFlag(),
 			&flg.String{Name: "as", Brief: "call as @tenant/alias with the plain header (development)"},
 			&flg.String{Name: "addr", Brief: "the tenant API address"},
 			&flg.String{Name: "cluster-addr", Brief: "the cluster API address"},
@@ -51,8 +65,8 @@ func Cmd(c *cmd.Config) *xli.Command {
 		},
 
 		Commands: []*xli.Command{
-			pdcmd.NewCmdVersion(),
-			pdcmd.NewCmdConfig(cmd.Loader, c),
+			version,
+			cfg.NewCmdConfig(l),
 			NewCmdInit(c),
 			NewCmdIdentity(c),
 			NewCmdServe(c),
@@ -60,7 +74,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdLive(c),
 		},
 
-		Handler: xli.Chain(pdcmd.Load(cmd.Loader, c), applyClientFlags(c), xli.RequireSubcommand()),
+		Handler: xli.Chain(cfg.Load(l, version), applyClientFlags(c), xli.RequireSubcommand()),
 	}
 
 	// Two trees, one per surface (§32): the generated verbs of the cluster's
