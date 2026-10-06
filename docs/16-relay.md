@@ -185,8 +185,8 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   4 Mbps). A joining viewer receives that group of pictures at once and
   starts within a fraction of a second instead of waiting for the next
   keyframe.
-- **Paced.** A producer sends a fragment at a time, half a second of
-  frames, and the relay sends each sample to the viewers when its
+- **Paced.** A producer sends a fragment at a time, up to
+  `fragment_duration` of frames (200 ms by default; it was half a second), and the relay sends each sample to the viewers when its
   timestamp says, not the fragment's frames at once. A burst every half
   second made a browser's jitter buffer, which starts small, stall at the
   fragments' pace until it had grown to a fragment: the picture stopped and

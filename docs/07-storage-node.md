@@ -371,7 +371,7 @@ epoch holds several laminae per source and epoch-based placement keeps its
 meaning. When the two rules conflict, for a ceiling under about 0.28 Mbps at
 a one-hour epoch, the epoch rule wins and the lamina is smaller than 32 MB.
 
-The container costs about 1%: a `moof` of a few hundred bytes per 500 ms
+The container costs about 1%: a `moof` of a few hundred bytes per 200 ms
 fragment ([§38.1](15-producer.md#381-inputs)), and 19 bytes per keyframe in
 the index a lamina ends with ([§23.1](#231-self-describing-laminae)).
 
