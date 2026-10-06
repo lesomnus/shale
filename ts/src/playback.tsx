@@ -124,8 +124,9 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 		engine.current = null
 		setHead(undefined)
 
+		// A fresh token is a new session: the relay ends one with its token (§39.4).
 		return whep(el, props.live.whepUrl, props.live.viewToken, setStatus)
-	}, [mode, props.live?.whepUrl])
+	}, [mode, props.live?.whepUrl, props.live?.viewToken])
 
 	const seek = (wall: number): void => {
 		const el = video.current

@@ -113,9 +113,9 @@ function Player(props: { set: Uint8Array; source: LiveSource }): ReactNode {
 		if (fake) return fakeScene(el, src?.alias ?? hex(v.sourceId).slice(0, 8), setStatus)
 
 		return whep(el, v.whepUrl, v.viewToken, setStatus)
-		// A fresh token on the same URL is the same session: the relay keeps
-		// a session open past its token (§39.4), so only the URL matters.
-	}, [v.whepUrl, fake])
+		// The relay ends a session when its token expires (§39.4), so a fresh
+		// token, which comes a minute before, is a new session.
+	}, [v.whepUrl, v.viewToken, fake])
 
 	return (
 		<div className="player">

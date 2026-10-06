@@ -254,7 +254,9 @@ actor        the Producer, Reader, or person the token was issued to, and
   (`allocation_ttl`, [§12.1](04-write-path.md#121-flow)), and
   `LaminaService.Renew` issues a fresh one for an attempt still in progress.
   Get tokens live `read_token_ttl` (default 1 hour) and view tokens
-  `view_token_ttl` (1 hour); a session already open outlives its token. A
+  `view_token_ttl` (1 hour); the relay ends a session when its token
+  expires, so a viewer still watching asks for a fresh one and opens a new
+  session ([§39.4](16-relay.md#394-viewers)). A
   publish token lives `publish_token_ttl` (24 hours) and is checked when the
   producer attaches ([§39.3](16-relay.md#393-from-the-producer)).
 - **Replay** gains nothing. A put token names one key and one attempt, uploads
@@ -262,8 +264,9 @@ actor        the Producer, Reader, or person the token was issued to, and
   complete lamina cannot be overwritten.
 - **Revocation** stops the CP from issuing new tokens. Tokens already issued
   stay valid until they expire: at most `allocation_ttl` for uploads (22
-  minutes at the defaults, about 80 at the bounds) and `read_token_ttl` for
-  reads. This lag is accepted.
+  minutes at the defaults, about 80 at the bounds), `read_token_ttl` for
+  reads, and `view_token_ttl` for live viewing, sessions already open
+  included. This lag is accepted.
 
 `actor` is used by the node for two things only: **per-actor limits**
 (`uploads_per_actor`, `sessions_per_actor`,

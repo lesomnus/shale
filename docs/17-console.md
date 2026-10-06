@@ -59,7 +59,7 @@ that clears the dead one.
 |---|---|---|
 | Cameras | tenant | every set, its producer's last heartbeat (up/down, CPU, temperature, uplink), and per camera: recording / dark / input down, the measured rate against the ceiling, frame rate, keyframe interval, restarts and early cuts, the suggestion a starved source earns ([§38.5](15-producer.md#385-choosing-the-ceiling), [§38.10](15-producer.md#3810-dark-scenes)) |
 | Segments | tenant | one set's laminae as they are allocated, committed, skipped or lost, and the last hour of each camera as a strip: laminae and gaps with their reasons ([§19](05-read-path.md#19-reader-semantics)) |
-| Live | tenant | every camera of a set through the relay: `SetService.Live`, then WHEP against the relay ([§39.4](16-relay.md#394-viewers)), asked again before the tokens lapse |
+| Live | tenant | every camera of a set through the relay: `SetService.Live`, then WHEP against the relay ([§39.4](16-relay.md#394-viewers)), asked again a minute before the tokens lapse, each camera connecting again with its fresh token, since the relay ends a session with its token |
 | Hosts | both | what waits for adoption — nodes and relays for the operator, producers and readers for the tenant — with the identity to check, and `adopt`; a producer is adopted for a set. Then every adopted host with when it was last seen, its status and when its certificate lapses |
 | Devices | cluster | the quarantine queue with why and since when, and the operator's answers (`release`, `retire`, `declare dead`, `locate`, each with a reason for the record); then every disk with its score, errors, latencies, SMART and the sinks on it ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) |
 
