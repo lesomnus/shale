@@ -183,10 +183,10 @@ func GstArgs(c SourceConfig, encoder string, ceiling int64, keyframe time.Durati
 //
 // The split is before anything is decoded, so the encoder takes its
 // pictures from the decoder exactly as it does without `idle:`. A tee in
-// front of the Pi's v4l2h264enc, after the decoder, first made gst-launch
-// abort asking for 4 GiB (the encoder's allocation query answered through
-// the tee), and with that query dropped the encoder recorded rows of other
-// pictures, shifted sideways, and lost frames in bursts.
+// front of the Pi's v4l2h264enc, after the decoder, made gst-launch abort
+// asking for 4 GiB (the encoder's allocation query answered through the
+// tee) unless that query was dropped, and cost the encoder a copy of every
+// picture; here only one JPEG a second is decoded for the measure.
 func gstDarkTee(c SourceConfig) []string {
 	if c.Idle == nil {
 		return nil
