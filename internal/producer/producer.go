@@ -635,7 +635,9 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 		Source:   s.cfg,
 		Log:      p.log,
 		RawLoops: s.cfg.RawLoops,
-		OnLine:   func(line string) bool { return s.dark != nil && s.dark.observe(line) },
+		OnLine: func(line string) bool {
+			return (s.dark != nil && s.dark.observe(line)) || p.discontinuity(s, line)
+		},
 		OnDark: func() {
 			if s.dark != nil {
 				s.dark.darkSecond()
@@ -707,6 +709,15 @@ func (p *Producer) newCutter(s *source) *Cutter {
 func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 	reader := NewMP4Reader(r)
 	s.cutter = p.newCutter(s)
+	// A capture is watched for stalls; a pushed stream may pause on purpose
+	// and has its idle window instead (§38.9).
+	var stall *stallTracker
+	if s.push == nil {
+		stall = &stallTracker{}
+		watch, unwatch := context.WithCancel(ctx)
+		defer unwatch()
+		go p.watchStall(watch, s, stall)
+	}
 	var f Frame
 	started := time.Now()
 	checked := false
@@ -721,6 +732,15 @@ func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 		p.relay.feed(s, &f, reader.Init())
 		s.accountFrame(&f, 0)
 		p.accountGap(s, &f)
+		if stall == nil {
+			// Pushed.
+		} else if f.Kind == FramePrefix {
+			stall.reset()
+		} else if v := reader.Init().Video(); f.Frames > 0 && v != nil && v.Timescale > 0 {
+			media := time.Duration(f.Ticks) * time.Second / time.Duration(v.Timescale)
+			quiet, hidden, warned := stall.seen(p.now(), media)
+			p.accountStall(s, quiet, hidden, warned)
+		}
 		if !checked && time.Since(started) > 10*time.Second {
 			checked = true
 			p.startupCheck(s)
