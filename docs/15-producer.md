@@ -419,6 +419,42 @@ comes from it ([§35.3](12-api.md#353-entities), [§31](09-operations.md#31-obse
 A producer whose heartbeats have been missing for `producer_down_after`
 (90 s, three heartbeats) is shown as down, and so are all of its sources.
 
+**A capture that stalls.** A camera can stop delivering frames for minutes
+while the process that reads it keeps running: a USB camera's driver stops
+handing frames over, and nothing exits. The laminae of those minutes do not
+exist, and the stream may not say so. A capture with a second stage (a
+`h264_v4l2m2m` encoder, or GStreamer) remuxes MPEG-TS, and when the frames
+come back ffmpeg sees the jump in the timestamps (`timestamp
+discontinuity`), rebases them, and writes an fMP4 as continuous as if
+nothing had happened: no frame is long, and `frame_gaps` would count
+nothing. What follows reads like a storage problem -- the live upload
+starves, the node times out, the resume fails and the lamina is finalized
+incomplete -- when it was the camera. So the producer measures a capture
+against the wall clock, which does not rebase:
+
+- **Quiet.** A capture that has delivered no fragment for 5 s, or two
+  keyframe intervals if that is longer, is stalled: logged as a warning
+  while it lasts (`capture stalled: the source delivers nothing`), and
+  again when it resumes, with how long it was (`capture resumed after
+  delivering nothing`). Each one counts in
+  `shale.producer.capture_stalls{source}` and its length in
+  `shale.producer.capture_stalled_seconds{source}`.
+- **What the timestamps hid.** At each fragment the producer compares the
+  wall time since the last one with the media time. Wall time past the
+  media, beyond the same threshold, is frames that never came and that the
+  timestamps no longer show, and it counts in `frame_gaps` and
+  `frames_missed` like a long frame does. A stall the timestamps do show
+  is the long frame's to count, so nothing counts twice.
+- **ffmpeg's own word.** The `timestamp discontinuity` line is a warning
+  and counts in `shale.producer.timestamp_discontinuities{source}`, where it
+  was one more line at info.
+- **The heartbeat.** `up` needs a keyframe within the last 10 s, so a
+  stall shows as the input down at the next heartbeat, and the console
+  marks the camera `input down`.
+
+A pushed stream ([§38.9](#389-pushed-sources-and-raw-frames)) may pause on purpose, and
+has its idle window instead; it is not watched for stalls.
+
 **A link that stalls.** Every connection between a host and the Control
 Plane, and between a producer and its relay, carries an HTTP/2 keepalive:
 a ping every 10 s, on an idle connection too, answered within 5 s or the

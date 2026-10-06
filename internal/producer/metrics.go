@@ -34,6 +34,11 @@ type metrics struct {
 	// than one and three quarters frames, and the frames that fit in it.
 	frameGaps    metric.Int64Counter
 	framesMissed metric.Int64Counter
+	// Captures that delivered nothing for a while, however the timestamps
+	// read after (§38.6), and the jumps ffmpeg said it rebased.
+	stalls          metric.Int64Counter
+	stalled         metric.Float64Counter
+	discontinuities metric.Int64Counter
 }
 
 func newMetrics(ctx context.Context) *metrics {
@@ -58,6 +63,10 @@ func newMetrics(ctx context.Context) *metrics {
 		earlyCuts:      o.Int64Counter("shale.producer.early_cuts", metric.WithDescription("segments cut early for running over their ceiling, per source (§38.2)")),
 		frameGaps:      o.Int64Counter("shale.producer.frame_gaps", metric.WithDescription("gaps between a source's recorded frames longer than one and three quarters frames, per source")),
 		framesMissed:   o.Int64Counter("shale.producer.frames_missed", metric.WithDescription("frames that would have filled those gaps at the source's frame rate, per source")),
+
+		stalls:          o.Int64Counter("shale.producer.capture_stalls", metric.WithDescription("times a source delivered nothing for 5 s or two keyframe intervals, counted when it resumes, per source")),
+		stalled:         o.Float64Counter("shale.producer.capture_stalled_seconds", metric.WithDescription("the time those stalls lasted, per source"), metric.WithUnit("s")),
+		discontinuities: o.Int64Counter("shale.producer.timestamp_discontinuities", metric.WithDescription("timestamp jumps a capture's ffmpeg reported and rebased, per source")),
 	}
 }
 
