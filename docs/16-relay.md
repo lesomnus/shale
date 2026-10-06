@@ -163,8 +163,10 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   works, and a browser needs no Shale code beyond the `Live` call.
 - The **view token** is an access token with `op = view`: `aud` is the
   relay, it names one source and the actor, and it lives `view_token_ttl`
-  (1 h). A session already open outlives its token; a new session needs a
-  fresh `Live`. The wall and site membership decide who gets one
+  (1 h). The relay ends a session when its token expires, so a viewer still
+  watching calls `Live` again before then and opens a new session with the
+  fresh token; the console does it a minute ahead, and instant start (below)
+  keeps the seam short. The wall and site membership decide who gets one
   ([§33.1](10-security.md#331-trust-model)).
 - **Instant start.** The relay keeps, per active source, every sample since
   the last keyframe (at most one keyframe interval, about a megabyte at
