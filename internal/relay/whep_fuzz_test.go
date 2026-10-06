@@ -58,6 +58,8 @@ func FuzzWHEP(f *testing.F) {
 	f.Add("POST", "/whep/"+source.String(), 1, "not sdp")
 	f.Add("POST", "/whep/"+source.String(), 2, offer)
 	f.Add("DELETE", "/whep/nothing", 0, "")
+	f.Add("PATCH", "/whep/nothing", 0, "")
+	f.Add("PATCH", "/whep/x.00", 1, "")
 	f.Add("OPTIONS", "/whep/x", 0, "")
 	f.Add("GET", "/healthz", 0, "")
 	f.Add("POST", "/whep/", 0, offer)

@@ -156,7 +156,10 @@ certificate ([§33.1](10-security.md#331-trust-model)).
 3. Viewer   POST <relay>/whep/<source>   Content-Type: application/sdp
             Authorization: Shale <view token>      body: SDP offer
    Relay    201, Location: /whep/<session>, body: SDP answer
-4. Viewer   plays; DELETE <relay>/whep/<session> when done
+4. Viewer   plays; before the token expires, SetService.Live again and
+            PATCH <relay>/whep/<session>   Authorization: Shale <fresh token>
+   Relay    204: the session now ends with the fresh token
+5. Viewer   DELETE <relay>/whep/<session> when done
 ```
 
 - **WHEP** is the IETF WebRTC egress protocol, so any WHEP-capable player
@@ -164,9 +167,15 @@ certificate ([§33.1](10-security.md#331-trust-model)).
 - The **view token** is an access token with `op = view`: `aud` is the
   relay, it names one source and the actor, and it lives `view_token_ttl`
   (1 h). The relay ends a session when its token expires, so a viewer still
-  watching calls `Live` again before then and opens a new session with the
-  fresh token; the console does it a minute ahead, and instant start (below)
-  keeps the seam short. The wall and site membership decide who gets one
+  watching calls `Live` again before then and **renews** the session: a
+  `PATCH` of the session with the fresh token and no body, answered 204,
+  moves the session's end to the fresh token's, and the picture does not
+  stop. The token has to name the session's source and its actor, or the
+  answer is 403; a session already gone is 404, and the viewer opens a new
+  one, as one does against a relay that answers `PATCH` with 404 because it
+  predates renewal. WHEP's own `PATCH` carries an ICE fragment; this one
+  carries no body and is Shale's. The console renews a minute ahead
+  (§40). The wall and site membership decide who gets one
   ([§33.1](10-security.md#331-trust-model)).
 - **Instant start.** The relay keeps, per active source, every sample since
   the last keyframe (at most one keyframe interval, about a megabyte at

@@ -23,7 +23,8 @@ import (
 
 // The WHEP side (§35.8, §39.4): POST /whep/{source} with a view token and
 // an SDP offer answers 201 with the SDP answer and a session Location;
-// DELETE /whep/{session} ends it. Never transcoded: an H.264 (or H.265)
+// PATCH /whep/{session} with a fresh view token and no body moves the
+// session's end to the token's; DELETE /whep/{session} ends it. Never transcoded: an H.264 (or H.265)
 // track packetized from the samples of the fragments the producer sends,
 // and the Opus track beside it.
 
@@ -50,6 +51,8 @@ type viewer struct {
 	done    chan struct{}
 	// caught says the group of pictures was handed over after connecting.
 	caught bool
+	// expiry ends the session when its token does; a renewal replaces it.
+	expiry *time.Timer
 	mu     sync.Mutex
 }
 
@@ -82,13 +85,15 @@ func (w *whepServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusNoContent)
 	case req.Method == http.MethodPost && path != "" && path == strings.TrimSuffix(path, "/"):
 		w.post(rw, req, path)
+	case req.Method == http.MethodPatch && path != "":
+		w.renew(rw, req, path)
 	case req.Method == http.MethodDelete && path != "":
 		w.del(rw, path)
 	case req.Method == http.MethodGet && strings.HasPrefix(req.URL.Path, "/recent/"):
 		w.recent(rw, req, strings.TrimPrefix(req.URL.Path, "/recent/"))
 	case req.Method == http.MethodOptions:
 		rw.Header().Set("Access-Control-Allow-Origin", "*")
-		rw.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+		rw.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		rw.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		rw.WriteHeader(http.StatusNoContent)
 	default:
@@ -236,14 +241,8 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	w.r.m.sessions.Add(req.Context(), 1, outcomeAttr("started"))
 	src.addViewer(key, v)
 	// The session lasts as long as its token (§33.7): a viewer who is still
-	// watching asks for a new one.
-	if exp := claims.GetExp().AsTime(); !exp.IsZero() {
-		time.AfterFunc(time.Until(exp), func() {
-			if w.end(key) {
-				w.r.log.Info("viewer's token expired", "source", sourceId.String(), "session", key[:8])
-			}
-		})
-	}
+	// watching renews it, or asks for a new session.
+	w.expireAt(v, claims.GetExp().AsTime())
 	w.r.log.Info("viewer", "source", sourceId.String(), "actor", actor, "session", key[:8])
 
 	rw.Header().Set("Content-Type", "application/sdp")
@@ -301,6 +300,55 @@ func (w *whepServer) recent(rw http.ResponseWriter, req *http.Request, sourceRef
 	rw.Write(b)
 }
 
+// renew takes a fresh view token for an open session (§39.4): one for the
+// same source and the same actor, which moves the session's end to the
+// token's. A viewer renews instead of opening a new session, so the
+// picture does not stop when a token is due.
+func (w *whepServer) renew(rw http.ResponseWriter, req *http.Request, session string) {
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
+	claims, err := w.r.verify(token.FromHeader(req.Header.Get("Authorization")), api.TokenOp_TOKEN_OP_VIEW)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	w.mu.Lock()
+	v, ok := w.sessions[session]
+	w.mu.Unlock()
+	if !ok {
+		http.NotFound(rw, req)
+		return
+	}
+	actor := ""
+	if a, err := pdid.From(claims.GetActor()); err == nil {
+		actor = a.String()
+	}
+	if string(claims.GetSource()) != string(v.source.id.Bytes()) || actor != v.actor {
+		http.Error(rw, "the token is for another source or another actor than the session", http.StatusForbidden)
+		return
+	}
+	w.expireAt(v, claims.GetExp().AsTime())
+	w.r.m.sessions.Add(req.Context(), 1, outcomeAttr("renewed"))
+	rw.WriteHeader(http.StatusNoContent)
+}
+
+// expireAt ends a session at its token's expiry, in place of the end it had.
+func (w *whepServer) expireAt(v *viewer, exp time.Time) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.expiry != nil {
+		v.expiry.Stop()
+	}
+	if exp.IsZero() {
+		v.expiry = nil
+		return
+	}
+	v.expiry = time.AfterFunc(time.Until(exp), func() {
+		if w.end(v.key) {
+			w.r.log.Info("viewer's token expired", "source", v.source.id.String(), "session", v.key[:8])
+		}
+	})
+}
+
 func (w *whepServer) del(rw http.ResponseWriter, session string) {
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
 	if !w.end(session) {
@@ -320,6 +368,11 @@ func (w *whepServer) end(key string) bool {
 		return false
 	}
 	v.once.Do(func() {
+		v.mu.Lock()
+		if v.expiry != nil {
+			v.expiry.Stop()
+		}
+		v.mu.Unlock()
 		v.source.removeViewer(key)
 		v.pc.Close()
 		close(v.done)
