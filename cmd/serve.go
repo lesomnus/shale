@@ -38,6 +38,7 @@ import (
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdpb"
+	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/watch"
 	"github.com/lesomnus/payday/web"
 
@@ -231,6 +232,11 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		}
 	}
 
+	if err := c.Auth.Delegation.check(c.Auth); err != nil {
+		s.Identity.Close()
+		db.Close()
+		return nil, err
+	}
 	if c.Auth.SsoOnly && !c.Auth.Oidc.On() {
 		s.Identity.Close()
 		db.Close()
@@ -264,6 +270,10 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		deps.AutoAdopt = func(kind pdid.Domain, _ *api.HostJoin, _ string) bool {
 			return kind == core.DomNode || kind == core.DomRelay
 		}
+	}
+	deps.Operators, deps.Reads = s.operators(), c.Auth.Operators.GrantedReads()
+	if c.Auth.Delegation.On() {
+		deps.Delegations, deps.DelegationConfig = delegations{s}, c.Auth.Delegation.core()
 	}
 	s.Deps = deps
 	s.Sites = core.NewSites(deps)
@@ -301,6 +311,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		s.Directives.Leader = s.Leader.Is
 	}
 	s.Spin = append(s.Spin, s.Jobs, s.Directives)
+	if c.Auth.Delegation.On() {
+		s.Spin = append(s.Spin, spin.Func(s.followStanding))
+	}
 	if c.Watch.Outbox && b != nil {
 		s.Spin = append(s.Spin, pd.Drain(client, b, c.Watch.Every()))
 	}
@@ -549,15 +562,15 @@ func (s *Server) nodeDialer() func(ctx context.Context, addr string, id pdid.Id)
 func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerOption) (*grpc.Server, error) {
 	c := s.cfg
 	sc := c.Server
-	var policy gate.Policy = core.TenantPolicy{Operators: s.operators()}
+	var policy gate.Policy = core.TenantPolicy{Operators: s.operators(), Reads: c.Auth.Operators.GrantedReads()}
 	if surface == SurfaceCluster {
 		sc = c.Cluster
 		policy = core.ClusterPolicy{ClusterTenant: s.ClusterTenant, Operators: s.operators()}
 	}
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(sc.CallTimeout())).
-		WithUnary(auth.InterceptorUnary(s.Auth[surface], Resolver(s), core.Public)).
-		WithStream(auth.InterceptorStream(s.Auth[surface], Resolver(s), core.Public)).
+		WithUnary(auth.InterceptorUnary(s.Auth[surface], Resolver(s), public(surface))).
+		WithStream(auth.InterceptorStream(s.Auth[surface], Resolver(s), public(surface))).
 		WithUnary(grpcx.LimitUnary(sc.Limiter(), gate.ByTenant())).
 		WithUnary(grpcx.LimitUnary(s.actorLimiter(), byActor)).
 		With(gate.Interceptor(policy)).
@@ -600,6 +613,15 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 	return g, nil
 }
 
+// public is what a surface serves without a credential it knows: every
+// host's Join, and on the tenant API an app's delegation, which proves
+// itself (§33.8).
+func public(surface Surface) func(string) bool {
+	return func(m string) bool {
+		return core.Public(m) || (surface == SurfaceTenant && core.IsDelegationEntry(m))
+	}
+}
+
 // registerTenant mounts the tenant API and nothing else (§35.2).
 func registerTenant(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterSetServiceServer(g, s.Set())
@@ -612,6 +634,7 @@ func registerTenant(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterReaderServiceServer(g, s.Reader())
 	api.RegisterHolderServiceServer(g, s.Holder())
 	api.RegisterAuditServiceServer(g, s.Audit())
+	api.RegisterDelegationServiceServer(g, s.Delegation())
 }
 
 // Listener is one served surface.

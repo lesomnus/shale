@@ -16,6 +16,7 @@ import type { EntityDesc } from '@lesomnus/payday/store'
 import { AddressPolicySchema, PlacementPolicySchema, SigningKeySchema, UploadPolicySchema } from './shale/policy_pb.js'
 import { AttemptSchema, LaminaSchema } from './shale/lamina_pb.js'
 import { AuditSchema } from './shale/payday/audit_pb.js'
+import { DelegationSchema } from './shale/delegation_pb.js'
 import { DeviceSchema, SinkSchema } from './shale/storage_pb.js'
 import { HolderSchema } from './shale/payday/holder_pb.js'
 import { NodeSchema, ProducerSchema, ReaderSchema, RelaySchema } from './shale/host_pb.js'
@@ -27,6 +28,7 @@ import { TenantSchema } from './shale/payday/tenant_pb.js'
 import { AddressPolicyService, PlacementPolicyService, SigningKeyService, UploadPolicyService } from './shale/policy_svc_pb.js'
 import { AttemptService, LaminaService } from './shale/lamina_svc_pb.js'
 import { AuditService } from './shale/payday/audit_svc_pb.js'
+import { DelegationService } from './shale/delegation_svc_pb.js'
 import { DeviceService, SinkService } from './shale/storage_svc_pb.js'
 import { HolderService } from './shale/payday/holder_svc_pb.js'
 import { NodeService, ProducerService, ReaderService, RelayService } from './shale/host_svc_pb.js'
@@ -68,6 +70,18 @@ export const Audit = {
 	key: "id",
 	ids: ["id", "tenantId", "actorId", "objectId", "actorTenantId", "counterpartTenantId"],
 	service: AuditService,
+} as const satisfies EntityDesc
+
+/** shale.Delegation, as the store holds it. */
+export const Delegation = {
+	typeName: "shale.Delegation",
+	schema: DelegationSchema,
+	domain: 25,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "holder", to: "shale.Holder" }],
+	key: "id",
+	ids: ["id"],
+	service: DelegationService,
 } as const satisfies EntityDesc
 
 /** shale.Device, as the store holds it. */
@@ -281,5 +295,5 @@ export const UploadPolicy = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [AddressPolicy, Attempt, Audit, Device, Holder, Lamina, Node, Outbox, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
+export const entities = [AddressPolicy, Attempt, Audit, Delegation, Device, Holder, Lamina, Node, Outbox, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
 

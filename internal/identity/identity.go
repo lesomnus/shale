@@ -93,13 +93,14 @@ const Agent = "shale"
 
 // AgentMethods is what that holder may call on the embedded roster:
 // checking a password, reading a person and the tenant, making a person,
-// and asking what roster grants somebody (`auth.operators`, §33.1).
+// asking what roster grants somebody (`auth.operators`, §33.1), and
+// introspecting an app's exchange token issued to Shale (§33.8).
 //
 // An external roster's holder needs less, since people are made and given
 // passwords there: `/roster.HolderService/Get`,
-// `/roster.HolderService/Reaches` and `/roster.TenantService/Get` --
-// and `/roster.MeService/Get` for an `rt_`, which is how Shale learns the
-// key's own tenant.
+// `/roster.HolderService/Reaches`, `/roster.TenantService/Get` and
+// `/payday.TokenService/Introspect` -- and `/roster.MeService/Get` for an
+// `rt_`, which is how Shale learns the key's own tenant.
 var AgentMethods = []string{
 	"/roster.VouchService/Verify",
 	"/roster.HolderService/Get",
@@ -107,6 +108,7 @@ var AgentMethods = []string{
 	"/roster.HolderService/Reaches",
 	"/roster.TenantService/Get",
 	"/roster.MeService/Get",
+	"/payday.TokenService/Introspect",
 }
 
 // The prefixes a key is read by, the way roster reads them.

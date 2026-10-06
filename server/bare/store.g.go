@@ -12,6 +12,7 @@ import (
 	addresspolicy "github.com/lesomnus/shale/internal/ent/addresspolicy"
 	attempt "github.com/lesomnus/shale/internal/ent/attempt"
 	audit "github.com/lesomnus/shale/internal/ent/audit"
+	delegation "github.com/lesomnus/shale/internal/ent/delegation"
 	device "github.com/lesomnus/shale/internal/ent/device"
 	holder "github.com/lesomnus/shale/internal/ent/holder"
 	lamina "github.com/lesomnus/shale/internal/ent/lamina"
@@ -328,6 +329,8 @@ func record(ctx context.Context, rec Recorder, db *ent.Client, c Change) error {
 // say about.
 type Scope interface {
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
+	HolderScope(ctx context.Context) (predicate.Holder, error)
+	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	SiteScope(ctx context.Context) (predicate.Site, error)
 	SetScope(ctx context.Context) (predicate.Set, error)
 	SourceScope(ctx context.Context) (predicate.Source, error)
@@ -339,7 +342,6 @@ type Scope interface {
 	SinkScope(ctx context.Context) (predicate.Sink, error)
 	LaminaScope(ctx context.Context) (predicate.Lamina, error)
 	AttemptScope(ctx context.Context) (predicate.Attempt, error)
-	HolderScope(ctx context.Context) (predicate.Holder, error)
 	SiteMemberScope(ctx context.Context) (predicate.SiteMember, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
@@ -362,6 +364,12 @@ type Unscoped struct{}
 var _ Scope = Unscoped{}
 
 func (Unscoped) TenantScope(_ context.Context) (predicate.Tenant, error) {
+	return nil, nil
+}
+func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
+	return nil, nil
+}
+func (Unscoped) DelegationScope(_ context.Context) (predicate.Delegation, error) {
 	return nil, nil
 }
 func (Unscoped) SiteScope(_ context.Context) (predicate.Site, error) {
@@ -395,9 +403,6 @@ func (Unscoped) LaminaScope(_ context.Context) (predicate.Lamina, error) {
 	return nil, nil
 }
 func (Unscoped) AttemptScope(_ context.Context) (predicate.Attempt, error) {
-	return nil, nil
-}
-func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
 func (Unscoped) SiteMemberScope(_ context.Context) (predicate.SiteMember, error) {
@@ -459,6 +464,46 @@ func (ss Scopes) TenantScope(ctx context.Context) (predicate.Tenant, error) {
 	}
 
 	return tenant.And(ps...), nil
+}
+
+func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
+	ps := make([]predicate.Holder, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.HolderScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return holder.And(ps...), nil
+}
+
+func (ss Scopes) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
+	ps := make([]predicate.Delegation, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.DelegationScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return delegation.And(ps...), nil
 }
 
 func (ss Scopes) SiteScope(ctx context.Context) (predicate.Site, error) {
@@ -681,26 +726,6 @@ func (ss Scopes) AttemptScope(ctx context.Context) (predicate.Attempt, error) {
 	return attempt.And(ps...), nil
 }
 
-func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
-	ps := make([]predicate.Holder, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.HolderScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return holder.And(ps...), nil
-}
-
 func (ss Scopes) SiteMemberScope(ctx context.Context) (predicate.SiteMember, error) {
 	ps := make([]predicate.SiteMember, 0, len(ss))
 	for _, s := range ss {
@@ -921,7 +946,7 @@ func (s Store) now() time.Time {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. AddressPolicy, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
+// check. AddressPolicy, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -959,7 +984,11 @@ func (s Server) WithDriver(drv dialect.Driver) (api.Server, error) {
 	return s, nil
 }
 
-func (s Server) Tenant() api.TenantServiceServer     { return TenantServiceServer{Store: s.Store} }
+func (s Server) Tenant() api.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
+func (s Server) Holder() api.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
+func (s Server) Delegation() api.DelegationServiceServer {
+	return DelegationServiceServer{Store: s.Store}
+}
 func (s Server) Site() api.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
 func (s Server) Set() api.SetServiceServer           { return SetServiceServer{Store: s.Store} }
 func (s Server) Source() api.SourceServiceServer     { return SourceServiceServer{Store: s.Store} }
@@ -971,7 +1000,6 @@ func (s Server) Device() api.DeviceServiceServer     { return DeviceServiceServe
 func (s Server) Sink() api.SinkServiceServer         { return SinkServiceServer{Store: s.Store} }
 func (s Server) Lamina() api.LaminaServiceServer     { return LaminaServiceServer{Store: s.Store} }
 func (s Server) Attempt() api.AttemptServiceServer   { return AttemptServiceServer{Store: s.Store} }
-func (s Server) Holder() api.HolderServiceServer     { return HolderServiceServer{Store: s.Store} }
 func (s Server) SiteMember() api.SiteMemberServiceServer {
 	return SiteMemberServiceServer{Store: s.Store}
 }

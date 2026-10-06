@@ -52,6 +52,7 @@ const (
 	DomProducer        pdid.Domain = 22
 	DomReader          pdid.Domain = 23
 	DomRelay           pdid.Domain = 24
+	DomDelegation      pdid.Domain = 25
 )
 
 // Deps is what the layer needs besides the servers below it.
@@ -88,6 +89,15 @@ type Deps struct {
 	// Identity is roster, where people and tenants are (§33.1); nil in a
 	// test that has none.
 	Identity *identity.Store
+	// Operators is what roster grants, where it says what people may change
+	// (`auth.operators`, §33.1); nil where it does not. Reads says that
+	// what people read is granted too (`auth.operators.reads`).
+	Operators Operators
+	Reads     bool
+	// Delegations proves an app and a person for viewing on the person's
+	// behalf (§33.8); nil where nothing is configured for it.
+	Delegations      Delegations
+	DelegationConfig DelegationConfig
 	// NodeDownAfter is how long a host may go unheard before it is down
 	// (§27), and SinkAutoAdoptAfter how long its sinks wait before the node
 	// that reports them takes them over (§28.3). Zero is §36.1's default.

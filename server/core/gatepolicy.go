@@ -35,7 +35,7 @@ var clusterServices = []string{
 var tenantServices = []string{
 	"/shale.SetService/", "/shale.SourceService/", "/shale.LaminaService/", "/shale.AttemptService/",
 	"/shale.SiteService/", "/shale.SiteMemberService/", "/shale.ProducerService/", "/shale.ReaderService/",
-	"/shale.HolderService/", "/shale.AuditService/",
+	"/shale.HolderService/", "/shale.AuditService/", "/shale.DelegationService/",
 }
 
 // IsClusterService says whether a method belongs to the cluster surface.
@@ -137,10 +137,16 @@ func granted(ctx context.Context, may func(context.Context, pdid.Id, pdid.Id, st
 // reader sees its tenant and only the calls it needs.
 //
 // With Operators, a person reads what the console's pages read (personMay)
-// and calls the rest as far as roster grants them; without, the rule
-// before it: a person may do anything inside their tenant.
+// and calls the rest as far as roster grants them; with Reads too, the
+// reads are as far as roster grants them as well. Without Operators, the
+// rule before it: a person may do anything inside their tenant.
+//
+// DelegationService is an app's (§33.8): its four entries are served to
+// nobody with a credential the interceptor knows, and its generated verbs
+// to nobody at all.
 type TenantPolicy struct {
 	Operators Operators
+	Reads     bool
 }
 
 var producerMay = map[string]bool{
@@ -213,6 +219,9 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 	if closedToEveryone(m) {
 		return denied(m, "written by the system, not by a caller")
 	}
+	if strings.HasPrefix(m, "/shale.DelegationService/") {
+		return denied(m, "an app calls this with its exchange token and nothing else (§33.8)")
+	}
 
 	switch kindOf(c.Actor) {
 	case DomProducer:
@@ -225,9 +234,9 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 		}
 	case DomHolder:
 		if p.Operators != nil {
-			// Reading is everybody's; the rest is what roster grants
-			// (§33.1).
-			if personMay[m] {
+			// Reading is everybody's, unless reads are granted too; the
+			// rest is what roster grants (§33.1).
+			if personMay[m] && !p.Reads {
 				return nil
 			}
 

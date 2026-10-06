@@ -27,6 +27,8 @@ import (
 
 type Server interface {
 	Tenant() TenantServiceServer
+	Holder() HolderServiceServer
+	Delegation() DelegationServiceServer
 	Site() SiteServiceServer
 	Set() SetServiceServer
 	Source() SourceServiceServer
@@ -38,7 +40,6 @@ type Server interface {
 	Sink() SinkServiceServer
 	Lamina() LaminaServiceServer
 	Attempt() AttemptServiceServer
-	Holder() HolderServiceServer
 	SiteMember() SiteMemberServiceServer
 	Audit() AuditServiceServer
 	Outbox() OutboxServiceServer
@@ -54,6 +55,8 @@ type Server interface {
 // server which is not gRPC's own can be handed the same set of services.
 func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterTenantServiceServer(g, s.Tenant())
+	RegisterHolderServiceServer(g, s.Holder())
+	RegisterDelegationServiceServer(g, s.Delegation())
 	RegisterSiteServiceServer(g, s.Site())
 	RegisterSetServiceServer(g, s.Set())
 	RegisterSourceServiceServer(g, s.Source())
@@ -65,7 +68,6 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterSinkServiceServer(g, s.Sink())
 	RegisterLaminaServiceServer(g, s.Lamina())
 	RegisterAttemptServiceServer(g, s.Attempt())
-	RegisterHolderServiceServer(g, s.Holder())
 	RegisterSiteMemberServiceServer(g, s.SiteMember())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterOutboxServiceServer(g, s.Outbox())
@@ -77,6 +79,8 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 
 type UnimplementedServer struct {
 	TenantServer          TenantServiceServer
+	HolderServer          HolderServiceServer
+	DelegationServer      DelegationServiceServer
 	SiteServer            SiteServiceServer
 	SetServer             SetServiceServer
 	SourceServer          SourceServiceServer
@@ -88,7 +92,6 @@ type UnimplementedServer struct {
 	SinkServer            SinkServiceServer
 	LaminaServer          LaminaServiceServer
 	AttemptServer         AttemptServiceServer
-	HolderServer          HolderServiceServer
 	SiteMemberServer      SiteMemberServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
@@ -99,6 +102,10 @@ type UnimplementedServer struct {
 }
 
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
+func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
+func (UnimplementedServer) Delegation() DelegationServiceServer {
+	return UnimplementedDelegationServiceServer{}
+}
 func (UnimplementedServer) Site() SiteServiceServer     { return UnimplementedSiteServiceServer{} }
 func (UnimplementedServer) Set() SetServiceServer       { return UnimplementedSetServiceServer{} }
 func (UnimplementedServer) Source() SourceServiceServer { return UnimplementedSourceServiceServer{} }
@@ -112,7 +119,6 @@ func (UnimplementedServer) Device() DeviceServiceServer   { return Unimplemented
 func (UnimplementedServer) Sink() SinkServiceServer       { return UnimplementedSinkServiceServer{} }
 func (UnimplementedServer) Lamina() LaminaServiceServer   { return UnimplementedLaminaServiceServer{} }
 func (UnimplementedServer) Attempt() AttemptServiceServer { return UnimplementedAttemptServiceServer{} }
-func (UnimplementedServer) Holder() HolderServiceServer   { return UnimplementedHolderServiceServer{} }
 func (UnimplementedServer) SiteMember() SiteMemberServiceServer {
 	return UnimplementedSiteMemberServiceServer{}
 }
@@ -133,6 +139,8 @@ func (UnimplementedServer) AddressPolicy() AddressPolicyServiceServer {
 
 type StaticServer struct {
 	TenantServer          TenantServiceServer
+	HolderServer          HolderServiceServer
+	DelegationServer      DelegationServiceServer
 	SiteServer            SiteServiceServer
 	SetServer             SetServiceServer
 	SourceServer          SourceServiceServer
@@ -144,7 +152,6 @@ type StaticServer struct {
 	SinkServer            SinkServiceServer
 	LaminaServer          LaminaServiceServer
 	AttemptServer         AttemptServiceServer
-	HolderServer          HolderServiceServer
 	SiteMemberServer      SiteMemberServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
@@ -155,6 +162,8 @@ type StaticServer struct {
 }
 
 func (s StaticServer) Tenant() TenantServiceServer                   { return s.TenantServer }
+func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
+func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
 func (s StaticServer) Site() SiteServiceServer                       { return s.SiteServer }
 func (s StaticServer) Set() SetServiceServer                         { return s.SetServer }
 func (s StaticServer) Source() SourceServiceServer                   { return s.SourceServer }
@@ -166,7 +175,6 @@ func (s StaticServer) Device() DeviceServiceServer                   { return s.
 func (s StaticServer) Sink() SinkServiceServer                       { return s.SinkServer }
 func (s StaticServer) Lamina() LaminaServiceServer                   { return s.LaminaServer }
 func (s StaticServer) Attempt() AttemptServiceServer                 { return s.AttemptServer }
-func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) SiteMember() SiteMemberServiceServer           { return s.SiteMemberServer }
 func (s StaticServer) Audit() AuditServiceServer                     { return s.AuditServer }
 func (s StaticServer) Outbox() OutboxServiceServer                   { return s.OutboxServer }
@@ -177,6 +185,8 @@ func (s StaticServer) AddressPolicy() AddressPolicyServiceServer     { return s.
 
 type Client interface {
 	Tenant() TenantServiceClient
+	Holder() HolderServiceClient
+	Delegation() DelegationServiceClient
 	Site() SiteServiceClient
 	Set() SetServiceClient
 	Source() SourceServiceClient
@@ -188,7 +198,6 @@ type Client interface {
 	Sink() SinkServiceClient
 	Lamina() LaminaServiceClient
 	Attempt() AttemptServiceClient
-	Holder() HolderServiceClient
 	SiteMember() SiteMemberServiceClient
 	Audit() AuditServiceClient
 	Outbox() OutboxServiceClient
@@ -201,6 +210,8 @@ type Client interface {
 func NewClient(c *grpc.ClientConn) Client {
 	return &client{
 		_Tenant:          NewTenantServiceClient(c),
+		_Holder:          NewHolderServiceClient(c),
+		_Delegation:      NewDelegationServiceClient(c),
 		_Site:            NewSiteServiceClient(c),
 		_Set:             NewSetServiceClient(c),
 		_Source:          NewSourceServiceClient(c),
@@ -212,7 +223,6 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Sink:            NewSinkServiceClient(c),
 		_Lamina:          NewLaminaServiceClient(c),
 		_Attempt:         NewAttemptServiceClient(c),
-		_Holder:          NewHolderServiceClient(c),
 		_SiteMember:      NewSiteMemberServiceClient(c),
 		_Audit:           NewAuditServiceClient(c),
 		_Outbox:          NewOutboxServiceClient(c),
@@ -225,6 +235,8 @@ func NewClient(c *grpc.ClientConn) Client {
 
 type client struct {
 	_Tenant          TenantServiceClient
+	_Holder          HolderServiceClient
+	_Delegation      DelegationServiceClient
 	_Site            SiteServiceClient
 	_Set             SetServiceClient
 	_Source          SourceServiceClient
@@ -236,7 +248,6 @@ type client struct {
 	_Sink            SinkServiceClient
 	_Lamina          LaminaServiceClient
 	_Attempt         AttemptServiceClient
-	_Holder          HolderServiceClient
 	_SiteMember      SiteMemberServiceClient
 	_Audit           AuditServiceClient
 	_Outbox          OutboxServiceClient
@@ -247,6 +258,8 @@ type client struct {
 }
 
 func (c *client) Tenant() TenantServiceClient                   { return c._Tenant }
+func (c *client) Holder() HolderServiceClient                   { return c._Holder }
+func (c *client) Delegation() DelegationServiceClient           { return c._Delegation }
 func (c *client) Site() SiteServiceClient                       { return c._Site }
 func (c *client) Set() SetServiceClient                         { return c._Set }
 func (c *client) Source() SourceServiceClient                   { return c._Source }
@@ -258,7 +271,6 @@ func (c *client) Device() DeviceServiceClient                   { return c._Devi
 func (c *client) Sink() SinkServiceClient                       { return c._Sink }
 func (c *client) Lamina() LaminaServiceClient                   { return c._Lamina }
 func (c *client) Attempt() AttemptServiceClient                 { return c._Attempt }
-func (c *client) Holder() HolderServiceClient                   { return c._Holder }
 func (c *client) SiteMember() SiteMemberServiceClient           { return c._SiteMember }
 func (c *client) Audit() AuditServiceClient                     { return c._Audit }
 func (c *client) Outbox() OutboxServiceClient                   { return c._Outbox }

@@ -14,11 +14,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/spin"
 
+	"github.com/lesomnus/payday/auth"
 	rostercli "github.com/lesomnus/roster/cli"
 	rostercmd "github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/rstr"
@@ -421,4 +423,48 @@ func (e *embedded) everything(ctx context.Context, tref *rstr.TenantRef, holder 
 	}
 
 	return nil
+}
+
+// Exchange is the exchange token an app of a tenant of the embedded roster
+// is issued for Shale (§33.8): roster's `DelegationService/Exchange`, asked
+// as the app's holder, naming Shale's holder in the tenant as its audience.
+// What an app does at an external roster with its own key; here, what the
+// tests prove an app with.
+func (s *Store) Exchange(ctx context.Context, tenant, app string, methods []string) (string, error) {
+	if s.em == nil {
+		return "", ErrExternal
+	}
+	if err := s.ensureAgent(ctx, tenant); err != nil {
+		return "", err
+	}
+	as := auth.PlainProvider("@" + tenant + "/" + app).Provide(ctx)
+	v, err := rstr.NewDelegationServiceClient(s.conn).Exchange(as, rstr.DelegationExchangeRequest_builder{
+		Audience: rstr.HolderRef_builder{
+			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(Agent), Tenant: rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()}.Build(),
+		}.Build(),
+		Methods: methods,
+	}.Build())
+	if err != nil {
+		return "", fmt.Errorf("roster: exchange: %w", err)
+	}
+
+	return v.GetToken(), nil
+}
+
+// Suspend suspends a person of the embedded roster, as a tenant's
+// administrator does at roster: they may not sign in, and what they held
+// stops working. For the tests.
+func (s *Store) Suspend(ctx context.Context, holder pdid.Id) error {
+	if s.em == nil {
+		return ErrExternal
+	}
+	ctx, cancel := unframed(ctx)
+	defer cancel()
+	_, err := s.em.rs.Ungated.Holder().Patch(ctx, rstr.HolderPatchRequest_builder{
+		Ref:              rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
+		DateDisabled:     timestamppb.Now(),
+		DateUpdatedForce: z.Ptr(true),
+	}.Build())
+
+	return err
 }

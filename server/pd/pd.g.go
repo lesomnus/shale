@@ -32,6 +32,7 @@ import (
 	addresspolicy "github.com/lesomnus/shale/internal/ent/addresspolicy"
 	attempt "github.com/lesomnus/shale/internal/ent/attempt"
 	audit "github.com/lesomnus/shale/internal/ent/audit"
+	delegation "github.com/lesomnus/shale/internal/ent/delegation"
 	device "github.com/lesomnus/shale/internal/ent/device"
 	holder "github.com/lesomnus/shale/internal/ent/holder"
 	lamina "github.com/lesomnus/shale/internal/ent/lamina"
@@ -97,6 +98,7 @@ const (
 	AddressPolicyDomain   pdid.Domain = 21 // "address-policy"
 	AttemptDomain         pdid.Domain = 10 // "attempt"
 	AuditDomain           pdid.Domain = 3  // "audit"
+	DelegationDomain      pdid.Domain = 25 // "delegation"
 	DeviceDomain          pdid.Domain = 13 // "device"
 	HolderDomain          pdid.Domain = 2  // "holder"
 	LaminaDomain          pdid.Domain = 9  // "lamina"
@@ -120,6 +122,7 @@ func init() {
 	pdid.Register("shale.AddressPolicy", AddressPolicyDomain, "address-policy")
 	pdid.Register("shale.Attempt", AttemptDomain, "attempt")
 	pdid.Register("shale.Audit", AuditDomain, "audit")
+	pdid.Register("shale.Delegation", DelegationDomain, "delegation")
 	pdid.Register("shale.Device", DeviceDomain, "device")
 	pdid.Register("shale.Holder", HolderDomain, "holder")
 	pdid.Register("shale.Lamina", LaminaDomain, "lamina")
@@ -147,6 +150,7 @@ var Domains = map[string]pdid.Domain{
 	"shale.AddressPolicy":   AddressPolicyDomain,
 	"shale.Attempt":         AttemptDomain,
 	"shale.Audit":           AuditDomain,
+	"shale.Delegation":      DelegationDomain,
 	"shale.Device":          DeviceDomain,
 	"shale.Holder":          HolderDomain,
 	"shale.Lamina":          LaminaDomain,
@@ -231,6 +235,16 @@ func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	}
 
 	return audit.Or(audit.TenantIdIn(vs...), audit.ActorTenantIdIn(vs...), audit.CounterpartTenantIdIn(vs...)), nil
+}
+
+// DelegationScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return delegation.TenantIdIn(vs...), nil
 }
 
 // DeviceScope: declared `global`, so it is not behind the wall at all.
@@ -416,6 +430,11 @@ func (x grouped) AttemptScope(ctx context.Context) (predicate.Attempt, error) {
 
 // AuditScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) AuditScope(ctx context.Context) (predicate.Audit, error) {
+	return nil, nil
+}
+
+// DelegationScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
 	return nil, nil
 }
 
@@ -7585,6 +7604,54 @@ func (s gateAttempt) Add(ctx context.Context, req *api.AttemptAddRequest) (*api.
 	return s.AttemptServiceServer.Add(ctx, req)
 }
 
+type gateDelegation struct {
+	Gate
+	api.DelegationServiceServer
+}
+
+func (s Gate) Delegation() api.DelegationServiceServer {
+	return gateDelegation{s, s.Next().Delegation()}
+}
+
+// Add refuses a Delegation put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateDelegation) Add(ctx context.Context, req *api.DelegationAddRequest) (*api.Delegation, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetHolder(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, api.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.DelegationServiceServer.Add(ctx, req)
+}
+
 type gateLamina struct {
 	Gate
 	api.LaminaServiceServer
@@ -8176,6 +8243,8 @@ func hidden(key pdid.Id, p *patchpb.Patch) *patchpb.Patch {
 
 	var secret []uint32
 	switch key.Domain() {
+	case DelegationDomain:
+		secret = []uint32{11}
 	case SigningKeyDomain:
 		secret = []uint32{9}
 	}
@@ -8284,6 +8353,40 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 		}
 
 		k, err := entuuid.FromBytes(row.GetTenantId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case DelegationDomain:
+		row, err := s.Delegation().Get(ctx, api.DelegationGetRequest_builder{
+			Ref: api.DelegationRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		// Erased softly is still a row; see [erasedDelegation].
+		if status.Code(err) == codes.NotFound {
+			row, err = erasedDelegation(ctx, s, key)
+		}
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil(), []byte{}, nil
+			}
+
+			return uuid.Nil(), nil, err
+		}
+
+		hideDelegation(row)
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
 		if err != nil {
 			return uuid.Nil(), nil, err
 		}
@@ -8570,6 +8673,33 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 	return uuid.Nil(), []byte{}, nil
 }
 
+// erasedDelegation is the row `key` names among the rows already erased, which no
+// bare read answers: erasure is part of every reference that server builds.
+// The recorder is the one caller that has to see past it -- the row it asks
+// about was erased by the very write it is recording, and a trail row built
+// blind was filed under the actor's tenant with an empty value, which the
+// tenant whose row was erased could not read.
+func erasedDelegation(ctx context.Context, s bare.Server, key pdid.Id) (*api.Delegation, error) {
+	k, err := entuuid.FromBytes(key.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	q := s.Db.Delegation.Query().Where(delegation.IdEQ(k), delegation.DateErasedNotNil())
+	bare.DelegationSelectInit(q, nil)
+
+	v, err := q.Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "Delegation not found")
+		}
+
+		return nil, err
+	}
+
+	return v.Proto(), nil
+}
+
 // erasedHolder is the row `key` names among the rows already erased, which no
 // bare read answers: erasure is part of every reference that server builds.
 // The recorder is the one caller that has to see past it -- the row it asks
@@ -8776,6 +8906,70 @@ type secretBuilder struct{}
 
 func (secretBuilder) Build(next api.Server) (api.Server, error) {
 	return NewSecret(next), nil
+}
+
+func (s Secret) Delegation() api.DelegationServiceServer {
+	return secretDelegation{s, s.Next().Delegation()}
+}
+
+type secretDelegation struct {
+	Secret
+	api.DelegationServiceServer
+}
+
+func (s secretDelegation) Add(ctx context.Context, req *api.DelegationAddRequest) (*api.Delegation, error) {
+	v, err := s.DelegationServiceServer.Add(ctx, req)
+
+	return hideDelegation(v), err
+}
+
+func (s secretDelegation) Get(ctx context.Context, req *api.DelegationGetRequest) (*api.Delegation, error) {
+	v, err := s.DelegationServiceServer.Get(ctx, req)
+
+	return hideDelegation(v), err
+}
+
+func (s secretDelegation) Patch(ctx context.Context, req *api.DelegationPatchRequest) (*api.Delegation, error) {
+	v, err := s.DelegationServiceServer.Patch(ctx, req)
+
+	return hideDelegation(v), err
+}
+
+func (s secretDelegation) Apply(ctx context.Context, req *api.DelegationApplyRequest) (*api.Delegation, error) {
+	v, err := s.DelegationServiceServer.Apply(ctx, req)
+
+	return hideDelegation(v), err
+}
+
+// hideDelegation clears what this entity declared it never answers with.
+//
+// A nil row passes through, because an error is answered with one and the
+// caller of this is handing both on.
+//
+// By field number and through the descriptor, rather than a setter per
+// field, because a setter's argument has a type and this has to hold for
+// every field a row can carry. A `Set<F>(nil)` per secret is what this
+// was, and it compiled only while every secret anybody had declared was
+// `bytes`: a `string` one ended the build in a generated file, and an
+// enum would have needed its own type spelled out here to say zero.
+//
+// Clear is also the truer word. A field with presence is **absent**
+// afterwards rather than present and empty, which is what "never answered
+// with" says; one without presence reads as its zero value either way.
+// And the numbers are the ones `hidden` filters the trail's patch by, so
+// the two cannot come to disagree about which fields they are.
+func hideDelegation(v *api.Delegation) *api.Delegation {
+	if v == nil {
+		return nil
+	}
+
+	m := v.ProtoReflect()
+	fs := m.Descriptor().Fields()
+	for _, n := range []protoreflect.FieldNumber{11} {
+		m.Clear(fs.ByNumber(n))
+	}
+
+	return v
 }
 
 func (s Secret) SigningKey() api.SigningKeyServiceServer {
@@ -9728,6 +9922,60 @@ func (s interceptHolder) Watch(req *api.HolderWatchRequest, out grpc.ServerStrea
 func (s interceptHolder) IssuePassword(ctx context.Context, req *api.HolderIssuePasswordRequest) (*api.HolderIssuePasswordResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
 		api.HolderService_IssuePassword_FullMethodName, req, s.HolderServiceServer.IssuePassword)
+}
+
+func (s Intercept) Delegation() api.DelegationServiceServer {
+	return interceptDelegation{s, s.Next().Delegation()}
+}
+
+type interceptDelegation struct {
+	Intercept
+	api.DelegationServiceServer
+}
+
+func (s interceptDelegation) Add(ctx context.Context, req *api.DelegationAddRequest) (*api.Delegation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Add_FullMethodName, req, s.DelegationServiceServer.Add)
+}
+
+func (s interceptDelegation) Get(ctx context.Context, req *api.DelegationGetRequest) (*api.Delegation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Get_FullMethodName, req, s.DelegationServiceServer.Get)
+}
+
+func (s interceptDelegation) Patch(ctx context.Context, req *api.DelegationPatchRequest) (*api.Delegation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Patch_FullMethodName, req, s.DelegationServiceServer.Patch)
+}
+
+func (s interceptDelegation) Apply(ctx context.Context, req *api.DelegationApplyRequest) (*api.Delegation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Apply_FullMethodName, req, s.DelegationServiceServer.Apply)
+}
+
+func (s interceptDelegation) Erase(ctx context.Context, req *api.DelegationRef) (*api.DelegationEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Erase_FullMethodName, req, s.DelegationServiceServer.Erase)
+}
+
+func (s interceptDelegation) Start(ctx context.Context, req *api.DelegationStartRequest) (*api.DelegationStartResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Start_FullMethodName, req, s.DelegationServiceServer.Start)
+}
+
+func (s interceptDelegation) Live(ctx context.Context, req *api.DelegationLiveRequest) (*api.SetLiveResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Live_FullMethodName, req, s.DelegationServiceServer.Live)
+}
+
+func (s interceptDelegation) Timeline(ctx context.Context, req *api.DelegationTimelineRequest) (*api.LaminaTimelineResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Timeline_FullMethodName, req, s.DelegationServiceServer.Timeline)
+}
+
+func (s interceptDelegation) Revoke(ctx context.Context, req *api.DelegationRevokeRequest) (*api.DelegationRevokeResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Revoke_FullMethodName, req, s.DelegationServiceServer.Revoke)
 }
 
 func (s Intercept) SiteMember() api.SiteMemberServiceServer {
@@ -12077,6 +12325,123 @@ func dispatch(ctx context.Context, s api.Server, op *pdpb.Op) (*anypb.Any, error
 		}
 
 		res, err := s.Holder().IssuePassword(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Add_FullMethodName:
+		v := &api.DelegationAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Get_FullMethodName:
+		v := &api.DelegationGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Patch_FullMethodName:
+		v := &api.DelegationPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Apply_FullMethodName:
+		v := &api.DelegationApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Erase_FullMethodName:
+		v := &api.DelegationRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Start_FullMethodName:
+		v := &api.DelegationStartRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Start(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Live_FullMethodName:
+		v := &api.DelegationLiveRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Live(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Timeline_FullMethodName:
+		v := &api.DelegationTimelineRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Timeline(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case api.DelegationService_Revoke_FullMethodName:
+		v := &api.DelegationRevokeRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Revoke(ctx, v)
 		if err != nil {
 			return nil, err
 		}

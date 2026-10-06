@@ -1,0 +1,100 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/payday/holder.proto";
+import "shale/payday/tenant.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Delegation is an app viewing on behalf of a person (§33.8): a portal that
+// signed somebody in, proved it to Shale once with that person's access
+// token beside its own exchange token, and renews from then on with this.
+// It is the receiver's session of roster's contract for an app acting as a
+// person: bound to the tenant, the app and the person, held by the app's
+// server and never a browser, and narrowed to what the app asked for when
+// it began. Every use asks roster again about both of them.
+//
+// The rows are written by `DelegationService.Start` and `Revoke` and read by
+// nobody through the generated verbs, which are not served.
+message Delegation {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // The person viewed for.
+  Holder holder = 8 [(orm.edge) = {immutable: true}];
+
+  // The app: its holder at roster, which its exchange token names, and the
+  // OAuth client the person's token was issued to.
+  bytes app = 9 [(orm.field) = {immutable: true}];
+  string client_id = 10 [(orm.field) = {immutable: true}];
+
+  // What the handle's secret hashes to; the handle is the row and the
+  // secret, and only the app was ever told the secret.
+  bytes secret_hash = 11 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {secret: true}
+  ];
+
+  // What the app may ask for under it: live view, recordings, or both; of
+  // these sets and sources, none meaning every one the person sees; and
+  // recordings from and to these times, unset meaning without that bound.
+  bool live = 12 [(orm.field) = {immutable: true}];
+  bool recordings = 16 [(orm.field) = {immutable: true}];
+  repeated bytes sets = 17 [(orm.field) = {immutable: true}];
+  repeated bytes sources = 18 [(orm.field) = {immutable: true}];
+  google.protobuf.Timestamp recordings_from = 19 [(orm.field) = {
+    immutable: true
+    nullable: true
+  }];
+  google.protobuf.Timestamp recordings_to = 20 [(orm.field) = {
+    immutable: true
+    nullable: true
+  }];
+
+  // When it ends, which renewing does not move; when the app ended it, or
+  // Shale did on hearing the person was signed out everywhere, suspended or
+  // erased; and when it was last used.
+  google.protobuf.Timestamp date_ends = 21 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+  google.protobuf.Timestamp date_revoked = 22 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_used = 23 [(orm.field) = {nullable: true}];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "holder"
+        refs: [
+          {name: "holder", number: 8},
+          {name: "date_ends", number: 21}
+        ]
+      }
+    ]
+  };
+  option (payday.entity) = {domain: 25};
+}

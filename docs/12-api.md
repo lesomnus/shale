@@ -101,6 +101,7 @@ each surface that is made without a credential.
 | `SiteMember` | tenant | 20 | Add, List, Erase | tenant |
 | `Producer` | tenant | 22 | Get, Patch, List, Erase, Watch | tenant |
 | `Reader` | tenant | 23 | Get, Patch, List, Erase, Watch | tenant |
+| `Delegation` | tenant | 25 | none served: written by `DelegationService`'s own verbs | tenant |
 | `Node` | **global** | 12 | Get, Patch, List, Erase, Watch | cluster |
 | `Relay` | **global** | 24 | Get, Patch, List, Erase, Watch | cluster |
 | `Device` | **global** | 13 | Get, List, Watch | cluster |
@@ -168,6 +169,10 @@ Producer         set, site (copied from the set), hardware_id, hostname,
                  live (always | on_demand, §39.3)
 Reader           hardware_id, hostname, state, certificate serial,
                  date_adopted, date_seen; sites through SiteMember
+Delegation       holder (the person), app (its holder at roster), client_id,
+                 secret_hash, live, recordings, sets, sources,
+                 recordings_from/to, date_ends, date_revoked, date_used
+                 (§33.8)
 Lamina           source, set, sink, lamina_key, date_started, date_ended, size,
                  site, state, incomplete, date_expired, date_deleted,
                  dates_synced (§20.3), placement_version, date_committed
@@ -275,6 +280,27 @@ service ReaderService {
   Watch requires filters, so no caller watches the whole table.
 - `Holder` has no custom RPCs. People sign in through payday
   ([§33.1](10-security.md#331-trust-model)).
+- `DelegationService` is an app's, viewing on a person's behalf
+  ([§33.8](10-security.md#338-viewing-on-a-persons-behalf)). Its four
+  verbs take the app's exchange token from roster as `authorization:
+  Bearer rd_…` and nothing else: no session, no certificate, and its
+  generated verbs are served to nobody. `Live` and `Timeline` are also the
+  permission methods a tenant binds to the app's holder at roster.
+
+```proto
+service DelegationService {
+  // The person's access token for Shale's API and the app's exchange
+  // token, bound; answers a handle, until date_ends.
+  rpc Start(DelegationStartRequest) returns (DelegationStartResponse);
+  // SetService.Live or SourceService.Live for the person, within the
+  // handle; asking again is the renewal.
+  rpc Live(DelegationLiveRequest) returns (SetLiveResponse);
+  // LaminaService.Timeline for the person, within the handle.
+  rpc Timeline(DelegationTimelineRequest) returns (LaminaTimelineResponse);
+  // Ends a handle.
+  rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
+}
+```
 
 ### 35.5 Cluster API: custom RPCs
 

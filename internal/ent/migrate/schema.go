@@ -177,6 +177,59 @@ var (
 			},
 		},
 	}
+	// DelegationColumns holds the columns for the "delegation" table.
+	DelegationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "app", Type: field.TypeBytes},
+		{Name: "client_id", Type: field.TypeString},
+		{Name: "secret_hash", Type: field.TypeBytes},
+		{Name: "live", Type: field.TypeBool},
+		{Name: "recordings", Type: field.TypeBool},
+		{Name: "sets", Type: field.TypeJson, Nullable: true},
+		{Name: "sources", Type: field.TypeJson, Nullable: true},
+		{Name: "recordings_from", Type: field.TypeTime, Nullable: true},
+		{Name: "recordings_to", Type: field.TypeTime, Nullable: true},
+		{Name: "date_ends", Type: field.TypeTime, Nullable: true},
+		{Name: "date_revoked", Type: field.TypeTime, Nullable: true},
+		{Name: "date_used", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "holder_id", Type: field.TypeUuid},
+	}
+	// DelegationTable holds the schema information for the "delegation" table.
+	DelegationTable = &schema.Table{
+		Name:       "delegation",
+		Columns:    DelegationColumns,
+		PrimaryKey: []*schema.Column{DelegationColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "delegation_tenant_tenant",
+				Columns:    []*schema.Column{DelegationColumns[16]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "delegation_holder_holder",
+				Columns:    []*schema.Column{DelegationColumns[17]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "delegation_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{DelegationColumns[15], DelegationColumns[0]},
+			},
+			{
+				Name:    "delegation_date_ends_holder_id",
+				Unique:  false,
+				Columns: []*schema.Column{DelegationColumns[10], DelegationColumns[17]},
+			},
+		},
+	}
 	// DeviceColumns holds the columns for the "device" table.
 	DeviceColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1078,6 +1131,7 @@ var (
 		AddresspolicyTable,
 		AttemptTable,
 		AuditTable,
+		DelegationTable,
 		DeviceTable,
 		HolderTable,
 		LaminaTable,
@@ -1112,6 +1166,11 @@ func init() {
 	}
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
+	}
+	DelegationTable.ForeignKeys[0].RefTable = TenantTable
+	DelegationTable.ForeignKeys[1].RefTable = HolderTable
+	DelegationTable.Annotation = &entsql.Annotation{
+		Table: "delegation",
 	}
 	DeviceTable.ForeignKeys[0].RefTable = NodeTable
 	DeviceTable.Annotation = &entsql.Annotation{

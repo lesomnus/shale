@@ -1,0 +1,176 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "shale/delegation.proto";
+import "shale/lamina_svc.g.proto";
+import "shale/payday/holder_svc.g.proto";
+import "shale/payday/tenant_svc.g.proto";
+import "shale/set.proto";
+import "shale/set_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service DelegationService {
+  // Add creates a new Delegation
+  rpc Add(DelegationAddRequest) returns (Delegation);
+  // Get retrieves a Delegation
+  rpc Get(DelegationGetRequest) returns (Delegation);
+  // Patch updates an existing Delegation
+  rpc Patch(DelegationPatchRequest) returns (Delegation);
+  // Apply applies a patch document to an existing Delegation
+  rpc Apply(DelegationApplyRequest) returns (Delegation);
+  // Erase deletes a Delegation
+  rpc Erase(DelegationRef) returns (DelegationEraseResponse);
+  // Start proves the person and the app together and answers a handle:
+  // what the app renews with from then on, until `date_ends`.
+  rpc Start(DelegationStartRequest) returns (DelegationStartResponse);
+  // Live is `SetService.Live` or `SourceService.Live` for the person,
+  // within the handle, its tokens naming the app beside the person. Asking
+  // again before they lapse is the renewal.
+  rpc Live(DelegationLiveRequest) returns (SetLiveResponse);
+  // Timeline is `LaminaService.Timeline` for the person, within the
+  // handle.
+  rpc Timeline(DelegationTimelineRequest) returns (LaminaTimelineResponse);
+  // Revoke ends a handle: what the app does when its own session ends.
+  rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
+}
+
+message DelegationAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  HolderRef holder = 8;
+  bytes app = 9 [features.field_presence = IMPLICIT];
+  string client_id = 10 [features.field_presence = IMPLICIT];
+  bytes secret_hash = 11 [features.field_presence = IMPLICIT];
+  bool live = 12 [features.field_presence = IMPLICIT];
+  bool recordings = 16 [features.field_presence = IMPLICIT];
+  repeated bytes sets = 17;
+  repeated bytes sources = 18;
+  google.protobuf.Timestamp recordings_from = 19;
+  google.protobuf.Timestamp recordings_to = 20;
+  google.protobuf.Timestamp date_ends = 21;
+  google.protobuf.Timestamp date_revoked = 22;
+  google.protobuf.Timestamp date_used = 23;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message DelegationGetRequest {
+  DelegationRef ref = 1;
+  DelegationSelect select = 2;
+}
+
+message DelegationRef {
+  oneof key {
+    bytes id = 1;
+  }
+}
+
+message DelegationSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  HolderSelect holder = 8;
+  bool app = 9;
+  bool client_id = 10;
+  bool secret_hash = 11;
+  bool live = 12;
+  bool recordings = 16;
+  bool sets = 17;
+  bool sources = 18;
+  bool recordings_from = 19;
+  bool recordings_to = 20;
+  bool date_ends = 21;
+  bool date_revoked = 22;
+  bool date_used = 23;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message DelegationPatchRequest {
+  DelegationRef ref = 1;
+  google.protobuf.Timestamp date_revoked = 44;
+  // Clear date_revoked instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_revoked clears.
+  bool date_revoked_null = 45;
+  google.protobuf.Timestamp date_used = 46;
+  // Clear date_used instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_used clears.
+  bool date_used_null = 47;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message DelegationApplyRequest {
+  DelegationRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message DelegationEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message DelegationStartRequest {
+  // The person's access token from the issuer: a JWT whose audience is
+  // Shale's API, issued to the app's OAuth client, minutes old.
+  string access_token = 1 [features.field_presence = IMPLICIT];
+
+  // What the app will ask for: live view, recordings, or both.
+  bool live = 2 [features.field_presence = IMPLICIT];
+  bool recordings = 3 [features.field_presence = IMPLICIT];
+  // Of these sets and sources; none is every one the person sees.
+  repeated SetRef sets = 4;
+  repeated SourceRef sources = 5;
+  // Recordings from and to these times; unset is without that bound.
+  google.protobuf.Timestamp recordings_from = 6;
+  google.protobuf.Timestamp recordings_to = 7;
+  // When the app wants it to end, at most `delegation_max_ttl` from now;
+  // unset is that.
+  google.protobuf.Timestamp date_ends = 8;
+}
+
+message DelegationStartResponse {
+  // What the app renews with; told once, and only to the app's server.
+  string handle = 1 [features.field_presence = IMPLICIT];
+  Delegation delegation = 2;
+}
+
+message DelegationLiveRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+  // Exactly one of set or source.
+  SetRef set = 2;
+  SourceRef source = 3;
+}
+
+message DelegationTimelineRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+  LaminaTimelineRequest timeline = 2;
+}
+
+message DelegationRevokeRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+}
+
+message DelegationRevokeResponse {}

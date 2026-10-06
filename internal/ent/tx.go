@@ -18,6 +18,8 @@ type Tx struct {
 	Attempt *AttemptClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// Delegation is the client for interacting with the Delegation builders.
+	Delegation *DelegationClient
 	// Device is the client for interacting with the Device builders.
 	Device *DeviceClient
 	// Holder is the client for interacting with the Holder builders.
@@ -186,6 +188,7 @@ func (tx *Tx) init() {
 	tx.AddressPolicy = NewAddressPolicyClient(tx.config)
 	tx.Attempt = NewAttemptClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
+	tx.Delegation = NewDelegationClient(tx.config)
 	tx.Device = NewDeviceClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
 	tx.Lamina = NewLaminaClient(tx.config)

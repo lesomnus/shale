@@ -176,7 +176,10 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   predates renewal. WHEP's own `PATCH` carries an ICE fragment; this one
   carries no body and is Shale's. The console renews a minute ahead
   (§40). The wall and site membership decide who gets one
-  ([§33.1](10-security.md#331-trust-model)).
+  ([§33.1](10-security.md#331-trust-model)). One an app asked for on a
+  person's behalf names the app as `delegator` too and lives minutes
+  ([§33.8](10-security.md#338-viewing-on-a-persons-behalf)); the relay
+  logs it beside the actor when a session opens, and it grants nothing.
 - **Instant start.** The relay keeps, per active source, every sample since
   the last keyframe (at most one keyframe interval, about a megabyte at
   4 Mbps). A joining viewer receives that group of pictures at once and

@@ -3646,6 +3646,7 @@ type TokenClaims struct {
 	xxx_hidden_ActorTenant           []byte                 `protobuf:"bytes,17,opt,name=actor_tenant,json=actorTenant"`
 	xxx_hidden_Live                  LivePolicy             `protobuf:"varint,18,opt,name=live,enum=shale.LivePolicy"`
 	xxx_hidden_RewindSeconds         int64                  `protobuf:"varint,19,opt,name=rewind_seconds,json=rewindSeconds"`
+	xxx_hidden_Delegator             []byte                 `protobuf:"bytes,20,opt,name=delegator"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -3808,6 +3809,13 @@ func (x *TokenClaims) GetRewindSeconds() int64 {
 	return 0
 }
 
+func (x *TokenClaims) GetDelegator() []byte {
+	if x != nil {
+		return x.xxx_hidden_Delegator
+	}
+	return nil
+}
+
 func (x *TokenClaims) SetKid(v string) {
 	x.xxx_hidden_Kid = v
 }
@@ -3902,6 +3910,13 @@ func (x *TokenClaims) SetRewindSeconds(v int64) {
 	x.xxx_hidden_RewindSeconds = v
 }
 
+func (x *TokenClaims) SetDelegator(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Delegator = v
+}
+
 func (x *TokenClaims) HasExp() bool {
 	if x == nil {
 		return false
@@ -3967,6 +3982,10 @@ type TokenClaims_builder struct {
 	// producer's sources plus the commit's lag, so the window reaches back
 	// past the last committed lamina. Zero keeps none.
 	RewindSeconds int64
+	// view and get: the app that asked for the token on the actor's behalf
+	// (§33.8), its holder at roster; empty when the actor asked for itself.
+	// Like actor it grants nothing: it is for limits and logs.
+	Delegator []byte
 }
 
 func (b0 TokenClaims_builder) Build() *TokenClaims {
@@ -3992,6 +4011,7 @@ func (b0 TokenClaims_builder) Build() *TokenClaims {
 	x.xxx_hidden_ActorTenant = b.ActorTenant
 	x.xxx_hidden_Live = b.Live
 	x.xxx_hidden_RewindSeconds = b.RewindSeconds
+	x.xxx_hidden_Delegator = b.Delegator
 	return m0
 }
 
@@ -5081,7 +5101,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x0fdate_deleted_ms\x18\x11 \x01(\x03R\rdateDeletedMs\x12\x1a\n" +
 	"\bchecksum\x18\x12 \x01(\fR\bchecksum\x12+\n" +
 	"\x11placement_version\x18\x13 \x01(\x03R\x10placementVersion\x12\x16\n" +
-	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\x9a\x05\n" +
+	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xb8\x05\n" +
 	"\vTokenClaims\x12\x10\n" +
 	"\x03kid\x18\x01 \x01(\tR\x03kid\x12,\n" +
 	"\x03exp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12,\n" +
@@ -5105,7 +5125,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x05actor\x18\x10 \x01(\fR\x05actor\x12!\n" +
 	"\factor_tenant\x18\x11 \x01(\fR\vactorTenant\x12%\n" +
 	"\x04live\x18\x12 \x01(\x0e2\x11.shale.LivePolicyR\x04live\x12%\n" +
-	"\x0erewind_seconds\x18\x13 \x01(\x03R\rrewindSeconds\"\xd9\x03\n" +
+	"\x0erewind_seconds\x18\x13 \x01(\x03R\rrewindSeconds\x12\x1c\n" +
+	"\tdelegator\x18\x14 \x01(\fR\tdelegator\"\xd9\x03\n" +
 	"\fLaminaStored\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1d\n" +
 	"\n" +

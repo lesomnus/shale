@@ -29,6 +29,11 @@ type OperatorsConfig struct {
 	// is asked again; 30 s by default. A grant taken away at roster stops
 	// working within it.
 	Ttl time.Duration `yaml:"ttl"`
+	// Reads is who reads what the console's pages read: `everybody` of
+	// the tenant (the default), or `granted`, as far as a role at roster
+	// covers it like any other call -- so a person who should only view
+	// through an app (§33.8) is granted nothing here.
+	Reads string `yaml:"reads"`
 
 	// Team and Site named the team operators were, before a team stopped
 	// being how this is said. Set, they are refused with what to write
@@ -40,6 +45,15 @@ type OperatorsConfig struct {
 
 // On says whether what people may change here is roster's to say.
 func (c OperatorsConfig) On() bool { return c.Tenant != "" || c.Team != "" || c.Site != "" }
+
+// The two answers to who reads (`auth.operators.reads`).
+const (
+	ReadsEverybody = "everybody"
+	ReadsGranted   = "granted"
+)
+
+// GrantedReads says whether reads are as far as roster grants them.
+func (c OperatorsConfig) GrantedReads() bool { return c.Reads == ReadsGranted }
 
 // OperatorsTtl is how long an answer is kept when nothing says.
 const OperatorsTtl = 30 * time.Second
@@ -103,6 +117,11 @@ func NewOperators(s *Store, cfg OperatorsConfig, log *slog.Logger) (*Operators, 
 	}
 	if cfg.Tenant == "" {
 		return nil, errors.New("auth.operators.tenant: say whose people operate the cluster")
+	}
+	switch cfg.Reads {
+	case "", ReadsEverybody, ReadsGranted:
+	default:
+		return nil, fmt.Errorf("auth.operators.reads: %q is neither %s nor %s", cfg.Reads, ReadsEverybody, ReadsGranted)
 	}
 	if s.em == nil && len(s.keys) > 0 {
 		if _, ok := s.keys[cfg.Tenant]; !ok {

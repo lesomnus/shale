@@ -243,7 +243,13 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	// The session lasts as long as its token (§33.7): a viewer who is still
 	// watching renews it, or asks for a new session.
 	w.expireAt(v, claims.GetExp().AsTime())
-	w.r.log.Info("viewer", "source", sourceId.String(), "actor", actor, "session", key[:8])
+	// The app that asked for the token on the actor's behalf (§33.8), when
+	// one did: logged beside the actor, and granting nothing.
+	delegator := ""
+	if a, err := pdid.From(claims.GetDelegator()); err == nil {
+		delegator = a.String()
+	}
+	w.r.log.Info("viewer", "source", sourceId.String(), "actor", actor, "delegator", delegator, "session", key[:8])
 
 	rw.Header().Set("Content-Type", "application/sdp")
 	rw.Header().Set("Location", "/whep/"+key)

@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/audit"
+	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
 	"github.com/lesomnus/shale/internal/ent/lamina"
@@ -45,6 +46,8 @@ type Client struct {
 	Attempt *AttemptClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// Delegation is the client for interacting with the Delegation builders.
+	Delegation *DelegationClient
 	// Device is the client for interacting with the Device builders.
 	Device *DeviceClient
 	// Holder is the client for interacting with the Holder builders.
@@ -92,6 +95,7 @@ func (c *Client) init() {
 	c.AddressPolicy = NewAddressPolicyClient(c.config)
 	c.Attempt = NewAttemptClient(c.config)
 	c.Audit = NewAuditClient(c.config)
+	c.Delegation = NewDelegationClient(c.config)
 	c.Device = NewDeviceClient(c.config)
 	c.Holder = NewHolderClient(c.config)
 	c.Lamina = NewLaminaClient(c.config)
@@ -204,6 +208,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		AddressPolicy:   NewAddressPolicyClient(cfg),
 		Attempt:         NewAttemptClient(cfg),
 		Audit:           NewAuditClient(cfg),
+		Delegation:      NewDelegationClient(cfg),
 		Device:          NewDeviceClient(cfg),
 		Holder:          NewHolderClient(cfg),
 		Lamina:          NewLaminaClient(cfg),
@@ -243,6 +248,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		AddressPolicy:   NewAddressPolicyClient(cfg),
 		Attempt:         NewAttemptClient(cfg),
 		Audit:           NewAuditClient(cfg),
+		Delegation:      NewDelegationClient(cfg),
 		Device:          NewDeviceClient(cfg),
 		Holder:          NewHolderClient(cfg),
 		Lamina:          NewLaminaClient(cfg),
@@ -335,8 +341,8 @@ func (c *Client) InTx() bool {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.AddressPolicy, c.Attempt, c.Audit, c.Device, c.Holder, c.Lamina, c.Node,
-		c.Outbox, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.Set,
+		c.AddressPolicy, c.Attempt, c.Audit, c.Delegation, c.Device, c.Holder, c.Lamina,
+		c.Node, c.Outbox, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.Set,
 		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
 	} {
 		n.Use(hooks...)
@@ -347,8 +353,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.AddressPolicy, c.Attempt, c.Audit, c.Device, c.Holder, c.Lamina, c.Node,
-		c.Outbox, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.Set,
+		c.AddressPolicy, c.Attempt, c.Audit, c.Delegation, c.Device, c.Holder, c.Lamina,
+		c.Node, c.Outbox, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.Set,
 		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
 	} {
 		n.Intercept(interceptors...)
@@ -364,6 +370,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Attempt.mutate(ctx, m)
 	case *AuditMutation:
 		return c.Audit.mutate(ctx, m)
+	case *DelegationMutation:
+		return c.Delegation.mutate(ctx, m)
 	case *DeviceMutation:
 		return c.Device.mutate(ctx, m)
 	case *HolderMutation:
@@ -879,6 +887,171 @@ func (c *AuditClient) mutate(ctx context.Context, m *AuditMutation) (Value, erro
 		return (&AuditDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Audit mutation op: %q", m.Op())
+	}
+}
+
+// DelegationClient is a client for the Delegation schema.
+type DelegationClient struct {
+	config
+}
+
+// NewDelegationClient returns a client for the Delegation from the given config.
+func NewDelegationClient(c config) *DelegationClient {
+	return &DelegationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `delegation.Hooks(f(g(h())))`.
+func (c *DelegationClient) Use(hooks ...Hook) {
+	c.hooks.Delegation = append(c.hooks.Delegation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `delegation.Intercept(f(g(h())))`.
+func (c *DelegationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Delegation = append(c.inters.Delegation, interceptors...)
+}
+
+// Create returns a builder for creating a Delegation entity.
+func (c *DelegationClient) Create() *DelegationCreate {
+	mutation := newDelegationMutation(c.config, OpCreate)
+	return &DelegationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Delegation entities.
+func (c *DelegationClient) CreateBulk(builders ...*DelegationCreate) *DelegationCreateBulk {
+	return &DelegationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DelegationClient) MapCreateBulk(slice any, setFunc func(*DelegationCreate, int)) *DelegationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DelegationCreateBulk{err: fmt.Errorf("calling to DelegationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DelegationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DelegationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Delegation.
+func (c *DelegationClient) Update() *DelegationUpdate {
+	mutation := newDelegationMutation(c.config, OpUpdate)
+	return &DelegationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DelegationClient) UpdateOne(_m *Delegation) *DelegationUpdateOne {
+	mutation := newDelegationMutation(c.config, OpUpdateOne, withDelegation(_m))
+	return &DelegationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *DelegationClient) UpdateOneId(id uuid.UUID) *DelegationUpdateOne {
+	mutation := newDelegationMutation(c.config, OpUpdateOne, withDelegationId(id))
+	return &DelegationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Delegation.
+func (c *DelegationClient) Delete() *DelegationDelete {
+	mutation := newDelegationMutation(c.config, OpDelete)
+	return &DelegationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DelegationClient) DeleteOne(_m *Delegation) *DelegationDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *DelegationClient) DeleteOneId(id uuid.UUID) *DelegationDeleteOne {
+	builder := c.Delete().Where(delegation.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &DelegationDeleteOne{builder}
+}
+
+// Query returns a query builder for Delegation.
+func (c *DelegationClient) Query() *DelegationQuery {
+	return &DelegationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDelegation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Delegation entity by its id.
+func (c *DelegationClient) Get(ctx context.Context, id uuid.UUID) (*Delegation, error) {
+	return c.Query().Where(delegation.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DelegationClient) GetX(ctx context.Context, id uuid.UUID) *Delegation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a Delegation.
+func (c *DelegationClient) QueryTenant(_m *Delegation) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(delegation.Table, delegation.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, delegation.TenantTable, delegation.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryHolder queries the holder edge of a Delegation.
+func (c *DelegationClient) QueryHolder(_m *Delegation) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(delegation.Table, delegation.FieldId, id),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, delegation.HolderTable, delegation.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DelegationClient) Hooks() []Hook {
+	return c.hooks.Delegation
+}
+
+// Interceptors returns the client interceptors.
+func (c *DelegationClient) Interceptors() []Interceptor {
+	return c.inters.Delegation
+}
+
+func (c *DelegationClient) mutate(ctx context.Context, m *DelegationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DelegationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DelegationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DelegationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DelegationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Delegation mutation op: %q", m.Op())
 	}
 }
 
@@ -3530,12 +3703,12 @@ func (c *UploadPolicyClient) mutate(ctx context.Context, m *UploadPolicyMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AddressPolicy, Attempt, Audit, Device, Holder, Lamina, Node, Outbox,
+		AddressPolicy, Attempt, Audit, Delegation, Device, Holder, Lamina, Node, Outbox,
 		PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site,
 		SiteMember, Source, Tenant, UploadPolicy []ent.Hook
 	}
 	inters struct {
-		AddressPolicy, Attempt, Audit, Device, Holder, Lamina, Node, Outbox,
+		AddressPolicy, Attempt, Audit, Delegation, Device, Holder, Lamina, Node, Outbox,
 		PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site,
 		SiteMember, Source, Tenant, UploadPolicy []ent.Interceptor
 	}
