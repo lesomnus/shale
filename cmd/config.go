@@ -19,12 +19,8 @@ import (
 
 // Name is what this app is called, and it is the only place it is written.
 // The environment prefix and the names of the configuration files are derived
-// from it: SHALE_DB_DSN, shale.yaml.
+// from it by the loader `cli.Cmd` makes with it: SHALE_DB_DSN, shale.yaml.
 const Name = "shale"
-
-// Loader reads this app's configuration: a file, then the environment over
-// the top of it (§34.1).
-var Loader = config.For(Name)
 
 // Config is what this app is configured with. Every role reads the same
 // file and uses the sections that concern it.

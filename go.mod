@@ -22,10 +22,11 @@ require (
 	github.com/lesomnus/mkot v0.0.0-20260907012347-f3fd02e2da01
 	github.com/lesomnus/mkot/otlp v0.0.0-20260911021409-f5f7b88768d9
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
-	github.com/lesomnus/payday v0.0.0-20261004195617-11bc109d3567
+	github.com/lesomnus/payday v0.0.0-20261006060928-6bb6d9c60fe4
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
-	github.com/lesomnus/roster v0.0.0-20261004204659-5670794b5c4b
-	github.com/lesomnus/xli v0.0.0-20260717171524-bf8cac633057
+	github.com/lesomnus/roster v0.0.0-20261006070005-e9f808e60990
+	github.com/lesomnus/xli v0.0.0-20261006060415-9f2e9ce97331
+	github.com/lesomnus/xli/cfg v0.1.2
 	github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278
 	github.com/pion/webrtc/v4 v4.2.20
 	github.com/protobuf-orm/ent v0.0.0-20260907034331-a2b266d6faf1
@@ -134,6 +135,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 // indirect
+	golang.org/x/image v0.45.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
