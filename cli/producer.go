@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/payday/pdcmd"
@@ -24,7 +25,7 @@ import (
 // see as a configuration skeleton, `probe` runs the configured sources for
 // a while and reports what they sustain. They are mounted under `producer`
 // beside the generated verbs.
-func addProducerCommands(t *pdcmd.Tree, c *cmd.Config) {
+func addProducerCommands(t *pdcmd.Tree, c *cmd.Config, l *cfg.Loader[cmd.Config]) {
 	t.Add("producer/scan", &xli.Command{
 		Name:  "scan",
 		Brief: "what this host can see: cameras, ONVIF devices, audio, encoders",
@@ -42,7 +43,7 @@ func addProducerCommands(t *pdcmd.Tree, c *cmd.Config) {
 		Name:  "push",
 		Brief: "write a stream to a pushed source of the producer on this host (§38.9)",
 		Flags: flg.Flags{
-			&flg.String{Name: "to", Brief: "the producer's listener, unix:/path or tcp://host:port (producer.push)"},
+			cfg.Bind(l, &c.Producer.Push, &flg.String{Name: "to", Brief: "the producer's listener, unix:/path or tcp://host:port (producer.push)"}),
 			&flg.String{Name: "part", Brief: "bytes per request (4MiB)"},
 			&flg.Switch{Name: "open", Brief: "leave the stream open at the end instead of completing it"},
 		},
@@ -52,10 +53,7 @@ func addProducerCommands(t *pdcmd.Tree, c *cmd.Config) {
 		},
 		Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 			alias, _ := arg.Get[string](self, "ALIAS")
-			to, _ := flg.Find[string](self, "to")
-			if to == "" {
-				to = c.Producer.Push
-			}
+			to := c.Producer.Push
 			if to == "" {
 				return errors.New("--to: the producer's listener, or producer.push in the configuration")
 			}

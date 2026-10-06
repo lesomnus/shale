@@ -29,9 +29,16 @@ shale serve all [--dev <dir>]     control, cluster, one Storage Node, and one Re
 - A host needs one setting, the Control Plane's address. Everything else about
   its identity is done by joining and adoption
   ([§33.4](10-security.md#334-joining-and-adoption)).
-- The binary knows nothing about Kubernetes. Configuration comes from flags,
-  then environment variables (`SHALE_*`), then a file
-  (`/etc/shale/shale.yaml`), in that order of precedence.
+- The binary knows nothing about Kubernetes. Configuration comes from a file
+  (`/etc/shale/shale.yaml`), then environment variables (`SHALE_*`) over
+  it, then the flags that stand for one of its values over both: `--addr`,
+  `--cluster-addr` and `--as` (`client.*`), `--cp` and `--state` of
+  `serve`, `--demo` of `serve producer`, and `--to` of `producer push`
+  (`producer.push`). A flag counts only when it is given, and given empty
+  (`--cp=`) it clears the value, as `SHALE_CP=` does. Help names the
+  variable beside each of these flags, and `shale config` prints where
+  every value came from. `--dev` is not one of them: development mode is
+  applied over what was read ([§34.7](#347-single-machine)).
 - The same binary is also the CLI. payday generates `get`, `ls`, `watch`,
   `add`, `patch`, and `erase` for every entity that declares them
   ([§32](09-operations.md#32-cli--processes)).
