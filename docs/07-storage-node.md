@@ -95,11 +95,12 @@ capability warnings, which the heartbeat carries and `shale sink get`
 shows.
 
 ```yaml
-sinks:
-  - path: /mnt/hdd01           # whole-HDD mount: device and capacity detected
-  - path: /srv/shale/a
-    capacity: 500GiB           # required when the filesystem is shared
-  - path: /tank/cctv           # a ZFS dataset: the pool is the device, its quota the capacity
+storage:
+  sinks:
+    - path: /mnt/hdd01           # whole-HDD mount: device and capacity detected
+    - path: /srv/shale/a
+      capacity: 500GiB           # required when the filesystem is shared
+    - path: /tank/cctv           # a ZFS dataset: the pool is the device, its quota the capacity
 ```
 
 **Capacity on a shared filesystem.** A sink with a declared `capacity`

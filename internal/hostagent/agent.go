@@ -194,7 +194,7 @@ func (a *Agent) tlsConfig() (*tls.Config, error) {
 		return cfg, nil
 	}
 
-	// First contact: accept what is presented, check it against --ca-hash
+	// First contact: accept what is presented, check it against ca_hash
 	// when given, and pin it.
 	cfg.InsecureSkipVerify = true
 	cfg.VerifyPeerCertificate = func(raw [][]byte, _ [][]*x509.Certificate) error {

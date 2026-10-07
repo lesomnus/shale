@@ -340,8 +340,8 @@ given only the Control Plane's address:
 
 ```text
 shale serve storage  --cp https://cp-cluster.internal:7401
-shale serve producer --cp https://cp.example.com:7400 [--tenant acme]
-shale serve reader   --cp https://cp.example.com:7400 [--tenant acme]
+shale serve producer --cp https://cp.example.com:7400   # and SHALE_TENANT=acme, with more than one tenant
+shale serve reader   --cp https://cp.example.com:7400   # likewise
 ```
 
 1. The host reads its **hardware identity**: the DMI product UUID
@@ -351,12 +351,12 @@ shale serve reader   --cp https://cp.example.com:7400 [--tenant acme]
    Only when neither exists does it fall back to `/etc/machine-id`, which does
    not, and it says so in its join request.
 2. It generates a key pair in its state directory and connects to the CP. On
-   first contact it **pins the CA it sees**; `--ca-hash sha256:<fingerprint>`
-   makes that a check instead of a pin, for operators who want to rule out a
-   man in the middle on an untrusted network.
+   first contact it **pins the CA it sees**; `ca_hash: sha256:<fingerprint>`
+   (`SHALE_CA_HASH`) makes that a check instead of a pin, for operators who
+   want to rule out a man in the middle on an untrusted network.
 3. It calls `Join` with its role, hardware identity, hostname, and a CSR, and
-   for a producer or reader the tenant it is meant for (implied in a
-   single-organization cluster). A Storage Node adds its interfaces and its
+   for a producer or reader the tenant it is meant for (`tenant`, implied in
+   a single-organization cluster). A Storage Node adds its interfaces and its
    sinks. `Join` needs no credential and is rate-limited per source address.
 4. The CP records a **pending host**: a `Node`, `Producer`, or `Reader` row in
    state `pending`. If a row with the same hardware identity already exists,

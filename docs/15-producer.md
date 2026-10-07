@@ -169,61 +169,62 @@ what the producer reads is the same.
 into ffmpeg arguments, passes the second through, and leaves the third alone.
 
 ```yaml
+cp: https://cp.example.com:7400
+
 producer:
-  cp: https://cp.example.com:7400
   set: lobby                # the set this host is adopted for
   uplink: 40Mbps            # optional; bounds the sum of the ceilings (§38.5)
   ffmpeg: /usr/bin/ffmpeg   # default: from PATH
   gstreamer: /usr/bin/gst-launch-1.0   # for capture: gstreamer; default: from PATH
   fragment_duration: 100ms  # the longest fragment, 200ms by default: about how far a live viewer is behind (§38.1)
 
-sources:
-  - alias: door             # tier 1: structured, portable
-    input: v4l2:/dev/video0
-    format: mjpeg           # what the camera delivers: mjpeg | yuyv | h264
-    size: 1920x1080
-    fps: 30
-    encoder: auto           # auto | h264_v4l2m2m | h264_vaapi | h264_nvenc | libx264 | ...
-    max_bitrate: auto       # or 4Mbps; the ceiling of §12.6
-    keyframe_interval: 2s
-    audio: {device: alsa:hw:1, bitrate: 64kbps}   # a microphone, or alsa:/dev/snd/by-path/…; absent: a USB camera has no audio
-    controls: {exposure_dynamic_framerate: 0}     # V4L2 controls, set before every start
-    idle: {dark_after: 10m}   # skip the segments of a dark scene (§38.10); absent: store everything
+  sources:
+    - alias: door             # tier 1: structured, portable
+      input: v4l2:/dev/video0
+      format: mjpeg           # what the camera delivers: mjpeg | yuyv | h264
+      size: 1920x1080
+      fps: 30
+      encoder: auto           # auto | h264_v4l2m2m | h264_vaapi | h264_nvenc | libx264 | ...
+      max_bitrate: auto       # or 4Mbps; the ceiling of §12.6
+      keyframe_interval: 2s
+      audio: {device: alsa:hw:1, bitrate: 64kbps}   # a microphone, or alsa:/dev/snd/by-path/…; absent: a USB camera has no audio
+      controls: {exposure_dynamic_framerate: 0}     # V4L2 controls, set before every start
+      idle: {dark_after: 10m}   # skip the segments of a dark scene (§38.10); absent: store everything
 
-  - alias: yard
-    input: rtsp://10.1.2.40/stream1
-    format: h264            # already encoded: remuxed with -c copy, no encoding
-    max_bitrate: onvif      # read from the camera (§38.4)
-    # audio: {codec: copy}  # the camera's own audio as it sends it (the default); aac, opus, none
+    - alias: yard
+      input: rtsp://10.1.2.40/stream1
+      format: h264            # already encoded: remuxed with -c copy, no encoding
+      max_bitrate: onvif      # read from the camera (§38.4)
+      # audio: {codec: copy}  # the camera's own audio as it sends it (the default); aac, opus, none
 
-  - alias: gate             # tier 2: structured plus overrides
-    input: v4l2:/dev/video2
-    format: mjpeg
-    size: 1280x720
-    fps: 30
-    encoder: libx264
-    max_bitrate: 2Mbps
-    encoder_options: {preset: veryfast, tune: zerolatency}   # -preset veryfast -tune zerolatency
-    extra_input_args: [-thread_queue_size, "512"]
-    extra_output_args: [-x264-params, "nal-hrd=cbr"]
+    - alias: gate             # tier 2: structured plus overrides
+      input: v4l2:/dev/video2
+      format: mjpeg
+      size: 1280x720
+      fps: 30
+      encoder: libx264
+      max_bitrate: 2Mbps
+      encoder_options: {preset: veryfast, tune: zerolatency}   # -preset veryfast -tune zerolatency
+      extra_input_args: [-thread_queue_size, "512"]
+      extra_output_args: [-x264-params, "nal-hrd=cbr"]
 
-  - alias: porch            # a Raspberry Pi's camera through GStreamer
-    capture: gstreamer
-    input: v4l2:/dev/v4l/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-video-index0
-    format: mjpeg
-    size: 1280x720
-    fps: 30
-    encoder: auto           # under gstreamer: auto | v4l2h264enc | x264enc | copy
-    max_bitrate: 2.2Mbps
-    controls: {exposure_dynamic_framerate: 0}
-    # the camera's microphone, by its USB port as the camera is: aac (+ Opus) | opus | none
-    audio: {device: "alsa:/dev/snd/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.2"}
+    - alias: porch            # a Raspberry Pi's camera through GStreamer
+      capture: gstreamer
+      input: v4l2:/dev/v4l/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-video-index0
+      format: mjpeg
+      size: 1280x720
+      fps: 30
+      encoder: auto           # under gstreamer: auto | v4l2h264enc | x264enc | copy
+      max_bitrate: 2.2Mbps
+      controls: {exposure_dynamic_framerate: 0}
+      # the camera's microphone, by its USB port as the camera is: aac (+ Opus) | opus | none
+      audio: {device: "alsa:/dev/snd/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.2"}
 
-  - alias: roof             # tier 3: your own command; stdout must be fragmented MP4
-    command: >
-      rpicam-vid -t 0 --codec h264 --inline --intra 60 --bitrate 4000000 -o -
-      | ffmpeg -f h264 -i - -c copy -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration 200000 -
-    max_bitrate: 4.5Mbps
+    - alias: roof             # tier 3: your own command; stdout must be fragmented MP4
+      command: >
+        rpicam-vid -t 0 --codec h264 --inline --intra 60 --bitrate 4000000 -o -
+        | ffmpeg -f h264 -i - -c copy -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration 200000 -
+      max_bitrate: 4.5Mbps
 ```
 
 **Translation** of tier 1:
@@ -614,15 +615,16 @@ camera. Storing that video is cost without a reader: the night is most of
 the day. A source with `idle:` skips it.
 
 ```yaml
-sources:
-  - alias: bench
-    input: v4l2:/dev/video0
-    format: mjpeg
-    size: 1280x720
-    fps: 30
-    idle:
-      dark_after: 10m      # this long dark, and the segments are skipped
-      threshold: 0.10      # a pixel is dark at or below this luma (0..1)
+producer:
+  sources:
+    - alias: bench
+      input: v4l2:/dev/video0
+      format: mjpeg
+      size: 1280x720
+      fps: 30
+      idle:
+        dark_after: 10m      # this long dark, and the segments are skipped
+        threshold: 0.10      # a pixel is dark at or below this luma (0..1)
 ```
 
 - **Lit: everything is stored**, as without `idle:`. There is no motion

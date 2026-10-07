@@ -26,22 +26,25 @@ Summary. The full rationale is in the [placement decision report](placement-deci
 - The Control Plane chooses the **sink** (node → device → sink). There are no
   Placement Groups and no node-local Disk Groups.
 
-Placement is tunable per set:
+Placement is tunable per set. It is the `Set`'s `placement`, given when the
+set is added or patched, and not a key of `shale.yaml`:
 
-```yaml
-placement:
-  epoch: 1h              # how long a source sticks to one sink
-  set_spread: spread     # spread | pack | none
+```sh
+shale set add @acme/cam-set '{"placement": {"epoch_seconds": 3600, "set_spread": "SET_SPREAD_SPREAD"}}'
 ```
 
-- `spread` (default): distinct nodes, then distinct devices, as above.
-- `pack`: the whole set shares one sink per epoch. Losses are all-or-nothing
-  per set, and set reads are limited to one device. Use it only when a partial
-  set is worthless.
-- `none`: each member is placed independently.
+`epoch_seconds` is how long a source sticks to one sink, an hour when it is
+0, and `set_spread` is one of:
 
-These are fields of the `Set`. The global `PlacementPolicy` is something
-else: it names the scheduler ([§11.2](#112-scheduler-interface)).
+- `SET_SPREAD_SPREAD`, which is also what an unset one means: distinct
+  nodes, then distinct devices, as above.
+- `SET_SPREAD_PACK`: the whole set shares one sink per epoch. Losses are
+  all-or-nothing per set, and set reads are limited to one device. Use it only
+  when a partial set is worthless.
+- `SET_SPREAD_NONE`: each member is placed independently.
+
+The global `PlacementPolicy` is something else: it names the scheduler
+([§11.2](#112-scheduler-interface)).
 
 | `epoch` | When one device dies (30-day retention, 480 devices) |
 |---|---|
