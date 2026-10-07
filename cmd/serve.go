@@ -568,7 +568,13 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 		policy = core.ClusterPolicy{ClusterTenant: s.ClusterTenant, Operators: s.operators()}
 	}
 
-	chain := grpcx.Serving(ctx, grpcx.WithDeadline(sc.CallTimeout())).
+	// Heartbeat is a clock, not a request: every node, every few seconds. Its
+	// arrive/answer records were most of what the cluster surface logged and
+	// said nothing a failed heartbeat would not say on its own.
+	chain := grpcx.Serving(ctx,
+		grpcx.WithDeadline(sc.CallTimeout()),
+		grpcx.WithPolled(api.NodeService_Heartbeat_FullMethodName),
+	).
 		WithUnary(auth.InterceptorUnary(s.Auth[surface], Resolver(s), public(surface))).
 		WithStream(auth.InterceptorStream(s.Auth[surface], Resolver(s), public(surface))).
 		WithUnary(grpcx.LimitUnary(sc.Limiter(), gate.ByTenant())).
