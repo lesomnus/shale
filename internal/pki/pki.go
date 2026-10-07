@@ -141,7 +141,7 @@ func BundleHash(pem []byte) string {
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
-// Fingerprint is the SHA-256 of a certificate's DER, the way `--ca-hash`
+// Fingerprint is the SHA-256 of a certificate's DER, the way `ca_hash`
 // takes it.
 func Fingerprint(c *x509.Certificate) string {
 	sum := sha256.Sum256(c.Raw)

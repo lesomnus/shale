@@ -164,13 +164,8 @@ With `T = 30 d`, `D = 480`:
 
 The **expected total loss is the same** for every setting. `epoch` only
 decides how that loss is distributed. Hence it is a policy parameter,
-configurable per set:
-
-```yaml
-placement:
-  epoch: 1h
-  set_spread: spread
-```
+configurable per set: the `Set`'s `placement.epoch_seconds`
+([§11](03-placement.md#11-placement)).
 
 **Default `1h`, why:**
 

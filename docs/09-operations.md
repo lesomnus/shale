@@ -96,7 +96,7 @@ Device.quarantine = { state, date_quarantined, reason,
 | `shale device release <device>` | back on probation (e.g. after reseating a cable) |
 | `shale device retire <device>` | reads only, never again for writes; laminae stay readable until they expire |
 | `shale device declare-dead <device>` | its laminae → LOST; the device is forgotten |
-| `shale device locate <device> [--off]` | light the bay LED, so the right HDD is pulled |
+| `shale device locate <device> ['{"off": true}']` | light the bay LED, so the right HDD is pulled; `off` puts it out |
 
 Every one of these reaches the node through its control API. A replaced HDD
 joins as a new device with a new sink ([§9](02-data-model.md#9-identity)). An
