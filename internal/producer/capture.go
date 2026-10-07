@@ -157,8 +157,10 @@ func (c SourceConfig) contentType() string {
 // FragDuration is the default bound on a fragment of a capture's stream
 // (§38.2): the live tee sends whole fragments, so it is about how far
 // behind the camera a viewer is; every keyframe starts a fragment too.
-// `producer.fragment_duration` sets another.
-const FragDuration = 500 * time.Millisecond
+// `producer.fragment_duration` sets another. 200 ms rather than the 500 it
+// was: on a Pi with three cameras it cost no CPU or bitrate that could be
+// measured, and a live viewer is 0.3 s nearer the camera (producer bench).
+const FragDuration = 200 * time.Millisecond
 
 // The bounds `fragment_duration` is held to: a frame or two at the least,
 // and no more than a keyframe interval's worth.

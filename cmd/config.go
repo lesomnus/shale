@@ -315,7 +315,7 @@ type ProducerConfig struct {
 	// Ffmpeg is the capture binary; `ffmpeg` on PATH by default.
 	Ffmpeg string `yaml:"ffmpeg"`
 	// FragmentDuration bounds a fragment of every source's stream, e.g.
-	// "200ms" (500 ms when unset): the live tee sends whole fragments, so
+	// "100ms" (200 ms when unset): the live tee sends whole fragments, so
 	// it is about how far behind the camera a live viewer is (§38.2).
 	FragmentDuration time.Duration `yaml:"fragment_duration"`
 	// Gstreamer is gst-launch, for the sources with `capture: gstreamer`

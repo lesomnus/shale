@@ -33,7 +33,7 @@ func TestGstArgsPi(t *testing.T) {
 	require.Equal(t, []string{
 		"-hide_banner", "-loglevel", "warning", "-nostats", "-probesize", "262144", "-analyzeduration", "500000",
 		"-f", "mpegts", "-i", "pipe:0", "-map", "0:v:0", "-map", "0:a?", "-c", "copy",
-		"-f", "mp4", "-movflags", "frag_keyframe+empty_moov+delay_moov+default_base_moof", "-frag_duration", "500000", "pipe:1",
+		"-f", "mp4", "-movflags", "frag_keyframe+empty_moov+delay_moov+default_base_moof", "-frag_duration", "200000", "pipe:1",
 	}, GstRemuxArgs(false, false, FragDuration))
 }
 
@@ -329,12 +329,12 @@ while :; do sleep 0.05; done`)
 // the capture's, the second stage's, and the live helper's (§38.2).
 func TestFragmentDuration(t *testing.T) {
 	c := SourceConfig{Alias: "a", Input: "v4l2:/dev/video0", Format: "mjpeg", Fps: 30}
-	require.Contains(t, strings.Join(Args(c, "libx264", 2_000_000, 2*time.Second), " "), "-frag_duration 500000 -")
-	c.Fragment = 200 * time.Millisecond
 	require.Contains(t, strings.Join(Args(c, "libx264", 2_000_000, 2*time.Second), " "), "-frag_duration 200000 -")
-	require.Contains(t, strings.Join(RemuxArgs(false, c.fragment()), " "), "-frag_duration 200000 pipe:1")
-	require.Contains(t, strings.Join(GstRemuxArgs(false, false, c.fragment()), " "), "-frag_duration 200000 pipe:1")
-	require.Contains(t, strings.Join(LiveArgs(64_000, c.fragment()), " "), "-frag_duration 200000 pipe:1")
+	c.Fragment = 500 * time.Millisecond
+	require.Contains(t, strings.Join(Args(c, "libx264", 2_000_000, 2*time.Second), " "), "-frag_duration 500000 -")
+	require.Contains(t, strings.Join(RemuxArgs(false, c.fragment()), " "), "-frag_duration 500000 pipe:1")
+	require.Contains(t, strings.Join(GstRemuxArgs(false, false, c.fragment()), " "), "-frag_duration 500000 pipe:1")
+	require.Contains(t, strings.Join(LiveArgs(64_000, c.fragment()), " "), "-frag_duration 500000 pipe:1")
 
 	for _, f := range []time.Duration{10 * time.Millisecond, 3 * time.Second} {
 		_, err := New(Config{Sources: []SourceConfig{{Alias: "a", Input: "v4l2:/dev/video0", Fragment: f}}})

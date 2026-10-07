@@ -238,6 +238,13 @@ Findings:
   (`USB isochronous frame lost (-18)` in uvcvideo's trace), the holes in
   each JPEG decoding as the shifted rows, and a frame dropped where a JPEG
   did not decode at all (Holiday-Robot/wed.hday.dev#387).
+- **200 ms fragments cost nothing measurable.** With `fragment_duration`
+  at 200 ms against 500, the three pipelines took 1.065 cores against
+  1.145, the remux 0.053 against 0.049 and the producer 0.097 against
+  0.105, within the noise; the stored bitrate was 1.88 Mbps both ways and
+  no frame was lost (nine laminae, 30.00 fps). A live viewer is 0.3 s
+  nearer the camera, so 200 ms became the default; the Pi then ran on it
+  for 66 hours without a restart.
 
 ## Caveats
 
