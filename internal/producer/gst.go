@@ -132,21 +132,16 @@ func GstArgs(c SourceConfig, encoder string, ceiling int64, keyframe time.Durati
 		args = append(args, "h264parse", "!", "avdec_h264", "!")
 	} else if format == "yuyv" {
 		args = append(args, "video/x-raw,format=YUY2,"+mode, "!")
+		args = append(args, gstDarkTee(c)...)
 	} else {
 		// MJPEG, what a USB camera sends at 720p and above. Decoded in
 		// software: the Pi's JPEG decoder takes two streams at most, and a
 		// third leaves it wedged until a reboot.
-		args = append(args, "image/jpeg,"+mode, "!", "jpegdec", "!")
+		args = append(args, "image/jpeg,"+mode, "!")
+		args = append(args, gstDarkTee(c)...)
+		args = append(args, "jpegdec", "!")
 	}
 	args = append(args, "videoconvert", "!", "video/x-raw,format=I420", "!")
-	if c.Idle != nil {
-		// The picture the encoder takes is also what is measured (§38.10).
-		// The encoder's allocation query is kept from the tee: answered
-		// through it, the Pi's v4l2h264enc made gst-launch abort asking
-		// for 4 GiB; without it the encoder copies each picture into its
-		// own buffers, 6% of a core at 720p30.
-		args = append(args, "tee", "name=pic", "pic.", "!", "queue", "!", "identity", "drop-allocation=true", "!")
-	}
 
 	if keyframe <= 0 {
 		keyframe = 2 * time.Second
@@ -182,20 +177,45 @@ func GstArgs(c SourceConfig, encoder string, ceiling int64, keyframe time.Durati
 	return append(args, gstDarkArgs(c)...)
 }
 
-// gstDarkArgs is the measuring branch of a source with `idle:` (§38.10):
-// one picture a second, grey and darkWidth wide, to fd 3, which the
-// producer reads (readDark). Its queue drops rather than holds the
-// recording up should the reader fall behind.
-func gstDarkArgs(c SourceConfig) []string {
+// gstDarkTee splits what the camera sends, for a source with `idle:`
+// (§38.10): the recording goes on through a queue that holds two of the
+// camera's buffers at most, and gstDarkArgs takes the other branch.
+//
+// The split is before anything is decoded, so the encoder takes its
+// pictures from the decoder exactly as it does without `idle:`. A tee in
+// front of the Pi's v4l2h264enc, after the decoder, made gst-launch abort
+// asking for 4 GiB (the encoder's allocation query answered through the
+// tee) unless that query was dropped, and cost the encoder a copy of every
+// picture; here only one JPEG a second is decoded for the measure.
+func gstDarkTee(c SourceConfig) []string {
 	if c.Idle == nil {
 		return nil
 	}
-	w, h := darkSize(c.Size)
 
-	return []string{"pic.", "!", "queue", "leaky=downstream", "max-size-buffers=2", "!",
-		"videorate", "drop-only=true", "!", "video/x-raw,framerate=1/1", "!",
-		"videoscale", "!", "videoconvert", "!", fmt.Sprintf("video/x-raw,format=GRAY8,width=%d,height=%d", w, h), "!",
-		"fdsink", "fd=3"}
+	return []string{"tee", "name=pic", "pic.", "!", "queue", "max-size-buffers=2", "!"}
+}
+
+// gstDarkArgs is the measuring branch of a source with `idle:` (§38.10):
+// what the camera sends, one picture a second, decoded when it is MJPEG,
+// grey and darkWidth wide, to fd 3, which the producer reads (readDark).
+// Its queue drops rather than holds the recording up should the reader fall
+// behind, and the rate is cut before the decoder, so one JPEG a second is
+// decoded.
+func gstDarkArgs(c SourceConfig) []string {
+	if c.Idle == nil || strings.ToLower(c.Format) == "h264" {
+		// A camera's own H.264 is not measured: idle is refused at start.
+		return nil
+	}
+	w, h := darkSize(c.Size)
+	args := []string{"pic.", "!", "queue", "leaky=downstream", "max-size-buffers=1", "!", "videorate", "drop-only=true", "!"}
+	if strings.ToLower(c.Format) == "yuyv" {
+		args = append(args, "video/x-raw,framerate=1/1", "!")
+	} else {
+		args = append(args, "image/jpeg,framerate=1/1", "!", "jpegdec", "!")
+	}
+
+	return append(args, "videoscale", "!", "videoconvert", "!", fmt.Sprintf("video/x-raw,format=GRAY8,width=%d,height=%d", w, h), "!",
+		"fdsink", "fd=3")
 }
 
 // gstVideoTail parses the H.264 so every keyframe carries its parameter

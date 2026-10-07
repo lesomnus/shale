@@ -220,12 +220,24 @@ Findings:
   the capture took 4.6% of a core, `voaacenc` 3% more, `opusenc` 7% more
   (9% at `complexity=0`, so lowering it saves little). All three tracks
   started together and lasted the same to within 30 ms.
-- **Measuring dark scenes costs 5% of a core per camera.** One picture a
-  second teed off to the producer (§38.10) took a 720p30 pipeline from 36%
-  to 42% of a core, most of it the encoder copying pictures into its own
-  buffers now that the tee is in front of it; the frame rate and bitrate
-  did not move. With every pixel counted dark (`threshold: 1.0`) it told
-  25 dark seconds in 25; in the lit room at the default 0.10, none.
+- **Measuring dark scenes costs about 1% of a core per camera,** split off
+  before the camera's JPEG is decoded and decoded once a second (§38.10):
+  a 720p30 pipeline at 36.9% against 36.1% without it. With every pixel
+  counted dark (`threshold: 1.0`) it told 20 dark seconds in 20; in the lit
+  room at the default 0.10, none.
+- **Split after the decoder, it cost more and needed a workaround.** The
+  first version teed the decoded picture in front of `v4l2h264enc`. That
+  made gst-launch abort asking for 4 GiB until the encoder's allocation
+  query was dropped (`identity drop-allocation=true`), and the pipeline
+  took 42% of a core, the encoder copying every picture into its own
+  buffers. While it ran, one camera of three recorded rows of other
+  pictures shifted sideways and lost frames in bursts, and the split was
+  suspected; it was not the cause. The same camera did the same with
+  `idle:` off, by day and not by night, and the loss followed the camera
+  from port to port: USB isochronous packets lost on the bus
+  (`USB isochronous frame lost (-18)` in uvcvideo's trace), the holes in
+  each JPEG decoding as the shifted rows, and a frame dropped where a JPEG
+  did not decode at all (Holiday-Robot/wed.hday.dev#387).
 
 ## Caveats
 
