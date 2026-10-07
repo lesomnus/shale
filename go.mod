@@ -22,7 +22,7 @@ require (
 	github.com/lesomnus/mkot v0.0.0-20260907012347-f3fd02e2da01
 	github.com/lesomnus/mkot/otlp v0.0.0-20260911021409-f5f7b88768d9
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
-	github.com/lesomnus/payday v0.0.0-20261006060928-6bb6d9c60fe4
+	github.com/lesomnus/payday v0.0.0-20261007114930-98c339f78ac5
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
 	github.com/lesomnus/roster v0.0.0-20261007010402-12d13f13260e
 	github.com/lesomnus/xli v0.0.0-20261006060415-9f2e9ce97331
