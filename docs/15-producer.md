@@ -255,7 +255,7 @@ heartbeat ([§38.6](#386-health-and-heartbeats)).
 | `audio` | a microphone only (`device`, named as for ffmpeg): `alsasrc device=<hw:…> ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1`, then AAC (`avenc_aac`, `fdkaacenc` or `voaacenc`, the first this host has) with `opusenc` beside it for live ([§38.7](#387-live-output)), or `opusenc` alone for `codec: opus`, at `bitrate`; both out of the video ceiling as with ffmpeg. A V4L2 camera sends no audio of its own, so `copy`, or a codec without a `device`, is refused. On a Pi 400 a microphone costs about a quarter of a core: AAC and Opus at 64 kbps, 16–20% of a core in the encoders, the rest in the pipeline ([bench](producer-bench.md#three-cameras-gstreamer-against-ffmpeg)) |
 | output (fixed) | `mpegtsmux name=mux ! fdsink fd=1`, the video into it at PID 65 after `h264parse config-interval=-1`, the AAC at 66 and the Opus at 67, so the streams come out of the second stage video first; into the second stage below, which maps `0:v:0` then `0:a?` and, with a microphone, probes 3 s, since the sound starts before the camera's first frame |
 | `controls` | as with ffmpeg: set on the device before every start |
-| `idle` | what the camera sends, split before anything is decoded (`tee name=pic`, the recording on through `queue max-size-buffers=2`), one picture a second, decoded when it is MJPEG, grey and 160 pixels wide, to fd 3 (`videorate drop-only=true ! image/jpeg,framerate=1/1 ! jpegdec ! videoscale ! videoconvert ! video/x-raw,format=GRAY8,… ! fdsink fd=3`), which the producer reads and measures as blackframe would ([§38.10](#3810-dark-scenes)). The encoder takes its pictures from the decoder as it does without `idle:`: a tee between them, on the Pi's `v4l2h264enc`, made gst-launch abort asking for 4 GiB unless the encoder's allocation query was dropped, and cost about 5% of a core in the encoder copying each picture. One JPEG decoded a second costs about 1% of a core |
+| `idle` | what the camera sends, split before anything is decoded (`tee name=pic`, the recording on through `queue max-size-buffers=2`), one picture a second, decoded when it is MJPEG, grey and 160 pixels wide, to fd 3 (`videorate drop-only=true ! image/jpeg,framerate=1/1 ! jpegdec ! videoscale ! videoconvert ! video/x-raw,format=GRAY8,… ! fdsink fd=3`), which the producer reads and measures as blackframe would ([§38.10](#3810-dark-scenes)). The encoder takes its pictures from the decoder as it does without `idle:`: a tee between them, on the Pi's `v4l2h264enc`, made gst-launch abort asking for 4 GiB unless the encoder's allocation query was dropped. **Not recommended on the Pi:** in the one run of this pipeline with three cameras (25 min), every camera lost frames in bursts that the same cameras did not lose without `idle:`, and why is not known; the producer warns at start ([bench](producer-bench.md#three-cameras-gstreamer-against-ffmpeg)) |
 
 **A second stage for the Raspberry Pi's encoder.** It also serves
 `capture: gstreamer`, whose pipeline writes MPEG-TS for it. `h264_v4l2m2m` hands
@@ -656,7 +656,9 @@ producer:
   one picture a second, grey and 160 pixels wide, to a pipe of its own
   (fd 3), and the producer counts its pixels at or below `threshold`, 98 %
   of them for a dark second, as blackframe does on the full picture
-  ([§38.3](#383-managed-capture)). Only
+  ([§38.3](#383-managed-capture)). On the Pi that measuring branch has
+  cost the recording frames, and it is not recommended there until the
+  measure is taken outside the capture pipeline. Only
   a source the producer encodes can be measured: a copied stream
   (`format: h264`, `encoder: copy`) is never decoded, and `idle:` on one
   is refused. An `extra_output_args` with its own `-vf` replaces the

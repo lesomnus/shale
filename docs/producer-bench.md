@@ -220,24 +220,46 @@ Findings:
   the capture took 4.6% of a core, `voaacenc` 3% more, `opusenc` 7% more
   (9% at `complexity=0`, so lowering it saves little). All three tracks
   started together and lasted the same to within 30 ms.
-- **Measuring dark scenes costs about 1% of a core per camera,** split off
-  before the camera's JPEG is decoded and decoded once a second (§38.10):
-  a 720p30 pipeline at 36.9% against 36.1% without it. With every pixel
-  counted dark (`threshold: 1.0`) it told 20 dark seconds in 20; in the lit
-  room at the default 0.10, none.
-- **Split after the decoder, it cost more and needed a workaround.** The
-  first version teed the decoded picture in front of `v4l2h264enc`. That
-  made gst-launch abort asking for 4 GiB until the encoder's allocation
-  query was dropped (`identity drop-allocation=true`), and the pipeline
-  took 42% of a core, the encoder copying every picture into its own
-  buffers. While it ran, one camera of three recorded rows of other
-  pictures shifted sideways and lost frames in bursts, and the split was
-  suspected; it was not the cause. The same camera did the same with
-  `idle:` off, by day and not by night, and the loss followed the camera
-  from port to port: USB isochronous packets lost on the bus
-  (`USB isochronous frame lost (-18)` in uvcvideo's trace), the holes in
-  each JPEG decoding as the shifted rows, and a frame dropped where a JPEG
-  did not decode at all (Holiday-Robot/wed.hday.dev#387).
+- **Measuring dark scenes (`idle:`) is not usable here yet.** What was
+  measured, on the Pi 400 with C270s at 720p30, in order:
+  - *A tee after the decoder, in front of `v4l2h264enc`* (shale#106, one
+    camera, 25 s per run): gst-launch aborted (`failed to allocate
+    4294967447 bytes`) until the encoder's allocation query was dropped
+    (`identity drop-allocation=true`). With it: 0.45 of a core against
+    0.39 without `idle:`, 29.44 fps against 29.48, 25 dark seconds in 25 at
+    `threshold: 1.0` and none at 0.10 in the lit room.
+  - *The same, three cameras, deployed* (2026-10-03): one camera recorded
+    rows of other pictures shifted sideways in most frames and lost frames
+    in bursts (43 gaps of 68–100 ms in one 244 s lamina); the other two
+    did not. That camera with `idle:` off: 30.00 fps, no gaps, no stripes
+    in 12 frames sampled.
+  - *A tee before the decoder* (shale#107, one JPEG a second decoded for
+    the measure): 36.9% of a core per camera against 36.1% without
+    `idle:` and 42% with the tee after the decoder; 20 dark seconds in 20
+    at 1.0, none at 0.10; the camera above, two laminae at 30.00 fps with
+    no gaps. Then 25 minutes with all three cameras: frames lost in bursts
+    on **every** camera -- laminae with gaps 4 of 6, 2 of 6 and 2 of 6, the
+    worst with 39, 42 and 26 gaps of up to 168 ms. Without `idle:` the same
+    cameras had recorded no gaps that day.
+  - *`idle:` off, three cameras, three days* (Holiday-Robot/wed.hday.dev#387):
+    the stripes and burst losses of the second item came back on the same
+    camera by day and not by night, with `USB isochronous frame lost (-18)`
+    in uvcvideo's trace on its port only, and followed the camera when the
+    plugs were swapped; on 2026-10-06 its port had 1,372 gaps and the other
+    two ports 2 and 3.
+
+  What follows from it, and what does not:
+  - The stripes are the camera's: packets lost on the bus, the holes
+    decoding as shifted rows and a JPEG that does not decode as a dropped
+    frame. Whether the tee after the decoder added to them in the second
+    item is not separable from these runs.
+  - The burst losses with the tee before the decoder are not that camera's
+    alone: all three cameras, far above the two or three a day the healthy
+    cameras had without it. Why is not measured. A split in the capture
+    pipeline holding on to the camera's buffers, so the driver drops frames
+    when none is free, is a guess.
+  - So `idle:` stays off on the Pi (wed.hday.dev#350), and measuring the
+    scene outside the capture pipeline is the way on.
 - **200 ms fragments cost nothing measurable.** With `fragment_duration`
   at 200 ms against 500, the three pipelines took 1.065 cores against
   1.145, the remux 0.053 against 0.049 and the producer 0.097 against
