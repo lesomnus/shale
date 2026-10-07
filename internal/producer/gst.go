@@ -187,6 +187,10 @@ func GstArgs(c SourceConfig, encoder string, ceiling int64, keyframe time.Durati
 // asking for 4 GiB (the encoder's allocation query answered through the
 // tee) unless that query was dropped, and cost the encoder a copy of every
 // picture; here only one JPEG a second is decoded for the measure.
+//
+// Either way the split is in the capture pipeline, and on the Pi this one
+// has cost the recording frames on every camera (docs/producer-bench.md):
+// the producer warns of it at start.
 func gstDarkTee(c SourceConfig) []string {
 	if c.Idle == nil {
 		return nil

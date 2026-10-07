@@ -302,6 +302,9 @@ func New(cfg Config) (*Producer, error) {
 			if sc.Input == InputPush || sc.Command != "" || copied {
 				return nil, fmt.Errorf("source %s: idle needs a source the producer encodes, to measure its frames (§38.10)", sc.Alias)
 			}
+			if sc.gstreamer() {
+				p.log.Warn("idle under capture: gstreamer splits the capture pipeline for the measure, which has cost recordings frames on the Pi; not recommended there (docs/producer-bench.md)", "source", sc.Alias)
+			}
 			s.dark = newDarkTracker(sc.Idle.darkAfter(), p.now)
 			s.dark.onChange = func(suppressed bool) { p.darkChanged(s, suppressed) }
 		}
