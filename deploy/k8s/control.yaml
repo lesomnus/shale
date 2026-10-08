@@ -16,6 +16,13 @@ spec:
       labels:
         app: shale-control
     spec:
+      # Nothing here needs root: the listeners are above 1024, the config and the
+      # Secret are read-only mounts, and the state is in PostgreSQL. 65532 is
+      # distroless `nonroot`; the image itself says USER 0 for the Storage Node.
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
       nodeSelector:
         kubernetes.io/arch: amd64
       affinity:
