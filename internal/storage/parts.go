@@ -32,6 +32,8 @@ type pool struct {
 	cond   *sync.Cond
 	budget int64
 	used   int64
+	// peak is the most the uploads ever held at once.
+	peak int64
 }
 
 func newPool(budget int64) *pool {
@@ -64,6 +66,9 @@ func (p *pool) acquire(ctx context.Context, n int64) error {
 		close(done)
 	}
 	p.used += n
+	if p.used > p.peak {
+		p.peak = p.used
+	}
 
 	return nil
 }
