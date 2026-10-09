@@ -1,10 +1,7 @@
 package e2e_test
 
 import (
-	"bytes"
 	"context"
-	"io"
-	"net/http"
 	"sort"
 	"testing"
 	"time"
@@ -13,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/shale/api"
-	"github.com/lesomnus/shale/internal/token"
 )
 
 // TestLivePacing is what a browser's jitter buffer has to absorb (§39.4):
@@ -92,21 +88,8 @@ func watchArrivals(t *testing.T, live *api.LiveSource, d time.Duration) []arriva
 			}
 		}
 	})
-	offer, err := pc.CreateOffer(nil)
+	_, _, err = offerWhep(pc, live)
 	require.NoError(t, err)
-	gathered := webrtc.GatheringCompletePromise(pc)
-	require.NoError(t, pc.SetLocalDescription(offer))
-	<-gathered
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, live.GetWhepUrl(), bytes.NewReader([]byte(pc.LocalDescription().SDP)))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/sdp")
-	req.Header.Set("Authorization", token.Scheme+" "+live.GetViewToken())
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
-	require.Equal(t, http.StatusCreated, resp.StatusCode, string(body))
-	require.NoError(t, pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: string(body)}))
 
 	var out []arrival
 	end := time.After(d)

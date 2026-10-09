@@ -65,13 +65,17 @@ type source struct {
 	clock   playout
 	pacing  bool
 	viewers map[string]sink
+	// joining are the viewers whose connection is not up yet: nothing is
+	// sent to them until catchUp hands them the group of pictures, so
+	// what they get first is that, whole, and nothing of it twice.
+	joining map[string]bool
 	idle    *time.Timer
 	// Bytes and units, for the heartbeat.
 	bytes int64
 }
 
 func newSource(r *Relay, id pdid.Id) *source {
-	return &source{id: id, r: r, viewers: map[string]sink{}, ring: newRing()}
+	return &source{id: id, r: r, viewers: map[string]sink{}, joining: map[string]bool{}, ring: newRing()}
 }
 
 // attach makes a producer stream the feeder of this source; a stream
@@ -271,11 +275,14 @@ func ticks(n uint32, timescale uint32, fallback time.Duration) time.Duration {
 	return time.Duration(n) * time.Second / time.Duration(timescale)
 }
 
-// addViewer starts the feed when this is the first viewer, and hands the
-// current group of pictures to the viewer so it starts at once (§39.4).
+// addViewer starts the feed when this is the first viewer. The viewer is
+// joining until its connection is up and catchUp hands it the current
+// group of pictures, so it starts at once (§39.4); before then nothing
+// sent to it could arrive.
 func (s *source) addViewer(key string, v sink) {
 	s.mu.Lock()
 	s.viewers[key] = v
+	s.joining[key] = true
 	if s.idle != nil {
 		s.idle.Stop()
 		s.idle = nil
@@ -285,14 +292,10 @@ func (s *source) addViewer(key string, v sink) {
 	if first {
 		s.started = true
 	}
-	gop := append([]sample(nil), s.gop...)
 	s.mu.Unlock()
 
 	if first {
 		f.start(s.id)
-	}
-	for _, sm := range gop {
-		v.write(sm.data, sm.d)
 	}
 }
 
@@ -303,6 +306,7 @@ func (s *source) removeViewer(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.viewers, key)
+	delete(s.joining, key)
 	if len(s.viewers) > 0 || !s.started || s.always {
 		return
 	}
@@ -325,13 +329,22 @@ func (s *source) removeViewer(key string) {
 	})
 }
 
-// catchUp hands a viewer the group of pictures again, for a viewer whose
-// connection came up after it was added.
-func (s *source) catchUp(v sink) {
+// catchUp hands a joining viewer whose connection came up the group of
+// pictures, and from then on what the pacer sends. With the lock held
+// throughout: a frame the pacer sent between the connection coming up and
+// the copy of the group would reach the viewer twice, and one sent while
+// the group was being written would come in the middle of it, and either
+// breaks the picture until the next keyframe. Viewers of one source who
+// join together so catch up one after another.
+func (s *source) catchUp(key string) {
 	s.mu.Lock()
-	gop := append([]sample(nil), s.gop...)
-	s.mu.Unlock()
-	for _, sm := range gop {
+	defer s.mu.Unlock()
+	v, ok := s.viewers[key]
+	if !ok || !s.joining[key] {
+		return
+	}
+	delete(s.joining, key)
+	for _, sm := range s.gop {
 		v.write(sm.data, sm.d)
 	}
 }

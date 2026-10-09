@@ -206,7 +206,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 			v.mu.Unlock()
 			if first {
 				w.r.m.firstFrame.Record(context.Background(), float64(time.Since(v.started).Microseconds())/1000)
-				src.catchUp(v)
+				src.catchUp(key)
 			}
 		case webrtc.PeerConnectionStateFailed, webrtc.PeerConnectionStateClosed, webrtc.PeerConnectionStateDisconnected:
 			w.end(key)

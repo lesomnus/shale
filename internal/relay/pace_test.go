@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/lesomnus/payday/pdid"
 )
 
 // The playout clock: samples go at their timestamps from the first one on;
@@ -38,4 +40,32 @@ func TestTicks64(t *testing.T) {
 	require.Equal(t, 10*24*time.Hour, ticks64(90000*86400*10, 90000))
 	require.Equal(t, 1500*time.Millisecond, ticks64(135000, 90000))
 	require.Zero(t, ticks64(5, 0))
+}
+
+// tape is a viewer that notes the video it is sent.
+type tape struct{ got []string }
+
+func (t *tape) write(data []byte, _ time.Duration)   { t.got = append(t.got, string(data)) }
+func (t *tape) writeAudio(_ []byte, _ time.Duration) {}
+
+// A joining viewer gets nothing until its connection is up, then the group
+// of pictures once and what follows it, in order: never a frame twice,
+// which a frame sent both live and in the group would be.
+func TestCatchUp(t *testing.T) {
+	s := newSource(&Relay{}, pdid.New(pdid.Domain(8)))
+	release := func(out ...pacedSample) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.release(out)
+	}
+	release(pacedSample{key: true, data: []byte("k")}, pacedSample{data: []byte("p1")})
+	v := &tape{}
+	s.addViewer("a.1", v)
+	release(pacedSample{data: []byte("p2")})
+	require.Empty(t, v.got, "nothing before the connection is up")
+
+	s.catchUp("a.1")
+	release(pacedSample{data: []byte("p3")})
+	s.catchUp("a.1")
+	require.Equal(t, []string{"k", "p1", "p2", "p3"}, v.got)
 }
