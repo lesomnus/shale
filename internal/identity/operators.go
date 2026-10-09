@@ -27,7 +27,8 @@ type OperatorsConfig struct {
 	Tenant string `yaml:"tenant"`
 	// Ttl is how long an answer about a person is believed before roster
 	// is asked again; 30 s by default. A grant taken away at roster stops
-	// working within it.
+	// working within it, and so does a session of somebody signed out
+	// everywhere or suspended there, whether or not the rest is set.
 	Ttl time.Duration `yaml:"ttl"`
 	// Reads is who reads what the console's pages read: `everybody` of
 	// the tenant (the default), or `granted`, as far as a role at roster

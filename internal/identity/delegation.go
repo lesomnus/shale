@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -188,4 +189,44 @@ func (s *Store) Standing(ctx context.Context, tenant, holder pdid.Id) error {
 	_, err = s.person(as, rstr.HolderRef_builder{Id: holder.Bytes()}.Build())
 
 	return err
+}
+
+// StandingOf is what roster says of somebody of a tenant now, asked rather
+// than heard on the sync stream: when what was issued to them stopped being
+// good, when they were suspended, when they were erased. ErrNoPerson is
+// somebody roster does not have any more; anything else is a roster that
+// could not be asked. It is what a session is held to on every call
+// (§33.7), on whichever roster this is, the one in this process included.
+func (s *Store) StandingOf(ctx context.Context, tenant, holder pdid.Id) (Standing, error) {
+	alias, err := s.alias(ctx, tenant)
+	if err != nil {
+		return Standing{}, err
+	}
+	as, err := s.as(ctx, alias)
+	if err != nil {
+		return Standing{}, err
+	}
+	v, err := rstr.NewHolderServiceClient(s.conn).Get(as, rstr.HolderGetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
+		Select: rstr.HolderSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return Standing{}, ErrNoPerson
+		}
+
+		return Standing{}, fmt.Errorf("roster: %w", err)
+	}
+	st := Standing{Holder: holder, Tenant: tenant}
+	if t := v.GetDateInvalidated(); t != nil {
+		st.Invalidated = t.AsTime()
+	}
+	if t := v.GetDateDisabled(); t != nil {
+		st.Disabled = t.AsTime()
+	}
+	if t := v.GetDateErased(); t != nil {
+		st.Erased = t.AsTime()
+	}
+
+	return st, nil
 }

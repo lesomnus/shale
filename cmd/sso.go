@@ -16,6 +16,7 @@ import (
 
 	"github.com/lesomnus/z"
 
+	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
@@ -198,6 +199,14 @@ func (s *Server) who(surface Surface, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, err := sessions.Read(r.Context(), sessions.KeyOf(r.Header.Values("Cookie")))
+	if err == nil {
+		// Held to its person's standing, as every call is (§33.7).
+		err = s.standing.check(r.Context(), v)
+	}
+	if errors.Is(err, auth.ErrUnavailable) {
+		writeJson(w, http.StatusServiceUnavailable, map[string]string{"error": "cannot tell who is signed in right now"})
+		return
+	}
 	if err != nil {
 		writeJson(w, http.StatusUnauthorized, map[string]string{"error": "not signed in"})
 		return
@@ -229,9 +238,11 @@ func (s *Server) who(surface Surface, w http.ResponseWriter, r *http.Request) {
 // otherwise, on the cluster surface, whether they are of the cluster
 // tenant, and on the tenant surface, yes.
 //
-// A narrower grant is still a grant: what a call may do is decided per
-// method by the policy, and this is only who signs in to the cluster
-// surface and the CLI, and whom the console shows as an operator.
+// This is who signs in to the cluster surface -- by password or through the
+// issuer -- and the CLI, and whom the console shows as an operator. The
+// cluster policy asks the same of every call there (§33.1), so a session
+// that reached the cluster surface some other way is no wider; on the
+// tenant surface a narrower grant is still a grant, decided per method.
 func (s *Server) mayOperate(ctx context.Context, surface Surface, tenant, holder pdid.Id) error {
 	if s.Operators != nil {
 		var is bool
@@ -330,11 +341,11 @@ func (s *Server) ssoCallback(surface Surface, w http.ResponseWriter, r *http.Req
 		no(http.StatusInternalServerError, "The sign-in did not complete", "Try again in a moment.", err)
 		return
 	}
-	_, ck, err := s.Sessions[surface].Mint(ctx, authsession.Session{
+	_, ck, err := s.Sessions[surface].Mint(ctx, issued(authsession.Session{
 		Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole(),
 		// Kept for the logout hint alone: nothing reads it to decide anything.
 		Held: map[string]string{heldIdToken: signed.Raw},
-	})
+	}))
 	if err != nil {
 		no(http.StatusInternalServerError, "The sign-in did not complete", "Try again in a moment.", err)
 		return
@@ -421,7 +432,7 @@ func (s *Server) ssoToken(surface Surface, w http.ResponseWriter, r *http.Reques
 		refuse(http.StatusInternalServerError, "the sign-in did not complete", err)
 		return
 	}
-	_, ck, err := s.Sessions[surface].Mint(ctx, authsession.Session{Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole()})
+	_, ck, err := s.Sessions[surface].Mint(ctx, issued(authsession.Session{Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole()}))
 	if err != nil {
 		refuse(http.StatusInternalServerError, "the sign-in did not complete", err)
 		return

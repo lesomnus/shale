@@ -451,6 +451,24 @@ func (s *Store) Exchange(ctx context.Context, tenant, app string, methods []stri
 	return v.GetToken(), nil
 }
 
+// SignOutEverywhere ends everything issued to a person of the embedded
+// roster until now, as roster does when they are signed out everywhere.
+// For the tests.
+func (s *Store) SignOutEverywhere(ctx context.Context, holder pdid.Id) error {
+	if s.em == nil {
+		return ErrExternal
+	}
+	ctx, cancel := unframed(ctx)
+	defer cancel()
+	_, err := s.em.rs.Ungated.Holder().Patch(ctx, rstr.HolderPatchRequest_builder{
+		Ref:              rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
+		DateInvalidated:  timestamppb.Now(),
+		DateUpdatedForce: z.Ptr(true),
+	}.Build())
+
+	return err
+}
+
 // Suspend suspends a person of the embedded roster, as a tenant's
 // administrator does at roster: they may not sign in, and what they held
 // stops working. For the tests.
