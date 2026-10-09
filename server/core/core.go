@@ -103,6 +103,11 @@ type Deps struct {
 	// that reports them takes them over (§28.3). Zero is §36.1's default.
 	NodeDownAfter      time.Duration
 	SinkAutoAdoptAfter time.Duration
+	// RelayDownAfter is how long a relay may go unheard before it is down
+	// and its producers are reassigned (§39.2): shorter than a node's,
+	// since a relay holds nothing and a viewer waits on it. Zero is §36.1's
+	// default.
+	RelayDownAfter time.Duration
 	// AllocationTTL is `allocation_ttl` (§12.1) when set; zero derives it
 	// from the set's link and the source's profile.
 	AllocationTTL time.Duration
@@ -178,14 +183,25 @@ func (d *Deps) now() time.Time {
 	return time.Now()
 }
 
-// nodeDownAfter is §27's `node_down_after`, which says when a host stops
-// counting as alive: nodes, and relays with them (§39.2).
+// nodeDownAfter is §27's `node_down_after`, which says when a Storage
+// Node stops counting as alive.
 func (d *Deps) nodeDownAfter() time.Duration {
 	if d.NodeDownAfter > 0 {
 		return d.NodeDownAfter
 	}
 
 	return DefaultNodeDownAfter
+}
+
+// relayDownAfter is §39.2's `relay_down_after`, which says when a relay
+// stops counting as alive: its producers are reassigned and `Live` stops
+// naming it.
+func (d *Deps) relayDownAfter() time.Duration {
+	if d.RelayDownAfter > 0 {
+		return d.RelayDownAfter
+	}
+
+	return DefaultRelayDownAfter
 }
 
 // allocationTTL is §12.1's `allocation_ttl`: the horizon, the segment,

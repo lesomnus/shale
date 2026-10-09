@@ -122,6 +122,12 @@ type ControlConfig struct {
 	// placement stops offering its sinks, so a cluster whose heartbeats
 	// cross a slow link raises it rather than flap.
 	NodeDownAfter time.Duration `yaml:"node_down_after"`
+	// RelayDownAfter is how long a relay may go unheard before it is down
+	// (§39.2); default 6 s, three of its heartbeats. Its producers are
+	// reassigned and `Live` stops naming it from then on. It goes with
+	// `relay.heartbeat_interval`: raise both, keeping it at three
+	// heartbeats or more, rather than flap.
+	RelayDownAfter time.Duration `yaml:"relay_down_after"`
 	// SinkAutoAdoptAfter is how long a sink whose node is down waits before
 	// the node that reports it takes it over (§28.3); default 10 min.
 	SinkAutoAdoptAfter time.Duration `yaml:"sink_auto_adopt_after"`
@@ -376,6 +382,9 @@ type RelayConfig struct {
 	// The UDP port range for ICE.
 	UdpPortMin int `yaml:"udp_port_min"`
 	UdpPortMax int `yaml:"udp_port_max"`
+	// HeartbeatInterval is how often the relay reports to the CP (§39.2);
+	// default 2 s, a third of `control.relay_down_after`.
+	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 }
 
 // StateDir is the directory a role keeps its state in (§34.3).
