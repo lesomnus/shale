@@ -184,7 +184,15 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   the last keyframe (at most one keyframe interval, about a megabyte at
   4 Mbps). A joining viewer receives that group of pictures at once and
   starts within a fraction of a second instead of waiting for the next
-  keyframe.
+  keyframe. It gets nothing before its connection is up and the group is
+  handed over, so what it gets first is the group whole and then what
+  follows, never a frame twice or out of order, either of which breaks
+  the picture until the next keyframe. Measured by WHEP viewers on a wall
+  of eight cameras through one relay, `Live` to the first frame that
+  decodes on its own: 10 to 32 ms, a median of 20 to 25. The group goes
+  out as one burst, which a socket's receive buffer of the kernel's
+  default size does not always hold: an occasional frame of it is lost,
+  and with it the picture until the next keyframe.
 - **Paced.** A producer sends a fragment at a time, up to
   `fragment_duration` of frames (200 ms by default; it was half a second), and the relay sends each sample to the viewers when its
   timestamp says, not the fragment's frames at once. A burst every half
@@ -280,7 +288,10 @@ egress   = Σ over watched sources of (viewers × bitrate)
 example  = 100 viewers × 4 Mbps = 400 Mbps, a fraction of one 10 GbE port
 ```
 
-Hundreds of viewers per relay are ordinary. A relay per site is the usual
+Hundreds of viewers per relay are ordinary. Measured with the relay, the
+producer and a hundred WebRTC viewers in one process, on one camera of
+4 Mbps: 402 to 418 Mbps out, every viewer at the camera's rate, no packet
+lost over 15 s and no viewer more than 172 ms without one. A relay per site is the usual
 shape, both for the labels in [§39.2](#392-assignment) and so that a
 site's viewers and producers share a network.
 
@@ -306,7 +317,7 @@ they cannot, the open lamina's.
 | Failure | Effect | Recovery |
 |---|---|---|
 | Relay process restarts | every session and attachment drops; the relay has no state to recover, and the recent windows start empty. A stopping relay is graceful for two seconds, then ends what is still open, so an attached producer never keeps a dying relay alive | producers re-attach: the same relay at other endpoints is a restart, and the link moves as soon as a heartbeat brings the new ones; viewers ask `Live` again; the windows fill again from the re-attach on |
-| Relay down | as above, and the CP reassigns its producers | a few seconds of no live picture; recording unaffected |
+| Relay down | as above, and the CP reassigns its producers once it has not heard the relay for `node_down_after`; until then `Live` still names it | no live picture for `node_down_after` and about a second more (31.5 s at the default 30 s, 5.5 to 6.9 s at 5 s); recording unaffected |
 | Producer's uplink saturated by live | live bytes and recording compete; the tee drops live bytes rather than hold the recording, the producer's heartbeat counts them, and each drop tears the recent window, which is handed out from the next keyframe after it | the uplink budget counts every camera once more under `always` ([§38.5](15-producer.md#385-choosing-the-ceiling)); the operator sizes the uplink, or sets the producer `on_demand` ([§39.2](#392-assignment)) |
 | Producer down | its cameras are off for viewers and for recording alike | as in [§15](04-write-path.md#15-partial-laminae) |
 | CP down | no new `Live` and no new publish tokens; open sessions and attachments continue | as for reads ([§12.1](04-write-path.md#121-flow)): run the CP highly available |
