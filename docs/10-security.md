@@ -52,7 +52,8 @@ holds a credential.
 - **Signing in with a password** is `POST /session {tenant, alias,
   password}` on the tenant API's HTTP listener: Shale asks roster
   (`VouchService.Verify`), and mints its own session cookie once roster said
-  yes. Shale holds no password and no verifier. The `shale` CLI signs in the
+  yes. The cluster API's HTTP listener takes the same request from an
+  operator and nobody else (below). Shale holds no password and no verifier. The `shale` CLI signs in the
   same way (`shale login`) and keeps the session.
 - **Signing in through the issuer (single sign-on).** A company whose people
   have no roster password -- they arrive at roster through their own
@@ -141,13 +142,24 @@ holds a credential.
   failure is remembered for 5 s so a roster that is down is not asked once
   per call. Taking a role away ends it within the TTL.
 
-  On the **cluster API** the person must also be of the operators'
-  tenant: a customer's administrator granted all of Shale in their own
-  tenant is not an operator of the cluster, which sees every tenant.
+  On the **cluster API** the person must be of the operators' tenant and
+  granted **all of Shale** there (`/shale.*/*`), asked on every call and
+  not only at sign-in: a customer's administrator granted all of Shale in
+  their own tenant is not an operator of the cluster, which sees every
+  tenant, and neither is a person of the operators' tenant granted one
+  service -- the cluster API reads and writes across tenants, so a grant of
+  `/shale.SetService/*` there would be every tenant's sets. A narrower
+  grant is used on the tenant API, inside the person's own tenant.
   `control.cluster_tenant` is then not consulted at all: its people are
-  not operators. Signing in to the cluster listener, and through the CLI,
-  takes all of Shale in the operators' tenant; a narrower grant is used
-  on the tenant API.
+  not operators. Signing in to the cluster listener -- with a password or
+  through the issuer -- and through the CLI takes the same: anybody else is
+  refused at the sign-in, and a session the tenant listener minted does not
+  open on the cluster listener, since each surface seals its sessions under
+  a key of its own. What no caller writes on the tenant API -- laminae,
+  attempts, and the general writes of hosts, devices, sinks and keys
+  ([§35.2](12-api.md#352-two-api-surfaces)) -- is closed to operators on
+  the cluster API too, and `DelegationService` is
+  not served there at all ([§33.8](#338-viewing-on-a-persons-behalf)).
 
   **It is a grant and not a team on purpose.** This used to be the members
   of a team at roster. A team membership is organisation there and not
@@ -562,7 +574,9 @@ portal ─ DelegationService.Revoke {handle} ─▶ Shale            (its own si
   naming the delegated methods (`/shale.DelegationService/*`) is as good as
   one naming the reads -- which is how somebody views through a portal and
   reads nothing here with a session of their own, since `DelegationService`
-  serves no session and no certificate.
+  serves no session and no certificate: on the tenant API its four entries
+  take an app's exchange token alone and its generated verbs are refused to
+  everybody, and the cluster API does not serve it at all.
 - **What the handle names**, at `Start`: live, recordings, or both; sets
   and sources, none meaning all the person sees; and a window of recordings.
   A request naming a camera outside it is refused at the CP. The window is

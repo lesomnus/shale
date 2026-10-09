@@ -229,9 +229,11 @@ func (s *Server) who(surface Surface, w http.ResponseWriter, r *http.Request) {
 // otherwise, on the cluster surface, whether they are of the cluster
 // tenant, and on the tenant surface, yes.
 //
-// A narrower grant is still a grant: what a call may do is decided per
-// method by the policy, and this is only who signs in to the cluster
-// surface and the CLI, and whom the console shows as an operator.
+// This is who signs in to the cluster surface -- by password or through the
+// issuer -- and the CLI, and whom the console shows as an operator. The
+// cluster policy asks the same of every call there (§33.1), so a session
+// that reached the cluster surface some other way is no wider; on the
+// tenant surface a narrower grant is still a grant, decided per method.
 func (s *Server) mayOperate(ctx context.Context, surface Surface, tenant, holder pdid.Id) error {
 	if s.Operators != nil {
 		var is bool

@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/sitemember"
+	"github.com/lesomnus/shale/internal/identity"
 )
 
 // The two surfaces' policies (§35.2). payday supplies the wall; what each
@@ -76,8 +77,10 @@ func denied(method, why string) error {
 	return status.Errorf(codes.PermissionDenied, "%s: %s", method, why)
 }
 
-// closedToEveryone are generated verbs no caller may use on the tenant
-// surface: rows the system writes (§35.3).
+// closedToEveryone are generated verbs no caller may use on either
+// surface: rows the system writes (§35.3). An operator holding all of Shale
+// on the cluster API is no exception: what a general write would set there
+// is a state nothing else agrees with just the same.
 func closedToEveryone(m string) bool {
 	switch {
 	case strings.HasPrefix(m, "/shale.LaminaService/"):
@@ -89,7 +92,8 @@ func closedToEveryone(m string) bool {
 		strings.HasPrefix(m, "/shale.SinkService/"), strings.HasPrefix(m, "/shale.SigningKeyService/"):
 		// Hosts, devices, sinks, and keys are written by the system and by
 		// the custom verbs of §32 (adopt, quarantine, retire, rotate, ...);
-		// a general write could set a state nothing else agrees with.
+		// a general write could set a state nothing else agrees with. Keys
+		// are made by Rotate.
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Patch")
 	case strings.HasPrefix(m, "/shale.ProducerService/"):
 		// `producer patch` is the admin's, for the name, the labels and the
@@ -273,9 +277,15 @@ func (TenantPolicy) Where(_ context.Context, c gate.Call) (frame.Tenants, error)
 // ClusterPolicy is the cluster API: operators see everything; nodes and
 // relays do their own work and nothing more.
 //
-// Operators are the people of the operators' tenant, as far as roster
-// grants them, when Operators is set; the people of ClusterTenant when it
-// is not (§33.1).
+// Operators are the people of the operators' tenant whom roster grants all
+// of Shale there, when Operators is set; the people of ClusterTenant when it
+// is not (§33.1). It is all of Shale on every call and not as far as roster
+// grants: Where is every tenant here, so a grant of one tenant service
+// would be that service in every tenant at once. A narrower grant is used
+// on the tenant API, inside the person's own tenant.
+//
+// What no caller may write on the tenant API is closed here too, and so is
+// DelegationService, which is an app's on the tenant API alone (§33.8).
 type ClusterPolicy struct {
 	ClusterTenant pdid.Id
 	Operators     Operators
@@ -301,6 +311,12 @@ func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	if strings.HasPrefix(m, "/payday.BatchService/") {
 		return nil
 	}
+	if closedToEveryone(m) {
+		return denied(m, "written by the system, not by a caller")
+	}
+	if strings.HasPrefix(m, "/shale.DelegationService/") {
+		return denied(m, "an app calls this on the tenant API with its exchange token and nothing else (§33.8)")
+	}
 	switch kindOf(c.Actor) {
 	case DomNode:
 		if !nodeMay[m] {
@@ -313,8 +329,15 @@ func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	case DomHolder:
 		switch {
 		case p.Operators != nil:
-			if err := granted(ctx, p.Operators.MayOperate, c); err != nil {
-				return err
+			// All of Shale, asked on every call rather than only at sign-in:
+			// a grant taken away ends here within the TTL, and a session that
+			// came by some other road than the cluster sign-in is still asked.
+			ok, err := p.Operators.MayOperate(ctx, c.Tenant, c.Actor, identity.Everything)
+			if err != nil {
+				return status.Errorf(codes.Unavailable, "%s: cannot tell what roster grants you right now: %v", m, err)
+			}
+			if !ok {
+				return denied(m, "the cluster API serves operators: people of the operators' tenant whom roster grants all of Shale ("+identity.Everything+")")
 			}
 		case p.ClusterTenant.IsZero():
 			// No cluster tenant is known here yet: nobody is an operator,
@@ -322,9 +345,6 @@ func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 			return denied(m, "the cluster tenant is not known yet; there are no cluster operators until it is")
 		case c.Tenant != p.ClusterTenant:
 			return denied(m, "the cluster API serves cluster operators")
-		}
-		if strings.HasPrefix(m, "/shale.SigningKeyService/") && (strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply")) {
-			return denied(m, "keys are made by Rotate")
 		}
 	default:
 		return denied(m, "not served to this kind of host")

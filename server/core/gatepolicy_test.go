@@ -169,10 +169,12 @@ func TestTenantPolicyWithoutOperators(t *testing.T) {
 }
 
 // The cluster API: where roster says what people may change, a person of
-// the operators' tenant as far as roster grants them there -- whatever
+// the operators' tenant whom roster grants all of Shale there -- whatever
 // tenant `cluster_tenant` names, whatever another tenant grants its own
-// people, and nobody while roster does not answer; without, the cluster
-// tenant's people, and nobody while it is not known.
+// people, nothing for a narrower grant, and nobody while roster does not
+// answer; without, the cluster tenant's people, and nobody while it is not
+// known. What nobody writes, and an app's DelegationService, are closed to
+// operators too.
 func TestClusterPolicyOperators(t *testing.T) {
 	ctx := context.Background()
 	hday, cluster, acme := pdid.New(DomTenant), pdid.New(DomTenant), pdid.New(DomTenant)
@@ -193,9 +195,28 @@ func TestClusterPolicyOperators(t *testing.T) {
 	require.Equal(t, codes.PermissionDenied, status.Code(byGrant.May(ctx, gate.Call{Actor: op, Tenant: hday, Action: api.SigningKeyService_Add_FullMethodName})),
 		"keys are still made by Rotate")
 
-	// A grant of one service is that service.
-	require.NoError(t, byGrant.May(ctx, gate.Call{Actor: nodes, Tenant: hday, Action: m}))
+	// A grant of one service is nothing here: the cluster API sees every
+	// tenant, so a tenant service granted here would be granted in all of
+	// them (§33.1).
+	require.Equal(t, codes.PermissionDenied, status.Code(byGrant.May(ctx, gate.Call{Actor: nodes, Tenant: hday, Action: m})))
 	require.Equal(t, codes.PermissionDenied, status.Code(byGrant.May(ctx, gate.Call{Actor: nodes, Tenant: hday, Action: api.SinkService_List_FullMethodName})))
+	sets := pdid.New(DomHolder)
+	ops.grant(hday, sets, "/shale.SetService/*")
+	for _, v := range []string{api.SetService_List_FullMethodName, api.SetService_Add_FullMethodName, api.SetService_Erase_FullMethodName} {
+		require.Equal(t, codes.PermissionDenied, status.Code(byGrant.May(ctx, gate.Call{Actor: sets, Tenant: hday, Action: v})), v)
+	}
+
+	// Closed to everybody, operators included.
+	for _, v := range []string{
+		api.LaminaService_Add_FullMethodName, api.AttemptService_Patch_FullMethodName, api.NodeService_Patch_FullMethodName,
+		api.SinkService_Apply_FullMethodName, api.ReaderService_Add_FullMethodName, api.RelayService_Add_FullMethodName,
+		api.DelegationService_Add_FullMethodName, api.DelegationService_Get_FullMethodName, api.DelegationService_Patch_FullMethodName,
+		api.DelegationService_Start_FullMethodName, api.DelegationService_Live_FullMethodName,
+	} {
+		require.Equal(t, codes.PermissionDenied, status.Code(byGrant.May(ctx, gate.Call{Actor: op, Tenant: hday, Action: v})), v)
+	}
+	require.NoError(t, byGrant.May(ctx, gate.Call{Actor: op, Tenant: hday, Action: api.RelayService_Patch_FullMethodName}), "a relay's labels are the operator's")
+	require.NoError(t, byGrant.May(ctx, gate.Call{Actor: op, Tenant: hday, Action: api.SetService_List_FullMethodName}), "an operator reads across tenants")
 
 	ops.down = true
 	require.Equal(t, codes.Unavailable, status.Code(byGrant.May(ctx, gate.Call{Actor: op, Tenant: hday, Action: m})))

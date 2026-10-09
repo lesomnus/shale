@@ -72,8 +72,14 @@ code rather than configuration, with one switch
 |---|---|---|
 | producer, reader | the calls of its own work | — |
 | node, relay | — | the calls of its own work |
-| person, operators a **tenant** (default) | everything in their tenant but what the system writes; a password only by one who sees every site | the people of `control.cluster_tenant`: everything but writing a key |
-| person, roster says (`auth.operators`) | the reads behind the console (`Get`/`List`/`Watch` of sets, sources, laminae, sites, producers, readers; `Get`/`List` of attempts; `Set.Live`, `Source.Live`, `Lamina.Timeline`), and every other call a pattern roster grants them covers, but what the system writes | the people of the tenant `auth.operators` names, each call a pattern roster grants them there covers: everything but writing a key for `/shale.*/*` |
+| person, operators a **tenant** (default) | everything in their tenant but what the system writes; a password only by one who sees every site | the people of `control.cluster_tenant`: everything but what the system writes |
+| person, roster says (`auth.operators`) | the reads behind the console (`Get`/`List`/`Watch` of sets, sources, laminae, sites, producers, readers; `Get`/`List` of attempts; `Set.Live`, `Source.Live`, `Lamina.Timeline`), and every other call a pattern roster grants them covers, but what the system writes | the people of the tenant `auth.operators` names whom roster grants all of Shale (`/shale.*/*`) there: everything but what the system writes. A narrower grant is nothing here, since every call here spans tenants |
+
+What the system writes is the same on both surfaces: laminae and attempts,
+the generated `Add` and `Apply` of every host, device, sink and key, and
+`Patch` of nodes, readers, devices, sinks and keys, which change by the
+custom verbs of §32 alone (a key by `Rotate`). `DelegationService` is
+mounted on the tenant API only ([§33.8](10-security.md#338-viewing-on-a-persons-behalf)).
 
 A grant roster cannot be asked about is refused with `UNAVAILABLE`, never
 allowed.

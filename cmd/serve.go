@@ -328,16 +328,18 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 
 	// Who is calling: a session cookie, the certificate, and in development
 	// the plain header (§33.1). Sessions are sealed into the cookie under a
-	// key derived from the KEK, so every CP process reads them alike.
+	// key derived from the KEK, so every CP process reads them alike -- one
+	// key per surface, so a cookie one listener minted opens nothing on the
+	// other whatever name it is presented under.
 	s.Sessions = map[Surface]*authsession.Sessions{}
 	s.Auth = map[Surface]auth.Handler{}
 	if s.Kek != nil {
-		sealed, err := authsession.NewSealed(sessionKey(s.Kek))
-		if err != nil {
-			db.Close()
-			return nil, err
-		}
 		for _, surface := range []Surface{SurfaceTenant, SurfaceCluster} {
+			sealed, err := authsession.NewSealed(sessionKey(s.Kek, surface))
+			if err != nil {
+				db.Close()
+				return nil, err
+			}
 			opts := []authsession.Option{
 				authsession.WithCookie(sessionCookie(surface, c.IsDev())),
 				authsession.WithLifetime(24 * time.Hour),
@@ -349,7 +351,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 			s.Sessions[surface] = authsession.New(sealed, opts...)
 		}
 		if c.Auth.Oidc.On() {
-			s.Sso, err = sso.New(c.Auth.Oidc, sessionKey(s.Kek), slog.Default())
+			s.Sso, err = sso.New(c.Auth.Oidc, flowKey(s.Kek), slog.Default())
 			if err != nil {
 				db.Close()
 				return nil, err
@@ -400,45 +402,73 @@ func sessionCookie(surface Surface, dev bool) string {
 	return "__Host-" + name
 }
 
-// sessionKey derives the session sealing key from the KEK, so the KEK
-// itself never leaves the key ring.
-func sessionKey(kek core.Kek) []byte {
+// sessionKey derives one surface's session sealing key from the KEK, so
+// the KEK itself never leaves the key ring. A key per surface, so what the
+// tenant listener sealed -- for anybody of any tenant -- does not open on
+// the cluster listener, which signs in operators only (§33.1).
+func sessionKey(kek core.Kek, surface Surface) []byte {
+	return derive(kek, "shale session "+surfaceName(surface))
+}
+
+// flowKey derives the key single sign-on seals its flows under: the cookie
+// a sign-in begins with, which is no session on either surface.
+func flowKey(kek core.Kek) []byte { return derive(kek, "shale sso flow") }
+
+func derive(kek core.Kek, label string) []byte {
 	h := hmac.New(sha256.New, kek)
-	h.Write([]byte("shale session"))
+	h.Write([]byte(label))
 
 	return h.Sum(nil)
 }
 
-// login is what checking a secret means here (§33.1): the person's
-// argon2id verifier on their row.
-func (s *Server) login(ctx context.Context, r *http.Request) (authsession.Session, error) {
+// login is password sign-in on one surface's listener: on the cluster's,
+// operators only, as through the issuer (§33.1).
+func (s *Server) login(surface Surface) authsession.Verify {
+	return func(ctx context.Context, r *http.Request) (authsession.Session, error) {
+		v, p, err := s.password(ctx, r)
+		if err != nil {
+			return authsession.Session{}, err
+		}
+		if surface == SurfaceCluster {
+			if err := s.mayOperate(ctx, surface, p.Tenant, p.Id); err != nil {
+				s.Deps.Log.WarnContext(ctx, "session: cluster sign-in refused", "tenant", p.TenantAlias, "alias", p.Alias, "err", err.Error())
+				return authsession.Session{}, err
+			}
+		}
+		if _, err := s.Provision(ctx, p); err != nil {
+			return authsession.Session{}, err
+		}
+
+		return v, nil
+	}
+}
+
+// password is what checking a secret means here (§33.1): roster checks it.
+func (s *Server) password(ctx context.Context, r *http.Request) (authsession.Session, identity.Person, error) {
 	if !s.passwordOn() {
 		// SSO only (`auth.sso_only`): a password is refused before it is
 		// read, so nothing here learns whether it was right.
-		return authsession.Session{}, errors.New("password sign-in is off here: sign in through SSO")
+		return authsession.Session{}, identity.Person{}, errors.New("password sign-in is off here: sign in through SSO")
 	}
 	var body struct{ Tenant, Alias, Password string }
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&body); err != nil {
-		return authsession.Session{}, err
+		return authsession.Session{}, identity.Person{}, err
 	}
 	if body.Tenant == "" || body.Alias == "" || body.Password == "" {
-		return authsession.Session{}, errors.New("tenant, alias, and password are required")
+		return authsession.Session{}, identity.Person{}, errors.New("tenant, alias, and password are required")
 	}
 	// roster checks the password (§33.1); the person it vouches for gets
 	// their rows here if this is their first time.
 	p, err := s.Identity.Verify(ctx, body.Tenant, body.Alias, body.Password)
 	if err != nil {
 		if errors.Is(err, identity.ErrRefused) || errors.Is(err, identity.ErrNoTenant) || errors.Is(err, identity.ErrNoPerson) {
-			return authsession.Session{}, errors.New("no such person, or wrong password")
+			return authsession.Session{}, identity.Person{}, errors.New("no such person, or wrong password")
 		}
 
-		return authsession.Session{}, err
-	}
-	if _, err := s.Provision(ctx, p); err != nil {
-		return authsession.Session{}, err
+		return authsession.Session{}, identity.Person{}, err
 	}
 
-	return authsession.Session{Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole()}, nil
+	return authsession.Session{Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole()}, p, nil
 }
 
 func (s *Server) Close() error {
@@ -610,7 +640,7 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 	case SurfaceTenant:
 		registerTenant(g, s.Walled)
 	case SurfaceCluster:
-		api.RegisterServer(g, s.Walled)
+		registerCluster(g, s.Walled)
 	}
 	healthpb.RegisterHealthServer(g, health.NewServer())
 
@@ -645,6 +675,33 @@ func registerTenant(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterHolderServiceServer(g, s.Holder())
 	api.RegisterAuditServiceServer(g, s.Audit())
 	api.RegisterDelegationServiceServer(g, s.Delegation())
+}
+
+// registerCluster mounts the cluster API: its own services, and the tenant
+// ones an operator reads and manages across tenants -- but not
+// DelegationService, which is an app's on the tenant API alone (§33.8).
+func registerCluster(g grpc.ServiceRegistrar, s api.Server) {
+	api.RegisterTenantServiceServer(g, s.Tenant())
+	api.RegisterNodeServiceServer(g, s.Node())
+	api.RegisterRelayServiceServer(g, s.Relay())
+	api.RegisterDeviceServiceServer(g, s.Device())
+	api.RegisterSinkServiceServer(g, s.Sink())
+	api.RegisterOutboxServiceServer(g, s.Outbox())
+	api.RegisterSigningKeyServiceServer(g, s.SigningKey())
+	api.RegisterPlacementPolicyServiceServer(g, s.PlacementPolicy())
+	api.RegisterUploadPolicyServiceServer(g, s.UploadPolicy())
+	api.RegisterAddressPolicyServiceServer(g, s.AddressPolicy())
+
+	api.RegisterHolderServiceServer(g, s.Holder())
+	api.RegisterSiteServiceServer(g, s.Site())
+	api.RegisterSetServiceServer(g, s.Set())
+	api.RegisterSourceServiceServer(g, s.Source())
+	api.RegisterProducerServiceServer(g, s.Producer())
+	api.RegisterReaderServiceServer(g, s.Reader())
+	api.RegisterLaminaServiceServer(g, s.Lamina())
+	api.RegisterAttemptServiceServer(g, s.Attempt())
+	api.RegisterSiteMemberServiceServer(g, s.SiteMember())
+	api.RegisterAuditServiceServer(g, s.Audit())
 }
 
 // Listener is one served surface.
@@ -717,8 +774,8 @@ func (s *Server) serveHttp(ctx context.Context, surface Surface, g *grpc.Server)
 	}
 	// Signing in and out (§33.1).
 	if sessions != nil {
-		h.Handle("POST /session", sessions.Serve(s.login))
-		h.Handle("DELETE /session", sessions.Serve(s.login))
+		h.Handle("POST /session", sessions.Serve(s.login(surface)))
+		h.Handle("DELETE /session", sessions.Serve(s.login(surface)))
 		// Who is signed in, how one signs in, and the issuer's routes when
 		// there is one (cmd/sso.go).
 		s.mountSso(surface, h)
