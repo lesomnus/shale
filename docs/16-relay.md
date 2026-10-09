@@ -198,13 +198,25 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   kernel's default size (208 kB) holds: a hundred viewers joining at once
   lost thousands of packets, and a wall of eight up to three frames a
   run. Measured by WHEP viewers on a wall of eight cameras through one
-  relay, `Live` to the first frame that decodes on its own: 10 to 34 ms,
-  a median of 17 to 22; to the live edge half a second after that, and
+  relay, `Live` to the first frame that decodes on its own: 10 to 36 ms,
+  a median of 16 to 26; to the live edge half a second after that, and
   no frame broken. A hundred viewers of a 4 Mbps camera joining at once:
-  the first frame a median of 250 to 365 ms after the offer, the live
+  the first frame a median of 240 to 365 ms after the offer, the live
   edge about a second after it, no packet lost for good and no frame
   broken, where the group sent at once lost 3,700 to 8,400 packets and
   broke 10 to 50 frames.
+- **Lost packets** are sent again. The answer offers `nack` feedback (and
+  RTX) for the video, and the relay keeps each viewer's last 512 video
+  packets, about 1.2 s at 4 Mbps and 400 ms of a group sent at three
+  times real time, to send again the ones a viewer's NACK names. A PLI or
+  a FIR, a viewer's ask for a keyframe, is read and not acted on: the
+  relay cannot have the camera make one, and sending the group again
+  would put frames already sent back into the stream. What NACKs could
+  not mend, the next keyframe does, at most a keyframe interval later.
+  The history costs about a megabyte a viewer ([§39.5](#395-capacity)).
+  Measured by a viewer that loses one video packet in 25 on arrival: every
+  frame came whole, where without the responder about one in twenty
+  broke.
 - **Paced.** A producer sends a fragment at a time, up to
   `fragment_duration` of frames (200 ms by default; it was half a second), and the relay sends each sample to the viewers when its
   timestamp says, not the fragment's frames at once. A burst every half
@@ -315,6 +327,11 @@ oldest bytes, so a relay never grows past what it was given, and its
 heartbeat reports both numbers (`rewind_bytes`, `rewind_budget`). The CP
 passes over a relay whose windows are at their budget when another fits
 ([§39.2](#392-assignment)), and takes it only when there is no other.
+
+Beside the windows, each viewer holds its NACK history, its last 512
+video packets in buffers of the MTU ([§39.4](#394-viewers)): about a
+megabyte, measured as 100 MB more heap for those hundred viewers, so
+500 MB at `max_viewers`.
 
 What the **first relay leaves out**: relay-to-relay cascades for one camera
 watched from many regions, a lower-resolution sub-stream for viewers on

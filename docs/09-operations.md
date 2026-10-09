@@ -331,7 +331,7 @@ scrape endpoint. The names, by the process that measures them:
 | frames the recording lost: gaps over one and three quarters frames, and wall time a capture's rebased timestamps hid ([§38.6](15-producer.md#386-health-and-heartbeats)) | `shale.producer.frame_gaps{source}`, `shale.producer.frames_missed{source}` |
 | captures that delivered nothing for 5 s or more, and the timestamp jumps ffmpeg rebased | `shale.producer.capture_stalls{source}`, `shale.producer.capture_stalled_seconds{source}`, `shale.producer.timestamp_discontinuities{source}` |
 | the Go runtime, every process: collections and their CPU, assists, heap, goroutines, scheduling | `shale.runtime.gc.cycles`, `gc.cpu`, `gc.assist`, `heap.live`, `heap.goal`, `memory`, `goroutines`, `sched.latency_max` |
-| relay | `shale.relay.attached_producers`, `active_sources`, `viewers`, `egress_bytes`, `sessions{outcome}`, `first_frame_ms`, `catch_up_ms`, `cpu` |
+| relay | `shale.relay.attached_producers`, `active_sources`, `viewers`, `egress_bytes`, `sessions{outcome}`, `first_frame_ms`, `catch_up_ms`, `nacked_packets`, `cpu` |
 | hosts pending, certificates due | `shale.cp.hosts_pending{kind}`, `shale.cp.certs_due{kind}` |
 | producers per relay, reassignments | `shale.cp.producers_per_relay{relay}`, `shale.cp.relay_reassignments` |
 | directives pending, reconciliation lag | `shale.cp.laminae_dates_unsynced`, `shale.cp.reconcile_lag_s{sink}`, `shale.cp.directive_errors` |

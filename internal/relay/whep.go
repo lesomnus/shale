@@ -12,6 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pion/interceptor"
+	"github.com/pion/interceptor/pkg/nack"
+	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
 
@@ -27,6 +30,16 @@ import (
 // session's end to the token's; DELETE /whep/{session} ends it. Never transcoded: an H.264 (or H.265)
 // track packetized from the samples of the fragments the producer sends,
 // and the Opus track beside it.
+
+// nackHistory is how many of a viewer's last video packets the relay keeps
+// to send again when the viewer reports them lost (§39.4). At 4 Mbps,
+// about 420 packets a second, it is about 1.2 s of the live edge, and
+// 400 ms of a group of pictures sent at catchUpSpeed: room for a
+// keyframe of a few hundred packets, the likeliest to lose some, and the
+// NACKs a browser sends for it a round trip or two later. Each packet
+// kept takes a buffer of the MTU, about 1.5 kB, so a viewer costs about
+// 750 kB: 75 MB for a hundred viewers, 375 MB at max_viewers.
+const nackHistory = 512
 
 type whepServer struct {
 	r   *Relay
@@ -66,11 +79,20 @@ func newWhepServer(r *Relay) (*whepServer, error) {
 	if len(r.cfg.Nat1To1) > 0 {
 		se.SetNAT1To1IPs(r.cfg.Nat1To1, webrtc.ICECandidateTypeHost)
 	}
+	// The default codecs offer `nack` and `nack pli` feedback, and RTX,
+	// for video, so a browser reports what it lost and the responder
+	// sends it again, on the RTX stream when the browser takes one.
 	me := &webrtc.MediaEngine{}
 	if err := me.RegisterDefaultCodecs(); err != nil {
 		return nil, err
 	}
-	w := &whepServer{r: r, api: webrtc.NewAPI(webrtc.WithSettingEngine(se), webrtc.WithMediaEngine(me)), sessions: map[string]*viewer{}}
+	ir := &interceptor.Registry{}
+	nacks, err := nack.NewResponderInterceptor(nack.ResponderSize(nackHistory))
+	if err != nil {
+		return nil, err
+	}
+	ir.Add(nacks)
+	w := &whepServer{r: r, api: webrtc.NewAPI(webrtc.WithSettingEngine(se), webrtc.WithMediaEngine(me), webrtc.WithInterceptorRegistry(ir)), sessions: map[string]*viewer{}}
 	for _, u := range r.cfg.Ice {
 		w.ice = append(w.ice, webrtc.ICEServer{URLs: []string{u}})
 	}
@@ -164,17 +186,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// RTCP from the viewer is read and dropped, so the sender's interceptors
-	// keep running.
-	drain := func(s *webrtc.RTPSender) {
-		buf := make([]byte, 1500)
-		for {
-			if _, _, err := s.Read(buf); err != nil {
-				return
-			}
-		}
-	}
-	go drain(sender)
+	go w.readRTCP(sender)
 	// Audio rides along as Opus when the producer records it (§39.4); the
 	// track is offered whenever the viewer asked for audio, and stays
 	// silent for a source without it.
@@ -192,7 +204,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		go drain(as)
+		go w.readRTCP(as)
 	}
 
 	key := newSessionKey(actor)
@@ -415,6 +427,42 @@ func (v *viewer) writeAudio(data []byte, d time.Duration) {
 		return
 	}
 	v.audio.WriteSample(media.Sample{Data: data, Duration: d})
+}
+
+// readRTCP reads what a viewer sends back about a track, so the sender's
+// interceptors run: the NACK responder sends again what a NACK names.
+// Nothing else is acted on. A PLI or a FIR asks for a keyframe, which the
+// relay cannot have a camera make, and sending the group of pictures again
+// would put frames already sent back into the stream; the next keyframe,
+// at most a keyframe interval away, mends what NACKs could not (§39.4).
+func (w *whepServer) readRTCP(s *webrtc.RTPSender) {
+	buf := make([]byte, 1500)
+	for {
+		n, _, err := s.Read(buf)
+		if err != nil {
+			return
+		}
+		w.r.m.nacked.Add(context.Background(), nackedPackets(buf[:n]))
+	}
+}
+
+// nackedPackets is how many packets the NACKs in an RTCP compound packet
+// ask for again.
+func nackedPackets(b []byte) int64 {
+	pkts, err := rtcp.Unmarshal(b)
+	if err != nil {
+		return 0
+	}
+	var n int64
+	for _, p := range pkts {
+		if nk, ok := p.(*rtcp.TransportLayerNack); ok {
+			for _, pair := range nk.Nacks {
+				n += int64(len(pair.PacketList()))
+			}
+		}
+	}
+
+	return n
 }
 
 // A session key is random, prefixed by the actor for the per-actor limit.
