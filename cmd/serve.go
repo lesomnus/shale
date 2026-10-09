@@ -129,6 +129,9 @@ type Server struct {
 	// Sso is the relying party of `auth.oidc`'s issuer; nil when there is
 	// none, or before init, when there is no KEK to seal its flows under.
 	Sso *sso.RP
+	// standing is what roster says of the people sessions name, asked on
+	// every call a session makes and kept a short while (§33.7).
+	standing *standing
 	// provisionMu serializes making rows for people, so two first sign-ins
 	// of a tenant do not both become its admin.
 	provisionMu sync.Mutex
@@ -334,6 +337,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	s.Sessions = map[Surface]*authsession.Sessions{}
 	s.Auth = map[Surface]auth.Handler{}
 	if s.Kek != nil {
+		s.standing = newStanding(s.Identity, c.Auth.Operators.Ttl)
 		for _, surface := range []Surface{SurfaceTenant, SurfaceCluster} {
 			sealed, err := authsession.NewSealed(sessionKey(s.Kek, surface))
 			if err != nil {
@@ -364,7 +368,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	for _, surface := range []Surface{SurfaceTenant, SurfaceCluster} {
 		var hs []auth.Handler
 		if ss := s.Sessions[surface]; ss != nil {
-			hs = append(hs, ss.Handler())
+			hs = append(hs, s.sessionHandler(ss))
 		}
 		hs = append(hs, auth.MTls())
 		if c.IsDev() {
@@ -468,7 +472,7 @@ func (s *Server) password(ctx context.Context, r *http.Request) (authsession.Ses
 		return authsession.Session{}, identity.Person{}, err
 	}
 
-	return authsession.Session{Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole()}, p, nil
+	return issued(authsession.Session{Id: p.Id.String(), TenantId: p.Tenant.String(), Grant: frame.Whole()}), p, nil
 }
 
 func (s *Server) Close() error {

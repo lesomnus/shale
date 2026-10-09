@@ -53,7 +53,21 @@ holds a credential.
   password}` on the tenant API's HTTP listener: Shale asks roster
   (`VouchService.Verify`), and mints its own session cookie once roster said
   yes. The cluster API's HTTP listener takes the same request from an
-  operator and nobody else (below). Shale holds no password and no verifier. The `shale` CLI signs in the
+  operator and nobody else (below).
+- **A session** is sealed into its cookie under a key derived from the KEK,
+  one per surface, and lives at most 24 hours; nothing on the server can
+  end the cookie itself before then. What ends it sooner is its person:
+  every call a session makes, on either surface and however it was minted,
+  asks roster about the person it names (`HolderService.Get`, kept for
+  `auth.operators.ttl`, 30 s, whether or not `auth.operators` is set) and
+  is refused once they are suspended, erased or gone, or were **signed out
+  everywhere** at or after the session began (a password roster issues
+  afresh does that too). It fails
+  closed like a grant: while roster cannot be asked no session is served,
+  the call is refused as `UNAVAILABLE`, and the failure is remembered for
+  5 s. Signing out (`DELETE /session`, `/sso/logout`) clears the cookie in
+  that browser; a copy of it elsewhere lasts until the person is signed out
+  everywhere at roster. Shale holds no password and no verifier. The `shale` CLI signs in the
   same way (`shale login`) and keeps the session.
 - **Signing in through the issuer (single sign-on).** A company whose people
   have no roster password -- they arrive at roster through their own
@@ -508,10 +522,10 @@ fetches laminae directly. The media server itself manages no keys.
 | A relay's key | serve any stream it carries to anyone, and feed viewers anything; it holds no token for any Storage Node, so recordings are out of reach | erase the relay and adopt the machine again; its producers are reassigned |
 | A producer's key | negotiate and allocate for that producer's set, and write laminae into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
 | A reader's key | read the laminae of its sites | erase the reader; effective at once for new tokens, within `read_token_ttl` for issued ones |
-| A person's session | anything that person may do, inside **their tenant only**; the wall holds | end the session, reset the password |
+| A person's session | anything that person may do, inside **their tenant only**; the wall holds; for up to 24 h, unless its person stops being in good standing at roster | sign the person out everywhere at roster, or suspend them: every session minted before it is refused within `auth.operators.ttl` (30 s) ([§33.1](#331-trust-model)); reset the password |
 | A node's key | act as that node: serve or drop its own sinks' data, report its own devices and sinks. A report about a sink or a device another live node holds changes nothing, its SMART and pressure included, and a sink's capacity is stored clamped to `max_sink_capacity` ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) | erase the node and adopt the machine again under a new key |
 | A hardware identity | request adoption as a known host | nothing until an operator adopts it; with `readopt: auto`, impersonate that host, which is why the default is `manual` |
-| A cluster operator's session | manage the cluster and read across tenants, **from wherever the cluster API's sign-in listener answers**: the API binds to localhost unless `cluster.addr` names an interface, until the cluster tenant (or, with `auth.operators`, the operators' tenant) is known it serves no person at all, and a deployment that exposes the sign-in listener for the console ([§40.4](17-console.md#404-serving-it)) exposes exactly that — a person with a password, behind the gate | end the session; keep the listener where the operators are |
+| A cluster operator's session | manage the cluster and read across tenants, **from wherever the cluster API's sign-in listener answers**: the API binds to localhost unless `cluster.addr` names an interface, until the cluster tenant (or, with `auth.operators`, the operators' tenant) is known it serves no person at all, and a deployment that exposes the sign-in listener for the console ([§40.4](17-console.md#404-serving-it)) exposes exactly that — a person with a password, behind the gate | sign the operator out everywhere at roster, or suspend them: refused within `auth.operators.ttl`; take their grant of all of Shale away, which ends it on the cluster API within the same; keep the listener where the operators are |
 | The CP signing key | read and write any lamina on any node | rotate the key at once ([§33.3](#333-signing-keys-and-rotation)); hosts drop the retired key within their next poll, 30 s |
 | The CA key | impersonate nodes or the CP to clients | re-initialize the CA and adopt every host again; protect it accordingly |
 
