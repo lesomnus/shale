@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"google.golang.org/grpc"
@@ -112,7 +113,13 @@ func (l *relayLink) run(ctx context.Context) error {
 	l.mu.Lock()
 	l.ctx = ctx
 	l.mu.Unlock()
-	wait := time.Second
+	wait := relayRetry
+	// lost is when the link last went from up to down: for relayRetryFor
+	// from then the producer asks every relayRetry, since a relay that
+	// went is replaced only when the CP stops hearing it, and the producer
+	// learns of that by asking (§39.2). A slower one would add its gap to
+	// every viewer's wait.
+	var lost time.Time
 	for {
 		// A change signaled before this point is in what current() answers
 		// now; a signal left over would end the stream about to be opened
@@ -131,9 +138,13 @@ func (l *relayLink) run(ctx context.Context) error {
 			}
 			continue
 		}
-		err := l.attach(ctx, ra)
+		up, err := l.attach(ctx, ra)
 		if ctx.Err() != nil {
 			return nil
+		}
+		if up || lost.IsZero() {
+			lost = time.Now()
+			wait = relayRetry
 		}
 		if err != nil {
 			l.p.log.Warn("relay", "err", err.Error(), "retry_in", wait.String())
@@ -146,26 +157,34 @@ func (l *relayLink) run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-l.changed:
-			wait = time.Second
+			wait = relayRetry
 		case <-time.After(wait):
-			if wait < 30*time.Second {
+			if time.Since(lost) >= relayRetryFor && wait < 30*time.Second {
 				wait *= 2
 			}
 		}
 	}
 }
 
+// relayRetry is how often a producer whose relay link is down tries it
+// again, asking the CP for its assignment each time, for relayRetryFor;
+// it backs off to 30 s from then on.
+const (
+	relayRetry    = time.Second
+	relayRetryFor = time.Minute
+)
+
 // attach is one stream: Hello, then Start and Stop from the relay and Data
-// from the taps, until either side ends it.
-func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) error {
+// from the taps, until either side ends it. up says the relay welcomed it.
+func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up bool, err error) {
 	if len(ra.GetEndpoints()) == 0 {
-		return errors.New("the assignment carries no endpoint")
+		return false, errors.New("the assignment carries no endpoint")
 	}
 	ep := ra.GetEndpoints()[0]
 	addr := fmt.Sprintf("%s:%d", ep.GetHost(), ep.GetPort())
 	conn, err := l.p.agent.DialAddr(ctx, addr, ep.GetScheme() == "http")
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer conn.Close()
 
@@ -173,10 +192,10 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) error {
 	defer cancel()
 	stream, err := api.NewRelayIngestClient(conn).Attach(sctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if err := stream.Send(api.AttachRequest_builder{Hello: api.AttachRequest_Hello_builder{PublishToken: ra.GetPublishToken()}.Build()}.Build()); err != nil {
-		return err
+		return false, err
 	}
 	relayId, _ := pdid.From(ra.GetRelayId())
 	l.mu.Lock()
@@ -189,6 +208,7 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) error {
 	defer l.clear()
 
 	errs := make(chan error, 2)
+	var welcomed atomic.Bool
 	go func() {
 		for {
 			select {
@@ -214,6 +234,7 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) error {
 			}
 			switch {
 			case msg.GetWelcome() != nil:
+				welcomed.Store(true)
 				l.p.log.Info("attached to the relay", "relay", relayId.String(), "sources", len(msg.GetWelcome().GetSources()))
 			case msg.GetStart() != nil:
 				if id, err := pdid.From(msg.GetStart().GetSourceId()); err == nil {
@@ -230,7 +251,7 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) error {
 	select {
 	case <-ctx.Done():
 		stream.CloseSend()
-		return nil
+		return welcomed.Load(), nil
 	case <-l.changed:
 		// A new assignment: reconnect to it.
 		l.mu.Lock()
@@ -240,9 +261,9 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) error {
 		}
 		l.mu.Unlock()
 		stream.CloseSend()
-		return nil
+		return welcomed.Load(), nil
 	case err := <-errs:
-		return err
+		return welcomed.Load(), err
 	}
 }
 
