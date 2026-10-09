@@ -103,6 +103,9 @@ type Deps struct {
 	// that reports them takes them over (§28.3). Zero is §36.1's default.
 	NodeDownAfter      time.Duration
 	SinkAutoAdoptAfter time.Duration
+	// AllocationTTL is `allocation_ttl` (§12.1) when set; zero derives it
+	// from the set's link and the source's profile.
+	AllocationTTL time.Duration
 	// Now is the clock.
 	Now func() time.Time
 	Log *slog.Logger
@@ -183,6 +186,19 @@ func (d *Deps) nodeDownAfter() time.Duration {
 	}
 
 	return DefaultNodeDownAfter
+}
+
+// allocationTTL is §12.1's `allocation_ttl`: the horizon, the segment,
+// the abandon timeout and five minutes, unless the deployment set it.
+func (d *Deps) allocationTTL(link *api.LinkProfile, prof *api.SegmentProfile) time.Duration {
+	if d.AllocationTTL > 0 {
+		return d.AllocationTTL
+	}
+
+	return time.Duration(link.GetAllocationHorizonSeconds())*time.Second +
+		time.Duration(prof.GetDurationSeconds())*time.Second +
+		time.Duration(link.GetAbandonTimeoutSeconds())*time.Second +
+		5*time.Minute
 }
 
 // sinkAutoAdoptAfter is §28.3's `sink_auto_adopt_after`.

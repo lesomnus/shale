@@ -43,7 +43,7 @@ deployment runs well on them, and changes them only for a reason.
 | Uploads | `idle_timeout` | 30 s | 10 s – 5 min | negotiated, per set | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Uploads | `abandon_timeout` | 5 min | 1–30 min, and ≥ 2 × `idle_timeout` | negotiated, per set | [§15](04-write-path.md#15-partial-laminae) |
 | Uploads | `allocation_horizon` | 10 min | 1–30 min | negotiated, per set | [§12.1](04-write-path.md#121-flow) |
-| Uploads | `allocation_ttl` | horizon + longest segment + `abandon_timeout` + 5 min (22 min at the defaults) | derived | — | [§12.1](04-write-path.md#121-flow) |
+| Uploads | `allocation_ttl` | horizon + longest segment + `abandon_timeout` + 5 min (22 min at the defaults) | derived; `control.allocation_ttl` replaces it | control | [§12.1](04-write-path.md#121-flow) |
 | Uploads | `max_open_attempts` per source | 32 | — | cluster | [§12.1](04-write-path.md#121-flow) |
 | Uploads | `clock_tolerance` (future `date_started`) | 5 min beyond the horizon | — | cluster | [§10](02-data-model.md#10-time-semantics) |
 | Uploads | `max_backlog_age` (past `date_started`) | = `retention.expire` | — | set | [§10](02-data-model.md#10-time-semantics) |
