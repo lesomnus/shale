@@ -76,12 +76,30 @@ an operator moves the producer, or when a relay is erased.
   V=$(shale producer get -o json @acme/lobby-pi | jq -r .dateUpdated)
   shale producer patch @acme/lobby-pi "{\"live\":\"LIVE_POLICY_ON_DEMAND\",\"date_updated\":\"$V\"}"
   ```
-- **Relay down.** Relays heartbeat like nodes (`heartbeat_interval`,
-  `node_down_after`, [§27](09-operations.md#27-node--device--sink-health-and-quarantine)).
-  When one is down the CP reassigns its producers at once. A producer whose
-  stream broke is already asking, so it attaches to the new relay within a
-  few seconds. Viewers follow by asking `Live` again
+- **Relay down.** A relay heartbeats every `relay.heartbeat_interval`
+  (2 s) and is **down** once the CP has not heard it for
+  `control.relay_down_after` (6 s): three heartbeats in a row that did not
+  arrive, where one late or lost one moves nobody. That is far shorter
+  than a Storage Node's `node_down_after` (30 s,
+  [§27](09-operations.md#27-node--device--sink-health-and-quarantine)),
+  because a relay holds nothing and a viewer is waiting on it, while a
+  node that is wrongly held down costs reads and placement. From then on
+  `Live` stops naming the relay and the CP reassigns each of its producers
+  when it next asks. A producer whose stream broke asks every second for
+  a minute, so it attaches to the new relay within a second of the CP
+  holding the old one down; one whose stream is intact asks at its
+  heartbeat. Viewers follow by asking `Live` again
   ([§39.4](#394-viewers)). Recording is untouched throughout.
+
+  The two values go together: a deployment whose relays reach the CP
+  over a slow or lossy link raises both, keeping `relay_down_after` at
+  three heartbeats or more, and the viewer's wait grows by as much.
+  A relay held down while it is up, because the CP did not hear it, is up
+  again from its next heartbeat, with nothing to repair. Producers that
+  asked in the meantime were moved and stay where they were moved, since
+  the assignment is sticky; the relay takes producers again as any other
+  does. A viewer still on it keeps its session but no longer gets the
+  moved producer's cameras, and asks `Live` again to find them.
 
 ### 39.3 From the producer
 
@@ -317,7 +335,8 @@ they cannot, the open lamina's.
 | Failure | Effect | Recovery |
 |---|---|---|
 | Relay process restarts | every session and attachment drops; the relay has no state to recover, and the recent windows start empty. A stopping relay is graceful for two seconds, then ends what is still open, so an attached producer never keeps a dying relay alive | producers re-attach: the same relay at other endpoints is a restart, and the link moves as soon as a heartbeat brings the new ones; viewers ask `Live` again; the windows fill again from the re-attach on |
-| Relay down | as above, and the CP reassigns its producers once it has not heard the relay for `node_down_after`; until then `Live` still names it | no live picture for `node_down_after` and about a second more (31.5 s at the default 30 s, 5.5 to 6.9 s at 5 s); recording unaffected |
+| Relay down | as above, and the CP reassigns its producers once it has not heard the relay for `relay_down_after` (6 s, three of its 2 s heartbeats); until then `Live` still names it | producers whose stream broke ask every second and move as soon as the CP holds the relay down; a viewer asking `Live` again has a picture within `relay_down_after`, a second, and the next keyframe (5.9 to 7.9 s as measured at the defaults, against 31.5 s with relays held to `node_down_after`); recording unaffected |
+| Relay held down while up | the CP did not hear it for `relay_down_after`, though it serves on: the producers that ask in that time (at their heartbeat, since their stream is intact) are moved to another relay, and `Live` names that one | the relay is up again from its next heartbeat that arrives; moved producers stay where they are, its viewers of their cameras ask `Live` again; raise `relay_down_after` with `relay.heartbeat_interval` where this recurs |
 | Producer's uplink saturated by live | live bytes and recording compete; the tee drops live bytes rather than hold the recording, the producer's heartbeat counts them, and each drop tears the recent window, which is handed out from the next keyframe after it | the uplink budget counts every camera once more under `always` ([§38.5](15-producer.md#385-choosing-the-ceiling)); the operator sizes the uplink, or sets the producer `on_demand` ([§39.2](#392-assignment)) |
 | Producer down | its cameras are off for viewers and for recording alike | as in [§15](04-write-path.md#15-partial-laminae) |
 | CP down | no new `Live` and no new publish tokens; open sessions and attachments continue | as for reads ([§12.1](04-write-path.md#121-flow)): run the CP highly available |
