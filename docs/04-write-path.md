@@ -81,7 +81,20 @@ short CP outage. It adds no durable producer state:
   and runs for its whole segment, and the node's abandon decision after it.
   An upload that still outlives it, for instance a buffered backlog queued
   behind other segments, gets a fresh token for the same attempt and target
-  from `LaminaService.Renew`.
+  from `LaminaService.Renew`. The producer asks two thirds of the way
+  through the token's life, read from the token's own `iat` and `exp`, for
+  as long as the attempt runs, whether or not a request is open; the
+  requests that follow carry the fresh token, at the same key. Renewal
+  moves the attempt's expiry with the token's.
+- Renewal is before the TTL; after it there is a new attempt. The CP
+  refuses to renew an attempt past its expiry or no longer `ALLOCATED`
+  (`FAILED_PRECONDITION`). The producer then neither tries the other
+  candidates, which were issued with the same TTL, nor reallocates: it asks
+  for the slot again, which answers the same lamina with a new attempt
+  ([§13](#13-retry-and-reallocation)). A segment whose bytes were already
+  released under `retain: written` is cut where its node has it instead.
+  `control.allocation_ttl` replaces the derived value, for a deployment that
+  wants put tokens shorter-lived.
 - An attempt without a `LaminaStored` at the end of its TTL becomes
   `ABANDONED`, and a lamina none of whose attempts stored anything is
   removed `abandon_grace` (1 hour) later. Both are provisional: a late
@@ -541,7 +554,10 @@ its offset ([§12.2](#122-resumable-part-uploads)).
 The limit is based on progress, not attempt count. A slow link may reconnect
 many times. The producer keeps resuming as long as each attempt advances the
 offset, and gives up on the target after `resume_timeout` (e.g. 2 minutes)
-without progress, or when the token cannot be renewed.
+without progress, or when the token cannot be renewed. The latter is no
+fault of the target's and the attempt's siblings share its TTL, so it
+skips the placement retry: the producer asks for the slot again and gets a
+new attempt of the same lamina ([§12.1](#121-flow)).
 
 ### Placement retry
 

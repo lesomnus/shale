@@ -125,6 +125,12 @@ type ControlConfig struct {
 	// SinkAutoAdoptAfter is how long a sink whose node is down waits before
 	// the node that reports it takes it over (§28.3); default 10 min.
 	SinkAutoAdoptAfter time.Duration `yaml:"sink_auto_adopt_after"`
+	// AllocationTTL replaces the derived `allocation_ttl` (§12.1): how long
+	// an attempt and its put token stay valid without LaminaService.Renew.
+	// Zero derives it from the set's link and profile, 22 min at the
+	// defaults; a shorter one keeps put tokens short-lived, at the cost of
+	// more renewals.
+	AllocationTTL time.Duration `yaml:"allocation_ttl"`
 }
 
 // SinkConfig is one sink a node serves (§22.2).

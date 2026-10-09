@@ -265,6 +265,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 
 		NodeDownAfter:      c.Control.NodeDownAfter,
 		SinkAutoAdoptAfter: c.Control.SinkAutoAdoptAfter,
+		AllocationTTL:      c.Control.AllocationTTL,
 	}
 	if c.Control.AutoAdopt {
 		deps.AutoAdopt = func(kind pdid.Domain, _ *api.HostJoin, _ string) bool {

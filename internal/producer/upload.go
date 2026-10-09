@@ -140,6 +140,16 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 
 				return res
 			}
+			if errors.Is(err, errExpired) {
+				// The attempt outlived its TTL unrenewed, and the CP will
+				// not renew it now: neither the candidates issued with it
+				// nor a reallocation help. The segment is kept, and asking
+				// for its slot again answers the same lamina with a new
+				// attempt (§12.1, §12.2).
+				res.Err = err
+
+				return res
+			}
 			u.Log.Warn("attempt failed", "key", al.GetLaminaKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "err", err.Error())
 			// The failed attempt is reported before moving on (§13).
 			rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -218,6 +228,13 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 	}
 	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), key)
 
+	// The token is renewed while the attempt runs, before its TTL, so an
+	// upload that outlives it carries on at the same key (§12.2).
+	ls := newLease(u.Laminae, u.Log, al, cand)
+	lctx, stop := context.WithCancel(ctx)
+	defer stop()
+	go ls.keep(lctx)
+
 	var offset int64
 	// sentMax is the furthest byte this process sent for the key: a node
 	// offset beyond it is somebody else's bytes.
@@ -234,7 +251,11 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		status, newOffset, sent, complete, err := u.put(ctx, url, cand.GetToken(), al, seg, offset, part)
+		tok, err := ls.token(ctx)
+		if err != nil {
+			return err
+		}
+		status, newOffset, sent, complete, err := u.put(ctx, url, tok, al, seg, offset, part)
 		if offset+sent > sentMax {
 			sentMax = offset + sent
 		}
@@ -305,7 +326,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		if err != nil {
 			u.Log.Warn("upload interrupted", "key", al.GetLaminaKey(), "url", token.RedactURL(url), "err", err.Error())
 		}
-		cur, herr := u.head(ctx, url, cand.GetToken())
+		cur, herr := u.head(ctx, url, tok)
 		if herr == nil {
 			if cur > sentMax {
 				return errForeign

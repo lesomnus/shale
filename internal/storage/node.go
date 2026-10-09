@@ -205,6 +205,16 @@ func (n *Node) sinkOf(id pdid.Id) *Sink { return n.byId[id] }
 // answers nothing until the CP says it is this node's.
 func (n *Node) Sinks() []*Sink { return n.sinks }
 
+// PartBuffers is what the uploads hold of the part buffer pool now, the
+// most they ever held at once, and the pool's size (§12.2).
+func (n *Node) PartBuffers() (used, peak, budget int64) {
+	p := n.dp.pool
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.used, p.peak, p.budget
+}
+
 // Run opens the sinks, joins, and serves until the context is done.
 func (n *Node) Run(ctx context.Context) error {
 	if err := os.MkdirAll(n.cfg.StateDir, 0o700); err != nil {

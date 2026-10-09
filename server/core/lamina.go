@@ -189,7 +189,7 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	// asked to move on.
 	link := linkOf(set, a.bounds)
 	prof := segmentOf(src, set, a.bounds)
-	ttl := time.Duration(link.GetAllocationHorizonSeconds())*time.Second + time.Duration(prof.GetDurationSeconds())*time.Second + time.Duration(link.GetAbandonTimeoutSeconds())*time.Second + 5*time.Minute
+	ttl := s.d.allocationTTL(link, prof)
 
 	var siteRef *api.SiteRef
 	if len(set.GetSite().GetId()) > 0 {
@@ -255,6 +255,12 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 	if at.GetState() != api.AttemptState_ATTEMPT_STATE_ALLOCATED {
 		return nil, failed("attempt is %s", at.GetState())
 	}
+	// Renewal is before the TTL, a new attempt after it (§12.2): an
+	// attempt past its expiry is ABANDONED by the next round of jobs, and
+	// renewing it in between would race that.
+	if exp := at.GetDateExpires(); exp != nil && !exp.AsTime().After(s.d.now()) {
+		return nil, failed("attempt expired at %s", exp.AsTime().UTC().Format(time.RFC3339))
+	}
 
 	src, err := s.Next().Source().Get(ctx, api.SourceGetRequest_builder{
 		Ref: api.SourceRef_builder{Id: obj.GetSource().GetId()}.Build(),
@@ -272,7 +278,7 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 	}
 	link := linkOf(set, a.bounds)
 	prof := segmentOf(src, set, a.bounds)
-	ttl := time.Duration(link.GetAllocationHorizonSeconds())*time.Second + time.Duration(prof.GetDurationSeconds())*time.Second + time.Duration(link.GetAbandonTimeoutSeconds())*time.Second + 5*time.Minute
+	ttl := s.d.allocationTTL(link, prof)
 
 	exp := timestamppb.New(a.now.Add(ttl))
 	if _, err := s.Next().Attempt().Patch(ctx, api.AttemptPatchRequest_builder{

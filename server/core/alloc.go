@@ -356,7 +356,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 		existing = nil
 	}
 
-	ttl := horizon + duration + time.Duration(link.GetAbandonTimeoutSeconds())*time.Second + 5*time.Minute
+	ttl := s.d.allocationTTL(link, prof)
 	expires := a.now.Add(ttl)
 
 	var (
