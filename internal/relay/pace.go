@@ -115,8 +115,10 @@ func (s *source) runPacer() {
 func (s *source) release(out []pacedSample) {
 	for _, sm := range out {
 		if sm.audio {
-			for _, v := range s.viewers {
-				v.writeAudio(sm.data, sm.d)
+			for k, v := range s.viewers {
+				if !s.joining[k] {
+					v.writeAudio(sm.data, sm.d)
+				}
 			}
 			continue
 		}
@@ -126,8 +128,10 @@ func (s *source) release(out []pacedSample) {
 		if sm.key || len(s.gop) > 0 {
 			s.gop = append(s.gop, sample{data: sm.data, d: sm.d})
 		}
-		for _, v := range s.viewers {
-			v.write(sm.data, sm.d)
+		for k, v := range s.viewers {
+			if !s.joining[k] {
+				v.write(sm.data, sm.d)
+			}
 		}
 	}
 }
