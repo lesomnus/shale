@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/relay"
 )
@@ -63,9 +64,18 @@ func (c *cluster) startRelayAt(name, stateDir string) (*relay.Relay, context.Can
 // TestRelayFailover is §39.2's assignment and §39.6's relay-down drill: a
 // site's selector picks the relays with a label, the producer is assigned
 // the least loaded of them, and when it goes the producer is reassigned
-// on its next heartbeat and Live answers the other relay.
+// on its next heartbeat, Live answers the other relay, and a viewer who
+// was watching has a picture from it again within E6's 10 s.
+//
+// A relay is down when it has not been heard for node_down_after, as a
+// node is (§39.2), and until then Live keeps naming it: the time to a
+// picture again is node_down_after and about a second more. With the
+// default of 30 s that is 31.5 s as measured, over E6's bound, so the
+// drill runs with 5 s, against relays that heartbeat every second; at
+// the relay's default heartbeat of 5 s the bound cannot be met without
+// a node_down_after that one late heartbeat would trip.
 func TestRelayFailover(t *testing.T) {
-	c := start(t)
+	c := start(t, func(cfg *cmd.Config) { cfg.Control.NodeDownAfter = 5 * time.Second })
 	ctx := context.Background()
 	ops := c.dialCluster("@cluster/ops")
 	relays := api.NewRelayServiceClient(ops)
@@ -173,7 +183,22 @@ func TestRelayFailover(t *testing.T) {
 	require.Eventually(t, func() bool { return p.Stats().Stored >= 1 }, 90*time.Second, 500*time.Millisecond, "recording before the relay goes")
 	stored := p.Stats().Stored
 
+	// A viewer is watching when it goes. It does what §39.4 says a viewer
+	// does: its session ends, so it asks Live again, every half second
+	// until Live names a relay that is up, and opens a session there. E6
+	// holds it to 10 s from the relay going to a picture again: the first
+	// frame that decodes on its own, received whole.
+	sets := api.NewSetServiceClient(admin)
+	before, err := sets.Live(ctx, api.SetLiveRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.Equal(t, first, before.GetSources()[0].GetRelayId())
+	v := watch(t, before.GetSources()[0])
+	defer v.close()
+	v.video(t, 50, 20*time.Second)
+	index := indexFrames(t, sample)
+
 	var other []byte
+	killed := time.Now()
 	if string(first) == string(r1.Id().Bytes()) {
 		stop1()
 		other = r2.Id().Bytes()
@@ -181,11 +206,32 @@ func TestRelayFailover(t *testing.T) {
 		stop2()
 		other = r1.Id().Bytes()
 	}
-	require.Eventually(t, func() bool { return string(assigned()) == string(other) }, 90*time.Second, 500*time.Millisecond, "reassigned once the relay is down")
-	live, err := api.NewSetServiceClient(admin).Live(ctx, api.SetLiveRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
-	require.NoError(t, err)
+	var live *api.SetLiveResponse
+	asks := 0
+	require.Eventually(t, func() bool {
+		asks++
+		live, err = sets.Live(ctx, api.SetLiveRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+		return err == nil && string(live.GetSources()[0].GetRelayId()) != string(first)
+	}, 90*time.Second, 500*time.Millisecond, "Live names another relay once this one is down")
+	named := time.Since(killed)
 	require.Len(t, live.GetSources(), 1)
 	require.Equal(t, other, live.GetSources()[0].GetRelayId())
+	require.Equal(t, other, assigned(), "the producer was reassigned")
+	var tile wallTile
+	for {
+		// The producer may not be on the new relay yet: no picture comes
+		// until it is, and the viewer tries again.
+		tile = watchTile(t, live.GetSources()[0], index, time.Second)
+		if tile.err == nil || time.Since(killed) > 60*time.Second {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	require.NoError(t, tile.err)
+	recovered := tile.first.Sub(killed)
+	t.Logf("relay down: Live named the other relay %d ms after, on ask %d; the first frame from it %d ms after (%d ms after that offer)",
+		named.Milliseconds(), asks, recovered.Milliseconds(), tile.first.Sub(tile.offered).Milliseconds())
+	require.Less(t, recovered, 10*time.Second, "a viewer has its picture again within 10 s of the relay going")
 
 	// The recording never depended on the relay.
 	require.Eventually(t, func() bool { return p.Stats().Stored > stored }, 90*time.Second, 500*time.Millisecond, "the recording went on across the relay outage: %+v", p.Stats())

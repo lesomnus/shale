@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os/exec"
@@ -399,10 +401,10 @@ func liveSource(t *testing.T, ctx context.Context, c *cluster, admin *grpc.Clien
 	return set, live
 }
 
-// liveProducer sets up one set with one producer of the given source,
+// liveProducer sets up one set with one producer of the given sources,
 // adopted and assigned a relay, and answers what Live says about its
-// source, and the producer.
-func liveProducer(t *testing.T, ctx context.Context, c *cluster, admin *grpc.ClientConn, src producer.SourceConfig) (*api.Set, *api.LiveSource, *producer.Producer) {
+// first source, and the producer.
+func liveProducer(t *testing.T, ctx context.Context, c *cluster, admin *grpc.ClientConn, srcs ...producer.SourceConfig) (*api.Set, *api.LiveSource, *producer.Producer) {
 	t.Helper()
 	set, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{
 		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "live",
@@ -429,7 +431,7 @@ func liveProducer(t *testing.T, ctx context.Context, c *cluster, admin *grpc.Cli
 		StateDir:          filepath.Join(t.TempDir(), "producer"),
 		Cp:                "http://" + c.running.TenantAddr,
 		Dev:               true,
-		Sources:           []producer.SourceConfig{src},
+		Sources:           srcs,
 		Mode:              api.UploadMode_UPLOAD_MODE_LIVE,
 		SegmentDuration:   8 * time.Second,
 		HeartbeatInterval: 2 * time.Second,
@@ -519,26 +521,51 @@ func watch(t *testing.T, live *api.LiveSource) *viewer {
 			}
 		}
 	})
-	offer, err := pc.CreateOffer(nil)
+	_, v.session, err = offerWhep(pc, live)
 	require.NoError(t, err)
+
+	return v
+}
+
+// offerWhep is a viewer's side of WHEP (§39.4): the offer of a peer
+// connection whose transceivers are set up, its candidates gathered, to
+// the source's WHEP URL with the view token, and the answer taken. It
+// answers the relay's base URL and the session's Location.
+func offerWhep(pc *webrtc.PeerConnection, live *api.LiveSource) (base, session string, err error) {
+	offer, err := pc.CreateOffer(nil)
+	if err != nil {
+		return "", "", err
+	}
 	gathered := webrtc.GatheringCompletePromise(pc)
-	require.NoError(t, pc.SetLocalDescription(offer))
+	if err := pc.SetLocalDescription(offer); err != nil {
+		return "", "", err
+	}
 	<-gathered
 
 	req, err := http.NewRequest(http.MethodPost, live.GetWhepUrl(), bytes.NewReader([]byte(pc.LocalDescription().SDP)))
-	require.NoError(t, err)
+	if err != nil {
+		return "", "", err
+	}
 	req.Header.Set("Content-Type", "application/sdp")
 	req.Header.Set("Authorization", token.Scheme+" "+live.GetViewToken())
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
+	if err != nil {
+		return "", "", err
+	}
 	body, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
-	require.Equal(t, http.StatusCreated, resp.StatusCode, string(body))
-	v.session = resp.Header.Get("Location")
-	require.NotEmpty(t, v.session)
-	require.NoError(t, pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: string(body)}))
+	if resp.StatusCode != http.StatusCreated {
+		return "", "", fmt.Errorf("WHEP: %d %s", resp.StatusCode, body)
+	}
+	session = resp.Header.Get("Location")
+	if session == "" {
+		return "", "", errors.New("WHEP: no Location")
+	}
+	if err := pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: string(body)}); err != nil {
+		return "", "", err
+	}
 
-	return v
+	return whepBase(live.GetWhepUrl()), session, nil
 }
 
 // video waits for n video RTP packets and answers the first payload.
