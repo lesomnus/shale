@@ -182,17 +182,29 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   logs it beside the actor when a session opens, and it grants nothing.
 - **Instant start.** The relay keeps, per active source, every sample since
   the last keyframe (at most one keyframe interval, about a megabyte at
-  4 Mbps). A joining viewer receives that group of pictures at once and
-  starts within a fraction of a second instead of waiting for the next
-  keyframe. It gets nothing before its connection is up and the group is
-  handed over, so what it gets first is the group whole and then what
-  follows, never a frame twice or out of order, either of which breaks
-  the picture until the next keyframe. Measured by WHEP viewers on a wall
-  of eight cameras through one relay, `Live` to the first frame that
-  decodes on its own: 10 to 32 ms, a median of 20 to 25. The group goes
-  out as one burst, which a socket's receive buffer of the kernel's
-  default size does not always hold: an occasional frame of it is lost,
-  and with it the picture until the next keyframe.
+  4 Mbps). A joining viewer receives that keyframe, with the parameter
+  sets in front of it, at once, and starts within a fraction of a second
+  instead of waiting for the next keyframe. The rest of the group of
+  pictures follows **at three times real time**, each frame a third of
+  its duration after the one before, and what the camera sends meanwhile
+  queues behind it, until the viewer has caught up with the live edge and
+  gets what comes as every viewer does: a viewer two seconds behind, the
+  most a keyframe interval of two seconds leaves, is there a second later.
+  It gets nothing before its connection is up, and every frame of the
+  group and after it once, in order, never a frame twice or out of order,
+  either of which breaks the picture until the next keyframe; the sound
+  starts at the live edge. Sent at once, as the group used to be, it was
+  a megabyte in milliseconds, more than a socket's receive buffer of the
+  kernel's default size (208 kB) holds: a hundred viewers joining at once
+  lost thousands of packets, and a wall of eight up to three frames a
+  run. Measured by WHEP viewers on a wall of eight cameras through one
+  relay, `Live` to the first frame that decodes on its own: 10 to 34 ms,
+  a median of 17 to 22; to the live edge half a second after that, and
+  no frame broken. A hundred viewers of a 4 Mbps camera joining at once:
+  the first frame a median of 250 to 365 ms after the offer, the live
+  edge about a second after it, no packet lost for good and no frame
+  broken, where the group sent at once lost 3,700 to 8,400 packets and
+  broke 10 to 50 frames.
 - **Paced.** A producer sends a fragment at a time, up to
   `fragment_duration` of frames (200 ms by default; it was half a second), and the relay sends each sample to the viewers when its
   timestamp says, not the fragment's frames at once. A burst every half
@@ -290,7 +302,7 @@ example  = 100 viewers × 4 Mbps = 400 Mbps, a fraction of one 10 GbE port
 
 Hundreds of viewers per relay are ordinary. Measured with the relay, the
 producer and a hundred WebRTC viewers in one process, on one camera of
-4 Mbps: 402 to 418 Mbps out, every viewer at the camera's rate, no packet
+4 Mbps: 402 to 420 Mbps out, every viewer at the camera's rate, no packet
 lost over 15 s and no viewer more than 172 ms without one. A relay per site is the usual
 shape, both for the labels in [§39.2](#392-assignment) and so that a
 site's viewers and producers share a network.

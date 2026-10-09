@@ -3,6 +3,7 @@ package relay
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 	"time"
 
@@ -69,13 +70,18 @@ type source struct {
 	// sent to them until catchUp hands them the group of pictures, so
 	// what they get first is that, whole, and nothing of it twice.
 	joining map[string]bool
-	idle    *time.Timer
+	// catching are the viewers handed the keyframe and being sent the rest
+	// of the group faster than real time (catchUp): what the pacer
+	// releases meanwhile joins the end of what each is owed, until it has
+	// caught up and the pacer sends it what comes, as to any viewer.
+	catching map[string]*owed
+	idle     *time.Timer
 	// Bytes and units, for the heartbeat.
 	bytes int64
 }
 
 func newSource(r *Relay, id pdid.Id) *source {
-	return &source{id: id, r: r, viewers: map[string]sink{}, joining: map[string]bool{}, ring: newRing()}
+	return &source{id: id, r: r, viewers: map[string]sink{}, joining: map[string]bool{}, catching: map[string]*owed{}, ring: newRing()}
 }
 
 // attach makes a producer stream the feeder of this source; a stream
@@ -307,6 +313,7 @@ func (s *source) removeViewer(key string) {
 	defer s.mu.Unlock()
 	delete(s.viewers, key)
 	delete(s.joining, key)
+	delete(s.catching, key)
 	if len(s.viewers) > 0 || !s.started || s.always {
 		return
 	}
@@ -329,13 +336,31 @@ func (s *source) removeViewer(key string) {
 	})
 }
 
+// catchUpSpeed is how many times real time a joining viewer is sent the
+// group of pictures after its keyframe: at three, a viewer two seconds
+// behind the live edge, the most a keyframe interval of two seconds
+// leaves, is there a second later, and the burst it gets is three times
+// the camera's rate rather than the whole group at once (§39.4).
+const catchUpSpeed = 3
+
+// owed is what a catching-up viewer is still to be sent, in order.
+type owed struct {
+	samples []sample
+	// since is when the viewer's catch-up began.
+	since time.Time
+}
+
 // catchUp hands a joining viewer whose connection came up the group of
-// pictures, and from then on what the pacer sends. With the lock held
-// throughout: a frame the pacer sent between the connection coming up and
-// the copy of the group would reach the viewer twice, and one sent while
-// the group was being written would come in the middle of it, and either
-// breaks the picture until the next keyframe. Viewers of one source who
-// join together so catch up one after another.
+// pictures, and from then on what the pacer sends. The keyframe goes at
+// once, with the lock held, so the picture comes up as fast as it did; the
+// rest of the group, and what the pacer releases meanwhile, goes from a
+// queue of the viewer's own at catchUpSpeed times real time until it is
+// empty, the viewer at the live edge. A frame is either in that queue or
+// sent after it, never both: one sent twice, or one of the live edge in
+// the middle of the group, breaks the picture until the next keyframe. A
+// group sent at once, as it was, is up to a megabyte in a few
+// milliseconds, more than a socket's receive buffer of the kernel's
+// default size holds.
 func (s *source) catchUp(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -344,8 +369,47 @@ func (s *source) catchUp(key string) {
 		return
 	}
 	delete(s.joining, key)
-	for _, sm := range s.gop {
+	if len(s.gop) == 0 {
+		return
+	}
+	v.write(s.gop[0].data, s.gop[0].d)
+	if len(s.gop) == 1 {
+		return
+	}
+	o := &owed{samples: slices.Clone(s.gop[1:]), since: time.Now()}
+	s.catching[key] = o
+	go s.runCatchUp(key, v, o, s.gop[0].d)
+}
+
+// runCatchUp sends a catching-up viewer what it is owed, each sample its
+// duration over catchUpSpeed after the one before it, the first after the
+// keyframe's (`first`), and ends when the queue is empty or the viewer
+// left. Each sample is written with the lock held, so the pacer sends the
+// viewer nothing until the last owed one is out.
+func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration) {
+	next := time.Now().Add(first / catchUpSpeed)
+	for {
+		if wait := time.Until(next); wait > 0 {
+			time.Sleep(wait)
+		}
+		s.mu.Lock()
+		if s.catching[key] != o {
+			s.mu.Unlock()
+			return
+		}
+		if len(o.samples) == 0 {
+			delete(s.catching, key)
+			s.mu.Unlock()
+			if s.r.m != nil {
+				s.r.m.catchUp.Record(context.Background(), float64(time.Since(o.since).Microseconds())/1000)
+			}
+			return
+		}
+		sm := o.samples[0]
+		o.samples = o.samples[1:]
 		v.write(sm.data, sm.d)
+		s.mu.Unlock()
+		next = next.Add(sm.d / catchUpSpeed)
 	}
 }
 
