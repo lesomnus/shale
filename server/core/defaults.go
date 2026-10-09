@@ -53,6 +53,11 @@ const (
 	DefaultNodeDownAfter     = 30 * time.Second
 	DefaultProducerDownAfter = 90 * time.Second
 	DefaultJoinPendingTTL    = 24 * time.Hour
+	// DefaultRelayDownAfter is three of a relay's heartbeats, every 2 s
+	// (§39.2): a relay is down once the third in a row has not arrived, so
+	// a viewer has its picture back within E6's 10 s and one late or lost
+	// heartbeat moves nobody.
+	DefaultRelayDownAfter = 6 * time.Second
 	// DefaultSinkAutoAdoptAfter is how long a sink whose node is down waits
 	// before the node that reports it adopts it (§28.3).
 	DefaultSinkAutoAdoptAfter = 10 * time.Minute

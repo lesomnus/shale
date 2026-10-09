@@ -267,6 +267,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		M:             core.NewMetrics(ctx),
 
 		NodeDownAfter:      c.Control.NodeDownAfter,
+		RelayDownAfter:     c.Control.RelayDownAfter,
 		SinkAutoAdoptAfter: c.Control.SinkAutoAdoptAfter,
 		AllocationTTL:      c.Control.AllocationTTL,
 	}

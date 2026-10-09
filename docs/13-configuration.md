@@ -95,7 +95,7 @@ deployment runs well on them, and changes them only for a reason.
 | Health | score half-life | 24 h | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
 | Health | suspect / quarantine / exit thresholds | 10 / 30 / 5 | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
 | Health | cool-down / probation | 24 h / 7 days at weight × 0.5 | — | cluster | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
-| Health | `control.node_down_after` | 30 s | how long a host may go unheard before it is down: nodes and relays alike | control | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
+| Health | `control.node_down_after` | 30 s | how long a Storage Node may go unheard before it is down; relays have `control.relay_down_after` | control | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
 | Health | `control.sink_auto_adopt_after` | 10 min | how long a sink whose node is down waits before the node reporting it takes it over | control | [§28.3](09-operations.md#283-node-failure-and-device-re-homing) |
 | Health | `reconcile_interval` | 24 h | — | cluster | [§34.9](11-deployment.md#349-events-and-directives) |
 | Health | `control.directives_every` | 5 s | — | control | [§34.9](11-deployment.md#349-events-and-directives) |
@@ -145,6 +145,8 @@ deployment runs well on them, and changes them only for a reason.
 | Live | `relay.whep_cert_file`, `relay.whep_key_file` | none (the host certificate) | both or neither; read again when the files change | relay | [§39.4](16-relay.md#394-viewers), [§33.5](10-security.md#335-tls) |
 | Live | `relay.whep_advertise` | `relay.advertise` and the bound port | a host, or host:port | relay | [§39.4](16-relay.md#394-viewers) |
 | Live | `relay_selector` | none (any relay) | labels | site | [§39.2](16-relay.md#392-assignment) |
+| Live | `relay.heartbeat_interval` | 2 s | a third of `control.relay_down_after` or less | relay | [§39.2](16-relay.md#392-assignment) |
+| Live | `control.relay_down_after` | 6 s (three relay heartbeats) | how long a relay may go unheard before it is down: its producers are reassigned and `Live` stops naming it; at least three `relay.heartbeat_interval`s | control | [§39.2](16-relay.md#392-assignment), [§39.6](16-relay.md#396-failures) |
 | Security | `rpc_rate` | 20 calls/s per actor, burst 100; 2,000/s per tenant | — | cluster | [§35.1](12-api.md#351-conventions) |
 | Security | `timeline_page` | 1,000 laminae | — | cluster | [§17.1](05-read-path.md#171-flow) |
 
