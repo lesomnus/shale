@@ -21,7 +21,11 @@ type metrics struct {
 	recent     metric.Int64Counter
 	rewind     metric.Int64Gauge
 	firstFrame metric.Float64Histogram
-	cpu        metric.Float64Gauge
+	// How long a joining viewer took to catch up with the live edge, and
+	// the packets viewers asked for again (§39.4).
+	catchUp metric.Float64Histogram
+	nacked  metric.Int64Counter
+	cpu     metric.Float64Gauge
 }
 
 func newMetrics(ctx context.Context) *metrics {
@@ -37,6 +41,8 @@ func newMetrics(ctx context.Context) *metrics {
 		recent:     o.Int64Counter("shale.relay.recent_bytes", metric.WithDescription("bytes of the recent window handed out"), metric.WithUnit("By")),
 		rewind:     o.Int64Gauge("shale.relay.rewind_bytes", metric.WithDescription("bytes the recent windows hold together"), metric.WithUnit("By")),
 		firstFrame: o.Float64Histogram("shale.relay.first_frame_ms", metric.WithDescription("from a session's offer to the connection over which its first frame goes"), metric.WithUnit("ms")),
+		catchUp:    o.Float64Histogram("shale.relay.catch_up_ms", metric.WithDescription("from a session's keyframe to the end of its group of pictures, sent faster than real time, at the live edge"), metric.WithUnit("ms")),
+		nacked:     o.Int64Counter("shale.relay.nacked_packets", metric.WithDescription("video packets viewers reported lost and asked for again")),
 		cpu:        o.Float64Gauge("shale.relay.cpu", metric.WithDescription("one-minute load average over the CPU count")),
 	}
 }

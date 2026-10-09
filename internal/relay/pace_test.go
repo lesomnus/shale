@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -48,9 +49,12 @@ type tape struct{ got []string }
 func (t *tape) write(data []byte, _ time.Duration)   { t.got = append(t.got, string(data)) }
 func (t *tape) writeAudio(_ []byte, _ time.Duration) {}
 
-// A joining viewer gets nothing until its connection is up, then the group
-// of pictures once and what follows it, in order: never a frame twice,
-// which a frame sent both live and in the group would be.
+// A joining viewer gets nothing until its connection is up, then the
+// keyframe at once, the rest of the group of pictures faster than real
+// time with what the pacer releases meanwhile behind it, and once caught
+// up what follows, in order: never a frame twice, which a frame sent both
+// live and in the group would be, nor a live frame in the middle of the
+// group.
 func TestCatchUp(t *testing.T) {
 	s := newSource(&Relay{}, pdid.New(pdid.Domain(8)))
 	release := func(out ...pacedSample) {
@@ -58,14 +62,60 @@ func TestCatchUp(t *testing.T) {
 		defer s.mu.Unlock()
 		s.release(out)
 	}
-	release(pacedSample{key: true, data: []byte("k")}, pacedSample{data: []byte("p1")})
-	v := &tape{}
-	s.addViewer("a.1", v)
-	release(pacedSample{data: []byte("p2")})
-	require.Empty(t, v.got, "nothing before the connection is up")
+	got := func() []string {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		return slices.Clone(v(s).got)
+	}
+	frame := 300 * time.Millisecond
+	release(pacedSample{key: true, data: []byte("k"), d: frame}, pacedSample{data: []byte("p1"), d: frame})
+	s.addViewer("a.1", &tape{})
+	release(pacedSample{data: []byte("p2"), d: frame})
+	require.Empty(t, got(), "nothing before the connection is up")
 
+	began := time.Now()
 	s.catchUp("a.1")
-	release(pacedSample{data: []byte("p3")})
+	require.Equal(t, []string{"k"}, got(), "the keyframe at once")
+	release(pacedSample{data: []byte("p3"), d: frame})
 	s.catchUp("a.1")
-	require.Equal(t, []string{"k", "p1", "p2", "p3"}, v.got)
+	require.Equal(t, []string{"k"}, got(), "a frame released while catching up waits its turn")
+
+	require.Eventually(t, func() bool {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		return len(s.catching) == 0
+	}, 5*time.Second, 5*time.Millisecond)
+	took := time.Since(began)
+	require.Equal(t, []string{"k", "p1", "p2", "p3"}, got())
+	require.GreaterOrEqual(t, took, 4*frame/catchUpSpeed, "faster than real time, not at once")
+	require.Less(t, took, 4*frame, "faster than real time")
+
+	release(pacedSample{data: []byte("p4"), d: frame})
+	require.Equal(t, []string{"k", "p1", "p2", "p3", "p4"}, got(), "caught up: what comes goes at once")
+}
+
+// A viewer that leaves while catching up is sent nothing more.
+func TestCatchUpLeaves(t *testing.T) {
+	s := newSource(&Relay{}, pdid.New(pdid.Domain(8)))
+	s.mu.Lock()
+	s.release([]pacedSample{{key: true, data: []byte("k"), d: time.Second}, {data: []byte("p1"), d: time.Second}})
+	s.mu.Unlock()
+	tp := &tape{}
+	s.addViewer("a.1", tp)
+	s.catchUp("a.1")
+	s.removeViewer("a.1")
+	time.Sleep(500 * time.Millisecond)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	require.Equal(t, []string{"k"}, tp.got)
+	require.Empty(t, s.catching)
+}
+
+// v is a source's only viewer, a tape; with the lock held.
+func v(s *source) *tape {
+	for _, x := range s.viewers {
+		return x.(*tape)
+	}
+
+	return &tape{}
 }
