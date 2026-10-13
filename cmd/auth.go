@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
 )
@@ -57,7 +58,11 @@ func Resolver(s *Server) auth.Resolver {
 			// name is the plain header of development mode.
 			p, err := s.Identity.Lookup(ctx, id.Tenant, id.Alias)
 			if err != nil {
-				return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
+				if errors.Is(err, identity.ErrNoPerson) || errors.Is(err, identity.ErrNoTenant) || errors.Is(err, identity.ErrRefused) {
+					return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
+				}
+
+				return nil, fmt.Errorf("%w: roster: %w", auth.ErrUnavailable, err)
 			}
 			if _, err := s.Provision(ctx, p); err != nil {
 				return nil, err
@@ -91,11 +96,7 @@ func holderFrame(ctx context.Context, own api.Server, ref *api.HolderRef) (*fram
 		}.Build(),
 	}.Build())
 	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return nil, fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
-		}
-
-		return nil, err
+		return nil, refused(err)
 	}
 
 	actor, err := pdid.From(v.GetId())
@@ -173,12 +174,21 @@ func hostFrame(ctx context.Context, own api.Server, k pdid.Id, id auth.Identity)
 	return f, nil
 }
 
+// refused says why the row of a caller could not be read. A row that is not
+// there is a credential that names nobody. An answer the server gave in its
+// own words stands. Anything else is the database not answering -- during a
+// network outage the CP could not reach PostgreSQL for a quarter of an hour
+// (2026-10-13) and every host was told Internal, which reads as a bug and not
+// as "try again" -- so it is Unavailable.
 func refused(err error) error {
 	if status.Code(err) == codes.NotFound {
 		return fmt.Errorf("%w: %s", auth.ErrNoCredential, err)
 	}
+	if _, ok := status.FromError(err); ok {
+		return err
+	}
 
-	return err
+	return fmt.Errorf("%w: %w", auth.ErrUnavailable, err)
 }
 
 func peerCert(ctx context.Context) (*x509.Certificate, bool) {
