@@ -230,3 +230,123 @@ func TestDelegatedViewing(t *testing.T) {
 		return err
 	})
 }
+
+// `auth.delegation.persons: tenant` (§33.8): on a deployment whose reads
+// are granted, a person granted nothing is viewed for through an app all
+// the same -- the app decides who sees what -- and still reads nothing
+// here themselves; the app is still held to what roster grants it, and
+// the person to their standing. By default the same person is refused.
+func TestDelegatedViewingEveryPerson(t *testing.T) {
+	for _, persons := range []string{"", cmd.DelegationPersonsTenant} {
+		t.Run("persons="+persons, func(t *testing.T) {
+			every := persons == cmd.DelegationPersonsTenant
+			idp := ssotest.New(t, "shale", "s3cret", "shale-cli")
+			c := start(t, func(c *cmd.Config) {
+				c.Auth.Operators = identity.OperatorsConfig{Tenant: "acme", Ttl: time.Second, Reads: identity.ReadsGranted}
+				c.Auth.Oidc.Issuer = idp.URL
+				c.Auth.Oidc.ClientId = "shale"
+				c.Auth.Oidc.ClientSecret = "s3cret"
+				c.Auth.Delegation = cmd.DelegationConfig{
+					Audience: shaleApi,
+					Clients:  map[string]string{portalClient: "portal"},
+					Persons:  persons,
+				}
+			})
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			id := c.running.CP.Identity
+			admin := c.dial("@acme/admin")
+			set, _ := liveSource(t, ctx, c, admin, "av.mp4")
+			byId := api.SetRef_builder{Id: set.GetId()}.Build()
+
+			bob, err := id.AddPerson(ctx, "acme", "bob", "Bob")
+			require.NoError(t, err)
+			carol, err := id.AddPerson(ctx, "acme", "carol", "Carol")
+			require.NoError(t, err)
+			portal, err := id.AddPerson(ctx, "acme", "portal", "Portal")
+			require.NoError(t, err)
+			_, err = id.Grant(ctx, "acme", "app", []string{"/roster.DelegationService/Exchange"}, portal.Id)
+			require.NoError(t, err)
+			// Live, and not recordings, is what the portal may do.
+			_, err = id.Grant(ctx, "acme", "portal-live", []string{"/shale.DelegationService/Live"}, portal.Id)
+			require.NoError(t, err)
+
+			personToken := func(sub string) string {
+				now := time.Now()
+				return idp.Sign(t, map[string]any{
+					"iss": idp.URL, "sub": sub, "aud": []string{shaleApi}, "client_id": portalClient,
+					"iat": now.Unix(), "exp": now.Add(5 * time.Minute).Unix(),
+				})
+			}
+			exchange := func() string {
+				tok, err := id.Exchange(ctx, "acme", "portal", []string{"/shale.DelegationService/*"})
+				require.NoError(t, err)
+				return tok
+			}
+			conn, err := grpc.NewClient(c.running.TenantAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.NoError(t, err)
+			defer conn.Close()
+			ds := api.NewDelegationServiceClient(conn)
+			as := func(rd string) context.Context {
+				return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+rd)
+			}
+			startFor := func(who pdid.Id, live, recordings bool) (*api.DelegationStartResponse, error) {
+				return ds.Start(as(exchange()), api.DelegationStartRequest_builder{AccessToken: personToken(who.String()), Live: live, Recordings: recordings}.Build())
+			}
+			liveFor := func(handle string) (*api.SetLiveResponse, error) {
+				return ds.Live(as(exchange()), api.DelegationLiveRequest_builder{Handle: handle, Set: byId}.Build())
+			}
+
+			// Bob, granted nothing, is viewed for only where every person may be.
+			var started *api.DelegationStartResponse
+			require.Eventually(t, func() bool {
+				started, err = startFor(bob.Id, true, false)
+				if every {
+					return err == nil
+				}
+				return status.Code(err) == codes.PermissionDenied && strings.Contains(status.Convert(err).Message(), "grants you nothing")
+			}, 10*time.Second, 200*time.Millisecond, "%v", err)
+
+			// Bob himself reads nothing here either way: the console's reads
+			// are still granted.
+			_, err = api.NewSetServiceClient(c.dial("@acme/bob")).Live(ctx, api.SetLiveRequest_builder{Ref: byId}.Build())
+			require.Equal(t, codes.PermissionDenied, status.Code(err))
+
+			if !every {
+				return
+			}
+
+			// Live through the handle, as Bob and naming the portal.
+			live, err := liveFor(started.GetHandle())
+			require.NoError(t, err)
+			require.Len(t, live.GetSources(), 1)
+			claims, err := token.Parse(live.GetSources()[0].GetViewToken())
+			require.NoError(t, err)
+			require.Equal(t, bob.Id.Bytes(), claims.GetActor())
+			require.Equal(t, portal.Id.Bytes(), claims.GetDelegator())
+
+			// The portal's ceiling still holds: it is not granted recordings.
+			_, err = startFor(bob.Id, false, true)
+			require.Equal(t, codes.PermissionDenied, status.Code(err))
+			require.Contains(t, status.Convert(err).Message(), "grants the app nothing")
+
+			// And the person's standing: somebody suspended is viewed for no more.
+			forCarol, err := startFor(carol.Id, true, false)
+			require.NoError(t, err)
+			_, err = liveFor(forCarol.GetHandle())
+			require.NoError(t, err)
+			require.NoError(t, id.Suspend(ctx, carol.Id))
+			_, err = liveFor(forCarol.GetHandle())
+			require.Equal(t, codes.PermissionDenied, status.Code(err))
+			require.Contains(t, status.Convert(err).Message(), "good standing")
+			_, err = startFor(carol.Id, true, false)
+			require.Error(t, err, "nor started for")
+
+			// Revoked, it answers nothing.
+			_, err = ds.Revoke(as(exchange()), api.DelegationRevokeRequest_builder{Handle: started.GetHandle()}.Build())
+			require.NoError(t, err)
+			_, err = liveFor(started.GetHandle())
+			require.Equal(t, codes.PermissionDenied, status.Code(err))
+		})
+	}
+}
