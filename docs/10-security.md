@@ -193,7 +193,9 @@ holds a credential.
   the reads are as far as roster grants them too, so a person granted
   nothing reads nothing; that is how people who should see cameras only
   through an app beside Shale are kept to it
-  ([§33.8](#338-viewing-on-a-persons-behalf)). Hosts are unchanged. Without
+  ([§33.8](#338-viewing-on-a-persons-behalf); with
+  `auth.delegation.persons: tenant` an app may view for any of them, and
+  the grant decides the console alone). Hosts are unchanged. Without
   `auth.operators` the rule is the one before it, and it is what an
   embedded roster, `--dev` and the tests run by default: every person
   administers their own tenant, and only one who sees every site issues a
@@ -517,7 +519,7 @@ fetches laminae directly. The media server itself manages no keys.
 |---|---|---|
 | One access token | one operation on one lamina until it expires; a view token, one camera for an hour, and the relay ends the session when the token does; one issued on a person's behalf, for `auth.delegation.token_ttl` (5 min) | none needed |
 | An app's delegation handle | nothing alone: every use needs a fresh exchange token from roster for that app ([§33.8](#338-viewing-on-a-persons-behalf)) | the app revokes it, or the person is signed out everywhere at roster |
-| An app's key at roster | mint exchange tokens and, with a handle the app holds, view what the app's delegations name, within what roster grants the app; a new delegation also needs a person's fresh access token for Shale | end the app's nomination at roster, or unbind its role; effective at the next renewal |
+| An app's key at roster | mint exchange tokens and, with a handle the app holds, view what the app's delegations name, within what roster grants the app; a new delegation also needs a person's fresh access token for Shale, and that person's own grant unless `auth.delegation.persons: tenant` | end the app's nomination at roster, or unbind its role; effective at the next renewal |
 | A publish token | feed false video for that producer's cameras to viewers, for up to a day: the relay ends a stream when its token expires, and learns nothing else about a producer | erase the producer; the token expires within `publish_token_ttl`, or rotate the signing key at once ([§33.3](#333-signing-keys-and-rotation)) |
 | A relay's key | serve any stream it carries to anyone, and feed viewers anything; it holds no token for any Storage Node, so recordings are out of reach | erase the relay and adopt the machine again; its producers are reassigned |
 | A producer's key | negotiate and allocate for that producer's set, and write laminae into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
@@ -591,6 +593,18 @@ portal ─ DelegationService.Revoke {handle} ─▶ Shale            (its own si
   serves no session and no certificate: on the tenant API its four entries
   take an app's exchange token alone and its generated verbs are refused to
   everybody, and the cluster API does not serve it at all.
+  With `auth.delegation.persons: tenant`, any person of the tenant in good
+  standing may be viewed for, whatever `auth.operators.reads` says, and
+  nobody needs a grant to be: the app is the authority on which of its
+  people sees which cameras, within its ceiling. What a person gets is
+  still narrowed by everything else here -- what roster grants the app,
+  the handle's sets, sources and window, the person's tenant and sites,
+  and their standing at every use -- and only to the reads: a person is
+  never let do anything but view through it. The console is unchanged: with
+  `reads: granted` the same person still reads nothing with a session of
+  their own. Set it where an app keeps its own list of who may watch what
+  (anonymous, every signed-in person, some groups), and leave it out where
+  roster's grants should be the list.
 - **What the handle names**, at `Start`: live, recordings, or both; sets
   and sources, none meaning all the person sees; and a window of recordings.
   A request naming a camera outside it is refused at the CP. The window is
@@ -611,7 +625,7 @@ portal ─ DelegationService.Revoke {handle} ─▶ Shale            (its own si
 | What happens | Stops new tokens | Stops what was issued |
 |---|---|---|
 | The portal revokes the handle | at once | within `token_ttl` |
-| The app's role unbound, its nomination ended, or the person's grant removed at roster | at the next renewal, within `auth.operators.ttl` | within `token_ttl` |
+| The app's role unbound, its nomination ended, or the person's grant removed at roster (which, with `auth.delegation.persons: tenant`, is not what lets them be viewed for) | at the next renewal, within `auth.operators.ttl` | within `token_ttl` |
 | The person signed out everywhere, suspended or erased | as fast as roster's sync stream says it | within `token_ttl` |
 | roster cannot be asked | at once: a renewal is refused | within `token_ttl` |
 

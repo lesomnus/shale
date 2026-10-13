@@ -64,6 +64,11 @@ type DelegationConfig struct {
 	// which bounds how long an open WHEP session or a signed URL outlives
 	// the handle; 5 min when zero.
 	TokenTtl time.Duration
+	// EveryPerson is `auth.delegation.persons: tenant`: any person of the
+	// tenant in good standing may be viewed for, whatever Reads says, so
+	// the app is who decides which of them sees what, within what roster
+	// grants the app. False holds the person to Reads, as the gate would.
+	EveryPerson bool
 }
 
 const (
@@ -203,7 +208,8 @@ func (s coreDelegation) ceiling(ctx context.Context, tenant, app pdid.Id, method
 // would serve them the method it stands for: their tenant, their sites,
 // and on a deployment whose reads are granted, what roster grants them --
 // the method itself, or the delegated one, which is how a person is let
-// view through an app and read nothing here themselves.
+// view through an app and read nothing here themselves -- unless every
+// person may be viewed for (`auth.delegation.persons: tenant`).
 func (s coreDelegation) as(ctx context.Context, holder *api.Holder, delegated string) (context.Context, error) {
 	method := inner(delegated)
 	actor, err := idOf(holder.GetId())
@@ -216,16 +222,24 @@ func (s coreDelegation) as(ctx context.Context, holder *api.Holder, delegated st
 	}
 	f := frame.New(actor, tenant, frame.Whole().In(tenant).To(method)).WithRow(holder)
 
-	return gate.Decide(frame.Into(ctx, f), personPolicy{TenantPolicy{Operators: s.d.Operators, Reads: s.d.Reads}, delegated}, method)
+	return gate.Decide(frame.Into(ctx, f), newPersonPolicy(s.d.Operators, s.d.Reads, s.d.DelegationConfig, delegated), method)
 }
 
 // personPolicy is the tenant policy for a person an app is served for: a
 // grant of the delegated method is as good as one of the method it
 // stands for. A grant of the delegated method is no use to the person
 // themselves, whom DelegationService refuses.
+//
+// With EveryPerson, reads are not granted for the person whatever the
+// deployment says: a person of the tenant reads what the console's pages
+// read, as where reads are everybody's, and nothing else.
 type personPolicy struct {
 	TenantPolicy
 	delegated string
+}
+
+func newPersonPolicy(ops Operators, reads bool, cfg DelegationConfig, delegated string) personPolicy {
+	return personPolicy{TenantPolicy{Operators: ops, Reads: reads && !cfg.EveryPerson}, delegated}
 }
 
 func (p personPolicy) May(ctx context.Context, c gate.Call) error {

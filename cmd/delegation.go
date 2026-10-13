@@ -38,13 +38,30 @@ type DelegationConfig struct {
 	// and so how long a live view outlives the delegation; 5 min by
 	// default.
 	TokenTtl time.Duration `yaml:"token_ttl"`
+	// Persons is whom an app may view for: `reads` (the default), a person
+	// who may read here themselves, as `auth.operators.reads` says; or
+	// `tenant`, any person of the tenant in good standing, whatever it
+	// says -- the app is then who decides which of them sees what, within
+	// what roster grants the app.
+	Persons string `yaml:"persons"`
 }
+
+// The two answers to whom an app may view for (`auth.delegation.persons`).
+const (
+	DelegationPersonsReads  = "reads"
+	DelegationPersonsTenant = "tenant"
+)
 
 // On says whether any app may view on anybody's behalf here.
 func (c DelegationConfig) On() bool { return len(c.Clients) > 0 }
 
 // check refuses a configuration that could not be served.
 func (c DelegationConfig) check(a AuthConfig) error {
+	switch c.Persons {
+	case "", DelegationPersonsReads, DelegationPersonsTenant:
+	default:
+		return fmt.Errorf("auth.delegation.persons: %q is neither %s nor %s", c.Persons, DelegationPersonsReads, DelegationPersonsTenant)
+	}
 	if !c.On() {
 		return nil
 	}
@@ -66,7 +83,7 @@ func (c DelegationConfig) check(a AuthConfig) error {
 }
 
 func (c DelegationConfig) core() core.DelegationConfig {
-	return core.DelegationConfig{MaxTtl: c.MaxTtl, TokenTtl: c.TokenTtl}
+	return core.DelegationConfig{MaxTtl: c.MaxTtl, TokenTtl: c.TokenTtl, EveryPerson: c.Persons == DelegationPersonsTenant}
 }
 
 // delegations is core.Delegations over this server: the issuer it signs
