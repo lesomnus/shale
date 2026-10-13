@@ -93,8 +93,9 @@ message Holder {
     // (`global: {}`) is the thing that has to be written.
 
     // Watchable, which is here and not in an app because an app cannot add it:
-    // an overlay merges **fields** and not the entity option, so a deployment
-    // has no way to declare payday's own entity streamable.
+    // an overlay may add fields and indexes to payday's entity and not to this
+    // option, so a deployment has no way to declare payday's own entity
+    // streamable.
     //
     // It earns the RPC. A product app anchors an identifier and a tenant --
     // neither of which changes -- so the one fact about somebody that has to

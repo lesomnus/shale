@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// AddressPolicy is the client for interacting with the AddressPolicy builders.
 	AddressPolicy *AddressPolicyClient
+	// Archived is the client for interacting with the Archived builders.
+	Archived *ArchivedClient
 	// Attempt is the client for interacting with the Attempt builders.
 	Attempt *AttemptClient
 	// Audit is the client for interacting with the Audit builders.
@@ -186,6 +188,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.AddressPolicy = NewAddressPolicyClient(tx.config)
+	tx.Archived = NewArchivedClient(tx.config)
 	tx.Attempt = NewAttemptClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
 	tx.Delegation = NewDelegationClient(tx.config)

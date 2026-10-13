@@ -132,6 +132,7 @@ deployment runs well on them, and changes them only for a reason.
 | Trail | `audit.profile` | none: forever | `pipa`, `pipa-sensitive`, `pci`, `hipaa`, `sox`, `gdpr`, `forever` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.retain`, `audit.destroy` | the profile's | how long a row stays in the table, and in the archive | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.archive`, `audit.discard` | none | a directory; a window with neither is refused | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
+| Trail | `audit.checkpoints.dir`, `audit.checkpoints.key` | none: kept in the archive, unsigned | a directory of their own; the key is a file or the PEM document itself (`SHALE_AUDIT_CHECKPOINTS_KEY`) | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.every` | 24h | — | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | Trail | `audit.by.<kind>` | — | `profile`, `retain`, `destroy`, `discard` for one kind: `lamina`, `set`, `holder`, …, `d19` for `site` | control | [§26.5](08-sizing.md#265-the-control-planes-database) |
 | People | `auth.roster.db` | SQLite beside the control plane's state | a database every control plane shares | control | [§34.7](11-deployment.md#347-single-machine), [§34.5](11-deployment.md#345-kubernetes) |

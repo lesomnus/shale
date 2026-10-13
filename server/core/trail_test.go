@@ -13,23 +13,36 @@ import (
 )
 
 // countingStore is a trail with nothing in it that counts how often it is
-// asked.
+// asked. A pass with no archive asks only for rows (`Heads`, `Older`); the
+// rest of the store, the manifest among it, is left to the nil it embeds.
 type countingStore struct {
+	trail.Store
+
 	asked atomic.Int32
 	seen  chan struct{}
 }
 
-func (s *countingStore) Older(context.Context, trail.Kinds, time.Time, int) (trail.Rows, error) {
+func (s *countingStore) ask() {
 	s.asked.Add(1)
 	select {
 	case s.seen <- struct{}{}:
 	default:
 	}
+}
+
+func (s *countingStore) Heads(context.Context, trail.Scope, time.Time, trail.Cursor, int) (trail.Rows, error) {
+	s.ask()
 
 	return nil, nil
 }
 
-func (s *countingStore) Count(context.Context, trail.Kinds, time.Time) (int, error) { return 0, nil }
+func (s *countingStore) Older(context.Context, trail.Scope, time.Time, trail.Cursor, int) (trail.Rows, error) {
+	s.ask()
+
+	return nil, nil
+}
+
+func (s *countingStore) Count(context.Context, trail.Scope, time.Time) (int, error) { return 0, nil }
 
 func (s *countingStore) Forget(context.Context, []any) (int, error) { return 0, nil }
 

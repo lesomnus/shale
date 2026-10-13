@@ -1649,6 +1649,7 @@ type SigningKeyListRequest struct {
 	xxx_hidden_Filters *[]*SigningKeyFilter   `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1701,6 +1702,13 @@ func (x *SigningKeyListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *SigningKeyListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *SigningKeyListRequest) SetFilters(v []*SigningKeyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1711,6 +1719,10 @@ func (x *SigningKeyListRequest) SetSize(v int32) {
 
 func (x *SigningKeyListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *SigningKeyListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type SigningKeyListRequest_builder struct {
@@ -1728,6 +1740,11 @@ type SigningKeyListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 SigningKeyListRequest_builder) Build() *SigningKeyListRequest {
@@ -1737,6 +1754,7 @@ func (b0 SigningKeyListRequest_builder) Build() *SigningKeyListRequest {
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -3742,6 +3760,7 @@ type PlacementPolicyListRequest struct {
 	xxx_hidden_Filters *[]*PlacementPolicyFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                     `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                    `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                      `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3794,6 +3813,13 @@ func (x *PlacementPolicyListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *PlacementPolicyListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *PlacementPolicyListRequest) SetFilters(v []*PlacementPolicyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -3804,6 +3830,10 @@ func (x *PlacementPolicyListRequest) SetSize(v int32) {
 
 func (x *PlacementPolicyListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *PlacementPolicyListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type PlacementPolicyListRequest_builder struct {
@@ -3821,6 +3851,11 @@ type PlacementPolicyListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 PlacementPolicyListRequest_builder) Build() *PlacementPolicyListRequest {
@@ -3830,6 +3865,7 @@ func (b0 PlacementPolicyListRequest_builder) Build() *PlacementPolicyListRequest
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -5598,6 +5634,7 @@ type UploadPolicyListRequest struct {
 	xxx_hidden_Filters *[]*UploadPolicyFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -5650,6 +5687,13 @@ func (x *UploadPolicyListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *UploadPolicyListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *UploadPolicyListRequest) SetFilters(v []*UploadPolicyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -5660,6 +5704,10 @@ func (x *UploadPolicyListRequest) SetSize(v int32) {
 
 func (x *UploadPolicyListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *UploadPolicyListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type UploadPolicyListRequest_builder struct {
@@ -5677,6 +5725,11 @@ type UploadPolicyListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 UploadPolicyListRequest_builder) Build() *UploadPolicyListRequest {
@@ -5686,6 +5739,7 @@ func (b0 UploadPolicyListRequest_builder) Build() *UploadPolicyListRequest {
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -7454,6 +7508,7 @@ type AddressPolicyListRequest struct {
 	xxx_hidden_Filters *[]*AddressPolicyFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                   `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                  `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                    `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -7506,6 +7561,13 @@ func (x *AddressPolicyListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *AddressPolicyListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *AddressPolicyListRequest) SetFilters(v []*AddressPolicyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -7516,6 +7578,10 @@ func (x *AddressPolicyListRequest) SetSize(v int32) {
 
 func (x *AddressPolicyListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *AddressPolicyListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type AddressPolicyListRequest_builder struct {
@@ -7533,6 +7599,11 @@ type AddressPolicyListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 AddressPolicyListRequest_builder) Build() *AddressPolicyListRequest {
@@ -7542,6 +7613,7 @@ func (b0 AddressPolicyListRequest_builder) Build() *AddressPolicyListRequest {
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -7866,11 +7938,12 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x14.shale.SigningKeyRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
 	"\x17SigningKeyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x82\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa3\x01\n" +
 	"\x15SigningKeyListRequest\x121\n" +
 	"\afilters\x18\x01 \x03(\v2\x17.shale.SigningKeyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"\\\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"\\\n" +
 	"\x16SigningKeyListResponse\x12'\n" +
 	"\x05items\x18\x01 \x03(\v2\x11.shale.SigningKeyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\":\n" +
@@ -7947,11 +8020,12 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x19.shale.PlacementPolicyRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"6\n" +
 	"\x1cPlacementPolicyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x8c\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xad\x01\n" +
 	"\x1aPlacementPolicyListRequest\x126\n" +
 	"\afilters\x18\x01 \x03(\v2\x1c.shale.PlacementPolicyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"f\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"f\n" +
 	"\x1bPlacementPolicyListResponse\x12,\n" +
 	"\x05items\x18\x01 \x03(\v2\x16.shale.PlacementPolicyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\\\n" +
@@ -8020,11 +8094,12 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"3\n" +
 	"\x19UploadPolicyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x86\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa7\x01\n" +
 	"\x17UploadPolicyListRequest\x123\n" +
 	"\afilters\x18\x01 \x03(\v2\x19.shale.UploadPolicyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"`\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"`\n" +
 	"\x18UploadPolicyListResponse\x12)\n" +
 	"\x05items\x18\x01 \x03(\v2\x13.shale.UploadPolicyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"V\n" +
@@ -8093,11 +8168,12 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.AddressPolicyRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"4\n" +
 	"\x1aAddressPolicyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x88\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa9\x01\n" +
 	"\x18AddressPolicyListRequest\x124\n" +
 	"\afilters\x18\x01 \x03(\v2\x1a.shale.AddressPolicyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"b\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"b\n" +
 	"\x19AddressPolicyListResponse\x12*\n" +
 	"\x05items\x18\x01 \x03(\v2\x14.shale.AddressPolicyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"X\n" +

@@ -994,6 +994,7 @@ type SiteMemberListRequest struct {
 	xxx_hidden_Filters *[]*SiteMemberFilter   `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1046,6 +1047,13 @@ func (x *SiteMemberListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *SiteMemberListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *SiteMemberListRequest) SetFilters(v []*SiteMemberFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1056,6 +1064,10 @@ func (x *SiteMemberListRequest) SetSize(v int32) {
 
 func (x *SiteMemberListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *SiteMemberListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type SiteMemberListRequest_builder struct {
@@ -1073,6 +1085,11 @@ type SiteMemberListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 SiteMemberListRequest_builder) Build() *SiteMemberListRequest {
@@ -1082,6 +1099,7 @@ func (b0 SiteMemberListRequest_builder) Build() *SiteMemberListRequest {
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -1367,11 +1385,12 @@ const file_shale_member_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x14.shale.SiteMemberRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
 	"\x17SiteMemberEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x82\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa3\x01\n" +
 	"\x15SiteMemberListRequest\x121\n" +
 	"\afilters\x18\x01 \x03(\v2\x17.shale.SiteMemberFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"\\\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"\\\n" +
 	"\x16SiteMemberListResponse\x12'\n" +
 	"\x05items\x18\x01 \x03(\v2\x11.shale.SiteMemberR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xdc\x01\n" +

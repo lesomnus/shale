@@ -1998,6 +1998,7 @@ type SetListRequest struct {
 	xxx_hidden_Filters *[]*SetFilter          `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2050,6 +2051,13 @@ func (x *SetListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *SetListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *SetListRequest) SetFilters(v []*SetFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -2060,6 +2068,10 @@ func (x *SetListRequest) SetSize(v int32) {
 
 func (x *SetListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *SetListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type SetListRequest_builder struct {
@@ -2077,6 +2089,11 @@ type SetListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 SetListRequest_builder) Build() *SetListRequest {
@@ -2086,6 +2103,7 @@ func (b0 SetListRequest_builder) Build() *SetListRequest {
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -5834,6 +5852,7 @@ type SourceListRequest struct {
 	xxx_hidden_Filters *[]*SourceFilter       `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -5886,6 +5905,13 @@ func (x *SourceListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *SourceListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *SourceListRequest) SetFilters(v []*SourceFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -5896,6 +5922,10 @@ func (x *SourceListRequest) SetSize(v int32) {
 
 func (x *SourceListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *SourceListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type SourceListRequest_builder struct {
@@ -5913,6 +5943,11 @@ type SourceListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 SourceListRequest_builder) Build() *SourceListRequest {
@@ -5922,6 +5957,7 @@ func (b0 SourceListRequest_builder) Build() *SourceListRequest {
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -6661,11 +6697,12 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\r.shale.SetRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"*\n" +
 	"\x10SetEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"t\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x95\x01\n" +
 	"\x0eSetListRequest\x12*\n" +
 	"\afilters\x18\x01 \x03(\v2\x10.shale.SetFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"N\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"N\n" +
 	"\x0fSetListResponse\x12 \n" +
 	"\x05items\x18\x01 \x03(\v2\n" +
 	".shale.SetR\x05items\x12\x19\n" +
@@ -6826,11 +6863,12 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.SourceRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
 	"\x13SourceEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"z\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9b\x01\n" +
 	"\x11SourceListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.shale.SourceFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"T\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"T\n" +
 	"\x12SourceListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.shale.SourceR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x95\x02\n" +

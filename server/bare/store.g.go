@@ -10,6 +10,7 @@ import (
 	api "github.com/lesomnus/shale/api"
 	ent "github.com/lesomnus/shale/internal/ent"
 	addresspolicy "github.com/lesomnus/shale/internal/ent/addresspolicy"
+	archived "github.com/lesomnus/shale/internal/ent/archived"
 	attempt "github.com/lesomnus/shale/internal/ent/attempt"
 	audit "github.com/lesomnus/shale/internal/ent/audit"
 	delegation "github.com/lesomnus/shale/internal/ent/delegation"
@@ -343,6 +344,7 @@ type Scope interface {
 	LaminaScope(ctx context.Context) (predicate.Lamina, error)
 	AttemptScope(ctx context.Context) (predicate.Attempt, error)
 	SiteMemberScope(ctx context.Context) (predicate.SiteMember, error)
+	ArchivedScope(ctx context.Context) (predicate.Archived, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 	SigningKeyScope(ctx context.Context) (predicate.SigningKey, error)
@@ -406,6 +408,9 @@ func (Unscoped) AttemptScope(_ context.Context) (predicate.Attempt, error) {
 	return nil, nil
 }
 func (Unscoped) SiteMemberScope(_ context.Context) (predicate.SiteMember, error) {
+	return nil, nil
+}
+func (Unscoped) ArchivedScope(_ context.Context) (predicate.Archived, error) {
 	return nil, nil
 }
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
@@ -746,6 +751,26 @@ func (ss Scopes) SiteMemberScope(ctx context.Context) (predicate.SiteMember, err
 	return sitemember.And(ps...), nil
 }
 
+func (ss Scopes) ArchivedScope(ctx context.Context) (predicate.Archived, error) {
+	ps := make([]predicate.Archived, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.ArchivedScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return archived.And(ps...), nil
+}
+
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	ps := make([]predicate.Audit, 0, len(ss))
 	for _, s := range ss {
@@ -1003,8 +1028,9 @@ func (s Server) Attempt() api.AttemptServiceServer   { return AttemptServiceServ
 func (s Server) SiteMember() api.SiteMemberServiceServer {
 	return SiteMemberServiceServer{Store: s.Store}
 }
-func (s Server) Audit() api.AuditServiceServer   { return AuditServiceServer{Store: s.Store} }
-func (s Server) Outbox() api.OutboxServiceServer { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Archived() api.ArchivedServiceServer { return ArchivedServiceServer{Store: s.Store} }
+func (s Server) Audit() api.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
+func (s Server) Outbox() api.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }
 func (s Server) SigningKey() api.SigningKeyServiceServer {
 	return SigningKeyServiceServer{Store: s.Store}
 }
