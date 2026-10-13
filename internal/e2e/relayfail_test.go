@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/shale/api"
-	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/relay"
 )
@@ -25,17 +24,24 @@ func (c *cluster) startRelay(name string) (*relay.Relay, context.CancelFunc) {
 // can be started again as itself.
 func (c *cluster) startRelayAt(name, stateDir string) (*relay.Relay, context.CancelFunc) {
 	c.t.Helper()
+	return c.startRelayVia(name, stateDir, c.running.ClusterAddr)
+}
+
+// startRelayVia is startRelayAt reaching the cluster API at cp, e.g.
+// through a proxy that can stop its heartbeats. The relay heartbeats at
+// its default interval, which `relay_down_after` is made for.
+func (c *cluster) startRelayVia(name, stateDir, cp string) (*relay.Relay, context.CancelFunc) {
+	c.t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	r, err := relay.New(relay.Config{
-		StateDir:          stateDir,
-		Cp:                "http://" + c.running.ClusterAddr,
-		Dev:               true,
-		HardwareId:        "test-" + name,
-		IngestAddr:        "127.0.0.1:0",
-		WhepAddr:          "127.0.0.1:0",
-		IdleStop:          time.Second,
-		HeartbeatInterval: time.Second,
-		Log:               slog.Default().With("relay", name),
+		StateDir:   stateDir,
+		Cp:         "http://" + cp,
+		Dev:        true,
+		HardwareId: "test-" + name,
+		IngestAddr: "127.0.0.1:0",
+		WhepAddr:   "127.0.0.1:0",
+		IdleStop:   time.Second,
+		Log:        slog.Default().With("relay", name),
 	})
 	require.NoError(c.t, err)
 	done := make(chan error, 1)
@@ -63,19 +69,18 @@ func (c *cluster) startRelayAt(name, stateDir string) (*relay.Relay, context.Can
 
 // TestRelayFailover is §39.2's assignment and §39.6's relay-down drill: a
 // site's selector picks the relays with a label, the producer is assigned
-// the least loaded of them, and when it goes the producer is reassigned
-// on its next heartbeat, Live answers the other relay, and a viewer who
+// the least loaded of them, and when it goes the producer, whose link
+// broke and which asks the CP every second, is reassigned the moment the
+// CP holds the relay down, Live answers the other relay, and a viewer who
 // was watching has a picture from it again within E6's 10 s.
 //
-// A relay is down when it has not been heard for node_down_after, as a
-// node is (§39.2), and until then Live keeps naming it: the time to a
-// picture again is node_down_after and about a second more. With the
-// default of 30 s that is 31.5 s as measured, over E6's bound, so the
-// drill runs with 5 s, against relays that heartbeat every second; at
-// the relay's default heartbeat of 5 s the bound cannot be met without
-// a node_down_after that one late heartbeat would trip.
+// A relay is down when it has not been heard for `relay_down_after` (6 s,
+// three of its 2 s heartbeats), and until then Live keeps naming it: the
+// time to a picture again is that, the producer's next ask, and the next
+// keyframe. Everything here is at its default, the producer's 30 s
+// heartbeat too, which therefore plays no part.
 func TestRelayFailover(t *testing.T) {
-	c := start(t, func(cfg *cmd.Config) { cfg.Control.NodeDownAfter = 5 * time.Second })
+	c := start(t)
 	ctx := context.Background()
 	ops := c.dialCluster("@cluster/ops")
 	relays := api.NewRelayServiceClient(ops)
@@ -139,7 +144,7 @@ func TestRelayFailover(t *testing.T) {
 		StateDir: filepath.Join(t.TempDir(), "producer"), Cp: "http://" + c.running.TenantAddr, Dev: true,
 		Sources:           []producer.SourceConfig{{Alias: "door", Input: "raw:" + sample, Fps: 30, MaxBitrate: 2_000_000, Format: "h264"}},
 		Mode:              api.UploadMode_UPLOAD_MODE_LIVE,
-		HeartbeatInterval: 2 * time.Second, AllocationHorizon: time.Minute, Buffer: 64 << 20,
+		AllocationHorizon: time.Minute, Buffer: 64 << 20,
 	})
 	require.NoError(t, err)
 	go p.Run(pctx)

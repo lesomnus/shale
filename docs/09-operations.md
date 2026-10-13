@@ -4,9 +4,11 @@
 
 Nodes send heartbeats every `heartbeat_interval` (5 s). A node whose
 heartbeats are missing for `node_down_after` (30 s) is **down**: its sinks are
-skipped by placement and its laminae read as UNAVAILABLE. Relays heartbeat
-on the same schedule; a relay that is down has its producers reassigned
-([§39.2](16-relay.md#392-assignment)).
+skipped by placement and its laminae read as UNAVAILABLE. Relays are held
+to a shorter schedule of their own, `relay.heartbeat_interval` (2 s) and
+`control.relay_down_after` (6 s), since a viewer waits on a relay that
+went and nothing is lost when one is wrongly held down: a relay that is
+down has its producers reassigned ([§39.2](16-relay.md#392-assignment)).
 
 ```text
 node_id, certificate serial, CA bundle hash, key IDs held

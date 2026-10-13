@@ -77,6 +77,11 @@ type Config struct {
 	Log               *slog.Logger
 }
 
+// DefaultHeartbeatInterval is how often a relay reports to the CP: a
+// third of the CP's `relay_down_after` (§39.2), so a relay is down after
+// three heartbeats that did not arrive.
+const DefaultHeartbeatInterval = 2 * time.Second
+
 func (c *Config) defaults() {
 	if c.IngestAddr == "" {
 		c.IngestAddr = ":7430"
@@ -97,7 +102,7 @@ func (c *Config) defaults() {
 		c.RewindBudget = 1 << 30
 	}
 	if c.HeartbeatInterval == 0 {
-		c.HeartbeatInterval = 5 * time.Second
+		c.HeartbeatInterval = DefaultHeartbeatInterval
 	}
 	if c.Log == nil {
 		c.Log = slog.Default()

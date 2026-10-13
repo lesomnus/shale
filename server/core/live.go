@@ -33,7 +33,7 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 	}
 	var chosen *ent.Relay
 	if !isZero(p.RelayId) {
-		if r, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(r, now, s.d.nodeDownAfter()) {
+		if r, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(r, now, s.d.relayDownAfter()) {
 			chosen = r
 		}
 	}
@@ -138,7 +138,8 @@ func livePolicy(v api.LivePolicy) api.LivePolicy {
 func showable(src *api.Source) bool { return src.GetLiveCapable() }
 
 // relayAlive says whether a relay still counts as up: `downAfter` is
-// `node_down_after`, which relays are held to as nodes are (§39.2).
+// `relay_down_after` (§39.2). One that was down and heartbeats again is
+// up from that heartbeat on: nothing else marks it.
 func relayAlive(r *ent.Relay, now time.Time, downAfter time.Duration) bool {
 	return r != nil && r.DateErased == nil && r.State == int32(api.HostState_HOST_STATE_ADOPTED) &&
 		r.DateSeen != nil && now.Sub(*r.DateSeen) <= downAfter
@@ -178,7 +179,7 @@ func (s Core) pickRelay(ctx context.Context, set *api.Set, now time.Time) (*ent.
 	var best *ent.Relay
 	for _, full := range []bool{false, true} {
 		for _, r := range relays {
-			if !relayAlive(r, now, s.d.nodeDownAfter()) || !matches(r.Labels, selector) || r.IngestAddress == "" {
+			if !relayAlive(r, now, s.d.relayDownAfter()) || !matches(r.Labels, selector) || r.IngestAddress == "" {
 				continue
 			}
 			if !full && rewindFull(r.Status) {
@@ -262,7 +263,7 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 		if isZero(p.RelayId) {
 			continue
 		}
-		if v, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(v, now, s.d.nodeDownAfter()) {
+		if v, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(v, now, s.d.relayDownAfter()) {
 			r = v
 			break
 		}

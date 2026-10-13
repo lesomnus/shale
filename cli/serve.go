@@ -528,7 +528,7 @@ func relayConfig(c *cmd.Config) relay.Config {
 		Nat1To1:           rc.Nat1To1,
 		UdpPortMin:        rc.UdpPortMin,
 		UdpPortMax:        rc.UdpPortMax,
-		HeartbeatInterval: c.Storage.HeartbeatInterval,
+		HeartbeatInterval: rc.HeartbeatInterval,
 		Log:               slog.Default(),
 	}
 	if c.IsDev() {
