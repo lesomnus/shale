@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
+	"github.com/lesomnus/shale/internal/ent/archived"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/audit"
 	"github.com/lesomnus/shale/internal/ent/delegation"
@@ -94,6 +95,7 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			addresspolicy.Table:   addresspolicy.ValidColumn,
+			archived.Table:        archived.ValidColumn,
 			attempt.Table:         attempt.ValidColumn,
 			audit.Table:           audit.ValidColumn,
 			delegation.Table:      delegation.ValidColumn,

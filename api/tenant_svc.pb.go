@@ -1271,6 +1271,7 @@ type TenantListRequest struct {
 	xxx_hidden_Filters *[]*TenantFilter       `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1323,6 +1324,13 @@ func (x *TenantListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *TenantListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *TenantListRequest) SetFilters(v []*TenantFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1333,6 +1341,10 @@ func (x *TenantListRequest) SetSize(v int32) {
 
 func (x *TenantListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *TenantListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type TenantListRequest_builder struct {
@@ -1350,6 +1362,11 @@ type TenantListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 TenantListRequest_builder) Build() *TenantListRequest {
@@ -1359,6 +1376,7 @@ func (b0 TenantListRequest_builder) Build() *TenantListRequest {
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -1562,11 +1580,12 @@ const file_shale_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.TenantRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
 	"\x13TenantEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"z\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9b\x01\n" +
 	"\x11TenantListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.shale.TenantFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"T\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"T\n" +
 	"\x12TenantListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.shale.TenantR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"2\n" +

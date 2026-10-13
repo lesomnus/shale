@@ -15,6 +15,9 @@ import { pdid } from '@lesomnus/payday'
 /** The domain identifiers of shale.AddressPolicy carry. */
 export const AddressPolicyDomain = 21
 
+/** The domain identifiers of shale.Archived carry. */
+export const ArchivedDomain = 5
+
 /** The domain identifiers of shale.Attempt carry. */
 export const AttemptDomain = 10
 
@@ -78,6 +81,7 @@ export const UploadPolicyDomain = 18
 // Registered as this module is loaded, which is why importing it is the
 // whole of what an app does with it.
 pdid.register("shale.AddressPolicy", AddressPolicyDomain, "address-policy")
+pdid.register("shale.Archived", ArchivedDomain, "archived")
 pdid.register("shale.Attempt", AttemptDomain, "attempt")
 pdid.register("shale.Audit", AuditDomain, "audit")
 pdid.register("shale.Delegation", DelegationDomain, "delegation")

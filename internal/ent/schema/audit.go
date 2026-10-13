@@ -46,6 +46,7 @@ func (Audit) Indexes() []ent.Index {
 		index.Fields("actor_tenant_id", "date_created"),
 		index.Fields("counterpart_tenant_id", "date_created"),
 		index.Fields("domain", "date_created"),
+		index.Fields("tenant_id", "domain", "date_created"),
 		index.Fields("actor_id", "date_created"),
 	}
 }

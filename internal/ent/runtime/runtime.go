@@ -5,6 +5,6 @@ package runtime
 // The schema-stitching logic is generated in github.com/lesomnus/shale/internal/ent/runtime.go
 
 const (
-	Version = "v0.0.0-20260907034331-a2b266d6faf1"              // Version of ent codegen.
-	Sum     = "h1:xLJMhkaBljnprCRiq7gTHJMFf8QGrT9ZUGVVs3LyDNo=" // Sum of ent codegen.
+	Version = "v0.0.0-20261010083551-979efcebf01a"              // Version of ent codegen.
+	Sum     = "h1:mqFHWDstu4JsnJdgTkW8mEoLCA0R4lc1xa/1RxUA0TA=" // Sum of ent codegen.
 )

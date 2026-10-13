@@ -330,6 +330,29 @@ message Audit {
           }
         ]
       },
+      // The same question, asked of one tenant: a deployment whose tenants
+      // keep their history for different lengths of time applies a window per
+      // tenant per kind, and `trail` above answers one tenant and every kind
+      // together. Without the kind in the middle, a pass over a tenant's
+      // person rows reads every one of its machine rows that is older -- and
+      // the machine's are the ones kept forever.
+      {
+        name: "by_tenant_domain"
+        refs: [
+          {
+            name: "tenant_id"
+            number: 2
+          },
+          {
+            name: "domain"
+            number: 19
+          },
+          {
+            name: "date_created"
+            number: 15
+          }
+        ]
+      },
       {
         name: "by_actor"
         refs: [

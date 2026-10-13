@@ -20,6 +20,9 @@ func AddressPolicyOrErr(p AddressPolicy, err error) AddressPolicy {
 	}
 }
 
+// Archived is the predicate function for archived builders.
+type Archived func(*sql.Selector)
+
 // Attempt is the predicate function for attempt builders.
 type Attempt func(*sql.Selector)
 

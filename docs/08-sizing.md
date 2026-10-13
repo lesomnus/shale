@@ -151,10 +151,16 @@ audit:
   `hipaa`, `sox` and `gdpr` are there with the sentence each comes from;
   `forever` is what an empty policy is. A `retain` or `destroy` written
   beside a profile wins.
-- `archive` is the one directory rows are written to on their way out, a
-  file per month and kind. A window with no archive is refused when the
-  process comes up, unless `discard: true` says the deployment means to
-  keep no copy.
+- `archive` is the one directory rows are written to on their way out:
+  payday's flob store, a namespace per tenant, chunked by month and kind.
+  A window with no archive is refused when the process comes up, unless
+  `discard: true` says the deployment means to keep no copy. The database
+  keeps an account of what the archive should hold (the `archived` table,
+  the deployment's and no tenant's), and every pass ends in a checkpoint
+  of it; `checkpoints.dir` keeps the checkpoints apart from the archive
+  and `checkpoints.key` signs them. Neither is required. The first pass
+  after an upgrade from a flat directory adopts the files already there
+  and fills the account from them; there is nothing to run.
 - `by:` sets a kind apart, keyed by the word the schema registered
   (`lamina`, `set`, `source`, `holder`, `tenant`, `sink`, …). `site` is a
   word roster registers too, so in this process it answers nobody and is

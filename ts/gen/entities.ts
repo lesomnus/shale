@@ -14,6 +14,7 @@
 import type { EntityDesc } from '@lesomnus/payday/store'
 
 import { AddressPolicySchema, PlacementPolicySchema, SigningKeySchema, UploadPolicySchema } from './shale/policy_pb.js'
+import { ArchivedSchema } from './shale/payday/archived_pb.js'
 import { AttemptSchema, LaminaSchema } from './shale/lamina_pb.js'
 import { AuditSchema } from './shale/payday/audit_pb.js'
 import { DelegationSchema } from './shale/delegation_pb.js'
@@ -26,6 +27,7 @@ import { SiteSchema } from './shale/site_pb.js'
 import { SiteMemberSchema } from './shale/member_pb.js'
 import { TenantSchema } from './shale/payday/tenant_pb.js'
 import { AddressPolicyService, PlacementPolicyService, SigningKeyService, UploadPolicyService } from './shale/policy_svc_pb.js'
+import { ArchivedService } from './shale/payday/archived_svc_pb.js'
 import { AttemptService, LaminaService } from './shale/lamina_svc_pb.js'
 import { AuditService } from './shale/payday/audit_svc_pb.js'
 import { DelegationService } from './shale/delegation_svc_pb.js'
@@ -48,6 +50,17 @@ export const AddressPolicy = {
 	key: "id",
 	ids: ["id"],
 	service: AddressPolicyService,
+} as const satisfies EntityDesc
+
+/** shale.Archived, as the store holds it. */
+export const Archived = {
+	typeName: "shale.Archived",
+	schema: ArchivedSchema,
+	domain: 5,
+	version: "dateUpdated",
+	key: "id",
+	ids: ["id"],
+	service: ArchivedService,
 } as const satisfies EntityDesc
 
 /** shale.Attempt, as the store holds it. */
@@ -81,6 +94,7 @@ export const Delegation = {
 	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "holder", to: "shale.Holder" }],
 	key: "id",
 	ids: ["id"],
+	secrets: ["secretHash"],
 	service: DelegationService,
 } as const satisfies EntityDesc
 
@@ -216,6 +230,7 @@ export const SigningKey = {
 	alias: "alias",
 	key: "id",
 	ids: ["id"],
+	secrets: ["privateKey"],
 	service: SigningKeyService,
 } as const satisfies EntityDesc
 
@@ -295,5 +310,5 @@ export const UploadPolicy = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [AddressPolicy, Attempt, Audit, Delegation, Device, Holder, Lamina, Node, Outbox, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
+export const entities = [AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder, Lamina, Node, Outbox, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
 
