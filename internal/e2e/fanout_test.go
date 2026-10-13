@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -29,9 +31,12 @@ import (
 // same person here, so the relay's viewers_per_actor (16) is raised for
 // the test; max_viewers (500) is left as it is.
 //
-// The numbers are logged: how long the viewers took to come up, what each
-// received in the window, packets lost, and the longest a viewer went
-// without a packet.
+// The numbers are logged: how long the viewers took to come up and to
+// reach the live edge, what each received in the window, packets lost,
+// and the longest a viewer went without a packet. No frame after a
+// viewer's first may come broken, joining or after: the relay sends the
+// group of pictures at a few times real time rather than at once, and
+// answers the viewers' NACKs (§39.4).
 func TestLiveFanOut(t *testing.T) {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		t.Skip("no ffmpeg on this host")
@@ -83,29 +88,41 @@ func TestLiveFanOut(t *testing.T) {
 		return true
 	}, 20*time.Second, 100*time.Millisecond, "every viewer has its first frame")
 	var joins []time.Duration
-	var joinLost int64
 	for _, v := range vs {
-		s := v.snapshot()
-		joins = append(joins, s.first.Sub(v.offered))
-		joinLost += s.lost
+		joins = append(joins, v.snapshot().first.Sub(v.offered))
 	}
-	t.Logf("%d viewers up, first frame after the offer: %s; %d packets lost so far", viewers, spread(joins), joinLost)
+	t.Logf("%d viewers up, first frame after the offer: %s", viewers, spread(joins))
 
 	// The window: what each viewer receives from here on, after the group
 	// of pictures each got on joining has passed.
-	time.Sleep(2 * time.Second)
+	time.Sleep(4 * time.Second)
 	before := make([]fanStats, viewers)
+	var edges []time.Duration
+	var joinLost, joinBroken int64
 	for i, v := range vs {
 		before[i] = v.snapshot()
 		v.resetGap()
+		v.mu.Lock()
+		edges = append(edges, liveEdge(v.arrivals))
+		v.mu.Unlock()
+		joinLost += before[i].lost
+		joinBroken += before[i].broken
 	}
+	t.Logf("joining: first frame to the live edge %s; %d packets lost for good, %d frames after the first not whole, all viewers together",
+		spread(edges), joinLost, joinBroken)
+	cpu0 := cpuTime()
 	begun := time.Now()
 	time.Sleep(window)
 	took := time.Since(begun).Seconds()
+	runtime.GC()
+	var ms runtime.MemStats
+	runtime.ReadMemStats(&ms)
+	t.Logf("the process, relay, producer and viewers together, in the window: %.2f CPUs; heap in use %d MiB",
+		(cpuTime()-cpu0).Seconds()/took, ms.HeapInuse>>20)
 
 	var rates []float64
 	var gaps []time.Duration
-	var packets, lost, bytes int64
+	var packets, lost, bytes, broken int64
 	for i, v := range vs {
 		s := v.snapshot()
 		d := s.minus(before[i])
@@ -114,12 +131,15 @@ func TestLiveFanOut(t *testing.T) {
 		packets += d.packets
 		lost += d.lost
 		bytes += d.bytes
+		broken += d.broken
 	}
 	slices.Sort(rates)
 	t.Logf("in %.0f s: %.0f Mbps to %d viewers together; per viewer min %.2f, median %.2f, max %.2f Mbps",
 		took, float64(bytes*8)/took/1e6, viewers, rates[0]/1e6, rates[len(rates)/2]/1e6, rates[len(rates)-1]/1e6)
-	t.Logf("packets %d, lost %d (%.3f%%); the longest a viewer went without a packet: %s",
-		packets, lost, 100*float64(lost)/float64(packets+lost), spread(gaps))
+	t.Logf("packets %d, lost for good %d (%.3f%%), frames not whole %d; the longest a viewer went without a packet: %s",
+		packets, lost, 100*float64(lost)/float64(packets+lost), broken, spread(gaps))
+
+	require.Zero(t, joinBroken+broken, "every frame after the first comes whole, joining or not: the group of pictures paced, and what was lost sent again")
 
 	st := relayStatus(t, ctx, relays)
 	require.EqualValues(t, viewers, st.GetViewers(), "the relay still has every session")
@@ -132,6 +152,14 @@ func TestLiveFanOut(t *testing.T) {
 		require.LessOrEqual(t, float64(s.lost), 0.01*float64(s.packets+s.lost), "viewer %d loses hardly a packet", i+1)
 		require.Less(t, v.snapshot().gap, time.Second, "viewer %d never stalls", i+1)
 	}
+}
+
+// cpuTime is the CPU time this process has used, user and system.
+func cpuTime() time.Duration {
+	var ru syscall.Rusage
+	syscall.Getrusage(syscall.RUSAGE_SELF, &ru)
+
+	return time.Duration(ru.Utime.Nano() + ru.Stime.Nano())
 }
 
 // fourMbps makes a recording of a camera at 4 Mbps of H.264, 720p30 with
@@ -166,6 +194,9 @@ type fanViewer struct {
 	mu    sync.Mutex
 	stats fanStats
 	last  time.Time
+	// arrivals are the frames from the first decodable one on, for the
+	// first seconds: when each came and its timestamp (liveEdge).
+	arrivals []arrival
 }
 
 // fanStats is what a viewer received: video RTP packets, their payload
@@ -175,12 +206,15 @@ type fanViewer struct {
 type fanStats struct {
 	packets, bytes, lost int64
 	frames               int64
-	first                time.Time
-	gap                  time.Duration
+	// broken is the frames after the first decodable one that did not
+	// come whole.
+	broken int64
+	first  time.Time
+	gap    time.Duration
 }
 
 func (s fanStats) minus(o fanStats) fanStats {
-	return fanStats{packets: s.packets - o.packets, bytes: s.bytes - o.bytes, lost: s.lost - o.lost, frames: s.frames - o.frames, first: s.first, gap: s.gap}
+	return fanStats{packets: s.packets - o.packets, bytes: s.bytes - o.bytes, lost: s.lost - o.lost, frames: s.frames - o.frames, broken: s.broken - o.broken, first: s.first, gap: s.gap}
 }
 
 func (v *fanViewer) snapshot() fanStats {
@@ -214,6 +248,14 @@ func openFanViewer(live *api.LiveSource) *fanViewer {
 			}
 			if v.stats.first.IsZero() && u.decodable() {
 				v.stats.first = u.at
+			}
+			if !v.stats.first.IsZero() {
+				if len(v.arrivals) > 0 && !u.whole {
+					v.stats.broken++
+				}
+				if u.at.Sub(v.stats.first) < 4*time.Second {
+					v.arrivals = append(v.arrivals, arrival{u.at, u.ts})
+				}
 			}
 			v.mu.Unlock()
 		})

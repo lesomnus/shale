@@ -115,8 +115,10 @@ func (s *source) runPacer() {
 func (s *source) release(out []pacedSample) {
 	for _, sm := range out {
 		if sm.audio {
+			// A viewer catching up gets the sound from the live edge on,
+			// where its picture is then.
 			for k, v := range s.viewers {
-				if !s.joining[k] {
+				if !s.joining[k] && s.catching[k] == nil {
 					v.writeAudio(sm.data, sm.d)
 				}
 			}
@@ -129,7 +131,11 @@ func (s *source) release(out []pacedSample) {
 			s.gop = append(s.gop, sample{data: sm.data, d: sm.d})
 		}
 		for k, v := range s.viewers {
-			if !s.joining[k] {
+			switch o := s.catching[k]; {
+			case s.joining[k]:
+			case o != nil:
+				o.samples = append(o.samples, sample{data: sm.data, d: sm.d})
+			default:
 				v.write(sm.data, sm.d)
 			}
 		}

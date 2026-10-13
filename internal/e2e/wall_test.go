@@ -37,10 +37,11 @@ import (
 // first frame is checked too: every frame after it that came whole is the
 // recording's, as many frames on as the RTP clock says, never one already
 // sent and never one from further back, so the picture that came up goes
-// on. A frame some packet of which never came is counted and logged, not
-// failed: the group of pictures goes out at once on joining (§39.4), a
-// burst a socket's receive buffer does not always hold, and a viewer has
-// no way to ask for it again.
+// on, and every frame after the first comes whole: the group of pictures
+// goes out faster than real time after the keyframe rather than at once,
+// and a packet lost all the same is asked for again with a NACK, which the
+// viewer's pion sends as a browser does and the relay answers (§39.4). How
+// long each viewer took to reach the live edge is logged.
 func TestLiveWall(t *testing.T) {
 	const cameras = 8
 	c := start(t)
@@ -62,7 +63,7 @@ func TestLiveWall(t *testing.T) {
 	time.Sleep(2500 * time.Millisecond)
 
 	sets := api.NewSetServiceClient(admin)
-	var fromLive, fromOffer []time.Duration
+	var fromLive, fromOffer, edges []time.Duration
 	broken := 0
 	for round := range 3 {
 		asked := time.Now()
@@ -87,16 +88,19 @@ func TestLiveWall(t *testing.T) {
 			fromLive = append(fromLive, g.first.Sub(asked))
 			fromOffer = append(fromOffer, g.first.Sub(g.offered))
 			broken += g.broken
-			t.Logf("round %d camera %d: first frame %4d ms after Live, %4d ms after the offer; then %d frames whole and in order, %d not whole (%d packets lost)",
-				round+1, i+1, g.first.Sub(asked).Milliseconds(), g.first.Sub(g.offered).Milliseconds(), g.after, g.broken, g.lost)
+			edges = append(edges, g.edge)
+			t.Logf("round %d camera %d: first frame %4d ms after Live, %4d ms after the offer, live edge %4d ms after that; then %d frames whole and in order, %d not whole (%d packets lost)",
+				round+1, i+1, g.first.Sub(asked).Milliseconds(), g.first.Sub(g.offered).Milliseconds(), g.edge.Milliseconds(), g.after, g.broken, g.lost)
 		}
 	}
 	t.Logf("first frame after Live, %d sessions: %s", len(fromLive), spread(fromLive))
 	t.Logf("first frame after the offer, %d sessions: %s", len(fromOffer), spread(fromOffer))
+	t.Logf("first frame to the live edge, %d sessions: %s", len(edges), spread(edges))
 	t.Logf("frames after the first that did not come whole, all sessions: %d", broken)
 	for _, d := range fromLive {
 		require.Less(t, d, time.Second, "every camera of the wall comes up within a second of Live")
 	}
+	require.Zero(t, broken, "every frame after the first comes whole: the group of pictures paced, and what was lost sent again")
 }
 
 // spread is the least, the median and the most of some durations.
@@ -117,7 +121,10 @@ type wallTile struct {
 	after   int
 	broken  int
 	lost    int64
-	err     error
+	// edge is how long after the first frame the viewer was at the live
+	// edge (liveEdge).
+	edge time.Duration
+	err  error
 }
 
 // watchTile opens a WHEP session for one camera and watches it until the
@@ -151,6 +158,8 @@ func watchTile(t *testing.T, live *api.LiveSource, index frameIndex, then time.D
 	var prevTs uint32
 	skipped := 0
 	var end <-chan time.Time
+	var frames []arrival
+	defer func() { out.edge = liveEdge(frames) }()
 	for {
 		select {
 		case u := <-units:
@@ -160,7 +169,9 @@ func watchTile(t *testing.T, live *api.LiveSource, index frameIndex, then time.D
 				}
 				out.first = u.at
 				end = time.After(then)
-			} else {
+			}
+			frames = append(frames, arrival{u.at, u.ts})
+			if len(frames) > 1 {
 				out.lost += u.lost
 				if !u.whole {
 					out.broken++
@@ -195,6 +206,34 @@ func watchTile(t *testing.T, live *api.LiveSource, index frameIndex, then time.D
 			return out
 		}
 	}
+}
+
+// liveEdge is how long after the first of some frames, each with when it
+// came and its RTP timestamp, a viewer was at the live edge: from the
+// frame on that came as far ahead of the first by its timestamp as the
+// frames from then on settled at, within 50 ms. A viewer handed the group
+// of pictures gets frames faster than real time until it has caught up,
+// and from then at the camera's pace.
+func liveEdge(frames []arrival) time.Duration {
+	if len(frames) < 4 {
+		return 0
+	}
+	lead := func(f arrival) time.Duration {
+		return time.Duration(float64(f.ts-frames[0].ts)/90000*float64(time.Second)) - f.at.Sub(frames[0].at)
+	}
+	var tail []time.Duration
+	for _, f := range frames[len(frames)/2:] {
+		tail = append(tail, lead(f))
+	}
+	slices.Sort(tail)
+	settled := tail[len(tail)/2]
+	for _, f := range frames {
+		if lead(f) >= settled-50*time.Millisecond {
+			return f.at.Sub(frames[0].at)
+		}
+	}
+
+	return 0
 }
 
 // follows says a frame at one of `next` comes `step` frames after one at

@@ -29,8 +29,9 @@ func TestLivePacing(t *testing.T) {
 	frames := watchArrivals(t, live, 12*time.Second)
 	require.Greater(t, len(frames), 200, "video arrived")
 
-	// From 3 s on: the start, the group of pictures handed over at once so
-	// the picture comes up, is not what playback stalls on.
+	// From 3 s on: the start, the group of pictures handed over faster
+	// than real time so the picture comes up and reaches the live edge, is
+	// not what playback stalls on.
 	t0 := frames[0].at
 	var offsets []float64
 	for _, f := range frames {
