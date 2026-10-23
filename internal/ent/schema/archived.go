@@ -41,8 +41,10 @@ func (Archived) Fields() []ent.Field {
 
 func (Archived) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("namespace", "digest"),
-		index.Fields("state"),
+		index.Fields("namespace", "digest").
+			StorageKey("archived_blob"),
+		index.Fields("state").
+			StorageKey("archived_state"),
 	}
 }
 

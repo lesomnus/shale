@@ -342,14 +342,26 @@ func (_u *ReaderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(reader.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldAlias); ok {
+		_spec.SetField(reader.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(reader.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldName); ok {
+		_spec.SetField(reader.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(reader.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDesc); ok {
+		_spec.SetField(reader.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(reader.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldLabels); ok {
+		_spec.SetField(reader.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(reader.FieldLabels, field.TypeJson)
@@ -357,17 +369,29 @@ func (_u *ReaderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(reader.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldHardwareId); ok {
+		_spec.SetField(reader.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Hostname(); ok {
 		_spec.SetField(reader.FieldHostname, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldHostname); ok {
+		_spec.SetField(reader.FieldHostname, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(reader.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldState); ok {
+		_spec.SetField(reader.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(reader.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.CertSerial(); ok {
 		_spec.SetField(reader.FieldCertSerial, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldCertSerial); ok {
+		_spec.SetField(reader.FieldCertSerial, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Join(); ok {
 		vv, err := reader.ValueScanner.Join.Value(value)
@@ -379,14 +403,23 @@ func (_u *ReaderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(reader.FieldJoin, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldJoin); ok {
+		_spec.SetField(reader.FieldJoin, field.TypeJson, e)
+	}
 	if _u.mutation.JoinCleared() {
 		_spec.ClearField(reader.FieldJoin, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(reader.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateUpdated); ok {
+		_spec.SetField(reader.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(reader.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateErased); ok {
+		_spec.SetField(reader.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(reader.FieldDateErased, field.TypeTime)
@@ -397,11 +430,17 @@ func (_u *ReaderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateAdopted(); ok {
 		_spec.SetField(reader.FieldDateAdopted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateAdopted); ok {
+		_spec.SetField(reader.FieldDateAdopted, field.TypeTime, e)
+	}
 	if _u.mutation.DateAdoptedCleared() {
 		_spec.ClearField(reader.FieldDateAdopted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(reader.FieldDateSeen, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateSeen); ok {
+		_spec.SetField(reader.FieldDateSeen, field.TypeTime, e)
 	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(reader.FieldDateSeen, field.TypeTime)
@@ -409,14 +448,23 @@ func (_u *ReaderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateCertExpires(); ok {
 		_spec.SetField(reader.FieldDateCertExpires, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateCertExpires); ok {
+		_spec.SetField(reader.FieldDateCertExpires, field.TypeTime, e)
+	}
 	if _u.mutation.DateCertExpiresCleared() {
 		_spec.ClearField(reader.FieldDateCertExpires, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(reader.FieldVersion, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldVersion); ok {
+		_spec.SetField(reader.FieldVersion, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.AllSites(); ok {
 		_spec.SetField(reader.FieldAllSites, field.TypeBool, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldAllSites); ok {
+		_spec.SetField(reader.FieldAllSites, field.TypeBool, e)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -782,14 +830,26 @@ func (_u *ReaderUpdateOne) sqlSave(ctx context.Context) (_node *Reader, err erro
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(reader.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldAlias); ok {
+		_spec.SetField(reader.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(reader.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldName); ok {
+		_spec.SetField(reader.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(reader.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDesc); ok {
+		_spec.SetField(reader.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(reader.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldLabels); ok {
+		_spec.SetField(reader.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(reader.FieldLabels, field.TypeJson)
@@ -797,17 +857,29 @@ func (_u *ReaderUpdateOne) sqlSave(ctx context.Context) (_node *Reader, err erro
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(reader.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldHardwareId); ok {
+		_spec.SetField(reader.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Hostname(); ok {
 		_spec.SetField(reader.FieldHostname, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldHostname); ok {
+		_spec.SetField(reader.FieldHostname, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(reader.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldState); ok {
+		_spec.SetField(reader.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(reader.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.CertSerial(); ok {
 		_spec.SetField(reader.FieldCertSerial, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldCertSerial); ok {
+		_spec.SetField(reader.FieldCertSerial, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Join(); ok {
 		vv, err := reader.ValueScanner.Join.Value(value)
@@ -819,14 +891,23 @@ func (_u *ReaderUpdateOne) sqlSave(ctx context.Context) (_node *Reader, err erro
 		}
 		_spec.SetField(reader.FieldJoin, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldJoin); ok {
+		_spec.SetField(reader.FieldJoin, field.TypeJson, e)
+	}
 	if _u.mutation.JoinCleared() {
 		_spec.ClearField(reader.FieldJoin, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(reader.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateUpdated); ok {
+		_spec.SetField(reader.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(reader.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateErased); ok {
+		_spec.SetField(reader.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(reader.FieldDateErased, field.TypeTime)
@@ -837,11 +918,17 @@ func (_u *ReaderUpdateOne) sqlSave(ctx context.Context) (_node *Reader, err erro
 	if value, ok := _u.mutation.DateAdopted(); ok {
 		_spec.SetField(reader.FieldDateAdopted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateAdopted); ok {
+		_spec.SetField(reader.FieldDateAdopted, field.TypeTime, e)
+	}
 	if _u.mutation.DateAdoptedCleared() {
 		_spec.ClearField(reader.FieldDateAdopted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(reader.FieldDateSeen, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateSeen); ok {
+		_spec.SetField(reader.FieldDateSeen, field.TypeTime, e)
 	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(reader.FieldDateSeen, field.TypeTime)
@@ -849,14 +936,23 @@ func (_u *ReaderUpdateOne) sqlSave(ctx context.Context) (_node *Reader, err erro
 	if value, ok := _u.mutation.DateCertExpires(); ok {
 		_spec.SetField(reader.FieldDateCertExpires, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldDateCertExpires); ok {
+		_spec.SetField(reader.FieldDateCertExpires, field.TypeTime, e)
+	}
 	if _u.mutation.DateCertExpiresCleared() {
 		_spec.ClearField(reader.FieldDateCertExpires, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(reader.FieldVersion, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldVersion); ok {
+		_spec.SetField(reader.FieldVersion, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.AllSites(); ok {
 		_spec.SetField(reader.FieldAllSites, field.TypeBool, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldAllSites); ok {
+		_spec.SetField(reader.FieldAllSites, field.TypeBool, e)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Reader{config: _u.config}

@@ -4,8 +4,11 @@ package ent
 
 import (
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/ent/access"
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
+	"github.com/lesomnus/shale/internal/ent/audit"
 	"github.com/lesomnus/shale/internal/ent/device"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
@@ -24,11 +27,23 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	accessFields := schema.Access{}.Fields()
+	_ = accessFields
+	// accessDescDomain is the schema descriptor for domain field.
+	accessDescDomain := accessFields[10].Descriptor()
+	// access.DefaultDomain holds the default value on creation for the domain field.
+	access.DefaultDomain = accessDescDomain.Default.(uint32)
 	addresspolicyFields := schema.AddressPolicy{}.Fields()
 	_ = addresspolicyFields
 	// addresspolicyDescParams is the schema descriptor for params field.
 	addresspolicyDescParams := addresspolicyFields[6].Descriptor()
 	addresspolicy.ValueScanner.Params = addresspolicyDescParams.ValueScanner.(field.TypeValueScanner[*api.AddressParams])
+	auditFields := schema.Audit{}.Fields()
+	_ = auditFields
+	// auditDescDomain is the schema descriptor for domain field.
+	auditDescDomain := auditFields[11].Descriptor()
+	// audit.DefaultDomain holds the default value on creation for the domain field.
+	audit.DefaultDomain = auditDescDomain.Default.(uint32)
 	deviceFields := schema.Device{}.Fields()
 	_ = deviceFields
 	// deviceDescQuarantine is the schema descriptor for quarantine field.
@@ -40,6 +55,12 @@ func init() {
 	// deviceDescReport is the schema descriptor for report field.
 	deviceDescReport := deviceFields[17].Descriptor()
 	device.ValueScanner.Report = deviceDescReport.ValueScanner.(field.TypeValueScanner[*api.DeviceReport])
+	laminaFields := schema.Lamina{}.Fields()
+	_ = laminaFields
+	// laminaDescSkipReason is the schema descriptor for skip_reason field.
+	laminaDescSkipReason := laminaFields[18].Descriptor()
+	// lamina.DefaultSkipReason holds the default value on creation for the skip_reason field.
+	lamina.DefaultSkipReason = laminaDescSkipReason.Default.(int32)
 	nodeFields := schema.Node{}.Fields()
 	_ = nodeFields
 	// nodeDescJoin is the schema descriptor for join field.
@@ -64,6 +85,10 @@ func init() {
 	// producerDescStatus is the schema descriptor for status field.
 	producerDescStatus := producerFields[16].Descriptor()
 	producer.ValueScanner.Status = producerDescStatus.ValueScanner.(field.TypeValueScanner[*api.ProducerStatus])
+	// producerDescLive is the schema descriptor for live field.
+	producerDescLive := producerFields[18].Descriptor()
+	// producer.DefaultLive holds the default value on creation for the live field.
+	producer.DefaultLive = producerDescLive.Default.(int32)
 	readerFields := schema.Reader{}.Fields()
 	_ = readerFields
 	// readerDescJoin is the schema descriptor for join field.
@@ -107,6 +132,10 @@ func init() {
 	// sourceDescStarvation is the schema descriptor for starvation field.
 	sourceDescStarvation := sourceFields[12].Descriptor()
 	source.ValueScanner.Starvation = sourceDescStarvation.ValueScanner.(field.TypeValueScanner[*api.Starvation])
+	// sourceDescLiveCapable is the schema descriptor for live_capable field.
+	sourceDescLiveCapable := sourceFields[14].Descriptor()
+	// source.DefaultLiveCapable holds the default value on creation for the live_capable field.
+	source.DefaultLiveCapable = sourceDescLiveCapable.Default.(bool)
 	uploadpolicyFields := schema.UploadPolicy{}.Fields()
 	_ = uploadpolicyFields
 	// uploadpolicyDescBounds is the schema descriptor for bounds field.

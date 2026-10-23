@@ -18,6 +18,8 @@ import (
 	site "github.com/lesomnus/shale/internal/ent/site"
 	source "github.com/lesomnus/shale/internal/ent/source"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
@@ -25,6 +27,7 @@ import (
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
@@ -84,33 +87,115 @@ func (s LaminaServiceServer) narrow(ctx context.Context, p predicate.Lamina) (pr
 	return LaminaNarrow(ctx, s.Scope, p)
 }
 
-func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest) (*api.Lamina, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s LaminaServiceServer) snapshot(ctx context.Context, p predicate.Lamina, lock bool) (*ent.Lamina, error) {
+	q := s.Db.Lamina.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s LaminaServiceServer) image(v *api.Lamina) *api.Lamina {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Lamina)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(3)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(9)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(10)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st LaminaServiceServer) create(ctx context.Context, req *api.LaminaAddRequest) (*ent.LaminaCreate, []func(v *api.Lamina), error) {
 	ds := make([]func(v *api.Lamina), 0, 5)
 	q := st.Db.Lamina.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Lamina", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Lamina", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *api.Lamina) {
@@ -119,7 +204,7 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 	}
 	if req.HasSite() {
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSiteId(k)
 			ds = append(ds, func(v *api.Lamina) {
@@ -128,7 +213,7 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 		}
 	}
 	if k, err := SetGetKey(ctx, st.Db, req.GetSet()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetSetId(k)
 		ds = append(ds, func(v *api.Lamina) {
@@ -136,7 +221,7 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 		})
 	}
 	if k, err := SourceGetKey(ctx, st.Db, req.GetSource()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetSourceId(k)
 		ds = append(ds, func(v *api.Lamina) {
@@ -145,7 +230,7 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 	}
 	if req.HasSink() {
 		if k, err := SinkGetKey(ctx, st.Db, req.GetSink()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSinkId(k)
 			ds = append(ds, func(v *api.Lamina) {
@@ -199,7 +284,30 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 	} else {
 		q.SetSkipReason(0)
 	}
+	return q, ds, nil
+}
 
+func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest) (*api.Lamina, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Lamina
+	if snapshotOptions(s.Rec, api.LaminaService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -213,9 +321,18 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Lamina
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.LaminaService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.LaminaService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -223,11 +340,39 @@ func (s LaminaServiceServer) Add(ctx context.Context, req *api.LaminaAddRequest)
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// LaminaAddRule is what a layer in front says about one row an Add of Lamina
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type LaminaAddRule func(ctx context.Context, req *api.LaminaAddRequest) (*api.LaminaAddRequest, error)
+
+// LaminaWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func LaminaWithAddRule(next api.LaminaServiceServer, rule LaminaAddRule) api.LaminaServiceServer {
+	return laminaAddRuled{next, rule}
+}
+
+type laminaAddRuled struct {
+	api.LaminaServiceServer
+	rule LaminaAddRule
+}
+
+func (s laminaAddRuled) Add(ctx context.Context, req *api.LaminaAddRequest) (*api.Lamina, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.LaminaServiceServer.Add(ctx, r)
 }
 
 func (s LaminaServiceServer) Get(ctx context.Context, req *api.LaminaGetRequest) (*api.Lamina, error) {
@@ -363,12 +508,6 @@ func LaminaSelect(q *ent.LaminaQuery, m *api.LaminaSelect) {
 func LaminaSelectInit(q *ent.LaminaQuery, m *api.LaminaSelect) {
 	if m != nil {
 		LaminaSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
-		q.WithSite(selectSiteKey)
-		q.WithSet(selectSetKey)
-		q.WithSource(selectSourceKey)
-		q.WithSink(selectSinkKey)
 	}
 }
 
@@ -479,6 +618,18 @@ func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc 
 		return nil, err
 	}
 
+	var previous *api.Lamina
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Lamina.Query().Where(p)
 		if pred != nil {
@@ -505,6 +656,7 @@ func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc 
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -527,20 +679,25 @@ func (s LaminaServiceServer) apply(ctx context.Context, ref *api.LaminaRef, doc 
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Lamina
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -567,8 +724,16 @@ func (s LaminaServiceServer) Erase(ctx context.Context, req *api.LaminaRef) (*ap
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Lamina
 	if s.Rec != nil {
-		v, err := st.Db.Lamina.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.LaminaService_Erase_FullMethodName)
+		var v *ent.Lamina
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Lamina.Query().Where(p).Select(lamina.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.LaminaEraseResponse{}, nil
@@ -576,18 +741,23 @@ func (s LaminaServiceServer) Erase(ctx context.Context, req *api.LaminaRef) (*ap
 			return nil, err
 		}
 
-		k = v
-		p = lamina.And(p, lamina.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = lamina.And(p, lamina.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	n, err := st.Db.Lamina.Delete().Where(p).Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.LaminaService_Erase_FullMethodName,
-			Key: k,
+			By:       api.LaminaService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -671,33 +841,115 @@ func (s AttemptServiceServer) narrow(ctx context.Context, p predicate.Attempt) (
 	return AttemptNarrow(ctx, s.Scope, p)
 }
 
-func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddRequest) (*api.Attempt, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s AttemptServiceServer) snapshot(ctx context.Context, p predicate.Attempt, lock bool) (*ent.Attempt, error) {
+	q := s.Db.Attempt.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s AttemptServiceServer) image(v *api.Attempt) *api.Attempt {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Attempt)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(3)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(9)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(10)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st AttemptServiceServer) create(ctx context.Context, req *api.AttemptAddRequest) (*ent.AttemptCreate, []func(v *api.Attempt), error) {
 	ds := make([]func(v *api.Attempt), 0, 5)
 	q := st.Db.Attempt.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Attempt", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Attempt", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *api.Attempt) {
@@ -706,7 +958,7 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 	}
 	if req.HasSite() {
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSiteId(k)
 			ds = append(ds, func(v *api.Attempt) {
@@ -715,7 +967,7 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 		}
 	}
 	if k, err := LaminaGetKey(ctx, st.Db, req.GetLamina()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetLaminaId(k)
 		ds = append(ds, func(v *api.Attempt) {
@@ -723,7 +975,7 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 		})
 	}
 	if k, err := SinkGetKey(ctx, st.Db, req.GetSink()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetSinkId(k)
 		ds = append(ds, func(v *api.Attempt) {
@@ -731,7 +983,7 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 		})
 	}
 	if k, err := NodeGetKey(ctx, st.Db, req.GetNode()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetNodeId(k)
 		ds = append(ds, func(v *api.Attempt) {
@@ -755,7 +1007,30 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 		q.SetDateFinished(req.GetDateFinished().AsTime())
 	}
 	q.SetRank(req.GetRank())
+	return q, ds, nil
+}
 
+func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddRequest) (*api.Attempt, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Attempt
+	if snapshotOptions(s.Rec, api.AttemptService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -769,9 +1044,18 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Attempt
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.AttemptService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.AttemptService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -779,11 +1063,39 @@ func (s AttemptServiceServer) Add(ctx context.Context, req *api.AttemptAddReques
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// AttemptAddRule is what a layer in front says about one row an Add of Attempt
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type AttemptAddRule func(ctx context.Context, req *api.AttemptAddRequest) (*api.AttemptAddRequest, error)
+
+// AttemptWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func AttemptWithAddRule(next api.AttemptServiceServer, rule AttemptAddRule) api.AttemptServiceServer {
+	return attemptAddRuled{next, rule}
+}
+
+type attemptAddRuled struct {
+	api.AttemptServiceServer
+	rule AttemptAddRule
+}
+
+func (s attemptAddRuled) Add(ctx context.Context, req *api.AttemptAddRequest) (*api.Attempt, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.AttemptServiceServer.Add(ctx, r)
 }
 
 func (s AttemptServiceServer) Get(ctx context.Context, req *api.AttemptGetRequest) (*api.Attempt, error) {
@@ -885,12 +1197,6 @@ func AttemptSelect(q *ent.AttemptQuery, m *api.AttemptSelect) {
 func AttemptSelectInit(q *ent.AttemptQuery, m *api.AttemptSelect) {
 	if m != nil {
 		AttemptSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
-		q.WithSite(selectSiteKey)
-		q.WithLamina(selectLaminaKey)
-		q.WithSink(selectSinkKey)
-		q.WithNode(selectNodeKey)
 	}
 }
 
@@ -991,6 +1297,18 @@ func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, do
 		return nil, err
 	}
 
+	var previous *api.Attempt
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Attempt.Query().Where(p)
 		if pred != nil {
@@ -1017,6 +1335,7 @@ func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, do
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1039,20 +1358,25 @@ func (s AttemptServiceServer) apply(ctx context.Context, ref *api.AttemptRef, do
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Attempt
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -1079,8 +1403,16 @@ func (s AttemptServiceServer) Erase(ctx context.Context, req *api.AttemptRef) (*
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Attempt
 	if s.Rec != nil {
-		v, err := st.Db.Attempt.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.AttemptService_Erase_FullMethodName)
+		var v *ent.Attempt
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Attempt.Query().Where(p).Select(attempt.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.AttemptEraseResponse{}, nil
@@ -1088,18 +1420,23 @@ func (s AttemptServiceServer) Erase(ctx context.Context, req *api.AttemptRef) (*
 			return nil, err
 		}
 
-		k = v
-		p = attempt.And(p, attempt.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = attempt.And(p, attempt.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	n, err := st.Db.Attempt.Delete().Where(p).Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.AttemptService_Erase_FullMethodName,
-			Key: k,
+			By:       api.AttemptService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

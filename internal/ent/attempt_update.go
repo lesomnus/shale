@@ -209,14 +209,23 @@ func (_u *AttemptUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(attempt.FieldState, field.TypeInt32, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldState); ok {
+		_spec.SetField(attempt.FieldState, field.TypeInt32, e)
+	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(attempt.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.FailureReason(); ok {
 		_spec.SetField(attempt.FieldFailureReason, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldFailureReason); ok {
+		_spec.SetField(attempt.FieldFailureReason, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(attempt.FieldDateUpdated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldDateUpdated); ok {
+		_spec.SetField(attempt.FieldDateUpdated, field.TypeTime, e)
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(attempt.FieldDateCreated, field.TypeTime)
@@ -224,17 +233,26 @@ func (_u *AttemptUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateExpires(); ok {
 		_spec.SetField(attempt.FieldDateExpires, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldDateExpires); ok {
+		_spec.SetField(attempt.FieldDateExpires, field.TypeTime, e)
+	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(attempt.FieldDateExpires, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateFinished(); ok {
 		_spec.SetField(attempt.FieldDateFinished, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldDateFinished); ok {
+		_spec.SetField(attempt.FieldDateFinished, field.TypeTime, e)
+	}
 	if _u.mutation.DateFinishedCleared() {
 		_spec.ClearField(attempt.FieldDateFinished, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Rank(); ok {
 		_spec.SetField(attempt.FieldRank, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldRank); ok {
+		_spec.SetField(attempt.FieldRank, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedRank(); ok {
 		_spec.AddField(attempt.FieldRank, field.TypeInt32, value)
@@ -471,14 +489,23 @@ func (_u *AttemptUpdateOne) sqlSave(ctx context.Context) (_node *Attempt, err er
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(attempt.FieldState, field.TypeInt32, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldState); ok {
+		_spec.SetField(attempt.FieldState, field.TypeInt32, e)
+	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(attempt.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.FailureReason(); ok {
 		_spec.SetField(attempt.FieldFailureReason, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldFailureReason); ok {
+		_spec.SetField(attempt.FieldFailureReason, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(attempt.FieldDateUpdated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldDateUpdated); ok {
+		_spec.SetField(attempt.FieldDateUpdated, field.TypeTime, e)
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(attempt.FieldDateCreated, field.TypeTime)
@@ -486,17 +513,26 @@ func (_u *AttemptUpdateOne) sqlSave(ctx context.Context) (_node *Attempt, err er
 	if value, ok := _u.mutation.DateExpires(); ok {
 		_spec.SetField(attempt.FieldDateExpires, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldDateExpires); ok {
+		_spec.SetField(attempt.FieldDateExpires, field.TypeTime, e)
+	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(attempt.FieldDateExpires, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateFinished(); ok {
 		_spec.SetField(attempt.FieldDateFinished, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldDateFinished); ok {
+		_spec.SetField(attempt.FieldDateFinished, field.TypeTime, e)
+	}
 	if _u.mutation.DateFinishedCleared() {
 		_spec.ClearField(attempt.FieldDateFinished, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Rank(); ok {
 		_spec.SetField(attempt.FieldRank, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(attempt.FieldRank); ok {
+		_spec.SetField(attempt.FieldRank, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedRank(); ok {
 		_spec.AddField(attempt.FieldRank, field.TypeInt32, value)

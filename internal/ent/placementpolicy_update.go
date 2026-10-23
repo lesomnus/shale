@@ -214,14 +214,26 @@ func (_u *PlacementPolicyUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(placementpolicy.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldAlias); ok {
+		_spec.SetField(placementpolicy.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(placementpolicy.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldName); ok {
+		_spec.SetField(placementpolicy.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(placementpolicy.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldDesc); ok {
+		_spec.SetField(placementpolicy.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(placementpolicy.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldLabels); ok {
+		_spec.SetField(placementpolicy.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(placementpolicy.FieldLabels, field.TypeJson)
@@ -236,17 +248,29 @@ func (_u *PlacementPolicyUpdate) sqlSave(ctx context.Context) (_node int, err er
 		}
 		_spec.SetField(placementpolicy.FieldParams, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldParams); ok {
+		_spec.SetField(placementpolicy.FieldParams, field.TypeJson, e)
+	}
 	if _u.mutation.ParamsCleared() {
 		_spec.ClearField(placementpolicy.FieldParams, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(placementpolicy.FieldActive, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldActive); ok {
+		_spec.SetField(placementpolicy.FieldActive, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(placementpolicy.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldDateUpdated); ok {
+		_spec.SetField(placementpolicy.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(placementpolicy.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldDateErased); ok {
+		_spec.SetField(placementpolicy.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(placementpolicy.FieldDateErased, field.TypeTime)
@@ -256,6 +280,9 @@ func (_u *PlacementPolicyUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if value, ok := _u.mutation.DateActivated(); ok {
 		_spec.SetField(placementpolicy.FieldDateActivated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldDateActivated); ok {
+		_spec.SetField(placementpolicy.FieldDateActivated, field.TypeTime, e)
 	}
 	if _u.mutation.DateActivatedCleared() {
 		_spec.ClearField(placementpolicy.FieldDateActivated, field.TypeTime)
@@ -496,14 +523,26 @@ func (_u *PlacementPolicyUpdateOne) sqlSave(ctx context.Context) (_node *Placeme
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(placementpolicy.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldAlias); ok {
+		_spec.SetField(placementpolicy.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(placementpolicy.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldName); ok {
+		_spec.SetField(placementpolicy.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(placementpolicy.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldDesc); ok {
+		_spec.SetField(placementpolicy.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(placementpolicy.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldLabels); ok {
+		_spec.SetField(placementpolicy.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(placementpolicy.FieldLabels, field.TypeJson)
@@ -518,17 +557,29 @@ func (_u *PlacementPolicyUpdateOne) sqlSave(ctx context.Context) (_node *Placeme
 		}
 		_spec.SetField(placementpolicy.FieldParams, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldParams); ok {
+		_spec.SetField(placementpolicy.FieldParams, field.TypeJson, e)
+	}
 	if _u.mutation.ParamsCleared() {
 		_spec.ClearField(placementpolicy.FieldParams, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(placementpolicy.FieldActive, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldActive); ok {
+		_spec.SetField(placementpolicy.FieldActive, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(placementpolicy.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldDateUpdated); ok {
+		_spec.SetField(placementpolicy.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(placementpolicy.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldDateErased); ok {
+		_spec.SetField(placementpolicy.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(placementpolicy.FieldDateErased, field.TypeTime)
@@ -538,6 +589,9 @@ func (_u *PlacementPolicyUpdateOne) sqlSave(ctx context.Context) (_node *Placeme
 	}
 	if value, ok := _u.mutation.DateActivated(); ok {
 		_spec.SetField(placementpolicy.FieldDateActivated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(placementpolicy.FieldDateActivated); ok {
+		_spec.SetField(placementpolicy.FieldDateActivated, field.TypeTime, e)
 	}
 	if _u.mutation.DateActivatedCleared() {
 		_spec.ClearField(placementpolicy.FieldDateActivated, field.TypeTime)

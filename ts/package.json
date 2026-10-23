@@ -18,7 +18,7 @@
 		"@connectrpc/connect": "^2.1.2",
 		"@connectrpc/connect-web": "^2.1.2",
 		"@lesomnus/grpc-dgram": "^0.1.0",
-		"@lesomnus/payday": "file:vendor/lesomnus-payday-0.1.1.tgz",
+		"@lesomnus/payday": "^0.1.2",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"sqlite3-wasm-go": "^0.0.1"

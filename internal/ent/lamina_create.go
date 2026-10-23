@@ -25,6 +25,7 @@ type LaminaCreate struct {
 	config
 	mutation *LaminaMutation
 	hooks    []Hook
+	stored   **Lamina
 }
 
 // SetLaminaKey sets the "lamina_key" field.
@@ -283,6 +284,7 @@ func (_c *LaminaCreate) Mutation() *LaminaMutation {
 
 // Save creates the Lamina in the database.
 func (_c *LaminaCreate) Save(ctx context.Context) (*Lamina, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -308,8 +310,21 @@ func (_c *LaminaCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *LaminaCreate) defaults() {
+	if _, ok := _c.mutation.SkipReason(); !ok {
+		if _, ok := _c.mutation.FieldExpr(lamina.FieldSkipReason); !ok {
+			v := lamina.DefaultSkipReason
+			_c.mutation.SetSkipReason(v)
+		}
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *LaminaCreate) check() error {
+	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
+		return &ValidationError{Name: fs[0], err: fmt.Errorf(`ent: field "Lamina.%s" was assigned an expression, which only an update writes`, fs[0])}
+	}
 	if _, ok := _c.mutation.LaminaKey(); !ok {
 		return &ValidationError{Name: "lamina_key", err: errors.New(`ent: missing required field "Lamina.lamina_key"`)}
 	}
@@ -390,6 +405,18 @@ func (_c *LaminaCreate) createSpec() (*Lamina, *sqlgraph.CreateSpec) {
 		_node = &Lamina{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(lamina.Table, sqlgraph.NewFieldSpec(lamina.FieldId, field.TypeUuid))
 	)
+	if _c.stored != nil {
+		_stored := &Lamina{config: _c.config}
+		_spec.Returning = lamina.Columns
+		_spec.ScanValues = _stored.scanValues
+		_spec.Assign = func(columns []string, values []any) error {
+			if err := _stored.assignValues(columns, values); err != nil {
+				return err
+			}
+			*_c.stored = _stored
+			return nil
+		}
+	}
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
@@ -554,6 +581,32 @@ func (_c *LaminaCreate) createSpec() (*Lamina, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// Stored has Save read the Lamina back, into `v`, as the database stored
+// it: at the precision of its columns, with the defaults the database filled
+// in and what a trigger before the write made of it. Save itself answers with
+// the Lamina as this builder had it.
+//
+// The INSERT reads it, with RETURNING, where the dialect has it, so that the
+// row and the reading of it are one statement. MySQL has none, and an INSERT
+// with a conflict clause may have written nothing, so for those it is a query
+// by the Id just after the INSERT. Either way it is read on the driver the
+// INSERT ran on, so inside a transaction it is that transaction's row. Its
+// edges are not loaded.
+//
+// In a CreateBulk, the Stored of each builder is honoured and the batch's one
+// INSERT reads all of their rows back: each is matched to its builder by the
+// Id the builder was given, or by its place when the database made the Ids up.
+// A column some builders of a batch set and others do not is NULL for the
+// others, as it is in any batch; the database's default is for a column no
+// builder sets.
+//
+// `v` is written only by a Save that wrote the row: one that failed, or that a
+// hook answered without writing, leaves it as it was.
+func (_c *LaminaCreate) Stored(v **Lamina) *LaminaCreate {
+	_c.stored = v
+	return _c
+}
+
 // LaminaCreateBulk is the builder for creating many Lamina entities in bulk.
 type LaminaCreateBulk struct {
 	config
@@ -572,6 +625,7 @@ func (_c *LaminaCreateBulk) Save(ctx context.Context) ([]*Lamina, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*LaminaMutation)
 				if !ok {

@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/lesomnus/shale/internal/ent/access"
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
 	"github.com/lesomnus/shale/internal/ent/archived"
 	"github.com/lesomnus/shale/internal/ent/attempt"
@@ -19,10 +20,12 @@ import (
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
 	"github.com/lesomnus/shale/internal/ent/outbox"
+	"github.com/lesomnus/shale/internal/ent/owed"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/rowseal"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/signingkey"
 	"github.com/lesomnus/shale/internal/ent/sink"
@@ -94,6 +97,7 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			access.Table:          access.ValidColumn,
 			addresspolicy.Table:   addresspolicy.ValidColumn,
 			archived.Table:        archived.ValidColumn,
 			attempt.Table:         attempt.ValidColumn,
@@ -104,10 +108,12 @@ func checkColumn(t, c string) error {
 			lamina.Table:          lamina.ValidColumn,
 			node.Table:            node.ValidColumn,
 			outbox.Table:          outbox.ValidColumn,
+			owed.Table:            owed.ValidColumn,
 			placementpolicy.Table: placementpolicy.ValidColumn,
 			producer.Table:        producer.ValidColumn,
 			reader.Table:          reader.ValidColumn,
 			relay.Table:           relay.ValidColumn,
+			rowseal.Table:         rowseal.ValidColumn,
 			set.Table:             set.ValidColumn,
 			signingkey.Table:      signingkey.ValidColumn,
 			sink.Table:            sink.ValidColumn,

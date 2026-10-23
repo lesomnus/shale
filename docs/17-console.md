@@ -15,7 +15,6 @@ and the key fingerprint on the screen.
 ts/                        the console: Vite + React + payday's client layer
   gen/                     generated from proto/ by `pd gen --ts`  (do not edit)
   src/                     the pages
-  vendor/                  payday's TypeScript package, from the commit go.mod pins
 wasm/main.go               the sandbox: the control plane compiled into the page
 internal/sandbox/          the hosts the sandbox plays
 ```
@@ -54,6 +53,18 @@ longer holds, one that idled out or was minted before an upgrade, does not
 strand the page: the call carrying it is served as nobody where nobody is
 asked for, so the sign-in is reachable, and it is answered with the cookie
 that clears the dead one.
+
+What a page keeps of a surface, the rows it drew (kept in the browser, so
+a reload draws them at once) and the writes it has not sent yet, is a store
+named by what the session lets its caller see: `GET /session` answers that
+name (`identity`, payday's `authsession.IdentityOf`), every call the store
+makes carries it, and a call carrying it under a cookie that is somebody
+else's session is refused as unauthenticated. A page left holding one
+person's store after another signed in, in another tab, neither reads their
+rows into it nor sends what it kept as them; its writes wait for the first
+person to sign in again. Opening a store deletes every other store of its
+surface on that browser, and signing out forgets it, and says so on the
+sign-in when the browser would not let go of it.
 
 | page | surface | what it shows, and does |
 |---|---|---|

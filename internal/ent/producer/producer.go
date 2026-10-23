@@ -136,6 +136,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultLive holds the default value on creation for the "live" field.
+	DefaultLive int32
 	// ValueScanner of all Producer fields.
 	ValueScanner struct {
 		Join   field.TypeValueScanner[*api.HostJoin]

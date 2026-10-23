@@ -66,10 +66,10 @@ message Node {
   string ca_hash = 21;
   string version = 22;
   // host:port of the node's control API, which the CP dials directly (§35.7).
-  string control_address = 23;
+  string control_address = 23 [(payday.field) = {personal: false}];
   // host:port of the node's data plane, as the node listens; the resolver
   // builds endpoints from the interfaces and this port.
-  string data_address = 24;
+  string data_address = 24 [(payday.field) = {personal: false}];
   NodeStatus status = 25;
   // Cumulative failure score with a 24 h half-life (§27).
   double failure_score = 26;
@@ -145,9 +145,9 @@ message Relay {
   string ca_hash = 21;
   string version = 22;
   // host:port of the ingest listener producers dial (§39.3).
-  string ingest_address = 23;
+  string ingest_address = 23 [(payday.field) = {personal: false}];
   // host:port of the WHEP listener viewers reach (§39.4).
-  string whep_address = 24;
+  string whep_address = 24 [(payday.field) = {personal: false}];
   RelayStatus status = 25;
 
   option (orm.message) = {
@@ -239,6 +239,7 @@ message Producer {
       {
         name: "page"
         refs: [
+          {name: "tenant", number: 2},
           {name: "date_created", number: 15},
           {name: "id", number: 1}
         ]
@@ -321,6 +322,7 @@ message Reader {
       {
         name: "page"
         refs: [
+          {name: "tenant", number: 2},
           {name: "date_created", number: 15},
           {name: "id", number: 1}
         ]

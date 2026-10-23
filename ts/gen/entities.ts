@@ -13,6 +13,7 @@
 
 import type { EntityDesc } from '@lesomnus/payday/store'
 
+import { AccessSchema } from './shale/payday/access_pb.js'
 import { AddressPolicySchema, PlacementPolicySchema, SigningKeySchema, UploadPolicySchema } from './shale/policy_pb.js'
 import { ArchivedSchema } from './shale/payday/archived_pb.js'
 import { AttemptSchema, LaminaSchema } from './shale/lamina_pb.js'
@@ -22,10 +23,13 @@ import { DeviceSchema, SinkSchema } from './shale/storage_pb.js'
 import { HolderSchema } from './shale/payday/holder_pb.js'
 import { NodeSchema, ProducerSchema, ReaderSchema, RelaySchema } from './shale/host_pb.js'
 import { OutboxSchema } from './shale/payday/outbox_pb.js'
+import { OwedSchema } from './shale/payday/owed_pb.js'
+import { RowSealSchema } from './shale/payday/rowseal_pb.js'
 import { SetSchema, SourceSchema } from './shale/set_pb.js'
 import { SiteSchema } from './shale/site_pb.js'
 import { SiteMemberSchema } from './shale/member_pb.js'
 import { TenantSchema } from './shale/payday/tenant_pb.js'
+import { AccessService } from './shale/payday/access_svc_pb.js'
 import { AddressPolicyService, PlacementPolicyService, SigningKeyService, UploadPolicyService } from './shale/policy_svc_pb.js'
 import { ArchivedService } from './shale/payday/archived_svc_pb.js'
 import { AttemptService, LaminaService } from './shale/lamina_svc_pb.js'
@@ -35,10 +39,22 @@ import { DeviceService, SinkService } from './shale/storage_svc_pb.js'
 import { HolderService } from './shale/payday/holder_svc_pb.js'
 import { NodeService, ProducerService, ReaderService, RelayService } from './shale/host_svc_pb.js'
 import { OutboxService } from './shale/payday/outbox_svc_pb.js'
+import { OwedService } from './shale/payday/owed_svc_pb.js'
+import { RowSealService } from './shale/payday/rowseal_svc_pb.js'
 import { SetService, SourceService } from './shale/set_svc_pb.js'
 import { SiteService } from './shale/site_svc_pb.js'
 import { SiteMemberService } from './shale/member_svc_pb.js'
 import { TenantService } from './shale/payday/tenant_svc_pb.js'
+
+/** shale.Access, as the store holds it. */
+export const Access = {
+	typeName: "shale.Access",
+	schema: AccessSchema,
+	domain: 6,
+	key: "id",
+	ids: ["id", "tenantId", "actorId", "actorTenantId"],
+	service: AccessService,
+} as const satisfies EntityDesc
 
 /** shale.AddressPolicy, as the store holds it. */
 export const AddressPolicy = {
@@ -158,6 +174,16 @@ export const Outbox = {
 	service: OutboxService,
 } as const satisfies EntityDesc
 
+/** shale.Owed, as the store holds it. */
+export const Owed = {
+	typeName: "shale.Owed",
+	schema: OwedSchema,
+	domain: 254,
+	key: "id",
+	ids: ["id", "object"],
+	service: OwedService,
+} as const satisfies EntityDesc
+
 /** shale.PlacementPolicy, as the store holds it. */
 export const PlacementPolicy = {
 	typeName: "shale.PlacementPolicy",
@@ -206,6 +232,16 @@ export const Relay = {
 	key: "id",
 	ids: ["id"],
 	service: RelayService,
+} as const satisfies EntityDesc
+
+/** shale.RowSeal, as the store holds it. */
+export const RowSeal = {
+	typeName: "shale.RowSeal",
+	schema: RowSealSchema,
+	domain: 255,
+	key: "id",
+	ids: ["id", "tenantId"],
+	service: RowSealService,
 } as const satisfies EntityDesc
 
 /** shale.Set, as the store holds it. */
@@ -310,5 +346,5 @@ export const UploadPolicy = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder, Lamina, Node, Outbox, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
+export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
 

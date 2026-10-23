@@ -227,23 +227,41 @@ func (_u *ArchivedUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(archived.FieldLabels, field.TypeJson, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldLabels); ok {
+		_spec.SetField(archived.FieldLabels, field.TypeJson, e)
+	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(archived.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Namespace(); ok {
 		_spec.SetField(archived.FieldNamespace, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldNamespace); ok {
+		_spec.SetField(archived.FieldNamespace, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Digest(); ok {
 		_spec.SetField(archived.FieldDigest, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldDigest); ok {
+		_spec.SetField(archived.FieldDigest, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Intent(); ok {
 		_spec.SetField(archived.FieldIntent, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldIntent); ok {
+		_spec.SetField(archived.FieldIntent, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(archived.FieldState, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldState); ok {
+		_spec.SetField(archived.FieldState, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Since(); ok {
 		_spec.SetField(archived.FieldSince, field.TypeUint32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldSince); ok {
+		_spec.SetField(archived.FieldSince, field.TypeUint32, e)
 	}
 	if value, ok := _u.mutation.AddedSince(); ok {
 		_spec.AddField(archived.FieldSince, field.TypeUint32, value)
@@ -251,11 +269,17 @@ func (_u *ArchivedUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(archived.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldDateUpdated); ok {
+		_spec.SetField(archived.FieldDateUpdated, field.TypeTime, e)
+	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(archived.FieldDateCreated, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Gone(); ok {
 		_spec.SetField(archived.FieldGone, field.TypeUint32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldGone); ok {
+		_spec.SetField(archived.FieldGone, field.TypeUint32, e)
 	}
 	if value, ok := _u.mutation.AddedGone(); ok {
 		_spec.AddField(archived.FieldGone, field.TypeUint32, value)
@@ -263,11 +287,17 @@ func (_u *ArchivedUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Signature(); ok {
 		_spec.SetField(archived.FieldSignature, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldSignature); ok {
+		_spec.SetField(archived.FieldSignature, field.TypeBytes, e)
+	}
 	if _u.mutation.SignatureCleared() {
 		_spec.ClearField(archived.FieldSignature, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.SignedBy(); ok {
 		_spec.SetField(archived.FieldSignedBy, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldSignedBy); ok {
+		_spec.SetField(archived.FieldSignedBy, field.TypeBytes, e)
 	}
 	if _u.mutation.SignedByCleared() {
 		_spec.ClearField(archived.FieldSignedBy, field.TypeBytes)
@@ -522,23 +552,41 @@ func (_u *ArchivedUpdateOne) sqlSave(ctx context.Context) (_node *Archived, err 
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(archived.FieldLabels, field.TypeJson, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldLabels); ok {
+		_spec.SetField(archived.FieldLabels, field.TypeJson, e)
+	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(archived.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Namespace(); ok {
 		_spec.SetField(archived.FieldNamespace, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldNamespace); ok {
+		_spec.SetField(archived.FieldNamespace, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Digest(); ok {
 		_spec.SetField(archived.FieldDigest, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldDigest); ok {
+		_spec.SetField(archived.FieldDigest, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Intent(); ok {
 		_spec.SetField(archived.FieldIntent, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldIntent); ok {
+		_spec.SetField(archived.FieldIntent, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(archived.FieldState, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldState); ok {
+		_spec.SetField(archived.FieldState, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Since(); ok {
 		_spec.SetField(archived.FieldSince, field.TypeUint32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldSince); ok {
+		_spec.SetField(archived.FieldSince, field.TypeUint32, e)
 	}
 	if value, ok := _u.mutation.AddedSince(); ok {
 		_spec.AddField(archived.FieldSince, field.TypeUint32, value)
@@ -546,11 +594,17 @@ func (_u *ArchivedUpdateOne) sqlSave(ctx context.Context) (_node *Archived, err 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(archived.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldDateUpdated); ok {
+		_spec.SetField(archived.FieldDateUpdated, field.TypeTime, e)
+	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(archived.FieldDateCreated, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Gone(); ok {
 		_spec.SetField(archived.FieldGone, field.TypeUint32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldGone); ok {
+		_spec.SetField(archived.FieldGone, field.TypeUint32, e)
 	}
 	if value, ok := _u.mutation.AddedGone(); ok {
 		_spec.AddField(archived.FieldGone, field.TypeUint32, value)
@@ -558,11 +612,17 @@ func (_u *ArchivedUpdateOne) sqlSave(ctx context.Context) (_node *Archived, err 
 	if value, ok := _u.mutation.Signature(); ok {
 		_spec.SetField(archived.FieldSignature, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldSignature); ok {
+		_spec.SetField(archived.FieldSignature, field.TypeBytes, e)
+	}
 	if _u.mutation.SignatureCleared() {
 		_spec.ClearField(archived.FieldSignature, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.SignedBy(); ok {
 		_spec.SetField(archived.FieldSignedBy, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(archived.FieldSignedBy); ok {
+		_spec.SetField(archived.FieldSignedBy, field.TypeBytes, e)
 	}
 	if _u.mutation.SignedByCleared() {
 		_spec.ClearField(archived.FieldSignedBy, field.TypeBytes)

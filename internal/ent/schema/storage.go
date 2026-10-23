@@ -68,9 +68,10 @@ func (Device) Edges() []ent.Edge {
 
 func (Device) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("health").
-			Edges("node"),
+		index.Fields("date_created", "id").
+			StorageKey("device_page"),
+		index.Fields("node_id", "health").
+			StorageKey("device_node"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
@@ -151,9 +152,10 @@ func (Sink) Edges() []ent.Edge {
 
 func (Sink) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("attachment").
-			Edges("node"),
+		index.Fields("date_created", "id").
+			StorageKey("sink_page"),
+		index.Fields("node_id", "attachment").
+			StorageKey("sink_node"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

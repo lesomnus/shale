@@ -12,12 +12,16 @@ import (
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	site "github.com/lesomnus/shale/internal/ent/site"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -80,33 +84,59 @@ func (s SiteServiceServer) narrow(ctx context.Context, p predicate.Site) (predic
 	return SiteNarrow(ctx, s.Scope, p)
 }
 
-func (s SiteServiceServer) Add(ctx context.Context, req *api.SiteAddRequest) (*api.Site, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s SiteServiceServer) snapshot(ctx context.Context, p predicate.Site, lock bool) (*ent.Site, error) {
+	q := s.Db.Site.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s SiteServiceServer) image(v *api.Site) *api.Site {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Site)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st SiteServiceServer) create(ctx context.Context, req *api.SiteAddRequest) (*ent.SiteCreate, []func(v *api.Site), error) {
 	ds := make([]func(v *api.Site), 0, 1)
 	q := st.Db.Site.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Site", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Site", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *api.Site) {
@@ -128,7 +158,30 @@ func (s SiteServiceServer) Add(ctx context.Context, req *api.SiteAddRequest) (*a
 	} else {
 		q.SetDateCreated(st.now())
 	}
+	return q, ds, nil
+}
 
+func (s SiteServiceServer) Add(ctx context.Context, req *api.SiteAddRequest) (*api.Site, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Site
+	if snapshotOptions(s.Rec, api.SiteService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -142,9 +195,18 @@ func (s SiteServiceServer) Add(ctx context.Context, req *api.SiteAddRequest) (*a
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Site
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.SiteService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.SiteService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -152,11 +214,39 @@ func (s SiteServiceServer) Add(ctx context.Context, req *api.SiteAddRequest) (*a
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// SiteAddRule is what a layer in front says about one row an Add of Site
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type SiteAddRule func(ctx context.Context, req *api.SiteAddRequest) (*api.SiteAddRequest, error)
+
+// SiteWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func SiteWithAddRule(next api.SiteServiceServer, rule SiteAddRule) api.SiteServiceServer {
+	return siteAddRuled{next, rule}
+}
+
+type siteAddRuled struct {
+	api.SiteServiceServer
+	rule SiteAddRule
+}
+
+func (s siteAddRuled) Add(ctx context.Context, req *api.SiteAddRequest) (*api.Site, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.SiteServiceServer.Add(ctx, r)
 }
 
 func (s SiteServiceServer) Get(ctx context.Context, req *api.SiteGetRequest) (*api.Site, error) {
@@ -238,8 +328,6 @@ func SiteSelect(q *ent.SiteQuery, m *api.SiteSelect) {
 func SiteSelectInit(q *ent.SiteQuery, m *api.SiteSelect) {
 	if m != nil {
 		SiteSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 
@@ -340,6 +428,18 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *pat
 		return nil, err
 	}
 
+	var previous *api.Site
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Site.Query().Where(p)
 		if pred != nil {
@@ -366,6 +466,7 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *pat
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -388,20 +489,25 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *api.SiteRef, doc *pat
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Site
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -428,8 +534,16 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *api.SiteRef) (*api.Si
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Site
 	if s.Rec != nil {
-		v, err := st.Db.Site.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.SiteService_Erase_FullMethodName)
+		var v *ent.Site
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Site.Query().Where(p).Select(site.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.SiteEraseResponse{}, nil
@@ -437,10 +551,14 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *api.SiteRef) (*api.Si
 			return nil, err
 		}
 
-		k = v
-		p = site.And(p, site.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = site.And(p, site.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Site.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -450,8 +568,9 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *api.SiteRef) (*api.Si
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.SiteService_Erase_FullMethodName,
-			Key: k,
+			By:       api.SiteService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

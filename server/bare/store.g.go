@@ -9,6 +9,7 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	api "github.com/lesomnus/shale/api"
 	ent "github.com/lesomnus/shale/internal/ent"
+	access "github.com/lesomnus/shale/internal/ent/access"
 	addresspolicy "github.com/lesomnus/shale/internal/ent/addresspolicy"
 	archived "github.com/lesomnus/shale/internal/ent/archived"
 	attempt "github.com/lesomnus/shale/internal/ent/attempt"
@@ -19,11 +20,13 @@ import (
 	lamina "github.com/lesomnus/shale/internal/ent/lamina"
 	node "github.com/lesomnus/shale/internal/ent/node"
 	outbox "github.com/lesomnus/shale/internal/ent/outbox"
+	owed "github.com/lesomnus/shale/internal/ent/owed"
 	placementpolicy "github.com/lesomnus/shale/internal/ent/placementpolicy"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	producer "github.com/lesomnus/shale/internal/ent/producer"
 	reader "github.com/lesomnus/shale/internal/ent/reader"
 	relay "github.com/lesomnus/shale/internal/ent/relay"
+	rowseal "github.com/lesomnus/shale/internal/ent/rowseal"
 	set "github.com/lesomnus/shale/internal/ent/set"
 	signingkey "github.com/lesomnus/shale/internal/ent/signingkey"
 	sink "github.com/lesomnus/shale/internal/ent/sink"
@@ -34,9 +37,12 @@ import (
 	uploadpolicy "github.com/lesomnus/shale/internal/ent/uploadpolicy"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
+	errdetails "google.golang.org/genproto/googleapis/rpc/errdetails"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoadapt "google.golang.org/protobuf/protoadapt"
 	time "time"
 	uuid "uuid"
 )
@@ -192,8 +198,9 @@ type Change struct {
 	//
 	// It says which entity and which kind of write without a field for
 	// either: a service is named for the entity it is about, and it is
-	// always one of the four this server has -- an Add adds and an Erase
-	// erases, and Patch and Apply are one write by two roads.
+	// always one of the five this server has -- an Add adds and an Erase
+	// erases, an AddMany adds a row each it is told about, and Patch and
+	// Apply are one write by two roads.
 	//
 	// So the two answer different questions and a recorder wants the one it
 	// is for. A trail is read by somebody asking what was asked for, and
@@ -217,6 +224,13 @@ type Change struct {
 	// on itself is not in it: the version stamp of an Apply, and the key and
 	// the timestamps an Add makes up for a request that left them out.
 	Patch *patchpb.Patch
+	// Previous and Value are optional images requested by SnapshotRecorder.
+	// By default neither is captured. Add has no Previous; Erase has no
+	// Value. A missing image does not identify the operation; use By instead.
+	// Treat both as read-only.
+	// References contain keys, as in a Get without an explicit selection.
+	Previous proto.Message
+	Value    proto.Message
 }
 
 // Recorder is told about every write, inside the transaction that makes
@@ -250,6 +264,28 @@ type Recorder interface {
 	Record(ctx context.Context, s Server, c Change) error
 }
 
+// SnapshotOptions selects images for one generated write method. The zero
+// value preserves the ordinary recorder's query and locking behavior.
+type SnapshotOptions struct{ Previous, Value bool }
+
+// SnapshotRecorder opts into image capture before the write. Previous reads
+// and locks the root row until transaction completion (except SQLite, whose
+// writes are serialized by the database). Value is the row an Add's, or an AddMany's, INSERT
+// reads back -- in the same statement, where the dialect has RETURNING -- and
+// the read-back Patch/Apply make anyway. Relations contain keys only.
+// method is the generated operation (Change.By), not the outer RPC.
+type SnapshotRecorder interface {
+	Recorder
+	Snapshots(method string) SnapshotOptions
+}
+
+func snapshotOptions(rec Recorder, method string) SnapshotOptions {
+	if r, ok := rec.(SnapshotRecorder); ok {
+		return r.Snapshots(method)
+	}
+	return SnapshotOptions{}
+}
+
 // Recorders is told about a write in the order they are written, and
 // stops at the first one that refuses. [WithRecorder] builds one of these
 // as soon as it is given a second recorder.
@@ -265,6 +301,16 @@ type Recorder interface {
 // whoever assembled the server.
 type Recorders []Recorder
 
+// Snapshots unions the requirements so each image is captured at most once.
+func (rs Recorders) Snapshots(method string) SnapshotOptions {
+	var out SnapshotOptions
+	for _, r := range rs {
+		v := snapshotOptions(r, method)
+		out.Previous = out.Previous || v.Previous
+		out.Value = out.Value || v.Value
+	}
+	return out
+}
 func (rs Recorders) Record(ctx context.Context, s Server, c Change) error {
 	for _, r := range rs {
 		if err := r.Record(ctx, s, c); err != nil {
@@ -299,10 +345,19 @@ func record(ctx context.Context, rec Recorder, db *ent.Client, c Change) error {
 	} else {
 		c.Method = c.By
 	}
+	c.Previous = snapshotOrNil(c.Previous)
+	c.Value = snapshotOrNil(c.Value)
 	if err := rec.Record(ctx, Server{Store: Store{Db: db}}, c); err != nil {
 		return status.Errorf(codes.Internal, "record the write by %s: %s", c.By, err)
 	}
 	return nil
+}
+
+func snapshotOrNil(v proto.Message) proto.Message {
+	if v == nil || !v.ProtoReflect().IsValid() {
+		return nil
+	}
+	return v
 }
 
 // Scope narrows what the servers of a [Server] can see, one entity at a
@@ -344,9 +399,12 @@ type Scope interface {
 	LaminaScope(ctx context.Context) (predicate.Lamina, error)
 	AttemptScope(ctx context.Context) (predicate.Attempt, error)
 	SiteMemberScope(ctx context.Context) (predicate.SiteMember, error)
+	AccessScope(ctx context.Context) (predicate.Access, error)
 	ArchivedScope(ctx context.Context) (predicate.Archived, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
+	OwedScope(ctx context.Context) (predicate.Owed, error)
+	RowSealScope(ctx context.Context) (predicate.RowSeal, error)
 	SigningKeyScope(ctx context.Context) (predicate.SigningKey, error)
 	PlacementPolicyScope(ctx context.Context) (predicate.PlacementPolicy, error)
 	UploadPolicyScope(ctx context.Context) (predicate.UploadPolicy, error)
@@ -410,6 +468,9 @@ func (Unscoped) AttemptScope(_ context.Context) (predicate.Attempt, error) {
 func (Unscoped) SiteMemberScope(_ context.Context) (predicate.SiteMember, error) {
 	return nil, nil
 }
+func (Unscoped) AccessScope(_ context.Context) (predicate.Access, error) {
+	return nil, nil
+}
 func (Unscoped) ArchivedScope(_ context.Context) (predicate.Archived, error) {
 	return nil, nil
 }
@@ -417,6 +478,12 @@ func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
 	return nil, nil
 }
 func (Unscoped) OutboxScope(_ context.Context) (predicate.Outbox, error) {
+	return nil, nil
+}
+func (Unscoped) OwedScope(_ context.Context) (predicate.Owed, error) {
+	return nil, nil
+}
+func (Unscoped) RowSealScope(_ context.Context) (predicate.RowSeal, error) {
 	return nil, nil
 }
 func (Unscoped) SigningKeyScope(_ context.Context) (predicate.SigningKey, error) {
@@ -751,6 +818,26 @@ func (ss Scopes) SiteMemberScope(ctx context.Context) (predicate.SiteMember, err
 	return sitemember.And(ps...), nil
 }
 
+func (ss Scopes) AccessScope(ctx context.Context) (predicate.Access, error) {
+	ps := make([]predicate.Access, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.AccessScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return access.And(ps...), nil
+}
+
 func (ss Scopes) ArchivedScope(ctx context.Context) (predicate.Archived, error) {
 	ps := make([]predicate.Archived, 0, len(ss))
 	for _, s := range ss {
@@ -809,6 +896,46 @@ func (ss Scopes) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	}
 
 	return outbox.And(ps...), nil
+}
+
+func (ss Scopes) OwedScope(ctx context.Context) (predicate.Owed, error) {
+	ps := make([]predicate.Owed, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.OwedScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return owed.And(ps...), nil
+}
+
+func (ss Scopes) RowSealScope(ctx context.Context) (predicate.RowSeal, error) {
+	ps := make([]predicate.RowSeal, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.RowSealScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return rowseal.And(ps...), nil
 }
 
 func (ss Scopes) SigningKeyScope(ctx context.Context) (predicate.SigningKey, error) {
@@ -962,6 +1089,61 @@ func (s Store) now() time.Time {
 	return s.Now().UTC()
 }
 
+// ItemError is `err`, about the item at `i` of a call that carries many --
+// an AddMany -- said so that its caller can tell which: in the code `err`
+// had, after `items[i]: ` in the message, and, for an InvalidArgument, with
+// every field of its google.rpc.BadRequest under `items[i]` -- or one that
+// names the item, when it had none. A layer that refuses one item of many
+// answers with this, as the generated AddMany does.
+func ItemError(i int, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	at := fmt.Sprintf("items[%d]", i)
+	st := status.Convert(err)
+	out := status.New(st.Code(), at+": "+st.Message())
+
+	details := []protoadapt.MessageV1{}
+	named := false
+	for _, d := range st.Details() {
+		if b, ok := d.(*errdetails.BadRequest); ok {
+			vs := make([]*errdetails.BadRequest_FieldViolation, len(b.GetFieldViolations()))
+			for k, v := range b.GetFieldViolations() {
+				field := at
+				switch f := v.GetField(); {
+				case f == "":
+				case f[0] == '[':
+					field += f
+				default:
+					field += "." + f
+				}
+				vs[k] = &errdetails.BadRequest_FieldViolation{Field: field, Description: v.GetDescription()}
+			}
+			details = append(details, &errdetails.BadRequest{FieldViolations: vs})
+			named = true
+			continue
+		}
+		if m, ok := d.(protoadapt.MessageV1); ok {
+			details = append(details, m)
+		}
+	}
+	if !named && st.Code() == codes.InvalidArgument {
+		details = append(details, &errdetails.BadRequest{
+			FieldViolations: []*errdetails.BadRequest_FieldViolation{{Field: at, Description: st.Message()}},
+		})
+	}
+	if len(details) == 0 {
+		return out.Err()
+	}
+
+	with, err := out.WithDetails(details...)
+	if err != nil {
+		return out.Err()
+	}
+	return with.Err()
+}
+
 // NewServer refuses a client whose dialect this backend does not write
 // SQL for.
 //
@@ -1028,9 +1210,12 @@ func (s Server) Attempt() api.AttemptServiceServer   { return AttemptServiceServ
 func (s Server) SiteMember() api.SiteMemberServiceServer {
 	return SiteMemberServiceServer{Store: s.Store}
 }
+func (s Server) Access() api.AccessServiceServer     { return AccessServiceServer{Store: s.Store} }
 func (s Server) Archived() api.ArchivedServiceServer { return ArchivedServiceServer{Store: s.Store} }
 func (s Server) Audit() api.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
 func (s Server) Outbox() api.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Owed() api.OwedServiceServer         { return OwedServiceServer{Store: s.Store} }
+func (s Server) RowSeal() api.RowSealServiceServer   { return RowSealServiceServer{Store: s.Store} }
 func (s Server) SigningKey() api.SigningKeyServiceServer {
 	return SigningKeyServiceServer{Store: s.Store}
 }

@@ -11,10 +11,11 @@
  * the deployment's issuer (single sign-on, §33.1), the browser itself goes to
  * `/sso/login` on the surface's listener and comes back signed in. Either way
  * the answer is a cookie this script cannot read (`auth/authsession`), every
- * call after that carries it, and `GET /session` says who it names.
- * `GET /session/ways` says which of the two a listener offers. In the sandbox
- * there is nobody to lie to, so the credential is the plain header of
- * development mode on the one transport the page has.
+ * call after that carries it, and `GET /session` says who it names -- and the
+ * name of what the session sees, which the page's store is named by (see
+ * `store.ts`). `GET /session/ways` says which of the two a listener offers.
+ * In the sandbox there is nobody to lie to, so the credential is the plain
+ * header of development mode on the one transport the page has.
  *
  * @module
  */
@@ -22,13 +23,24 @@
 import { Code, ConnectError, type Transport } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 
+import { identityOf } from '@lesomnus/payday/store'
+
+import { events } from '../gen/events.js'
+
 export type Surface = 'tenant' | 'cluster'
 
 /** Who is signed in on one surface, and how to reach it. */
 export interface Session {
 	readonly surface: Surface
-	/** `@tenant/alias`, which is also what the store is keyed on. */
+	/** `@tenant/alias`, as people read it. */
 	readonly who: string
+	/**
+	 * What the session lets its caller see, as the server names it
+	 * (`GET /session`'s `identity`): the store's name, which every call the
+	 * store makes says, and which the server serves only as a session it
+	 * names. In the sandbox, a digest of the surface and `who`.
+	 */
+	readonly identity: string
 	readonly transport: Transport
 	/** The HTTP origin of this surface; empty in the sandbox. */
 	readonly base: string
@@ -67,6 +79,11 @@ export async function ways(base: string): Promise<Ways> {
 /** Who a listener's cookie names (`GET /session`). */
 export interface Who {
 	readonly who: string
+	/**
+	 * The name of what the session sees, which the store is named by; a
+	 * server older than this page does not say it, and does not ask for it.
+	 */
+	readonly identity?: string
 	readonly sso: boolean
 	readonly operator: boolean
 }
@@ -159,14 +176,19 @@ function withCredentials(input: RequestInfo | URL, init?: RequestInit): Promise<
 	return fetch(input, { ...init, credentials: 'include' })
 }
 
-/** transportFor is the Connect transport of one surface of a real server. */
+/**
+ * transportFor is the Connect transport of one surface of a real server. It
+ * is handed the messages this app's events hold, without which Connect's
+ * JSON cannot read an `Any` that holds one (`gen/events.ts`).
+ */
 export function transportFor(base: string): Transport {
-	return createConnectTransport({ baseUrl: base, fetch: withCredentials })
+	return createConnectTransport({ baseUrl: base, fetch: withCredentials, jsonOptions: { registry: events } })
 }
 
 /**
  * signIn asks the server for a session cookie. What checking a secret means
- * is the server's (§33.1); a refusal is answered as one sentence.
+ * is the server's (§33.1); a refusal is answered as one sentence. The cookie
+ * cannot be read here, so the server is asked next what it names.
  */
 export async function signIn(base: string, tenant: string, alias: string, password: string): Promise<Session> {
 	const r = await withCredentials(base + '/session', {
@@ -180,10 +202,16 @@ export async function signIn(base: string, tenant: string, alias: string, passwo
 	if (!r.ok) {
 		throw new Error(`sign-in: ${r.status} ${(await r.text()).trim()}`)
 	}
+	const surface: Surface = base === addrs().cluster ? 'cluster' : 'tenant'
+	const w = await current(base)
+	if (w === null || w === undefined) {
+		throw new Error('signed in, but the server did not say who is signed in; sign in again')
+	}
 
 	return {
-		surface: base === addrs().cluster ? 'cluster' : 'tenant',
-		who: `@${tenant}/${alias}`,
+		surface,
+		who: w.who,
+		identity: w.identity ?? (await identityOf(`${surface}:${w.who}`)),
 		transport: transportFor(base),
 		base,
 		sandbox: false,

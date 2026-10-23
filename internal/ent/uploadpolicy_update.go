@@ -214,14 +214,26 @@ func (_u *UploadPolicyUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(uploadpolicy.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldAlias); ok {
+		_spec.SetField(uploadpolicy.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(uploadpolicy.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldName); ok {
+		_spec.SetField(uploadpolicy.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(uploadpolicy.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldDesc); ok {
+		_spec.SetField(uploadpolicy.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(uploadpolicy.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldLabels); ok {
+		_spec.SetField(uploadpolicy.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(uploadpolicy.FieldLabels, field.TypeJson)
@@ -236,17 +248,29 @@ func (_u *UploadPolicyUpdate) sqlSave(ctx context.Context) (_node int, err error
 		}
 		_spec.SetField(uploadpolicy.FieldBounds, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldBounds); ok {
+		_spec.SetField(uploadpolicy.FieldBounds, field.TypeJson, e)
+	}
 	if _u.mutation.BoundsCleared() {
 		_spec.ClearField(uploadpolicy.FieldBounds, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(uploadpolicy.FieldActive, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldActive); ok {
+		_spec.SetField(uploadpolicy.FieldActive, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(uploadpolicy.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldDateUpdated); ok {
+		_spec.SetField(uploadpolicy.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(uploadpolicy.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldDateErased); ok {
+		_spec.SetField(uploadpolicy.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(uploadpolicy.FieldDateErased, field.TypeTime)
@@ -256,6 +280,9 @@ func (_u *UploadPolicyUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.DateActivated(); ok {
 		_spec.SetField(uploadpolicy.FieldDateActivated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldDateActivated); ok {
+		_spec.SetField(uploadpolicy.FieldDateActivated, field.TypeTime, e)
 	}
 	if _u.mutation.DateActivatedCleared() {
 		_spec.ClearField(uploadpolicy.FieldDateActivated, field.TypeTime)
@@ -496,14 +523,26 @@ func (_u *UploadPolicyUpdateOne) sqlSave(ctx context.Context) (_node *UploadPoli
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(uploadpolicy.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldAlias); ok {
+		_spec.SetField(uploadpolicy.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(uploadpolicy.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldName); ok {
+		_spec.SetField(uploadpolicy.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(uploadpolicy.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldDesc); ok {
+		_spec.SetField(uploadpolicy.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(uploadpolicy.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldLabels); ok {
+		_spec.SetField(uploadpolicy.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(uploadpolicy.FieldLabels, field.TypeJson)
@@ -518,17 +557,29 @@ func (_u *UploadPolicyUpdateOne) sqlSave(ctx context.Context) (_node *UploadPoli
 		}
 		_spec.SetField(uploadpolicy.FieldBounds, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldBounds); ok {
+		_spec.SetField(uploadpolicy.FieldBounds, field.TypeJson, e)
+	}
 	if _u.mutation.BoundsCleared() {
 		_spec.ClearField(uploadpolicy.FieldBounds, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(uploadpolicy.FieldActive, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldActive); ok {
+		_spec.SetField(uploadpolicy.FieldActive, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(uploadpolicy.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldDateUpdated); ok {
+		_spec.SetField(uploadpolicy.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(uploadpolicy.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldDateErased); ok {
+		_spec.SetField(uploadpolicy.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(uploadpolicy.FieldDateErased, field.TypeTime)
@@ -538,6 +589,9 @@ func (_u *UploadPolicyUpdateOne) sqlSave(ctx context.Context) (_node *UploadPoli
 	}
 	if value, ok := _u.mutation.DateActivated(); ok {
 		_spec.SetField(uploadpolicy.FieldDateActivated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(uploadpolicy.FieldDateActivated); ok {
+		_spec.SetField(uploadpolicy.FieldDateActivated, field.TypeTime, e)
 	}
 	if _u.mutation.DateActivatedCleared() {
 		_spec.ClearField(uploadpolicy.FieldDateActivated, field.TypeTime)

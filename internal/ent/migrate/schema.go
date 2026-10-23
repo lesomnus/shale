@@ -9,6 +9,45 @@ import (
 )
 
 var (
+	// AccessColumns holds the columns for the "access" table.
+	AccessColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "actor_id", Type: field.TypeUuid},
+		{Name: "trace_id", Type: field.TypeBytes},
+		{Name: "action", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "result", Type: field.TypeString},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "actor_tenant_id", Type: field.TypeUuid},
+		{Name: "value", Type: field.TypeBytes},
+		{Name: "domain", Type: field.TypeUint32, Nullable: true, Default: 0},
+		{Name: "subjects", Type: field.TypeJson, Nullable: true},
+		{Name: "subject_count", Type: field.TypeUint32},
+	}
+	// AccessTable holds the schema information for the "access" table.
+	AccessTable = &schema.Table{
+		Name:       "access",
+		Columns:    AccessColumns,
+		PrimaryKey: []*schema.Column{AccessColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "access_access",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[1], AccessColumns[7]},
+			},
+			{
+				Name:    "access_by_actor_tenant",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[8], AccessColumns[7]},
+			},
+			{
+				Name:    "access_by_actor",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[2], AccessColumns[7]},
+			},
+		},
+	}
 	// AddresspolicyColumns holds the columns for the "addresspolicy" table.
 	AddresspolicyColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -31,7 +70,7 @@ var (
 		PrimaryKey: []*schema.Column{AddresspolicyColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "addresspolicy_date_created_id",
+				Name:    "addresspolicy_page",
 				Unique:  false,
 				Columns: []*schema.Column{AddresspolicyColumns[10], AddresspolicyColumns[0]},
 			},
@@ -75,7 +114,7 @@ var (
 		PrimaryKey: []*schema.Column{ArchivedColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "archived_namespace_digest",
+				Name:    "archived_blob",
 				Unique:  false,
 				Columns: []*schema.Column{ArchivedColumns[2], ArchivedColumns[3]},
 			},
@@ -141,17 +180,17 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "attempt_date_created_id",
+				Name:    "attempt_page",
 				Unique:  false,
-				Columns: []*schema.Column{AttemptColumns[4], AttemptColumns[0]},
+				Columns: []*schema.Column{AttemptColumns[8], AttemptColumns[4], AttemptColumns[0]},
 			},
 			{
-				Name:    "attempt_date_created_lamina_id",
+				Name:    "attempt_lamina",
 				Unique:  false,
-				Columns: []*schema.Column{AttemptColumns[4], AttemptColumns[10]},
+				Columns: []*schema.Column{AttemptColumns[10], AttemptColumns[4]},
 			},
 			{
-				Name:    "attempt_state_date_expires",
+				Name:    "attempt_open",
 				Unique:  false,
 				Columns: []*schema.Column{AttemptColumns[1], AttemptColumns[5]},
 			},
@@ -170,7 +209,10 @@ var (
 		{Name: "actor_tenant_id", Type: field.TypeUuid},
 		{Name: "value", Type: field.TypeBytes},
 		{Name: "counterpart_tenant_id", Type: field.TypeUuid, Nullable: true},
-		{Name: "domain", Type: field.TypeUint32, Nullable: true},
+		{Name: "domain", Type: field.TypeUint32, Nullable: true, Default: 0},
+		{Name: "fields", Type: field.TypeJson, Nullable: true},
+		{Name: "digest", Type: field.TypeBytes, Nullable: true},
+		{Name: "digest_fields", Type: field.TypeJson, Nullable: true},
 	}
 	// AuditTable holds the schema information for the "audit" table.
 	AuditTable = &schema.Table{
@@ -179,37 +221,37 @@ var (
 		PrimaryKey: []*schema.Column{AuditColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "audit_object_id",
+				Name:    "audit_object",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[5]},
 			},
 			{
-				Name:    "audit_tenant_id_date_created",
+				Name:    "audit_trail",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[1], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_actor_tenant_id_date_created",
+				Name:    "audit_by_actor_tenant",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[8], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_counterpart_tenant_id_date_created",
+				Name:    "audit_by_counterpart",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[10], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_domain_date_created",
+				Name:    "audit_by_domain",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[11], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_tenant_id_domain_date_created",
+				Name:    "audit_by_tenant_domain",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[1], AuditColumns[11], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_actor_id_date_created",
+				Name:    "audit_by_actor",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[2], AuditColumns[7]},
 			},
@@ -257,14 +299,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "delegation_date_created_id",
+				Name:    "delegation_page",
 				Unique:  false,
 				Columns: []*schema.Column{DelegationColumns[15], DelegationColumns[0]},
 			},
 			{
-				Name:    "delegation_date_ends_holder_id",
+				Name:    "delegation_holder",
 				Unique:  false,
-				Columns: []*schema.Column{DelegationColumns[10], DelegationColumns[17]},
+				Columns: []*schema.Column{DelegationColumns[17], DelegationColumns[10]},
 			},
 		},
 	}
@@ -306,14 +348,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "device_date_created_id",
+				Name:    "device_page",
 				Unique:  false,
 				Columns: []*schema.Column{DeviceColumns[11], DeviceColumns[0]},
 			},
 			{
-				Name:    "device_health_node_id",
+				Name:    "device_node",
 				Unique:  false,
-				Columns: []*schema.Column{DeviceColumns[7], DeviceColumns[19]},
+				Columns: []*schema.Column{DeviceColumns[19], DeviceColumns[7]},
 			},
 			{
 				Name:    "device_alias",
@@ -361,12 +403,17 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "holder_alias_tenant_id",
+				Name:    "holder_slug",
 				Unique:  true,
 				Columns: []*schema.Column{HolderColumns[1], HolderColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
+			},
+			{
+				Name:    "holder_page",
+				Unique:  false,
+				Columns: []*schema.Column{HolderColumns[9], HolderColumns[7], HolderColumns[0]},
 			},
 		},
 	}
@@ -390,7 +437,7 @@ var (
 		{Name: "date_finished", Type: field.TypeTime, Nullable: true},
 		{Name: "checksum", Type: field.TypeBytes, Nullable: true},
 		{Name: "epoch", Type: field.TypeInt64},
-		{Name: "skip_reason", Type: field.TypeInt32, Nullable: true},
+		{Name: "skip_reason", Type: field.TypeInt32, Nullable: true, Default: 0},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid},
@@ -436,32 +483,32 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "lamina_date_created_id",
+				Name:    "lamina_page",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[4], LaminaColumns[0]},
+				Columns: []*schema.Column{LaminaColumns[19], LaminaColumns[4], LaminaColumns[0]},
 			},
 			{
-				Name:    "lamina_date_started_source_id",
+				Name:    "lamina_source_time",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[5], LaminaColumns[22]},
+				Columns: []*schema.Column{LaminaColumns[22], LaminaColumns[5]},
 			},
 			{
-				Name:    "lamina_date_started_set_id",
+				Name:    "lamina_set_time",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[5], LaminaColumns[21]},
+				Columns: []*schema.Column{LaminaColumns[21], LaminaColumns[5]},
 			},
 			{
-				Name:    "lamina_lamina_key_sink_id",
+				Name:    "lamina_location",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[1], LaminaColumns[23]},
+				Columns: []*schema.Column{LaminaColumns[23], LaminaColumns[1]},
 			},
 			{
-				Name:    "lamina_date_expired_sink_id",
+				Name:    "lamina_gc",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[10], LaminaColumns[23]},
+				Columns: []*schema.Column{LaminaColumns[23], LaminaColumns[10]},
 			},
 			{
-				Name:    "lamina_state_date_finished",
+				Name:    "lamina_state",
 				Unique:  false,
 				Columns: []*schema.Column{LaminaColumns[2], LaminaColumns[15]},
 			},
@@ -502,12 +549,12 @@ var (
 		PrimaryKey: []*schema.Column{NodeColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "node_date_created_id",
+				Name:    "node_page",
 				Unique:  false,
 				Columns: []*schema.Column{NodeColumns[12], NodeColumns[0]},
 			},
 			{
-				Name:    "node_hardware_id",
+				Name:    "node_hardware",
 				Unique:  false,
 				Columns: []*schema.Column{NodeColumns[5]},
 			},
@@ -531,6 +578,7 @@ var (
 		{Name: "object_id", Type: field.TypeUuid},
 		{Name: "patch", Type: field.TypeBytes},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "event", Type: field.TypeBytes, Nullable: true},
 	}
 	// OutboxTable holds the schema information for the "outbox" table.
 	OutboxTable = &schema.Table{
@@ -539,9 +587,29 @@ var (
 		PrimaryKey: []*schema.Column{OutboxColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "outbox_id",
+				Name:    "outbox_queue",
 				Unique:  false,
 				Columns: []*schema.Column{OutboxColumns[0]},
+			},
+		},
+	}
+	// OwedColumns holds the columns for the "owed" table.
+	OwedColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "object", Type: field.TypeUuid},
+		{Name: "held_by", Type: field.TypeJson, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+	}
+	// OwedTable holds the schema information for the "owed" table.
+	OwedTable = &schema.Table{
+		Name:       "owed",
+		Columns:    OwedColumns,
+		PrimaryKey: []*schema.Column{OwedColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "owed_owed",
+				Unique:  false,
+				Columns: []*schema.Column{OwedColumns[3], OwedColumns[0]},
 			},
 		},
 	}
@@ -567,7 +635,7 @@ var (
 		PrimaryKey: []*schema.Column{PlacementpolicyColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "placementpolicy_date_created_id",
+				Name:    "placementpolicy_page",
 				Unique:  false,
 				Columns: []*schema.Column{PlacementpolicyColumns[10], PlacementpolicyColumns[0]},
 			},
@@ -609,7 +677,7 @@ var (
 		{Name: "date_cert_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "status", Type: field.TypeJson, Nullable: true},
 		{Name: "version", Type: field.TypeString},
-		{Name: "live", Type: field.TypeInt32, Nullable: true},
+		{Name: "live", Type: field.TypeInt32, Nullable: true, Default: 0},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid, Nullable: true},
@@ -648,12 +716,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "producer_date_created_id",
+				Name:    "producer_page",
 				Unique:  false,
-				Columns: []*schema.Column{ProducerColumns[11], ProducerColumns[0]},
+				Columns: []*schema.Column{ProducerColumns[19], ProducerColumns[11], ProducerColumns[0]},
 			},
 			{
-				Name:    "producer_alias_tenant_id",
+				Name:    "producer_slug",
 				Unique:  true,
 				Columns: []*schema.Column{ProducerColumns[1], ProducerColumns[19]},
 				Annotation: &entsql.IndexAnnotation{
@@ -661,7 +729,7 @@ var (
 				},
 			},
 			{
-				Name:    "producer_hardware_id_tenant_id",
+				Name:    "producer_hardware",
 				Unique:  false,
 				Columns: []*schema.Column{ProducerColumns[5], ProducerColumns[19]},
 			},
@@ -704,12 +772,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "reader_date_created_id",
+				Name:    "reader_page",
 				Unique:  false,
-				Columns: []*schema.Column{ReaderColumns[12], ReaderColumns[0]},
+				Columns: []*schema.Column{ReaderColumns[18], ReaderColumns[12], ReaderColumns[0]},
 			},
 			{
-				Name:    "reader_alias_tenant_id",
+				Name:    "reader_slug",
 				Unique:  true,
 				Columns: []*schema.Column{ReaderColumns[1], ReaderColumns[18]},
 				Annotation: &entsql.IndexAnnotation{
@@ -717,7 +785,7 @@ var (
 				},
 			},
 			{
-				Name:    "reader_hardware_id_tenant_id",
+				Name:    "reader_hardware",
 				Unique:  false,
 				Columns: []*schema.Column{ReaderColumns[5], ReaderColumns[18]},
 			},
@@ -756,12 +824,12 @@ var (
 		PrimaryKey: []*schema.Column{RelayColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "relay_date_created_id",
+				Name:    "relay_page",
 				Unique:  false,
 				Columns: []*schema.Column{RelayColumns[12], RelayColumns[0]},
 			},
 			{
-				Name:    "relay_hardware_id",
+				Name:    "relay_hardware",
 				Unique:  false,
 				Columns: []*schema.Column{RelayColumns[5]},
 			},
@@ -774,6 +842,19 @@ var (
 				},
 			},
 		},
+	}
+	// RowsealColumns holds the columns for the "rowseal" table.
+	RowsealColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "sum", Type: field.TypeBytes},
+		{Name: "fields", Type: field.TypeJson, Nullable: true},
+	}
+	// RowsealTable holds the schema information for the "rowseal" table.
+	RowsealTable = &schema.Table{
+		Name:       "rowseal",
+		Columns:    RowsealColumns,
+		PrimaryKey: []*schema.Column{RowsealColumns[0]},
 	}
 	// SetColumns holds the columns for the "set" table.
 	SetColumns = []*schema.Column{
@@ -816,12 +897,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "set_date_created_id",
+				Name:    "set_page",
 				Unique:  false,
-				Columns: []*schema.Column{SetColumns[12], SetColumns[0]},
+				Columns: []*schema.Column{SetColumns[15], SetColumns[12], SetColumns[0]},
 			},
 			{
-				Name:    "set_alias_tenant_id",
+				Name:    "set_slug",
 				Unique:  true,
 				Columns: []*schema.Column{SetColumns[1], SetColumns[15]},
 				Annotation: &entsql.IndexAnnotation{
@@ -853,7 +934,7 @@ var (
 		PrimaryKey: []*schema.Column{SigningkeyColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "signingkey_date_created_id",
+				Name:    "signingkey_page",
 				Unique:  false,
 				Columns: []*schema.Column{SigningkeyColumns[10], SigningkeyColumns[0]},
 			},
@@ -915,14 +996,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "sink_date_created_id",
+				Name:    "sink_page",
 				Unique:  false,
 				Columns: []*schema.Column{SinkColumns[10], SinkColumns[0]},
 			},
 			{
-				Name:    "sink_attachment_node_id",
+				Name:    "sink_node",
 				Unique:  false,
-				Columns: []*schema.Column{SinkColumns[13], SinkColumns[22]},
+				Columns: []*schema.Column{SinkColumns[22], SinkColumns[13]},
 			},
 			{
 				Name:    "sink_alias",
@@ -962,12 +1043,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "site_date_created_id",
+				Name:    "site_page",
 				Unique:  false,
-				Columns: []*schema.Column{SiteColumns[8], SiteColumns[0]},
+				Columns: []*schema.Column{SiteColumns[9], SiteColumns[8], SiteColumns[0]},
 			},
 			{
-				Name:    "site_alias_tenant_id",
+				Name:    "site_slug",
 				Unique:  true,
 				Columns: []*schema.Column{SiteColumns[1], SiteColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
@@ -1019,17 +1100,17 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "sitemember_date_created_id",
+				Name:    "sitemember_page",
 				Unique:  false,
-				Columns: []*schema.Column{SitememberColumns[2], SitememberColumns[0]},
+				Columns: []*schema.Column{SitememberColumns[3], SitememberColumns[2], SitememberColumns[0]},
 			},
 			{
-				Name:    "sitemember_site_id_holder_id",
+				Name:    "sitemember_holder",
 				Unique:  false,
 				Columns: []*schema.Column{SitememberColumns[4], SitememberColumns[5]},
 			},
 			{
-				Name:    "sitemember_site_id_reader_id",
+				Name:    "sitemember_reader",
 				Unique:  false,
 				Columns: []*schema.Column{SitememberColumns[4], SitememberColumns[6]},
 			},
@@ -1051,7 +1132,7 @@ var (
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "starvation", Type: field.TypeJson, Nullable: true},
 		{Name: "content_type", Type: field.TypeString},
-		{Name: "live_capable", Type: field.TypeBool, Nullable: true},
+		{Name: "live_capable", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid},
@@ -1083,12 +1164,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "source_date_created_id",
+				Name:    "source_page",
 				Unique:  false,
-				Columns: []*schema.Column{SourceColumns[11], SourceColumns[0]},
+				Columns: []*schema.Column{SourceColumns[15], SourceColumns[11], SourceColumns[0]},
 			},
 			{
-				Name:    "source_alias_tenant_id",
+				Name:    "source_slug",
 				Unique:  true,
 				Columns: []*schema.Column{SourceColumns[1], SourceColumns[15]},
 				Annotation: &entsql.IndexAnnotation{
@@ -1096,9 +1177,9 @@ var (
 				},
 			},
 			{
-				Name:    "source_ordinal_set_id",
+				Name:    "source_member",
 				Unique:  true,
-				Columns: []*schema.Column{SourceColumns[5], SourceColumns[17]},
+				Columns: []*schema.Column{SourceColumns[17], SourceColumns[5]},
 			},
 		},
 	}
@@ -1119,6 +1200,13 @@ var (
 		Name:       "tenant",
 		Columns:    TenantColumns,
 		PrimaryKey: []*schema.Column{TenantColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tenant_page",
+				Unique:  false,
+				Columns: []*schema.Column{TenantColumns[6], TenantColumns[0]},
+			},
+		},
 	}
 	// UploadpolicyColumns holds the columns for the "uploadpolicy" table.
 	UploadpolicyColumns = []*schema.Column{
@@ -1142,7 +1230,7 @@ var (
 		PrimaryKey: []*schema.Column{UploadpolicyColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "uploadpolicy_date_created_id",
+				Name:    "uploadpolicy_page",
 				Unique:  false,
 				Columns: []*schema.Column{UploadpolicyColumns[10], UploadpolicyColumns[0]},
 			},
@@ -1166,6 +1254,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AccessTable,
 		AddresspolicyTable,
 		ArchivedTable,
 		AttemptTable,
@@ -1176,10 +1265,12 @@ var (
 		LaminaTable,
 		NodeTable,
 		OutboxTable,
+		OwedTable,
 		PlacementpolicyTable,
 		ProducerTable,
 		ReaderTable,
 		RelayTable,
+		RowsealTable,
 		SetTable,
 		SigningkeyTable,
 		SinkTable,
@@ -1192,6 +1283,9 @@ var (
 )
 
 func init() {
+	AccessTable.Annotation = &entsql.Annotation{
+		Table: "access",
+	}
 	AddresspolicyTable.Annotation = &entsql.Annotation{
 		Table: "addresspolicy",
 	}
@@ -1236,6 +1330,9 @@ func init() {
 	OutboxTable.Annotation = &entsql.Annotation{
 		Table: "outbox",
 	}
+	OwedTable.Annotation = &entsql.Annotation{
+		Table: "owed",
+	}
 	PlacementpolicyTable.Annotation = &entsql.Annotation{
 		Table: "placementpolicy",
 	}
@@ -1252,6 +1349,9 @@ func init() {
 	}
 	RelayTable.Annotation = &entsql.Annotation{
 		Table: "relay",
+	}
+	RowsealTable.Annotation = &entsql.Annotation{
+		Table: "rowseal",
 	}
 	SetTable.ForeignKeys[0].RefTable = TenantTable
 	SetTable.ForeignKeys[1].RefTable = SiteTable

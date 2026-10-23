@@ -14,6 +14,8 @@ import (
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	sink "github.com/lesomnus/shale/internal/ent/sink"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
@@ -21,6 +23,7 @@ import (
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
@@ -84,28 +87,54 @@ func (s DeviceServiceServer) narrow(ctx context.Context, p predicate.Device) (pr
 	return DeviceNarrow(ctx, s.Scope, p)
 }
 
-func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest) (*api.Device, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s DeviceServiceServer) snapshot(ctx context.Context, p predicate.Device, lock bool) (*ent.Device, error) {
+	q := s.Db.Device.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s DeviceServiceServer) image(v *api.Device) *api.Device {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Device)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st DeviceServiceServer) create(ctx context.Context, req *api.DeviceAddRequest) (*ent.DeviceCreate, []func(v *api.Device), error) {
 	ds := make([]func(v *api.Device), 0, 1)
 	q := st.Db.Device.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Device", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Device", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -117,7 +146,7 @@ func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest)
 	}
 	if req.HasNode() {
 		if k, err := NodeGetKey(ctx, st.Db, req.GetNode()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetNodeId(k)
 			ds = append(ds, func(v *api.Device) {
@@ -152,7 +181,30 @@ func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest)
 	if req.HasDateSeen() {
 		q.SetDateSeen(req.GetDateSeen().AsTime())
 	}
+	return q, ds, nil
+}
 
+func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest) (*api.Device, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Device
+	if snapshotOptions(s.Rec, api.DeviceService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -166,9 +218,18 @@ func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest)
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Device
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.DeviceService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.DeviceService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -176,11 +237,39 @@ func (s DeviceServiceServer) Add(ctx context.Context, req *api.DeviceAddRequest)
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// DeviceAddRule is what a layer in front says about one row an Add of Device
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type DeviceAddRule func(ctx context.Context, req *api.DeviceAddRequest) (*api.DeviceAddRequest, error)
+
+// DeviceWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func DeviceWithAddRule(next api.DeviceServiceServer, rule DeviceAddRule) api.DeviceServiceServer {
+	return deviceAddRuled{next, rule}
+}
+
+type deviceAddRuled struct {
+	api.DeviceServiceServer
+	rule DeviceAddRule
+}
+
+func (s deviceAddRuled) Add(ctx context.Context, req *api.DeviceAddRequest) (*api.Device, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.DeviceServiceServer.Add(ctx, r)
 }
 
 func (s DeviceServiceServer) Get(ctx context.Context, req *api.DeviceGetRequest) (*api.Device, error) {
@@ -293,8 +382,6 @@ func DeviceSelect(q *ent.DeviceQuery, m *api.DeviceSelect) {
 func DeviceSelectInit(q *ent.DeviceQuery, m *api.DeviceSelect) {
 	if m != nil {
 		DeviceSelect(q, m)
-	} else {
-		q.WithNode(selectNodeKey)
 	}
 }
 
@@ -405,6 +492,18 @@ func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc 
 		return nil, err
 	}
 
+	var previous *api.Device
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Device.Query().Where(p)
 		if pred != nil {
@@ -431,6 +530,7 @@ func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc 
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -453,20 +553,25 @@ func (s DeviceServiceServer) apply(ctx context.Context, ref *api.DeviceRef, doc 
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Device
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -493,8 +598,16 @@ func (s DeviceServiceServer) Erase(ctx context.Context, req *api.DeviceRef) (*ap
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Device
 	if s.Rec != nil {
-		v, err := st.Db.Device.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.DeviceService_Erase_FullMethodName)
+		var v *ent.Device
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Device.Query().Where(p).Select(device.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.DeviceEraseResponse{}, nil
@@ -502,10 +615,14 @@ func (s DeviceServiceServer) Erase(ctx context.Context, req *api.DeviceRef) (*ap
 			return nil, err
 		}
 
-		k = v
-		p = device.And(p, device.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = device.And(p, device.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Device.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -515,8 +632,9 @@ func (s DeviceServiceServer) Erase(ctx context.Context, req *api.DeviceRef) (*ap
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.DeviceService_Erase_FullMethodName,
-			Key: k,
+			By:       api.DeviceService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -626,28 +744,68 @@ func (s SinkServiceServer) narrow(ctx context.Context, p predicate.Sink) (predic
 	return SinkNarrow(ctx, s.Scope, p)
 }
 
-func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*api.Sink, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s SinkServiceServer) snapshot(ctx context.Context, p predicate.Sink, lock bool) (*ent.Sink, error) {
+	q := s.Db.Sink.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s SinkServiceServer) image(v *api.Sink) *api.Sink {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Sink)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(9)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st SinkServiceServer) create(ctx context.Context, req *api.SinkAddRequest) (*ent.SinkCreate, []func(v *api.Sink), error) {
 	ds := make([]func(v *api.Sink), 0, 2)
 	q := st.Db.Sink.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Sink", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Sink", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -659,7 +817,7 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 	}
 	if req.HasNode() {
 		if k, err := NodeGetKey(ctx, st.Db, req.GetNode()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetNodeId(k)
 			ds = append(ds, func(v *api.Sink) {
@@ -668,7 +826,7 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 		}
 	}
 	if k, err := DeviceGetKey(ctx, st.Db, req.GetDevice()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetDeviceId(k)
 		ds = append(ds, func(v *api.Sink) {
@@ -699,7 +857,7 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 	}
 	if req.HasReportedBy() {
 		if v, err := entuuid.FromBytes(req.GetReportedBy()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "reported_by: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "reported_by: %s", err)
 		} else {
 			q.SetReportedBy(v)
 		}
@@ -709,7 +867,30 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 	}
 	q.SetCapacityClamped(req.GetCapacityClamped())
 	q.SetLaminae(req.GetLaminae())
+	return q, ds, nil
+}
 
+func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*api.Sink, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Sink
+	if snapshotOptions(s.Rec, api.SinkService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -723,9 +904,18 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Sink
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.SinkService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.SinkService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -733,11 +923,39 @@ func (s SinkServiceServer) Add(ctx context.Context, req *api.SinkAddRequest) (*a
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// SinkAddRule is what a layer in front says about one row an Add of Sink
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type SinkAddRule func(ctx context.Context, req *api.SinkAddRequest) (*api.SinkAddRequest, error)
+
+// SinkWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func SinkWithAddRule(next api.SinkServiceServer, rule SinkAddRule) api.SinkServiceServer {
+	return sinkAddRuled{next, rule}
+}
+
+type sinkAddRuled struct {
+	api.SinkServiceServer
+	rule SinkAddRule
+}
+
+func (s sinkAddRuled) Add(ctx context.Context, req *api.SinkAddRequest) (*api.Sink, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.SinkServiceServer.Add(ctx, r)
 }
 
 func (s SinkServiceServer) Get(ctx context.Context, req *api.SinkGetRequest) (*api.Sink, error) {
@@ -865,9 +1083,6 @@ func SinkSelect(q *ent.SinkQuery, m *api.SinkSelect) {
 func SinkSelectInit(q *ent.SinkQuery, m *api.SinkSelect) {
 	if m != nil {
 		SinkSelect(q, m)
-	} else {
-		q.WithNode(selectNodeKey)
-		q.WithDevice(selectDeviceKey)
 	}
 }
 
@@ -978,6 +1193,18 @@ func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *pat
 		return nil, err
 	}
 
+	var previous *api.Sink
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Sink.Query().Where(p)
 		if pred != nil {
@@ -1004,6 +1231,7 @@ func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *pat
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1026,20 +1254,25 @@ func (s SinkServiceServer) apply(ctx context.Context, ref *api.SinkRef, doc *pat
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Sink
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -1066,8 +1299,16 @@ func (s SinkServiceServer) Erase(ctx context.Context, req *api.SinkRef) (*api.Si
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Sink
 	if s.Rec != nil {
-		v, err := st.Db.Sink.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.SinkService_Erase_FullMethodName)
+		var v *ent.Sink
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Sink.Query().Where(p).Select(sink.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.SinkEraseResponse{}, nil
@@ -1075,10 +1316,14 @@ func (s SinkServiceServer) Erase(ctx context.Context, req *api.SinkRef) (*api.Si
 			return nil, err
 		}
 
-		k = v
-		p = sink.And(p, sink.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = sink.And(p, sink.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Sink.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -1088,8 +1333,9 @@ func (s SinkServiceServer) Erase(ctx context.Context, req *api.SinkRef) (*api.Si
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.SinkService_Erase_FullMethodName,
-			Key: k,
+			By:       api.SinkService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

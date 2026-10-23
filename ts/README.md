@@ -29,5 +29,7 @@ BASE=https://cp:7402 TENANT_PW=… CLUSTER_PW=… node test/server.mjs
 `go build`; a binary built without it serves a line saying so where the
 console would be.
 
-`vendor/` holds payday's TypeScript package built from the commit `go.mod`
-pins, until that version is on npm; `package.json` points at it.
+payday's TypeScript package is `@lesomnus/payday` from npm. The payday
+`go.mod` pins holds it to a floor (`go tool pd versions .`), and
+`go tool pd upgrade` moves it there when it is below; above it, it is
+Renovate's.

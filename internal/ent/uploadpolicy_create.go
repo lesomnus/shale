@@ -21,6 +21,7 @@ type UploadPolicyCreate struct {
 	config
 	mutation *UploadPolicyMutation
 	hooks    []Hook
+	stored   **UploadPolicy
 }
 
 // SetAlias sets the "alias" field.
@@ -153,6 +154,9 @@ func (_c *UploadPolicyCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *UploadPolicyCreate) check() error {
+	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
+		return &ValidationError{Name: fs[0], err: fmt.Errorf(`ent: field "UploadPolicy.%s" was assigned an expression, which only an update writes`, fs[0])}
+	}
 	if _, ok := _c.mutation.Alias(); !ok {
 		return &ValidationError{Name: "alias", err: errors.New(`ent: missing required field "UploadPolicy.alias"`)}
 	}
@@ -209,6 +213,18 @@ func (_c *UploadPolicyCreate) createSpec() (*UploadPolicy, *sqlgraph.CreateSpec,
 		_node = &UploadPolicy{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(uploadpolicy.Table, sqlgraph.NewFieldSpec(uploadpolicy.FieldId, field.TypeUuid))
 	)
+	if _c.stored != nil {
+		_stored := &UploadPolicy{config: _c.config}
+		_spec.Returning = uploadpolicy.Columns
+		_spec.ScanValues = _stored.scanValues
+		_spec.Assign = func(columns []string, values []any) error {
+			if err := _stored.assignValues(columns, values); err != nil {
+				return err
+			}
+			*_c.stored = _stored
+			return nil
+		}
+	}
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
@@ -265,6 +281,32 @@ func (_c *UploadPolicyCreate) createSpec() (*UploadPolicy, *sqlgraph.CreateSpec,
 		_node.DateActivated = &value
 	}
 	return _node, _spec, nil
+}
+
+// Stored has Save read the UploadPolicy back, into `v`, as the database stored
+// it: at the precision of its columns, with the defaults the database filled
+// in and what a trigger before the write made of it. Save itself answers with
+// the UploadPolicy as this builder had it.
+//
+// The INSERT reads it, with RETURNING, where the dialect has it, so that the
+// row and the reading of it are one statement. MySQL has none, and an INSERT
+// with a conflict clause may have written nothing, so for those it is a query
+// by the Id just after the INSERT. Either way it is read on the driver the
+// INSERT ran on, so inside a transaction it is that transaction's row. Its
+// edges are not loaded.
+//
+// In a CreateBulk, the Stored of each builder is honoured and the batch's one
+// INSERT reads all of their rows back: each is matched to its builder by the
+// Id the builder was given, or by its place when the database made the Ids up.
+// A column some builders of a batch set and others do not is NULL for the
+// others, as it is in any batch; the database's default is for a column no
+// builder sets.
+//
+// `v` is written only by a Save that wrote the row: one that failed, or that a
+// hook answered without writing, leaves it as it was.
+func (_c *UploadPolicyCreate) Stored(v **UploadPolicy) *UploadPolicyCreate {
+	_c.stored = v
+	return _c
 }
 
 // UploadPolicyCreateBulk is the builder for creating many UploadPolicy entities in bulk.

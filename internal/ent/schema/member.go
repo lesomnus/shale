@@ -63,9 +63,12 @@ func (SiteMember) Edges() []ent.Edge {
 
 func (SiteMember) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Edges("site", "holder"),
-		index.Edges("site", "reader"),
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("sitemember_page"),
+		index.Fields("site_id", "holder_id").
+			StorageKey("sitemember_holder"),
+		index.Fields("site_id", "reader_id").
+			StorageKey("sitemember_reader"),
 	}
 }
 

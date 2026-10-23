@@ -47,6 +47,7 @@ message SiteMember {
       {
         name: "page"
         refs: [
+          {name: "tenant", number: 2},
           {name: "date_created", number: 15},
           {name: "id", number: 1}
         ]

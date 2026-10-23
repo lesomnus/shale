@@ -182,8 +182,15 @@ type Who struct {
 	Tenant string `json:"tenant"`
 	Alias  string `json:"alias"`
 	Name   string `json:"name,omitempty"`
-	// Who is `@tenant/alias`, as the console keys its store.
+	// Who is `@tenant/alias`, as people read it.
 	Who string `json:"who"`
+	// Identity names what the session lets its caller see
+	// (`authsession.IdentityOf`), which is what the console names its store
+	// by: every call the store makes says it (`payday-identity`), and the
+	// session handler serves the call only as a session it names, so a
+	// page left holding one person's store under the next person's cookie
+	// is refused rather than reading their rows into it.
+	Identity string `json:"identity"`
 	// Sso says the session came from the issuer, so signing out of it is two
 	// hops.
 	Sso bool `json:"sso"`
@@ -227,8 +234,8 @@ func (s *Server) who(surface Surface, w http.ResponseWriter, r *http.Request) {
 	tenant, _ := pdid.From(h.GetTenant().GetId())
 	writeJson(w, http.StatusOK, Who{
 		Id: id.String(), Tenant: h.GetTenant().GetAlias(), Alias: h.GetAlias(), Name: h.GetName(),
-		Who: "@" + h.GetTenant().GetAlias() + "/" + h.GetAlias(), Sso: v.Held[heldIdToken] != "",
-		Operator: s.mayOperate(r.Context(), surface, tenant, id) == nil,
+		Who: "@" + h.GetTenant().GetAlias() + "/" + h.GetAlias(), Identity: authsession.IdentityOf(v),
+		Sso: v.Held[heldIdToken] != "", Operator: s.mayOperate(r.Context(), surface, tenant, id) == nil,
 	})
 }
 

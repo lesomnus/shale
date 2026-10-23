@@ -52,7 +52,8 @@ func (Lamina) Fields() []ent.Field {
 			Optional(),
 		field.Int64("epoch"),
 		field.Int32("skip_reason").
-			Optional(),
+			Optional().
+			Default(0),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").
@@ -96,16 +97,18 @@ func (Lamina) Edges() []ent.Edge {
 
 func (Lamina) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("date_started").
-			Edges("source"),
-		index.Fields("date_started").
-			Edges("set"),
-		index.Fields("lamina_key").
-			Edges("sink"),
-		index.Fields("date_expired").
-			Edges("sink"),
-		index.Fields("state", "date_finished"),
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("lamina_page"),
+		index.Fields("source_id", "date_started").
+			StorageKey("lamina_source_time"),
+		index.Fields("set_id", "date_started").
+			StorageKey("lamina_set_time"),
+		index.Fields("sink_id", "lamina_key").
+			StorageKey("lamina_location"),
+		index.Fields("sink_id", "date_expired").
+			StorageKey("lamina_gc"),
+		index.Fields("state", "date_finished").
+			StorageKey("lamina_state"),
 	}
 }
 
@@ -181,10 +184,12 @@ func (Attempt) Edges() []ent.Edge {
 
 func (Attempt) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("date_created").
-			Edges("lamina"),
-		index.Fields("state", "date_expires"),
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("attempt_page"),
+		index.Fields("lamina_id", "date_created").
+			StorageKey("attempt_lamina"),
+		index.Fields("state", "date_expires").
+			StorageKey("attempt_open"),
 	}
 }
 

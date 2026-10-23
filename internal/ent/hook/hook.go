@@ -9,6 +9,18 @@ import (
 	"github.com/lesomnus/shale/internal/ent"
 )
 
+// The AccessFunc type is an adapter to allow the use of ordinary
+// function as Access mutator.
+type AccessFunc func(context.Context, *ent.AccessMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AccessFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AccessMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AccessMutation", m)
+}
+
 // The AddressPolicyFunc type is an adapter to allow the use of ordinary
 // function as AddressPolicy mutator.
 type AddressPolicyFunc func(context.Context, *ent.AddressPolicyMutation) (ent.Value, error)
@@ -129,6 +141,18 @@ func (f OutboxFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OutboxMutation", m)
 }
 
+// The OwedFunc type is an adapter to allow the use of ordinary
+// function as Owed mutator.
+type OwedFunc func(context.Context, *ent.OwedMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f OwedFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.OwedMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OwedMutation", m)
+}
+
 // The PlacementPolicyFunc type is an adapter to allow the use of ordinary
 // function as PlacementPolicy mutator.
 type PlacementPolicyFunc func(context.Context, *ent.PlacementPolicyMutation) (ent.Value, error)
@@ -175,6 +199,18 @@ func (f RelayFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelayMutation", m)
+}
+
+// The RowSealFunc type is an adapter to allow the use of ordinary
+// function as RowSeal mutator.
+type RowSealFunc func(context.Context, *ent.RowSealMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RowSealFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RowSealMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RowSealMutation", m)
 }
 
 // The SetFunc type is an adapter to allow the use of ordinary

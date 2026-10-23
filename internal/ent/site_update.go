@@ -190,14 +190,26 @@ func (_u *SiteUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(site.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldAlias); ok {
+		_spec.SetField(site.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(site.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldName); ok {
+		_spec.SetField(site.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(site.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldDesc); ok {
+		_spec.SetField(site.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(site.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldLabels); ok {
+		_spec.SetField(site.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(site.FieldLabels, field.TypeJson)
@@ -205,14 +217,23 @@ func (_u *SiteUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.RelaySelector(); ok {
 		_spec.SetField(site.FieldRelaySelector, field.TypeJson, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldRelaySelector); ok {
+		_spec.SetField(site.FieldRelaySelector, field.TypeJson, e)
+	}
 	if _u.mutation.RelaySelectorCleared() {
 		_spec.ClearField(site.FieldRelaySelector, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldDateUpdated); ok {
+		_spec.SetField(site.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(site.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldDateErased); ok {
+		_spec.SetField(site.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(site.FieldDateErased, field.TypeTime)
@@ -433,14 +454,26 @@ func (_u *SiteUpdateOne) sqlSave(ctx context.Context) (_node *Site, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(site.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldAlias); ok {
+		_spec.SetField(site.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(site.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldName); ok {
+		_spec.SetField(site.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(site.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldDesc); ok {
+		_spec.SetField(site.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(site.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldLabels); ok {
+		_spec.SetField(site.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(site.FieldLabels, field.TypeJson)
@@ -448,14 +481,23 @@ func (_u *SiteUpdateOne) sqlSave(ctx context.Context) (_node *Site, err error) {
 	if value, ok := _u.mutation.RelaySelector(); ok {
 		_spec.SetField(site.FieldRelaySelector, field.TypeJson, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldRelaySelector); ok {
+		_spec.SetField(site.FieldRelaySelector, field.TypeJson, e)
+	}
 	if _u.mutation.RelaySelectorCleared() {
 		_spec.ClearField(site.FieldRelaySelector, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldDateUpdated); ok {
+		_spec.SetField(site.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(site.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldDateErased); ok {
+		_spec.SetField(site.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(site.FieldDateErased, field.TypeTime)

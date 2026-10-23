@@ -69,9 +69,10 @@ func (Set) Edges() []ent.Edge {
 
 func (Set) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("alias").
-			Edges("tenant").
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("set_page"),
+		index.Fields("alias", "tenant_id").
+			StorageKey("set_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}
@@ -115,7 +116,8 @@ func (Source) Fields() []ent.Field {
 			Optional(),
 		field.String("content_type"),
 		field.Bool("live_capable").
-			Optional(),
+			Optional().
+			Default(false),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").
@@ -147,13 +149,14 @@ func (Source) Edges() []ent.Edge {
 
 func (Source) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("alias").
-			Edges("tenant").
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("source_page"),
+		index.Fields("alias", "tenant_id").
+			StorageKey("source_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
-		index.Fields("ordinal").
-			Edges("set").
+		index.Fields("set_id", "ordinal").
+			StorageKey("source_member").
 			Unique(),
 	}
 }

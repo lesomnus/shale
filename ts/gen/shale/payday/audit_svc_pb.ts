@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/payday/audit_svc.g.proto.
  */
 export const file_shale_payday_audit_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch5zaGFsZS9wYXlkYXkvYXVkaXRfc3ZjLmcucHJvdG8SBXNoYWxlIscCCg9BdWRpdEFkZFJlcXVlc3QSCgoCaWQYASABKAwSGAoJdGVuYW50X2lkGAIgASgMQgWqAQIIAhIXCghhY3Rvcl9pZBgIIAEoDEIFqgECCAISFwoIdHJhY2VfaWQYCSABKAxCBaoBAggCEhUKBmFjdGlvbhgKIAEoCUIFqgECCAISGAoJb2JqZWN0X2lkGAsgASgMQgWqAQIIAhIUCgVwYXRjaBgMIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIeCg9hY3Rvcl90ZW5hbnRfaWQYECABKAxCBaoBAggCEhQKBXZhbHVlGBEgASgMQgWqAQIIAhIdChVjb3VudGVycGFydF90ZW5hbnRfaWQYEiABKAwSDgoGZG9tYWluGBMgASgNIlMKD0F1ZGl0R2V0UmVxdWVzdBIcCgNyZWYYASABKAsyDy5zaGFsZS5BdWRpdFJlZhIiCgZzZWxlY3QYAiABKAsyEi5zaGFsZS5BdWRpdFNlbGVjdCIfCghBdWRpdFJlZhIMCgJpZBgBIAEoDEgAQgUKA2tleSLwAQoLQXVkaXRTZWxlY3QSCwoDYWxsGAEgASgIEhEKCXRlbmFudF9pZBgCIAEoCBIQCghhY3Rvcl9pZBgIIAEoCBIQCgh0cmFjZV9pZBgJIAEoCBIOCgZhY3Rpb24YCiABKAgSEQoJb2JqZWN0X2lkGAsgASgIEg0KBXBhdGNoGAwgASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIXCg9hY3Rvcl90ZW5hbnRfaWQYECABKAgSDQoFdmFsdWUYESABKAgSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgIEg4KBmRvbWFpbhgTIAEoCCKVAgoRQXVkaXRQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uc2hhbGUuQXVkaXRSZWYSEQoJdGVuYW50X2lkGAQgASgMEhAKCGFjdG9yX2lkGBAgASgMEhAKCHRyYWNlX2lkGBIgASgMEg4KBmFjdGlvbhgUIAEoCRIRCglvYmplY3RfaWQYFiABKAwSDQoFcGF0Y2gYGCABKAwSFwoPYWN0b3JfdGVuYW50X2lkGCAgASgMEg0KBXZhbHVlGCIgASgMEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgkIAEoDBIiChpjb3VudGVycGFydF90ZW5hbnRfaWRfbnVsbBglIAEoCBIOCgZkb21haW4YJiABKA0iTgoRQXVkaXRBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uc2hhbGUuQXVkaXRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJBdWRpdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIInoKEEF1ZGl0TGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnNoYWxlLkF1ZGl0RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJFChFBdWRpdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnNoYWxlLkF1ZGl0EhMKBG5leHQYAiABKAlCBaoBAggCIn0KC0F1ZGl0RmlsdGVyEhEKCW9iamVjdF9pZBgBIAEoDBIQCghhY3Rvcl9pZBgCIAEoDBIRCgl0ZW5hbnRfaWQYAyABKAwSFwoPYWN0b3JfdGVuYW50X2lkGAQgASgMEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgFIAEoDDK6AgoMQXVkaXRTZXJ2aWNlEisKA0FkZBIWLnNoYWxlLkF1ZGl0QWRkUmVxdWVzdBoMLnNoYWxlLkF1ZGl0EisKA0dldBIWLnNoYWxlLkF1ZGl0R2V0UmVxdWVzdBoMLnNoYWxlLkF1ZGl0Ei8KBVBhdGNoEhguc2hhbGUuQXVkaXRQYXRjaFJlcXVlc3QaDC5zaGFsZS5BdWRpdBIvCgVBcHBseRIYLnNoYWxlLkF1ZGl0QXBwbHlSZXF1ZXN0Ggwuc2hhbGUuQXVkaXQSMwoFRXJhc2USDy5zaGFsZS5BdWRpdFJlZhoZLnNoYWxlLkF1ZGl0RXJhc2VSZXNwb25zZRI5CgRMaXN0Ehcuc2hhbGUuQXVkaXRMaXN0UmVxdWVzdBoYLnNoYWxlLkF1ZGl0TGlzdFJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_patch_patch, file_shale_payday_audit]);
+  fileDesc("Ch5zaGFsZS9wYXlkYXkvYXVkaXRfc3ZjLmcucHJvdG8SBXNoYWxlIv4CCg9BdWRpdEFkZFJlcXVlc3QSCgoCaWQYASABKAwSGAoJdGVuYW50X2lkGAIgASgMQgWqAQIIAhIXCghhY3Rvcl9pZBgIIAEoDEIFqgECCAISFwoIdHJhY2VfaWQYCSABKAxCBaoBAggCEhUKBmFjdGlvbhgKIAEoCUIFqgECCAISGAoJb2JqZWN0X2lkGAsgASgMQgWqAQIIAhIUCgVwYXRjaBgMIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIeCg9hY3Rvcl90ZW5hbnRfaWQYECABKAxCBaoBAggCEhQKBXZhbHVlGBEgASgMQgWqAQIIAhIdChVjb3VudGVycGFydF90ZW5hbnRfaWQYEiABKAwSDgoGZG9tYWluGBMgASgNEg4KBmZpZWxkcxgUIAMoDRIOCgZkaWdlc3QYFSABKAwSFQoNZGlnZXN0X2ZpZWxkcxgWIAMoDSJTCg9BdWRpdEdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8uc2hhbGUuQXVkaXRSZWYSIgoGc2VsZWN0GAIgASgLMhIuc2hhbGUuQXVkaXRTZWxlY3QiHwoIQXVkaXRSZWYSDAoCaWQYASABKAxIAEIFCgNrZXkipwIKC0F1ZGl0U2VsZWN0EgsKA2FsbBgBIAEoCBIRCgl0ZW5hbnRfaWQYAiABKAgSEAoIYWN0b3JfaWQYCCABKAgSEAoIdHJhY2VfaWQYCSABKAgSDgoGYWN0aW9uGAogASgIEhEKCW9iamVjdF9pZBgLIAEoCBINCgVwYXRjaBgMIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSFwoPYWN0b3JfdGVuYW50X2lkGBAgASgIEg0KBXZhbHVlGBEgASgIEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoCBIOCgZkb21haW4YEyABKAgSDgoGZmllbGRzGBQgASgIEg4KBmRpZ2VzdBgVIAEoCBIVCg1kaWdlc3RfZmllbGRzGBYgASgIIswCChFBdWRpdFBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5zaGFsZS5BdWRpdFJlZhIRCgl0ZW5hbnRfaWQYBCABKAwSEAoIYWN0b3JfaWQYECABKAwSEAoIdHJhY2VfaWQYEiABKAwSDgoGYWN0aW9uGBQgASgJEhEKCW9iamVjdF9pZBgWIAEoDBINCgVwYXRjaBgYIAEoDBIXCg9hY3Rvcl90ZW5hbnRfaWQYICABKAwSDQoFdmFsdWUYIiABKAwSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGCQgASgMEiIKGmNvdW50ZXJwYXJ0X3RlbmFudF9pZF9udWxsGCUgASgIEg4KBmRvbWFpbhgmIAEoDRIOCgZmaWVsZHMYKCADKA0SDgoGZGlnZXN0GCogASgMEhUKDWRpZ2VzdF9maWVsZHMYLCADKA0iTgoRQXVkaXRBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8uc2hhbGUuQXVkaXRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJBdWRpdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIInoKEEF1ZGl0TGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnNoYWxlLkF1ZGl0RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJFChFBdWRpdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnNoYWxlLkF1ZGl0EhMKBG5leHQYAiABKAlCBaoBAggCIn0KC0F1ZGl0RmlsdGVyEhEKCW9iamVjdF9pZBgBIAEoDBIQCghhY3Rvcl9pZBgCIAEoDBIRCgl0ZW5hbnRfaWQYAyABKAwSFwoPYWN0b3JfdGVuYW50X2lkGAQgASgMEh0KFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgFIAEoDDK6AgoMQXVkaXRTZXJ2aWNlEisKA0FkZBIWLnNoYWxlLkF1ZGl0QWRkUmVxdWVzdBoMLnNoYWxlLkF1ZGl0EisKA0dldBIWLnNoYWxlLkF1ZGl0R2V0UmVxdWVzdBoMLnNoYWxlLkF1ZGl0Ei8KBVBhdGNoEhguc2hhbGUuQXVkaXRQYXRjaFJlcXVlc3QaDC5zaGFsZS5BdWRpdBIvCgVBcHBseRIYLnNoYWxlLkF1ZGl0QXBwbHlSZXF1ZXN0Ggwuc2hhbGUuQXVkaXQSMwoFRXJhc2USDy5zaGFsZS5BdWRpdFJlZhoZLnNoYWxlLkF1ZGl0RXJhc2VSZXNwb25zZRI5CgRMaXN0Ehcuc2hhbGUuQXVkaXRMaXN0UmVxdWVzdBoYLnNoYWxlLkF1ZGl0TGlzdFJlc3BvbnNlQh9aHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_patch_patch, file_shale_payday_audit]);
 
 /**
  * @generated from message shale.AuditAddRequest
@@ -81,6 +81,21 @@ export type AuditAddRequest = Message<"shale.AuditAddRequest"> & {
    * @generated from field: uint32 domain = 19;
    */
   domain: number;
+
+  /**
+   * @generated from field: repeated uint32 fields = 20;
+   */
+  fields: number[];
+
+  /**
+   * @generated from field: bytes digest = 21;
+   */
+  digest: Uint8Array;
+
+  /**
+   * @generated from field: repeated uint32 digest_fields = 22;
+   */
+  digestFields: number[];
 };
 
 /**
@@ -198,6 +213,21 @@ export type AuditSelect = Message<"shale.AuditSelect"> & {
    * @generated from field: bool domain = 19;
    */
   domain: boolean;
+
+  /**
+   * @generated from field: bool fields = 20;
+   */
+  fields: boolean;
+
+  /**
+   * @generated from field: bool digest = 21;
+   */
+  digest: boolean;
+
+  /**
+   * @generated from field: bool digest_fields = 22;
+   */
+  digestFields: boolean;
 };
 
 /**
@@ -275,6 +305,21 @@ export type AuditPatchRequest = Message<"shale.AuditPatchRequest"> & {
    * @generated from field: uint32 domain = 38;
    */
   domain: number;
+
+  /**
+   * @generated from field: repeated uint32 fields = 40;
+   */
+  fields: number[];
+
+  /**
+   * @generated from field: bytes digest = 42;
+   */
+  digest: Uint8Array;
+
+  /**
+   * @generated from field: repeated uint32 digest_fields = 44;
+   */
+  digestFields: number[];
 };
 
 /**
