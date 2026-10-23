@@ -148,8 +148,15 @@ func (s *Directives) Once(ctx context.Context) error {
 		alive := n.DateSeen != nil && now.Sub(*n.DateSeen) <= s.d.nodeDownAfter() && n.ControlAddress != ""
 		s.mu.Lock()
 		was := s.alive[id]
-		s.alive[id] = alive
 		next := s.backoff[id]
+		// A node waiting out a failure is owed everything on the next
+		// success, which the failure said by marking it not alive. Heard
+		// from meanwhile -- it may have restarted, which is the case the
+		// full re-send is for -- it is still owed that, so it is marked
+		// alive only once it is told.
+		if !alive || !now.Before(next) {
+			s.alive[id] = alive
+		}
 		s.mu.Unlock()
 		if !alive {
 			if was {
