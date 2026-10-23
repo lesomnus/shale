@@ -52,6 +52,24 @@ message Tenant {
   // names a tenant that way, so there is nothing for its row to outlive.
   option (orm.message) = {
     rpc: {crud: true}
+    indexes: [
+      // The order its list reads in. Small next to anything a tenant holds,
+      // and still the table a deployment of many customers grows: without it
+      // every page of them is the whole table, sorted.
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      }
+    ]
   };
   option (payday.entity) = {
     // payday's own, so that generation finds it whatever an app called the

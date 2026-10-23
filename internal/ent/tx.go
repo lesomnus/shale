@@ -12,6 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Access is the client for interacting with the Access builders.
+	Access *AccessClient
 	// AddressPolicy is the client for interacting with the AddressPolicy builders.
 	AddressPolicy *AddressPolicyClient
 	// Archived is the client for interacting with the Archived builders.
@@ -32,6 +34,8 @@ type Tx struct {
 	Node *NodeClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
+	// Owed is the client for interacting with the Owed builders.
+	Owed *OwedClient
 	// PlacementPolicy is the client for interacting with the PlacementPolicy builders.
 	PlacementPolicy *PlacementPolicyClient
 	// Producer is the client for interacting with the Producer builders.
@@ -40,6 +44,8 @@ type Tx struct {
 	Reader *ReaderClient
 	// Relay is the client for interacting with the Relay builders.
 	Relay *RelayClient
+	// RowSeal is the client for interacting with the RowSeal builders.
+	RowSeal *RowSealClient
 	// Set is the client for interacting with the Set builders.
 	Set *SetClient
 	// SigningKey is the client for interacting with the SigningKey builders.
@@ -187,6 +193,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Access = NewAccessClient(tx.config)
 	tx.AddressPolicy = NewAddressPolicyClient(tx.config)
 	tx.Archived = NewArchivedClient(tx.config)
 	tx.Attempt = NewAttemptClient(tx.config)
@@ -197,10 +204,12 @@ func (tx *Tx) init() {
 	tx.Lamina = NewLaminaClient(tx.config)
 	tx.Node = NewNodeClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
+	tx.Owed = NewOwedClient(tx.config)
 	tx.PlacementPolicy = NewPlacementPolicyClient(tx.config)
 	tx.Producer = NewProducerClient(tx.config)
 	tx.Reader = NewReaderClient(tx.config)
 	tx.Relay = NewRelayClient(tx.config)
+	tx.RowSeal = NewRowSealClient(tx.config)
 	tx.Set = NewSetClient(tx.config)
 	tx.SigningKey = NewSigningKeyClient(tx.config)
 	tx.Sink = NewSinkClient(tx.config)
@@ -218,7 +227,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: AddressPolicy.QueryXXX(), the query will be executed
+// applies a query, for example: Access.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

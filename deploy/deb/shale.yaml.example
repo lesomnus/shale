@@ -24,6 +24,8 @@ state: /var/lib/shale
 # audit:                                  # the trail's retention (§26.5); empty keeps everything
 #   profile: pipa                         # 90 days in the table, a year in the archive
 #   archive: /var/lib/shale/control/audit
+#   checkpoints:
+#     key: /etc/shale/checkpoints.pem     # an archive is refused without one (§26.5)
 
 # --- every other role: the cluster API to join (§33.4) ---------------------
 # cp: https://cp.example.com:7401

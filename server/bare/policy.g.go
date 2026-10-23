@@ -15,12 +15,15 @@ import (
 	signingkey "github.com/lesomnus/shale/internal/ent/signingkey"
 	uploadpolicy "github.com/lesomnus/shale/internal/ent/uploadpolicy"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	uuid "uuid"
 )
 
@@ -83,27 +86,39 @@ func (s SigningKeyServiceServer) narrow(ctx context.Context, p predicate.Signing
 	return SigningKeyNarrow(ctx, s.Scope, p)
 }
 
-func (s SigningKeyServiceServer) Add(ctx context.Context, req *api.SigningKeyAddRequest) (*api.SigningKey, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s SigningKeyServiceServer) snapshot(ctx context.Context, p predicate.SigningKey, lock bool) (*ent.SigningKey, error) {
+	q := s.Db.SigningKey.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s SigningKeyServiceServer) image(v *api.SigningKey) *api.SigningKey {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.SigningKey)
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st SigningKeyServiceServer) create(ctx context.Context, req *api.SigningKeyAddRequest) (*ent.SigningKeyCreate, []func(v *api.SigningKey), error) {
+	var ds []func(v *api.SigningKey)
 	q := st.Db.SigningKey.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.SigningKey", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.SigningKey", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -136,7 +151,30 @@ func (s SigningKeyServiceServer) Add(ctx context.Context, req *api.SigningKeyAdd
 	if req.HasDateRetired() {
 		q.SetDateRetired(req.GetDateRetired().AsTime())
 	}
+	return q, ds, nil
+}
 
+func (s SigningKeyServiceServer) Add(ctx context.Context, req *api.SigningKeyAddRequest) (*api.SigningKey, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.SigningKey
+	if snapshotOptions(s.Rec, api.SigningKeyService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -150,9 +188,18 @@ func (s SigningKeyServiceServer) Add(ctx context.Context, req *api.SigningKeyAdd
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.SigningKey
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.SigningKeyService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.SigningKeyService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -160,7 +207,39 @@ func (s SigningKeyServiceServer) Add(ctx context.Context, req *api.SigningKeyAdd
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
+}
+
+// SigningKeyAddRule is what a layer in front says about one row an Add of SigningKey
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type SigningKeyAddRule func(ctx context.Context, req *api.SigningKeyAddRequest) (*api.SigningKeyAddRequest, error)
+
+// SigningKeyWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func SigningKeyWithAddRule(next api.SigningKeyServiceServer, rule SigningKeyAddRule) api.SigningKeyServiceServer {
+	return signingKeyAddRuled{next, rule}
+}
+
+type signingKeyAddRuled struct {
+	api.SigningKeyServiceServer
+	rule SigningKeyAddRule
+}
+
+func (s signingKeyAddRuled) Add(ctx context.Context, req *api.SigningKeyAddRequest) (*api.SigningKey, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.SigningKeyServiceServer.Add(ctx, r)
 }
 
 func (s SigningKeyServiceServer) Get(ctx context.Context, req *api.SigningKeyGetRequest) (*api.SigningKey, error) {
@@ -249,7 +328,6 @@ func SigningKeySelect(q *ent.SigningKeyQuery, m *api.SigningKeySelect) {
 func SigningKeySelectInit(q *ent.SigningKeyQuery, m *api.SigningKeySelect) {
 	if m != nil {
 		SigningKeySelect(q, m)
-	} else {
 	}
 }
 
@@ -350,6 +428,18 @@ func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyR
 		return nil, err
 	}
 
+	var previous *api.SigningKey
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.SigningKey.Query().Where(p)
 		if pred != nil {
@@ -376,6 +466,7 @@ func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyR
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -398,20 +489,25 @@ func (s SigningKeyServiceServer) apply(ctx context.Context, ref *api.SigningKeyR
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.SigningKey
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -438,8 +534,16 @@ func (s SigningKeyServiceServer) Erase(ctx context.Context, req *api.SigningKeyR
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.SigningKey
 	if s.Rec != nil {
-		v, err := st.Db.SigningKey.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.SigningKeyService_Erase_FullMethodName)
+		var v *ent.SigningKey
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.SigningKey.Query().Where(p).Select(signingkey.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.SigningKeyEraseResponse{}, nil
@@ -447,10 +551,14 @@ func (s SigningKeyServiceServer) Erase(ctx context.Context, req *api.SigningKeyR
 			return nil, err
 		}
 
-		k = v
-		p = signingkey.And(p, signingkey.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = signingkey.And(p, signingkey.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.SigningKey.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -460,8 +568,9 @@ func (s SigningKeyServiceServer) Erase(ctx context.Context, req *api.SigningKeyR
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.SigningKeyService_Erase_FullMethodName,
-			Key: k,
+			By:       api.SigningKeyService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -569,27 +678,39 @@ func (s PlacementPolicyServiceServer) narrow(ctx context.Context, p predicate.Pl
 	return PlacementPolicyNarrow(ctx, s.Scope, p)
 }
 
-func (s PlacementPolicyServiceServer) Add(ctx context.Context, req *api.PlacementPolicyAddRequest) (*api.PlacementPolicy, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s PlacementPolicyServiceServer) snapshot(ctx context.Context, p predicate.PlacementPolicy, lock bool) (*ent.PlacementPolicy, error) {
+	q := s.Db.PlacementPolicy.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s PlacementPolicyServiceServer) image(v *api.PlacementPolicy) *api.PlacementPolicy {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.PlacementPolicy)
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st PlacementPolicyServiceServer) create(ctx context.Context, req *api.PlacementPolicyAddRequest) (*ent.PlacementPolicyCreate, []func(v *api.PlacementPolicy), error) {
+	var ds []func(v *api.PlacementPolicy)
 	q := st.Db.PlacementPolicy.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.PlacementPolicy", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.PlacementPolicy", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -613,7 +734,30 @@ func (s PlacementPolicyServiceServer) Add(ctx context.Context, req *api.Placemen
 	if req.HasDateActivated() {
 		q.SetDateActivated(req.GetDateActivated().AsTime())
 	}
+	return q, ds, nil
+}
 
+func (s PlacementPolicyServiceServer) Add(ctx context.Context, req *api.PlacementPolicyAddRequest) (*api.PlacementPolicy, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.PlacementPolicy
+	if snapshotOptions(s.Rec, api.PlacementPolicyService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -627,9 +771,18 @@ func (s PlacementPolicyServiceServer) Add(ctx context.Context, req *api.Placemen
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.PlacementPolicy
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.PlacementPolicyService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.PlacementPolicyService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -637,7 +790,39 @@ func (s PlacementPolicyServiceServer) Add(ctx context.Context, req *api.Placemen
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
+}
+
+// PlacementPolicyAddRule is what a layer in front says about one row an Add of PlacementPolicy
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type PlacementPolicyAddRule func(ctx context.Context, req *api.PlacementPolicyAddRequest) (*api.PlacementPolicyAddRequest, error)
+
+// PlacementPolicyWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func PlacementPolicyWithAddRule(next api.PlacementPolicyServiceServer, rule PlacementPolicyAddRule) api.PlacementPolicyServiceServer {
+	return placementPolicyAddRuled{next, rule}
+}
+
+type placementPolicyAddRuled struct {
+	api.PlacementPolicyServiceServer
+	rule PlacementPolicyAddRule
+}
+
+func (s placementPolicyAddRuled) Add(ctx context.Context, req *api.PlacementPolicyAddRequest) (*api.PlacementPolicy, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.PlacementPolicyServiceServer.Add(ctx, r)
 }
 
 func (s PlacementPolicyServiceServer) Get(ctx context.Context, req *api.PlacementPolicyGetRequest) (*api.PlacementPolicy, error) {
@@ -723,7 +908,6 @@ func PlacementPolicySelect(q *ent.PlacementPolicyQuery, m *api.PlacementPolicySe
 func PlacementPolicySelectInit(q *ent.PlacementPolicyQuery, m *api.PlacementPolicySelect) {
 	if m != nil {
 		PlacementPolicySelect(q, m)
-	} else {
 	}
 }
 
@@ -824,6 +1008,18 @@ func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.Placem
 		return nil, err
 	}
 
+	var previous *api.PlacementPolicy
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.PlacementPolicy.Query().Where(p)
 		if pred != nil {
@@ -850,6 +1046,7 @@ func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.Placem
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -872,20 +1069,25 @@ func (s PlacementPolicyServiceServer) apply(ctx context.Context, ref *api.Placem
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.PlacementPolicy
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -912,8 +1114,16 @@ func (s PlacementPolicyServiceServer) Erase(ctx context.Context, req *api.Placem
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.PlacementPolicy
 	if s.Rec != nil {
-		v, err := st.Db.PlacementPolicy.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.PlacementPolicyService_Erase_FullMethodName)
+		var v *ent.PlacementPolicy
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.PlacementPolicy.Query().Where(p).Select(placementpolicy.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.PlacementPolicyEraseResponse{}, nil
@@ -921,10 +1131,14 @@ func (s PlacementPolicyServiceServer) Erase(ctx context.Context, req *api.Placem
 			return nil, err
 		}
 
-		k = v
-		p = placementpolicy.And(p, placementpolicy.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = placementpolicy.And(p, placementpolicy.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.PlacementPolicy.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -934,8 +1148,9 @@ func (s PlacementPolicyServiceServer) Erase(ctx context.Context, req *api.Placem
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.PlacementPolicyService_Erase_FullMethodName,
-			Key: k,
+			By:       api.PlacementPolicyService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -1045,27 +1260,39 @@ func (s UploadPolicyServiceServer) narrow(ctx context.Context, p predicate.Uploa
 	return UploadPolicyNarrow(ctx, s.Scope, p)
 }
 
-func (s UploadPolicyServiceServer) Add(ctx context.Context, req *api.UploadPolicyAddRequest) (*api.UploadPolicy, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s UploadPolicyServiceServer) snapshot(ctx context.Context, p predicate.UploadPolicy, lock bool) (*ent.UploadPolicy, error) {
+	q := s.Db.UploadPolicy.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s UploadPolicyServiceServer) image(v *api.UploadPolicy) *api.UploadPolicy {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.UploadPolicy)
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st UploadPolicyServiceServer) create(ctx context.Context, req *api.UploadPolicyAddRequest) (*ent.UploadPolicyCreate, []func(v *api.UploadPolicy), error) {
+	var ds []func(v *api.UploadPolicy)
 	q := st.Db.UploadPolicy.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.UploadPolicy", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.UploadPolicy", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -1089,7 +1316,30 @@ func (s UploadPolicyServiceServer) Add(ctx context.Context, req *api.UploadPolic
 	if req.HasDateActivated() {
 		q.SetDateActivated(req.GetDateActivated().AsTime())
 	}
+	return q, ds, nil
+}
 
+func (s UploadPolicyServiceServer) Add(ctx context.Context, req *api.UploadPolicyAddRequest) (*api.UploadPolicy, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.UploadPolicy
+	if snapshotOptions(s.Rec, api.UploadPolicyService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1103,9 +1353,18 @@ func (s UploadPolicyServiceServer) Add(ctx context.Context, req *api.UploadPolic
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.UploadPolicy
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.UploadPolicyService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.UploadPolicyService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1113,7 +1372,39 @@ func (s UploadPolicyServiceServer) Add(ctx context.Context, req *api.UploadPolic
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
+}
+
+// UploadPolicyAddRule is what a layer in front says about one row an Add of UploadPolicy
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type UploadPolicyAddRule func(ctx context.Context, req *api.UploadPolicyAddRequest) (*api.UploadPolicyAddRequest, error)
+
+// UploadPolicyWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func UploadPolicyWithAddRule(next api.UploadPolicyServiceServer, rule UploadPolicyAddRule) api.UploadPolicyServiceServer {
+	return uploadPolicyAddRuled{next, rule}
+}
+
+type uploadPolicyAddRuled struct {
+	api.UploadPolicyServiceServer
+	rule UploadPolicyAddRule
+}
+
+func (s uploadPolicyAddRuled) Add(ctx context.Context, req *api.UploadPolicyAddRequest) (*api.UploadPolicy, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.UploadPolicyServiceServer.Add(ctx, r)
 }
 
 func (s UploadPolicyServiceServer) Get(ctx context.Context, req *api.UploadPolicyGetRequest) (*api.UploadPolicy, error) {
@@ -1199,7 +1490,6 @@ func UploadPolicySelect(q *ent.UploadPolicyQuery, m *api.UploadPolicySelect) {
 func UploadPolicySelectInit(q *ent.UploadPolicyQuery, m *api.UploadPolicySelect) {
 	if m != nil {
 		UploadPolicySelect(q, m)
-	} else {
 	}
 }
 
@@ -1300,6 +1590,18 @@ func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPol
 		return nil, err
 	}
 
+	var previous *api.UploadPolicy
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.UploadPolicy.Query().Where(p)
 		if pred != nil {
@@ -1326,6 +1628,7 @@ func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPol
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1348,20 +1651,25 @@ func (s UploadPolicyServiceServer) apply(ctx context.Context, ref *api.UploadPol
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.UploadPolicy
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -1388,8 +1696,16 @@ func (s UploadPolicyServiceServer) Erase(ctx context.Context, req *api.UploadPol
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.UploadPolicy
 	if s.Rec != nil {
-		v, err := st.Db.UploadPolicy.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.UploadPolicyService_Erase_FullMethodName)
+		var v *ent.UploadPolicy
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.UploadPolicy.Query().Where(p).Select(uploadpolicy.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.UploadPolicyEraseResponse{}, nil
@@ -1397,10 +1713,14 @@ func (s UploadPolicyServiceServer) Erase(ctx context.Context, req *api.UploadPol
 			return nil, err
 		}
 
-		k = v
-		p = uploadpolicy.And(p, uploadpolicy.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = uploadpolicy.And(p, uploadpolicy.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.UploadPolicy.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -1410,8 +1730,9 @@ func (s UploadPolicyServiceServer) Erase(ctx context.Context, req *api.UploadPol
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.UploadPolicyService_Erase_FullMethodName,
-			Key: k,
+			By:       api.UploadPolicyService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -1521,27 +1842,39 @@ func (s AddressPolicyServiceServer) narrow(ctx context.Context, p predicate.Addr
 	return AddressPolicyNarrow(ctx, s.Scope, p)
 }
 
-func (s AddressPolicyServiceServer) Add(ctx context.Context, req *api.AddressPolicyAddRequest) (*api.AddressPolicy, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s AddressPolicyServiceServer) snapshot(ctx context.Context, p predicate.AddressPolicy, lock bool) (*ent.AddressPolicy, error) {
+	q := s.Db.AddressPolicy.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s AddressPolicyServiceServer) image(v *api.AddressPolicy) *api.AddressPolicy {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.AddressPolicy)
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st AddressPolicyServiceServer) create(ctx context.Context, req *api.AddressPolicyAddRequest) (*ent.AddressPolicyCreate, []func(v *api.AddressPolicy), error) {
+	var ds []func(v *api.AddressPolicy)
 	q := st.Db.AddressPolicy.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.AddressPolicy", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.AddressPolicy", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -1565,7 +1898,30 @@ func (s AddressPolicyServiceServer) Add(ctx context.Context, req *api.AddressPol
 	if req.HasDateActivated() {
 		q.SetDateActivated(req.GetDateActivated().AsTime())
 	}
+	return q, ds, nil
+}
 
+func (s AddressPolicyServiceServer) Add(ctx context.Context, req *api.AddressPolicyAddRequest) (*api.AddressPolicy, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.AddressPolicy
+	if snapshotOptions(s.Rec, api.AddressPolicyService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1579,9 +1935,18 @@ func (s AddressPolicyServiceServer) Add(ctx context.Context, req *api.AddressPol
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.AddressPolicy
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.AddressPolicyService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.AddressPolicyService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1589,7 +1954,39 @@ func (s AddressPolicyServiceServer) Add(ctx context.Context, req *api.AddressPol
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
+}
+
+// AddressPolicyAddRule is what a layer in front says about one row an Add of AddressPolicy
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type AddressPolicyAddRule func(ctx context.Context, req *api.AddressPolicyAddRequest) (*api.AddressPolicyAddRequest, error)
+
+// AddressPolicyWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func AddressPolicyWithAddRule(next api.AddressPolicyServiceServer, rule AddressPolicyAddRule) api.AddressPolicyServiceServer {
+	return addressPolicyAddRuled{next, rule}
+}
+
+type addressPolicyAddRuled struct {
+	api.AddressPolicyServiceServer
+	rule AddressPolicyAddRule
+}
+
+func (s addressPolicyAddRuled) Add(ctx context.Context, req *api.AddressPolicyAddRequest) (*api.AddressPolicy, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.AddressPolicyServiceServer.Add(ctx, r)
 }
 
 func (s AddressPolicyServiceServer) Get(ctx context.Context, req *api.AddressPolicyGetRequest) (*api.AddressPolicy, error) {
@@ -1675,7 +2072,6 @@ func AddressPolicySelect(q *ent.AddressPolicyQuery, m *api.AddressPolicySelect) 
 func AddressPolicySelectInit(q *ent.AddressPolicyQuery, m *api.AddressPolicySelect) {
 	if m != nil {
 		AddressPolicySelect(q, m)
-	} else {
 	}
 }
 
@@ -1776,6 +2172,18 @@ func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressP
 		return nil, err
 	}
 
+	var previous *api.AddressPolicy
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.AddressPolicy.Query().Where(p)
 		if pred != nil {
@@ -1802,6 +2210,7 @@ func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressP
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1824,20 +2233,25 @@ func (s AddressPolicyServiceServer) apply(ctx context.Context, ref *api.AddressP
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.AddressPolicy
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -1864,8 +2278,16 @@ func (s AddressPolicyServiceServer) Erase(ctx context.Context, req *api.AddressP
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.AddressPolicy
 	if s.Rec != nil {
-		v, err := st.Db.AddressPolicy.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.AddressPolicyService_Erase_FullMethodName)
+		var v *ent.AddressPolicy
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.AddressPolicy.Query().Where(p).Select(addresspolicy.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.AddressPolicyEraseResponse{}, nil
@@ -1873,10 +2295,14 @@ func (s AddressPolicyServiceServer) Erase(ctx context.Context, req *api.AddressP
 			return nil, err
 		}
 
-		k = v
-		p = addresspolicy.And(p, addresspolicy.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = addresspolicy.And(p, addresspolicy.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.AddressPolicy.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -1886,8 +2312,9 @@ func (s AddressPolicyServiceServer) Erase(ctx context.Context, req *api.AddressP
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.AddressPolicyService_Erase_FullMethodName,
-			Key: k,
+			By:       api.AddressPolicyService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

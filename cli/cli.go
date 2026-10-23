@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/lesomnus/xli"
@@ -25,11 +26,13 @@ import (
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdcmd"
+	"github.com/lesomnus/payday/rename"
 
 	"github.com/lesomnus/shale/cmd"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
+	"github.com/lesomnus/shale/server/pd"
 )
 
 // protoPackage is the proto package this app's entities are declared in,
@@ -87,6 +90,9 @@ func Cmd(c *cmd.Config) *xli.Command {
 	for g := range clusterGroups {
 		t.Drop(g)
 	}
+	for g := range unserved {
+		t.Drop(g)
+	}
 	addCustom(t, c, false)
 	addLaminaCommands(t, c)
 	addStateCommands(t, c, false)
@@ -95,6 +101,9 @@ func Cmd(c *cmd.Config) *xli.Command {
 
 	t = pdcmd.NewIn(&connector{c: c, cluster: true}, protoPackage)
 	for g := range tenantGroups {
+		t.Drop(g)
+	}
+	for g := range unserved {
 		t.Drop(g)
 	}
 	addCustom(t, c, true)
@@ -119,8 +128,48 @@ func applyClientFlags(c *cmd.Config) xli.Handler {
 }
 
 // Migrate brings the database into the shape this app's schema says.
+//
+// The indexes an earlier build stored under other names are taken to the
+// names this one declares first (payday's `rename`). A migration finds an
+// index by its name, and one it does not find it makes again from every
+// row, beside the old one, which it leaves: ent's migration drops no
+// index. Found under its name, an index whose columns changed is made
+// again where it stands.
 func Migrate(ctx context.Context, s *cmd.Server) error {
+	if err := rename.Indexes(ctx, s.Db, s.Dialect, slices.Concat(pd.IndexRenames, moved)); err != nil {
+		return err
+	}
+
 	return entmigrate.NewSchema(s.Drv).Create(ctx)
+}
+
+// moved are the indexes whose columns changed after payday a36d5d0, under
+// the names a build of that payday stored them by. `pd.IndexRenames` names
+// each index by its columns in the order the schema declares them, which
+// for these is not the order that build wrote: nine declare an edge before
+// a field and were stored with every field first, and the lists of what a
+// tenant holds page by the tenant first now (payday's docs/migrating.md,
+// "An index is in the order it declares"). Without them each would be made
+// again beside the old one, which would go on being written on every
+// insert and read by nothing.
+var moved = []rename.Index{
+	{Table: "attempt", From: "attempt_date_created_id", To: "attempt_page"},
+	{Table: "attempt", From: "attempt_date_created_lamina_id", To: "attempt_lamina"},
+	{Table: "delegation", From: "delegation_date_ends_holder_id", To: "delegation_holder"},
+	{Table: "device", From: "device_health_node_id", To: "device_node"},
+	{Table: "lamina", From: "lamina_date_created_id", To: "lamina_page"},
+	{Table: "lamina", From: "lamina_date_expired_sink_id", To: "lamina_gc"},
+	{Table: "lamina", From: "lamina_date_started_set_id", To: "lamina_set_time"},
+	{Table: "lamina", From: "lamina_date_started_source_id", To: "lamina_source_time"},
+	{Table: "lamina", From: "lamina_lamina_key_sink_id", To: "lamina_location"},
+	{Table: "producer", From: "producer_date_created_id", To: "producer_page"},
+	{Table: "reader", From: "reader_date_created_id", To: "reader_page"},
+	{Table: "set", From: "set_date_created_id", To: "set_page"},
+	{Table: "sink", From: "sink_attachment_node_id", To: "sink_node"},
+	{Table: "site", From: "site_date_created_id", To: "site_page"},
+	{Table: "sitemember", From: "sitemember_date_created_id", To: "sitemember_page"},
+	{Table: "source", From: "source_date_created_id", To: "source_page"},
+	{Table: "source", From: "source_ordinal_set_id", To: "source_member"},
 }
 
 // clusterGroups are the command groups that talk to the cluster API, and
@@ -135,6 +184,11 @@ var tenantGroups = map[string]bool{
 	"set": true, "source": true, "lamina": true, "attempt": true, "site": true, "site-member": true,
 	"producer": true, "reader": true, "holder": true, "audit": true,
 }
+
+// unserved are the groups of entities neither surface mounts, which a
+// command would only be refused at: payday's access record, which this
+// deployment does not keep.
+var unserved = map[string]bool{"access": true}
 
 // connector dials one surface (§32). It is asked when a command runs, after
 // the configuration was read.

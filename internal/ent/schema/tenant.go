@@ -8,6 +8,7 @@ import (
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
 	field "github.com/protobuf-orm/ent/schema/field"
+	index "github.com/protobuf-orm/ent/schema/index"
 )
 
 type Tenant struct {
@@ -31,6 +32,13 @@ func (Tenant) Fields() []ent.Field {
 			Optional(),
 		field.Float("capacity_share"),
 		field.Int64("stored_bytes"),
+	}
+}
+
+func (Tenant) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("date_created", "id").
+			StorageKey("tenant_page"),
 	}
 }
 

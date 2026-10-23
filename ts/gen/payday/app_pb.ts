@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file payday/app.proto.
  */
 export const file_payday_app: GenFile = /*@__PURE__*/
-  fileDesc("ChBwYXlkYXkvYXBwLnByb3RvEgZwYXlkYXkiBQoDQXBwQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcGF5ZGF5L3BkcGKSAwIIAmIIZWRpdGlvbnNw6Ac");
+  fileDesc("ChBwYXlkYXkvYXBwLnByb3RvEgZwYXlkYXkiIQoDQXBwEhoKBHBhc3QYASABKAsyDC5wYXlkYXkuUGFzdCIjCgRQYXN0Eg0KBWV2ZW50GAEgASgNEgwKBGZhY3QYAiABKA1CJlofZ2l0aHViLmNvbS9sZXNvbW51cy9wYXlkYXkvcGRwYpIDAggCYghlZGl0aW9uc3DoBw");
 
 /**
  * App says that this file's proto package is the app's own.
@@ -41,9 +41,10 @@ export const file_payday_app: GenFile = /*@__PURE__*/
  * package of its own. The shared message is then the same name everywhere it is
  * read, and nothing else has to be.
  *
- * This is presence and nothing else: a file either says it or does not. It is a
- * message rather than a `bool` so that something can be added to it later
- * without every app that set it having to change.
+ * It was presence and nothing else for as long as there was nothing else to
+ * say: a file either says it or does not. It is a message rather than a `bool`
+ * so that something could be added to it without every app that set it having
+ * to change, and [App.past] is the first thing that was.
  *
  * Setting it on more than one package is refused. Two answers to "where do
  * payday's entities go" is the thing this exists to avoid, and getting two of
@@ -52,6 +53,23 @@ export const file_payday_app: GenFile = /*@__PURE__*/
  * @generated from message payday.App
  */
 export type App = Message<"payday.App"> & {
+  /**
+   * Past says this app keeps its past, and which domains the two entities it is
+   * kept in take (payday#151):
+   *
+   * 	option (payday.app) = {past: {event: 17, fact: 16}};
+   *
+   * `pd gen` then writes payday's `Event` and `Fact` into the app beside its
+   * other entities, on every run, and takes them out again when this goes. An
+   * app that says nothing has neither, which is every app until it says so.
+   *
+   * It is said here, in the schema, and not in a file of `pd`'s own, for the
+   * reason [App] is: where an app's parts are is read off what it already
+   * wrote, and this is one more line of what it wrote.
+   *
+   * @generated from field: payday.Past past = 1;
+   */
+  past?: Past | undefined;
 };
 
 /**
@@ -60,4 +78,47 @@ export type App = Message<"payday.App"> & {
  */
 export const AppSchema: GenMessage<App> = /*@__PURE__*/
   messageDesc(file_payday_app, 0);
+
+/**
+ * Past is the domain of each of the two entities an app's past is kept in.
+ *
+ * # Why the app numbers them
+ *
+ * A table every app has gets a number payday fixes: a tenant is domain 1 in
+ * every payday app, which is what lets one app name another's rows. A table an
+ * app opts into is numbered by the app, because payday cannot fix a number for
+ * it without taking that number from every app that already spent it -- and
+ * these two arrived after apps had. The generator finds them by their `own:`
+ * marker, never by their number, so nothing of payday's depends on which.
+ *
+ * Each is a domain like any other: 7..247, the two different, and neither one
+ * another entity of the app's declares. 1..6 and 248..255 are payday's. And
+ * like any other it is chosen once and never changed, since an identifier
+ * carries it for as long as anything names the row.
+ *
+ * @generated from message payday.Past
+ */
+export type Past = Message<"payday.Past"> & {
+  /**
+   * Event is the domain of `Event`, one row per operation.
+   *
+   * @generated from field: uint32 event = 1;
+   */
+  event: number;
+
+  /**
+   * Fact is the domain of `Fact`, one row per field of a resource from a moment
+   * on.
+   *
+   * @generated from field: uint32 fact = 2;
+   */
+  fact: number;
+};
+
+/**
+ * Describes the message payday.Past.
+ * Use `create(PastSchema)` to create a new message.
+ */
+export const PastSchema: GenMessage<Past> = /*@__PURE__*/
+  messageDesc(file_payday_app, 1);
 

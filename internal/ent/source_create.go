@@ -24,6 +24,7 @@ type SourceCreate struct {
 	config
 	mutation *SourceMutation
 	hooks    []Hook
+	stored   **Source
 }
 
 // SetAlias sets the "alias" field.
@@ -188,6 +189,7 @@ func (_c *SourceCreate) Mutation() *SourceMutation {
 
 // Save creates the Source in the database.
 func (_c *SourceCreate) Save(ctx context.Context) (*Source, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -213,8 +215,21 @@ func (_c *SourceCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *SourceCreate) defaults() {
+	if _, ok := _c.mutation.LiveCapable(); !ok {
+		if _, ok := _c.mutation.FieldExpr(source.FieldLiveCapable); !ok {
+			v := source.DefaultLiveCapable
+			_c.mutation.SetLiveCapable(v)
+		}
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *SourceCreate) check() error {
+	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
+		return &ValidationError{Name: fs[0], err: fmt.Errorf(`ent: field "Source.%s" was assigned an expression, which only an update writes`, fs[0])}
+	}
 	if _, ok := _c.mutation.Alias(); !ok {
 		return &ValidationError{Name: "alias", err: errors.New(`ent: missing required field "Source.alias"`)}
 	}
@@ -286,6 +301,18 @@ func (_c *SourceCreate) createSpec() (*Source, *sqlgraph.CreateSpec, error) {
 		_node = &Source{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(source.Table, sqlgraph.NewFieldSpec(source.FieldId, field.TypeUuid))
 	)
+	if _c.stored != nil {
+		_stored := &Source{config: _c.config}
+		_spec.Returning = source.Columns
+		_spec.ScanValues = _stored.scanValues
+		_spec.Assign = func(columns []string, values []any) error {
+			if err := _stored.assignValues(columns, values); err != nil {
+				return err
+			}
+			*_c.stored = _stored
+			return nil
+		}
+	}
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
@@ -421,6 +448,32 @@ func (_c *SourceCreate) createSpec() (*Source, *sqlgraph.CreateSpec, error) {
 	return _node, _spec, nil
 }
 
+// Stored has Save read the Source back, into `v`, as the database stored
+// it: at the precision of its columns, with the defaults the database filled
+// in and what a trigger before the write made of it. Save itself answers with
+// the Source as this builder had it.
+//
+// The INSERT reads it, with RETURNING, where the dialect has it, so that the
+// row and the reading of it are one statement. MySQL has none, and an INSERT
+// with a conflict clause may have written nothing, so for those it is a query
+// by the Id just after the INSERT. Either way it is read on the driver the
+// INSERT ran on, so inside a transaction it is that transaction's row. Its
+// edges are not loaded.
+//
+// In a CreateBulk, the Stored of each builder is honoured and the batch's one
+// INSERT reads all of their rows back: each is matched to its builder by the
+// Id the builder was given, or by its place when the database made the Ids up.
+// A column some builders of a batch set and others do not is NULL for the
+// others, as it is in any batch; the database's default is for a column no
+// builder sets.
+//
+// `v` is written only by a Save that wrote the row: one that failed, or that a
+// hook answered without writing, leaves it as it was.
+func (_c *SourceCreate) Stored(v **Source) *SourceCreate {
+	_c.stored = v
+	return _c
+}
+
 // SourceCreateBulk is the builder for creating many Source entities in bulk.
 type SourceCreateBulk struct {
 	config
@@ -439,6 +492,7 @@ func (_c *SourceCreateBulk) Save(ctx context.Context) ([]*Source, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*SourceMutation)
 				if !ok {

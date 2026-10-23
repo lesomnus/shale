@@ -17,6 +17,8 @@ import (
 	set "github.com/lesomnus/shale/internal/ent/set"
 	site "github.com/lesomnus/shale/internal/ent/site"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
@@ -24,6 +26,7 @@ import (
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
@@ -87,27 +90,39 @@ func (s NodeServiceServer) narrow(ctx context.Context, p predicate.Node) (predic
 	return NodeNarrow(ctx, s.Scope, p)
 }
 
-func (s NodeServiceServer) Add(ctx context.Context, req *api.NodeAddRequest) (*api.Node, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s NodeServiceServer) snapshot(ctx context.Context, p predicate.Node, lock bool) (*ent.Node, error) {
+	q := s.Db.Node.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s NodeServiceServer) image(v *api.Node) *api.Node {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Node)
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st NodeServiceServer) create(ctx context.Context, req *api.NodeAddRequest) (*ent.NodeCreate, []func(v *api.Node), error) {
+	var ds []func(v *api.Node)
 	q := st.Db.Node.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Node", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Node", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -156,7 +171,30 @@ func (s NodeServiceServer) Add(ctx context.Context, req *api.NodeAddRequest) (*a
 	if req.HasDateScored() {
 		q.SetDateScored(req.GetDateScored().AsTime())
 	}
+	return q, ds, nil
+}
 
+func (s NodeServiceServer) Add(ctx context.Context, req *api.NodeAddRequest) (*api.Node, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Node
+	if snapshotOptions(s.Rec, api.NodeService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -170,9 +208,18 @@ func (s NodeServiceServer) Add(ctx context.Context, req *api.NodeAddRequest) (*a
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Node
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.NodeService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.NodeService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -180,7 +227,39 @@ func (s NodeServiceServer) Add(ctx context.Context, req *api.NodeAddRequest) (*a
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
+}
+
+// NodeAddRule is what a layer in front says about one row an Add of Node
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type NodeAddRule func(ctx context.Context, req *api.NodeAddRequest) (*api.NodeAddRequest, error)
+
+// NodeWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func NodeWithAddRule(next api.NodeServiceServer, rule NodeAddRule) api.NodeServiceServer {
+	return nodeAddRuled{next, rule}
+}
+
+type nodeAddRuled struct {
+	api.NodeServiceServer
+	rule NodeAddRule
+}
+
+func (s nodeAddRuled) Add(ctx context.Context, req *api.NodeAddRequest) (*api.Node, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.NodeServiceServer.Add(ctx, r)
 }
 
 func (s NodeServiceServer) Get(ctx context.Context, req *api.NodeGetRequest) (*api.Node, error) {
@@ -305,7 +384,6 @@ func NodeSelect(q *ent.NodeQuery, m *api.NodeSelect) {
 func NodeSelectInit(q *ent.NodeQuery, m *api.NodeSelect) {
 	if m != nil {
 		NodeSelect(q, m)
-	} else {
 	}
 }
 
@@ -406,6 +484,18 @@ func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *pat
 		return nil, err
 	}
 
+	var previous *api.Node
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Node.Query().Where(p)
 		if pred != nil {
@@ -432,6 +522,7 @@ func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *pat
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -454,20 +545,25 @@ func (s NodeServiceServer) apply(ctx context.Context, ref *api.NodeRef, doc *pat
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Node
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -494,8 +590,16 @@ func (s NodeServiceServer) Erase(ctx context.Context, req *api.NodeRef) (*api.No
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Node
 	if s.Rec != nil {
-		v, err := st.Db.Node.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.NodeService_Erase_FullMethodName)
+		var v *ent.Node
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Node.Query().Where(p).Select(node.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.NodeEraseResponse{}, nil
@@ -503,10 +607,14 @@ func (s NodeServiceServer) Erase(ctx context.Context, req *api.NodeRef) (*api.No
 			return nil, err
 		}
 
-		k = v
-		p = node.And(p, node.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = node.And(p, node.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Node.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -516,8 +624,9 @@ func (s NodeServiceServer) Erase(ctx context.Context, req *api.NodeRef) (*api.No
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.NodeService_Erase_FullMethodName,
-			Key: k,
+			By:       api.NodeService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -625,27 +734,39 @@ func (s RelayServiceServer) narrow(ctx context.Context, p predicate.Relay) (pred
 	return RelayNarrow(ctx, s.Scope, p)
 }
 
-func (s RelayServiceServer) Add(ctx context.Context, req *api.RelayAddRequest) (*api.Relay, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s RelayServiceServer) snapshot(ctx context.Context, p predicate.Relay, lock bool) (*ent.Relay, error) {
+	q := s.Db.Relay.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s RelayServiceServer) image(v *api.Relay) *api.Relay {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Relay)
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st RelayServiceServer) create(ctx context.Context, req *api.RelayAddRequest) (*ent.RelayCreate, []func(v *api.Relay), error) {
+	var ds []func(v *api.Relay)
 	q := st.Db.Relay.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Relay", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Relay", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -690,7 +811,30 @@ func (s RelayServiceServer) Add(ctx context.Context, req *api.RelayAddRequest) (
 	if req.HasStatus() {
 		q.SetStatus(req.GetStatus())
 	}
+	return q, ds, nil
+}
 
+func (s RelayServiceServer) Add(ctx context.Context, req *api.RelayAddRequest) (*api.Relay, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Relay
+	if snapshotOptions(s.Rec, api.RelayService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -704,9 +848,18 @@ func (s RelayServiceServer) Add(ctx context.Context, req *api.RelayAddRequest) (
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Relay
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.RelayService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.RelayService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -714,7 +867,39 @@ func (s RelayServiceServer) Add(ctx context.Context, req *api.RelayAddRequest) (
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
+}
+
+// RelayAddRule is what a layer in front says about one row an Add of Relay
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type RelayAddRule func(ctx context.Context, req *api.RelayAddRequest) (*api.RelayAddRequest, error)
+
+// RelayWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func RelayWithAddRule(next api.RelayServiceServer, rule RelayAddRule) api.RelayServiceServer {
+	return relayAddRuled{next, rule}
+}
+
+type relayAddRuled struct {
+	api.RelayServiceServer
+	rule RelayAddRule
+}
+
+func (s relayAddRuled) Add(ctx context.Context, req *api.RelayAddRequest) (*api.Relay, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.RelayServiceServer.Add(ctx, r)
 }
 
 func (s RelayServiceServer) Get(ctx context.Context, req *api.RelayGetRequest) (*api.Relay, error) {
@@ -833,7 +1018,6 @@ func RelaySelect(q *ent.RelayQuery, m *api.RelaySelect) {
 func RelaySelectInit(q *ent.RelayQuery, m *api.RelaySelect) {
 	if m != nil {
 		RelaySelect(q, m)
-	} else {
 	}
 }
 
@@ -934,6 +1118,18 @@ func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *p
 		return nil, err
 	}
 
+	var previous *api.Relay
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Relay.Query().Where(p)
 		if pred != nil {
@@ -960,6 +1156,7 @@ func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *p
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -982,20 +1179,25 @@ func (s RelayServiceServer) apply(ctx context.Context, ref *api.RelayRef, doc *p
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Relay
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -1022,8 +1224,16 @@ func (s RelayServiceServer) Erase(ctx context.Context, req *api.RelayRef) (*api.
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Relay
 	if s.Rec != nil {
-		v, err := st.Db.Relay.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.RelayService_Erase_FullMethodName)
+		var v *ent.Relay
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Relay.Query().Where(p).Select(relay.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.RelayEraseResponse{}, nil
@@ -1031,10 +1241,14 @@ func (s RelayServiceServer) Erase(ctx context.Context, req *api.RelayRef) (*api.
 			return nil, err
 		}
 
-		k = v
-		p = relay.And(p, relay.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = relay.And(p, relay.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Relay.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -1044,8 +1258,9 @@ func (s RelayServiceServer) Erase(ctx context.Context, req *api.RelayRef) (*api.
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.RelayService_Erase_FullMethodName,
-			Key: k,
+			By:       api.RelayService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -1153,33 +1368,101 @@ func (s ProducerServiceServer) narrow(ctx context.Context, p predicate.Producer)
 	return ProducerNarrow(ctx, s.Scope, p)
 }
 
-func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequest) (*api.Producer, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s ProducerServiceServer) snapshot(ctx context.Context, p predicate.Producer, lock bool) (*ent.Producer, error) {
+	q := s.Db.Producer.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s ProducerServiceServer) image(v *api.Producer) *api.Producer {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Producer)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(3)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(20)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st ProducerServiceServer) create(ctx context.Context, req *api.ProducerAddRequest) (*ent.ProducerCreate, []func(v *api.Producer), error) {
 	ds := make([]func(v *api.Producer), 0, 4)
 	q := st.Db.Producer.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Producer", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Producer", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *api.Producer) {
@@ -1188,7 +1471,7 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 	}
 	if req.HasSite() {
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSiteId(k)
 			ds = append(ds, func(v *api.Producer) {
@@ -1204,7 +1487,7 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 	}
 	if req.HasSet() {
 		if k, err := SetGetKey(ctx, st.Db, req.GetSet()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSetId(k)
 			ds = append(ds, func(v *api.Producer) {
@@ -1236,7 +1519,7 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 	}
 	if req.HasRelay() {
 		if k, err := RelayGetKey(ctx, st.Db, req.GetRelay()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetRelayId(k)
 			ds = append(ds, func(v *api.Producer) {
@@ -1253,7 +1536,30 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 	} else {
 		q.SetLive(0)
 	}
+	return q, ds, nil
+}
 
+func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequest) (*api.Producer, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Producer
+	if snapshotOptions(s.Rec, api.ProducerService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1267,9 +1573,18 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Producer
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.ProducerService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.ProducerService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1277,11 +1592,39 @@ func (s ProducerServiceServer) Add(ctx context.Context, req *api.ProducerAddRequ
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// ProducerAddRule is what a layer in front says about one row an Add of Producer
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type ProducerAddRule func(ctx context.Context, req *api.ProducerAddRequest) (*api.ProducerAddRequest, error)
+
+// ProducerWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func ProducerWithAddRule(next api.ProducerServiceServer, rule ProducerAddRule) api.ProducerServiceServer {
+	return producerAddRuled{next, rule}
+}
+
+type producerAddRuled struct {
+	api.ProducerServiceServer
+	rule ProducerAddRule
+}
+
+func (s producerAddRuled) Add(ctx context.Context, req *api.ProducerAddRequest) (*api.Producer, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.ProducerServiceServer.Add(ctx, r)
 }
 
 func (s ProducerServiceServer) Get(ctx context.Context, req *api.ProducerGetRequest) (*api.Producer, error) {
@@ -1411,11 +1754,6 @@ func ProducerSelect(q *ent.ProducerQuery, m *api.ProducerSelect) {
 func ProducerSelectInit(q *ent.ProducerQuery, m *api.ProducerSelect) {
 	if m != nil {
 		ProducerSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
-		q.WithSite(selectSiteKey)
-		q.WithSet(selectSetKey)
-		q.WithRelay(selectRelayKey)
 	}
 }
 
@@ -1538,6 +1876,18 @@ func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, 
 		return nil, err
 	}
 
+	var previous *api.Producer
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Producer.Query().Where(p)
 		if pred != nil {
@@ -1564,6 +1914,7 @@ func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, 
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1586,20 +1937,25 @@ func (s ProducerServiceServer) apply(ctx context.Context, ref *api.ProducerRef, 
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Producer
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -1626,8 +1982,16 @@ func (s ProducerServiceServer) Erase(ctx context.Context, req *api.ProducerRef) 
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Producer
 	if s.Rec != nil {
-		v, err := st.Db.Producer.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.ProducerService_Erase_FullMethodName)
+		var v *ent.Producer
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Producer.Query().Where(p).Select(producer.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.ProducerEraseResponse{}, nil
@@ -1635,10 +1999,14 @@ func (s ProducerServiceServer) Erase(ctx context.Context, req *api.ProducerRef) 
 			return nil, err
 		}
 
-		k = v
-		p = producer.And(p, producer.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = producer.And(p, producer.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Producer.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -1648,8 +2016,9 @@ func (s ProducerServiceServer) Erase(ctx context.Context, req *api.ProducerRef) 
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.ProducerService_Erase_FullMethodName,
-			Key: k,
+			By:       api.ProducerService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -1765,33 +2134,59 @@ func (s ReaderServiceServer) narrow(ctx context.Context, p predicate.Reader) (pr
 	return ReaderNarrow(ctx, s.Scope, p)
 }
 
-func (s ReaderServiceServer) Add(ctx context.Context, req *api.ReaderAddRequest) (*api.Reader, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s ReaderServiceServer) snapshot(ctx context.Context, p predicate.Reader, lock bool) (*ent.Reader, error) {
+	q := s.Db.Reader.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s ReaderServiceServer) image(v *api.Reader) *api.Reader {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Reader)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st ReaderServiceServer) create(ctx context.Context, req *api.ReaderAddRequest) (*ent.ReaderCreate, []func(v *api.Reader), error) {
 	ds := make([]func(v *api.Reader), 0, 1)
 	q := st.Db.Reader.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Reader", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Reader", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *api.Reader) {
@@ -1828,7 +2223,30 @@ func (s ReaderServiceServer) Add(ctx context.Context, req *api.ReaderAddRequest)
 	}
 	q.SetVersion(req.GetVersion())
 	q.SetAllSites(req.GetAllSites())
+	return q, ds, nil
+}
 
+func (s ReaderServiceServer) Add(ctx context.Context, req *api.ReaderAddRequest) (*api.Reader, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Reader
+	if snapshotOptions(s.Rec, api.ReaderService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1842,9 +2260,18 @@ func (s ReaderServiceServer) Add(ctx context.Context, req *api.ReaderAddRequest)
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Reader
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.ReaderService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.ReaderService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1852,11 +2279,39 @@ func (s ReaderServiceServer) Add(ctx context.Context, req *api.ReaderAddRequest)
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// ReaderAddRule is what a layer in front says about one row an Add of Reader
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type ReaderAddRule func(ctx context.Context, req *api.ReaderAddRequest) (*api.ReaderAddRequest, error)
+
+// ReaderWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func ReaderWithAddRule(next api.ReaderServiceServer, rule ReaderAddRule) api.ReaderServiceServer {
+	return readerAddRuled{next, rule}
+}
+
+type readerAddRuled struct {
+	api.ReaderServiceServer
+	rule ReaderAddRule
+}
+
+func (s readerAddRuled) Add(ctx context.Context, req *api.ReaderAddRequest) (*api.Reader, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.ReaderServiceServer.Add(ctx, r)
 }
 
 func (s ReaderServiceServer) Get(ctx context.Context, req *api.ReaderGetRequest) (*api.Reader, error) {
@@ -1965,8 +2420,6 @@ func ReaderSelect(q *ent.ReaderQuery, m *api.ReaderSelect) {
 func ReaderSelectInit(q *ent.ReaderQuery, m *api.ReaderSelect) {
 	if m != nil {
 		ReaderSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 
@@ -2067,6 +2520,18 @@ func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc 
 		return nil, err
 	}
 
+	var previous *api.Reader
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Reader.Query().Where(p)
 		if pred != nil {
@@ -2093,6 +2558,7 @@ func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc 
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -2115,20 +2581,25 @@ func (s ReaderServiceServer) apply(ctx context.Context, ref *api.ReaderRef, doc 
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Reader
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -2155,8 +2626,16 @@ func (s ReaderServiceServer) Erase(ctx context.Context, req *api.ReaderRef) (*ap
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Reader
 	if s.Rec != nil {
-		v, err := st.Db.Reader.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.ReaderService_Erase_FullMethodName)
+		var v *ent.Reader
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Reader.Query().Where(p).Select(reader.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.ReaderEraseResponse{}, nil
@@ -2164,10 +2643,14 @@ func (s ReaderServiceServer) Erase(ctx context.Context, req *api.ReaderRef) (*ap
 			return nil, err
 		}
 
-		k = v
-		p = reader.And(p, reader.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = reader.And(p, reader.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Reader.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -2177,8 +2660,9 @@ func (s ReaderServiceServer) Erase(ctx context.Context, req *api.ReaderRef) (*ap
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.ReaderService_Erase_FullMethodName,
-			Key: k,
+			By:       api.ReaderService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

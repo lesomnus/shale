@@ -140,6 +140,8 @@ people write it is a compliance question rather than a sizing one:
 audit:
   profile: pipa                          # 90 days in the table, a year in the archive
   archive: /var/lib/shale/control/audit  # what leaves the table is written here first
+  checkpoints:
+    key: /etc/shale/checkpoints.pem      # signs every checkpoint; an archive needs one
   by:
     lamina:                              # reschedules: the lamina's own row retention
       retain: 720h
@@ -157,10 +159,21 @@ audit:
   `discard: true` says the deployment means to keep no copy. The database
   keeps an account of what the archive should hold (the `archived` table,
   the deployment's and no tenant's), and every pass ends in a checkpoint
-  of it; `checkpoints.dir` keeps the checkpoints apart from the archive
-  and `checkpoints.key` signs them. Neither is required. The first pass
-  after an upgrade from a flat directory adopts the files already there
-  and fills the account from them; there is nothing to run.
+  of it, signed by `checkpoints.key`: an archive with no key is refused
+  when the process comes up, since there is no account of an archive
+  that nothing signs (`openssl genpkey -algorithm ed25519 -out
+  checkpoints.pem`, mounted as a secret). `checkpoints.dir` keeps the
+  checkpoints apart from the archive, best on a disk that refuses
+  deletion, and `checkpoints.witnesses` names where each is heard outside
+  the database and the archive: `log:`, the log and the metrics, which
+  monitoring alerts on, or `store:<dir>`. The first pass after an upgrade
+  from a flat directory adopts the files already there and fills the
+  account from them; there is nothing to run.
+- `content` is what a row keeps of the write it records: what the write
+  set, by default (`patch`); `fields` keeps which fields and nothing they
+  were set to, and `value` the row as the write left it. A field the
+  schema declares personal (a person's alias, name, description and
+  labels) or secret is on the trail as a value at no level.
 - `by:` sets a kind apart, keyed by the word the schema registered
   (`lamina`, `set`, `source`, `holder`, `tenant`, `sink`, …). `site` is a
   word roster registers too, so in this process it answers nobody and is

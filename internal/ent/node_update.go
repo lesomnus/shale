@@ -449,14 +449,26 @@ func (_u *NodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(node.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldAlias); ok {
+		_spec.SetField(node.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(node.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldName); ok {
+		_spec.SetField(node.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(node.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDesc); ok {
+		_spec.SetField(node.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(node.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldLabels); ok {
+		_spec.SetField(node.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(node.FieldLabels, field.TypeJson)
@@ -464,17 +476,29 @@ func (_u *NodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(node.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldHardwareId); ok {
+		_spec.SetField(node.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Hostname(); ok {
 		_spec.SetField(node.FieldHostname, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldHostname); ok {
+		_spec.SetField(node.FieldHostname, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(node.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldState); ok {
+		_spec.SetField(node.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(node.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.CertSerial(); ok {
 		_spec.SetField(node.FieldCertSerial, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldCertSerial); ok {
+		_spec.SetField(node.FieldCertSerial, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Join(); ok {
 		vv, err := node.ValueScanner.Join.Value(value)
@@ -486,14 +510,23 @@ func (_u *NodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(node.FieldJoin, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldJoin); ok {
+		_spec.SetField(node.FieldJoin, field.TypeJson, e)
+	}
 	if _u.mutation.JoinCleared() {
 		_spec.ClearField(node.FieldJoin, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(node.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateUpdated); ok {
+		_spec.SetField(node.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(node.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateErased); ok {
+		_spec.SetField(node.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(node.FieldDateErased, field.TypeTime)
@@ -504,17 +537,26 @@ func (_u *NodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateAdopted(); ok {
 		_spec.SetField(node.FieldDateAdopted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateAdopted); ok {
+		_spec.SetField(node.FieldDateAdopted, field.TypeTime, e)
+	}
 	if _u.mutation.DateAdoptedCleared() {
 		_spec.ClearField(node.FieldDateAdopted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(node.FieldDateSeen, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateSeen); ok {
+		_spec.SetField(node.FieldDateSeen, field.TypeTime, e)
+	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(node.FieldDateSeen, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateCertExpires(); ok {
 		_spec.SetField(node.FieldDateCertExpires, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateCertExpires); ok {
+		_spec.SetField(node.FieldDateCertExpires, field.TypeTime, e)
 	}
 	if _u.mutation.DateCertExpiresCleared() {
 		_spec.ClearField(node.FieldDateCertExpires, field.TypeTime)
@@ -529,6 +571,9 @@ func (_u *NodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(node.FieldInterfaces, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldInterfaces); ok {
+		_spec.SetField(node.FieldInterfaces, field.TypeJson, e)
+	}
 	if value, ok := _u.mutation.AppendedInterfaces(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, node.FieldInterfaces, value)
@@ -539,6 +584,9 @@ func (_u *NodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.KeyIds(); ok {
 		_spec.SetField(node.FieldKeyIds, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldKeyIds); ok {
+		_spec.SetField(node.FieldKeyIds, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedKeyIds(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -551,14 +599,26 @@ func (_u *NodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.CaHash(); ok {
 		_spec.SetField(node.FieldCaHash, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldCaHash); ok {
+		_spec.SetField(node.FieldCaHash, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(node.FieldVersion, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldVersion); ok {
+		_spec.SetField(node.FieldVersion, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.ControlAddress(); ok {
 		_spec.SetField(node.FieldControlAddress, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldControlAddress); ok {
+		_spec.SetField(node.FieldControlAddress, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DataAddress(); ok {
 		_spec.SetField(node.FieldDataAddress, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDataAddress); ok {
+		_spec.SetField(node.FieldDataAddress, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		vv, err := node.ValueScanner.Status.Value(value)
@@ -570,17 +630,26 @@ func (_u *NodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(node.FieldStatus, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldStatus); ok {
+		_spec.SetField(node.FieldStatus, field.TypeJson, e)
+	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(node.FieldStatus, field.TypeJson)
 	}
 	if value, ok := _u.mutation.FailureScore(); ok {
 		_spec.SetField(node.FieldFailureScore, field.TypeFloat64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldFailureScore); ok {
+		_spec.SetField(node.FieldFailureScore, field.TypeFloat64, e)
+	}
 	if value, ok := _u.mutation.AddedFailureScore(); ok {
 		_spec.AddField(node.FieldFailureScore, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.DateScored(); ok {
 		_spec.SetField(node.FieldDateScored, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateScored); ok {
+		_spec.SetField(node.FieldDateScored, field.TypeTime, e)
 	}
 	if _u.mutation.DateScoredCleared() {
 		_spec.ClearField(node.FieldDateScored, field.TypeTime)
@@ -1055,14 +1124,26 @@ func (_u *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(node.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldAlias); ok {
+		_spec.SetField(node.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(node.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldName); ok {
+		_spec.SetField(node.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(node.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDesc); ok {
+		_spec.SetField(node.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(node.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldLabels); ok {
+		_spec.SetField(node.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(node.FieldLabels, field.TypeJson)
@@ -1070,17 +1151,29 @@ func (_u *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) {
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(node.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldHardwareId); ok {
+		_spec.SetField(node.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Hostname(); ok {
 		_spec.SetField(node.FieldHostname, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldHostname); ok {
+		_spec.SetField(node.FieldHostname, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(node.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldState); ok {
+		_spec.SetField(node.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(node.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.CertSerial(); ok {
 		_spec.SetField(node.FieldCertSerial, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldCertSerial); ok {
+		_spec.SetField(node.FieldCertSerial, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Join(); ok {
 		vv, err := node.ValueScanner.Join.Value(value)
@@ -1092,14 +1185,23 @@ func (_u *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) {
 		}
 		_spec.SetField(node.FieldJoin, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldJoin); ok {
+		_spec.SetField(node.FieldJoin, field.TypeJson, e)
+	}
 	if _u.mutation.JoinCleared() {
 		_spec.ClearField(node.FieldJoin, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(node.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateUpdated); ok {
+		_spec.SetField(node.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(node.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateErased); ok {
+		_spec.SetField(node.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(node.FieldDateErased, field.TypeTime)
@@ -1110,17 +1212,26 @@ func (_u *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) {
 	if value, ok := _u.mutation.DateAdopted(); ok {
 		_spec.SetField(node.FieldDateAdopted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateAdopted); ok {
+		_spec.SetField(node.FieldDateAdopted, field.TypeTime, e)
+	}
 	if _u.mutation.DateAdoptedCleared() {
 		_spec.ClearField(node.FieldDateAdopted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(node.FieldDateSeen, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateSeen); ok {
+		_spec.SetField(node.FieldDateSeen, field.TypeTime, e)
+	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(node.FieldDateSeen, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateCertExpires(); ok {
 		_spec.SetField(node.FieldDateCertExpires, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateCertExpires); ok {
+		_spec.SetField(node.FieldDateCertExpires, field.TypeTime, e)
 	}
 	if _u.mutation.DateCertExpiresCleared() {
 		_spec.ClearField(node.FieldDateCertExpires, field.TypeTime)
@@ -1135,6 +1246,9 @@ func (_u *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) {
 		}
 		_spec.SetField(node.FieldInterfaces, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldInterfaces); ok {
+		_spec.SetField(node.FieldInterfaces, field.TypeJson, e)
+	}
 	if value, ok := _u.mutation.AppendedInterfaces(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, node.FieldInterfaces, value)
@@ -1145,6 +1259,9 @@ func (_u *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) {
 	}
 	if value, ok := _u.mutation.KeyIds(); ok {
 		_spec.SetField(node.FieldKeyIds, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldKeyIds); ok {
+		_spec.SetField(node.FieldKeyIds, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedKeyIds(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -1157,14 +1274,26 @@ func (_u *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) {
 	if value, ok := _u.mutation.CaHash(); ok {
 		_spec.SetField(node.FieldCaHash, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldCaHash); ok {
+		_spec.SetField(node.FieldCaHash, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(node.FieldVersion, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldVersion); ok {
+		_spec.SetField(node.FieldVersion, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.ControlAddress(); ok {
 		_spec.SetField(node.FieldControlAddress, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldControlAddress); ok {
+		_spec.SetField(node.FieldControlAddress, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DataAddress(); ok {
 		_spec.SetField(node.FieldDataAddress, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDataAddress); ok {
+		_spec.SetField(node.FieldDataAddress, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		vv, err := node.ValueScanner.Status.Value(value)
@@ -1176,17 +1305,26 @@ func (_u *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) {
 		}
 		_spec.SetField(node.FieldStatus, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldStatus); ok {
+		_spec.SetField(node.FieldStatus, field.TypeJson, e)
+	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(node.FieldStatus, field.TypeJson)
 	}
 	if value, ok := _u.mutation.FailureScore(); ok {
 		_spec.SetField(node.FieldFailureScore, field.TypeFloat64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldFailureScore); ok {
+		_spec.SetField(node.FieldFailureScore, field.TypeFloat64, e)
+	}
 	if value, ok := _u.mutation.AddedFailureScore(); ok {
 		_spec.AddField(node.FieldFailureScore, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.DateScored(); ok {
 		_spec.SetField(node.FieldDateScored, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(node.FieldDateScored); ok {
+		_spec.SetField(node.FieldDateScored, field.TypeTime, e)
 	}
 	if _u.mutation.DateScoredCleared() {
 		_spec.ClearField(node.FieldDateScored, field.TypeTime)

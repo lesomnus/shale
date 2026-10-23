@@ -471,14 +471,26 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(sink.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldAlias); ok {
+		_spec.SetField(sink.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(sink.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldName); ok {
+		_spec.SetField(sink.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(sink.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDesc); ok {
+		_spec.SetField(sink.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(sink.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldLabels); ok {
+		_spec.SetField(sink.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(sink.FieldLabels, field.TypeJson)
@@ -486,8 +498,14 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Path(); ok {
 		_spec.SetField(sink.FieldPath, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldPath); ok {
+		_spec.SetField(sink.FieldPath, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Capacity(); ok {
 		_spec.SetField(sink.FieldCapacity, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldCapacity); ok {
+		_spec.SetField(sink.FieldCapacity, field.TypeInt64, e)
 	}
 	if value, ok := _u.mutation.AddedCapacity(); ok {
 		_spec.AddField(sink.FieldCapacity, field.TypeInt64, value)
@@ -495,14 +513,23 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Free(); ok {
 		_spec.SetField(sink.FieldFree, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldFree); ok {
+		_spec.SetField(sink.FieldFree, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedFree(); ok {
 		_spec.AddField(sink.FieldFree, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(sink.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDateUpdated); ok {
+		_spec.SetField(sink.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(sink.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDateErased); ok {
+		_spec.SetField(sink.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(sink.FieldDateErased, field.TypeTime)
@@ -512,6 +539,9 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Pressure(); ok {
 		_spec.SetField(sink.FieldPressure, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldPressure); ok {
+		_spec.SetField(sink.FieldPressure, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedPressure(); ok {
 		_spec.AddField(sink.FieldPressure, field.TypeInt32, value)
@@ -526,11 +556,17 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(sink.FieldCapabilities, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldCapabilities); ok {
+		_spec.SetField(sink.FieldCapabilities, field.TypeJson, e)
+	}
 	if _u.mutation.CapabilitiesCleared() {
 		_spec.ClearField(sink.FieldCapabilities, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Attachment(); ok {
 		_spec.SetField(sink.FieldAttachment, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldAttachment); ok {
+		_spec.SetField(sink.FieldAttachment, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedAttachment(); ok {
 		_spec.AddField(sink.FieldAttachment, field.TypeInt32, value)
@@ -538,8 +574,14 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AcceptWrites(); ok {
 		_spec.SetField(sink.FieldAcceptWrites, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldAcceptWrites); ok {
+		_spec.SetField(sink.FieldAcceptWrites, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(sink.FieldDateSeen, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDateSeen); ok {
+		_spec.SetField(sink.FieldDateSeen, field.TypeTime, e)
 	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(sink.FieldDateSeen, field.TypeTime)
@@ -547,11 +589,17 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.UploadsInFlight(); ok {
 		_spec.SetField(sink.FieldUploadsInFlight, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldUploadsInFlight); ok {
+		_spec.SetField(sink.FieldUploadsInFlight, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedUploadsInFlight(); ok {
 		_spec.AddField(sink.FieldUploadsInFlight, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateReconciled(); ok {
 		_spec.SetField(sink.FieldDateReconciled, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDateReconciled); ok {
+		_spec.SetField(sink.FieldDateReconciled, field.TypeTime, e)
 	}
 	if _u.mutation.DateReconciledCleared() {
 		_spec.ClearField(sink.FieldDateReconciled, field.TypeTime)
@@ -559,11 +607,17 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.ReportedBy(); ok {
 		_spec.SetField(sink.FieldReportedBy, field.TypeUuid, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldReportedBy); ok {
+		_spec.SetField(sink.FieldReportedBy, field.TypeUuid, e)
+	}
 	if _u.mutation.ReportedByCleared() {
 		_spec.ClearField(sink.FieldReportedBy, field.TypeUuid)
 	}
 	if value, ok := _u.mutation.Warnings(); ok {
 		_spec.SetField(sink.FieldWarnings, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldWarnings); ok {
+		_spec.SetField(sink.FieldWarnings, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedWarnings(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -576,8 +630,14 @@ func (_u *SinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.CapacityClamped(); ok {
 		_spec.SetField(sink.FieldCapacityClamped, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldCapacityClamped); ok {
+		_spec.SetField(sink.FieldCapacityClamped, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.Laminae(); ok {
 		_spec.SetField(sink.FieldLaminae, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldLaminae); ok {
+		_spec.SetField(sink.FieldLaminae, field.TypeInt64, e)
 	}
 	if value, ok := _u.mutation.AddedLaminae(); ok {
 		_spec.AddField(sink.FieldLaminae, field.TypeInt64, value)
@@ -1101,14 +1161,26 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(sink.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldAlias); ok {
+		_spec.SetField(sink.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(sink.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldName); ok {
+		_spec.SetField(sink.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(sink.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDesc); ok {
+		_spec.SetField(sink.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(sink.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldLabels); ok {
+		_spec.SetField(sink.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(sink.FieldLabels, field.TypeJson)
@@ -1116,8 +1188,14 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	if value, ok := _u.mutation.Path(); ok {
 		_spec.SetField(sink.FieldPath, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldPath); ok {
+		_spec.SetField(sink.FieldPath, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Capacity(); ok {
 		_spec.SetField(sink.FieldCapacity, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldCapacity); ok {
+		_spec.SetField(sink.FieldCapacity, field.TypeInt64, e)
 	}
 	if value, ok := _u.mutation.AddedCapacity(); ok {
 		_spec.AddField(sink.FieldCapacity, field.TypeInt64, value)
@@ -1125,14 +1203,23 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	if value, ok := _u.mutation.Free(); ok {
 		_spec.SetField(sink.FieldFree, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldFree); ok {
+		_spec.SetField(sink.FieldFree, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedFree(); ok {
 		_spec.AddField(sink.FieldFree, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(sink.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDateUpdated); ok {
+		_spec.SetField(sink.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(sink.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDateErased); ok {
+		_spec.SetField(sink.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(sink.FieldDateErased, field.TypeTime)
@@ -1142,6 +1229,9 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	}
 	if value, ok := _u.mutation.Pressure(); ok {
 		_spec.SetField(sink.FieldPressure, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldPressure); ok {
+		_spec.SetField(sink.FieldPressure, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedPressure(); ok {
 		_spec.AddField(sink.FieldPressure, field.TypeInt32, value)
@@ -1156,11 +1246,17 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 		}
 		_spec.SetField(sink.FieldCapabilities, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldCapabilities); ok {
+		_spec.SetField(sink.FieldCapabilities, field.TypeJson, e)
+	}
 	if _u.mutation.CapabilitiesCleared() {
 		_spec.ClearField(sink.FieldCapabilities, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Attachment(); ok {
 		_spec.SetField(sink.FieldAttachment, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldAttachment); ok {
+		_spec.SetField(sink.FieldAttachment, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedAttachment(); ok {
 		_spec.AddField(sink.FieldAttachment, field.TypeInt32, value)
@@ -1168,8 +1264,14 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	if value, ok := _u.mutation.AcceptWrites(); ok {
 		_spec.SetField(sink.FieldAcceptWrites, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldAcceptWrites); ok {
+		_spec.SetField(sink.FieldAcceptWrites, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(sink.FieldDateSeen, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDateSeen); ok {
+		_spec.SetField(sink.FieldDateSeen, field.TypeTime, e)
 	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(sink.FieldDateSeen, field.TypeTime)
@@ -1177,11 +1279,17 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	if value, ok := _u.mutation.UploadsInFlight(); ok {
 		_spec.SetField(sink.FieldUploadsInFlight, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldUploadsInFlight); ok {
+		_spec.SetField(sink.FieldUploadsInFlight, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedUploadsInFlight(); ok {
 		_spec.AddField(sink.FieldUploadsInFlight, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateReconciled(); ok {
 		_spec.SetField(sink.FieldDateReconciled, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldDateReconciled); ok {
+		_spec.SetField(sink.FieldDateReconciled, field.TypeTime, e)
 	}
 	if _u.mutation.DateReconciledCleared() {
 		_spec.ClearField(sink.FieldDateReconciled, field.TypeTime)
@@ -1189,11 +1297,17 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	if value, ok := _u.mutation.ReportedBy(); ok {
 		_spec.SetField(sink.FieldReportedBy, field.TypeUuid, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldReportedBy); ok {
+		_spec.SetField(sink.FieldReportedBy, field.TypeUuid, e)
+	}
 	if _u.mutation.ReportedByCleared() {
 		_spec.ClearField(sink.FieldReportedBy, field.TypeUuid)
 	}
 	if value, ok := _u.mutation.Warnings(); ok {
 		_spec.SetField(sink.FieldWarnings, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldWarnings); ok {
+		_spec.SetField(sink.FieldWarnings, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedWarnings(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -1206,8 +1320,14 @@ func (_u *SinkUpdateOne) sqlSave(ctx context.Context) (_node *Sink, err error) {
 	if value, ok := _u.mutation.CapacityClamped(); ok {
 		_spec.SetField(sink.FieldCapacityClamped, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldCapacityClamped); ok {
+		_spec.SetField(sink.FieldCapacityClamped, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.Laminae(); ok {
 		_spec.SetField(sink.FieldLaminae, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sink.FieldLaminae); ok {
+		_spec.SetField(sink.FieldLaminae, field.TypeInt64, e)
 	}
 	if value, ok := _u.mutation.AddedLaminae(); ok {
 		_spec.AddField(sink.FieldLaminae, field.TypeInt64, value)

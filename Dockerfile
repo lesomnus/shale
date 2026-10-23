@@ -16,7 +16,6 @@
 FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS console
 WORKDIR /src/ts
 COPY ts/package.json ts/package-lock.json ./
-COPY ts/vendor ./vendor
 RUN npm ci --no-audit --no-fund
 COPY ts .
 RUN npm run build

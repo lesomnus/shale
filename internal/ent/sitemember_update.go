@@ -107,6 +107,9 @@ func (_u *SiteMemberUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(sitemember.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sitemember.FieldDateUpdated); ok {
+		_spec.SetField(sitemember.FieldDateUpdated, field.TypeTime, e)
+	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(sitemember.FieldDateCreated, field.TypeTime)
 	}
@@ -239,6 +242,9 @@ func (_u *SiteMemberUpdateOne) sqlSave(ctx context.Context) (_node *SiteMember, 
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(sitemember.FieldDateUpdated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sitemember.FieldDateUpdated); ok {
+		_spec.SetField(sitemember.FieldDateUpdated, field.TypeTime, e)
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(sitemember.FieldDateCreated, field.TypeTime)

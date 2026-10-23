@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+
 	"uuid"
 
+	"github.com/lesomnus/shale/internal/ent/access"
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
 	"github.com/lesomnus/shale/internal/ent/archived"
 	"github.com/lesomnus/shale/internal/ent/attempt"
@@ -20,10 +22,12 @@ import (
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
 	"github.com/lesomnus/shale/internal/ent/outbox"
+	"github.com/lesomnus/shale/internal/ent/owed"
 	"github.com/lesomnus/shale/internal/ent/placementpolicy"
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/rowseal"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/signingkey"
 	"github.com/lesomnus/shale/internal/ent/sink"
@@ -41,6 +45,8 @@ import (
 // Client is the client that holds all ent builders.
 type Client struct {
 	config
+	// Access is the client for interacting with the Access builders.
+	Access *AccessClient
 	// AddressPolicy is the client for interacting with the AddressPolicy builders.
 	AddressPolicy *AddressPolicyClient
 	// Archived is the client for interacting with the Archived builders.
@@ -61,6 +67,8 @@ type Client struct {
 	Node *NodeClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
+	// Owed is the client for interacting with the Owed builders.
+	Owed *OwedClient
 	// PlacementPolicy is the client for interacting with the PlacementPolicy builders.
 	PlacementPolicy *PlacementPolicyClient
 	// Producer is the client for interacting with the Producer builders.
@@ -69,6 +77,8 @@ type Client struct {
 	Reader *ReaderClient
 	// Relay is the client for interacting with the Relay builders.
 	Relay *RelayClient
+	// RowSeal is the client for interacting with the RowSeal builders.
+	RowSeal *RowSealClient
 	// Set is the client for interacting with the Set builders.
 	Set *SetClient
 	// SigningKey is the client for interacting with the SigningKey builders.
@@ -95,6 +105,7 @@ func NewClient(opts ...Option) *Client {
 }
 
 func (c *Client) init() {
+	c.Access = NewAccessClient(c.config)
 	c.AddressPolicy = NewAddressPolicyClient(c.config)
 	c.Archived = NewArchivedClient(c.config)
 	c.Attempt = NewAttemptClient(c.config)
@@ -105,10 +116,12 @@ func (c *Client) init() {
 	c.Lamina = NewLaminaClient(c.config)
 	c.Node = NewNodeClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
+	c.Owed = NewOwedClient(c.config)
 	c.PlacementPolicy = NewPlacementPolicyClient(c.config)
 	c.Producer = NewProducerClient(c.config)
 	c.Reader = NewReaderClient(c.config)
 	c.Relay = NewRelayClient(c.config)
+	c.RowSeal = NewRowSealClient(c.config)
 	c.Set = NewSetClient(c.config)
 	c.SigningKey = NewSigningKeyClient(c.config)
 	c.Sink = NewSinkClient(c.config)
@@ -209,6 +222,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:             ctx,
 		config:          cfg,
+		Access:          NewAccessClient(cfg),
 		AddressPolicy:   NewAddressPolicyClient(cfg),
 		Archived:        NewArchivedClient(cfg),
 		Attempt:         NewAttemptClient(cfg),
@@ -219,10 +233,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Lamina:          NewLaminaClient(cfg),
 		Node:            NewNodeClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
+		Owed:            NewOwedClient(cfg),
 		PlacementPolicy: NewPlacementPolicyClient(cfg),
 		Producer:        NewProducerClient(cfg),
 		Reader:          NewReaderClient(cfg),
 		Relay:           NewRelayClient(cfg),
+		RowSeal:         NewRowSealClient(cfg),
 		Set:             NewSetClient(cfg),
 		SigningKey:      NewSigningKeyClient(cfg),
 		Sink:            NewSinkClient(cfg),
@@ -250,6 +266,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:             ctx,
 		config:          cfg,
+		Access:          NewAccessClient(cfg),
 		AddressPolicy:   NewAddressPolicyClient(cfg),
 		Archived:        NewArchivedClient(cfg),
 		Attempt:         NewAttemptClient(cfg),
@@ -260,10 +277,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Lamina:          NewLaminaClient(cfg),
 		Node:            NewNodeClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
+		Owed:            NewOwedClient(cfg),
 		PlacementPolicy: NewPlacementPolicyClient(cfg),
 		Producer:        NewProducerClient(cfg),
 		Reader:          NewReaderClient(cfg),
 		Relay:           NewRelayClient(cfg),
+		RowSeal:         NewRowSealClient(cfg),
 		Set:             NewSetClient(cfg),
 		SigningKey:      NewSigningKeyClient(cfg),
 		Sink:            NewSinkClient(cfg),
@@ -278,7 +297,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		AddressPolicy.
+//		Access.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -347,10 +366,10 @@ func (c *Client) InTx() bool {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.Delegation, c.Device,
-		c.Holder, c.Lamina, c.Node, c.Outbox, c.PlacementPolicy, c.Producer, c.Reader,
-		c.Relay, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant,
-		c.UploadPolicy,
+		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.Delegation,
+		c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed, c.PlacementPolicy,
+		c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set, c.SigningKey, c.Sink, c.Site,
+		c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
 	} {
 		n.Use(hooks...)
 	}
@@ -360,10 +379,10 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.Delegation, c.Device,
-		c.Holder, c.Lamina, c.Node, c.Outbox, c.PlacementPolicy, c.Producer, c.Reader,
-		c.Relay, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant,
-		c.UploadPolicy,
+		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.Delegation,
+		c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed, c.PlacementPolicy,
+		c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set, c.SigningKey, c.Sink, c.Site,
+		c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -372,6 +391,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *AccessMutation:
+		return c.Access.mutate(ctx, m)
 	case *AddressPolicyMutation:
 		return c.AddressPolicy.mutate(ctx, m)
 	case *ArchivedMutation:
@@ -392,6 +413,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Node.mutate(ctx, m)
 	case *OutboxMutation:
 		return c.Outbox.mutate(ctx, m)
+	case *OwedMutation:
+		return c.Owed.mutate(ctx, m)
 	case *PlacementPolicyMutation:
 		return c.PlacementPolicy.mutate(ctx, m)
 	case *ProducerMutation:
@@ -400,6 +423,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Reader.mutate(ctx, m)
 	case *RelayMutation:
 		return c.Relay.mutate(ctx, m)
+	case *RowSealMutation:
+		return c.RowSeal.mutate(ctx, m)
 	case *SetMutation:
 		return c.Set.mutate(ctx, m)
 	case *SigningKeyMutation:
@@ -418,6 +443,139 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UploadPolicy.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// AccessClient is a client for the Access schema.
+type AccessClient struct {
+	config
+}
+
+// NewAccessClient returns a client for the Access from the given config.
+func NewAccessClient(c config) *AccessClient {
+	return &AccessClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `access.Hooks(f(g(h())))`.
+func (c *AccessClient) Use(hooks ...Hook) {
+	c.hooks.Access = append(c.hooks.Access, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `access.Intercept(f(g(h())))`.
+func (c *AccessClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Access = append(c.inters.Access, interceptors...)
+}
+
+// Create returns a builder for creating a Access entity.
+func (c *AccessClient) Create() *AccessCreate {
+	mutation := newAccessMutation(c.config, OpCreate)
+	return &AccessCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Access entities.
+func (c *AccessClient) CreateBulk(builders ...*AccessCreate) *AccessCreateBulk {
+	return &AccessCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AccessClient) MapCreateBulk(slice any, setFunc func(*AccessCreate, int)) *AccessCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AccessCreateBulk{err: fmt.Errorf("calling to AccessClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AccessCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AccessCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Access.
+func (c *AccessClient) Update() *AccessUpdate {
+	mutation := newAccessMutation(c.config, OpUpdate)
+	return &AccessUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AccessClient) UpdateOne(_m *Access) *AccessUpdateOne {
+	mutation := newAccessMutation(c.config, OpUpdateOne, withAccess(_m))
+	return &AccessUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *AccessClient) UpdateOneId(id uuid.UUID) *AccessUpdateOne {
+	mutation := newAccessMutation(c.config, OpUpdateOne, withAccessId(id))
+	return &AccessUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Access.
+func (c *AccessClient) Delete() *AccessDelete {
+	mutation := newAccessMutation(c.config, OpDelete)
+	return &AccessDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AccessClient) DeleteOne(_m *Access) *AccessDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *AccessClient) DeleteOneId(id uuid.UUID) *AccessDeleteOne {
+	builder := c.Delete().Where(access.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &AccessDeleteOne{builder}
+}
+
+// Query returns a query builder for Access.
+func (c *AccessClient) Query() *AccessQuery {
+	return &AccessQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAccess},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Access entity by its id.
+func (c *AccessClient) Get(ctx context.Context, id uuid.UUID) (*Access, error) {
+	return c.Query().Where(access.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AccessClient) GetX(ctx context.Context, id uuid.UUID) *Access {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *AccessClient) Hooks() []Hook {
+	return c.hooks.Access
+}
+
+// Interceptors returns the client interceptors.
+func (c *AccessClient) Interceptors() []Interceptor {
+	return c.inters.Access
+}
+
+func (c *AccessClient) mutate(ctx context.Context, m *AccessMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AccessCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AccessUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AccessUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AccessDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Access mutation op: %q", m.Op())
 	}
 }
 
@@ -1975,6 +2133,139 @@ func (c *OutboxClient) mutate(ctx context.Context, m *OutboxMutation) (Value, er
 	}
 }
 
+// OwedClient is a client for the Owed schema.
+type OwedClient struct {
+	config
+}
+
+// NewOwedClient returns a client for the Owed from the given config.
+func NewOwedClient(c config) *OwedClient {
+	return &OwedClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `owed.Hooks(f(g(h())))`.
+func (c *OwedClient) Use(hooks ...Hook) {
+	c.hooks.Owed = append(c.hooks.Owed, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `owed.Intercept(f(g(h())))`.
+func (c *OwedClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Owed = append(c.inters.Owed, interceptors...)
+}
+
+// Create returns a builder for creating a Owed entity.
+func (c *OwedClient) Create() *OwedCreate {
+	mutation := newOwedMutation(c.config, OpCreate)
+	return &OwedCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Owed entities.
+func (c *OwedClient) CreateBulk(builders ...*OwedCreate) *OwedCreateBulk {
+	return &OwedCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *OwedClient) MapCreateBulk(slice any, setFunc func(*OwedCreate, int)) *OwedCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &OwedCreateBulk{err: fmt.Errorf("calling to OwedClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*OwedCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &OwedCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Owed.
+func (c *OwedClient) Update() *OwedUpdate {
+	mutation := newOwedMutation(c.config, OpUpdate)
+	return &OwedUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *OwedClient) UpdateOne(_m *Owed) *OwedUpdateOne {
+	mutation := newOwedMutation(c.config, OpUpdateOne, withOwed(_m))
+	return &OwedUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *OwedClient) UpdateOneId(id uuid.UUID) *OwedUpdateOne {
+	mutation := newOwedMutation(c.config, OpUpdateOne, withOwedId(id))
+	return &OwedUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Owed.
+func (c *OwedClient) Delete() *OwedDelete {
+	mutation := newOwedMutation(c.config, OpDelete)
+	return &OwedDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *OwedClient) DeleteOne(_m *Owed) *OwedDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *OwedClient) DeleteOneId(id uuid.UUID) *OwedDeleteOne {
+	builder := c.Delete().Where(owed.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &OwedDeleteOne{builder}
+}
+
+// Query returns a query builder for Owed.
+func (c *OwedClient) Query() *OwedQuery {
+	return &OwedQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeOwed},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Owed entity by its id.
+func (c *OwedClient) Get(ctx context.Context, id uuid.UUID) (*Owed, error) {
+	return c.Query().Where(owed.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *OwedClient) GetX(ctx context.Context, id uuid.UUID) *Owed {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *OwedClient) Hooks() []Hook {
+	return c.hooks.Owed
+}
+
+// Interceptors returns the client interceptors.
+func (c *OwedClient) Interceptors() []Interceptor {
+	return c.inters.Owed
+}
+
+func (c *OwedClient) mutate(ctx context.Context, m *OwedMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&OwedCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&OwedUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&OwedUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&OwedDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Owed mutation op: %q", m.Op())
+	}
+}
+
 // PlacementPolicyClient is a client for the PlacementPolicy schema.
 type PlacementPolicyClient struct {
 	config
@@ -2584,6 +2875,139 @@ func (c *RelayClient) mutate(ctx context.Context, m *RelayMutation) (Value, erro
 		return (&RelayDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Relay mutation op: %q", m.Op())
+	}
+}
+
+// RowSealClient is a client for the RowSeal schema.
+type RowSealClient struct {
+	config
+}
+
+// NewRowSealClient returns a client for the RowSeal from the given config.
+func NewRowSealClient(c config) *RowSealClient {
+	return &RowSealClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rowseal.Hooks(f(g(h())))`.
+func (c *RowSealClient) Use(hooks ...Hook) {
+	c.hooks.RowSeal = append(c.hooks.RowSeal, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rowseal.Intercept(f(g(h())))`.
+func (c *RowSealClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RowSeal = append(c.inters.RowSeal, interceptors...)
+}
+
+// Create returns a builder for creating a RowSeal entity.
+func (c *RowSealClient) Create() *RowSealCreate {
+	mutation := newRowSealMutation(c.config, OpCreate)
+	return &RowSealCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RowSeal entities.
+func (c *RowSealClient) CreateBulk(builders ...*RowSealCreate) *RowSealCreateBulk {
+	return &RowSealCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RowSealClient) MapCreateBulk(slice any, setFunc func(*RowSealCreate, int)) *RowSealCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RowSealCreateBulk{err: fmt.Errorf("calling to RowSealClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RowSealCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RowSealCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RowSeal.
+func (c *RowSealClient) Update() *RowSealUpdate {
+	mutation := newRowSealMutation(c.config, OpUpdate)
+	return &RowSealUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RowSealClient) UpdateOne(_m *RowSeal) *RowSealUpdateOne {
+	mutation := newRowSealMutation(c.config, OpUpdateOne, withRowSeal(_m))
+	return &RowSealUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *RowSealClient) UpdateOneId(id uuid.UUID) *RowSealUpdateOne {
+	mutation := newRowSealMutation(c.config, OpUpdateOne, withRowSealId(id))
+	return &RowSealUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RowSeal.
+func (c *RowSealClient) Delete() *RowSealDelete {
+	mutation := newRowSealMutation(c.config, OpDelete)
+	return &RowSealDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RowSealClient) DeleteOne(_m *RowSeal) *RowSealDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *RowSealClient) DeleteOneId(id uuid.UUID) *RowSealDeleteOne {
+	builder := c.Delete().Where(rowseal.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &RowSealDeleteOne{builder}
+}
+
+// Query returns a query builder for RowSeal.
+func (c *RowSealClient) Query() *RowSealQuery {
+	return &RowSealQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRowSeal},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RowSeal entity by its id.
+func (c *RowSealClient) Get(ctx context.Context, id uuid.UUID) (*RowSeal, error) {
+	return c.Query().Where(rowseal.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RowSealClient) GetX(ctx context.Context, id uuid.UUID) *RowSeal {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *RowSealClient) Hooks() []Hook {
+	return c.hooks.RowSeal
+}
+
+// Interceptors returns the client interceptors.
+func (c *RowSealClient) Interceptors() []Interceptor {
+	return c.inters.RowSeal
+}
+
+func (c *RowSealClient) mutate(ctx context.Context, m *RowSealMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RowSealCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RowSealUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RowSealUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RowSealDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RowSeal mutation op: %q", m.Op())
 	}
 }
 
@@ -3846,13 +4270,15 @@ func (c *UploadPolicyClient) mutate(ctx context.Context, m *UploadPolicyMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder, Lamina,
-		Node, Outbox, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink,
-		Site, SiteMember, Source, Tenant, UploadPolicy []ent.Hook
+		Access, AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder,
+		Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal,
+		Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
+		UploadPolicy []ent.Hook
 	}
 	inters struct {
-		AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder, Lamina,
-		Node, Outbox, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink,
-		Site, SiteMember, Source, Tenant, UploadPolicy []ent.Interceptor
+		Access, AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder,
+		Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal,
+		Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
+		UploadPolicy []ent.Interceptor
 	}
 )

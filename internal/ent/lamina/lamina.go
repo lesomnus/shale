@@ -145,6 +145,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultSkipReason holds the default value on creation for the "skip_reason" field.
+	DefaultSkipReason int32
+)
+
 // OrderOption defines the ordering options for the Lamina queries.
 type OrderOption func(*sql.Selector)
 

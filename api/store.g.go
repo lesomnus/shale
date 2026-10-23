@@ -41,9 +41,12 @@ type Server interface {
 	Lamina() LaminaServiceServer
 	Attempt() AttemptServiceServer
 	SiteMember() SiteMemberServiceServer
+	Access() AccessServiceServer
 	Archived() ArchivedServiceServer
 	Audit() AuditServiceServer
 	Outbox() OutboxServiceServer
+	Owed() OwedServiceServer
+	RowSeal() RowSealServiceServer
 	SigningKey() SigningKeyServiceServer
 	PlacementPolicy() PlacementPolicyServiceServer
 	UploadPolicy() UploadPolicyServiceServer
@@ -70,9 +73,12 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterLaminaServiceServer(g, s.Lamina())
 	RegisterAttemptServiceServer(g, s.Attempt())
 	RegisterSiteMemberServiceServer(g, s.SiteMember())
+	RegisterAccessServiceServer(g, s.Access())
 	RegisterArchivedServiceServer(g, s.Archived())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterOutboxServiceServer(g, s.Outbox())
+	RegisterOwedServiceServer(g, s.Owed())
+	RegisterRowSealServiceServer(g, s.RowSeal())
 	RegisterSigningKeyServiceServer(g, s.SigningKey())
 	RegisterPlacementPolicyServiceServer(g, s.PlacementPolicy())
 	RegisterUploadPolicyServiceServer(g, s.UploadPolicy())
@@ -95,9 +101,12 @@ type UnimplementedServer struct {
 	LaminaServer          LaminaServiceServer
 	AttemptServer         AttemptServiceServer
 	SiteMemberServer      SiteMemberServiceServer
+	AccessServer          AccessServiceServer
 	ArchivedServer        ArchivedServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
+	OwedServer            OwedServiceServer
+	RowSealServer         RowSealServiceServer
 	SigningKeyServer      SigningKeyServiceServer
 	PlacementPolicyServer PlacementPolicyServiceServer
 	UploadPolicyServer    UploadPolicyServiceServer
@@ -125,11 +134,14 @@ func (UnimplementedServer) Attempt() AttemptServiceServer { return Unimplemented
 func (UnimplementedServer) SiteMember() SiteMemberServiceServer {
 	return UnimplementedSiteMemberServiceServer{}
 }
+func (UnimplementedServer) Access() AccessServiceServer { return UnimplementedAccessServiceServer{} }
 func (UnimplementedServer) Archived() ArchivedServiceServer {
 	return UnimplementedArchivedServiceServer{}
 }
-func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAuditServiceServer{} }
-func (UnimplementedServer) Outbox() OutboxServiceServer { return UnimplementedOutboxServiceServer{} }
+func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
+func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
+func (UnimplementedServer) Owed() OwedServiceServer       { return UnimplementedOwedServiceServer{} }
+func (UnimplementedServer) RowSeal() RowSealServiceServer { return UnimplementedRowSealServiceServer{} }
 func (UnimplementedServer) SigningKey() SigningKeyServiceServer {
 	return UnimplementedSigningKeyServiceServer{}
 }
@@ -159,9 +171,12 @@ type StaticServer struct {
 	LaminaServer          LaminaServiceServer
 	AttemptServer         AttemptServiceServer
 	SiteMemberServer      SiteMemberServiceServer
+	AccessServer          AccessServiceServer
 	ArchivedServer        ArchivedServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
+	OwedServer            OwedServiceServer
+	RowSealServer         RowSealServiceServer
 	SigningKeyServer      SigningKeyServiceServer
 	PlacementPolicyServer PlacementPolicyServiceServer
 	UploadPolicyServer    UploadPolicyServiceServer
@@ -183,9 +198,12 @@ func (s StaticServer) Sink() SinkServiceServer                       { return s.
 func (s StaticServer) Lamina() LaminaServiceServer                   { return s.LaminaServer }
 func (s StaticServer) Attempt() AttemptServiceServer                 { return s.AttemptServer }
 func (s StaticServer) SiteMember() SiteMemberServiceServer           { return s.SiteMemberServer }
+func (s StaticServer) Access() AccessServiceServer                   { return s.AccessServer }
 func (s StaticServer) Archived() ArchivedServiceServer               { return s.ArchivedServer }
 func (s StaticServer) Audit() AuditServiceServer                     { return s.AuditServer }
 func (s StaticServer) Outbox() OutboxServiceServer                   { return s.OutboxServer }
+func (s StaticServer) Owed() OwedServiceServer                       { return s.OwedServer }
+func (s StaticServer) RowSeal() RowSealServiceServer                 { return s.RowSealServer }
 func (s StaticServer) SigningKey() SigningKeyServiceServer           { return s.SigningKeyServer }
 func (s StaticServer) PlacementPolicy() PlacementPolicyServiceServer { return s.PlacementPolicyServer }
 func (s StaticServer) UploadPolicy() UploadPolicyServiceServer       { return s.UploadPolicyServer }
@@ -207,9 +225,12 @@ type Client interface {
 	Lamina() LaminaServiceClient
 	Attempt() AttemptServiceClient
 	SiteMember() SiteMemberServiceClient
+	Access() AccessServiceClient
 	Archived() ArchivedServiceClient
 	Audit() AuditServiceClient
 	Outbox() OutboxServiceClient
+	Owed() OwedServiceClient
+	RowSeal() RowSealServiceClient
 	SigningKey() SigningKeyServiceClient
 	PlacementPolicy() PlacementPolicyServiceClient
 	UploadPolicy() UploadPolicyServiceClient
@@ -233,9 +254,12 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Lamina:          NewLaminaServiceClient(c),
 		_Attempt:         NewAttemptServiceClient(c),
 		_SiteMember:      NewSiteMemberServiceClient(c),
+		_Access:          NewAccessServiceClient(c),
 		_Archived:        NewArchivedServiceClient(c),
 		_Audit:           NewAuditServiceClient(c),
 		_Outbox:          NewOutboxServiceClient(c),
+		_Owed:            NewOwedServiceClient(c),
+		_RowSeal:         NewRowSealServiceClient(c),
 		_SigningKey:      NewSigningKeyServiceClient(c),
 		_PlacementPolicy: NewPlacementPolicyServiceClient(c),
 		_UploadPolicy:    NewUploadPolicyServiceClient(c),
@@ -259,9 +283,12 @@ type client struct {
 	_Lamina          LaminaServiceClient
 	_Attempt         AttemptServiceClient
 	_SiteMember      SiteMemberServiceClient
+	_Access          AccessServiceClient
 	_Archived        ArchivedServiceClient
 	_Audit           AuditServiceClient
 	_Outbox          OutboxServiceClient
+	_Owed            OwedServiceClient
+	_RowSeal         RowSealServiceClient
 	_SigningKey      SigningKeyServiceClient
 	_PlacementPolicy PlacementPolicyServiceClient
 	_UploadPolicy    UploadPolicyServiceClient
@@ -283,9 +310,12 @@ func (c *client) Sink() SinkServiceClient                       { return c._Sink
 func (c *client) Lamina() LaminaServiceClient                   { return c._Lamina }
 func (c *client) Attempt() AttemptServiceClient                 { return c._Attempt }
 func (c *client) SiteMember() SiteMemberServiceClient           { return c._SiteMember }
+func (c *client) Access() AccessServiceClient                   { return c._Access }
 func (c *client) Archived() ArchivedServiceClient               { return c._Archived }
 func (c *client) Audit() AuditServiceClient                     { return c._Audit }
 func (c *client) Outbox() OutboxServiceClient                   { return c._Outbox }
+func (c *client) Owed() OwedServiceClient                       { return c._Owed }
+func (c *client) RowSeal() RowSealServiceClient                 { return c._RowSeal }
 func (c *client) SigningKey() SigningKeyServiceClient           { return c._SigningKey }
 func (c *client) PlacementPolicy() PlacementPolicyServiceClient { return c._PlacementPolicy }
 func (c *client) UploadPolicy() UploadPolicyServiceClient       { return c._UploadPolicy }

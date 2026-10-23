@@ -13,12 +13,16 @@ import (
 	holder "github.com/lesomnus/shale/internal/ent/holder"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -81,33 +85,73 @@ func (s DelegationServiceServer) narrow(ctx context.Context, p predicate.Delegat
 	return DelegationNarrow(ctx, s.Scope, p)
 }
 
-func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAddRequest) (*api.Delegation, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
+func (s DelegationServiceServer) snapshot(ctx context.Context, p predicate.Delegation, lock bool) (*ent.Delegation, error) {
+	q := s.Db.Delegation.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s DelegationServiceServer) image(v *api.Delegation) *api.Delegation {
+	if v == nil {
+		return nil
 	}
-	defer tx.Close()
+	out := proto.Clone(v).(*api.Delegation)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st DelegationServiceServer) create(ctx context.Context, req *api.DelegationAddRequest) (*ent.DelegationCreate, []func(v *api.Delegation), error) {
 	ds := make([]func(v *api.Delegation), 0, 2)
 	q := st.Db.Delegation.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "shale.Delegation", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "shale.Delegation", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *api.Delegation) {
@@ -115,7 +159,7 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAdd
 		})
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetHolderId(k)
 		ds = append(ds, func(v *api.Delegation) {
@@ -156,7 +200,30 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAdd
 	} else {
 		q.SetDateCreated(st.now())
 	}
+	return q, ds, nil
+}
 
+func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAddRequest) (*api.Delegation, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Delegation
+	if snapshotOptions(s.Rec, api.DelegationService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -170,9 +237,18 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAdd
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Delegation
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  api.DelegationService_Add_FullMethodName,
-		Key: u.Id,
+		By:    api.DelegationService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -180,11 +256,39 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *api.DelegationAdd
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
+}
+
+// DelegationAddRule is what a layer in front says about one row an Add of Delegation
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type DelegationAddRule func(ctx context.Context, req *api.DelegationAddRequest) (*api.DelegationAddRequest, error)
+
+// DelegationWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func DelegationWithAddRule(next api.DelegationServiceServer, rule DelegationAddRule) api.DelegationServiceServer {
+	return delegationAddRuled{next, rule}
+}
+
+type delegationAddRuled struct {
+	api.DelegationServiceServer
+	rule DelegationAddRule
+}
+
+func (s delegationAddRuled) Add(ctx context.Context, req *api.DelegationAddRequest) (*api.Delegation, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.DelegationServiceServer.Add(ctx, r)
 }
 
 func (s DelegationServiceServer) Get(ctx context.Context, req *api.DelegationGetRequest) (*api.Delegation, error) {
@@ -293,9 +397,6 @@ func DelegationSelect(q *ent.DelegationQuery, m *api.DelegationSelect) {
 func DelegationSelectInit(q *ent.DelegationQuery, m *api.DelegationSelect) {
 	if m != nil {
 		DelegationSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
-		q.WithHolder(selectHolderKey)
 	}
 }
 
@@ -396,6 +497,18 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationR
 		return nil, err
 	}
 
+	var previous *api.Delegation
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Delegation.Query().Where(p)
 		if pred != nil {
@@ -422,6 +535,7 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationR
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -444,20 +558,25 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *api.DelegationR
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *api.Delegation
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -484,8 +603,16 @@ func (s DelegationServiceServer) Erase(ctx context.Context, req *api.DelegationR
 	st.Db = tx.Db
 
 	var k any
+	var previous *api.Delegation
 	if s.Rec != nil {
-		v, err := st.Db.Delegation.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, api.DelegationService_Erase_FullMethodName)
+		var v *ent.Delegation
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Delegation.Query().Where(p).Select(delegation.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &api.DelegationEraseResponse{}, nil
@@ -493,10 +620,14 @@ func (s DelegationServiceServer) Erase(ctx context.Context, req *api.DelegationR
 			return nil, err
 		}
 
-		k = v
-		p = delegation.And(p, delegation.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = delegation.And(p, delegation.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Delegation.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -506,8 +637,9 @@ func (s DelegationServiceServer) Erase(ctx context.Context, req *api.DelegationR
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  api.DelegationService_Erase_FullMethodName,
-			Key: k,
+			By:       api.DelegationService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

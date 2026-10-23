@@ -26,6 +26,8 @@ func TrailOfPeople(next bare.Recorder) bare.Recorder {
 
 type trailOfPeople struct{ next bare.Recorder }
 
+var _ bare.SnapshotRecorder = trailOfPeople{}
+
 func (r trailOfPeople) Record(ctx context.Context, s bare.Server, c bare.Change) error {
 	f, ok := frame.From(ctx)
 	if !ok || f == nil || kindOf(f.Actor) != DomHolder {
@@ -33,6 +35,20 @@ func (r trailOfPeople) Record(ctx context.Context, s bare.Server, c bare.Change)
 	}
 
 	return r.next.Record(ctx, s, c)
+}
+
+// Snapshots asks for what the trail asks for: the row each write leaves,
+// which an Add's line is written from. Asked of every write, whoever makes
+// it, since it is asked before there is a caller to tell; an Add's INSERT
+// hands its row back in the same statement and a Patch reads its row back
+// anyway, so it costs little. Not passed on, an Add would be on the trail
+// with nothing of what it set.
+func (r trailOfPeople) Snapshots(method string) bare.SnapshotOptions {
+	if s, ok := r.next.(bare.SnapshotRecorder); ok {
+		return s.Snapshots(method)
+	}
+
+	return bare.SnapshotOptions{}
 }
 
 // TrailSweep applies the trail's retention policy (§26.5) on its clock,

@@ -214,14 +214,26 @@ func (_u *AddressPolicyUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(addresspolicy.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldAlias); ok {
+		_spec.SetField(addresspolicy.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(addresspolicy.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldName); ok {
+		_spec.SetField(addresspolicy.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(addresspolicy.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDesc); ok {
+		_spec.SetField(addresspolicy.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(addresspolicy.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldLabels); ok {
+		_spec.SetField(addresspolicy.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(addresspolicy.FieldLabels, field.TypeJson)
@@ -236,17 +248,29 @@ func (_u *AddressPolicyUpdate) sqlSave(ctx context.Context) (_node int, err erro
 		}
 		_spec.SetField(addresspolicy.FieldParams, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldParams); ok {
+		_spec.SetField(addresspolicy.FieldParams, field.TypeJson, e)
+	}
 	if _u.mutation.ParamsCleared() {
 		_spec.ClearField(addresspolicy.FieldParams, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(addresspolicy.FieldActive, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldActive); ok {
+		_spec.SetField(addresspolicy.FieldActive, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(addresspolicy.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDateUpdated); ok {
+		_spec.SetField(addresspolicy.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(addresspolicy.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDateErased); ok {
+		_spec.SetField(addresspolicy.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(addresspolicy.FieldDateErased, field.TypeTime)
@@ -256,6 +280,9 @@ func (_u *AddressPolicyUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if value, ok := _u.mutation.DateActivated(); ok {
 		_spec.SetField(addresspolicy.FieldDateActivated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDateActivated); ok {
+		_spec.SetField(addresspolicy.FieldDateActivated, field.TypeTime, e)
 	}
 	if _u.mutation.DateActivatedCleared() {
 		_spec.ClearField(addresspolicy.FieldDateActivated, field.TypeTime)
@@ -496,14 +523,26 @@ func (_u *AddressPolicyUpdateOne) sqlSave(ctx context.Context) (_node *AddressPo
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(addresspolicy.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldAlias); ok {
+		_spec.SetField(addresspolicy.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(addresspolicy.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldName); ok {
+		_spec.SetField(addresspolicy.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(addresspolicy.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDesc); ok {
+		_spec.SetField(addresspolicy.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(addresspolicy.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldLabels); ok {
+		_spec.SetField(addresspolicy.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(addresspolicy.FieldLabels, field.TypeJson)
@@ -518,17 +557,29 @@ func (_u *AddressPolicyUpdateOne) sqlSave(ctx context.Context) (_node *AddressPo
 		}
 		_spec.SetField(addresspolicy.FieldParams, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldParams); ok {
+		_spec.SetField(addresspolicy.FieldParams, field.TypeJson, e)
+	}
 	if _u.mutation.ParamsCleared() {
 		_spec.ClearField(addresspolicy.FieldParams, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Active(); ok {
 		_spec.SetField(addresspolicy.FieldActive, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldActive); ok {
+		_spec.SetField(addresspolicy.FieldActive, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(addresspolicy.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDateUpdated); ok {
+		_spec.SetField(addresspolicy.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(addresspolicy.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDateErased); ok {
+		_spec.SetField(addresspolicy.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(addresspolicy.FieldDateErased, field.TypeTime)
@@ -538,6 +589,9 @@ func (_u *AddressPolicyUpdateOne) sqlSave(ctx context.Context) (_node *AddressPo
 	}
 	if value, ok := _u.mutation.DateActivated(); ok {
 		_spec.SetField(addresspolicy.FieldDateActivated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDateActivated); ok {
+		_spec.SetField(addresspolicy.FieldDateActivated, field.TypeTime, e)
 	}
 	if _u.mutation.DateActivatedCleared() {
 		_spec.ClearField(addresspolicy.FieldDateActivated, field.TypeTime)

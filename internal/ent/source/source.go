@@ -112,6 +112,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultLiveCapable holds the default value on creation for the "live_capable" field.
+	DefaultLiveCapable bool
 	// ValueScanner of all Source fields.
 	ValueScanner struct {
 		Profile    field.TypeValueScanner[*api.SegmentProfile]

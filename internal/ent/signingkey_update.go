@@ -252,14 +252,26 @@ func (_u *SigningKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(signingkey.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldAlias); ok {
+		_spec.SetField(signingkey.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(signingkey.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldName); ok {
+		_spec.SetField(signingkey.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(signingkey.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDesc); ok {
+		_spec.SetField(signingkey.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(signingkey.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldLabels); ok {
+		_spec.SetField(signingkey.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(signingkey.FieldLabels, field.TypeJson)
@@ -267,11 +279,17 @@ func (_u *SigningKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.PublicKey(); ok {
 		_spec.SetField(signingkey.FieldPublicKey, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldPublicKey); ok {
+		_spec.SetField(signingkey.FieldPublicKey, field.TypeBytes, e)
+	}
 	if _u.mutation.PublicKeyCleared() {
 		_spec.ClearField(signingkey.FieldPublicKey, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.PrivateKey(); ok {
 		_spec.SetField(signingkey.FieldPrivateKey, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldPrivateKey); ok {
+		_spec.SetField(signingkey.FieldPrivateKey, field.TypeBytes, e)
 	}
 	if _u.mutation.PrivateKeyCleared() {
 		_spec.ClearField(signingkey.FieldPrivateKey, field.TypeBytes)
@@ -279,14 +297,23 @@ func (_u *SigningKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(signingkey.FieldState, field.TypeInt32, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldState); ok {
+		_spec.SetField(signingkey.FieldState, field.TypeInt32, e)
+	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(signingkey.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(signingkey.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDateUpdated); ok {
+		_spec.SetField(signingkey.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(signingkey.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDateErased); ok {
+		_spec.SetField(signingkey.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(signingkey.FieldDateErased, field.TypeTime)
@@ -297,11 +324,17 @@ func (_u *SigningKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.DateSigning(); ok {
 		_spec.SetField(signingkey.FieldDateSigning, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDateSigning); ok {
+		_spec.SetField(signingkey.FieldDateSigning, field.TypeTime, e)
+	}
 	if _u.mutation.DateSigningCleared() {
 		_spec.ClearField(signingkey.FieldDateSigning, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateRetired(); ok {
 		_spec.SetField(signingkey.FieldDateRetired, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDateRetired); ok {
+		_spec.SetField(signingkey.FieldDateRetired, field.TypeTime, e)
 	}
 	if _u.mutation.DateRetiredCleared() {
 		_spec.ClearField(signingkey.FieldDateRetired, field.TypeTime)
@@ -581,14 +614,26 @@ func (_u *SigningKeyUpdateOne) sqlSave(ctx context.Context) (_node *SigningKey, 
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(signingkey.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldAlias); ok {
+		_spec.SetField(signingkey.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(signingkey.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldName); ok {
+		_spec.SetField(signingkey.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(signingkey.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDesc); ok {
+		_spec.SetField(signingkey.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(signingkey.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldLabels); ok {
+		_spec.SetField(signingkey.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(signingkey.FieldLabels, field.TypeJson)
@@ -596,11 +641,17 @@ func (_u *SigningKeyUpdateOne) sqlSave(ctx context.Context) (_node *SigningKey, 
 	if value, ok := _u.mutation.PublicKey(); ok {
 		_spec.SetField(signingkey.FieldPublicKey, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldPublicKey); ok {
+		_spec.SetField(signingkey.FieldPublicKey, field.TypeBytes, e)
+	}
 	if _u.mutation.PublicKeyCleared() {
 		_spec.ClearField(signingkey.FieldPublicKey, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.PrivateKey(); ok {
 		_spec.SetField(signingkey.FieldPrivateKey, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldPrivateKey); ok {
+		_spec.SetField(signingkey.FieldPrivateKey, field.TypeBytes, e)
 	}
 	if _u.mutation.PrivateKeyCleared() {
 		_spec.ClearField(signingkey.FieldPrivateKey, field.TypeBytes)
@@ -608,14 +659,23 @@ func (_u *SigningKeyUpdateOne) sqlSave(ctx context.Context) (_node *SigningKey, 
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(signingkey.FieldState, field.TypeInt32, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldState); ok {
+		_spec.SetField(signingkey.FieldState, field.TypeInt32, e)
+	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(signingkey.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(signingkey.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDateUpdated); ok {
+		_spec.SetField(signingkey.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(signingkey.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDateErased); ok {
+		_spec.SetField(signingkey.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(signingkey.FieldDateErased, field.TypeTime)
@@ -626,11 +686,17 @@ func (_u *SigningKeyUpdateOne) sqlSave(ctx context.Context) (_node *SigningKey, 
 	if value, ok := _u.mutation.DateSigning(); ok {
 		_spec.SetField(signingkey.FieldDateSigning, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDateSigning); ok {
+		_spec.SetField(signingkey.FieldDateSigning, field.TypeTime, e)
+	}
 	if _u.mutation.DateSigningCleared() {
 		_spec.ClearField(signingkey.FieldDateSigning, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateRetired(); ok {
 		_spec.SetField(signingkey.FieldDateRetired, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(signingkey.FieldDateRetired); ok {
+		_spec.SetField(signingkey.FieldDateRetired, field.TypeTime, e)
 	}
 	if _u.mutation.DateRetiredCleared() {
 		_spec.ClearField(signingkey.FieldDateRetired, field.TypeTime)

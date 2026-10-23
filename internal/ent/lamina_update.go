@@ -442,8 +442,14 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.LaminaKey(); ok {
 		_spec.SetField(lamina.FieldLaminaKey, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldLaminaKey); ok {
+		_spec.SetField(lamina.FieldLaminaKey, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(lamina.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldState); ok {
+		_spec.SetField(lamina.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(lamina.FieldState, field.TypeInt32, value)
@@ -451,11 +457,17 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(lamina.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateUpdated); ok {
+		_spec.SetField(lamina.FieldDateUpdated, field.TypeTime, e)
+	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(lamina.FieldDateCreated, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateStarted(); ok {
 		_spec.SetField(lamina.FieldDateStarted, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateStarted); ok {
+		_spec.SetField(lamina.FieldDateStarted, field.TypeTime, e)
 	}
 	if _u.mutation.DateStartedCleared() {
 		_spec.ClearField(lamina.FieldDateStarted, field.TypeTime)
@@ -463,14 +475,23 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateEnded(); ok {
 		_spec.SetField(lamina.FieldDateEnded, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateEnded); ok {
+		_spec.SetField(lamina.FieldDateEnded, field.TypeTime, e)
+	}
 	if _u.mutation.DateEndedCleared() {
 		_spec.ClearField(lamina.FieldDateEnded, field.TypeTime)
 	}
 	if value, ok := _u.mutation.EndedEstimated(); ok {
 		_spec.SetField(lamina.FieldEndedEstimated, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldEndedEstimated); ok {
+		_spec.SetField(lamina.FieldEndedEstimated, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.Size(); ok {
 		_spec.SetField(lamina.FieldSize, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldSize); ok {
+		_spec.SetField(lamina.FieldSize, field.TypeInt64, e)
 	}
 	if value, ok := _u.mutation.AddedSize(); ok {
 		_spec.AddField(lamina.FieldSize, field.TypeInt64, value)
@@ -478,8 +499,14 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Incomplete(); ok {
 		_spec.SetField(lamina.FieldIncomplete, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldIncomplete); ok {
+		_spec.SetField(lamina.FieldIncomplete, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateExpired(); ok {
 		_spec.SetField(lamina.FieldDateExpired, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateExpired); ok {
+		_spec.SetField(lamina.FieldDateExpired, field.TypeTime, e)
 	}
 	if _u.mutation.DateExpiredCleared() {
 		_spec.ClearField(lamina.FieldDateExpired, field.TypeTime)
@@ -487,14 +514,23 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateDeleted(); ok {
 		_spec.SetField(lamina.FieldDateDeleted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateDeleted); ok {
+		_spec.SetField(lamina.FieldDateDeleted, field.TypeTime, e)
+	}
 	if _u.mutation.DateDeletedCleared() {
 		_spec.ClearField(lamina.FieldDateDeleted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DatesSynced(); ok {
 		_spec.SetField(lamina.FieldDatesSynced, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDatesSynced); ok {
+		_spec.SetField(lamina.FieldDatesSynced, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.PlacementVersion(); ok {
 		_spec.SetField(lamina.FieldPlacementVersion, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldPlacementVersion); ok {
+		_spec.SetField(lamina.FieldPlacementVersion, field.TypeInt64, e)
 	}
 	if value, ok := _u.mutation.AddedPlacementVersion(); ok {
 		_spec.AddField(lamina.FieldPlacementVersion, field.TypeInt64, value)
@@ -502,11 +538,17 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateCommitted(); ok {
 		_spec.SetField(lamina.FieldDateCommitted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateCommitted); ok {
+		_spec.SetField(lamina.FieldDateCommitted, field.TypeTime, e)
+	}
 	if _u.mutation.DateCommittedCleared() {
 		_spec.ClearField(lamina.FieldDateCommitted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateFinished(); ok {
 		_spec.SetField(lamina.FieldDateFinished, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateFinished); ok {
+		_spec.SetField(lamina.FieldDateFinished, field.TypeTime, e)
 	}
 	if _u.mutation.DateFinishedCleared() {
 		_spec.ClearField(lamina.FieldDateFinished, field.TypeTime)
@@ -514,17 +556,26 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Checksum(); ok {
 		_spec.SetField(lamina.FieldChecksum, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldChecksum); ok {
+		_spec.SetField(lamina.FieldChecksum, field.TypeBytes, e)
+	}
 	if _u.mutation.ChecksumCleared() {
 		_spec.ClearField(lamina.FieldChecksum, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.Epoch(); ok {
 		_spec.SetField(lamina.FieldEpoch, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldEpoch); ok {
+		_spec.SetField(lamina.FieldEpoch, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedEpoch(); ok {
 		_spec.AddField(lamina.FieldEpoch, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.SkipReason(); ok {
 		_spec.SetField(lamina.FieldSkipReason, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldSkipReason); ok {
+		_spec.SetField(lamina.FieldSkipReason, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedSkipReason(); ok {
 		_spec.AddField(lamina.FieldSkipReason, field.TypeInt32, value)
@@ -1024,8 +1075,14 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	if value, ok := _u.mutation.LaminaKey(); ok {
 		_spec.SetField(lamina.FieldLaminaKey, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldLaminaKey); ok {
+		_spec.SetField(lamina.FieldLaminaKey, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(lamina.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldState); ok {
+		_spec.SetField(lamina.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(lamina.FieldState, field.TypeInt32, value)
@@ -1033,11 +1090,17 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(lamina.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateUpdated); ok {
+		_spec.SetField(lamina.FieldDateUpdated, field.TypeTime, e)
+	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(lamina.FieldDateCreated, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateStarted(); ok {
 		_spec.SetField(lamina.FieldDateStarted, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateStarted); ok {
+		_spec.SetField(lamina.FieldDateStarted, field.TypeTime, e)
 	}
 	if _u.mutation.DateStartedCleared() {
 		_spec.ClearField(lamina.FieldDateStarted, field.TypeTime)
@@ -1045,14 +1108,23 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	if value, ok := _u.mutation.DateEnded(); ok {
 		_spec.SetField(lamina.FieldDateEnded, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateEnded); ok {
+		_spec.SetField(lamina.FieldDateEnded, field.TypeTime, e)
+	}
 	if _u.mutation.DateEndedCleared() {
 		_spec.ClearField(lamina.FieldDateEnded, field.TypeTime)
 	}
 	if value, ok := _u.mutation.EndedEstimated(); ok {
 		_spec.SetField(lamina.FieldEndedEstimated, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldEndedEstimated); ok {
+		_spec.SetField(lamina.FieldEndedEstimated, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.Size(); ok {
 		_spec.SetField(lamina.FieldSize, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldSize); ok {
+		_spec.SetField(lamina.FieldSize, field.TypeInt64, e)
 	}
 	if value, ok := _u.mutation.AddedSize(); ok {
 		_spec.AddField(lamina.FieldSize, field.TypeInt64, value)
@@ -1060,8 +1132,14 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	if value, ok := _u.mutation.Incomplete(); ok {
 		_spec.SetField(lamina.FieldIncomplete, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldIncomplete); ok {
+		_spec.SetField(lamina.FieldIncomplete, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.DateExpired(); ok {
 		_spec.SetField(lamina.FieldDateExpired, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateExpired); ok {
+		_spec.SetField(lamina.FieldDateExpired, field.TypeTime, e)
 	}
 	if _u.mutation.DateExpiredCleared() {
 		_spec.ClearField(lamina.FieldDateExpired, field.TypeTime)
@@ -1069,14 +1147,23 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	if value, ok := _u.mutation.DateDeleted(); ok {
 		_spec.SetField(lamina.FieldDateDeleted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateDeleted); ok {
+		_spec.SetField(lamina.FieldDateDeleted, field.TypeTime, e)
+	}
 	if _u.mutation.DateDeletedCleared() {
 		_spec.ClearField(lamina.FieldDateDeleted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DatesSynced(); ok {
 		_spec.SetField(lamina.FieldDatesSynced, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDatesSynced); ok {
+		_spec.SetField(lamina.FieldDatesSynced, field.TypeBool, e)
+	}
 	if value, ok := _u.mutation.PlacementVersion(); ok {
 		_spec.SetField(lamina.FieldPlacementVersion, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldPlacementVersion); ok {
+		_spec.SetField(lamina.FieldPlacementVersion, field.TypeInt64, e)
 	}
 	if value, ok := _u.mutation.AddedPlacementVersion(); ok {
 		_spec.AddField(lamina.FieldPlacementVersion, field.TypeInt64, value)
@@ -1084,11 +1171,17 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	if value, ok := _u.mutation.DateCommitted(); ok {
 		_spec.SetField(lamina.FieldDateCommitted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateCommitted); ok {
+		_spec.SetField(lamina.FieldDateCommitted, field.TypeTime, e)
+	}
 	if _u.mutation.DateCommittedCleared() {
 		_spec.ClearField(lamina.FieldDateCommitted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateFinished(); ok {
 		_spec.SetField(lamina.FieldDateFinished, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldDateFinished); ok {
+		_spec.SetField(lamina.FieldDateFinished, field.TypeTime, e)
 	}
 	if _u.mutation.DateFinishedCleared() {
 		_spec.ClearField(lamina.FieldDateFinished, field.TypeTime)
@@ -1096,17 +1189,26 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	if value, ok := _u.mutation.Checksum(); ok {
 		_spec.SetField(lamina.FieldChecksum, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldChecksum); ok {
+		_spec.SetField(lamina.FieldChecksum, field.TypeBytes, e)
+	}
 	if _u.mutation.ChecksumCleared() {
 		_spec.ClearField(lamina.FieldChecksum, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.Epoch(); ok {
 		_spec.SetField(lamina.FieldEpoch, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldEpoch); ok {
+		_spec.SetField(lamina.FieldEpoch, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedEpoch(); ok {
 		_spec.AddField(lamina.FieldEpoch, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.SkipReason(); ok {
 		_spec.SetField(lamina.FieldSkipReason, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(lamina.FieldSkipReason); ok {
+		_spec.SetField(lamina.FieldSkipReason, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedSkipReason(); ok {
 		_spec.AddField(lamina.FieldSkipReason, field.TypeInt32, value)

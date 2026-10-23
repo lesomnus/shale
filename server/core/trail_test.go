@@ -13,8 +13,9 @@ import (
 )
 
 // countingStore is a trail with nothing in it that counts how often it is
-// asked. A pass with no archive asks only for rows (`Heads`, `Older`); the
-// rest of the store, the manifest among it, is left to the nil it embeds.
+// asked. A pass with no archive asks whether it is inside a transaction,
+// what erasures are owed, and for rows (`Heads`, `Older`); the rest of the
+// store, the manifest among it, is left to the nil it embeds.
 type countingStore struct {
 	trail.Store
 
@@ -43,6 +44,17 @@ func (s *countingStore) Older(context.Context, trail.Scope, time.Time, trail.Cur
 }
 
 func (s *countingStore) Count(context.Context, trail.Scope, time.Time) (int, error) { return 0, nil }
+
+// InTx is false: a pass is an act on the trail, which is refused inside a
+// transaction.
+func (s *countingStore) InTx() bool { return false }
+
+// Owed is nothing owed, which a pass asks before it moves anything.
+func (s *countingStore) Owed(context.Context, trail.Cursor, int) ([]trail.Owed, error) {
+	s.ask()
+
+	return nil, nil
+}
 
 func (s *countingStore) Forget(context.Context, []any) (int, error) { return 0, nil }
 

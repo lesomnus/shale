@@ -50,7 +50,8 @@ func (SigningKey) Fields() []ent.Field {
 
 func (SigningKey) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("signingkey_page"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
@@ -97,7 +98,8 @@ func (PlacementPolicy) Fields() []ent.Field {
 
 func (PlacementPolicy) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("placementpolicy_page"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
@@ -147,7 +149,8 @@ func (UploadPolicy) Fields() []ent.Field {
 
 func (UploadPolicy) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("uploadpolicy_page"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
@@ -197,7 +200,8 @@ func (AddressPolicy) Fields() []ent.Field {
 
 func (AddressPolicy) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("addresspolicy_page"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

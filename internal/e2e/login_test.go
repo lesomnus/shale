@@ -16,6 +16,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/auth/authsession"
+
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
 )
@@ -74,6 +76,25 @@ func TestSignIn(t *testing.T) {
 
 	// Without it: refused.
 	_, err = sets.List(ctx, api.SetListRequest_builder{}.Build())
+	require.Equal(t, codes.Unauthenticated, status.Code(err))
+
+	// What the console names its store by (§40.1): `GET /session` says it,
+	// every call the store makes carries it, and a call carrying another
+	// store's is refused under this session's cookie, as a page left behind
+	// by the next sign-in is.
+	req, err := http.NewRequest(http.MethodGet, "http://"+httpAddr+"/session", nil)
+	require.NoError(t, err)
+	req.Header.Set("Cookie", cookie)
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	var who cmd.Who
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&who))
+	resp.Body.Close()
+	require.Equal(t, "@acme/admin", who.Who)
+	require.NotEmpty(t, who.Identity)
+	_, err = sets.List(metadata.AppendToOutgoingContext(as, authsession.IdentityHeader, who.Identity), api.SetListRequest_builder{}.Build())
+	require.NoError(t, err)
+	_, err = sets.List(metadata.AppendToOutgoingContext(as, authsession.IdentityHeader, "another"), api.SetListRequest_builder{}.Build())
 	require.Equal(t, codes.Unauthenticated, status.Code(err))
 
 	// The wall: the cluster operator, signed in on the cluster API, does not

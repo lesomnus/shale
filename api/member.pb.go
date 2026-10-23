@@ -241,7 +241,7 @@ var File_shale_member_proto protoreflect.FileDescriptor
 
 const file_shale_member_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/member.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/holder.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\"\xba\x04\n" +
+	"\x12shale/member.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/holder.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\"\xc6\x04\n" +
 	"\n" +
 	"SiteMember\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
@@ -250,7 +250,9 @@ const file_shale_member_proto_rawDesc = "" +
 	"\x06holder\x18\b \x01(\v2\r.shale.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x06holder\x12/\n" +
 	"\x06reader\x18\t \x01(\v2\r.shale.ReaderB\b\xf2\x82\x16\x048\x01@\x01R\x06reader\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xc2\x01\xca\xfc\x15f\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xce\x01\xca\xfc\x15r\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
+	"\n" +
+	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a\x1e\x12\x06holder\x1a\b\n" +
 	"\x04site\x10\x03\x1a\n" +

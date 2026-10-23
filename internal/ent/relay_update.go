@@ -408,14 +408,26 @@ func (_u *RelayUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(relay.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldAlias); ok {
+		_spec.SetField(relay.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(relay.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldName); ok {
+		_spec.SetField(relay.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(relay.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDesc); ok {
+		_spec.SetField(relay.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(relay.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldLabels); ok {
+		_spec.SetField(relay.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(relay.FieldLabels, field.TypeJson)
@@ -423,17 +435,29 @@ func (_u *RelayUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(relay.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldHardwareId); ok {
+		_spec.SetField(relay.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Hostname(); ok {
 		_spec.SetField(relay.FieldHostname, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldHostname); ok {
+		_spec.SetField(relay.FieldHostname, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(relay.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldState); ok {
+		_spec.SetField(relay.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(relay.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.CertSerial(); ok {
 		_spec.SetField(relay.FieldCertSerial, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldCertSerial); ok {
+		_spec.SetField(relay.FieldCertSerial, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Join(); ok {
 		vv, err := relay.ValueScanner.Join.Value(value)
@@ -445,14 +469,23 @@ func (_u *RelayUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(relay.FieldJoin, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldJoin); ok {
+		_spec.SetField(relay.FieldJoin, field.TypeJson, e)
+	}
 	if _u.mutation.JoinCleared() {
 		_spec.ClearField(relay.FieldJoin, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(relay.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateUpdated); ok {
+		_spec.SetField(relay.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(relay.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateErased); ok {
+		_spec.SetField(relay.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(relay.FieldDateErased, field.TypeTime)
@@ -463,17 +496,26 @@ func (_u *RelayUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateAdopted(); ok {
 		_spec.SetField(relay.FieldDateAdopted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateAdopted); ok {
+		_spec.SetField(relay.FieldDateAdopted, field.TypeTime, e)
+	}
 	if _u.mutation.DateAdoptedCleared() {
 		_spec.ClearField(relay.FieldDateAdopted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(relay.FieldDateSeen, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateSeen); ok {
+		_spec.SetField(relay.FieldDateSeen, field.TypeTime, e)
+	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(relay.FieldDateSeen, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateCertExpires(); ok {
 		_spec.SetField(relay.FieldDateCertExpires, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateCertExpires); ok {
+		_spec.SetField(relay.FieldDateCertExpires, field.TypeTime, e)
 	}
 	if _u.mutation.DateCertExpiresCleared() {
 		_spec.ClearField(relay.FieldDateCertExpires, field.TypeTime)
@@ -488,6 +530,9 @@ func (_u *RelayUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(relay.FieldInterfaces, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldInterfaces); ok {
+		_spec.SetField(relay.FieldInterfaces, field.TypeJson, e)
+	}
 	if value, ok := _u.mutation.AppendedInterfaces(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, relay.FieldInterfaces, value)
@@ -498,6 +543,9 @@ func (_u *RelayUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.KeyIds(); ok {
 		_spec.SetField(relay.FieldKeyIds, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldKeyIds); ok {
+		_spec.SetField(relay.FieldKeyIds, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedKeyIds(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -510,14 +558,26 @@ func (_u *RelayUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.CaHash(); ok {
 		_spec.SetField(relay.FieldCaHash, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldCaHash); ok {
+		_spec.SetField(relay.FieldCaHash, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(relay.FieldVersion, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldVersion); ok {
+		_spec.SetField(relay.FieldVersion, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.IngestAddress(); ok {
 		_spec.SetField(relay.FieldIngestAddress, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldIngestAddress); ok {
+		_spec.SetField(relay.FieldIngestAddress, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.WhepAddress(); ok {
 		_spec.SetField(relay.FieldWhepAddress, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldWhepAddress); ok {
+		_spec.SetField(relay.FieldWhepAddress, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		vv, err := relay.ValueScanner.Status.Value(value)
@@ -528,6 +588,9 @@ func (_u *RelayUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			return 0, err
 		}
 		_spec.SetField(relay.FieldStatus, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldStatus); ok {
+		_spec.SetField(relay.FieldStatus, field.TypeJson, e)
 	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(relay.FieldStatus, field.TypeJson)
@@ -961,14 +1024,26 @@ func (_u *RelayUpdateOne) sqlSave(ctx context.Context) (_node *Relay, err error)
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(relay.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldAlias); ok {
+		_spec.SetField(relay.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(relay.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldName); ok {
+		_spec.SetField(relay.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(relay.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDesc); ok {
+		_spec.SetField(relay.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(relay.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldLabels); ok {
+		_spec.SetField(relay.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(relay.FieldLabels, field.TypeJson)
@@ -976,17 +1051,29 @@ func (_u *RelayUpdateOne) sqlSave(ctx context.Context) (_node *Relay, err error)
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(relay.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldHardwareId); ok {
+		_spec.SetField(relay.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Hostname(); ok {
 		_spec.SetField(relay.FieldHostname, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldHostname); ok {
+		_spec.SetField(relay.FieldHostname, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(relay.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldState); ok {
+		_spec.SetField(relay.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(relay.FieldState, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.CertSerial(); ok {
 		_spec.SetField(relay.FieldCertSerial, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldCertSerial); ok {
+		_spec.SetField(relay.FieldCertSerial, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Join(); ok {
 		vv, err := relay.ValueScanner.Join.Value(value)
@@ -998,14 +1085,23 @@ func (_u *RelayUpdateOne) sqlSave(ctx context.Context) (_node *Relay, err error)
 		}
 		_spec.SetField(relay.FieldJoin, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldJoin); ok {
+		_spec.SetField(relay.FieldJoin, field.TypeJson, e)
+	}
 	if _u.mutation.JoinCleared() {
 		_spec.ClearField(relay.FieldJoin, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(relay.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateUpdated); ok {
+		_spec.SetField(relay.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(relay.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateErased); ok {
+		_spec.SetField(relay.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(relay.FieldDateErased, field.TypeTime)
@@ -1016,17 +1112,26 @@ func (_u *RelayUpdateOne) sqlSave(ctx context.Context) (_node *Relay, err error)
 	if value, ok := _u.mutation.DateAdopted(); ok {
 		_spec.SetField(relay.FieldDateAdopted, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateAdopted); ok {
+		_spec.SetField(relay.FieldDateAdopted, field.TypeTime, e)
+	}
 	if _u.mutation.DateAdoptedCleared() {
 		_spec.ClearField(relay.FieldDateAdopted, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(relay.FieldDateSeen, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateSeen); ok {
+		_spec.SetField(relay.FieldDateSeen, field.TypeTime, e)
+	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(relay.FieldDateSeen, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateCertExpires(); ok {
 		_spec.SetField(relay.FieldDateCertExpires, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldDateCertExpires); ok {
+		_spec.SetField(relay.FieldDateCertExpires, field.TypeTime, e)
 	}
 	if _u.mutation.DateCertExpiresCleared() {
 		_spec.ClearField(relay.FieldDateCertExpires, field.TypeTime)
@@ -1041,6 +1146,9 @@ func (_u *RelayUpdateOne) sqlSave(ctx context.Context) (_node *Relay, err error)
 		}
 		_spec.SetField(relay.FieldInterfaces, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldInterfaces); ok {
+		_spec.SetField(relay.FieldInterfaces, field.TypeJson, e)
+	}
 	if value, ok := _u.mutation.AppendedInterfaces(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, relay.FieldInterfaces, value)
@@ -1051,6 +1159,9 @@ func (_u *RelayUpdateOne) sqlSave(ctx context.Context) (_node *Relay, err error)
 	}
 	if value, ok := _u.mutation.KeyIds(); ok {
 		_spec.SetField(relay.FieldKeyIds, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldKeyIds); ok {
+		_spec.SetField(relay.FieldKeyIds, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedKeyIds(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -1063,14 +1174,26 @@ func (_u *RelayUpdateOne) sqlSave(ctx context.Context) (_node *Relay, err error)
 	if value, ok := _u.mutation.CaHash(); ok {
 		_spec.SetField(relay.FieldCaHash, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldCaHash); ok {
+		_spec.SetField(relay.FieldCaHash, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(relay.FieldVersion, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldVersion); ok {
+		_spec.SetField(relay.FieldVersion, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.IngestAddress(); ok {
 		_spec.SetField(relay.FieldIngestAddress, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldIngestAddress); ok {
+		_spec.SetField(relay.FieldIngestAddress, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.WhepAddress(); ok {
 		_spec.SetField(relay.FieldWhepAddress, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldWhepAddress); ok {
+		_spec.SetField(relay.FieldWhepAddress, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		vv, err := relay.ValueScanner.Status.Value(value)
@@ -1081,6 +1204,9 @@ func (_u *RelayUpdateOne) sqlSave(ctx context.Context) (_node *Relay, err error)
 			return nil, err
 		}
 		_spec.SetField(relay.FieldStatus, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(relay.FieldStatus); ok {
+		_spec.SetField(relay.FieldStatus, field.TypeJson, e)
 	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(relay.FieldStatus, field.TypeJson)

@@ -6,6 +6,9 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
 
+// Access is the predicate function for access builders.
+type Access func(*sql.Selector)
+
 // AddressPolicy is the predicate function for addresspolicy builders.
 type AddressPolicy func(*sql.Selector)
 
@@ -69,6 +72,9 @@ func NodeOrErr(p Node, err error) Node {
 // Outbox is the predicate function for outbox builders.
 type Outbox func(*sql.Selector)
 
+// Owed is the predicate function for owed builders.
+type Owed func(*sql.Selector)
+
 // PlacementPolicy is the predicate function for placementpolicy builders.
 type PlacementPolicy func(*sql.Selector)
 
@@ -124,6 +130,9 @@ func RelayOrErr(p Relay, err error) Relay {
 		p(s)
 	}
 }
+
+// RowSeal is the predicate function for rowseal builders.
+type RowSeal func(*sql.Selector)
 
 // Set is the predicate function for set builders.
 type Set func(*sql.Selector)

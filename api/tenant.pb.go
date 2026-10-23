@@ -245,7 +245,7 @@ var File_shale_payday_tenant_proto protoreflect.FileDescriptor
 
 const file_shale_payday_tenant_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/payday/tenant.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf4\x03\n" +
+	"\x19shale/payday/tenant.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x96\x04\n" +
 	"\x06Tenant\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
@@ -258,7 +258,9 @@ const file_shale_payday_tenant_proto_rawDesc = "" +
 	"\fstored_bytes\x18\t \x01(\x03R\vstoredBytes\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:=\xca\xfc\x15\x04\x12\x02\x10\x01\x8a\xbb\x161\b\x012%\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:_\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x10\x0f\x1a\x06\n" +
+	"\x02id\x10\x01\x8a\xbb\x161\b\x012%\n" +
 	"\x10\n" +
 	"\x0e\n" +
 	"\fdate_created\n" +

@@ -85,9 +85,10 @@ func (Delegation) Edges() []ent.Edge {
 
 func (Delegation) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("date_ends").
-			Edges("holder"),
+		index.Fields("date_created", "id").
+			StorageKey("delegation_page"),
+		index.Fields("holder_id", "date_ends").
+			StorageKey("delegation_holder"),
 	}
 }
 

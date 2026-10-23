@@ -50,4 +50,8 @@ func TestTrailOfPeople(t *testing.T) {
 	}
 	require.NotNil(t, ours, "the admin's write is on the trail: %d rows", len(rows.GetItems()))
 	require.Equal(t, me.GetId(), ours.GetActorId())
+	// And what it set, which the line of an Add is written from the row it
+	// made: the set's alias among the fields, and the patch that set them.
+	require.Contains(t, ours.GetFields(), uint32(4), "the alias the admin gave the set")
+	require.NotEmpty(t, ours.GetPatch())
 }

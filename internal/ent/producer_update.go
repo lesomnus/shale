@@ -464,14 +464,26 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(producer.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldAlias); ok {
+		_spec.SetField(producer.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(producer.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldName); ok {
+		_spec.SetField(producer.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(producer.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDesc); ok {
+		_spec.SetField(producer.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(producer.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldLabels); ok {
+		_spec.SetField(producer.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(producer.FieldLabels, field.TypeJson)
@@ -479,11 +491,20 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(producer.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldHardwareId); ok {
+		_spec.SetField(producer.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Hostname(); ok {
 		_spec.SetField(producer.FieldHostname, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldHostname); ok {
+		_spec.SetField(producer.FieldHostname, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(producer.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldState); ok {
+		_spec.SetField(producer.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(producer.FieldState, field.TypeInt32, value)
@@ -491,11 +512,20 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.CertSerial(); ok {
 		_spec.SetField(producer.FieldCertSerial, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldCertSerial); ok {
+		_spec.SetField(producer.FieldCertSerial, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(producer.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateUpdated); ok {
+		_spec.SetField(producer.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(producer.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateErased); ok {
+		_spec.SetField(producer.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(producer.FieldDateErased, field.TypeTime)
@@ -513,11 +543,17 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(producer.FieldJoin, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldJoin); ok {
+		_spec.SetField(producer.FieldJoin, field.TypeJson, e)
+	}
 	if _u.mutation.JoinCleared() {
 		_spec.ClearField(producer.FieldJoin, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateAdopted(); ok {
 		_spec.SetField(producer.FieldDateAdopted, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateAdopted); ok {
+		_spec.SetField(producer.FieldDateAdopted, field.TypeTime, e)
 	}
 	if _u.mutation.DateAdoptedCleared() {
 		_spec.ClearField(producer.FieldDateAdopted, field.TypeTime)
@@ -525,11 +561,17 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(producer.FieldDateSeen, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateSeen); ok {
+		_spec.SetField(producer.FieldDateSeen, field.TypeTime, e)
+	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(producer.FieldDateSeen, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateCertExpires(); ok {
 		_spec.SetField(producer.FieldDateCertExpires, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateCertExpires); ok {
+		_spec.SetField(producer.FieldDateCertExpires, field.TypeTime, e)
 	}
 	if _u.mutation.DateCertExpiresCleared() {
 		_spec.ClearField(producer.FieldDateCertExpires, field.TypeTime)
@@ -544,14 +586,23 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(producer.FieldStatus, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldStatus); ok {
+		_spec.SetField(producer.FieldStatus, field.TypeJson, e)
+	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(producer.FieldStatus, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(producer.FieldVersion, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldVersion); ok {
+		_spec.SetField(producer.FieldVersion, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Live(); ok {
 		_spec.SetField(producer.FieldLive, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldLive); ok {
+		_spec.SetField(producer.FieldLive, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedLive(); ok {
 		_spec.AddField(producer.FieldLive, field.TypeInt32, value)
@@ -1128,14 +1179,26 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(producer.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldAlias); ok {
+		_spec.SetField(producer.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(producer.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldName); ok {
+		_spec.SetField(producer.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(producer.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDesc); ok {
+		_spec.SetField(producer.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(producer.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldLabels); ok {
+		_spec.SetField(producer.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(producer.FieldLabels, field.TypeJson)
@@ -1143,11 +1206,20 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(producer.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldHardwareId); ok {
+		_spec.SetField(producer.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Hostname(); ok {
 		_spec.SetField(producer.FieldHostname, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldHostname); ok {
+		_spec.SetField(producer.FieldHostname, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(producer.FieldState, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldState); ok {
+		_spec.SetField(producer.FieldState, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedState(); ok {
 		_spec.AddField(producer.FieldState, field.TypeInt32, value)
@@ -1155,11 +1227,20 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 	if value, ok := _u.mutation.CertSerial(); ok {
 		_spec.SetField(producer.FieldCertSerial, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldCertSerial); ok {
+		_spec.SetField(producer.FieldCertSerial, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(producer.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateUpdated); ok {
+		_spec.SetField(producer.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(producer.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateErased); ok {
+		_spec.SetField(producer.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(producer.FieldDateErased, field.TypeTime)
@@ -1177,11 +1258,17 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 		}
 		_spec.SetField(producer.FieldJoin, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldJoin); ok {
+		_spec.SetField(producer.FieldJoin, field.TypeJson, e)
+	}
 	if _u.mutation.JoinCleared() {
 		_spec.ClearField(producer.FieldJoin, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateAdopted(); ok {
 		_spec.SetField(producer.FieldDateAdopted, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateAdopted); ok {
+		_spec.SetField(producer.FieldDateAdopted, field.TypeTime, e)
 	}
 	if _u.mutation.DateAdoptedCleared() {
 		_spec.ClearField(producer.FieldDateAdopted, field.TypeTime)
@@ -1189,11 +1276,17 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(producer.FieldDateSeen, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateSeen); ok {
+		_spec.SetField(producer.FieldDateSeen, field.TypeTime, e)
+	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(producer.FieldDateSeen, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateCertExpires(); ok {
 		_spec.SetField(producer.FieldDateCertExpires, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldDateCertExpires); ok {
+		_spec.SetField(producer.FieldDateCertExpires, field.TypeTime, e)
 	}
 	if _u.mutation.DateCertExpiresCleared() {
 		_spec.ClearField(producer.FieldDateCertExpires, field.TypeTime)
@@ -1208,14 +1301,23 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 		}
 		_spec.SetField(producer.FieldStatus, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldStatus); ok {
+		_spec.SetField(producer.FieldStatus, field.TypeJson, e)
+	}
 	if _u.mutation.StatusCleared() {
 		_spec.ClearField(producer.FieldStatus, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Version(); ok {
 		_spec.SetField(producer.FieldVersion, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldVersion); ok {
+		_spec.SetField(producer.FieldVersion, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Live(); ok {
 		_spec.SetField(producer.FieldLive, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldLive); ok {
+		_spec.SetField(producer.FieldLive, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedLive(); ok {
 		_spec.AddField(producer.FieldLive, field.TypeInt32, value)

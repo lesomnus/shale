@@ -382,14 +382,26 @@ func (_u *DeviceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(device.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldAlias); ok {
+		_spec.SetField(device.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(device.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldName); ok {
+		_spec.SetField(device.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(device.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDesc); ok {
+		_spec.SetField(device.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(device.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldLabels); ok {
+		_spec.SetField(device.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(device.FieldLabels, field.TypeJson)
@@ -397,11 +409,20 @@ func (_u *DeviceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(device.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldHardwareId); ok {
+		_spec.SetField(device.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Slot(); ok {
 		_spec.SetField(device.FieldSlot, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldSlot); ok {
+		_spec.SetField(device.FieldSlot, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Health(); ok {
 		_spec.SetField(device.FieldHealth, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldHealth); ok {
+		_spec.SetField(device.FieldHealth, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedHealth(); ok {
 		_spec.AddField(device.FieldHealth, field.TypeInt32, value)
@@ -409,14 +430,23 @@ func (_u *DeviceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.FailureScore(); ok {
 		_spec.SetField(device.FieldFailureScore, field.TypeFloat64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldFailureScore); ok {
+		_spec.SetField(device.FieldFailureScore, field.TypeFloat64, e)
+	}
 	if value, ok := _u.mutation.AddedFailureScore(); ok {
 		_spec.AddField(device.FieldFailureScore, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(device.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDateUpdated); ok {
+		_spec.SetField(device.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(device.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDateErased); ok {
+		_spec.SetField(device.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(device.FieldDateErased, field.TypeTime)
@@ -426,6 +456,9 @@ func (_u *DeviceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.DateScored(); ok {
 		_spec.SetField(device.FieldDateScored, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDateScored); ok {
+		_spec.SetField(device.FieldDateScored, field.TypeTime, e)
 	}
 	if _u.mutation.DateScoredCleared() {
 		_spec.ClearField(device.FieldDateScored, field.TypeTime)
@@ -440,6 +473,9 @@ func (_u *DeviceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(device.FieldQuarantine, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldQuarantine); ok {
+		_spec.SetField(device.FieldQuarantine, field.TypeJson, e)
+	}
 	if _u.mutation.QuarantineCleared() {
 		_spec.ClearField(device.FieldQuarantine, field.TypeJson)
 	}
@@ -453,17 +489,26 @@ func (_u *DeviceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(device.FieldSmart, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldSmart); ok {
+		_spec.SetField(device.FieldSmart, field.TypeJson, e)
+	}
 	if _u.mutation.SmartCleared() {
 		_spec.ClearField(device.FieldSmart, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Capacity(); ok {
 		_spec.SetField(device.FieldCapacity, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldCapacity); ok {
+		_spec.SetField(device.FieldCapacity, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedCapacity(); ok {
 		_spec.AddField(device.FieldCapacity, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Model(); ok {
 		_spec.SetField(device.FieldModel, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldModel); ok {
+		_spec.SetField(device.FieldModel, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Report(); ok {
 		vv, err := device.ValueScanner.Report.Value(value)
@@ -475,11 +520,17 @@ func (_u *DeviceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(device.FieldReport, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldReport); ok {
+		_spec.SetField(device.FieldReport, field.TypeJson, e)
+	}
 	if _u.mutation.ReportCleared() {
 		_spec.ClearField(device.FieldReport, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(device.FieldDateSeen, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDateSeen); ok {
+		_spec.SetField(device.FieldDateSeen, field.TypeTime, e)
 	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(device.FieldDateSeen, field.TypeTime)
@@ -915,14 +966,26 @@ func (_u *DeviceUpdateOne) sqlSave(ctx context.Context) (_node *Device, err erro
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(device.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldAlias); ok {
+		_spec.SetField(device.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(device.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldName); ok {
+		_spec.SetField(device.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(device.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDesc); ok {
+		_spec.SetField(device.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(device.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldLabels); ok {
+		_spec.SetField(device.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(device.FieldLabels, field.TypeJson)
@@ -930,11 +993,20 @@ func (_u *DeviceUpdateOne) sqlSave(ctx context.Context) (_node *Device, err erro
 	if value, ok := _u.mutation.HardwareId(); ok {
 		_spec.SetField(device.FieldHardwareId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldHardwareId); ok {
+		_spec.SetField(device.FieldHardwareId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Slot(); ok {
 		_spec.SetField(device.FieldSlot, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldSlot); ok {
+		_spec.SetField(device.FieldSlot, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Health(); ok {
 		_spec.SetField(device.FieldHealth, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldHealth); ok {
+		_spec.SetField(device.FieldHealth, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedHealth(); ok {
 		_spec.AddField(device.FieldHealth, field.TypeInt32, value)
@@ -942,14 +1014,23 @@ func (_u *DeviceUpdateOne) sqlSave(ctx context.Context) (_node *Device, err erro
 	if value, ok := _u.mutation.FailureScore(); ok {
 		_spec.SetField(device.FieldFailureScore, field.TypeFloat64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldFailureScore); ok {
+		_spec.SetField(device.FieldFailureScore, field.TypeFloat64, e)
+	}
 	if value, ok := _u.mutation.AddedFailureScore(); ok {
 		_spec.AddField(device.FieldFailureScore, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(device.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDateUpdated); ok {
+		_spec.SetField(device.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(device.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDateErased); ok {
+		_spec.SetField(device.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(device.FieldDateErased, field.TypeTime)
@@ -959,6 +1040,9 @@ func (_u *DeviceUpdateOne) sqlSave(ctx context.Context) (_node *Device, err erro
 	}
 	if value, ok := _u.mutation.DateScored(); ok {
 		_spec.SetField(device.FieldDateScored, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDateScored); ok {
+		_spec.SetField(device.FieldDateScored, field.TypeTime, e)
 	}
 	if _u.mutation.DateScoredCleared() {
 		_spec.ClearField(device.FieldDateScored, field.TypeTime)
@@ -973,6 +1057,9 @@ func (_u *DeviceUpdateOne) sqlSave(ctx context.Context) (_node *Device, err erro
 		}
 		_spec.SetField(device.FieldQuarantine, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldQuarantine); ok {
+		_spec.SetField(device.FieldQuarantine, field.TypeJson, e)
+	}
 	if _u.mutation.QuarantineCleared() {
 		_spec.ClearField(device.FieldQuarantine, field.TypeJson)
 	}
@@ -986,17 +1073,26 @@ func (_u *DeviceUpdateOne) sqlSave(ctx context.Context) (_node *Device, err erro
 		}
 		_spec.SetField(device.FieldSmart, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldSmart); ok {
+		_spec.SetField(device.FieldSmart, field.TypeJson, e)
+	}
 	if _u.mutation.SmartCleared() {
 		_spec.ClearField(device.FieldSmart, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Capacity(); ok {
 		_spec.SetField(device.FieldCapacity, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldCapacity); ok {
+		_spec.SetField(device.FieldCapacity, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedCapacity(); ok {
 		_spec.AddField(device.FieldCapacity, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Model(); ok {
 		_spec.SetField(device.FieldModel, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldModel); ok {
+		_spec.SetField(device.FieldModel, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Report(); ok {
 		vv, err := device.ValueScanner.Report.Value(value)
@@ -1008,11 +1104,17 @@ func (_u *DeviceUpdateOne) sqlSave(ctx context.Context) (_node *Device, err erro
 		}
 		_spec.SetField(device.FieldReport, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldReport); ok {
+		_spec.SetField(device.FieldReport, field.TypeJson, e)
+	}
 	if _u.mutation.ReportCleared() {
 		_spec.ClearField(device.FieldReport, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateSeen(); ok {
 		_spec.SetField(device.FieldDateSeen, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(device.FieldDateSeen); ok {
+		_spec.SetField(device.FieldDateSeen, field.TypeTime, e)
 	}
 	if _u.mutation.DateSeenCleared() {
 		_spec.ClearField(device.FieldDateSeen, field.TypeTime)

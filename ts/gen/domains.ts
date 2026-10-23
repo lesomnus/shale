@@ -12,6 +12,9 @@
 
 import { pdid } from '@lesomnus/payday'
 
+/** The domain identifiers of shale.Access carry. */
+export const AccessDomain = 6
+
 /** The domain identifiers of shale.AddressPolicy carry. */
 export const AddressPolicyDomain = 21
 
@@ -42,6 +45,9 @@ export const NodeDomain = 12
 /** The domain identifiers of shale.Outbox carry. */
 export const OutboxDomain = 4
 
+/** The domain identifiers of shale.Owed carry. */
+export const OwedDomain = 254
+
 /** The domain identifiers of shale.PlacementPolicy carry. */
 export const PlacementPolicyDomain = 16
 
@@ -53,6 +59,9 @@ export const ReaderDomain = 23
 
 /** The domain identifiers of shale.Relay carry. */
 export const RelayDomain = 24
+
+/** The domain identifiers of shale.RowSeal carry. */
+export const RowSealDomain = 255
 
 /** The domain identifiers of shale.Set carry. */
 export const SetDomain = 7
@@ -80,6 +89,7 @@ export const UploadPolicyDomain = 18
 
 // Registered as this module is loaded, which is why importing it is the
 // whole of what an app does with it.
+pdid.register("shale.Access", AccessDomain, "access")
 pdid.register("shale.AddressPolicy", AddressPolicyDomain, "address-policy")
 pdid.register("shale.Archived", ArchivedDomain, "archived")
 pdid.register("shale.Attempt", AttemptDomain, "attempt")
@@ -90,10 +100,12 @@ pdid.register("shale.Holder", HolderDomain, "holder")
 pdid.register("shale.Lamina", LaminaDomain, "lamina")
 pdid.register("shale.Node", NodeDomain, "node")
 pdid.register("shale.Outbox", OutboxDomain, "outbox")
+pdid.register("shale.Owed", OwedDomain, "owed")
 pdid.register("shale.PlacementPolicy", PlacementPolicyDomain, "placement-policy")
 pdid.register("shale.Producer", ProducerDomain, "producer")
 pdid.register("shale.Reader", ReaderDomain, "reader")
 pdid.register("shale.Relay", RelayDomain, "relay")
+pdid.register("shale.RowSeal", RowSealDomain, "row-seal")
 pdid.register("shale.Set", SetDomain, "set")
 pdid.register("shale.SigningKey", SigningKeyDomain, "signing-key")
 pdid.register("shale.Sink", SinkDomain, "sink")

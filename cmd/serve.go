@@ -165,6 +165,13 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	// And what the trail keeps of each kind's writes (`audit.content`,
+	// §26.5), which is the deployment's to say: by default what a write set,
+	// with no value of a field declared personal.
+	content, err := c.Audit.Contents()
+	if err != nil {
+		return nil, err
+	}
 	db, dia, err := c.Db.Open(ctx)
 	if err != nil {
 		return nil, err
@@ -173,7 +180,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	drv := entsql.OpenDB(dia, db)
 	client := ent.NewClient(ent.Driver(drv))
 
-	b, err := c.Watch.Build(c.Db)
+	b, err := c.Watch.Build(ctx, c.Db)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -182,7 +189,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 
 	// The trail records what people do; the system's own writes are not
 	// evidence of anybody's decision (§26.5).
-	rec := bare.Recorders{core.TrailOfPeople(pd.Recorder()), pd.WatchRecorder(w)}
+	rec := bare.Recorders{core.TrailOfPeople(pd.Recorder(content)), pd.WatchRecorder(w)}
 	if c.Watch.Outbox {
 		rec = append(rec, pd.OutboxRecorder())
 	}
@@ -617,8 +624,10 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 	).
 		WithUnary(auth.InterceptorUnary(s.Auth[surface], Resolver(s), public(surface))).
 		WithStream(auth.InterceptorStream(s.Auth[surface], Resolver(s), public(surface))).
-		WithUnary(grpcx.LimitUnary(sc.Limiter(), gate.ByTenant())).
-		WithUnary(grpcx.LimitUnary(s.actorLimiter(), byActor)).
+		// A call costs what it asks for (`pd.Cost`): one, but for an AddMany,
+		// which costs one for each of its items.
+		WithUnary(grpcx.LimitUnary(sc.Limiter(), gate.ByTenant(), pd.Cost)).
+		WithUnary(grpcx.LimitUnary(s.actorLimiter(), byActor, pd.Cost)).
 		With(gate.Interceptor(policy)).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(sc.Closed()))

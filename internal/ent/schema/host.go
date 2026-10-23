@@ -69,8 +69,10 @@ func (Node) Fields() []ent.Field {
 
 func (Node) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("hardware_id"),
+		index.Fields("date_created", "id").
+			StorageKey("node_page"),
+		index.Fields("hardware_id").
+			StorageKey("node_hardware"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
@@ -134,8 +136,10 @@ func (Relay) Fields() []ent.Field {
 
 func (Relay) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("hardware_id"),
+		index.Fields("date_created", "id").
+			StorageKey("relay_page"),
+		index.Fields("hardware_id").
+			StorageKey("relay_hardware"),
 		index.Fields("alias").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
@@ -188,7 +192,8 @@ func (Producer) Fields() []ent.Field {
 			Optional(),
 		field.String("version"),
 		field.Int32("live").
-			Optional(),
+			Optional().
+			Default(0),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").
@@ -221,13 +226,14 @@ func (Producer) Edges() []ent.Edge {
 
 func (Producer) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("alias").
-			Edges("tenant").
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("producer_page"),
+		index.Fields("alias", "tenant_id").
+			StorageKey("producer_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
-		index.Fields("hardware_id").
-			Edges("tenant"),
+		index.Fields("hardware_id", "tenant_id").
+			StorageKey("producer_hardware"),
 	}
 }
 
@@ -292,13 +298,14 @@ func (Reader) Edges() []ent.Edge {
 
 func (Reader) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("alias").
-			Edges("tenant").
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("reader_page"),
+		index.Fields("alias", "tenant_id").
+			StorageKey("reader_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
-		index.Fields("hardware_id").
-			Edges("tenant"),
+		index.Fields("hardware_id", "tenant_id").
+			StorageKey("reader_hardware"),
 	}
 }
 
