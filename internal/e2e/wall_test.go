@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"hash/fnv"
+	"net"
 	"os"
 	"path/filepath"
 	"slices"
@@ -14,6 +16,7 @@ import (
 	"time"
 
 	"github.com/pion/rtp"
+	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
 	"github.com/stretchr/testify/require"
 
@@ -255,6 +258,17 @@ func follows(prev, next []int, n, step int) bool {
 // when it came, to `f`, with an assembler of its own per track; audio is
 // read and dropped. The connection offers to receive video and audio, as
 // a browser does.
+//
+// A packet sent again on the RTX stream is one pion hands over only as a
+// read begins, and a read waits for the next packet of the video itself:
+// one that comes while the video pauses waits with it, and the jitter
+// buffer gives it up as lost on the packet that ends the pause, a moment
+// before it is read. The video pauses where a viewer's catch-up has sent
+// all the relay holds and the next fragment has not come, for up to a
+// fragment's duration less the catch-up: a third of a second in
+// TestLiveNack, whose recording comes in half-second fragments. So while
+// a packet is missing, a read waits no longer than rtxPoll, and a packet
+// sent again is taken as it comes, as a browser takes it.
 func onVideo(pc *webrtc.PeerConnection, f func(p *rtp.Packet, at time.Time, asm *assembler)) {
 	pc.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly})
 	pc.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly})
@@ -262,9 +276,22 @@ func onVideo(pc *webrtc.PeerConnection, f func(p *rtp.Packet, at time.Time, asm 
 		video := track.Kind() == webrtc.RTPCodecTypeVideo
 		asm := &assembler{}
 		jb := &jitter{wait: jitterWait}
+		polling := false
 		for {
+			if missing := video && jb.waiting(); missing || polling {
+				var until time.Time
+				if missing {
+					until = time.Now().Add(rtxPoll)
+				}
+				track.SetReadDeadline(until)
+				polling = missing
+			}
 			p, _, err := track.ReadRTP()
 			if err != nil {
+				var ne net.Error
+				if errors.As(err, &ne) && ne.Timeout() {
+					continue
+				}
 				return
 			}
 			if video {
@@ -281,6 +308,11 @@ func onVideo(pc *webrtc.PeerConnection, f func(p *rtp.Packet, at time.Time, asm 
 // about this much, puts them back in order the same way.
 const jitterWait = 250 * time.Millisecond
 
+// rtxPoll is the longest a viewer's read waits while a packet is missing
+// (onVideo), so a packet sent again reaches the jitter buffer within this
+// of when it came.
+const rtxPoll = 10 * time.Millisecond
+
 // jitter hands on RTP packets in the order of their sequence numbers: a
 // packet ahead of the next one due waits, up to `wait`, and then those
 // still missing are given up as lost; one that comes after it was given
@@ -296,6 +328,9 @@ type heldPacket struct {
 	p  *rtp.Packet
 	at time.Time
 }
+
+// waiting says a packet is missing: those after it are held for it.
+func (j *jitter) waiting() bool { return len(j.held) > 0 }
 
 func (j *jitter) push(p *rtp.Packet, at time.Time, out func(*rtp.Packet, time.Time)) {
 	if !j.started {
@@ -393,7 +428,10 @@ func hashNALs(nals [][]byte) uint64 {
 // assembler puts H.264 RTP packets back into access units (RFC 6184):
 // single NAL units, STAP-A and FU-A, a frame ending at a new timestamp. A
 // lost packet, a gap in the sequence numbers, leaves the frames it may
-// have belonged to not whole.
+// have belonged to not whole, and a frame that is not whole is handed on
+// even when none of its NAL units came whole: a frame of one NAL unit in
+// fragments has none once a fragment is lost, and would otherwise pass
+// without a word, the packets it lost with it.
 type assembler struct {
 	started bool
 	seq     uint16
@@ -413,7 +451,7 @@ func (a *assembler) push(p *rtp.Packet, at time.Time, out func(accessUnit)) {
 	a.packets++
 	a.bytes += int64(len(p.Payload))
 	if !a.started || p.Timestamp != a.cur.ts {
-		if a.started && len(a.cur.nals) > 0 {
+		if a.started && (len(a.cur.nals) > 0 || !a.cur.whole || !a.cur.marked) {
 			a.cur.whole = a.cur.whole && a.cur.marked
 			out(a.cur)
 		}
@@ -461,6 +499,55 @@ func (a *assembler) push(p *rtp.Packet, at time.Time, out func(accessUnit)) {
 			a.cur.nals = append(a.cur.nals, a.frag)
 			a.frag = nil
 		}
+	}
+}
+
+// A frame that lost a packet is handed on as not whole wherever in it the
+// packet was: most of what the relay sends is a frame of one slice in
+// fragments, which has no NAL unit whole once one is lost, and the viewers
+// of TestLiveNack, TestLiveWall and TestLiveFanOut count what is lost for
+// good by these frames.
+func TestAssemblerHandsOnABrokenFrame(t *testing.T) {
+	// Three frames of one slice in four fragments each, across the wrap
+	// of the sequence numbers.
+	var frames [][]*rtp.Packet
+	seq := uint16(65530)
+	for i := range 3 {
+		slice := append([]byte{0, 0, 0, 1, 0x41}, bytes.Repeat([]byte{byte(i + 1)}, 350)...)
+		pls := (&codecs.H264Payloader{}).Payload(100, slice)
+		require.Len(t, pls, 4)
+		var f []*rtp.Packet
+		for j, pl := range pls {
+			f = append(f, &rtp.Packet{Header: rtp.Header{SequenceNumber: seq, Timestamp: 3000 * uint32(i), Marker: j == len(pls)-1}, Payload: pl})
+			seq++
+		}
+		frames = append(frames, f)
+	}
+	// The next frame's first packet ends the last of them.
+	next := &rtp.Packet{Header: rtp.Header{SequenceNumber: seq, Timestamp: 9000}, Payload: []byte{0x41, 0}}
+
+	for lost := range 4 {
+		a := &assembler{}
+		var units []accessUnit
+		keep := func(u accessUnit) { units = append(units, u) }
+		for i, f := range frames {
+			for j, p := range f {
+				if i != 1 || j != lost {
+					a.push(p, time.Now(), keep)
+				}
+			}
+		}
+		a.push(next, time.Now(), keep)
+
+		require.NotEmpty(t, units, "fragment %d of the second frame lost", lost)
+		require.True(t, units[0].whole, "fragment %d of the second frame lost: the first comes whole", lost)
+		broken, missing := false, int64(0)
+		for _, u := range units {
+			broken = broken || (u.ts == 3000 && !u.whole)
+			missing += u.lost
+		}
+		require.True(t, broken, "fragment %d of the second frame lost: it comes, not whole", lost)
+		require.EqualValues(t, 1, missing, "fragment %d of the second frame lost: and the packet is counted", lost)
 	}
 }
 
