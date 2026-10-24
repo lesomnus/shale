@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -21,6 +22,9 @@ import (
 // back is video with sound in it. This is the tutorial's producer, so it
 // is the tutorial that breaks when it stops working.
 func TestDemoProducer(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("no ffmpeg on this host")
+	}
 	c := start(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
