@@ -46,6 +46,46 @@ jobs:
           sudo mkdir -p /mnt/shale-tmp && sudo mount -o loop,user_xattr /tmp/shale.img /mnt/shale-tmp
           sudo chmod 1777 /mnt/shale-tmp
           TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 20m
+  # The tests whose goroutines meet, under the race detector. The test job
+  # cannot see a race, since a test checks what it ends with: the producer's
+  # heartbeat, stall watch and negotiations shared a source with its capture
+  # loop without a lock through every run of it, and -race failed every
+  # end-to-end test that runs a producer on its first run.
+  #
+  # Every package but internal/e2e: internal/producer's own tests run its
+  # loops at once against a fake control plane, its uploader for several
+  # sources at once, and its relay stream ended while it sends. And of
+  # internal/e2e, whose seventeen minutes would make this the slowest job,
+  # the tests that run a producer against the whole stack, but the drills
+  # that spend a minute or more waiting out a restart, a failover or an
+  # outage. These wait more than they compute, so the detector hardly
+  # slows them: about six minutes, beside the test job.
+  race:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: ffmpeg
+        # The capture tests, which read the process's stderr beside its
+        # stream, and the live helper's.
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: test
+        # The sinks' user xattrs, as in the test job; the test binaries are
+        # built beside it, since race-built they outgrow its two gigabytes.
+        run: |
+          fallocate -l 2G /tmp/shale.img && mkfs.ext4 -q -F /tmp/shale.img
+          sudo mkdir -p /mnt/shale-tmp && sudo mount -o loop,user_xattr /tmp/shale.img /mnt/shale-tmp
+          sudo chmod 1777 /mnt/shale-tmp
+          export TMPDIR=/mnt/shale-tmp GOTMPDIR=$RUNNER_TEMP
+          go test -race -count=1 -timeout 20m $(go list ./... | grep -v '/internal/e2e$')
+          e2e='ProducerRecords|PushedSources|DarkSkip|ProducerDown'
+          e2e+='|Live|LiveAlways|LiveNack|LivePacing|LiveWall'
+          e2e+='|RelayRestart|ControlPlaneDownWhileWatching'
+          e2e+='|DelegatedViewing|DelegatedViewingEveryPerson'
+          go test -race -count=1 -timeout 20m -run "^Test($e2e)\$" ./internal/e2e/
   package:
     runs-on: ubuntu-latest
     needs: test
