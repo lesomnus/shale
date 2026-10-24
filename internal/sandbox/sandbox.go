@@ -20,6 +20,7 @@ import (
 	mrand "math/rand/v2"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -618,8 +619,9 @@ type camera struct {
 	alias   string
 	row     *api.Source
 	ceiling int64
-	// dark says the scene is dark and the segments are skipped (§38.10).
-	dark bool
+	// dark says the scene is dark and the segments are skipped (§38.10):
+	// set by the camera's recording, read by the producer's heartbeat.
+	dark atomic.Bool
 	// since is when the segment being recorded began; last is the lamina
 	// of the segment before, which the next one never reuses (§15).
 	since time.Time
@@ -777,8 +779,9 @@ func (b *Sandbox) producerHeartbeats(ctx context.Context, me context.Context, na
 	for {
 		var reports []*api.SourceReport
 		for _, c := range cams {
+			dark := c.dark.Load()
 			rate := int64(float64(c.ceiling) * (0.55 + mrand.Float64()*0.4))
-			if c.dark {
+			if dark {
 				rate = int64(float64(c.ceiling) * 0.3)
 			}
 			reports = append(reports, api.SourceReport_builder{
@@ -789,7 +792,7 @@ func (b *Sandbox) producerHeartbeats(ctx context.Context, me context.Context, na
 				MaxBitrate:         c.ceiling,
 				KeyframeIntervalMs: 2000,
 				SecondsTotal:       int64(b.Every.Seconds()),
-				Dark:               c.dark,
+				Dark:               dark,
 			}.Build())
 		}
 		if _, err := retry(ctx, func() (*api.ProducerHeartbeatResponse, error) {
@@ -817,7 +820,7 @@ func (b *Sandbox) recordCamera(ctx context.Context, me context.Context, name str
 		n++
 		if nightly {
 			// Six segments lit, three dark, and again.
-			c.dark = n%9 >= 6
+			c.dark.Store(n%9 >= 6)
 		}
 		c.since = time.Now()
 		req := api.LaminaAllocateRequest_builder{
@@ -843,7 +846,7 @@ func (b *Sandbox) recordCamera(ctx context.Context, me context.Context, name str
 		}
 		ended := time.Now()
 		switch {
-		case c.dark:
+		case c.dark.Load():
 			if _, err := retry(ctx, func() (*api.Lamina, error) {
 				return b.S.Walled.Lamina().Skip(me, api.LaminaSkipRequest_builder{
 					Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build(), DateEnded: timestamppb.New(ended), Reason: api.LaminaSkipReason_LAMINA_SKIP_REASON_DARK,
