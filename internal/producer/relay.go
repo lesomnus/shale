@@ -248,9 +248,12 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up boo
 		}
 	}()
 
+	// The stream ends with its context, canceled on the way out, and not
+	// with CloseSend: the sender above may be inside Send, and gRPC does
+	// not allow the two at once. The relay takes a canceled stream as it
+	// takes a closed one.
 	select {
 	case <-ctx.Done():
-		stream.CloseSend()
 		return welcomed.Load(), nil
 	case <-l.changed:
 		// A new assignment: reconnect to it.
@@ -260,7 +263,6 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up boo
 		default:
 		}
 		l.mu.Unlock()
-		stream.CloseSend()
 		return welcomed.Load(), nil
 	case err := <-errs:
 		return welcomed.Load(), err
