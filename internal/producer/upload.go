@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
@@ -71,6 +73,10 @@ type Uploader struct {
 	// of requests, the bytes a node reported durable are released, and a
 	// target that fails after that ends the segment where it has it.
 	Written bool
+
+	// defaulted fills in what Cfg leaves out, once: every source's upload
+	// loop calls Upload, each from a goroutine of its own.
+	defaulted sync.Once
 }
 
 // Result is what became of a segment.
@@ -105,7 +111,7 @@ var (
 // answers when the segment is durable somewhere, or lost.
 func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment) Result {
 	began := time.Now()
-	u.Cfg.defaults()
+	u.defaulted.Do(u.Cfg.defaults)
 	res := Result{}
 	tried := map[string]bool{}
 
@@ -416,7 +422,7 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 
 	resp, err := u.Cfg.Client.Do(req)
 	if err != nil {
-		return 0, -1, counted.n, false, err
+		return 0, -1, counted.n.Load(), false, err
 	}
 	defer resp.Body.Close()
 	// The body of a refusal says why; the log carries it.
@@ -443,21 +449,24 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 		}
 	}
 	if resp.StatusCode >= 500 {
-		return resp.StatusCode, v, counted.n, complete, fmt.Errorf("server error %d", resp.StatusCode)
+		return resp.StatusCode, v, counted.n.Load(), complete, fmt.Errorf("server error %d", resp.StatusCode)
 	}
 
-	return resp.StatusCode, v, counted.n, complete, nil
+	return resp.StatusCode, v, counted.n.Load(), complete, nil
 }
 
-// countingReader counts what a request body handed over.
+// countingReader counts what a request body handed over. The transport
+// reads a body on a goroutine of its own, which can still be at it when Do
+// has answered -- with an error, or a node's answer that came first -- so
+// the count is atomic.
 type countingReader struct {
 	r io.Reader
-	n int64
+	n atomic.Int64
 }
 
 func (c *countingReader) Read(p []byte) (int, error) {
 	n, err := c.r.Read(p)
-	c.n += int64(n)
+	c.n.Add(int64(n))
 
 	return n, err
 }
