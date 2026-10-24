@@ -149,7 +149,7 @@ func (l *relayLink) run(ctx context.Context) error {
 		if err != nil {
 			l.p.log.Warn("relay", "err", err.Error(), "retry_in", wait.String())
 			// A token the relay refused may have expired: ask for a fresh one.
-			if fresh, err := api.NewProducerServiceClient(l.p.conn).Relay(ctx, &api.ProducerRelayRequest{}); err == nil {
+			if fresh, err := api.NewProducerServiceClient(l.p.cp()).Relay(ctx, &api.ProducerRelayRequest{}); err == nil {
 				l.set(fresh.GetRelay())
 			}
 		}
