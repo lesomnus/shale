@@ -318,7 +318,12 @@ type Cutter struct {
 	Prefix   func() []byte
 	OnPrefix func([]byte)
 
-	cur   *Segment
+	cur *Segment
+	// mu guards stats, which the heartbeat and the stall watch read from
+	// goroutines of their own while the capture loop feeds (§38.6). The
+	// rest of the cutter is the loop's alone, and mu is never held across
+	// a callback.
+	mu    sync.Mutex
 	stats CutStats
 	// last is the data time of the last frame of a raw source, which is
 	// where its segment ends when the source stops.
@@ -341,8 +346,13 @@ type CutStats struct {
 	KeyInterval time.Duration
 }
 
-// Stats is a copy of the counters.
-func (c *Cutter) Stats() CutStats { return c.stats }
+// Stats is a copy of the counters, from any goroutine.
+func (c *Cutter) Stats() CutStats {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.stats
+}
 
 func (c *Cutter) now() time.Time {
 	if c.Now != nil {
@@ -373,14 +383,21 @@ func (c *Cutter) Feed(f *Frame) {
 		// frame of the writer's (§38.9).
 		key, frames = true, max(frames, 1)
 	}
+	var now time.Time
+	if key {
+		now = c.now()
+	}
+	c.mu.Lock()
 	c.stats.Frames += int64(max(frames, 0))
 	if key {
 		c.stats.Keyframes++
-		now := c.now()
 		if !c.stats.LastKey.IsZero() {
 			c.stats.KeyInterval = now.Sub(c.stats.LastKey)
 		}
 		c.stats.LastKey = now
+	}
+	c.mu.Unlock()
+	if key {
 		if due, early := c.Schedule().Due(c.cur, t); due {
 			c.cut(f, t, early)
 		}
@@ -398,7 +415,9 @@ func (c *Cutter) Feed(f *Frame) {
 		}
 	}
 	c.cur.Write(f.Payload)
+	c.mu.Lock()
 	c.stats.Bytes += int64(len(f.Payload))
+	c.mu.Unlock()
 }
 
 // prefix is what a new segment starts with: the last prefix frame. A
@@ -425,12 +444,16 @@ func (c *Cutter) cut(f *Frame, now time.Time, early bool) {
 	if c.cur != nil {
 		c.cur.Early = early
 		if early {
+			c.mu.Lock()
 			c.stats.EarlyCuts++
+			c.mu.Unlock()
 		}
 		c.finish(c.cur, now)
 	}
 	c.cur = newSegment(now, c.Schedule().SlotOf(now), prefix)
+	c.mu.Lock()
 	c.stats.Segments++
+	c.mu.Unlock()
 	if c.Open != nil {
 		c.Open(c.cur)
 	}

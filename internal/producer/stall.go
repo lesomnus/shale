@@ -83,11 +83,12 @@ func (t *stallTracker) quiet(now time.Time, after time.Duration) (time.Duration,
 
 // keyInterval is the source's measured keyframe interval, zero before one.
 func (s *source) keyInterval() time.Duration {
-	if s.cutter == nil {
+	c := s.currentCutter()
+	if c == nil {
 		return 0
 	}
 
-	return s.cutter.Stats().KeyInterval
+	return c.Stats().KeyInterval
 }
 
 // watchStall reports a stream that has gone quiet while it is quiet, so the

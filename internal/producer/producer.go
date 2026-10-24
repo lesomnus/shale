@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -159,8 +160,11 @@ type Producer struct {
 	cfg   Config
 	log   *slog.Logger
 	agent *hostagent.Agent
-	conn  *grpc.ClientConn
-	id    pdid.Id
+	// conn is the connection to the CP, which the heartbeat replaces when
+	// the certificate is renewed (§33.5) while every loop calls on it: they
+	// call through cp, on the connection there is at each call.
+	conn atomic.Pointer[grpc.ClientConn]
+	id   pdid.Id
 
 	set     *api.Set
 	members int
@@ -168,18 +172,56 @@ type Producer struct {
 	order   []*source
 
 	uploader *Uploader
-	profileV int64
 	relay    *relayLink
 	m        *metrics
 	// push is the listener pushed sources are written to; nil when no
 	// source is pushed (§38.9).
 	push *Push
 
-	mu       sync.Mutex
-	retained int64
+	// negotiating holds negotiations to one at a time: the allocations, the
+	// heartbeat and the ticks each start one when they have a reason to
+	// (§12.6, §38.5).
+	negotiating sync.Mutex
+	// mu guards terms, which a negotiation writes while the capture loops,
+	// the allocations and the heartbeat read them.
+	mu    sync.Mutex
+	terms terms
 
 	// Ready is closed once the producer records.
 	Ready chan struct{}
+}
+
+// terms are what the last negotiation settled (§12.6): the profile version
+// it was made at, the upload mode, and the link the mode is part of; the
+// configured mode until the first.
+type terms struct {
+	version int64
+	mode    api.UploadMode
+	link    *api.LinkProfile
+}
+
+// agreed is what the last negotiation settled.
+func (p *Producer) agreed() terms {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.terms
+}
+
+// cp is the connection to the CP as it is at each call.
+func (p *Producer) cp() grpc.ClientConnInterface { return currentConn{&p.conn} }
+
+// currentConn calls on whichever connection the pointer holds at the call.
+type currentConn struct {
+	p *atomic.Pointer[grpc.ClientConn]
+}
+
+func (c currentConn) Invoke(ctx context.Context, method string, args, reply any, opts ...grpc.CallOption) error {
+	return c.p.Load().Invoke(ctx, method, args, reply, opts...)
+}
+
+func (c currentConn) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	return c.p.Load().NewStream(ctx, desc, method, opts...)
 }
 
 // input is what the heartbeat asks of where a source's bytes come from: a
@@ -192,13 +234,15 @@ type input interface {
 
 // source is one camera's state.
 type source struct {
-	cfg     SourceConfig
-	row     *api.Source
+	cfg SourceConfig
+	row *api.Source
+	// capture runs the source's capture process; push is the source's side
+	// of the listener when a process on the host writes the stream (§38.9),
+	// and capture is nil then. Both are made with the producer and never
+	// change: the heartbeat asks them how the input is doing (§38.6) while
+	// they run.
 	capture *Capture
-	// push is the source's side of the listener when a process on the
-	// host writes the stream (§38.9); capture is nil then.
-	push   *pushSource
-	cutter *Cutter
+	push    *pushSource
 	// prefix is a raw source's last prefix frame, what its laminae start
 	// with (§38.9), kept across streams.
 	prefix []byte
@@ -206,7 +250,12 @@ type source struct {
 	// (§38.10); nil otherwise.
 	dark *darkTracker
 
-	mu      sync.Mutex
+	mu sync.Mutex
+	// cutter cuts the stream being read, a new one for every stream. The
+	// capture loop makes it and is the only one to feed it; the heartbeat
+	// and the stall watch read its counters from goroutines of their own
+	// (§38.6), so it is set and read under mu.
+	cutter  *Cutter
 	profile *api.SegmentProfile
 	sched   Schedule
 	ceiling int64
@@ -247,7 +296,7 @@ func New(cfg Config) (*Producer, error) {
 	if cfg.Retain != RetainCommitted && cfg.Retain != RetainWritten {
 		return nil, fmt.Errorf("retain: %q is neither %s nor %s", cfg.Retain, RetainCommitted, RetainWritten)
 	}
-	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, Ready: make(chan struct{})}
+	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, terms: terms{mode: cfg.Mode}, Ready: make(chan struct{})}
 	p.relay = newRelayLink(p)
 	p.m = newMetrics(context.Background())
 	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
@@ -307,6 +356,9 @@ func New(cfg Config) (*Producer, error) {
 			}
 			s.dark = newDarkTracker(sc.Idle.darkAfter(), p.now)
 			s.dark.onChange = func(suppressed bool) { p.darkChanged(s, suppressed) }
+		}
+		if s.push == nil {
+			s.capture = p.newCapture(s)
 		}
 		p.sources[sc.Alias] = s
 		p.order = append(p.order, s)
@@ -382,8 +434,9 @@ func (p *Producer) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-	p.conn = conn
+	p.conn.Store(conn)
+	// The one there is by then: a renewal replaces it.
+	defer func() { p.conn.Load().Close() }()
 
 	if err := p.waitForSet(ctx); err != nil {
 		return err
@@ -395,7 +448,7 @@ func (p *Producer) Run(ctx context.Context) error {
 		return err
 	}
 
-	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(conn), Log: p.log, Mode: p.cfg.Mode, Written: p.cfg.Retain == RetainWritten, m: p.m}
+	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(p.cp()), Log: p.log, Mode: p.agreed().mode, Written: p.cfg.Retain == RetainWritten, m: p.m}
 	if p.uploader.Cfg.Client == nil {
 		// The data planes speak TLS from the same CA the producer pinned.
 		hc, err := p.agent.HTTPClient()
@@ -441,11 +494,11 @@ func (p *Producer) joinCall(ctx context.Context, conn *grpc.ClientConn, hj *api.
 func (p *Producer) waitForSet(ctx context.Context) error {
 	said := false
 	for {
-		me, err := api.NewProducerServiceClient(p.conn).Get(ctx, api.ProducerGetRequest_builder{
+		me, err := api.NewProducerServiceClient(p.cp()).Get(ctx, api.ProducerGetRequest_builder{
 			Ref: api.ProducerRef_builder{Id: p.id.Bytes()}.Build(),
 		}.Build())
 		if err == nil && len(me.GetSet().GetId()) > 0 {
-			set, err := api.NewSetServiceClient(p.conn).Get(ctx, api.SetGetRequest_builder{
+			set, err := api.NewSetServiceClient(p.cp()).Get(ctx, api.SetGetRequest_builder{
 				Ref: api.SetRef_builder{Id: me.GetSet().GetId()}.Build(),
 			}.Build())
 			if err == nil {
@@ -470,7 +523,7 @@ func (p *Producer) waitForSet(ctx context.Context) error {
 
 // register makes sure every configured source exists in the set (§38.4).
 func (p *Producer) register(ctx context.Context) error {
-	sources := api.NewSourceServiceClient(p.conn)
+	sources := api.NewSourceServiceClient(p.cp())
 	byAlias := map[string]*api.Source{}
 	after := ""
 	for {
@@ -526,16 +579,20 @@ func (p *Producer) startingCeiling(s *source) int64 {
 
 // negotiate proposes the profile and applies what was agreed (§12.6).
 func (p *Producer) negotiate(ctx context.Context) error {
+	p.negotiating.Lock()
+	defer p.negotiating.Unlock()
 	var proposals []*api.SourceProposal
 	var total int64
 	for _, s := range p.order {
-		ceiling := s.ceiling
+		s.mu.Lock()
+		ceiling, raise := s.ceiling, s.raise
+		s.raise = false
+		s.mu.Unlock()
 		if ceiling == 0 {
 			ceiling = p.startingCeiling(s)
 		}
-		if s.raise {
+		if raise {
 			ceiling = ceiling * 5 / 4
-			s.raise = false
 		}
 		total += ceiling
 		prof := api.SegmentProfile_builder{MaxBitrate: ceiling}
@@ -555,7 +612,7 @@ func (p *Producer) negotiate(ctx context.Context) error {
 		}.Build())
 	}
 
-	link := api.LinkProfile_builder{Mode: p.cfg.Mode}
+	link := api.LinkProfile_builder{Mode: p.agreed().mode}
 	if p.cfg.IdleTimeout > 0 {
 		link.IdleTimeoutSeconds = int64(p.cfg.IdleTimeout.Seconds())
 	}
@@ -566,7 +623,7 @@ func (p *Producer) negotiate(ctx context.Context) error {
 		link.AllocationHorizonSeconds = int64(p.cfg.AllocationHorizon.Seconds())
 	}
 
-	resp, err := api.NewSetServiceClient(p.conn).Negotiate(ctx, api.SetNegotiateRequest_builder{
+	resp, err := api.NewSetServiceClient(p.cp()).Negotiate(ctx, api.SetNegotiateRequest_builder{
 		Ref: api.SetRef_builder{Id: p.set.GetId()}.Build(), Link: link.Build(), Sources: proposals,
 	}.Build())
 	if err != nil {
@@ -575,7 +632,10 @@ func (p *Producer) negotiate(ctx context.Context) error {
 	for _, a := range resp.GetAdjustments() {
 		p.log.Info("adjusted", "source", mustId(a.GetSourceId()).String(), "field", a.GetField(), "proposed", a.GetProposed(), "agreed", a.GetAgreed(), "why", a.GetReason())
 	}
-	p.profileV = resp.GetProfileVersion()
+	mode := resp.GetLink().GetMode()
+	p.mu.Lock()
+	p.terms = terms{version: resp.GetProfileVersion(), mode: mode, link: resp.GetLink()}
+	p.mu.Unlock()
 	p.relay.set(resp.GetRelay())
 	// The uplink budget (§38.5): the ceilings with 20% headroom, and once
 	// more when the relay carries every camera at all times (§39.3).
@@ -588,27 +648,27 @@ func (p *Producer) negotiate(ctx context.Context) error {
 			p.log.Warn("the ceilings exceed the uplink: 20% headroom, and once more for live at all times", "ceilings", total, "need", int64(need), "uplink", p.cfg.Uplink)
 		}
 	}
-	p.set.SetLink(resp.GetLink())
-	p.cfg.Mode = resp.GetLink().GetMode()
 	if p.uploader != nil {
-		p.uploader.Mode = p.cfg.Mode
+		p.uploader.Mode = mode
 	}
 	for _, ag := range resp.GetSources() {
 		for _, s := range p.order {
 			if string(s.row.GetId()) != string(ag.GetSourceId()) {
 				continue
 			}
-			s.mu.Lock()
-			s.profile = ag.GetProfile()
-			s.ceiling = ag.GetProfile().GetMaxBitrate()
-			d := time.Duration(ag.GetProfile().GetDurationSeconds()) * time.Second
-			s.sched = Schedule{
+			prof := ag.GetProfile()
+			d := time.Duration(prof.GetDurationSeconds()) * time.Second
+			sched := Schedule{
 				Duration: d,
 				Phase:    core.Phase(p.set.GetId(), int(s.row.GetOrdinal()), p.members, d),
-				Ceiling:  ag.GetProfile().GetMaxBitrate() / 8 * ag.GetProfile().GetDurationSeconds(),
+				Ceiling:  prof.GetMaxBitrate() / 8 * prof.GetDurationSeconds(),
 			}
+			s.mu.Lock()
+			s.profile = prof
+			s.ceiling = prof.GetMaxBitrate()
+			s.sched = sched
 			s.mu.Unlock()
-			p.log.Info("profile", "source", s.cfg.Alias, "max_bitrate", s.ceiling, "duration", d.String(), "keyframe_ms", ag.GetProfile().GetKeyframeIntervalMs(), "phase", s.sched.Phase.String())
+			p.log.Info("profile", "source", s.cfg.Alias, "max_bitrate", prof.GetMaxBitrate(), "duration", d.String(), "keyframe_ms", prof.GetKeyframeIntervalMs(), "phase", sched.Phase.String())
 		}
 	}
 
@@ -621,8 +681,8 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 	if s.push != nil {
 		return s.push.Run(ctx, func(st *pushStream) {
 			st.OnIdle = func() {
-				if s.cutter != nil {
-					s.cutter.Stop()
+				if c := s.currentCutter(); c != nil {
+					c.Stop()
 				}
 			}
 			if s.cfg.Kind == KindRaw {
@@ -632,7 +692,14 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 			}
 		})
 	}
-	s.capture = &Capture{
+
+	return s.capture.Run(ctx, func(r io.Reader) { p.readMP4(ctx, s, r) })
+}
+
+// newCapture is the capture process of a source that is not pushed, made
+// with the producer so that it is there before anything that asks it.
+func (p *Producer) newCapture(s *source) *Capture {
+	return &Capture{
 		Ffmpeg:   p.cfg.Ffmpeg,
 		Gst:      p.cfg.Gst,
 		Source:   s.cfg,
@@ -653,8 +720,22 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 			return s.ceiling, kf
 		},
 	}
+}
 
-	return s.capture.Run(ctx, func(r io.Reader) { p.readMP4(ctx, s, r) })
+// setCutter makes a new stream's cutter the source's.
+func (s *source) setCutter(c *Cutter) {
+	s.mu.Lock()
+	s.cutter = c
+	s.mu.Unlock()
+}
+
+// currentCutter is the cutter of the stream being read, nil before the
+// first.
+func (s *source) currentCutter() *Cutter {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.cutter
 }
 
 // newCutter is the source's cutter for one stream, handing segments to
@@ -673,12 +754,12 @@ func (p *Producer) newCutter(s *source) *Cutter {
 				// before it closes (§38.10).
 				seg.SetDark(true)
 			}
-			if p.cfg.Mode == api.UploadMode_UPLOAD_MODE_LIVE {
+			if p.agreed().mode == api.UploadMode_UPLOAD_MODE_LIVE {
 				p.enqueue(s, seg)
 			}
 		},
 		Out: func(seg *Segment) {
-			if p.cfg.Mode != api.UploadMode_UPLOAD_MODE_LIVE {
+			if p.agreed().mode != api.UploadMode_UPLOAD_MODE_LIVE {
 				p.enqueue(s, seg)
 			} else {
 				// Already queued at open; a dark one waits for its close.
@@ -711,7 +792,8 @@ func (p *Producer) newCutter(s *source) *Cutter {
 // stream, until it ends (§38.2).
 func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 	reader := NewMP4Reader(r)
-	s.cutter = p.newCutter(s)
+	cutter := p.newCutter(s)
+	s.setCutter(cutter)
 	// A capture is watched for stalls; a pushed stream may pause on purpose
 	// and has its idle window instead (§38.9).
 	var stall *stallTracker
@@ -731,7 +813,7 @@ func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 			}
 			break
 		}
-		s.cutter.Feed(&f)
+		cutter.Feed(&f)
 		p.relay.feed(s, &f, reader.Init())
 		s.accountFrame(&f, 0)
 		p.accountGap(s, &f)
@@ -746,18 +828,19 @@ func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 		}
 		if !checked && time.Since(started) > 10*time.Second {
 			checked = true
-			p.startupCheck(s)
+			p.startupCheck(s, cutter.Stats())
 		}
 	}
 	// The camera stopped: the segment closes where the recording did (§15).
-	s.cutter.Stop()
+	cutter.Stop()
 }
 
 // readFrames cuts one raw stream (§38.9) until it ends: frames, cut at
 // frame boundaries, the last prefix frame in front of every lamina.
 func (p *Producer) readFrames(ctx context.Context, s *source, r io.Reader) {
 	reader := NewFrameReader(r)
-	s.cutter = p.newCutter(s)
+	cutter := p.newCutter(s)
+	s.setCutter(cutter)
 	var f Frame
 	for {
 		if err := reader.Next(&f); err != nil {
@@ -766,10 +849,10 @@ func (p *Producer) readFrames(ctx context.Context, s *source, r io.Reader) {
 			}
 			break
 		}
-		s.cutter.Feed(&f)
+		cutter.Feed(&f)
 		s.accountFrame(&f, FrameHeader)
 	}
-	s.cutter.Stop()
+	cutter.Stop()
 }
 
 // accountGap counts a fragment whose longest frame stands for frames that
@@ -794,9 +877,9 @@ func (p *Producer) accountGap(s *source, f *Frame) {
 	p.m.framesMissed.Add(context.Background(), int64((f.Longest+frame/2)/frame)-1, attr)
 }
 
-// startupCheck is the ten-second look at what a capture produces (§38.3).
-func (p *Producer) startupCheck(s *source) {
-	st := s.cutter.Stats()
+// startupCheck is the ten-second look at what a capture produces (§38.3):
+// st is what its cutter counted by then.
+func (p *Producer) startupCheck(s *source, st CutStats) {
 	if st.KeyInterval > 2500*time.Millisecond {
 		p.log.Warn("keyframe interval above 2 s; expect early cuts", "source", s.cfg.Alias, "interval", st.KeyInterval.String())
 	}
@@ -1165,7 +1248,7 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 	if len(last) > 0 {
 		req.After = api.LaminaRef_builder{Id: last}.Build()
 	}
-	al, err := api.NewLaminaServiceClient(p.conn).Allocate(actx, req.Build())
+	al, err := api.NewLaminaServiceClient(p.cp()).Allocate(actx, req.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -1179,20 +1262,20 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 // allocations fetches allocations ahead for every member (§12.1).
 func (p *Producer) allocations(ctx context.Context) error {
 	for {
-		horizon := time.Duration(p.set.GetLink().GetAllocationHorizonSeconds()) * time.Second
+		horizon := time.Duration(p.agreed().link.GetAllocationHorizonSeconds()) * time.Second
 		if horizon <= 0 {
 			horizon = 10 * time.Minute
 		}
 		actx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		resp, err := api.NewSetServiceClient(p.conn).Allocate(actx, api.SetAllocateRequest_builder{
+		resp, err := api.NewSetServiceClient(p.cp()).Allocate(actx, api.SetAllocateRequest_builder{
 			Ref: api.SetRef_builder{Id: p.set.GetId()}.Build(),
 		}.Build())
 		cancel()
 		if err != nil {
 			p.log.Warn("allocate", "err", err.Error())
 		} else {
-			if resp.GetProfileVersion() != p.profileV {
-				p.log.Info("profile changed; negotiating again", "was", p.profileV, "now", resp.GetProfileVersion())
+			if was := p.agreed().version; resp.GetProfileVersion() != was {
+				p.log.Info("profile changed; negotiating again", "was", was, "now", resp.GetProfileVersion())
 				if err := p.negotiate(ctx); err != nil {
 					p.log.Warn("negotiate", "err", err.Error())
 				}
@@ -1338,7 +1421,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 
 	hctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	resp, err := api.NewProducerServiceClient(p.conn).Heartbeat(hctx, api.ProducerHeartbeatRequest_builder{
+	resp, err := api.NewProducerServiceClient(p.cp()).Heartbeat(hctx, api.ProducerHeartbeatRequest_builder{
 		Sources: reports,
 		Load:    api.HostLoad_builder{Cpu: cpuLoad(), Temperature: socTemperature()}.Build(),
 		CaHash:  p.agent.BundleHash(),
@@ -1348,7 +1431,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		return err
 	}
 	p.relay.set(resp.GetRelay())
-	if resp.GetProfileVersion() != 0 && resp.GetProfileVersion() != p.profileV {
+	if resp.GetProfileVersion() != 0 && resp.GetProfileVersion() != p.agreed().version {
 		if err := p.negotiate(ctx); err != nil {
 			p.log.Warn("negotiate", "err", err.Error())
 		}
@@ -1357,7 +1440,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		p.log.Info("suggestion", "source", mustId(sg.GetSourceId()).String(), "max_bitrate", sg.GetMaxBitrate(), "suggested", sg.GetSuggested(), "applied", sg.GetApplied(), "why", sg.GetReason())
 	}
 	if resp.GetRenewCertificate() || p.agent.NeedsRenewal(time.Now()) {
-		if err := p.agent.Renew(ctx, p.conn, func(ctx context.Context, conn *grpc.ClientConn, csr []byte) ([]byte, []byte, error) {
+		if err := p.agent.Renew(ctx, p.conn.Load(), func(ctx context.Context, conn *grpc.ClientConn, csr []byte) ([]byte, []byte, error) {
 			r, err := api.NewProducerServiceClient(conn).RenewCertificate(ctx, api.ProducerRenewCertificateRequest_builder{Csr: csr}.Build())
 			if err != nil {
 				return nil, nil, err
@@ -1369,9 +1452,9 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		} else {
 			p.log.Info("certificate renewed; reconnecting")
 			if conn, err := p.agent.Dial(ctx); err == nil {
-				old := p.conn
-				p.conn = conn
-				old.Close()
+				// Every call from here on is on the new one; one still on
+				// the old ends with it, and is asked again.
+				p.conn.Swap(conn).Close()
 			}
 		}
 	}
