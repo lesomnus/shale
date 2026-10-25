@@ -216,15 +216,30 @@ func TestPushedSources(t *testing.T) {
 
 	// Raw: laminae cut at record boundaries on the schedule, each starting
 	// with the prefix, dated by the records rather than by their arrival,
-	// tiling the minute, the last one ending where the stream did.
+	// tiling the minute, the last one ending where the stream did. The
+	// minute is a lamina for every slot it touches, and the last of them
+	// are still in progress, a gap in the timeline, while the first are
+	// committed: what is waited for is every record committed.
 	telemetry := byAlias["telemetry"]
-	committed(telemetry, 3)
-	tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
-		Source: api.SourceRef_builder{Id: telemetry.GetId()}.Build(),
-		From:   timestamppb.New(t0.Add(-time.Second)), To: timestamppb.New(t0.Add(records * time.Second)),
-	}.Build())
-	require.NoError(t, err)
-	require.Len(t, tl.GetSources(), 1)
+	var tl *api.LaminaTimelineResponse
+	require.Eventually(t, func() bool {
+		var err error
+		tl, err = laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
+			Source: api.SourceRef_builder{Id: telemetry.GetId()}.Build(),
+			From:   timestamppb.New(t0.Add(-time.Second)), To: timestamppb.New(t0.Add(records * time.Second)),
+		}.Build())
+		if err != nil || len(tl.GetSources()) != 1 {
+			return false
+		}
+		var held int64
+		for _, o := range tl.GetSources()[0].GetLaminae() {
+			if o.GetState() == api.ReadState_READ_STATE_AVAILABLE {
+				held += o.GetSize() - 4
+			}
+		}
+
+		return held >= records*(64<<10)
+	}, 90*time.Second, 500*time.Millisecond, "telemetry: every record committed")
 	objs := tl.GetSources()[0].GetLaminae()
 	require.GreaterOrEqual(t, len(objs), 3)
 	var total int64
