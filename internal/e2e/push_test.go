@@ -216,15 +216,30 @@ func TestPushedSources(t *testing.T) {
 
 	// Raw: laminae cut at record boundaries on the schedule, each starting
 	// with the prefix, dated by the records rather than by their arrival,
-	// tiling the minute, the last one ending where the stream did.
+	// tiling the minute, the last one ending where the stream did. The
+	// minute is a lamina for every slot it touches, and the last of them
+	// are still in progress, a gap in the timeline, while the first are
+	// committed: what is waited for is every record committed.
 	telemetry := byAlias["telemetry"]
-	committed(telemetry, 3)
-	tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
-		Source: api.SourceRef_builder{Id: telemetry.GetId()}.Build(),
-		From:   timestamppb.New(t0.Add(-time.Second)), To: timestamppb.New(t0.Add(records * time.Second)),
-	}.Build())
-	require.NoError(t, err)
-	require.Len(t, tl.GetSources(), 1)
+	var tl *api.LaminaTimelineResponse
+	require.Eventually(t, func() bool {
+		var err error
+		tl, err = laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{
+			Source: api.SourceRef_builder{Id: telemetry.GetId()}.Build(),
+			From:   timestamppb.New(t0.Add(-time.Second)), To: timestamppb.New(t0.Add(records * time.Second)),
+		}.Build())
+		if err != nil || len(tl.GetSources()) != 1 {
+			return false
+		}
+		var held int64
+		for _, o := range tl.GetSources()[0].GetLaminae() {
+			if o.GetState() == api.ReadState_READ_STATE_AVAILABLE {
+				held += o.GetSize() - 4
+			}
+		}
+
+		return held >= records*(64<<10)
+	}, 90*time.Second, 500*time.Millisecond, "telemetry: every record committed")
 	objs := tl.GetSources()[0].GetLaminae()
 	require.GreaterOrEqual(t, len(objs), 3)
 	var total int64
@@ -253,6 +268,30 @@ func TestPushedSources(t *testing.T) {
 		require.True(t, !g.GetTo().AsTime().After(t0) || !g.GetFrom().AsTime().Before(t0.Add((records-1)*time.Second)),
 			"a gap inside the pushed minute: %s to %s", g.GetFrom().AsTime(), g.GetTo().AsTime())
 	}
+
+	// Every segment the producer counted stored is a lamina committed, of
+	// both sources: a segment uploaded under a lamina another one has is
+	// answered as a retry of that one at its key, and counted, and lost
+	// (§12.1, §12.5).
+	require.Eventually(t, func() bool {
+		var n int64
+		for _, src := range byAlias {
+			vs, err := laminae.List(ctx, api.LaminaListRequest_builder{
+				Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: src.GetId()}.Build()}.Build()},
+				Size:    100,
+			}.Build())
+			if err != nil {
+				return false
+			}
+			for _, o := range vs.GetItems() {
+				if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED {
+					n++
+				}
+			}
+		}
+
+		return n == p.Stats().Stored
+	}, 90*time.Second, 500*time.Millisecond, "every segment counted stored is committed")
 
 	// A raw source has nothing a relay could show.
 	_, err = sources.Live(ctx, api.SourceLiveRequest_builder{Ref: api.SourceRef_builder{Id: telemetry.GetId()}.Build()}.Build())

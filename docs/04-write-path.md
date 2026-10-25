@@ -60,6 +60,21 @@ short CP outage. It adds no durable producer state:
   attempts all failed still gets fresh ones, so a segment being retried
   ([§16](#16-producer-backpressure)) is never held back by the allocations
   ahead of it.
+- **A lamina is one segment's.** The CP answers a lamina again, with
+  fresh tokens, for as long as it is `PENDING`, which lasts until its
+  commit reaches the CP: that is the idempotency above. A slot can hold
+  several segments by then: a camera that came back, segments cut early
+  ([§38.2](15-producer.md#382-cutting-segments)), or the burst of a
+  pushed source flushing what it kept offline
+  ([§38.9](15-producer.md#389-pushed-sources-and-raw-frames)). So the
+  producer never hands one lamina to two segments. At its key the node
+  holds the first of them, complete, and would answer the second's upload
+  as a retry of it ([§12.5](#125-idempotent-uploads)): the second would
+  be counted stored, and lost. A slot's allocation fetched ahead is its
+  first segment's; every segment after it asks for its own, naming the
+  lamina of the one before as `after`; and an answer that names a lamina
+  an earlier segment has is asked again after a backoff, by which time
+  that commit has reached the CP.
 - The CP accepts an expected `date_started` between `now − max_backlog_age`
   (default: the set's `retention.expire`) and `now + allocation_horizon +
   clock_tolerance` (5 minutes). A backlog that arrives hours late after a link
