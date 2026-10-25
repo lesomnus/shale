@@ -110,7 +110,7 @@ is what is being looked at.
 ```sh
 cd ts && npm install
 npm run gen               # ts/gen from proto/, needs protoc-gen-es (installed with the rest)
-npm run sandbox:build     # ts/public/app.wasm and wasm_exec.js, ~140 MB raw, 11 MB brotli
+npm run sandbox:build     # ts/public/app.wasm and wasm_exec.js, ~114 MB raw, 14 MB brotli
 npm run dev               # then open http://localhost:5173/?sandbox
 npm run test:sandbox      # headless Chromium through every page, adopting a host on the way
 ```
