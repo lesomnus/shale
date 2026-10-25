@@ -269,6 +269,30 @@ func TestPushedSources(t *testing.T) {
 			"a gap inside the pushed minute: %s to %s", g.GetFrom().AsTime(), g.GetTo().AsTime())
 	}
 
+	// Every segment the producer counted stored is a lamina committed, of
+	// both sources: a segment uploaded under a lamina another one has is
+	// answered as a retry of that one at its key, and counted, and lost
+	// (§12.1, §12.5).
+	require.Eventually(t, func() bool {
+		var n int64
+		for _, src := range byAlias {
+			vs, err := laminae.List(ctx, api.LaminaListRequest_builder{
+				Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: src.GetId()}.Build()}.Build()},
+				Size:    100,
+			}.Build())
+			if err != nil {
+				return false
+			}
+			for _, o := range vs.GetItems() {
+				if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED {
+					n++
+				}
+			}
+		}
+
+		return n == p.Stats().Stored
+	}, 90*time.Second, 500*time.Millisecond, "every segment counted stored is committed")
+
 	// A raw source has nothing a relay could show.
 	_, err = sources.Live(ctx, api.SourceLiveRequest_builder{Ref: api.SourceRef_builder{Id: telemetry.GetId()}.Build()}.Build())
 	require.Error(t, err)
