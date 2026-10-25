@@ -1,7 +1,6 @@
 package producer
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -259,15 +258,31 @@ type source struct {
 	profile *api.SegmentProfile
 	sched   Schedule
 	ceiling int64
-	allocs  map[int64]*api.Allocation
+	// allocs is each slot's allocation fetched ahead, which is the slot's
+	// first segment's (§12.1).
+	allocs map[int64]*api.Allocation
+	// taken is the laminae the source's segments were handed, by id, in
+	// the slot of the segment finished last and after. A lamina is one
+	// segment's (§12.1, §15), and the CP answers a PENDING lamina again,
+	// with fresh tokens, until its commit reaches it: a slot's allocation
+	// fetched ahead, or an answer, can name a lamina an earlier segment of
+	// the slot has. That one is at the lamina's key, complete, and the node
+	// answers another upload there as a retry of it: the later segment is
+	// counted stored, and lost.
+	taken   map[string]handed
 	pending []*Segment
 	wake    chan struct{}
-	// lastObj is the lamina of the segment finished last: the next segment
-	// never reuses it, however the slot's allocation was cached (§15).
-	// headAlloc is the allocation the head of the queue is being uploaded
-	// with, kept across retries (§16).
+	// lastObj is the lamina of the segment finished last, which the next
+	// segment's allocation names as `after` (§15). headObj is the lamina
+	// the head of the queue was handed, kept when headAlloc, the allocation
+	// it is being uploaded with, is let go for fresh attempts (§13, §16).
+	// head counts the segments that were the head: only the head is handed
+	// a lamina, so it is what taken knows a segment by, and holds none of
+	// its bytes.
 	lastObj   []byte
+	headObj   []byte
 	headAlloc *api.Allocation
+	head      int64
 
 	// Per-second accounting for the heartbeat (§38.5, §38.6).
 	secBytes   [60]int64
@@ -316,7 +331,7 @@ func New(cfg Config) (*Producer, error) {
 		if f := sc.Fragment; f != 0 && (f < MinFragDuration || f > MaxFragDuration) {
 			return nil, fmt.Errorf("fragment_duration %s is outside %s to %s", f, MinFragDuration, MaxFragDuration)
 		}
-		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, wake: make(chan struct{}, 1)}
+		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, taken: map[string]handed{}, wake: make(chan struct{}, 1)}
 		if sc.Input == InputPush {
 			if cfg.Push == "" {
 				return nil, fmt.Errorf("source %s is pushed, and producer.push names no listener", sc.Alias)
@@ -1154,15 +1169,56 @@ func (p *Producer) skip(ctx context.Context, s *source, seg *Segment, al *api.Al
 }
 
 // finish takes the head segment off the queue and remembers its lamina as
-// the one the next segment must not get (§15). The lock is held.
+// the one the next segment names as `after` (§15). What was handed in the
+// slots before this segment's is let go: the segments to come are in its
+// slot or later. The lock is held.
 func (s *source) finish(seg *Segment) {
 	if len(s.pending) > 0 && s.pending[0] == seg {
 		s.pending = s.pending[1:]
 	}
-	if s.headAlloc != nil {
-		s.lastObj = s.headAlloc.GetLaminaId()
+	if s.headObj != nil {
+		s.lastObj = s.headObj
 	}
-	s.headAlloc = nil
+	s.headObj, s.headAlloc = nil, nil
+	s.head++
+	slot := s.sched.SlotOf(seg.Started).Unix()
+	for id, h := range s.taken {
+		if h.slot < slot {
+			delete(s.taken, id)
+		}
+	}
+}
+
+// handed is which head a lamina was handed to, and its slot.
+type handed struct {
+	head int64
+	slot int64
+}
+
+// first says whether no segment of the slot but the head was handed a
+// lamina: the head is the slot's first. The lock is held.
+func (s *source) first(slot int64) bool {
+	for _, h := range s.taken {
+		if h.slot == slot && h.head != s.head {
+			return false
+		}
+	}
+
+	return true
+}
+
+// another says whether an allocation names a lamina a segment before the
+// head was handed. The lock is held.
+func (s *source) another(al *api.Allocation) bool {
+	h, ok := s.taken[string(al.GetLaminaId())]
+
+	return ok && h.head != s.head
+}
+
+// hand gives the head an allocation's lamina. The lock is held.
+func (s *source) hand(al *api.Allocation, slot int64) {
+	s.taken[string(al.GetLaminaId())] = handed{head: s.head, slot: slot}
+	s.headObj = al.GetLaminaId()
 }
 
 // permanent says an allocation error will not go away by asking again: the
@@ -1204,6 +1260,14 @@ func sleep(ctx context.Context, d time.Duration) bool {
 
 var errSlotStored = errors.New("the slot was already stored")
 
+// errTaken is an answer naming a lamina an earlier segment was handed. The
+// CP takes a request for a retry of the slot's last lamina by their
+// starts, unless `after` names that one (§12.1, §15), and the starts of a
+// burst's segments can tie within a millisecond. Asked again once that
+// lamina's commit has reached it, the CP answers a lamina of the
+// segment's own.
+var errTaken = errors.New("the answer names a lamina an earlier segment has")
+
 // overBudget says whether retained segments exceed the RAM budget: what
 // is held, which under `retain: written` is less than their length (§16).
 func (p *Producer) overBudget() bool {
@@ -1219,25 +1283,25 @@ func (p *Producer) overBudget() bool {
 	return total > p.cfg.Buffer
 }
 
-// allocationFor is the allocation of the slot a segment belongs to, from
-// what was fetched ahead or on demand (§12.1).
+// allocationFor is the allocation of the slot the head segment belongs
+// to, from what was fetched ahead or on demand (§12.1), for a lamina no
+// other segment was handed (§15).
 func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (*api.Allocation, error) {
 	s.mu.Lock()
 	slot := s.sched.SlotOf(seg.Started).Unix()
 	al := s.allocs[slot]
-	if al != nil {
-		delete(s.allocs, slot)
+	delete(s.allocs, slot)
+	// The prefetch asks for the slot, and the CP answers the slot's lamina
+	// for as long as that is PENDING: it is the slot's first segment's.
+	// The segments after it ask for theirs, each naming the one before.
+	if al != nil && s.first(slot) && !s.another(al) && al.GetDateExpires().AsTime().After(p.now().Add(time.Minute)) && len(al.GetCandidates()) > 0 {
+		s.hand(al, slot)
+		s.mu.Unlock()
+
+		return al, nil
 	}
 	last := s.lastObj
 	s.mu.Unlock()
-	if al != nil && len(last) > 0 && bytes.Equal(al.GetLaminaId(), last) {
-		// The slot's allocation was the segment before this one, which
-		// the camera ended: this one needs a lamina of its own (§15).
-		al = nil
-	}
-	if al != nil && al.GetDateExpires().AsTime().After(p.now().Add(time.Minute)) && len(al.GetCandidates()) > 0 {
-		return al, nil
-	}
 
 	actx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
@@ -1255,6 +1319,12 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 	if len(al.GetCandidates()) == 0 {
 		return nil, errSlotStored
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.another(al) {
+		return nil, errTaken
+	}
+	s.hand(al, slot)
 
 	return al, nil
 }
