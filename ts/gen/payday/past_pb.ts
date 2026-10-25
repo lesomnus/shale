@@ -11,20 +11,35 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file payday/past.proto.
  */
 export const file_payday_past: GenFile = /*@__PURE__*/
-  fileDesc("ChFwYXlkYXkvcGFzdC5wcm90bxIGcGF5ZGF5IhwKDEV2ZW50TWVzc2FnZRIMCgRraW5kGAEgASgJQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcGF5ZGF5L3BkcGKSAwIIAmIIZWRpdGlvbnNw6Ac");
+  fileDesc("ChFwYXlkYXkvcGFzdC5wcm90bxIGcGF5ZGF5Ih0KDEV2ZW50TWVzc2FnZRINCgVraW5kcxgBIAMoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3BheWRheS9wZHBikgMCCAJiCGVkaXRpb25zcOgH");
 
 /**
- * EventMessage says a message is what one kind of the app's events holds: the
- * `value` of a row of payday's Event, in an app that declares a past
+ * EventMessage says a message is what the app's events of one or more kinds
+ * hold: the `value` of a row of payday's Event, in an app that declares a past
  * (payday#151).
  *
  * 	message RobotMoved {
- * 	  option (payday.event) = {kind: "robot.move"};
+ * 	  option (payday.event) = {kinds: "robot.move"};
  *
  * 	  bytes robot = 1;
  * 	  bytes from = 2;
  * 	  bytes to = 3;
  * 	}
+ *
+ * 	// What a correction holds: the event it is of, and when that happened
+ * 	// instead -- which a retraction, of an event that never happened, leaves
+ * 	// empty.
+ * 	message Corrected {
+ * 	  option (payday.event) = {kinds: ["correct", "retract"]};
+ *
+ * 	  bytes event = 1;
+ * 	  google.protobuf.Timestamp at = 2;
+ * 	}
+ *
+ * A kind is the operation -- what a list of events is filtered by, and what a
+ * sentence is said for -- and the message is what its events hold. Kinds whose
+ * events hold much the same are one message, and each kind's events hold the
+ * fields it uses of it.
  *
  * An event keeps no sentence. It keeps this message, and a sentence is made
  * from it when the event is read -- in the reader's language, naming the people
@@ -48,28 +63,39 @@ export const file_payday_past: GenFile = /*@__PURE__*/
  *   - a field holding an entity, or a message of a generated contract -- a row
  *     whole, or a Ref with a slug in it;
  *   - a `google.protobuf.Any`, whose message nothing here declared;
- *   - an entity that says it is one, or two messages of one kind.
+ *   - an entity that says it is one, a kind two messages say, and a kind said
+ *     empty or twice;
+ *   - a field whose name another message of the same domain's kinds holds at
+ *     another number, or holding another type: a kind it names is of the
+ *     domain it says before its first `.` -- the full name of a message that
+ *     names none is of no domain -- and one name is one field across a domain.
  *
- * And it keeps `proto/<pkg>/payday/past.lock`, the record of every event
- * message the app ever declared: a message in it is not deleted, a field of one
- * is not removed and keeps its JSON name, its kind and whether it is a list or
- * a map, and a value of an enum one holds is not renamed. `pd gen` only adds to
- * it.
+ * And it keeps `proto/<pkg>/payday/past.lock`, the record of every kind the
+ * app ever declared and of the message its rows hold: a kind in it is not
+ * dropped or moved to another message, a field of one of those messages is
+ * not removed and keeps its JSON name, its kind and whether it is a list or a
+ * map, and a value of an enum one holds is not renamed. `pd gen` only adds to
+ * it, so a message may take more kinds and never give one up.
  *
  * @generated from message payday.EventMessage
  */
 export type EventMessage = Message<"payday.EventMessage"> & {
   /**
-   * Kind is what the rows of this message are written under -- the event's
-   * `kind`, which a list of events is filtered by -- and the message's full
-   * name when it says none. Two messages of one app have two kinds.
+   * Kinds are what the rows of this message are written under -- each an
+   * event's `kind` -- and the message's full name alone when it says none. A
+   * kind is one message's, and an event of a message of several says which
+   * of them it is (`past.Event.Kind`).
    *
-   * Chosen once, like a field's number: a row says which message its value is
-   * by its kind, so the lock refuses a kind that changed.
+   * Each is chosen once, like a field's number: a row says which message its
+   * value is by its kind, so the lock refuses a kind dropped or moved to
+   * another message, and a message may only take more.
    *
-   * @generated from field: string kind = 1;
+   * At 1, where `string kind` was until payday#171: a declaration compiled
+   * against that is read as its one kind.
+   *
+   * @generated from field: repeated string kinds = 1;
    */
-  kind: string;
+  kinds: string[];
 };
 
 /**

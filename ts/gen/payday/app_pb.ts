@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file payday/app.proto.
  */
 export const file_payday_app: GenFile = /*@__PURE__*/
-  fileDesc("ChBwYXlkYXkvYXBwLnByb3RvEgZwYXlkYXkiIQoDQXBwEhoKBHBhc3QYASABKAsyDC5wYXlkYXkuUGFzdCIjCgRQYXN0Eg0KBWV2ZW50GAEgASgNEgwKBGZhY3QYAiABKA1CJlofZ2l0aHViLmNvbS9sZXNvbW51cy9wYXlkYXkvcGRwYpIDAggCYghlZGl0aW9uc3DoBw");
+  fileDesc("ChBwYXlkYXkvYXBwLnByb3RvEgZwYXlkYXkiQwoDQXBwEhoKBHBhc3QYASABKAsyDC5wYXlkYXkuUGFzdBIgCgdkb21haW5zGAIgASgLMg8ucGF5ZGF5LkRvbWFpbnMiIwoEUGFzdBINCgVldmVudBgBIAEoDRIMCgRmYWN0GAIgASgNIisKB0RvbWFpbnMSEAoIYXJjaGl2ZWQYASABKA0SDgoGYWNjZXNzGAIgASgNQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcGF5ZGF5L3BkcGKSAwIIAmIIZWRpdGlvbnNw6Ac");
 
 /**
  * App says that this file's proto package is the app's own.
@@ -44,7 +44,8 @@ export const file_payday_app: GenFile = /*@__PURE__*/
  * It was presence and nothing else for as long as there was nothing else to
  * say: a file either says it or does not. It is a message rather than a `bool`
  * so that something could be added to it without every app that set it having
- * to change, and [App.past] is the first thing that was.
+ * to change, and [App.past] is the first thing that was, [App.domains] the
+ * second.
  *
  * Setting it on more than one package is refused. Two answers to "where do
  * payday's entities go" is the thing this exists to avoid, and getting two of
@@ -70,6 +71,22 @@ export type App = Message<"payday.App"> & {
    * @generated from field: payday.Past past = 1;
    */
   past?: Past | undefined;
+
+  /**
+   * Domains gives payday's `Archived` and `Access` numbers of the app's own,
+   * for an app whose own entities already hold the ones payday gives them
+   * (payday#163):
+   *
+   * 	option (payday.app) = {domains: {archived: 240, access: 241}};
+   *
+   * `pd gen` writes the copies of the two at these numbers, on every run, and
+   * everything generated from them follows. An app that says nothing has them
+   * at 5 and 6, which is every app whose own entities never held either; one
+   * that says one of them has the other where payday puts it.
+   *
+   * @generated from field: payday.Domains domains = 2;
+   */
+  domains?: Domains | undefined;
 };
 
 /**
@@ -84,12 +101,14 @@ export const AppSchema: GenMessage<App> = /*@__PURE__*/
  *
  * # Why the app numbers them
  *
- * A table every app has gets a number payday fixes: a tenant is domain 1 in
- * every payday app, which is what lets one app name another's rows. A table an
- * app opts into is numbered by the app, because payday cannot fix a number for
- * it without taking that number from every app that already spent it -- and
- * these two arrived after apps had. The generator finds them by their `own:`
- * marker, never by their number, so nothing of payday's depends on which.
+ * A table every app has keeps the number payday gives it: a tenant is domain 1
+ * in every payday app, which is what lets one app name another's rows. (Two
+ * such tables an app may number all the same, where its own entities had spent
+ * their numbers first: see [Domains].) A table an app opts into is numbered by
+ * the app, because payday cannot fix a number for it without taking that
+ * number from every app that already spent it -- and these two arrived after
+ * apps had. The generator finds them by their `own:` marker, never by their
+ * number, so nothing of payday's depends on which.
  *
  * Each is a domain like any other: 7..247, the two different, and neither one
  * another entity of the app's declares. 1..6 and 248..255 are payday's. And
@@ -121,4 +140,59 @@ export type Past = Message<"payday.Past"> & {
  */
 export const PastSchema: GenMessage<Past> = /*@__PURE__*/
   messageDesc(file_payday_app, 1);
+
+/**
+ * Domains is the domain of each of the two entities of payday's that an app may
+ * number itself: `Archived`, the account the database keeps of the trail's
+ * archive, and `Access`, the access record. Zero is the number payday gives
+ * it.
+ *
+ * # Why these two, and only when the app says
+ *
+ * A table every app has keeps the number payday gives it, so that one number
+ * means one thing in every payday app. These two were given theirs -- 5 on
+ * 2026-10-11, 6 on 2026-10-21 -- after apps on payday had already spent them:
+ * a fleet whose robots carry domain 5 in every identifier, and in device
+ * certificates already issued, cannot move its robots. payday's two can move,
+ * since no identifier of theirs is held anywhere but the app's own database
+ * and archive. So an app whose own entity holds 5 or 6 keeps it, and says here
+ * where payday's goes instead.
+ *
+ * Nothing of payday's depends on which. The generator finds both by their
+ * `own:` marker, the archive files a row under its kind's name -- `access`,
+ * whatever the number -- and everything that knows the number is generated
+ * from the copy. The others keep theirs: Tenant 1, Holder 2, Audit 3, Outbox
+ * 4, Owed 254 and RowSeal 255.
+ *
+ * Each is a domain like any other: 7..247, the two different, and neither one
+ * another entity of the app's holds, the past's included. And like any other
+ * it is chosen once and never changed, since an identifier carries it for as
+ * long as anything names the row.
+ *
+ * @generated from message payday.Domains
+ */
+export type Domains = Message<"payday.Domains"> & {
+  /**
+   * Archived is the domain of `Archived`, one row per blob of the trail's
+   * archive: 5 when this says nothing.
+   *
+   * @generated from field: uint32 archived = 1;
+   */
+  archived: number;
+
+  /**
+   * Access is the domain of `Access`, one row per call that carried somebody's
+   * personal data: 6 when this says nothing.
+   *
+   * @generated from field: uint32 access = 2;
+   */
+  access: number;
+};
+
+/**
+ * Describes the message payday.Domains.
+ * Use `create(DomainsSchema)` to create a new message.
+ */
+export const DomainsSchema: GenMessage<Domains> = /*@__PURE__*/
+  messageDesc(file_payday_app, 2);
 

@@ -10,14 +10,18 @@ until the next one -- the past's lock apart, below.
 - `event.proto` and `fact.proto` are here when the app declares a past
   -- `option (payday.app) = {past: {event: 17, fact: 16}};` -- numbered as it
   declares, and go when the declaration does.
+- `archived.proto` and `access.proto` are at domains 5 and 6, or at the
+  numbers the app gives them when its own entities hold those --
+  `option (payday.app) = {domains: {archived: 240, access: 241}};`.
 - `*_svc.g.proto` are the service contracts generated from them, the same
   as the ones beside your own entities.
-- `past.lock`, with a past, is the record of every event message the app
-  has declared, and the one file here that is not written over: `pd gen` only
-  adds to it, and refuses a schema that lost or changed what it holds, since
-  a row of an event is read back by name for as long as it is kept. Commit
-  it. Taking something out of it by hand is right only for a type no
-  deployment ever wrote a row of.
+- `past.lock`, with a past, is the record of every kind of event the app
+  has declared and of the message its rows hold, and the one file here that
+  is not written over: `pd gen` only adds to it, and refuses a schema that
+  lost or changed what it holds -- a kind dropped or moved to another message
+  among them -- since a row of an event is read back by name for as long as
+  it is kept. Commit it. Taking something out of it by hand is right only for
+  a type or a kind no deployment ever wrote a row of.
 
 To change what payday's entities hold, write an overlay in `proto/ext/payday/`
 -- one file per entity, named after it, and it is merged in here on the next

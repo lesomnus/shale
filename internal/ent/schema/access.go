@@ -48,6 +48,8 @@ func (Access) Indexes() []ent.Index {
 			StorageKey("access_by_actor_tenant"),
 		index.Fields("actor_id", "date_created").
 			StorageKey("access_by_actor"),
+		index.Fields("date_created", "id").
+			StorageKey("access_by_time"),
 	}
 }
 
