@@ -46,6 +46,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{AccessColumns[2], AccessColumns[7]},
 			},
+			{
+				Name:    "access_by_time",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[7], AccessColumns[0]},
+			},
 		},
 	}
 	// AddresspolicyColumns holds the columns for the "addresspolicy" table.
@@ -254,6 +259,11 @@ var (
 				Name:    "audit_by_actor",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[2], AuditColumns[7]},
+			},
+			{
+				Name:    "audit_by_time",
+				Unique:  false,
+				Columns: []*schema.Column{AuditColumns[7], AuditColumns[0]},
 			},
 		},
 	}

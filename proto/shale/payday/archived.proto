@@ -129,6 +129,10 @@ message Archived {
   };
   option (payday.entity) = {
     own: OWN_ARCHIVED
+
+    // 5 in every app but one whose own entity held 5 before this did, which
+    // gives this a number of its own -- `option (payday.app) = {domains:
+    // {archived: ...}}` -- and `pd gen` writes it over this line (payday#163).
     domain: 5
 
     // A row is gone once no checkpoint it was in is read back any more.

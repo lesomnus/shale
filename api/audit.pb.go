@@ -602,7 +602,7 @@ var File_shale_payday_audit_proto protoreflect.FileDescriptor
 
 const file_shale_payday_audit_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/payday/audit.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc0\b\n" +
+	"\x18shale/payday/audit.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe5\b\n" +
 	"\x05Audit\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12#\n" +
 	"\ttenant_id\x18\x02 \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\x12!\n" +
@@ -619,7 +619,7 @@ const file_shale_payday_audit_proto_rawDesc = "" +
 	"\x06domain\x18\x13 \x01(\rB\a\xea\x82\x16\x03\x82\x01\x00R\x06domain\x12\x16\n" +
 	"\x06fields\x18\x14 \x03(\rR\x06fields\x12\x1f\n" +
 	"\x06digest\x18\x15 \x01(\fB\a\xea\x82\x16\x03\x82\x01\x00R\x06digest\x12#\n" +
-	"\rdigest_fields\x18\x16 \x03(\rR\fdigestFields:\x96\x04\xca\xfc\x15\xd8\x02\x12\x02\x10\x01\x1a\x17\x12\x06object\x1a\r\n" +
+	"\rdigest_fields\x18\x16 \x03(\rR\fdigestFields:\xbb\x04\xca\xfc\x15\xfd\x02\x12\x02\x10\x01\x1a\x17\x12\x06object\x1a\r\n" +
 	"\tobject_id\x10\v\x1a(\x12\x05trail\x1a\r\n" +
 	"\ttenant_id\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a8\x12\x0fby_actor_tenant\x1a\x13\n" +
@@ -635,7 +635,9 @@ const file_shale_payday_audit_proto_rawDesc = "" +
 	"\x06domain\x10\x13\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a*\x12\bby_actor\x1a\f\n" +
 	"\bactor_id\x10\b\x1a\x10\n" +
-	"\fdate_created\x10\x0f\x8a\xbb\x16\xb4\x01\b\x032u\n" +
+	"\fdate_created\x10\x0f\x1a#\x12\aby_time\x1a\x10\n" +
+	"\fdate_created\x10\x0f\x1a\x06\n" +
+	"\x02id\x10\x01\x8a\xbb\x16\xb4\x01\b\x032u\n" +
 	"\x12\n" +
 	"\x0e\n" +
 	"\fdate_created\x10\x01\n" +

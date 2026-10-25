@@ -445,6 +445,29 @@ message Audit {
             number: 15
           }
         ]
+      },
+      // The trail read by time alone: oldest first by a pass over the whole
+      // deployment, and newest first by a List that names no filter. Every
+      // index above begins with what a read is narrowed by, and these are
+      // narrowed by none of it -- a policy with no `Tenants` passes over every
+      // kind but the ones it names, and `trail.Archive` and `Policy.Collect`
+      // over every kind -- so each batch scanned the table and sorted it, and
+      // a pass cost its batches times the table (payday#157).
+      //
+      // It is one more entry for every line of the trail, in every app, made
+      // where every line's time puts it: at the end of the index.
+      {
+        name: "by_time"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
       }
     ]
   };

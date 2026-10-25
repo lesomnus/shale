@@ -324,7 +324,7 @@ var File_shale_payday_access_proto protoreflect.FileDescriptor
 
 const file_shale_payday_access_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/payday/access.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xdf\x05\n" +
+	"\x19shale/payday/access.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x84\x06\n" +
 	"\x06Access\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12#\n" +
 	"\ttenant_id\x18\x02 \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\x12!\n" +
@@ -339,13 +339,15 @@ const file_shale_payday_access_proto_rawDesc = "" +
 	"\x05value\x18\x11 \x01(\fR\x05value\x12\x1f\n" +
 	"\x06domain\x18\x13 \x01(\rB\a\xea\x82\x16\x03\x82\x01\x00R\x06domain\x12\x1a\n" +
 	"\bsubjects\x18\x14 \x03(\fR\bsubjects\x12#\n" +
-	"\rsubject_count\x18\x15 \x01(\rR\fsubjectCount:\x9e\x02\xca\xfc\x15\x96\x01\x12\x03\x8a\x01\x00\x1a)\x12\x06access\x1a\r\n" +
+	"\rsubject_count\x18\x15 \x01(\rR\fsubjectCount:\xc3\x02\xca\xfc\x15\xbb\x01\x12\x03\x8a\x01\x00\x1a)\x12\x06access\x1a\r\n" +
 	"\ttenant_id\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a8\x12\x0fby_actor_tenant\x1a\x13\n" +
 	"\x0factor_tenant_id\x10\x10\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a*\x12\bby_actor\x1a\f\n" +
 	"\bactor_id\x10\b\x1a\x10\n" +
-	"\fdate_created\x10\x0f\x8a\xbb\x16\x7f\b\x062W\n" +
+	"\fdate_created\x10\x0f\x1a#\x12\aby_time\x1a\x10\n" +
+	"\fdate_created\x10\x0f\x1a\x06\n" +
+	"\x02id\x10\x01\x8a\xbb\x16\x7f\b\x062W\n" +
 	"\x12\n" +
 	"\x0e\n" +
 	"\fdate_created\x10\x01\n" +

@@ -126,11 +126,31 @@ message Access {
             number: 15
           }
         ]
+      },
+      // The record read by time alone, as the trail's `by_time` is: a pass
+      // over the whole deployment reads these rows beside the trail's, oldest
+      // first and narrowed by no tenant (payday#157).
+      {
+        name: "by_time"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
       }
     ]
   };
   option (payday.entity) = {
     own: OWN_ACCESS
+
+    // 6 in every app but one whose own entity held 6 before this did, which
+    // gives this a number of its own -- `option (payday.app) = {domains:
+    // {access: ...}}` -- and `pd gen` writes it over this line (payday#163).
     domain: 6
     erase: {hard: {}}
     tenanted: {

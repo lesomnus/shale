@@ -62,6 +62,8 @@ func (Audit) Indexes() []ent.Index {
 			StorageKey("audit_by_tenant_domain"),
 		index.Fields("actor_id", "date_created").
 			StorageKey("audit_by_actor"),
+		index.Fields("date_created", "id").
+			StorageKey("audit_by_time"),
 	}
 }
 
