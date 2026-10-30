@@ -53,6 +53,8 @@ type Config struct {
 	Producer ProducerConfig `yaml:"producer"`
 	Reader   ReaderConfig   `yaml:"reader"`
 	Relay    RelayConfig    `yaml:"relay"`
+	// Export is the opt-in MP4 download endpoint on the tenant HTTP listener.
+	Export ExportConfig `yaml:"export"`
 
 	// Client is how this binary reaches a deployment when it is the CLI.
 	Client ClientConfig `yaml:"client"`
