@@ -104,3 +104,33 @@ The `moov` at the tail is intentional. Completed local files can seek to it;
 moving it to the front is an optional faststart optimization, not a prerequisite
 for playing the downloaded file. The exporter creates a normal MP4 sample table,
 not a second `moov` appended to an existing fragmented initialization segment.
+
+## Validation
+
+`go test ./internal/mp4export ./internal/exporthttp` checks sample tables,
+payload preservation, keyframe alignment, encoder restarts, recording gaps,
+resource limits, cancellation and incomplete HTTP responses. With `ffmpeg` and
+`ffprobe` in `PATH`, the writer tests additionally compare every packet's hash,
+PTS and DTS with an independent demuxer, decode every output track, and cover
+B-frame presentation offsets. The normal CI test job installs these tools.
+
+`go test ./internal/e2e -run 'Test(NativeExport|DelegatedNativeExport)'` exercises
+the real API stack, Storage upload and native HTTP downloads, including tenant,
+site, Reader and delegated recording permissions.
+
+For browser seeking and ordinary attachment downloads, generate synthetic
+artifacts and run the portable browser check (Playwright Chromium installed):
+
+```sh
+MP4EXPORT_ARTIFACTS=/tmp/shale-export MP4EXPORT_LARGE=1 \
+  go test ./internal/mp4export -run 'Test(ValidationArtifacts|LargeValidationArtifact)$' -count=1
+cd ts
+node test/export-download.mjs /tmp/shale-export
+```
+
+`CHROMIUM_EXECUTABLE` optionally selects a locally installed browser. The large
+artifact is 302,661,840 bytes, 45 min 44.967 s, and checks front/middle/tail seeks
+and a complete ordinary download without Range. It contains synthetic video,
+AAC and Opus, not camera footage. These browser checks serve completed writer
+artifacts; the end-to-end Go tests separately cover ticket issuance and the live
+export HTTP endpoint.
