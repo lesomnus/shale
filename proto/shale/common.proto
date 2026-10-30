@@ -330,6 +330,9 @@ enum TokenOp {
   TOKEN_OP_GET = 2;
   TOKEN_OP_PUBLISH = 3;
   TOKEN_OP_VIEW = 4;
+  // A CP HTTP export capability for one source and an exact time range;
+  // it is neither a storage GET token nor a relay VIEW token.
+  TOKEN_OP_EXPORT = 5;
 }
 
 // TokenClaims is what the CP signs (§33.2). The wire form is
@@ -368,6 +371,10 @@ message TokenClaims {
   // (§33.8), its holder at roster; empty when the actor asked for itself.
   // Like actor it grants nothing: it is for limits and logs.
   bytes delegator = 20;
+  // export: the exact admitted range of source. No storage URL or other
+  // caller-controlled network address is carried by a capability.
+  google.protobuf.Timestamp export_from = 21;
+  google.protobuf.Timestamp export_to = 22;
 }
 
 // LaminaStored is a node's word that an upload committed (§12.4).

@@ -97,8 +97,9 @@ func (c DelegationConfig) tokenTtl() time.Duration {
 type delegatedKey struct{}
 
 type delegated struct {
-	app pdid.Id
-	ttl time.Duration
+	app  pdid.Id
+	ttl  time.Duration
+	ends time.Time
 }
 
 func delegatedFrom(ctx context.Context) (delegated, bool) {
@@ -116,6 +117,9 @@ func claimsFor(ctx context.Context, f *frame.Frame, b *api.TokenClaims_builder, 
 		b.Delegator = d.app.Bytes()
 		if e := now.Add(d.ttl); e.Before(exp) {
 			exp = e
+		}
+		if !d.ends.IsZero() && d.ends.Before(exp) {
+			exp = d.ends
 		}
 	}
 	b.Exp = timestamppb.New(exp)
@@ -141,7 +145,7 @@ var (
 // which finds no credential it knows, and proved by the handler.
 func IsDelegationEntry(method string) bool {
 	switch method {
-	case api.DelegationService_Start_FullMethodName, delegatedLive, delegatedTimeline, api.DelegationService_Revoke_FullMethodName:
+	case api.DelegationService_Start_FullMethodName, delegatedLive, delegatedTimeline, api.DelegationService_Export_FullMethodName, api.DelegationService_Revoke_FullMethodName:
 		return true
 	}
 
@@ -462,7 +466,7 @@ func (s coreDelegation) use(ctx context.Context, handle, method string) (*ent.De
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	pc = context.WithValue(pc, delegatedKey{}, delegated{app: app, ttl: s.d.DelegationConfig.tokenTtl()})
+	pc = context.WithValue(pc, delegatedKey{}, delegated{app: app, ttl: s.d.DelegationConfig.tokenTtl(), ends: row.DateEnds})
 	s.touch(ctx, row, holder, now)
 
 	return row, holder, pc, nil

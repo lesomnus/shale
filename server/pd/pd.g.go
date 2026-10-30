@@ -13884,6 +13884,11 @@ func (s interceptLamina) Timeline(ctx context.Context, req *api.LaminaTimelineRe
 		api.LaminaService_Timeline_FullMethodName, req, s.LaminaServiceServer.Timeline)
 }
 
+func (s interceptLamina) Export(ctx context.Context, req *api.LaminaExportRequest) (*api.LaminaExportResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.LaminaServiceServer,
+		api.LaminaService_Export_FullMethodName, req, s.LaminaServiceServer.Export)
+}
+
 func (s Intercept) Attempt() api.AttemptServiceServer {
 	return interceptAttempt{s, s.Next().Attempt()}
 }
@@ -14019,6 +14024,11 @@ func (s interceptDelegation) Live(ctx context.Context, req *api.DelegationLiveRe
 func (s interceptDelegation) Timeline(ctx context.Context, req *api.DelegationTimelineRequest) (*api.LaminaTimelineResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
 		api.DelegationService_Timeline_FullMethodName, req, s.DelegationServiceServer.Timeline)
+}
+
+func (s interceptDelegation) Export(ctx context.Context, req *api.DelegationExportRequest) (*api.LaminaExportResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		api.DelegationService_Export_FullMethodName, req, s.DelegationServiceServer.Export)
 }
 
 func (s interceptDelegation) Revoke(ctx context.Context, req *api.DelegationRevokeRequest) (*api.DelegationRevokeResponse, error) {
@@ -16192,6 +16202,8 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.LaminaRescheduleRequest{}
 	case api.LaminaService_Timeline_FullMethodName:
 		v = &api.LaminaTimelineRequest{}
+	case api.LaminaService_Export_FullMethodName:
+		v = &api.LaminaExportRequest{}
 	case api.AttemptService_Add_FullMethodName:
 		v = &api.AttemptAddRequest{}
 	case api.AttemptService_Get_FullMethodName:
@@ -16234,6 +16246,8 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.DelegationLiveRequest{}
 	case api.DelegationService_Timeline_FullMethodName:
 		v = &api.DelegationTimelineRequest{}
+	case api.DelegationService_Export_FullMethodName:
+		v = &api.DelegationExportRequest{}
 	case api.DelegationService_Revoke_FullMethodName:
 		v = &api.DelegationRevokeRequest{}
 	case api.SiteMemberService_Add_FullMethodName:
@@ -16548,6 +16562,8 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.Lamina().Reschedule(ctx, v.(*api.LaminaRescheduleRequest))
 	case api.LaminaService_Timeline_FullMethodName:
 		res, err = s.Lamina().Timeline(ctx, v.(*api.LaminaTimelineRequest))
+	case api.LaminaService_Export_FullMethodName:
+		res, err = s.Lamina().Export(ctx, v.(*api.LaminaExportRequest))
 	case api.AttemptService_Add_FullMethodName:
 		res, err = s.Attempt().Add(ctx, v.(*api.AttemptAddRequest))
 	case api.AttemptService_Get_FullMethodName:
@@ -16590,6 +16606,8 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.Delegation().Live(ctx, v.(*api.DelegationLiveRequest))
 	case api.DelegationService_Timeline_FullMethodName:
 		res, err = s.Delegation().Timeline(ctx, v.(*api.DelegationTimelineRequest))
+	case api.DelegationService_Export_FullMethodName:
+		res, err = s.Delegation().Export(ctx, v.(*api.DelegationExportRequest))
 	case api.DelegationService_Revoke_FullMethodName:
 		res, err = s.Delegation().Revoke(ctx, v.(*api.DelegationRevokeRequest))
 	case api.SiteMemberService_Add_FullMethodName:

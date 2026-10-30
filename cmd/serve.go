@@ -77,8 +77,11 @@ const (
 // Server is a built Control Plane: the database it runs on and the two
 // stacks it answers through.
 type Server struct {
-	Db  *sql.DB
-	Ent *ent.Client
+	// exports carries media only when explicitly enabled; the ordinary
+	// control-plane read path remains a metadata service.
+	exports http.Handler
+	Db      *sql.DB
+	Ent     *ent.Client
 	// Drv is what the client was built on, kept because a transaction is
 	// begun on a driver.
 	Drv     dialect.Driver
@@ -152,6 +155,9 @@ func noFile(err error) bool {
 
 // Build opens the database and stacks the servers.
 func Build(ctx context.Context, c Config) (*Server, error) {
+	if err := c.Export.check(c.IsDev()); err != nil {
+		return nil, err
+	}
 	// Patch is an API here, for the rows §32 says people and operators edit
 	// (a set's retention, a relay's labels, a tenant's share); what each
 	// caller may patch is the gate policy's decision (gatepolicy.go), so
@@ -278,6 +284,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		SinkAutoAdoptAfter: c.Control.SinkAutoAdoptAfter,
 		AllocationTTL:      c.Control.AllocationTTL,
 	}
+	if c.Export.Enabled {
+		deps.ExportURL = func() string { return c.Export.endpoint() }
+	}
 	if c.Control.AutoAdopt {
 		deps.AutoAdopt = func(kind pdid.Domain, _ *api.HostJoin, _ string) bool {
 			return kind == core.DomNode || kind == core.DomRelay
@@ -305,6 +314,13 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 	s.Walled = stacked
+	if c.Export.Enabled {
+		s.exports, err = s.exportHandler()
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
+	}
 
 	s.Jobs = core.NewJobs(deps)
 	if c.Control.JobsEvery > 0 {
@@ -796,6 +812,13 @@ func (s *Server) serveHttp(ctx context.Context, surface Surface, g *grpc.Server)
 		s.mountSso(surface, h)
 	}
 	if surface == SurfaceTenant {
+		if s.exports != nil {
+			h.Handle("/exports/recording.mp4", s.exports)
+		} else {
+			// Keep the disabled endpoint absent even when the console's
+			// SPA fallback would answer unknown paths with index.html.
+			h.Handle("/exports/recording.mp4", http.NotFoundHandler())
+		}
 		// The console (§40.4), when it was built into this binary: at the
 		// root of the tenant API's listener, which is the one origin a
 		// browser then needs to be told about. The page routes by its

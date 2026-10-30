@@ -64,6 +64,10 @@ service LaminaService {
   rpc Reschedule(LaminaRescheduleRequest) returns (LaminaRescheduleResponse);
   // Laminae and gaps over a time range, with read tokens; paged (§17, §19).
   rpc Timeline(LaminaTimelineRequest) returns (LaminaTimelineResponse);
+  // A short-lived URL for a native MP4 download of one source. The
+  // optional HTTP exporter streams through Shale, never through the
+  // caller's application, and does not create a temporary media file.
+  rpc Export(LaminaExportRequest) returns (LaminaExportResponse);
 }
 
 service AttemptService {
@@ -442,6 +446,20 @@ enum GapReason {
   // Nothing was stored on purpose: the producer skipped the span because
   // the scene was dark (§38.10).
   GAP_REASON_DARK = 6;
+}
+
+message LaminaExportRequest {
+  SourceRef source = 1;
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+}
+
+message LaminaExportResponse {
+  // A bearer capability: keep it out of logs. A relative URL is relative
+  // to the tenant HTTP listener; public deployments may configure an
+  // absolute URL. Expiry gates admission, not an already-running job.
+  string url = 1 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_expires = 2;
 }
 
 message AttemptAddRequest {

@@ -104,6 +104,10 @@ deployment runs well on them, and changes them only for a reason.
 | Listeners | `server.http.origins` / `cluster.http.origins` | none: the listener's own origin; loopback at the console's port and at vite's in development mode | the origins a page may call from; the console's, on the cluster listener | control | [§40.4](17-console.md#404-serving-it) |
 | Limits | `server.limit` / `cluster.limit` | none | rate, burst per tenant | control | [§35.1](12-api.md#351-conventions) |
 | Limits | `control.actor_limit` | none | rate, burst per actor | control | [§35.1](12-api.md#351-conventions) |
+| Exports | `export.enabled` | false | opt-in MP4 attachment route on the tenant HTTP listener; media passes through the exporting CP | control | [MP4 downloads](mp4-export.md) |
+| Exports | `export.public_url` | `/exports/recording.mp4` | external endpoint URL, or path relative to the tenant HTTP origin | control | [MP4 downloads](mp4-export.md) |
+| Exports | `export.max_concurrent` / `export.per_actor` | 2 / 1 | active jobs per CP process, including planning; no wait queue | control | [MP4 downloads](mp4-export.md) |
+| Exports | `export.max_duration` | 30 min | planning and streaming execution deadline; ticket admission TTL is 5 min or less | control | [MP4 downloads](mp4-export.md) |
 | Hosts | `join_pending_ttl` | 24 h | — | cluster | [§33.4](10-security.md#334-joining-and-adoption) |
 | Hosts | `readopt` | `manual` | `manual`, `auto` | cluster | [§33.4](10-security.md#334-joining-and-adoption) |
 | Hosts | host certificate lifetime | 90 days, renewed at 60 | — | cluster | [§33.5](10-security.md#335-tls) |

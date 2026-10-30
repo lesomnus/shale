@@ -63,6 +63,16 @@ Read sessions are limited per node (`max_read_sessions`, 64) and per caller
 [§33.2](10-security.md#332-access-tokens)), so one media server cannot take a
 node's whole read capacity from the others.
 
+### 17.5 Native MP4 exports
+
+An opt-in native MP4 export returns a source/range-scoped attachment URL.
+The selected Control Plane HTTP process reads Storage ranges and streams a
+normal MP4 with its final sample tables at the tail, without an output-sized
+RAM buffer or staging file. Unlike Timeline, this path carries media through
+the exporting CP process; an external viewer's server still carries metadata
+only. See [Streaming MP4 downloads](mp4-export.md) for the API, authorization,
+configuration, limits and failure behavior.
+
 ## 18. Delete During Read
 
 POSIX keeps an unlinked file readable through already-open descriptors:

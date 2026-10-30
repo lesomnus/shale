@@ -33,6 +33,11 @@ service DelegationService {
   // Timeline is `LaminaService.Timeline` for the person, within the
   // handle.
   rpc Timeline(DelegationTimelineRequest) returns (LaminaTimelineResponse);
+  // Export is a native MP4 download within the handle's recording scope.
+  // It uses the same roster ceiling as Timeline: permission to read the
+  // recording already permits these bytes. The handle stays server-side;
+  // only the short-lived scoped download URL is given to the browser.
+  rpc Export(DelegationExportRequest) returns (LaminaExportResponse);
   // Revoke ends a handle: what the app does when its own session ends.
   rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
 }
@@ -167,6 +172,11 @@ message DelegationLiveRequest {
 message DelegationTimelineRequest {
   string handle = 1 [features.field_presence = IMPLICIT];
   LaminaTimelineRequest timeline = 2;
+}
+
+message DelegationExportRequest {
+  string handle = 1 [features.field_presence = IMPLICIT];
+  LaminaExportRequest export = 2;
 }
 
 message DelegationRevokeRequest {
