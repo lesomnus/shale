@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -61,6 +62,7 @@ type exportFixture struct {
 	visible           bool
 	loads             int
 	row               *api.TimelineLamina
+	timeline          func(*api.LaminaTimelineRequest) (*api.LaminaTimelineResponse, error)
 }
 
 func newExportFixture(t *testing.T) *exportFixture {
@@ -70,7 +72,7 @@ func newExportFixture(t *testing.T) *exportFixture {
 	f.key, err = token.Generate("test-export")
 	require.NoError(t, err)
 	f.source = api.Source_builder{Id: f.id.Bytes(), Tenant: api.Tenant_builder{Id: f.tenant.Bytes()}.Build()}.Build()
-	f.row = api.TimelineLamina_builder{LaminaId: pdid.New(DomLamina).Bytes(), DateStarted: timestamppb.New(f.now.Add(-time.Minute)), DateEnded: timestamppb.New(f.now), Url: "https://storage.example/laminae/test?token=old"}.Build()
+	f.row = api.TimelineLamina_builder{LaminaId: pdid.New(DomLamina).Bytes(), DateStarted: timestamppb.New(f.now.Add(-time.Minute)), DateEnded: timestamppb.New(f.now), State: api.ReadState_READ_STATE_AVAILABLE, Url: "https://storage.example/laminae/test?token=old"}.Build()
 	f.ctx = frame.Into(context.Background(), frame.New(f.actor, f.tenant, frame.Whole()).WithScope(frame.Only(f.tenant)))
 	next := exportTestServer{
 		source: exportTestSource{get: func(ctx context.Context, req *api.SourceGetRequest) (*api.Source, error) {
@@ -98,6 +100,9 @@ func newExportFixture(t *testing.T) *exportFixture {
 			require.Equal(t, f.row.GetDateEnded().AsTime(), req.GetTo().AsTime())
 			require.Empty(t, callerOf(ctx), "the CP must not resolve storage using the browser's peer IP")
 			f.loads++
+			if f.timeline != nil {
+				return f.timeline(req)
+			}
 			row := proto.CloneOf(f.row)
 			row.SetUrl("https://storage.example/laminae/test?token=fresh")
 
@@ -109,6 +114,122 @@ func newExportFixture(t *testing.T) *exportFixture {
 	f.core = New(next, d)
 
 	return f
+}
+
+// A committed row with no final date_ended is returned by Timeline's
+// date_ended IS NULL query even when its estimated ending precedes the
+// selected range. Such a row cannot be exported and must not poison a
+// download that also contains a complete, available recording.
+func incompleteExportRow(f *exportFixture) *api.TimelineLamina {
+	row := proto.CloneOf(f.row)
+	row.SetLaminaId(pdid.New(DomLamina).Bytes())
+	row.SetIncomplete(true)
+	row.SetEndedEstimated(true)
+	row.SetDateStarted(timestamppb.New(f.now.Add(-2 * time.Hour)))
+	row.SetDateEnded(timestamppb.New(f.now.Add(-2*time.Hour + time.Minute)))
+
+	return row
+}
+
+func exportTimeline(f *exportFixture, rows []*api.TimelineLamina, next string) *api.LaminaTimelineResponse {
+	return api.LaminaTimelineResponse_builder{
+		Sources: []*api.TimelineSource{api.TimelineSource_builder{SourceId: f.id.Bytes(), Laminae: rows}.Build()},
+		Next:    next,
+	}.Build()
+}
+
+func TestExportSkipsIncompleteTimelineRows(t *testing.T) {
+	f := newExportFixture(t)
+	old := incompleteExportRow(f)
+	f.timeline = func(*api.LaminaTimelineRequest) (*api.LaminaTimelineResponse, error) {
+		return exportTimeline(f, []*api.TimelineLamina{old, f.row}, ""), nil
+	}
+	ticket, _ := f.ticket(t, f.ctx)
+	plan, err := f.core.ResolveExport(context.Background(), ticket)
+	require.NoError(t, err, "an old incomplete estimated row is not a corrupt complete recording")
+	require.Len(t, plan.Laminae, 1)
+	require.Equal(t, f.row.GetLaminaId(), plan.Laminae[0].GetLaminaId())
+	fresh, err := plan.Refresh(context.Background(), f.row.GetLaminaId())
+	require.NoError(t, err, "the same incomplete Timeline rows must not prevent renewing an admitted recording")
+	require.Equal(t, f.row.GetLaminaId(), fresh.GetLaminaId())
+}
+
+func TestExportWithoutUsableRecordingIsNotFound(t *testing.T) {
+	for name, alter := range map[string]func(*api.TimelineLamina){
+		"incomplete estimated": func(*api.TimelineLamina) {},
+		"incomplete without dates": func(row *api.TimelineLamina) {
+			row.SetDateStarted(nil)
+			row.SetDateEnded(nil)
+		},
+		"unavailable": func(row *api.TimelineLamina) {
+			row.SetIncomplete(false)
+			row.SetState(api.ReadState_READ_STATE_UNAVAILABLE)
+		},
+		"without a read URL": func(row *api.TimelineLamina) {
+			row.SetIncomplete(false)
+			row.SetUrl("")
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newExportFixture(t)
+			row := incompleteExportRow(f)
+			alter(row)
+			f.timeline = func(*api.LaminaTimelineRequest) (*api.LaminaTimelineResponse, error) {
+				return exportTimeline(f, []*api.TimelineLamina{row}, ""), nil
+			}
+			ticket, _ := f.ticket(t, f.ctx)
+			_, err := f.core.ResolveExport(context.Background(), ticket)
+			require.Equal(t, codes.NotFound, status.Code(err), "a range without complete available bytes has no export")
+		})
+	}
+}
+
+func TestExportRejectsCompleteTimelineRowsOutsideRange(t *testing.T) {
+	for name, alter := range map[string]func(*api.TimelineLamina, time.Time){
+		"before": func(row *api.TimelineLamina, now time.Time) {
+			row.SetDateStarted(timestamppb.New(now.Add(-2 * time.Hour)))
+			row.SetDateEnded(timestamppb.New(now.Add(-time.Hour)))
+		},
+		"after": func(row *api.TimelineLamina, now time.Time) {
+			row.SetDateStarted(timestamppb.New(now.Add(time.Minute)))
+			row.SetDateEnded(timestamppb.New(now.Add(2 * time.Minute)))
+		},
+		"missing start": func(row *api.TimelineLamina, _ time.Time) { row.SetDateStarted(nil) },
+		"missing end":   func(row *api.TimelineLamina, _ time.Time) { row.SetDateEnded(nil) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newExportFixture(t)
+			row := proto.CloneOf(f.row)
+			alter(row, f.now)
+			f.timeline = func(*api.LaminaTimelineRequest) (*api.LaminaTimelineResponse, error) {
+				return exportTimeline(f, []*api.TimelineLamina{row}, ""), nil
+			}
+			ticket, _ := f.ticket(t, f.ctx)
+			_, err := f.core.ResolveExport(context.Background(), ticket)
+			require.Equal(t, codes.Internal, status.Code(err), "complete available rows must still obey the admitted range")
+		})
+	}
+}
+
+func TestExportBoundsScannedRowsIncludingIncomplete(t *testing.T) {
+	f := newExportFixture(t)
+	old := incompleteExportRow(f)
+	rows := make([]*api.TimelineLamina, 1000)
+	for i := range rows {
+		rows[i] = old
+	}
+	f.timeline = func(req *api.LaminaTimelineRequest) (*api.LaminaTimelineResponse, error) {
+		if f.loads == 1 {
+			require.Empty(t, req.GetAfter())
+		} else {
+			require.Equal(t, strconv.Itoa(f.loads-1), req.GetAfter())
+		}
+		return exportTimeline(f, rows, strconv.Itoa(f.loads)), nil
+	}
+	ticket, _ := f.ticket(t, f.ctx)
+	_, err := f.core.ResolveExport(context.Background(), ticket)
+	require.Equal(t, codes.ResourceExhausted, status.Code(err), "discarded rows still consume the metadata scanning budget")
+	require.Equal(t, ExportMaxLaminae/len(rows)+1, f.loads)
 }
 
 func (f *exportFixture) request() *api.LaminaExportRequest {

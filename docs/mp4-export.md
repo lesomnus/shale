@@ -82,7 +82,7 @@ settings are refused before any output body is sent.
 
 Planning currently limits a job to a seven-day requested window, 1,024 input
 recordings, 2,000,000 samples and 64 MiB of parsed container metadata. The
-capability resolver also retains at most 20,000 returned laminae before
+capability resolver also examines at most 20,000 returned laminae before
 media planning; skipped/unavailable Timeline rows and gaps are paged without
 becoming source inputs. These are resource bounds, not a 256 MiB output-size limit;
 choose a shorter range when they are exceeded. Cuts can include the preceding

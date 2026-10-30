@@ -312,12 +312,22 @@ func TestPushedSources(t *testing.T) {
 	}.Build())
 	require.NoError(t, err)
 	require.Equal(t, custom, patched.GetContentType())
-	_, err = api.NewSetServiceClient(admin).Negotiate(ctx, api.SetNegotiateRequest_builder{
-		Ref: api.SetRef_builder{Id: set.GetId()}.Build(),
-		Sources: []*api.SourceProposal{api.SourceProposal_builder{
-			Source: api.SourceRef_builder{Id: telemetry.GetId()}.Build(), Profile: patched.GetProfile(), ContentType: "application/x-mcap",
-		}.Build()},
-	}.Build())
+	// The running producer also negotiates. A conflicting update between
+	// the CP's read and patch needs a fresh negotiation, not a failed test.
+	for attempt := 0; attempt < 10; attempt++ {
+		_, err = api.NewSetServiceClient(admin).Negotiate(ctx, api.SetNegotiateRequest_builder{
+			Ref: api.SetRef_builder{Id: set.GetId()}.Build(),
+			Sources: []*api.SourceProposal{api.SourceProposal_builder{
+				Source: api.SourceRef_builder{Id: telemetry.GetId()}.Build(), Profile: patched.GetProfile(), ContentType: "application/x-mcap",
+			}.Build()},
+		}.Build())
+		if status.Code(err) != codes.FailedPrecondition || status.Convert(err).Message() != "a test in the patch did not hold" {
+			break
+		}
+		if attempt < 9 {
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
 	require.NoError(t, err)
 	again, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: telemetry.GetId()}.Build()}.Build())
 	require.NoError(t, err)
