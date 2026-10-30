@@ -292,6 +292,7 @@ func (s Core) ResolveExport(ctx context.Context, ticket string) (*ExportPlan, er
 
 func (s Core) exportLaminae(ctx context.Context, source pdid.Id, from, to time.Time) ([]*api.TimelineLamina, error) {
 	var rows []*api.TimelineLamina
+	scanned := 0
 	after := ""
 	for {
 		v, err := s.Next().Lamina().Timeline(ctx, api.LaminaTimelineRequest_builder{
@@ -305,13 +306,22 @@ func (s Core) exportLaminae(ctx context.Context, source pdid.Id, from, to time.T
 				return nil, status.Error(codes.Internal, "export timeline answered another source")
 			}
 			for _, row := range src.GetLaminae() {
+				// Timeline also returns incomplete recordings. A NULL stored
+				// end can select an old row whose estimated end precedes this
+				// window. Such rows are never export inputs: exclude them
+				// before validating the complete recordings' range.
+				// Count them anyway so filtering cannot bypass the work bound.
+				scanned++
+				if scanned > ExportMaxLaminae {
+					return nil, status.Error(codes.ResourceExhausted, "export spans too many recording segments; use a shorter range")
+				}
+				if row.GetState() != api.ReadState_READ_STATE_AVAILABLE || row.GetIncomplete() || row.GetUrl() == "" {
+					continue
+				}
 				if row.GetDateStarted() == nil || row.GetDateEnded() == nil || !row.GetDateStarted().AsTime().Before(to) || !row.GetDateEnded().AsTime().After(from) {
 					return nil, status.Error(codes.Internal, "export timeline answered a recording outside its range")
 				}
 				rows = append(rows, row)
-				if len(rows) > ExportMaxLaminae {
-					return nil, status.Error(codes.ResourceExhausted, "export spans too many recording segments; use a shorter range")
-				}
 			}
 		}
 		if v.GetNext() == "" {
