@@ -241,6 +241,8 @@ service LaminaService {
   rpc Reschedule(LaminaRescheduleRequest) returns (LaminaRescheduleResponse);
   // Laminae and gaps over a time range, with read tokens; paged (§17, §19).
   rpc Timeline(LaminaTimelineRequest) returns (LaminaTimelineResponse);
+  // One source/range as a short-lived native MP4 attachment URL.
+  rpc Export(LaminaExportRequest) returns (LaminaExportResponse);
 }
 
 service ProducerService {
@@ -303,6 +305,8 @@ service DelegationService {
   rpc Live(DelegationLiveRequest) returns (SetLiveResponse);
   // LaminaService.Timeline for the person, within the handle.
   rpc Timeline(DelegationTimelineRequest) returns (LaminaTimelineResponse);
+  // Native MP4 download within the same delegated recording permission.
+  rpc Export(DelegationExportRequest) returns (LaminaExportResponse);
   // Ends a handle.
   rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
 }

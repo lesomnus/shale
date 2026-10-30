@@ -36,6 +36,7 @@ var custom = map[string]string{
 	"lamina/report-attempt":     "shale.LaminaService.ReportAttempt",
 	"lamina/report-failure":     "shale.LaminaService.ReportFailure",
 	"lamina/timeline":           "shale.LaminaService.Timeline",
+	"lamina/export":             "shale.LaminaService.Export",
 	"holder/issue-password":     "shale.HolderService.IssuePassword",
 	"sink/adopt":                "shale.SinkService.Adopt",
 	"sink/retire":               "shale.SinkService.Retire",
