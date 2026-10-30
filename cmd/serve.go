@@ -814,6 +814,10 @@ func (s *Server) serveHttp(ctx context.Context, surface Surface, g *grpc.Server)
 	if surface == SurfaceTenant {
 		if s.exports != nil {
 			h.Handle("/exports/recording.mp4", s.exports)
+		} else {
+			// Keep the disabled endpoint absent even when the console's
+			// SPA fallback would answer unknown paths with index.html.
+			h.Handle("/exports/recording.mp4", http.NotFoundHandler())
 		}
 		// The console (§40.4), when it was built into this binary: at the
 		// root of the tenant API's listener, which is the one origin a
