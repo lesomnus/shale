@@ -68,6 +68,11 @@ type Deps struct {
 	Own api.Server
 	// Keys signs tokens.
 	Keys *Keys
+	// ExportURL is the optional native MP4 download endpoint on the tenant
+	// HTTP listener. An empty result (or nil) disables issuing or redeeming
+	// capabilities. A relative path is served by that listener; a deployment
+	// behind a proxy can configure its absolute public URL.
+	ExportURL func() string
 	// CA issues host certificates. Nil on a deployment with external
 	// certificates only, where adoption cannot issue any.
 	CA *pki.CA

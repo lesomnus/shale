@@ -5006,6 +5006,209 @@ func (b0 TimelineGap_builder) Build() *TimelineGap {
 	return m0
 }
 
+type LaminaExportRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Source *SourceRef             `protobuf:"bytes,1,opt,name=source"`
+	xxx_hidden_From   *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=from"`
+	xxx_hidden_To     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=to"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *LaminaExportRequest) Reset() {
+	*x = LaminaExportRequest{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LaminaExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LaminaExportRequest) ProtoMessage() {}
+
+func (x *LaminaExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *LaminaExportRequest) GetSource() *SourceRef {
+	if x != nil {
+		return x.xxx_hidden_Source
+	}
+	return nil
+}
+
+func (x *LaminaExportRequest) GetFrom() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_From
+	}
+	return nil
+}
+
+func (x *LaminaExportRequest) GetTo() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_To
+	}
+	return nil
+}
+
+func (x *LaminaExportRequest) SetSource(v *SourceRef) {
+	x.xxx_hidden_Source = v
+}
+
+func (x *LaminaExportRequest) SetFrom(v *timestamppb.Timestamp) {
+	x.xxx_hidden_From = v
+}
+
+func (x *LaminaExportRequest) SetTo(v *timestamppb.Timestamp) {
+	x.xxx_hidden_To = v
+}
+
+func (x *LaminaExportRequest) HasSource() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Source != nil
+}
+
+func (x *LaminaExportRequest) HasFrom() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_From != nil
+}
+
+func (x *LaminaExportRequest) HasTo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_To != nil
+}
+
+func (x *LaminaExportRequest) ClearSource() {
+	x.xxx_hidden_Source = nil
+}
+
+func (x *LaminaExportRequest) ClearFrom() {
+	x.xxx_hidden_From = nil
+}
+
+func (x *LaminaExportRequest) ClearTo() {
+	x.xxx_hidden_To = nil
+}
+
+type LaminaExportRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Source *SourceRef
+	From   *timestamppb.Timestamp
+	To     *timestamppb.Timestamp
+}
+
+func (b0 LaminaExportRequest_builder) Build() *LaminaExportRequest {
+	m0 := &LaminaExportRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Source = b.Source
+	x.xxx_hidden_From = b.From
+	x.xxx_hidden_To = b.To
+	return m0
+}
+
+type LaminaExportResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Url         string                 `protobuf:"bytes,1,opt,name=url"`
+	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expires,json=dateExpires"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *LaminaExportResponse) Reset() {
+	*x = LaminaExportResponse{}
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LaminaExportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LaminaExportResponse) ProtoMessage() {}
+
+func (x *LaminaExportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *LaminaExportResponse) GetUrl() string {
+	if x != nil {
+		return x.xxx_hidden_Url
+	}
+	return ""
+}
+
+func (x *LaminaExportResponse) GetDateExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateExpires
+	}
+	return nil
+}
+
+func (x *LaminaExportResponse) SetUrl(v string) {
+	x.xxx_hidden_Url = v
+}
+
+func (x *LaminaExportResponse) SetDateExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpires = v
+}
+
+func (x *LaminaExportResponse) HasDateExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateExpires != nil
+}
+
+func (x *LaminaExportResponse) ClearDateExpires() {
+	x.xxx_hidden_DateExpires = nil
+}
+
+type LaminaExportResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// A bearer capability: keep it out of logs. A relative URL is relative
+	// to the tenant HTTP listener; public deployments may configure an
+	// absolute URL. Expiry gates admission, not an already-running job.
+	Url         string
+	DateExpires *timestamppb.Timestamp
+}
+
+func (b0 LaminaExportResponse_builder) Build() *LaminaExportResponse {
+	m0 := &LaminaExportResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Url = b.Url
+	x.xxx_hidden_DateExpires = b.DateExpires
+	return m0
+}
+
 type AttemptAddRequest struct {
 	state                    protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -5028,7 +5231,7 @@ type AttemptAddRequest struct {
 
 func (x *AttemptAddRequest) Reset() {
 	*x = AttemptAddRequest{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[27]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5040,7 +5243,7 @@ func (x *AttemptAddRequest) String() string {
 func (*AttemptAddRequest) ProtoMessage() {}
 
 func (x *AttemptAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[27]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5336,7 +5539,7 @@ type AttemptGetRequest struct {
 
 func (x *AttemptGetRequest) Reset() {
 	*x = AttemptGetRequest{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[28]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5348,7 +5551,7 @@ func (x *AttemptGetRequest) String() string {
 func (*AttemptGetRequest) ProtoMessage() {}
 
 func (x *AttemptGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[28]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5442,7 +5645,7 @@ type AttemptSelect struct {
 
 func (x *AttemptSelect) Reset() {
 	*x = AttemptSelect{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[29]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5454,7 +5657,7 @@ func (x *AttemptSelect) String() string {
 func (*AttemptSelect) ProtoMessage() {}
 
 func (x *AttemptSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[29]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5848,7 +6051,7 @@ type AttemptPatchRequest struct {
 
 func (x *AttemptPatchRequest) Reset() {
 	*x = AttemptPatchRequest{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[30]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5860,7 +6063,7 @@ func (x *AttemptPatchRequest) String() string {
 func (*AttemptPatchRequest) ProtoMessage() {}
 
 func (x *AttemptPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[30]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6155,7 +6358,7 @@ type AttemptApplyRequest struct {
 
 func (x *AttemptApplyRequest) Reset() {
 	*x = AttemptApplyRequest{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[31]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6167,7 +6370,7 @@ func (x *AttemptApplyRequest) String() string {
 func (*AttemptApplyRequest) ProtoMessage() {}
 
 func (x *AttemptApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[31]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6249,7 +6452,7 @@ type AttemptEraseResponse struct {
 
 func (x *AttemptEraseResponse) Reset() {
 	*x = AttemptEraseResponse{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[32]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6261,7 +6464,7 @@ func (x *AttemptEraseResponse) String() string {
 func (*AttemptEraseResponse) ProtoMessage() {}
 
 func (x *AttemptEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[32]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6330,7 +6533,7 @@ type AttemptListRequest struct {
 
 func (x *AttemptListRequest) Reset() {
 	*x = AttemptListRequest{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[33]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6342,7 +6545,7 @@ func (x *AttemptListRequest) String() string {
 func (*AttemptListRequest) ProtoMessage() {}
 
 func (x *AttemptListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[33]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6442,7 +6645,7 @@ type AttemptListResponse struct {
 
 func (x *AttemptListResponse) Reset() {
 	*x = AttemptListResponse{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[34]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6454,7 +6657,7 @@ func (x *AttemptListResponse) String() string {
 func (*AttemptListResponse) ProtoMessage() {}
 
 func (x *AttemptListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[34]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6524,7 +6727,7 @@ type AttemptFilter struct {
 
 func (x *AttemptFilter) Reset() {
 	*x = AttemptFilter{}
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[35]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6536,7 +6739,7 @@ func (x *AttemptFilter) String() string {
 func (*AttemptFilter) ProtoMessage() {}
 
 func (x *AttemptFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_lamina_svc_g_proto_msgTypes[35]
+	mi := &file_shale_lamina_svc_g_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6862,7 +7065,14 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\vTimelineGap\x12.\n" +
 	"\x04from\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04from\x12*\n" +
 	"\x02to\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x02to\x12/\n" +
-	"\x06reason\x18\x03 \x01(\x0e2\x10.shale.GapReasonB\x05\xaa\x01\x02\b\x02R\x06reason\"\x9d\x04\n" +
+	"\x06reason\x18\x03 \x01(\x0e2\x10.shale.GapReasonB\x05\xaa\x01\x02\b\x02R\x06reason\"\x9b\x01\n" +
+	"\x13LaminaExportRequest\x12(\n" +
+	"\x06source\x18\x01 \x01(\v2\x10.shale.SourceRefR\x06source\x12.\n" +
+	"\x04from\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04from\x12*\n" +
+	"\x02to\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x02to\"n\n" +
+	"\x14LaminaExportResponse\x12\x17\n" +
+	"\x03url\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03url\x12=\n" +
+	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"\x9d\x04\n" +
 	"\x11AttemptAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -6936,7 +7146,7 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\x0fGAP_REASON_LOST\x10\x03\x12\x16\n" +
 	"\x12GAP_REASON_DELETED\x10\x04\x12\x1a\n" +
 	"\x16GAP_REASON_UNAVAILABLE\x10\x05\x12\x13\n" +
-	"\x0fGAP_REASON_DARK\x10\x062\x8e\a\n" +
+	"\x0fGAP_REASON_DARK\x10\x062\xd1\a\n" +
 	"\rLaminaService\x12-\n" +
 	"\x03Add\x12\x17.shale.LaminaAddRequest\x1a\r.shale.Lamina\x12-\n" +
 	"\x03Get\x12\x17.shale.LaminaGetRequest\x1a\r.shale.Lamina\x121\n" +
@@ -6954,7 +7164,8 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\x04Skip\x12\x18.shale.LaminaSkipRequest\x1a\r.shale.Lamina\x12M\n" +
 	"\n" +
 	"Reschedule\x12\x1e.shale.LaminaRescheduleRequest\x1a\x1f.shale.LaminaRescheduleResponse\x12G\n" +
-	"\bTimeline\x12\x1c.shale.LaminaTimelineRequest\x1a\x1d.shale.LaminaTimelineResponse2\xd4\x02\n" +
+	"\bTimeline\x12\x1c.shale.LaminaTimelineRequest\x1a\x1d.shale.LaminaTimelineResponse\x12A\n" +
+	"\x06Export\x12\x1a.shale.LaminaExportRequest\x1a\x1b.shale.LaminaExportResponse2\xd4\x02\n" +
 	"\x0eAttemptService\x12/\n" +
 	"\x03Add\x12\x18.shale.AttemptAddRequest\x1a\x0e.shale.Attempt\x12/\n" +
 	"\x03Get\x12\x18.shale.AttemptGetRequest\x1a\x0e.shale.Attempt\x123\n" +
@@ -6964,7 +7175,7 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\x04List\x12\x19.shale.AttemptListRequest\x1a\x1a.shale.AttemptListResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
 var file_shale_lamina_svc_g_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_shale_lamina_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_shale_lamina_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_shale_lamina_svc_g_proto_goTypes = []any{
 	(ReadState)(0),                     // 0: shale.ReadState
 	(GapReason)(0),                     // 1: shale.GapReason
@@ -6995,84 +7206,86 @@ var file_shale_lamina_svc_g_proto_goTypes = []any{
 	(*TimelineSource)(nil),             // 26: shale.TimelineSource
 	(*TimelineLamina)(nil),             // 27: shale.TimelineLamina
 	(*TimelineGap)(nil),                // 28: shale.TimelineGap
-	(*AttemptAddRequest)(nil),          // 29: shale.AttemptAddRequest
-	(*AttemptGetRequest)(nil),          // 30: shale.AttemptGetRequest
-	(*AttemptSelect)(nil),              // 31: shale.AttemptSelect
-	(*AttemptPatchRequest)(nil),        // 32: shale.AttemptPatchRequest
-	(*AttemptApplyRequest)(nil),        // 33: shale.AttemptApplyRequest
-	(*AttemptEraseResponse)(nil),       // 34: shale.AttemptEraseResponse
-	(*AttemptListRequest)(nil),         // 35: shale.AttemptListRequest
-	(*AttemptListResponse)(nil),        // 36: shale.AttemptListResponse
-	(*AttemptFilter)(nil),              // 37: shale.AttemptFilter
-	(*TenantRef)(nil),                  // 38: shale.TenantRef
-	(*SiteRef)(nil),                    // 39: shale.SiteRef
-	(*SetRef)(nil),                     // 40: shale.SetRef
-	(*SourceRef)(nil),                  // 41: shale.SourceRef
-	(*SinkRef)(nil),                    // 42: shale.SinkRef
-	(LaminaState)(0),                   // 43: shale.LaminaState
-	(*timestamppb.Timestamp)(nil),      // 44: google.protobuf.Timestamp
-	(LaminaSkipReason)(0),              // 45: shale.LaminaSkipReason
-	(*TenantSelect)(nil),               // 46: shale.TenantSelect
-	(*SiteSelect)(nil),                 // 47: shale.SiteSelect
-	(*SetSelect)(nil),                  // 48: shale.SetSelect
-	(*SourceSelect)(nil),               // 49: shale.SourceSelect
-	(*SinkSelect)(nil),                 // 50: shale.SinkSelect
-	(*patchpb.Patch)(nil),              // 51: patch.Patch
-	(*Lamina)(nil),                     // 52: shale.Lamina
-	(*Endpoint)(nil),                   // 53: shale.Endpoint
-	(*NodeRef)(nil),                    // 54: shale.NodeRef
-	(AttemptState)(0),                  // 55: shale.AttemptState
-	(*NodeSelect)(nil),                 // 56: shale.NodeSelect
-	(*Attempt)(nil),                    // 57: shale.Attempt
-	(*Allocation)(nil),                 // 58: shale.Allocation
+	(*LaminaExportRequest)(nil),        // 29: shale.LaminaExportRequest
+	(*LaminaExportResponse)(nil),       // 30: shale.LaminaExportResponse
+	(*AttemptAddRequest)(nil),          // 31: shale.AttemptAddRequest
+	(*AttemptGetRequest)(nil),          // 32: shale.AttemptGetRequest
+	(*AttemptSelect)(nil),              // 33: shale.AttemptSelect
+	(*AttemptPatchRequest)(nil),        // 34: shale.AttemptPatchRequest
+	(*AttemptApplyRequest)(nil),        // 35: shale.AttemptApplyRequest
+	(*AttemptEraseResponse)(nil),       // 36: shale.AttemptEraseResponse
+	(*AttemptListRequest)(nil),         // 37: shale.AttemptListRequest
+	(*AttemptListResponse)(nil),        // 38: shale.AttemptListResponse
+	(*AttemptFilter)(nil),              // 39: shale.AttemptFilter
+	(*TenantRef)(nil),                  // 40: shale.TenantRef
+	(*SiteRef)(nil),                    // 41: shale.SiteRef
+	(*SetRef)(nil),                     // 42: shale.SetRef
+	(*SourceRef)(nil),                  // 43: shale.SourceRef
+	(*SinkRef)(nil),                    // 44: shale.SinkRef
+	(LaminaState)(0),                   // 45: shale.LaminaState
+	(*timestamppb.Timestamp)(nil),      // 46: google.protobuf.Timestamp
+	(LaminaSkipReason)(0),              // 47: shale.LaminaSkipReason
+	(*TenantSelect)(nil),               // 48: shale.TenantSelect
+	(*SiteSelect)(nil),                 // 49: shale.SiteSelect
+	(*SetSelect)(nil),                  // 50: shale.SetSelect
+	(*SourceSelect)(nil),               // 51: shale.SourceSelect
+	(*SinkSelect)(nil),                 // 52: shale.SinkSelect
+	(*patchpb.Patch)(nil),              // 53: patch.Patch
+	(*Lamina)(nil),                     // 54: shale.Lamina
+	(*Endpoint)(nil),                   // 55: shale.Endpoint
+	(*NodeRef)(nil),                    // 56: shale.NodeRef
+	(AttemptState)(0),                  // 57: shale.AttemptState
+	(*NodeSelect)(nil),                 // 58: shale.NodeSelect
+	(*Attempt)(nil),                    // 59: shale.Attempt
+	(*Allocation)(nil),                 // 60: shale.Allocation
 }
 var file_shale_lamina_svc_g_proto_depIdxs = []int32{
-	38,  // 0: shale.LaminaAddRequest.tenant:type_name -> shale.TenantRef
-	39,  // 1: shale.LaminaAddRequest.site:type_name -> shale.SiteRef
-	40,  // 2: shale.LaminaAddRequest.set:type_name -> shale.SetRef
-	41,  // 3: shale.LaminaAddRequest.source:type_name -> shale.SourceRef
-	42,  // 4: shale.LaminaAddRequest.sink:type_name -> shale.SinkRef
-	43,  // 5: shale.LaminaAddRequest.state:type_name -> shale.LaminaState
-	44,  // 6: shale.LaminaAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	44,  // 7: shale.LaminaAddRequest.date_started:type_name -> google.protobuf.Timestamp
-	44,  // 8: shale.LaminaAddRequest.date_ended:type_name -> google.protobuf.Timestamp
-	44,  // 9: shale.LaminaAddRequest.date_expired:type_name -> google.protobuf.Timestamp
-	44,  // 10: shale.LaminaAddRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	44,  // 11: shale.LaminaAddRequest.date_committed:type_name -> google.protobuf.Timestamp
-	44,  // 12: shale.LaminaAddRequest.date_finished:type_name -> google.protobuf.Timestamp
-	45,  // 13: shale.LaminaAddRequest.skip_reason:type_name -> shale.LaminaSkipReason
+	40,  // 0: shale.LaminaAddRequest.tenant:type_name -> shale.TenantRef
+	41,  // 1: shale.LaminaAddRequest.site:type_name -> shale.SiteRef
+	42,  // 2: shale.LaminaAddRequest.set:type_name -> shale.SetRef
+	43,  // 3: shale.LaminaAddRequest.source:type_name -> shale.SourceRef
+	44,  // 4: shale.LaminaAddRequest.sink:type_name -> shale.SinkRef
+	45,  // 5: shale.LaminaAddRequest.state:type_name -> shale.LaminaState
+	46,  // 6: shale.LaminaAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	46,  // 7: shale.LaminaAddRequest.date_started:type_name -> google.protobuf.Timestamp
+	46,  // 8: shale.LaminaAddRequest.date_ended:type_name -> google.protobuf.Timestamp
+	46,  // 9: shale.LaminaAddRequest.date_expired:type_name -> google.protobuf.Timestamp
+	46,  // 10: shale.LaminaAddRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	46,  // 11: shale.LaminaAddRequest.date_committed:type_name -> google.protobuf.Timestamp
+	46,  // 12: shale.LaminaAddRequest.date_finished:type_name -> google.protobuf.Timestamp
+	47,  // 13: shale.LaminaAddRequest.skip_reason:type_name -> shale.LaminaSkipReason
 	4,   // 14: shale.LaminaGetRequest.ref:type_name -> shale.LaminaRef
 	5,   // 15: shale.LaminaGetRequest.select:type_name -> shale.LaminaSelect
-	46,  // 16: shale.LaminaSelect.tenant:type_name -> shale.TenantSelect
-	47,  // 17: shale.LaminaSelect.site:type_name -> shale.SiteSelect
-	48,  // 18: shale.LaminaSelect.set:type_name -> shale.SetSelect
-	49,  // 19: shale.LaminaSelect.source:type_name -> shale.SourceSelect
-	50,  // 20: shale.LaminaSelect.sink:type_name -> shale.SinkSelect
+	48,  // 16: shale.LaminaSelect.tenant:type_name -> shale.TenantSelect
+	49,  // 17: shale.LaminaSelect.site:type_name -> shale.SiteSelect
+	50,  // 18: shale.LaminaSelect.set:type_name -> shale.SetSelect
+	51,  // 19: shale.LaminaSelect.source:type_name -> shale.SourceSelect
+	52,  // 20: shale.LaminaSelect.sink:type_name -> shale.SinkSelect
 	4,   // 21: shale.LaminaPatchRequest.ref:type_name -> shale.LaminaRef
-	42,  // 22: shale.LaminaPatchRequest.sink:type_name -> shale.SinkRef
-	43,  // 23: shale.LaminaPatchRequest.state:type_name -> shale.LaminaState
-	44,  // 24: shale.LaminaPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	44,  // 25: shale.LaminaPatchRequest.date_started:type_name -> google.protobuf.Timestamp
-	44,  // 26: shale.LaminaPatchRequest.date_ended:type_name -> google.protobuf.Timestamp
-	44,  // 27: shale.LaminaPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
-	44,  // 28: shale.LaminaPatchRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	44,  // 29: shale.LaminaPatchRequest.date_committed:type_name -> google.protobuf.Timestamp
-	44,  // 30: shale.LaminaPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
-	45,  // 31: shale.LaminaPatchRequest.skip_reason:type_name -> shale.LaminaSkipReason
+	44,  // 22: shale.LaminaPatchRequest.sink:type_name -> shale.SinkRef
+	45,  // 23: shale.LaminaPatchRequest.state:type_name -> shale.LaminaState
+	46,  // 24: shale.LaminaPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	46,  // 25: shale.LaminaPatchRequest.date_started:type_name -> google.protobuf.Timestamp
+	46,  // 26: shale.LaminaPatchRequest.date_ended:type_name -> google.protobuf.Timestamp
+	46,  // 27: shale.LaminaPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
+	46,  // 28: shale.LaminaPatchRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	46,  // 29: shale.LaminaPatchRequest.date_committed:type_name -> google.protobuf.Timestamp
+	46,  // 30: shale.LaminaPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
+	47,  // 31: shale.LaminaPatchRequest.skip_reason:type_name -> shale.LaminaSkipReason
 	4,   // 32: shale.LaminaApplyRequest.ref:type_name -> shale.LaminaRef
-	51,  // 33: shale.LaminaApplyRequest.patch:type_name -> patch.Patch
+	53,  // 33: shale.LaminaApplyRequest.patch:type_name -> patch.Patch
 	11,  // 34: shale.LaminaListRequest.filters:type_name -> shale.LaminaFilter
-	52,  // 35: shale.LaminaListResponse.items:type_name -> shale.Lamina
+	54,  // 35: shale.LaminaListResponse.items:type_name -> shale.Lamina
 	4,   // 36: shale.LaminaFilter.ref:type_name -> shale.LaminaRef
-	38,  // 37: shale.LaminaFilter.tenant:type_name -> shale.TenantRef
-	40,  // 38: shale.LaminaFilter.set:type_name -> shale.SetRef
-	41,  // 39: shale.LaminaFilter.source:type_name -> shale.SourceRef
-	42,  // 40: shale.LaminaFilter.sink:type_name -> shale.SinkRef
+	40,  // 37: shale.LaminaFilter.tenant:type_name -> shale.TenantRef
+	42,  // 38: shale.LaminaFilter.set:type_name -> shale.SetRef
+	43,  // 39: shale.LaminaFilter.source:type_name -> shale.SourceRef
+	44,  // 40: shale.LaminaFilter.sink:type_name -> shale.SinkRef
 	11,  // 41: shale.LaminaWatchRequest.filters:type_name -> shale.LaminaFilter
 	14,  // 42: shale.LaminaWatchResponse.items:type_name -> shale.LaminaWatchItem
-	52,  // 43: shale.LaminaWatchItem.value:type_name -> shale.Lamina
-	41,  // 44: shale.LaminaAllocateRequest.source:type_name -> shale.SourceRef
-	44,  // 45: shale.LaminaAllocateRequest.date_started:type_name -> google.protobuf.Timestamp
+	54,  // 43: shale.LaminaWatchItem.value:type_name -> shale.Lamina
+	43,  // 44: shale.LaminaAllocateRequest.source:type_name -> shale.SourceRef
+	46,  // 45: shale.LaminaAllocateRequest.date_started:type_name -> google.protobuf.Timestamp
 	4,   // 46: shale.LaminaAllocateRequest.after:type_name -> shale.LaminaRef
 	4,   // 47: shale.LaminaReallocateRequest.ref:type_name -> shale.LaminaRef
 	4,   // 48: shale.LaminaRenewRequest.ref:type_name -> shale.LaminaRef
@@ -7081,106 +7294,112 @@ var file_shale_lamina_svc_g_proto_depIdxs = []int32{
 	18,  // 51: shale.LaminaReportAttemptRequest.attempt:type_name -> shale.AttemptRef
 	4,   // 52: shale.LaminaReportFailureRequest.ref:type_name -> shale.LaminaRef
 	4,   // 53: shale.LaminaSkipRequest.ref:type_name -> shale.LaminaRef
-	44,  // 54: shale.LaminaSkipRequest.date_ended:type_name -> google.protobuf.Timestamp
-	45,  // 55: shale.LaminaSkipRequest.reason:type_name -> shale.LaminaSkipReason
+	46,  // 54: shale.LaminaSkipRequest.date_ended:type_name -> google.protobuf.Timestamp
+	47,  // 55: shale.LaminaSkipRequest.reason:type_name -> shale.LaminaSkipReason
 	4,   // 56: shale.LaminaRescheduleRequest.ref:type_name -> shale.LaminaRef
-	40,  // 57: shale.LaminaRescheduleRequest.set:type_name -> shale.SetRef
-	41,  // 58: shale.LaminaRescheduleRequest.source:type_name -> shale.SourceRef
-	44,  // 59: shale.LaminaRescheduleRequest.from:type_name -> google.protobuf.Timestamp
-	44,  // 60: shale.LaminaRescheduleRequest.to:type_name -> google.protobuf.Timestamp
-	44,  // 61: shale.LaminaRescheduleRequest.date_expired:type_name -> google.protobuf.Timestamp
-	44,  // 62: shale.LaminaRescheduleRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	40,  // 63: shale.LaminaTimelineRequest.set:type_name -> shale.SetRef
-	41,  // 64: shale.LaminaTimelineRequest.source:type_name -> shale.SourceRef
-	44,  // 65: shale.LaminaTimelineRequest.from:type_name -> google.protobuf.Timestamp
-	44,  // 66: shale.LaminaTimelineRequest.to:type_name -> google.protobuf.Timestamp
+	42,  // 57: shale.LaminaRescheduleRequest.set:type_name -> shale.SetRef
+	43,  // 58: shale.LaminaRescheduleRequest.source:type_name -> shale.SourceRef
+	46,  // 59: shale.LaminaRescheduleRequest.from:type_name -> google.protobuf.Timestamp
+	46,  // 60: shale.LaminaRescheduleRequest.to:type_name -> google.protobuf.Timestamp
+	46,  // 61: shale.LaminaRescheduleRequest.date_expired:type_name -> google.protobuf.Timestamp
+	46,  // 62: shale.LaminaRescheduleRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	42,  // 63: shale.LaminaTimelineRequest.set:type_name -> shale.SetRef
+	43,  // 64: shale.LaminaTimelineRequest.source:type_name -> shale.SourceRef
+	46,  // 65: shale.LaminaTimelineRequest.from:type_name -> google.protobuf.Timestamp
+	46,  // 66: shale.LaminaTimelineRequest.to:type_name -> google.protobuf.Timestamp
 	26,  // 67: shale.LaminaTimelineResponse.sources:type_name -> shale.TimelineSource
 	27,  // 68: shale.TimelineSource.laminae:type_name -> shale.TimelineLamina
 	28,  // 69: shale.TimelineSource.gaps:type_name -> shale.TimelineGap
-	44,  // 70: shale.TimelineLamina.date_started:type_name -> google.protobuf.Timestamp
-	44,  // 71: shale.TimelineLamina.date_ended:type_name -> google.protobuf.Timestamp
+	46,  // 70: shale.TimelineLamina.date_started:type_name -> google.protobuf.Timestamp
+	46,  // 71: shale.TimelineLamina.date_ended:type_name -> google.protobuf.Timestamp
 	0,   // 72: shale.TimelineLamina.state:type_name -> shale.ReadState
-	53,  // 73: shale.TimelineLamina.endpoints:type_name -> shale.Endpoint
-	44,  // 74: shale.TimelineLamina.date_token_expires:type_name -> google.protobuf.Timestamp
-	44,  // 75: shale.TimelineGap.from:type_name -> google.protobuf.Timestamp
-	44,  // 76: shale.TimelineGap.to:type_name -> google.protobuf.Timestamp
+	55,  // 73: shale.TimelineLamina.endpoints:type_name -> shale.Endpoint
+	46,  // 74: shale.TimelineLamina.date_token_expires:type_name -> google.protobuf.Timestamp
+	46,  // 75: shale.TimelineGap.from:type_name -> google.protobuf.Timestamp
+	46,  // 76: shale.TimelineGap.to:type_name -> google.protobuf.Timestamp
 	1,   // 77: shale.TimelineGap.reason:type_name -> shale.GapReason
-	38,  // 78: shale.AttemptAddRequest.tenant:type_name -> shale.TenantRef
-	39,  // 79: shale.AttemptAddRequest.site:type_name -> shale.SiteRef
-	4,   // 80: shale.AttemptAddRequest.lamina:type_name -> shale.LaminaRef
-	42,  // 81: shale.AttemptAddRequest.sink:type_name -> shale.SinkRef
-	54,  // 82: shale.AttemptAddRequest.node:type_name -> shale.NodeRef
-	55,  // 83: shale.AttemptAddRequest.state:type_name -> shale.AttemptState
-	44,  // 84: shale.AttemptAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	44,  // 85: shale.AttemptAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	44,  // 86: shale.AttemptAddRequest.date_finished:type_name -> google.protobuf.Timestamp
-	18,  // 87: shale.AttemptGetRequest.ref:type_name -> shale.AttemptRef
-	31,  // 88: shale.AttemptGetRequest.select:type_name -> shale.AttemptSelect
-	46,  // 89: shale.AttemptSelect.tenant:type_name -> shale.TenantSelect
-	47,  // 90: shale.AttemptSelect.site:type_name -> shale.SiteSelect
-	5,   // 91: shale.AttemptSelect.lamina:type_name -> shale.LaminaSelect
-	50,  // 92: shale.AttemptSelect.sink:type_name -> shale.SinkSelect
-	56,  // 93: shale.AttemptSelect.node:type_name -> shale.NodeSelect
-	18,  // 94: shale.AttemptPatchRequest.ref:type_name -> shale.AttemptRef
-	55,  // 95: shale.AttemptPatchRequest.state:type_name -> shale.AttemptState
-	44,  // 96: shale.AttemptPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	44,  // 97: shale.AttemptPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
-	44,  // 98: shale.AttemptPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
-	18,  // 99: shale.AttemptApplyRequest.ref:type_name -> shale.AttemptRef
-	51,  // 100: shale.AttemptApplyRequest.patch:type_name -> patch.Patch
-	37,  // 101: shale.AttemptListRequest.filters:type_name -> shale.AttemptFilter
-	57,  // 102: shale.AttemptListResponse.items:type_name -> shale.Attempt
-	18,  // 103: shale.AttemptFilter.ref:type_name -> shale.AttemptRef
-	38,  // 104: shale.AttemptFilter.tenant:type_name -> shale.TenantRef
-	4,   // 105: shale.AttemptFilter.lamina:type_name -> shale.LaminaRef
-	42,  // 106: shale.AttemptFilter.sink:type_name -> shale.SinkRef
-	2,   // 107: shale.LaminaService.Add:input_type -> shale.LaminaAddRequest
-	3,   // 108: shale.LaminaService.Get:input_type -> shale.LaminaGetRequest
-	6,   // 109: shale.LaminaService.Patch:input_type -> shale.LaminaPatchRequest
-	7,   // 110: shale.LaminaService.Apply:input_type -> shale.LaminaApplyRequest
-	4,   // 111: shale.LaminaService.Erase:input_type -> shale.LaminaRef
-	9,   // 112: shale.LaminaService.List:input_type -> shale.LaminaListRequest
-	12,  // 113: shale.LaminaService.Watch:input_type -> shale.LaminaWatchRequest
-	15,  // 114: shale.LaminaService.Allocate:input_type -> shale.LaminaAllocateRequest
-	16,  // 115: shale.LaminaService.Reallocate:input_type -> shale.LaminaReallocateRequest
-	17,  // 116: shale.LaminaService.Renew:input_type -> shale.LaminaRenewRequest
-	19,  // 117: shale.LaminaService.ReportAttempt:input_type -> shale.LaminaReportAttemptRequest
-	20,  // 118: shale.LaminaService.ReportFailure:input_type -> shale.LaminaReportFailureRequest
-	21,  // 119: shale.LaminaService.Skip:input_type -> shale.LaminaSkipRequest
-	22,  // 120: shale.LaminaService.Reschedule:input_type -> shale.LaminaRescheduleRequest
-	24,  // 121: shale.LaminaService.Timeline:input_type -> shale.LaminaTimelineRequest
-	29,  // 122: shale.AttemptService.Add:input_type -> shale.AttemptAddRequest
-	30,  // 123: shale.AttemptService.Get:input_type -> shale.AttemptGetRequest
-	32,  // 124: shale.AttemptService.Patch:input_type -> shale.AttemptPatchRequest
-	33,  // 125: shale.AttemptService.Apply:input_type -> shale.AttemptApplyRequest
-	18,  // 126: shale.AttemptService.Erase:input_type -> shale.AttemptRef
-	35,  // 127: shale.AttemptService.List:input_type -> shale.AttemptListRequest
-	52,  // 128: shale.LaminaService.Add:output_type -> shale.Lamina
-	52,  // 129: shale.LaminaService.Get:output_type -> shale.Lamina
-	52,  // 130: shale.LaminaService.Patch:output_type -> shale.Lamina
-	52,  // 131: shale.LaminaService.Apply:output_type -> shale.Lamina
-	8,   // 132: shale.LaminaService.Erase:output_type -> shale.LaminaEraseResponse
-	10,  // 133: shale.LaminaService.List:output_type -> shale.LaminaListResponse
-	13,  // 134: shale.LaminaService.Watch:output_type -> shale.LaminaWatchResponse
-	58,  // 135: shale.LaminaService.Allocate:output_type -> shale.Allocation
-	58,  // 136: shale.LaminaService.Reallocate:output_type -> shale.Allocation
-	58,  // 137: shale.LaminaService.Renew:output_type -> shale.Allocation
-	57,  // 138: shale.LaminaService.ReportAttempt:output_type -> shale.Attempt
-	52,  // 139: shale.LaminaService.ReportFailure:output_type -> shale.Lamina
-	52,  // 140: shale.LaminaService.Skip:output_type -> shale.Lamina
-	23,  // 141: shale.LaminaService.Reschedule:output_type -> shale.LaminaRescheduleResponse
-	25,  // 142: shale.LaminaService.Timeline:output_type -> shale.LaminaTimelineResponse
-	57,  // 143: shale.AttemptService.Add:output_type -> shale.Attempt
-	57,  // 144: shale.AttemptService.Get:output_type -> shale.Attempt
-	57,  // 145: shale.AttemptService.Patch:output_type -> shale.Attempt
-	57,  // 146: shale.AttemptService.Apply:output_type -> shale.Attempt
-	34,  // 147: shale.AttemptService.Erase:output_type -> shale.AttemptEraseResponse
-	36,  // 148: shale.AttemptService.List:output_type -> shale.AttemptListResponse
-	128, // [128:149] is the sub-list for method output_type
-	107, // [107:128] is the sub-list for method input_type
-	107, // [107:107] is the sub-list for extension type_name
-	107, // [107:107] is the sub-list for extension extendee
-	0,   // [0:107] is the sub-list for field type_name
+	43,  // 78: shale.LaminaExportRequest.source:type_name -> shale.SourceRef
+	46,  // 79: shale.LaminaExportRequest.from:type_name -> google.protobuf.Timestamp
+	46,  // 80: shale.LaminaExportRequest.to:type_name -> google.protobuf.Timestamp
+	46,  // 81: shale.LaminaExportResponse.date_expires:type_name -> google.protobuf.Timestamp
+	40,  // 82: shale.AttemptAddRequest.tenant:type_name -> shale.TenantRef
+	41,  // 83: shale.AttemptAddRequest.site:type_name -> shale.SiteRef
+	4,   // 84: shale.AttemptAddRequest.lamina:type_name -> shale.LaminaRef
+	44,  // 85: shale.AttemptAddRequest.sink:type_name -> shale.SinkRef
+	56,  // 86: shale.AttemptAddRequest.node:type_name -> shale.NodeRef
+	57,  // 87: shale.AttemptAddRequest.state:type_name -> shale.AttemptState
+	46,  // 88: shale.AttemptAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	46,  // 89: shale.AttemptAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	46,  // 90: shale.AttemptAddRequest.date_finished:type_name -> google.protobuf.Timestamp
+	18,  // 91: shale.AttemptGetRequest.ref:type_name -> shale.AttemptRef
+	33,  // 92: shale.AttemptGetRequest.select:type_name -> shale.AttemptSelect
+	48,  // 93: shale.AttemptSelect.tenant:type_name -> shale.TenantSelect
+	49,  // 94: shale.AttemptSelect.site:type_name -> shale.SiteSelect
+	5,   // 95: shale.AttemptSelect.lamina:type_name -> shale.LaminaSelect
+	52,  // 96: shale.AttemptSelect.sink:type_name -> shale.SinkSelect
+	58,  // 97: shale.AttemptSelect.node:type_name -> shale.NodeSelect
+	18,  // 98: shale.AttemptPatchRequest.ref:type_name -> shale.AttemptRef
+	57,  // 99: shale.AttemptPatchRequest.state:type_name -> shale.AttemptState
+	46,  // 100: shale.AttemptPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	46,  // 101: shale.AttemptPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
+	46,  // 102: shale.AttemptPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
+	18,  // 103: shale.AttemptApplyRequest.ref:type_name -> shale.AttemptRef
+	53,  // 104: shale.AttemptApplyRequest.patch:type_name -> patch.Patch
+	39,  // 105: shale.AttemptListRequest.filters:type_name -> shale.AttemptFilter
+	59,  // 106: shale.AttemptListResponse.items:type_name -> shale.Attempt
+	18,  // 107: shale.AttemptFilter.ref:type_name -> shale.AttemptRef
+	40,  // 108: shale.AttemptFilter.tenant:type_name -> shale.TenantRef
+	4,   // 109: shale.AttemptFilter.lamina:type_name -> shale.LaminaRef
+	44,  // 110: shale.AttemptFilter.sink:type_name -> shale.SinkRef
+	2,   // 111: shale.LaminaService.Add:input_type -> shale.LaminaAddRequest
+	3,   // 112: shale.LaminaService.Get:input_type -> shale.LaminaGetRequest
+	6,   // 113: shale.LaminaService.Patch:input_type -> shale.LaminaPatchRequest
+	7,   // 114: shale.LaminaService.Apply:input_type -> shale.LaminaApplyRequest
+	4,   // 115: shale.LaminaService.Erase:input_type -> shale.LaminaRef
+	9,   // 116: shale.LaminaService.List:input_type -> shale.LaminaListRequest
+	12,  // 117: shale.LaminaService.Watch:input_type -> shale.LaminaWatchRequest
+	15,  // 118: shale.LaminaService.Allocate:input_type -> shale.LaminaAllocateRequest
+	16,  // 119: shale.LaminaService.Reallocate:input_type -> shale.LaminaReallocateRequest
+	17,  // 120: shale.LaminaService.Renew:input_type -> shale.LaminaRenewRequest
+	19,  // 121: shale.LaminaService.ReportAttempt:input_type -> shale.LaminaReportAttemptRequest
+	20,  // 122: shale.LaminaService.ReportFailure:input_type -> shale.LaminaReportFailureRequest
+	21,  // 123: shale.LaminaService.Skip:input_type -> shale.LaminaSkipRequest
+	22,  // 124: shale.LaminaService.Reschedule:input_type -> shale.LaminaRescheduleRequest
+	24,  // 125: shale.LaminaService.Timeline:input_type -> shale.LaminaTimelineRequest
+	29,  // 126: shale.LaminaService.Export:input_type -> shale.LaminaExportRequest
+	31,  // 127: shale.AttemptService.Add:input_type -> shale.AttemptAddRequest
+	32,  // 128: shale.AttemptService.Get:input_type -> shale.AttemptGetRequest
+	34,  // 129: shale.AttemptService.Patch:input_type -> shale.AttemptPatchRequest
+	35,  // 130: shale.AttemptService.Apply:input_type -> shale.AttemptApplyRequest
+	18,  // 131: shale.AttemptService.Erase:input_type -> shale.AttemptRef
+	37,  // 132: shale.AttemptService.List:input_type -> shale.AttemptListRequest
+	54,  // 133: shale.LaminaService.Add:output_type -> shale.Lamina
+	54,  // 134: shale.LaminaService.Get:output_type -> shale.Lamina
+	54,  // 135: shale.LaminaService.Patch:output_type -> shale.Lamina
+	54,  // 136: shale.LaminaService.Apply:output_type -> shale.Lamina
+	8,   // 137: shale.LaminaService.Erase:output_type -> shale.LaminaEraseResponse
+	10,  // 138: shale.LaminaService.List:output_type -> shale.LaminaListResponse
+	13,  // 139: shale.LaminaService.Watch:output_type -> shale.LaminaWatchResponse
+	60,  // 140: shale.LaminaService.Allocate:output_type -> shale.Allocation
+	60,  // 141: shale.LaminaService.Reallocate:output_type -> shale.Allocation
+	60,  // 142: shale.LaminaService.Renew:output_type -> shale.Allocation
+	59,  // 143: shale.LaminaService.ReportAttempt:output_type -> shale.Attempt
+	54,  // 144: shale.LaminaService.ReportFailure:output_type -> shale.Lamina
+	54,  // 145: shale.LaminaService.Skip:output_type -> shale.Lamina
+	23,  // 146: shale.LaminaService.Reschedule:output_type -> shale.LaminaRescheduleResponse
+	25,  // 147: shale.LaminaService.Timeline:output_type -> shale.LaminaTimelineResponse
+	30,  // 148: shale.LaminaService.Export:output_type -> shale.LaminaExportResponse
+	59,  // 149: shale.AttemptService.Add:output_type -> shale.Attempt
+	59,  // 150: shale.AttemptService.Get:output_type -> shale.Attempt
+	59,  // 151: shale.AttemptService.Patch:output_type -> shale.Attempt
+	59,  // 152: shale.AttemptService.Apply:output_type -> shale.Attempt
+	36,  // 153: shale.AttemptService.Erase:output_type -> shale.AttemptEraseResponse
+	38,  // 154: shale.AttemptService.List:output_type -> shale.AttemptListResponse
+	133, // [133:155] is the sub-list for method output_type
+	111, // [111:133] is the sub-list for method input_type
+	111, // [111:111] is the sub-list for extension type_name
+	111, // [111:111] is the sub-list for extension extendee
+	0,   // [0:111] is the sub-list for field type_name
 }
 
 func init() { file_shale_lamina_svc_g_proto_init() }
@@ -7207,7 +7426,7 @@ func file_shale_lamina_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_lamina_svc_g_proto_rawDesc), len(file_shale_lamina_svc_g_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   36,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

@@ -268,6 +268,9 @@ const (
 	TokenOp_TOKEN_OP_GET         TokenOp = 2
 	TokenOp_TOKEN_OP_PUBLISH     TokenOp = 3
 	TokenOp_TOKEN_OP_VIEW        TokenOp = 4
+	// A CP HTTP export capability for one source and an exact time range;
+	// it is neither a storage GET token nor a relay VIEW token.
+	TokenOp_TOKEN_OP_EXPORT TokenOp = 5
 )
 
 // Enum value maps for TokenOp.
@@ -278,6 +281,7 @@ var (
 		2: "TOKEN_OP_GET",
 		3: "TOKEN_OP_PUBLISH",
 		4: "TOKEN_OP_VIEW",
+		5: "TOKEN_OP_EXPORT",
 	}
 	TokenOp_value = map[string]int32{
 		"TOKEN_OP_UNSPECIFIED": 0,
@@ -285,6 +289,7 @@ var (
 		"TOKEN_OP_GET":         2,
 		"TOKEN_OP_PUBLISH":     3,
 		"TOKEN_OP_VIEW":        4,
+		"TOKEN_OP_EXPORT":      5,
 	}
 )
 
@@ -3647,6 +3652,8 @@ type TokenClaims struct {
 	xxx_hidden_Live                  LivePolicy             `protobuf:"varint,18,opt,name=live,enum=shale.LivePolicy"`
 	xxx_hidden_RewindSeconds         int64                  `protobuf:"varint,19,opt,name=rewind_seconds,json=rewindSeconds"`
 	xxx_hidden_Delegator             []byte                 `protobuf:"bytes,20,opt,name=delegator"`
+	xxx_hidden_ExportFrom            *timestamppb.Timestamp `protobuf:"bytes,21,opt,name=export_from,json=exportFrom"`
+	xxx_hidden_ExportTo              *timestamppb.Timestamp `protobuf:"bytes,22,opt,name=export_to,json=exportTo"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -3816,6 +3823,20 @@ func (x *TokenClaims) GetDelegator() []byte {
 	return nil
 }
 
+func (x *TokenClaims) GetExportFrom() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_ExportFrom
+	}
+	return nil
+}
+
+func (x *TokenClaims) GetExportTo() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_ExportTo
+	}
+	return nil
+}
+
 func (x *TokenClaims) SetKid(v string) {
 	x.xxx_hidden_Kid = v
 }
@@ -3917,6 +3938,14 @@ func (x *TokenClaims) SetDelegator(v []byte) {
 	x.xxx_hidden_Delegator = v
 }
 
+func (x *TokenClaims) SetExportFrom(v *timestamppb.Timestamp) {
+	x.xxx_hidden_ExportFrom = v
+}
+
+func (x *TokenClaims) SetExportTo(v *timestamppb.Timestamp) {
+	x.xxx_hidden_ExportTo = v
+}
+
 func (x *TokenClaims) HasExp() bool {
 	if x == nil {
 		return false
@@ -3938,6 +3967,20 @@ func (x *TokenClaims) HasRecord() bool {
 	return x.xxx_hidden_Record != nil
 }
 
+func (x *TokenClaims) HasExportFrom() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ExportFrom != nil
+}
+
+func (x *TokenClaims) HasExportTo() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ExportTo != nil
+}
+
 func (x *TokenClaims) ClearExp() {
 	x.xxx_hidden_Exp = nil
 }
@@ -3948,6 +3991,14 @@ func (x *TokenClaims) ClearIat() {
 
 func (x *TokenClaims) ClearRecord() {
 	x.xxx_hidden_Record = nil
+}
+
+func (x *TokenClaims) ClearExportFrom() {
+	x.xxx_hidden_ExportFrom = nil
+}
+
+func (x *TokenClaims) ClearExportTo() {
+	x.xxx_hidden_ExportTo = nil
 }
 
 type TokenClaims_builder struct {
@@ -3986,6 +4037,10 @@ type TokenClaims_builder struct {
 	// (§33.8), its holder at roster; empty when the actor asked for itself.
 	// Like actor it grants nothing: it is for limits and logs.
 	Delegator []byte
+	// export: the exact admitted range of source. No storage URL or other
+	// caller-controlled network address is carried by a capability.
+	ExportFrom *timestamppb.Timestamp
+	ExportTo   *timestamppb.Timestamp
 }
 
 func (b0 TokenClaims_builder) Build() *TokenClaims {
@@ -4012,6 +4067,8 @@ func (b0 TokenClaims_builder) Build() *TokenClaims {
 	x.xxx_hidden_Live = b.Live
 	x.xxx_hidden_RewindSeconds = b.RewindSeconds
 	x.xxx_hidden_Delegator = b.Delegator
+	x.xxx_hidden_ExportFrom = b.ExportFrom
+	x.xxx_hidden_ExportTo = b.ExportTo
 	return m0
 }
 
@@ -5101,7 +5158,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x0fdate_deleted_ms\x18\x11 \x01(\x03R\rdateDeletedMs\x12\x1a\n" +
 	"\bchecksum\x18\x12 \x01(\fR\bchecksum\x12+\n" +
 	"\x11placement_version\x18\x13 \x01(\x03R\x10placementVersion\x12\x16\n" +
-	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xb8\x05\n" +
+	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xae\x06\n" +
 	"\vTokenClaims\x12\x10\n" +
 	"\x03kid\x18\x01 \x01(\tR\x03kid\x12,\n" +
 	"\x03exp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12,\n" +
@@ -5126,7 +5183,10 @@ const file_shale_common_proto_rawDesc = "" +
 	"\factor_tenant\x18\x11 \x01(\fR\vactorTenant\x12%\n" +
 	"\x04live\x18\x12 \x01(\x0e2\x11.shale.LivePolicyR\x04live\x12%\n" +
 	"\x0erewind_seconds\x18\x13 \x01(\x03R\rrewindSeconds\x12\x1c\n" +
-	"\tdelegator\x18\x14 \x01(\fR\tdelegator\"\xd9\x03\n" +
+	"\tdelegator\x18\x14 \x01(\fR\tdelegator\x12;\n" +
+	"\vexport_from\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"exportFrom\x127\n" +
+	"\texport_to\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\bexportTo\"\xd9\x03\n" +
 	"\fLaminaStored\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1d\n" +
 	"\n" +
@@ -5197,13 +5257,14 @@ const file_shale_common_proto_rawDesc = "" +
 	"\vRecordState\x12\x1c\n" +
 	"\x18RECORD_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11RECORD_STATE_OPEN\x10\x01\x12\x19\n" +
-	"\x15RECORD_STATE_COMPLETE\x10\x02*p\n" +
+	"\x15RECORD_STATE_COMPLETE\x10\x02*\x85\x01\n" +
 	"\aTokenOp\x12\x18\n" +
 	"\x14TOKEN_OP_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fTOKEN_OP_PUT\x10\x01\x12\x10\n" +
 	"\fTOKEN_OP_GET\x10\x02\x12\x14\n" +
 	"\x10TOKEN_OP_PUBLISH\x10\x03\x12\x11\n" +
-	"\rTOKEN_OP_VIEW\x10\x04*\x87\x01\n" +
+	"\rTOKEN_OP_VIEW\x10\x04\x12\x13\n" +
+	"\x0fTOKEN_OP_EXPORT\x10\x05*\x87\x01\n" +
 	"\rMissingReason\x12\x1e\n" +
 	"\x1aMISSING_REASON_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18MISSING_REASON_NOT_FOUND\x10\x01\x12\x1a\n" +
@@ -5282,21 +5343,23 @@ var file_shale_common_proto_depIdxs = []int32{
 	26, // 30: shale.TokenClaims.record:type_name -> shale.LaminaRecord
 	0,  // 31: shale.TokenClaims.mode:type_name -> shale.UploadMode
 	1,  // 32: shale.TokenClaims.live:type_name -> shale.LivePolicy
-	33, // 33: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
-	33, // 34: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
-	33, // 35: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
-	26, // 36: shale.LaminaStored.record:type_name -> shale.LaminaRecord
-	33, // 37: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
-	6,  // 38: shale.LaminaMissing.reason:type_name -> shale.MissingReason
-	33, // 39: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
-	28, // 40: shale.Event.stored:type_name -> shale.LaminaStored
-	29, // 41: shale.Event.deleted:type_name -> shale.LaminaDeleted
-	30, // 42: shale.Event.missing:type_name -> shale.LaminaMissing
-	43, // [43:43] is the sub-list for method output_type
-	43, // [43:43] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	33, // 33: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
+	33, // 34: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
+	33, // 35: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
+	33, // 36: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
+	33, // 37: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
+	26, // 38: shale.LaminaStored.record:type_name -> shale.LaminaRecord
+	33, // 39: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
+	6,  // 40: shale.LaminaMissing.reason:type_name -> shale.MissingReason
+	33, // 41: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
+	28, // 42: shale.Event.stored:type_name -> shale.LaminaStored
+	29, // 43: shale.Event.deleted:type_name -> shale.LaminaDeleted
+	30, // 44: shale.Event.missing:type_name -> shale.LaminaMissing
+	45, // [45:45] is the sub-list for method output_type
+	45, // [45:45] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_shale_common_proto_init() }

@@ -34,6 +34,7 @@ const (
 	LaminaService_Skip_FullMethodName          = "/shale.LaminaService/Skip"
 	LaminaService_Reschedule_FullMethodName    = "/shale.LaminaService/Reschedule"
 	LaminaService_Timeline_FullMethodName      = "/shale.LaminaService/Timeline"
+	LaminaService_Export_FullMethodName        = "/shale.LaminaService/Export"
 )
 
 // LaminaServiceClient is the client API for LaminaService service.
@@ -90,6 +91,10 @@ type LaminaServiceClient interface {
 	Reschedule(ctx context.Context, in *LaminaRescheduleRequest, opts ...grpc.CallOption) (*LaminaRescheduleResponse, error)
 	// Laminae and gaps over a time range, with read tokens; paged (§17, §19).
 	Timeline(ctx context.Context, in *LaminaTimelineRequest, opts ...grpc.CallOption) (*LaminaTimelineResponse, error)
+	// A short-lived URL for a native MP4 download of one source. The
+	// optional HTTP exporter streams through Shale, never through the
+	// caller's application, and does not create a temporary media file.
+	Export(ctx context.Context, in *LaminaExportRequest, opts ...grpc.CallOption) (*LaminaExportResponse, error)
 }
 
 type laminaServiceClient struct {
@@ -259,6 +264,16 @@ func (c *laminaServiceClient) Timeline(ctx context.Context, in *LaminaTimelineRe
 	return out, nil
 }
 
+func (c *laminaServiceClient) Export(ctx context.Context, in *LaminaExportRequest, opts ...grpc.CallOption) (*LaminaExportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LaminaExportResponse)
+	err := c.cc.Invoke(ctx, LaminaService_Export_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LaminaServiceServer is the server API for LaminaService service.
 // All implementations must embed UnimplementedLaminaServiceServer
 // for forward compatibility.
@@ -313,6 +328,10 @@ type LaminaServiceServer interface {
 	Reschedule(context.Context, *LaminaRescheduleRequest) (*LaminaRescheduleResponse, error)
 	// Laminae and gaps over a time range, with read tokens; paged (§17, §19).
 	Timeline(context.Context, *LaminaTimelineRequest) (*LaminaTimelineResponse, error)
+	// A short-lived URL for a native MP4 download of one source. The
+	// optional HTTP exporter streams through Shale, never through the
+	// caller's application, and does not create a temporary media file.
+	Export(context.Context, *LaminaExportRequest) (*LaminaExportResponse, error)
 	mustEmbedUnimplementedLaminaServiceServer()
 }
 
@@ -367,6 +386,9 @@ func (UnimplementedLaminaServiceServer) Reschedule(context.Context, *LaminaResch
 }
 func (UnimplementedLaminaServiceServer) Timeline(context.Context, *LaminaTimelineRequest) (*LaminaTimelineResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Timeline not implemented")
+}
+func (UnimplementedLaminaServiceServer) Export(context.Context, *LaminaExportRequest) (*LaminaExportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Export not implemented")
 }
 func (UnimplementedLaminaServiceServer) mustEmbedUnimplementedLaminaServiceServer() {}
 func (UnimplementedLaminaServiceServer) testEmbeddedByValue()                       {}
@@ -652,6 +674,24 @@ func _LaminaService_Timeline_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LaminaService_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LaminaExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LaminaServiceServer).Export(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LaminaService_Export_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LaminaServiceServer).Export(ctx, req.(*LaminaExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LaminaService_ServiceDesc is the grpc.ServiceDesc for LaminaService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -714,6 +754,10 @@ var LaminaService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Timeline",
 			Handler:    _LaminaService_Timeline_Handler,
+		},
+		{
+			MethodName: "Export",
+			Handler:    _LaminaService_Export_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -2098,6 +2098,88 @@ func (b0 DelegationTimelineRequest_builder) Build() *DelegationTimelineRequest {
 	return m0
 }
 
+type DelegationExportRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Handle string                 `protobuf:"bytes,1,opt,name=handle"`
+	xxx_hidden_Export *LaminaExportRequest   `protobuf:"bytes,2,opt,name=export"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *DelegationExportRequest) Reset() {
+	*x = DelegationExportRequest{}
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DelegationExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DelegationExportRequest) ProtoMessage() {}
+
+func (x *DelegationExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DelegationExportRequest) GetHandle() string {
+	if x != nil {
+		return x.xxx_hidden_Handle
+	}
+	return ""
+}
+
+func (x *DelegationExportRequest) GetExport() *LaminaExportRequest {
+	if x != nil {
+		return x.xxx_hidden_Export
+	}
+	return nil
+}
+
+func (x *DelegationExportRequest) SetHandle(v string) {
+	x.xxx_hidden_Handle = v
+}
+
+func (x *DelegationExportRequest) SetExport(v *LaminaExportRequest) {
+	x.xxx_hidden_Export = v
+}
+
+func (x *DelegationExportRequest) HasExport() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Export != nil
+}
+
+func (x *DelegationExportRequest) ClearExport() {
+	x.xxx_hidden_Export = nil
+}
+
+type DelegationExportRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Handle string
+	Export *LaminaExportRequest
+}
+
+func (b0 DelegationExportRequest_builder) Build() *DelegationExportRequest {
+	m0 := &DelegationExportRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Handle = b.Handle
+	x.xxx_hidden_Export = b.Export
+	return m0
+}
+
 type DelegationRevokeRequest struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Handle string                 `protobuf:"bytes,1,opt,name=handle"`
@@ -2107,7 +2189,7 @@ type DelegationRevokeRequest struct {
 
 func (x *DelegationRevokeRequest) Reset() {
 	*x = DelegationRevokeRequest{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2119,7 +2201,7 @@ func (x *DelegationRevokeRequest) String() string {
 func (*DelegationRevokeRequest) ProtoMessage() {}
 
 func (x *DelegationRevokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[11]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2163,7 +2245,7 @@ type DelegationRevokeResponse struct {
 
 func (x *DelegationRevokeResponse) Reset() {
 	*x = DelegationRevokeResponse{}
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[12]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2175,7 +2257,7 @@ func (x *DelegationRevokeResponse) String() string {
 func (*DelegationRevokeResponse) ProtoMessage() {}
 
 func (x *DelegationRevokeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_delegation_svc_g_proto_msgTypes[12]
+	mi := &file_shale_delegation_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2289,10 +2371,13 @@ const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\x06source\x18\x03 \x01(\v2\x10.shale.SourceRefR\x06source\"t\n" +
 	"\x19DelegationTimelineRequest\x12\x1d\n" +
 	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\x128\n" +
-	"\btimeline\x18\x02 \x01(\v2\x1c.shale.LaminaTimelineRequestR\btimeline\"8\n" +
+	"\btimeline\x18\x02 \x01(\v2\x1c.shale.LaminaTimelineRequestR\btimeline\"l\n" +
+	"\x17DelegationExportRequest\x12\x1d\n" +
+	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\x122\n" +
+	"\x06export\x18\x02 \x01(\v2\x1a.shale.LaminaExportRequestR\x06export\"8\n" +
 	"\x17DelegationRevokeRequest\x12\x1d\n" +
 	"\x06handle\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06handle\"\x1a\n" +
-	"\x18DelegationRevokeResponse2\xd4\x04\n" +
+	"\x18DelegationRevokeResponse2\x9b\x05\n" +
 	"\x11DelegationService\x125\n" +
 	"\x03Add\x12\x1b.shale.DelegationAddRequest\x1a\x11.shale.Delegation\x125\n" +
 	"\x03Get\x12\x1b.shale.DelegationGetRequest\x1a\x11.shale.Delegation\x129\n" +
@@ -2301,10 +2386,11 @@ const file_shale_delegation_svc_g_proto_rawDesc = "" +
 	"\x05Erase\x12\x14.shale.DelegationRef\x1a\x1e.shale.DelegationEraseResponse\x12F\n" +
 	"\x05Start\x12\x1d.shale.DelegationStartRequest\x1a\x1e.shale.DelegationStartResponse\x12<\n" +
 	"\x04Live\x12\x1c.shale.DelegationLiveRequest\x1a\x16.shale.SetLiveResponse\x12K\n" +
-	"\bTimeline\x12 .shale.DelegationTimelineRequest\x1a\x1d.shale.LaminaTimelineResponse\x12I\n" +
+	"\bTimeline\x12 .shale.DelegationTimelineRequest\x1a\x1d.shale.LaminaTimelineResponse\x12E\n" +
+	"\x06Export\x12\x1e.shale.DelegationExportRequest\x1a\x1b.shale.LaminaExportResponse\x12I\n" +
 	"\x06Revoke\x12\x1e.shale.DelegationRevokeRequest\x1a\x1f.shale.DelegationRevokeResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_delegation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_shale_delegation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_shale_delegation_svc_g_proto_goTypes = []any{
 	(*DelegationAddRequest)(nil),      // 0: shale.DelegationAddRequest
 	(*DelegationGetRequest)(nil),      // 1: shale.DelegationGetRequest
@@ -2317,72 +2403,78 @@ var file_shale_delegation_svc_g_proto_goTypes = []any{
 	(*DelegationStartResponse)(nil),   // 8: shale.DelegationStartResponse
 	(*DelegationLiveRequest)(nil),     // 9: shale.DelegationLiveRequest
 	(*DelegationTimelineRequest)(nil), // 10: shale.DelegationTimelineRequest
-	(*DelegationRevokeRequest)(nil),   // 11: shale.DelegationRevokeRequest
-	(*DelegationRevokeResponse)(nil),  // 12: shale.DelegationRevokeResponse
-	(*TenantRef)(nil),                 // 13: shale.TenantRef
-	(*HolderRef)(nil),                 // 14: shale.HolderRef
-	(*timestamppb.Timestamp)(nil),     // 15: google.protobuf.Timestamp
-	(*TenantSelect)(nil),              // 16: shale.TenantSelect
-	(*HolderSelect)(nil),              // 17: shale.HolderSelect
-	(*patchpb.Patch)(nil),             // 18: patch.Patch
-	(*SetRef)(nil),                    // 19: shale.SetRef
-	(*SourceRef)(nil),                 // 20: shale.SourceRef
-	(*Delegation)(nil),                // 21: shale.Delegation
-	(*LaminaTimelineRequest)(nil),     // 22: shale.LaminaTimelineRequest
-	(*SetLiveResponse)(nil),           // 23: shale.SetLiveResponse
-	(*LaminaTimelineResponse)(nil),    // 24: shale.LaminaTimelineResponse
+	(*DelegationExportRequest)(nil),   // 11: shale.DelegationExportRequest
+	(*DelegationRevokeRequest)(nil),   // 12: shale.DelegationRevokeRequest
+	(*DelegationRevokeResponse)(nil),  // 13: shale.DelegationRevokeResponse
+	(*TenantRef)(nil),                 // 14: shale.TenantRef
+	(*HolderRef)(nil),                 // 15: shale.HolderRef
+	(*timestamppb.Timestamp)(nil),     // 16: google.protobuf.Timestamp
+	(*TenantSelect)(nil),              // 17: shale.TenantSelect
+	(*HolderSelect)(nil),              // 18: shale.HolderSelect
+	(*patchpb.Patch)(nil),             // 19: patch.Patch
+	(*SetRef)(nil),                    // 20: shale.SetRef
+	(*SourceRef)(nil),                 // 21: shale.SourceRef
+	(*Delegation)(nil),                // 22: shale.Delegation
+	(*LaminaTimelineRequest)(nil),     // 23: shale.LaminaTimelineRequest
+	(*LaminaExportRequest)(nil),       // 24: shale.LaminaExportRequest
+	(*SetLiveResponse)(nil),           // 25: shale.SetLiveResponse
+	(*LaminaTimelineResponse)(nil),    // 26: shale.LaminaTimelineResponse
+	(*LaminaExportResponse)(nil),      // 27: shale.LaminaExportResponse
 }
 var file_shale_delegation_svc_g_proto_depIdxs = []int32{
-	13, // 0: shale.DelegationAddRequest.tenant:type_name -> shale.TenantRef
-	14, // 1: shale.DelegationAddRequest.holder:type_name -> shale.HolderRef
-	15, // 2: shale.DelegationAddRequest.recordings_from:type_name -> google.protobuf.Timestamp
-	15, // 3: shale.DelegationAddRequest.recordings_to:type_name -> google.protobuf.Timestamp
-	15, // 4: shale.DelegationAddRequest.date_ends:type_name -> google.protobuf.Timestamp
-	15, // 5: shale.DelegationAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
-	15, // 6: shale.DelegationAddRequest.date_used:type_name -> google.protobuf.Timestamp
-	15, // 7: shale.DelegationAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	14, // 0: shale.DelegationAddRequest.tenant:type_name -> shale.TenantRef
+	15, // 1: shale.DelegationAddRequest.holder:type_name -> shale.HolderRef
+	16, // 2: shale.DelegationAddRequest.recordings_from:type_name -> google.protobuf.Timestamp
+	16, // 3: shale.DelegationAddRequest.recordings_to:type_name -> google.protobuf.Timestamp
+	16, // 4: shale.DelegationAddRequest.date_ends:type_name -> google.protobuf.Timestamp
+	16, // 5: shale.DelegationAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	16, // 6: shale.DelegationAddRequest.date_used:type_name -> google.protobuf.Timestamp
+	16, // 7: shale.DelegationAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 8: shale.DelegationGetRequest.ref:type_name -> shale.DelegationRef
 	3,  // 9: shale.DelegationGetRequest.select:type_name -> shale.DelegationSelect
-	16, // 10: shale.DelegationSelect.tenant:type_name -> shale.TenantSelect
-	17, // 11: shale.DelegationSelect.holder:type_name -> shale.HolderSelect
+	17, // 10: shale.DelegationSelect.tenant:type_name -> shale.TenantSelect
+	18, // 11: shale.DelegationSelect.holder:type_name -> shale.HolderSelect
 	2,  // 12: shale.DelegationPatchRequest.ref:type_name -> shale.DelegationRef
-	15, // 13: shale.DelegationPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
-	15, // 14: shale.DelegationPatchRequest.date_used:type_name -> google.protobuf.Timestamp
-	15, // 15: shale.DelegationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	16, // 13: shale.DelegationPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	16, // 14: shale.DelegationPatchRequest.date_used:type_name -> google.protobuf.Timestamp
+	16, // 15: shale.DelegationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 16: shale.DelegationApplyRequest.ref:type_name -> shale.DelegationRef
-	18, // 17: shale.DelegationApplyRequest.patch:type_name -> patch.Patch
-	19, // 18: shale.DelegationStartRequest.sets:type_name -> shale.SetRef
-	20, // 19: shale.DelegationStartRequest.sources:type_name -> shale.SourceRef
-	15, // 20: shale.DelegationStartRequest.recordings_from:type_name -> google.protobuf.Timestamp
-	15, // 21: shale.DelegationStartRequest.recordings_to:type_name -> google.protobuf.Timestamp
-	15, // 22: shale.DelegationStartRequest.date_ends:type_name -> google.protobuf.Timestamp
-	21, // 23: shale.DelegationStartResponse.delegation:type_name -> shale.Delegation
-	19, // 24: shale.DelegationLiveRequest.set:type_name -> shale.SetRef
-	20, // 25: shale.DelegationLiveRequest.source:type_name -> shale.SourceRef
-	22, // 26: shale.DelegationTimelineRequest.timeline:type_name -> shale.LaminaTimelineRequest
-	0,  // 27: shale.DelegationService.Add:input_type -> shale.DelegationAddRequest
-	1,  // 28: shale.DelegationService.Get:input_type -> shale.DelegationGetRequest
-	4,  // 29: shale.DelegationService.Patch:input_type -> shale.DelegationPatchRequest
-	5,  // 30: shale.DelegationService.Apply:input_type -> shale.DelegationApplyRequest
-	2,  // 31: shale.DelegationService.Erase:input_type -> shale.DelegationRef
-	7,  // 32: shale.DelegationService.Start:input_type -> shale.DelegationStartRequest
-	9,  // 33: shale.DelegationService.Live:input_type -> shale.DelegationLiveRequest
-	10, // 34: shale.DelegationService.Timeline:input_type -> shale.DelegationTimelineRequest
-	11, // 35: shale.DelegationService.Revoke:input_type -> shale.DelegationRevokeRequest
-	21, // 36: shale.DelegationService.Add:output_type -> shale.Delegation
-	21, // 37: shale.DelegationService.Get:output_type -> shale.Delegation
-	21, // 38: shale.DelegationService.Patch:output_type -> shale.Delegation
-	21, // 39: shale.DelegationService.Apply:output_type -> shale.Delegation
-	6,  // 40: shale.DelegationService.Erase:output_type -> shale.DelegationEraseResponse
-	8,  // 41: shale.DelegationService.Start:output_type -> shale.DelegationStartResponse
-	23, // 42: shale.DelegationService.Live:output_type -> shale.SetLiveResponse
-	24, // 43: shale.DelegationService.Timeline:output_type -> shale.LaminaTimelineResponse
-	12, // 44: shale.DelegationService.Revoke:output_type -> shale.DelegationRevokeResponse
-	36, // [36:45] is the sub-list for method output_type
-	27, // [27:36] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	19, // 17: shale.DelegationApplyRequest.patch:type_name -> patch.Patch
+	20, // 18: shale.DelegationStartRequest.sets:type_name -> shale.SetRef
+	21, // 19: shale.DelegationStartRequest.sources:type_name -> shale.SourceRef
+	16, // 20: shale.DelegationStartRequest.recordings_from:type_name -> google.protobuf.Timestamp
+	16, // 21: shale.DelegationStartRequest.recordings_to:type_name -> google.protobuf.Timestamp
+	16, // 22: shale.DelegationStartRequest.date_ends:type_name -> google.protobuf.Timestamp
+	22, // 23: shale.DelegationStartResponse.delegation:type_name -> shale.Delegation
+	20, // 24: shale.DelegationLiveRequest.set:type_name -> shale.SetRef
+	21, // 25: shale.DelegationLiveRequest.source:type_name -> shale.SourceRef
+	23, // 26: shale.DelegationTimelineRequest.timeline:type_name -> shale.LaminaTimelineRequest
+	24, // 27: shale.DelegationExportRequest.export:type_name -> shale.LaminaExportRequest
+	0,  // 28: shale.DelegationService.Add:input_type -> shale.DelegationAddRequest
+	1,  // 29: shale.DelegationService.Get:input_type -> shale.DelegationGetRequest
+	4,  // 30: shale.DelegationService.Patch:input_type -> shale.DelegationPatchRequest
+	5,  // 31: shale.DelegationService.Apply:input_type -> shale.DelegationApplyRequest
+	2,  // 32: shale.DelegationService.Erase:input_type -> shale.DelegationRef
+	7,  // 33: shale.DelegationService.Start:input_type -> shale.DelegationStartRequest
+	9,  // 34: shale.DelegationService.Live:input_type -> shale.DelegationLiveRequest
+	10, // 35: shale.DelegationService.Timeline:input_type -> shale.DelegationTimelineRequest
+	11, // 36: shale.DelegationService.Export:input_type -> shale.DelegationExportRequest
+	12, // 37: shale.DelegationService.Revoke:input_type -> shale.DelegationRevokeRequest
+	22, // 38: shale.DelegationService.Add:output_type -> shale.Delegation
+	22, // 39: shale.DelegationService.Get:output_type -> shale.Delegation
+	22, // 40: shale.DelegationService.Patch:output_type -> shale.Delegation
+	22, // 41: shale.DelegationService.Apply:output_type -> shale.Delegation
+	6,  // 42: shale.DelegationService.Erase:output_type -> shale.DelegationEraseResponse
+	8,  // 43: shale.DelegationService.Start:output_type -> shale.DelegationStartResponse
+	25, // 44: shale.DelegationService.Live:output_type -> shale.SetLiveResponse
+	26, // 45: shale.DelegationService.Timeline:output_type -> shale.LaminaTimelineResponse
+	27, // 46: shale.DelegationService.Export:output_type -> shale.LaminaExportResponse
+	13, // 47: shale.DelegationService.Revoke:output_type -> shale.DelegationRevokeResponse
+	38, // [38:48] is the sub-list for method output_type
+	28, // [28:38] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_shale_delegation_svc_g_proto_init() }
@@ -2405,7 +2497,7 @@ func file_shale_delegation_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_delegation_svc_g_proto_rawDesc), len(file_shale_delegation_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

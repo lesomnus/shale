@@ -27,6 +27,7 @@ const (
 	DelegationService_Start_FullMethodName    = "/shale.DelegationService/Start"
 	DelegationService_Live_FullMethodName     = "/shale.DelegationService/Live"
 	DelegationService_Timeline_FullMethodName = "/shale.DelegationService/Timeline"
+	DelegationService_Export_FullMethodName   = "/shale.DelegationService/Export"
 	DelegationService_Revoke_FullMethodName   = "/shale.DelegationService/Revoke"
 )
 
@@ -54,6 +55,11 @@ type DelegationServiceClient interface {
 	// Timeline is `LaminaService.Timeline` for the person, within the
 	// handle.
 	Timeline(ctx context.Context, in *DelegationTimelineRequest, opts ...grpc.CallOption) (*LaminaTimelineResponse, error)
+	// Export is a native MP4 download within the handle's recording scope.
+	// It uses the same roster ceiling as Timeline: permission to read the
+	// recording already permits these bytes. The handle stays server-side;
+	// only the short-lived scoped download URL is given to the browser.
+	Export(ctx context.Context, in *DelegationExportRequest, opts ...grpc.CallOption) (*LaminaExportResponse, error)
 	// Revoke ends a handle: what the app does when its own session ends.
 	Revoke(ctx context.Context, in *DelegationRevokeRequest, opts ...grpc.CallOption) (*DelegationRevokeResponse, error)
 }
@@ -146,6 +152,16 @@ func (c *delegationServiceClient) Timeline(ctx context.Context, in *DelegationTi
 	return out, nil
 }
 
+func (c *delegationServiceClient) Export(ctx context.Context, in *DelegationExportRequest, opts ...grpc.CallOption) (*LaminaExportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LaminaExportResponse)
+	err := c.cc.Invoke(ctx, DelegationService_Export_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *delegationServiceClient) Revoke(ctx context.Context, in *DelegationRevokeRequest, opts ...grpc.CallOption) (*DelegationRevokeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DelegationRevokeResponse)
@@ -180,6 +196,11 @@ type DelegationServiceServer interface {
 	// Timeline is `LaminaService.Timeline` for the person, within the
 	// handle.
 	Timeline(context.Context, *DelegationTimelineRequest) (*LaminaTimelineResponse, error)
+	// Export is a native MP4 download within the handle's recording scope.
+	// It uses the same roster ceiling as Timeline: permission to read the
+	// recording already permits these bytes. The handle stays server-side;
+	// only the short-lived scoped download URL is given to the browser.
+	Export(context.Context, *DelegationExportRequest) (*LaminaExportResponse, error)
 	// Revoke ends a handle: what the app does when its own session ends.
 	Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error)
 	mustEmbedUnimplementedDelegationServiceServer()
@@ -215,6 +236,9 @@ func (UnimplementedDelegationServiceServer) Live(context.Context, *DelegationLiv
 }
 func (UnimplementedDelegationServiceServer) Timeline(context.Context, *DelegationTimelineRequest) (*LaminaTimelineResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Timeline not implemented")
+}
+func (UnimplementedDelegationServiceServer) Export(context.Context, *DelegationExportRequest) (*LaminaExportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Export not implemented")
 }
 func (UnimplementedDelegationServiceServer) Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
@@ -384,6 +408,24 @@ func _DelegationService_Timeline_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DelegationService_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DelegationExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DelegationServiceServer).Export(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DelegationService_Export_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DelegationServiceServer).Export(ctx, req.(*DelegationExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DelegationService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DelegationRevokeRequest)
 	if err := dec(in); err != nil {
@@ -440,6 +482,10 @@ var DelegationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Timeline",
 			Handler:    _DelegationService_Timeline_Handler,
+		},
+		{
+			MethodName: "Export",
+			Handler:    _DelegationService_Export_Handler,
 		},
 		{
 			MethodName: "Revoke",

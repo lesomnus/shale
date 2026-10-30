@@ -171,7 +171,8 @@ var readerMay = map[string]bool{
 	api.SetService_Get_FullMethodName: true, api.SetService_List_FullMethodName: true, api.SetService_Live_FullMethodName: true,
 	api.SourceService_Get_FullMethodName: true, api.SourceService_List_FullMethodName: true, api.SourceService_Live_FullMethodName: true,
 	api.LaminaService_Get_FullMethodName: true, api.LaminaService_List_FullMethodName: true, api.LaminaService_Timeline_FullMethodName: true,
-	api.SiteService_Get_FullMethodName: true, api.SiteService_List_FullMethodName: true,
+	api.LaminaService_Export_FullMethodName: true,
+	api.SiteService_Get_FullMethodName:      true, api.SiteService_List_FullMethodName: true,
 	api.ReaderService_Get_FullMethodName: true, api.ReaderService_Heartbeat_FullMethodName: true,
 	api.ReaderService_RenewCertificate_FullMethodName: true,
 }
@@ -195,6 +196,7 @@ var personMay = map[string]bool{
 	api.LaminaService_List_FullMethodName:     true,
 	api.LaminaService_Watch_FullMethodName:    true,
 	api.LaminaService_Timeline_FullMethodName: true,
+	api.LaminaService_Export_FullMethodName:   true,
 	api.AttemptService_Get_FullMethodName:     true,
 	api.AttemptService_List_FullMethodName:    true,
 	api.SiteService_Get_FullMethodName:        true,
