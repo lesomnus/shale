@@ -177,6 +177,56 @@ func TestNativeExportDownloadAndWall(t *testing.T) {
 	require.NotEmpty(t, src.GetId())
 }
 
+// A finalized partial upload can have no stored end timestamp. Timeline
+// selects it via IS NULL even after its estimated end falls outside the query.
+// Exercise the real SQL, layer stack and HTTP route beside a complete upload.
+func TestNativeExportIgnoresStaleIncompleteRecording(t *testing.T) {
+	c := start(t, func(c *cmd.Config) { c.Export.Enabled = true })
+	ctx := context.Background()
+	admin := c.dial("@acme/admin")
+	src, ex := exportRecording(t, c, admin)
+	laminae := api.NewLaminaServiceClient(admin)
+	oldStart := ex.GetFrom().AsTime().Add(-time.Hour)
+	al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
+		Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(oldStart),
+	}.Build())
+	require.NoError(t, err)
+	body, err := os.ReadFile(filepath.Join("..", "fmp4", "testdata", "av.mp4"))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, put(t, al, body, oldStart.Add(6*time.Second)))
+	require.Eventually(t, func() bool {
+		v, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build()}.Build())
+		return err == nil && v.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED
+	}, 10*time.Second, 100*time.Millisecond)
+	// Model a historical incomplete finalization directly, rather than
+	// introducing a timed producer crash into this download regression.
+	id, err := pdid.From(al.GetLaminaId())
+	require.NoError(t, err)
+	_, err = c.running.CP.Deps.Ent.Lamina.UpdateOneId(id.Uuid()).ClearDateEnded().SetIncomplete(true).Save(ctx)
+	require.NoError(t, err)
+	tl, err := laminae.Timeline(ctx, api.LaminaTimelineRequest_builder{Source: ex.GetSource(), From: ex.GetFrom(), To: ex.GetTo()}.Build())
+	require.NoError(t, err)
+	stale := false
+	complete := false
+	for _, source := range tl.GetSources() {
+		for _, row := range source.GetLaminae() {
+			if string(row.GetLaminaId()) == string(al.GetLaminaId()) {
+				stale = true
+				require.True(t, row.GetIncomplete())
+				require.True(t, row.GetEndedEstimated())
+				require.True(t, row.GetDateEnded().AsTime().Before(ex.GetFrom().AsTime()))
+			} else if !row.GetIncomplete() {
+				complete = true
+			}
+		}
+	}
+	require.True(t, stale, "the real Timeline includes the historical incomplete row")
+	require.True(t, complete, "a complete recording exists inside the requested window")
+	out, err := laminae.Export(ctx, ex)
+	require.NoError(t, err)
+	exportDownload(t, exportHTTPBase(t, c, cmd.SurfaceTenant), out)
+}
+
 func TestNativeExportDisabled(t *testing.T) {
 	c := start(t)
 	_, err := api.NewLaminaServiceClient(c.dial("@acme/admin")).Export(context.Background(), api.LaminaExportRequest_builder{}.Build())
