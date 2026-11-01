@@ -20,7 +20,7 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.6
 	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
 	github.com/lesomnus/mkot v0.0.0-20261013182918-46d8b05a79b3
-	github.com/lesomnus/mkot/otlp v0.0.0-20261013182918-46d8b05a79b3
+	github.com/lesomnus/mkot/otlp v0.0.0-20261017184153-a69c4c1f08ca
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/payday v0.0.0-20261024224508-53eabb7618f9
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
@@ -28,10 +28,10 @@ require (
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
 	github.com/lesomnus/xli/cfg v0.1.3
 	github.com/lesomnus/z v0.0.0-20260907061127-c3858eb05878
-	github.com/pion/interceptor v0.1.48
-	github.com/pion/rtcp v1.2.17
-	github.com/pion/rtp v1.10.5
-	github.com/pion/webrtc/v4 v4.2.20
+	github.com/pion/interceptor v0.1.51
+	github.com/pion/rtcp v1.2.20
+	github.com/pion/rtp v1.10.6
+	github.com/pion/webrtc/v4 v4.2.26
 	github.com/protobuf-orm/ent v0.0.0-20261024205432-0dd7dadc81bc
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20261017212716-3430237a8656
 	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260907034345-a9bdc5357d7d
@@ -98,18 +98,18 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/petermattis/goid v0.0.0-20260716134002-a9b348f0a2b9 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/pion/datachannel v1.6.2 // indirect
-	github.com/pion/dtls/v3 v3.1.8 // indirect
-	github.com/pion/ice/v4 v4.4.2 // indirect
+	github.com/pion/datachannel v1.6.3 // indirect
+	github.com/pion/dtls/v3 v3.1.15 // indirect
+	github.com/pion/ice/v4 v4.4.8 // indirect
 	github.com/pion/logging v0.2.4 // indirect
-	github.com/pion/mdns/v2 v2.2.0 // indirect
+	github.com/pion/mdns/v2 v2.2.2 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/sctp v1.11.1 // indirect
-	github.com/pion/sdp/v3 v3.0.19 // indirect
-	github.com/pion/srtp/v3 v3.0.13 // indirect
-	github.com/pion/stun/v4 v4.0.0 // indirect
-	github.com/pion/transport/v4 v4.1.0 // indirect
-	github.com/pion/turn/v5 v5.1.0 // indirect
+	github.com/pion/sctp v1.12.0 // indirect
+	github.com/pion/sdp/v3 v3.0.20 // indirect
+	github.com/pion/srtp/v3 v3.1.3 // indirect
+	github.com/pion/stun/v4 v4.0.1 // indirect
+	github.com/pion/transport/v5 v5.1.4 // indirect
+	github.com/pion/turn/v5 v5.1.3 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261021213534-6068959c562d // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e // indirect
