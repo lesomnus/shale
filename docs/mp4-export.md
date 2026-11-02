@@ -109,6 +109,25 @@ is clipped at decodable video boundaries. Compatible encoder restarts and gaps
 must preserve the wall-clock placement of audio and video; incompatible track
 settings are refused before any output body is sent.
 
+Container planning asks for many small headers and sample tables. The HTTP
+reader coalesces these requests with one aligned **256 KiB read-ahead window
+per admitted export job**, shared across all its input recordings. The same
+byte array is reused when changing window or recording; 1,000 recording readers
+still retain only one such window. It is keyed by the admitted recording reader
+and byte offset, never shared across jobs, and is published only after the exact
+206 byte range and its complete body have been validated. Cancellation also
+stops cache hits. Large reads bypass the window and keep their existing maximum
+1 MiB HTTP requests.
+
+Read-ahead can fetch adjacent media bytes while the parser asks only for
+metadata. It trades more Storage-to-CP bytes for fewer HTTP round trips and
+Storage read jobs, which otherwise read an entire device chunk for each tiny
+header request. The window remains within an already authorized immutable
+lamina; the browser receives only the selected remuxed output. This bounds
+retained payload memory, not the sum of bytes fetched. It creates no whole-file
+RAM buffer or temporary disk file and does not change capability admission,
+credential renewal or the job deadline.
+
 Planning currently limits a job to a seven-day requested window, 1,024 input
 recordings, 2,000,000 samples and 64 MiB of parsed container metadata. The
 capability resolver also examines at most 20,000 returned laminae before
@@ -142,6 +161,24 @@ resource limits, cancellation and incomplete HTTP responses. With `ffmpeg` and
 `ffprobe` in `PATH`, the writer tests additionally compare every packet's hash,
 PTS and DTS with an independent demuxer, decode every output track, and cover
 B-frame presentation offsets. The normal CI test job installs these tools.
+
+The HTTP tests also check fixed cache memory across 1,000 recording identities,
+cross-recording/job isolation, failed fills, cancellation, direct large reads
+and expired Storage credentials. The parser/writer comparison produces the same
+MP4 bytes with and without read-ahead. Synthetic fixture measurements for its
+preparation phase are:
+
+| Fixture | Recordings | HTTP requests, before → after | Storage bytes, before → after |
+| --- | ---: | ---: | ---: |
+| `sample.mp4` | 1 | 95 → 12 | 7,913 → 2,836,296 |
+| `av.mp4` | 1 | 44 → 6 | 9,124 → 1,354,912 |
+| `aac.mp4` | 1 | 32 → 4 | 4,756 → 830,122 |
+| `av.mp4` | 17 | 748 → 102 | 155,108 → 23,033,504 |
+
+These are request-count regressions, not production latency estimates. A short
+selection still inspects its containing lamina's container metadata, so it also
+benefits from coalescing. Run them with
+`go test ./internal/exporthttp -run TestPrepareReadAheadReducesHTTPRequests -v`.
 
 `go test ./internal/e2e -run 'Test(NativeExport|DelegatedNativeExport)'` exercises
 the real API stack, Storage upload and native HTTP downloads, including tenant,
