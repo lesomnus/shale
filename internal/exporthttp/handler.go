@@ -133,7 +133,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer controller.SetWriteDeadline(time.Time{})
 	request, err := h.Resolve(ctx, ticket)
 	if err != nil {
-		http.Error(w, "cannot authorize this export", authStatus(err))
+		code := authStatus(err)
+		// Resolver errors can contain storage URLs and bearer credentials.
+		// Keep both the response and diagnostic attributes independent of them.
+		slog.WarnContext(ctx, "MP4 export admission failed", "grpc_code", status.Code(err).String(), "http_status", code)
+		http.Error(w, admissionErrorMessage(code), code)
 		return
 	}
 	if request == nil || request.Actor == "" {
@@ -213,6 +217,27 @@ func authStatus(err error) int {
 		return http.StatusRequestTimeout
 	default:
 		return http.StatusInternalServerError
+	}
+}
+
+func admissionErrorMessage(code int) string {
+	switch code {
+	case http.StatusBadRequest:
+		return "invalid export request"
+	case http.StatusUnauthorized:
+		return "this export link is invalid or expired; request a new export"
+	case http.StatusForbidden:
+		return "you are not permitted to download this export"
+	case http.StatusNotFound:
+		return "no recording is available for this export range"
+	case http.StatusTooManyRequests:
+		return "export limits were exceeded; request a shorter range"
+	case http.StatusServiceUnavailable:
+		return "exports are temporarily unavailable; try again later"
+	case http.StatusRequestTimeout:
+		return "export preparation was canceled or timed out; try again"
+	default:
+		return "cannot prepare this export; try again later"
 	}
 }
 

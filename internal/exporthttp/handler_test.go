@@ -3,9 +3,12 @@ package exporthttp_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"log/slog"
 	"mime"
 	"net/http"
 	"net/http/httptest"
@@ -70,6 +73,31 @@ func request(h http.Handler, method, token string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
 	return w
+}
+
+func captureLogs(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var logs bytes.Buffer
+	previous := slog.Default()
+	previousOutput, previousFlags := log.Writer(), log.Flags()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, nil)))
+	t.Cleanup(func() {
+		slog.SetDefault(previous)
+		log.SetOutput(previousOutput)
+		log.SetFlags(previousFlags)
+	})
+	return &logs
+}
+
+func checkAdmissionLog(t *testing.T, logs *bytes.Buffer, code codes.Code, httpStatus int) {
+	t.Helper()
+	var entry map[string]any
+	require.NoError(t, json.Unmarshal(logs.Bytes(), &entry))
+	require.Len(t, entry, 5, "only time, level, event and the two status attributes are logged")
+	require.Equal(t, "WARN", entry["level"])
+	require.Equal(t, "MP4 export admission failed", entry["msg"])
+	require.Equal(t, code.String(), entry["grpc_code"])
+	require.Equal(t, float64(httpStatus), entry["http_status"])
 }
 
 // The endpoint emits a conventional attachment with one final moov, while its
@@ -140,23 +168,76 @@ func TestRequestValidation(t *testing.T) {
 }
 
 func TestAuthorizationErrorsDoNotLeak(t *testing.T) {
+	const secret = "https://storage.example/secret?token=private-storage-token"
+	const ticket = "private-export-ticket"
 	for _, tc := range []struct {
-		code codes.Code
-		want int
-	}{{codes.InvalidArgument, 400}, {codes.Unauthenticated, 401}, {codes.PermissionDenied, 403}, {codes.NotFound, 404}, {codes.Unavailable, 503}, {codes.ResourceExhausted, 429}, {codes.DeadlineExceeded, 408}, {codes.Internal, 500}} {
+		code    codes.Code
+		want    int
+		message string
+	}{
+		{codes.InvalidArgument, 400, "invalid export request"},
+		{codes.Unauthenticated, 401, "this export link is invalid or expired; request a new export"},
+		{codes.PermissionDenied, 403, "you are not permitted to download this export"},
+		{codes.NotFound, 404, "no recording is available for this export range"},
+		{codes.ResourceExhausted, 429, "export limits were exceeded; request a shorter range"},
+		{codes.Unavailable, 503, "exports are temporarily unavailable; try again later"},
+		{codes.FailedPrecondition, 503, "exports are temporarily unavailable; try again later"},
+		{codes.Canceled, 408, "export preparation was canceled or timed out; try again"},
+		{codes.DeadlineExceeded, 408, "export preparation was canceled or timed out; try again"},
+		{codes.Unknown, 500, "cannot prepare this export; try again later"},
+		{codes.AlreadyExists, 500, "cannot prepare this export; try again later"},
+		{codes.Aborted, 500, "cannot prepare this export; try again later"},
+		{codes.OutOfRange, 500, "cannot prepare this export; try again later"},
+		{codes.Unimplemented, 500, "cannot prepare this export; try again later"},
+		{codes.Internal, 500, "cannot prepare this export; try again later"},
+		{codes.DataLoss, 500, "cannot prepare this export; try again later"},
+	} {
 		t.Run(tc.code.String(), func(t *testing.T) {
+			logs := captureLogs(t)
 			h := &exporthttp.Handler{Resolve: func(context.Context, string) (*exporthttp.Request, error) {
-				return nil, status.Error(tc.code, "https://storage.example/secret?token=do-not-leak")
+				return nil, status.Error(tc.code, secret)
 			}}
-			w := request(h, http.MethodGet, "ticket")
+			w := request(h, http.MethodGet, ticket)
 			require.Equal(t, tc.want, w.Code)
-			require.NotContains(t, w.Body.String(), "do-not-leak")
-			require.NotContains(t, w.Body.String(), "storage.example")
+			require.Equal(t, tc.message+"\n", w.Body.String())
+			require.Equal(t, "no-store", w.Header().Get("Cache-Control"))
+			require.Equal(t, "no-referrer", w.Header().Get("Referrer-Policy"))
+			require.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
+			require.Equal(t, "none", w.Header().Get("Accept-Ranges"))
+			require.Empty(t, w.Header().Get("Content-Disposition"))
+			checkAdmissionLog(t, logs, tc.code, tc.want)
+			for _, private := range []string{secret, "storage.example", "private-storage-token", ticket} {
+				require.NotContains(t, w.Body.String(), private)
+				require.NotContains(t, logs.String(), private)
+			}
 		})
 	}
 	for _, r := range []*exporthttp.Request{nil, {Actor: ""}} {
 		h := &exporthttp.Handler{Resolve: func(context.Context, string) (*exporthttp.Request, error) { return r, nil }}
 		require.Equal(t, http.StatusForbidden, request(h, http.MethodGet, "ticket").Code)
+	}
+}
+
+func TestNonStatusAdmissionErrorsRemainInternal(t *testing.T) {
+	// Preserve the existing HTTP classification for plain errors, including
+	// cancellation that was not returned as a gRPC status by the resolver.
+	for name, err := range map[string]error{
+		"plain storage failure": errors.New("https://storage.example/?token=private-storage-token"),
+		"canceled":              context.Canceled,
+		"deadline exceeded":     context.DeadlineExceeded,
+	} {
+		t.Run(name, func(t *testing.T) {
+			logs := captureLogs(t)
+			h := &exporthttp.Handler{Resolve: func(context.Context, string) (*exporthttp.Request, error) { return nil, err }}
+			w := request(h, http.MethodGet, "private-export-ticket")
+			require.Equal(t, http.StatusInternalServerError, w.Code)
+			require.Equal(t, "cannot prepare this export; try again later\n", w.Body.String())
+			checkAdmissionLog(t, logs, codes.Unknown, http.StatusInternalServerError)
+			for _, private := range []string{"storage.example", "private-storage-token", "private-export-ticket"} {
+				require.NotContains(t, w.Body.String(), private)
+				require.NotContains(t, logs.String(), private)
+			}
+		})
 	}
 }
 
