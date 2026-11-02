@@ -157,9 +157,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		*client = *h.Client
 	}
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	cache := &readAhead{}
 	sources := make([]mp4export.Source, 0, len(request.Recordings))
 	for _, recording := range request.Recordings {
-		reader, err := newRemoteReader(ctx, client, recording, h.AllowHTTP)
+		reader, err := newRemoteReader(ctx, client, recording, h.AllowHTTP, cache)
 		if err != nil {
 			http.Error(w, "invalid storage endpoint for export", http.StatusBadGateway)
 			return

@@ -374,22 +374,14 @@ func TestStorageCredentialRenewalIsBounded(t *testing.T) {
 	}
 }
 
-func TestCodecChangeFailsBeforeMedia(t *testing.T) {
+func TestCodecChangeFailsBeforeDownload(t *testing.T) {
 	b := fixture(t)
 	changed := bytes.Clone(b)
 	config := bytes.Index(changed, []byte("avcC"))
 	require.Greater(t, config, 0)
 	changed[config+5] ^= 1 // Same container dimensions, a different AVC profile.
-	var mediaReads atomic.Int32
-	boxes, err := fmp4.Children(b)
-	require.NoError(t, err)
 	storage := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		from, to := requestedRange(t, r, len(b))
-		for _, box := range boxes {
-			if box.Type == "mdat" && from >= box.Off+box.Hdr && from < box.End {
-				mediaReads.Add(1)
-			}
-		}
 		payload := b
 		if r.URL.Path == "/changed" {
 			payload = changed
@@ -407,7 +399,7 @@ func TestCodecChangeFailsBeforeMedia(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, w.Code)
 	require.Contains(t, w.Body.String(), "configuration changed")
 	require.Empty(t, w.Header().Get("Content-Disposition"))
-	require.Zero(t, mediaReads.Load(), "all codec descriptions are validated before any media is streamed")
+	require.NotEqual(t, "video/mp4", w.Header().Get("Content-Type"), "read-ahead may fetch adjacent media, but incompatible input must not start an MP4 download")
 }
 
 func TestInvalidContainerFailsBeforeMedia(t *testing.T) {
@@ -426,26 +418,35 @@ func TestInvalidContainerFailsBeforeMedia(t *testing.T) {
 
 // A failure after media bytes were sent is a truncated download, not a 200 MP4
 // containing an error message or a successful short file.
+type downloadPhaseWriter struct {
+	http.ResponseWriter
+	streaming *atomic.Bool
+}
+
+func (w downloadPhaseWriter) Write(b []byte) (int, error) {
+	w.streaming.Store(true)
+	return w.ResponseWriter.Write(b)
+}
+
+func (w downloadPhaseWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
 func TestLateStorageFailureAbortsDownload(t *testing.T) {
 	b := fixture(t)
-	boxes, err := fmp4.Children(b)
-	require.NoError(t, err)
+	var streaming atomic.Bool
 	var mediaReads atomic.Int32
 	storage := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		from, to := requestedRange(t, r, len(b))
-		for _, box := range boxes {
-			if box.Type == "mdat" && from >= box.Off+box.Hdr && from < box.End {
-				if mediaReads.Add(1) > 1 {
-					http.Error(w, "private upstream failure", http.StatusInternalServerError)
-					return
-				}
-			}
+		if streaming.Load() && mediaReads.Add(1) > 1 {
+			http.Error(w, "private upstream failure", http.StatusInternalServerError)
+			return
 		}
 		serveRange(w, b, from, to)
 	}))
 	defer storage.Close()
 	h := &exporthttp.Handler{AllowHTTP: true, Resolve: resolveRecording(b, storage.URL)}
-	server := httptest.NewServer(h)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(downloadPhaseWriter{ResponseWriter: w, streaming: &streaming}, r)
+	}))
 	defer server.Close()
 	resp, err := http.Get(server.URL + "/exports/recording.mp4?token=ticket")
 	require.NoError(t, err)
