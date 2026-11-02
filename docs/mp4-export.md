@@ -31,6 +31,35 @@ starting the response. It reads only canonical Storage endpoints selected by
 Shale, verifies HTTPS against public and cluster roots, and does not follow
 redirects carrying read credentials. Plain HTTP is development-only.
 
+## Admission failures
+
+A URL can be issued successfully and then fail when opened: capability
+resolution also reads current source visibility and recording availability.
+Resolver failures keep their existing HTTP status and return fixed text that
+identifies the next step, rather than calling every failure an authorization
+failure ([issue #171](https://github.com/lesomnus/shale/issues/171)).
+
+| HTTP status | Download response |
+| --- | --- |
+| 400 | `invalid export request` |
+| 401 | `this export link is invalid or expired; request a new export` |
+| 403 | `you are not permitted to download this export` |
+| 404 | `no recording is available for this export range` |
+| 408 | `export preparation was canceled or timed out; try again` |
+| 429 | `export limits were exceeded; request a shorter range` |
+| 503 | `exports are temporarily unavailable; try again later` |
+| 500 | `cannot prepare this export; try again later` |
+
+For resolver failures, 408 covers gRPC `Canceled` and `DeadlineExceeded`; 503
+covers `Unavailable` and `FailedPrecondition`. Other unclassified failures
+remain 500. These messages do not expose the resolver's error text, Storage
+URLs or bearer credentials. The diagnostic event `MP4 export admission failed`
+records only `grpc_code` and `http_status`, in addition to the logger's standard
+event fields, so operators can distinguish these cases without recording the
+download URL. Capability scope, admission expiry and execution limits are
+unchanged. This classification does not establish the cause of any particular
+failed recording export.
+
 ## Serving and resource costs
 
 Exports are opt-in on the tenant HTTP listener. Unlike ordinary Timeline reads,
