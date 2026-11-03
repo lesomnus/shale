@@ -154,22 +154,7 @@ func TestNativeExportDownloadAndWall(t *testing.T) {
 	exportDownload(t, base, out)
 
 	// A joined/adopted reader may issue a browser capability too.
-	key, err := pki.NewHostKey()
-	require.NoError(t, err)
-	csr, err := key.CSR("export-reader")
-	require.NoError(t, err)
-	anonymous, err := grpc.NewClient(c.running.TenantAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err)
-	defer anonymous.Close()
-	joined, err := api.NewReaderServiceClient(anonymous).Join(ctx, api.ReaderJoinRequest_builder{
-		Tenant: "acme", Host: api.HostJoin_builder{HardwareId: "export-reader-id", Hostname: "export-reader", Csr: csr, KeyFingerprint: key.Fingerprint()}.Build(),
-	}.Build())
-	require.NoError(t, err)
-	reader, err := api.NewReaderServiceClient(admin).Adopt(ctx, api.ReaderAdoptRequest_builder{Ref: api.ReaderRef_builder{Id: joined.GetAnswer().GetId()}.Build()}.Build())
-	require.NoError(t, err)
-	readerID, err := pdid.From(reader.GetId())
-	require.NoError(t, err)
-	out, err = api.NewLaminaServiceClient(c.dial(readerID.String())).Export(ctx, ex)
+	out, err = api.NewLaminaServiceClient(exportReader(t, c, admin)).Export(ctx, ex)
 	require.NoError(t, err)
 	exportDownload(t, base, out)
 
@@ -206,6 +191,27 @@ func TestNativeExportDownloadAndWall(t *testing.T) {
 	resp.Body.Close()
 	require.Equal(t, http.StatusUnauthorized, resp.StatusCode, "a tampered capability cannot download")
 	require.NotEmpty(t, src.GetId())
+}
+
+func exportReader(t *testing.T, c *cluster, admin *grpc.ClientConn) *grpc.ClientConn {
+	t.Helper()
+	ctx := t.Context()
+	key, err := pki.NewHostKey()
+	require.NoError(t, err)
+	csr, err := key.CSR("export-reader")
+	require.NoError(t, err)
+	anonymous, err := grpc.NewClient(c.running.TenantAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	defer anonymous.Close()
+	joined, err := api.NewReaderServiceClient(anonymous).Join(ctx, api.ReaderJoinRequest_builder{
+		Tenant: "acme", Host: api.HostJoin_builder{HardwareId: "export-reader-id", Hostname: "export-reader", Csr: csr, KeyFingerprint: key.Fingerprint()}.Build(),
+	}.Build())
+	require.NoError(t, err)
+	reader, err := api.NewReaderServiceClient(admin).Adopt(ctx, api.ReaderAdoptRequest_builder{Ref: api.ReaderRef_builder{Id: joined.GetAnswer().GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	readerID, err := pdid.From(reader.GetId())
+	require.NoError(t, err)
+	return c.dial(readerID.String())
 }
 
 // A finalized partial upload can have no stored end timestamp. Timeline
