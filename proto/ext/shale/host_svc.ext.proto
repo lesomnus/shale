@@ -94,7 +94,7 @@ message ProducerJoinResponse {
 message ProducerAdoptRequest {
   ProducerRef ref = 1;
   SetRef set = 2;
-  // The alias to give it; the hostname when empty.
+  // The alias to give it; keep its existing alias when empty.
   string alias = 3 [features.field_presence = IMPLICIT];
 }
 

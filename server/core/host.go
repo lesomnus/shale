@@ -230,22 +230,20 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 	switch s.decide(js, hj) {
 	case decCreate:
 		id := pdid.New(DomProducer)
-		alias := aliasFor(hj.GetHostname(), func(a string) bool {
-			n, _ := s.ent(ctx).Producer.Query().Where(producer.AliasEQ(a), producer.TenantIdEQ(tid.Uuid()), producer.DateErasedIsNil()).Count(ctx)
-			return n > 0
-		})
-		if _, err := s.own(ctx).Producer().Add(ctx, api.ProducerAddRequest_builder{
+		// Leave alias generation and collision retries to the server's namer.
+		created, err := s.own(ctx).Producer().Add(ctx, api.ProducerAddRequest_builder{
 			Id:         id.Bytes(),
 			Tenant:     tenantRef(tid),
-			Alias:      alias,
 			HardwareId: strings.ToLower(hj.GetHardwareId()),
 			Hostname:   hj.GetHostname(),
 			State:      api.HostState_HOST_STATE_PENDING,
 			Join:       s.joinRecord(hj, from, false),
 			Version:    hj.GetVersion(),
-		}.Build()); err != nil {
+		}.Build())
+		if err != nil {
 			return nil, err
 		}
+		alias := created.GetAlias()
 		answer.Id = id.Bytes()
 		answer.Alias = alias
 		// The command as it is typed (§32): a tenanted row is named
