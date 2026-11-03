@@ -31,9 +31,7 @@ import (
 	"github.com/lesomnus/shale/internal/token"
 )
 
-// exportRecording stores the small real capture through the ordinary
-// allocation/upload/commit path. No producer loop or ffmpeg is needed.
-func exportRecording(t *testing.T, c *cluster, admin *grpc.ClientConn) (*api.Source, *api.LaminaExportRequest) {
+func exportSource(t *testing.T, admin *grpc.ClientConn) *api.Source {
 	t.Helper()
 	ctx := context.Background()
 	site, err := api.NewSiteServiceClient(admin).Add(ctx, api.SiteAddRequest_builder{Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "export-recordings"}.Build())
@@ -47,6 +45,15 @@ func exportRecording(t *testing.T, c *cluster, admin *grpc.ClientConn) (*api.Sou
 		Profile: api.SegmentProfile_builder{MaxBitrate: 2_000_000}.Build(),
 	}.Build())
 	require.NoError(t, err)
+	return src
+}
+
+// exportRecording stores the small public fixture through the ordinary
+// allocation/upload/commit path. No producer loop is needed.
+func exportRecording(t *testing.T, c *cluster, admin *grpc.ClientConn) (*api.Source, *api.LaminaExportRequest) {
+	t.Helper()
+	ctx := context.Background()
+	src := exportSource(t, admin)
 	laminae := api.NewLaminaServiceClient(admin)
 	al, err := laminae.Allocate(ctx, api.LaminaAllocateRequest_builder{
 		Source: api.SourceRef_builder{Id: src.GetId()}.Build(), DateStarted: timestamppb.New(time.Now().Add(-time.Hour).Truncate(time.Second)),
@@ -76,22 +83,40 @@ func exportHTTPBase(t *testing.T, c *cluster, surface cmd.Surface) string {
 	return "http://" + addr
 }
 
-func exportDownload(t *testing.T, base string, out *api.LaminaExportResponse) []byte {
+func exportHTTPGet(t *testing.T, endpoint string) *http.Response {
+	t.Helper()
+	resp, err := (&http.Client{Timeout: 20 * time.Second}).Get(endpoint)
+	if err != nil {
+		// http.Client errors contain the complete URL, including its bearer
+		// capability. Never include them in test failure output.
+		t.Fatal("the native export download request failed")
+	}
+	return resp
+}
+
+func exportDownload(t *testing.T, base string, out *api.LaminaExportResponse) exportedPlayback {
 	t.Helper()
 	u, err := url.Parse(out.GetUrl())
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal("the export response contained an invalid download URL")
+	}
 	require.Equal(t, "/exports/recording.mp4", u.Path)
 	// A native download has only the short-lived URL: no app credential,
 	// session cookie, reader certificate or JavaScript media buffer.
-	resp, err := (&http.Client{Timeout: 20 * time.Second}).Get(base + out.GetUrl())
-	require.NoError(t, err)
+	resp := exportHTTPGet(t, base+out.GetUrl())
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode, "%s", body)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, "video/mp4", resp.Header.Get("Content-Type"))
 	require.Contains(t, resp.Header.Get("Content-Disposition"), "attachment;")
-	require.Equal(t, int64(len(body)), resp.ContentLength)
+	file := filepath.Join(t.TempDir(), "download.mp4")
+	f, err := os.OpenFile(file, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	require.NoError(t, err)
+	n, copyErr := io.Copy(f, resp.Body)
+	require.NoError(t, f.Close())
+	require.NoError(t, copyErr, "the complete HTTP attachment must reach the file")
+	require.Equal(t, resp.ContentLength, n)
+	body, err := os.ReadFile(file)
+	require.NoError(t, err)
 	boxes, err := fmp4.Children(body)
 	require.NoError(t, err)
 	require.Len(t, boxes, 3)
@@ -99,7 +124,15 @@ func exportDownload(t *testing.T, base string, out *api.LaminaExportResponse) []
 	require.Equal(t, "mdat", boxes[1].Type)
 	require.Equal(t, "moov", boxes[2].Type, "one normal MP4, its completed sample tables at the tail")
 
-	return body
+	result := exportedPlayback{File: file}
+	// A missing local decoder skips only this child, not the API, site wall,
+	// Reader, delegation and revocation checks surrounding the download.
+	t.Run("independent playback", func(t *testing.T) {
+		ffprobe, ffmpeg := exportPlaybackTools(t)
+		result.Media = probeExport(t, ffprobe, file)
+		checkExportPlayback(t, ffmpeg, result)
+	})
+	return result
 }
 
 func TestNativeExportDownloadAndWall(t *testing.T) {
@@ -121,22 +154,7 @@ func TestNativeExportDownloadAndWall(t *testing.T) {
 	exportDownload(t, base, out)
 
 	// A joined/adopted reader may issue a browser capability too.
-	key, err := pki.NewHostKey()
-	require.NoError(t, err)
-	csr, err := key.CSR("export-reader")
-	require.NoError(t, err)
-	anonymous, err := grpc.NewClient(c.running.TenantAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err)
-	defer anonymous.Close()
-	joined, err := api.NewReaderServiceClient(anonymous).Join(ctx, api.ReaderJoinRequest_builder{
-		Tenant: "acme", Host: api.HostJoin_builder{HardwareId: "export-reader-id", Hostname: "export-reader", Csr: csr, KeyFingerprint: key.Fingerprint()}.Build(),
-	}.Build())
-	require.NoError(t, err)
-	reader, err := api.NewReaderServiceClient(admin).Adopt(ctx, api.ReaderAdoptRequest_builder{Ref: api.ReaderRef_builder{Id: joined.GetAnswer().GetId()}.Build()}.Build())
-	require.NoError(t, err)
-	readerID, err := pdid.From(reader.GetId())
-	require.NoError(t, err)
-	out, err = api.NewLaminaServiceClient(c.dial(readerID.String())).Export(ctx, ex)
+	out, err = api.NewLaminaServiceClient(exportReader(t, c, admin)).Export(ctx, ex)
 	require.NoError(t, err)
 	exportDownload(t, base, out)
 
@@ -166,15 +184,34 @@ func TestNativeExportDownloadAndWall(t *testing.T) {
 	require.Equal(t, codes.NotFound, status.Code(err))
 
 	// Export media is absent on the separate operator HTTP surface.
-	resp, err := http.Get(exportHTTPBase(t, c, cmd.SurfaceCluster) + out.GetUrl())
-	require.NoError(t, err)
+	resp := exportHTTPGet(t, exportHTTPBase(t, c, cmd.SurfaceCluster)+out.GetUrl())
 	resp.Body.Close()
 	require.Equal(t, http.StatusNotFound, resp.StatusCode)
-	resp, err = http.Get(base + out.GetUrl() + "x")
-	require.NoError(t, err)
+	resp = exportHTTPGet(t, base+out.GetUrl()+"x")
 	resp.Body.Close()
 	require.Equal(t, http.StatusUnauthorized, resp.StatusCode, "a tampered capability cannot download")
 	require.NotEmpty(t, src.GetId())
+}
+
+func exportReader(t *testing.T, c *cluster, admin *grpc.ClientConn) *grpc.ClientConn {
+	t.Helper()
+	ctx := t.Context()
+	key, err := pki.NewHostKey()
+	require.NoError(t, err)
+	csr, err := key.CSR("export-reader")
+	require.NoError(t, err)
+	anonymous, err := grpc.NewClient(c.running.TenantAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	defer anonymous.Close()
+	joined, err := api.NewReaderServiceClient(anonymous).Join(ctx, api.ReaderJoinRequest_builder{
+		Tenant: "acme", Host: api.HostJoin_builder{HardwareId: "export-reader-id", Hostname: "export-reader", Csr: csr, KeyFingerprint: key.Fingerprint()}.Build(),
+	}.Build())
+	require.NoError(t, err)
+	reader, err := api.NewReaderServiceClient(admin).Adopt(ctx, api.ReaderAdoptRequest_builder{Ref: api.ReaderRef_builder{Id: joined.GetAnswer().GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	readerID, err := pdid.From(reader.GetId())
+	require.NoError(t, err)
+	return c.dial(readerID.String())
 }
 
 // A finalized partial upload can have no stored end timestamp. Timeline
@@ -231,8 +268,7 @@ func TestNativeExportDisabled(t *testing.T) {
 	c := start(t)
 	_, err := api.NewLaminaServiceClient(c.dial("@acme/admin")).Export(context.Background(), api.LaminaExportRequest_builder{}.Build())
 	require.Equal(t, codes.FailedPrecondition, status.Code(err))
-	resp, err := http.Get(exportHTTPBase(t, c, cmd.SurfaceTenant) + "/exports/recording.mp4?token=anything")
-	require.NoError(t, err)
+	resp := exportHTTPGet(t, exportHTTPBase(t, c, cmd.SurfaceTenant)+"/exports/recording.mp4?token=anything")
 	resp.Body.Close()
 	require.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
