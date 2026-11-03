@@ -392,6 +392,11 @@ shale serve reader   --cp https://cp.example.com:7400   # likewise
    key". The host repeats `Join` every 10 seconds until it is answered with a
    certificate. A pending request nobody adopts expires after
    `join_pending_ttl` (24 hours); the host keeps asking, so it reappears.
+   A new Producer gets a random alias from the server's normal name generator,
+   with collisions retried by the store. Its hostname remains inventory
+   metadata: two machines with the same hostname get different aliases, and
+   changing the hostname during a pending join preserves the existing alias.
+   Existing pending, adopted, and rejoining producers retain their aliases.
 5. An operator **adopts** it, from the console or the CLI, after checking that
    it is theirs. The console shows the hostname, the hardware identity, the
    key fingerprint the host also prints in its log, and, for a re-join, the
@@ -403,6 +408,9 @@ shale serve reader   --cp https://cp.example.com:7400   # likewise
    shale producer adopt <producer> '{"set":{"alias":"<set>"}}'   # site follows the set
    shale reader adopt <reader> '{"sites":[{"id":"<site>"}]}'     # none: the whole tenant
    ```
+
+   Producer adoption may include an explicit `alias`; when it is omitted,
+   the producer keeps the alias the CP already assigned it.
 
 6. The CP issues the **host certificate** from its built-in CA
    ([§33.5](#335-tls)) and the next `Join` answers with it, the CA bundle,

@@ -2971,7 +2971,7 @@ export type ProducerAdoptRequest = Message<"shale.ProducerAdoptRequest"> & {
   set?: SetRef | undefined;
 
   /**
-   * The alias to give it; the hostname when empty.
+   * The alias to give it; keep its existing alias when empty.
    *
    * @generated from field: string alias = 3 [features.field_presence = IMPLICIT];
    */
