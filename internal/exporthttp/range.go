@@ -10,6 +10,48 @@ import (
 	"time"
 )
 
+// readAheadBytes is a single job-wide window, not an allocation per file.
+// Container headers are tiny and adjacent, but every remote range otherwise
+// incurs a request and a Storage read job. Windows may include media bytes.
+const readAheadBytes = 256 << 10
+
+// readAhead belongs to one admitted export. It serializes fills so one reusable
+// array bounds retained payload memory even when the job has many recordings.
+type readAhead struct {
+	mu    sync.Mutex
+	buf   []byte
+	owner *remoteReader
+	off   int64
+	n     int
+}
+
+func (c *readAhead) copy(r *remoteReader, p []byte, off int64) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	if c.owner != r || off < c.off || off >= c.off+int64(c.n) {
+		// A failed fill must not expose partially overwritten bytes under
+		// either the previous recording's identity or this one's.
+		c.owner, c.n = nil, 0
+		if c.buf == nil {
+			c.buf = make([]byte, readAheadBytes)
+		}
+		start := off - off%readAheadBytes
+		n := int(min(int64(len(c.buf)), r.recording.Size-start))
+		if err := r.read(c.buf[:n], start); err != nil {
+			return 0, err
+		}
+		if err := r.ctx.Err(); err != nil {
+			return 0, err
+		}
+		c.owner, c.off, c.n = r, start, n
+	}
+	at := int(off - c.off)
+	return copy(p, c.buf[at:c.n]), nil
+}
+
 // remoteReader fetches only bounded byte ranges. It never retains an entire
 // recording and renews only this admitted lamina after a token has expired.
 type remoteReader struct {
@@ -19,6 +61,7 @@ type remoteReader struct {
 	allowHTTP bool
 	mu        sync.Mutex
 	url       string
+	cache     *readAhead
 }
 
 func endpoint(raw string, allowHTTP bool) error {
@@ -29,19 +72,22 @@ func endpoint(raw string, allowHTTP bool) error {
 	return nil
 }
 
-func newRemoteReader(ctx context.Context, client *http.Client, recording Recording, allowHTTP bool) (*remoteReader, error) {
+func newRemoteReader(ctx context.Context, client *http.Client, recording Recording, allowHTTP bool, cache *readAhead) (*remoteReader, error) {
 	if recording.Size <= 0 {
 		return nil, &storageError{"invalid recording size"}
 	}
 	if err := endpoint(recording.URL, allowHTTP); err != nil {
 		return nil, err
 	}
-	return &remoteReader{ctx: ctx, client: client, recording: recording, allowHTTP: allowHTTP, url: recording.URL}, nil
+	return &remoteReader{ctx: ctx, client: client, recording: recording, allowHTTP: allowHTTP, url: recording.URL, cache: cache}, nil
 }
 
 func (r *remoteReader) ReadAt(p []byte, off int64) (int, error) {
 	if off < 0 {
 		return 0, &storageError{"negative offset"}
+	}
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
 	}
 	if len(p) == 0 {
 		return 0, nil
@@ -51,8 +97,20 @@ func (r *remoteReader) ReadAt(p []byte, off int64) (int, error) {
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	small := r.cache != nil && len(p) <= readAheadBytes
 	n := 0
 	for n < len(p) && off+int64(n) < r.recording.Size {
+		if err := r.ctx.Err(); err != nil {
+			return n, err
+		}
+		if small {
+			got, err := r.cache.copy(r, p[n:], off+int64(n))
+			n += got
+			if err != nil {
+				return n, err
+			}
+			continue
+		}
 		length := min(int64(len(p)-n), min(1<<20, r.recording.Size-off-int64(n)))
 		if err := r.read(p[n:n+int(length)], off+int64(n)); err != nil {
 			return n, err
