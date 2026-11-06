@@ -581,7 +581,8 @@ type Capture struct {
 	Remux bool
 	// OnLine sees every line the process writes to stderr first, and
 	// answers true for one it consumed, which is then neither logged nor
-	// kept as the last error (§38.10).
+	// kept as the last error (§38.10). It must return promptly: an attempt
+	// joins both stages' diagnostic callbacks before releasing credentials.
 	OnLine func(line string) bool
 	// OnDark is told every dark second a GStreamer capture measured, for a
 	// source with `idle:` (§38.10); ffmpeg's are lines, for OnLine.
@@ -749,6 +750,10 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 	ceiling, keyframe := c.Profile()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	var stderrReaders sync.WaitGroup
+	// A completed attempt owns its diagnostics too: no reader may retain its
+	// credential sanitizer or call back into the next capture attempt.
+	defer stderrReaders.Wait()
 	c.mu.Lock()
 	c.cancel, c.kicked = cancel, false
 	fallback := c.audioFallback
@@ -859,13 +864,16 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 	if err != nil {
 		return err
 	}
+	defer stdout.Close()
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		return err
 	}
+	defer stderr.Close()
 	// The second stage (§38.3), when the encoder needs one: the first's
 	// TS in, fragmented MP4 out.
 	var second *exec.Cmd
+	var secondStderr io.ReadCloser
 	if remux {
 		if remuxArgs == nil {
 			remuxArgs = RemuxArgs(src.aacArchive(), src.fragment())
@@ -881,12 +889,14 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 		if err != nil {
 			return err
 		}
+		defer out.Close()
 		errs, err := second.StderrPipe()
 		if err != nil {
 			return err
 		}
+		defer errs.Close()
 		stdout = out
-		go c.scanStderrWith(errs, sanitize)
+		secondStderr = errs
 	}
 	if err := cmd.Start(); err != nil {
 		return err
@@ -906,7 +916,17 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 	c.up = true
 	c.started = time.Now()
 	c.mu.Unlock()
-	go c.scanStderrWith(stderr, sanitize)
+	scan := func(stderr io.Reader) {
+		stderrReaders.Add(1)
+		go func() {
+			defer stderrReaders.Done()
+			c.scanStderrWith(stderr, sanitize)
+		}()
+	}
+	scan(stderr)
+	if secondStderr != nil {
+		scan(secondStderr)
+	}
 
 	read(stdout)
 	err = cmd.Wait()
@@ -915,6 +935,9 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 			err = err2
 		}
 	}
+	// Wait closes process-owned pipes, so blocked reads are released. Join
+	// before clearing attempt state or releasing the credential lease.
+	stderrReaders.Wait()
 	c.mu.Lock()
 	c.up = false
 	c.cancel = nil

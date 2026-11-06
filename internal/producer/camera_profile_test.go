@@ -116,15 +116,13 @@ func TestCaptureReferenceRetryAndSecretDiagnostics(t *testing.T) {
 		e = c.once(context.Background(), func(rd io.Reader) { io.Copy(io.Discard, rd) })
 		require.Error(t, e)
 	}
-	// Drain the intentionally short stderr reader before inspecting diagnostics.
-	deadline := time.Now().Add(time.Second)
-	for c.LastError() == "" && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
-	}
+	// once joins the attempt's diagnostic readers before releasing its lease.
+	require.NotEmpty(t, c.LastError())
 	provider.mu.Lock()
 	require.Equal(t, []camera.CredentialRef{ref, ref}, provider.refs)
 	provider.mu.Unlock()
 	diagnostics := logs.String() + c.LastError() + e.Error()
+	require.Contains(t, logs.String(), "ffmpeg")
 	for _, secret := range []string{material.Password, url.QueryEscape(material.Password), url.UserPassword(material.Username, material.Password).String()} {
 		require.NotContains(t, diagnostics, secret)
 	}
@@ -147,4 +145,128 @@ func TestLegacyCaptureStderrRedactedBeforeObservers(t *testing.T) {
 		require.NotContains(t, text, "pa@ss")
 	}
 	require.True(t, errors.Is(credential.SanitizeError(media.ErrMismatch, credential.NewSanitizer()), media.ErrMismatch))
+}
+
+func TestCaptureAttemptJoinsDiagnosticReaders(t *testing.T) {
+	for _, remux := range []bool{false, true} {
+		name := "single"
+		if remux {
+			name = "remux"
+		}
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Setenv("SHALE_TEST_CAPTURE_READY", dir)
+			binary := filepath.Join(dir, "capture")
+			script := `#!/bin/sh
+capture_stage=first
+for capture_arg do
+  if [ "$capture_arg" = pipe:0 ]; then
+    capture_stage=second
+    cat >/dev/null
+  fi
+done
+printf '%s\n' "$capture_stage" >&2
+while [ ! -f "$SHALE_TEST_CAPTURE_READY/$capture_stage" ]; do sleep 0.01; done
+printf 'synthetic capture'
+exit 1
+`
+			require.NoError(t, os.WriteFile(binary, []byte(script), 0700))
+			var logs bytes.Buffer
+			encoder := "copy"
+			wantReaders := 1
+			if remux {
+				encoder, wantReaders = "h264_v4l2m2m", 2
+			}
+			entered := make(chan string, 2)
+			release := make(chan struct{})
+			var releaseOnce sync.Once
+			unblock := func() { releaseOnce.Do(func() { close(release) }) }
+			defer unblock()
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			capture := &Capture{
+				Ffmpeg: binary,
+				Source: SourceConfig{Alias: "camera", Input: "file:unused", Encoder: encoder},
+				Log:    slog.New(slog.NewTextHandler(&logs, nil)),
+				Profile: func() (int64, time.Duration) {
+					return 2_000_000, time.Second
+				},
+				OnLine: func(line string) bool {
+					if err := os.WriteFile(filepath.Join(dir, line), nil, 0600); err != nil {
+						t.Error(err)
+					}
+					entered <- line
+					<-release
+					return false
+				},
+			}
+			stdoutDone := make(chan struct{})
+			done := make(chan error, 1)
+			go func() {
+				done <- capture.once(ctx, func(r io.Reader) {
+					io.Copy(io.Discard, r)
+					close(stdoutDone)
+				})
+			}()
+			for range wantReaders {
+				select {
+				case <-entered:
+				case <-ctx.Done():
+					t.Fatal("diagnostic reader never started", ctx.Err())
+				}
+			}
+			select {
+			case <-stdoutDone:
+			case <-ctx.Done():
+				t.Fatal("capture process did not finish", ctx.Err())
+			}
+			select {
+			case <-done:
+				t.Fatal("attempt returned while its diagnostic callback was still running")
+			case <-time.After(20 * time.Millisecond):
+			}
+			unblock()
+			select {
+			case err := <-done:
+				require.Error(t, err)
+			case <-ctx.Done():
+				t.Fatal("attempt did not join its diagnostic readers", ctx.Err())
+			}
+			require.Contains(t, logs.String(), "first")
+			if remux {
+				require.Contains(t, logs.String(), "second")
+			}
+		})
+	}
+}
+
+func TestCaptureAttemptStartupFailuresDoNotWaitForUnstartedReaders(t *testing.T) {
+	for _, second := range []bool{false, true} {
+		name := "first"
+		if second {
+			name = "second"
+		}
+		t.Run(name, func(t *testing.T) {
+			capture := &Capture{
+				Ffmpeg: filepath.Join(t.TempDir(), "missing"),
+				Source: SourceConfig{Input: "file:unused", Encoder: "h264_v4l2m2m"},
+				Log:    slog.New(slog.NewTextHandler(io.Discard, nil)),
+				Profile: func() (int64, time.Duration) {
+					return 2_000_000, time.Second
+				},
+			}
+			if second {
+				capture.Source.Command = "exit 0"
+				capture.Remux = true
+			}
+			done := make(chan error, 1)
+			go func() { done <- capture.once(t.Context(), func(r io.Reader) { io.Copy(io.Discard, r) }) }()
+			select {
+			case err := <-done:
+				require.Error(t, err)
+			case <-time.After(time.Second):
+				t.Fatal("startup failure left an unstarted diagnostic reader waiting")
+			}
+		})
+	}
 }
