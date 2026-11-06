@@ -154,7 +154,10 @@ func TestInterruptionAfterPasswordWriteReinspects(t *testing.T) {
 	if err := d.Activate(context.Background(), testHint(), lease); err == nil {
 		t.Fatal("expected ambiguous transport failure")
 	}
-	if f.writes != 1 {
+	f.mu.Lock()
+	writes := f.writes
+	f.mu.Unlock()
+	if writes != 1 {
 		t.Fatal("write did not happen")
 	}
 	// A new lease resolves the prepared exact version; it remains usable after
