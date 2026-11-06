@@ -34,6 +34,13 @@ type ONVIFCamera struct {
 	calls              []string
 	writes             int
 	activations        int
+	heldSet            *heldConfiguration
+}
+
+type heldConfiguration struct {
+	accepted chan struct{}
+	release  chan struct{}
+	settled  chan struct{}
 }
 
 func ServeONVIF(t testing.TB, profile camera.MediaProfile) *ONVIFCamera {
@@ -64,6 +71,28 @@ func (c *ONVIFCamera) LoseActivationResponseOnce() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.loseActivation = true
+}
+
+// HoldConfigurationResponseOnce models firmware which accepted a Set but still
+// commits after the HTTP caller has lost its response. Another request can read
+// the old state while the device-side operation remains unsettled.
+func (c *ONVIFCamera) HoldConfigurationResponseOnce(t testing.TB) (<-chan struct{}, func(), <-chan struct{}) {
+	t.Helper()
+	h := &heldConfiguration{accepted: make(chan struct{}), release: make(chan struct{}), settled: make(chan struct{})}
+	c.mu.Lock()
+	c.heldSet = h
+	c.mu.Unlock()
+	var once sync.Once
+	release := func() {
+		once.Do(func() { close(h.release) })
+		select {
+		case <-h.accepted:
+			<-h.settled
+		default:
+		}
+	}
+	t.Cleanup(release)
+	return h.accepted, release, h.settled
 }
 func (c *ONVIFCamera) SetMedia1Codec(codec string) {
 	c.mu.Lock()
@@ -185,17 +214,36 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 		}
 	case "SetVideoEncoderConfiguration":
 		x := request.Body.Operation.Configuration
-		c.profile.Codec = strings.ToLower(x.Encoding)
-		if c.profile.Codec == "hevc" {
-			c.profile.Codec = "h265"
+		after := c.profile
+		after.Codec = strings.ToLower(x.Encoding)
+		if after.Codec == "hevc" {
+			after.Codec = "h265"
 		}
-		c.profile.Width, c.profile.Height = x.Resolution.Width, x.Resolution.Height
-		c.profile.FPS = x.RateControl.FrameRateLimit
-		c.profile.Bitrate = x.RateControl.BitrateLimit * 1000
-		c.profile.GOP = x.GovLength
-		if c.profile.GOP == 0 {
-			c.profile.GOP = x.H264.GovLength
+		after.Width, after.Height = x.Resolution.Width, x.Resolution.Height
+		after.FPS = x.RateControl.FrameRateLimit
+		after.Bitrate = x.RateControl.BitrateLimit * 1000
+		after.GOP = x.GovLength
+		if after.GOP == 0 {
+			after.GOP = x.H264.GovLength
 		}
+		if held := c.heldSet; held != nil {
+			c.heldSet = nil
+			close(held.accepted)
+			go func() {
+				<-held.release
+				c.mu.Lock()
+				c.profile = after
+				c.writes++
+				c.mu.Unlock()
+				close(held.settled)
+			}()
+			connection, _, err := w.(http.Hijacker).Hijack()
+			if err == nil {
+				_ = connection.Close()
+			}
+			return
+		}
+		c.profile = after
 		c.writes++
 	default:
 		w.WriteHeader(400)

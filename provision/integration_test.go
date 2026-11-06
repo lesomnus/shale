@@ -242,3 +242,46 @@ func TestProtocolUnknownVendorActivationRemainsReadOnlyWaiting(t *testing.T) {
 	require.Zero(t, activation)
 	require.Empty(t, f.device.Calls())
 }
+
+func TestProtocolUnsettledCameraWriteBlocksNewDesiredRevision(t *testing.T) {
+	f := protocolFixture(t)
+	f.request.Desired.Bitrate = 2_000_000
+	accepted, release, settled := f.device.HoldConfigurationResponseOnce(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	first, err := f.engine(t).Execute(ctx, f.request, true)
+	require.Error(t, err)
+	require.NotEqual(t, provision.Active, first.Stage)
+	select {
+	case <-accepted:
+	default:
+		t.Fatal("camera did not accept the pending write")
+	}
+	configuration, _ := f.device.Writes()
+	require.Zero(t, configuration, "the firmware has not yet committed its accepted Set")
+	newer := f.request
+	newer.ID = "new-desired-revision"
+	newer.Desired.Revision = "desired-2"
+	newer.Desired.Bitrate = 1_000_000
+	calls := len(f.device.Calls())
+	_, err = f.engine(t).Execute(ctx, newer, true)
+	require.ErrorIs(t, err, provision.ErrConflict)
+	require.Len(t, f.device.Calls(), calls, "new desired state reached the device before the older write settled")
+	// The old operation commits after its HTTP caller already received an
+	// error. Reconstruct the original engine and reconcile that exact target;
+	// only its verified completion releases the durable mutation reservation.
+	release()
+	<-settled
+	first, err = f.engine(t).Execute(ctx, f.request, true)
+	require.NoError(t, err)
+	require.Equal(t, provision.Active, first.Stage)
+	require.Equal(t, int64(2_000_000), first.Inspection.Current.Profiles[0].Bitrate)
+	second, err := f.engine(t).Execute(ctx, newer, true)
+	require.NoError(t, err)
+	require.Equal(t, provision.Active, second.Stage)
+	require.Equal(t, int64(1_000_000), second.Inspection.Current.Profiles[0].Bitrate)
+	require.Equal(t, first.Binding.SourceID, second.Binding.SourceID)
+	configuration, _ = f.device.Writes()
+	require.Equal(t, 2, configuration)
+	f.assertNoSecrets(t)
+}
