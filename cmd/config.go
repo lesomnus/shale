@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/shale/camera"
 )
 
 // Name is what this app is called, and it is the only place it is written.
@@ -204,7 +205,11 @@ type SourceConfig struct {
 	// Input: `v4l2:/dev/video0`, `rtsp://...`, `file:/path.mp4`, or `push`
 	// for a stream a process on this host writes to `producer.push`
 	// (§38.9).
-	Input string `yaml:"input"`
+	Input           string                 `yaml:"input"`
+	InputCredential *camera.CredentialRef  `yaml:"input_credential,omitempty"`
+	Scope           camera.EnrollmentScope `yaml:"scope,omitempty"`
+	Onvif           *OnvifConfig           `yaml:"onvif,omitempty"`
+	Labels          map[string]string      `yaml:"labels,omitempty"`
 	// Kind of a pushed stream: `mp4` (the default), or `raw` for frames
 	// that are not video, cut at frame boundaries (§38.9).
 	Kind string `yaml:"kind"`
@@ -244,6 +249,19 @@ type SourceConfig struct {
 	Command string `yaml:"command"`
 	// Zone label (§7).
 	Zone string `yaml:"zone"`
+}
+
+// OnvifConfig selects a standard media profile for a camera-derived ceiling.
+type OnvifConfig struct {
+	Endpoint      string                `yaml:"endpoint"`
+	ProfileToken  string                `yaml:"profile_token"`
+	CredentialRef *camera.CredentialRef `yaml:"credential_ref,omitempty"`
+}
+
+// CredentialStoreConfig names a local private provider store, never material.
+type CredentialStoreConfig struct {
+	Directory string `yaml:"directory"`
+	Provider  string `yaml:"provider"`
 }
 
 // IdleConfig is a source's `idle:` (§38.10).
@@ -327,7 +345,9 @@ type ProducerConfig struct {
 	Buffer            string        `yaml:"buffer"`
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	// Ffmpeg is the capture binary; `ffmpeg` on PATH by default.
-	Ffmpeg string `yaml:"ffmpeg"`
+	Ffmpeg      string                `yaml:"ffmpeg"`
+	Ffprobe     string                `yaml:"ffprobe"`
+	Credentials CredentialStoreConfig `yaml:"credentials"`
 	// FragmentDuration bounds a fragment of every source's stream, e.g.
 	// "100ms" (200 ms when unset): the live tee sends whole fragments, so
 	// it is about how far behind the camera a live viewer is (§38.2).

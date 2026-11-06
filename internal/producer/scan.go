@@ -14,6 +14,7 @@ import (
 
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/discovery"
+	"github.com/lesomnus/shale/camera/media"
 )
 
 // Discovery (§38.4): what this host can see, as a configuration skeleton
@@ -277,9 +278,43 @@ func Probe(ctx context.Context, ffmpeg string, sources []SourceConfig, d time.Du
 	Info(string, ...any)
 	Warn(string, ...any)
 }) []ProbeResult {
+	return ProbeWithProvider(ctx, ffmpeg, sources, d, log, nil)
+}
+
+// ProbeWithProvider uses the independent network verifier for RTSP sources and
+// preserves the local capture probe for USB/ALSA/encoder diagnostics.
+func ProbeWithProvider(ctx context.Context, ffmpeg string, sources []SourceConfig, d time.Duration, log interface {
+	Info(string, ...any)
+	Warn(string, ...any)
+}, auth camera.AuthProvider) []ProbeResult {
 	var out []ProbeResult
 	for _, sc := range sources {
 		res := ProbeResult{Alias: sc.Alias}
+		if strings.HasPrefix(strings.ToLower(sc.Input), "rtsp") {
+			scope := sc.Scope
+			if scope.NetworkID == "" {
+				scope.NetworkID = "local"
+			}
+			verifier := media.Verifier{AuthProvider: auth, Ffmpeg: ffmpeg, NetworkScope: scope.NetworkID}
+			profile := camera.MediaProfile{StreamURI: sc.Input, Codec: sc.Format, FPS: float64(sc.Fps)}
+			if sc.Size != "" {
+				fmt.Sscanf(sc.Size, "%dx%d", &profile.Width, &profile.Height)
+			}
+			got, err := verifier.Verify(ctx, camera.MediaRequest{Scope: scope, Profile: profile, CredentialRef: sc.InputCredential, NetworkScope: scope.NetworkID, Duration: d, RequireDecode: true})
+			res.FrameRate = got.ArrivalFPS
+			res.Bitrate = got.ArrivalBitrate
+			if got.Profile.FPS > 0 && got.Profile.GOP > 0 {
+				res.Keyframe = time.Duration(float64(time.Second) * float64(got.Profile.GOP) / got.Profile.FPS)
+			}
+			res.Encoder = got.Profile.Codec
+			res.Cpu = cpuLoad()
+			res.Temp = socTemperature()
+			if err != nil {
+				res.Err = err.Error()
+			}
+			out = append(out, res)
+			continue
+		}
 		if sc.Input == InputPush {
 			// Nothing to run: whatever pushes it is not this process.
 			res.Err = "pushed (" + sc.Kind + "): not probed"

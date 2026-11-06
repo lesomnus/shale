@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera/credential"
 	"github.com/lesomnus/shale/cmd"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
 	"github.com/lesomnus/shale/internal/producer"
@@ -372,6 +373,10 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		HeartbeatInterval: pc.HeartbeatInterval,
 		Log:               slog.Default(),
 	}
+	cfg.Ffprobe = pc.Ffprobe
+	if pc.Credentials.Directory != "" {
+		cfg.AuthProvider = credential.FileProvider{Dir: pc.Credentials.Directory, Name: pc.Credentials.Provider}
+	}
 	cfg.Upload = producer.UploadConfig{ResumeTimeout: pc.ResumeTimeout, RetryAfterCap: pc.RetryAfterCap, PlacementRetries: pc.PlacementRetries}
 	switch strings.ToLower(pc.Mode) {
 	case "buffered":
@@ -409,12 +414,18 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 			Alias: sc.Alias, Name: sc.Name, Input: sc.Input, Kind: sc.Kind, ContentType: sc.ContentType, Format: sc.Format, Size: sc.Size, Fps: sc.Fps,
 			Capture: sc.Capture, Encoder: sc.Encoder, KeyframeInterval: sc.KeyframeInterval, EncoderOptions: sc.EncoderOptions,
 			ExtraInputArgs: sc.ExtraInputArgs, ExtraOutputArgs: sc.ExtraOutputArgs, Command: sc.Command, Zone: sc.Zone,
-			Controls: sc.Controls,
+			Controls:        sc.Controls,
+			InputCredential: sc.InputCredential, Scope: sc.Scope, Labels: sc.Labels,
+		}
+		if sc.Onvif != nil {
+			src.Onvif = &producer.OnvifConfig{Endpoint: sc.Onvif.Endpoint, ProfileToken: sc.Onvif.ProfileToken, CredentialRef: sc.Onvif.CredentialRef}
 		}
 		if sc.Idle != nil {
 			src.Idle = &producer.IdleConfig{DarkAfter: sc.Idle.DarkAfter, Threshold: sc.Idle.Threshold}
 		}
-		if sc.MaxBitrate == "" || strings.EqualFold(sc.MaxBitrate, "auto") {
+		if strings.EqualFold(sc.MaxBitrate, "onvif") {
+			src.MaxBitrateOnvif = true
+		} else if sc.MaxBitrate == "" || strings.EqualFold(sc.MaxBitrate, "auto") {
 			src.MaxBitrateAuto = true
 		} else {
 			v, err := producer.ParseBitrate(sc.MaxBitrate)
