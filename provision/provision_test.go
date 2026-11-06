@@ -387,3 +387,23 @@ func TestUncertainWritePinsOriginalRunUntilItReconciles(t *testing.T) {
 	_, err = e.Execute(context.Background(), newRevision, true)
 	require.NoError(t, err)
 }
+
+func TestReplayOfCompletedOldRunDoesNotRevertNewRevision(t *testing.T) {
+	q, d, _, e, _ := fixture(t)
+	d.ready = true
+	first, err := e.Execute(context.Background(), q, true)
+	require.NoError(t, err)
+	newRevision := q
+	newRevision.ID = "newer-job"
+	newRevision.Desired.Revision = "r2"
+	newRevision.Desired.Codec = "h265"
+	_, err = e.Execute(context.Background(), newRevision, true)
+	require.NoError(t, err)
+	require.Equal(t, "h265", d.profile.Codec)
+	require.Equal(t, 2, d.writes)
+	replayed, err := e.Execute(context.Background(), q, true)
+	require.NoError(t, err)
+	require.Equal(t, first.Version, replayed.Version)
+	require.Equal(t, "h265", d.profile.Codec)
+	require.Equal(t, 2, d.writes)
+}

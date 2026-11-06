@@ -133,7 +133,7 @@ func (s *Store) mutation(ctx context.Context, q provision.Request, complete bool
 		if c.Tenant != q.Scope.TenantID || c.Device != string(q.Device.ID) {
 			continue
 		}
-		if c.Binding != q.BindingID || c.Set != q.Scope.SetID || c.Producer != q.Scope.ProducerID || (c.PendingRun != "" && c.PendingRun != q.ID) {
+		if c.Binding != q.BindingID || c.Set != q.Scope.SetID || c.Producer != q.Scope.ProducerID || c.Network != q.Scope.NetworkID || c.Alias != q.Alias || (c.PendingRun != "" && c.PendingRun != q.ID) {
 			return provision.ErrConflict
 		}
 		if complete {

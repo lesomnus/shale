@@ -197,6 +197,11 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	} else if !sameRequest(q, out.Request) {
 		return out, ErrConflict
 	}
+	// A delayed delivery of an old completed job must not reapply its desired
+	// state over a newer revision. Explicit reconciliation uses a new job ID.
+	if out.Stage == Active {
+		return out, e.Store.CompleteMutation(ctx, q)
+	}
 	// Preserve the exact references journaled before a write, even when the
 	// provider's current default has changed since the previous process.
 	defer func() {
@@ -374,6 +379,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	}{deploymentProfile, sref})
 	dep := Deployment{OperationID: Key(q.Scope.TenantID, q.BindingID, q.Desired.Revision, string(deploymentRevision)), Request: q, Profile: profile, Credential: sref, Previous: out.Binding}
 	if err = e.save(ctx, &out, Deploying, "capture_deploy"); err != nil {
+		return out, err
+	}
+	if err = e.Store.BeginMutation(ctx, q); err != nil {
 		return out, err
 	}
 	binding, err := e.Publisher.Publish(ctx, dep)
