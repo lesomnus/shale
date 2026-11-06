@@ -70,6 +70,9 @@ func (e *RemoteExecutor) Execute(ctx context.Context, q provision.Request, apply
 	if err = json.NewDecoder(io.LimitReader(response.Body, 2<<20)).Decode(&result); err != nil {
 		return provision.Run{}, camera.ErrInvalid
 	}
+	if result.Code == "" && !reflectRequest(result.Run.Request, q) {
+		return provision.Run{}, camera.ErrInvalid
+	}
 	if result.Run.Request.ID != "" && (!reflectRequest(result.Run.Request, q) || result.Run.Request.Scope != q.Scope) {
 		return provision.Run{}, camera.ErrForbidden
 	}

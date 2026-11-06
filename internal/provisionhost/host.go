@@ -360,18 +360,20 @@ func (h *Host) discover(ctx context.Context, scope camera.DiscoveryScope) ([]cam
 	if err != nil {
 		return nil, err
 	}
+	var observations []camera.Observation
 	if network.Worker.URL == "" {
-		return h.options.Discoverer.Discover(ctx, scope)
+		observations, err = h.options.Discoverer.Discover(ctx, scope)
+	} else {
+		client, token, er := connectionHTTP(network.Worker)
+		if er != nil {
+			return nil, er
+		}
+		if transport, ok := client.Transport.(*http.Transport); ok {
+			defer transport.CloseIdleConnections()
+		}
+		remote := &RemoteExecutor{URL: network.Worker.URL, Token: token, HTTPClient: client, AllowLoopbackHTTP: network.Worker.AllowLoopbackHTTP}
+		observations, err = remote.Discover(ctx, scope)
 	}
-	client, token, err := connectionHTTP(network.Worker)
-	if err != nil {
-		return nil, err
-	}
-	if transport, ok := client.Transport.(*http.Transport); ok {
-		defer transport.CloseIdleConnections()
-	}
-	remote := &RemoteExecutor{URL: network.Worker.URL, Token: token, HTTPClient: client, AllowLoopbackHTTP: network.Worker.AllowLoopbackHTTP}
-	observations, err := remote.Discover(ctx, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -592,7 +594,7 @@ func (h *Host) route(w http.ResponseWriter, r *http.Request) {
 			}
 			seeds = append(seeds, seed)
 		}
-		observations, err := h.options.Discoverer.Discover(r.Context(), camera.DiscoveryScope{ID: network.ID, Interface: network.Interface, LocalAddress: network.LocalAddress, Seeds: seeds, Timeout: 2 * time.Second, Multicast: network.Multicast})
+		observations, err := h.discover(r.Context(), camera.DiscoveryScope{ID: network.ID, Interface: network.Interface, LocalAddress: network.LocalAddress, Seeds: seeds, Timeout: 2 * time.Second, Multicast: network.Multicast})
 		if err != nil {
 			fail(w, err)
 			return

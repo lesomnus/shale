@@ -402,3 +402,23 @@ func TestControllerDispatchesDiscoveryToLANWorker(t *testing.T) {
 		t.Fatalf("worker discovery: %v %+v", err, observations)
 	}
 }
+
+func TestRemoteEmptySuccessAndForeignDiscoveryRejected(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "{}") }))
+	defer server.Close()
+	remote := &RemoteExecutor{URL: server.URL, Token: testToken, HTTPClient: server.Client()}
+	if _, err := remote.Execute(context.Background(), testRequest(), true); !errors.Is(err, camera.ErrInvalid) {
+		t.Fatalf("empty worker result accepted: %v", err)
+	}
+	opts := testOptions(t, executorFunc(func(context.Context, provision.Request, bool) (provision.Run, error) { return provision.Run{}, nil }))
+	opts.Discoverer = discovererFunc(func(context.Context, camera.DiscoveryScope) ([]camera.Observation, error) {
+		return []camera.Observation{{Scope: "lan", Device: camera.DeviceHint{Endpoints: []camera.Endpoint{{URL: "http://192.0.2.1/onvif", NetworkScope: "lan"}}}}}, nil
+	})
+	host, err := New(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = host.discover(context.Background(), camera.DiscoveryScope{ID: "lan"}); !errors.Is(err, camera.ErrForbidden) {
+		t.Fatalf("foreign local discovery accepted: %v", err)
+	}
+}
