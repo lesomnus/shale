@@ -92,6 +92,10 @@ type publisher struct {
 	notReady    bool
 }
 
+func (p *publisher) Impacts(q provision.Request) []provision.Impact {
+	return []provision.Impact{{Kind: "producer_restart", ProducerID: q.Scope.ProducerID, RestartMayBeRequired: true, AffectsOtherSources: true}}
+}
+
 func (p *publisher) Publish(_ context.Context, d provision.Deployment) (provision.BindingState, error) {
 	p.last = d
 	if p.binding.DeploymentID == "" {
@@ -194,6 +198,8 @@ func TestInspectPlanExistingDeviceDoesNotMutate(t *testing.T) {
 	r, err := e.Execute(context.Background(), q, false)
 	require.NoError(t, err)
 	require.Equal(t, provision.Planned, r.Stage)
+	require.Len(t, r.Impacts, 1)
+	require.True(t, r.Impacts[0].AffectsOtherSources)
 	require.NotEmpty(t, r.Plan.Changes)
 	require.Zero(t, d.activations)
 	require.Zero(t, d.writes)

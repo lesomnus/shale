@@ -243,3 +243,12 @@ func TestDeploymentBudgetsAudioAndRetainsCameraGOP(t *testing.T) {
 	require.Equal(t, "2128000bps", scalar(n, "max_bitrate"))
 	require.Equal(t, "2s", scalar(n, "keyframe_interval"))
 }
+
+func TestReadOnlyDeploymentImpactDisclosesOtherFeeds(t *testing.T) {
+	p, d, _, restarts := publisherFixture(t)
+	impacts := p.Impacts(d.Request)
+	require.Len(t, impacts, 1)
+	require.Equal(t, d.Request.Scope.ProducerID, impacts[0].ProducerID)
+	require.True(t, impacts[0].RestartMayBeRequired && impacts[0].AffectsOtherSources)
+	require.Zero(t, *restarts)
+}

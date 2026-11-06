@@ -96,7 +96,19 @@ type Run struct {
 	ActivationComplete  bool                  `json:"activation_complete"`
 	Binding             BindingState          `json:"binding"`
 	Events              []Event               `json:"events"`
+	Impacts             []Impact              `json:"impacts,omitempty"`
 }
+
+type Impact struct {
+	Kind                 string `json:"kind"`
+	ProducerID           string `json:"producer_id"`
+	RestartMayBeRequired bool   `json:"restart_may_be_required"`
+	AffectsOtherSources  bool   `json:"affects_other_sources"`
+}
+
+// ImpactReporter discloses adapter-specific operational effects during a
+// read-only plan. Reporting cannot deploy or restart a Producer.
+type ImpactReporter interface{ Impacts(Request) []Impact }
 
 // Store serializes a physical device and reserves its logical assignment across
 // processes. Lock has no expiring lease: an uncertain writer must finish or be
@@ -202,6 +214,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	// state over a newer revision. Explicit reconciliation uses a new job ID.
 	if out.Stage == Active {
 		return out, e.Store.CompleteMutation(ctx, q)
+	}
+	if reporter, ok := e.Publisher.(ImpactReporter); ok {
+		out.Impacts = reporter.Impacts(q)
 	}
 	// Preserve the exact references journaled before a write, even when the
 	// provider's current default has changed since the previous process.

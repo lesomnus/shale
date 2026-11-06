@@ -59,6 +59,10 @@ type FilePublisher struct {
 	Restart    RestartFunc
 }
 
+func (p *FilePublisher) Impacts(q provision.Request) []provision.Impact {
+	return []provision.Impact{{Kind: "producer_restart", ProducerID: q.Scope.ProducerID, RestartMayBeRequired: true, AffectsOtherSources: true}}
+}
+
 type deploymentJournal struct {
 	OperationID       string     `json:"operation_id"`
 	BindingID         string     `json:"binding_id"`
