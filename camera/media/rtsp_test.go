@@ -3,8 +3,10 @@ package media_test
 import (
 	"context"
 	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/camera/credential"
 	"github.com/lesomnus/shale/camera/media"
 	"github.com/lesomnus/shale/internal/cameratest"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -25,5 +27,26 @@ func TestActualRTSPQualification(t *testing.T) {
 	}
 	if !got.Complete || !got.Decoded || got.ArrivalFPS < 7 || got.ArrivalFPS > 15 || got.MaxGap > 500*time.Millisecond || got.Profile.GOP < 8 || got.Profile.GOP > 12 {
 		t.Fatalf("bad network observation: %+v", got)
+	}
+}
+
+func TestActualRTSPAuthenticationReservedPassword(t *testing.T) {
+	requireMediaTools(t)
+	material := camera.CredentialMaterial{Username: "camera", Password: "reserved:@/?% password"}
+	address := cameratest.ServeRTSPAuth(t, material.Username, material.Password)
+	scope := camera.EnrollmentScope{TenantID: "tenant", SetID: "set", ProducerID: "producer", NetworkID: "lan"}
+	provider := credential.FileProvider{Dir: filepath.Join(t.TempDir(), "private")}
+	ref, e := provider.Prepare(context.Background(), scope, camera.AuthStreaming, "stream", material)
+	if e != nil {
+		t.Fatal(e)
+	}
+	req := camera.MediaRequest{Scope: scope, NetworkScope: "lan", Profile: camera.MediaProfile{StreamURI: address, Codec: "h264", Width: 160, Height: 90, FPS: 10}, CredentialRef: &ref, Duration: 2 * time.Second, RequireDecode: true}
+	v := media.Verifier{AuthProvider: provider, NetworkScope: "lan", StartupTimeout: 3 * time.Second}
+	got, e := v.Verify(context.Background(), req)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if !got.Complete || !got.Decoded {
+		t.Fatal("authenticated RTSP stream not independently decoded")
 	}
 }

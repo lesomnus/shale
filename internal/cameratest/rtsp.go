@@ -21,7 +21,14 @@ import (
 	"time"
 )
 
-func ServeRTSP(t testing.TB) string {
+func ServeRTSP(t testing.TB) string { return serveRTSP(t, "", "") }
+
+// ServeRTSPAuth requires actual RTSP Basic authentication. Passwords may contain
+// URI-reserved characters; clients must resolve and encode them correctly.
+func ServeRTSPAuth(t testing.TB, username, password string) string {
+	return serveRTSP(t, username, password)
+}
+func serveRTSP(t testing.TB, username, password string) string {
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "synthetic.h264")
@@ -73,7 +80,7 @@ func ServeRTSP(t testing.TB) string {
 				defer workers.Done()
 				defer c.Close()
 				defer func() { mu.Lock(); delete(connections, c); mu.Unlock() }()
-				serveRTSPConnection(c, listener.Addr().String(), units, sps, pps, done)
+				serveRTSPConnection(c, listener.Addr().String(), units, sps, pps, done, username, password)
 			}()
 		}
 	}()
@@ -106,7 +113,7 @@ func accessUnits(raw []byte) (units [][][]byte, sps, pps []byte) {
 	}
 	return
 }
-func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps []byte, done <-chan struct{}) {
+func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps []byte, done <-chan struct{}, username, password string) {
 	reader := bufio.NewReader(conn)
 	var write sync.Mutex
 	started := false
@@ -143,6 +150,15 @@ func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps 
 			}
 		}
 		cseq := header.Get("Cseq")
+		if username != "" && parts[0] != "OPTIONS" && header.Get("Authorization") != "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)) {
+			write.Lock()
+			_, err := fmt.Fprintf(conn, "RTSP/1.0 401 Unauthorized\r\nCSeq: %s\r\nWWW-Authenticate: Basic realm=\"synthetic-camera\"\r\nContent-Length: 0\r\n\r\n", cseq)
+			write.Unlock()
+			if err != nil {
+				return
+			}
+			continue
+		}
 		switch parts[0] {
 		case "OPTIONS":
 			e = response(cseq, "Public: OPTIONS, DESCRIBE, SETUP, PLAY, TEARDOWN\r\n", "")

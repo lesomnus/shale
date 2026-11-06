@@ -131,7 +131,7 @@ func TestCameraProvisioningRecordsAndResumes(t *testing.T) {
 	require.NoError(t, err)
 	streaming, err := provider.Prepare(ctx, scope, cameramodel.AuthStreaming, "streaming", material)
 	require.NoError(t, err)
-	profile := cameramodel.MediaProfile{Token: "main", Name: "Main", Codec: "h264", Width: 160, Height: 90, FPS: 10, Bitrate: 1_000_000, GOP: 10, StreamURI: cameratest.ServeRTSP(t)}
+	profile := cameramodel.MediaProfile{Token: "main", Name: "Main", Codec: "h264", Width: 160, Height: 90, FPS: 10, Bitrate: 1_000_000, GOP: 10, StreamURI: cameratest.ServeRTSPAuth(t, material.Username, material.Password)}
 	device := cameratest.ServeONVIF(t, profile)
 	device.RequireCredentials(material.Username, material.Password)
 	restarts := 0
@@ -189,7 +189,7 @@ func TestCameraProvisioningRecordsAndResumes(t *testing.T) {
 	require.Equal(t, 1, restarts)
 	// DHCP/endpoint change uses a new desired revision while retaining the same
 	// authenticated physical identity and logical recording history.
-	profile.StreamURI = cameratest.ServeRTSP(t)
+	profile.StreamURI = cameratest.ServeRTSPAuth(t, material.Username, material.Password)
 	device.SetVideo(profile)
 	request.ID = "enroll-main-v2"
 	request.Desired.Revision = "v2"
