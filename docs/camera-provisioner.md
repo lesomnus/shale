@@ -249,6 +249,11 @@ decision, not password guessing, resetting, or silently adopting another Source.
 Restart resumes jobs interrupted while running. A canceled operation must settle
 before resume can start a new writer. Cancellation cannot undo a write already
 accepted by the camera; the next apply re-inspects before deciding what to do.
+If a camera write has an uncertain result, resume that original run before
+submitting a different desired revision: its durable mutation reservation blocks
+another run from overwriting a change whose completion is still unknown. Do not
+clear that reservation to force a new writer; recover access/state and reconcile
+the original intent first.
 
 The service stores normalized state and references, not camera pictures. Keep
 state backups private and maintain the separate recoverable secret store. Use
