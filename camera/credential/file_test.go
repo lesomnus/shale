@@ -163,3 +163,31 @@ func TestDiagnosticRedactionLegacyAndMalformed(t *testing.T) {
 		t.Fatal("sanitized error lost classification or exposed cause")
 	}
 }
+
+func TestPrivateStoreDirectoryRequiredOnRead(t *testing.T) {
+	ctx := context.Background()
+	scope := camera.EnrollmentScope{TenantID: "tenant"}
+	dir := filepath.Join(t.TempDir(), "private")
+	provider := credential.FileProvider{Dir: dir}
+	ref, e := provider.Prepare(ctx, scope, camera.AuthStreaming, "same", camera.CredentialMaterial{Username: "user", Password: "password"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = os.Chmod(dir, 0777); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = provider.Acquire(ctx, camera.AuthRequest{Scope: scope, Purpose: camera.AuthStreaming, ExistingRef: &ref}); !errors.Is(e, camera.ErrAuthRequired) {
+		t.Fatal("credential resolved from replaceable directory")
+	}
+	if e = os.Chmod(dir, 0700); e != nil {
+		t.Fatal(e)
+	}
+	link := filepath.Join(t.TempDir(), "link")
+	if e = os.Symlink(dir, link); e != nil {
+		t.Skip("symlinks unavailable")
+	}
+	provider.Dir = link
+	if _, e = provider.Acquire(ctx, camera.AuthRequest{Scope: scope, Purpose: camera.AuthStreaming, ExistingRef: &ref}); !errors.Is(e, camera.ErrAuthRequired) {
+		t.Fatal("credential resolved through directory symlink")
+	}
+}

@@ -73,6 +73,9 @@ func (p FileProvider) path(ref camera.CredentialRef) (string, error) {
 }
 func (p FileProvider) read(ref camera.CredentialRef) (record, error) {
 	var out record
+	if !privateDirectory(p.Dir) {
+		return out, ErrUnavailable
+	}
 	path, err := p.path(ref)
 	if err != nil {
 		return out, err
@@ -130,8 +133,7 @@ func (p FileProvider) Put(ctx context.Context, ref camera.CredentialRef, materia
 	if err = os.MkdirAll(p.Dir, 0700); err != nil {
 		return errors.New("cannot prepare credential store")
 	}
-	st, err := os.Stat(p.Dir)
-	if err != nil || !st.IsDir() || st.Mode().Perm()&0077 != 0 {
+	if !privateDirectory(p.Dir) {
 		return errors.New("credential store must be a private directory")
 	}
 	if old, err := p.read(ref); err == nil {
@@ -233,7 +235,7 @@ func (l *lease) Use(ctx context.Context, f func(camera.CredentialMaterial) error
 		return err
 	}
 	if l.closed || !time.Now().Before(l.expires) {
-		return ErrUnavailable
+		return camera.ErrExpired
 	}
 	return f(l.material)
 }
@@ -261,7 +263,7 @@ func WithInput(ctx context.Context, provider camera.AuthProvider, scope camera.E
 	}
 	l, err := camera.Acquire(ctx, provider, camera.AuthRequest{Scope: scope, Device: device, Purpose: ref.Purpose, Requirement: camera.AuthRequirement{Access: camera.AccessRead}, ExistingRef: ref})
 	if err != nil {
-		return ErrUnavailable
+		return accessError(err)
 	}
 	defer l.Close()
 	if l.Ref() != *ref {
@@ -311,4 +313,17 @@ func SanitizeError(err error, s Sanitizer) error {
 		return nil
 	}
 	return sanitizedError{cause: err, message: s.Redact(err.Error())}
+}
+
+func privateDirectory(path string) bool {
+	st, err := os.Lstat(path)
+	return err == nil && st.IsDir() && st.Mode().Perm()&0077 == 0
+}
+func accessError(err error) error {
+	for _, code := range []error{camera.ErrForbidden, camera.ErrNeedsUserInput, camera.ErrExpired, context.Canceled, context.DeadlineExceeded} {
+		if errors.Is(err, code) {
+			return code
+		}
+	}
+	return ErrUnavailable
 }
