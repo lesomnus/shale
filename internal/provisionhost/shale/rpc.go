@@ -140,7 +140,7 @@ func (a *RPCAuthority) Observe(ctx context.Context, d provision.Deployment, b pr
 		// The RPC transport can observe its deadline before the local context
 		// timer publishes Err(). Continue bounded readiness polling instead of
 		// exposing a timing-dependent transport error to the workflow.
-		if errors.Is(err, context.DeadlineExceeded) || status.Code(err) == codes.DeadlineExceeded {
+		if retryableReadiness(err) {
 			err = provision.ErrNotReady
 		}
 		if !errors.Is(err, provision.ErrNotReady) {
@@ -153,6 +153,24 @@ func (a *RPCAuthority) Observe(ctx context.Context, d provision.Deployment, b pr
 		case <-tick.C:
 		}
 	}
+}
+
+func retryableReadiness(err error) bool {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	if _, ok := status.FromError(err); !ok {
+		return false
+	}
+	// These operations only observe state (Live also issues a short-lived
+	// token). A temporary CP outage, busy database or server-side cancellation
+	// must not discard a deployed binding. Ownership/policy/validation failures
+	// are returned immediately and never treated as readiness.
+	switch status.Code(err) {
+	case codes.DeadlineExceeded, codes.Unavailable, codes.Aborted, codes.ResourceExhausted, codes.Unknown, codes.Canceled:
+		return true
+	}
+	return false
 }
 
 func contextError(ctx context.Context) error {

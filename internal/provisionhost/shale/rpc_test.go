@@ -3,6 +3,7 @@ package shale
 import (
 	"context"
 	"net"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -12,7 +13,9 @@ import (
 	"github.com/lesomnus/shale/provision"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -35,10 +38,12 @@ func (s *setRPC) Get(context.Context, *api.SetGetRequest) (*api.Set, error) { re
 
 type sourceRPC struct {
 	api.UnimplementedSourceServiceServer
-	rows          []*api.Source
-	live          *api.LiveSource
-	tenant        []byte
-	filterChecked bool
+	rows             []*api.Source
+	live             *api.LiveSource
+	tenant           []byte
+	filterChecked    bool
+	liveFailureCount atomic.Int32
+	liveFailureCode  codes.Code
 }
 
 func (s *sourceRPC) List(_ context.Context, q *api.SourceListRequest) (*api.SourceListResponse, error) {
@@ -46,6 +51,9 @@ func (s *sourceRPC) List(_ context.Context, q *api.SourceListRequest) (*api.Sour
 	return api.SourceListResponse_builder{Items: s.rows}.Build(), nil
 }
 func (s *sourceRPC) Live(context.Context, *api.SourceLiveRequest) (*api.SourceLiveResponse, error) {
+	if s.liveFailureCount.Add(-1) >= 0 {
+		return nil, status.Error(s.liveFailureCode, "temporary control plane failure")
+	}
 	return api.SourceLiveResponse_builder{Source: s.live}.Build(), nil
 }
 
@@ -163,4 +171,25 @@ type lateDeadlineContext struct{ context.Context }
 func (lateDeadlineContext) Deadline() (time.Time, bool) { return time.Now().Add(-time.Second), true }
 func TestObserveHonorsElapsedDeadlineBeforeContextTimer(t *testing.T) {
 	require.ErrorIs(t, contextError(lateDeadlineContext{context.Background()}), context.DeadlineExceeded)
+}
+
+func TestReadinessRetriesTransientCPFailureWithoutWeakeningOwnership(t *testing.T) {
+	for _, code := range []codes.Code{codes.Unavailable, codes.Aborted, codes.Unknown, codes.Canceled, codes.ResourceExhausted} {
+		t.Run(code.String(), func(t *testing.T) {
+			f := newRPCFixture(t)
+			f.authority.ObserveTimeout = time.Second
+			f.source.liveFailureCode = code
+			f.source.liveFailureCount.Store(1)
+			b, err := f.authority.Observe(context.Background(), f.dep, f.binding)
+			require.NoError(t, err)
+			require.True(t, b.Ingest && b.Live && b.Committed)
+		})
+	}
+	f := newRPCFixture(t)
+	f.source.liveFailureCode = codes.PermissionDenied
+	f.source.liveFailureCount.Store(1)
+	_, err := f.authority.Observe(context.Background(), f.dep, f.binding)
+	require.Equal(t, codes.PermissionDenied, status.Code(err))
+	require.False(t, retryableReadiness(camera.ErrForbidden))
+	require.False(t, retryableReadiness(provision.ErrConflict))
 }
