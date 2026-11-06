@@ -1,7 +1,8 @@
 # Camera provisioning as a reusable control-plane module
 
-Status: proposed design, 2026-11-06. No provisioning implementation or device
-changes are included. Code references use main `26d8e286`.
+Status: implemented on the camera-provisioning feature branch, 2026-11-06.
+The original code constraints below describe base main `26d8e286`; the new
+adapters address them without changing the installed production cameras.
 
 Implementation tracking: [epic #177](https://github.com/lesomnus/shale/issues/177),
 with ten new tasks (#178–#187) and the existing ONVIF negotiation task (#128).
@@ -39,14 +40,14 @@ service cannot assume that WS-Discovery multicast crosses routers.
 
 ## Package boundaries
 
-These are proposed package names, not implemented APIs:
+The reusable packages and process adapters are:
 
 | Package or adapter | Responsibility |
 | --- | --- |
 | `camera` | Device identity, endpoints, observations, capabilities, driver facets, authentication contracts |
 | `camera/discovery` | WS-Discovery and explicitly supplied addresses; observations only |
 | `camera/onvif` | Standard device/media operations, with Media2 support |
-| `camera/vendor/tplink` | TP-Link activation/login extensions and model/firmware-specific corrections |
+| `camera/vendors/tplink` | TP-Link first-time activation and model/firmware-specific corrections |
 | `camera/media` | Bounded RTSP inspection and decoding; actual codec/FPS/GOP/continuity facts |
 | `provision` | Plan, apply, verify, resume and reconcile; injected state/auth/driver/publisher dependencies |
 | `internal/provisionhost` | Payday API/CLI hosting, persistence, worker coordination and policy |
