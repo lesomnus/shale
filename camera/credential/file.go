@@ -140,7 +140,7 @@ func (p FileProvider) Put(ctx context.Context, ref camera.CredentialRef, materia
 		if old.Material != storeMaterial(material) {
 			return ErrIntentConflict
 		}
-		return nil
+		return syncCredentialDirectories(p.Dir)
 	}
 	b, err := json.Marshal(record{Ref: ref, Material: storeMaterial(material), Access: purposeAccess(ref.Purpose)})
 	if err != nil {
@@ -176,15 +176,7 @@ func (p FileProvider) Put(ctx context.Context, ref camera.CredentialRef, materia
 			return ErrIntentConflict
 		}
 	}
-	d, err := os.Open(p.Dir)
-	if err != nil {
-		return errors.New("cannot sync credential store")
-	}
-	defer d.Close()
-	if err = d.Sync(); err != nil {
-		return errors.New("cannot sync credential store")
-	}
-	return nil
+	return syncCredentialDirectories(p.Dir)
 }
 func (p FileProvider) Acquire(ctx context.Context, request camera.AuthRequest) (camera.CredentialLease, error) {
 	if err := ctx.Err(); err != nil {
@@ -236,6 +228,9 @@ func (l *lease) Use(ctx context.Context, f func(camera.CredentialMaterial) error
 	}
 	if l.closed || !time.Now().Before(l.expires) {
 		return camera.ErrExpired
+	}
+	if f == nil {
+		return camera.ErrInvalid
 	}
 	return f(l.material)
 }
@@ -326,4 +321,31 @@ func accessError(err error) error {
 		}
 	}
 	return ErrUnavailable
+}
+
+// Sync the store and its parent chain. The parent entry for a newly created
+// provider directory must survive power loss as well as the credential file's
+// entry. Also do this when another preparer already published the same intent;
+// its rename/link may not have reached its directory fsync yet.
+func syncCredentialDirectories(path string) error {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return errors.New("cannot sync credential store")
+	}
+	for {
+		dir, err := os.Open(absolute)
+		if err != nil {
+			return errors.New("cannot sync credential store")
+		}
+		err = dir.Sync()
+		closeErr := dir.Close()
+		if err != nil || closeErr != nil {
+			return errors.New("cannot sync credential store")
+		}
+		parent := filepath.Dir(absolute)
+		if parent == absolute {
+			return nil
+		}
+		absolute = parent
+	}
 }

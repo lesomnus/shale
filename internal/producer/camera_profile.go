@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -93,7 +94,7 @@ func (p *Producer) onvifProfile(ctx context.Context, source SourceConfig) (camer
 		if err != nil || u.Hostname() == "" {
 			return result, camera.ErrInvalid
 		}
-		endpoint = "http://" + u.Hostname() + "/onvif/device_service"
+		endpoint = (&url.URL{Scheme: "http", Host: net.JoinHostPort(u.Hostname(), "80"), Path: "/onvif/device_service"}).String()
 	}
 	if u, err := url.Parse(endpoint); err != nil || u.User != nil {
 		return result, camera.ErrInvalid
