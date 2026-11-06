@@ -108,7 +108,24 @@ func (f *activationFixture) serve(w http.ResponseWriter, r *http.Request) {
 }
 
 func testHint() camera.DeviceHint {
-	return camera.DeviceHint{Manufacturer: "TP-Link", Model: "EasyCam C420", Hardware: "1.0", Firmware: "1.2.2 Build260624 Rel.39352n"}
+	return camera.DeviceHint{Manufacturer: "TP-Link", Model: "EasyCam C420", Hardware: "1.0", Firmware: "1.2.2 Build 260624 Rel.39352n"}
+}
+
+func TestObservedFirmwareSpelling(t *testing.T) {
+	for _, firmware := range []string{"1.2.2 Build 260624 Rel.39352n", "1.2.2 Build260624 Rel.39352n", "1.2.2 Build 260624", "1.2.2 Build260624"} {
+		hint := testHint()
+		hint.Firmware = firmware
+		if !Match(hint) {
+			t.Errorf("supported C420 firmware %q was not recognized", firmware)
+		}
+	}
+	for _, firmware := range []string{"1.2.2 Build 260625 Rel.39352n", "1.2.3 Build 260624 Rel.39352n", "1.2.2 Build 260624-extra", "1.2.2 Build 2606240", "unknown"} {
+		hint := testHint()
+		hint.Firmware = firmware
+		if Match(hint) {
+			t.Errorf("unverified C420 firmware %q was recognized", firmware)
+		}
+	}
 }
 func initialLease(recoverable bool) camera.CredentialLease {
 	return camera.NewCredentialLease(camera.CredentialRef{Provider: "vault", ID: "admin-c420", Version: "exact-1", Scope: camera.EnrollmentScope{TenantID: "a"}, Purpose: camera.AuthInitialAdmin, Recoverable: recoverable}, camera.CredentialMaterial{Username: "admin", Password: "test reserved +:/?# password"}, time.Now().Add(time.Minute))

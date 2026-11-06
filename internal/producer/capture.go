@@ -368,6 +368,9 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		}
 	}
 	bps := strconv.FormatInt(c.audioBitrate(), 10)
+	// Resample only encoded Opus to its 48 kHz clock. With an 8 kHz camera
+	// input FFmpeg otherwise writes a 48 kHz MP4 sample entry but retains 8 kHz
+	// in dOps and the track timescale, which browsers reject during parsing.
 	switch {
 	case silent:
 		args = append(args, "-an")
@@ -376,7 +379,7 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		if mic || demo {
 			args = append(args, "-map", "0:v:0", "-map", "1:a:0")
 		}
-		args = append(args, "-c:a", "libopus", "-b:a", bps)
+		args = append(args, "-c:a", "libopus", "-b:a", bps, "-ar:a", "48000")
 	default:
 		// Two tracks (§38.7): the archive's, which is the camera's audio
 		// as it sends it or AAC when `codec` or a microphone says so, and
@@ -396,7 +399,7 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 			// `copy`, or nothing said: the camera's audio as it sends it.
 			args = append(args, "-c:a:0", "copy")
 		}
-		args = append(args, "-c:a:1", "libopus", "-b:a:1", bps)
+		args = append(args, "-c:a:1", "libopus", "-b:a:1", bps, "-ar:a:1", "48000")
 	}
 	for k, v := range c.EncoderOptions {
 		args = append(args, "-"+k, v)
@@ -1008,7 +1011,7 @@ func LiveArgs(bitrate int64, frag time.Duration) []string {
 		"-probesize", "262144", "-analyzeduration", "500000",
 		"-f", "mp4", "-i", "pipe:0",
 		"-map", "0:v:0", "-map", "0:a:0?",
-		"-c:v", "copy", "-c:a", "libopus", "-b:a", strconv.FormatInt(bitrate, 10),
+		"-c:v", "copy", "-c:a", "libopus", "-b:a", strconv.FormatInt(bitrate, 10), "-ar:a", "48000",
 		"-flush_packets", "1",
 	}
 	args = append(args, MuxArgs(frag)...)

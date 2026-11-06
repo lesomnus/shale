@@ -240,6 +240,11 @@ producer:
 | output (fixed) | `-f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration <fragment_duration in µs> -`: fragmented MP4, every keyframe a fragment and none longer than `fragment_duration`, 200 ms by default ([§38.1](#381-inputs)). `h264_v4l2m2m` writes `-f mpegts -` instead, into a second ffmpeg (below) |
 | `controls` | not ffmpeg: V4L2 controls set on the device through the ioctls `v4l2-ctl -c` uses, by v4l2-ctl's names, before every start of the capture, since a re-plugged camera forgets them. A control the device does not have, or a value outside its range, is a warning in the log and the rest are set |
 
+Every encoded Opus output explicitly resamples to 48 kHz, including the live
+helper. An 8 kHz G.711 input can otherwise produce a 48 kHz MP4 sample entry
+with 8 kHz in `dOps`, a mismatch that
+[Chromium rejects](https://github.com/chromium/chromium/blob/main/media/formats/mp4/box_definitions.cc).
+
 The producer records which encoder `auto` chose and shows it in its
 heartbeat ([§38.6](#386-health-and-heartbeats)).
 
