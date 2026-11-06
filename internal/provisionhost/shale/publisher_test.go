@@ -226,3 +226,20 @@ func TestFractionalFPSDoesNotBecomeTruncatedCaptureMetadata(t *testing.T) {
 	require.Nil(t, mapping(sources.Content[1], "fps"))
 	require.Equal(t, "copy", scalar(sources.Content[1], "encoder"))
 }
+
+func TestUnsupportedCopyCodecNeverRestartsProducer(t *testing.T) {
+	p, d, _, restarts := publisherFixture(t)
+	d.Profile.Codec = "mjpeg"
+	_, err := p.Publish(context.Background(), d)
+	require.ErrorIs(t, err, camera.ErrUnsupported)
+	require.Zero(t, *restarts)
+}
+
+func TestDeploymentBudgetsAudioAndRetainsCameraGOP(t *testing.T) {
+	_, d, _, _ := publisherFixture(t)
+	d.Profile.GOP = 60
+	n, err := sourceNode(d, d.Previous.Alias)
+	require.NoError(t, err)
+	require.Equal(t, "2128000bps", scalar(n, "max_bitrate"))
+	require.Equal(t, "2s", scalar(n, "keyframe_interval"))
+}

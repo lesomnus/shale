@@ -12,10 +12,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/credential"
+	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/provision"
 	"github.com/lesomnus/shale/provision/filestore"
 	"go.yaml.in/yaml/v3"
@@ -331,18 +333,36 @@ func sourceAt(sources *yaml.Node, alias, binding, device string) (int, *yaml.Nod
 }
 func sourceNode(d provision.Deployment, alias string) (*yaml.Node, error) {
 	p := d.Profile
+	switch strings.ToLower(p.Codec) {
+	case "h264", "avc":
+		p.Codec = "h264"
+	case "h265", "hevc":
+		p.Codec = "h265"
+	default:
+		return nil, camera.ErrUnsupported
+	}
 	if p.StreamURI == "" || p.StreamURI != camera.SanitizeURI(p.StreamURI) {
 		return nil, camera.ErrInvalid
 	}
-	m := map[string]any{"alias": alias, "name": d.Request.Name, "input": p.StreamURI, "input_credential": d.Credential, "scope": d.Request.Scope, "labels": map[string]string{BindingLabel: d.Request.BindingID, DeviceLabel: string(d.Request.Device.ID)}, "format": p.Codec, "size": fmt.Sprintf("%dx%d", p.Width, p.Height), "encoder": "copy", "max_bitrate": fmt.Sprintf("%dbps", p.Bitrate)}
+	if p.Width <= 0 || p.Height <= 0 || p.FPS <= 0 {
+		return nil, camera.ErrInvalid
+	}
+	ceiling := p.Bitrate
+	if ceiling <= 0 {
+		ceiling = producer.StartingCeiling(fmt.Sprintf("%dx%d", p.Width, p.Height), int(math.Round(p.FPS)), p.Codec)
+	}
+	// ONVIF's bitrate describes video; Shale also budgets the default archive
+	// audio and live Opus track, as the Producer's ONVIF negotiation does.
+	ceiling += 2 * producer.DefaultAudioBitrate
+	m := map[string]any{"alias": alias, "name": d.Request.Name, "input": p.StreamURI, "input_credential": d.Credential, "scope": d.Request.Scope, "labels": map[string]string{BindingLabel: d.Request.BindingID, DeviceLabel: string(d.Request.Device.ID)}, "format": p.Codec, "size": fmt.Sprintf("%dx%d", p.Width, p.Height), "encoder": "copy", "max_bitrate": fmt.Sprintf("%dbps", ceiling)}
 	// The legacy Producer field is integer-only. Copy capture preserves the
 	// source cadence without it; retain the exact fractional FPS in Verified,
 	// rather than silently truncating it in capture metadata.
 	if p.FPS > 0 && math.Trunc(p.FPS) == p.FPS {
 		m["fps"] = int(p.FPS)
 	}
-	if p.Bitrate <= 0 {
-		m["max_bitrate"] = "auto"
+	if p.GOP > 0 {
+		m["keyframe_interval"] = (time.Duration(float64(time.Second) * float64(p.GOP) / p.FPS)).String()
 	}
 	var node yaml.Node
 	if err := node.Encode(m); err != nil {

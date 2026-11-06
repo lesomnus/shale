@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -371,13 +372,31 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	}
 	verified.Profile.StreamURI = camera.SanitizeURI(verified.Profile.StreamURI)
 	out.Verified = &verified
-	deploymentProfile := profile
+	// Some standard profiles omit rate-control facts. Complete the capture
+	// specification from independent observations without rewriting Current.
+	captureProfile := profile
+	if captureProfile.Codec == "" {
+		captureProfile.Codec = verified.Profile.Codec
+	}
+	if captureProfile.Width == 0 {
+		captureProfile.Width = verified.Profile.Width
+	}
+	if captureProfile.Height == 0 {
+		captureProfile.Height = verified.Profile.Height
+	}
+	if captureProfile.FPS == 0 {
+		captureProfile.FPS = verified.Profile.FPS
+	}
+	if captureProfile.GOP == 0 {
+		captureProfile.GOP = verified.Profile.GOP
+	}
+	deploymentProfile := captureProfile
 	deploymentProfile.Evidence = nil
 	deploymentRevision, _ := json.Marshal(struct {
 		Profile    camera.MediaProfile
 		Credential camera.CredentialRef
 	}{deploymentProfile, sref})
-	dep := Deployment{OperationID: Key(q.Scope.TenantID, q.BindingID, q.Desired.Revision, string(deploymentRevision)), Request: q, Profile: profile, Credential: sref, Previous: out.Binding}
+	dep := Deployment{OperationID: Key(q.Scope.TenantID, q.BindingID, q.Desired.Revision, string(deploymentRevision)), Request: q, Profile: captureProfile, Credential: sref, Previous: out.Binding}
 	if err = e.save(ctx, &out, Deploying, "capture_deploy"); err != nil {
 		return out, err
 	}
@@ -434,6 +453,8 @@ func profileFor(s camera.CurrentState, token string) (camera.MediaProfile, bool)
 	return camera.MediaProfile{}, false
 }
 func cleanInspection(i camera.Inspection) camera.Inspection {
+	i.Device.Endpoints = slices.Clone(i.Device.Endpoints)
+	i.Current.Profiles = slices.Clone(i.Current.Profiles)
 	for n := range i.Device.Endpoints {
 		i.Device.Endpoints[n].URL = camera.SanitizeURI(i.Device.Endpoints[n].URL)
 	}

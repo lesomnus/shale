@@ -53,6 +53,8 @@ func (c *Client) Inspect(ctx context.Context, device camera.DeviceHint, lease ca
 }
 
 func (c *Client) inspect(ctx context.Context, device camera.DeviceHint, material camera.CredentialMaterial) (snapshot, error) {
+	device.Endpoints = slices.Clone(device.Endpoints)
+	device.Evidence = slices.Clone(device.Evidence)
 	s := snapshot{configs: map[string]*node{}, uses: map[string]int{}}
 	base, err := deviceEndpoint(device)
 	if err != nil {

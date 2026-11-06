@@ -86,12 +86,14 @@ func (v verifier) Verify(_ context.Context, q camera.MediaRequest) (camera.Verif
 
 type publisher struct {
 	binding     provision.BindingState
+	last        provision.Deployment
 	deploys     int
 	failPublish bool
 	notReady    bool
 }
 
 func (p *publisher) Publish(_ context.Context, d provision.Deployment) (provision.BindingState, error) {
+	p.last = d
 	if p.binding.DeploymentID == "" {
 		p.deploys++
 		p.binding = provision.BindingState{BindingID: d.Request.BindingID, Alias: d.Previous.Alias, DeploymentID: d.OperationID, DeployedAt: time.Now().UTC()}
@@ -406,4 +408,33 @@ func TestReplayOfCompletedOldRunDoesNotRevertNewRevision(t *testing.T) {
 	require.Equal(t, first.Version, replayed.Version)
 	require.Equal(t, "h265", d.profile.Codec)
 	require.Equal(t, 2, d.writes)
+}
+
+type observedMissingFacts struct{}
+
+func (observedMissingFacts) Verify(_ context.Context, q camera.MediaRequest) (camera.VerifiedState, error) {
+	p := q.Profile
+	p.Width = 1280
+	p.Height = 720
+	p.FPS = 30
+	p.Bitrate = 800_000
+	p.GOP = 30
+	return camera.VerifiedState{Profile: p, Complete: true, Decoded: true, Duration: q.Duration, ObservedAt: time.Now().UTC(), Firmware: "v1", ProfileRevision: q.Desired.Revision}, nil
+}
+func TestMissingAdvertisedFactsUseVerifiedCaptureWithoutRewritingCurrent(t *testing.T) {
+	q, d, p, e, _ := fixture(t)
+	d.ready = true
+	d.profile.Width = 0
+	d.profile.Height = 0
+	d.profile.FPS = 0
+	d.profile.GOP = 0
+	d.profile.Bitrate = 0
+	e.Verifier = observedMissingFacts{}
+	r, err := e.Execute(context.Background(), q, true)
+	require.NoError(t, err)
+	require.Equal(t, provision.Active, r.Stage)
+	require.Zero(t, r.Inspection.Current.Profiles[0].Width)
+	require.Equal(t, 1280, p.last.Profile.Width)
+	require.Equal(t, float64(30), p.last.Profile.FPS)
+	require.Equal(t, 30, p.last.Profile.GOP)
 }
