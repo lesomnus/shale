@@ -76,6 +76,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdServe(c, l),
 			NewCmdLogin(c),
 			NewCmdLive(c),
+			NewCmdCamera(),
 		},
 
 		Handler: xli.Chain(cfg.Load(l, version), applyClientFlags(c), xli.RequireSubcommand()),
