@@ -85,6 +85,7 @@ jobs:
           e2e+='|Live|LiveAlways|LiveNack|LivePacing|LiveWall'
           e2e+='|RelayRestart|ControlPlaneDownWhileWatching'
           e2e+='|DelegatedViewing|DelegatedViewingEveryPerson'
+          e2e+='|CameraProvisioningRecordsAndResumes|CameraDerivedCeilingsRecord'
           go test -race -count=1 -timeout 20m -run "^Test($e2e)\$" ./internal/e2e/
   package:
     runs-on: ubuntu-latest

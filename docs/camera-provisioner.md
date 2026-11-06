@@ -166,6 +166,9 @@ shale camera resume --server https://provisioner.example --token-file /etc/shale
 Submitting an identical job is idempotent. Approve a previously submitted plan
 using `resume --apply`; resubmitting the same job ID with a different mode/request
 is a conflict. To submit a fresh apply job directly, use `camera apply`.
+Replaying a completed job returns its saved result; it does not reapply old
+settings over a newer revision. Use a new job ID for an explicit reconciliation
+or current health qualification.
 
 `Active` requires read-back, independent bounded RTSP decoding, successful
 deployment, normal Source registration, live video and a new complete committed
