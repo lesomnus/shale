@@ -12,6 +12,8 @@ import (
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/provision"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // RPCAuthority uses a configured scoped service/operator identity, never an
@@ -129,11 +131,17 @@ func (a *RPCAuthority) Observe(ctx context.Context, d provision.Deployment, b pr
 		if err == nil {
 			return out, nil
 		}
-		if parent.Err() != nil {
-			return out, parent.Err()
+		if cause := contextError(parent); cause != nil {
+			return out, cause
 		}
-		if ctx.Err() != nil {
+		if contextError(ctx) != nil {
 			return out, provision.ErrNotReady
+		}
+		// The RPC transport can observe its deadline before the local context
+		// timer publishes Err(). Continue bounded readiness polling instead of
+		// exposing a timing-dependent transport error to the workflow.
+		if errors.Is(err, context.DeadlineExceeded) || status.Code(err) == codes.DeadlineExceeded {
+			err = provision.ErrNotReady
 		}
 		if !errors.Is(err, provision.ErrNotReady) {
 			return out, err
@@ -145,6 +153,16 @@ func (a *RPCAuthority) Observe(ctx context.Context, d provision.Deployment, b pr
 		case <-tick.C:
 		}
 	}
+}
+
+func contextError(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
+		return context.DeadlineExceeded
+	}
+	return nil
 }
 func (a *RPCAuthority) observeOnce(ctx context.Context, d provision.Deployment, b provision.BindingState) (provision.BindingState, error) {
 	p, err := a.assignment(ctx, d.Request.Scope)

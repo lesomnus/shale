@@ -157,3 +157,10 @@ func TestRPCAuthorityMetadataOldOrIncompleteRecordingNotReady(t *testing.T) {
 		})
 	}
 }
+
+type lateDeadlineContext struct{ context.Context }
+
+func (lateDeadlineContext) Deadline() (time.Time, bool) { return time.Now().Add(-time.Second), true }
+func TestObserveHonorsElapsedDeadlineBeforeContextTimer(t *testing.T) {
+	require.ErrorIs(t, contextError(lateDeadlineContext{context.Background()}), context.DeadlineExceeded)
+}
