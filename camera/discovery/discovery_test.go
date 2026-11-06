@@ -100,6 +100,31 @@ func TestDiscoveryParentDeadlineAndInvalidInterface(t *testing.T) {
 	}
 }
 
+// Model the timer publication race deterministically: the socket observes the
+// elapsed deadline while the parent has not yet published Err/closed Done.
+type laggingDeadlineContext struct {
+	context.Context
+	deadline time.Time
+}
+
+func (c laggingDeadlineContext) Deadline() (time.Time, bool) { return c.deadline, true }
+
+func TestDiscoveryElapsedParentDeadlineBeforeContextErr(t *testing.T) {
+	ctx := laggingDeadlineContext{Context: context.Background(), deadline: time.Now().Add(-time.Millisecond)}
+	if ctx.Err() != nil {
+		t.Fatal("fixture must model unpublished cancellation")
+	}
+	server, err := net.ListenPacket("udp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
+	_, err = (discovery.Discoverer{Target: server.LocalAddr()}).Discover(ctx, camera.DiscoveryScope{ID: "lan", LocalAddress: "127.0.0.1", Multicast: true, Timeout: time.Second})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("elapsed parent deadline swallowed before Err: %v", err)
+	}
+}
+
 func TestIdentityRequiresClaimAndPreservesAcrossDHCP(t *testing.T) {
 	var inventory discovery.Inventory
 	hint := camera.DeviceHint{Manufacturer: "vendor", Model: "model", Serial: "duplicated", DiscoveryID: "uuid-one", Endpoints: []camera.Endpoint{{URL: "http://192.0.2.1/onvif"}}, Evidence: []camera.Evidence{{Source: "authenticated_device", Authenticated: true}}}

@@ -101,8 +101,11 @@ func (d Discoverer) Discover(ctx context.Context, scope camera.DiscoveryScope) (
 		conn.SetDeadline(deadline)
 	}
 	if _, err = conn.WriteTo([]byte(probe), dst); err != nil {
+		if parentErr := parentResult(parent); parentErr != nil {
+			return sorted(observations), parentErr
+		}
 		if ctx.Err() != nil {
-			return sorted(observations), parent.Err()
+			return sorted(observations), nil
 		}
 		return nil, fmt.Errorf("camera discovery probe: %w", err)
 	}
@@ -110,8 +113,8 @@ func (d Discoverer) Discover(ctx context.Context, scope camera.DiscoveryScope) (
 	for {
 		n, from, readErr := conn.ReadFrom(buf)
 		if readErr != nil {
-			if parent.Err() != nil {
-				return sorted(observations), parent.Err()
+			if parentErr := parentResult(parent); parentErr != nil {
+				return sorted(observations), parentErr
 			}
 			if ctx.Err() != nil {
 				if errors.Is(ctx.Err(), context.DeadlineExceeded) {
@@ -157,6 +160,20 @@ func (d Discoverer) Discover(ctx context.Context, scope camera.DiscoveryScope) (
 			observations[key] = camera.Observation{Scope: scope.ID, ObservedAt: at, Device: hint}
 		}
 	}
+}
+
+// The socket deadline and a context's timer run independently. A UDP timeout
+// can arrive before the context timer goroutine publishes Err, especially under
+// load. The parent's elapsed deadline is still cancellation, not successful
+// completion of this discoverer's own observation window.
+func parentResult(parent context.Context) error {
+	if err := parent.Err(); err != nil {
+		return err
+	}
+	if deadline, ok := parent.Deadline(); ok && !time.Now().Before(deadline) {
+		return context.DeadlineExceeded
+	}
+	return nil
 }
 
 // Match contains only WS-Discovery fields. Neither a UUID nor the XAddr is an
