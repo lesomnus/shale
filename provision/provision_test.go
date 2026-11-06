@@ -366,3 +366,24 @@ func TestCompleteFlagCannotOverrideActualCodecMismatch(t *testing.T) {
 	require.ErrorIs(t, err, provision.ErrNotReady)
 	require.Zero(t, p.deploys)
 }
+
+func TestUncertainWritePinsOriginalRunUntilItReconciles(t *testing.T) {
+	q, d, _, e, dir := fixture(t)
+	d.ready = true
+	d.failApply = true
+	_, err := e.Execute(context.Background(), q, true)
+	require.Error(t, err)
+	reopened, err := filestore.Open(dir)
+	require.NoError(t, err)
+	e.Store = reopened
+	newRevision := q
+	newRevision.ID = "new-revision"
+	newRevision.Desired.Revision = "r2"
+	_, err = e.Execute(context.Background(), newRevision, true)
+	require.ErrorIs(t, err, provision.ErrConflict)
+	_, err = e.Execute(context.Background(), q, true)
+	require.NoError(t, err)
+	require.Equal(t, 1, d.writes)
+	_, err = e.Execute(context.Background(), newRevision, true)
+	require.NoError(t, err)
+}

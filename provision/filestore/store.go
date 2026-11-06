@@ -50,15 +50,16 @@ func (s *Store) Lock(ctx context.Context, key string) (func() error, error) {
 }
 
 type claim struct {
-	Tenant   string `json:"tenant"`
-	Device   string `json:"device"`
-	Binding  string `json:"binding"`
-	Set      string `json:"set"`
-	Producer string `json:"producer"`
-	Network  string `json:"network"`
-	Alias    string `json:"alias"`
-	Serial   string `json:"serial,omitempty"`
-	Hardware string `json:"hardware,omitempty"`
+	Tenant     string `json:"tenant"`
+	Device     string `json:"device"`
+	Binding    string `json:"binding"`
+	Set        string `json:"set"`
+	Producer   string `json:"producer"`
+	Network    string `json:"network"`
+	Alias      string `json:"alias"`
+	Serial     string `json:"serial,omitempty"`
+	Hardware   string `json:"hardware,omitempty"`
+	PendingRun string `json:"pending_run,omitempty"`
 }
 
 func (s *Store) Reserve(ctx context.Context, q provision.Request) error {
@@ -82,6 +83,9 @@ func (s *Store) Reserve(ctx context.Context, q provision.Request) error {
 			continue
 		}
 		if v.Device == c.Device || v.Binding == c.Binding {
+			if v.PendingRun != "" && v.PendingRun != q.ID {
+				return provision.ErrConflict
+			}
 			if v.Device != c.Device || v.Binding != c.Binding || v.Set != c.Set || v.Producer != c.Producer || v.Network != c.Network || v.Alias != c.Alias {
 				return provision.ErrConflict
 			}
@@ -94,6 +98,56 @@ func (s *Store) Reserve(ctx context.Context, q provision.Request) error {
 		return err
 	}
 	return WriteAtomic(path, b, 0600)
+}
+
+// BeginMutation pins an in-flight physical write to its original run. An HTTP
+// timeout does not mean the camera stopped processing it. Another revision may
+// not overtake that run merely because its process/file lock was released.
+func (s *Store) BeginMutation(ctx context.Context, q provision.Request) error {
+	return s.mutation(ctx, q, false)
+}
+
+// CompleteMutation is called after the owning run has reconciled its requested
+// state, independently qualified media and observed committed capture. It is
+// never called just because a worker lease/request expired.
+func (s *Store) CompleteMutation(ctx context.Context, q provision.Request) error {
+	return s.mutation(ctx, q, true)
+}
+func (s *Store) mutation(ctx context.Context, q provision.Request, complete bool) error {
+	u, err := s.Lock(ctx, "inventory")
+	if err != nil {
+		return err
+	}
+	defer u()
+	path := filepath.Join(s.dir, "inventory.json")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var claims []claim
+	if err = json.Unmarshal(b, &claims); err != nil {
+		return err
+	}
+	for i := range claims {
+		c := &claims[i]
+		if c.Tenant != q.Scope.TenantID || c.Device != string(q.Device.ID) {
+			continue
+		}
+		if c.Binding != q.BindingID || c.Set != q.Scope.SetID || c.Producer != q.Scope.ProducerID || (c.PendingRun != "" && c.PendingRun != q.ID) {
+			return provision.ErrConflict
+		}
+		if complete {
+			c.PendingRun = ""
+		} else {
+			c.PendingRun = q.ID
+		}
+		b, err = json.Marshal(claims)
+		if err != nil {
+			return err
+		}
+		return WriteAtomic(path, b, 0600)
+	}
+	return provision.ErrConflict
 }
 
 // Identify remembers authenticated physical evidence across desired revisions

@@ -104,6 +104,8 @@ type Store interface {
 	Lock(context.Context, string) (func() error, error)
 	Reserve(context.Context, Request) error
 	Identify(context.Context, camera.EnrollmentScope, camera.DeviceHint) error
+	BeginMutation(context.Context, Request) error
+	CompleteMutation(context.Context, Request) error
 	Load(context.Context, string) (Run, error)
 	Save(context.Context, Run) error
 	List(context.Context) ([]Run, error)
@@ -242,6 +244,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		if err = e.save(ctx, &out, Activating, "credential_prepared"); err != nil {
 			return out, err
 		}
+		if err = e.Store.BeginMutation(ctx, q); err != nil {
+			return out, err
+		}
 		if err = e.Bootstrapper.Activate(ctx, q.Device, lease); err != nil {
 			return out, err
 		}
@@ -302,6 +307,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	}
 	if len(plan.Changes) != 0 {
 		if err = e.save(ctx, &out, Applying, "apply_started"); err != nil {
+			return out, err
+		}
+		if err = e.Store.BeginMutation(ctx, q); err != nil {
 			return out, err
 		}
 		if _, err = e.Configurator.Apply(ctx, inspection.Device, lease, plan); err != nil {
@@ -387,6 +395,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		return out, ErrNotReady
 	}
 	err = e.save(ctx, &out, Active, "ready")
+	if err == nil {
+		err = e.Store.CompleteMutation(ctx, q)
+	}
 	return out, err
 }
 
