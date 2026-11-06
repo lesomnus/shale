@@ -25,6 +25,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
@@ -41,8 +42,12 @@ type Config struct {
 	Dev      bool
 	Tenant   string
 
-	Sources []SourceConfig
-	Ffmpeg  string
+	Sources        []SourceConfig
+	Ffmpeg         string
+	Ffprobe        string
+	AuthProvider   camera.AuthProvider
+	OnvifInspector camera.Inspector
+	MediaVerifier  camera.MediaVerifier
 	// Gst is gst-launch, for the sources captured through GStreamer
 	// (§38.3); `gst-launch-1.0` on PATH by default.
 	Gst string
@@ -254,10 +259,11 @@ type source struct {
 	// capture loop makes it and is the only one to feed it; the heartbeat
 	// and the stall watch read its counters from goroutines of their own
 	// (§38.6), so it is set and read under mu.
-	cutter  *Cutter
-	profile *api.SegmentProfile
-	sched   Schedule
-	ceiling int64
+	cutter          *Cutter
+	profile         *api.SegmentProfile
+	sched           Schedule
+	ceiling         int64
+	inferredCeiling int64
 	// allocs is each slot's allocation fetched ahead, which is the slot's
 	// first segment's (§12.1).
 	allocs map[int64]*api.Allocation
@@ -316,6 +322,9 @@ func New(cfg Config) (*Producer, error) {
 	p.m = newMetrics(context.Background())
 	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
 	for _, sc := range cfg.Sources {
+		if err := validateCameraInput(cfg, sc); err != nil {
+			return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+		}
 		if sc.Alias == "" {
 			return nil, errors.New("a source needs an alias")
 		}
@@ -456,6 +465,9 @@ func (p *Producer) Run(ctx context.Context) error {
 	if err := p.waitForSet(ctx); err != nil {
 		return err
 	}
+	if err := p.validateCameraAssignment(); err != nil {
+		return err
+	}
 	if err := p.register(ctx); err != nil {
 		return err
 	}
@@ -538,6 +550,11 @@ func (p *Producer) waitForSet(ctx context.Context) error {
 
 // register makes sure every configured source exists in the set (§38.4).
 func (p *Producer) register(ctx context.Context) error {
+	for _, s := range p.order {
+		if err := p.refreshCeiling(ctx, s); err != nil {
+			return err
+		}
+	}
 	sources := api.NewSourceServiceClient(p.cp())
 	byAlias := map[string]*api.Source{}
 	after := ""
@@ -561,12 +578,18 @@ func (p *Producer) register(ctx context.Context) error {
 
 	for _, s := range p.order {
 		if v, ok := byAlias[s.cfg.Alias]; ok {
+			for key, want := range s.cfg.Labels {
+				if v.GetLabels()[key] != want {
+					return fmt.Errorf("source %s binding label does not match existing Source", s.cfg.Alias)
+				}
+			}
 			s.row = v
 			continue
 		}
 		v, err := sources.Add(ctx, api.SourceAddRequest_builder{
 			Tenant:  api.TenantRef_builder{Id: p.set.GetTenant().GetId()}.Build(),
 			Alias:   s.cfg.Alias,
+			Labels:  s.cfg.Labels,
 			Name:    s.cfg.Name,
 			Set:     api.SetRef_builder{Id: p.set.GetId()}.Build(),
 			Zone:    s.cfg.Zone,
@@ -589,6 +612,12 @@ func (p *Producer) startingCeiling(s *source) int64 {
 		return s.cfg.MaxBitrate
 	}
 
+	s.mu.Lock()
+	inferred := s.inferredCeiling
+	s.mu.Unlock()
+	if inferred > 0 {
+		return inferred
+	}
 	return StartingCeiling(s.cfg.Size, s.cfg.Fps, s.cfg.Format)
 }
 
@@ -599,11 +628,14 @@ func (p *Producer) negotiate(ctx context.Context) error {
 	var proposals []*api.SourceProposal
 	var total int64
 	for _, s := range p.order {
+		if err := p.refreshCeiling(ctx, s); err != nil {
+			return err
+		}
 		s.mu.Lock()
 		ceiling, raise := s.ceiling, s.raise
 		s.raise = false
 		s.mu.Unlock()
-		if ceiling == 0 {
+		if ceiling == 0 || s.cfg.MaxBitrateOnvif {
 			ceiling = p.startingCeiling(s)
 		}
 		if raise {
@@ -715,11 +747,12 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 // with the producer so that it is there before anything that asks it.
 func (p *Producer) newCapture(s *source) *Capture {
 	return &Capture{
-		Ffmpeg:   p.cfg.Ffmpeg,
-		Gst:      p.cfg.Gst,
-		Source:   s.cfg,
-		Log:      p.log,
-		RawLoops: s.cfg.RawLoops,
+		Ffmpeg:       p.cfg.Ffmpeg,
+		AuthProvider: p.cfg.AuthProvider,
+		Gst:          p.cfg.Gst,
+		Source:       s.cfg,
+		Log:          p.log,
+		RawLoops:     s.cfg.RawLoops,
 		OnLine: func(line string) bool {
 			return (s.dark != nil && s.dark.observe(line)) || p.discontinuity(s, line)
 		},

@@ -112,7 +112,7 @@ func addProducerCommands(t *pdcmd.Tree, c *cmd.Config, l *cfg.Loader[cmd.Config]
 				return fmt.Errorf("no sources configured; run `shale producer scan` first")
 			}
 			fmt.Fprintf(self, "%-12s %-14s %8s %12s %10s %6s %6s  %s\n", "SOURCE", "ENCODER", "FPS", "BITRATE", "KEYFRAME", "CPU", "TEMP", "LAST STDERR")
-			for _, r := range producer.Probe(ctx, cfg.Ffmpeg, cfg.Sources, d, slog.Default()) {
+			for _, r := range producer.ProbeWithProvider(ctx, cfg.Ffmpeg, cfg.Sources, d, slog.Default(), cfg.AuthProvider) {
 				fmt.Fprintf(self, "%-12s %-14s %8.1f %12d %10s %6.2f %6.1f  %s\n", r.Alias, r.Encoder, r.FrameRate, r.Bitrate, r.Keyframe.Round(time.Millisecond), r.Cpu, r.Temp, r.Err)
 			}
 
