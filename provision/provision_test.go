@@ -81,7 +81,7 @@ func (d *device) Apply(_ context.Context, _ camera.DeviceHint, _ camera.Credenti
 type verifier struct{ incomplete bool }
 
 func (v verifier) Verify(_ context.Context, q camera.MediaRequest) (camera.VerifiedState, error) {
-	return camera.VerifiedState{Profile: q.Profile, Complete: !v.incomplete, Decoded: true, Firmware: "v1", ProfileRevision: q.Desired.Revision}, nil
+	return camera.VerifiedState{Profile: q.Profile, Complete: !v.incomplete, Decoded: true, Firmware: "v1", ProfileRevision: q.Desired.Revision, Duration: q.Duration, ObservedAt: time.Now().UTC()}, nil
 }
 
 type publisher struct {
@@ -125,7 +125,7 @@ func fixture(t *testing.T) (provision.Request, *device, *publisher, *provision.E
 	}
 	auth, err := camera.NewStaticProvider(entries)
 	require.NoError(t, err)
-	d := &device{profile: camera.MediaProfile{Token: "main", Codec: "h265", Width: 1280, Height: 720, FPS: 30, StreamURI: "rtsp://camera/main"}}
+	d := &device{profile: camera.MediaProfile{Token: "main", Codec: "h265", Width: 1280, Height: 720, FPS: 30, Bitrate: 2_000_000, StreamURI: "rtsp://camera/main"}}
 	p := &publisher{}
 	e := &provision.Engine{Store: s, Auth: auth, Inspector: d, Configurator: d, Bootstrapper: d, Verifier: verifier{}, Publisher: p}
 	return q, d, p, e, dir
@@ -285,4 +285,84 @@ func TestFileStoreSerializesAcrossInstancesAndRejectsStaleWrites(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, json.Valid(b))
 	require.False(t, strings.Contains(string(b), "password"))
+}
+
+type interruptedStore struct {
+	provision.Store
+	at    provision.Stage
+	after bool
+	fired bool
+}
+
+func (s *interruptedStore) Save(ctx context.Context, r provision.Run) error {
+	if !s.fired && r.Stage == s.at {
+		s.fired = true
+		if s.after {
+			if err := s.Store.Save(ctx, r); err != nil {
+				return err
+			}
+		}
+		return errors.New("simulated process interruption")
+	}
+	return s.Store.Save(ctx, r)
+}
+func TestRestartAtEveryDurableWriteBoundary(t *testing.T) {
+	for _, stage := range []provision.Stage{provision.Activating, provision.Applying, provision.Deploying, provision.Binding, provision.Active} {
+		for _, after := range []bool{false, true} {
+			name := string(stage) + "/before"
+			if after {
+				name = string(stage) + "/after"
+			}
+			t.Run(name, func(t *testing.T) {
+				q, d, p, e, dir := fixture(t)
+				e.Store = &interruptedStore{Store: e.Store, at: stage, after: after}
+				_, err := e.Execute(context.Background(), q, true)
+				require.Error(t, err)
+				restarted, err := filestore.Open(dir)
+				require.NoError(t, err)
+				e.Store = restarted
+				r, err := e.Execute(context.Background(), q, true)
+				require.NoError(t, err)
+				require.Equal(t, provision.Active, r.Stage)
+				require.Equal(t, 1, d.activations)
+				require.Equal(t, 1, d.writes)
+				require.Equal(t, 1, p.deploys)
+			})
+		}
+	}
+}
+
+type changedIdentity struct{ *device }
+
+func (d changedIdentity) Inspect(ctx context.Context, h camera.DeviceHint, l camera.CredentialLease) (camera.Inspection, error) {
+	i, err := d.device.Inspect(ctx, h, l)
+	i.Device.Serial = "replacement-serial"
+	return i, err
+}
+func TestPhysicalIdentityRemainsClaimedAcrossJobs(t *testing.T) {
+	q, d, _, e, _ := fixture(t)
+	d.ready = true
+	_, err := e.Execute(context.Background(), q, false)
+	require.NoError(t, err)
+	e.Inspector = changedIdentity{d}
+	q.ID = "another-job"
+	_, err = e.Execute(context.Background(), q, true)
+	require.ErrorIs(t, err, camera.ErrAmbiguousIdentity)
+	require.Zero(t, d.writes)
+}
+
+type mismatchedVerifier struct{}
+
+func (mismatchedVerifier) Verify(ctx context.Context, q camera.MediaRequest) (camera.VerifiedState, error) {
+	v, _ := (verifier{}).Verify(ctx, q)
+	v.Profile.Codec = "h265"
+	return v, nil
+}
+func TestCompleteFlagCannotOverrideActualCodecMismatch(t *testing.T) {
+	q, d, p, e, _ := fixture(t)
+	d.ready = true
+	e.Verifier = mismatchedVerifier{}
+	_, err := e.Execute(context.Background(), q, true)
+	require.ErrorIs(t, err, provision.ErrNotReady)
+	require.Zero(t, p.deploys)
 }

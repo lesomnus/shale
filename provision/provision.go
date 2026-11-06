@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/shale/camera"
@@ -136,7 +138,7 @@ func (q Request) Validate() error {
 	if q.ID == "" || q.BindingID == "" || q.Device.ID == "" || q.Desired.Revision == "" || q.Provider == "" || q.Scope.TenantID == "" || q.Scope.SetID == "" || q.Scope.ProducerID == "" || q.Scope.NetworkID == "" || len(q.Device.Endpoints) == 0 {
 		return camera.ErrInvalid
 	}
-	if q.ProbeDuration < 0 || q.ProbeDuration > time.Minute {
+	if q.ProbeDuration < 0 || q.ProbeDuration > 30*time.Second {
 		return camera.ErrInvalid
 	}
 	for _, ep := range q.Device.Endpoints {
@@ -348,7 +350,7 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	if err != nil {
 		return out, err
 	}
-	if !verified.Complete || !verified.Decoded {
+	if !verified.Complete || !verified.Decoded || verified.ObservedAt.IsZero() || verified.Duration < d*8/10 || !verifiedMatches(profile, verified.Profile, q.Desired) {
 		return out, ErrNotReady
 	}
 	if verified.Firmware != readback.Current.Firmware || verified.ProfileRevision != q.Desired.Revision {
@@ -381,7 +383,7 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	if err != nil {
 		return out, err
 	}
-	if out.Binding.BindingID != q.BindingID || out.Binding.Alias != binding.Alias || out.Binding.SourceID == "" || !out.Binding.Ingest || !out.Binding.Live || !out.Binding.Committed || out.Binding.CommittedAt.Before(out.Binding.DeployedAt) {
+	if out.Binding.BindingID != q.BindingID || out.Binding.Alias != binding.Alias || out.Binding.SourceID == "" || out.Binding.DeployedAt.IsZero() || out.Binding.CommittedAt.IsZero() || !out.Binding.Ingest || !out.Binding.Live || !out.Binding.Committed || out.Binding.CommittedAt.Before(out.Binding.DeployedAt) {
 		return out, ErrNotReady
 	}
 	err = e.save(ctx, &out, Active, "ready")
@@ -427,7 +429,33 @@ func samePhysicalDevice(a, b camera.DeviceHint) bool {
 	}
 	// A changed IP/name is fine. A changed authenticated serial/hardware is not
 	// silently interpreted as DHCP. Explicit replacement is a separate action.
-	return (a.Serial == "" || b.Serial == "" || a.Serial == b.Serial) && (a.Hardware == "" || b.Hardware == "" || a.Hardware == b.Hardware)
+	return (a.Serial == "" || a.Serial == b.Serial) && (a.Hardware == "" || a.Hardware == b.Hardware)
+}
+
+func verifiedMatches(reported, actual camera.MediaProfile, w camera.DesiredState) bool {
+	codec := func(s string) string {
+		s = strings.ToLower(s)
+		if s == "hevc" {
+			return "h265"
+		}
+		if s == "avc" {
+			return "h264"
+		}
+		return s
+	}
+	if actual.Codec == "" || actual.Width <= 0 || actual.Height <= 0 || actual.FPS <= 0 || actual.Bitrate <= 0 {
+		return false
+	}
+	if reported.Token != "" && actual.Token != reported.Token {
+		return false
+	}
+	if reported.Codec != "" && codec(actual.Codec) != codec(reported.Codec) || reported.Width > 0 && actual.Width != reported.Width || reported.Height > 0 && actual.Height != reported.Height || reported.FPS > 0 && math.Abs(actual.FPS-reported.FPS) > reported.FPS*.15 {
+		return false
+	}
+	if w.Codec != "" && codec(actual.Codec) != codec(w.Codec) || w.Width > 0 && w.Width != actual.Width || w.Height > 0 && w.Height != actual.Height || w.FPS > 0 && math.Abs(actual.FPS-w.FPS) > w.FPS*.15 || w.Bitrate > 0 && actual.Bitrate > w.Bitrate*13/10 || w.GOP > 0 && actual.GOP > w.GOP+2 {
+		return false
+	}
+	return true
 }
 func failure(err error) (Stage, string) {
 	switch {

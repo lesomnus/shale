@@ -118,7 +118,7 @@ func (s *Store) Identify(ctx context.Context, scope camera.EnrollmentScope, devi
 		if c.Tenant != scope.TenantID || c.Device != string(device.ID) {
 			continue
 		}
-		if c.Serial != "" && device.Serial != "" && c.Serial != device.Serial || c.Hardware != "" && device.Hardware != "" && c.Hardware != device.Hardware {
+		if c.Serial != "" && c.Serial != device.Serial || c.Hardware != "" && c.Hardware != device.Hardware {
 			return camera.ErrAmbiguousIdentity
 		}
 		if device.Serial != "" {
