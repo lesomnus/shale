@@ -56,11 +56,14 @@ type ClientConfig struct {
 }
 
 type ConnectionConfig struct {
-	URL               string `json:"url" yaml:"url"`
-	CAFile            string `json:"ca_file,omitempty" yaml:"ca_file,omitempty"`
-	CertFile          string `json:"cert_file,omitempty" yaml:"cert_file,omitempty"`
-	KeyFile           string `json:"key_file,omitempty" yaml:"key_file,omitempty"`
-	TokenFile         string `json:"token_file,omitempty" yaml:"token_file,omitempty"`
+	URL       string `json:"url" yaml:"url"`
+	CAFile    string `json:"ca_file,omitempty" yaml:"ca_file,omitempty"`
+	CertFile  string `json:"cert_file,omitempty" yaml:"cert_file,omitempty"`
+	KeyFile   string `json:"key_file,omitempty" yaml:"key_file,omitempty"`
+	TokenFile string `json:"token_file,omitempty" yaml:"token_file,omitempty"`
+	// SessionFile is a CLI-saved tenant session cookie for CP gRPC calls.
+	// Worker HTTP connections use their own bearer tokens instead.
+	SessionFile       string `json:"session_file,omitempty" yaml:"session_file,omitempty"`
 	AllowLoopbackHTTP bool   `json:"allow_loopback_http" yaml:"allow_loopback_http"`
 }
 type VendorConfig struct {
@@ -283,6 +286,9 @@ func validateConnection(c ConnectionConfig) (*url.URL, error) {
 }
 
 func connectionHTTP(c ConnectionConfig) (*http.Client, string, error) {
+	if c.SessionFile != "" {
+		return nil, "", camera.ErrInvalid
+	}
 	if _, err := validateConnection(c); err != nil {
 		return nil, "", err
 	}
@@ -299,6 +305,18 @@ func connectionHTTP(c ConnectionConfig) (*http.Client, string, error) {
 }
 
 func connectionGRPC(c ConnectionConfig) (*grpc.ClientConn, error) {
+	methods := 0
+	for _, configured := range []bool{c.SessionFile != "", c.TokenFile != "", c.CertFile != "" || c.KeyFile != ""} {
+		if configured {
+			methods++
+		}
+	}
+	if methods == 0 {
+		return nil, camera.ErrAuthRequired
+	}
+	if methods != 1 {
+		return nil, camera.ErrInvalid
+	}
 	u, err := validateConnection(c)
 	if err != nil {
 		return nil, err
@@ -313,14 +331,17 @@ func connectionGRPC(c ConnectionConfig) (*grpc.ClientConn, error) {
 		transport = insecure.NewCredentials()
 	}
 	options := []grpc.DialOption{grpc.WithTransportCredentials(transport)}
-	if c.TokenFile != "" {
+	if c.SessionFile != "" {
+		if _, err := readSession(c.SessionFile); err != nil {
+			return nil, err
+		}
+		options = append(options, grpc.WithPerRPCCredentials(sessionCredential{Path: c.SessionFile, Secure: u.Scheme != "http"}))
+	} else if c.TokenFile != "" {
 		token, err := ReadToken(c.TokenFile)
 		if err != nil {
 			return nil, err
 		}
 		options = append(options, grpc.WithPerRPCCredentials(bearerCredential{Token: token, Secure: u.Scheme != "http"}))
-	} else if c.CertFile == "" {
-		return nil, camera.ErrAuthRequired
 	}
 	return grpc.NewClient(u.Host, options...)
 }
