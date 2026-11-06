@@ -153,7 +153,20 @@ func (c *Client) inspect(ctx context.Context, device camera.DeviceHint, material
 				return s, e
 			}
 			if e == nil {
-				s.inspection.Capabilities.Profiles = append(s.inspection.Capabilities.Profiles, capabilities(token, options, profile.Evidence)...)
+				caps := capabilities(token, options, profile.Evidence)
+				if ns == media1NS {
+					interval := integer(config.child("RateControl").text("EncodingInterval"))
+					if interval > 1 {
+						for i := range caps {
+							caps[i].FrameRateMin /= float64(interval)
+							caps[i].FrameRateMax /= float64(interval)
+							for j := range caps[i].FrameRates {
+								caps[i].FrameRates[j] /= float64(interval)
+							}
+						}
+					}
+				}
+				s.inspection.Capabilities.Profiles = append(s.inspection.Capabilities.Profiles, caps...)
 			}
 		}
 		if len(s.inspection.Current.Profiles) == 0 {
@@ -209,7 +222,12 @@ func profileFromNode(token, name string, config *node) camera.MediaProfile {
 	r := config.child("Resolution")
 	rate := config.child("RateControl")
 	codec := normalizeCodec(config.text("Encoding"))
-	gop := integer(config.text("GovLength"))
+	// Media2 defines GovLength as an attribute, unlike Media1's H264 child.
+	// Tolerate a child extension but prefer the standard attribute.
+	gop := integer(config.attr("GovLength"))
+	if gop == 0 {
+		gop = integer(config.text("GovLength"))
+	}
 	if gop == 0 {
 		for _, kind := range []string{"H264", "H265", "MPEG4"} {
 			if x := config.child(kind); x != nil {
@@ -218,7 +236,11 @@ func profileFromNode(token, name string, config *node) camera.MediaProfile {
 			}
 		}
 	}
-	return camera.MediaProfile{Token: token, Name: name, Codec: codec, Width: integer(r.text("Width")), Height: integer(r.text("Height")), FPS: decimal(rate.text("FrameRateLimit")), Bitrate: int64(integer(rate.text("BitrateLimit"))) * 1000, GOP: gop}
+	fps := decimal(rate.text("FrameRateLimit"))
+	if interval := integer(rate.text("EncodingInterval")); interval > 1 {
+		fps /= float64(interval)
+	}
+	return camera.MediaProfile{Token: token, Name: name, Codec: codec, Width: integer(r.text("Width")), Height: integer(r.text("Height")), FPS: fps, Bitrate: int64(integer(rate.text("BitrateLimit"))) * 1000, GOP: gop}
 }
 
 func normalizeCodec(s string) string {
@@ -273,6 +295,15 @@ func capabilities(token string, response *node, evidence []camera.Evidence) []ca
 
 func capability(token, codec string, options *node, evidence []camera.Evidence) camera.ProfileCapability {
 	c := camera.ProfileCapability{Token: token, Codecs: []string{codec}, Evidence: evidence}
+	// Media2 frame rates and GOP range are list-valued attributes in onvif.xsd.
+	for _, value := range strings.Fields(options.attr("FrameRatesSupported")) {
+		if f := decimal(value); f > 0 {
+			c.FrameRates = append(c.FrameRates, f)
+		}
+	}
+	if limits := strings.Fields(options.attr("GovLengthRange")); len(limits) == 2 {
+		c.GOPMin, c.GOPMax = integer(limits[0]), integer(limits[1])
+	}
 	for _, r := range options.all("ResolutionsAvailable") {
 		c.Resolutions = append(c.Resolutions, camera.Resolution{Width: integer(r.text("Width")), Height: integer(r.text("Height"))})
 	}
@@ -458,12 +489,22 @@ func (c *Client) Apply(ctx context.Context, device camera.DeviceHint, lease came
 			case "height":
 				config.child("Resolution").set("Height", strconv.Itoa(plan.After.Height))
 			case "fps":
-				config.child("RateControl").set("FrameRateLimit", strconv.FormatFloat(plan.After.FPS, 'f', -1, 64))
+				fps := plan.After.FPS
+				if s.namespace == media1NS {
+					interval := integer(config.child("RateControl").text("EncodingInterval"))
+					if interval > 1 {
+						fps *= float64(interval)
+					}
+					if fps != math.Trunc(fps) {
+						return camera.ErrUnsupported
+					}
+				}
+				config.child("RateControl").set("FrameRateLimit", strconv.FormatFloat(fps, 'f', -1, 64))
 			case "bitrate":
 				config.child("RateControl").set("BitrateLimit", strconv.FormatInt(plan.After.Bitrate/1000, 10))
 			case "gop":
 				if s.namespace == media2NS {
-					config.set("GovLength", strconv.Itoa(plan.After.GOP))
+					config.setAttr("GovLength", strconv.Itoa(plan.After.GOP))
 				} else {
 					x := config.child(wireCodec(plan.After.Codec))
 					if x == nil {

@@ -151,6 +151,15 @@ func (n *node) set(name, value string) {
 	}
 	c.Text = value
 }
+func (n *node) setAttr(name, value string) {
+	for i := range n.Attrs {
+		if n.Attrs[i].Name.Space == "" && n.Attrs[i].Name.Local == name {
+			n.Attrs[i].Value = value
+			return
+		}
+	}
+	n.Attrs = append(n.Attrs, xml.Attr{Name: xml.Name{Local: name}, Value: value})
+}
 func (n *node) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name = n.Name
 	for _, a := range n.Attrs {

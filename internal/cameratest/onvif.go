@@ -107,7 +107,7 @@ type encoderConfig struct {
 		FrameRateLimit float64
 		BitrateLimit   int64
 	}
-	GovLength int
+	GovLength int `xml:"GovLength,attr"`
 	H264      struct{ GovLength int }
 }
 
@@ -165,10 +165,10 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 			profile.Codec = c.media1Codec
 			response = `<Profiles token="` + xmlText(profile.Token) + `"><Name>` + xmlText(profile.Name) + `</Name><VideoEncoderConfiguration token="encoder">` + encoderXML(profile, false) + `</VideoEncoderConfiguration></Profiles>`
 		} else {
-			response = `<Profiles token="` + xmlText(profile.Token) + `"><Name>` + xmlText(profile.Name) + `</Name><Configurations><VideoEncoder token="encoder">` + encoderXML(profile, true) + `</VideoEncoder></Configurations></Profiles>`
+			response = `<Profiles token="` + xmlText(profile.Token) + `"><Name>` + xmlText(profile.Name) + `</Name><Configurations><VideoEncoder token="encoder" GovLength="` + strconv.Itoa(profile.GOP) + `" Profile="Main">` + encoderXML(profile, true) + `</VideoEncoder></Configurations></Profiles>`
 		}
 	case "GetVideoEncoderConfigurations":
-		response = `<Configurations token="encoder">` + encoderXML(profile, true) + `</Configurations>`
+		response = `<Configurations token="encoder" GovLength="` + strconv.Itoa(profile.GOP) + `" Profile="Main">` + encoderXML(profile, true) + `</Configurations>`
 	case "GetStreamUri":
 		if ns == media1 {
 			response = "<MediaUri><Uri>" + xmlText(profile.StreamURI) + "</Uri></MediaUri>"
@@ -178,7 +178,7 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 	case "GetVideoEncoderConfigurationOptions":
 		if ns == media2 {
 			for _, codec := range []string{"H264", "H265"} {
-				response += "<Options><Encoding>" + codec + "</Encoding>" + resolutionXML(profile) + "<FrameRatesSupported>10 15 25 30</FrameRatesSupported><BitrateRange><Min>1</Min><Max>16384</Max></BitrateRange><GovLengthRange><Min>1</Min><Max>150</Max></GovLengthRange></Options>"
+				response += `<Options FrameRatesSupported="30 25 15 10" GovLengthRange="1 150"><Encoding>` + codec + "</Encoding><QualityRange><Min>1</Min><Max>5</Max></QualityRange>" + resolutionXML(profile) + "<BitrateRange><Min>1</Min><Max>16384</Max></BitrateRange></Options>"
 			}
 		} else {
 			response = "<Options><H264>" + resolutionXML(profile) + "<FrameRateRange><Min>1</Min><Max>30</Max></FrameRateRange><GovLengthRange><Min>1</Min><Max>150</Max></GovLengthRange></H264><Extension><H264><BitrateRange><Min>1</Min><Max>16384</Max></BitrateRange></H264></Extension></Options>"
@@ -277,6 +277,18 @@ func encoderXML(p camera.MediaProfile, media2 bool) string {
 	gop := "<GovLength>" + strconv.Itoa(p.GOP) + "</GovLength>"
 	if !media2 {
 		gop = "<H264>" + gop + "<H264Profile>Main</H264Profile></H264>"
+	} else {
+		gop = ""
 	}
-	return fmt.Sprintf("<Name>%s</Name><UseCount>1</UseCount><Encoding>%s</Encoding><Resolution><Width>%d</Width><Height>%d</Height></Resolution><Quality>4</Quality><RateControl><FrameRateLimit>%s</FrameRateLimit><BitrateLimit>%d</BitrateLimit></RateControl>%s", xmlText(p.Name), codec, p.Width, p.Height, strconv.FormatFloat(p.FPS, 'f', -1, 64), p.Bitrate/1000, gop)
+	base := fmt.Sprintf("<Name>%s</Name><UseCount>1</UseCount><Encoding>%s</Encoding><Resolution><Width>%d</Width><Height>%d</Height></Resolution>", xmlText(p.Name), codec, p.Width, p.Height)
+	interval := ""
+	if !media2 {
+		base += "<Quality>4</Quality>"
+		interval = "<EncodingInterval>1</EncodingInterval>"
+	}
+	base += fmt.Sprintf("<RateControl><FrameRateLimit>%s</FrameRateLimit>%s<BitrateLimit>%d</BitrateLimit></RateControl>", strconv.FormatFloat(p.FPS, 'f', -1, 64), interval, p.Bitrate/1000)
+	if media2 {
+		return base + "<Quality>4</Quality>"
+	}
+	return base + gop + "<Multicast><Address><Type>IPv4</Type><IPv4Address>0.0.0.0</IPv4Address></Address><Port>0</Port><TTL>1</TTL><AutoStart>false</AutoStart></Multicast><SessionTimeout>PT60S</SessionTimeout>"
 }

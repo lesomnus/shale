@@ -23,20 +23,23 @@ import (
 )
 
 type cameraFixture struct {
-	mu           sync.Mutex
-	server       *httptest.Server
-	media2       bool
-	noMedia      bool
-	noOptions    bool
-	forbidden    bool
-	failReadback bool
-	shared       bool
-	digest       bool
-	status       int
-	endpoint     string
-	ops          []string
-	writes       int
-	config       string
+	mu                sync.Mutex
+	server            *httptest.Server
+	media2            bool
+	noMedia           bool
+	noOptions         bool
+	forbidden         bool
+	failReadback      bool
+	shared            bool
+	digest            bool
+	status            int
+	endpoint          string
+	ops               []string
+	writes            int
+	config            string
+	configAttrs       string
+	capabilitiesOnly  bool
+	media2Unsupported bool
 }
 
 func newFixture(t *testing.T, media2 bool) *cameraFixture {
@@ -45,6 +48,11 @@ func newFixture(t *testing.T, media2 bool) *cameraFixture {
 	if !media2 {
 		f.config = strings.ReplaceAll(f.config, "H265", "H264")
 		f.config = strings.ReplaceAll(f.config, "<tt:GovLength>30</tt:GovLength>", "<tt:H264><tt:GovLength>30</tt:GovLength><tt:H264Profile>Main</tt:H264Profile></tt:H264>")
+	} else {
+		f.config = strings.ReplaceAll(f.config, "<tt:GovLength>30</tt:GovLength>", "")
+		f.config = strings.ReplaceAll(f.config, "<tt:Profile>Main</tt:Profile>", "")
+		f.config = strings.ReplaceAll(f.config, "<tt:Quality>4.5</tt:Quality>", "") + "<tt:Quality>4.5</tt:Quality>"
+		f.configAttrs = ` GovLength="30" Profile="Main"`
 	}
 	f.server = httptest.NewServer(http.HandlerFunc(f.serve))
 	t.Cleanup(f.server.Close)
@@ -106,6 +114,10 @@ func (f *cameraFixture) serve(w http.ResponseWriter, r *http.Request) {
 	case "GetDeviceInformation":
 		inner = "<t:Manufacturer>TP-Link</t:Manufacturer><t:Model>EasyCam C420</t:Model><t:FirmwareVersion>1.2.2 Build260624</t:FirmwareVersion><t:SerialNumber>serial-A</t:SerialNumber><t:HardwareId>1.0</t:HardwareId>"
 	case "GetServices":
+		if f.capabilitiesOnly {
+			fault(w, "ActionNotSupported")
+			return
+		}
 		if f.noMedia {
 			break
 		}
@@ -117,9 +129,15 @@ func (f *cameraFixture) serve(w http.ResponseWriter, r *http.Request) {
 		if f.media2 {
 			inner += "<t:Service><t:Namespace>" + media2NS + "</t:Namespace><t:XAddr>" + ep + "</t:XAddr></t:Service>"
 		}
+	case "GetCapabilities":
+		inner = "<t:Capabilities><tt:Media><tt:XAddr>" + f.server.URL + "/media</tt:XAddr></tt:Media></t:Capabilities>"
 	case "GetProfiles":
+		if ns == media2NS && f.media2Unsupported {
+			fault(w, "ActionNotSupported")
+			return
+		}
 		if ns == media2NS {
-			inner = `<t:Profiles token="profile_1"><t:Name>Main</t:Name><t:Configurations><t:VideoEncoder token="config_1">` + f.config + `</t:VideoEncoder></t:Configurations></t:Profiles>`
+			inner = `<t:Profiles token="profile_1"><t:Name>Main</t:Name><t:Configurations><t:VideoEncoder token="config_1"` + f.configAttrs + `>` + f.config + `</t:VideoEncoder></t:Configurations></t:Profiles>`
 		} else {
 			inner = `<t:Profiles token="profile_1"><tt:Name>Main</tt:Name><tt:VideoEncoderConfiguration token="config_1">` + strings.ReplaceAll(f.config, "H265", "H264") + `</tt:VideoEncoderConfiguration></t:Profiles>`
 		}
@@ -127,7 +145,7 @@ func (f *cameraFixture) serve(w http.ResponseWriter, r *http.Request) {
 			inner += strings.ReplaceAll(inner, "profile_1", "profile_2")
 		}
 	case "GetVideoEncoderConfigurations":
-		inner = `<t:Configurations token="config_1">` + f.config + `</t:Configurations>`
+		inner = `<t:Configurations token="config_1"` + f.configAttrs + `>` + f.config + `</t:Configurations>`
 	case "GetStreamUri":
 		uri := strings.Replace(f.server.URL, "http:", "rtsp:", 1) + "/stream1"
 		if ns == media2NS {
@@ -142,7 +160,7 @@ func (f *cameraFixture) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		if ns == media2NS {
 			for _, codec := range []string{"H264", "H265"} {
-				inner += "<t:Options><tt:Encoding>" + codec + "</tt:Encoding><tt:ResolutionsAvailable><tt:Width>1920</tt:Width><tt:Height>1080</tt:Height></tt:ResolutionsAvailable><tt:ResolutionsAvailable><tt:Width>1280</tt:Width><tt:Height>720</tt:Height></tt:ResolutionsAvailable><tt:FrameRatesSupported>15 25 30</tt:FrameRatesSupported><tt:BitrateRange><tt:Min>64</tt:Min><tt:Max>8192</tt:Max></tt:BitrateRange><tt:GovLengthRange><tt:Min>1</tt:Min><tt:Max>150</tt:Max></tt:GovLengthRange></t:Options>"
+				inner += `<t:Options FrameRatesSupported="30 25 15" GovLengthRange="1 150"><tt:Encoding>` + codec + "</tt:Encoding><tt:QualityRange><tt:Min>1</tt:Min><tt:Max>5</tt:Max></tt:QualityRange><tt:ResolutionsAvailable><tt:Width>1920</tt:Width><tt:Height>1080</tt:Height></tt:ResolutionsAvailable><tt:ResolutionsAvailable><tt:Width>1280</tt:Width><tt:Height>720</tt:Height></tt:ResolutionsAvailable><tt:BitrateRange><tt:Min>64</tt:Min><tt:Max>8192</tt:Max></tt:BitrateRange></t:Options>"
 			}
 		} else {
 			inner = "<t:Options><tt:H264><tt:ResolutionsAvailable><tt:Width>1920</tt:Width><tt:Height>1080</tt:Height></tt:ResolutionsAvailable><tt:FrameRateRange><tt:Min>1</tt:Min><tt:Max>30</tt:Max></tt:FrameRateRange><tt:GovLengthRange><tt:Min>1</tt:Min><tt:Max>150</tt:Max></tt:GovLengthRange></tt:H264><tt:Extension><tt:H264><tt:BitrateRange><tt:Min>64</tt:Min><tt:Max>8192</tt:Max></tt:BitrateRange></tt:H264></tt:Extension></t:Options>"
@@ -161,6 +179,9 @@ func (f *cameraFixture) serve(w http.ResponseWriter, r *http.Request) {
 				b.Write(data)
 			}
 			f.config = b.String()
+			if ns == media2NS {
+				f.configAttrs = ` GovLength="` + config.attr("GovLength") + `" Profile="` + config.attr("Profile") + `"`
+			}
 		}
 	default:
 		fault(w, "ActionNotSupported")
@@ -231,6 +252,53 @@ func TestMedia1AndPartialCapabilities(t *testing.T) {
 			}
 			if !partial && err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestMedia1EncodingIntervalIsPartOfActualFrameRate(t *testing.T) {
+	f := newFixture(t, false)
+	f.config = strings.ReplaceAll(f.config, "<tt:FrameRateLimit>30</tt:FrameRateLimit>", "<tt:FrameRateLimit>30</tt:FrameRateLimit><tt:EncodingInterval>2</tt:EncodingInterval>")
+	client := &Client{}
+	lease := fixtureLease()
+	defer lease.Close()
+	i, err := client.Inspect(context.Background(), f.device(), lease)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if i.Current.Profiles[0].FPS != 15 {
+		t.Fatal("encoded frame rate ignores EncodingInterval")
+	}
+	if _, err := client.Plan(context.Background(), i, camera.DesiredState{ProfileToken: "profile_1", FPS: 25}); !errors.Is(err, camera.ErrUnsupported) {
+		t.Fatal("plan silently changes encoding interval")
+	}
+	p, err := client.Plan(context.Background(), i, camera.DesiredState{ProfileToken: "profile_1", FPS: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err := client.Apply(context.Background(), f.device(), lease, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Profiles[0].FPS != 10 || !strings.Contains(f.config, ">20</") || !strings.Contains(f.config, ">2</") {
+		t.Fatal("FrameRateLimit was not adjusted while preserving EncodingInterval")
+	}
+}
+
+func TestDeliberateFallbacksForOlderServices(t *testing.T) {
+	for _, legacy := range []bool{false, true} {
+		t.Run(fmt.Sprint(legacy), func(t *testing.T) {
+			f := newFixture(t, !legacy)
+			f.capabilitiesOnly, f.media2Unsupported = legacy, !legacy
+			lease := fixtureLease()
+			defer lease.Close()
+			i, err := (&Client{}).Inspect(context.Background(), f.device(), lease)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if i.Current.Profiles[0].Evidence[0].Source != "onvif/media1" || i.Current.Profiles[0].Codec != "h264" {
+				t.Fatal("legacy service fallback did not preserve Media1 provenance")
 			}
 		})
 	}
