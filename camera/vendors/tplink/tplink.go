@@ -63,8 +63,9 @@ var _ camera.Bootstrapper = (*Driver)(nil)
 // Match is compatibility selection, not authorization to acquire credentials.
 // Scope and access still come from the caller's enrollment policy/provider.
 func Match(device camera.DeviceHint) bool {
-	vendor := strings.ToLower(strings.ReplaceAll(device.Manufacturer, "-", ""))
-	return strings.Contains(vendor, "tplink") && strings.EqualFold(device.Model, "EasyCam C420") && device.Hardware == "1.0" && strings.HasPrefix(device.Firmware, "1.2.2 Build260624")
+	vendor := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(device.Manufacturer), "-", ""))
+	firmware := device.Firmware == "1.2.2 Build260624" || strings.HasPrefix(device.Firmware, "1.2.2 Build260624 Rel.")
+	return vendor == "tplink" && strings.EqualFold(device.Model, "EasyCam C420") && device.Hardware == "1.0" && firmware
 }
 
 func (d *Driver) baseline() *onvif.Client {
@@ -174,6 +175,25 @@ func (d *Driver) Activation(ctx context.Context, hint camera.DeviceHint) (camera
 	}
 	if d.CompatibilityProfile == "" && !Match(hint) {
 		return camera.ActivationUnsupported, camera.ErrManualActivation
+	}
+	// A configured web endpoint may use a different port from ONVIF, but must
+	// still address the claimed camera when the caller supplies network hints.
+	if len(hint.Endpoints) > 0 {
+		ep, err := d.endpoint()
+		if err != nil {
+			return camera.ActivationUnknown, err
+		}
+		web, _ := url.Parse(ep)
+		match := false
+		for _, candidate := range hint.Endpoints {
+			u, err := url.Parse(candidate.URL)
+			if err == nil && strings.EqualFold(u.Hostname(), web.Hostname()) {
+				match = true
+			}
+		}
+		if !match {
+			return camera.ActivationUnknown, camera.ErrForbidden
+		}
 	}
 	r, err := d.rpc(ctx, map[string]any{"method": "do", "user_management": map[string]any{"get_encrypt_info": nil}})
 	if err != nil {

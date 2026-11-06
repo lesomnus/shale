@@ -290,6 +290,9 @@ func (c *Client) request(ctx context.Context, endpoint, ns, operation, body stri
 			s := string(b)
 			switch {
 			case strings.Contains(s, "NotAuthorized"):
+				if strings.HasPrefix(operation, "Set") {
+					return nil, camera.ErrForbidden
+				}
 				return nil, camera.ErrAuthRequired
 			case strings.Contains(s, "OperationProhibited"), strings.Contains(s, "AccessDenied"):
 				return nil, camera.ErrForbidden

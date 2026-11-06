@@ -365,6 +365,20 @@ func TestWSSecurityDigestAndRequestCancellation(t *testing.T) {
 	}
 }
 
+func TestSetNotAuthorizedIsPermissionFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fault(w, "NotAuthorized") }))
+	defer server.Close()
+	client := &Client{}
+	_, err := client.request(context.Background(), server.URL, media2NS, "SetVideoEncoderConfiguration", "", camera.CredentialMaterial{Username: "operator", Password: "reserved password"})
+	if !errors.Is(err, camera.ErrForbidden) {
+		t.Fatalf("write permission failure misclassified: %v", err)
+	}
+	_, err = client.request(context.Background(), server.URL, media2NS, "GetProfiles", "", camera.CredentialMaterial{Username: "operator", Password: "reserved password"})
+	if !errors.Is(err, camera.ErrAuthRequired) {
+		t.Fatalf("read authentication failure misclassified: %v", err)
+	}
+}
+
 func TestPlansAreCredentialFreeAndRejectUnsupportedValues(t *testing.T) {
 	f := newFixture(t, true)
 	client := &Client{}

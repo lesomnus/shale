@@ -213,6 +213,22 @@ func TestAdministratorPinnedCompatibilityForFreshDevice(t *testing.T) {
 	}
 }
 
+func TestManagedEndpointMustAddressTheClaimedCamera(t *testing.T) {
+	f := newActivationFixture(t)
+	d := testDriver(f)
+	hint := testHint()
+	hint.Endpoints = []camera.Endpoint{{URL: "http://192.0.2.10:2020/onvif/device_service"}}
+	_, err := d.Activation(context.Background(), hint)
+	if !errors.Is(err, camera.ErrForbidden) || f.writes != 0 {
+		t.Fatalf("mismatched web endpoint accepted: %v", err)
+	}
+	hint = testHint()
+	hint.Manufacturer = "not-tplink"
+	if Match(hint) {
+		t.Fatal("manufacturer substring accepted as compatibility evidence")
+	}
+}
+
 func TestFirmwarePublicKeyAndCredentialFreeErrors(t *testing.T) {
 	d := &Driver{}
 	key, err := d.key()
