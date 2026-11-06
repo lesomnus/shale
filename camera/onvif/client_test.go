@@ -447,6 +447,26 @@ func TestSetNotAuthorizedIsPermissionFailure(t *testing.T) {
 	}
 }
 
+func TestPreservedEncoderExtensionsRetainQNameNamespaceDeclarations(t *testing.T) {
+	config, err := parseXML([]byte(`<Configurations xmlns="http://www.onvif.org/ver20/media/wsdl" xmlns:vnd="urn:synthetic-vendor" token="encoder" GovLength="30"><Extension xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="vnd:EncoderMode"><vnd:Behavior>unchanged</vnd:Behavior></Extension></Configurations>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Name = xml.Name{Space: media2NS, Local: "Configuration"}
+	config.setAttr("GovLength", "50")
+	body, err := xml.Marshal(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), `xmlns:vnd="urn:synthetic-vendor"`) || !strings.Contains(string(body), `type="vnd:EncoderMode"`) {
+		t.Fatal("encoder update discarded a namespace used by a vendor QName")
+	}
+	parsed, err := parseXML(body)
+	if err != nil || parsed.find("Behavior").Name.Space != "urn:synthetic-vendor" {
+		t.Fatal("preserved vendor extension changed namespace")
+	}
+}
+
 func TestPlansAreCredentialFreeAndRejectUnsupportedValues(t *testing.T) {
 	f := newFixture(t, true)
 	client := &Client{}

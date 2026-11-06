@@ -163,7 +163,17 @@ func (n *node) setAttr(name, value string) {
 func (n *node) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name = n.Name
 	for _, a := range n.Attrs {
-		if a.Name.Space != "xmlns" && a.Name.Local != "xmlns" {
+		switch {
+		case a.Name.Space == "xmlns":
+			// Preserve declarations used by QName-valued attributes such as a
+			// vendor xsi:type. xml.Encoder otherwise only recreates namespaces
+			// needed by element/attribute names, not by attribute values.
+			start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "xmlns:" + a.Name.Local}, Value: a.Value})
+		case a.Name.Local == "xmlns" && a.Name.Space == "":
+			if n.Name.Space == "" {
+				start.Attr = append(start.Attr, a)
+			}
+		default:
 			start.Attr = append(start.Attr, a)
 		}
 	}
