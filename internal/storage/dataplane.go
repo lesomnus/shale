@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -98,6 +99,16 @@ type upload struct {
 	// one (§30); crcAt of -1 means it has to be recomputed from the file.
 	crc   uint32
 	crcAt int64
+
+	// dataStartedMs is the heartbeat snapshot. An upload holds mu throughout
+	// live I/O, so metrics must neither read record unsafely nor wait for mu.
+	dataStartedMs atomic.Int64
+}
+
+// setRecord is called under mu, or before publishing a newly adopted upload.
+func (u *upload) setRecord(record *api.LaminaRecord) {
+	u.record = record
+	u.dataStartedMs.Store(record.GetDateStartedMs())
 }
 
 // DataPlane serves the lamina paths of every sink on this node.
@@ -446,7 +457,7 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return
 	}
 	defer f.Close()
-	u.record = rec
+	u.setRecord(rec)
 
 	if offset != cur {
 		w.Header().Set(HdrUploadOffset, strconv.FormatInt(cur, 10))
@@ -1086,7 +1097,8 @@ func (d *DataPlane) sweepAbandoned(ctx context.Context) {
 // (§12.2): they are left alone until idle for their abandon_timeout.
 func (d *DataPlane) adoptOpen(sink *Sink, open []OpenFile) {
 	for _, o := range open {
-		u := &upload{key: o.Key, sink: sink, record: o.Record, last: o.Modified, hint: o.Record.GetSizeHint()}
+		u := &upload{key: o.Key, sink: sink, last: o.Modified, hint: o.Record.GetSizeHint()}
+		u.setRecord(o.Record)
 		if id, err := pdid.From(o.Record.GetAttemptId()); err == nil {
 			_ = id
 		}
@@ -1104,7 +1116,7 @@ func (d *DataPlane) uploadAges(now time.Time) map[*Sink]time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	for _, u := range d.uploads {
-		ms := u.record.GetDateStartedMs()
+		ms := u.dataStartedMs.Load()
 		if ms <= 0 {
 			continue
 		}
