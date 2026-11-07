@@ -20,6 +20,7 @@ application, and a standalone Payday service should call the same core.
 flowchart LR
     Caller[CLI / service API] --> Engine[Provisioning engine]
     Auth[Injected AuthProvider] --> Engine
+    Presets[Injected DevicePresetProvider] --> Engine
     Engine --> Drivers[ONVIF baseline + vendor extensions]
     Drivers --> Camera[Camera]
     Engine --> Publisher[Shale deployment adapter]
@@ -46,6 +47,7 @@ The reusable packages and process adapters are:
 | --- | --- |
 | `camera` | Device identity, endpoints, observations, capabilities, driver facets, authentication contracts |
 | `camera/discovery` | WS-Discovery and explicitly supplied addresses; observations only |
+| `camera/preset` | Scoped, immutable file-backed device preset selection and explicit alternatives |
 | `camera/onvif` | Standard device/media operations, with Media2 support |
 | `camera/vendors/tplink` | TP-Link first-time activation and model/firmware-specific corrections |
 | `camera/media` | Bounded RTSP inspection and decoding; actual codec/FPS/GOP/continuity facts |
@@ -60,6 +62,51 @@ The core should not depend on CLI formatting, Ent, or generated Shale RPC types.
 
 A manufacturer adapter does not register Shale Sources. It exposes device
 operations and normalized evidence; the Shale adapter owns enrollment.
+
+## Device preset injection and adaptation
+
+An embedding application can inject `camera.DevicePresetProvider` through
+`provision.Engine.Presets`; the standalone host accepts the same dependency
+through `BuildWithOptions`. The default `camera/preset` implementation loads
+strict YAML or JSON rules. Requests opt in with `use_preset: true` instead of
+supplying direct `desired` settings. Existing direct requests are unchanged.
+
+```go
+type DevicePresetProvider interface {
+    Resolve(context.Context, EnrollmentScope, DeviceHint) (DevicePreset, error)
+}
+```
+
+The provider chooses policy; it does not write a camera or supply passwords.
+After activation and authenticated inspection, the engine persists the resolved
+preset, matched rules and content-derived revision before configuration writes.
+Authentication and first-password preparation remain the existing AuthProvider
+workflow. MAC matching uses authenticated ONVIF network-interface evidence;
+advertised hints do not become ownership or authorization claims.
+
+A preset contains requested device/video settings, required fields and ordered
+fallback patches. Zero patch fields inherit the requested setting. An explicit
+`preserve` list instead leaves those fields on the device unchanged. Required
+fields cannot be changed or preserved by an alternative. Alternatives are
+bounded and explicitly configured; an authentication, identity, transport or
+uncertain-write failure does not authorize a downgrade.
+
+`DeviceInitializer` plans and applies prerequisites separately from password
+activation and video configuration. The C420 implementation sets an explicit
+50/60Hz image frequency, reads it back and then refreshes media capabilities
+before video planning. A read-only plan reports prerequisite changes without
+pretending to know the capabilities after a write it has not performed.
+
+The run keeps `preset.requested`, `effective`, independently `verified` media,
+and structured `warnings` separately. A verified alternative reaches `active`
+with warnings. The selected candidate and full snapshot survive process restarts
+and provider edits. A changed preset is applied through a new request ID, while
+the same BindingID keeps the existing logical Source. The API and
+`camera status --summary` show the selected preset and adjustments; there is no
+camera-provisioning dashboard in the disk-management UI.
+
+See [the standalone provisioner configuration](camera-provisioner.md) for a
+scoped ruleset, a C420 frequency prerequisite and a preserve-current fallback.
 
 ## AuthProvider injection
 
