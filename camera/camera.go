@@ -61,6 +61,7 @@ type DeviceHint struct {
 	Hardware     string     `json:"hardware,omitempty"`
 	Firmware     string     `json:"firmware,omitempty"`
 	Serial       string     `json:"serial,omitempty"`
+	MAC          string     `json:"mac,omitempty"`
 	DiscoveryID  string     `json:"discovery_id,omitempty"`
 	Evidence     []Evidence `json:"evidence,omitempty"`
 }
@@ -154,15 +155,15 @@ type CurrentState struct {
 }
 
 type DesiredState struct {
-	ProfileToken  string  `json:"profile_token,omitempty"`
-	Codec         string  `json:"codec,omitempty"`
-	Width         int     `json:"width,omitempty"`
-	Height        int     `json:"height,omitempty"`
-	FPS           float64 `json:"fps,omitempty"`
-	Bitrate       int64   `json:"bitrate,omitempty"`
-	GOP           int     `json:"gop,omitempty"`
-	AllowFallback bool    `json:"allow_fallback,omitempty"`
-	Revision      string  `json:"revision"`
+	ProfileToken  string  `json:"profile_token,omitempty" yaml:"profile_token,omitempty"`
+	Codec         string  `json:"codec,omitempty" yaml:"codec,omitempty"`
+	Width         int     `json:"width,omitempty" yaml:"width,omitempty"`
+	Height        int     `json:"height,omitempty" yaml:"height,omitempty"`
+	FPS           float64 `json:"fps,omitempty" yaml:"fps,omitempty"`
+	Bitrate       int64   `json:"bitrate,omitempty" yaml:"bitrate,omitempty"`
+	GOP           int     `json:"gop,omitempty" yaml:"gop,omitempty"`
+	AllowFallback bool    `json:"allow_fallback,omitempty" yaml:"allow_fallback,omitempty"`
+	Revision      string  `json:"revision" yaml:"revision,omitempty"`
 }
 
 type Inspection struct {
