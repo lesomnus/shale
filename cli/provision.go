@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/credential"
@@ -211,7 +215,11 @@ func NewCmdCamera() *xli.Command {
 	})})
 	for _, name := range []string{"status", "resume", "cancel"} {
 		name := name
-		commands = append(commands, &xli.Command{Name: name, Brief: "observe, resume or cancel a durable provisioning job", Flags: append(flags(), &flg.String{Name: "id", Brief: "job ID; omit for status to list visible jobs"}, &flg.Switch{Name: "apply", Brief: "on resume, explicitly apply a previously read-only plan"}, &flg.Switch{Name: "wait", Brief: "wait for resumed work to finish or need input"}), Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
+		commandFlags := append(flags(), &flg.String{Name: "id", Brief: "job ID; omit for status to list visible jobs"}, &flg.Switch{Name: "apply", Brief: "on resume, explicitly apply a previously read-only plan"}, &flg.Switch{Name: "wait", Brief: "wait for resumed work to finish or need input"})
+		if name == "status" {
+			commandFlags = append(commandFlags, &flg.Switch{Name: "summary", Brief: "show preset, effective settings and warnings as text; JSON is the default"})
+		}
+		commands = append(commands, &xli.Command{Name: name, Brief: "observe, resume or cancel a durable provisioning job", Flags: commandFlags, Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 			if path, _ := flg.Find[string](self, "host-config"); path != "" {
 				return errors.New("status, resume and cancel use --server and --token-file")
 			}
@@ -225,6 +233,21 @@ func NewCmdCamera() *xli.Command {
 				path += "/" + url.PathEscape(id)
 			}
 			if name == "status" {
+				if summary, _ := flg.Find[bool](self, "summary"); summary {
+					var jobs []provisionhost.Job
+					if id == "" {
+						if err := provisionhost.Call(ctx, connection, http.MethodGet, path, nil, &jobs); err != nil {
+							return err
+						}
+					} else {
+						var job provisionhost.Job
+						if err := provisionhost.Call(ctx, connection, http.MethodGet, path, nil, &job); err != nil {
+							return err
+						}
+						jobs = append(jobs, job)
+					}
+					return printCameraSummary(self, jobs)
+				}
 				var value any
 				if err := provisionhost.Call(ctx, connection, http.MethodGet, path, nil, &value); err != nil {
 					return err
@@ -243,6 +266,80 @@ func NewCmdCamera() *xli.Command {
 		})})
 	}
 	return &xli.Command{Name: "camera", Brief: "discover and provision IP cameras using scoped credentials and durable plans", Commands: commands, Handler: xli.RequireSubcommand()}
+}
+
+func printCameraSummary(w io.Writer, jobs []provisionhost.Job) error {
+	for _, job := range jobs {
+		stage := job.State
+		if job.Run != nil {
+			stage = string(job.Run.Stage)
+		}
+		if _, err := fmt.Fprintf(w, "%s: %s (job: %s)\n", cameraStatusLabel(job.ID), cameraStatusLabel(stage), cameraStatusLabel(job.State)); err != nil {
+			return err
+		}
+		if job.Run == nil {
+			continue
+		}
+		run := job.Run
+		if run.Preset != nil {
+			if _, err := fmt.Fprintf(w, "  preset: %q revision %q\n  requested: %s\n", run.Preset.Ref.ID, run.Preset.Ref.Revision, cameraSettingsSummary(run.Preset.Requested)); err != nil {
+				return err
+			}
+			if len(run.Preset.MatchedRules) != 0 {
+				if _, err := fmt.Fprintf(w, "  matched rules: %q\n", run.Preset.MatchedRules); err != nil {
+					return err
+				}
+			}
+		}
+		if run.Effective != nil {
+			if _, err := fmt.Fprintf(w, "  effective: %s\n", cameraSettingsSummary(*run.Effective)); err != nil {
+				return err
+			}
+		}
+		for _, warning := range run.Warnings {
+			if _, err := fmt.Fprintf(w, "  WARNING %q: %q requested=%q applied=%q reason=%q\n", warning.Code, warning.Field, warning.Requested, warning.Applied, warning.Reason); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func cameraStatusLabel(value string) string {
+	if strings.IndexFunc(value, func(r rune) bool { return unicode.IsControl(r) || unicode.Is(unicode.Cf, r) }) >= 0 {
+		return strconv.Quote(value)
+	}
+	return value
+}
+
+func cameraSettingsSummary(settings camera.PresetSettings) string {
+	parts := []string{}
+	if settings.Initialization.PowerLineFrequency != 0 {
+		parts = append(parts, fmt.Sprintf("frequency=%dHz", settings.Initialization.PowerLineFrequency))
+	}
+	v := settings.Video
+	if v.ProfileToken != "" {
+		parts = append(parts, fmt.Sprintf("profile=%q", v.ProfileToken))
+	}
+	if v.Codec != "" {
+		parts = append(parts, fmt.Sprintf("codec=%q", v.Codec))
+	}
+	if v.Width != 0 || v.Height != 0 {
+		parts = append(parts, fmt.Sprintf("size=%dx%d", v.Width, v.Height))
+	}
+	if v.FPS != 0 {
+		parts = append(parts, fmt.Sprintf("fps=%g", v.FPS))
+	}
+	if v.Bitrate != 0 {
+		parts = append(parts, fmt.Sprintf("bitrate=%d", v.Bitrate))
+	}
+	if v.GOP != 0 {
+		parts = append(parts, fmt.Sprintf("gop=%d", v.GOP))
+	}
+	if len(parts) == 0 {
+		return "preserve current settings"
+	}
+	return strings.Join(parts, " ")
 }
 
 func cameraRequest(self *xli.Command) (provision.Request, error) {
