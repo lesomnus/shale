@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"os"
 	"path/filepath"
 	"sync"
@@ -59,6 +60,7 @@ type claim struct {
 	Alias      string `json:"alias"`
 	Serial     string `json:"serial,omitempty"`
 	Hardware   string `json:"hardware,omitempty"`
+	MAC        string `json:"mac,omitempty"`
 	PendingRun string `json:"pending_run,omitempty"`
 }
 
@@ -174,6 +176,20 @@ func (s *Store) Identify(ctx context.Context, scope camera.EnrollmentScope, devi
 		}
 		if c.Serial != "" && c.Serial != device.Serial || c.Hardware != "" && c.Hardware != device.Hardware {
 			return camera.ErrAmbiguousIdentity
+		}
+		mac := ""
+		if device.MAC != "" {
+			value, err := net.ParseMAC(device.MAC)
+			if err != nil || len(value) != 6 {
+				return camera.ErrInvalid
+			}
+			mac = value.String()
+		}
+		if c.MAC != "" && c.MAC != mac {
+			return camera.ErrAmbiguousIdentity
+		}
+		if mac != "" {
+			c.MAC = mac
 		}
 		if device.Serial != "" {
 			c.Serial = device.Serial
