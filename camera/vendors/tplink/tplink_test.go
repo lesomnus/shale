@@ -290,6 +290,9 @@ func TestInitializedInspectionNeverUsesBrowserClockHelper(t *testing.T) {
 		case strings.Contains(request, "<t:GetServices>"):
 			op = "GetServices"
 			response = "<Service><Namespace>http://www.onvif.org/ver20/media/wsdl</Namespace><XAddr>" + server.URL + "/media</XAddr></Service>"
+		case strings.Contains(request, "<t:GetNetworkInterfaces>"):
+			op = "GetNetworkInterfaces"
+			response = `<NetworkInterfaces token="eth0"><Enabled>true</Enabled><Info><HwAddress>02:00:00:00:00:42</HwAddress></Info></NetworkInterfaces>`
 		case strings.Contains(request, "<t:GetProfiles>"):
 			op = "GetProfiles"
 			response = `<Profiles token="main"><Name>Main</Name><Configurations><VideoEncoder token="config"><Encoding>H265</Encoding><Resolution><Width>1920</Width><Height>1080</Height></Resolution><RateControl><FrameRateLimit>30</FrameRateLimit><BitrateLimit>4096</BitrateLimit></RateControl></VideoEncoder></Configurations></Profiles>`
@@ -318,7 +321,7 @@ func TestInitializedInspectionNeverUsesBrowserClockHelper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if i.Current.Profiles[0].Codec != "h265" || len(operations) != 6 {
+	if i.Current.Profiles[0].Codec != "h265" || len(operations) != 7 {
 		t.Fatal("missing read-only normalized media2 result")
 	}
 	if i.Current.Profiles[0].Evidence[1].Source != "tplink/c420/media2-preferred" {
