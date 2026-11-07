@@ -40,6 +40,7 @@ type cameraFixture struct {
 	configAttrs       string
 	capabilitiesOnly  bool
 	media2Unsupported bool
+	interfaces        string
 }
 
 func newFixture(t *testing.T, media2 bool) *cameraFixture {
@@ -113,6 +114,12 @@ func (f *cameraFixture) serve(w http.ResponseWriter, r *http.Request) {
 	switch name {
 	case "GetDeviceInformation":
 		inner = "<t:Manufacturer>TP-Link</t:Manufacturer><t:Model>EasyCam C420</t:Model><t:FirmwareVersion>1.2.2 Build260624</t:FirmwareVersion><t:SerialNumber>serial-A</t:SerialNumber><t:HardwareId>1.0</t:HardwareId>"
+	case "GetNetworkInterfaces":
+		if f.interfaces == "" {
+			fault(w, "ActionNotSupported")
+			return
+		}
+		inner = f.interfaces
 	case "GetServices":
 		if f.capabilitiesOnly {
 			fault(w, "ActionNotSupported")

@@ -182,6 +182,8 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 	switch name {
 	case "GetDeviceInformation":
 		response = "<Manufacturer>TP-Link</Manufacturer><Model>EasyCam C420</Model><FirmwareVersion>1.2.2 Build260624 Rel.39352n</FirmwareVersion><SerialNumber>synthetic-camera</SerialNumber><HardwareId>1.0</HardwareId>"
+	case "GetNetworkInterfaces":
+		response = `<NetworkInterfaces token="eth0"><Enabled>true</Enabled><Info><HwAddress>02:00:00:00:00:01</HwAddress></Info></NetworkInterfaces>`
 	case "GetServices":
 		for _, service := range []string{media1, media2} {
 			if service == media2 && !c.media2 {
