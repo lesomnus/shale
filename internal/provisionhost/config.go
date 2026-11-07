@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/shale/camera/credential"
 	"github.com/lesomnus/shale/camera/media"
 	"github.com/lesomnus/shale/camera/onvif"
+	"github.com/lesomnus/shale/camera/preset"
 	"github.com/lesomnus/shale/camera/vendors/tplink"
 	shaleadapter "github.com/lesomnus/shale/internal/provisionhost/shale"
 	"github.com/lesomnus/shale/provision"
@@ -42,6 +43,7 @@ type Config struct {
 	Clients           []ClientConfig   `json:"clients" yaml:"clients"`
 	Ffmpeg            string           `json:"ffmpeg,omitempty" yaml:"ffmpeg,omitempty"`
 	Ffprobe           string           `json:"ffprobe,omitempty" yaml:"ffprobe,omitempty"`
+	PresetFile        string           `json:"preset_file,omitempty" yaml:"preset_file,omitempty"`
 }
 
 type ProviderConfig struct {
@@ -119,7 +121,17 @@ func (b *Built) Close() {
 	}
 }
 
-func Build(config Config) (built *Built, err error) {
+// BuildOptions supplies application-owned implementations without coupling the
+// portable workflow to the file-backed defaults used by the CLI.
+type BuildOptions struct {
+	Presets camera.DevicePresetProvider
+}
+
+func Build(config Config) (*Built, error) { return BuildWithOptions(config, BuildOptions{}) }
+
+// BuildWithOptions accepts an injected preset provider or the administrator's
+// preset_file. Selecting both is refused rather than silently ignoring one.
+func BuildWithOptions(config Config, dependencies BuildOptions) (built *Built, err error) {
 	built = &Built{Config: config}
 	defer func() {
 		if err != nil {
@@ -128,6 +140,16 @@ func Build(config Config) (built *Built, err error) {
 	}()
 	if config.StateDir == "" {
 		return built, camera.ErrInvalid
+	}
+	presets := dependencies.Presets
+	if config.PresetFile != "" {
+		if presets != nil {
+			return built, camera.ErrInvalid
+		}
+		presets, err = preset.Load(config.PresetFile)
+		if err != nil {
+			return built, err
+		}
 	}
 	options := Options{StateDir: config.StateDir, Networks: config.Networks}
 	coreStore, er := filestore.Open(filepath.Join(config.StateDir, "core"))
@@ -181,6 +203,7 @@ func Build(config Config) (built *Built, err error) {
 			var inspector camera.Inspector = baseline
 			var configurator camera.VideoConfigurator = baseline
 			var bootstrapper camera.Bootstrapper
+			var initializer camera.DeviceInitializer
 			if entry.Vendor.Name != "" {
 				if entry.Vendor.Name != "tplink" || network.AllowURI(entry.Vendor.WebEndpoint) != nil {
 					return built, camera.ErrInvalid
@@ -189,6 +212,7 @@ func Build(config Config) (built *Built, err error) {
 				driver.CompatibilityProfile = entry.Vendor.CompatibilityProfile
 				selected := &selectedDriver{Baseline: baseline, Vendor: driver, Endpoint: entry.Vendor.WebEndpoint}
 				inspector, configurator, bootstrapper = selected, selected, selected
+				initializer = selected
 			}
 			stateDir := entry.StateDir
 			if stateDir == "" {
@@ -209,7 +233,7 @@ func Build(config Config) (built *Built, err error) {
 			liveClient := &http.Client{Transport: liveTransport, Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 			publisher := &shaleadapter.FilePublisher{ConfigPath: entry.ConfigPath, StateDir: filepath.Join(stateDir, "deployments"), Scope: entry.Scope, Authority: &shaleadapter.RPCAuthority{Conn: connection, LiveHTTPClient: liveClient}, Restart: shaleadapter.CommandRestart(entry.Restart)}
 			verifier := &media.Verifier{AuthProvider: provider, Ffmpeg: config.Ffmpeg, Ffprobe: config.Ffprobe, NetworkScope: network.ID}
-			target.Executor = &provision.Engine{Store: store, Auth: provider, Inspector: inspector, Configurator: configurator, Bootstrapper: bootstrapper, Verifier: scopedVerifier{Network: network, Verifier: verifier}, Publisher: publisher}
+			target.Executor = &provision.Engine{Store: store, Auth: provider, Inspector: inspector, Configurator: configurator, Bootstrapper: bootstrapper, Initializer: initializer, Presets: presets, Verifier: scopedVerifier{Network: network, Verifier: verifier}, Publisher: publisher}
 			target.Checkpoint = func(ctx context.Context, q provision.Request) (provision.Run, error) { return store.Load(ctx, q.ID) }
 		}
 		for _, prior := range options.Targets {
@@ -477,4 +501,18 @@ func (d *selectedDriver) Activate(ctx context.Context, h camera.DeviceHint, l ca
 		return d.Vendor.Activate(ctx, h, l)
 	}
 	return camera.ErrManualActivation
+}
+
+func (d *selectedDriver) PlanInitialization(ctx context.Context, h camera.DeviceHint, l camera.CredentialLease, settings camera.DeviceSettings) (camera.InitializationPlan, error) {
+	if d.matches(h) {
+		return d.Vendor.PlanInitialization(ctx, h, l, settings)
+	}
+	return camera.InitializationPlan{}, camera.ErrUnsupported
+}
+
+func (d *selectedDriver) ApplyInitialization(ctx context.Context, h camera.DeviceHint, l camera.CredentialLease, plan camera.InitializationPlan) (camera.DeviceSettings, error) {
+	if d.matches(h) {
+		return d.Vendor.ApplyInitialization(ctx, h, l, plan)
+	}
+	return camera.DeviceSettings{}, camera.ErrUnsupported
 }
