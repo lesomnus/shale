@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"slices"
 	"strings"
 	"time"
@@ -30,6 +31,7 @@ const (
 	Inspecting   Stage = "inspecting"
 	Planned      Stage = "planned"
 	Activating   Stage = "activating"
+	Initializing Stage = "initializing"
 	Applying     Stage = "applying"
 	Verifying    Stage = "verifying"
 	Deploying    Stage = "deploying"
@@ -51,6 +53,7 @@ type Request struct {
 	Scope                camera.EnrollmentScope `json:"scope"`
 	Device               camera.DeviceHint      `json:"device"`
 	Desired              camera.DesiredState    `json:"desired"`
+	UsePreset            bool                   `json:"use_preset,omitempty"`
 	Alias                string                 `json:"alias,omitempty"`
 	Name                 string                 `json:"name,omitempty"`
 	Provider             string                 `json:"provider"`
@@ -81,22 +84,28 @@ type BindingState struct {
 }
 
 type Run struct {
-	Request             Request               `json:"request"`
-	Stage               Stage                 `json:"stage"`
-	Version             uint64                `json:"version"`
-	CreatedAt           time.Time             `json:"created_at"`
-	UpdatedAt           time.Time             `json:"updated_at"`
-	Inspection          *camera.Inspection    `json:"inspection,omitempty"`
-	Plan                *camera.ChangePlan    `json:"plan,omitempty"`
-	Verified            *camera.VerifiedState `json:"verified,omitempty"`
-	InitialRef          *camera.CredentialRef `json:"initial_ref,omitempty"`
-	ManagementRef       *camera.CredentialRef `json:"management_ref,omitempty"`
-	StreamingRef        *camera.CredentialRef `json:"streaming_ref,omitempty"`
-	ActivationAttempted bool                  `json:"activation_attempted"`
-	ActivationComplete  bool                  `json:"activation_complete"`
-	Binding             BindingState          `json:"binding"`
-	Events              []Event               `json:"events"`
-	Impacts             []Impact              `json:"impacts,omitempty"`
+	Request             Request                    `json:"request"`
+	Stage               Stage                      `json:"stage"`
+	Version             uint64                     `json:"version"`
+	CreatedAt           time.Time                  `json:"created_at"`
+	UpdatedAt           time.Time                  `json:"updated_at"`
+	Inspection          *camera.Inspection         `json:"inspection,omitempty"`
+	Plan                *camera.ChangePlan         `json:"plan,omitempty"`
+	Verified            *camera.VerifiedState      `json:"verified,omitempty"`
+	InitialRef          *camera.CredentialRef      `json:"initial_ref,omitempty"`
+	ManagementRef       *camera.CredentialRef      `json:"management_ref,omitempty"`
+	StreamingRef        *camera.CredentialRef      `json:"streaming_ref,omitempty"`
+	ActivationAttempted bool                       `json:"activation_attempted"`
+	ActivationComplete  bool                       `json:"activation_complete"`
+	Binding             BindingState               `json:"binding"`
+	Events              []Event                    `json:"events"`
+	Impacts             []Impact                   `json:"impacts,omitempty"`
+	Preset              *camera.DevicePreset       `json:"preset,omitempty"`
+	Effective           *camera.PresetSettings     `json:"effective,omitempty"`
+	CandidateIndex      int                        `json:"candidate_index,omitempty"`
+	InitializationPlan  *camera.InitializationPlan `json:"initialization_plan,omitempty"`
+	Initialized         *camera.DeviceSettings     `json:"initialized,omitempty"`
+	Warnings            []camera.PresetWarning     `json:"warnings,omitempty"`
 }
 
 type Impact struct {
@@ -147,11 +156,22 @@ type Engine struct {
 	Bootstrapper camera.Bootstrapper
 	Verifier     camera.MediaVerifier
 	Publisher    SourcePublisher
+	Presets      camera.DevicePresetProvider
+	Initializer  camera.DeviceInitializer
 }
 
 func (q Request) Validate() error {
-	if q.ID == "" || q.BindingID == "" || q.Device.ID == "" || q.Desired.Revision == "" || q.Provider == "" || q.Scope.TenantID == "" || q.Scope.SetID == "" || q.Scope.ProducerID == "" || q.Scope.NetworkID == "" || len(q.Device.Endpoints) == 0 {
+	if q.ID == "" || q.BindingID == "" || q.Device.ID == "" || (!q.UsePreset && q.Desired.Revision == "") || q.Provider == "" || q.Scope.TenantID == "" || q.Scope.SetID == "" || q.Scope.ProducerID == "" || q.Scope.NetworkID == "" || len(q.Device.Endpoints) == 0 {
 		return camera.ErrInvalid
+	}
+	if q.UsePreset && q.Desired != (camera.DesiredState{}) {
+		return camera.ErrInvalid
+	}
+	if q.Device.MAC != "" {
+		mac, err := net.ParseMAC(q.Device.MAC)
+		if err != nil || len(mac) != 6 {
+			return camera.ErrInvalid
+		}
 	}
 	if q.ProbeDuration < 0 || q.ProbeDuration > 30*time.Second {
 		return camera.ErrInvalid
@@ -316,44 +336,11 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		out.ActivationComplete = true
 	}
 	out.Inspection = &inspection
-	plan, err := e.Configurator.Plan(ctx, inspection, q.Desired)
-	if err != nil {
+	readback, desired, configured, err := e.configure(ctx, &out, inspection, lease, apply)
+	if err != nil || !configured {
 		return out, err
 	}
-	plan.Before.StreamURI = camera.SanitizeURI(plan.Before.StreamURI)
-	plan.After.StreamURI = camera.SanitizeURI(plan.After.StreamURI)
-	out.Plan = &plan
-	if err = e.save(ctx, &out, Planned, "plan_ready"); err != nil || !apply {
-		return out, err
-	}
-	if len(plan.Changes) != 0 {
-		if err = e.save(ctx, &out, Applying, "apply_started"); err != nil {
-			return out, err
-		}
-		if err = e.Store.BeginMutation(ctx, q); err != nil {
-			return out, err
-		}
-		if _, err = e.Configurator.Apply(ctx, inspection.Device, lease, plan); err != nil {
-			return out, err
-		}
-	}
-	// Independently read back; Apply's return value alone is not proof.
-	readback, err := e.Inspector.Inspect(ctx, q.Device, lease)
-	if err != nil {
-		return out, err
-	}
-	readback = cleanInspection(readback)
-	if !samePhysicalDevice(inspection.Device, readback.Device) {
-		return out, camera.ErrAmbiguousIdentity
-	}
-	check, err := e.Configurator.Plan(ctx, readback, q.Desired)
-	if err != nil {
-		return out, err
-	}
-	if len(check.Changes) != 0 {
-		return out, camera.ErrConflict
-	}
-	out.Inspection = &readback
+	check := *out.Plan
 	profile, ok := profileFor(readback.Current, check.ProfileToken)
 	if !ok || profile.StreamURI == "" {
 		return out, camera.ErrUnsupported
@@ -375,14 +362,14 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	if d == 0 {
 		d = 5 * time.Second
 	}
-	verified, err := e.Verifier.Verify(ctx, camera.MediaRequest{Scope: q.Scope, Device: readback.Device, Profile: profile, Desired: q.Desired, CredentialRef: &sref, NetworkScope: q.Scope.NetworkID, Duration: d, RequireDecode: true})
+	verified, err := e.Verifier.Verify(ctx, camera.MediaRequest{Scope: q.Scope, Device: readback.Device, Profile: profile, Desired: desired, CredentialRef: &sref, NetworkScope: q.Scope.NetworkID, Duration: d, RequireDecode: true})
 	if err != nil {
 		return out, err
 	}
-	if !verified.Complete || !verified.Decoded || verified.ObservedAt.IsZero() || verified.Duration < d*8/10 || !verifiedMatches(profile, verified.Profile, q.Desired) {
+	if !verified.Complete || !verified.Decoded || verified.ObservedAt.IsZero() || verified.Duration < d*8/10 || !verifiedMatches(profile, verified.Profile, desired) {
 		return out, ErrNotReady
 	}
-	if verified.Firmware != readback.Current.Firmware || verified.ProfileRevision != q.Desired.Revision {
+	if verified.Firmware != readback.Current.Firmware || verified.ProfileRevision != desired.Revision {
 		return out, camera.ErrConflict
 	}
 	verified.Profile.StreamURI = camera.SanitizeURI(verified.Profile.StreamURI)
@@ -411,7 +398,7 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		Profile    camera.MediaProfile
 		Credential camera.CredentialRef
 	}{deploymentProfile, sref})
-	dep := Deployment{OperationID: Key(q.Scope.TenantID, q.BindingID, q.Desired.Revision, string(deploymentRevision)), Request: q, Profile: captureProfile, Credential: sref, Previous: out.Binding}
+	dep := Deployment{OperationID: Key(q.Scope.TenantID, q.BindingID, desired.Revision, string(deploymentRevision)), Request: q, Profile: captureProfile, Credential: sref, Previous: out.Binding}
 	if err = e.save(ctx, &out, Deploying, "capture_deploy"); err != nil {
 		return out, err
 	}
@@ -484,6 +471,13 @@ func samePhysicalDevice(a, b camera.DeviceHint) bool {
 	}
 	// A changed IP/name is fine. A changed authenticated serial/hardware is not
 	// silently interpreted as DHCP. Explicit replacement is a separate action.
+	if a.MAC != "" {
+		x, xe := net.ParseMAC(a.MAC)
+		y, ye := net.ParseMAC(b.MAC)
+		if xe != nil || ye != nil || x.String() != y.String() {
+			return false
+		}
+	}
 	return (a.Serial == "" || a.Serial == b.Serial) && (a.Hardware == "" || a.Hardware == b.Hardware)
 }
 
@@ -518,16 +512,16 @@ func failure(err error) (Stage, string) {
 		return WaitingAuth, "credentials_required"
 	case errors.Is(err, camera.ErrNeedsUserInput), errors.Is(err, camera.ErrManualActivation), errors.Is(err, camera.ErrAmbiguousIdentity):
 		return WaitingInput, "input_required"
-	case errors.Is(err, camera.ErrUnsupported):
-		return Unsupported, "unsupported"
-	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-		return Pending, "interrupted"
-	case errors.Is(err, ErrNotReady):
-		return Binding, "media_not_ready"
 	case errors.Is(err, camera.ErrForbidden):
 		return Failed, "forbidden"
 	case errors.Is(err, camera.ErrConflict), errors.Is(err, ErrConflict):
 		return Failed, "conflict"
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return Pending, "interrupted"
+	case errors.Is(err, camera.ErrUnsupported):
+		return Unsupported, "unsupported"
+	case errors.Is(err, ErrNotReady):
+		return Binding, "media_not_ready"
 	default:
 		return Failed, "operation_failed"
 	}

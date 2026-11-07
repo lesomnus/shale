@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"net"
 	"sort"
 	"sync"
 
@@ -8,7 +9,7 @@ import (
 )
 
 // Inventory requires explicit physical identity claims. It never automatically
-// merges observations by IP, advertised name, serial or discovery UUID. Persist
+// merges observations by IP, advertised name, serial, MAC or discovery UUID. Persist
 // Snapshot in the embedding application's store and Restore it after restart.
 type Inventory struct {
 	mu      sync.Mutex
@@ -90,7 +91,39 @@ func sameIdentity(a, b camera.DeviceHint) bool {
 	if a.DiscoveryID != "" && a.DiscoveryID != b.DiscoveryID {
 		return false
 	}
-	return (a.Serial != "" && b.Serial != "") || (a.DiscoveryID != "" && a.DiscoveryID == b.DiscoveryID)
+	macMatches := false
+	if a.MAC != "" {
+		prior, priorErr := net.ParseMAC(a.MAC)
+		current, currentErr := net.ParseMAC(b.MAC)
+		if priorErr != nil || currentErr != nil || len(prior) != 6 || len(current) != 6 || prior.String() != current.String() {
+			return false
+		}
+		macMatches = true
+	} else if b.MAC != "" {
+		// Do not poison an existing serial-based record with a malformed MAC.
+		current, err := net.ParseMAC(b.MAC)
+		if err != nil || len(current) != 6 {
+			return false
+		}
+	}
+	if (a.Serial != "" && b.Serial != "") || (a.DiscoveryID != "" && a.DiscoveryID == b.DiscoveryID) {
+		return true
+	}
+	// A MAC is useful only within a known network. A mixed or missing scope
+	// cannot establish identity on its own, even with an explicit inventory ID.
+	scope := macNetworkScope(a)
+	return macMatches && scope != "" && scope == macNetworkScope(b)
+}
+
+func macNetworkScope(h camera.DeviceHint) string {
+	scope := ""
+	for _, endpoint := range h.Endpoints {
+		if endpoint.NetworkScope == "" || (scope != "" && scope != endpoint.NetworkScope) {
+			return ""
+		}
+		scope = endpoint.NetworkScope
+	}
+	return scope
 }
 
 func cloneHint(h camera.DeviceHint) camera.DeviceHint {
