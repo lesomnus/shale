@@ -17,6 +17,7 @@ var (
 	ErrOptions            = errors.New("media probe: invalid options")
 	ErrEndpoint           = errors.New("media probe: invalid endpoint")
 	ErrNegotiation        = errors.New("media probe: WHEP negotiation failed")
+	ErrEpoch              = errors.New("media probe: capture epoch does not match capability")
 	ErrMedia              = errors.New("media probe: incomplete or invalid H264 media")
 	ErrLimit              = errors.New("media probe: resource limit exceeded")
 	ErrDecode             = errors.New("media probe: independent H264 decode failed")
@@ -24,7 +25,12 @@ var (
 )
 
 // Endpoint is a short-lived WHEP capability, never a persistent/wire DTO.
-type Endpoint struct{ URL, Token string }
+type Endpoint struct {
+	URL, Token string
+	// ExpectedEpoch is copied from the caller's current signed Source
+	// capability. Empty explicitly selects the legacy, uncorrelated path.
+	ExpectedEpoch string
+}
 
 const redactedEndpoint = "[media probe endpoint]"
 
@@ -49,8 +55,10 @@ type Options struct {
 
 // Evidence separates receiver-local receipt times and RTP progress from the
 // later independent decoder's pixel-output times. None identifies the camera's
-// capture epoch. Callers must correlate the current Producer/Source epoch.
+// capture epoch. CaptureEpoch instead records the exact expected capability
+// epoch confirmed by the WHEP response, never an inference from decoder time.
 type Evidence struct {
+	CaptureEpoch                    string
 	AccessUnits, DecodedFrames      int
 	Width, Height                   int
 	RTPClockRate                    uint32
@@ -94,7 +102,7 @@ func (o Options) normalized() (Options, error) {
 }
 
 func (e Endpoint) validate() error {
-	if len(e.URL) > 4096 || len(e.Token) == 0 || len(e.Token) > 16384 {
+	if len(e.URL) > 4096 || len(e.Token) == 0 || len(e.Token) > 16384 || len(e.ExpectedEpoch) > 128 {
 		return ErrEndpoint
 	}
 	u, err := url.Parse(e.URL)
@@ -105,6 +113,12 @@ func (e Endpoint) validate() error {
 		if b < 0x21 || b > 0x7e {
 			return ErrEndpoint
 		}
+	}
+	for _, b := range []byte(e.ExpectedEpoch) {
+		if b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '-' || b == '_' || b == '.' || b == ':' || b == '/' {
+			continue
+		}
+		return ErrEndpoint
 	}
 	return nil
 }
@@ -144,6 +158,7 @@ func Probe(ctx context.Context, options Options, endpoint Endpoint) (Evidence, e
 		return Evidence{}, err
 	}
 	e := captured.evidence
+	e.CaptureEpoch = endpoint.ExpectedEpoch
 	e.DecodedFrames = pixels.frames
 	e.Width = pixels.width
 	e.Height = pixels.height

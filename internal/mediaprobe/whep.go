@@ -151,6 +151,11 @@ func negotiate(ctx context.Context, client *http.Client, pc *webrtc.PeerConnecti
 		return "", ErrNegotiation
 	}
 	session := resolved.String()
+	if endpoint.ExpectedEpoch != "" && resp.Header.Get("Shale-Capture-Epoch") != endpoint.ExpectedEpoch {
+		// Return the validated same-origin session even on rejection so the
+		// caller closes the peer and deletes this allocated WHEP session.
+		return session, ErrEpoch
+	}
 	answer, err := io.ReadAll(io.LimitReader(resp.Body, (1<<20)+1))
 	if err != nil || len(answer) > 1<<20 {
 		if ctx.Err() != nil {

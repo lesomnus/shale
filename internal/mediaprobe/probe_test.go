@@ -277,3 +277,33 @@ func TestPostAndCleanupNeverFollowRedirects(t *testing.T) {
 		}
 	}
 }
+
+func TestWHEPRejectsMissingOrDifferentEpochAndDeletesSession(t *testing.T) {
+	for _, returned := range []string{"", "previous-capture", "current-capture"} {
+		t.Run("returned_"+returned, func(t *testing.T) {
+			var deletes atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodDelete && r.URL.Path == "/session" {
+					if r.Header.Get("Authorization") == token.Scheme+" private-token" {
+						deletes.Add(1)
+					}
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				w.Header().Set("Location", "/session")
+				w.Header().Set("Shale-Capture-Epoch", returned)
+				w.WriteHeader(http.StatusCreated)
+				_, _ = io.WriteString(w, "invalid-sdp")
+			}))
+			defer server.Close()
+			evidence, err := Probe(t.Context(), Options{Timeout: 2 * time.Second}, Endpoint{URL: server.URL, Token: "private-token", ExpectedEpoch: "current-capture"})
+			if returned == "current-capture" {
+				require.ErrorIs(t, err, ErrNegotiation, "a matching epoch still requires valid SDP and decoded pixels")
+			} else {
+				require.ErrorIs(t, err, ErrEpoch, "stale or absent relay correlation fails before SDP/media acceptance")
+			}
+			require.Equal(t, Evidence{}, evidence)
+			require.Equal(t, int32(1), deletes.Load(), "rejected correlation still releases the allocated same-origin session")
+		})
+	}
+}
