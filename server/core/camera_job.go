@@ -126,6 +126,9 @@ func (s Core) cameraJobRows(ctx context.Context, ref *api.CameraJobRef) (*api.Ca
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
+	if err := s.cameraExecutionScope(ctx, a); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	b, err := nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: j.GetBinding().GetId()}.Build()}.Build())
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -157,7 +160,7 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 	if err := cameraMessage(r); err != nil {
 		return nil, err
 	}
-	who, err := cameraOperator(ctx)
+	who, err := s.cameraExecutor(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -227,14 +230,21 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 	return out, nil
 }
 func (s Core) cameraLease(j *api.CameraJob, a *api.CameraAssignment, d *api.CameraDevice, who pdid.Id, lease, assignment int64) error {
+	if err := s.cameraLeaseFence(j, a, d, who, lease, assignment); err != nil {
+		return err
+	}
+	if cameraTerminalStage(j.GetStage()) {
+		return failed("enrollment job is terminal")
+	}
+	return nil
+}
+
+func (s Core) cameraLeaseFence(j *api.CameraJob, a *api.CameraAssignment, d *api.CameraDevice, who pdid.Id, lease, assignment int64) error {
 	if lease == 0 || lease != j.GetLeaseGeneration() || lease != d.GetClaimGeneration() || !bytes.Equal(d.GetActiveJobId(), j.GetId()) || !bytes.Equal(j.GetLeaseOwner(), who.Bytes()) || j.GetLeaseExpires() == nil || !j.GetLeaseExpires().AsTime().After(s.d.now()) {
 		return failed("camera job lease expired or was replaced")
 	}
 	if assignment == 0 || assignment != a.GetGeneration() || assignment != j.GetAssignmentGeneration() {
 		return status.Error(codes.Aborted, "camera assignment was replaced")
-	}
-	if cameraTerminalStage(j.GetStage()) {
-		return failed("enrollment job is terminal")
 	}
 	return nil
 }
@@ -258,7 +268,7 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 	if err := cameraMessage(r); err != nil {
 		return nil, err
 	}
-	who, err := cameraOperator(ctx)
+	who, err := s.cameraExecutor(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -285,6 +295,14 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 		j, a, b, d, err := c.cameraJobRows(ctx, r.GetRef())
 		if err != nil {
 			return err
+		}
+		// A machine's replay must still refer to its current assignment and
+		// physical-device fence. Operator historical acknowledgments retain
+		// their existing compatibility behavior.
+		if kindOf(who) == DomCameraWorker {
+			if err := c.cameraLeaseFence(j, a, d, who, r.GetLeaseGeneration(), r.GetAssignmentGeneration()); err != nil {
+				return err
+			}
 		}
 		if replay, err := cameraReplay(j, who, r.GetOperationKey(), hash); err != nil {
 			return err
@@ -363,7 +381,7 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 	if err := cameraMessage(r); err != nil {
 		return nil, err
 	}
-	who, err := cameraOperator(ctx)
+	who, err := s.cameraExecutor(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -433,6 +451,14 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		j, a, b, d, err := c.cameraJobRows(ctx, r.GetRef())
 		if err != nil {
 			return err
+		}
+		// A machine's replay must still refer to its current assignment and
+		// physical-device fence. Operator historical acknowledgments retain
+		// their existing compatibility behavior.
+		if kindOf(who) == DomCameraWorker {
+			if err := c.cameraLeaseFence(j, a, d, who, r.GetLeaseGeneration(), r.GetAssignmentGeneration()); err != nil {
+				return err
+			}
 		}
 		if replay, err := cameraReplay(j, who, r.GetOperationKey(), hash); err != nil {
 			return err

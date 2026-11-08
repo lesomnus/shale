@@ -129,6 +129,18 @@ func (f CameraNetworkFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Valu
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraNetworkMutation", m)
 }
 
+// The CameraWorkerFunc type is an adapter to allow the use of ordinary
+// function as CameraWorker mutator.
+type CameraWorkerFunc func(context.Context, *ent.CameraWorkerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraWorkerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraWorkerMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraWorkerMutation", m)
+}
+
 // The DelegationFunc type is an adapter to allow the use of ordinary
 // function as Delegation mutator.
 type DelegationFunc func(context.Context, *ent.DelegationMutation) (ent.Value, error)

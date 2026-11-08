@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/camerabinding"
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
+	"github.com/lesomnus/shale/internal/ent/cameraworker"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
@@ -71,6 +72,11 @@ func init() {
 	// camerajobDescObserved is the schema descriptor for observed field.
 	camerajobDescObserved := camerajobFields[13].Descriptor()
 	camerajob.ValueScanner.Observed = camerajobDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
+	cameraworkerFields := schema.CameraWorker{}.Fields()
+	_ = cameraworkerFields
+	// cameraworkerDescJoin is the schema descriptor for join field.
+	cameraworkerDescJoin := cameraworkerFields[9].Descriptor()
+	cameraworker.ValueScanner.Join = cameraworkerDescJoin.ValueScanner.(field.TypeValueScanner[*api.HostJoin])
 	deviceFields := schema.Device{}.Fields()
 	_ = deviceFields
 	// deviceDescQuarantine is the schema descriptor for quarantine field.

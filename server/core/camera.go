@@ -39,6 +39,40 @@ func cameraOperator(ctx context.Context) (pdid.Id, error) {
 	}
 	return f.Actor, nil
 }
+
+// cameraExecutor does not broaden cameraOperator: configuration, inventory,
+// assignment and handover remain person/operator-only.
+func (s Core) cameraExecutor(ctx context.Context) (pdid.Id, error) {
+	f, err := actor(ctx)
+	if err != nil {
+		return pdid.Id{}, err
+	}
+	if kindOf(f.Actor) == DomHolder {
+		return f.Actor, nil
+	}
+	if _, err := s.cameraWorkerActor(ctx); err != nil {
+		return pdid.Id{}, err
+	}
+	return f.Actor, nil
+}
+func (s Core) cameraExecutionScope(ctx context.Context, a *api.CameraAssignment) error {
+	f, err := actor(ctx)
+	if err != nil {
+		return err
+	}
+	if kindOf(f.Actor) == DomHolder {
+		return nil
+	}
+	w, err := s.cameraWorkerActor(ctx)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(a.GetWorkerId(), w.GetId()) {
+		return denied("camera job", "job is not assigned to this worker")
+	}
+	return cameraSameScope(a.GetTenant().GetId(), a.GetSite().GetId(), w.GetTenant().GetId(), w.GetSite().GetId())
+}
+
 func cameraVersion(want, got *timestamppb.Timestamp) error {
 	if want == nil || got == nil || want.CheckValid() != nil || !want.AsTime().Equal(got.AsTime()) {
 		return status.Error(codes.Aborted, "camera state changed; read the current version before retrying")

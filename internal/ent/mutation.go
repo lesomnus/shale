@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
 	"github.com/lesomnus/shale/internal/ent/cameranetwork"
+	"github.com/lesomnus/shale/internal/ent/cameraworker"
 	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
@@ -63,6 +64,7 @@ const (
 	TypeCameraDevice     = "CameraDevice"
 	TypeCameraJob        = "CameraJob"
 	TypeCameraNetwork    = "CameraNetwork"
+	TypeCameraWorker     = "CameraWorker"
 	TypeDelegation       = "Delegation"
 	TypeDevice           = "Device"
 	TypeHolder           = "Holder"
@@ -4095,6 +4097,506 @@ func (m *CameraNetworkMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldSiteId(ctx)
 	}
 	return nil, fmt.Errorf("unknown CameraNetwork field %s", name)
+}
+
+// CameraWorkerMutation represents an operation that mutates the CameraWorker nodes in the graph.
+type CameraWorkerMutation struct {
+	cameraworker.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*CameraWorker, error)
+}
+
+var _ ent.Mutation = (*CameraWorkerMutation)(nil)
+
+// cameraworkerOption allows management of the mutation configuration using functional options.
+type cameraworkerOption func(*CameraWorkerMutation)
+
+// newCameraWorkerMutation creates new mutation for the CameraWorker entity.
+func newCameraWorkerMutation(c config, op Op, opts ...cameraworkerOption) *CameraWorkerMutation {
+	m := &CameraWorkerMutation{
+		Mutation: *cameraworker.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of CameraWorker entities.
+func (m *CameraWorkerMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CameraWorkerMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withCameraWorkerId sets the Id field of the mutation.
+func withCameraWorkerId(id uuid.UUID) cameraworkerOption {
+	return func(m *CameraWorkerMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CameraWorker
+		)
+		m.oldValue = func(ctx context.Context) (*CameraWorker, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CameraWorker.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCameraWorker sets the old CameraWorker of the mutation.
+func withCameraWorker(node *CameraWorker) cameraworkerOption {
+	return func(m *CameraWorkerMutation) {
+		m.oldValue = func(context.Context) (*CameraWorker, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CameraWorkerMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CameraWorkerMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CameraWorkerMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().CameraWorker.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldAlias returns the old "alias" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldAlias(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAlias is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAlias requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAlias: %w", err)
+	}
+	return oldValue.Alias, nil
+}
+
+// OldName returns the old "name" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldName requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// OldDesc returns the old "desc" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldDesc(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDesc is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDesc requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDesc: %w", err)
+	}
+	return oldValue.Desc, nil
+}
+
+// OldLabels returns the old "labels" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// OldHardwareId returns the old "hardware_id" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldHardwareId(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldHardwareId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldHardwareId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHardwareId: %w", err)
+	}
+	return oldValue.HardwareId, nil
+}
+
+// OldHostname returns the old "hostname" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldHostname(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldHostname is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldHostname requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHostname: %w", err)
+	}
+	return oldValue.Hostname, nil
+}
+
+// OldState returns the old "state" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldState(ctx context.Context) (v int32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldState requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// OldCertSerial returns the old "cert_serial" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldCertSerial(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCertSerial is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCertSerial requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCertSerial: %w", err)
+	}
+	return oldValue.CertSerial, nil
+}
+
+// OldJoin returns the old "join" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldJoin(ctx context.Context) (v *api.HostJoin, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldJoin is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldJoin requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldJoin: %w", err)
+	}
+	return oldValue.Join, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateErased returns the old "date_erased" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldDateAdopted returns the old "date_adopted" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldDateAdopted(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateAdopted is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateAdopted requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateAdopted: %w", err)
+	}
+	return oldValue.DateAdopted, nil
+}
+
+// OldDateSeen returns the old "date_seen" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldDateSeen(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateSeen is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateSeen requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateSeen: %w", err)
+	}
+	return oldValue.DateSeen, nil
+}
+
+// OldDateCertExpires returns the old "date_cert_expires" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldDateCertExpires(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCertExpires is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCertExpires requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCertExpires: %w", err)
+	}
+	return oldValue.DateCertExpires, nil
+}
+
+// OldVersion returns the old "version" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldVersion(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// OldApprovedKeyFingerprint returns the old "approved_key_fingerprint" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldApprovedKeyFingerprint(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldApprovedKeyFingerprint is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldApprovedKeyFingerprint requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApprovedKeyFingerprint: %w", err)
+	}
+	return oldValue.ApprovedKeyFingerprint, nil
+}
+
+// OldDateCertIssued returns the old "date_cert_issued" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldDateCertIssued(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCertIssued is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCertIssued requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCertIssued: %w", err)
+	}
+	return oldValue.DateCertIssued, nil
+}
+
+// OldTenantId returns the old "tenant_id" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldTenantId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldTenantId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldTenantId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTenantId: %w", err)
+	}
+	return oldValue.TenantId, nil
+}
+
+// OldSiteId returns the old "site_id" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldSiteId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSiteId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSiteId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSiteId: %w", err)
+	}
+	return oldValue.SiteId, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CameraWorkerMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case cameraworker.FieldAlias:
+		return m.OldAlias(ctx)
+	case cameraworker.FieldName:
+		return m.OldName(ctx)
+	case cameraworker.FieldDesc:
+		return m.OldDesc(ctx)
+	case cameraworker.FieldLabels:
+		return m.OldLabels(ctx)
+	case cameraworker.FieldHardwareId:
+		return m.OldHardwareId(ctx)
+	case cameraworker.FieldHostname:
+		return m.OldHostname(ctx)
+	case cameraworker.FieldState:
+		return m.OldState(ctx)
+	case cameraworker.FieldCertSerial:
+		return m.OldCertSerial(ctx)
+	case cameraworker.FieldJoin:
+		return m.OldJoin(ctx)
+	case cameraworker.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case cameraworker.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case cameraworker.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case cameraworker.FieldDateAdopted:
+		return m.OldDateAdopted(ctx)
+	case cameraworker.FieldDateSeen:
+		return m.OldDateSeen(ctx)
+	case cameraworker.FieldDateCertExpires:
+		return m.OldDateCertExpires(ctx)
+	case cameraworker.FieldVersion:
+		return m.OldVersion(ctx)
+	case cameraworker.FieldApprovedKeyFingerprint:
+		return m.OldApprovedKeyFingerprint(ctx)
+	case cameraworker.FieldDateCertIssued:
+		return m.OldDateCertIssued(ctx)
+	case cameraworker.FieldTenantId:
+		return m.OldTenantId(ctx)
+	case cameraworker.FieldSiteId:
+		return m.OldSiteId(ctx)
+	}
+	return nil, fmt.Errorf("unknown CameraWorker field %s", name)
 }
 
 // DelegationMutation represents an operation that mutates the Delegation nodes in the graph.

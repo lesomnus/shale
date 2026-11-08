@@ -2483,8 +2483,8 @@ type CameraAssignment_builder struct {
 	Producer *Producer
 	// Routing intent, not an authenticated machine identity.
 	WorkerSlot string
-	// Reserved for #195. Nonempty values are rejected until approved Worker
-	// identity validation is implemented; arbitrary UUIDs grant no authority.
+	// Approved CameraWorker identity in this exact tenant/site. Assignment APIs
+	// validate current adoption; the UUID alone is never an execution credential.
 	WorkerId   []byte
 	Generation int64
 	// Monotonic aggregate revision; every catalog membership/spec change moves it.

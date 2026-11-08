@@ -160,6 +160,16 @@ type Names struct {
 // row `id`. `names` may be empty for a producer or a reader, which nobody
 // dials.
 func (ca *CA) IssueHost(csrDER []byte, id pdid.Id, names Names, now time.Time) (*x509.Certificate, error) {
+	return ca.issueHost(csrDER, id, names, now, []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth})
+}
+
+// IssueClientHost signs an outbound-only machine identity. It cannot authenticate
+// as a TLS server, and CSR-provided names or extensions are not copied.
+func (ca *CA) IssueClientHost(csrDER []byte, id pdid.Id, now time.Time) (*x509.Certificate, error) {
+	return ca.issueHost(csrDER, id, Names{}, now, []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth})
+}
+
+func (ca *CA) issueHost(csrDER []byte, id pdid.Id, names Names, now time.Time, usages []x509.ExtKeyUsage) (*x509.Certificate, error) {
 	csr, err := x509.ParseCertificateRequest(csrDER)
 	if err != nil {
 		return nil, fmt.Errorf("pki: csr: %w", err)
@@ -179,7 +189,7 @@ func (ca *CA) IssueHost(csrDER []byte, id pdid.Id, names Names, now time.Time) (
 		NotBefore:    now.Add(-5 * time.Minute),
 		NotAfter:     now.Add(HostLifetime),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		ExtKeyUsage:  usages,
 		URIs:         []*url.URL{{Scheme: UriScheme, Opaque: id.String()}},
 		DNSNames:     names.DNS,
 		IPAddresses:  names.IPs,

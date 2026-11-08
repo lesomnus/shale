@@ -41,6 +41,7 @@ type Server interface {
 	CameraJob() CameraJobServiceServer
 	Device() DeviceServiceServer
 	Sink() SinkServiceServer
+	CameraWorker() CameraWorkerServiceServer
 	Holder() HolderServiceServer
 	Delegation() DelegationServiceServer
 	Lamina() LaminaServiceServer
@@ -78,6 +79,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterCameraJobServiceServer(g, s.CameraJob())
 	RegisterDeviceServiceServer(g, s.Device())
 	RegisterSinkServiceServer(g, s.Sink())
+	RegisterCameraWorkerServiceServer(g, s.CameraWorker())
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterDelegationServiceServer(g, s.Delegation())
 	RegisterLaminaServiceServer(g, s.Lamina())
@@ -111,6 +113,7 @@ type UnimplementedServer struct {
 	CameraJobServer        CameraJobServiceServer
 	DeviceServer           DeviceServiceServer
 	SinkServer             SinkServiceServer
+	CameraWorkerServer     CameraWorkerServiceServer
 	HolderServer           HolderServiceServer
 	DelegationServer       DelegationServiceServer
 	LaminaServer           LaminaServiceServer
@@ -155,6 +158,9 @@ func (UnimplementedServer) CameraJob() CameraJobServiceServer {
 }
 func (UnimplementedServer) Device() DeviceServiceServer { return UnimplementedDeviceServiceServer{} }
 func (UnimplementedServer) Sink() SinkServiceServer     { return UnimplementedSinkServiceServer{} }
+func (UnimplementedServer) CameraWorker() CameraWorkerServiceServer {
+	return UnimplementedCameraWorkerServiceServer{}
+}
 func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
 func (UnimplementedServer) Delegation() DelegationServiceServer {
 	return UnimplementedDelegationServiceServer{}
@@ -201,6 +207,7 @@ type StaticServer struct {
 	CameraJobServer        CameraJobServiceServer
 	DeviceServer           DeviceServiceServer
 	SinkServer             SinkServiceServer
+	CameraWorkerServer     CameraWorkerServiceServer
 	HolderServer           HolderServiceServer
 	DelegationServer       DelegationServiceServer
 	LaminaServer           LaminaServiceServer
@@ -235,6 +242,7 @@ func (s StaticServer) CameraBinding() CameraBindingServiceServer     { return s.
 func (s StaticServer) CameraJob() CameraJobServiceServer             { return s.CameraJobServer }
 func (s StaticServer) Device() DeviceServiceServer                   { return s.DeviceServer }
 func (s StaticServer) Sink() SinkServiceServer                       { return s.SinkServer }
+func (s StaticServer) CameraWorker() CameraWorkerServiceServer       { return s.CameraWorkerServer }
 func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
 func (s StaticServer) Lamina() LaminaServiceServer                   { return s.LaminaServer }
@@ -267,6 +275,7 @@ type Client interface {
 	CameraJob() CameraJobServiceClient
 	Device() DeviceServiceClient
 	Sink() SinkServiceClient
+	CameraWorker() CameraWorkerServiceClient
 	Holder() HolderServiceClient
 	Delegation() DelegationServiceClient
 	Lamina() LaminaServiceClient
@@ -301,6 +310,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_CameraJob:        NewCameraJobServiceClient(c),
 		_Device:           NewDeviceServiceClient(c),
 		_Sink:             NewSinkServiceClient(c),
+		_CameraWorker:     NewCameraWorkerServiceClient(c),
 		_Holder:           NewHolderServiceClient(c),
 		_Delegation:       NewDelegationServiceClient(c),
 		_Lamina:           NewLaminaServiceClient(c),
@@ -335,6 +345,7 @@ type client struct {
 	_CameraJob        CameraJobServiceClient
 	_Device           DeviceServiceClient
 	_Sink             SinkServiceClient
+	_CameraWorker     CameraWorkerServiceClient
 	_Holder           HolderServiceClient
 	_Delegation       DelegationServiceClient
 	_Lamina           LaminaServiceClient
@@ -367,6 +378,7 @@ func (c *client) CameraBinding() CameraBindingServiceClient       { return c._Ca
 func (c *client) CameraJob() CameraJobServiceClient               { return c._CameraJob }
 func (c *client) Device() DeviceServiceClient                     { return c._Device }
 func (c *client) Sink() SinkServiceClient                         { return c._Sink }
+func (c *client) CameraWorker() CameraWorkerServiceClient         { return c._CameraWorker }
 func (c *client) Holder() HolderServiceClient                     { return c._Holder }
 func (c *client) Delegation() DelegationServiceClient             { return c._Delegation }
 func (c *client) Lamina() LaminaServiceClient                     { return c._Lamina }

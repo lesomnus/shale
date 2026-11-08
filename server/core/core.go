@@ -58,6 +58,7 @@ const (
 	DomCameraAssignment pdid.Domain = 28
 	DomCameraBinding    pdid.Domain = 29
 	DomCameraJob        pdid.Domain = 30
+	DomCameraWorker     pdid.Domain = 31
 )
 
 // Deps is what the layer needs besides the servers below it.

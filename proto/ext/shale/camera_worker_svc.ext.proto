@@ -1,0 +1,84 @@
+edition = "2023";
+package shale;
+import "google/protobuf/timestamp.proto";
+import "shale/common.proto";
+import "shale/host.proto";
+import "shale/camera_worker.proto";
+import "shale/camera.proto";
+import "shale/camera_svc.g.proto";
+import "shale/host_svc.g.proto";
+import "shale/site_svc.g.proto";
+import "shale/set_svc.g.proto";
+option go_package = "github.com/lesomnus/shale/api";
+
+service CameraWorkerService {
+  rpc Join(CameraWorkerJoinRequest) returns (CameraWorkerJoinResponse);
+  rpc Adopt(CameraWorkerAdoptRequest) returns (CameraWorker);
+  rpc RenewCertificate(CameraWorkerRenewCertificateRequest) returns (CameraWorkerRenewCertificateResponse);
+  rpc Heartbeat(CameraWorkerHeartbeatRequest) returns (CameraWorkerHeartbeatResponse);
+  // Explicit operator revocation; generated Erase and other writes stay closed.
+  rpc Revoke(CameraWorkerRevokeRequest) returns (CameraWorker);
+  // Outbound bounded long poll. Each response is a full current view, not a delta.
+  // Identity and assignment are checked again while waiting and before emission.
+  rpc Poll(CameraWorkerPollRequest) returns (CameraWorkerPollResponse);
+  // A scoped current execution grant. This never opens generic Source/Lamina APIs.
+  rpc CheckJob(CameraWorkerCheckJobRequest) returns (CameraWorkerWork);
+  // Readiness and a view capability for this leased job only.
+  rpc ObserveJob(CameraWorkerCheckJobRequest) returns (CameraWorkerObservation);
+}
+message CameraWorkerJoinRequest {
+  HostJoin host = 1;
+  string tenant = 2 [features.field_presence = IMPLICIT];
+}
+message CameraWorkerJoinResponse { JoinAnswer answer = 1; }
+message CameraWorkerAdoptRequest {
+  CameraWorkerRef ref = 1;
+  string alias = 2 [features.field_presence = IMPLICIT];
+  SiteRef site = 3;
+}
+message CameraWorkerRenewCertificateRequest { bytes csr = 1 [features.field_presence = IMPLICIT]; }
+message CameraWorkerRenewCertificateResponse {
+  bytes certificate = 1 [features.field_presence = IMPLICIT];
+  bytes ca_bundle = 2 [features.field_presence = IMPLICIT];
+}
+message CameraWorkerHeartbeatRequest {
+  string ca_hash = 1 [features.field_presence = IMPLICIT];
+  string version = 2 [features.field_presence = IMPLICIT];
+}
+message CameraWorkerHeartbeatResponse { bool renew_certificate = 1 [features.field_presence = IMPLICIT]; }
+message CameraWorkerRevokeRequest {
+  CameraWorkerRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+}
+message CameraWorkerPollRequest {
+  string after_revision = 1 [features.field_presence = IMPLICIT];
+  int64 wait_seconds = 2 [features.field_presence = IMPLICIT];
+}
+message CameraWorkerAssignment {
+  CameraAssignment assignment = 1;
+  CameraNetwork network = 2;
+}
+message CameraWorkerWork {
+  CameraJob job = 1;
+  CameraAssignment assignment = 2;
+  CameraNetwork network = 3;
+  CameraBinding binding = 4;
+  CameraDevice device = 5;
+}
+message CameraWorkerPollResponse {
+  string revision = 1 [features.field_presence = IMPLICIT];
+  repeated CameraWorkerAssignment assignments = 2;
+  repeated CameraWorkerWork jobs = 3;
+}
+message CameraWorkerCheckJobRequest {
+  CameraJobRef ref = 1;
+  int64 lease_generation = 2 [features.field_presence = IMPLICIT];
+  int64 assignment_generation = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraWorkerObservation {
+ CameraWorkerWork work = 1;
+ ProducerStatus producer_status = 2;
+ LiveSource live = 3;
+ bool recording_complete = 4 [features.field_presence = IMPLICIT];
+}

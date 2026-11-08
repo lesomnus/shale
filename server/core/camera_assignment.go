@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/cameraassignment"
@@ -48,9 +49,6 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 	if _, err := cameraOperator(ctx); err != nil {
 		return nil, err
 	}
-	if len(r.GetWorkerId()) != 0 {
-		return nil, status.Error(codes.FailedPrecondition, "Worker machine binding requires the adopted Worker identity feature (#195)")
-	}
 	if err := cameraToken("worker_slot", r.GetWorkerSlot()); err != nil {
 		return nil, err
 	}
@@ -92,6 +90,21 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 		if err := cameraSameScope(p.GetTenant().GetId(), p.GetSite().GetId(), set.GetTenant().GetId(), set.GetSite().GetId()); err != nil {
 			return err
 		}
+		if len(r.GetWorkerId()) > 0 {
+			if id, err := pdid.From(r.GetWorkerId()); err != nil || kindOf(id) != DomCameraWorker {
+				return invalid("worker_id", "a worker identity is required")
+			}
+			w, err := nx.CameraWorker().Get(ctx, api.CameraWorkerGetRequest_builder{Ref: api.CameraWorkerRef_builder{Id: r.GetWorkerId()}.Build()}.Build())
+			if err != nil {
+				return err
+			}
+			if w.GetState() != api.HostState_HOST_STATE_ADOPTED {
+				return failed("worker must already be adopted")
+			}
+			if err := cameraSameScope(n.GetTenant().GetId(), n.GetSite().GetId(), w.GetTenant().GetId(), w.GetSite().GetId()); err != nil {
+				return err
+			}
+		}
 		c := New(nx, s.d)
 		if r.GetRef() == nil {
 			old, err := c.ent(ctx).CameraAssignment.Query().Where(cameraassignment.SetIdEQ(mustId(set.GetId()).Uuid()), cameraassignment.DateErasedIsNil()).Only(ctx)
@@ -100,7 +113,7 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 				if err != nil {
 					return err
 				}
-				if !bytes.Equal(v.GetNetwork().GetId(), n.GetId()) || !bytes.Equal(v.GetProducer().GetId(), p.GetId()) || v.GetWorkerSlot() != r.GetWorkerSlot() {
+				if !bytes.Equal(v.GetNetwork().GetId(), n.GetId()) || !bytes.Equal(v.GetProducer().GetId(), p.GetId()) || v.GetWorkerSlot() != r.GetWorkerSlot() || !bytes.Equal(v.GetWorkerId(), r.GetWorkerId()) {
 					return failed("set already has a different camera assignment; use its versioned update or handover")
 				}
 				out = v
@@ -109,7 +122,7 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 			if !ent.IsNotFound(err) {
 				return err
 			}
-			out, err = nx.CameraAssignment().Add(ctx, api.CameraAssignmentAddRequest_builder{Tenant: api.TenantRef_builder{Id: set.GetTenant().GetId()}.Build(), Site: cameraSite(set.GetSite()), Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), Set: api.SetRef_builder{Id: set.GetId()}.Build(), Producer: api.ProducerRef_builder{Id: p.GetId()}.Build(), WorkerSlot: r.GetWorkerSlot(), Generation: 1, CatalogRevision: 0}.Build())
+			out, err = nx.CameraAssignment().Add(ctx, api.CameraAssignmentAddRequest_builder{Tenant: api.TenantRef_builder{Id: set.GetTenant().GetId()}.Build(), Site: cameraSite(set.GetSite()), Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), Set: api.SetRef_builder{Id: set.GetId()}.Build(), Producer: api.ProducerRef_builder{Id: p.GetId()}.Build(), WorkerSlot: r.GetWorkerSlot(), WorkerId: r.GetWorkerId(), Generation: 1, CatalogRevision: 0}.Build())
 			return err
 		}
 		a, err := c.cameraAssignmentRow(ctx, r.GetRef())
@@ -122,11 +135,17 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 		if !bytes.Equal(a.GetNetwork().GetId(), n.GetId()) || !bytes.Equal(a.GetProducer().GetId(), p.GetId()) {
 			return invalid("assignment", "network and producer changes require explicit replacement; a Set is immutable")
 		}
-		if a.GetWorkerSlot() == r.GetWorkerSlot() {
+		if a.GetWorkerSlot() == r.GetWorkerSlot() && bytes.Equal(a.GetWorkerId(), r.GetWorkerId()) {
 			out = a
 			return nil
 		}
-		out, err = nx.CameraAssignment().Patch(ctx, api.CameraAssignmentPatchRequest_builder{Ref: r.GetRef(), WorkerSlot: z.Ptr(r.GetWorkerSlot()), Generation: z.Ptr(a.GetGeneration() + 1), CatalogRevision: z.Ptr(a.GetCatalogRevision() + 1), DateUpdated: a.GetDateUpdated()}.Build())
+		patch := api.CameraAssignmentPatchRequest_builder{Ref: r.GetRef(), WorkerSlot: z.Ptr(r.GetWorkerSlot()), Generation: z.Ptr(a.GetGeneration() + 1), CatalogRevision: z.Ptr(a.GetCatalogRevision() + 1), DateUpdated: a.GetDateUpdated()}
+		if len(r.GetWorkerId()) > 0 {
+			patch.WorkerId = r.GetWorkerId()
+		} else {
+			patch.WorkerIdNull = z.Ptr(true)
+		}
+		out, err = nx.CameraAssignment().Patch(ctx, patch.Build())
 		return err
 	})
 	if err != nil {

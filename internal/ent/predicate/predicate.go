@@ -80,6 +80,20 @@ func CameraJobOrErr(p CameraJob, err error) CameraJob {
 // CameraNetwork is the predicate function for cameranetwork builders.
 type CameraNetwork func(*sql.Selector)
 
+// CameraWorker is the predicate function for cameraworker builders.
+type CameraWorker func(*sql.Selector)
+
+// CameraWorkerOrErr calls the predicate only if the error is not nit.
+func CameraWorkerOrErr(p CameraWorker, err error) CameraWorker {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Delegation is the predicate function for delegation builders.
 type Delegation func(*sql.Selector)
 

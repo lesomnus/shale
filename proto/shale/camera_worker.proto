@@ -1,0 +1,58 @@
+edition = "2023";
+package shale;
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/common.proto";
+import "shale/host.proto";
+import "shale/site.proto";
+import "shale/payday/tenant.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// CameraWorker is an adopted tenant machine which executes only its assigned
+// camera jobs. It has its own client-only certificate, independent of Producer.
+// The site is approved at adoption; a worker never receives a tenant-wide site flag.
+message CameraWorker {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID key: true default: ""}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  // Chosen by explicit adoption; only assignments in this exact site are served.
+  Site site = 3 [(orm.edge) = {nullable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  string hardware_id = 8;
+  string hostname = 9;
+  HostState state = 10;
+  string cert_serial = 11;
+  HostJoin join = 12;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
+  google.protobuf.Timestamp date_adopted = 16 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_seen = 17 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_cert_expires = 18 [(orm.field) = {nullable: true}];
+  string version = 19;
+  // Full SHA-256 SPKI fingerprint approved by Adopt, independent of a new Join.
+  string approved_key_fingerprint = 20;
+  // Moves on renewal; date_adopted remains the operator approval time.
+  google.protobuf.Timestamp date_cert_issued = 21 [(orm.field) = {nullable: true}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]},
+      {name: "slug" refs: [{name: "alias", number: 4}, {name: "tenant", number: 2}] unique: true},
+      {name: "hardware" refs: [{name: "hardware_id", number: 8}, {name: "tenant", number: 2}]}
+    ]
+  };
+  option (payday.entity) = {
+    domain: 31
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}, {name: "labels"}]
+      size: 20 max: 100
+    }
+    watch: {}
+  };
+}

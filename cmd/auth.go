@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/frame"
@@ -79,7 +80,7 @@ func Resolver(s *Server) auth.Resolver {
 		switch k.Domain() {
 		case core.DomHolder:
 			return holderFrame(ctx, own, api.HolderRef_builder{Id: k.Bytes()}.Build())
-		case core.DomProducer, core.DomReader, core.DomNode, core.DomRelay:
+		case core.DomProducer, core.DomReader, core.DomNode, core.DomRelay, core.DomCameraWorker:
 			return hostFrame(ctx, own, k, id)
 		default:
 			return nil, fmt.Errorf("%w: a %s cannot call", auth.ErrNoCredential, k.Domain())
@@ -118,12 +119,19 @@ func hostFrame(ctx context.Context, own api.Server, k pdid.Id, id auth.Identity)
 		state  api.HostState
 		serial string
 		tenant pdid.Id
-		row    any
+		row    proto.Message
 	)
 
 	switch k.Domain() {
 	case core.DomProducer:
 		v, err := own.Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: k.Bytes()}.Build()}.Build())
+		if err != nil {
+			return nil, refused(err)
+		}
+		state, serial, row = v.GetState(), v.GetCertSerial(), v
+		tenant, _ = pdid.From(v.GetTenant().GetId())
+	case core.DomCameraWorker:
+		v, err := own.CameraWorker().Get(ctx, api.CameraWorkerGetRequest_builder{Ref: api.CameraWorkerRef_builder{Id: k.Bytes()}.Build()}.Build())
 		if err != nil {
 			return nil, refused(err)
 		}
@@ -166,12 +174,7 @@ func hostFrame(ctx context.Context, own api.Server, k pdid.Id, id auth.Identity)
 		}
 	}
 
-	f := frame.New(k, tenant, frame.Grant{})
-	if m, ok := row.(interface{ ProtoReflect() }); ok {
-		_ = m
-	}
-
-	return f, nil
+	return frame.New(k, tenant, frame.Grant{}).WithRow(row), nil
 }
 
 // refused says why the row of a caller could not be read. A row that is not
