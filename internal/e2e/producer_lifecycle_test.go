@@ -18,6 +18,7 @@ import (
 	"github.com/lesomnus/shale/internal/cameratest"
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/token"
+	"github.com/lesomnus/shale/server/core"
 	catalog "github.com/lesomnus/shale/source"
 	catalogcp "github.com/lesomnus/shale/source/cp"
 	"github.com/stretchr/testify/require"
@@ -284,7 +285,9 @@ func TestProducerLifecycleReconcilesActualMediaAndHistory(t *testing.T) {
 	require.NoError(t, err)
 	a := sourceCatalogAssignment(t, admin, network, host)
 	profile := api.CameraCaptureProfile_builder{Codec: "h264", Width: 160, Height: 90, Fps: 10, MaxBitrateBps: 1_000_000, KeyframeIntervalMs: 1000}.Build()
-	anchorInput := cameratest.ServeRTSP(t)
+	before := cameramodel.MediaProfile{Token: "main", Codec: "h264", Width: 160, Height: 90, FPS: 10, Bitrate: 128_000, GOP: 10}
+	anchorCamera := cameratest.ServeRTSPCamera(t, cameratest.RTSPOptions{Profile: before})
+	anchorInput := anchorCamera.URL()
 	anchor := lifecycleBind(t, admin, a, "anchor", anchorInput)
 	anchorPub := lifecyclePublish(t, admin, a, anchor, nil, anchorInput, profile, nil, "anchor-first")
 	anchor = lifecycleApplied(t, admin, anchorPub.GetBinding())
@@ -294,7 +297,6 @@ func TestProducerLifecycleReconcilesActualMediaAndHistory(t *testing.T) {
 	defer anchorViewer.close()
 	anchorViewer.video(t, 3, 10*time.Second)
 	require.Equal(t, int32(1), factories.Load(), "initial unavailable snapshot must not repeatedly reopen the authenticated provider")
-	before := cameramodel.MediaProfile{Token: "main", Codec: "h264", Width: 160, Height: 90, FPS: 10, Bitrate: 128_000, GOP: 10}
 	cam := cameratest.ServeRTSPCamera(t, cameratest.RTSPOptions{ListenAddress: "127.0.0.2:0", Path: "/main", Profile: before, Username: "fixture-reader", Password: "fixture-pass:/v1@local-only"})
 	scope := cameramodel.EnrollmentScope{TenantID: sourceCatalogID(t, set.GetTenant().GetId()), SetID: sourceCatalogID(t, set.GetId()), ProducerID: sourceCatalogID(t, host.GetId()), NetworkID: sourceCatalogID(t, network.GetId())}
 	r1 := cameramodel.CredentialRef{Provider: "fixture", ID: "stream", Version: "1", Scope: scope, Purpose: cameramodel.AuthStreaming, Recoverable: true}
@@ -386,6 +388,22 @@ func TestProducerLifecycleReconcilesActualMediaAndHistory(t *testing.T) {
 	require.Equal(t, priorEpoch, current.GetAppliedApplication().GetCaptureEpoch())
 	lifecycleFreshVideo(t, viewer, 15)
 	lifecycleCommitted(t, admin, mutable, mutableBeforeReject)
+	stableAnchor, err := api.NewCameraBindingServiceClient(admin).Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: anchor.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.Equal(t, anchorEpoch, stableAnchor.GetAppliedApplication().GetCaptureEpoch(), "all preceding updates kept the unrelated capture and peer")
+	lifecycleFreshVideo(t, anchorViewer, 15)
+	// The full new catalog is still over capacity. A real disconnect of its
+	// unchanged, previously admitted camera may nevertheless acquire a fresh
+	// ticket at the latest catalog and resume actual media/recording.
+	anchorViewer.close()
+	anchorCamera.Disconnect()
+	anchor = lifecycleApplied(t, admin, anchor, anchorEpoch)
+	anchorEpoch = anchor.GetAppliedApplication().GetCaptureEpoch()
+	anchorFirst = lifecycleCommitted(t, admin, anchor)
+	anchorViewer = watch(t, lifecycleLive(t, admin, anchor))
+	defer anchorViewer.close()
+	lifecycleFreshVideo(t, anchorViewer, 5)
+	lifecycleFreshVideo(t, viewer, 15)
 	// Force an old FIFO to remain while the new metadata ceiling shrinks.
 	fault.enabled.Store(true)
 	hits := fault.hits.Load()
@@ -401,6 +419,10 @@ func TestProducerLifecycleReconcilesActualMediaAndHistory(t *testing.T) {
 	fault.enabled.Store(false)
 	mutable = lifecycleApplied(t, admin, pub.GetBinding())
 	lifecycleCommitted(t, admin, mutable)
+	fault.mu.Lock()
+	oldMaxLength := fault.limits[priorEpoch]
+	fault.mu.Unlock()
+	require.Greater(t, oldMaxLength, core.MaxLength(mutable.GetStartingApplication().GetSegmentProfile()), "the blocked old upload retained its larger epoch's signed length budget")
 	anchorNow, err := api.NewCameraBindingServiceClient(admin).Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: anchor.GetId()}.Build()}.Build())
 	require.NoError(t, err)
 	require.Equal(t, anchorEpoch, anchorNow.GetAppliedApplication().GetCaptureEpoch(), "unrelated capture never restarts for another catalog revision")

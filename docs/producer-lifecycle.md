@@ -39,11 +39,14 @@ New incarnations reserve a negotiated segment's maximum RAM in addition to bytes
 already retained. Existing static negotiation keeps its compatibility behavior.
 
 The sequence is preview, atomic strict commit, changed-source cancellation/join
-and bounded FIFO drain, then new capture. A failed final admission leaves the
+and bounded FIFO drain, then new capture. A rejected preview or strict CP commit leaves the
 existing captures and peers running. Every ticket freezes its storage profile,
 so a newly committed lower Source profile cannot lower old queued segments'
 max_length or change their incarnation. All changed captures stop promptly;
 their independent drains proceed concurrently. Unchanged captures keep running.
+If retained queues grow during that commit/drain interval, a final RAM check can
+leave changed captures stopped while the replacement waits for enough room;
+that later check does not promise to restore their old sessions.
 
 Desired publication is separate from current execution. Publishing a replacement
 does not retire the currently running ticket: it may keep serving and recording
