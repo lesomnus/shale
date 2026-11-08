@@ -92,7 +92,9 @@ func normalizeMedia(p camera.MediaProfile) (camera.MediaProfile, error) {
 	if p.GOP == 0 {
 		p.GOP = int(math.Round(p.FPS))
 	}
-	if p.GOP < 1 || p.GOP > 600 {
+	// The bounded clip is GOP-aligned and looped; reject longer GOPs rather
+	// than growing a test capture without a bound.
+	if p.GOP < 1 || p.GOP > int(math.Ceil(2*p.FPS)) {
 		return p, fmt.Errorf("unsupported synthetic GOP")
 	}
 	if p.Token == "" {
@@ -118,7 +120,9 @@ func (c *RTSPCamera) SetProfile(parent context.Context, p camera.MediaProfile) e
 	defer os.RemoveAll(dir)
 	path := filepath.Join(dir, "stream.h264")
 	rate := fmt.Sprint(p.Bitrate)
-	args := []string{"-hide_banner", "-v", "error", "-filter_threads", "1", "-f", "lavfi", "-i", fmt.Sprintf("testsrc2=s=%dx%d:r=%g", p.Width, p.Height, p.FPS), "-t", "2", "-an", "-c:v", "libx264", "-threads", "1", "-preset", "ultrafast", "-tune", "zerolatency", "-g", fmt.Sprint(p.GOP), "-bf", "0", "-b:v", rate, "-minrate", rate, "-maxrate", rate, "-bufsize", fmt.Sprint(2 * p.Bitrate), "-x264-params", "repeat-headers=1:aud=1:nal-hrd=cbr", "-f", "h264", "-y", path}
+	frames := int(math.Ceil(2 * p.FPS))
+	frames = ((frames + p.GOP - 1) / p.GOP) * p.GOP
+	args := []string{"-hide_banner", "-v", "error", "-filter_threads", "1", "-f", "lavfi", "-i", fmt.Sprintf("testsrc2=s=%dx%d:r=%g", p.Width, p.Height, p.FPS), "-frames:v", fmt.Sprint(frames), "-an", "-c:v", "libx264", "-threads", "1", "-preset", "ultrafast", "-tune", "zerolatency", "-g", fmt.Sprint(p.GOP), "-bf", "0", "-b:v", rate, "-minrate", rate, "-maxrate", rate, "-bufsize", fmt.Sprint(2 * p.Bitrate), "-x264-params", "repeat-headers=1:aud=1:nal-hrd=cbr:scenecut=0", "-f", "h264", "-y", path}
 	cmd := exec.CommandContext(ctx, c.options.FFmpeg, args...)
 	cmd.WaitDelay = time.Second
 	if err = cmd.Run(); err != nil {
@@ -128,7 +132,7 @@ func (c *RTSPCamera) SetProfile(parent context.Context, p camera.MediaProfile) e
 		return fmt.Errorf("synthetic H264 encoder failed")
 	}
 	raw, err := os.ReadFile(path)
-	if err != nil || len(raw) > 3<<20 {
+	if err != nil || len(raw) > 6<<20 {
 		return fmt.Errorf("invalid synthetic encoded media")
 	}
 	units, sps, pps := accessUnits(raw)

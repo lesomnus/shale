@@ -123,9 +123,33 @@ func TestRTSPCameraRejectsUnboundedProfileWithoutChangingMedia(t *testing.T) {
 	after.Width = 16384
 	require.Error(t, fixture.SetProfile(t.Context(), after))
 	require.Equal(t, before.Width, fixture.Profile().Width)
+	_, after = profiles()
+	after.GOP = 3 * int(after.FPS)
+	require.Error(t, fixture.SetProfile(t.Context(), after), "a two-second loop must not claim a longer actual GOP")
+	require.Equal(t, before.GOP, fixture.Profile().GOP)
 	cancelled, cancel := context.WithCancel(t.Context())
 	cancel()
 	_, after = profiles()
 	require.ErrorIs(t, fixture.SetProfile(cancelled, after), context.Canceled)
 	require.Equal(t, before.Width, fixture.Profile().Width)
+}
+
+func TestRTSPCameraBitrateOnlyChangesActualPacketRate(t *testing.T) {
+	requireMediaTools(t)
+	before, _ := profiles()
+	fixture := cameratest.ServeRTSPCamera(t, cameratest.RTSPOptions{Profile: before})
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
+	defer cancel()
+	old, err := probeRTSP(ctx, fixture.URL(), 1)
+	require.NoError(t, err)
+	after := before
+	after.Bitrate *= 4
+	require.NoError(t, fixture.SetProfile(ctx, after))
+	current, err := probeRTSP(ctx, fixture.URL(), 1)
+	require.NoError(t, err)
+	require.Equal(t, old.Width, current.Width)
+	require.Equal(t, old.Height, current.Height)
+	require.InDelta(t, old.FPS, current.FPS, 0.1)
+	require.Greater(t, current.Bitrate, 2*old.Bitrate, "changing bitrate alone must change actual payload bytes")
+	t.Logf("bitrate-only actual old %.0fbps new %.0fbps at %dx%d %.2ffps", old.Bitrate, current.Bitrate, current.Width, current.Height, current.FPS)
 }
