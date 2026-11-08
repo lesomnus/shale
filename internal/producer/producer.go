@@ -881,15 +881,16 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 // with the producer so that it is there before anything that asks it.
 func (p *Producer) newCapture(s *source) *Capture {
 	return &Capture{
-		Ffmpeg:        p.cfg.Ffmpeg,
-		AuthProvider:  p.cfg.AuthProvider,
-		Gst:           p.cfg.Gst,
-		Source:        s.cfg,
-		Log:           p.log,
-		RawLoops:      s.cfg.RawLoops,
-		BeforeAttempt: func(ctx context.Context) error { return p.beginSourceAttempt(ctx, s) },
-		OnCredential:  func(ref *camera.CredentialRef) { p.sourceCredentialUsed(s, ref) },
-		OnAttemptDone: func(ctx context.Context) { p.endSourceAttempt(ctx, s) },
+		Ffmpeg:                 p.cfg.Ffmpeg,
+		AuthProvider:           p.cfg.AuthProvider,
+		AuthProviderForAttempt: func() camera.AuthProvider { return p.sourceAuth(s) },
+		Gst:                    p.cfg.Gst,
+		Source:                 s.cfg,
+		Log:                    p.log,
+		RawLoops:               s.cfg.RawLoops,
+		BeforeAttempt:          func(ctx context.Context) error { return p.beginSourceAttempt(ctx, s) },
+		OnCredential:           func(ref *camera.CredentialRef) { p.sourceCredentialUsed(s, ref) },
+		OnAttemptDone:          func(ctx context.Context) { p.endSourceAttempt(ctx, s) },
 		OnLine: func(line string) bool {
 			return (s.dark != nil && s.dark.observe(line)) || p.discontinuity(s, line)
 		},

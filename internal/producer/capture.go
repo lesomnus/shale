@@ -567,6 +567,9 @@ func encoderOpens(ctx context.Context, ffmpeg, encoder string) bool {
 type Capture struct {
 	Ffmpeg       string
 	AuthProvider camera.AuthProvider
+	// AuthProviderForAttempt binds a fully constructed Source incarnation after
+	// BeforeAttempt succeeds, immediately before leasing input credentials.
+	AuthProviderForAttempt func() camera.AuthProvider
 	// Gst is gst-launch, for a source captured through GStreamer.
 	Gst    string
 	Source SourceConfig
@@ -753,7 +756,11 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	if c.OnAttemptDone != nil {
 		defer c.OnAttemptDone(ctx)
 	}
-	return credential.WithInput(ctx, c.AuthProvider, c.Source.Scope, camera.DeviceHint{}, c.Source.InputCredential, c.Source.Input, func(input string, sanitize credential.Sanitizer) error {
+	provider := c.AuthProvider
+	if c.AuthProviderForAttempt != nil {
+		provider = c.AuthProviderForAttempt()
+	}
+	return credential.WithInput(ctx, provider, c.Source.Scope, camera.DeviceHint{}, c.Source.InputCredential, c.Source.Input, func(input string, sanitize credential.Sanitizer) error {
 		if c.OnCredential != nil {
 			var used *camera.CredentialRef
 			if c.Source.InputCredential != nil {

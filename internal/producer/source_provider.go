@@ -154,9 +154,17 @@ func (p *Producer) sourceAuth(s *source) camera.AuthProvider {
 	provider := p.cfg.AuthProvider
 	if scoped, ok := provider.(camera.SourceAuthProvider); ok {
 		value := camera.SourceAuthContext{Scope: s.cfg.Scope}
-		value.AssignmentID, value.AssignmentGeneration = p.initialCatalog.Revision.AssignmentID, p.initialCatalog.Revision.Generation
-		if spec, ok := p.initialSpecs[s.cfg.Alias]; ok {
-			value.SourceID, value.Revision = spec.SourceID, spec.Revision
+		if s.spec != nil {
+			// The startup alias map may describe a different source/revision
+			// after a live update. Each incarnation owns its immutable intent.
+			value.SourceID, value.Revision = s.spec.SourceID, s.spec.Revision
+			value.AssignmentID, value.AssignmentGeneration = s.catalogRevision.AssignmentID, s.catalogRevision.Generation
+		} else {
+			initial := p.acceptedCatalog()
+			value.AssignmentID, value.AssignmentGeneration = initial.Revision.AssignmentID, initial.Revision.Generation
+			if spec, ok := p.initialSpecs[s.cfg.Alias]; ok {
+				value.SourceID, value.Revision = spec.SourceID, spec.Revision
+			}
 		}
 		if value.SourceID == "" && s.row != nil {
 			value.SourceID = mustId(s.row.GetId()).String()

@@ -60,6 +60,32 @@ type lifecycleAuth struct {
 	mu       sync.Mutex
 	provider cameramodel.AuthProvider
 	refs     []cameramodel.CredentialRef
+	contexts []cameramodel.SourceAuthContext
+}
+
+type lifecycleScopedAuth struct {
+	parent *lifecycleAuth
+	source cameramodel.SourceAuthContext
+}
+
+func (a *lifecycleAuth) ForSource(source cameramodel.SourceAuthContext) cameramodel.AuthProvider {
+	return lifecycleScopedAuth{parent: a, source: source}
+}
+func (a lifecycleScopedAuth) Acquire(ctx context.Context, r cameramodel.AuthRequest) (cameramodel.CredentialLease, error) {
+	a.parent.mu.Lock()
+	a.parent.contexts = append(a.parent.contexts, a.source)
+	a.parent.mu.Unlock()
+	return a.parent.Acquire(ctx, r)
+}
+func (a *lifecycleAuth) usedContext(p catalog.AppliedProof) bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for _, seen := range a.contexts {
+		if seen.SourceID == p.SourceID && seen.Revision == p.SpecRevision && seen.AssignmentID == p.Revision.AssignmentID && seen.AssignmentGeneration == p.Revision.Generation {
+			return seen.Scope == (cameramodel.EnrollmentScope{TenantID: p.Scope.TenantID, SiteID: p.Scope.SiteID, SetID: p.Scope.SetID, ProducerID: p.Scope.ProducerID, NetworkID: p.Scope.NetworkID})
+		}
+	}
+	return false
 }
 
 func (a *lifecycleAuth) Acquire(ctx context.Context, r cameramodel.AuthRequest) (cameramodel.CredentialLease, error) {
@@ -317,6 +343,7 @@ func TestProducerLifecycleReconcilesActualMediaAndHistory(t *testing.T) {
 	proof, ok := observer.proof(mutable.GetAppliedApplication().GetCaptureEpoch())
 	require.True(t, ok)
 	require.Equal(t, "1", proof.UsedCredentialRef.Version)
+	require.True(t, auth.usedContext(proof), "the actual lease was bound to this immutable capture intent")
 	firstEpoch := mutable.GetAppliedApplication().GetCaptureEpoch()
 	pub = lifecyclePublish(t, admin, a, mutable, pub.GetJob(), cam.URL(), profile, ref(r2), "mutable-new-ref")
 	mutable = lifecycleApplied(t, admin, pub.GetBinding())
@@ -324,6 +351,7 @@ func TestProducerLifecycleReconcilesActualMediaAndHistory(t *testing.T) {
 	proof, ok = observer.proof(mutable.GetAppliedApplication().GetCaptureEpoch())
 	require.True(t, ok)
 	require.Equal(t, "2", proof.UsedCredentialRef.Version)
+	require.True(t, auth.usedContext(proof), "a credential update cannot reuse the startup alias's old revision")
 
 	// Restart the test control/storage/relay process while the external Producer
 	// and RTSP fixture keep running. Failed catalog reads must not empty capture.
@@ -367,6 +395,9 @@ func TestProducerLifecycleReconcilesActualMediaAndHistory(t *testing.T) {
 	mutable = lifecycleApplied(t, admin, pub.GetBinding())
 	mutableBeforeReject := lifecycleCommitted(t, admin, mutable)
 	require.Equal(t, id, string(mutable.GetSource().GetId()), "endpoint changes preserve physical/logical Source identity")
+	proof, ok = observer.proof(mutable.GetAppliedApplication().GetCaptureEpoch())
+	require.True(t, ok)
+	require.True(t, auth.usedContext(proof), "a new endpoint/profile leases against its current per-source revision")
 	viewer := watch(t, lifecycleLive(t, admin, mutable))
 	defer viewer.close()
 	viewer.video(t, 3, 10*time.Second)
