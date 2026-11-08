@@ -21,6 +21,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
 	"github.com/lesomnus/shale/internal/ent/cameranetwork"
+	"github.com/lesomnus/shale/internal/ent/camerapolicy"
+	"github.com/lesomnus/shale/internal/ent/camerapreset"
 	"github.com/lesomnus/shale/internal/ent/cameraworker"
 	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
@@ -71,6 +73,10 @@ type Client struct {
 	CameraJob *CameraJobClient
 	// CameraNetwork is the client for interacting with the CameraNetwork builders.
 	CameraNetwork *CameraNetworkClient
+	// CameraPolicy is the client for interacting with the CameraPolicy builders.
+	CameraPolicy *CameraPolicyClient
+	// CameraPreset is the client for interacting with the CameraPreset builders.
+	CameraPreset *CameraPresetClient
 	// CameraWorker is the client for interacting with the CameraWorker builders.
 	CameraWorker *CameraWorkerClient
 	// Delegation is the client for interacting with the Delegation builders.
@@ -133,6 +139,8 @@ func (c *Client) init() {
 	c.CameraDevice = NewCameraDeviceClient(c.config)
 	c.CameraJob = NewCameraJobClient(c.config)
 	c.CameraNetwork = NewCameraNetworkClient(c.config)
+	c.CameraPolicy = NewCameraPolicyClient(c.config)
+	c.CameraPreset = NewCameraPresetClient(c.config)
 	c.CameraWorker = NewCameraWorkerClient(c.config)
 	c.Delegation = NewDelegationClient(c.config)
 	c.Device = NewDeviceClient(c.config)
@@ -256,6 +264,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		CameraDevice:     NewCameraDeviceClient(cfg),
 		CameraJob:        NewCameraJobClient(cfg),
 		CameraNetwork:    NewCameraNetworkClient(cfg),
+		CameraPolicy:     NewCameraPolicyClient(cfg),
+		CameraPreset:     NewCameraPresetClient(cfg),
 		CameraWorker:     NewCameraWorkerClient(cfg),
 		Delegation:       NewDelegationClient(cfg),
 		Device:           NewDeviceClient(cfg),
@@ -306,6 +316,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		CameraDevice:     NewCameraDeviceClient(cfg),
 		CameraJob:        NewCameraJobClient(cfg),
 		CameraNetwork:    NewCameraNetworkClient(cfg),
+		CameraPolicy:     NewCameraPolicyClient(cfg),
+		CameraPreset:     NewCameraPresetClient(cfg),
 		CameraWorker:     NewCameraWorkerClient(cfg),
 		Delegation:       NewDelegationClient(cfg),
 		Device:           NewDeviceClient(cfg),
@@ -403,10 +415,11 @@ func (c *Client) InTx() bool {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.CameraAssignment,
-		c.CameraBinding, c.CameraDevice, c.CameraJob, c.CameraNetwork, c.CameraWorker,
-		c.Delegation, c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed,
-		c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set,
-		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
+		c.CameraBinding, c.CameraDevice, c.CameraJob, c.CameraNetwork, c.CameraPolicy,
+		c.CameraPreset, c.CameraWorker, c.Delegation, c.Device, c.Holder, c.Lamina,
+		c.Node, c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reader, c.Relay,
+		c.RowSeal, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source,
+		c.Tenant, c.UploadPolicy,
 	} {
 		n.Use(hooks...)
 	}
@@ -417,10 +430,11 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.CameraAssignment,
-		c.CameraBinding, c.CameraDevice, c.CameraJob, c.CameraNetwork, c.CameraWorker,
-		c.Delegation, c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed,
-		c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set,
-		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
+		c.CameraBinding, c.CameraDevice, c.CameraJob, c.CameraNetwork, c.CameraPolicy,
+		c.CameraPreset, c.CameraWorker, c.Delegation, c.Device, c.Holder, c.Lamina,
+		c.Node, c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reader, c.Relay,
+		c.RowSeal, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source,
+		c.Tenant, c.UploadPolicy,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -449,6 +463,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CameraJob.mutate(ctx, m)
 	case *CameraNetworkMutation:
 		return c.CameraNetwork.mutate(ctx, m)
+	case *CameraPolicyMutation:
+		return c.CameraPolicy.mutate(ctx, m)
+	case *CameraPresetMutation:
+		return c.CameraPreset.mutate(ctx, m)
 	case *CameraWorkerMutation:
 		return c.CameraWorker.mutate(ctx, m)
 	case *DelegationMutation:
@@ -2207,6 +2225,368 @@ func (c *CameraNetworkClient) mutate(ctx context.Context, m *CameraNetworkMutati
 		return (&CameraNetworkDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CameraNetwork mutation op: %q", m.Op())
+	}
+}
+
+// CameraPolicyClient is a client for the CameraPolicy schema.
+type CameraPolicyClient struct {
+	config
+}
+
+// NewCameraPolicyClient returns a client for the CameraPolicy from the given config.
+func NewCameraPolicyClient(c config) *CameraPolicyClient {
+	return &CameraPolicyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `camerapolicy.Hooks(f(g(h())))`.
+func (c *CameraPolicyClient) Use(hooks ...Hook) {
+	c.hooks.CameraPolicy = append(c.hooks.CameraPolicy, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `camerapolicy.Intercept(f(g(h())))`.
+func (c *CameraPolicyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraPolicy = append(c.inters.CameraPolicy, interceptors...)
+}
+
+// Create returns a builder for creating a CameraPolicy entity.
+func (c *CameraPolicyClient) Create() *CameraPolicyCreate {
+	mutation := newCameraPolicyMutation(c.config, OpCreate)
+	return &CameraPolicyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraPolicy entities.
+func (c *CameraPolicyClient) CreateBulk(builders ...*CameraPolicyCreate) *CameraPolicyCreateBulk {
+	return &CameraPolicyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraPolicyClient) MapCreateBulk(slice any, setFunc func(*CameraPolicyCreate, int)) *CameraPolicyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraPolicyCreateBulk{err: fmt.Errorf("calling to CameraPolicyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraPolicyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraPolicyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraPolicy.
+func (c *CameraPolicyClient) Update() *CameraPolicyUpdate {
+	mutation := newCameraPolicyMutation(c.config, OpUpdate)
+	return &CameraPolicyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraPolicyClient) UpdateOne(_m *CameraPolicy) *CameraPolicyUpdateOne {
+	mutation := newCameraPolicyMutation(c.config, OpUpdateOne, withCameraPolicy(_m))
+	return &CameraPolicyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraPolicyClient) UpdateOneId(id uuid.UUID) *CameraPolicyUpdateOne {
+	mutation := newCameraPolicyMutation(c.config, OpUpdateOne, withCameraPolicyId(id))
+	return &CameraPolicyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraPolicy.
+func (c *CameraPolicyClient) Delete() *CameraPolicyDelete {
+	mutation := newCameraPolicyMutation(c.config, OpDelete)
+	return &CameraPolicyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraPolicyClient) DeleteOne(_m *CameraPolicy) *CameraPolicyDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraPolicyClient) DeleteOneId(id uuid.UUID) *CameraPolicyDeleteOne {
+	builder := c.Delete().Where(camerapolicy.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraPolicyDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraPolicy.
+func (c *CameraPolicyClient) Query() *CameraPolicyQuery {
+	return &CameraPolicyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraPolicy},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraPolicy entity by its id.
+func (c *CameraPolicyClient) Get(ctx context.Context, id uuid.UUID) (*CameraPolicy, error) {
+	return c.Query().Where(camerapolicy.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraPolicyClient) GetX(ctx context.Context, id uuid.UUID) *CameraPolicy {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraPolicy.
+func (c *CameraPolicyClient) QueryTenant(_m *CameraPolicy) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerapolicy.Table, camerapolicy.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerapolicy.TenantTable, camerapolicy.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraPolicy.
+func (c *CameraPolicyClient) QuerySite(_m *CameraPolicy) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerapolicy.Table, camerapolicy.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerapolicy.SiteTable, camerapolicy.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNetwork queries the network edge of a CameraPolicy.
+func (c *CameraPolicyClient) QueryNetwork(_m *CameraPolicy) *CameraNetworkQuery {
+	query := (&CameraNetworkClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerapolicy.Table, camerapolicy.FieldId, id),
+			sqlgraph.To(cameranetwork.Table, cameranetwork.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerapolicy.NetworkTable, camerapolicy.NetworkColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPreset queries the preset edge of a CameraPolicy.
+func (c *CameraPolicyClient) QueryPreset(_m *CameraPolicy) *CameraPresetQuery {
+	query := (&CameraPresetClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerapolicy.Table, camerapolicy.FieldId, id),
+			sqlgraph.To(camerapreset.Table, camerapreset.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerapolicy.PresetTable, camerapolicy.PresetColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraPolicyClient) Hooks() []Hook {
+	return c.hooks.CameraPolicy
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraPolicyClient) Interceptors() []Interceptor {
+	return c.inters.CameraPolicy
+}
+
+func (c *CameraPolicyClient) mutate(ctx context.Context, m *CameraPolicyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraPolicyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraPolicyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraPolicyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraPolicyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraPolicy mutation op: %q", m.Op())
+	}
+}
+
+// CameraPresetClient is a client for the CameraPreset schema.
+type CameraPresetClient struct {
+	config
+}
+
+// NewCameraPresetClient returns a client for the CameraPreset from the given config.
+func NewCameraPresetClient(c config) *CameraPresetClient {
+	return &CameraPresetClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `camerapreset.Hooks(f(g(h())))`.
+func (c *CameraPresetClient) Use(hooks ...Hook) {
+	c.hooks.CameraPreset = append(c.hooks.CameraPreset, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `camerapreset.Intercept(f(g(h())))`.
+func (c *CameraPresetClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraPreset = append(c.inters.CameraPreset, interceptors...)
+}
+
+// Create returns a builder for creating a CameraPreset entity.
+func (c *CameraPresetClient) Create() *CameraPresetCreate {
+	mutation := newCameraPresetMutation(c.config, OpCreate)
+	return &CameraPresetCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraPreset entities.
+func (c *CameraPresetClient) CreateBulk(builders ...*CameraPresetCreate) *CameraPresetCreateBulk {
+	return &CameraPresetCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraPresetClient) MapCreateBulk(slice any, setFunc func(*CameraPresetCreate, int)) *CameraPresetCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraPresetCreateBulk{err: fmt.Errorf("calling to CameraPresetClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraPresetCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraPresetCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraPreset.
+func (c *CameraPresetClient) Update() *CameraPresetUpdate {
+	mutation := newCameraPresetMutation(c.config, OpUpdate)
+	return &CameraPresetUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraPresetClient) UpdateOne(_m *CameraPreset) *CameraPresetUpdateOne {
+	mutation := newCameraPresetMutation(c.config, OpUpdateOne, withCameraPreset(_m))
+	return &CameraPresetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraPresetClient) UpdateOneId(id uuid.UUID) *CameraPresetUpdateOne {
+	mutation := newCameraPresetMutation(c.config, OpUpdateOne, withCameraPresetId(id))
+	return &CameraPresetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraPreset.
+func (c *CameraPresetClient) Delete() *CameraPresetDelete {
+	mutation := newCameraPresetMutation(c.config, OpDelete)
+	return &CameraPresetDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraPresetClient) DeleteOne(_m *CameraPreset) *CameraPresetDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraPresetClient) DeleteOneId(id uuid.UUID) *CameraPresetDeleteOne {
+	builder := c.Delete().Where(camerapreset.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraPresetDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraPreset.
+func (c *CameraPresetClient) Query() *CameraPresetQuery {
+	return &CameraPresetQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraPreset},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraPreset entity by its id.
+func (c *CameraPresetClient) Get(ctx context.Context, id uuid.UUID) (*CameraPreset, error) {
+	return c.Query().Where(camerapreset.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraPresetClient) GetX(ctx context.Context, id uuid.UUID) *CameraPreset {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraPreset.
+func (c *CameraPresetClient) QueryTenant(_m *CameraPreset) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerapreset.Table, camerapreset.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerapreset.TenantTable, camerapreset.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraPreset.
+func (c *CameraPresetClient) QuerySite(_m *CameraPreset) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerapreset.Table, camerapreset.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerapreset.SiteTable, camerapreset.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraPresetClient) Hooks() []Hook {
+	return c.hooks.CameraPreset
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraPresetClient) Interceptors() []Interceptor {
+	return c.inters.CameraPreset
+}
+
+func (c *CameraPresetClient) mutate(ctx context.Context, m *CameraPresetMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraPresetCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraPresetUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraPresetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraPresetDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraPreset mutation op: %q", m.Op())
 	}
 }
 
@@ -5455,16 +5835,16 @@ func (c *UploadPolicyClient) mutate(ctx context.Context, m *UploadPolicyMutation
 type (
 	hooks struct {
 		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
-		CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraWorker,
-		Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy,
-		Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember,
-		Source, Tenant, UploadPolicy []ent.Hook
+		CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraPolicy,
+		CameraPreset, CameraWorker, Delegation, Device, Holder, Lamina, Node, Outbox,
+		Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink,
+		Site, SiteMember, Source, Tenant, UploadPolicy []ent.Hook
 	}
 	inters struct {
 		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
-		CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraWorker,
-		Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy,
-		Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember,
-		Source, Tenant, UploadPolicy []ent.Interceptor
+		CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraPolicy,
+		CameraPreset, CameraWorker, Delegation, Device, Holder, Lamina, Node, Outbox,
+		Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink,
+		Site, SiteMember, Source, Tenant, UploadPolicy []ent.Interceptor
 	}
 )

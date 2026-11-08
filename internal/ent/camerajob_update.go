@@ -267,6 +267,18 @@ func (_u *CameraJobUpdate) ClearLastOperationHash() *CameraJobUpdate {
 	return _u
 }
 
+// SetPinnedPreset sets the "pinned_preset" field.
+func (_u *CameraJobUpdate) SetPinnedPreset(v *api.CameraResolvedPreset) *CameraJobUpdate {
+	_u.mutation.SetPinnedPreset(v)
+	return _u
+}
+
+// ClearPinnedPreset clears the value of the "pinned_preset" field.
+func (_u *CameraJobUpdate) ClearPinnedPreset() *CameraJobUpdate {
+	_u.mutation.ClearPinnedPreset()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraJobUpdate) SetDateUpdated(v time.Time) *CameraJobUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -488,6 +500,22 @@ func (_u *CameraJobUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.LastOperationHashCleared() {
 		_spec.ClearField(camerajob.FieldLastOperationHash, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.PinnedPreset(); ok {
+		vv, err := camerajob.ValueScanner.PinnedPreset.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(camerajob.FieldPinnedPreset, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerajob.FieldPinnedPreset); ok {
+		_spec.SetField(camerajob.FieldPinnedPreset, field.TypeJson, e)
+	}
+	if _u.mutation.PinnedPresetCleared() {
+		_spec.ClearField(camerajob.FieldPinnedPreset, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerajob.FieldDateUpdated, field.TypeTime, value)
@@ -765,6 +793,18 @@ func (_u *CameraJobUpdateOne) ClearLastOperationHash() *CameraJobUpdateOne {
 	return _u
 }
 
+// SetPinnedPreset sets the "pinned_preset" field.
+func (_u *CameraJobUpdateOne) SetPinnedPreset(v *api.CameraResolvedPreset) *CameraJobUpdateOne {
+	_u.mutation.SetPinnedPreset(v)
+	return _u
+}
+
+// ClearPinnedPreset clears the value of the "pinned_preset" field.
+func (_u *CameraJobUpdateOne) ClearPinnedPreset() *CameraJobUpdateOne {
+	_u.mutation.ClearPinnedPreset()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraJobUpdateOne) SetDateUpdated(v time.Time) *CameraJobUpdateOne {
 	_u.mutation.SetDateUpdated(v)
@@ -1016,6 +1056,22 @@ func (_u *CameraJobUpdateOne) sqlSave(ctx context.Context) (_node *CameraJob, er
 	}
 	if _u.mutation.LastOperationHashCleared() {
 		_spec.ClearField(camerajob.FieldLastOperationHash, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.PinnedPreset(); ok {
+		vv, err := camerajob.ValueScanner.PinnedPreset.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(camerajob.FieldPinnedPreset, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerajob.FieldPinnedPreset); ok {
+		_spec.SetField(camerajob.FieldPinnedPreset, field.TypeJson, e)
+	}
+	if _u.mutation.PinnedPresetCleared() {
+		_spec.ClearField(camerajob.FieldPinnedPreset, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerajob.FieldDateUpdated, field.TypeTime, value)

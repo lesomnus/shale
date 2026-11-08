@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
 	"github.com/lesomnus/shale/internal/ent/cameranetwork"
 	"github.com/lesomnus/shale/internal/ent/predicate"
@@ -166,6 +167,26 @@ func (_u *CameraNetworkUpdate) SetNillableRevision(v *int64) *CameraNetworkUpdat
 // AddRevision adds value to the "revision" field.
 func (_u *CameraNetworkUpdate) AddRevision(v int64) *CameraNetworkUpdate {
 	_u.mutation.AddRevision(v)
+	return _u
+}
+
+// SetActivePolicyId sets the "active_policy_id" field.
+func (_u *CameraNetworkUpdate) SetActivePolicyId(v uuid.UUID) *CameraNetworkUpdate {
+	_u.mutation.SetActivePolicyId(v)
+	return _u
+}
+
+// SetNillableActivePolicyId sets the "active_policy_id" field if the given value is not nil.
+func (_u *CameraNetworkUpdate) SetNillableActivePolicyId(v *uuid.UUID) *CameraNetworkUpdate {
+	if v != nil {
+		_u.SetActivePolicyId(*v)
+	}
+	return _u
+}
+
+// ClearActivePolicyId clears the value of the "active_policy_id" field.
+func (_u *CameraNetworkUpdate) ClearActivePolicyId() *CameraNetworkUpdate {
+	_u.mutation.ClearActivePolicyId()
 	return _u
 }
 
@@ -336,6 +357,15 @@ func (_u *CameraNetworkUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if value, ok := _u.mutation.AddedRevision(); ok {
 		_spec.AddField(cameranetwork.FieldRevision, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.ActivePolicyId(); ok {
+		_spec.SetField(cameranetwork.FieldActivePolicyId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameranetwork.FieldActivePolicyId); ok {
+		_spec.SetField(cameranetwork.FieldActivePolicyId, field.TypeUuid, e)
+	}
+	if _u.mutation.ActivePolicyIdCleared() {
+		_spec.ClearField(cameranetwork.FieldActivePolicyId, field.TypeUuid)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameranetwork.FieldDateUpdated, field.TypeTime, value)
@@ -513,6 +543,26 @@ func (_u *CameraNetworkUpdateOne) SetNillableRevision(v *int64) *CameraNetworkUp
 // AddRevision adds value to the "revision" field.
 func (_u *CameraNetworkUpdateOne) AddRevision(v int64) *CameraNetworkUpdateOne {
 	_u.mutation.AddRevision(v)
+	return _u
+}
+
+// SetActivePolicyId sets the "active_policy_id" field.
+func (_u *CameraNetworkUpdateOne) SetActivePolicyId(v uuid.UUID) *CameraNetworkUpdateOne {
+	_u.mutation.SetActivePolicyId(v)
+	return _u
+}
+
+// SetNillableActivePolicyId sets the "active_policy_id" field if the given value is not nil.
+func (_u *CameraNetworkUpdateOne) SetNillableActivePolicyId(v *uuid.UUID) *CameraNetworkUpdateOne {
+	if v != nil {
+		_u.SetActivePolicyId(*v)
+	}
+	return _u
+}
+
+// ClearActivePolicyId clears the value of the "active_policy_id" field.
+func (_u *CameraNetworkUpdateOne) ClearActivePolicyId() *CameraNetworkUpdateOne {
+	_u.mutation.ClearActivePolicyId()
 	return _u
 }
 
@@ -713,6 +763,15 @@ func (_u *CameraNetworkUpdateOne) sqlSave(ctx context.Context) (_node *CameraNet
 	}
 	if value, ok := _u.mutation.AddedRevision(); ok {
 		_spec.AddField(cameranetwork.FieldRevision, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.ActivePolicyId(); ok {
+		_spec.SetField(cameranetwork.FieldActivePolicyId, field.TypeUuid, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameranetwork.FieldActivePolicyId); ok {
+		_spec.SetField(cameranetwork.FieldActivePolicyId, field.TypeUuid, e)
+	}
+	if _u.mutation.ActivePolicyIdCleared() {
+		_spec.ClearField(cameranetwork.FieldActivePolicyId, field.TypeUuid)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameranetwork.FieldDateUpdated, field.TypeTime, value)

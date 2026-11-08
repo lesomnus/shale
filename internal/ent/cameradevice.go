@@ -43,6 +43,8 @@ type CameraDevice struct {
 	ActiveJobId *uuid.UUID `json:"active_job_id,omitempty"`
 	// ClaimGeneration holds the value of the "claim_generation" field.
 	ClaimGeneration int64 `json:"claim_generation,omitempty"`
+	// Enrollment holds the value of the "enrollment" field.
+	Enrollment *api.CameraEnrollmentObservation `json:"enrollment,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -128,6 +130,8 @@ func (*CameraDevice) scanValues(columns []string) ([]any, error) {
 			values[i] = cameradevice.ValueScanner.Identity.ScanValue()
 		case cameradevice.FieldEndpoints:
 			values[i] = cameradevice.ValueScanner.Endpoints.ScanValue()
+		case cameradevice.FieldEnrollment:
+			values[i] = cameradevice.ValueScanner.Enrollment.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -211,6 +215,12 @@ func (_m *CameraDevice) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field claim_generation", values[i])
 			} else if value.Valid {
 				_m.ClaimGeneration = value.Int64
+			}
+		case cameradevice.FieldEnrollment:
+			if value, err := cameradevice.ValueScanner.Enrollment.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Enrollment = value
 			}
 		case cameradevice.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -331,6 +341,9 @@ func (_m *CameraDevice) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("claim_generation=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ClaimGeneration))
+	builder.WriteString(", ")
+	builder.WriteString("enrollment=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Enrollment))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

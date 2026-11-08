@@ -261,7 +261,7 @@ func TestCameraWorkerAssignedJobsAndReplacementFences(t *testing.T) {
 	x.Equal(api.CameraJobStage_CAMERA_JOB_STAGE_CANCELED, final.GetStage())
 }
 
-func cameraWorkerJob(t *testing.T, ctx context.Context, server *cmd.Server, cp string, admin *grpc.ClientConn, worker *api.CameraWorker, stem string, site *api.SiteRef) *api.CameraJob {
+func cameraWorkerJob(t *testing.T, ctx context.Context, server *cmd.Server, cp string, admin *grpc.ClientConn, worker *api.CameraWorker, stem string, site *api.SiteRef, pinned ...*api.CameraJobInputs) *api.CameraJob {
 	t.Helper()
 	x := require.New(t)
 	producer, _, _ := cameraWorkerProducer(t, ctx, server, cp, admin, stem+"-producer", site)
@@ -275,7 +275,11 @@ func cameraWorkerJob(t *testing.T, ctx context.Context, server *cmd.Server, cp s
 	x.NoError(err)
 	binding, err := api.NewCameraBindingServiceClient(admin).Bind(ctx, api.CameraBindingBindRequest_builder{Assignment: api.CameraAssignmentRef_builder{Id: assignment.GetId()}.Build(), Device: api.CameraDeviceRef_builder{Id: device.GetId()}.Build(), LogicalKey: stem, SourceAlias: stem + "-camera"}.Build())
 	x.NoError(err)
-	job, err := api.NewCameraJobServiceClient(admin).Create(ctx, api.CameraJobCreateRequest_builder{Binding: api.CameraBindingRef_builder{Id: binding.GetId()}.Build(), RequestKey: stem + "-intent", Inputs: api.CameraJobInputs_builder{Desired: api.CameraCaptureProfile_builder{Codec: "h264", Width: 1280, Height: 720, Fps: 30, MaxBitrateBps: 2_000_000}.Build(), StreamingCredential: api.CameraCredentialReference_builder{Provider: "cp", Id: "stream", Version: "1", Purpose: "streaming"}.Build()}.Build()}.Build())
+	inputs := api.CameraJobInputs_builder{Desired: api.CameraCaptureProfile_builder{Codec: "h264", Width: 1280, Height: 720, Fps: 30, MaxBitrateBps: 2_000_000}.Build(), StreamingCredential: api.CameraCredentialReference_builder{Provider: "cp", Id: "stream", Version: "1", Purpose: "streaming"}.Build()}.Build()
+	if len(pinned) > 0 {
+		inputs = pinned[0]
+	}
+	job, err := api.NewCameraJobServiceClient(admin).Create(ctx, api.CameraJobCreateRequest_builder{Binding: api.CameraBindingRef_builder{Id: binding.GetId()}.Build(), RequestKey: stem + "-intent", Inputs: inputs}.Build())
 	x.NoError(err)
 	return job
 }

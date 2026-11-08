@@ -39,6 +39,7 @@ type Mutation struct {
 	date_published           *time.Time
 	last_operation_key       *string
 	last_operation_hash      *[]byte
+	pinned_preset            **api.CameraResolvedPreset
 	date_updated             *time.Time
 	date_erased              *time.Time
 	date_created             *time.Time
@@ -604,6 +605,42 @@ func (m *Mutation) ResetLastOperationHash() {
 	delete(m.exprs, FieldLastOperationHash)
 }
 
+// SetPinnedPreset sets the "pinned_preset" field.
+func (m *Mutation) SetPinnedPreset(arp *api.CameraResolvedPreset) {
+	m.pinned_preset = &arp
+	delete(m.clearedFields, FieldPinnedPreset)
+	delete(m.exprs, FieldPinnedPreset)
+}
+
+// PinnedPreset returns the value of the "pinned_preset" field in the mutation.
+func (m *Mutation) PinnedPreset() (r *api.CameraResolvedPreset, exists bool) {
+	v := m.pinned_preset
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPinnedPreset clears the value of the "pinned_preset" field.
+func (m *Mutation) ClearPinnedPreset() {
+	m.pinned_preset = nil
+	delete(m.exprs, FieldPinnedPreset)
+	m.clearedFields[FieldPinnedPreset] = struct{}{}
+}
+
+// PinnedPresetCleared returns if the "pinned_preset" field was cleared in this mutation.
+func (m *Mutation) PinnedPresetCleared() bool {
+	_, ok := m.clearedFields[FieldPinnedPreset]
+	return ok
+}
+
+// ResetPinnedPreset resets all changes to the "pinned_preset" field.
+func (m *Mutation) ResetPinnedPreset() {
+	m.pinned_preset = nil
+	delete(m.clearedFields, FieldPinnedPreset)
+	delete(m.exprs, FieldPinnedPreset)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -926,7 +963,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 25)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -977,6 +1014,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.last_operation_hash != nil || m.exprs[FieldLastOperationHash] != nil {
 		fields = append(fields, FieldLastOperationHash)
+	}
+	if m.pinned_preset != nil || m.exprs[FieldPinnedPreset] != nil {
+		fields = append(fields, FieldPinnedPreset)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -1047,6 +1087,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.LastOperationKey()
 	case FieldLastOperationHash:
 		return m.LastOperationHash()
+	case FieldPinnedPreset:
+		return m.PinnedPreset()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -1250,6 +1292,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetLastOperationHash(v)
 		return nil
+	case FieldPinnedPreset:
+		v, ok := value.(*api.CameraResolvedPreset)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPinnedPreset(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -1376,6 +1428,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetLastOperationKey()
 	case FieldLastOperationHash:
 		m.ResetLastOperationHash()
+	case FieldPinnedPreset:
+		m.ResetPinnedPreset()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -1452,6 +1506,9 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldLastOperationHash]; ok {
 		fields = append(fields, FieldLastOperationHash)
+	}
+	if _, ok := m.exprs[FieldPinnedPreset]; ok {
+		fields = append(fields, FieldPinnedPreset)
 	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
@@ -1560,6 +1617,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldLastOperationHash) {
 		fields = append(fields, FieldLastOperationHash)
 	}
+	if m.FieldCleared(FieldPinnedPreset) {
+		fields = append(fields, FieldPinnedPreset)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -1603,6 +1663,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldLastOperationHash:
 		m.ClearLastOperationHash()
+		return nil
+	case FieldPinnedPreset:
+		m.ClearPinnedPreset()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -1671,6 +1734,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldLastOperationHash:
 		m.ResetLastOperationHash()
+		return nil
+	case FieldPinnedPreset:
+		m.ResetPinnedPreset()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

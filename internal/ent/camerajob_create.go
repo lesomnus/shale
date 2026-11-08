@@ -154,6 +154,12 @@ func (_c *CameraJobCreate) SetLastOperationHash(v []byte) *CameraJobCreate {
 	return _c
 }
 
+// SetPinnedPreset sets the "pinned_preset" field.
+func (_c *CameraJobCreate) SetPinnedPreset(v *api.CameraResolvedPreset) *CameraJobCreate {
+	_c.mutation.SetPinnedPreset(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraJobCreate) SetDateUpdated(v time.Time) *CameraJobCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -469,6 +475,17 @@ func (_c *CameraJobCreate) createSpec() (*CameraJob, *sqlgraph.CreateSpec, error
 	if value, ok := _c.mutation.LastOperationHash(); ok {
 		_spec.SetField(camerajob.FieldLastOperationHash, field.TypeBytes, value)
 		_node.LastOperationHash = &value
+	}
+	if value, ok := _c.mutation.PinnedPreset(); ok {
+		vv, err := camerajob.ValueScanner.PinnedPreset.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(camerajob.FieldPinnedPreset, field.TypeJson, vv)
+		_node.PinnedPreset = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(camerajob.FieldDateUpdated, field.TypeTime, value)

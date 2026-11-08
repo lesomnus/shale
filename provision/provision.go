@@ -84,14 +84,17 @@ type BindingState struct {
 }
 
 type Run struct {
-	Request             Request                    `json:"request"`
-	Stage               Stage                      `json:"stage"`
-	Version             uint64                     `json:"version"`
-	CreatedAt           time.Time                  `json:"created_at"`
-	UpdatedAt           time.Time                  `json:"updated_at"`
-	Inspection          *camera.Inspection         `json:"inspection,omitempty"`
-	Plan                *camera.ChangePlan         `json:"plan,omitempty"`
-	Verified            *camera.VerifiedState      `json:"verified,omitempty"`
+	Request    Request               `json:"request"`
+	Stage      Stage                 `json:"stage"`
+	Version    uint64                `json:"version"`
+	CreatedAt  time.Time             `json:"created_at"`
+	UpdatedAt  time.Time             `json:"updated_at"`
+	Inspection *camera.Inspection    `json:"inspection,omitempty"`
+	Plan       *camera.ChangePlan    `json:"plan,omitempty"`
+	Verified   *camera.VerifiedState `json:"verified,omitempty"`
+	// Pinned before Publish; retries use the same declared capture payload
+	// even when a later independent sample fills unknown rate facts differently.
+	DeploymentProfile   *camera.MediaProfile       `json:"deployment_profile,omitempty"`
 	InitialRef          *camera.CredentialRef      `json:"initial_ref,omitempty"`
 	ManagementRef       *camera.CredentialRef      `json:"management_ref,omitempty"`
 	StreamingRef        *camera.CredentialRef      `json:"streaming_ref,omitempty"`
@@ -229,6 +232,16 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		return out, err
 	} else if !sameRequest(q, out.Request) {
 		return out, ErrConflict
+	}
+	if out.Stage != Active && out.Stage != Canceled && out.DeploymentProfile == nil && out.Binding.DeploymentID == "" {
+		for _, event := range out.Events {
+			if event.Stage == Deploying {
+				// Older checkpoints did not journal their publication payload.
+				// A private deployment journal may already have committed it;
+				// require explicit reconciliation instead of issuing a new write.
+				return out, ErrConflict
+			}
+		}
 	}
 	// A delayed delivery of an old completed job must not reapply its desired
 	// state over a newer revision. Explicit reconciliation uses a new job ID.
@@ -389,8 +402,21 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	if captureProfile.FPS == 0 {
 		captureProfile.FPS = verified.Profile.FPS
 	}
+	if captureProfile.Bitrate == 0 {
+		captureProfile.Bitrate = verified.Profile.Bitrate
+	}
 	if captureProfile.GOP == 0 {
 		captureProfile.GOP = verified.Profile.GOP
+	}
+	if out.DeploymentProfile != nil {
+		captureProfile = *out.DeploymentProfile
+		if !verifiedMatches(captureProfile, verified.Profile, desired) || captureProfile.Bitrate > 0 && float64(verified.Profile.Bitrate) > float64(captureProfile.Bitrate)*1.3 {
+			return out, ErrNotReady
+		}
+	} else {
+		pinned := captureProfile
+		pinned.Evidence = nil
+		out.DeploymentProfile = &pinned
 	}
 	deploymentProfile := captureProfile
 	deploymentProfile.Evidence = nil
@@ -399,6 +425,11 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		Credential camera.CredentialRef
 	}{deploymentProfile, sref})
 	dep := Deployment{OperationID: Key(q.Scope.TenantID, q.BindingID, desired.Revision, string(deploymentRevision)), Request: q, Profile: captureProfile, Credential: sref, Previous: out.Binding}
+	if out.Binding.DeploymentID != "" {
+		dep.OperationID = out.Binding.DeploymentID
+	} else {
+		out.Binding.DeploymentID = dep.OperationID
+	}
 	if err = e.save(ctx, &out, Deploying, "capture_deploy"); err != nil {
 		return out, err
 	}

@@ -19,6 +19,8 @@ import (
 	cameradevice "github.com/lesomnus/shale/internal/ent/cameradevice"
 	camerajob "github.com/lesomnus/shale/internal/ent/camerajob"
 	cameranetwork "github.com/lesomnus/shale/internal/ent/cameranetwork"
+	camerapolicy "github.com/lesomnus/shale/internal/ent/camerapolicy"
+	camerapreset "github.com/lesomnus/shale/internal/ent/camerapreset"
 	cameraworker "github.com/lesomnus/shale/internal/ent/cameraworker"
 	delegation "github.com/lesomnus/shale/internal/ent/delegation"
 	device "github.com/lesomnus/shale/internal/ent/device"
@@ -398,11 +400,13 @@ type Scope interface {
 	RelayScope(ctx context.Context) (predicate.Relay, error)
 	ProducerScope(ctx context.Context) (predicate.Producer, error)
 	ReaderScope(ctx context.Context) (predicate.Reader, error)
+	CameraPresetScope(ctx context.Context) (predicate.CameraPreset, error)
 	CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, error)
 	CameraDeviceScope(ctx context.Context) (predicate.CameraDevice, error)
 	CameraAssignmentScope(ctx context.Context) (predicate.CameraAssignment, error)
 	CameraBindingScope(ctx context.Context) (predicate.CameraBinding, error)
 	CameraJobScope(ctx context.Context) (predicate.CameraJob, error)
+	CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error)
 	DeviceScope(ctx context.Context) (predicate.Device, error)
 	SinkScope(ctx context.Context) (predicate.Sink, error)
 	CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error)
@@ -459,6 +463,9 @@ func (Unscoped) ProducerScope(_ context.Context) (predicate.Producer, error) {
 func (Unscoped) ReaderScope(_ context.Context) (predicate.Reader, error) {
 	return nil, nil
 }
+func (Unscoped) CameraPresetScope(_ context.Context) (predicate.CameraPreset, error) {
+	return nil, nil
+}
 func (Unscoped) CameraNetworkScope(_ context.Context) (predicate.CameraNetwork, error) {
 	return nil, nil
 }
@@ -472,6 +479,9 @@ func (Unscoped) CameraBindingScope(_ context.Context) (predicate.CameraBinding, 
 	return nil, nil
 }
 func (Unscoped) CameraJobScope(_ context.Context) (predicate.CameraJob, error) {
+	return nil, nil
+}
+func (Unscoped) CameraPolicyScope(_ context.Context) (predicate.CameraPolicy, error) {
 	return nil, nil
 }
 func (Unscoped) DeviceScope(_ context.Context) (predicate.Device, error) {
@@ -708,6 +718,26 @@ func (ss Scopes) ReaderScope(ctx context.Context) (predicate.Reader, error) {
 	return reader.And(ps...), nil
 }
 
+func (ss Scopes) CameraPresetScope(ctx context.Context) (predicate.CameraPreset, error) {
+	ps := make([]predicate.CameraPreset, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraPresetScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return camerapreset.And(ps...), nil
+}
+
 func (ss Scopes) CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, error) {
 	ps := make([]predicate.CameraNetwork, 0, len(ss))
 	for _, s := range ss {
@@ -806,6 +836,26 @@ func (ss Scopes) CameraJobScope(ctx context.Context) (predicate.CameraJob, error
 	}
 
 	return camerajob.And(ps...), nil
+}
+
+func (ss Scopes) CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error) {
+	ps := make([]predicate.CameraPolicy, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraPolicyScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return camerapolicy.And(ps...), nil
 }
 
 func (ss Scopes) DeviceScope(ctx context.Context) (predicate.Device, error) {
@@ -1303,7 +1353,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. AddressPolicy, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraWorker, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
+// check. AddressPolicy, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1349,6 +1399,9 @@ func (s Server) Node() api.NodeServiceServer         { return NodeServiceServer{
 func (s Server) Relay() api.RelayServiceServer       { return RelayServiceServer{Store: s.Store} }
 func (s Server) Producer() api.ProducerServiceServer { return ProducerServiceServer{Store: s.Store} }
 func (s Server) Reader() api.ReaderServiceServer     { return ReaderServiceServer{Store: s.Store} }
+func (s Server) CameraPreset() api.CameraPresetServiceServer {
+	return CameraPresetServiceServer{Store: s.Store}
+}
 func (s Server) CameraNetwork() api.CameraNetworkServiceServer {
 	return CameraNetworkServiceServer{Store: s.Store}
 }
@@ -1362,8 +1415,11 @@ func (s Server) CameraBinding() api.CameraBindingServiceServer {
 	return CameraBindingServiceServer{Store: s.Store}
 }
 func (s Server) CameraJob() api.CameraJobServiceServer { return CameraJobServiceServer{Store: s.Store} }
-func (s Server) Device() api.DeviceServiceServer       { return DeviceServiceServer{Store: s.Store} }
-func (s Server) Sink() api.SinkServiceServer           { return SinkServiceServer{Store: s.Store} }
+func (s Server) CameraPolicy() api.CameraPolicyServiceServer {
+	return CameraPolicyServiceServer{Store: s.Store}
+}
+func (s Server) Device() api.DeviceServiceServer { return DeviceServiceServer{Store: s.Store} }
+func (s Server) Sink() api.SinkServiceServer     { return SinkServiceServer{Store: s.Store} }
 func (s Server) CameraWorker() api.CameraWorkerServiceServer {
 	return CameraWorkerServiceServer{Store: s.Store}
 }

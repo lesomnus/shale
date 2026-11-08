@@ -129,6 +129,30 @@ func (f CameraNetworkFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Valu
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraNetworkMutation", m)
 }
 
+// The CameraPolicyFunc type is an adapter to allow the use of ordinary
+// function as CameraPolicy mutator.
+type CameraPolicyFunc func(context.Context, *ent.CameraPolicyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraPolicyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraPolicyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraPolicyMutation", m)
+}
+
+// The CameraPresetFunc type is an adapter to allow the use of ordinary
+// function as CameraPreset mutator.
+type CameraPresetFunc func(context.Context, *ent.CameraPresetMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraPresetFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraPresetMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraPresetMutation", m)
+}
+
 // The CameraWorkerFunc type is an adapter to allow the use of ordinary
 // function as CameraWorker mutator.
 type CameraWorkerFunc func(context.Context, *ent.CameraWorkerMutation) (ent.Value, error)

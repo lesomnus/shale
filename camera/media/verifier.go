@@ -99,10 +99,12 @@ func (v *Verifier) Verify(ctx context.Context, request camera.MediaRequest) (cam
 			return ErrMismatch
 		}
 		if request.RequireDecode {
-			if err = v.decode(ctx, input, d, sanitize, isFile); err != nil {
-				return err
+			frames, decodeErr := v.decode(ctx, input, d, sanitize, isFile)
+			if decodeErr != nil {
+				return decodeErr
 			}
 			result.Decoded = true
+			result.DecodedFrames = frames
 			result.Evidence = append(result.Evidence, camera.Evidence{Source: "ffmpeg:independent-decode", At: time.Now().UTC(), Firmware: result.Firmware, Authenticated: request.CredentialRef != nil || u.User != nil})
 		}
 		return nil
@@ -361,7 +363,7 @@ func (v *Verifier) observe(ctx context.Context, input string, d time.Duration, s
 	}
 	return out, nil
 }
-func (v *Verifier) decode(ctx context.Context, input string, d time.Duration, sanitize credential.Sanitizer, isFile bool) error {
+func (v *Verifier) decode(ctx context.Context, input string, d time.Duration, sanitize credential.Sanitizer, isFile bool) (int64, error) {
 	limit, cancel := context.WithTimeout(ctx, d+v.startup())
 	defer cancel()
 	binary := v.Ffmpeg
@@ -381,13 +383,13 @@ func (v *Verifier) decode(ctx context.Context, input string, d time.Duration, sa
 	cmd.Stderr = stderr
 	err := cmd.Run()
 	if ctx.Err() != nil {
-		return ctx.Err()
+		return 0, ctx.Err()
 	}
 	if limit.Err() != nil {
-		return ErrIncomplete
+		return 0, ErrIncomplete
 	}
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrDecode, sanitize.Redact(stderr.String()))
+		return 0, fmt.Errorf("%w: %s", ErrDecode, sanitize.Redact(stderr.String()))
 	}
 	frames := int64(0)
 	for _, line := range strings.Split(stdout.String(), "\n") {
@@ -398,9 +400,9 @@ func (v *Verifier) decode(ctx context.Context, input string, d time.Duration, sa
 		}
 	}
 	if frames < 2 {
-		return ErrDecode
+		return 0, ErrDecode
 	}
-	return nil
+	return frames, nil
 }
 
 type limitedBuffer struct {

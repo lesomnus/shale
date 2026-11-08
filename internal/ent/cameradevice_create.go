@@ -95,6 +95,12 @@ func (_c *CameraDeviceCreate) SetClaimGeneration(v int64) *CameraDeviceCreate {
 	return _c
 }
 
+// SetEnrollment sets the "enrollment" field.
+func (_c *CameraDeviceCreate) SetEnrollment(v *api.CameraEnrollmentObservation) *CameraDeviceCreate {
+	_c.mutation.SetEnrollment(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraDeviceCreate) SetDateUpdated(v time.Time) *CameraDeviceCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -353,6 +359,17 @@ func (_c *CameraDeviceCreate) createSpec() (*CameraDevice, *sqlgraph.CreateSpec,
 	if value, ok := _c.mutation.ClaimGeneration(); ok {
 		_spec.SetField(cameradevice.FieldClaimGeneration, field.TypeInt64, value)
 		_node.ClaimGeneration = value
+	}
+	if value, ok := _c.mutation.Enrollment(); ok {
+		vv, err := cameradevice.ValueScanner.Enrollment.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(cameradevice.FieldEnrollment, field.TypeJson, vv)
+		_node.Enrollment = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

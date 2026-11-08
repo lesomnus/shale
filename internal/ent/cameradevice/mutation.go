@@ -31,6 +31,7 @@ type Mutation struct {
 	active_job_id           *uuid.UUID
 	claim_generation        *int64
 	addclaim_generation     *int64
+	enrollment              **api.CameraEnrollmentObservation
 	date_updated            *time.Time
 	date_erased             *time.Time
 	date_created            *time.Time
@@ -383,6 +384,42 @@ func (m *Mutation) ResetClaimGeneration() {
 	delete(m.exprs, FieldClaimGeneration)
 }
 
+// SetEnrollment sets the "enrollment" field.
+func (m *Mutation) SetEnrollment(aeo *api.CameraEnrollmentObservation) {
+	m.enrollment = &aeo
+	delete(m.clearedFields, FieldEnrollment)
+	delete(m.exprs, FieldEnrollment)
+}
+
+// Enrollment returns the value of the "enrollment" field in the mutation.
+func (m *Mutation) Enrollment() (r *api.CameraEnrollmentObservation, exists bool) {
+	v := m.enrollment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearEnrollment clears the value of the "enrollment" field.
+func (m *Mutation) ClearEnrollment() {
+	m.enrollment = nil
+	delete(m.exprs, FieldEnrollment)
+	m.clearedFields[FieldEnrollment] = struct{}{}
+}
+
+// EnrollmentCleared returns if the "enrollment" field was cleared in this mutation.
+func (m *Mutation) EnrollmentCleared() bool {
+	_, ok := m.clearedFields[FieldEnrollment]
+	return ok
+}
+
+// ResetEnrollment resets all changes to the "enrollment" field.
+func (m *Mutation) ResetEnrollment() {
+	m.enrollment = nil
+	delete(m.clearedFields, FieldEnrollment)
+	delete(m.exprs, FieldEnrollment)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -659,7 +696,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -689,6 +726,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.claim_generation != nil || m.exprs[FieldClaimGeneration] != nil {
 		fields = append(fields, FieldClaimGeneration)
+	}
+	if m.enrollment != nil || m.exprs[FieldEnrollment] != nil {
+		fields = append(fields, FieldEnrollment)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -742,6 +782,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.ActiveJobId()
 	case FieldClaimGeneration:
 		return m.ClaimGeneration()
+	case FieldEnrollment:
+		return m.Enrollment()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -873,6 +915,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetClaimGeneration(v)
 		return nil
+	case FieldEnrollment:
+		v, ok := value.(*api.CameraEnrollmentObservation)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnrollment(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -975,6 +1027,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetActiveJobId()
 	case FieldClaimGeneration:
 		m.ResetClaimGeneration()
+	case FieldEnrollment:
+		m.ResetEnrollment()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -1034,6 +1088,9 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldClaimGeneration]; ok {
 		fields = append(fields, FieldClaimGeneration)
+	}
+	if _, ok := m.exprs[FieldEnrollment]; ok {
+		fields = append(fields, FieldEnrollment)
 	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
@@ -1109,6 +1166,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldActiveJobId) {
 		fields = append(fields, FieldActiveJobId)
 	}
+	if m.FieldCleared(FieldEnrollment) {
+		fields = append(fields, FieldEnrollment)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -1143,6 +1203,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldActiveJobId:
 		m.ClearActiveJobId()
+		return nil
+	case FieldEnrollment:
+		m.ClearEnrollment()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -1190,6 +1253,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldClaimGeneration:
 		m.ResetClaimGeneration()
+		return nil
+	case FieldEnrollment:
+		m.ResetEnrollment()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

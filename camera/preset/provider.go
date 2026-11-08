@@ -66,6 +66,16 @@ type Provider struct {
 
 var _ camera.DevicePresetProvider = (*Provider)(nil)
 
+// Reference identifies the complete immutable ruleset, before resolving a
+// device. Equivalent rule ordering has the same reference; an absent fallback
+// override and an explicit empty override remain distinct policy.
+func (p *Provider) Reference() camera.PresetRef {
+	if p == nil {
+		return camera.PresetRef{}
+	}
+	return p.ref
+}
+
 func New(config Config) (*Provider, error) {
 	if strings.TrimSpace(config.ID) == "" || strings.TrimSpace(config.Revision) == "" || len(config.Rules) == 0 || len(config.Rules) > maxRules {
 		return nil, fmt.Errorf("%w: invalid preset ruleset reference or rule count", camera.ErrInvalid)

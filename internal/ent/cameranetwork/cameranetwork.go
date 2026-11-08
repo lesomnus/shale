@@ -30,6 +30,8 @@ const (
 	FieldInterfaceHint = "interface_hint"
 	// FieldRevision holds the string denoting the revision field in the database.
 	FieldRevision = "revision"
+	// FieldActivePolicyId holds the string denoting the active_policy_id field in the database.
+	FieldActivePolicyId = "active_policy_id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -74,6 +76,7 @@ var Columns = []string{
 	FieldSeeds,
 	FieldInterfaceHint,
 	FieldRevision,
+	FieldActivePolicyId,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -127,6 +130,11 @@ func ByInterfaceHint(opts ...sql.OrderTermOption) OrderOption {
 // ByRevision orders the results by the revision field.
 func ByRevision(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRevision, opts...).ToFunc()
+}
+
+// ByActivePolicyId orders the results by the active_policy_id field.
+func ByActivePolicyId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldActivePolicyId, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

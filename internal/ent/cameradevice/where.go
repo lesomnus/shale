@@ -541,6 +541,16 @@ func ClaimGenerationLTE(v int64) predicate.CameraDevice {
 	return predicate.CameraDevice(sql.FieldLTE(FieldClaimGeneration, v))
 }
 
+// EnrollmentIsNil applies the IsNil predicate on the "enrollment" field.
+func EnrollmentIsNil() predicate.CameraDevice {
+	return predicate.CameraDevice(sql.FieldIsNull(FieldEnrollment))
+}
+
+// EnrollmentNotNil applies the NotNil predicate on the "enrollment" field.
+func EnrollmentNotNil() predicate.CameraDevice {
+	return predicate.CameraDevice(sql.FieldNotNull(FieldEnrollment))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.CameraDevice {
 	return predicate.CameraDevice(sql.FieldEQ(FieldDateUpdated, v))

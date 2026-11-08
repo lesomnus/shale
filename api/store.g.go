@@ -34,11 +34,13 @@ type Server interface {
 	Relay() RelayServiceServer
 	Producer() ProducerServiceServer
 	Reader() ReaderServiceServer
+	CameraPreset() CameraPresetServiceServer
 	CameraNetwork() CameraNetworkServiceServer
 	CameraDevice() CameraDeviceServiceServer
 	CameraAssignment() CameraAssignmentServiceServer
 	CameraBinding() CameraBindingServiceServer
 	CameraJob() CameraJobServiceServer
+	CameraPolicy() CameraPolicyServiceServer
 	Device() DeviceServiceServer
 	Sink() SinkServiceServer
 	CameraWorker() CameraWorkerServiceServer
@@ -72,11 +74,13 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterRelayServiceServer(g, s.Relay())
 	RegisterProducerServiceServer(g, s.Producer())
 	RegisterReaderServiceServer(g, s.Reader())
+	RegisterCameraPresetServiceServer(g, s.CameraPreset())
 	RegisterCameraNetworkServiceServer(g, s.CameraNetwork())
 	RegisterCameraDeviceServiceServer(g, s.CameraDevice())
 	RegisterCameraAssignmentServiceServer(g, s.CameraAssignment())
 	RegisterCameraBindingServiceServer(g, s.CameraBinding())
 	RegisterCameraJobServiceServer(g, s.CameraJob())
+	RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
 	RegisterDeviceServiceServer(g, s.Device())
 	RegisterSinkServiceServer(g, s.Sink())
 	RegisterCameraWorkerServiceServer(g, s.CameraWorker())
@@ -106,11 +110,13 @@ type UnimplementedServer struct {
 	RelayServer            RelayServiceServer
 	ProducerServer         ProducerServiceServer
 	ReaderServer           ReaderServiceServer
+	CameraPresetServer     CameraPresetServiceServer
 	CameraNetworkServer    CameraNetworkServiceServer
 	CameraDeviceServer     CameraDeviceServiceServer
 	CameraAssignmentServer CameraAssignmentServiceServer
 	CameraBindingServer    CameraBindingServiceServer
 	CameraJobServer        CameraJobServiceServer
+	CameraPolicyServer     CameraPolicyServiceServer
 	DeviceServer           DeviceServiceServer
 	SinkServer             SinkServiceServer
 	CameraWorkerServer     CameraWorkerServiceServer
@@ -141,6 +147,9 @@ func (UnimplementedServer) Producer() ProducerServiceServer {
 	return UnimplementedProducerServiceServer{}
 }
 func (UnimplementedServer) Reader() ReaderServiceServer { return UnimplementedReaderServiceServer{} }
+func (UnimplementedServer) CameraPreset() CameraPresetServiceServer {
+	return UnimplementedCameraPresetServiceServer{}
+}
 func (UnimplementedServer) CameraNetwork() CameraNetworkServiceServer {
 	return UnimplementedCameraNetworkServiceServer{}
 }
@@ -155,6 +164,9 @@ func (UnimplementedServer) CameraBinding() CameraBindingServiceServer {
 }
 func (UnimplementedServer) CameraJob() CameraJobServiceServer {
 	return UnimplementedCameraJobServiceServer{}
+}
+func (UnimplementedServer) CameraPolicy() CameraPolicyServiceServer {
+	return UnimplementedCameraPolicyServiceServer{}
 }
 func (UnimplementedServer) Device() DeviceServiceServer { return UnimplementedDeviceServiceServer{} }
 func (UnimplementedServer) Sink() SinkServiceServer     { return UnimplementedSinkServiceServer{} }
@@ -200,11 +212,13 @@ type StaticServer struct {
 	RelayServer            RelayServiceServer
 	ProducerServer         ProducerServiceServer
 	ReaderServer           ReaderServiceServer
+	CameraPresetServer     CameraPresetServiceServer
 	CameraNetworkServer    CameraNetworkServiceServer
 	CameraDeviceServer     CameraDeviceServiceServer
 	CameraAssignmentServer CameraAssignmentServiceServer
 	CameraBindingServer    CameraBindingServiceServer
 	CameraJobServer        CameraJobServiceServer
+	CameraPolicyServer     CameraPolicyServiceServer
 	DeviceServer           DeviceServiceServer
 	SinkServer             SinkServiceServer
 	CameraWorkerServer     CameraWorkerServiceServer
@@ -233,6 +247,7 @@ func (s StaticServer) Node() NodeServiceServer                   { return s.Node
 func (s StaticServer) Relay() RelayServiceServer                 { return s.RelayServer }
 func (s StaticServer) Producer() ProducerServiceServer           { return s.ProducerServer }
 func (s StaticServer) Reader() ReaderServiceServer               { return s.ReaderServer }
+func (s StaticServer) CameraPreset() CameraPresetServiceServer   { return s.CameraPresetServer }
 func (s StaticServer) CameraNetwork() CameraNetworkServiceServer { return s.CameraNetworkServer }
 func (s StaticServer) CameraDevice() CameraDeviceServiceServer   { return s.CameraDeviceServer }
 func (s StaticServer) CameraAssignment() CameraAssignmentServiceServer {
@@ -240,6 +255,7 @@ func (s StaticServer) CameraAssignment() CameraAssignmentServiceServer {
 }
 func (s StaticServer) CameraBinding() CameraBindingServiceServer     { return s.CameraBindingServer }
 func (s StaticServer) CameraJob() CameraJobServiceServer             { return s.CameraJobServer }
+func (s StaticServer) CameraPolicy() CameraPolicyServiceServer       { return s.CameraPolicyServer }
 func (s StaticServer) Device() DeviceServiceServer                   { return s.DeviceServer }
 func (s StaticServer) Sink() SinkServiceServer                       { return s.SinkServer }
 func (s StaticServer) CameraWorker() CameraWorkerServiceServer       { return s.CameraWorkerServer }
@@ -268,11 +284,13 @@ type Client interface {
 	Relay() RelayServiceClient
 	Producer() ProducerServiceClient
 	Reader() ReaderServiceClient
+	CameraPreset() CameraPresetServiceClient
 	CameraNetwork() CameraNetworkServiceClient
 	CameraDevice() CameraDeviceServiceClient
 	CameraAssignment() CameraAssignmentServiceClient
 	CameraBinding() CameraBindingServiceClient
 	CameraJob() CameraJobServiceClient
+	CameraPolicy() CameraPolicyServiceClient
 	Device() DeviceServiceClient
 	Sink() SinkServiceClient
 	CameraWorker() CameraWorkerServiceClient
@@ -303,11 +321,13 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Relay:            NewRelayServiceClient(c),
 		_Producer:         NewProducerServiceClient(c),
 		_Reader:           NewReaderServiceClient(c),
+		_CameraPreset:     NewCameraPresetServiceClient(c),
 		_CameraNetwork:    NewCameraNetworkServiceClient(c),
 		_CameraDevice:     NewCameraDeviceServiceClient(c),
 		_CameraAssignment: NewCameraAssignmentServiceClient(c),
 		_CameraBinding:    NewCameraBindingServiceClient(c),
 		_CameraJob:        NewCameraJobServiceClient(c),
+		_CameraPolicy:     NewCameraPolicyServiceClient(c),
 		_Device:           NewDeviceServiceClient(c),
 		_Sink:             NewSinkServiceClient(c),
 		_CameraWorker:     NewCameraWorkerServiceClient(c),
@@ -338,11 +358,13 @@ type client struct {
 	_Relay            RelayServiceClient
 	_Producer         ProducerServiceClient
 	_Reader           ReaderServiceClient
+	_CameraPreset     CameraPresetServiceClient
 	_CameraNetwork    CameraNetworkServiceClient
 	_CameraDevice     CameraDeviceServiceClient
 	_CameraAssignment CameraAssignmentServiceClient
 	_CameraBinding    CameraBindingServiceClient
 	_CameraJob        CameraJobServiceClient
+	_CameraPolicy     CameraPolicyServiceClient
 	_Device           DeviceServiceClient
 	_Sink             SinkServiceClient
 	_CameraWorker     CameraWorkerServiceClient
@@ -371,11 +393,13 @@ func (c *client) Node() NodeServiceClient                         { return c._No
 func (c *client) Relay() RelayServiceClient                       { return c._Relay }
 func (c *client) Producer() ProducerServiceClient                 { return c._Producer }
 func (c *client) Reader() ReaderServiceClient                     { return c._Reader }
+func (c *client) CameraPreset() CameraPresetServiceClient         { return c._CameraPreset }
 func (c *client) CameraNetwork() CameraNetworkServiceClient       { return c._CameraNetwork }
 func (c *client) CameraDevice() CameraDeviceServiceClient         { return c._CameraDevice }
 func (c *client) CameraAssignment() CameraAssignmentServiceClient { return c._CameraAssignment }
 func (c *client) CameraBinding() CameraBindingServiceClient       { return c._CameraBinding }
 func (c *client) CameraJob() CameraJobServiceClient               { return c._CameraJob }
+func (c *client) CameraPolicy() CameraPolicyServiceClient         { return c._CameraPolicy }
 func (c *client) Device() DeviceServiceClient                     { return c._Device }
 func (c *client) Sink() SinkServiceClient                         { return c._Sink }
 func (c *client) CameraWorker() CameraWorkerServiceClient         { return c._CameraWorker }

@@ -59,6 +59,8 @@ const (
 	DomCameraBinding    pdid.Domain = 29
 	DomCameraJob        pdid.Domain = 30
 	DomCameraWorker     pdid.Domain = 31
+	DomCameraPreset     pdid.Domain = 40
+	DomCameraPolicy     pdid.Domain = 41
 )
 
 // Deps is what the layer needs besides the servers below it.
@@ -127,6 +129,12 @@ type Deps struct {
 	Log *slog.Logger
 	// M are the instruments; made from a bare context when nil.
 	M *Metrics
+	// PrepareCameraEnrollment injects central credential preparation into policy
+	// decisions. It writes durable references on the supplied transaction before
+	// job creation. Nil leaves observations waiting, with no activation job.
+	// The concrete credential Store adapter is composed after both components
+	// have landed; policy code never generates or retains camera passwords.
+	PrepareCameraEnrollment func(context.Context, CameraEnrollmentPreparation) (CameraEnrollmentCredentials, error)
 
 	pol policies
 

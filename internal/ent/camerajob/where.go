@@ -916,6 +916,16 @@ func LastOperationHashNotNil() predicate.CameraJob {
 	return predicate.CameraJob(sql.FieldNotNull(FieldLastOperationHash))
 }
 
+// PinnedPresetIsNil applies the IsNil predicate on the "pinned_preset" field.
+func PinnedPresetIsNil() predicate.CameraJob {
+	return predicate.CameraJob(sql.FieldIsNull(FieldPinnedPreset))
+}
+
+// PinnedPresetNotNil applies the NotNil predicate on the "pinned_preset" field.
+func PinnedPresetNotNil() predicate.CameraJob {
+	return predicate.CameraJob(sql.FieldNotNull(FieldPinnedPreset))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.CameraJob {
 	return predicate.CameraJob(sql.FieldEQ(FieldDateUpdated, v))

@@ -19,6 +19,8 @@ import { ArchivedSchema } from './shale/payday/archived_pb.js'
 import { AttemptSchema, LaminaSchema } from './shale/lamina_pb.js'
 import { AuditSchema } from './shale/payday/audit_pb.js'
 import { CameraAssignmentSchema, CameraBindingSchema, CameraDeviceSchema, CameraJobSchema, CameraNetworkSchema } from './shale/camera_pb.js'
+import { CameraPolicySchema } from './shale/camera_policy_pb.js'
+import { CameraPresetSchema } from './shale/camera_preset_pb.js'
 import { CameraWorkerSchema } from './shale/camera_worker_pb.js'
 import { DelegationSchema } from './shale/delegation_pb.js'
 import { DeviceSchema, SinkSchema } from './shale/storage_pb.js'
@@ -37,6 +39,8 @@ import { ArchivedService } from './shale/payday/archived_svc_pb.js'
 import { AttemptService, LaminaService } from './shale/lamina_svc_pb.js'
 import { AuditService } from './shale/payday/audit_svc_pb.js'
 import { CameraAssignmentService, CameraBindingService, CameraDeviceService, CameraJobService, CameraNetworkService } from './shale/camera_svc_pb.js'
+import { CameraPolicyService } from './shale/camera_policy_svc_pb.js'
+import { CameraPresetService } from './shale/camera_preset_svc_pb.js'
 import { CameraWorkerService } from './shale/camera_worker_svc_pb.js'
 import { DelegationService } from './shale/delegation_svc_pb.js'
 import { DeviceService, SinkService } from './shale/storage_svc_pb.js'
@@ -166,8 +170,34 @@ export const CameraNetwork = {
 	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }],
 	alias: "alias",
 	key: "id",
-	ids: ["id"],
+	ids: ["id", "activePolicyId"],
 	service: CameraNetworkService,
+} as const satisfies EntityDesc
+
+/** shale.CameraPolicy, as the store holds it. */
+export const CameraPolicy = {
+	typeName: "shale.CameraPolicy",
+	schema: CameraPolicySchema,
+	domain: 41,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }, { field: "network", to: "shale.CameraNetwork" }, { field: "preset", to: "shale.CameraPreset" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
+	service: CameraPolicyService,
+} as const satisfies EntityDesc
+
+/** shale.CameraPreset, as the store holds it. */
+export const CameraPreset = {
+	typeName: "shale.CameraPreset",
+	schema: CameraPresetSchema,
+	domain: 40,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
+	service: CameraPresetService,
 } as const satisfies EntityDesc
 
 /** shale.CameraWorker, as the store holds it. */
@@ -428,5 +458,5 @@ export const UploadPolicy = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraWorker, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
+export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
 

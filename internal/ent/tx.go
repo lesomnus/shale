@@ -32,6 +32,10 @@ type Tx struct {
 	CameraJob *CameraJobClient
 	// CameraNetwork is the client for interacting with the CameraNetwork builders.
 	CameraNetwork *CameraNetworkClient
+	// CameraPolicy is the client for interacting with the CameraPolicy builders.
+	CameraPolicy *CameraPolicyClient
+	// CameraPreset is the client for interacting with the CameraPreset builders.
+	CameraPreset *CameraPresetClient
 	// CameraWorker is the client for interacting with the CameraWorker builders.
 	CameraWorker *CameraWorkerClient
 	// Delegation is the client for interacting with the Delegation builders.
@@ -215,6 +219,8 @@ func (tx *Tx) init() {
 	tx.CameraDevice = NewCameraDeviceClient(tx.config)
 	tx.CameraJob = NewCameraJobClient(tx.config)
 	tx.CameraNetwork = NewCameraNetworkClient(tx.config)
+	tx.CameraPolicy = NewCameraPolicyClient(tx.config)
+	tx.CameraPreset = NewCameraPresetClient(tx.config)
 	tx.CameraWorker = NewCameraWorkerClient(tx.config)
 	tx.Delegation = NewDelegationClient(tx.config)
 	tx.Device = NewDeviceClient(tx.config)

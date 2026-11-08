@@ -35,6 +35,9 @@ func (CameraNetwork) Fields() []ent.Field {
 			Optional(),
 		field.String("interface_hint"),
 		field.Int64("revision"),
+		field.Uuid("active_policy_id").
+			Nillable().
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -102,6 +105,8 @@ func (CameraDevice) Fields() []ent.Field {
 			Nillable().
 			Optional(),
 		field.Int64("claim_generation"),
+		field.Json("enrollment", &api.CameraEnrollmentObservation{}).ValueScanner(entpb.ValueScanner[*api.CameraEnrollmentObservation]{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -374,6 +379,8 @@ func (CameraJob) Fields() []ent.Field {
 		field.String("last_operation_key"),
 		field.Bytes("last_operation_hash").
 			Nillable().
+			Optional(),
+		field.Json("pinned_preset", &api.CameraResolvedPreset{}).ValueScanner(entpb.ValueScanner[*api.CameraResolvedPreset]{}).
 			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
