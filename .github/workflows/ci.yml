@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,11 +19,17 @@ jobs:
           cache: true
       - name: download integrity checks
         run: python3 .github/scripts/test_fetch_tool.py
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ runner.temp }}/shale-ci-tools
+          key: shale-ci-buf-linux-amd64-1.72.0-8720830e26a733da
       - name: pinned generation tool
         # Same Buf release and SHA as the pinned Payday tool. Retry only HTTP
         # transport; an actual generation difference must fail on its first run.
         # Official v1.72.0 buf-Linux-x86_64 release asset; the API download route
         # avoids the release-page route that repeatedly returned HTTP 504.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           sh .github/scripts/fetch-tool.sh \
             https://api.github.com/repos/bufbuild/buf/releases/assets/480772580 \

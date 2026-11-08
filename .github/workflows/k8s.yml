@@ -10,6 +10,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   kind:
     runs-on: ubuntu-latest
@@ -20,10 +23,18 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            ${{ runner.tool_cache }}/kind/v0.31.0/amd64/kind/bin/kind
+            ${{ runner.tool_cache }}/kubectl/bin/kubectl
+          key: shale-ci-cluster-linux-amd64-kind0.31.0-eb244cba-kubectl1.35.0-a2e984a1
       - name: pinned cluster tools
         # Prepopulate the action's cache with verified executables. Its downloader
         # otherwise saves HTTP error bodies without a transport retry.
         # Official kind v0.31.0 linux-amd64 release asset, via its API download.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           sh .github/scripts/fetch-tool.sh \
             https://api.github.com/repos/kubernetes-sigs/kind/releases/assets/330009836 \
