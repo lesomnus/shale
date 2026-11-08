@@ -106,7 +106,7 @@ type ApplyObserver interface {
 // A bitrate is a ceiling, not a target. A bounded burst allowance accounts for
 // startup IDRs; a zero/unknown measurement never proves a declared constraint.
 func CheckMedia(want Profile, got MediaProgress) error {
-	if got.Frames < 2 || got.Keyframes < 1 || got.FirstMediaAt.IsZero() || got.LastMediaAt.Sub(got.FirstMediaAt) < 500*time.Millisecond || got.LastMediaAt.Sub(got.FirstMediaAt) > time.Minute {
+	if got.Frames < 2 || got.Frames > 120000 || got.Keyframes < 1 || got.Keyframes > got.Frames || got.FirstMediaAt.IsZero() || got.LastMediaAt.Sub(got.FirstMediaAt) < 500*time.Millisecond || got.LastMediaAt.Sub(got.FirstMediaAt) > time.Minute {
 		return ErrInvalid
 	}
 	if got.Codec == "" || got.Width <= 0 || got.Height <= 0 || math.IsNaN(got.FPS) || math.IsInf(got.FPS, 0) || got.FPS <= 0 || got.Bitrate <= 0 {

@@ -150,6 +150,9 @@ func (s coreCameraAssignment) Applied(ctx context.Context, r *api.CameraAppliedR
 	if err := cameraProfile(r.GetMedia().GetProfile(), true); err != nil {
 		return nil, err
 	}
+	if r.GetMedia().GetProfile().GetKeyframeIntervalMs() > time.Minute.Milliseconds() {
+		return nil, invalid("media", "keyframe observation exceeds bounded capture window")
+	}
 	if r.GetMedia().GetFirstMediaAt() == nil || r.GetMedia().GetLastMediaAt() == nil || r.GetMedia().GetFirstMediaAt().CheckValid() != nil || r.GetMedia().GetLastMediaAt().CheckValid() != nil {
 		return nil, invalid("media", "valid capture progress dates are required")
 	}
