@@ -48,6 +48,8 @@ const (
 	FieldLastOperationKey = "last_operation_key"
 	// FieldLastOperationHash holds the string denoting the last_operation_hash field in the database.
 	FieldLastOperationHash = "last_operation_hash"
+	// FieldPinnedPreset holds the string denoting the pinned_preset field in the database.
+	FieldPinnedPreset = "pinned_preset"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -122,6 +124,7 @@ var Columns = []string{
 	FieldDatePublished,
 	FieldLastOperationKey,
 	FieldLastOperationHash,
+	FieldPinnedPreset,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -144,8 +147,9 @@ func ValidColumn(column string) bool {
 var (
 	// ValueScanner of all CameraJob fields.
 	ValueScanner struct {
-		Inputs   field.TypeValueScanner[*api.CameraJobInputs]
-		Observed field.TypeValueScanner[*api.CameraJobObservation]
+		Inputs       field.TypeValueScanner[*api.CameraJobInputs]
+		Observed     field.TypeValueScanner[*api.CameraJobObservation]
+		PinnedPreset field.TypeValueScanner[*api.CameraResolvedPreset]
 	}
 )
 

@@ -83,6 +83,9 @@ func (e *CameraDevice) Proto() *api.CameraDevice {
 		x.SetActiveJobId(e.ActiveJobId[:])
 	}
 	x.SetClaimGeneration(e.ClaimGeneration)
+	if e.Enrollment != nil {
+		x.SetEnrollment(e.Enrollment)
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))
@@ -263,6 +266,9 @@ func (e *CameraJob) Proto() *api.CameraJob {
 	x.SetLastOperationKey(e.LastOperationKey)
 	if e.LastOperationHash != nil {
 		x.SetLastOperationHash(*e.LastOperationHash)
+	}
+	if e.PinnedPreset != nil {
+		x.SetPinnedPreset(e.PinnedPreset)
 	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {

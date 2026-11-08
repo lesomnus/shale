@@ -66,6 +66,9 @@ func init() {
 	// cameradeviceDescEndpoints is the schema descriptor for endpoints field.
 	cameradeviceDescEndpoints := cameradeviceFields[7].Descriptor()
 	cameradevice.ValueScanner.Endpoints = cameradeviceDescEndpoints.ValueScanner.(field.TypeValueScanner[[]*api.CameraObservedEndpoint])
+	// cameradeviceDescEnrollment is the schema descriptor for enrollment field.
+	cameradeviceDescEnrollment := cameradeviceFields[11].Descriptor()
+	cameradevice.ValueScanner.Enrollment = cameradeviceDescEnrollment.ValueScanner.(field.TypeValueScanner[*api.CameraEnrollmentObservation])
 	camerajobFields := schema.CameraJob{}.Fields()
 	_ = camerajobFields
 	// camerajobDescInputs is the schema descriptor for inputs field.
@@ -74,6 +77,9 @@ func init() {
 	// camerajobDescObserved is the schema descriptor for observed field.
 	camerajobDescObserved := camerajobFields[13].Descriptor()
 	camerajob.ValueScanner.Observed = camerajobDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
+	// camerajobDescPinnedPreset is the schema descriptor for pinned_preset field.
+	camerajobDescPinnedPreset := camerajobFields[18].Descriptor()
+	camerajob.ValueScanner.PinnedPreset = camerajobDescPinnedPreset.ValueScanner.(field.TypeValueScanner[*api.CameraResolvedPreset])
 	camerapolicyFields := schema.CameraPolicy{}.Fields()
 	_ = camerapolicyFields
 	// camerapolicyDescEnrollment is the schema descriptor for enrollment field.

@@ -209,18 +209,20 @@ type MediaRequest struct {
 }
 
 type VerifiedState struct {
-	Profile         MediaProfile  `json:"profile"`
-	AudioCodec      string        `json:"audio_codec,omitempty"`
-	ArrivalFPS      float64       `json:"arrival_fps,omitempty"`
-	ArrivalBitrate  int64         `json:"arrival_bitrate,omitempty"`
-	Duration        time.Duration `json:"duration"`
-	MaxGap          time.Duration `json:"max_gap,omitempty"`
-	Decoded         bool          `json:"decoded"`
-	Complete        bool          `json:"complete"`
-	Evidence        []Evidence    `json:"evidence,omitempty"`
-	ObservedAt      time.Time     `json:"observed_at"`
-	Firmware        string        `json:"firmware,omitempty"`
-	ProfileRevision string        `json:"profile_revision,omitempty"`
+	Profile        MediaProfile  `json:"profile"`
+	AudioCodec     string        `json:"audio_codec,omitempty"`
+	ArrivalFPS     float64       `json:"arrival_fps,omitempty"`
+	ArrivalBitrate int64         `json:"arrival_bitrate,omitempty"`
+	Duration       time.Duration `json:"duration"`
+	MaxGap         time.Duration `json:"max_gap,omitempty"`
+	Decoded        bool          `json:"decoded"`
+	// Actual independently decoded video frames, not an FPS/duration estimate.
+	DecodedFrames   int64      `json:"decoded_frames,omitempty"`
+	Complete        bool       `json:"complete"`
+	Evidence        []Evidence `json:"evidence,omitempty"`
+	ObservedAt      time.Time  `json:"observed_at"`
+	Firmware        string     `json:"firmware,omitempty"`
+	ProfileRevision string     `json:"profile_revision,omitempty"`
 }
 
 type MediaVerifier interface {

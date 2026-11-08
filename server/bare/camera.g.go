@@ -870,6 +870,9 @@ func (st CameraDeviceServiceServer) create(ctx context.Context, req *api.CameraD
 		}
 	}
 	q.SetClaimGeneration(req.GetClaimGeneration())
+	if req.HasEnrollment() {
+		q.SetEnrollment(req.GetEnrollment())
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -1033,6 +1036,9 @@ func CameraDeviceSelectedFields(m *api.CameraDeviceSelect) []string {
 	if m.GetClaimGeneration() {
 		vs = append(vs, cameradevice.FieldClaimGeneration)
 	}
+	if m.GetEnrollment() {
+		vs = append(vs, cameradevice.FieldEnrollment)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, cameradevice.FieldDateUpdated)
 	}
@@ -1123,7 +1129,7 @@ func CameraDeviceGetKey(ctx context.Context, db *ent.Client, ref *api.CameraDevi
 var cameraDeviceOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, "CameraDevice")
 
 var cameraDevicePatchColumns = entpatch.Columns{
-	1: cameradevice.FieldId, 2: cameradevice.TenantColumn, 3: cameradevice.SiteColumn, 4: cameradevice.FieldAlias, 5: cameradevice.FieldName, 6: cameradevice.FieldDesc, 7: cameradevice.FieldLabels, 8: cameradevice.NetworkColumn, 9: cameradevice.FieldDeviceKey, 10: cameradevice.FieldIdentity, 11: cameradevice.FieldEndpoints, 12: cameradevice.FieldObservationRevision, 16: cameradevice.FieldActiveJobId, 17: cameradevice.FieldClaimGeneration, 13: cameradevice.FieldDateUpdated, 14: cameradevice.FieldDateErased, 15: cameradevice.FieldDateCreated}
+	1: cameradevice.FieldId, 2: cameradevice.TenantColumn, 3: cameradevice.SiteColumn, 4: cameradevice.FieldAlias, 5: cameradevice.FieldName, 6: cameradevice.FieldDesc, 7: cameradevice.FieldLabels, 8: cameradevice.NetworkColumn, 9: cameradevice.FieldDeviceKey, 10: cameradevice.FieldIdentity, 11: cameradevice.FieldEndpoints, 12: cameradevice.FieldObservationRevision, 16: cameradevice.FieldActiveJobId, 17: cameradevice.FieldClaimGeneration, 18: cameradevice.FieldEnrollment, 13: cameradevice.FieldDateUpdated, 14: cameradevice.FieldDateErased, 15: cameradevice.FieldDateCreated}
 
 func (s CameraDeviceServiceServer) Apply(ctx context.Context, req *api.CameraDeviceApplyRequest) (*api.CameraDevice, error) {
 	if !req.HasPatch() {
@@ -3081,6 +3087,9 @@ func (st CameraJobServiceServer) create(ctx context.Context, req *api.CameraJobA
 	if req.HasLastOperationHash() {
 		q.SetLastOperationHash(req.GetLastOperationHash())
 	}
+	if req.HasPinnedPreset() {
+		q.SetPinnedPreset(req.GetPinnedPreset())
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -3265,6 +3274,9 @@ func CameraJobSelectedFields(m *api.CameraJobSelect) []string {
 	if m.GetLastOperationHash() {
 		vs = append(vs, camerajob.FieldLastOperationHash)
 	}
+	if m.GetPinnedPreset() {
+		vs = append(vs, camerajob.FieldPinnedPreset)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, camerajob.FieldDateUpdated)
 	}
@@ -3361,7 +3373,7 @@ func CameraJobGetKey(ctx context.Context, db *ent.Client, ref *api.CameraJobRef)
 var cameraJobOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, "CameraJob")
 
 var cameraJobPatchColumns = entpatch.Columns{
-	1: camerajob.FieldId, 2: camerajob.TenantColumn, 3: camerajob.SiteColumn, 4: camerajob.FieldAlias, 5: camerajob.FieldName, 6: camerajob.FieldDesc, 7: camerajob.FieldLabels, 8: camerajob.BindingColumn, 9: camerajob.AssignmentColumn, 10: camerajob.FieldRequestKey, 11: camerajob.FieldRequestHash, 12: camerajob.FieldStage, 16: camerajob.FieldLeaseGeneration, 17: camerajob.FieldAssignmentGeneration, 18: camerajob.FieldLeaseOwner, 19: camerajob.FieldLeaseExpires, 20: camerajob.FieldInputs, 21: camerajob.FieldObserved, 22: camerajob.FieldPublishedRevision, 23: camerajob.FieldDatePublished, 24: camerajob.FieldLastOperationKey, 25: camerajob.FieldLastOperationHash, 13: camerajob.FieldDateUpdated, 14: camerajob.FieldDateErased, 15: camerajob.FieldDateCreated}
+	1: camerajob.FieldId, 2: camerajob.TenantColumn, 3: camerajob.SiteColumn, 4: camerajob.FieldAlias, 5: camerajob.FieldName, 6: camerajob.FieldDesc, 7: camerajob.FieldLabels, 8: camerajob.BindingColumn, 9: camerajob.AssignmentColumn, 10: camerajob.FieldRequestKey, 11: camerajob.FieldRequestHash, 12: camerajob.FieldStage, 16: camerajob.FieldLeaseGeneration, 17: camerajob.FieldAssignmentGeneration, 18: camerajob.FieldLeaseOwner, 19: camerajob.FieldLeaseExpires, 20: camerajob.FieldInputs, 21: camerajob.FieldObserved, 22: camerajob.FieldPublishedRevision, 23: camerajob.FieldDatePublished, 24: camerajob.FieldLastOperationKey, 25: camerajob.FieldLastOperationHash, 26: camerajob.FieldPinnedPreset, 13: camerajob.FieldDateUpdated, 14: camerajob.FieldDateErased, 15: camerajob.FieldDateCreated}
 
 func (s CameraJobServiceServer) Apply(ctx context.Context, req *api.CameraJobApplyRequest) (*api.CameraJob, error) {
 	if !req.HasPatch() {

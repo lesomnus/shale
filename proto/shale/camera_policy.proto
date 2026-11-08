@@ -18,6 +18,9 @@ message CameraEnrollmentPolicy {
   int32 max_devices = 3;
   repeated CameraPresetMatch eligible = 4;
   bool allow_any = 5;
+  // Used only when generating a first-activation account; empty means admin.
+  // Existing/imported credential material is never rewritten from this value.
+  string initial_username = 6;
 }
 // One immutable policy revision. The network selects its active policy by CAS.
 message CameraPolicy {

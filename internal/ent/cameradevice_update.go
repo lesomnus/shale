@@ -178,6 +178,18 @@ func (_u *CameraDeviceUpdate) AddClaimGeneration(v int64) *CameraDeviceUpdate {
 	return _u
 }
 
+// SetEnrollment sets the "enrollment" field.
+func (_u *CameraDeviceUpdate) SetEnrollment(v *api.CameraEnrollmentObservation) *CameraDeviceUpdate {
+	_u.mutation.SetEnrollment(v)
+	return _u
+}
+
+// ClearEnrollment clears the value of the "enrollment" field.
+func (_u *CameraDeviceUpdate) ClearEnrollment() *CameraDeviceUpdate {
+	_u.mutation.ClearEnrollment()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraDeviceUpdate) SetDateUpdated(v time.Time) *CameraDeviceUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -364,6 +376,22 @@ func (_u *CameraDeviceUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.AddedClaimGeneration(); ok {
 		_spec.AddField(cameradevice.FieldClaimGeneration, field.TypeInt64, value)
 	}
+	if value, ok := _u.mutation.Enrollment(); ok {
+		vv, err := cameradevice.ValueScanner.Enrollment.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(cameradevice.FieldEnrollment, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldEnrollment); ok {
+		_spec.SetField(cameradevice.FieldEnrollment, field.TypeJson, e)
+	}
+	if _u.mutation.EnrollmentCleared() {
+		_spec.ClearField(cameradevice.FieldEnrollment, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -547,6 +575,18 @@ func (_u *CameraDeviceUpdateOne) SetNillableClaimGeneration(v *int64) *CameraDev
 // AddClaimGeneration adds value to the "claim_generation" field.
 func (_u *CameraDeviceUpdateOne) AddClaimGeneration(v int64) *CameraDeviceUpdateOne {
 	_u.mutation.AddClaimGeneration(v)
+	return _u
+}
+
+// SetEnrollment sets the "enrollment" field.
+func (_u *CameraDeviceUpdateOne) SetEnrollment(v *api.CameraEnrollmentObservation) *CameraDeviceUpdateOne {
+	_u.mutation.SetEnrollment(v)
+	return _u
+}
+
+// ClearEnrollment clears the value of the "enrollment" field.
+func (_u *CameraDeviceUpdateOne) ClearEnrollment() *CameraDeviceUpdateOne {
+	_u.mutation.ClearEnrollment()
 	return _u
 }
 
@@ -765,6 +805,22 @@ func (_u *CameraDeviceUpdateOne) sqlSave(ctx context.Context) (_node *CameraDevi
 	}
 	if value, ok := _u.mutation.AddedClaimGeneration(); ok {
 		_spec.AddField(cameradevice.FieldClaimGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.Enrollment(); ok {
+		vv, err := cameradevice.ValueScanner.Enrollment.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(cameradevice.FieldEnrollment, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldEnrollment); ok {
+		_spec.SetField(cameradevice.FieldEnrollment, field.TypeJson, e)
+	}
+	if _u.mutation.EnrollmentCleared() {
+		_spec.ClearField(cameradevice.FieldEnrollment, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

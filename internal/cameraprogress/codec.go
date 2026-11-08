@@ -227,7 +227,7 @@ func (e *encoder) verified(v *camera.VerifiedState) *api.CameraProvisionVerified
 	if v == nil {
 		return nil
 	}
-	return api.CameraProvisionVerifiedState_builder{Profile: profile(v.Profile), AudioCodec: v.AudioCodec, ArrivalFps: v.ArrivalFPS, ArrivalBitrate: v.ArrivalBitrate, DurationNs: int64(v.Duration), MaxGapNs: int64(v.MaxGap), Decoded: v.Decoded, Complete: v.Complete, Evidence: evidence(v.Evidence), ObservedAt: stamp(v.ObservedAt), Firmware: v.Firmware, ProfileRevision: v.ProfileRevision}.Build()
+	return api.CameraProvisionVerifiedState_builder{Profile: profile(v.Profile), AudioCodec: v.AudioCodec, ArrivalFps: v.ArrivalFPS, ArrivalBitrate: v.ArrivalBitrate, DurationNs: int64(v.Duration), MaxGapNs: int64(v.MaxGap), Decoded: v.Decoded, DecodedFrames: v.DecodedFrames, Complete: v.Complete, Evidence: evidence(v.Evidence), ObservedAt: stamp(v.ObservedAt), Firmware: v.Firmware, ProfileRevision: v.ProfileRevision}.Build()
 }
 func (e *encoder) settings(v *camera.PresetSettings) *api.CameraProvisionSettings {
 	if v == nil {
@@ -401,7 +401,7 @@ func (d *decoder) verified(v *api.CameraProvisionVerifiedState) *camera.Verified
 	if v == nil {
 		return nil
 	}
-	return &camera.VerifiedState{Profile: d.profile(v.GetProfile()), AudioCodec: v.GetAudioCodec(), ArrivalFPS: v.GetArrivalFps(), ArrivalBitrate: v.GetArrivalBitrate(), Duration: time.Duration(v.GetDurationNs()), MaxGap: time.Duration(v.GetMaxGapNs()), Decoded: v.GetDecoded(), Complete: v.GetComplete(), Evidence: d.evidence(v.GetEvidence()), ObservedAt: date(v.GetObservedAt()), Firmware: v.GetFirmware(), ProfileRevision: v.GetProfileRevision()}
+	return &camera.VerifiedState{Profile: d.profile(v.GetProfile()), AudioCodec: v.GetAudioCodec(), ArrivalFPS: v.GetArrivalFps(), ArrivalBitrate: v.GetArrivalBitrate(), Duration: time.Duration(v.GetDurationNs()), MaxGap: time.Duration(v.GetMaxGapNs()), Decoded: v.GetDecoded(), DecodedFrames: v.GetDecodedFrames(), Complete: v.GetComplete(), Evidence: d.evidence(v.GetEvidence()), ObservedAt: date(v.GetObservedAt()), Firmware: v.GetFirmware(), ProfileRevision: v.GetProfileRevision()}
 }
 func (d *decoder) binding(v *api.CameraProvisionBinding) provision.BindingState {
 	if v == nil {

@@ -2998,6 +2998,23 @@ func (m *CameraDeviceMutation) OldClaimGeneration(ctx context.Context) (v int64,
 	return oldValue.ClaimGeneration, nil
 }
 
+// OldEnrollment returns the old "enrollment" field's value of the CameraDevice entity.
+// If the CameraDevice object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraDeviceMutation) OldEnrollment(ctx context.Context) (v *api.CameraEnrollmentObservation, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldEnrollment is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldEnrollment requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnrollment: %w", err)
+	}
+	return oldValue.Enrollment, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the CameraDevice entity.
 // If the CameraDevice object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -3125,6 +3142,8 @@ func (m *CameraDeviceMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldActiveJobId(ctx)
 	case cameradevice.FieldClaimGeneration:
 		return m.OldClaimGeneration(ctx)
+	case cameradevice.FieldEnrollment:
+		return m.OldEnrollment(ctx)
 	case cameradevice.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case cameradevice.FieldDateErased:
@@ -3541,6 +3560,23 @@ func (m *CameraJobMutation) OldLastOperationHash(ctx context.Context) (v *[]byte
 	return oldValue.LastOperationHash, nil
 }
 
+// OldPinnedPreset returns the old "pinned_preset" field's value of the CameraJob entity.
+// If the CameraJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraJobMutation) OldPinnedPreset(ctx context.Context) (v *api.CameraResolvedPreset, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPinnedPreset is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPinnedPreset requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPinnedPreset: %w", err)
+	}
+	return oldValue.PinnedPreset, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the CameraJob entity.
 // If the CameraJob object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -3699,6 +3735,8 @@ func (m *CameraJobMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldLastOperationKey(ctx)
 	case camerajob.FieldLastOperationHash:
 		return m.OldLastOperationHash(ctx)
+	case camerajob.FieldPinnedPreset:
+		return m.OldPinnedPreset(ctx)
 	case camerajob.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case camerajob.FieldDateErased:

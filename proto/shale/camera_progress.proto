@@ -123,6 +123,7 @@ message CameraProvisionVerifiedState {
   google.protobuf.Timestamp observed_at = 10;
   string firmware = 11;
   string profile_revision = 12;
+  int64 decoded_frames = 13;
 }
 message CameraProvisionEvent {
   google.protobuf.Timestamp at = 1;

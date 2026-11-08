@@ -64,6 +64,12 @@ message CameraObservedEndpoint {
   string provenance = 2;
   google.protobuf.Timestamp observed_at = 3;
 }
+message CameraEnrollmentObservation {
+  string code = 1;
+  google.protobuf.Timestamp observed_at = 2;
+  // A deduplication hint, never proof of authenticated ownership.
+  string discovery_id = 3;
+}
 message CameraMediaEvidence {
   CameraCaptureProfile profile = 1;
   bool decoded = 2;
@@ -174,6 +180,7 @@ message CameraDevice {
   // One physical-device writer across jobs; fenced using server-side CAS.
   bytes active_job_id = 16 [(orm.field) = {type: TYPE_UUID nullable: true}];
   int64 claim_generation = 17;
+  CameraEnrollmentObservation enrollment = 18;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
@@ -300,6 +307,9 @@ message CameraJob {
   string last_operation_key = 24;
   // Pending jobs have not acknowledged an operation yet.
   bytes last_operation_hash = 25 [(orm.field) = {nullable: true}];
+  // Write-once through a validated leased checkpoint. Later edits of a policy
+  // or a different inspection cannot replace a job's resolved settings.
+  CameraResolvedPreset pinned_preset = 26;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

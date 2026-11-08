@@ -32,6 +32,7 @@ type CameraEnrollmentPolicy struct {
 	xxx_hidden_MaxDevices      int32                  `protobuf:"varint,3,opt,name=max_devices,json=maxDevices"`
 	xxx_hidden_Eligible        *[]*CameraPresetMatch  `protobuf:"bytes,4,rep,name=eligible"`
 	xxx_hidden_AllowAny        bool                   `protobuf:"varint,5,opt,name=allow_any,json=allowAny"`
+	xxx_hidden_InitialUsername string                 `protobuf:"bytes,6,opt,name=initial_username,json=initialUsername"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -98,6 +99,13 @@ func (x *CameraEnrollmentPolicy) GetAllowAny() bool {
 	return false
 }
 
+func (x *CameraEnrollmentPolicy) GetInitialUsername() string {
+	if x != nil {
+		return x.xxx_hidden_InitialUsername
+	}
+	return ""
+}
+
 func (x *CameraEnrollmentPolicy) SetAutomatic(v bool) {
 	x.xxx_hidden_Automatic = v
 }
@@ -118,6 +126,10 @@ func (x *CameraEnrollmentPolicy) SetAllowAny(v bool) {
 	x.xxx_hidden_AllowAny = v
 }
 
+func (x *CameraEnrollmentPolicy) SetInitialUsername(v string) {
+	x.xxx_hidden_InitialUsername = v
+}
+
 type CameraEnrollmentPolicy_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -126,6 +138,9 @@ type CameraEnrollmentPolicy_builder struct {
 	MaxDevices      int32
 	Eligible        []*CameraPresetMatch
 	AllowAny        bool
+	// Used only when generating a first-activation account; empty means admin.
+	// Existing/imported credential material is never rewritten from this value.
+	InitialUsername string
 }
 
 func (b0 CameraEnrollmentPolicy_builder) Build() *CameraEnrollmentPolicy {
@@ -137,6 +152,7 @@ func (b0 CameraEnrollmentPolicy_builder) Build() *CameraEnrollmentPolicy {
 	x.xxx_hidden_MaxDevices = b.MaxDevices
 	x.xxx_hidden_Eligible = &b.Eligible
 	x.xxx_hidden_AllowAny = b.AllowAny
+	x.xxx_hidden_InitialUsername = b.InitialUsername
 	return m0
 }
 
@@ -489,14 +505,15 @@ var File_shale_camera_policy_proto protoreflect.FileDescriptor
 
 const file_shale_camera_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/camera_policy.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\"\xd5\x01\n" +
+	"\x19shale/camera_policy.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\"\x80\x02\n" +
 	"\x16CameraEnrollmentPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12)\n" +
 	"\x10allow_activation\x18\x02 \x01(\bR\x0fallowActivation\x12\x1f\n" +
 	"\vmax_devices\x18\x03 \x01(\x05R\n" +
 	"maxDevices\x124\n" +
 	"\beligible\x18\x04 \x03(\v2\x18.shale.CameraPresetMatchR\beligible\x12\x1b\n" +
-	"\tallow_any\x18\x05 \x01(\bR\ballowAny\"\xce\a\n" +
+	"\tallow_any\x18\x05 \x01(\bR\ballowAny\x12)\n" +
+	"\x10initial_username\x18\x06 \x01(\tR\x0finitialUsername\"\xce\a\n" +
 	"\fCameraPolicy\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +

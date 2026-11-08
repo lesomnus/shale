@@ -40,7 +40,7 @@ func TestActualH264AudioAndIndependentDecode(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if !got.Complete || !got.Decoded || got.Profile.Codec != "h264" || got.Profile.Width != 640 || got.Profile.Height != 360 || got.Profile.FPS < 25 || got.AudioCodec == "" {
+	if !got.Complete || !got.Decoded || got.DecodedFrames < 2 || got.Profile.Codec != "h264" || got.Profile.Width != 640 || got.Profile.Height != 360 || got.Profile.FPS < 25 || got.AudioCodec == "" {
 		t.Fatalf("wrong normalized facts: %+v", got)
 	}
 	if len(got.Evidence) < 2 {
@@ -73,7 +73,7 @@ func TestActualHEVCAndEarlyEOF(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if got.Profile.Codec != "hevc" || !got.Decoded {
+	if got.Profile.Codec != "hevc" || !got.Decoded || got.DecodedFrames < 2 {
 		t.Fatal("HEVC not independently decoded")
 	}
 	req.Duration = 4 * time.Second

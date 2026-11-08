@@ -2370,6 +2370,7 @@ type CameraProvisionVerifiedState struct {
 	xxx_hidden_ObservedAt      *timestamppb.Timestamp       `protobuf:"bytes,10,opt,name=observed_at,json=observedAt"`
 	xxx_hidden_Firmware        string                       `protobuf:"bytes,11,opt,name=firmware"`
 	xxx_hidden_ProfileRevision string                       `protobuf:"bytes,12,opt,name=profile_revision,json=profileRevision"`
+	xxx_hidden_DecodedFrames   int64                        `protobuf:"varint,13,opt,name=decoded_frames,json=decodedFrames"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -2483,6 +2484,13 @@ func (x *CameraProvisionVerifiedState) GetProfileRevision() string {
 	return ""
 }
 
+func (x *CameraProvisionVerifiedState) GetDecodedFrames() int64 {
+	if x != nil {
+		return x.xxx_hidden_DecodedFrames
+	}
+	return 0
+}
+
 func (x *CameraProvisionVerifiedState) SetProfile(v *CameraProvisionMediaProfile) {
 	x.xxx_hidden_Profile = v
 }
@@ -2529,6 +2537,10 @@ func (x *CameraProvisionVerifiedState) SetFirmware(v string) {
 
 func (x *CameraProvisionVerifiedState) SetProfileRevision(v string) {
 	x.xxx_hidden_ProfileRevision = v
+}
+
+func (x *CameraProvisionVerifiedState) SetDecodedFrames(v int64) {
+	x.xxx_hidden_DecodedFrames = v
 }
 
 func (x *CameraProvisionVerifiedState) HasProfile() bool {
@@ -2579,6 +2591,7 @@ type CameraProvisionVerifiedState_builder struct {
 	ObservedAt      *timestamppb.Timestamp
 	Firmware        string
 	ProfileRevision string
+	DecodedFrames   int64
 }
 
 func (b0 CameraProvisionVerifiedState_builder) Build() *CameraProvisionVerifiedState {
@@ -2597,6 +2610,7 @@ func (b0 CameraProvisionVerifiedState_builder) Build() *CameraProvisionVerifiedS
 	x.xxx_hidden_ObservedAt = b.ObservedAt
 	x.xxx_hidden_Firmware = b.Firmware
 	x.xxx_hidden_ProfileRevision = b.ProfileRevision
+	x.xxx_hidden_DecodedFrames = b.DecodedFrames
 	return m0
 }
 
@@ -4361,7 +4375,7 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\x06before\x18\x02 \x01(\v2\".shale.CameraProvisionMediaProfileR\x06before\x128\n" +
 	"\x05after\x18\x03 \x01(\v2\".shale.CameraProvisionMediaProfileR\x05after\x127\n" +
 	"\achanges\x18\x04 \x01(\v2\x1d.shale.CameraProvisionStringsR\achanges\x12\x1a\n" +
-	"\brevision\x18\x05 \x01(\tR\brevision\"\x80\x04\n" +
+	"\brevision\x18\x05 \x01(\tR\brevision\"\xa7\x04\n" +
 	"\x1cCameraProvisionVerifiedState\x12<\n" +
 	"\aprofile\x18\x01 \x01(\v2\".shale.CameraProvisionMediaProfileR\aprofile\x12\x1f\n" +
 	"\vaudio_codec\x18\x02 \x01(\tR\n" +
@@ -4380,7 +4394,8 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"observedAt\x12\x1a\n" +
 	"\bfirmware\x18\v \x01(\tR\bfirmware\x12)\n" +
-	"\x10profile_revision\x18\f \x01(\tR\x0fprofileRevision\"l\n" +
+	"\x10profile_revision\x18\f \x01(\tR\x0fprofileRevision\x12%\n" +
+	"\x0edecoded_frames\x18\r \x01(\x03R\rdecodedFrames\"l\n" +
 	"\x14CameraProvisionEvent\x12*\n" +
 	"\x02at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x02at\x12\x14\n" +
 	"\x05stage\x18\x02 \x01(\tR\x05stage\x12\x12\n" +

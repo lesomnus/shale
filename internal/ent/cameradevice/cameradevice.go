@@ -34,6 +34,8 @@ const (
 	FieldActiveJobId = "active_job_id"
 	// FieldClaimGeneration holds the string denoting the claim_generation field in the database.
 	FieldClaimGeneration = "claim_generation"
+	// FieldEnrollment holds the string denoting the enrollment field in the database.
+	FieldEnrollment = "enrollment"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -90,6 +92,7 @@ var Columns = []string{
 	FieldObservationRevision,
 	FieldActiveJobId,
 	FieldClaimGeneration,
+	FieldEnrollment,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -111,8 +114,9 @@ func ValidColumn(column string) bool {
 var (
 	// ValueScanner of all CameraDevice fields.
 	ValueScanner struct {
-		Identity  field.TypeValueScanner[*api.CameraIdentityEvidence]
-		Endpoints field.TypeValueScanner[[]*api.CameraObservedEndpoint]
+		Identity   field.TypeValueScanner[*api.CameraIdentityEvidence]
+		Endpoints  field.TypeValueScanner[[]*api.CameraObservedEndpoint]
+		Enrollment field.TypeValueScanner[*api.CameraEnrollmentObservation]
 	}
 )
 

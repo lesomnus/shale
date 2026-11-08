@@ -58,6 +58,8 @@ type CameraJob struct {
 	LastOperationKey string `json:"last_operation_key,omitempty"`
 	// LastOperationHash holds the value of the "last_operation_hash" field.
 	LastOperationHash *[]byte `json:"last_operation_hash,omitempty"`
+	// PinnedPreset holds the value of the "pinned_preset" field.
+	PinnedPreset *api.CameraResolvedPreset `json:"pinned_preset,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -158,6 +160,8 @@ func (*CameraJob) scanValues(columns []string) ([]any, error) {
 			values[i] = camerajob.ValueScanner.Inputs.ScanValue()
 		case camerajob.FieldObserved:
 			values[i] = camerajob.ValueScanner.Observed.ScanValue()
+		case camerajob.FieldPinnedPreset:
+			values[i] = camerajob.ValueScanner.PinnedPreset.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -288,6 +292,12 @@ func (_m *CameraJob) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field last_operation_hash", values[i])
 			} else if value != nil {
 				_m.LastOperationHash = value
+			}
+		case camerajob.FieldPinnedPreset:
+			if value, err := camerajob.ValueScanner.PinnedPreset.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.PinnedPreset = value
 			}
 		case camerajob.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -446,6 +456,9 @@ func (_m *CameraJob) String() string {
 		builder.WriteString("last_operation_hash=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("pinned_preset=")
+	builder.WriteString(fmt.Sprintf("%v", _m.PinnedPreset))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
