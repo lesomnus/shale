@@ -869,16 +869,19 @@ var CameraDeviceService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	CameraAssignmentService_Add_FullMethodName      = "/shale.CameraAssignmentService/Add"
-	CameraAssignmentService_Get_FullMethodName      = "/shale.CameraAssignmentService/Get"
-	CameraAssignmentService_Patch_FullMethodName    = "/shale.CameraAssignmentService/Patch"
-	CameraAssignmentService_Apply_FullMethodName    = "/shale.CameraAssignmentService/Apply"
-	CameraAssignmentService_Erase_FullMethodName    = "/shale.CameraAssignmentService/Erase"
-	CameraAssignmentService_List_FullMethodName     = "/shale.CameraAssignmentService/List"
-	CameraAssignmentService_Watch_FullMethodName    = "/shale.CameraAssignmentService/Watch"
-	CameraAssignmentService_Assign_FullMethodName   = "/shale.CameraAssignmentService/Assign"
-	CameraAssignmentService_Snapshot_FullMethodName = "/shale.CameraAssignmentService/Snapshot"
-	CameraAssignmentService_Handover_FullMethodName = "/shale.CameraAssignmentService/Handover"
+	CameraAssignmentService_Add_FullMethodName         = "/shale.CameraAssignmentService/Add"
+	CameraAssignmentService_Get_FullMethodName         = "/shale.CameraAssignmentService/Get"
+	CameraAssignmentService_Patch_FullMethodName       = "/shale.CameraAssignmentService/Patch"
+	CameraAssignmentService_Apply_FullMethodName       = "/shale.CameraAssignmentService/Apply"
+	CameraAssignmentService_Erase_FullMethodName       = "/shale.CameraAssignmentService/Erase"
+	CameraAssignmentService_List_FullMethodName        = "/shale.CameraAssignmentService/List"
+	CameraAssignmentService_Watch_FullMethodName       = "/shale.CameraAssignmentService/Watch"
+	CameraAssignmentService_Assign_FullMethodName      = "/shale.CameraAssignmentService/Assign"
+	CameraAssignmentService_Snapshot_FullMethodName    = "/shale.CameraAssignmentService/Snapshot"
+	CameraAssignmentService_Handover_FullMethodName    = "/shale.CameraAssignmentService/Handover"
+	CameraAssignmentService_Application_FullMethodName = "/shale.CameraAssignmentService/Application"
+	CameraAssignmentService_BeginApply_FullMethodName  = "/shale.CameraAssignmentService/BeginApply"
+	CameraAssignmentService_Applied_FullMethodName     = "/shale.CameraAssignmentService/Applied"
 )
 
 // CameraAssignmentServiceClient is the client API for CameraAssignmentService service.
@@ -912,6 +915,10 @@ type CameraAssignmentServiceClient interface {
 	Assign(ctx context.Context, in *CameraAssignmentAssignRequest, opts ...grpc.CallOption) (*CameraAssignment, error)
 	Snapshot(ctx context.Context, in *CameraAssignmentSnapshotRequest, opts ...grpc.CallOption) (*CameraCatalogSnapshot, error)
 	Handover(ctx context.Context, in *CameraAssignmentHandoverRequest, opts ...grpc.CallOption) (*CameraAssignment, error)
+	// Only the currently assigned adopted Producer may use runtime acknowledgments.
+	Application(ctx context.Context, in *CameraApplicationRequest, opts ...grpc.CallOption) (*CameraApplyState, error)
+	BeginApply(ctx context.Context, in *CameraBeginApplyRequest, opts ...grpc.CallOption) (*CameraApplication, error)
+	Applied(ctx context.Context, in *CameraAppliedRequest, opts ...grpc.CallOption) (*CameraApplication, error)
 }
 
 type cameraAssignmentServiceClient struct {
@@ -1031,6 +1038,36 @@ func (c *cameraAssignmentServiceClient) Handover(ctx context.Context, in *Camera
 	return out, nil
 }
 
+func (c *cameraAssignmentServiceClient) Application(ctx context.Context, in *CameraApplicationRequest, opts ...grpc.CallOption) (*CameraApplyState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraApplyState)
+	err := c.cc.Invoke(ctx, CameraAssignmentService_Application_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraAssignmentServiceClient) BeginApply(ctx context.Context, in *CameraBeginApplyRequest, opts ...grpc.CallOption) (*CameraApplication, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraApplication)
+	err := c.cc.Invoke(ctx, CameraAssignmentService_BeginApply_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraAssignmentServiceClient) Applied(ctx context.Context, in *CameraAppliedRequest, opts ...grpc.CallOption) (*CameraApplication, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraApplication)
+	err := c.cc.Invoke(ctx, CameraAssignmentService_Applied_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CameraAssignmentServiceServer is the server API for CameraAssignmentService service.
 // All implementations must embed UnimplementedCameraAssignmentServiceServer
 // for forward compatibility.
@@ -1062,6 +1099,10 @@ type CameraAssignmentServiceServer interface {
 	Assign(context.Context, *CameraAssignmentAssignRequest) (*CameraAssignment, error)
 	Snapshot(context.Context, *CameraAssignmentSnapshotRequest) (*CameraCatalogSnapshot, error)
 	Handover(context.Context, *CameraAssignmentHandoverRequest) (*CameraAssignment, error)
+	// Only the currently assigned adopted Producer may use runtime acknowledgments.
+	Application(context.Context, *CameraApplicationRequest) (*CameraApplyState, error)
+	BeginApply(context.Context, *CameraBeginApplyRequest) (*CameraApplication, error)
+	Applied(context.Context, *CameraAppliedRequest) (*CameraApplication, error)
 	mustEmbedUnimplementedCameraAssignmentServiceServer()
 }
 
@@ -1101,6 +1142,15 @@ func (UnimplementedCameraAssignmentServiceServer) Snapshot(context.Context, *Cam
 }
 func (UnimplementedCameraAssignmentServiceServer) Handover(context.Context, *CameraAssignmentHandoverRequest) (*CameraAssignment, error) {
 	return nil, status.Error(codes.Unimplemented, "method Handover not implemented")
+}
+func (UnimplementedCameraAssignmentServiceServer) Application(context.Context, *CameraApplicationRequest) (*CameraApplyState, error) {
+	return nil, status.Error(codes.Unimplemented, "method Application not implemented")
+}
+func (UnimplementedCameraAssignmentServiceServer) BeginApply(context.Context, *CameraBeginApplyRequest) (*CameraApplication, error) {
+	return nil, status.Error(codes.Unimplemented, "method BeginApply not implemented")
+}
+func (UnimplementedCameraAssignmentServiceServer) Applied(context.Context, *CameraAppliedRequest) (*CameraApplication, error) {
+	return nil, status.Error(codes.Unimplemented, "method Applied not implemented")
 }
 func (UnimplementedCameraAssignmentServiceServer) mustEmbedUnimplementedCameraAssignmentServiceServer() {
 }
@@ -1297,6 +1347,60 @@ func _CameraAssignmentService_Handover_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CameraAssignmentService_Application_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraApplicationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraAssignmentServiceServer).Application(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraAssignmentService_Application_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraAssignmentServiceServer).Application(ctx, req.(*CameraApplicationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraAssignmentService_BeginApply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraBeginApplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraAssignmentServiceServer).BeginApply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraAssignmentService_BeginApply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraAssignmentServiceServer).BeginApply(ctx, req.(*CameraBeginApplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraAssignmentService_Applied_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraAppliedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraAssignmentServiceServer).Applied(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraAssignmentService_Applied_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraAssignmentServiceServer).Applied(ctx, req.(*CameraAppliedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CameraAssignmentService_ServiceDesc is the grpc.ServiceDesc for CameraAssignmentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1339,6 +1443,18 @@ var CameraAssignmentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Handover",
 			Handler:    _CameraAssignmentService_Handover_Handler,
+		},
+		{
+			MethodName: "Application",
+			Handler:    _CameraAssignmentService_Application_Handler,
+		},
+		{
+			MethodName: "BeginApply",
+			Handler:    _CameraAssignmentService_BeginApply_Handler,
+		},
+		{
+			MethodName: "Applied",
+			Handler:    _CameraAssignmentService_Applied_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -57,6 +57,19 @@ func (r *MP4Reader) Next(f *Frame) error {
 			f.Key = u.Frag.Key(r.init)
 			f.Frames = len(tr.Samples)
 			f.Ticks = tr.Time
+			f.VideoTicks = tr.Duration()
+			f.VideoValid = len(tr.Samples) > 0
+			for i, sample := range tr.Samples {
+				data := u.Frag.Bytes[sample.Off : sample.Off+sample.Size]
+				key := fmp4.KeyByNAL(data, v.LengthSize(), v.H265())
+				if key == 0 || sample.Duration == 0 {
+					f.VideoValid = false
+				}
+				if i == 0 && key == 1 {
+					f.IDR = true
+				}
+				f.VideoBytes += int64(sample.Size)
+			}
 			if v.Timescale > 0 {
 				var longest uint32
 				for _, s := range tr.Samples {

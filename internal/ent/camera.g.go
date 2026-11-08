@@ -200,6 +200,15 @@ func (e *CameraBinding) Proto() *api.CameraBinding {
 	}
 	x.SetAppliedRevision(e.AppliedRevision)
 	x.SetCollect(e.Collect)
+	if e.StartingApplication != nil {
+		x.SetStartingApplication(e.StartingApplication)
+	}
+	if e.AppliedApplication != nil {
+		x.SetAppliedApplication(e.AppliedApplication)
+	}
+	x.SetPreviousApplications(e.PreviousApplications)
+	x.SetAdmittedSpecRevision(e.AdmittedSpecRevision)
+	x.SetAdmittedAssignmentGeneration(e.AdmittedAssignmentGeneration)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

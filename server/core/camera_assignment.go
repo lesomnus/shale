@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
@@ -166,6 +167,9 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 			out = a
 			return nil
 		}
+		if err := c.cameraRetireAssignmentApplications(ctx, nx, a); err != nil {
+			return err
+		}
 		patch := api.CameraAssignmentPatchRequest_builder{Ref: r.GetRef(), WorkerSlot: z.Ptr(r.GetWorkerSlot()), Generation: z.Ptr(a.GetGeneration() + 1), CatalogRevision: z.Ptr(a.GetCatalogRevision() + 1), DateUpdated: a.GetDateUpdated()}
 		if len(r.GetWorkerId()) > 0 {
 			patch.WorkerId = r.GetWorkerId()
@@ -244,6 +248,16 @@ func (s Core) producerCatalogOwner(ctx context.Context, actor, tenant pdid.Id, a
 	if err != nil {
 		return err
 	}
+	if !s.d.Dev {
+		f, err := gate.Actor(ctx)
+		if err != nil {
+			return err
+		}
+		prior, ok := f.Row.(*api.Producer)
+		if !ok || prior.GetCertSerial() == "" || prior.GetCertSerial() != p.GetCertSerial() || p.GetDateCertExpires() == nil || !p.GetDateCertExpires().AsTime().After(s.d.now()) {
+			return denied("camera Producer", "Producer certificate expired or was revoked")
+		}
+	}
 	return producerCatalogAssignment(actor, tenant, p, a)
 }
 
@@ -310,6 +324,9 @@ func (s coreCameraAssignment) Handover(ctx context.Context, r *api.CameraAssignm
 		// Revoke future CP access before adopting the replacement into the same
 		// immutable Set. Existing data-plane capabilities retain their own expiry;
 		// this transaction does not claim to terminate already-open media sessions.
+		if err := c.cameraRetireAssignmentApplications(ctx, nx, a); err != nil {
+			return err
+		}
 		if _, err := nx.Producer().Erase(ctx, api.ProducerRef_builder{Id: old.GetId()}.Build()); err != nil {
 			return err
 		}

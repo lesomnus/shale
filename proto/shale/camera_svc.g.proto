@@ -97,6 +97,10 @@ service CameraAssignmentService {
   rpc Assign(CameraAssignmentAssignRequest) returns (CameraAssignment);
   rpc Snapshot(CameraAssignmentSnapshotRequest) returns (CameraCatalogSnapshot);
   rpc Handover(CameraAssignmentHandoverRequest) returns (CameraAssignment);
+  // Only the currently assigned adopted Producer may use runtime acknowledgments.
+  rpc Application(CameraApplicationRequest) returns (CameraApplyState);
+  rpc BeginApply(CameraBeginApplyRequest) returns (CameraApplication);
+  rpc Applied(CameraAppliedRequest) returns (CameraApplication);
 }
 
 service CameraBindingService {
@@ -794,6 +798,24 @@ message CameraAssignmentHandoverRequest {
   ProducerRef replacement = 4;
 }
 
+message CameraApplicationRequest {
+  CameraApplyTarget target = 1;
+}
+
+message CameraBeginApplyRequest {
+  CameraApplyTarget target = 1;
+  int64 expected_sequence = 2 [features.field_presence = IMPLICIT];
+  string intent_key = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraAppliedRequest {
+  CameraApplyTarget target = 1;
+  int64 sequence = 2 [features.field_presence = IMPLICIT];
+  string capture_epoch = 3 [features.field_presence = IMPLICIT];
+  CameraRuntimeMedia media = 4;
+  CameraCredentialReference used_credential = 5;
+}
+
 message CameraBindingAddRequest {
   bytes id = 1;
   TenantRef tenant = 2;
@@ -811,6 +833,11 @@ message CameraBindingAddRequest {
   CameraJobObservation observed = 17;
   int64 applied_revision = 18 [features.field_presence = IMPLICIT];
   bool collect = 19 [features.field_presence = IMPLICIT];
+  CameraApplication starting_application = 20;
+  CameraApplication applied_application = 21;
+  repeated CameraApplication previous_applications = 22;
+  int64 admitted_spec_revision = 23 [features.field_presence = IMPLICIT];
+  int64 admitted_assignment_generation = 24 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -853,6 +880,11 @@ message CameraBindingSelect {
   bool observed = 17;
   bool applied_revision = 18;
   bool collect = 19;
+  bool starting_application = 20;
+  bool applied_application = 21;
+  bool previous_applications = 22;
+  bool admitted_spec_revision = 23;
+  bool admitted_assignment_generation = 24;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -878,6 +910,21 @@ message CameraBindingPatchRequest {
   bool observed_null = 35;
   int64 applied_revision = 36;
   bool collect = 38;
+  CameraApplication starting_application = 40;
+  // Clear starting_application instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and starting_application clears.
+  bool starting_application_null = 41;
+  CameraApplication applied_application = 42;
+  // Clear applied_application instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and applied_application clears.
+  bool applied_application_null = 43;
+  repeated CameraApplication previous_applications = 44;
+  int64 admitted_spec_revision = 46;
+  int64 admitted_assignment_generation = 48;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

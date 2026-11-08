@@ -61,11 +61,25 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 	}
 	var sources [][]byte
 	var shown []*api.Source
+	var epochs []*api.CaptureEpochGrant
 	for _, m := range members {
 		// A raw source (§38.9) has nothing a relay could show, and a
 		// policy of `always` would start it for nothing.
 		if !showable(m) {
 			continue
+		}
+		grant, managed, err := s.currentSourcePublishGrant(ctx, m, producerId)
+		if err != nil {
+			if managed && status.Code(err) == codes.PermissionDenied {
+				continue
+			}
+			return nil, err
+		}
+		if managed {
+			if grant == nil {
+				continue
+			}
+			epochs = append(epochs, grant)
 		}
 		sources = append(sources, m.GetId())
 		shown = append(shown, m)
@@ -78,7 +92,7 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 	exp := now.Add(b.PublishTokenTTL)
 	tok, err := s.d.Keys.Sign(ctx, api.TokenClaims_builder{
 		Exp: timestamppb.New(exp), Iat: timestamppb.New(now),
-		Aud: chosen.Id[:], Op: api.TokenOp_TOKEN_OP_PUBLISH, Sources: sources, Actor: producerId.Bytes(),
+		Aud: chosen.Id[:], Op: api.TokenOp_TOKEN_OP_PUBLISH, Sources: sources, Actor: producerId.Bytes(), ActorTenant: p.TenantId[:], CaptureEpochs: epochs,
 		Live: live, RewindSeconds: rewindSeconds(shown, b),
 	}.Build())
 	if err != nil {
@@ -251,12 +265,6 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 // liveSourcesUntil additionally bounds a job-scoped execution capability by its
 // lease. Ordinary viewer calls retain the configured ViewTokenTTL.
 func (s Core) liveSourcesUntil(ctx context.Context, f *frame.Frame, set *api.Set, sources []*api.Source, notAfter time.Time) ([]*api.LiveSource, error) {
-	for _, src := range sources {
-		// A raw source (§38.9) has nothing a relay could show.
-		if !showable(src) {
-			return nil, status.Errorf(codes.FailedPrecondition, "%s: nothing a relay could show; its producer takes raw frames, or never negotiated", src.GetAlias())
-		}
-	}
 	now := s.d.now()
 	producers, err := s.ent(ctx).Producer.Query().
 		Where(producer.SetIdEQ(mustId(set.GetId()).Uuid()), producer.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), producer.DateErasedIsNil()).
@@ -274,16 +282,9 @@ func (s Core) liveSourcesUntil(ctx context.Context, f *frame.Frame, set *api.Set
 			break
 		}
 	}
-	if r == nil {
-		return nil, status.Error(codes.FailedPrecondition, "no relay carries this set's cameras yet: its producer is not assigned one, or the relay is down")
-	}
 	b, _, _, address, err := s.policies(ctx)
 	if err != nil {
 		return nil, err
-	}
-	eps := s.whepEndpoints(r, callerOf(ctx), address)
-	if len(eps) == 0 {
-		return nil, status.Error(codes.FailedPrecondition, "the relay has no WHEP address for this caller")
 	}
 	exp := now.Add(b.ViewTokenTTL)
 	if !notAfter.IsZero() && notAfter.Before(exp) {
@@ -295,8 +296,49 @@ func (s Core) liveSourcesUntil(ctx context.Context, f *frame.Frame, set *api.Set
 
 	var out []*api.LiveSource
 	for _, src := range sources {
+		app, managed, err := s.currentSourceApplication(ctx, src)
+		if err != nil {
+			if managed && (status.Code(err) == codes.FailedPrecondition || status.Code(err) == codes.NotFound || status.Code(err) == codes.PermissionDenied) {
+				continue
+			}
+			return nil, err
+		}
+		if !showable(src) {
+			if managed {
+				continue
+			}
+			return nil, failed("nothing a relay could show; the producer takes raw frames or has not negotiated")
+		}
+		carrying := r
+		epoch := ""
+		if managed {
+			epoch = app.GetCaptureEpoch()
+			p, err := s.ent(ctx).Producer.Get(ctx, mustId(app.GetProducerId()).Uuid())
+			if err != nil {
+				return nil, err
+			}
+			carrying = nil
+			if !isZero(p.RelayId) {
+				if v, err := s.ent(ctx).Relay.Get(ctx, p.RelayId); err == nil && relayAlive(v, now, s.d.relayDownAfter()) {
+					carrying = v
+				}
+			}
+		}
+		if carrying == nil {
+			if managed {
+				continue
+			}
+			return nil, failed("no relay carries this set's cameras yet")
+		}
+		eps := s.whepEndpoints(carrying, callerOf(ctx), address)
+		if len(eps) == 0 {
+			if managed {
+				continue
+			}
+			return nil, failed("the relay has no WHEP address for this caller")
+		}
 		claims := api.TokenClaims_builder{
-			Iat: timestamppb.New(now), Aud: r.Id[:], Op: api.TokenOp_TOKEN_OP_VIEW, Source: src.GetId(),
+			Iat: timestamppb.New(now), Aud: carrying.Id[:], Op: api.TokenOp_TOKEN_OP_VIEW, Source: src.GetId(), CaptureEpoch: epoch,
 		}
 		claimsFor(ctx, f, &claims, now, exp)
 		tok, err := s.d.Keys.Sign(ctx, claims.Build())
@@ -304,14 +346,15 @@ func (s Core) liveSourcesUntil(ctx context.Context, f *frame.Frame, set *api.Set
 			return nil, err
 		}
 		out = append(out, api.LiveSource_builder{
-			SourceId:    src.GetId(),
-			Ordinal:     src.GetOrdinal(),
-			RelayId:     r.Id[:],
-			Endpoints:   eps,
-			WhepUrl:     endpointURL(eps[0], "whep/"+mustId(src.GetId()).String(), nil),
-			RecentUrl:   endpointURL(eps[0], "recent/"+mustId(src.GetId()).String(), nil),
-			ViewToken:   tok,
-			DateExpires: claims.Exp,
+			SourceId:     src.GetId(),
+			Ordinal:      src.GetOrdinal(),
+			RelayId:      carrying.Id[:],
+			Endpoints:    eps,
+			WhepUrl:      endpointURL(eps[0], "whep/"+mustId(src.GetId()).String(), nil),
+			RecentUrl:    endpointURL(eps[0], "recent/"+mustId(src.GetId()).String(), nil),
+			ViewToken:    tok,
+			DateExpires:  claims.Exp,
+			CaptureEpoch: epoch,
 		}.Build())
 	}
 
@@ -356,6 +399,9 @@ func (s coreSource) Live(ctx context.Context, req *api.SourceLiveRequest) (*api.
 	if err != nil {
 		return nil, err
 	}
+	if len(vs) == 0 {
+		return nil, failed("the managed source has no current ready live incarnation")
+	}
 
 	return api.SourceLiveResponse_builder{Source: vs[0]}.Build(), nil
 }
@@ -399,6 +445,10 @@ func (s Core) starvation(ctx context.Context, p *api.Producer, reports []*api.So
 		if set != nil && string(src.GetSet().GetId()) != string(set.GetId()) {
 			continue
 		}
+		managed, err := s.cameraHasBinding(ctx, src)
+		if err != nil {
+			return nil, err
+		}
 		st := src.GetStarvation()
 		if st == nil || st.GetDateReset() == nil || now.Sub(st.GetDateReset().AsTime()) > 24*time.Hour {
 			st = api.Starvation_builder{DateReset: timestamppb.New(now)}.Build()
@@ -424,7 +474,7 @@ func (s Core) starvation(ctx context.Context, p *api.Producer, reports []*api.So
 			st.SetSuggestedMaxBitrate(suggested)
 			sg := api.Suggestion_builder{SourceId: src.GetId(), MaxBitrate: ceiling, Suggested: suggested,
 				Reason: "starved: episodes at the cap while the day was mostly below it"}
-			if set != nil && set.GetAutoRaise() && suggested > ceiling && (st.GetDateReset() == nil || now.Sub(st.GetDateReset().AsTime()) < time.Minute) {
+			if !managed && set != nil && set.GetAutoRaise() && suggested > ceiling && (st.GetDateReset() == nil || now.Sub(st.GetDateReset().AsTime()) < time.Minute) {
 				// At most once a day: the counters reset when a raise is applied.
 				prof := src.GetProfile()
 				prof.SetMaxBitrate(suggested)

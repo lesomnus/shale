@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/textproto"
 	"os"
@@ -114,11 +115,16 @@ func accessUnits(raw []byte) (units [][][]byte, sps, pps []byte) {
 	return
 }
 func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps []byte, done <-chan struct{}, username, password string) {
+	serveRTSPMedia(conn, host, "/camera", &rtspMedia{units: units, sps: sps, pps: pps, fps: 10}, done, username, password)
+}
+
+func serveRTSPMedia(conn net.Conn, host, path string, media *rtspMedia, done <-chan struct{}, username, password string) {
 	reader := bufio.NewReader(conn)
 	var write sync.Mutex
 	started := false
 	var streamWorkers sync.WaitGroup
 	defer streamWorkers.Wait()
+	defer conn.Close()
 	streamDone := make(chan struct{})
 	defer close(streamDone)
 	response := func(cseq string, extra string, body string) error {
@@ -163,18 +169,19 @@ func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps 
 		case "OPTIONS":
 			e = response(cseq, "Public: OPTIONS, DESCRIBE, SETUP, PLAY, TEARDOWN\r\n", "")
 		case "DESCRIBE":
-			body := fmt.Sprintf("v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=synthetic\r\nc=IN IP4 127.0.0.1\r\nt=0 0\r\na=control:*\r\nm=video 0 RTP/AVP 96\r\na=rtpmap:96 H264/90000\r\na=fmtp:96 packetization-mode=1;sprop-parameter-sets=%s,%s\r\na=control:trackID=0\r\n", base64.StdEncoding.EncodeToString(sps), base64.StdEncoding.EncodeToString(pps))
-			e = response(cseq, "Content-Type: application/sdp\r\nContent-Base: rtsp://"+host+"/camera/\r\n", body)
+			ip, _, _ := net.SplitHostPort(host)
+			body := fmt.Sprintf("v=0\r\no=- 1 1 IN IP4 %s\r\ns=synthetic\r\nc=IN IP4 %s\r\nt=0 0\r\na=control:*\r\nm=video 0 RTP/AVP 96\r\na=rtpmap:96 H264/90000\r\na=fmtp:96 packetization-mode=1;sprop-parameter-sets=%s,%s\r\na=control:trackID=0\r\n", ip, ip, base64.StdEncoding.EncodeToString(media.sps), base64.StdEncoding.EncodeToString(media.pps))
+			e = response(cseq, "Content-Type: application/sdp\r\nContent-Base: rtsp://"+host+path+"/\r\n", body)
 		case "SETUP":
 			e = response(cseq, "Session: fixture\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1\r\n", "")
 		case "PLAY":
-			e = response(cseq, "Session: fixture\r\nRange: npt=0.000-\r\n", "")
+			e = response(cseq, "Session: fixture\r\nRange: npt=0.000-\r\nRTP-Info: url=rtsp://"+host+path+"/trackID=0;seq=0;rtptime=0\r\n", "")
 			if !started && e == nil {
 				started = true
 				streamWorkers.Add(1)
 				go func() {
 					defer streamWorkers.Done()
-					ticker := time.NewTicker(100 * time.Millisecond)
+					ticker := time.NewTicker(time.Duration(float64(time.Second) / media.fps))
 					defer ticker.Stop()
 					seq := uint16(0)
 					stamp := uint32(0)
@@ -186,28 +193,31 @@ func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps 
 							return
 						case <-ticker.C:
 						}
-						frame := units[i%len(units)]
+						frame := media.units[i%len(media.units)]
 						for j, nal := range frame {
-							packet := make([]byte, 12+len(nal))
-							packet[0] = 0x80
-							packet[1] = 96
-							if j == len(frame)-1 {
-								packet[1] |= 0x80
-							}
-							binary.BigEndian.PutUint16(packet[2:4], seq)
-							binary.BigEndian.PutUint32(packet[4:8], stamp)
-							binary.BigEndian.PutUint32(packet[8:12], 123)
-							copy(packet[12:], nal)
-							seq++
-							prefix := []byte{'$', 0, byte(len(packet) >> 8), byte(len(packet))}
-							write.Lock()
-							_, e := conn.Write(append(prefix, packet...))
-							write.Unlock()
-							if e != nil {
-								return
+							parts := packetizeNAL(nal)
+							for part, payload := range parts {
+								packet := make([]byte, 12+len(payload))
+								packet[0] = 0x80
+								packet[1] = 96
+								if j == len(frame)-1 && part == len(parts)-1 {
+									packet[1] |= 0x80
+								}
+								binary.BigEndian.PutUint16(packet[2:4], seq)
+								binary.BigEndian.PutUint32(packet[4:8], stamp)
+								binary.BigEndian.PutUint32(packet[8:12], 123)
+								copy(packet[12:], payload)
+								seq++
+								prefix := []byte{'$', 0, byte(len(packet) >> 8), byte(len(packet))}
+								write.Lock()
+								_, e := conn.Write(append(prefix, packet...))
+								write.Unlock()
+								if e != nil {
+									return
+								}
 							}
 						}
-						stamp += 9000
+						stamp = uint32(math.Round(float64(i+1) * 90000 / media.fps))
 					}
 				}()
 			}
@@ -221,4 +231,31 @@ func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps 
 			return
 		}
 	}
+}
+
+// Larger dynamic modes need legal FU-A packets rather than overflowing RTSP's
+// two-byte interleaved frame length. Marker belongs to the final NAL fragment.
+func packetizeNAL(nal []byte) [][]byte {
+	const limit = 1200
+	if len(nal) <= limit {
+		return [][]byte{nal}
+	}
+	var out [][]byte
+	header := nal[0]
+	for offset := 1; offset < len(nal); {
+		end := min(offset+limit-2, len(nal))
+		p := make([]byte, 2+end-offset)
+		p[0] = (header & 0xe0) | 28
+		p[1] = header & 31
+		if offset == 1 {
+			p[1] |= 0x80
+		}
+		if end == len(nal) {
+			p[1] |= 0x40
+		}
+		copy(p[2:], nal[offset:end])
+		out = append(out, p)
+		offset = end
+	}
+	return out
 }

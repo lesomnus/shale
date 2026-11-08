@@ -89,6 +89,36 @@ func (_c *CameraBindingCreate) SetCollect(v bool) *CameraBindingCreate {
 	return _c
 }
 
+// SetStartingApplication sets the "starting_application" field.
+func (_c *CameraBindingCreate) SetStartingApplication(v *api.CameraApplication) *CameraBindingCreate {
+	_c.mutation.SetStartingApplication(v)
+	return _c
+}
+
+// SetAppliedApplication sets the "applied_application" field.
+func (_c *CameraBindingCreate) SetAppliedApplication(v *api.CameraApplication) *CameraBindingCreate {
+	_c.mutation.SetAppliedApplication(v)
+	return _c
+}
+
+// SetPreviousApplications sets the "previous_applications" field.
+func (_c *CameraBindingCreate) SetPreviousApplications(v []*api.CameraApplication) *CameraBindingCreate {
+	_c.mutation.SetPreviousApplications(v)
+	return _c
+}
+
+// SetAdmittedSpecRevision sets the "admitted_spec_revision" field.
+func (_c *CameraBindingCreate) SetAdmittedSpecRevision(v int64) *CameraBindingCreate {
+	_c.mutation.SetAdmittedSpecRevision(v)
+	return _c
+}
+
+// SetAdmittedAssignmentGeneration sets the "admitted_assignment_generation" field.
+func (_c *CameraBindingCreate) SetAdmittedAssignmentGeneration(v int64) *CameraBindingCreate {
+	_c.mutation.SetAdmittedAssignmentGeneration(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraBindingCreate) SetDateUpdated(v time.Time) *CameraBindingCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -250,6 +280,12 @@ func (_c *CameraBindingCreate) check() error {
 	if _, ok := _c.mutation.Collect(); !ok {
 		return &ValidationError{Name: "collect", err: errors.New(`ent: missing required field "CameraBinding.collect"`)}
 	}
+	if _, ok := _c.mutation.AdmittedSpecRevision(); !ok {
+		return &ValidationError{Name: "admitted_spec_revision", err: errors.New(`ent: missing required field "CameraBinding.admitted_spec_revision"`)}
+	}
+	if _, ok := _c.mutation.AdmittedAssignmentGeneration(); !ok {
+		return &ValidationError{Name: "admitted_assignment_generation", err: errors.New(`ent: missing required field "CameraBinding.admitted_assignment_generation"`)}
+	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "CameraBinding.date_updated"`)}
 	}
@@ -384,6 +420,47 @@ func (_c *CameraBindingCreate) createSpec() (*CameraBinding, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.Collect(); ok {
 		_spec.SetField(camerabinding.FieldCollect, field.TypeBool, value)
 		_node.Collect = value
+	}
+	if value, ok := _c.mutation.StartingApplication(); ok {
+		vv, err := camerabinding.ValueScanner.StartingApplication.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, vv)
+		_node.StartingApplication = value
+	}
+	if value, ok := _c.mutation.AppliedApplication(); ok {
+		vv, err := camerabinding.ValueScanner.AppliedApplication.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, vv)
+		_node.AppliedApplication = value
+	}
+	if value, ok := _c.mutation.PreviousApplications(); ok {
+		vv, err := camerabinding.ValueScanner.PreviousApplications.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, vv)
+		_node.PreviousApplications = value
+	}
+	if value, ok := _c.mutation.AdmittedSpecRevision(); ok {
+		_spec.SetField(camerabinding.FieldAdmittedSpecRevision, field.TypeInt64, value)
+		_node.AdmittedSpecRevision = value
+	}
+	if value, ok := _c.mutation.AdmittedAssignmentGeneration(); ok {
+		_spec.SetField(camerabinding.FieldAdmittedAssignmentGeneration, field.TypeInt64, value)
+		_node.AdmittedAssignmentGeneration = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)

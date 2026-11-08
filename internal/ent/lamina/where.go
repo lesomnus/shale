@@ -146,6 +146,11 @@ func SkipReason(v int32) predicate.Lamina {
 	return predicate.Lamina(sql.FieldEQ(FieldSkipReason, v))
 }
 
+// CaptureEpoch applies equality check predicate on the "capture_epoch" field. It's identical to CaptureEpochEQ.
+func CaptureEpoch(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldEQ(FieldCaptureEpoch, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Lamina {
 	return predicate.Lamina(sql.FieldEQ(FieldTenantId, v))
@@ -914,6 +919,81 @@ func SkipReasonIsNil() predicate.Lamina {
 // SkipReasonNotNil applies the NotNil predicate on the "skip_reason" field.
 func SkipReasonNotNil() predicate.Lamina {
 	return predicate.Lamina(sql.FieldNotNull(FieldSkipReason))
+}
+
+// CaptureEpochEQ applies the EQ predicate on the "capture_epoch" field.
+func CaptureEpochEQ(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldEQ(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochNEQ applies the NEQ predicate on the "capture_epoch" field.
+func CaptureEpochNEQ(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldNEQ(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochIn applies the In predicate on the "capture_epoch" field.
+func CaptureEpochIn(vs ...string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldIn(FieldCaptureEpoch, vs...))
+}
+
+// CaptureEpochNotIn applies the NotIn predicate on the "capture_epoch" field.
+func CaptureEpochNotIn(vs ...string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldNotIn(FieldCaptureEpoch, vs...))
+}
+
+// CaptureEpochGT applies the GT predicate on the "capture_epoch" field.
+func CaptureEpochGT(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldGT(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochGTE applies the GTE predicate on the "capture_epoch" field.
+func CaptureEpochGTE(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldGTE(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochLT applies the LT predicate on the "capture_epoch" field.
+func CaptureEpochLT(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldLT(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochLTE applies the LTE predicate on the "capture_epoch" field.
+func CaptureEpochLTE(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldLTE(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochContains applies the Contains predicate on the "capture_epoch" field.
+func CaptureEpochContains(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldContains(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochHasPrefix applies the HasPrefix predicate on the "capture_epoch" field.
+func CaptureEpochHasPrefix(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldHasPrefix(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochHasSuffix applies the HasSuffix predicate on the "capture_epoch" field.
+func CaptureEpochHasSuffix(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldHasSuffix(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochIsNil applies the IsNil predicate on the "capture_epoch" field.
+func CaptureEpochIsNil() predicate.Lamina {
+	return predicate.Lamina(sql.FieldIsNull(FieldCaptureEpoch))
+}
+
+// CaptureEpochNotNil applies the NotNil predicate on the "capture_epoch" field.
+func CaptureEpochNotNil() predicate.Lamina {
+	return predicate.Lamina(sql.FieldNotNull(FieldCaptureEpoch))
+}
+
+// CaptureEpochEqualFold applies the EqualFold predicate on the "capture_epoch" field.
+func CaptureEpochEqualFold(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldEqualFold(FieldCaptureEpoch, v))
+}
+
+// CaptureEpochContainsFold applies the ContainsFold predicate on the "capture_epoch" field.
+func CaptureEpochContainsFold(v string) predicate.Lamina {
+	return predicate.Lamina(sql.FieldContainsFold(FieldCaptureEpoch, v))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

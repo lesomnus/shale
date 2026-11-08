@@ -2540,6 +2540,91 @@ func (m *CameraBindingMutation) OldCollect(ctx context.Context) (v bool, err err
 	return oldValue.Collect, nil
 }
 
+// OldStartingApplication returns the old "starting_application" field's value of the CameraBinding entity.
+// If the CameraBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraBindingMutation) OldStartingApplication(ctx context.Context) (v *api.CameraApplication, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldStartingApplication is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldStartingApplication requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartingApplication: %w", err)
+	}
+	return oldValue.StartingApplication, nil
+}
+
+// OldAppliedApplication returns the old "applied_application" field's value of the CameraBinding entity.
+// If the CameraBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraBindingMutation) OldAppliedApplication(ctx context.Context) (v *api.CameraApplication, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAppliedApplication is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAppliedApplication requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAppliedApplication: %w", err)
+	}
+	return oldValue.AppliedApplication, nil
+}
+
+// OldPreviousApplications returns the old "previous_applications" field's value of the CameraBinding entity.
+// If the CameraBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraBindingMutation) OldPreviousApplications(ctx context.Context) (v []*api.CameraApplication, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPreviousApplications is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPreviousApplications requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPreviousApplications: %w", err)
+	}
+	return oldValue.PreviousApplications, nil
+}
+
+// OldAdmittedSpecRevision returns the old "admitted_spec_revision" field's value of the CameraBinding entity.
+// If the CameraBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraBindingMutation) OldAdmittedSpecRevision(ctx context.Context) (v int64, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAdmittedSpecRevision is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAdmittedSpecRevision requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAdmittedSpecRevision: %w", err)
+	}
+	return oldValue.AdmittedSpecRevision, nil
+}
+
+// OldAdmittedAssignmentGeneration returns the old "admitted_assignment_generation" field's value of the CameraBinding entity.
+// If the CameraBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraBindingMutation) OldAdmittedAssignmentGeneration(ctx context.Context) (v int64, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAdmittedAssignmentGeneration is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAdmittedAssignmentGeneration requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAdmittedAssignmentGeneration: %w", err)
+	}
+	return oldValue.AdmittedAssignmentGeneration, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the CameraBinding entity.
 // If the CameraBinding object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -2701,6 +2786,16 @@ func (m *CameraBindingMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldAppliedRevision(ctx)
 	case camerabinding.FieldCollect:
 		return m.OldCollect(ctx)
+	case camerabinding.FieldStartingApplication:
+		return m.OldStartingApplication(ctx)
+	case camerabinding.FieldAppliedApplication:
+		return m.OldAppliedApplication(ctx)
+	case camerabinding.FieldPreviousApplications:
+		return m.OldPreviousApplications(ctx)
+	case camerabinding.FieldAdmittedSpecRevision:
+		return m.OldAdmittedSpecRevision(ctx)
+	case camerabinding.FieldAdmittedAssignmentGeneration:
+		return m.OldAdmittedAssignmentGeneration(ctx)
 	case camerabinding.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case camerabinding.FieldDateErased:
@@ -7859,6 +7954,23 @@ func (m *LaminaMutation) OldSkipReason(ctx context.Context) (v int32, err error)
 	return oldValue.SkipReason, nil
 }
 
+// OldCaptureEpoch returns the old "capture_epoch" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldCaptureEpoch(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCaptureEpoch is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCaptureEpoch requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCaptureEpoch: %w", err)
+	}
+	return oldValue.CaptureEpoch, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the Lamina entity.
 // If the Lamina object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -7985,6 +8097,8 @@ func (m *LaminaMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldEpoch(ctx)
 	case lamina.FieldSkipReason:
 		return m.OldSkipReason(ctx)
+	case lamina.FieldCaptureEpoch:
+		return m.OldCaptureEpoch(ctx)
 	case lamina.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case lamina.FieldSiteId:

@@ -1058,6 +1058,7 @@ type Allocation struct {
 	xxx_hidden_LaminaKey      string                 `protobuf:"bytes,10,opt,name=lamina_key,json=laminaKey"`
 	xxx_hidden_Profile        *SegmentProfile        `protobuf:"bytes,11,opt,name=profile"`
 	xxx_hidden_Link           *LinkProfile           `protobuf:"bytes,12,opt,name=link"`
+	xxx_hidden_CaptureEpoch   string                 `protobuf:"bytes,13,opt,name=capture_epoch,json=captureEpoch"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -1173,6 +1174,13 @@ func (x *Allocation) GetLink() *LinkProfile {
 	return nil
 }
 
+func (x *Allocation) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *Allocation) SetLaminaId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1225,6 +1233,10 @@ func (x *Allocation) SetProfile(v *SegmentProfile) {
 
 func (x *Allocation) SetLink(v *LinkProfile) {
 	x.xxx_hidden_Link = v
+}
+
+func (x *Allocation) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
 }
 
 func (x *Allocation) HasDateStarted() bool {
@@ -1287,6 +1299,7 @@ type Allocation_builder struct {
 	LaminaKey      string
 	Profile        *SegmentProfile
 	Link           *LinkProfile
+	CaptureEpoch   string
 }
 
 func (b0 Allocation_builder) Build() *Allocation {
@@ -1305,6 +1318,7 @@ func (b0 Allocation_builder) Build() *Allocation {
 	x.xxx_hidden_LaminaKey = b.LaminaKey
 	x.xxx_hidden_Profile = b.Profile
 	x.xxx_hidden_Link = b.Link
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	return m0
 }
 
@@ -1832,6 +1846,7 @@ type SourceReport struct {
 	xxx_hidden_SecondsTotal       int64                  `protobuf:"varint,11,opt,name=seconds_total,json=secondsTotal"`
 	xxx_hidden_Error              string                 `protobuf:"bytes,12,opt,name=error"`
 	xxx_hidden_Dark               bool                   `protobuf:"varint,13,opt,name=dark"`
+	xxx_hidden_CaptureEpoch       string                 `protobuf:"bytes,14,opt,name=capture_epoch,json=captureEpoch"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -1952,6 +1967,13 @@ func (x *SourceReport) GetDark() bool {
 	return false
 }
 
+func (x *SourceReport) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *SourceReport) SetSourceId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -2007,6 +2029,10 @@ func (x *SourceReport) SetDark(v bool) {
 	x.xxx_hidden_Dark = v
 }
 
+func (x *SourceReport) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
 type SourceReport_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2025,6 +2051,8 @@ type SourceReport_builder struct {
 	// Dark says the source's scene has been dark past `idle.dark_after`
 	// and its segments are being skipped (§38.10).
 	Dark bool
+	// Empty for legacy static sources; otherwise the exact applied incarnation.
+	CaptureEpoch string
 }
 
 func (b0 SourceReport_builder) Build() *SourceReport {
@@ -2044,6 +2072,7 @@ func (b0 SourceReport_builder) Build() *SourceReport {
 	x.xxx_hidden_SecondsTotal = b.SecondsTotal
 	x.xxx_hidden_Error = b.Error
 	x.xxx_hidden_Dark = b.Dark
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	return m0
 }
 
@@ -3304,6 +3333,7 @@ type LaminaRecord struct {
 	xxx_hidden_Checksum              []byte                 `protobuf:"bytes,18,opt,name=checksum"`
 	xxx_hidden_PlacementVersion      int64                  `protobuf:"varint,19,opt,name=placement_version,json=placementVersion"`
 	xxx_hidden_Crc32C                bool                   `protobuf:"varint,20,opt,name=crc32c"`
+	xxx_hidden_CaptureEpoch          string                 `protobuf:"bytes,21,opt,name=capture_epoch,json=captureEpoch"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -3473,6 +3503,13 @@ func (x *LaminaRecord) GetCrc32C() bool {
 	return false
 }
 
+func (x *LaminaRecord) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *LaminaRecord) SetFormatVersion(v int32) {
 	x.xxx_hidden_FormatVersion = v
 }
@@ -3574,6 +3611,10 @@ func (x *LaminaRecord) SetCrc32C(v bool) {
 	x.xxx_hidden_Crc32C = v
 }
 
+func (x *LaminaRecord) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
 type LaminaRecord_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -3598,7 +3639,8 @@ type LaminaRecord_builder struct {
 	PlacementVersion      int64
 	// Crc32c asks the node to compute a CRC32C while receiving and keep it
 	// in `checksum` (§30), which the set's `checksum` flag turns on.
-	Crc32C bool
+	Crc32C       bool
+	CaptureEpoch string
 }
 
 func (b0 LaminaRecord_builder) Build() *LaminaRecord {
@@ -3625,6 +3667,98 @@ func (b0 LaminaRecord_builder) Build() *LaminaRecord {
 	x.xxx_hidden_Checksum = b.Checksum
 	x.xxx_hidden_PlacementVersion = b.PlacementVersion
 	x.xxx_hidden_Crc32C = b.Crc32C
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
+	return m0
+}
+
+// Presence in a publish token marks a managed Source. An empty epoch means
+// that it has no starting ticket yet, never an unmanaged compatibility grant.
+type CaptureEpochGrant struct {
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_SourceId     []byte                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId"`
+	xxx_hidden_CaptureEpoch string                 `protobuf:"bytes,2,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_Sequence     int64                  `protobuf:"varint,3,opt,name=sequence"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *CaptureEpochGrant) Reset() {
+	*x = CaptureEpochGrant{}
+	mi := &file_shale_common_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CaptureEpochGrant) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CaptureEpochGrant) ProtoMessage() {}
+
+func (x *CaptureEpochGrant) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_common_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CaptureEpochGrant) GetSourceId() []byte {
+	if x != nil {
+		return x.xxx_hidden_SourceId
+	}
+	return nil
+}
+
+func (x *CaptureEpochGrant) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
+func (x *CaptureEpochGrant) GetSequence() int64 {
+	if x != nil {
+		return x.xxx_hidden_Sequence
+	}
+	return 0
+}
+
+func (x *CaptureEpochGrant) SetSourceId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_SourceId = v
+}
+
+func (x *CaptureEpochGrant) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
+func (x *CaptureEpochGrant) SetSequence(v int64) {
+	x.xxx_hidden_Sequence = v
+}
+
+type CaptureEpochGrant_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	SourceId     []byte
+	CaptureEpoch string
+	// Monotonic Producer Begin ticket. A valid old token never rolls back live.
+	Sequence int64
+}
+
+func (b0 CaptureEpochGrant_builder) Build() *CaptureEpochGrant {
+	m0 := &CaptureEpochGrant{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_SourceId = b.SourceId
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
+	x.xxx_hidden_Sequence = b.Sequence
 	return m0
 }
 
@@ -3654,13 +3788,15 @@ type TokenClaims struct {
 	xxx_hidden_Delegator             []byte                 `protobuf:"bytes,20,opt,name=delegator"`
 	xxx_hidden_ExportFrom            *timestamppb.Timestamp `protobuf:"bytes,21,opt,name=export_from,json=exportFrom"`
 	xxx_hidden_ExportTo              *timestamppb.Timestamp `protobuf:"bytes,22,opt,name=export_to,json=exportTo"`
+	xxx_hidden_CaptureEpoch          string                 `protobuf:"bytes,23,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_CaptureEpochs         *[]*CaptureEpochGrant  `protobuf:"bytes,24,rep,name=capture_epochs,json=captureEpochs"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
 
 func (x *TokenClaims) Reset() {
 	*x = TokenClaims{}
-	mi := &file_shale_common_proto_msgTypes[20]
+	mi := &file_shale_common_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3672,7 +3808,7 @@ func (x *TokenClaims) String() string {
 func (*TokenClaims) ProtoMessage() {}
 
 func (x *TokenClaims) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[20]
+	mi := &file_shale_common_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3837,6 +3973,22 @@ func (x *TokenClaims) GetExportTo() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *TokenClaims) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
+func (x *TokenClaims) GetCaptureEpochs() []*CaptureEpochGrant {
+	if x != nil {
+		if x.xxx_hidden_CaptureEpochs != nil {
+			return *x.xxx_hidden_CaptureEpochs
+		}
+	}
+	return nil
+}
+
 func (x *TokenClaims) SetKid(v string) {
 	x.xxx_hidden_Kid = v
 }
@@ -3946,6 +4098,14 @@ func (x *TokenClaims) SetExportTo(v *timestamppb.Timestamp) {
 	x.xxx_hidden_ExportTo = v
 }
 
+func (x *TokenClaims) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
+func (x *TokenClaims) SetCaptureEpochs(v []*CaptureEpochGrant) {
+	x.xxx_hidden_CaptureEpochs = &v
+}
+
 func (x *TokenClaims) HasExp() bool {
 	if x == nil {
 		return false
@@ -4041,6 +4201,9 @@ type TokenClaims_builder struct {
 	// caller-controlled network address is carried by a capability.
 	ExportFrom *timestamppb.Timestamp
 	ExportTo   *timestamppb.Timestamp
+	// view: never serve a different capture incarnation under this capability.
+	CaptureEpoch  string
+	CaptureEpochs []*CaptureEpochGrant
 }
 
 func (b0 TokenClaims_builder) Build() *TokenClaims {
@@ -4069,6 +4232,8 @@ func (b0 TokenClaims_builder) Build() *TokenClaims {
 	x.xxx_hidden_Delegator = b.Delegator
 	x.xxx_hidden_ExportFrom = b.ExportFrom
 	x.xxx_hidden_ExportTo = b.ExportTo
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
+	x.xxx_hidden_CaptureEpochs = &b.CaptureEpochs
 	return m0
 }
 
@@ -4093,7 +4258,7 @@ type LaminaStored struct {
 
 func (x *LaminaStored) Reset() {
 	*x = LaminaStored{}
-	mi := &file_shale_common_proto_msgTypes[21]
+	mi := &file_shale_common_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4105,7 +4270,7 @@ func (x *LaminaStored) String() string {
 func (*LaminaStored) ProtoMessage() {}
 
 func (x *LaminaStored) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[21]
+	mi := &file_shale_common_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4361,7 +4526,7 @@ type LaminaDeleted struct {
 
 func (x *LaminaDeleted) Reset() {
 	*x = LaminaDeleted{}
-	mi := &file_shale_common_proto_msgTypes[22]
+	mi := &file_shale_common_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4373,7 +4538,7 @@ func (x *LaminaDeleted) String() string {
 func (*LaminaDeleted) ProtoMessage() {}
 
 func (x *LaminaDeleted) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[22]
+	mi := &file_shale_common_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4508,7 +4673,7 @@ type LaminaMissing struct {
 
 func (x *LaminaMissing) Reset() {
 	*x = LaminaMissing{}
-	mi := &file_shale_common_proto_msgTypes[23]
+	mi := &file_shale_common_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4520,7 +4685,7 @@ func (x *LaminaMissing) String() string {
 func (*LaminaMissing) ProtoMessage() {}
 
 func (x *LaminaMissing) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[23]
+	mi := &file_shale_common_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4651,7 +4816,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_shale_common_proto_msgTypes[24]
+	mi := &file_shale_common_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4663,7 +4828,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[24]
+	mi := &file_shale_common_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4828,7 +4993,7 @@ func (b0 Event_builder) Build() *Event {
 type case_Event_Event protoreflect.FieldNumber
 
 func (x case_Event_Event) String() string {
-	md := file_shale_common_proto_msgTypes[24].Descriptor()
+	md := file_shale_common_proto_msgTypes[25].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -4869,7 +5034,7 @@ type KeyEntry struct {
 
 func (x *KeyEntry) Reset() {
 	*x = KeyEntry{}
-	mi := &file_shale_common_proto_msgTypes[25]
+	mi := &file_shale_common_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4881,7 +5046,7 @@ func (x *KeyEntry) String() string {
 func (*KeyEntry) ProtoMessage() {}
 
 func (x *KeyEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[25]
+	mi := &file_shale_common_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4987,7 +5152,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\tendpoints\x18\x04 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12\x14\n" +
 	"\x05token\x18\x05 \x01(\tR\x05token\x12\x1d\n" +
 	"\n" +
-	"lamina_key\x18\x06 \x01(\tR\tlaminaKey\"\xed\x03\n" +
+	"lamina_key\x18\x06 \x01(\tR\tlaminaKey\"\x92\x04\n" +
 	"\n" +
 	"Allocation\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1b\n" +
@@ -5006,7 +5171,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"lamina_key\x18\n" +
 	" \x01(\tR\tlaminaKey\x12/\n" +
 	"\aprofile\x18\v \x01(\v2\x15.shale.SegmentProfileR\aprofile\x12&\n" +
-	"\x04link\x18\f \x01(\v2\x12.shale.LinkProfileR\x04link\"\xe6\x01\n" +
+	"\x04link\x18\f \x01(\v2\x12.shale.LinkProfileR\x04link\x12#\n" +
+	"\rcapture_epoch\x18\r \x01(\tR\fcaptureEpoch\"\xe6\x01\n" +
 	"\x0fRelayAssignment\x12\x19\n" +
 	"\brelay_id\x18\x01 \x01(\fR\arelayId\x12-\n" +
 	"\tendpoints\x18\x02 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12#\n" +
@@ -5035,7 +5201,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\vtemperature\x18\x02 \x01(\x01R\vtemperature\x12\x1d\n" +
 	"\n" +
 	"uplink_bps\x18\x03 \x01(\x03R\tuplinkBps\x12!\n" +
-	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\xbe\x03\n" +
+	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\xe3\x03\n" +
 	"\fSourceReport\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12\x19\n" +
 	"\binput_up\x18\x02 \x01(\bR\ainputUp\x12\x1d\n" +
@@ -5053,7 +5219,8 @@ const file_shale_common_proto_rawDesc = "" +
 	" \x01(\x03R\bepisodes\x12#\n" +
 	"\rseconds_total\x18\v \x01(\x03R\fsecondsTotal\x12\x14\n" +
 	"\x05error\x18\f \x01(\tR\x05error\x12\x12\n" +
-	"\x04dark\x18\r \x01(\bR\x04dark\"\xa5\x01\n" +
+	"\x04dark\x18\r \x01(\bR\x04dark\x12#\n" +
+	"\rcapture_epoch\x18\x0e \x01(\tR\fcaptureEpoch\"\xa5\x01\n" +
 	"\x0eProducerStatus\x12-\n" +
 	"\asources\x18\x01 \x03(\v2\x13.shale.SourceReportR\asources\x12#\n" +
 	"\x04load\x18\x02 \x01(\v2\x0f.shale.HostLoadR\x04load\x12?\n" +
@@ -5133,7 +5300,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\ringress_bytes\x18\b \x01(\x03R\fingressBytes\x12!\n" +
 	"\frewind_bytes\x18\t \x01(\x03R\vrewindBytes\x12#\n" +
 	"\rrewind_budget\x18\n" +
-	" \x01(\x03R\frewindBudget\"\xb2\x05\n" +
+	" \x01(\x03R\frewindBudget\"\xd7\x05\n" +
 	"\fLaminaRecord\x12%\n" +
 	"\x0eformat_version\x18\x01 \x01(\x05R\rformatVersion\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\fR\btenantId\x12\x17\n" +
@@ -5158,7 +5325,12 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x0fdate_deleted_ms\x18\x11 \x01(\x03R\rdateDeletedMs\x12\x1a\n" +
 	"\bchecksum\x18\x12 \x01(\fR\bchecksum\x12+\n" +
 	"\x11placement_version\x18\x13 \x01(\x03R\x10placementVersion\x12\x16\n" +
-	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xae\x06\n" +
+	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\x12#\n" +
+	"\rcapture_epoch\x18\x15 \x01(\tR\fcaptureEpoch\"q\n" +
+	"\x11CaptureEpochGrant\x12\x1b\n" +
+	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12#\n" +
+	"\rcapture_epoch\x18\x02 \x01(\tR\fcaptureEpoch\x12\x1a\n" +
+	"\bsequence\x18\x03 \x01(\x03R\bsequence\"\x94\a\n" +
 	"\vTokenClaims\x12\x10\n" +
 	"\x03kid\x18\x01 \x01(\tR\x03kid\x12,\n" +
 	"\x03exp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12,\n" +
@@ -5186,7 +5358,9 @@ const file_shale_common_proto_rawDesc = "" +
 	"\tdelegator\x18\x14 \x01(\fR\tdelegator\x12;\n" +
 	"\vexport_from\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"exportFrom\x127\n" +
-	"\texport_to\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\bexportTo\"\xd9\x03\n" +
+	"\texport_to\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\bexportTo\x12#\n" +
+	"\rcapture_epoch\x18\x17 \x01(\tR\fcaptureEpoch\x12?\n" +
+	"\x0ecapture_epochs\x18\x18 \x03(\v2\x18.shale.CaptureEpochGrantR\rcaptureEpochs\"\xd9\x03\n" +
 	"\fLaminaStored\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1d\n" +
 	"\n" +
@@ -5272,7 +5446,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x18MISSING_REASON_ABANDONED\x10\x03B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_shale_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_shale_common_proto_goTypes = []any{
 	(UploadMode)(0),               // 0: shale.UploadMode
 	(LivePolicy)(0),               // 1: shale.LivePolicy
@@ -5301,65 +5475,67 @@ var file_shale_common_proto_goTypes = []any{
 	(*NodeStatus)(nil),            // 24: shale.NodeStatus
 	(*RelayStatus)(nil),           // 25: shale.RelayStatus
 	(*LaminaRecord)(nil),          // 26: shale.LaminaRecord
-	(*TokenClaims)(nil),           // 27: shale.TokenClaims
-	(*LaminaStored)(nil),          // 28: shale.LaminaStored
-	(*LaminaDeleted)(nil),         // 29: shale.LaminaDeleted
-	(*LaminaMissing)(nil),         // 30: shale.LaminaMissing
-	(*Event)(nil),                 // 31: shale.Event
-	(*KeyEntry)(nil),              // 32: shale.KeyEntry
-	(*timestamppb.Timestamp)(nil), // 33: google.protobuf.Timestamp
+	(*CaptureEpochGrant)(nil),     // 27: shale.CaptureEpochGrant
+	(*TokenClaims)(nil),           // 28: shale.TokenClaims
+	(*LaminaStored)(nil),          // 29: shale.LaminaStored
+	(*LaminaDeleted)(nil),         // 30: shale.LaminaDeleted
+	(*LaminaMissing)(nil),         // 31: shale.LaminaMissing
+	(*Event)(nil),                 // 32: shale.Event
+	(*KeyEntry)(nil),              // 33: shale.KeyEntry
+	(*timestamppb.Timestamp)(nil), // 34: google.protobuf.Timestamp
 }
 var file_shale_common_proto_depIdxs = []int32{
 	0,  // 0: shale.LinkProfile.mode:type_name -> shale.UploadMode
-	33, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
-	33, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
+	34, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
+	34, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
 	11, // 3: shale.Candidate.endpoints:type_name -> shale.Endpoint
-	33, // 4: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
+	34, // 4: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
 	12, // 5: shale.Allocation.candidates:type_name -> shale.Candidate
-	33, // 6: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
+	34, // 6: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
 	8,  // 7: shale.Allocation.profile:type_name -> shale.SegmentProfile
 	7,  // 8: shale.Allocation.link:type_name -> shale.LinkProfile
 	11, // 9: shale.RelayAssignment.endpoints:type_name -> shale.Endpoint
-	33, // 10: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
+	34, // 10: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
 	1,  // 11: shale.RelayAssignment.live:type_name -> shale.LivePolicy
 	2,  // 12: shale.HostJoin.hardware_id_kind:type_name -> shale.HardwareIdKind
-	33, // 13: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
+	34, // 13: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
 	18, // 14: shale.ProducerStatus.sources:type_name -> shale.SourceReport
 	17, // 15: shale.ProducerStatus.load:type_name -> shale.HostLoad
-	33, // 16: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
+	34, // 16: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
 	3,  // 17: shale.SinkReport.pressure:type_name -> shale.Pressure
 	20, // 18: shale.SinkReport.capabilities:type_name -> shale.SinkCapabilities
-	33, // 19: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
-	33, // 20: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
+	34, // 19: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
+	34, // 20: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
 	22, // 21: shale.DeviceReport.smart:type_name -> shale.SmartSummary
-	33, // 22: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
-	33, // 23: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
+	34, // 22: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
+	34, // 23: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
 	17, // 24: shale.RelayStatus.load:type_name -> shale.HostLoad
 	4,  // 25: shale.LaminaRecord.state:type_name -> shale.RecordState
 	0,  // 26: shale.LaminaRecord.mode:type_name -> shale.UploadMode
-	33, // 27: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
-	33, // 28: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
+	34, // 27: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
+	34, // 28: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
 	5,  // 29: shale.TokenClaims.op:type_name -> shale.TokenOp
 	26, // 30: shale.TokenClaims.record:type_name -> shale.LaminaRecord
 	0,  // 31: shale.TokenClaims.mode:type_name -> shale.UploadMode
 	1,  // 32: shale.TokenClaims.live:type_name -> shale.LivePolicy
-	33, // 33: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
-	33, // 34: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
-	33, // 35: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
-	33, // 36: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
-	33, // 37: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
-	26, // 38: shale.LaminaStored.record:type_name -> shale.LaminaRecord
-	33, // 39: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
-	6,  // 40: shale.LaminaMissing.reason:type_name -> shale.MissingReason
-	33, // 41: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
-	28, // 42: shale.Event.stored:type_name -> shale.LaminaStored
-	29, // 43: shale.Event.deleted:type_name -> shale.LaminaDeleted
-	30, // 44: shale.Event.missing:type_name -> shale.LaminaMissing
-	45, // [45:45] is the sub-list for method output_type
-	45, // [45:45] is the sub-list for method input_type
-	45, // [45:45] is the sub-list for extension type_name
-	45, // [45:45] is the sub-list for extension extendee
-	0,  // [0:45] is the sub-list for field type_name
+	34, // 33: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
+	34, // 34: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
+	27, // 35: shale.TokenClaims.capture_epochs:type_name -> shale.CaptureEpochGrant
+	34, // 36: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
+	34, // 37: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
+	34, // 38: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
+	26, // 39: shale.LaminaStored.record:type_name -> shale.LaminaRecord
+	34, // 40: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
+	6,  // 41: shale.LaminaMissing.reason:type_name -> shale.MissingReason
+	34, // 42: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
+	29, // 43: shale.Event.stored:type_name -> shale.LaminaStored
+	30, // 44: shale.Event.deleted:type_name -> shale.LaminaDeleted
+	31, // 45: shale.Event.missing:type_name -> shale.LaminaMissing
+	46, // [46:46] is the sub-list for method output_type
+	46, // [46:46] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
+	0,  // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_shale_common_proto_init() }
@@ -5367,7 +5543,7 @@ func file_shale_common_proto_init() {
 	if File_shale_common_proto != nil {
 		return
 	}
-	file_shale_common_proto_msgTypes[24].OneofWrappers = []any{
+	file_shale_common_proto_msgTypes[25].OneofWrappers = []any{
 		(*event_Stored)(nil),
 		(*event_Deleted)(nil),
 		(*event_Missing)(nil),
@@ -5378,7 +5554,7 @@ func file_shale_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_common_proto_rawDesc), len(file_shale_common_proto_rawDesc)),
 			NumEnums:      7,
-			NumMessages:   26,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -3,6 +3,7 @@ package shale;
 
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
+import "shale/camera.proto";
 import "shale/common.proto";
 import "shale/payday/tenant_svc.g.proto";
 import "shale/set.proto";
@@ -282,6 +283,9 @@ message SetNegotiateRequest {
   SetRef ref = 1;
   LinkProfile link = 2;
   repeated SourceProposal sources = 3;
+  // Managed full membership: no historical member budgets or scaled copy feeds.
+  CameraApplyTarget catalog = 4;
+  bool preview = 5 [features.field_presence = IMPLICIT];
 }
 
 message SetNegotiateResponse {
@@ -373,6 +377,7 @@ message LiveSource {
   // GET here with the view token for the recent window: the last minutes
   // of the source as one TS, tables first, a keyframe first (§39.4).
   string recent_url = 8 [features.field_presence = IMPLICIT];
+  string capture_epoch = 9 [features.field_presence = IMPLICIT];
 }
 
 message SourceAddRequest {

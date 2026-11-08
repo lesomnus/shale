@@ -13,6 +13,9 @@ import (
 // runs and an uploader reads them, closed when the segment is cut (§38.2).
 // It is the RAM the producer holds under its `retain` policy (§16).
 type Segment struct {
+	// CaptureEpoch is fixed by the read loop at segment creation. Old queued
+	// bytes retain their original incarnation through delayed allocation/commit.
+	CaptureEpoch string
 	// Started is the arrival time of the first keyframe; Ended the arrival
 	// time of the next segment's first keyframe, or the last packet when
 	// the source stopped (§38.2).

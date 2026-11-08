@@ -34,6 +34,16 @@ const (
 	FieldAppliedRevision = "applied_revision"
 	// FieldCollect holds the string denoting the collect field in the database.
 	FieldCollect = "collect"
+	// FieldStartingApplication holds the string denoting the starting_application field in the database.
+	FieldStartingApplication = "starting_application"
+	// FieldAppliedApplication holds the string denoting the applied_application field in the database.
+	FieldAppliedApplication = "applied_application"
+	// FieldPreviousApplications holds the string denoting the previous_applications field in the database.
+	FieldPreviousApplications = "previous_applications"
+	// FieldAdmittedSpecRevision holds the string denoting the admitted_spec_revision field in the database.
+	FieldAdmittedSpecRevision = "admitted_spec_revision"
+	// FieldAdmittedAssignmentGeneration holds the string denoting the admitted_assignment_generation field in the database.
+	FieldAdmittedAssignmentGeneration = "admitted_assignment_generation"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -112,6 +122,11 @@ var Columns = []string{
 	FieldObserved,
 	FieldAppliedRevision,
 	FieldCollect,
+	FieldStartingApplication,
+	FieldAppliedApplication,
+	FieldPreviousApplications,
+	FieldAdmittedSpecRevision,
+	FieldAdmittedAssignmentGeneration,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -135,8 +150,11 @@ func ValidColumn(column string) bool {
 var (
 	// ValueScanner of all CameraBinding fields.
 	ValueScanner struct {
-		Desired  field.TypeValueScanner[*api.CameraCaptureSpec]
-		Observed field.TypeValueScanner[*api.CameraJobObservation]
+		Desired              field.TypeValueScanner[*api.CameraCaptureSpec]
+		Observed             field.TypeValueScanner[*api.CameraJobObservation]
+		StartingApplication  field.TypeValueScanner[*api.CameraApplication]
+		AppliedApplication   field.TypeValueScanner[*api.CameraApplication]
+		PreviousApplications field.TypeValueScanner[[]*api.CameraApplication]
 	}
 )
 
@@ -181,6 +199,16 @@ func ByAppliedRevision(opts ...sql.OrderTermOption) OrderOption {
 // ByCollect orders the results by the collect field.
 func ByCollect(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCollect, opts...).ToFunc()
+}
+
+// ByAdmittedSpecRevision orders the results by the admitted_spec_revision field.
+func ByAdmittedSpecRevision(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAdmittedSpecRevision, opts...).ToFunc()
+}
+
+// ByAdmittedAssignmentGeneration orders the results by the admitted_assignment_generation field.
+func ByAdmittedAssignmentGeneration(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAdmittedAssignmentGeneration, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

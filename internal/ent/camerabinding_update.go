@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
+	"github.com/protobuf-orm/ent/dialect/sql/sqljson"
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
@@ -140,6 +141,90 @@ func (_u *CameraBindingUpdate) SetNillableCollect(v *bool) *CameraBindingUpdate 
 	if v != nil {
 		_u.SetCollect(*v)
 	}
+	return _u
+}
+
+// SetStartingApplication sets the "starting_application" field.
+func (_u *CameraBindingUpdate) SetStartingApplication(v *api.CameraApplication) *CameraBindingUpdate {
+	_u.mutation.SetStartingApplication(v)
+	return _u
+}
+
+// ClearStartingApplication clears the value of the "starting_application" field.
+func (_u *CameraBindingUpdate) ClearStartingApplication() *CameraBindingUpdate {
+	_u.mutation.ClearStartingApplication()
+	return _u
+}
+
+// SetAppliedApplication sets the "applied_application" field.
+func (_u *CameraBindingUpdate) SetAppliedApplication(v *api.CameraApplication) *CameraBindingUpdate {
+	_u.mutation.SetAppliedApplication(v)
+	return _u
+}
+
+// ClearAppliedApplication clears the value of the "applied_application" field.
+func (_u *CameraBindingUpdate) ClearAppliedApplication() *CameraBindingUpdate {
+	_u.mutation.ClearAppliedApplication()
+	return _u
+}
+
+// SetPreviousApplications sets the "previous_applications" field.
+func (_u *CameraBindingUpdate) SetPreviousApplications(v []*api.CameraApplication) *CameraBindingUpdate {
+	_u.mutation.SetPreviousApplications(v)
+	return _u
+}
+
+// AppendPreviousApplications appends value to the "previous_applications" field.
+func (_u *CameraBindingUpdate) AppendPreviousApplications(v []*api.CameraApplication) *CameraBindingUpdate {
+	_u.mutation.AppendPreviousApplications(v)
+	return _u
+}
+
+// ClearPreviousApplications clears the value of the "previous_applications" field.
+func (_u *CameraBindingUpdate) ClearPreviousApplications() *CameraBindingUpdate {
+	_u.mutation.ClearPreviousApplications()
+	return _u
+}
+
+// SetAdmittedSpecRevision sets the "admitted_spec_revision" field.
+func (_u *CameraBindingUpdate) SetAdmittedSpecRevision(v int64) *CameraBindingUpdate {
+	_u.mutation.ResetAdmittedSpecRevision()
+	_u.mutation.SetAdmittedSpecRevision(v)
+	return _u
+}
+
+// SetNillableAdmittedSpecRevision sets the "admitted_spec_revision" field if the given value is not nil.
+func (_u *CameraBindingUpdate) SetNillableAdmittedSpecRevision(v *int64) *CameraBindingUpdate {
+	if v != nil {
+		_u.SetAdmittedSpecRevision(*v)
+	}
+	return _u
+}
+
+// AddAdmittedSpecRevision adds value to the "admitted_spec_revision" field.
+func (_u *CameraBindingUpdate) AddAdmittedSpecRevision(v int64) *CameraBindingUpdate {
+	_u.mutation.AddAdmittedSpecRevision(v)
+	return _u
+}
+
+// SetAdmittedAssignmentGeneration sets the "admitted_assignment_generation" field.
+func (_u *CameraBindingUpdate) SetAdmittedAssignmentGeneration(v int64) *CameraBindingUpdate {
+	_u.mutation.ResetAdmittedAssignmentGeneration()
+	_u.mutation.SetAdmittedAssignmentGeneration(v)
+	return _u
+}
+
+// SetNillableAdmittedAssignmentGeneration sets the "admitted_assignment_generation" field if the given value is not nil.
+func (_u *CameraBindingUpdate) SetNillableAdmittedAssignmentGeneration(v *int64) *CameraBindingUpdate {
+	if v != nil {
+		_u.SetAdmittedAssignmentGeneration(*v)
+	}
+	return _u
+}
+
+// AddAdmittedAssignmentGeneration adds value to the "admitted_assignment_generation" field.
+func (_u *CameraBindingUpdate) AddAdmittedAssignmentGeneration(v int64) *CameraBindingUpdate {
+	_u.mutation.AddAdmittedAssignmentGeneration(v)
 	return _u
 }
 
@@ -318,6 +403,77 @@ func (_u *CameraBindingUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldCollect); ok {
 		_spec.SetField(camerabinding.FieldCollect, field.TypeBool, e)
 	}
+	if value, ok := _u.mutation.StartingApplication(); ok {
+		vv, err := camerabinding.ValueScanner.StartingApplication.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldStartingApplication); ok {
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, e)
+	}
+	if _u.mutation.StartingApplicationCleared() {
+		_spec.ClearField(camerabinding.FieldStartingApplication, field.TypeJson)
+	}
+	if value, ok := _u.mutation.AppliedApplication(); ok {
+		vv, err := camerabinding.ValueScanner.AppliedApplication.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldAppliedApplication); ok {
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, e)
+	}
+	if _u.mutation.AppliedApplicationCleared() {
+		_spec.ClearField(camerabinding.FieldAppliedApplication, field.TypeJson)
+	}
+	if value, ok := _u.mutation.PreviousApplications(); ok {
+		vv, err := camerabinding.ValueScanner.PreviousApplications.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldPreviousApplications); ok {
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, e)
+	}
+	if value, ok := _u.mutation.AppendedPreviousApplications(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, camerabinding.FieldPreviousApplications, value)
+		})
+	}
+	if _u.mutation.PreviousApplicationsCleared() {
+		_spec.ClearField(camerabinding.FieldPreviousApplications, field.TypeJson)
+	}
+	if value, ok := _u.mutation.AdmittedSpecRevision(); ok {
+		_spec.SetField(camerabinding.FieldAdmittedSpecRevision, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldAdmittedSpecRevision); ok {
+		_spec.SetField(camerabinding.FieldAdmittedSpecRevision, field.TypeInt64, e)
+	}
+	if value, ok := _u.mutation.AddedAdmittedSpecRevision(); ok {
+		_spec.AddField(camerabinding.FieldAdmittedSpecRevision, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AdmittedAssignmentGeneration(); ok {
+		_spec.SetField(camerabinding.FieldAdmittedAssignmentGeneration, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldAdmittedAssignmentGeneration); ok {
+		_spec.SetField(camerabinding.FieldAdmittedAssignmentGeneration, field.TypeInt64, e)
+	}
+	if value, ok := _u.mutation.AddedAdmittedAssignmentGeneration(); ok {
+		_spec.AddField(camerabinding.FieldAdmittedAssignmentGeneration, field.TypeInt64, value)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -468,6 +624,90 @@ func (_u *CameraBindingUpdateOne) SetNillableCollect(v *bool) *CameraBindingUpda
 	if v != nil {
 		_u.SetCollect(*v)
 	}
+	return _u
+}
+
+// SetStartingApplication sets the "starting_application" field.
+func (_u *CameraBindingUpdateOne) SetStartingApplication(v *api.CameraApplication) *CameraBindingUpdateOne {
+	_u.mutation.SetStartingApplication(v)
+	return _u
+}
+
+// ClearStartingApplication clears the value of the "starting_application" field.
+func (_u *CameraBindingUpdateOne) ClearStartingApplication() *CameraBindingUpdateOne {
+	_u.mutation.ClearStartingApplication()
+	return _u
+}
+
+// SetAppliedApplication sets the "applied_application" field.
+func (_u *CameraBindingUpdateOne) SetAppliedApplication(v *api.CameraApplication) *CameraBindingUpdateOne {
+	_u.mutation.SetAppliedApplication(v)
+	return _u
+}
+
+// ClearAppliedApplication clears the value of the "applied_application" field.
+func (_u *CameraBindingUpdateOne) ClearAppliedApplication() *CameraBindingUpdateOne {
+	_u.mutation.ClearAppliedApplication()
+	return _u
+}
+
+// SetPreviousApplications sets the "previous_applications" field.
+func (_u *CameraBindingUpdateOne) SetPreviousApplications(v []*api.CameraApplication) *CameraBindingUpdateOne {
+	_u.mutation.SetPreviousApplications(v)
+	return _u
+}
+
+// AppendPreviousApplications appends value to the "previous_applications" field.
+func (_u *CameraBindingUpdateOne) AppendPreviousApplications(v []*api.CameraApplication) *CameraBindingUpdateOne {
+	_u.mutation.AppendPreviousApplications(v)
+	return _u
+}
+
+// ClearPreviousApplications clears the value of the "previous_applications" field.
+func (_u *CameraBindingUpdateOne) ClearPreviousApplications() *CameraBindingUpdateOne {
+	_u.mutation.ClearPreviousApplications()
+	return _u
+}
+
+// SetAdmittedSpecRevision sets the "admitted_spec_revision" field.
+func (_u *CameraBindingUpdateOne) SetAdmittedSpecRevision(v int64) *CameraBindingUpdateOne {
+	_u.mutation.ResetAdmittedSpecRevision()
+	_u.mutation.SetAdmittedSpecRevision(v)
+	return _u
+}
+
+// SetNillableAdmittedSpecRevision sets the "admitted_spec_revision" field if the given value is not nil.
+func (_u *CameraBindingUpdateOne) SetNillableAdmittedSpecRevision(v *int64) *CameraBindingUpdateOne {
+	if v != nil {
+		_u.SetAdmittedSpecRevision(*v)
+	}
+	return _u
+}
+
+// AddAdmittedSpecRevision adds value to the "admitted_spec_revision" field.
+func (_u *CameraBindingUpdateOne) AddAdmittedSpecRevision(v int64) *CameraBindingUpdateOne {
+	_u.mutation.AddAdmittedSpecRevision(v)
+	return _u
+}
+
+// SetAdmittedAssignmentGeneration sets the "admitted_assignment_generation" field.
+func (_u *CameraBindingUpdateOne) SetAdmittedAssignmentGeneration(v int64) *CameraBindingUpdateOne {
+	_u.mutation.ResetAdmittedAssignmentGeneration()
+	_u.mutation.SetAdmittedAssignmentGeneration(v)
+	return _u
+}
+
+// SetNillableAdmittedAssignmentGeneration sets the "admitted_assignment_generation" field if the given value is not nil.
+func (_u *CameraBindingUpdateOne) SetNillableAdmittedAssignmentGeneration(v *int64) *CameraBindingUpdateOne {
+	if v != nil {
+		_u.SetAdmittedAssignmentGeneration(*v)
+	}
+	return _u
+}
+
+// AddAdmittedAssignmentGeneration adds value to the "admitted_assignment_generation" field.
+func (_u *CameraBindingUpdateOne) AddAdmittedAssignmentGeneration(v int64) *CameraBindingUpdateOne {
+	_u.mutation.AddAdmittedAssignmentGeneration(v)
 	return _u
 }
 
@@ -675,6 +915,77 @@ func (_u *CameraBindingUpdateOne) sqlSave(ctx context.Context) (_node *CameraBin
 	}
 	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldCollect); ok {
 		_spec.SetField(camerabinding.FieldCollect, field.TypeBool, e)
+	}
+	if value, ok := _u.mutation.StartingApplication(); ok {
+		vv, err := camerabinding.ValueScanner.StartingApplication.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldStartingApplication); ok {
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, e)
+	}
+	if _u.mutation.StartingApplicationCleared() {
+		_spec.ClearField(camerabinding.FieldStartingApplication, field.TypeJson)
+	}
+	if value, ok := _u.mutation.AppliedApplication(); ok {
+		vv, err := camerabinding.ValueScanner.AppliedApplication.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldAppliedApplication); ok {
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, e)
+	}
+	if _u.mutation.AppliedApplicationCleared() {
+		_spec.ClearField(camerabinding.FieldAppliedApplication, field.TypeJson)
+	}
+	if value, ok := _u.mutation.PreviousApplications(); ok {
+		vv, err := camerabinding.ValueScanner.PreviousApplications.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldPreviousApplications); ok {
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, e)
+	}
+	if value, ok := _u.mutation.AppendedPreviousApplications(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, camerabinding.FieldPreviousApplications, value)
+		})
+	}
+	if _u.mutation.PreviousApplicationsCleared() {
+		_spec.ClearField(camerabinding.FieldPreviousApplications, field.TypeJson)
+	}
+	if value, ok := _u.mutation.AdmittedSpecRevision(); ok {
+		_spec.SetField(camerabinding.FieldAdmittedSpecRevision, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldAdmittedSpecRevision); ok {
+		_spec.SetField(camerabinding.FieldAdmittedSpecRevision, field.TypeInt64, e)
+	}
+	if value, ok := _u.mutation.AddedAdmittedSpecRevision(); ok {
+		_spec.AddField(camerabinding.FieldAdmittedSpecRevision, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AdmittedAssignmentGeneration(); ok {
+		_spec.SetField(camerabinding.FieldAdmittedAssignmentGeneration, field.TypeInt64, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldAdmittedAssignmentGeneration); ok {
+		_spec.SetField(camerabinding.FieldAdmittedAssignmentGeneration, field.TypeInt64, e)
+	}
+	if value, ok := _u.mutation.AddedAdmittedAssignmentGeneration(); ok {
+		_spec.AddField(camerabinding.FieldAdmittedAssignmentGeneration, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)

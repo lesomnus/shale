@@ -177,22 +177,27 @@ func (s coreCameraWorker) ObserveJob(ctx context.Context, r *api.CameraWorkerChe
 		if j.GetDatePublished() == nil || j.GetPublishedRevision() == 0 {
 			return nil
 		}
-		after := j.GetDatePublished().AsTime()
-		complete, err := c.ent(ctx).Lamina.Query().Where(lamina.SourceIdEQ(mustId(b.GetSource().GetId()).Uuid()), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_COMMITTED)), lamina.IncompleteEQ(false), lamina.DateCommittedGTE(after), lamina.DateStartedGTE(after)).Exist(ctx)
-		if err != nil {
-			return err
-		}
-		out.SetRecordingComplete(complete)
 		src, err := nx.Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: b.GetSource().GetId()}.Build()}.Build())
 		if err != nil {
 			return err
 		}
-		if !bytes.Equal(src.GetSet().GetId(), a.GetSet().GetId()) {
-			return failed("binding source moved to another set")
-		}
-		if err := cameraSameScope(src.GetTenant().GetId(), src.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
+		app, managed, err := c.currentSourceApplication(ctx, src)
+		if err != nil {
+			if status.Code(err) == codes.FailedPrecondition {
+				return nil
+			}
 			return err
 		}
+		if !managed || app.GetTarget().GetSpecRevision() != j.GetPublishedRevision() || app.GetTarget().GetAssignmentGeneration() != a.GetGeneration() {
+			return nil
+		}
+		after := app.GetDateStarted().AsTime().Add(-5 * time.Second)
+		complete, err := c.ent(ctx).Lamina.Query().Where(lamina.SourceIdEQ(mustId(b.GetSource().GetId()).Uuid()), lamina.CaptureEpochEQ(app.GetCaptureEpoch()), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_COMMITTED)), lamina.IncompleteEQ(false), lamina.DateCommittedGTE(after), lamina.DateStartedGTE(after)).Exist(ctx)
+		if err != nil {
+			return err
+		}
+		out.SetRecordingComplete(complete)
+
 		set, err := nx.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: a.GetSet().GetId()}.Build()}.Build())
 		if err != nil {
 			return err

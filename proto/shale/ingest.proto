@@ -18,14 +18,20 @@ message AttachRequest {
   }
   message Data {
     bytes source_id = 1;
-    // MPEG-TS packets, a whole number of them, the same bytes the producer
-    // stores; the first bytes after a Start begin at a keyframe with the
-    // tables prepended.
+    // fMP4 init or complete fragment. Each incarnation starts at a keyframe.
     bytes payload = 2;
+    string capture_epoch = 3;
+  }
+  // Reliable source control, independent of the bounded lossy media queue.
+  message Reset {
+    bytes source_id = 1;
+    string capture_epoch = 2;
+    bool stopped = 3;
   }
   oneof message {
     Hello hello = 1;
     Data data = 2;
+    Reset reset = 3;
   }
 }
 

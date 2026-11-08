@@ -19,6 +19,10 @@ service CameraAssignmentService {
   rpc Assign(CameraAssignmentAssignRequest) returns (CameraAssignment);
   rpc Snapshot(CameraAssignmentSnapshotRequest) returns (CameraCatalogSnapshot);
   rpc Handover(CameraAssignmentHandoverRequest) returns (CameraAssignment);
+  // Only the currently assigned adopted Producer may use runtime acknowledgments.
+  rpc Application(CameraApplicationRequest) returns (CameraApplyState);
+  rpc BeginApply(CameraBeginApplyRequest) returns (CameraApplication);
+  rpc Applied(CameraAppliedRequest) returns (CameraApplication);
 }
 service CameraBindingService {
   rpc Bind(CameraBindingBindRequest) returns (CameraBinding);
@@ -121,4 +125,18 @@ message CameraJobPublishResponse {
   CameraJob job = 1;
   CameraBinding binding = 2;
   int64 catalog_revision = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraApplicationRequest { CameraApplyTarget target = 1; }
+message CameraBeginApplyRequest {
+  CameraApplyTarget target = 1;
+  int64 expected_sequence = 2 [features.field_presence = IMPLICIT];
+  string intent_key = 3 [features.field_presence = IMPLICIT];
+}
+message CameraAppliedRequest {
+  CameraApplyTarget target = 1;
+  int64 sequence = 2 [features.field_presence = IMPLICIT];
+  string capture_epoch = 3 [features.field_presence = IMPLICIT];
+  CameraRuntimeMedia media = 4;
+  CameraCredentialReference used_credential = 5;
 }

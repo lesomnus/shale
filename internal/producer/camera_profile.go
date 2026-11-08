@@ -189,7 +189,10 @@ func validateCameraInput(cfg Config, source SourceConfig) error {
 // A reference scoped to another authoritative Producer/Set is not accepted
 // merely because the local YAML repeats that scope alongside it.
 func (p *Producer) validateCameraAssignment() error {
-	for _, s := range p.order {
+	return p.validateCameraAssignmentSources(p.activeSources())
+}
+func (p *Producer) validateCameraAssignmentSources(sources []*source) error {
+	for _, s := range sources {
 		scope := s.cfg.Scope
 		if s.cfg.InputCredential == nil && s.cfg.Onvif == nil && scope.TenantID == "" {
 			continue

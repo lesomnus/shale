@@ -1,12 +1,14 @@
 package cameratest
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -35,6 +37,17 @@ type ONVIFCamera struct {
 	writes             int
 	activations        int
 	heldSet            *heldConfiguration
+	identity           CameraIdentity
+	media              *RTSPCamera
+	modes              []camera.MediaProfile
+	customIdentity     bool
+}
+
+type ONVIFOptions struct {
+	ListenAddress string
+	Identity      CameraIdentity
+	Media         *RTSPCamera
+	Modes         []camera.MediaProfile
 }
 
 type heldConfiguration struct {
@@ -44,6 +57,10 @@ type heldConfiguration struct {
 }
 
 func ServeONVIF(t testing.TB, profile camera.MediaProfile) *ONVIFCamera {
+	return ServeONVIFWithOptions(t, profile, ONVIFOptions{})
+}
+
+func ServeONVIFWithOptions(t testing.TB, profile camera.MediaProfile, options ONVIFOptions) *ONVIFCamera {
 	t.Helper()
 	if profile.Token == "" {
 		profile.Token = "main"
@@ -51,15 +68,35 @@ func ServeONVIF(t testing.TB, profile camera.MediaProfile) *ONVIFCamera {
 	if profile.Name == "" {
 		profile.Name = "Main"
 	}
-	c := &ONVIFCamera{profile: profile, active: true, media2: true, media1Codec: profile.Codec}
-	c.server = httptest.NewServer(http.HandlerFunc(c.serve))
+	if options.ListenAddress == "" {
+		options.ListenAddress = "127.0.0.1:0"
+	}
+	if options.Media != nil {
+		profile = options.Media.Profile()
+	}
+	c := &ONVIFCamera{profile: profile, active: true, media2: true, media1Codec: profile.Codec, identity: defaultIdentity(options.Identity), media: options.Media, modes: append([]camera.MediaProfile(nil), options.Modes...), customIdentity: options.Identity != (CameraIdentity{})}
+	lis, err := net.Listen("tcp4", options.ListenAddress)
+	if err != nil {
+		t.Fatalf("bind synthetic ONVIF: %v", err)
+	}
+	c.server = httptest.NewUnstartedServer(http.HandlerFunc(c.serve))
+	c.server.Listener = lis
+	c.server.Start()
 	c.URL, c.WebURL = c.server.URL+"/onvif/device_service", c.server.URL
-	t.Cleanup(c.server.Close)
+	t.Cleanup(c.close)
 	return c
 }
 
 func (c *ONVIFCamera) Hint(id camera.DeviceID) camera.DeviceHint {
-	return camera.DeviceHint{ID: id, Manufacturer: "TP-Link", Model: "EasyCam C420", Hardware: "1.0", Firmware: "1.2.2 Build260624 Rel.39352n", Endpoints: []camera.Endpoint{{URL: c.URL, NetworkScope: "lan"}}}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	hint := camera.DeviceHint{ID: id, Manufacturer: c.identity.Manufacturer, Model: c.identity.Model, Hardware: c.identity.Hardware, Firmware: c.identity.Firmware, Endpoints: []camera.Endpoint{{URL: c.server.URL + "/onvif/device_service", NetworkScope: "lan"}}}
+	if c.customIdentity {
+		hint.Serial = c.identity.Serial
+		hint.MAC = c.identity.MAC
+		hint.DiscoveryID = c.identity.DiscoveryID
+	}
+	return hint
 }
 func (c *ONVIFCamera) SetVideo(p camera.MediaProfile) {
 	c.mu.Lock()
@@ -181,9 +218,9 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 	const media2 = "http://www.onvif.org/ver20/media/wsdl"
 	switch name {
 	case "GetDeviceInformation":
-		response = "<Manufacturer>TP-Link</Manufacturer><Model>EasyCam C420</Model><FirmwareVersion>1.2.2 Build260624 Rel.39352n</FirmwareVersion><SerialNumber>synthetic-camera</SerialNumber><HardwareId>1.0</HardwareId>"
+		response = "<Manufacturer>" + xmlText(c.identity.Manufacturer) + "</Manufacturer><Model>" + xmlText(c.identity.Model) + "</Model><FirmwareVersion>" + xmlText(c.identity.Firmware) + "</FirmwareVersion><SerialNumber>" + xmlText(c.identity.Serial) + "</SerialNumber><HardwareId>" + xmlText(c.identity.Hardware) + "</HardwareId>"
 	case "GetNetworkInterfaces":
-		response = `<NetworkInterfaces token="eth0"><Enabled>true</Enabled><Info><HwAddress>02:00:00:00:00:01</HwAddress></Info></NetworkInterfaces>`
+		response = `<NetworkInterfaces token="eth0"><Enabled>true</Enabled><Info><HwAddress>` + xmlText(c.identity.MAC) + `</HwAddress></Info></NetworkInterfaces>`
 	case "GetServices":
 		for _, service := range []string{media1, media2} {
 			if service == media2 && !c.media2 {
@@ -207,12 +244,32 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 			response = "<Uri>" + xmlText(profile.StreamURI) + "</Uri>"
 		}
 	case "GetVideoEncoderConfigurationOptions":
+		resolutions := resolutionXML(profile)
+		frames := "30 25 15 10"
+		bitrateRange := "<BitrateRange><Min>1</Min><Max>16384</Max></BitrateRange>"
+		if c.media != nil {
+			frames = strconv.FormatFloat(profile.FPS, 'f', -1, 64)
+			bitrateRange = "<BitrateRange><Min>32</Min><Max>8000</Max></BitrateRange>"
+		}
+		if len(c.modes) > 0 {
+			resolutions = ""
+			rates := []string{}
+			for _, mode := range c.modes {
+				resolutions += resolutionXML(mode)
+				rates = append(rates, strconv.FormatFloat(mode.FPS, 'f', -1, 64))
+			}
+			frames = strings.Join(rates, " ")
+		}
 		if ns == media2 {
-			for _, codec := range []string{"H264", "H265"} {
-				response += `<Options FrameRatesSupported="30 25 15 10" GovLengthRange="1 150"><Encoding>` + codec + "</Encoding><QualityRange><Min>1</Min><Max>5</Max></QualityRange>" + resolutionXML(profile) + "<BitrateRange><Min>1</Min><Max>16384</Max></BitrateRange></Options>"
+			codecs := []string{"H264", "H265"}
+			if c.media != nil {
+				codecs = []string{"H264"}
+			}
+			for _, codec := range codecs {
+				response += `<Options FrameRatesSupported="` + frames + `" GovLengthRange="1 150"><Encoding>` + codec + "</Encoding><QualityRange><Min>1</Min><Max>5</Max></QualityRange>" + resolutions + bitrateRange + "</Options>"
 			}
 		} else {
-			response = "<Options><H264>" + resolutionXML(profile) + "<FrameRateRange><Min>1</Min><Max>30</Max></FrameRateRange><GovLengthRange><Min>1</Min><Max>150</Max></GovLengthRange></H264><Extension><H264><BitrateRange><Min>1</Min><Max>16384</Max></BitrateRange></H264></Extension></Options>"
+			response = "<Options><H264>" + resolutions + "<FrameRateRange><Min>1</Min><Max>30</Max></FrameRateRange><GovLengthRange><Min>1</Min><Max>150</Max></GovLengthRange></H264><Extension><H264>" + bitrateRange + "</H264></Extension></Options>"
 		}
 	case "SetVideoEncoderConfiguration":
 		x := request.Body.Operation.Configuration
@@ -234,8 +291,7 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 			go func() {
 				<-held.release
 				c.mu.Lock()
-				c.profile = after
-				c.writes++
+				_ = c.configure(context.Background(), after)
 				c.mu.Unlock()
 				close(held.settled)
 			}()
@@ -245,8 +301,10 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		c.profile = after
-		c.writes++
+		if err := c.configure(r.Context(), after); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	default:
 		w.WriteHeader(400)
 		return

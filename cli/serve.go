@@ -404,6 +404,7 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		IdleTimeout:       pc.IdleTimeout,
 		AbandonTimeout:    pc.AbandonTimeout,
 		AllocationHorizon: pc.AllocationHorizon,
+		DrainTimeout:      pc.DrainTimeout,
 		HeartbeatInterval: pc.HeartbeatInterval,
 		Log:               slog.Default(),
 	}

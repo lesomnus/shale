@@ -42,8 +42,15 @@ type source struct {
 	id pdid.Id
 	r  *Relay
 
-	mu     sync.Mutex
-	feeder feeder
+	mu            sync.Mutex
+	feeder        feeder
+	managed       bool
+	epoch         string
+	epochSequence int64
+	epochDenied   bool
+	stopped       bool
+	initEpoch     string
+	paceWake      chan struct{}
 	// always says the feeder's policy is `always` (§39.3): started at
 	// attach, and never stopped for want of viewers.
 	always  bool
@@ -81,7 +88,7 @@ type source struct {
 }
 
 func newSource(r *Relay, id pdid.Id) *source {
-	return &source{id: id, r: r, viewers: map[string]sink{}, joining: map[string]bool{}, catching: map[string]*owed{}, ring: newRing()}
+	return &source{id: id, r: r, viewers: map[string]sink{}, joining: map[string]bool{}, catching: map[string]*owed{}, ring: newRing(), paceWake: make(chan struct{})}
 }
 
 // attach makes a producer stream the feeder of this source; a stream
@@ -138,9 +145,17 @@ var errNoInit = errors.New("a fragment before any init segment")
 // feed takes one unit from the producer (§39.3): an init segment, or one
 // fragment as it came.
 func (s *source) feed(b []byte) {
+	s.feedEpoch(nil, "", b)
+}
+
+func (s *source) feedEpoch(from feeder, epoch string, b []byte) {
 	s.r.m.ingress.Add(context.Background(), int64(len(b)))
 	now := time.Now()
 	s.mu.Lock()
+	if from != nil && s.feeder != from || s.stopped || s.managed && (s.epochDenied || epoch == "" || epoch != s.epoch) || !s.managed && epoch != "" {
+		s.mu.Unlock()
+		return
+	}
 	s.bytes += int64(len(b))
 	if _, ok := fmp4.Find(b, "moov"); ok {
 		init, err := fmp4.ParseInit(b)
@@ -150,7 +165,9 @@ func (s *source) feed(b []byte) {
 			return
 		}
 		s.init = init
+		s.initEpoch = epoch
 		s.params = nil
+		s.gop = nil
 		if v := init.Video(); v != nil {
 			s.params = v.ParamSets()
 		}
@@ -158,10 +175,11 @@ func (s *source) feed(b []byte) {
 		s.ring.reset()
 		s.seq = 0
 		s.restartPacing()
+		s.armIdleStopLocked()
 		s.mu.Unlock()
 		return
 	}
-	if s.init == nil {
+	if s.init == nil || s.initEpoch != epoch {
 		s.r.log.Warn("ingest", "source", s.id.String(), "err", errNoInit.Error())
 		s.mu.Unlock()
 		return
@@ -190,8 +208,9 @@ func (s *source) feed(b []byte) {
 		s.ring.trim(now.Add(-s.window))
 	}
 	s.fanOut(frag)
+	window := s.window
 	s.mu.Unlock()
-	if s.window > 0 {
+	if window > 0 {
 		s.r.sources.enforce()
 	}
 }
@@ -201,8 +220,15 @@ func (s *source) feed(b []byte) {
 // the init segment first, with when that keyframe came and how long the
 // window from it is (§39.4).
 func (s *source) recent(since time.Duration) ([]byte, time.Time, float64, bool) {
+	return s.recentEpoch(since, "", false)
+}
+
+func (s *source) recentEpoch(since time.Duration, epoch string, enforce bool) ([]byte, time.Time, float64, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if enforce && !s.viewEpochLocked(epoch) {
+		return nil, time.Time{}, 0, false
+	}
 	if s.init == nil {
 		return nil, time.Time{}, 0, false
 	}
@@ -286,7 +312,15 @@ func ticks(n uint32, timescale uint32, fallback time.Duration) time.Duration {
 // group of pictures, so it starts at once (§39.4); before then nothing
 // sent to it could arrive.
 func (s *source) addViewer(key string, v sink) {
+	s.addViewerEpoch(key, v, "", 0, false)
+}
+
+func (s *source) addViewerEpoch(key string, v sink, epoch string, sequence int64, enforce bool) bool {
 	s.mu.Lock()
+	if enforce && (!s.viewEpochLocked(epoch) || s.epochSequence != sequence) {
+		s.mu.Unlock()
+		return false
+	}
 	s.viewers[key] = v
 	s.joining[key] = true
 	if s.idle != nil {
@@ -303,6 +337,7 @@ func (s *source) addViewer(key string, v sink) {
 	if first {
 		f.start(s.id)
 	}
+	return true
 }
 
 // removeViewer stops the feed relay_idle_stop after the last viewer left,
@@ -314,15 +349,24 @@ func (s *source) removeViewer(key string) {
 	delete(s.viewers, key)
 	delete(s.joining, key)
 	delete(s.catching, key)
+	s.armIdleStopLocked()
+}
+
+func (s *source) armIdleStopLocked() {
 	if len(s.viewers) > 0 || !s.started || s.always {
 		return
 	}
 	if s.idle != nil {
 		s.idle.Stop()
 	}
-	s.idle = time.AfterFunc(s.r.cfg.IdleStop, func() {
+	wait := s.r.cfg.IdleStop
+	if wait <= 0 {
+		wait = 10 * time.Second
+	}
+	wake := s.paceWake
+	s.idle = time.AfterFunc(wait, func() {
 		s.mu.Lock()
-		if len(s.viewers) > 0 || !s.started || s.always {
+		if s.paceWake != wake || len(s.viewers) > 0 || !s.started || s.always {
 			s.mu.Unlock()
 			return
 		}
@@ -378,7 +422,7 @@ func (s *source) catchUp(key string) {
 	}
 	o := &owed{samples: slices.Clone(s.gop[1:]), since: time.Now()}
 	s.catching[key] = o
-	go s.runCatchUp(key, v, o, s.gop[0].d)
+	go s.runCatchUp(key, v, o, s.gop[0].d, s.paceWake)
 }
 
 // runCatchUp sends a catching-up viewer what it is owed, each sample its
@@ -386,11 +430,17 @@ func (s *source) catchUp(key string) {
 // keyframe's (`first`), and ends when the queue is empty or the viewer
 // left. Each sample is written with the lock held, so the pacer sends the
 // viewer nothing until the last owed one is out.
-func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration) {
+func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration, wake <-chan struct{}) {
 	next := time.Now().Add(first / catchUpSpeed)
 	for {
 		if wait := time.Until(next); wait > 0 {
-			time.Sleep(wait)
+			timer := time.NewTimer(wait)
+			select {
+			case <-timer.C:
+			case <-wake:
+				timer.Stop()
+				return
+			}
 		}
 		s.mu.Lock()
 		if s.catching[key] != o {

@@ -59,6 +59,15 @@ func init() {
 	// camerabindingDescObserved is the schema descriptor for observed field.
 	camerabindingDescObserved := camerabindingFields[8].Descriptor()
 	camerabinding.ValueScanner.Observed = camerabindingDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
+	// camerabindingDescStartingApplication is the schema descriptor for starting_application field.
+	camerabindingDescStartingApplication := camerabindingFields[11].Descriptor()
+	camerabinding.ValueScanner.StartingApplication = camerabindingDescStartingApplication.ValueScanner.(field.TypeValueScanner[*api.CameraApplication])
+	// camerabindingDescAppliedApplication is the schema descriptor for applied_application field.
+	camerabindingDescAppliedApplication := camerabindingFields[12].Descriptor()
+	camerabinding.ValueScanner.AppliedApplication = camerabindingDescAppliedApplication.ValueScanner.(field.TypeValueScanner[*api.CameraApplication])
+	// camerabindingDescPreviousApplications is the schema descriptor for previous_applications field.
+	camerabindingDescPreviousApplications := camerabindingFields[13].Descriptor()
+	camerabinding.ValueScanner.PreviousApplications = camerabindingDescPreviousApplications.ValueScanner.(field.TypeValueScanner[[]*api.CameraApplication])
 	cameracredentialversionFields := schema.CameraCredentialVersion{}.Fields()
 	_ = cameracredentialversionFields
 	// cameracredentialversionDescLegacy is the schema descriptor for legacy field.
@@ -121,6 +130,10 @@ func init() {
 	laminaDescSkipReason := laminaFields[18].Descriptor()
 	// lamina.DefaultSkipReason holds the default value on creation for the skip_reason field.
 	lamina.DefaultSkipReason = laminaDescSkipReason.Default.(int32)
+	// laminaDescCaptureEpoch is the schema descriptor for capture_epoch field.
+	laminaDescCaptureEpoch := laminaFields[19].Descriptor()
+	// lamina.DefaultCaptureEpoch holds the default value on creation for the capture_epoch field.
+	lamina.DefaultCaptureEpoch = laminaDescCaptureEpoch.Default.(string)
 	nodeFields := schema.Node{}.Fields()
 	_ = nodeFields
 	// nodeDescJoin is the schema descriptor for join field.

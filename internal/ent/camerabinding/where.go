@@ -91,6 +91,16 @@ func Collect(v bool) predicate.CameraBinding {
 	return predicate.CameraBinding(sql.FieldEQ(FieldCollect, v))
 }
 
+// AdmittedSpecRevision applies equality check predicate on the "admitted_spec_revision" field. It's identical to AdmittedSpecRevisionEQ.
+func AdmittedSpecRevision(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldEQ(FieldAdmittedSpecRevision, v))
+}
+
+// AdmittedAssignmentGeneration applies equality check predicate on the "admitted_assignment_generation" field. It's identical to AdmittedAssignmentGenerationEQ.
+func AdmittedAssignmentGeneration(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldEQ(FieldAdmittedAssignmentGeneration, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.CameraBinding {
 	return predicate.CameraBinding(sql.FieldEQ(FieldDateUpdated, v))
@@ -534,6 +544,116 @@ func CollectEQ(v bool) predicate.CameraBinding {
 // CollectNEQ applies the NEQ predicate on the "collect" field.
 func CollectNEQ(v bool) predicate.CameraBinding {
 	return predicate.CameraBinding(sql.FieldNEQ(FieldCollect, v))
+}
+
+// StartingApplicationIsNil applies the IsNil predicate on the "starting_application" field.
+func StartingApplicationIsNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldIsNull(FieldStartingApplication))
+}
+
+// StartingApplicationNotNil applies the NotNil predicate on the "starting_application" field.
+func StartingApplicationNotNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNotNull(FieldStartingApplication))
+}
+
+// AppliedApplicationIsNil applies the IsNil predicate on the "applied_application" field.
+func AppliedApplicationIsNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldIsNull(FieldAppliedApplication))
+}
+
+// AppliedApplicationNotNil applies the NotNil predicate on the "applied_application" field.
+func AppliedApplicationNotNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNotNull(FieldAppliedApplication))
+}
+
+// PreviousApplicationsIsNil applies the IsNil predicate on the "previous_applications" field.
+func PreviousApplicationsIsNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldIsNull(FieldPreviousApplications))
+}
+
+// PreviousApplicationsNotNil applies the NotNil predicate on the "previous_applications" field.
+func PreviousApplicationsNotNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNotNull(FieldPreviousApplications))
+}
+
+// AdmittedSpecRevisionEQ applies the EQ predicate on the "admitted_spec_revision" field.
+func AdmittedSpecRevisionEQ(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldEQ(FieldAdmittedSpecRevision, v))
+}
+
+// AdmittedSpecRevisionNEQ applies the NEQ predicate on the "admitted_spec_revision" field.
+func AdmittedSpecRevisionNEQ(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNEQ(FieldAdmittedSpecRevision, v))
+}
+
+// AdmittedSpecRevisionIn applies the In predicate on the "admitted_spec_revision" field.
+func AdmittedSpecRevisionIn(vs ...int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldIn(FieldAdmittedSpecRevision, vs...))
+}
+
+// AdmittedSpecRevisionNotIn applies the NotIn predicate on the "admitted_spec_revision" field.
+func AdmittedSpecRevisionNotIn(vs ...int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNotIn(FieldAdmittedSpecRevision, vs...))
+}
+
+// AdmittedSpecRevisionGT applies the GT predicate on the "admitted_spec_revision" field.
+func AdmittedSpecRevisionGT(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldGT(FieldAdmittedSpecRevision, v))
+}
+
+// AdmittedSpecRevisionGTE applies the GTE predicate on the "admitted_spec_revision" field.
+func AdmittedSpecRevisionGTE(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldGTE(FieldAdmittedSpecRevision, v))
+}
+
+// AdmittedSpecRevisionLT applies the LT predicate on the "admitted_spec_revision" field.
+func AdmittedSpecRevisionLT(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldLT(FieldAdmittedSpecRevision, v))
+}
+
+// AdmittedSpecRevisionLTE applies the LTE predicate on the "admitted_spec_revision" field.
+func AdmittedSpecRevisionLTE(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldLTE(FieldAdmittedSpecRevision, v))
+}
+
+// AdmittedAssignmentGenerationEQ applies the EQ predicate on the "admitted_assignment_generation" field.
+func AdmittedAssignmentGenerationEQ(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldEQ(FieldAdmittedAssignmentGeneration, v))
+}
+
+// AdmittedAssignmentGenerationNEQ applies the NEQ predicate on the "admitted_assignment_generation" field.
+func AdmittedAssignmentGenerationNEQ(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNEQ(FieldAdmittedAssignmentGeneration, v))
+}
+
+// AdmittedAssignmentGenerationIn applies the In predicate on the "admitted_assignment_generation" field.
+func AdmittedAssignmentGenerationIn(vs ...int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldIn(FieldAdmittedAssignmentGeneration, vs...))
+}
+
+// AdmittedAssignmentGenerationNotIn applies the NotIn predicate on the "admitted_assignment_generation" field.
+func AdmittedAssignmentGenerationNotIn(vs ...int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNotIn(FieldAdmittedAssignmentGeneration, vs...))
+}
+
+// AdmittedAssignmentGenerationGT applies the GT predicate on the "admitted_assignment_generation" field.
+func AdmittedAssignmentGenerationGT(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldGT(FieldAdmittedAssignmentGeneration, v))
+}
+
+// AdmittedAssignmentGenerationGTE applies the GTE predicate on the "admitted_assignment_generation" field.
+func AdmittedAssignmentGenerationGTE(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldGTE(FieldAdmittedAssignmentGeneration, v))
+}
+
+// AdmittedAssignmentGenerationLT applies the LT predicate on the "admitted_assignment_generation" field.
+func AdmittedAssignmentGenerationLT(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldLT(FieldAdmittedAssignmentGeneration, v))
+}
+
+// AdmittedAssignmentGenerationLTE applies the LTE predicate on the "admitted_assignment_generation" field.
+func AdmittedAssignmentGenerationLTE(v int64) predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldLTE(FieldAdmittedAssignmentGeneration, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

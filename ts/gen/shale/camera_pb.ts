@@ -21,13 +21,15 @@ import type { CameraProvisionState } from "./camera_progress_pb.js";
 import { file_shale_camera_progress } from "./camera_progress_pb.js";
 import type { CameraPresetSettings, CameraResolvedPreset } from "./camera_preset_pb.js";
 import { file_shale_camera_preset } from "./camera_preset_pb.js";
+import type { SegmentProfile } from "./common_pb.js";
+import { file_shale_common } from "./common_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file shale/camera.proto.
  */
 export const file_shale_camera: GenFile = /*@__PURE__*/
-  fileDesc("ChJzaGFsZS9jYW1lcmEucHJvdG8SBXNoYWxlIlsKGUNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2USEAoIcHJvdmlkZXIYASABKAkSCgoCaWQYAiABKAkSDwoHdmVyc2lvbhgDIAEoCRIPCgdwdXJwb3NlGAQgASgJIjcKF0NhbWVyYVJldmlzaW9uUmVmZXJlbmNlEgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgJIogBChRDYW1lcmFDYXB0dXJlUHJvZmlsZRINCgVjb2RlYxgBIAEoCRINCgV3aWR0aBgCIAEoBRIOCgZoZWlnaHQYAyABKAUSCwoDZnBzGAQgASgBEhcKD21heF9iaXRyYXRlX2JwcxgFIAEoAxIcChRrZXlmcmFtZV9pbnRlcnZhbF9tcxgGIAEoAyLPAgoRQ2FtZXJhQ2FwdHVyZVNwZWMSEgoKYmluZGluZ19pZBgBIAEoDBIRCglzb3VyY2VfaWQYAiABKAwSEAoIcmV2aXNpb24YAyABKAMSDQoFaW5wdXQYBCABKAkSLAoHcHJvZmlsZRgFIAEoCzIbLnNoYWxlLkNhbWVyYUNhcHR1cmVQcm9maWxlEjQKCmNyZWRlbnRpYWwYBiABKAsyIC5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmZXJlbmNlEjQKBmxhYmVscxgHIAMoCzIkLnNoYWxlLkNhbWVyYUNhcHR1cmVTcGVjLkxhYmVsc0VudHJ5EgwKBHpvbmUYCCABKAkSDQoFYWxpYXMYCSABKAkSDAoEbmFtZRgKIAEoCRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIpYBChZDYW1lcmFJZGVudGl0eUV2aWRlbmNlEhQKDG1hbnVmYWN0dXJlchgBIAEoCRINCgVtb2RlbBgCIAEoCRIQCghoYXJkd2FyZRgDIAEoCRIQCghmaXJtd2FyZRgEIAEoCRIOCgZzZXJpYWwYBSABKAkSDAoEbWFjcxgGIAMoCRIVCg1hdXRoZW50aWNhdGVkGAcgASgIImoKFkNhbWVyYU9ic2VydmVkRW5kcG9pbnQSCwoDdXJpGAEgASgJEhIKCnByb3ZlbmFuY2UYAiABKAkSLwoLb2JzZXJ2ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInIKG0NhbWVyYUVucm9sbG1lbnRPYnNlcnZhdGlvbhIMCgRjb2RlGAEgASgJEi8KC29ic2VydmVkX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgxkaXNjb3ZlcnlfaWQYAyABKAkitwEKE0NhbWVyYU1lZGlhRXZpZGVuY2USLAoHcHJvZmlsZRgBIAEoCzIbLnNoYWxlLkNhbWVyYUNhcHR1cmVQcm9maWxlEg8KB2RlY29kZWQYAiABKAgSGAoQZHVyYXRpb25fc2Vjb25kcxgDIAEoARIWCg5kZWNvZGVkX2ZyYW1lcxgEIAEoAxIvCgtvYnNlcnZlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYAoNQ2FtZXJhV2FybmluZxIMCgRjb2RlGAEgASgJEg0KBWZpZWxkGAIgASgJEhEKCXJlcXVlc3RlZBgDIAEoCRIPCgdhcHBsaWVkGAQgASgJEg4KBnJlYXNvbhgFIAEoCSKsAwoPQ2FtZXJhSm9iSW5wdXRzEi4KBnBvbGljeRgBIAEoCzIeLnNoYWxlLkNhbWVyYVJldmlzaW9uUmVmZXJlbmNlEi4KBnByZXNldBgCIAEoCzIeLnNoYWxlLkNhbWVyYVJldmlzaW9uUmVmZXJlbmNlEiwKB2Rlc2lyZWQYAyABKAsyGy5zaGFsZS5DYW1lcmFDYXB0dXJlUHJvZmlsZRIYChBhbGxvd19hY3RpdmF0aW9uGAQgASgIEjwKEmluaXRpYWxfY3JlZGVudGlhbBgFIAEoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2USPwoVbWFuYWdlbWVudF9jcmVkZW50aWFsGAYgASgLMiAuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFJlZmVyZW5jZRI+ChRzdHJlYW1pbmdfY3JlZGVudGlhbBgHIAEoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2USMgoNY29uZmlndXJhdGlvbhgIIAEoCzIbLnNoYWxlLkNhbWVyYVByZXNldFNldHRpbmdzIoEDChRDYW1lcmFKb2JPYnNlcnZhdGlvbhIuCgllZmZlY3RpdmUYASABKAsyGy5zaGFsZS5DYW1lcmFDYXB0dXJlUHJvZmlsZRIsCgh2ZXJpZmllZBgCIAEoCzIaLnNoYWxlLkNhbWVyYU1lZGlhRXZpZGVuY2USJgoId2FybmluZ3MYAyADKAsyFC5zaGFsZS5DYW1lcmFXYXJuaW5nEgwKBGNvZGUYBCABKAkSGwoTbGl2ZV9kZWNvZGVkX2ZyYW1lcxgFIAEoAxI3ChNsaXZlX2ZpcnN0X2ZyYW1lX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI2ChJsaXZlX2xhc3RfZnJhbWVfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKEGFwcGxpZWRfcmV2aXNpb24YCCABKAMSLQoIcHJvZ3Jlc3MYCSABKAsyGy5zaGFsZS5DYW1lcmFQcm92aXNpb25TdGF0ZSKrBQoNQ2FtZXJhTmV0d29yaxIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESIwoEc2l0ZRgDIAEoCzILLnNoYWxlLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIwCgZsYWJlbHMYByADKAsyIC5zaGFsZS5DYW1lcmFOZXR3b3JrLkxhYmVsc0VudHJ5Eg0KBWNpZHJzGAggAygJEhEKCW11bHRpY2FzdBgJIAEoCBINCgVzZWVkcxgKIAMoCRIWCg5pbnRlcmZhY2VfaGludBgLIAEoCRIQCghyZXZpc2lvbhgMIAEoAxIiChBhY3RpdmVfcG9saWN5X2lkGBAgASgMQgjqghYEEEA4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATp4yvwVMhICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWPggaMjgKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgMij0AzoAIqAHCgxDYW1lcmFEZXZpY2USFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiUKBnRlbmFudBgCIAEoCzINLnNoYWxlLlRlbmFudEIG8oIWAkABEiMKBHNpdGUYAyABKAsyCy5zaGFsZS5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSLwoGbGFiZWxzGAcgAygLMh8uc2hhbGUuQ2FtZXJhRGV2aWNlLkxhYmVsc0VudHJ5Ei0KB25ldHdvcmsYCCABKAsyFC5zaGFsZS5DYW1lcmFOZXR3b3JrQgbyghYCQAESGgoKZGV2aWNlX2tleRgJIAEoCUIG6oIWAkABEi8KCGlkZW50aXR5GAogASgLMh0uc2hhbGUuQ2FtZXJhSWRlbnRpdHlFdmlkZW5jZRIwCgllbmRwb2ludHMYCyADKAsyHS5zaGFsZS5DYW1lcmFPYnNlcnZlZEVuZHBvaW50EhwKFG9ic2VydmF0aW9uX3JldmlzaW9uGAwgASgDEh8KDWFjdGl2ZV9qb2JfaWQYECABKAxCCOqCFgQQQDgBEhgKEGNsYWltX2dlbmVyYXRpb24YESABKAMSNgoKZW5yb2xsbWVudBgSIAEoCzIiLnNoYWxlLkNhbWVyYUVucm9sbG1lbnRPYnNlcnZhdGlvbhI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATquAcr8FV0SAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARopEghpZGVudGl0eRoLCgduZXR3b3JrEAgaDgoKZGV2aWNlX2tleRAJMAGKuxZJCBsyQwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZRoJCgduZXR3b3JrIDIo9AM6ACK8BgoQQ2FtZXJhQXNzaWdubWVudBIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESIwoEc2l0ZRgDIAEoCzILLnNoYWxlLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIzCgZsYWJlbHMYByADKAsyIy5zaGFsZS5DYW1lcmFBc3NpZ25tZW50LkxhYmVsc0VudHJ5Ei0KB25ldHdvcmsYCCABKAsyFC5zaGFsZS5DYW1lcmFOZXR3b3JrQgbyghYCQAESHwoDc2V0GAkgASgLMgouc2hhbGUuU2V0QgbyghYCQAESJwoIcHJvZHVjZXIYCiABKAsyDy5zaGFsZS5Qcm9kdWNlckIE8oIWABITCgt3b3JrZXJfc2xvdBgLIAEoCRIbCgl3b3JrZXJfaWQYDCABKAxCCOqCFgQQQDgBEhIKCmdlbmVyYXRpb24YECABKAMSGAoQY2F0YWxvZ19yZXZpc2lvbhgRIAEoAxI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqoAcr8FUQSAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARoQEgNzZXQaBwoDc2V0EAkwAYq7FlwIHDJWChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoGCgRzaXRlGgkKB25ldHdvcmsaCgoIcHJvZHVjZXIaBQoDc2V0IDIo9AM6ACLaBwoNQ2FtZXJhQmluZGluZxIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESIwoEc2l0ZRgDIAEoCzILLnNoYWxlLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIwCgZsYWJlbHMYByADKAsyIC5zaGFsZS5DYW1lcmFCaW5kaW5nLkxhYmVsc0VudHJ5EjMKCmFzc2lnbm1lbnQYCCABKAsyFy5zaGFsZS5DYW1lcmFBc3NpZ25tZW50QgbyghYCQAESKwoGZGV2aWNlGAkgASgLMhMuc2hhbGUuQ2FtZXJhRGV2aWNlQgbyghYCQAESJQoGc291cmNlGAogASgLMg0uc2hhbGUuU291cmNlQgbyghYCQAESGwoLbG9naWNhbF9rZXkYCyABKAlCBuqCFgJAARIcCgxzb3VyY2VfYWxpYXMYDCABKAlCBuqCFgJAARIpCgdkZXNpcmVkGBAgASgLMhguc2hhbGUuQ2FtZXJhQ2FwdHVyZVNwZWMSLQoIb2JzZXJ2ZWQYESABKAsyGy5zaGFsZS5DYW1lcmFKb2JPYnNlcnZhdGlvbhIYChBhcHBsaWVkX3JldmlzaW9uGBIgASgDEg8KB2NvbGxlY3QYEyABKAgSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE63AHK/BV0EgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaFhIGc291cmNlGgoKBnNvdXJjZRAKMAEaKBIHbG9naWNhbBoKCgZ0ZW5hbnQQAhoPCgtsb2dpY2FsX2tleRALMAGKuxZgCB0yWgoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZRoMCgphc3NpZ25tZW50GggKBmRldmljZRoICgZzb3VyY2UgMij0AzoAIusJCglDYW1lcmFKb2ISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiUKBnRlbmFudBgCIAEoCzINLnNoYWxlLlRlbmFudEIG8oIWAkABEiMKBHNpdGUYAyABKAsyCy5zaGFsZS5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSLAoGbGFiZWxzGAcgAygLMhwuc2hhbGUuQ2FtZXJhSm9iLkxhYmVsc0VudHJ5Ei0KB2JpbmRpbmcYCCABKAsyFC5zaGFsZS5DYW1lcmFCaW5kaW5nQgbyghYCQAESMwoKYXNzaWdubWVudBgJIAEoCzIXLnNoYWxlLkNhbWVyYUFzc2lnbm1lbnRCBvKCFgJAARIbCgtyZXF1ZXN0X2tleRgKIAEoCUIG6oIWAkABEhwKDHJlcXVlc3RfaGFzaBgLIAEoDEIG6oIWAkABEiQKBXN0YWdlGAwgASgOMhUuc2hhbGUuQ2FtZXJhSm9iU3RhZ2USGAoQbGVhc2VfZ2VuZXJhdGlvbhgQIAEoAxIdChVhc3NpZ25tZW50X2dlbmVyYXRpb24YESABKAMSHQoLbGVhc2Vfb3duZXIYEiABKAxCCOqCFgQQQDgBEjkKDWxlYXNlX2V4cGlyZXMYEyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESLgoGaW5wdXRzGBQgASgLMhYuc2hhbGUuQ2FtZXJhSm9iSW5wdXRzQgbqghYCQAESLQoIb2JzZXJ2ZWQYFSABKAsyGy5zaGFsZS5DYW1lcmFKb2JPYnNlcnZhdGlvbhIaChJwdWJsaXNoZWRfcmV2aXNpb24YFiABKAMSOgoOZGF0ZV9wdWJsaXNoZWQYFyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESGgoSbGFzdF9vcGVyYXRpb25fa2V5GBggASgJEiMKE2xhc3Rfb3BlcmF0aW9uX2hhc2gYGSABKAxCBuqCFgI4ARIyCg1waW5uZWRfcHJlc2V0GBogASgLMhsuc2hhbGUuQ2FtZXJhUmVzb2x2ZWRQcmVzZXQSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6ugHK/BVbEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaJxIGaW50ZW50GgoKBnRlbmFudBACGg8KC3JlcXVlc3Rfa2V5EAowAYq7FlcIHjJRChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoGCgRzaXRlGgwKCmFzc2lnbm1lbnQaCQoHYmluZGluZyAyKPQDOgAqywIKDkNhbWVyYUpvYlN0YWdlEiAKHENBTUVSQV9KT0JfU1RBR0VfVU5TUEVDSUZJRUQQABIcChhDQU1FUkFfSk9CX1NUQUdFX1BFTkRJTkcQARIcChhDQU1FUkFfSk9CX1NUQUdFX0NMQUlNRUQQAhIdChlDQU1FUkFfSk9CX1NUQUdFX0FQUExZSU5HEAMSHgoaQ0FNRVJBX0pPQl9TVEFHRV9WRVJJRllJTkcQBBIlCiFDQU1FUkFfSk9CX1NUQUdFX0RFUExPWU1FTlRfUkVBRFkQBRIbChdDQU1FUkFfSk9CX1NUQUdFX0FDVElWRRAGEhwKGENBTUVSQV9KT0JfU1RBR0VfV0FJVElORxAHEhsKF0NBTUVSQV9KT0JfU1RBR0VfRkFJTEVEEAgSHQoZQ0FNRVJBX0pPQl9TVEFHRV9DQU5DRUxFRBAJQiRaHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpkgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_payday_tenant, file_shale_site, file_shale_set, file_shale_host, file_shale_camera_progress, file_shale_camera_preset]);
+  fileDesc("ChJzaGFsZS9jYW1lcmEucHJvdG8SBXNoYWxlIlsKGUNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2USEAoIcHJvdmlkZXIYASABKAkSCgoCaWQYAiABKAkSDwoHdmVyc2lvbhgDIAEoCRIPCgdwdXJwb3NlGAQgASgJIjcKF0NhbWVyYVJldmlzaW9uUmVmZXJlbmNlEgoKAmlkGAEgASgJEhAKCHJldmlzaW9uGAIgASgJIogBChRDYW1lcmFDYXB0dXJlUHJvZmlsZRINCgVjb2RlYxgBIAEoCRINCgV3aWR0aBgCIAEoBRIOCgZoZWlnaHQYAyABKAUSCwoDZnBzGAQgASgBEhcKD21heF9iaXRyYXRlX2JwcxgFIAEoAxIcChRrZXlmcmFtZV9pbnRlcnZhbF9tcxgGIAEoAyLPAgoRQ2FtZXJhQ2FwdHVyZVNwZWMSEgoKYmluZGluZ19pZBgBIAEoDBIRCglzb3VyY2VfaWQYAiABKAwSEAoIcmV2aXNpb24YAyABKAMSDQoFaW5wdXQYBCABKAkSLAoHcHJvZmlsZRgFIAEoCzIbLnNoYWxlLkNhbWVyYUNhcHR1cmVQcm9maWxlEjQKCmNyZWRlbnRpYWwYBiABKAsyIC5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmZXJlbmNlEjQKBmxhYmVscxgHIAMoCzIkLnNoYWxlLkNhbWVyYUNhcHR1cmVTcGVjLkxhYmVsc0VudHJ5EgwKBHpvbmUYCCABKAkSDQoFYWxpYXMYCSABKAkSDAoEbmFtZRgKIAEoCRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIqEBChFDYW1lcmFBcHBseVRhcmdldBIVCg1hc3NpZ25tZW50X2lkGAEgASgMEhIKCmJpbmRpbmdfaWQYAiABKAwSEQoJc291cmNlX2lkGAMgASgMEh0KFWFzc2lnbm1lbnRfZ2VuZXJhdGlvbhgEIAEoAxIYChBjYXRhbG9nX3JldmlzaW9uGAUgASgDEhUKDXNwZWNfcmV2aXNpb24YBiABKAMizAEKEkNhbWVyYVJ1bnRpbWVNZWRpYRIsCgdwcm9maWxlGAEgASgLMhsuc2hhbGUuQ2FtZXJhQ2FwdHVyZVByb2ZpbGUSMgoOZmlyc3RfbWVkaWFfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfbWVkaWFfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBmZyYW1lcxgEIAEoAxIRCglrZXlmcmFtZXMYBSABKAMi7gMKEUNhbWVyYUFwcGxpY2F0aW9uEigKBnRhcmdldBgBIAEoCzIYLnNoYWxlLkNhbWVyYUFwcGx5VGFyZ2V0EhAKCHNlcXVlbmNlGAIgASgDEhUKDWNhcHR1cmVfZXBvY2gYAyABKAkSEgoKaW50ZW50X2tleRgEIAEoCRIwCgxkYXRlX3N0YXJ0ZWQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfYXBwbGllZBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASKAoFbWVkaWEYByABKAsyGS5zaGFsZS5DYW1lcmFSdW50aW1lTWVkaWESOQoPdXNlZF9jcmVkZW50aWFsGAggASgLMiAuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFJlZmVyZW5jZRITCgtwcm9kdWNlcl9pZBgJIAEoDBIuCg9zZWdtZW50X3Byb2ZpbGUYCiABKAsyFS5zaGFsZS5TZWdtZW50UHJvZmlsZRIwCgxkcmFpbl9jdXRvZmYYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjIKDmRyYWluX2RlYWRsaW5lGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJpChBDYW1lcmFBcHBseVN0YXRlEioKCHN0YXJ0aW5nGAEgASgLMhguc2hhbGUuQ2FtZXJhQXBwbGljYXRpb24SKQoHYXBwbGllZBgCIAEoCzIYLnNoYWxlLkNhbWVyYUFwcGxpY2F0aW9uIpYBChZDYW1lcmFJZGVudGl0eUV2aWRlbmNlEhQKDG1hbnVmYWN0dXJlchgBIAEoCRINCgVtb2RlbBgCIAEoCRIQCghoYXJkd2FyZRgDIAEoCRIQCghmaXJtd2FyZRgEIAEoCRIOCgZzZXJpYWwYBSABKAkSDAoEbWFjcxgGIAMoCRIVCg1hdXRoZW50aWNhdGVkGAcgASgIImoKFkNhbWVyYU9ic2VydmVkRW5kcG9pbnQSCwoDdXJpGAEgASgJEhIKCnByb3ZlbmFuY2UYAiABKAkSLwoLb2JzZXJ2ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInIKG0NhbWVyYUVucm9sbG1lbnRPYnNlcnZhdGlvbhIMCgRjb2RlGAEgASgJEi8KC29ic2VydmVkX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgxkaXNjb3ZlcnlfaWQYAyABKAkitwEKE0NhbWVyYU1lZGlhRXZpZGVuY2USLAoHcHJvZmlsZRgBIAEoCzIbLnNoYWxlLkNhbWVyYUNhcHR1cmVQcm9maWxlEg8KB2RlY29kZWQYAiABKAgSGAoQZHVyYXRpb25fc2Vjb25kcxgDIAEoARIWCg5kZWNvZGVkX2ZyYW1lcxgEIAEoAxIvCgtvYnNlcnZlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYAoNQ2FtZXJhV2FybmluZxIMCgRjb2RlGAEgASgJEg0KBWZpZWxkGAIgASgJEhEKCXJlcXVlc3RlZBgDIAEoCRIPCgdhcHBsaWVkGAQgASgJEg4KBnJlYXNvbhgFIAEoCSKsAwoPQ2FtZXJhSm9iSW5wdXRzEi4KBnBvbGljeRgBIAEoCzIeLnNoYWxlLkNhbWVyYVJldmlzaW9uUmVmZXJlbmNlEi4KBnByZXNldBgCIAEoCzIeLnNoYWxlLkNhbWVyYVJldmlzaW9uUmVmZXJlbmNlEiwKB2Rlc2lyZWQYAyABKAsyGy5zaGFsZS5DYW1lcmFDYXB0dXJlUHJvZmlsZRIYChBhbGxvd19hY3RpdmF0aW9uGAQgASgIEjwKEmluaXRpYWxfY3JlZGVudGlhbBgFIAEoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2USPwoVbWFuYWdlbWVudF9jcmVkZW50aWFsGAYgASgLMiAuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFJlZmVyZW5jZRI+ChRzdHJlYW1pbmdfY3JlZGVudGlhbBgHIAEoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2USMgoNY29uZmlndXJhdGlvbhgIIAEoCzIbLnNoYWxlLkNhbWVyYVByZXNldFNldHRpbmdzIp0DChRDYW1lcmFKb2JPYnNlcnZhdGlvbhIuCgllZmZlY3RpdmUYASABKAsyGy5zaGFsZS5DYW1lcmFDYXB0dXJlUHJvZmlsZRIsCgh2ZXJpZmllZBgCIAEoCzIaLnNoYWxlLkNhbWVyYU1lZGlhRXZpZGVuY2USJgoId2FybmluZ3MYAyADKAsyFC5zaGFsZS5DYW1lcmFXYXJuaW5nEgwKBGNvZGUYBCABKAkSGwoTbGl2ZV9kZWNvZGVkX2ZyYW1lcxgFIAEoAxI3ChNsaXZlX2ZpcnN0X2ZyYW1lX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI2ChJsaXZlX2xhc3RfZnJhbWVfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKEGFwcGxpZWRfcmV2aXNpb24YCCABKAMSLQoIcHJvZ3Jlc3MYCSABKAsyGy5zaGFsZS5DYW1lcmFQcm92aXNpb25TdGF0ZRIaChJsaXZlX2NhcHR1cmVfZXBvY2gYCiABKAkiqwUKDUNhbWVyYU5ldHdvcmsSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiUKBnRlbmFudBgCIAEoCzINLnNoYWxlLlRlbmFudEIG8oIWAkABEiMKBHNpdGUYAyABKAsyCy5zaGFsZS5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSMAoGbGFiZWxzGAcgAygLMiAuc2hhbGUuQ2FtZXJhTmV0d29yay5MYWJlbHNFbnRyeRINCgVjaWRycxgIIAMoCRIRCgltdWx0aWNhc3QYCSABKAgSDQoFc2VlZHMYCiADKAkSFgoOaW50ZXJmYWNlX2hpbnQYCyABKAkSEAoIcmV2aXNpb24YDCABKAMSIgoQYWN0aXZlX3BvbGljeV9pZBgQIAEoDEII6oIWBBBAOAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6eMr8FTISAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7Fj4IGjI4ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoGCgRzaXRlIDIo9AM6ACKgBwoMQ2FtZXJhRGV2aWNlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIlCgZ0ZW5hbnQYAiABKAsyDS5zaGFsZS5UZW5hbnRCBvKCFgJAARIjCgRzaXRlGAMgASgLMgsuc2hhbGUuU2l0ZUII8oIWBDgBQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEi8KBmxhYmVscxgHIAMoCzIfLnNoYWxlLkNhbWVyYURldmljZS5MYWJlbHNFbnRyeRItCgduZXR3b3JrGAggASgLMhQuc2hhbGUuQ2FtZXJhTmV0d29ya0IG8oIWAkABEhoKCmRldmljZV9rZXkYCSABKAlCBuqCFgJAARIvCghpZGVudGl0eRgKIAEoCzIdLnNoYWxlLkNhbWVyYUlkZW50aXR5RXZpZGVuY2USMAoJZW5kcG9pbnRzGAsgAygLMh0uc2hhbGUuQ2FtZXJhT2JzZXJ2ZWRFbmRwb2ludBIcChRvYnNlcnZhdGlvbl9yZXZpc2lvbhgMIAEoAxIfCg1hY3RpdmVfam9iX2lkGBAgASgMQgjqghYEEEA4ARIYChBjbGFpbV9nZW5lcmF0aW9uGBEgASgDEjYKCmVucm9sbG1lbnQYEiABKAsyIi5zaGFsZS5DYW1lcmFFbnJvbGxtZW50T2JzZXJ2YXRpb24SOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6rgHK/BVdEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaKRIIaWRlbnRpdHkaCwoHbmV0d29yaxAIGg4KCmRldmljZV9rZXkQCTABirsWSQgbMkMKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUaCQoHbmV0d29yayAyKPQDOgAivAYKEENhbWVyYUFzc2lnbm1lbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiUKBnRlbmFudBgCIAEoCzINLnNoYWxlLlRlbmFudEIG8oIWAkABEiMKBHNpdGUYAyABKAsyCy5zaGFsZS5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSMwoGbGFiZWxzGAcgAygLMiMuc2hhbGUuQ2FtZXJhQXNzaWdubWVudC5MYWJlbHNFbnRyeRItCgduZXR3b3JrGAggASgLMhQuc2hhbGUuQ2FtZXJhTmV0d29ya0IG8oIWAkABEh8KA3NldBgJIAEoCzIKLnNoYWxlLlNldEIG8oIWAkABEicKCHByb2R1Y2VyGAogASgLMg8uc2hhbGUuUHJvZHVjZXJCBPKCFgASEwoLd29ya2VyX3Nsb3QYCyABKAkSGwoJd29ya2VyX2lkGAwgASgMQgjqghYEEEA4ARISCgpnZW5lcmF0aW9uGBAgASgDEhgKEGNhdGFsb2dfcmV2aXNpb24YESABKAMSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6qAHK/BVEEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaEBIDc2V0GgcKA3NldBAJMAGKuxZcCBwyVgoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZRoJCgduZXR3b3JrGgoKCHByb2R1Y2VyGgUKA3NldCAyKPQDOgAiygkKDUNhbWVyYUJpbmRpbmcSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiUKBnRlbmFudBgCIAEoCzINLnNoYWxlLlRlbmFudEIG8oIWAkABEiMKBHNpdGUYAyABKAsyCy5zaGFsZS5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSMAoGbGFiZWxzGAcgAygLMiAuc2hhbGUuQ2FtZXJhQmluZGluZy5MYWJlbHNFbnRyeRIzCgphc3NpZ25tZW50GAggASgLMhcuc2hhbGUuQ2FtZXJhQXNzaWdubWVudEIG8oIWAkABEisKBmRldmljZRgJIAEoCzITLnNoYWxlLkNhbWVyYURldmljZUIG8oIWAkABEiUKBnNvdXJjZRgKIAEoCzINLnNoYWxlLlNvdXJjZUIG8oIWAkABEhsKC2xvZ2ljYWxfa2V5GAsgASgJQgbqghYCQAESHAoMc291cmNlX2FsaWFzGAwgASgJQgbqghYCQAESKQoHZGVzaXJlZBgQIAEoCzIYLnNoYWxlLkNhbWVyYUNhcHR1cmVTcGVjEi0KCG9ic2VydmVkGBEgASgLMhsuc2hhbGUuQ2FtZXJhSm9iT2JzZXJ2YXRpb24SGAoQYXBwbGllZF9yZXZpc2lvbhgSIAEoAxIPCgdjb2xsZWN0GBMgASgIEjYKFHN0YXJ0aW5nX2FwcGxpY2F0aW9uGBQgASgLMhguc2hhbGUuQ2FtZXJhQXBwbGljYXRpb24SNQoTYXBwbGllZF9hcHBsaWNhdGlvbhgVIAEoCzIYLnNoYWxlLkNhbWVyYUFwcGxpY2F0aW9uEjcKFXByZXZpb3VzX2FwcGxpY2F0aW9ucxgWIAMoCzIYLnNoYWxlLkNhbWVyYUFwcGxpY2F0aW9uEh4KFmFkbWl0dGVkX3NwZWNfcmV2aXNpb24YFyABKAMSJgoeYWRtaXR0ZWRfYXNzaWdubWVudF9nZW5lcmF0aW9uGBggASgDEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOtwByvwVdBICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhYSBnNvdXJjZRoKCgZzb3VyY2UQCjABGigSB2xvZ2ljYWwaCgoGdGVuYW50EAIaDwoLbG9naWNhbF9rZXkQCzABirsWYAgdMloKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUaDAoKYXNzaWdubWVudBoICgZkZXZpY2UaCAoGc291cmNlIDIo9AM6ACLrCQoJQ2FtZXJhSm9iEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIlCgZ0ZW5hbnQYAiABKAsyDS5zaGFsZS5UZW5hbnRCBvKCFgJAARIjCgRzaXRlGAMgASgLMgsuc2hhbGUuU2l0ZUII8oIWBDgBQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiwKBmxhYmVscxgHIAMoCzIcLnNoYWxlLkNhbWVyYUpvYi5MYWJlbHNFbnRyeRItCgdiaW5kaW5nGAggASgLMhQuc2hhbGUuQ2FtZXJhQmluZGluZ0IG8oIWAkABEjMKCmFzc2lnbm1lbnQYCSABKAsyFy5zaGFsZS5DYW1lcmFBc3NpZ25tZW50QgbyghYCQAESGwoLcmVxdWVzdF9rZXkYCiABKAlCBuqCFgJAARIcCgxyZXF1ZXN0X2hhc2gYCyABKAxCBuqCFgJAARIkCgVzdGFnZRgMIAEoDjIVLnNoYWxlLkNhbWVyYUpvYlN0YWdlEhgKEGxlYXNlX2dlbmVyYXRpb24YECABKAMSHQoVYXNzaWdubWVudF9nZW5lcmF0aW9uGBEgASgDEh0KC2xlYXNlX293bmVyGBIgASgMQgjqghYEEEA4ARI5Cg1sZWFzZV9leHBpcmVzGBMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEi4KBmlucHV0cxgUIAEoCzIWLnNoYWxlLkNhbWVyYUpvYklucHV0c0IG6oIWAkABEi0KCG9ic2VydmVkGBUgASgLMhsuc2hhbGUuQ2FtZXJhSm9iT2JzZXJ2YXRpb24SGgoScHVibGlzaGVkX3JldmlzaW9uGBYgASgDEjoKDmRhdGVfcHVibGlzaGVkGBcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEhoKEmxhc3Rfb3BlcmF0aW9uX2tleRgYIAEoCRIjChNsYXN0X29wZXJhdGlvbl9oYXNoGBkgASgMQgbqghYCOAESMgoNcGlubmVkX3ByZXNldBgaIAEoCzIbLnNoYWxlLkNhbWVyYVJlc29sdmVkUHJlc2V0EjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOroByvwVWxICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGicSBmludGVudBoKCgZ0ZW5hbnQQAhoPCgtyZXF1ZXN0X2tleRAKMAGKuxZXCB4yUQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZRoMCgphc3NpZ25tZW50GgkKB2JpbmRpbmcgMij0AzoAKssCCg5DYW1lcmFKb2JTdGFnZRIgChxDQU1FUkFfSk9CX1NUQUdFX1VOU1BFQ0lGSUVEEAASHAoYQ0FNRVJBX0pPQl9TVEFHRV9QRU5ESU5HEAESHAoYQ0FNRVJBX0pPQl9TVEFHRV9DTEFJTUVEEAISHQoZQ0FNRVJBX0pPQl9TVEFHRV9BUFBMWUlORxADEh4KGkNBTUVSQV9KT0JfU1RBR0VfVkVSSUZZSU5HEAQSJQohQ0FNRVJBX0pPQl9TVEFHRV9ERVBMT1lNRU5UX1JFQURZEAUSGwoXQ0FNRVJBX0pPQl9TVEFHRV9BQ1RJVkUQBhIcChhDQU1FUkFfSk9CX1NUQUdFX1dBSVRJTkcQBxIbChdDQU1FUkFfSk9CX1NUQUdFX0ZBSUxFRBAIEh0KGUNBTUVSQV9KT0JfU1RBR0VfQ0FOQ0VMRUQQCUIkWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaZIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_payday_tenant, file_shale_site, file_shale_set, file_shale_host, file_shale_camera_progress, file_shale_camera_preset, file_shale_common]);
 
 /**
  * References are not grants. Resolve always checks the current assignment,
@@ -196,6 +198,185 @@ export const CameraCaptureSpecSchema: GenMessage<CameraCaptureSpec> = /*@__PURE_
   messageDesc(file_shale_camera, 3);
 
 /**
+ * Desired identity and server-fenced runtime application are deliberately
+ * separate from the Worker's provisioning report.
+ *
+ * @generated from message shale.CameraApplyTarget
+ */
+export type CameraApplyTarget = Message<"shale.CameraApplyTarget"> & {
+  /**
+   * @generated from field: bytes assignment_id = 1;
+   */
+  assignmentId: Uint8Array;
+
+  /**
+   * @generated from field: bytes binding_id = 2;
+   */
+  bindingId: Uint8Array;
+
+  /**
+   * @generated from field: bytes source_id = 3;
+   */
+  sourceId: Uint8Array;
+
+  /**
+   * @generated from field: int64 assignment_generation = 4;
+   */
+  assignmentGeneration: bigint;
+
+  /**
+   * @generated from field: int64 catalog_revision = 5;
+   */
+  catalogRevision: bigint;
+
+  /**
+   * @generated from field: int64 spec_revision = 6;
+   */
+  specRevision: bigint;
+};
+
+/**
+ * Describes the message shale.CameraApplyTarget.
+ * Use `create(CameraApplyTargetSchema)` to create a new message.
+ */
+export const CameraApplyTargetSchema: GenMessage<CameraApplyTarget> = /*@__PURE__*/
+  messageDesc(file_shale_camera, 4);
+
+/**
+ * @generated from message shale.CameraRuntimeMedia
+ */
+export type CameraRuntimeMedia = Message<"shale.CameraRuntimeMedia"> & {
+  /**
+   * @generated from field: shale.CameraCaptureProfile profile = 1;
+   */
+  profile?: CameraCaptureProfile | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp first_media_at = 2;
+   */
+  firstMediaAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp last_media_at = 3;
+   */
+  lastMediaAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: int64 frames = 4;
+   */
+  frames: bigint;
+
+  /**
+   * @generated from field: int64 keyframes = 5;
+   */
+  keyframes: bigint;
+};
+
+/**
+ * Describes the message shale.CameraRuntimeMedia.
+ * Use `create(CameraRuntimeMediaSchema)` to create a new message.
+ */
+export const CameraRuntimeMediaSchema: GenMessage<CameraRuntimeMedia> = /*@__PURE__*/
+  messageDesc(file_shale_camera, 5);
+
+/**
+ * @generated from message shale.CameraApplication
+ */
+export type CameraApplication = Message<"shale.CameraApplication"> & {
+  /**
+   * @generated from field: shale.CameraApplyTarget target = 1;
+   */
+  target?: CameraApplyTarget | undefined;
+
+  /**
+   * @generated from field: int64 sequence = 2;
+   */
+  sequence: bigint;
+
+  /**
+   * @generated from field: string capture_epoch = 3;
+   */
+  captureEpoch: string;
+
+  /**
+   * @generated from field: string intent_key = 4;
+   */
+  intentKey: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_started = 5;
+   */
+  dateStarted?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_applied = 6;
+   */
+  dateApplied?: Timestamp | undefined;
+
+  /**
+   * @generated from field: shale.CameraRuntimeMedia media = 7;
+   */
+  media?: CameraRuntimeMedia | undefined;
+
+  /**
+   * @generated from field: shale.CameraCredentialReference used_credential = 8;
+   */
+  usedCredential?: CameraCredentialReference | undefined;
+
+  /**
+   * @generated from field: bytes producer_id = 9;
+   */
+  producerId: Uint8Array;
+
+  /**
+   * Frozen negotiated storage limits for this incarnation, including its
+   * unallocated closed RAM segments after capture intent changes.
+   *
+   * @generated from field: shale.SegmentProfile segment_profile = 10;
+   */
+  segmentProfile?: SegmentProfile | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp drain_cutoff = 11;
+   */
+  drainCutoff?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp drain_deadline = 12;
+   */
+  drainDeadline?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message shale.CameraApplication.
+ * Use `create(CameraApplicationSchema)` to create a new message.
+ */
+export const CameraApplicationSchema: GenMessage<CameraApplication> = /*@__PURE__*/
+  messageDesc(file_shale_camera, 6);
+
+/**
+ * @generated from message shale.CameraApplyState
+ */
+export type CameraApplyState = Message<"shale.CameraApplyState"> & {
+  /**
+   * @generated from field: shale.CameraApplication starting = 1;
+   */
+  starting?: CameraApplication | undefined;
+
+  /**
+   * @generated from field: shale.CameraApplication applied = 2;
+   */
+  applied?: CameraApplication | undefined;
+};
+
+/**
+ * Describes the message shale.CameraApplyState.
+ * Use `create(CameraApplyStateSchema)` to create a new message.
+ */
+export const CameraApplyStateSchema: GenMessage<CameraApplyState> = /*@__PURE__*/
+  messageDesc(file_shale_camera, 7);
+
+/**
  * @generated from message shale.CameraIdentityEvidence
  */
 export type CameraIdentityEvidence = Message<"shale.CameraIdentityEvidence"> & {
@@ -240,7 +421,7 @@ export type CameraIdentityEvidence = Message<"shale.CameraIdentityEvidence"> & {
  * Use `create(CameraIdentityEvidenceSchema)` to create a new message.
  */
 export const CameraIdentityEvidenceSchema: GenMessage<CameraIdentityEvidence> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 4);
+  messageDesc(file_shale_camera, 8);
 
 /**
  * @generated from message shale.CameraObservedEndpoint
@@ -267,7 +448,7 @@ export type CameraObservedEndpoint = Message<"shale.CameraObservedEndpoint"> & {
  * Use `create(CameraObservedEndpointSchema)` to create a new message.
  */
 export const CameraObservedEndpointSchema: GenMessage<CameraObservedEndpoint> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 5);
+  messageDesc(file_shale_camera, 9);
 
 /**
  * @generated from message shale.CameraEnrollmentObservation
@@ -296,7 +477,7 @@ export type CameraEnrollmentObservation = Message<"shale.CameraEnrollmentObserva
  * Use `create(CameraEnrollmentObservationSchema)` to create a new message.
  */
 export const CameraEnrollmentObservationSchema: GenMessage<CameraEnrollmentObservation> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 6);
+  messageDesc(file_shale_camera, 10);
 
 /**
  * @generated from message shale.CameraMediaEvidence
@@ -333,7 +514,7 @@ export type CameraMediaEvidence = Message<"shale.CameraMediaEvidence"> & {
  * Use `create(CameraMediaEvidenceSchema)` to create a new message.
  */
 export const CameraMediaEvidenceSchema: GenMessage<CameraMediaEvidence> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 7);
+  messageDesc(file_shale_camera, 11);
 
 /**
  * @generated from message shale.CameraWarning
@@ -370,7 +551,7 @@ export type CameraWarning = Message<"shale.CameraWarning"> & {
  * Use `create(CameraWarningSchema)` to create a new message.
  */
 export const CameraWarningSchema: GenMessage<CameraWarning> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 8);
+  messageDesc(file_shale_camera, 12);
 
 /**
  * @generated from message shale.CameraJobInputs
@@ -422,7 +603,7 @@ export type CameraJobInputs = Message<"shale.CameraJobInputs"> & {
  * Use `create(CameraJobInputsSchema)` to create a new message.
  */
 export const CameraJobInputsSchema: GenMessage<CameraJobInputs> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 9);
+  messageDesc(file_shale_camera, 13);
 
 /**
  * @generated from message shale.CameraJobObservation
@@ -481,6 +662,13 @@ export type CameraJobObservation = Message<"shale.CameraJobObservation"> & {
    * @generated from field: shale.CameraProvisionState progress = 9;
    */
   progress?: CameraProvisionState | undefined;
+
+  /**
+   * Verified WHEP response/token epoch, not inferred from old advancing RTP.
+   *
+   * @generated from field: string live_capture_epoch = 10;
+   */
+  liveCaptureEpoch: string;
 };
 
 /**
@@ -488,7 +676,7 @@ export type CameraJobObservation = Message<"shale.CameraJobObservation"> & {
  * Use `create(CameraJobObservationSchema)` to create a new message.
  */
 export const CameraJobObservationSchema: GenMessage<CameraJobObservation> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 10);
+  messageDesc(file_shale_camera, 14);
 
 /**
  * CameraNetwork is tenant/site scoped; custom CP operations own its invariants.
@@ -586,7 +774,7 @@ export type CameraNetwork = Message<"shale.CameraNetwork"> & {
  * Use `create(CameraNetworkSchema)` to create a new message.
  */
 export const CameraNetworkSchema: GenMessage<CameraNetwork> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 11);
+  messageDesc(file_shale_camera, 15);
 
 /**
  * CameraDevice is tenant/site scoped; custom CP operations own its invariants.
@@ -694,7 +882,7 @@ export type CameraDevice = Message<"shale.CameraDevice"> & {
  * Use `create(CameraDeviceSchema)` to create a new message.
  */
 export const CameraDeviceSchema: GenMessage<CameraDevice> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 12);
+  messageDesc(file_shale_camera, 16);
 
 /**
  * CameraAssignment is tenant/site scoped; custom CP operations own its invariants.
@@ -800,7 +988,7 @@ export type CameraAssignment = Message<"shale.CameraAssignment"> & {
  * Use `create(CameraAssignmentSchema)` to create a new message.
  */
 export const CameraAssignmentSchema: GenMessage<CameraAssignment> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 13);
+  messageDesc(file_shale_camera, 17);
 
 /**
  * CameraBinding is tenant/site scoped; custom CP operations own its invariants.
@@ -889,6 +1077,40 @@ export type CameraBinding = Message<"shale.CameraBinding"> & {
   collect: boolean;
 
   /**
+   * BeginApply is not evidence. Applied requires the current starting ticket
+   * and observed video from that exact capture incarnation.
+   *
+   * @generated from field: shale.CameraApplication starting_application = 20;
+   */
+  startingApplication?: CameraApplication | undefined;
+
+  /**
+   * @generated from field: shale.CameraApplication applied_application = 21;
+   */
+  appliedApplication?: CameraApplication | undefined;
+
+  /**
+   * At most sixteen server-retired incarnations for bounded historical RAM
+   * drain. They never authorize ACK, current live or ACTIVE readiness.
+   *
+   * @generated from field: repeated shale.CameraApplication previous_applications = 22;
+   */
+  previousApplications: CameraApplication[];
+
+  /**
+   * A strict full-catalog negotiation commits these per-source fences. A
+   * desired publication or collection re-enable cannot reuse an old admission.
+   *
+   * @generated from field: int64 admitted_spec_revision = 23;
+   */
+  admittedSpecRevision: bigint;
+
+  /**
+   * @generated from field: int64 admitted_assignment_generation = 24;
+   */
+  admittedAssignmentGeneration: bigint;
+
+  /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */
   dateUpdated?: Timestamp | undefined;
@@ -909,7 +1131,7 @@ export type CameraBinding = Message<"shale.CameraBinding"> & {
  * Use `create(CameraBindingSchema)` to create a new message.
  */
 export const CameraBindingSchema: GenMessage<CameraBinding> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 14);
+  messageDesc(file_shale_camera, 18);
 
 /**
  * CameraJob is tenant/site scoped; custom CP operations own its invariants.
@@ -1058,7 +1280,7 @@ export type CameraJob = Message<"shale.CameraJob"> & {
  * Use `create(CameraJobSchema)` to create a new message.
  */
 export const CameraJobSchema: GenMessage<CameraJob> = /*@__PURE__*/
-  messageDesc(file_shale_camera, 15);
+  messageDesc(file_shale_camera, 19);
 
 /**
  * @generated from enum shale.CameraJobStage

@@ -134,6 +134,7 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 			DatesSynced:      true,
 			PlacementVersion: rec.GetPlacementVersion(),
 			Epoch:            placement.Epoch(rec.GetDateStartedMs()/1000, int64(epochOf(set).Seconds())),
+			CaptureEpoch:     z.Ptr(rec.GetCaptureEpoch()),
 		}
 		if len(rec.GetSiteId()) > 0 {
 			add.Site = api.SiteRef_builder{Id: rec.GetSiteId()}.Build()
@@ -148,11 +149,15 @@ func (s Core) applyStored(ctx context.Context, own api.Server, nodeId pdid.Id, e
 		// transaction cannot see it yet.
 		obj = &ent.Lamina{
 			Id: objId.Uuid(), TenantId: mustId(rec.GetTenantId()).Uuid(), SetId: mustId(rec.GetSetId()).Uuid(), SourceId: mustId(rec.GetSourceId()).Uuid(),
-			State: int32(api.LaminaState_LAMINA_STATE_PENDING), DateStarted: add.DateStarted.AsTime(), DateExpired: add.DateExpired.AsTime(), DatesSynced: true,
+			State: int32(api.LaminaState_LAMINA_STATE_PENDING), CaptureEpoch: rec.GetCaptureEpoch(), DateStarted: add.DateStarted.AsTime(), DateExpired: add.DateExpired.AsTime(), DatesSynced: true,
 		}
 		if len(rec.GetSiteId()) > 0 {
 			obj.SiteId = mustId(rec.GetSiteId()).Uuid()
 		}
+	}
+
+	if rec := ev.GetRecord(); rec != nil && obj.CaptureEpoch != rec.GetCaptureEpoch() {
+		return failed("stored record cannot relabel a capture incarnation")
 	}
 
 	// And the attempt, when the node knows one the CP does not.

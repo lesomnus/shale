@@ -187,6 +187,12 @@ func segmentOf(src *api.Source, set *api.Set, b Bounds) *api.SegmentProfile {
 }
 
 func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*api.SetNegotiateResponse, error) {
+	if req.GetCatalog() != nil {
+		return s.negotiateManaged(ctx, req)
+	}
+	if req.GetPreview() {
+		return nil, invalid("preview", "managed catalog identity is required")
+	}
 	f, err := actor(ctx)
 	if err != nil {
 		return nil, err
@@ -208,6 +214,11 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 		if err := s.producerOwns(ctx, f.Actor, set); err != nil {
 			return nil, err
 		}
+	}
+	if managed, err := s.cameraManagedSet(ctx, set.GetId()); err != nil {
+		return nil, err
+	} else if managed {
+		return nil, failed("managed Set admission requires its current catalog identity")
 	}
 
 	var adjustments []*api.Adjustment

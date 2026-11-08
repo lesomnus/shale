@@ -3,6 +3,7 @@ package producer
 import (
 	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"testing"
 
@@ -103,7 +104,8 @@ func TestSourceCatalogInitialBoundaries(t *testing.T) {
 	p, v := catalogRuntime(t, Config{SourceProvider: testCatalog{}})
 	v.Sources, v.Revision.Catalog = nil, 0
 	p.cfg.SourceProvider = testCatalog{value: v}
-	require.ErrorIs(t, p.loadSourceCatalog(context.Background()), ErrInitialCatalogEmpty)
+	require.NoError(t, p.loadSourceCatalog(context.Background()))
+	require.Empty(t, p.activeSources(), "approved empty catalogs wait without a synthetic camera")
 	p.cfg.SourceProvider = testCatalog{err: errors.New("private credential endpoint")}
 	err := p.loadSourceCatalog(context.Background())
 	require.ErrorIs(t, err, catalog.ErrUnavailable)
@@ -140,13 +142,18 @@ func TestSourceCatalogReferenceIsNotAuthority(t *testing.T) {
 	require.ErrorIs(t, p.loadSourceCatalog(context.Background()), camera.ErrAuthRequired, "a reference cannot create an AuthProvider")
 }
 
-type sourceAuthProbe struct{ seen []camera.SourceAuthContext }
+type sourceAuthProbe struct {
+	seen   []camera.SourceAuthContext
+	events []string
+}
 
-func (*sourceAuthProbe) Acquire(context.Context, camera.AuthRequest) (camera.CredentialLease, error) {
+func (p *sourceAuthProbe) Acquire(context.Context, camera.AuthRequest) (camera.CredentialLease, error) {
+	p.events = append(p.events, "acquire")
 	return nil, camera.ErrAuthRequired
 }
 func (p *sourceAuthProbe) ForSource(s camera.SourceAuthContext) camera.AuthProvider {
 	p.seen = append(p.seen, s)
+	p.events = append(p.events, "scope")
 	return p
 }
 
@@ -165,10 +172,70 @@ func TestCredentialFactoryOpensAfterAdoptionAndBindsExactSource(t *testing.T) {
 	p.cfg.SourceProvider = testCatalog{value: v}
 	require.NoError(t, p.loadSourceCatalog(t.Context()))
 	require.Equal(t, 1, opened)
+	require.Empty(t, auth.seen, "construction does not bind a still-incomplete capture context")
+	_ = p.sourceAuth(p.stagedSources()[0])
 	require.NotEmpty(t, auth.seen)
 	require.Equal(t, v.Sources[0].SourceID, auth.seen[len(auth.seen)-1].SourceID)
 	require.Equal(t, v.Sources[0].Revision, auth.seen[len(auth.seen)-1].Revision)
 	require.Equal(t, p.order[0].cfg.Scope, auth.seen[len(auth.seen)-1].Scope)
 	_, err := New(Config{Sources: []SourceConfig{{Alias: "usb", Input: "v4l2:/dev/video0"}}, AuthProvider: auth, AuthProviderFactory: func(context.Context, SourceSession) (camera.AuthProvider, error) { return auth, nil }})
 	require.ErrorIs(t, err, camera.ErrInvalid)
+}
+
+func TestSourceCatalogHiddenInitialRowsRetainManagedSpec(t *testing.T) {
+	p, v := catalogRuntime(t, Config{SourceProvider: testCatalog{}})
+	p.cfg.SourceProvider = testCatalog{value: v}
+	p.loading.Store(true)
+	require.NoError(t, p.loadSourceCatalog(context.Background()))
+	require.Empty(t, p.activeSources(), "incomplete rows stay hidden from heartbeat and live")
+	staged := p.stagedSources()
+	require.Len(t, staged, 1)
+	require.NotNil(t, staged[0].spec, "hidden initial capture still carries managed execution identity")
+	require.Equal(t, v.Revision, staged[0].catalogRevision)
+	require.Equal(t, v.Sources[0], *staged[0].spec)
+	p.loading.Store(false)
+	require.True(t, sameCapture(p.activeSources()[0], v.Sources[0], v.Revision), "first reconciliation reuses the initialized incarnation instead of adding a duplicate alias")
+}
+
+func TestCredentialScopeUsesImmutableIncarnationInsteadOfInitialAlias(t *testing.T) {
+	auth := &sourceAuthProbe{}
+	p, v := catalogRuntime(t, Config{SourceProvider: testCatalog{}, AuthProvider: auth})
+	p.cfg.SourceProvider = testCatalog{value: v}
+	require.NoError(t, p.loadSourceCatalog(t.Context()))
+	next := v.Clone()
+	next.Revision.Generation++
+	next.Revision.Catalog++
+	next.Sources[0].SourceID = pdid.New(8).String()
+	next.Sources[0].Revision++
+	s, err := p.sourceFor(p.configForSpec(next, next.Sources[0]))
+	require.NoError(t, err)
+	require.Empty(t, auth.seen)
+	s.spec = &next.Sources[0]
+	s.catalogRevision = next.Revision
+	_ = p.sourceAuth(s)
+	require.Len(t, auth.seen, 1)
+	require.Equal(t, next.Sources[0].SourceID, auth.seen[0].SourceID)
+	require.Equal(t, next.Sources[0].Revision, auth.seen[0].Revision)
+	require.Equal(t, next.Revision.AssignmentID, auth.seen[0].AssignmentID)
+	require.Equal(t, next.Revision.Generation, auth.seen[0].AssignmentGeneration)
+	require.Equal(t, s.cfg.Scope, auth.seen[0].Scope)
+}
+
+func TestCredentialScopeIsOpenedAfterBeginBeforeEveryAcquire(t *testing.T) {
+	auth := &sourceAuthProbe{}
+	p, v := catalogRuntime(t, Config{SourceProvider: testCatalog{}, AuthProvider: auth})
+	v.Sources[0].Credential = &catalog.CredentialRef{Provider: "cp", ID: pdid.New(32).String(), Version: "v1", Purpose: "streaming"}
+	p.cfg.SourceProvider = testCatalog{value: v}
+	require.NoError(t, p.loadSourceCatalog(t.Context()))
+	s := p.stagedSources()[0]
+	s.capture.BeforeAttempt = func(context.Context) error {
+		auth.events = append(auth.events, "begin")
+		return nil
+	}
+	for range 2 {
+		err := s.capture.once(t.Context(), func(_ io.Reader) { t.Error("unauthorized input opened") })
+		require.ErrorIs(t, err, camera.ErrAuthRequired)
+	}
+	require.Equal(t, []string{"begin", "scope", "acquire", "begin", "scope", "acquire"}, auth.events)
+	require.Len(t, auth.seen, 2)
 }

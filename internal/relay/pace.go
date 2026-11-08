@@ -78,15 +78,19 @@ func (s *source) pace(out []pacedSample) {
 	s.paced = append(s.paced, out...)
 	if !s.pacing {
 		s.pacing = true
-		go s.runPacer()
+		go s.runPacer(s.paceWake)
 	}
 }
 
 // runPacer sends the waiting samples as their times come, and ends when
 // none wait.
-func (s *source) runPacer() {
+func (s *source) runPacer(wake <-chan struct{}) {
 	for {
 		s.mu.Lock()
+		if s.paceWake != wake {
+			s.mu.Unlock()
+			return
+		}
 		if len(s.paced) == 0 {
 			s.pacing = false
 			s.mu.Unlock()
@@ -95,7 +99,13 @@ func (s *source) runPacer() {
 		wait := time.Until(s.paced[0].at)
 		if wait > 0 {
 			s.mu.Unlock()
-			time.Sleep(wait)
+			timer := time.NewTimer(wait)
+			select {
+			case <-timer.C:
+			case <-wake:
+				timer.Stop()
+				return
+			}
 			continue
 		}
 		now := time.Now()
@@ -145,6 +155,12 @@ func (s *source) release(out []pacedSample) {
 // restartPacing drops what waits and starts the clock over: a new stream,
 // or none; with the lock held. A running pacer finds nothing and ends.
 func (s *source) restartPacing() {
+	if s.paceWake != nil {
+		close(s.paceWake)
+	}
+	s.paceWake = make(chan struct{})
+	s.pacing = false
 	s.paced = nil
 	s.clock = playout{}
+	s.catching = map[string]*owed{}
 }

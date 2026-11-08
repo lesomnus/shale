@@ -54,6 +54,10 @@ func (Lamina) Fields() []ent.Field {
 		field.Int32("skip_reason").
 			Optional().
 			Default(0),
+		field.String("capture_epoch").
+			Immutable().
+			Optional().
+			Default(""),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").

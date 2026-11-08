@@ -11,6 +11,7 @@ import "shale/set.proto";
 import "shale/host.proto";
 import "shale/camera_progress.proto";
 import "shale/camera_preset.proto";
+import "shale/common.proto";
 
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
@@ -50,6 +51,44 @@ message CameraCaptureSpec {
   string alias = 9;
   string name = 10;
 }
+// Desired identity and server-fenced runtime application are deliberately
+// separate from the Worker's provisioning report.
+message CameraApplyTarget {
+  bytes assignment_id = 1;
+  bytes binding_id = 2;
+  bytes source_id = 3;
+  int64 assignment_generation = 4;
+  int64 catalog_revision = 5;
+  int64 spec_revision = 6;
+}
+message CameraRuntimeMedia {
+  CameraCaptureProfile profile = 1;
+  google.protobuf.Timestamp first_media_at = 2;
+  google.protobuf.Timestamp last_media_at = 3;
+  int64 frames = 4;
+  int64 keyframes = 5;
+}
+message CameraApplication {
+  CameraApplyTarget target = 1;
+  int64 sequence = 2;
+  string capture_epoch = 3;
+  string intent_key = 4;
+  google.protobuf.Timestamp date_started = 5;
+  google.protobuf.Timestamp date_applied = 6;
+  CameraRuntimeMedia media = 7;
+  CameraCredentialReference used_credential = 8;
+  bytes producer_id = 9;
+  // Frozen negotiated storage limits for this incarnation, including its
+  // unallocated closed RAM segments after capture intent changes.
+  SegmentProfile segment_profile = 10;
+  google.protobuf.Timestamp drain_cutoff = 11;
+  google.protobuf.Timestamp drain_deadline = 12;
+}
+message CameraApplyState {
+  CameraApplication starting = 1;
+  CameraApplication applied = 2;
+}
+
 message CameraIdentityEvidence {
   string manufacturer = 1;
   string model = 2;
@@ -110,6 +149,8 @@ message CameraJobObservation {
   // Full typed portable workflow state; configuration intent is durable before
   // device writes and cannot be replaced by a later policy revision.
   CameraProvisionState progress = 9;
+  // Verified WHEP response/token epoch, not inferred from old advancing RTP.
+  string live_capture_epoch = 10;
 }
 enum CameraJobStage {
   CAMERA_JOB_STAGE_UNSPECIFIED = 0;
@@ -261,6 +302,17 @@ message CameraBinding {
   CameraJobObservation observed = 17;
   int64 applied_revision = 18;
   bool collect = 19;
+  // BeginApply is not evidence. Applied requires the current starting ticket
+  // and observed video from that exact capture incarnation.
+  CameraApplication starting_application = 20;
+  CameraApplication applied_application = 21;
+  // At most sixteen server-retired incarnations for bounded historical RAM
+  // drain. They never authorize ACK, current live or ACTIVE readiness.
+  repeated CameraApplication previous_applications = 22;
+  // A strict full-catalog negotiation commits these per-source fences. A
+  // desired publication or collection re-enable cannot reuse an old admission.
+  int64 admitted_spec_revision = 23;
+  int64 admitted_assignment_generation = 24;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

@@ -118,8 +118,7 @@ consumable before the central commit.
 CP adapters use an adopted Producer's current assignment, not an operator login
 or a tenant-wide inventory grant. Initial loading occurs after machine
 authentication and Set assignment. Dynamic source add/change/stop, zero-source
-idle operation and applied acknowledgements are the separate #199 lifecycle
-boundary. A runtime acknowledgement must correlate assignment generation,
+idle operation and applied acknowledgements follow the [managed lifecycle](producer-lifecycle.md). A runtime acknowledgement must correlate assignment generation,
 aggregate catalog revision and each binding/Source specification revision after
 registration, negotiation and actual capture application. Reading a snapshot
 alone is not applied state or proof of live/committed media readiness.
@@ -164,10 +163,11 @@ each managed Source by its exact CP ID, and rejects identity, alias, Set, tenant
 or configured-label mismatches. It never creates a replacement ID for a managed
 binding. Legacy aliases without IDs still use normal registration.
 
-This implementation consumes one initial snapshot. A successfully empty catalog
-returns `producer.ErrInitialCatalogEmpty` with a clear runtime boundary; it does
-not synthesize a camera or interpret a failed CP read as empty. Dynamic updates,
-empty idle operation and actual-applied acknowledgements remain #199 work.
+The Producer continuously reconciles full managed snapshots. A successfully empty
+managed catalog remains idle without a synthetic camera. Initial unavailability,
+including a not-yet-created assignment, keeps the approved control loops alive.
+Errors never masquerade as a successful empty catalog. The lifecycle documents
+actual application acknowledgment, historical drain and current live epoch checks.
 
 ## Worker publication adapter
 

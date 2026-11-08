@@ -40,6 +40,7 @@ type Mutation struct {
 	addepoch             *int64
 	skip_reason          *int32
 	addskip_reason       *int32
+	capture_epoch        *string
 	clearedFields        map[string]struct{}
 	exprs                map[string]sql.Querier
 	tenant               *uuid.UUID
@@ -680,6 +681,39 @@ func (m *Mutation) ResetSkipReason() {
 	delete(m.exprs, FieldSkipReason)
 }
 
+// SetCaptureEpoch sets the "capture_epoch" field.
+func (m *Mutation) SetCaptureEpoch(s string) {
+	m.capture_epoch = &s
+	delete(m.clearedFields, FieldCaptureEpoch)
+}
+
+// CaptureEpoch returns the value of the "capture_epoch" field in the mutation.
+func (m *Mutation) CaptureEpoch() (r string, exists bool) {
+	v := m.capture_epoch
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCaptureEpoch clears the value of the "capture_epoch" field.
+func (m *Mutation) ClearCaptureEpoch() {
+	m.capture_epoch = nil
+	m.clearedFields[FieldCaptureEpoch] = struct{}{}
+}
+
+// CaptureEpochCleared returns if the "capture_epoch" field was cleared in this mutation.
+func (m *Mutation) CaptureEpochCleared() bool {
+	_, ok := m.clearedFields[FieldCaptureEpoch]
+	return ok
+}
+
+// ResetCaptureEpoch resets all changes to the "capture_epoch" field.
+func (m *Mutation) ResetCaptureEpoch() {
+	m.capture_epoch = nil
+	delete(m.clearedFields, FieldCaptureEpoch)
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -972,7 +1006,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 23)
+	fields := make([]string, 0, 24)
 	if m.lamina_key != nil || m.exprs[FieldLaminaKey] != nil {
 		fields = append(fields, FieldLaminaKey)
 	}
@@ -1026,6 +1060,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.skip_reason != nil || m.exprs[FieldSkipReason] != nil {
 		fields = append(fields, FieldSkipReason)
+	}
+	if m.capture_epoch != nil {
+		fields = append(fields, FieldCaptureEpoch)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -1092,6 +1129,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Epoch()
 	case FieldSkipReason:
 		return m.SkipReason()
+	case FieldCaptureEpoch:
+		return m.CaptureEpoch()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldSiteId:
@@ -1301,6 +1340,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSkipReason(v)
 		return nil
+	case FieldCaptureEpoch:
+		v, ok := value.(string)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCaptureEpoch(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -1409,6 +1458,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetEpoch()
 	case FieldSkipReason:
 		m.ResetSkipReason()
+	case FieldCaptureEpoch:
+		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldTenantId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	case FieldSiteId:
@@ -1610,6 +1661,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldSkipReason) {
 		fields = append(fields, FieldSkipReason)
 	}
+	if m.FieldCleared(FieldCaptureEpoch) {
+		fields = append(fields, FieldCaptureEpoch)
+	}
 	if m.FieldCleared(FieldSiteId) {
 		fields = append(fields, FieldSiteId)
 	}
@@ -1656,6 +1710,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldSkipReason:
 		m.ClearSkipReason()
+		return nil
+	case FieldCaptureEpoch:
+		m.ClearCaptureEpoch()
 		return nil
 	case FieldSiteId:
 		m.ClearSiteId()
@@ -1724,6 +1781,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldSkipReason:
 		m.ResetSkipReason()
+		return nil
+	case FieldCaptureEpoch:
+		m.ResetCaptureEpoch()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()
