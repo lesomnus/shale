@@ -146,3 +146,35 @@ func TestLeasedDevicesRefreshTransportAndHideDriverError(t *testing.T) {
 	require.ErrorIs(t, err, secret)
 	require.NotContains(t, err.Error(), "password")
 }
+
+func TestJobCommitterRecoversPublicationWithoutReplayingNewProbeTimes(t *testing.T) {
+	e, w := checkpointFixture(t)
+	r := checkpointRun(w)
+	p := camera.MediaProfile{Token: "main", Codec: "h264", Width: 1280, Height: 720, FPS: 30, Bitrate: 2_000_000, GOP: 30, StreamURI: "rtsp://192.0.2.20/stream"}
+	r.Stage = provision.Deploying
+	r.Plan = &camera.ChangePlan{ProfileToken: "main", Before: p, After: p, Revision: "1"}
+	r.Verified = &camera.VerifiedState{Profile: p, Complete: true, Decoded: true, DecodedFrames: 150, Duration: 5 * time.Second, ObservedAt: r.UpdatedAt, ProfileRevision: "1"}
+	// The new actual decoder sample has a slightly different cadence. A lost
+	// durable response must not turn this into another capture publication.
+	r.Verified.Profile.FPS = 29.97
+	o, err := runObservation(r, nil)
+	require.NoError(t, err)
+	w.GetJob().SetObserved(o)
+	w.GetJob().SetPublishedRevision(9)
+	w.GetJob().SetDatePublished(timestamppb.New(r.UpdatedAt.Add(-time.Minute)))
+	w.GetJob().SetStage(api.CameraJobStage_CAMERA_JOB_STAGE_DEPLOYMENT_READY)
+	old := captureProfile(p)
+	old.SetKeyframeIntervalMs(1000)
+	w.GetBinding().SetCollect(true)
+	w.GetBinding().SetDesired(api.CameraCaptureSpec_builder{Profile: old, Input: p.StreamURI, Credential: w.GetJob().GetInputs().GetStreamingCredential(), Revision: 9}.Build())
+	d := provision.Deployment{OperationID: "stable-operation", Request: r.Request, Profile: p, Credential: *r.StreamingRef, Previous: r.Binding}
+	receipt, err := (JobCommitter{Execution: e}).Commit(t.Context(), d)
+	require.NoError(t, err)
+	require.Equal(t, int64(9), receipt.Revision.Catalog)
+	require.Equal(t, cameraID(w.GetBinding().GetSource().GetId()), receipt.Binding.SourceID)
+	require.Equal(t, "stable-operation", receipt.Binding.DeploymentID)
+	require.Equal(t, int64(1000), w.GetBinding().GetDesired().GetProfile().GetKeyframeIntervalMs(), "a new probe does not replace durable capture intent")
+	w.GetBinding().GetDesired().SetInput("rtsp://192.0.2.21/another")
+	_, err = (JobCommitter{Execution: e}).Commit(t.Context(), d)
+	require.ErrorIs(t, err, camera.ErrConflict)
+}

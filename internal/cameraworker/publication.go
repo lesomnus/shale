@@ -57,7 +57,16 @@ func (c JobCommitter) Commit(ctx context.Context, d provision.Deployment) (publi
 		// New independent probes have new timestamps; reuse its durable receipt
 		// instead of resending the old operation with different evidence bytes.
 		prior := b.GetDesired()
-		if j.GetPublishedRevision() != prior.GetRevision() || !b.GetCollect() || prior.GetInput() != spec.GetInput() || !proto.Equal(prior.GetProfile(), spec.GetProfile()) || !proto.Equal(prior.GetCredential(), spec.GetCredential()) {
+		if prior.GetProfile() == nil {
+			return publication.Receipt{}, camera.ErrConflict
+		}
+		oldProfile := proto.Clone(prior.GetProfile()).(*api.CameraCaptureProfile)
+		newProfile := proto.Clone(spec.GetProfile()).(*api.CameraCaptureProfile)
+		// A later probe's measured cadence can differ slightly. It cannot
+		// rewrite the already-published configuration of this same pinned job.
+		oldProfile.SetKeyframeIntervalMs(0)
+		newProfile.SetKeyframeIntervalMs(0)
+		if j.GetPublishedRevision() != prior.GetRevision() || !b.GetCollect() || prior.GetInput() != spec.GetInput() || !proto.Equal(oldProfile, newProfile) || !proto.Equal(prior.GetCredential(), spec.GetCredential()) {
 			return publication.Receipt{}, camera.ErrConflict
 		}
 		return publicationReceipt(w, d.OperationID), nil
