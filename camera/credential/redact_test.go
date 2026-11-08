@@ -25,6 +25,7 @@ func TestCredentialQueryRedactionAcrossRawEncodings(t *testing.T) {
 		require.NotContains(t, credential.Redact(input), "bad%escape")
 		require.NotContains(t, credential.Redact(input), "private-fragment")
 	}
+	require.Equal(t, "[invalid URL]", credential.Redact("rtsp://reader:bad%escape@camera/live?auth=private-token"), "a malformed userinfo must not leave a credential-bearing query tail")
 }
 
 func TestSanitizerPrefersFullOverlappingTokenAndPercentCases(t *testing.T) {

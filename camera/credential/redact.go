@@ -30,11 +30,8 @@ func Redact(text string) string {
 	return uriPattern.ReplaceAllStringFunc(text, func(raw string) string {
 		u, err := url.Parse(raw)
 		if err != nil {
-			if i := strings.LastIndex(raw, "@"); i >= 0 {
-				if start := strings.Index(raw, "://"); start >= 0 && i > start {
-					return raw[:start+3] + "[redacted]@" + raw[i+1:]
-				}
-			}
+			// Keeping only a malformed URL's tail could retain its query
+			// credentials even after the user information was removed.
 			return "[invalid URL]"
 		}
 		if u.User != nil {
