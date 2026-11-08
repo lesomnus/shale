@@ -1,0 +1,23 @@
+name: camera-lan
+
+on:
+  push:
+    branches: [main]
+    paths: ['deploy/edge/**', '.github/workflows/camera-lan.yml']
+  pull_request:
+    paths: ['deploy/edge/**', '.github/workflows/camera-lan.yml']
+
+jobs:
+  isolated-dhcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: configuration validation
+        run: python3 -m unittest discover -s deploy/edge -p 'test_*.py'
+      - name: isolated DHCP protocol
+        # Privilege is confined to a disposable container with no external
+        # network or host filesystem mounts. It creates only new namespaces.
+        run: |
+          docker build -t shale-camera-lan-test -f deploy/edge/test.Dockerfile deploy/edge
+          docker run --rm --network=none --privileged shale-camera-lan-test
