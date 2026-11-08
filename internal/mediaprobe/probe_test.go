@@ -175,6 +175,11 @@ func TestEndpointRedactionAndValidation(t *testing.T) {
 	}
 	_, err = Probe(context.Background(), Options{Frames: 1}, e)
 	require.ErrorIs(t, err, ErrOptions)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	got, err := Probe(ctx, Options{}, e)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Equal(t, Evidence{}, got, "a canceled grant emits no media evidence")
 }
 
 func TestWHEPCancellationStopsReaderAndRequest(t *testing.T) {
