@@ -16,39 +16,43 @@ import (
 
 // Mutation represents an operation that mutates the CameraBinding nodes in the graph.
 type Mutation struct {
-	op                          ent.Op
-	typ                         string
-	alias                       *string
-	name                        *string
-	desc                        *string
-	labels                      *map[string]string
-	logical_key                 *string
-	source_alias                *string
-	desired                     **api.CameraCaptureSpec
-	observed                    **api.CameraJobObservation
-	applied_revision            *int64
-	addapplied_revision         *int64
-	collect                     *bool
-	starting_application        **api.CameraApplication
-	applied_application         **api.CameraApplication
-	previous_applications       *[]*api.CameraApplication
-	appendprevious_applications []*api.CameraApplication
-	date_updated                *time.Time
-	date_erased                 *time.Time
-	date_created                *time.Time
-	clearedFields               map[string]struct{}
-	exprs                       map[string]sql.Querier
-	tenant                      *uuid.UUID
-	clearedtenant               bool
-	site                        *uuid.UUID
-	clearedsite                 bool
-	assignment                  *uuid.UUID
-	clearedassignment           bool
-	device                      *uuid.UUID
-	cleareddevice               bool
-	source                      *uuid.UUID
-	clearedsource               bool
-	predicates                  []predicate.CameraBinding
+	op                                ent.Op
+	typ                               string
+	alias                             *string
+	name                              *string
+	desc                              *string
+	labels                            *map[string]string
+	logical_key                       *string
+	source_alias                      *string
+	desired                           **api.CameraCaptureSpec
+	observed                          **api.CameraJobObservation
+	applied_revision                  *int64
+	addapplied_revision               *int64
+	collect                           *bool
+	starting_application              **api.CameraApplication
+	applied_application               **api.CameraApplication
+	previous_applications             *[]*api.CameraApplication
+	appendprevious_applications       []*api.CameraApplication
+	admitted_spec_revision            *int64
+	addadmitted_spec_revision         *int64
+	admitted_assignment_generation    *int64
+	addadmitted_assignment_generation *int64
+	date_updated                      *time.Time
+	date_erased                       *time.Time
+	date_created                      *time.Time
+	clearedFields                     map[string]struct{}
+	exprs                             map[string]sql.Querier
+	tenant                            *uuid.UUID
+	clearedtenant                     bool
+	site                              *uuid.UUID
+	clearedsite                       bool
+	assignment                        *uuid.UUID
+	clearedassignment                 bool
+	device                            *uuid.UUID
+	cleareddevice                     bool
+	source                            *uuid.UUID
+	clearedsource                     bool
+	predicates                        []predicate.CameraBinding
 }
 
 // NewMutation creates a new Mutation for the CameraBinding entity.
@@ -460,6 +464,88 @@ func (m *Mutation) ResetPreviousApplications() {
 	delete(m.exprs, FieldPreviousApplications)
 }
 
+// SetAdmittedSpecRevision sets the "admitted_spec_revision" field.
+func (m *Mutation) SetAdmittedSpecRevision(i int64) {
+	m.admitted_spec_revision = &i
+	m.addadmitted_spec_revision = nil
+	delete(m.exprs, FieldAdmittedSpecRevision)
+}
+
+// AdmittedSpecRevision returns the value of the "admitted_spec_revision" field in the mutation.
+func (m *Mutation) AdmittedSpecRevision() (r int64, exists bool) {
+	v := m.admitted_spec_revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddAdmittedSpecRevision adds i to the "admitted_spec_revision" field.
+func (m *Mutation) AddAdmittedSpecRevision(i int64) {
+	if m.addadmitted_spec_revision != nil {
+		*m.addadmitted_spec_revision += i
+	} else {
+		m.addadmitted_spec_revision = &i
+	}
+}
+
+// AddedAdmittedSpecRevision returns the value that was added to the "admitted_spec_revision" field in this mutation.
+func (m *Mutation) AddedAdmittedSpecRevision() (r int64, exists bool) {
+	v := m.addadmitted_spec_revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAdmittedSpecRevision resets all changes to the "admitted_spec_revision" field.
+func (m *Mutation) ResetAdmittedSpecRevision() {
+	m.admitted_spec_revision = nil
+	m.addadmitted_spec_revision = nil
+	delete(m.exprs, FieldAdmittedSpecRevision)
+}
+
+// SetAdmittedAssignmentGeneration sets the "admitted_assignment_generation" field.
+func (m *Mutation) SetAdmittedAssignmentGeneration(i int64) {
+	m.admitted_assignment_generation = &i
+	m.addadmitted_assignment_generation = nil
+	delete(m.exprs, FieldAdmittedAssignmentGeneration)
+}
+
+// AdmittedAssignmentGeneration returns the value of the "admitted_assignment_generation" field in the mutation.
+func (m *Mutation) AdmittedAssignmentGeneration() (r int64, exists bool) {
+	v := m.admitted_assignment_generation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AddAdmittedAssignmentGeneration adds i to the "admitted_assignment_generation" field.
+func (m *Mutation) AddAdmittedAssignmentGeneration(i int64) {
+	if m.addadmitted_assignment_generation != nil {
+		*m.addadmitted_assignment_generation += i
+	} else {
+		m.addadmitted_assignment_generation = &i
+	}
+}
+
+// AddedAdmittedAssignmentGeneration returns the value that was added to the "admitted_assignment_generation" field in this mutation.
+func (m *Mutation) AddedAdmittedAssignmentGeneration() (r int64, exists bool) {
+	v := m.addadmitted_assignment_generation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAdmittedAssignmentGeneration resets all changes to the "admitted_assignment_generation" field.
+func (m *Mutation) ResetAdmittedAssignmentGeneration() {
+	m.admitted_assignment_generation = nil
+	m.addadmitted_assignment_generation = nil
+	delete(m.exprs, FieldAdmittedAssignmentGeneration)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -828,7 +914,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 23)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -867,6 +953,12 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.previous_applications != nil || m.exprs[FieldPreviousApplications] != nil {
 		fields = append(fields, FieldPreviousApplications)
+	}
+	if m.admitted_spec_revision != nil || m.exprs[FieldAdmittedSpecRevision] != nil {
+		fields = append(fields, FieldAdmittedSpecRevision)
+	}
+	if m.admitted_assignment_generation != nil || m.exprs[FieldAdmittedAssignmentGeneration] != nil {
+		fields = append(fields, FieldAdmittedAssignmentGeneration)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -932,6 +1024,10 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.AppliedApplication()
 	case FieldPreviousApplications:
 		return m.PreviousApplications()
+	case FieldAdmittedSpecRevision:
+		return m.AdmittedSpecRevision()
+	case FieldAdmittedAssignmentGeneration:
+		return m.AdmittedAssignmentGeneration()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -1097,6 +1193,26 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPreviousApplications(v)
 		return nil
+	case FieldAdmittedSpecRevision:
+		v, ok := value.(int64)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAdmittedSpecRevision(v)
+		return nil
+	case FieldAdmittedAssignmentGeneration:
+		v, ok := value.(int64)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAdmittedAssignmentGeneration(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -1225,6 +1341,10 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetAppliedApplication()
 	case FieldPreviousApplications:
 		m.ResetPreviousApplications()
+	case FieldAdmittedSpecRevision:
+		m.ResetAdmittedSpecRevision()
+	case FieldAdmittedAssignmentGeneration:
+		m.ResetAdmittedAssignmentGeneration()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -1295,6 +1415,12 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldPreviousApplications]; ok {
 		fields = append(fields, FieldPreviousApplications)
 	}
+	if _, ok := m.exprs[FieldAdmittedSpecRevision]; ok {
+		fields = append(fields, FieldAdmittedSpecRevision)
+	}
+	if _, ok := m.exprs[FieldAdmittedAssignmentGeneration]; ok {
+		fields = append(fields, FieldAdmittedAssignmentGeneration)
+	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
 	}
@@ -1311,6 +1437,12 @@ func (m *Mutation) AddedFields() []string {
 	if m.addapplied_revision != nil {
 		fields = append(fields, FieldAppliedRevision)
 	}
+	if m.addadmitted_spec_revision != nil {
+		fields = append(fields, FieldAdmittedSpecRevision)
+	}
+	if m.addadmitted_assignment_generation != nil {
+		fields = append(fields, FieldAdmittedAssignmentGeneration)
+	}
 	return fields
 }
 
@@ -1321,6 +1453,10 @@ func (m *Mutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case FieldAppliedRevision:
 		return m.AddedAppliedRevision()
+	case FieldAdmittedSpecRevision:
+		return m.AddedAdmittedSpecRevision()
+	case FieldAdmittedAssignmentGeneration:
+		return m.AddedAdmittedAssignmentGeneration()
 	}
 	return nil, false
 }
@@ -1336,6 +1472,20 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddAppliedRevision(v)
+		return nil
+	case FieldAdmittedSpecRevision:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAdmittedSpecRevision(v)
+		return nil
+	case FieldAdmittedAssignmentGeneration:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAdmittedAssignmentGeneration(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CameraBinding numeric field %s", name)
@@ -1459,6 +1609,12 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldPreviousApplications:
 		m.ResetPreviousApplications()
+		return nil
+	case FieldAdmittedSpecRevision:
+		m.ResetAdmittedSpecRevision()
+		return nil
+	case FieldAdmittedAssignmentGeneration:
+		m.ResetAdmittedAssignmentGeneration()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

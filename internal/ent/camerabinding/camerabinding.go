@@ -40,6 +40,10 @@ const (
 	FieldAppliedApplication = "applied_application"
 	// FieldPreviousApplications holds the string denoting the previous_applications field in the database.
 	FieldPreviousApplications = "previous_applications"
+	// FieldAdmittedSpecRevision holds the string denoting the admitted_spec_revision field in the database.
+	FieldAdmittedSpecRevision = "admitted_spec_revision"
+	// FieldAdmittedAssignmentGeneration holds the string denoting the admitted_assignment_generation field in the database.
+	FieldAdmittedAssignmentGeneration = "admitted_assignment_generation"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -121,6 +125,8 @@ var Columns = []string{
 	FieldStartingApplication,
 	FieldAppliedApplication,
 	FieldPreviousApplications,
+	FieldAdmittedSpecRevision,
+	FieldAdmittedAssignmentGeneration,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -193,6 +199,16 @@ func ByAppliedRevision(opts ...sql.OrderTermOption) OrderOption {
 // ByCollect orders the results by the collect field.
 func ByCollect(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCollect, opts...).ToFunc()
+}
+
+// ByAdmittedSpecRevision orders the results by the admitted_spec_revision field.
+func ByAdmittedSpecRevision(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAdmittedSpecRevision, opts...).ToFunc()
+}
+
+// ByAdmittedAssignmentGeneration orders the results by the admitted_assignment_generation field.
+func ByAdmittedAssignmentGeneration(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAdmittedAssignmentGeneration, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

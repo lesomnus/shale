@@ -7,8 +7,10 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/camerabinding"
+	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // negotiateManaged makes an exact full-catalog admission decision. Historical
@@ -75,6 +77,7 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 		link := clampLink(r.GetLink(), bounds, func(string, string, string, string) {})
 		var agreed []*api.SourceAgreed
 		var patches []*api.SourcePatchRequest
+		var admissions []*api.CameraBindingPatchRequest
 		var total int64
 		changed := !equalLink(set.GetLink(), link)
 		for _, binding := range rows {
@@ -126,6 +129,9 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 			if !equalSegment(src.GetProfile(), profile) || patch.ContentType != nil || patch.LiveCapable != nil {
 				patches = append(patches, patch.Build())
 			}
+			if binding.AdmittedSpecRevision != binding.Desired.GetRevision() || binding.AdmittedAssignmentGeneration != a.GetGeneration() {
+				admissions = append(admissions, api.CameraBindingPatchRequest_builder{Ref: api.CameraBindingRef_builder{Id: binding.Id[:]}.Build(), AdmittedSpecRevision: z.Ptr(binding.Desired.GetRevision()), AdmittedAssignmentGeneration: z.Ptr(a.GetGeneration()), DateUpdated: timestamppb.New(binding.DateUpdated)}.Build())
+			}
 			agreed = append(agreed, api.SourceAgreed_builder{SourceId: src.GetId(), Ordinal: src.GetOrdinal(), Profile: profile, MaxLength: MaxLength(profile)}.Build())
 		}
 		if set.GetMaxBitrateTotal() > 0 && total > set.GetMaxBitrateTotal() {
@@ -146,6 +152,11 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 		}
 		for _, patch := range patches {
 			if _, err := nx.Source().Patch(ctx, patch); err != nil {
+				return err
+			}
+		}
+		for _, patch := range admissions {
+			if _, err := nx.CameraBinding().Patch(ctx, patch); err != nil {
 				return err
 			}
 		}

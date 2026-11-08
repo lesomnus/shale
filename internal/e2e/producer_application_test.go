@@ -139,3 +139,112 @@ func TestProducerManagedAdmissionPreservesExistingFeedsAndHistory(t *testing.T) 
 	_, err = sources.Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: stopped.GetSource().GetId()}.Build()}.Build())
 	require.NoError(t, err, "collection stop preserves Source/history identity")
 }
+
+// A stale nonzero Source profile is not proof that its newer desired capture
+// passed the strict full-catalog transaction. Only the exact admitted per-source
+// revision/generation may obtain a new ticket; an unchanged camera's reconnect
+// remains possible while an unrelated new camera is waiting for capacity.
+func TestProducerApplicationRequiresAdmittedSpecification(t *testing.T) {
+	for _, larger := range []bool{false, true} {
+		t.Run(map[bool]string{false: "same ceiling new endpoint", true: "larger rejected ceiling"}[larger], func(t *testing.T) {
+			c := cameraControlCluster(t)
+			ctx := t.Context()
+			admin := c.dial("@acme/admin")
+			set := sourceCatalogSet(t, admin, "admission-ticket")
+			host := sourceCatalogAdopt(t, c, admin, set, "admission-ticket-owner")
+			a := sourceCatalogAssignment(t, admin, cameraNetwork(t, admin, "admission-ticket-lan", nil), host)
+			first, applied, owner := liveEpochApply(t, c, admin, a, "admission-ticket-camera")
+			sets := api.NewSetServiceClient(admin)
+			set, err := sets.Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+			require.NoError(t, err)
+			_, err = sets.Patch(ctx, api.SetPatchRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build(), DateUpdated: set.GetDateUpdated(), MaxBitrateTotal: z.Ptr(int64(1_500_000))}.Build())
+			require.NoError(t, err)
+			profile := proto.Clone(first.GetBinding().GetDesired().GetProfile()).(*api.CameraCaptureProfile)
+			ceiling := int64(1_128_000)
+			if larger {
+				profile.SetMaxBitrateBps(3_000_000)
+				ceiling = 3_128_000
+			}
+			pub := lifecyclePublish(t, admin, a, first.GetBinding(), first.GetJob(), "rtsp://192.0.2.11/new-endpoint", profile, nil, "admission-ticket-replacement")
+			target := api.CameraApplyTarget_builder{AssignmentId: a.GetId(), BindingId: pub.GetBinding().GetId(), SourceId: pub.GetBinding().GetSource().GetId(), AssignmentGeneration: a.GetGeneration(), CatalogRevision: pub.GetCatalogRevision(), SpecRevision: pub.GetBinding().GetDesired().GetRevision()}.Build()
+			request := api.SetNegotiateRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build(), Catalog: api.CameraApplyTarget_builder{AssignmentId: a.GetId(), AssignmentGeneration: a.GetGeneration(), CatalogRevision: pub.GetCatalogRevision()}.Build(), Sources: []*api.SourceProposal{api.SourceProposal_builder{Source: api.SourceRef_builder{Id: target.GetSourceId()}.Build(), Profile: api.SegmentProfile_builder{MaxBitrate: ceiling, DurationSeconds: 30}.Build(), ContentType: "video/mp4", LiveCapable: true}.Build()}}.Build()
+			apps := api.NewCameraAssignmentServiceClient(owner)
+			if larger {
+				_, err = api.NewSetServiceClient(owner).Negotiate(ctx, request)
+				require.Equal(t, codes.ResourceExhausted, status.Code(err))
+			}
+			_, err = apps.BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: applied.GetSequence(), IntentKey: "unadmitted-replacement"}.Build())
+			require.Equal(t, codes.FailedPrecondition, status.Code(err), "old negotiated storage metadata cannot authorize a newer desired specification")
+			binding, err := api.NewCameraBindingServiceClient(admin).Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: pub.GetBinding().GetId()}.Build()}.Build())
+			require.NoError(t, err)
+			require.Equal(t, applied.GetCaptureEpoch(), binding.GetStartingApplication().GetCaptureEpoch())
+			if larger {
+				set, err = sets.Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+				require.NoError(t, err)
+				_, err = sets.Patch(ctx, api.SetPatchRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build(), DateUpdated: set.GetDateUpdated(), MaxBitrateTotal: z.Ptr(int64(10_000_000))}.Build())
+				require.NoError(t, err)
+			}
+			_, err = api.NewSetServiceClient(owner).Negotiate(ctx, request)
+			require.NoError(t, err)
+			started, err := apps.BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: applied.GetSequence(), IntentKey: "admitted-replacement"}.Build())
+			require.NoError(t, err)
+			require.NotEqual(t, applied.GetCaptureEpoch(), started.GetCaptureEpoch())
+			require.Equal(t, ceiling, started.GetSegmentProfile().GetMaxBitrate())
+			bindings := api.NewCameraBindingServiceClient(admin)
+			binding, err = bindings.Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: pub.GetBinding().GetId()}.Build()}.Build())
+			require.NoError(t, err)
+			require.Equal(t, target.GetSpecRevision(), binding.GetAdmittedSpecRevision())
+			require.Equal(t, target.GetAssignmentGeneration(), binding.GetAdmittedAssignmentGeneration())
+			binding, err = bindings.SetCollect(ctx, api.CameraBindingSetCollectRequest_builder{Ref: api.CameraBindingRef_builder{Id: binding.GetId()}.Build(), ExpectedVersion: binding.GetDateUpdated(), Collect: false}.Build())
+			require.NoError(t, err)
+			require.Zero(t, binding.GetAdmittedSpecRevision())
+			_, err = bindings.SetCollect(ctx, api.CameraBindingSetCollectRequest_builder{Ref: api.CameraBindingRef_builder{Id: binding.GetId()}.Build(), ExpectedVersion: binding.GetDateUpdated(), Collect: true}.Build())
+			require.NoError(t, err)
+			snapshot, err := apps.Snapshot(ctx, api.CameraAssignmentSnapshotRequest_builder{Ref: api.CameraAssignmentRef_builder{Id: a.GetId()}.Build()}.Build())
+			require.NoError(t, err)
+			target.SetCatalogRevision(snapshot.GetRevision())
+			_, err = apps.BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: started.GetSequence(), IntentKey: "re-enabled-without-reservation"}.Build())
+			require.Equal(t, codes.FailedPrecondition, status.Code(err), "re-enabling collection must not reuse capacity released by stop")
+			request.GetCatalog().SetCatalogRevision(snapshot.GetRevision())
+			_, err = api.NewSetServiceClient(owner).Negotiate(ctx, request)
+			require.NoError(t, err)
+			_, err = apps.BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: started.GetSequence(), IntentKey: "re-enabled-after-reservation"}.Build())
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestProducerApplicationUnchangedReconnectDuringRejectedCatalog(t *testing.T) {
+	c := cameraControlCluster(t)
+	ctx := t.Context()
+	admin := c.dial("@acme/admin")
+	set := sourceCatalogSet(t, admin, "reconnect-budget")
+	host := sourceCatalogAdopt(t, c, admin, set, "reconnect-budget-owner")
+	a := sourceCatalogAssignment(t, admin, cameraNetwork(t, admin, "reconnect-budget-lan", nil), host)
+	first, applied, owner := liveEpochApply(t, c, admin, a, "reconnect-anchor")
+	sets := api.NewSetServiceClient(admin)
+	set, err := sets.Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	_, err = sets.Patch(ctx, api.SetPatchRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build(), DateUpdated: set.GetDateUpdated(), MaxBitrateTotal: z.Ptr(int64(2_000_000))}.Build())
+	require.NoError(t, err)
+	input := "rtsp://192.0.2.12/oversized"
+	other := lifecycleBind(t, admin, a, "reconnect-oversized", input)
+	profile := proto.Clone(first.GetBinding().GetDesired().GetProfile()).(*api.CameraCaptureProfile)
+	profile.SetMaxBitrateBps(3_000_000)
+	pub := lifecyclePublish(t, admin, a, other, nil, input, profile, nil, "reconnect-pending-camera")
+	var proposals []*api.SourceProposal
+	for _, v := range []struct {
+		id      []byte
+		ceiling int64
+	}{{first.GetBinding().GetSource().GetId(), 1_128_000}, {other.GetSource().GetId(), 3_128_000}} {
+		proposals = append(proposals, api.SourceProposal_builder{Source: api.SourceRef_builder{Id: v.id}.Build(), Profile: api.SegmentProfile_builder{MaxBitrate: v.ceiling, DurationSeconds: 30}.Build(), ContentType: "video/mp4", LiveCapable: true}.Build())
+	}
+	_, err = api.NewSetServiceClient(owner).Negotiate(ctx, api.SetNegotiateRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build(), Catalog: api.CameraApplyTarget_builder{AssignmentId: a.GetId(), AssignmentGeneration: a.GetGeneration(), CatalogRevision: pub.GetCatalogRevision()}.Build(), Sources: proposals}.Build())
+	require.Equal(t, codes.ResourceExhausted, status.Code(err))
+	target := proto.Clone(applied.GetTarget()).(*api.CameraApplyTarget)
+	target.SetCatalogRevision(pub.GetCatalogRevision())
+	reconnected, err := api.NewCameraAssignmentServiceClient(owner).BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: applied.GetSequence(), IntentKey: "unchanged-anchor-reconnect"}.Build())
+	require.NoError(t, err, "an unrelated rejected capture does not revoke an unchanged camera's admitted specification")
+	require.NotEqual(t, applied.GetCaptureEpoch(), reconnected.GetCaptureEpoch())
+	require.Equal(t, applied.GetTarget().GetSpecRevision(), reconnected.GetTarget().GetSpecRevision())
+}

@@ -51,6 +51,10 @@ type CameraBinding struct {
 	AppliedApplication *api.CameraApplication `json:"applied_application,omitempty"`
 	// PreviousApplications holds the value of the "previous_applications" field.
 	PreviousApplications []*api.CameraApplication `json:"previous_applications,omitempty"`
+	// AdmittedSpecRevision holds the value of the "admitted_spec_revision" field.
+	AdmittedSpecRevision int64 `json:"admitted_spec_revision,omitempty"`
+	// AdmittedAssignmentGeneration holds the value of the "admitted_assignment_generation" field.
+	AdmittedAssignmentGeneration int64 `json:"admitted_assignment_generation,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -154,7 +158,7 @@ func (*CameraBinding) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case camerabinding.FieldCollect:
 			values[i] = new(sql.NullBool)
-		case camerabinding.FieldAppliedRevision:
+		case camerabinding.FieldAppliedRevision, camerabinding.FieldAdmittedSpecRevision, camerabinding.FieldAdmittedAssignmentGeneration:
 			values[i] = new(sql.NullInt64)
 		case camerabinding.FieldAlias, camerabinding.FieldName, camerabinding.FieldDesc, camerabinding.FieldLogicalKey, camerabinding.FieldSourceAlias:
 			values[i] = new(sql.NullString)
@@ -274,6 +278,18 @@ func (_m *CameraBinding) assignValues(columns []string, values []any) error {
 				return err
 			} else {
 				_m.PreviousApplications = value
+			}
+		case camerabinding.FieldAdmittedSpecRevision:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field admitted_spec_revision", values[i])
+			} else if value.Valid {
+				_m.AdmittedSpecRevision = value.Int64
+			}
+		case camerabinding.FieldAdmittedAssignmentGeneration:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field admitted_assignment_generation", values[i])
+			} else if value.Valid {
+				_m.AdmittedAssignmentGeneration = value.Int64
 			}
 		case camerabinding.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -423,6 +439,12 @@ func (_m *CameraBinding) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("previous_applications=")
 	builder.WriteString(fmt.Sprintf("%v", _m.PreviousApplications))
+	builder.WriteString(", ")
+	builder.WriteString("admitted_spec_revision=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AdmittedSpecRevision))
+	builder.WriteString(", ")
+	builder.WriteString("admitted_assignment_generation=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AdmittedAssignmentGeneration))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

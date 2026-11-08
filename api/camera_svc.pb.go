@@ -8631,31 +8631,33 @@ func (b0 CameraAppliedRequest_builder) Build() *CameraAppliedRequest {
 }
 
 type CameraBindingAddRequest struct {
-	state                           protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id                   []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant               *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Site                 *SiteRef               `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Alias                string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name                 string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc                 string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels               map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Assignment           *CameraAssignmentRef   `protobuf:"bytes,8,opt,name=assignment"`
-	xxx_hidden_Device               *CameraDeviceRef       `protobuf:"bytes,9,opt,name=device"`
-	xxx_hidden_Source               *SourceRef             `protobuf:"bytes,10,opt,name=source"`
-	xxx_hidden_LogicalKey           string                 `protobuf:"bytes,11,opt,name=logical_key,json=logicalKey"`
-	xxx_hidden_SourceAlias          string                 `protobuf:"bytes,12,opt,name=source_alias,json=sourceAlias"`
-	xxx_hidden_Desired              *CameraCaptureSpec     `protobuf:"bytes,16,opt,name=desired"`
-	xxx_hidden_Observed             *CameraJobObservation  `protobuf:"bytes,17,opt,name=observed"`
-	xxx_hidden_AppliedRevision      int64                  `protobuf:"varint,18,opt,name=applied_revision,json=appliedRevision"`
-	xxx_hidden_Collect              bool                   `protobuf:"varint,19,opt,name=collect"`
-	xxx_hidden_StartingApplication  *CameraApplication     `protobuf:"bytes,20,opt,name=starting_application,json=startingApplication"`
-	xxx_hidden_AppliedApplication   *CameraApplication     `protobuf:"bytes,21,opt,name=applied_application,json=appliedApplication"`
-	xxx_hidden_PreviousApplications *[]*CameraApplication  `protobuf:"bytes,22,rep,name=previous_applications,json=previousApplications"`
-	xxx_hidden_DateCreated          *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData          protoimpl.RaceDetectHookData
-	XXX_presence                    [1]uint32
-	unknownFields                   protoimpl.UnknownFields
-	sizeCache                       protoimpl.SizeCache
+	state                                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                           []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant                       *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Site                         *SiteRef               `protobuf:"bytes,3,opt,name=site"`
+	xxx_hidden_Alias                        string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name                         string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc                         string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels                       map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Assignment                   *CameraAssignmentRef   `protobuf:"bytes,8,opt,name=assignment"`
+	xxx_hidden_Device                       *CameraDeviceRef       `protobuf:"bytes,9,opt,name=device"`
+	xxx_hidden_Source                       *SourceRef             `protobuf:"bytes,10,opt,name=source"`
+	xxx_hidden_LogicalKey                   string                 `protobuf:"bytes,11,opt,name=logical_key,json=logicalKey"`
+	xxx_hidden_SourceAlias                  string                 `protobuf:"bytes,12,opt,name=source_alias,json=sourceAlias"`
+	xxx_hidden_Desired                      *CameraCaptureSpec     `protobuf:"bytes,16,opt,name=desired"`
+	xxx_hidden_Observed                     *CameraJobObservation  `protobuf:"bytes,17,opt,name=observed"`
+	xxx_hidden_AppliedRevision              int64                  `protobuf:"varint,18,opt,name=applied_revision,json=appliedRevision"`
+	xxx_hidden_Collect                      bool                   `protobuf:"varint,19,opt,name=collect"`
+	xxx_hidden_StartingApplication          *CameraApplication     `protobuf:"bytes,20,opt,name=starting_application,json=startingApplication"`
+	xxx_hidden_AppliedApplication           *CameraApplication     `protobuf:"bytes,21,opt,name=applied_application,json=appliedApplication"`
+	xxx_hidden_PreviousApplications         *[]*CameraApplication  `protobuf:"bytes,22,rep,name=previous_applications,json=previousApplications"`
+	xxx_hidden_AdmittedSpecRevision         int64                  `protobuf:"varint,23,opt,name=admitted_spec_revision,json=admittedSpecRevision"`
+	xxx_hidden_AdmittedAssignmentGeneration int64                  `protobuf:"varint,24,opt,name=admitted_assignment_generation,json=admittedAssignmentGeneration"`
+	xxx_hidden_DateCreated                  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData                  protoimpl.RaceDetectHookData
+	XXX_presence                            [1]uint32
+	unknownFields                           protoimpl.UnknownFields
+	sizeCache                               protoimpl.SizeCache
 }
 
 func (x *CameraBindingAddRequest) Reset() {
@@ -8818,6 +8820,20 @@ func (x *CameraBindingAddRequest) GetPreviousApplications() []*CameraApplication
 	return nil
 }
 
+func (x *CameraBindingAddRequest) GetAdmittedSpecRevision() int64 {
+	if x != nil {
+		return x.xxx_hidden_AdmittedSpecRevision
+	}
+	return 0
+}
+
+func (x *CameraBindingAddRequest) GetAdmittedAssignmentGeneration() int64 {
+	if x != nil {
+		return x.xxx_hidden_AdmittedAssignmentGeneration
+	}
+	return 0
+}
+
 func (x *CameraBindingAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -8830,7 +8846,7 @@ func (x *CameraBindingAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 20)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 22)
 }
 
 func (x *CameraBindingAddRequest) SetTenant(v *TenantRef) {
@@ -8903,6 +8919,14 @@ func (x *CameraBindingAddRequest) SetAppliedApplication(v *CameraApplication) {
 
 func (x *CameraBindingAddRequest) SetPreviousApplications(v []*CameraApplication) {
 	x.xxx_hidden_PreviousApplications = &v
+}
+
+func (x *CameraBindingAddRequest) SetAdmittedSpecRevision(v int64) {
+	x.xxx_hidden_AdmittedSpecRevision = v
+}
+
+func (x *CameraBindingAddRequest) SetAdmittedAssignmentGeneration(v int64) {
+	x.xxx_hidden_AdmittedAssignmentGeneration = v
 }
 
 func (x *CameraBindingAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -9034,26 +9058,28 @@ func (x *CameraBindingAddRequest) ClearDateCreated() {
 type CameraBindingAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id                   []byte
-	Tenant               *TenantRef
-	Site                 *SiteRef
-	Alias                string
-	Name                 string
-	Desc                 string
-	Labels               map[string]string
-	Assignment           *CameraAssignmentRef
-	Device               *CameraDeviceRef
-	Source               *SourceRef
-	LogicalKey           string
-	SourceAlias          string
-	Desired              *CameraCaptureSpec
-	Observed             *CameraJobObservation
-	AppliedRevision      int64
-	Collect              bool
-	StartingApplication  *CameraApplication
-	AppliedApplication   *CameraApplication
-	PreviousApplications []*CameraApplication
-	DateCreated          *timestamppb.Timestamp
+	Id                           []byte
+	Tenant                       *TenantRef
+	Site                         *SiteRef
+	Alias                        string
+	Name                         string
+	Desc                         string
+	Labels                       map[string]string
+	Assignment                   *CameraAssignmentRef
+	Device                       *CameraDeviceRef
+	Source                       *SourceRef
+	LogicalKey                   string
+	SourceAlias                  string
+	Desired                      *CameraCaptureSpec
+	Observed                     *CameraJobObservation
+	AppliedRevision              int64
+	Collect                      bool
+	StartingApplication          *CameraApplication
+	AppliedApplication           *CameraApplication
+	PreviousApplications         []*CameraApplication
+	AdmittedSpecRevision         int64
+	AdmittedAssignmentGeneration int64
+	DateCreated                  *timestamppb.Timestamp
 }
 
 func (b0 CameraBindingAddRequest_builder) Build() *CameraBindingAddRequest {
@@ -9061,7 +9087,7 @@ func (b0 CameraBindingAddRequest_builder) Build() *CameraBindingAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 20)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 22)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -9082,6 +9108,8 @@ func (b0 CameraBindingAddRequest_builder) Build() *CameraBindingAddRequest {
 	x.xxx_hidden_StartingApplication = b.StartingApplication
 	x.xxx_hidden_AppliedApplication = b.AppliedApplication
 	x.xxx_hidden_PreviousApplications = &b.PreviousApplications
+	x.xxx_hidden_AdmittedSpecRevision = b.AdmittedSpecRevision
+	x.xxx_hidden_AdmittedAssignmentGeneration = b.AdmittedAssignmentGeneration
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -9565,33 +9593,35 @@ func (b0 CameraBindingRefBySource_builder) Build() *CameraBindingRefBySource {
 }
 
 type CameraBindingSelect struct {
-	state                           protoimpl.MessageState  `protogen:"opaque.v1"`
-	xxx_hidden_All                  bool                    `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_Tenant               *TenantSelect           `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Site                 *SiteSelect             `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Alias                bool                    `protobuf:"varint,4,opt,name=alias"`
-	xxx_hidden_Name                 bool                    `protobuf:"varint,5,opt,name=name"`
-	xxx_hidden_Desc                 bool                    `protobuf:"varint,6,opt,name=desc"`
-	xxx_hidden_Labels               bool                    `protobuf:"varint,7,opt,name=labels"`
-	xxx_hidden_Assignment           *CameraAssignmentSelect `protobuf:"bytes,8,opt,name=assignment"`
-	xxx_hidden_Device               *CameraDeviceSelect     `protobuf:"bytes,9,opt,name=device"`
-	xxx_hidden_Source               *SourceSelect           `protobuf:"bytes,10,opt,name=source"`
-	xxx_hidden_LogicalKey           bool                    `protobuf:"varint,11,opt,name=logical_key,json=logicalKey"`
-	xxx_hidden_SourceAlias          bool                    `protobuf:"varint,12,opt,name=source_alias,json=sourceAlias"`
-	xxx_hidden_Desired              bool                    `protobuf:"varint,16,opt,name=desired"`
-	xxx_hidden_Observed             bool                    `protobuf:"varint,17,opt,name=observed"`
-	xxx_hidden_AppliedRevision      bool                    `protobuf:"varint,18,opt,name=applied_revision,json=appliedRevision"`
-	xxx_hidden_Collect              bool                    `protobuf:"varint,19,opt,name=collect"`
-	xxx_hidden_StartingApplication  bool                    `protobuf:"varint,20,opt,name=starting_application,json=startingApplication"`
-	xxx_hidden_AppliedApplication   bool                    `protobuf:"varint,21,opt,name=applied_application,json=appliedApplication"`
-	xxx_hidden_PreviousApplications bool                    `protobuf:"varint,22,opt,name=previous_applications,json=previousApplications"`
-	xxx_hidden_DateUpdated          bool                    `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased           bool                    `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated          bool                    `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData          protoimpl.RaceDetectHookData
-	XXX_presence                    [1]uint32
-	unknownFields                   protoimpl.UnknownFields
-	sizeCache                       protoimpl.SizeCache
+	state                                   protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_All                          bool                    `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Tenant                       *TenantSelect           `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Site                         *SiteSelect             `protobuf:"bytes,3,opt,name=site"`
+	xxx_hidden_Alias                        bool                    `protobuf:"varint,4,opt,name=alias"`
+	xxx_hidden_Name                         bool                    `protobuf:"varint,5,opt,name=name"`
+	xxx_hidden_Desc                         bool                    `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels                       bool                    `protobuf:"varint,7,opt,name=labels"`
+	xxx_hidden_Assignment                   *CameraAssignmentSelect `protobuf:"bytes,8,opt,name=assignment"`
+	xxx_hidden_Device                       *CameraDeviceSelect     `protobuf:"bytes,9,opt,name=device"`
+	xxx_hidden_Source                       *SourceSelect           `protobuf:"bytes,10,opt,name=source"`
+	xxx_hidden_LogicalKey                   bool                    `protobuf:"varint,11,opt,name=logical_key,json=logicalKey"`
+	xxx_hidden_SourceAlias                  bool                    `protobuf:"varint,12,opt,name=source_alias,json=sourceAlias"`
+	xxx_hidden_Desired                      bool                    `protobuf:"varint,16,opt,name=desired"`
+	xxx_hidden_Observed                     bool                    `protobuf:"varint,17,opt,name=observed"`
+	xxx_hidden_AppliedRevision              bool                    `protobuf:"varint,18,opt,name=applied_revision,json=appliedRevision"`
+	xxx_hidden_Collect                      bool                    `protobuf:"varint,19,opt,name=collect"`
+	xxx_hidden_StartingApplication          bool                    `protobuf:"varint,20,opt,name=starting_application,json=startingApplication"`
+	xxx_hidden_AppliedApplication           bool                    `protobuf:"varint,21,opt,name=applied_application,json=appliedApplication"`
+	xxx_hidden_PreviousApplications         bool                    `protobuf:"varint,22,opt,name=previous_applications,json=previousApplications"`
+	xxx_hidden_AdmittedSpecRevision         bool                    `protobuf:"varint,23,opt,name=admitted_spec_revision,json=admittedSpecRevision"`
+	xxx_hidden_AdmittedAssignmentGeneration bool                    `protobuf:"varint,24,opt,name=admitted_assignment_generation,json=admittedAssignmentGeneration"`
+	xxx_hidden_DateUpdated                  bool                    `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased                   bool                    `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated                  bool                    `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData                  protoimpl.RaceDetectHookData
+	XXX_presence                            [1]uint32
+	unknownFields                           protoimpl.UnknownFields
+	sizeCache                               protoimpl.SizeCache
 }
 
 func (x *CameraBindingSelect) Reset() {
@@ -9752,6 +9782,20 @@ func (x *CameraBindingSelect) GetPreviousApplications() bool {
 	return false
 }
 
+func (x *CameraBindingSelect) GetAdmittedSpecRevision() bool {
+	if x != nil {
+		return x.xxx_hidden_AdmittedSpecRevision
+	}
+	return false
+}
+
+func (x *CameraBindingSelect) GetAdmittedAssignmentGeneration() bool {
+	if x != nil {
+		return x.xxx_hidden_AdmittedAssignmentGeneration
+	}
+	return false
+}
+
 func (x *CameraBindingSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -9775,7 +9819,7 @@ func (x *CameraBindingSelect) GetDateCreated() bool {
 
 func (x *CameraBindingSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 24)
 }
 
 func (x *CameraBindingSelect) SetTenant(v *TenantSelect) {
@@ -9788,22 +9832,22 @@ func (x *CameraBindingSelect) SetSite(v *SiteSelect) {
 
 func (x *CameraBindingSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 24)
 }
 
 func (x *CameraBindingSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 24)
 }
 
 func (x *CameraBindingSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 24)
 }
 
 func (x *CameraBindingSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 24)
 }
 
 func (x *CameraBindingSelect) SetAssignment(v *CameraAssignmentSelect) {
@@ -9820,62 +9864,72 @@ func (x *CameraBindingSelect) SetSource(v *SourceSelect) {
 
 func (x *CameraBindingSelect) SetLogicalKey(v bool) {
 	x.xxx_hidden_LogicalKey = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 24)
 }
 
 func (x *CameraBindingSelect) SetSourceAlias(v bool) {
 	x.xxx_hidden_SourceAlias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 24)
 }
 
 func (x *CameraBindingSelect) SetDesired(v bool) {
 	x.xxx_hidden_Desired = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 24)
 }
 
 func (x *CameraBindingSelect) SetObserved(v bool) {
 	x.xxx_hidden_Observed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 24)
 }
 
 func (x *CameraBindingSelect) SetAppliedRevision(v bool) {
 	x.xxx_hidden_AppliedRevision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 24)
 }
 
 func (x *CameraBindingSelect) SetCollect(v bool) {
 	x.xxx_hidden_Collect = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 24)
 }
 
 func (x *CameraBindingSelect) SetStartingApplication(v bool) {
 	x.xxx_hidden_StartingApplication = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 24)
 }
 
 func (x *CameraBindingSelect) SetAppliedApplication(v bool) {
 	x.xxx_hidden_AppliedApplication = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 24)
 }
 
 func (x *CameraBindingSelect) SetPreviousApplications(v bool) {
 	x.xxx_hidden_PreviousApplications = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 24)
+}
+
+func (x *CameraBindingSelect) SetAdmittedSpecRevision(v bool) {
+	x.xxx_hidden_AdmittedSpecRevision = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 24)
+}
+
+func (x *CameraBindingSelect) SetAdmittedAssignmentGeneration(v bool) {
+	x.xxx_hidden_AdmittedAssignmentGeneration = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 24)
 }
 
 func (x *CameraBindingSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 24)
 }
 
 func (x *CameraBindingSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 24)
 }
 
 func (x *CameraBindingSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 24)
 }
 
 func (x *CameraBindingSelect) HasAll() bool {
@@ -10011,25 +10065,39 @@ func (x *CameraBindingSelect) HasPreviousApplications() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 18)
 }
 
-func (x *CameraBindingSelect) HasDateUpdated() bool {
+func (x *CameraBindingSelect) HasAdmittedSpecRevision() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
 }
 
-func (x *CameraBindingSelect) HasDateErased() bool {
+func (x *CameraBindingSelect) HasAdmittedAssignmentGeneration() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
 }
 
-func (x *CameraBindingSelect) HasDateCreated() bool {
+func (x *CameraBindingSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
+}
+
+func (x *CameraBindingSelect) HasDateErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
+}
+
+func (x *CameraBindingSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 23)
 }
 
 func (x *CameraBindingSelect) ClearAll() {
@@ -10122,46 +10190,58 @@ func (x *CameraBindingSelect) ClearPreviousApplications() {
 	x.xxx_hidden_PreviousApplications = false
 }
 
-func (x *CameraBindingSelect) ClearDateUpdated() {
+func (x *CameraBindingSelect) ClearAdmittedSpecRevision() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
+	x.xxx_hidden_AdmittedSpecRevision = false
+}
+
+func (x *CameraBindingSelect) ClearAdmittedAssignmentGeneration() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 20)
+	x.xxx_hidden_AdmittedAssignmentGeneration = false
+}
+
+func (x *CameraBindingSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *CameraBindingSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 20)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 22)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *CameraBindingSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 23)
 	x.xxx_hidden_DateCreated = false
 }
 
 type CameraBindingSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	All                  *bool
-	Tenant               *TenantSelect
-	Site                 *SiteSelect
-	Alias                *bool
-	Name                 *bool
-	Desc                 *bool
-	Labels               *bool
-	Assignment           *CameraAssignmentSelect
-	Device               *CameraDeviceSelect
-	Source               *SourceSelect
-	LogicalKey           *bool
-	SourceAlias          *bool
-	Desired              *bool
-	Observed             *bool
-	AppliedRevision      *bool
-	Collect              *bool
-	StartingApplication  *bool
-	AppliedApplication   *bool
-	PreviousApplications *bool
-	DateUpdated          *bool
-	DateErased           *bool
-	DateCreated          *bool
+	All                          *bool
+	Tenant                       *TenantSelect
+	Site                         *SiteSelect
+	Alias                        *bool
+	Name                         *bool
+	Desc                         *bool
+	Labels                       *bool
+	Assignment                   *CameraAssignmentSelect
+	Device                       *CameraDeviceSelect
+	Source                       *SourceSelect
+	LogicalKey                   *bool
+	SourceAlias                  *bool
+	Desired                      *bool
+	Observed                     *bool
+	AppliedRevision              *bool
+	Collect                      *bool
+	StartingApplication          *bool
+	AppliedApplication           *bool
+	PreviousApplications         *bool
+	AdmittedSpecRevision         *bool
+	AdmittedAssignmentGeneration *bool
+	DateUpdated                  *bool
+	DateErased                   *bool
+	DateCreated                  *bool
 }
 
 func (b0 CameraBindingSelect_builder) Build() *CameraBindingSelect {
@@ -10169,105 +10249,115 @@ func (b0 CameraBindingSelect_builder) Build() *CameraBindingSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 24)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 24)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 24)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 24)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 24)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	x.xxx_hidden_Assignment = b.Assignment
 	x.xxx_hidden_Device = b.Device
 	x.xxx_hidden_Source = b.Source
 	if b.LogicalKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 24)
 		x.xxx_hidden_LogicalKey = *b.LogicalKey
 	}
 	if b.SourceAlias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 24)
 		x.xxx_hidden_SourceAlias = *b.SourceAlias
 	}
 	if b.Desired != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 24)
 		x.xxx_hidden_Desired = *b.Desired
 	}
 	if b.Observed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 24)
 		x.xxx_hidden_Observed = *b.Observed
 	}
 	if b.AppliedRevision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 24)
 		x.xxx_hidden_AppliedRevision = *b.AppliedRevision
 	}
 	if b.Collect != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 24)
 		x.xxx_hidden_Collect = *b.Collect
 	}
 	if b.StartingApplication != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 24)
 		x.xxx_hidden_StartingApplication = *b.StartingApplication
 	}
 	if b.AppliedApplication != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 24)
 		x.xxx_hidden_AppliedApplication = *b.AppliedApplication
 	}
 	if b.PreviousApplications != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 24)
 		x.xxx_hidden_PreviousApplications = *b.PreviousApplications
 	}
+	if b.AdmittedSpecRevision != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 24)
+		x.xxx_hidden_AdmittedSpecRevision = *b.AdmittedSpecRevision
+	}
+	if b.AdmittedAssignmentGeneration != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 24)
+		x.xxx_hidden_AdmittedAssignmentGeneration = *b.AdmittedAssignmentGeneration
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 24)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 24)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 24)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
 }
 
 type CameraBindingPatchRequest struct {
-	state                              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref                     *CameraBindingRef      `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Alias                   *string                `protobuf:"bytes,8,opt,name=alias"`
-	xxx_hidden_Name                    *string                `protobuf:"bytes,10,opt,name=name"`
-	xxx_hidden_Desc                    *string                `protobuf:"bytes,12,opt,name=desc"`
-	xxx_hidden_Labels                  map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Desired                 *CameraCaptureSpec     `protobuf:"bytes,32,opt,name=desired"`
-	xxx_hidden_DesiredNull             bool                   `protobuf:"varint,33,opt,name=desired_null,json=desiredNull"`
-	xxx_hidden_Observed                *CameraJobObservation  `protobuf:"bytes,34,opt,name=observed"`
-	xxx_hidden_ObservedNull            bool                   `protobuf:"varint,35,opt,name=observed_null,json=observedNull"`
-	xxx_hidden_AppliedRevision         int64                  `protobuf:"varint,36,opt,name=applied_revision,json=appliedRevision"`
-	xxx_hidden_Collect                 bool                   `protobuf:"varint,38,opt,name=collect"`
-	xxx_hidden_StartingApplication     *CameraApplication     `protobuf:"bytes,40,opt,name=starting_application,json=startingApplication"`
-	xxx_hidden_StartingApplicationNull bool                   `protobuf:"varint,41,opt,name=starting_application_null,json=startingApplicationNull"`
-	xxx_hidden_AppliedApplication      *CameraApplication     `protobuf:"bytes,42,opt,name=applied_application,json=appliedApplication"`
-	xxx_hidden_AppliedApplicationNull  bool                   `protobuf:"varint,43,opt,name=applied_application_null,json=appliedApplicationNull"`
-	xxx_hidden_PreviousApplications    *[]*CameraApplication  `protobuf:"bytes,44,rep,name=previous_applications,json=previousApplications"`
-	xxx_hidden_DateUpdated             *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateUpdatedForce        bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
-	XXX_raceDetectHookData             protoimpl.RaceDetectHookData
-	XXX_presence                       [1]uint32
-	unknownFields                      protoimpl.UnknownFields
-	sizeCache                          protoimpl.SizeCache
+	state                                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref                          *CameraBindingRef      `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Alias                        *string                `protobuf:"bytes,8,opt,name=alias"`
+	xxx_hidden_Name                         *string                `protobuf:"bytes,10,opt,name=name"`
+	xxx_hidden_Desc                         *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels                       map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Desired                      *CameraCaptureSpec     `protobuf:"bytes,32,opt,name=desired"`
+	xxx_hidden_DesiredNull                  bool                   `protobuf:"varint,33,opt,name=desired_null,json=desiredNull"`
+	xxx_hidden_Observed                     *CameraJobObservation  `protobuf:"bytes,34,opt,name=observed"`
+	xxx_hidden_ObservedNull                 bool                   `protobuf:"varint,35,opt,name=observed_null,json=observedNull"`
+	xxx_hidden_AppliedRevision              int64                  `protobuf:"varint,36,opt,name=applied_revision,json=appliedRevision"`
+	xxx_hidden_Collect                      bool                   `protobuf:"varint,38,opt,name=collect"`
+	xxx_hidden_StartingApplication          *CameraApplication     `protobuf:"bytes,40,opt,name=starting_application,json=startingApplication"`
+	xxx_hidden_StartingApplicationNull      bool                   `protobuf:"varint,41,opt,name=starting_application_null,json=startingApplicationNull"`
+	xxx_hidden_AppliedApplication           *CameraApplication     `protobuf:"bytes,42,opt,name=applied_application,json=appliedApplication"`
+	xxx_hidden_AppliedApplicationNull       bool                   `protobuf:"varint,43,opt,name=applied_application_null,json=appliedApplicationNull"`
+	xxx_hidden_PreviousApplications         *[]*CameraApplication  `protobuf:"bytes,44,rep,name=previous_applications,json=previousApplications"`
+	xxx_hidden_AdmittedSpecRevision         int64                  `protobuf:"varint,46,opt,name=admitted_spec_revision,json=admittedSpecRevision"`
+	xxx_hidden_AdmittedAssignmentGeneration int64                  `protobuf:"varint,48,opt,name=admitted_assignment_generation,json=admittedAssignmentGeneration"`
+	xxx_hidden_DateUpdated                  *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateUpdatedForce             bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
+	XXX_raceDetectHookData                  protoimpl.RaceDetectHookData
+	XXX_presence                            [1]uint32
+	unknownFields                           protoimpl.UnknownFields
+	sizeCache                               protoimpl.SizeCache
 }
 
 func (x *CameraBindingPatchRequest) Reset() {
@@ -10418,6 +10508,20 @@ func (x *CameraBindingPatchRequest) GetPreviousApplications() []*CameraApplicati
 	return nil
 }
 
+func (x *CameraBindingPatchRequest) GetAdmittedSpecRevision() int64 {
+	if x != nil {
+		return x.xxx_hidden_AdmittedSpecRevision
+	}
+	return 0
+}
+
+func (x *CameraBindingPatchRequest) GetAdmittedAssignmentGeneration() int64 {
+	if x != nil {
+		return x.xxx_hidden_AdmittedAssignmentGeneration
+	}
+	return 0
+}
+
 func (x *CameraBindingPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -10438,17 +10542,17 @@ func (x *CameraBindingPatchRequest) SetRef(v *CameraBindingRef) {
 
 func (x *CameraBindingPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetLabels(v map[string]string) {
@@ -10461,7 +10565,7 @@ func (x *CameraBindingPatchRequest) SetDesired(v *CameraCaptureSpec) {
 
 func (x *CameraBindingPatchRequest) SetDesiredNull(v bool) {
 	x.xxx_hidden_DesiredNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetObserved(v *CameraJobObservation) {
@@ -10470,17 +10574,17 @@ func (x *CameraBindingPatchRequest) SetObserved(v *CameraJobObservation) {
 
 func (x *CameraBindingPatchRequest) SetObservedNull(v bool) {
 	x.xxx_hidden_ObservedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetAppliedRevision(v int64) {
 	x.xxx_hidden_AppliedRevision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetCollect(v bool) {
 	x.xxx_hidden_Collect = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetStartingApplication(v *CameraApplication) {
@@ -10489,7 +10593,7 @@ func (x *CameraBindingPatchRequest) SetStartingApplication(v *CameraApplication)
 
 func (x *CameraBindingPatchRequest) SetStartingApplicationNull(v bool) {
 	x.xxx_hidden_StartingApplicationNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetAppliedApplication(v *CameraApplication) {
@@ -10498,11 +10602,21 @@ func (x *CameraBindingPatchRequest) SetAppliedApplication(v *CameraApplication) 
 
 func (x *CameraBindingPatchRequest) SetAppliedApplicationNull(v bool) {
 	x.xxx_hidden_AppliedApplicationNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetPreviousApplications(v []*CameraApplication) {
 	x.xxx_hidden_PreviousApplications = &v
+}
+
+func (x *CameraBindingPatchRequest) SetAdmittedSpecRevision(v int64) {
+	x.xxx_hidden_AdmittedSpecRevision = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 20)
+}
+
+func (x *CameraBindingPatchRequest) SetAdmittedAssignmentGeneration(v int64) {
+	x.xxx_hidden_AdmittedAssignmentGeneration = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 20)
 }
 
 func (x *CameraBindingPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -10511,7 +10625,7 @@ func (x *CameraBindingPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *CameraBindingPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 20)
 }
 
 func (x *CameraBindingPatchRequest) HasRef() bool {
@@ -10612,6 +10726,20 @@ func (x *CameraBindingPatchRequest) HasAppliedApplicationNull() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
 }
 
+func (x *CameraBindingPatchRequest) HasAdmittedSpecRevision() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 16)
+}
+
+func (x *CameraBindingPatchRequest) HasAdmittedAssignmentGeneration() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
+}
+
 func (x *CameraBindingPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -10623,7 +10751,7 @@ func (x *CameraBindingPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
 }
 
 func (x *CameraBindingPatchRequest) ClearRef() {
@@ -10691,12 +10819,22 @@ func (x *CameraBindingPatchRequest) ClearAppliedApplicationNull() {
 	x.xxx_hidden_AppliedApplicationNull = false
 }
 
+func (x *CameraBindingPatchRequest) ClearAdmittedSpecRevision() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 16)
+	x.xxx_hidden_AdmittedSpecRevision = 0
+}
+
+func (x *CameraBindingPatchRequest) ClearAdmittedAssignmentGeneration() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 17)
+	x.xxx_hidden_AdmittedAssignmentGeneration = 0
+}
+
 func (x *CameraBindingPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *CameraBindingPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 17)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -10733,8 +10871,10 @@ type CameraBindingPatchRequest_builder struct {
 	// It takes a field of its own because an unset value already means
 	// "leave it alone", so no value could have meant NULL. It wins
 	// outright: setting both this and applied_application clears.
-	AppliedApplicationNull *bool
-	PreviousApplications   []*CameraApplication
+	AppliedApplicationNull       *bool
+	PreviousApplications         []*CameraApplication
+	AdmittedSpecRevision         *int64
+	AdmittedAssignmentGeneration *int64
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -10757,50 +10897,58 @@ func (b0 CameraBindingPatchRequest_builder) Build() *CameraBindingPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 20)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 20)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 20)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Desired = b.Desired
 	if b.DesiredNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 20)
 		x.xxx_hidden_DesiredNull = *b.DesiredNull
 	}
 	x.xxx_hidden_Observed = b.Observed
 	if b.ObservedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 20)
 		x.xxx_hidden_ObservedNull = *b.ObservedNull
 	}
 	if b.AppliedRevision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 20)
 		x.xxx_hidden_AppliedRevision = *b.AppliedRevision
 	}
 	if b.Collect != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 20)
 		x.xxx_hidden_Collect = *b.Collect
 	}
 	x.xxx_hidden_StartingApplication = b.StartingApplication
 	if b.StartingApplicationNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 20)
 		x.xxx_hidden_StartingApplicationNull = *b.StartingApplicationNull
 	}
 	x.xxx_hidden_AppliedApplication = b.AppliedApplication
 	if b.AppliedApplicationNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 20)
 		x.xxx_hidden_AppliedApplicationNull = *b.AppliedApplicationNull
 	}
 	x.xxx_hidden_PreviousApplications = &b.PreviousApplications
+	if b.AdmittedSpecRevision != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 20)
+		x.xxx_hidden_AdmittedSpecRevision = *b.AdmittedSpecRevision
+	}
+	if b.AdmittedAssignmentGeneration != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 20)
+		x.xxx_hidden_AdmittedAssignmentGeneration = *b.AdmittedAssignmentGeneration
+	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 20)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -16282,7 +16430,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\bsequence\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\bsequence\x12*\n" +
 	"\rcapture_epoch\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\fcaptureEpoch\x12/\n" +
 	"\x05media\x18\x04 \x01(\v2\x19.shale.CameraRuntimeMediaR\x05media\x12I\n" +
-	"\x0fused_credential\x18\x05 \x01(\v2 .shale.CameraCredentialReferenceR\x0eusedCredential\"\x97\b\n" +
+	"\x0fused_credential\x18\x05 \x01(\v2 .shale.CameraCredentialReferenceR\x0eusedCredential\"\xa1\t\n" +
 	"\x17CameraBindingAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -16306,7 +16454,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\acollect\x18\x13 \x01(\bB\x05\xaa\x01\x02\b\x02R\acollect\x12K\n" +
 	"\x14starting_application\x18\x14 \x01(\v2\x18.shale.CameraApplicationR\x13startingApplication\x12I\n" +
 	"\x13applied_application\x18\x15 \x01(\v2\x18.shale.CameraApplicationR\x12appliedApplication\x12M\n" +
-	"\x15previous_applications\x18\x16 \x03(\v2\x18.shale.CameraApplicationR\x14previousApplications\x12=\n" +
+	"\x15previous_applications\x18\x16 \x03(\v2\x18.shale.CameraApplicationR\x14previousApplications\x12;\n" +
+	"\x16admitted_spec_revision\x18\x17 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x14admittedSpecRevision\x12K\n" +
+	"\x1eadmitted_assignment_generation\x18\x18 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x1cadmittedAssignmentGeneration\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -16326,7 +16476,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"logicalKey\"D\n" +
 	"\x18CameraBindingRefBySource\x12(\n" +
 	"\x06source\x18\n" +
-	" \x01(\v2\x10.shale.SourceRefR\x06source\"\xaf\x06\n" +
+	" \x01(\v2\x10.shale.SourceRefR\x06source\"\xab\a\n" +
 	"\x13CameraBindingSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -16350,11 +16500,13 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\acollect\x18\x13 \x01(\bR\acollect\x121\n" +
 	"\x14starting_application\x18\x14 \x01(\bR\x13startingApplication\x12/\n" +
 	"\x13applied_application\x18\x15 \x01(\bR\x12appliedApplication\x123\n" +
-	"\x15previous_applications\x18\x16 \x01(\bR\x14previousApplications\x12!\n" +
+	"\x15previous_applications\x18\x16 \x01(\bR\x14previousApplications\x124\n" +
+	"\x16admitted_spec_revision\x18\x17 \x01(\bR\x14admittedSpecRevision\x12D\n" +
+	"\x1eadmitted_assignment_generation\x18\x18 \x01(\bR\x1cadmittedAssignmentGeneration\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc9\a\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc5\b\n" +
 	"\x19CameraBindingPatchRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraBindingRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -16372,7 +16524,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x19starting_application_null\x18) \x01(\bR\x17startingApplicationNull\x12I\n" +
 	"\x13applied_application\x18* \x01(\v2\x18.shale.CameraApplicationR\x12appliedApplication\x128\n" +
 	"\x18applied_application_null\x18+ \x01(\bR\x16appliedApplicationNull\x12M\n" +
-	"\x15previous_applications\x18, \x03(\v2\x18.shale.CameraApplicationR\x14previousApplications\x12=\n" +
+	"\x15previous_applications\x18, \x03(\v2\x18.shale.CameraApplicationR\x14previousApplications\x124\n" +
+	"\x16admitted_spec_revision\x18. \x01(\x03R\x14admittedSpecRevision\x12D\n" +
+	"\x1eadmitted_assignment_generation\x180 \x01(\x03R\x1cadmittedAssignmentGeneration\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

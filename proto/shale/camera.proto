@@ -309,6 +309,10 @@ message CameraBinding {
   // At most sixteen server-retired incarnations for bounded historical RAM
   // drain. They never authorize ACK, current live or ACTIVE readiness.
   repeated CameraApplication previous_applications = 22;
+  // A strict full-catalog negotiation commits these per-source fences. A
+  // desired publication or collection re-enable cannot reuse an old admission.
+  int64 admitted_spec_revision = 23;
+  int64 admitted_assignment_generation = 24;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

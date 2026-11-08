@@ -356,6 +356,8 @@ var (
 		{Name: "starting_application", Type: field.TypeJson, Nullable: true},
 		{Name: "applied_application", Type: field.TypeJson, Nullable: true},
 		{Name: "previous_applications", Type: field.TypeJson, Nullable: true},
+		{Name: "admitted_spec_revision", Type: field.TypeInt64},
+		{Name: "admitted_assignment_generation", Type: field.TypeInt64},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -373,31 +375,31 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "camerabinding_tenant_tenant",
-				Columns:    []*schema.Column{CamerabindingColumns[17]},
+				Columns:    []*schema.Column{CamerabindingColumns[19]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "camerabinding_site_site",
-				Columns:    []*schema.Column{CamerabindingColumns[18]},
+				Columns:    []*schema.Column{CamerabindingColumns[20]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "camerabinding_cameraassignment_assignment",
-				Columns:    []*schema.Column{CamerabindingColumns[19]},
+				Columns:    []*schema.Column{CamerabindingColumns[21]},
 				RefColumns: []*schema.Column{CameraassignmentColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "camerabinding_cameradevice_device",
-				Columns:    []*schema.Column{CamerabindingColumns[20]},
+				Columns:    []*schema.Column{CamerabindingColumns[22]},
 				RefColumns: []*schema.Column{CameradeviceColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "camerabinding_source_source",
-				Columns:    []*schema.Column{CamerabindingColumns[21]},
+				Columns:    []*schema.Column{CamerabindingColumns[23]},
 				RefColumns: []*schema.Column{SourceColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -406,12 +408,12 @@ var (
 			{
 				Name:    "camerabinding_page",
 				Unique:  false,
-				Columns: []*schema.Column{CamerabindingColumns[17], CamerabindingColumns[16], CamerabindingColumns[0]},
+				Columns: []*schema.Column{CamerabindingColumns[19], CamerabindingColumns[18], CamerabindingColumns[0]},
 			},
 			{
 				Name:    "camerabinding_source",
 				Unique:  true,
-				Columns: []*schema.Column{CamerabindingColumns[21]},
+				Columns: []*schema.Column{CamerabindingColumns[23]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -419,7 +421,7 @@ var (
 			{
 				Name:    "camerabinding_logical",
 				Unique:  true,
-				Columns: []*schema.Column{CamerabindingColumns[17], CamerabindingColumns[5]},
+				Columns: []*schema.Column{CamerabindingColumns[19], CamerabindingColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

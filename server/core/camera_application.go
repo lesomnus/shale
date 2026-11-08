@@ -122,6 +122,9 @@ func (s coreCameraAssignment) BeginApply(ctx context.Context, r *api.CameraBegin
 				return status.Error(codes.Aborted, "capture starting intent was superseded")
 			}
 		}
+		if b.GetAdmittedSpecRevision() != r.GetTarget().GetSpecRevision() || b.GetAdmittedAssignmentGeneration() != r.GetTarget().GetAssignmentGeneration() {
+			return failed("current capture specification must pass strict managed admission before BeginApply")
+		}
 		var nonce [16]byte
 		if _, err := rand.Read(nonce[:]); err != nil {
 			return status.Error(codes.Internal, "cannot allocate capture epoch")
@@ -130,7 +133,7 @@ func (s coreCameraAssignment) BeginApply(ctx context.Context, r *api.CameraBegin
 		if err != nil {
 			return err
 		}
-		if source.GetProfile().GetMaxBitrate() <= 0 || source.GetProfile().GetDurationSeconds() <= 0 {
+		if source.GetProfile().GetMaxBitrate() < b.GetDesired().GetProfile().GetMaxBitrateBps() || source.GetProfile().GetDurationSeconds() <= 0 {
 			return failed("managed capture must negotiate its storage profile before BeginApply")
 		}
 		app := api.CameraApplication_builder{Target: r.GetTarget(), Sequence: prior.GetSequence() + 1, CaptureEpoch: hex.EncodeToString(nonce[:]), IntentKey: r.GetIntentKey(), DateStarted: timestamppb.New(s.d.now()), ProducerId: a.GetProducer().GetId(), SegmentProfile: source.GetProfile()}.Build()

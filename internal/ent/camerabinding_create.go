@@ -107,6 +107,18 @@ func (_c *CameraBindingCreate) SetPreviousApplications(v []*api.CameraApplicatio
 	return _c
 }
 
+// SetAdmittedSpecRevision sets the "admitted_spec_revision" field.
+func (_c *CameraBindingCreate) SetAdmittedSpecRevision(v int64) *CameraBindingCreate {
+	_c.mutation.SetAdmittedSpecRevision(v)
+	return _c
+}
+
+// SetAdmittedAssignmentGeneration sets the "admitted_assignment_generation" field.
+func (_c *CameraBindingCreate) SetAdmittedAssignmentGeneration(v int64) *CameraBindingCreate {
+	_c.mutation.SetAdmittedAssignmentGeneration(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraBindingCreate) SetDateUpdated(v time.Time) *CameraBindingCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -267,6 +279,12 @@ func (_c *CameraBindingCreate) check() error {
 	}
 	if _, ok := _c.mutation.Collect(); !ok {
 		return &ValidationError{Name: "collect", err: errors.New(`ent: missing required field "CameraBinding.collect"`)}
+	}
+	if _, ok := _c.mutation.AdmittedSpecRevision(); !ok {
+		return &ValidationError{Name: "admitted_spec_revision", err: errors.New(`ent: missing required field "CameraBinding.admitted_spec_revision"`)}
+	}
+	if _, ok := _c.mutation.AdmittedAssignmentGeneration(); !ok {
+		return &ValidationError{Name: "admitted_assignment_generation", err: errors.New(`ent: missing required field "CameraBinding.admitted_assignment_generation"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "CameraBinding.date_updated"`)}
@@ -435,6 +453,14 @@ func (_c *CameraBindingCreate) createSpec() (*CameraBinding, *sqlgraph.CreateSpe
 		}
 		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, vv)
 		_node.PreviousApplications = value
+	}
+	if value, ok := _c.mutation.AdmittedSpecRevision(); ok {
+		_spec.SetField(camerabinding.FieldAdmittedSpecRevision, field.TypeInt64, value)
+		_node.AdmittedSpecRevision = value
+	}
+	if value, ok := _c.mutation.AdmittedAssignmentGeneration(); ok {
+		_spec.SetField(camerabinding.FieldAdmittedAssignmentGeneration, field.TypeInt64, value)
+		_node.AdmittedAssignmentGeneration = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)

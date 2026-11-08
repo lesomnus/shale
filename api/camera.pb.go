@@ -3450,31 +3450,33 @@ func (b0 CameraAssignment_builder) Build() *CameraAssignment {
 
 // CameraBinding is tenant/site scoped; custom CP operations own its invariants.
 type CameraBinding struct {
-	state                           protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id                   []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant               *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Site                 *Site                  `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Alias                string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name                 string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc                 string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels               map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Assignment           *CameraAssignment      `protobuf:"bytes,8,opt,name=assignment"`
-	xxx_hidden_Device               *CameraDevice          `protobuf:"bytes,9,opt,name=device"`
-	xxx_hidden_Source               *Source                `protobuf:"bytes,10,opt,name=source"`
-	xxx_hidden_LogicalKey           string                 `protobuf:"bytes,11,opt,name=logical_key,json=logicalKey"`
-	xxx_hidden_SourceAlias          string                 `protobuf:"bytes,12,opt,name=source_alias,json=sourceAlias"`
-	xxx_hidden_Desired              *CameraCaptureSpec     `protobuf:"bytes,16,opt,name=desired"`
-	xxx_hidden_Observed             *CameraJobObservation  `protobuf:"bytes,17,opt,name=observed"`
-	xxx_hidden_AppliedRevision      int64                  `protobuf:"varint,18,opt,name=applied_revision,json=appliedRevision"`
-	xxx_hidden_Collect              bool                   `protobuf:"varint,19,opt,name=collect"`
-	xxx_hidden_StartingApplication  *CameraApplication     `protobuf:"bytes,20,opt,name=starting_application,json=startingApplication"`
-	xxx_hidden_AppliedApplication   *CameraApplication     `protobuf:"bytes,21,opt,name=applied_application,json=appliedApplication"`
-	xxx_hidden_PreviousApplications *[]*CameraApplication  `protobuf:"bytes,22,rep,name=previous_applications,json=previousApplications"`
-	xxx_hidden_DateUpdated          *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased           *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated          *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	unknownFields                   protoimpl.UnknownFields
-	sizeCache                       protoimpl.SizeCache
+	state                                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                           []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant                       *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Site                         *Site                  `protobuf:"bytes,3,opt,name=site"`
+	xxx_hidden_Alias                        string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name                         string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc                         string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels                       map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Assignment                   *CameraAssignment      `protobuf:"bytes,8,opt,name=assignment"`
+	xxx_hidden_Device                       *CameraDevice          `protobuf:"bytes,9,opt,name=device"`
+	xxx_hidden_Source                       *Source                `protobuf:"bytes,10,opt,name=source"`
+	xxx_hidden_LogicalKey                   string                 `protobuf:"bytes,11,opt,name=logical_key,json=logicalKey"`
+	xxx_hidden_SourceAlias                  string                 `protobuf:"bytes,12,opt,name=source_alias,json=sourceAlias"`
+	xxx_hidden_Desired                      *CameraCaptureSpec     `protobuf:"bytes,16,opt,name=desired"`
+	xxx_hidden_Observed                     *CameraJobObservation  `protobuf:"bytes,17,opt,name=observed"`
+	xxx_hidden_AppliedRevision              int64                  `protobuf:"varint,18,opt,name=applied_revision,json=appliedRevision"`
+	xxx_hidden_Collect                      bool                   `protobuf:"varint,19,opt,name=collect"`
+	xxx_hidden_StartingApplication          *CameraApplication     `protobuf:"bytes,20,opt,name=starting_application,json=startingApplication"`
+	xxx_hidden_AppliedApplication           *CameraApplication     `protobuf:"bytes,21,opt,name=applied_application,json=appliedApplication"`
+	xxx_hidden_PreviousApplications         *[]*CameraApplication  `protobuf:"bytes,22,rep,name=previous_applications,json=previousApplications"`
+	xxx_hidden_AdmittedSpecRevision         int64                  `protobuf:"varint,23,opt,name=admitted_spec_revision,json=admittedSpecRevision"`
+	xxx_hidden_AdmittedAssignmentGeneration int64                  `protobuf:"varint,24,opt,name=admitted_assignment_generation,json=admittedAssignmentGeneration"`
+	xxx_hidden_DateUpdated                  *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased                   *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated                  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields                           protoimpl.UnknownFields
+	sizeCache                               protoimpl.SizeCache
 }
 
 func (x *CameraBinding) Reset() {
@@ -3637,6 +3639,20 @@ func (x *CameraBinding) GetPreviousApplications() []*CameraApplication {
 	return nil
 }
 
+func (x *CameraBinding) GetAdmittedSpecRevision() int64 {
+	if x != nil {
+		return x.xxx_hidden_AdmittedSpecRevision
+	}
+	return 0
+}
+
+func (x *CameraBinding) GetAdmittedAssignmentGeneration() int64 {
+	if x != nil {
+		return x.xxx_hidden_AdmittedAssignmentGeneration
+	}
+	return 0
+}
+
 func (x *CameraBinding) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -3735,6 +3751,14 @@ func (x *CameraBinding) SetAppliedApplication(v *CameraApplication) {
 
 func (x *CameraBinding) SetPreviousApplications(v []*CameraApplication) {
 	x.xxx_hidden_PreviousApplications = &v
+}
+
+func (x *CameraBinding) SetAdmittedSpecRevision(v int64) {
+	x.xxx_hidden_AdmittedSpecRevision = v
+}
+
+func (x *CameraBinding) SetAdmittedAssignmentGeneration(v int64) {
+	x.xxx_hidden_AdmittedAssignmentGeneration = v
 }
 
 func (x *CameraBinding) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -3907,9 +3931,13 @@ type CameraBinding_builder struct {
 	// At most sixteen server-retired incarnations for bounded historical RAM
 	// drain. They never authorize ACK, current live or ACTIVE readiness.
 	PreviousApplications []*CameraApplication
-	DateUpdated          *timestamppb.Timestamp
-	DateErased           *timestamppb.Timestamp
-	DateCreated          *timestamppb.Timestamp
+	// A strict full-catalog negotiation commits these per-source fences. A
+	// desired publication or collection re-enable cannot reuse an old admission.
+	AdmittedSpecRevision         int64
+	AdmittedAssignmentGeneration int64
+	DateUpdated                  *timestamppb.Timestamp
+	DateErased                   *timestamppb.Timestamp
+	DateCreated                  *timestamppb.Timestamp
 }
 
 func (b0 CameraBinding_builder) Build() *CameraBinding {
@@ -3935,6 +3963,8 @@ func (b0 CameraBinding_builder) Build() *CameraBinding {
 	x.xxx_hidden_StartingApplication = b.StartingApplication
 	x.xxx_hidden_AppliedApplication = b.AppliedApplication
 	x.xxx_hidden_PreviousApplications = &b.PreviousApplications
+	x.xxx_hidden_AdmittedSpecRevision = b.AdmittedSpecRevision
+	x.xxx_hidden_AdmittedAssignmentGeneration = b.AdmittedAssignmentGeneration
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -4744,7 +4774,7 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\anetwork\x1a\n" +
 	"\n" +
 	"\bproducer\x1a\x05\n" +
-	"\x03set 2(\xf4\x03:\x00\"\x82\v\n" +
+	"\x03set 2(\xf4\x03:\x00\"\xfe\v\n" +
 	"\rCameraBinding\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -4768,7 +4798,9 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\acollect\x18\x13 \x01(\bR\acollect\x12K\n" +
 	"\x14starting_application\x18\x14 \x01(\v2\x18.shale.CameraApplicationR\x13startingApplication\x12I\n" +
 	"\x13applied_application\x18\x15 \x01(\v2\x18.shale.CameraApplicationR\x12appliedApplication\x12M\n" +
-	"\x15previous_applications\x18\x16 \x03(\v2\x18.shale.CameraApplicationR\x14previousApplications\x12F\n" +
+	"\x15previous_applications\x18\x16 \x03(\v2\x18.shale.CameraApplicationR\x14previousApplications\x124\n" +
+	"\x16admitted_spec_revision\x18\x17 \x01(\x03R\x14admittedSpecRevision\x12D\n" +
+	"\x1eadmitted_assignment_generation\x18\x18 \x01(\x03R\x1cadmittedAssignmentGeneration\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

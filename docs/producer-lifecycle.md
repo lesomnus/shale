@@ -51,6 +51,17 @@ while the replacement waits for capacity. Replacement BeginApply, explicit stop,
 assignment fencing and ownership revocation retire the old execution. A newer
 desired specification does not make the old execution qualify for the new job.
 
+Strict negotiation atomically records each Binding's admitted specification and
+assignment generation. BeginApply requires those exact fences; stale nonzero
+Source metadata cannot authorize a replacement after capacity rejection. Stop
+releases that admission, and re-enabling collection must reserve capacity again.
+An unchanged admitted camera can reconnect with a fresh ticket at the latest
+catalog while another desired camera waits for capacity. If this same Source's
+desired specification changed, only its already established old input session is
+retained. Once that session ends, restarting requires approval of the current
+desired specification; the runtime does not revive an older input or credential.
+CP credential resolution retains that exact desired-reference contract.
+
 ## Starting, applied and active
 
 The Producer obtains a monotonic BeginApply ticket before every managed capture

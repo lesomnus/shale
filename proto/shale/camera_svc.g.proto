@@ -836,6 +836,8 @@ message CameraBindingAddRequest {
   CameraApplication starting_application = 20;
   CameraApplication applied_application = 21;
   repeated CameraApplication previous_applications = 22;
+  int64 admitted_spec_revision = 23 [features.field_presence = IMPLICIT];
+  int64 admitted_assignment_generation = 24 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -881,6 +883,8 @@ message CameraBindingSelect {
   bool starting_application = 20;
   bool applied_application = 21;
   bool previous_applications = 22;
+  bool admitted_spec_revision = 23;
+  bool admitted_assignment_generation = 24;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -919,6 +923,8 @@ message CameraBindingPatchRequest {
   // outright: setting both this and applied_application clears.
   bool applied_application_null = 43;
   repeated CameraApplication previous_applications = 44;
+  int64 admitted_spec_revision = 46;
+  int64 admitted_assignment_generation = 48;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

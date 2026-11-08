@@ -25666,6 +25666,8 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 12, Name: entCameraBinding.FieldSourceAlias, Type: 9, Nullable: false, Key: 0},
 				{Number: 18, Name: entCameraBinding.FieldAppliedRevision, Type: 3, Nullable: false, Key: 0},
 				{Number: 19, Name: entCameraBinding.FieldCollect, Type: 8, Nullable: false, Key: 0},
+				{Number: 23, Name: entCameraBinding.FieldAdmittedSpecRevision, Type: 3, Nullable: false, Key: 0},
+				{Number: 24, Name: entCameraBinding.FieldAdmittedAssignmentGeneration, Type: 3, Nullable: false, Key: 0},
 				{Number: 13, Name: entCameraBinding.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entCameraBinding.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: entCameraBinding.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
