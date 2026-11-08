@@ -411,6 +411,9 @@ func cameraProgressMedia(run provision.Run, candidate camera.PresetSettings, obs
 	if !proof.GetDecoded() || proof.GetDecodedFrames() != actual.DecodedFrames || proof.GetDurationSeconds() != actual.Duration.Seconds() || proof.GetObservedAt() == nil || !proof.GetObservedAt().AsTime().Equal(actual.ObservedAt) || proof.GetProfile().GetMaxBitrateBps() != actual.Profile.Bitrate {
 		return invalid("progress.verified", "reported media facts differ from the durable independent verification")
 	}
+	if p := proof.GetProfile(); p.GetCodec() != actual.Profile.Codec || int(p.GetWidth()) != actual.Profile.Width || int(p.GetHeight()) != actual.Profile.Height || p.GetFps() != actual.Profile.FPS {
+		return invalid("progress.verified", "reported measured profile differs from the durable independent verification")
+	}
 	v := actual.Profile
 	if v.Codec == "" || v.Width <= 0 || v.Height <= 0 || v.FPS <= 0 || v.Bitrate <= 0 || !cameraProgressActualMatches(v, effective) || !cameraProgressActualMatches(v, observed.GetVerified().GetProfile()) {
 		return invalid("progress.verified", "independently observed media differs from the reported capture profile")

@@ -245,6 +245,7 @@ func TestCameraProgressVerificationMustMatchConfiguredAndReportedMedia(t *testin
 			o.GetVerified().SetObservedAt(timestamppb.New(o.GetVerified().GetObservedAt().AsTime().Add(time.Minute)))
 		}},
 		{"forged-frame-count", func(_ *progressFixture, o *api.CameraJobObservation) { o.GetVerified().SetDecodedFrames(151) }},
+		{"forged-measured-fps", func(_ *progressFixture, o *api.CameraJobObservation) { o.GetVerified().GetProfile().SetFps(30) }},
 		{"forged-duration", func(_ *progressFixture, o *api.CameraJobObservation) { o.GetVerified().SetDurationSeconds(6) }},
 		{"forged-bitrate", func(_ *progressFixture, o *api.CameraJobObservation) {
 			o.GetVerified().GetProfile().SetMaxBitrateBps(1_800_000)
