@@ -2,6 +2,7 @@ edition = "2023";
 package shale;
 import "google/protobuf/timestamp.proto";
 import "shale/camera_preset.proto";
+import "shale/camera_bootstrap.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
 
@@ -57,6 +58,7 @@ message CameraProvisionRequest {
   bool allow_activation = 13;
   bool allow_producer_restart = 14;
   int64 probe_duration_ns = 15;
+  CameraBootstrapProfile bootstrap = 16;
 }
 message CameraProvisionResolution { int32 width = 1; int32 height = 2; }
 message CameraProvisionResolutions { repeated CameraProvisionResolution items = 1; }

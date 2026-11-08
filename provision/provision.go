@@ -48,21 +48,22 @@ const (
 // camera role. A changed desired revision uses a new ID and the same BindingID.
 // Device.ID must be an explicit inventory claim, never an address-derived key.
 type Request struct {
-	ID                   string                 `json:"id"`
-	BindingID            string                 `json:"binding_id"`
-	Scope                camera.EnrollmentScope `json:"scope"`
-	Device               camera.DeviceHint      `json:"device"`
-	Desired              camera.DesiredState    `json:"desired"`
-	UsePreset            bool                   `json:"use_preset,omitempty"`
-	Alias                string                 `json:"alias,omitempty"`
-	Name                 string                 `json:"name,omitempty"`
-	Provider             string                 `json:"provider"`
-	ManagementRef        *camera.CredentialRef  `json:"management_ref,omitempty"`
-	InitialRef           *camera.CredentialRef  `json:"initial_ref,omitempty"`
-	StreamingRef         *camera.CredentialRef  `json:"streaming_ref,omitempty"`
-	AllowActivation      bool                   `json:"allow_activation"`
-	AllowProducerRestart bool                   `json:"allow_producer_restart"`
-	ProbeDuration        time.Duration          `json:"probe_duration,omitempty"`
+	ID                   string                    `json:"id"`
+	BindingID            string                    `json:"binding_id"`
+	Scope                camera.EnrollmentScope    `json:"scope"`
+	Device               camera.DeviceHint         `json:"device"`
+	Desired              camera.DesiredState       `json:"desired"`
+	UsePreset            bool                      `json:"use_preset,omitempty"`
+	Alias                string                    `json:"alias,omitempty"`
+	Name                 string                    `json:"name,omitempty"`
+	Provider             string                    `json:"provider"`
+	ManagementRef        *camera.CredentialRef     `json:"management_ref,omitempty"`
+	InitialRef           *camera.CredentialRef     `json:"initial_ref,omitempty"`
+	StreamingRef         *camera.CredentialRef     `json:"streaming_ref,omitempty"`
+	AllowActivation      bool                      `json:"allow_activation"`
+	AllowProducerRestart bool                      `json:"allow_producer_restart"`
+	ProbeDuration        time.Duration             `json:"probe_duration,omitempty"`
+	Bootstrap            *camera.BootstrapSettings `json:"bootstrap,omitempty"`
 }
 
 type Event struct {
@@ -164,6 +165,9 @@ type Engine struct {
 }
 
 func (q Request) Validate() error {
+	if q.Bootstrap != nil && q.Bootstrap.Validate() != nil {
+		return camera.ErrInvalid
+	}
 	if q.ID == "" || q.BindingID == "" || q.Device.ID == "" || (!q.UsePreset && q.Desired.Revision == "") || q.Provider == "" || q.Scope.TenantID == "" || q.Scope.SetID == "" || q.Scope.ProducerID == "" || q.Scope.NetworkID == "" || len(q.Device.Endpoints) == 0 {
 		return camera.ErrInvalid
 	}
@@ -204,6 +208,10 @@ func Key(parts ...string) string {
 // Execute with apply=false only inspects and plans. Every apply re-inspects the
 // device, including after an ambiguous prior write, before planning another one.
 func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, err error) {
+	if q.Bootstrap != nil {
+		bootstrap := *q.Bootstrap
+		q.Bootstrap = &bootstrap
+	}
 	if err = q.Validate(); err != nil {
 		return out, err
 	}

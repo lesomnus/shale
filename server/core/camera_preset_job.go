@@ -38,6 +38,9 @@ func (s Core) cameraPinnedInputs(ctx context.Context, a *api.CameraAssignment, i
 		if out.GetAllowActivation() && !p.GetEnrollment().GetAllowActivation() {
 			return nil, denied("allow_activation", "pinned policy does not permit first-time activation")
 		}
+		if !proto.Equal(out.GetBootstrap(), p.GetEnrollment().GetBootstrap()) {
+			return nil, denied("bootstrap", "bootstrap does not match the pinned policy revision")
+		}
 		pinned, err := s.Next().CameraPreset().Get(ctx, api.CameraPresetGetRequest_builder{Ref: api.CameraPresetRef_builder{Id: p.GetPreset().GetId()}.Build()}.Build())
 		if err != nil {
 			return nil, err

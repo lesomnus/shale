@@ -26,13 +26,14 @@ const (
 // Matching hints do not authenticate identity or authorize existing secrets.
 // Empty eligible does not permit everything: allow_any is a deliberate choice.
 type CameraEnrollmentPolicy struct {
-	state                      protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Automatic       bool                   `protobuf:"varint,1,opt,name=automatic"`
-	xxx_hidden_AllowActivation bool                   `protobuf:"varint,2,opt,name=allow_activation,json=allowActivation"`
-	xxx_hidden_MaxDevices      int32                  `protobuf:"varint,3,opt,name=max_devices,json=maxDevices"`
-	xxx_hidden_Eligible        *[]*CameraPresetMatch  `protobuf:"bytes,4,rep,name=eligible"`
-	xxx_hidden_AllowAny        bool                   `protobuf:"varint,5,opt,name=allow_any,json=allowAny"`
-	xxx_hidden_InitialUsername string                 `protobuf:"bytes,6,opt,name=initial_username,json=initialUsername"`
+	state                      protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_Automatic       bool                    `protobuf:"varint,1,opt,name=automatic"`
+	xxx_hidden_AllowActivation bool                    `protobuf:"varint,2,opt,name=allow_activation,json=allowActivation"`
+	xxx_hidden_MaxDevices      int32                   `protobuf:"varint,3,opt,name=max_devices,json=maxDevices"`
+	xxx_hidden_Eligible        *[]*CameraPresetMatch   `protobuf:"bytes,4,rep,name=eligible"`
+	xxx_hidden_AllowAny        bool                    `protobuf:"varint,5,opt,name=allow_any,json=allowAny"`
+	xxx_hidden_InitialUsername string                  `protobuf:"bytes,6,opt,name=initial_username,json=initialUsername"`
+	xxx_hidden_Bootstrap       *CameraBootstrapProfile `protobuf:"bytes,7,opt,name=bootstrap"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -106,6 +107,13 @@ func (x *CameraEnrollmentPolicy) GetInitialUsername() string {
 	return ""
 }
 
+func (x *CameraEnrollmentPolicy) GetBootstrap() *CameraBootstrapProfile {
+	if x != nil {
+		return x.xxx_hidden_Bootstrap
+	}
+	return nil
+}
+
 func (x *CameraEnrollmentPolicy) SetAutomatic(v bool) {
 	x.xxx_hidden_Automatic = v
 }
@@ -130,6 +138,21 @@ func (x *CameraEnrollmentPolicy) SetInitialUsername(v string) {
 	x.xxx_hidden_InitialUsername = v
 }
 
+func (x *CameraEnrollmentPolicy) SetBootstrap(v *CameraBootstrapProfile) {
+	x.xxx_hidden_Bootstrap = v
+}
+
+func (x *CameraEnrollmentPolicy) HasBootstrap() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Bootstrap != nil
+}
+
+func (x *CameraEnrollmentPolicy) ClearBootstrap() {
+	x.xxx_hidden_Bootstrap = nil
+}
+
 type CameraEnrollmentPolicy_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -141,6 +164,8 @@ type CameraEnrollmentPolicy_builder struct {
 	// Used only when generating a first-activation account; empty means admin.
 	// Existing/imported credential material is never rewritten from this value.
 	InitialUsername string
+	// Copied into each job; no scheme, port or firmware inference is permitted.
+	Bootstrap *CameraBootstrapProfile
 }
 
 func (b0 CameraEnrollmentPolicy_builder) Build() *CameraEnrollmentPolicy {
@@ -153,6 +178,7 @@ func (b0 CameraEnrollmentPolicy_builder) Build() *CameraEnrollmentPolicy {
 	x.xxx_hidden_Eligible = &b.Eligible
 	x.xxx_hidden_AllowAny = b.AllowAny
 	x.xxx_hidden_InitialUsername = b.InitialUsername
+	x.xxx_hidden_Bootstrap = b.Bootstrap
 	return m0
 }
 
@@ -505,7 +531,7 @@ var File_shale_camera_policy_proto protoreflect.FileDescriptor
 
 const file_shale_camera_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/camera_policy.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\"\x80\x02\n" +
+	"\x19shale/camera_policy.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\x1a\x1cshale/camera_bootstrap.proto\"\xbd\x02\n" +
 	"\x16CameraEnrollmentPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12)\n" +
 	"\x10allow_activation\x18\x02 \x01(\bR\x0fallowActivation\x12\x1f\n" +
@@ -513,7 +539,8 @@ const file_shale_camera_policy_proto_rawDesc = "" +
 	"maxDevices\x124\n" +
 	"\beligible\x18\x04 \x03(\v2\x18.shale.CameraPresetMatchR\beligible\x12\x1b\n" +
 	"\tallow_any\x18\x05 \x01(\bR\ballowAny\x12)\n" +
-	"\x10initial_username\x18\x06 \x01(\tR\x0finitialUsername\"\xce\a\n" +
+	"\x10initial_username\x18\x06 \x01(\tR\x0finitialUsername\x12;\n" +
+	"\tbootstrap\x18\a \x01(\v2\x1d.shale.CameraBootstrapProfileR\tbootstrap\"\xce\a\n" +
 	"\fCameraPolicy\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -565,28 +592,30 @@ var file_shale_camera_policy_proto_goTypes = []any{
 	(*CameraPolicy)(nil),           // 1: shale.CameraPolicy
 	nil,                            // 2: shale.CameraPolicy.LabelsEntry
 	(*CameraPresetMatch)(nil),      // 3: shale.CameraPresetMatch
-	(*Tenant)(nil),                 // 4: shale.Tenant
-	(*Site)(nil),                   // 5: shale.Site
-	(*CameraNetwork)(nil),          // 6: shale.CameraNetwork
-	(*CameraPreset)(nil),           // 7: shale.CameraPreset
-	(*timestamppb.Timestamp)(nil),  // 8: google.protobuf.Timestamp
+	(*CameraBootstrapProfile)(nil), // 4: shale.CameraBootstrapProfile
+	(*Tenant)(nil),                 // 5: shale.Tenant
+	(*Site)(nil),                   // 6: shale.Site
+	(*CameraNetwork)(nil),          // 7: shale.CameraNetwork
+	(*CameraPreset)(nil),           // 8: shale.CameraPreset
+	(*timestamppb.Timestamp)(nil),  // 9: google.protobuf.Timestamp
 }
 var file_shale_camera_policy_proto_depIdxs = []int32{
 	3,  // 0: shale.CameraEnrollmentPolicy.eligible:type_name -> shale.CameraPresetMatch
-	4,  // 1: shale.CameraPolicy.tenant:type_name -> shale.Tenant
-	5,  // 2: shale.CameraPolicy.site:type_name -> shale.Site
-	2,  // 3: shale.CameraPolicy.labels:type_name -> shale.CameraPolicy.LabelsEntry
-	6,  // 4: shale.CameraPolicy.network:type_name -> shale.CameraNetwork
-	7,  // 5: shale.CameraPolicy.preset:type_name -> shale.CameraPreset
-	0,  // 6: shale.CameraPolicy.enrollment:type_name -> shale.CameraEnrollmentPolicy
-	8,  // 7: shale.CameraPolicy.date_updated:type_name -> google.protobuf.Timestamp
-	8,  // 8: shale.CameraPolicy.date_erased:type_name -> google.protobuf.Timestamp
-	8,  // 9: shale.CameraPolicy.date_created:type_name -> google.protobuf.Timestamp
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	4,  // 1: shale.CameraEnrollmentPolicy.bootstrap:type_name -> shale.CameraBootstrapProfile
+	5,  // 2: shale.CameraPolicy.tenant:type_name -> shale.Tenant
+	6,  // 3: shale.CameraPolicy.site:type_name -> shale.Site
+	2,  // 4: shale.CameraPolicy.labels:type_name -> shale.CameraPolicy.LabelsEntry
+	7,  // 5: shale.CameraPolicy.network:type_name -> shale.CameraNetwork
+	8,  // 6: shale.CameraPolicy.preset:type_name -> shale.CameraPreset
+	0,  // 7: shale.CameraPolicy.enrollment:type_name -> shale.CameraEnrollmentPolicy
+	9,  // 8: shale.CameraPolicy.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 9: shale.CameraPolicy.date_erased:type_name -> google.protobuf.Timestamp
+	9,  // 10: shale.CameraPolicy.date_created:type_name -> google.protobuf.Timestamp
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_policy_proto_init() }
@@ -598,6 +627,7 @@ func file_shale_camera_policy_proto_init() {
 	file_shale_site_proto_init()
 	file_shale_camera_proto_init()
 	file_shale_camera_preset_proto_init()
+	file_shale_camera_bootstrap_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

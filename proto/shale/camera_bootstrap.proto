@@ -1,0 +1,12 @@
+edition = "2023";
+package shale;
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Explicit compatibility and transport selection, never a device address or
+// credential. This pin does not grant permission to activate a camera.
+message CameraBootstrapProfile {
+  string compatibility_profile = 1;
+  string web_scheme = 2;
+  int32 web_port = 3;
+}

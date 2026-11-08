@@ -20,11 +20,15 @@ var (
 )
 
 func cameraEnrollmentInputs(p *api.CameraPolicy, preset *api.CameraPreset, activation bool) *api.CameraJobInputs {
-	return api.CameraJobInputs_builder{
+	out := api.CameraJobInputs_builder{
 		Policy:          api.CameraRevisionReference_builder{Id: mustId(p.GetId()).String(), Revision: p.GetRevision()}.Build(),
 		Preset:          api.CameraRevisionReference_builder{Id: mustId(preset.GetId()).String(), Revision: preset.GetRevision()}.Build(),
 		AllowActivation: activation,
 	}.Build()
+	if bootstrap := p.GetEnrollment().GetBootstrap(); bootstrap != nil {
+		out.SetBootstrap(proto.Clone(bootstrap).(*api.CameraBootstrapProfile))
+	}
+	return out
 }
 
 // cameraEnrollJob is called only after its caller has locked and authorized the

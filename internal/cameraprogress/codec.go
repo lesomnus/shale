@@ -10,6 +10,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/internal/camerabootstrap"
 	"github.com/lesomnus/shale/internal/camerapreset"
 	"github.com/lesomnus/shale/provision"
 	"google.golang.org/protobuf/proto"
@@ -209,7 +210,7 @@ func (e *encoder) video(v camera.DesiredState) *api.CameraPresetVideo {
 	return x.GetVideo()
 }
 func (e *encoder) request(v provision.Request) *api.CameraProvisionRequest {
-	return api.CameraProvisionRequest_builder{Id: v.ID, BindingId: v.BindingID, Scope: scope(v.Scope), Device: device(v.Device), Desired: e.video(v.Desired), UsePreset: v.UsePreset, Alias: v.Alias, Name: v.Name, Provider: v.Provider, ManagementRef: ref(v.ManagementRef), InitialRef: ref(v.InitialRef), StreamingRef: ref(v.StreamingRef), AllowActivation: v.AllowActivation, AllowProducerRestart: v.AllowProducerRestart, ProbeDurationNs: int64(v.ProbeDuration)}.Build()
+	return api.CameraProvisionRequest_builder{Id: v.ID, BindingId: v.BindingID, Scope: scope(v.Scope), Device: device(v.Device), Desired: e.video(v.Desired), UsePreset: v.UsePreset, Alias: v.Alias, Name: v.Name, Provider: v.Provider, ManagementRef: ref(v.ManagementRef), InitialRef: ref(v.InitialRef), StreamingRef: ref(v.StreamingRef), AllowActivation: v.AllowActivation, AllowProducerRestart: v.AllowProducerRestart, ProbeDurationNs: int64(v.ProbeDuration), Bootstrap: camerabootstrap.Encode(v.Bootstrap)}.Build()
 }
 func (e *encoder) inspection(v *camera.Inspection) *api.CameraProvisionInspection {
 	if v == nil {
@@ -383,7 +384,7 @@ func (d *decoder) request(v *api.CameraProvisionRequest) provision.Request {
 		return provision.Request{}
 	}
 	d.require(v.GetScope() != nil)
-	return provision.Request{ID: v.GetId(), BindingID: v.GetBindingId(), Scope: readScope(v.GetScope()), Device: d.device(v.GetDevice()), Desired: d.video(v.GetDesired()), UsePreset: v.GetUsePreset(), Alias: v.GetAlias(), Name: v.GetName(), Provider: v.GetProvider(), ManagementRef: d.ref(v.GetManagementRef()), InitialRef: d.ref(v.GetInitialRef()), StreamingRef: d.ref(v.GetStreamingRef()), AllowActivation: v.GetAllowActivation(), AllowProducerRestart: v.GetAllowProducerRestart(), ProbeDuration: time.Duration(v.GetProbeDurationNs())}
+	return provision.Request{ID: v.GetId(), BindingID: v.GetBindingId(), Scope: readScope(v.GetScope()), Device: d.device(v.GetDevice()), Desired: d.video(v.GetDesired()), UsePreset: v.GetUsePreset(), Alias: v.GetAlias(), Name: v.GetName(), Provider: v.GetProvider(), ManagementRef: d.ref(v.GetManagementRef()), InitialRef: d.ref(v.GetInitialRef()), StreamingRef: d.ref(v.GetStreamingRef()), AllowActivation: v.GetAllowActivation(), AllowProducerRestart: v.GetAllowProducerRestart(), ProbeDuration: time.Duration(v.GetProbeDurationNs()), Bootstrap: camerabootstrap.Decode(v.GetBootstrap())}
 }
 func (d *decoder) inspection(v *api.CameraProvisionInspection) *camera.Inspection {
 	if v == nil {

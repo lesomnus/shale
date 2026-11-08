@@ -7,6 +7,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/internal/camerabootstrap"
 	presetwire "github.com/lesomnus/shale/internal/camerapreset"
 	"github.com/lesomnus/shale/internal/cameraprogress"
 	"github.com/lesomnus/shale/provision"
@@ -27,6 +28,9 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 	run, err := cameraprogress.Decode(next)
 	if err != nil {
 		return nil, invalid("progress", "invalid bounded typed camera checkpoint")
+	}
+	if !reflect.DeepEqual(run.Request.Bootstrap, camerabootstrap.Decode(j.GetInputs().GetBootstrap())) {
+		return nil, invalid("progress.bootstrap", "checkpoint must retain the exact pinned bootstrap profile")
 	}
 	// Status-only reports may carry the exact historical checkpoint after a
 	// Producer replacement. An edit must instead bind today's complete scope.
