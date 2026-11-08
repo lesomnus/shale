@@ -184,7 +184,15 @@ func (e *Execution) renew(ctx context.Context) error {
 }
 
 func pendingExecutor(ctx context.Context, e *Execution) error {
-	_, err := e.Checkpoint(ctx, operationKey(), api.CameraJobStage_CAMERA_JOB_STAGE_WAITING, api.CameraJobObservation_builder{Code: "central_credentials_pending"}.Build())
+	// A binary without an execution provider may resume an uncertain job from a
+	// previous process. Preserve its evidence and warnings while yielding, rather
+	// than replacing the recoverable checkpoint with a status-only observation.
+	observed := e.Snapshot().GetJob().GetObserved()
+	if observed == nil {
+		observed = &api.CameraJobObservation{}
+	}
+	observed.SetCode("central_credentials_pending")
+	_, err := e.Checkpoint(ctx, operationKey(), api.CameraJobStage_CAMERA_JOB_STAGE_WAITING, observed)
 	return err
 }
 

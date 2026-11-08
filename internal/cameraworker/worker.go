@@ -15,6 +15,8 @@ import (
 	"github.com/lesomnus/shale/internal/pki"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const Domain pdid.Domain = 31
@@ -82,8 +84,9 @@ func operationKey() string {
 }
 
 func (w *Worker) Run(ctx context.Context) error {
+	bootstrap := false
 	for ctx.Err() == nil {
-		if !w.agent.Ready(time.Now()) {
+		if bootstrap || !w.agent.Ready(time.Now()) {
 			_, err := w.agent.JoinBootstrap(ctx, func(ctx context.Context, conn *grpc.ClientConn, host *api.HostJoin) (hostagent.Answer, error) {
 				v, err := api.NewCameraWorkerServiceClient(conn).Join(ctx, api.CameraWorkerJoinRequest_builder{Host: host, Tenant: w.cfg.Tenant}.Build())
 				if err != nil {
@@ -97,6 +100,7 @@ func (w *Worker) Run(ctx context.Context) error {
 				}
 				return err
 			}
+			bootstrap = false
 		}
 		conn, err := w.agent.Dial(ctx)
 		if err == nil {
@@ -105,6 +109,12 @@ func (w *Worker) Run(ctx context.Context) error {
 		}
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+		// A committed renewal may have lost its response. Recover only through
+		// the public approved-key Join; never substitute an anonymous or human
+		// credential for an ordinary machine request.
+		if status.Code(err) == codes.Unauthenticated {
+			bootstrap = true
 		}
 		if !errors.Is(err, errReconnect) {
 			w.cfg.Log.Warn("camera worker connection stopped; device work canceled", "error", err)
@@ -164,7 +174,7 @@ func (w *Worker) execute(ctx context.Context, conn *grpc.ClientConn, work *api.C
 	err := w.cfg.Executor.Execute(ctx, e)
 	cancel()
 	keepErr := <-keepDone
-	if err == nil && keepErr != nil && !errors.Is(keepErr, context.Canceled) {
+	if (err == nil || errors.Is(err, context.Canceled)) && keepErr != nil && !errors.Is(keepErr, context.Canceled) {
 		err = keepErr
 	}
 	finished <- err
@@ -248,6 +258,12 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 			}
 			claimed, err := jobs.Claim(ctx, api.CameraJobClaimRequest_builder{Ref: api.CameraJobRef_builder{Id: j.GetId()}.Build(), ExpectedVersion: j.GetDateUpdated(), OperationKey: operationKey(), LeaseSeconds: w.cfg.LeaseSeconds}.Build())
 			if err != nil {
+				// A changed snapshot or another unsettled intent for this physical
+				// device is expected contention. Keep polling other assigned work
+				// instead of reconnecting and reclaiming every yielded WAITING job.
+				if code := status.Code(err); code == codes.Aborted || code == codes.FailedPrecondition {
+					continue
+				}
 				return err
 			}
 			v.SetJob(claimed)

@@ -104,9 +104,12 @@ func TestUncertainCheckpointCannotProceedToAnotherDeviceWrite(t *testing.T) {
 
 func TestDefaultExecutorWaitsForCentralProviders(t *testing.T) {
 	e, life := executionFixture(t)
+	e.work.GetJob().SetObserved(api.CameraJobObservation_builder{Effective: api.CameraCaptureProfile_builder{Codec: "h264", Width: 1280, Height: 720}.Build(), AppliedRevision: 23}.Build())
 	e.jobs = jobClient{report: func(_ context.Context, r *api.CameraJobReportRequest) (*api.CameraJob, error) {
 		require.Equal(t, api.CameraJobStage_CAMERA_JOB_STAGE_WAITING, r.GetStage())
 		require.Equal(t, "central_credentials_pending", r.GetObserved().GetCode())
+		require.Equal(t, int32(1280), r.GetObserved().GetEffective().GetWidth())
+		require.Equal(t, int64(23), r.GetObserved().GetAppliedRevision(), "yielding must preserve previous execution evidence")
 		j := proto.Clone(e.work.GetJob()).(*api.CameraJob)
 		j.SetStage(r.GetStage())
 		j.SetObserved(r.GetObserved())

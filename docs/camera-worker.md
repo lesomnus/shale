@@ -36,6 +36,8 @@ without rotating its serial. The approved certificate is stored separately from
 a pending new-key Join, so an anonymous new request cannot block key recovery.
 Revoked/erased identities receive no automatic readoption. Ordinary machine RPCs
 retain normal mTLS checks and reject expired or replaced certificates.
+An Unauthenticated session result also enters that public same-key recovery
+path, so a lost renewal response can recover the CP's already-issued certificate.
 Generated Add/Patch/Erase are closed. Operators revoke with
 `CameraWorkerService.Revoke` and its expected version.
 
