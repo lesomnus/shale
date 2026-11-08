@@ -32,7 +32,7 @@ func checkpoint() provision.Run {
 	effective := camera.PresetSettings{Initialization: camera.DeviceSettings{PowerLineFrequency: 60}, Video: desired, Preserve: []string{}}
 	preset := camera.DevicePreset{Ref: camera.PresetRef{ID: "policy", Revision: "immutable-preset-revision"}, MatchedRules: []string{"tenant", "model", "serial"}, Requested: effective, Fallbacks: []camera.PresetSettings{{Initialization: camera.DeviceSettings{PowerLineFrequency: 50}, Video: camera.DesiredState{Width: 640, Height: 360, FPS: 15, Bitrate: 1_000_000, GOP: 15, Revision: "fallback-metadata", AllowFallback: true}, Preserve: []string{camera.PresetFieldProfile}}}, Required: []string{camera.PresetFieldCodec}}
 	return provision.Run{
-		Request: provision.Request{ID: "job", BindingID: "binding", Scope: scope, Device: device, Desired: desired, Alias: "camera", Name: "4F Main", Provider: "cp", InitialRef: ref(camera.AuthInitialAdmin), ManagementRef: ref(camera.AuthManagement), StreamingRef: ref(camera.AuthStreaming), AllowActivation: true, AllowProducerRestart: true, ProbeDuration: 5*time.Second + 17},
+		Request: provision.Request{ID: "job", BindingID: "binding", Scope: scope, Device: device, Desired: desired, Alias: "camera", Name: "4F Main", Provider: "cp", InitialRef: ref(camera.AuthInitialAdmin), ManagementRef: ref(camera.AuthManagement), StreamingRef: ref(camera.AuthStreaming), AllowActivation: true, AllowProducerRestart: true, ProbeDuration: 5*time.Second + 17, Bootstrap: &camera.BootstrapSettings{CompatibilityProfile: "fixture-first-password-v1", WebScheme: "https", WebPort: 8443}},
 		Stage:   provision.Active, Version: math.MaxUint64, CreatedAt: now, UpdatedAt: now.Add(1*time.Second + 23),
 		Inspection:        &camera.Inspection{Device: device, Activation: camera.ActivationReady, Capabilities: camera.Capabilities{Profiles: []camera.ProfileCapability{{Token: "main", Codecs: []string{"h264", "h265"}, Resolutions: []camera.Resolution{{Width: 640, Height: 360}, {Width: 1280, Height: 720}}, FrameRates: []float64{15, 30000.0 / 1001, 60}, Bitrates: []int64{1_000_000, 2_000_000, 8_000_000}, FrameRateMin: 1, FrameRateMax: 60, BitrateMin: 128_000, BitrateMax: 8_000_000, GOPMin: 1, GOPMax: 120, Evidence: evidence("onvif-options")}}, Evidence: evidence("onvif-capabilities")}, Current: camera.CurrentState{Profiles: []camera.MediaProfile{before}, Firmware: "1.2.3", ObservedAt: now}},
 		Plan:              &camera.ChangePlan{ProfileToken: "main", Before: before, After: after, Changes: []string{"resolution", "fps", "bitrate", "gop"}, Revision: "immutable-plan"},
@@ -74,12 +74,22 @@ func TestFullRunWireRoundTrip(t *testing.T) {
 	require.Equal(t, want.InitializationPlan, got.InitializationPlan)
 }
 
+func TestLegacyCheckpointWithoutBootstrapRoundTrip(t *testing.T) {
+	want := checkpoint()
+	want.Request.Bootstrap = nil
+	value, got := wireRoundTrip(t, want)
+	require.Nil(t, value.GetRequest().GetBootstrap())
+	require.Nil(t, got.Request.Bootstrap)
+	require.Equal(t, want, got)
+}
+
 func TestCheckpointOwnsPortableAndWireGraphs(t *testing.T) {
 	want := checkpoint()
 	value, err := Encode(want)
 	require.NoError(t, err)
 	stable := proto.Clone(value).(*api.CameraProvisionState)
 	want.Request.Device.Endpoints[0].URL = "http://192.0.2.99/changed"
+	want.Request.Bootstrap.CompatibilityProfile = "changed"
 	want.Inspection.Capabilities.Profiles[0].Resolutions[0].Width = 999
 	want.Plan.Changes[0] = "changed"
 	want.Preset.Fallbacks[0].Preserve[0] = "changed"
@@ -91,6 +101,7 @@ func TestCheckpointOwnsPortableAndWireGraphs(t *testing.T) {
 	require.NoError(t, err)
 	expected := checkpoint()
 	value.GetRequest().GetDevice().GetEndpoints().GetItems()[0].SetUrl("http://192.0.2.99/changed")
+	value.GetRequest().GetBootstrap().SetWebPort(443)
 	value.GetInspection().GetCapabilities().GetProfiles().GetItems()[0].GetResolutions().GetItems()[0].SetWidth(999)
 	value.GetPlan().GetChanges().SetItems([]string{"changed"})
 	value.GetPreset().GetValue().GetAlternatives()[0].SetPreserve([]string{"changed"})
@@ -152,6 +163,9 @@ func TestCheckpointRejectsPortableInvalidState(t *testing.T) {
 		edit func(*provision.Run)
 	}{
 		{"request", func(r *provision.Run) { r.Request.ID = "" }},
+		{"bootstrap-empty", func(r *provision.Run) { r.Request.Bootstrap = &camera.BootstrapSettings{} }},
+		{"bootstrap-scheme", func(r *provision.Run) { r.Request.Bootstrap.WebScheme = "" }},
+		{"bootstrap-port", func(r *provision.Run) { r.Request.Bootstrap.WebPort = 0 }},
 		{"stage", func(r *provision.Run) { r.Stage = "unknown" }},
 		{"event-stage", func(r *provision.Run) { r.Events[0].Stage = "unknown" }},
 		{"invalid-utf8", func(r *provision.Run) { r.Request.Device.Model = string([]byte{0xff, 0xfe}) }},
@@ -201,6 +215,11 @@ func TestCheckpointRejectsMalformedWireWithoutPartialState(t *testing.T) {
 	}{
 		{"schema", func(v *api.CameraProvisionState) { v.SetSchemaVersion(2) }},
 		{"missing-request", func(v *api.CameraProvisionState) { v.SetRequest(nil) }},
+		{"bootstrap-empty", func(v *api.CameraProvisionState) {
+			v.GetRequest().SetBootstrap(api.CameraBootstrapProfile_builder{}.Build())
+		}},
+		{"bootstrap-port", func(v *api.CameraProvisionState) { v.GetRequest().GetBootstrap().SetWebPort(65536) }},
+		{"bootstrap-scheme", func(v *api.CameraProvisionState) { v.GetRequest().GetBootstrap().SetWebScheme("") }},
 		{"missing-scope", func(v *api.CameraProvisionState) { v.GetRequest().SetScope(nil) }},
 		{"missing-device", func(v *api.CameraProvisionState) { v.GetRequest().SetDevice(nil) }},
 		{"missing-desired", func(v *api.CameraProvisionState) { v.GetRequest().SetDesired(nil) }},
