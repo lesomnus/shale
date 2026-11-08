@@ -45,7 +45,10 @@ func (c *cluster) startRelayVia(name, stateDir, cp string) (*relay.Relay, contex
 	})
 	require.NoError(c.t, err)
 	done := make(chan error, 1)
-	go func() { done <- r.Run(ctx) }()
+	go func() {
+		done <- r.Run(ctx)
+		close(done) // a manual stop and t.Cleanup share this completion
+	}()
 	select {
 	case <-r.Ready:
 	case err := <-done:

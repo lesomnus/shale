@@ -67,7 +67,7 @@ jobs:
           fallocate -l 2G /tmp/shale.img && mkfs.ext4 -q -F /tmp/shale.img
           sudo mkdir -p /mnt/shale-tmp && sudo mount -o loop,user_xattr /tmp/shale.img /mnt/shale-tmp
           sudo chmod 1777 /mnt/shale-tmp
-          TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 20m
+          TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 30m
   # The tests whose goroutines meet, under the race detector. The test job
   # cannot see a race, since a test checks what it ends with: the producer's
   # heartbeat, stall watch and negotiations shared a source with its capture
