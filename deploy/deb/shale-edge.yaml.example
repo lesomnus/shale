@@ -1,5 +1,5 @@
 # Managed outbound camera host: /usr/bin/shale --config /etc/shale/shale.yaml serve edge
-# Copy to the active config only after reviewing docs/managed-edge.md migration.
+# Review /usr/share/doc/shale/docs/managed-edge.md before replacing active config.
 # Both machine identities need separate CP approval and assignments.
 state: /var/lib/shale
 cp: https://shale.example.internal:7400 # tenant API, not the cluster API on 7401

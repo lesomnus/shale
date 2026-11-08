@@ -23,7 +23,9 @@ route. The example below is an example, not a subnet allocation for your site.
 The pool excludes the Pi's own address, network and broadcast addresses.
 
 ```sh
-python3 deploy/edge/camera_lan.py \
+renderer=/usr/share/shale/edge/camera_lan.py
+# From a source checkout instead: renderer=deploy/edge/camera_lan.py
+python3 "$renderer" \
   --interface eth0 --uplink wlan0 --address 192.168.250.1/24 \
   --first 192.168.250.20 --last 192.168.250.99 --output ./camera-lan
 ```
@@ -35,6 +37,11 @@ refuses a bridge/bond member, wildcard interface names and a camera-port default
 route. It makes no network changes. `--offline` can render on another machine;
 rerun the same command with `--validate-only` on the Pi before installation.
 An existing output directory is refused rather than overwritten.
+
+The Debian package installs this guide at
+`/usr/share/doc/shale/deploy/edge/README.md` and the renderer at the path above.
+It installs neither a network profile nor an enabled DHCP service. A checkout
+is not needed to render the files on the Pi.
 
 Review the four files:
 
@@ -105,6 +112,21 @@ observation, an approved network assignment and central policy still gate camera
 initialization and credential use. Do not attach a root DHCP hook that passes
 untrusted lease strings to shell commands.
 
+## Run the managed Shale roles
+
+Follow the [managed edge guide](../../docs/managed-edge.md) for machine approval,
+configuration and migration from standalone services. The Debian example is
+`/etc/shale/shale-edge.yaml.example`. It connects the Worker and Producer to the
+tenant API, normally port **7400**, and deliberately has no USB/manual Sources,
+local presets or password files. Both roles receive their own approved central
+assignments. Use `shale@edge` for the combined process or the separate supported
+role commands; do not run both layouts against the same role state directories.
+
+`camera-network.json` is only a description to review for the central network
+assignment. Rendering it, obtaining a DHCP lease or starting `shale@edge` does
+not create or authorize that assignment. The network recipe and Shale unit are
+enabled separately, and the package starts neither automatically.
+
 ## Rollback
 
 ```sh
@@ -133,17 +155,20 @@ live forwarding before overhead. Use measured throughput in the actual location.
 The video buffer is finite volatile RAM. A larger buffer absorbs brief outages;
 it cannot fix an average upload rate below the camera input rate and does not
 survive Pi power loss. DHCP continuing during an uplink outage does not imply
-new central policy/credential operations can proceed or that a cold-started
-Producer can record without CP. Offline capture requires an explicitly supported
-applied-state/credential cache and its expiry/revocation rules; this recipe adds
-neither such a cache nor a durable video spool.
+new central policy/credential operations can proceed. Already-running authorized
+captures may continue while their finite RAM queue and existing sessions allow;
+a process restart or a new capture attempt still requires the current CP catalog
+and a new BeginApply ticket. The optional streaming credential cache is off by
+default and does not supply either authority, authorize offline cold startup or
+replace current assignment checks. This recipe adds no durable video spool.
 
 ## References and checks
 
 The settings follow the [dnsmasq manual](https://dnsmasq.org/docs/dnsmasq-man.html),
 [NetworkManager IPv4 reference](https://networkmanager.dev/docs/api/latest/settings-ipv4.html)
 and [Raspberry Pi networking documentation](https://www.raspberrypi.com/documentation/computers/configuration.html).
-Run `python3 -m unittest discover -s deploy/edge -p 'test_*.py'` for range,
+From a source checkout, run
+`python3 -m unittest discover -s deploy/edge -p 'test_*.py'` for range,
 interface, route-collision and generated-scope checks. Physical Pi/camera
 qualification is an explicit separate deployment step; tests do not reset a
 production camera.
@@ -158,6 +183,7 @@ Wi-Fi route restoration is simulated; physical reboot/radio qualification is
 not inferred from this test.
 
 ```sh
+# Run from a source checkout on a dedicated test runner.
 docker build -t shale-camera-lan-test -f deploy/edge/test.Dockerfile deploy/edge
 docker run --rm --network=none --privileged shale-camera-lan-test
 ```

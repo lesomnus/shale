@@ -69,6 +69,13 @@ the binary, the template unit, and configuration examples in `/etc/shale`; its
 postinst makes the `shale` user and `/var/lib/shale`, and starts nothing.
 CI attaches one per architecture to every run.
 
+The package also includes `/etc/shale/shale-edge.yaml.example`, the optional
+renderer `/usr/share/shale/edge/camera_lan.py`, and the guides under
+`/usr/share/doc/shale/docs/managed-edge.md` and
+`/usr/share/doc/shale/deploy/edge/README.md`. The two guides retain their relative
+links in the package. The renderer's OS dependencies are optional package
+suggestions; installing Shale does not configure interfaces or enable DHCP.
+
 ```sh
 sudo dpkg -i shale_0.1.0_amd64.deb
 sudo cp /etc/shale/shale.yaml.example /etc/shale/shale.yaml   # then edit
