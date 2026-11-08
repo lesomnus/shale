@@ -835,6 +835,7 @@ message CameraBindingAddRequest {
   bool collect = 19 [features.field_presence = IMPLICIT];
   CameraApplication starting_application = 20;
   CameraApplication applied_application = 21;
+  repeated CameraApplication previous_applications = 22;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -879,6 +880,7 @@ message CameraBindingSelect {
   bool collect = 19;
   bool starting_application = 20;
   bool applied_application = 21;
+  bool previous_applications = 22;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -916,6 +918,7 @@ message CameraBindingPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and applied_application clears.
   bool applied_application_null = 43;
+  repeated CameraApplication previous_applications = 44;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

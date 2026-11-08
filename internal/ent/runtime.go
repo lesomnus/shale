@@ -65,6 +65,9 @@ func init() {
 	// camerabindingDescAppliedApplication is the schema descriptor for applied_application field.
 	camerabindingDescAppliedApplication := camerabindingFields[12].Descriptor()
 	camerabinding.ValueScanner.AppliedApplication = camerabindingDescAppliedApplication.ValueScanner.(field.TypeValueScanner[*api.CameraApplication])
+	// camerabindingDescPreviousApplications is the schema descriptor for previous_applications field.
+	camerabindingDescPreviousApplications := camerabindingFields[13].Descriptor()
+	camerabinding.ValueScanner.PreviousApplications = camerabindingDescPreviousApplications.ValueScanner.(field.TypeValueScanner[[]*api.CameraApplication])
 	cameracredentialversionFields := schema.CameraCredentialVersion{}.Fields()
 	_ = cameracredentialversionFields
 	// cameracredentialversionDescLegacy is the schema descriptor for legacy field.

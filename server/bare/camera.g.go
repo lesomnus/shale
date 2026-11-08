@@ -2349,6 +2349,9 @@ func (st CameraBindingServiceServer) create(ctx context.Context, req *api.Camera
 	if req.HasAppliedApplication() {
 		q.SetAppliedApplication(req.GetAppliedApplication())
 	}
+	if u := req.GetPreviousApplications(); len(u) > 0 {
+		q.SetPreviousApplications(u)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -2518,6 +2521,9 @@ func CameraBindingSelectedFields(m *api.CameraBindingSelect) []string {
 	if m.GetAppliedApplication() {
 		vs = append(vs, camerabinding.FieldAppliedApplication)
 	}
+	if m.GetPreviousApplications() {
+		vs = append(vs, camerabinding.FieldPreviousApplications)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, camerabinding.FieldDateUpdated)
 	}
@@ -2620,7 +2626,7 @@ func CameraBindingGetKey(ctx context.Context, db *ent.Client, ref *api.CameraBin
 var cameraBindingOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, "CameraBinding")
 
 var cameraBindingPatchColumns = entpatch.Columns{
-	1: camerabinding.FieldId, 2: camerabinding.TenantColumn, 3: camerabinding.SiteColumn, 4: camerabinding.FieldAlias, 5: camerabinding.FieldName, 6: camerabinding.FieldDesc, 7: camerabinding.FieldLabels, 8: camerabinding.AssignmentColumn, 9: camerabinding.DeviceColumn, 10: camerabinding.SourceColumn, 11: camerabinding.FieldLogicalKey, 12: camerabinding.FieldSourceAlias, 16: camerabinding.FieldDesired, 17: camerabinding.FieldObserved, 18: camerabinding.FieldAppliedRevision, 19: camerabinding.FieldCollect, 20: camerabinding.FieldStartingApplication, 21: camerabinding.FieldAppliedApplication, 13: camerabinding.FieldDateUpdated, 14: camerabinding.FieldDateErased, 15: camerabinding.FieldDateCreated}
+	1: camerabinding.FieldId, 2: camerabinding.TenantColumn, 3: camerabinding.SiteColumn, 4: camerabinding.FieldAlias, 5: camerabinding.FieldName, 6: camerabinding.FieldDesc, 7: camerabinding.FieldLabels, 8: camerabinding.AssignmentColumn, 9: camerabinding.DeviceColumn, 10: camerabinding.SourceColumn, 11: camerabinding.FieldLogicalKey, 12: camerabinding.FieldSourceAlias, 16: camerabinding.FieldDesired, 17: camerabinding.FieldObserved, 18: camerabinding.FieldAppliedRevision, 19: camerabinding.FieldCollect, 20: camerabinding.FieldStartingApplication, 21: camerabinding.FieldAppliedApplication, 22: camerabinding.FieldPreviousApplications, 13: camerabinding.FieldDateUpdated, 14: camerabinding.FieldDateErased, 15: camerabinding.FieldDateCreated}
 
 func (s CameraBindingServiceServer) Apply(ctx context.Context, req *api.CameraBindingApplyRequest) (*api.CameraBinding, error) {
 	if !req.HasPatch() {

@@ -556,6 +556,16 @@ func AppliedApplicationNotNil() predicate.CameraBinding {
 	return predicate.CameraBinding(sql.FieldNotNull(FieldAppliedApplication))
 }
 
+// PreviousApplicationsIsNil applies the IsNil predicate on the "previous_applications" field.
+func PreviousApplicationsIsNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldIsNull(FieldPreviousApplications))
+}
+
+// PreviousApplicationsNotNil applies the NotNil predicate on the "previous_applications" field.
+func PreviousApplicationsNotNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNotNull(FieldPreviousApplications))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.CameraBinding {
 	return predicate.CameraBinding(sql.FieldEQ(FieldDateUpdated, v))

@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
+	"github.com/protobuf-orm/ent/dialect/sql/sqljson"
 	"github.com/protobuf-orm/ent/schema/field"
 )
 
@@ -164,6 +165,24 @@ func (_u *CameraBindingUpdate) SetAppliedApplication(v *api.CameraApplication) *
 // ClearAppliedApplication clears the value of the "applied_application" field.
 func (_u *CameraBindingUpdate) ClearAppliedApplication() *CameraBindingUpdate {
 	_u.mutation.ClearAppliedApplication()
+	return _u
+}
+
+// SetPreviousApplications sets the "previous_applications" field.
+func (_u *CameraBindingUpdate) SetPreviousApplications(v []*api.CameraApplication) *CameraBindingUpdate {
+	_u.mutation.SetPreviousApplications(v)
+	return _u
+}
+
+// AppendPreviousApplications appends value to the "previous_applications" field.
+func (_u *CameraBindingUpdate) AppendPreviousApplications(v []*api.CameraApplication) *CameraBindingUpdate {
+	_u.mutation.AppendPreviousApplications(v)
+	return _u
+}
+
+// ClearPreviousApplications clears the value of the "previous_applications" field.
+func (_u *CameraBindingUpdate) ClearPreviousApplications() *CameraBindingUpdate {
+	_u.mutation.ClearPreviousApplications()
 	return _u
 }
 
@@ -374,6 +393,27 @@ func (_u *CameraBindingUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if _u.mutation.AppliedApplicationCleared() {
 		_spec.ClearField(camerabinding.FieldAppliedApplication, field.TypeJson)
 	}
+	if value, ok := _u.mutation.PreviousApplications(); ok {
+		vv, err := camerabinding.ValueScanner.PreviousApplications.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldPreviousApplications); ok {
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, e)
+	}
+	if value, ok := _u.mutation.AppendedPreviousApplications(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, camerabinding.FieldPreviousApplications, value)
+		})
+	}
+	if _u.mutation.PreviousApplicationsCleared() {
+		_spec.ClearField(camerabinding.FieldPreviousApplications, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -548,6 +588,24 @@ func (_u *CameraBindingUpdateOne) SetAppliedApplication(v *api.CameraApplication
 // ClearAppliedApplication clears the value of the "applied_application" field.
 func (_u *CameraBindingUpdateOne) ClearAppliedApplication() *CameraBindingUpdateOne {
 	_u.mutation.ClearAppliedApplication()
+	return _u
+}
+
+// SetPreviousApplications sets the "previous_applications" field.
+func (_u *CameraBindingUpdateOne) SetPreviousApplications(v []*api.CameraApplication) *CameraBindingUpdateOne {
+	_u.mutation.SetPreviousApplications(v)
+	return _u
+}
+
+// AppendPreviousApplications appends value to the "previous_applications" field.
+func (_u *CameraBindingUpdateOne) AppendPreviousApplications(v []*api.CameraApplication) *CameraBindingUpdateOne {
+	_u.mutation.AppendPreviousApplications(v)
+	return _u
+}
+
+// ClearPreviousApplications clears the value of the "previous_applications" field.
+func (_u *CameraBindingUpdateOne) ClearPreviousApplications() *CameraBindingUpdateOne {
+	_u.mutation.ClearPreviousApplications()
 	return _u
 }
 
@@ -787,6 +845,27 @@ func (_u *CameraBindingUpdateOne) sqlSave(ctx context.Context) (_node *CameraBin
 	}
 	if _u.mutation.AppliedApplicationCleared() {
 		_spec.ClearField(camerabinding.FieldAppliedApplication, field.TypeJson)
+	}
+	if value, ok := _u.mutation.PreviousApplications(); ok {
+		vv, err := camerabinding.ValueScanner.PreviousApplications.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldPreviousApplications); ok {
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, e)
+	}
+	if value, ok := _u.mutation.AppendedPreviousApplications(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, camerabinding.FieldPreviousApplications, value)
+		})
+	}
+	if _u.mutation.PreviousApplicationsCleared() {
+		_spec.ClearField(camerabinding.FieldPreviousApplications, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)

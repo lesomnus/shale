@@ -339,6 +339,15 @@ enum TokenOp {
   TOKEN_OP_EXPORT = 5;
 }
 
+// Presence in a publish token marks a managed Source. An empty epoch means
+// that it has no starting ticket yet, never an unmanaged compatibility grant.
+message CaptureEpochGrant {
+  bytes source_id = 1;
+  string capture_epoch = 2;
+  // Monotonic Producer Begin ticket. A valid old token never rolls back live.
+  int64 sequence = 3;
+}
+
 // TokenClaims is what the CP signs (§33.2). The wire form is
 // base64url(claims) "." base64url(Ed25519 signature).
 message TokenClaims {
@@ -381,6 +390,7 @@ message TokenClaims {
   google.protobuf.Timestamp export_to = 22;
   // view: never serve a different capture incarnation under this capability.
   string capture_epoch = 23;
+  repeated CaptureEpochGrant capture_epochs = 24;
 }
 
 // LaminaStored is a node's word that an upload committed (§12.4).

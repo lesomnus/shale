@@ -49,6 +49,8 @@ type CameraBinding struct {
 	StartingApplication *api.CameraApplication `json:"starting_application,omitempty"`
 	// AppliedApplication holds the value of the "applied_application" field.
 	AppliedApplication *api.CameraApplication `json:"applied_application,omitempty"`
+	// PreviousApplications holds the value of the "previous_applications" field.
+	PreviousApplications []*api.CameraApplication `json:"previous_applications,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -170,6 +172,8 @@ func (*CameraBinding) scanValues(columns []string) ([]any, error) {
 			values[i] = camerabinding.ValueScanner.StartingApplication.ScanValue()
 		case camerabinding.FieldAppliedApplication:
 			values[i] = camerabinding.ValueScanner.AppliedApplication.ScanValue()
+		case camerabinding.FieldPreviousApplications:
+			values[i] = camerabinding.ValueScanner.PreviousApplications.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -264,6 +268,12 @@ func (_m *CameraBinding) assignValues(columns []string, values []any) error {
 				return err
 			} else {
 				_m.AppliedApplication = value
+			}
+		case camerabinding.FieldPreviousApplications:
+			if value, err := camerabinding.ValueScanner.PreviousApplications.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.PreviousApplications = value
 			}
 		case camerabinding.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -410,6 +420,9 @@ func (_m *CameraBinding) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("applied_application=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AppliedApplication))
+	builder.WriteString(", ")
+	builder.WriteString("previous_applications=")
+	builder.WriteString(fmt.Sprintf("%v", _m.PreviousApplications))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

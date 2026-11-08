@@ -38,6 +38,8 @@ const (
 	FieldStartingApplication = "starting_application"
 	// FieldAppliedApplication holds the string denoting the applied_application field in the database.
 	FieldAppliedApplication = "applied_application"
+	// FieldPreviousApplications holds the string denoting the previous_applications field in the database.
+	FieldPreviousApplications = "previous_applications"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -118,6 +120,7 @@ var Columns = []string{
 	FieldCollect,
 	FieldStartingApplication,
 	FieldAppliedApplication,
+	FieldPreviousApplications,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -141,10 +144,11 @@ func ValidColumn(column string) bool {
 var (
 	// ValueScanner of all CameraBinding fields.
 	ValueScanner struct {
-		Desired             field.TypeValueScanner[*api.CameraCaptureSpec]
-		Observed            field.TypeValueScanner[*api.CameraJobObservation]
-		StartingApplication field.TypeValueScanner[*api.CameraApplication]
-		AppliedApplication  field.TypeValueScanner[*api.CameraApplication]
+		Desired              field.TypeValueScanner[*api.CameraCaptureSpec]
+		Observed             field.TypeValueScanner[*api.CameraJobObservation]
+		StartingApplication  field.TypeValueScanner[*api.CameraApplication]
+		AppliedApplication   field.TypeValueScanner[*api.CameraApplication]
+		PreviousApplications field.TypeValueScanner[[]*api.CameraApplication]
 	}
 )
 

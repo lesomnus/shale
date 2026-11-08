@@ -101,6 +101,12 @@ func (_c *CameraBindingCreate) SetAppliedApplication(v *api.CameraApplication) *
 	return _c
 }
 
+// SetPreviousApplications sets the "previous_applications" field.
+func (_c *CameraBindingCreate) SetPreviousApplications(v []*api.CameraApplication) *CameraBindingCreate {
+	_c.mutation.SetPreviousApplications(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraBindingCreate) SetDateUpdated(v time.Time) *CameraBindingCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -418,6 +424,17 @@ func (_c *CameraBindingCreate) createSpec() (*CameraBinding, *sqlgraph.CreateSpe
 		}
 		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, vv)
 		_node.AppliedApplication = value
+	}
+	if value, ok := _c.mutation.PreviousApplications(); ok {
+		vv, err := camerabinding.ValueScanner.PreviousApplications.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(camerabinding.FieldPreviousApplications, field.TypeJson, vv)
+		_node.PreviousApplications = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)

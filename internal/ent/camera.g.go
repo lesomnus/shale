@@ -206,6 +206,7 @@ func (e *CameraBinding) Proto() *api.CameraBinding {
 	if e.AppliedApplication != nil {
 		x.SetAppliedApplication(e.AppliedApplication)
 	}
+	x.SetPreviousApplications(e.PreviousApplications)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

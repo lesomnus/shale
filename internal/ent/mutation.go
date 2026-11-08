@@ -2574,6 +2574,23 @@ func (m *CameraBindingMutation) OldAppliedApplication(ctx context.Context) (v *a
 	return oldValue.AppliedApplication, nil
 }
 
+// OldPreviousApplications returns the old "previous_applications" field's value of the CameraBinding entity.
+// If the CameraBinding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraBindingMutation) OldPreviousApplications(ctx context.Context) (v []*api.CameraApplication, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPreviousApplications is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPreviousApplications requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPreviousApplications: %w", err)
+	}
+	return oldValue.PreviousApplications, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the CameraBinding entity.
 // If the CameraBinding object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -2739,6 +2756,8 @@ func (m *CameraBindingMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldStartingApplication(ctx)
 	case camerabinding.FieldAppliedApplication:
 		return m.OldAppliedApplication(ctx)
+	case camerabinding.FieldPreviousApplications:
+		return m.OldPreviousApplications(ctx)
 	case camerabinding.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case camerabinding.FieldDateErased:

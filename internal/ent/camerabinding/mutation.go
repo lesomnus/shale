@@ -16,37 +16,39 @@ import (
 
 // Mutation represents an operation that mutates the CameraBinding nodes in the graph.
 type Mutation struct {
-	op                   ent.Op
-	typ                  string
-	alias                *string
-	name                 *string
-	desc                 *string
-	labels               *map[string]string
-	logical_key          *string
-	source_alias         *string
-	desired              **api.CameraCaptureSpec
-	observed             **api.CameraJobObservation
-	applied_revision     *int64
-	addapplied_revision  *int64
-	collect              *bool
-	starting_application **api.CameraApplication
-	applied_application  **api.CameraApplication
-	date_updated         *time.Time
-	date_erased          *time.Time
-	date_created         *time.Time
-	clearedFields        map[string]struct{}
-	exprs                map[string]sql.Querier
-	tenant               *uuid.UUID
-	clearedtenant        bool
-	site                 *uuid.UUID
-	clearedsite          bool
-	assignment           *uuid.UUID
-	clearedassignment    bool
-	device               *uuid.UUID
-	cleareddevice        bool
-	source               *uuid.UUID
-	clearedsource        bool
-	predicates           []predicate.CameraBinding
+	op                          ent.Op
+	typ                         string
+	alias                       *string
+	name                        *string
+	desc                        *string
+	labels                      *map[string]string
+	logical_key                 *string
+	source_alias                *string
+	desired                     **api.CameraCaptureSpec
+	observed                    **api.CameraJobObservation
+	applied_revision            *int64
+	addapplied_revision         *int64
+	collect                     *bool
+	starting_application        **api.CameraApplication
+	applied_application         **api.CameraApplication
+	previous_applications       *[]*api.CameraApplication
+	appendprevious_applications []*api.CameraApplication
+	date_updated                *time.Time
+	date_erased                 *time.Time
+	date_created                *time.Time
+	clearedFields               map[string]struct{}
+	exprs                       map[string]sql.Querier
+	tenant                      *uuid.UUID
+	clearedtenant               bool
+	site                        *uuid.UUID
+	clearedsite                 bool
+	assignment                  *uuid.UUID
+	clearedassignment           bool
+	device                      *uuid.UUID
+	cleareddevice               bool
+	source                      *uuid.UUID
+	clearedsource               bool
+	predicates                  []predicate.CameraBinding
 }
 
 // NewMutation creates a new Mutation for the CameraBinding entity.
@@ -404,6 +406,58 @@ func (m *Mutation) ResetAppliedApplication() {
 	m.applied_application = nil
 	delete(m.clearedFields, FieldAppliedApplication)
 	delete(m.exprs, FieldAppliedApplication)
+}
+
+// SetPreviousApplications sets the "previous_applications" field.
+func (m *Mutation) SetPreviousApplications(aa []*api.CameraApplication) {
+	m.previous_applications = &aa
+	m.appendprevious_applications = nil
+	delete(m.clearedFields, FieldPreviousApplications)
+	delete(m.exprs, FieldPreviousApplications)
+}
+
+// PreviousApplications returns the value of the "previous_applications" field in the mutation.
+func (m *Mutation) PreviousApplications() (r []*api.CameraApplication, exists bool) {
+	v := m.previous_applications
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// AppendPreviousApplications adds aa to the "previous_applications" field.
+func (m *Mutation) AppendPreviousApplications(aa []*api.CameraApplication) {
+	m.appendprevious_applications = append(m.appendprevious_applications, aa...)
+}
+
+// AppendedPreviousApplications returns the list of values that were appended to the "previous_applications" field in this mutation.
+func (m *Mutation) AppendedPreviousApplications() ([]*api.CameraApplication, bool) {
+	if len(m.appendprevious_applications) == 0 {
+		return nil, false
+	}
+	return m.appendprevious_applications, true
+}
+
+// ClearPreviousApplications clears the value of the "previous_applications" field.
+func (m *Mutation) ClearPreviousApplications() {
+	m.previous_applications = nil
+	m.appendprevious_applications = nil
+	delete(m.exprs, FieldPreviousApplications)
+	m.clearedFields[FieldPreviousApplications] = struct{}{}
+}
+
+// PreviousApplicationsCleared returns if the "previous_applications" field was cleared in this mutation.
+func (m *Mutation) PreviousApplicationsCleared() bool {
+	_, ok := m.clearedFields[FieldPreviousApplications]
+	return ok
+}
+
+// ResetPreviousApplications resets all changes to the "previous_applications" field.
+func (m *Mutation) ResetPreviousApplications() {
+	m.previous_applications = nil
+	m.appendprevious_applications = nil
+	delete(m.clearedFields, FieldPreviousApplications)
+	delete(m.exprs, FieldPreviousApplications)
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -774,7 +828,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 21)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -810,6 +864,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.applied_application != nil || m.exprs[FieldAppliedApplication] != nil {
 		fields = append(fields, FieldAppliedApplication)
+	}
+	if m.previous_applications != nil || m.exprs[FieldPreviousApplications] != nil {
+		fields = append(fields, FieldPreviousApplications)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -873,6 +930,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.StartingApplication()
 	case FieldAppliedApplication:
 		return m.AppliedApplication()
+	case FieldPreviousApplications:
+		return m.PreviousApplications()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -1028,6 +1087,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAppliedApplication(v)
 		return nil
+	case FieldPreviousApplications:
+		v, ok := value.([]*api.CameraApplication)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPreviousApplications(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -1154,6 +1223,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetStartingApplication()
 	case FieldAppliedApplication:
 		m.ResetAppliedApplication()
+	case FieldPreviousApplications:
+		m.ResetPreviousApplications()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -1221,6 +1292,9 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldAppliedApplication]; ok {
 		fields = append(fields, FieldAppliedApplication)
 	}
+	if _, ok := m.exprs[FieldPreviousApplications]; ok {
+		fields = append(fields, FieldPreviousApplications)
+	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
 	}
@@ -1286,6 +1360,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldAppliedApplication) {
 		fields = append(fields, FieldAppliedApplication)
 	}
+	if m.FieldCleared(FieldPreviousApplications) {
+		fields = append(fields, FieldPreviousApplications)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -1323,6 +1400,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldAppliedApplication:
 		m.ClearAppliedApplication()
+		return nil
+	case FieldPreviousApplications:
+		m.ClearPreviousApplications()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -1376,6 +1456,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldAppliedApplication:
 		m.ResetAppliedApplication()
+		return nil
+	case FieldPreviousApplications:
+		m.ResetPreviousApplications()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
