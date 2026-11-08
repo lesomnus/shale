@@ -38,6 +38,15 @@ func (s coreCameraBinding) Bind(ctx context.Context, r *api.CameraBindingBindReq
 	if _, err := cameraOperator(ctx); err != nil {
 		return nil, err
 	}
+	return s.bind(ctx, r)
+}
+
+// bind shares the recorded creation path with a policy decision that has
+// already validated a Worker's current assignment. It grants no public CRUD.
+func (s coreCameraBinding) bind(ctx context.Context, r *api.CameraBindingBindRequest) (*api.CameraBinding, error) {
+	if err := cameraMessage(r); err != nil {
+		return nil, err
+	}
 	if err := cameraToken("logical_key", r.GetLogicalKey()); err != nil {
 		return nil, err
 	}

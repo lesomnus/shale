@@ -66,6 +66,16 @@ func (s coreCameraJob) Create(ctx context.Context, r *api.CameraJobCreateRequest
 	if _, err := cameraOperator(ctx); err != nil {
 		return nil, err
 	}
+	return s.create(ctx, r)
+}
+
+// create is also used after the policy observer has checked a Worker's exact
+// network assignment. Its caller already owns the authorization boundary; the
+// normal recorded stack and enclosing transaction still own every write.
+func (s coreCameraJob) create(ctx context.Context, r *api.CameraJobCreateRequest) (*api.CameraJob, error) {
+	if err := cameraMessage(r); err != nil {
+		return nil, err
+	}
 	if err := cameraToken("request_key", r.GetRequestKey()); err != nil {
 		return nil, err
 	}
@@ -91,8 +101,13 @@ func (s coreCameraJob) Create(ctx context.Context, r *api.CameraJobCreateRequest
 		if err != nil {
 			return err
 		}
+		pinned, err := c.cameraPinnedInputs(ctx, a, r.GetInputs())
+		if err != nil {
+			return err
+		}
 		canonical := proto.Clone(r).(*api.CameraJobCreateRequest)
 		canonical.SetBinding(api.CameraBindingRef_builder{Id: b.GetId()}.Build())
+		canonical.SetInputs(pinned)
 		hash := cameraHash(canonical)
 		old, err := c.ent(ctx).CameraJob.Query().Where(camerajob.TenantIdEQ(mustId(a.GetTenant().GetId()).Uuid()), camerajob.RequestKeyEQ(r.GetRequestKey()), camerajob.DateErasedIsNil()).Only(ctx)
 		if err == nil {
@@ -105,7 +120,7 @@ func (s coreCameraJob) Create(ctx context.Context, r *api.CameraJobCreateRequest
 		if !ent.IsNotFound(err) {
 			return err
 		}
-		out, err = nx.CameraJob().Add(ctx, api.CameraJobAddRequest_builder{Tenant: api.TenantRef_builder{Id: a.GetTenant().GetId()}.Build(), Site: cameraSite(a.GetSite()), Binding: api.CameraBindingRef_builder{Id: b.GetId()}.Build(), Assignment: api.CameraAssignmentRef_builder{Id: a.GetId()}.Build(), RequestKey: r.GetRequestKey(), RequestHash: hash, Stage: api.CameraJobStage_CAMERA_JOB_STAGE_PENDING, AssignmentGeneration: a.GetGeneration(), Inputs: r.GetInputs()}.Build())
+		out, err = nx.CameraJob().Add(ctx, api.CameraJobAddRequest_builder{Tenant: api.TenantRef_builder{Id: a.GetTenant().GetId()}.Build(), Site: cameraSite(a.GetSite()), Binding: api.CameraBindingRef_builder{Id: b.GetId()}.Build(), Assignment: api.CameraAssignmentRef_builder{Id: a.GetId()}.Build(), RequestKey: r.GetRequestKey(), RequestHash: hash, Stage: api.CameraJobStage_CAMERA_JOB_STAGE_PENDING, AssignmentGeneration: a.GetGeneration(), Inputs: pinned}.Build())
 		return err
 	})
 	if err != nil {
@@ -264,6 +279,9 @@ func (s Core) cameraLeaseFence(j *api.CameraJob, a *api.CameraAssignment, d *api
 	return nil
 }
 func cameraStageTransition(from, to api.CameraJobStage) bool {
+	if from == to && !cameraTerminalStage(from) {
+		return true // a new typed checkpoint need not change the deployment phase
+	}
 	if to == api.CameraJobStage_CAMERA_JOB_STAGE_WAITING || to == api.CameraJobStage_CAMERA_JOB_STAGE_FAILED || to == api.CameraJobStage_CAMERA_JOB_STAGE_CANCELED {
 		return true
 	}
@@ -334,12 +352,19 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 		if !cameraStageTransition(j.GetStage(), r.GetStage()) {
 			return failed("invalid enrollment stage transition")
 		}
+		pin, err := c.cameraProgress(ctx, j, a, b, d, r.GetObserved())
+		if err != nil {
+			return err
+		}
+		if err := c.cameraProgressIdentityRecord(ctx, j, d, r.GetObserved()); err != nil {
+			return err
+		}
 		if r.GetStage() == api.CameraJobStage_CAMERA_JOB_STAGE_ACTIVE {
 			if err := c.cameraActive(ctx, j, a, b, r.GetObserved()); err != nil {
 				return err
 			}
 		}
-		out, err = nx.CameraJob().Patch(ctx, api.CameraJobPatchRequest_builder{Ref: r.GetRef(), Stage: z.Ptr(r.GetStage()), Observed: r.GetObserved(), LastOperationKey: z.Ptr(r.GetOperationKey()), LastOperationHash: hash, DateUpdated: j.GetDateUpdated()}.Build())
+		out, err = nx.CameraJob().Patch(ctx, api.CameraJobPatchRequest_builder{Ref: r.GetRef(), Stage: z.Ptr(r.GetStage()), Observed: r.GetObserved(), PinnedPreset: pin, LastOperationKey: z.Ptr(r.GetOperationKey()), LastOperationHash: hash, DateUpdated: j.GetDateUpdated()}.Build())
 		if err != nil {
 			return err
 		}
@@ -490,6 +515,19 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		if j.GetStage() != api.CameraJobStage_CAMERA_JOB_STAGE_VERIFYING {
 			return failed("camera must be independently verified before deployment")
 		}
+		if (j.GetInputs().GetPolicy() != nil || j.GetInputs().GetPreset() != nil || j.GetInputs().GetConfiguration() != nil || j.GetObserved().GetProgress() != nil) && r.GetObserved().GetProgress() == nil {
+			return failed("pinned camera configuration requires its durable typed checkpoint before publication")
+		}
+		pin, err := c.cameraProgress(ctx, j, a, b, d, r.GetObserved())
+		if err != nil {
+			return err
+		}
+		if err := c.cameraProgressIdentityRecord(ctx, j, d, r.GetObserved()); err != nil {
+			return err
+		}
+		if progress := r.GetObserved().GetProgress(); progress != nil && spec.GetInput() != progress.GetVerified().GetProfile().GetStreamUri() {
+			return invalid("input", "capture must use the independently verified stream address")
+		}
 		if !proto.Equal(spec.GetCredential(), j.GetInputs().GetStreamingCredential()) {
 			return invalid("credential", "capture must use the pinned streaming credential version")
 		}
@@ -564,7 +602,7 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		if err != nil {
 			return err
 		}
-		j, err = nx.CameraJob().Patch(ctx, api.CameraJobPatchRequest_builder{Ref: r.GetRef(), Stage: z.Ptr(api.CameraJobStage_CAMERA_JOB_STAGE_DEPLOYMENT_READY), Observed: r.GetObserved(), PublishedRevision: z.Ptr(ready.GetRevision()), DatePublished: timestamppb.New(c.d.now()), LastOperationKey: z.Ptr(r.GetOperationKey()), LastOperationHash: hash, DateUpdated: j.GetDateUpdated()}.Build())
+		j, err = nx.CameraJob().Patch(ctx, api.CameraJobPatchRequest_builder{Ref: r.GetRef(), Stage: z.Ptr(api.CameraJobStage_CAMERA_JOB_STAGE_DEPLOYMENT_READY), Observed: r.GetObserved(), PinnedPreset: pin, PublishedRevision: z.Ptr(ready.GetRevision()), DatePublished: timestamppb.New(c.d.now()), LastOperationKey: z.Ptr(r.GetOperationKey()), LastOperationHash: hash, DateUpdated: j.GetDateUpdated()}.Build())
 		if err != nil {
 			return err
 		}

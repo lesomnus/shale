@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 // Poll is deliberately bounded and outbound-only. A revision covers the whole
@@ -83,6 +84,9 @@ func (s coreCameraWorker) Poll(ctx context.Context, r *api.CameraWorkerPollReque
 				}
 			}
 			out = api.CameraWorkerPollResponse_builder{Assignments: assignments, Jobs: jobs}.Build()
+			if proto.Size(out) > 2<<20 {
+				return status.Error(codes.ResourceExhausted, "worker snapshot exceeds two MiB; split assignments across workers")
+			}
 			out.SetRevision(hex.EncodeToString(cameraHash(out)))
 			return nil
 		})

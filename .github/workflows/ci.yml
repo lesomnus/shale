@@ -110,6 +110,7 @@ jobs:
           e2e+='|CameraProvisioningRecordsAndResumes|CameraDerivedCeilingsRecord|CameraControl.*'
           e2e+='|CameraWorker.*'
           e2e+='|SourceCatalog.*'
+          e2e+='|CameraPolicy.*'
           go test -race -count=1 -timeout 20m -run "^Test($e2e)\$" ./internal/e2e/
   package:
     runs-on: ubuntu-latest

@@ -149,6 +149,9 @@ func (s Core) cameraEnrollmentPolicy(ctx context.Context, n *api.CameraNetwork, 
 	if p == nil || p.GetMaxDevices() < 0 || p.GetMaxDevices() > 1024 || len(p.GetEligible()) > 128 {
 		return invalid("enrollment", "bounded enrollment policy is required")
 	}
+	if !cameraPresetText(p.GetInitialUsername()) {
+		return invalid("initial_username", "bounded activation username is required")
+	}
 	if p.GetAutomatic() && (p.GetMaxDevices() == 0 || (!p.GetAllowAny() && len(p.GetEligible()) == 0)) {
 		return invalid("enrollment", "automatic enrollment requires a device limit and explicit eligibility")
 	}
