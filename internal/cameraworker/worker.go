@@ -170,6 +170,12 @@ func (w *Worker) execute(ctx context.Context, conn *grpc.ClientConn, work *api.C
 	finished <- err
 }
 
+func (w *Worker) startExecution(ctx context.Context, conn *grpc.ClientConn, work *api.CameraWorkerWork, finished chan<- error) context.CancelFunc {
+	execCtx, stop := context.WithCancel(ctx)
+	go w.execute(execCtx, conn, work, finished)
+	return stop
+}
+
 // One serial execution per Worker avoids local overlap; the CP's physical-device
 // fence also protects against competing Workers and restarts. Terminal or
 // superseded work is canceled before another executor starts.
@@ -192,6 +198,9 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 	for {
 		select {
 		case err := <-finished:
+			if stop != nil {
+				stop()
+			}
 			stop = nil
 			if err != nil {
 				return err
@@ -249,9 +258,7 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 				return err
 			}
 			active = v
-			var execCtx context.Context
-			execCtx, stop = context.WithCancel(ctx)
-			go w.execute(execCtx, conn, v, finished)
+			stop = w.startExecution(ctx, conn, v, finished)
 			break
 		}
 	}
