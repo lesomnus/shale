@@ -191,3 +191,159 @@ docker run --rm --network=none --privileged shale-camera-lan-test
 No physical interface, existing namespace, camera or host-network container is
 used. Namespace/process cleanup runs on failure as well. Run this only on a
 dedicated test runner that permits the required namespace capabilities.
+
+## Topology runner for assembled end-to-end tests
+
+`topology.py` reuses the generated DHCP configuration and builds three fresh
+network namespaces inside the same disposable, network-disabled test container:
+
+```text
+camera eth0 <-- dedicated camera LAN --> eth0 edge wlan0 <-- simulated Wi-Fi --> eth0 CP
+DHCP lease                              192.168.250.1     10.23.0.2           10.23.0.1
+```
+
+The camera obtains its address from an actual DHCP exchange before a test starts.
+The runner checks server DORA log entries, a persisted lease and absent
+router/DNS/NTP options. It configures the WS-Discovery multicast route on the
+camera LAN and disables edge IPv4 forwarding. There is no bridge, NAT, physical
+interface or route from CP to the camera LAN. The Wi-Fi link is a veth simulation;
+it does not model radio behavior.
+
+The runner executes one coordinator command in the CP namespace and exports
+`SHALE_TOPOLOGY_FILE`, the absolute path to a version-1 JSON manifest. The manifest
+contains `roles.edge`, `roles.camera` and `roles.cp`, their addresses/interfaces,
+`exec_prefix` argument arrays, the multicast destination, and DHCP evidence paths.
+The coordinator runs as root solely to launch test processes in the prepared
+namespaces. DHCP is a separate process with its own limited network capabilities.
+Every application's `exec_prefix` uses UID/GID 65534, empty supplementary groups,
+no capabilities (including an empty bounding set), and `no_new_privs`.
+
+Append a command to a role's `exec_prefix` and execute the resulting argument array
+directly. Do not join a Go runtime thread to a namespace, pass the prefix through
+a shell, or give the application a privileged prefix. The `ip netns exec` helper
+performs namespace entry before executing the unprivileged application. The root
+coordinator keeps access to the named namespaces and may use `exec.Command` to
+start, stop or restart each role as the scenario requires. For example:
+
+```go
+argv := append(append([]string{}, topology.Roles["edge"].ExecPrefix...),
+    "/test/shale", "serve", "edge", "--config", configPath)
+edge := exec.CommandContext(ctx, argv[0], argv[1:]...)
+```
+
+This is an execution-contract example; the future assembled test supplies actual
+CLI arguments, central services, credentials, readiness checks and assertions.
+Tests must create writable state/config directories for UID/GID 65534, including
+traversable parents. Prefer a dedicated subdirectory below a test temporary
+directory, and chown that subdirectory explicitly. Ordinary unprivileged sockets
+can perform discovery and connect to camera RTSP; camera fixture listeners should
+use ports above 1023. Host filesystem mounts are unnecessary: build or copy test
+binaries and fixtures into a test image with `COPY`.
+
+```sh
+docker run --rm --network=none --privileged shale-camera-lan-test \
+  python3 topology.py -- python3 topology_smoke.py
+# A future image can inject a compiled coordinator instead:
+# python3 topology.py -- /test/e2e.test -test.run '^TestAssembledEdge$'
+```
+
+`--timeout` bounds the coordinator's lifetime (default 120 seconds), and its exit
+code becomes the runner's exit code. `--artifacts /tmp/run-name` creates a fresh
+directory and retains `topology.json`, DHCP logs/lease and `result.json` inside
+the container. `result.json` records the coordinator exit code and whether cleanup
+completed; the manifest's namespace prefixes are valid only while the runner is
+active. Without `--artifacts`, temporary evidence is deleted after cleanup. Use
+`docker cp` from a stopped container when evidence must be retained outside it.
+
+The supervisor terminates child process groups and remaining processes in its
+namespaces, reaps detached descendants and deletes its namespaces/veth pairs on
+success, coordinator failure, timeout or SIGTERM/SIGINT. SIGKILL still requires
+removing the disposable container. It refuses to start unless explicitly enabled
+by the test image, running as root, and the outer namespace contains only loopback.
+
+`python3 topology_test.py` explicitly exercises this contract in the test
+container. Its unprivileged socket peers check a multicast probe/reply, RTSP
+OPTIONS routing and the outbound CP path; these are transport checks, not the
+production ONVIF adapter, RTSP video, central policy or an assembled Go end-to-end
+test. It also checks success/failure/timeout/SIGTERM cleanup, including a detached
+role child. No hardware or media qualification is inferred from these checks.
+
+## Two-camera qualification topology
+
+From a source checkout, the opt-in `qualification_topology.py` wrapper uses the
+same isolation gate and coordinator contract with two independent camera peers:
+
+```text
+camera  eth0 (DHCP .20) --+-- edge eth0 bridge (.1)  wlan0 -- CP
+camera2 eth0 (DHCP .21) --+
+```
+
+The bridge models the isolated PoE switch inside the owned edge namespace;
+Wi-Fi stays on a separate link. Both camera clients keep distinct fixed MACs,
+and ordinary application processes use the same UID/GID 65534, zero-capability
+prefix as the original runner. CP has no camera-LAN route and edge forwarding
+remains disabled. The original `topology.py` defaults to its three-namespace
+layout. No production interface or network configuration changes for this test.
+
+The manifest keeps its version-1 fields and adds `roles.camera2`. Each camera
+role includes `mac` and a stable `logical_identity`. The outer wrapper owns both
+DHCP clients and the daemon. Camera/edge application processes can read the
+public manifest; only the root coordinator can traverse the `0700` control
+directory. Requests and responses are fixed `0600` JSON files at the manifest's
+`control.request_file` and `control.response_file` paths.
+
+Write one request at a time by atomically renaming a completed temporary file to
+`request.json`. Match the response's `version` and `id`; an older response may
+still occupy `response.json` until the new operation completes. Remove the
+previous response before submitting a retry with the same ID, as the Python
+helper does. For example:
+
+```json
+{"version":1,"id":"camera-move-1","op":"move_camera","role":"camera","address":"192.168.250.30"}
+```
+
+| Operation | Additional fields | Effect |
+| --- | --- | --- |
+| `status` | none | Current client/daemon PIDs, observed MACs/IPs and DHCP leases |
+| `move_camera` | `role`, `address` | Release and reacquire an in-pool address using the same client/MAC |
+| `renew_camera` | `role` | Renew that client's lease |
+| `restart_dhcp` | none | Restart the owned daemon while retaining its leases and clients |
+| `uplink_down` / `uplink_up` | none | Toggle only the prepared edge Wi-Fi simulation |
+
+Roles are exactly `camera` or `camera2`; requested addresses must be unused by
+the other camera and lie in `192.168.250.20`–`192.168.250.99`. Unknown fields,
+versions and operations are rejected. Requests accept no command, interface,
+path, credential or SQL. IDs are 1–64 ASCII letters/digits/underscores/dashes.
+Requests are at most 4 KiB and responses at most 64 KiB. Each operation has a
+20-second limit bounded further by the coordinator deadline. The Python
+`control_request` helper waits at most 30 seconds and checks response correlation.
+Up to 128 completed IDs are retained for exact-response retries during one run;
+reusing a retained ID with different contents is rejected. Use a fresh `status`
+ID to obtain current state after a previous receipt.
+
+An address move releases the client's existing lease, removes its previous owned
+IPv4 address in the DHCP hook, updates the private reservation file, signals
+dnsmasq to reload it and reacquires through DHCP. The daemon and other camera
+continue running. The wrapper updates the public manifest after the new address
+is bound. An already-running camera fixture should listen on its namespace's
+wildcard address and keep its logical identity while its advertised endpoint is
+updated by the assembled test. The control API does not restart that fixture.
+
+```sh
+docker run --rm --network=none --privileged shale-camera-lan-test \
+  python3 qualification_topology.py -- python3 qualification_smoke.py
+docker run --rm --network=none --privileged shale-camera-lan-test \
+  python3 qualification_topology_test.py
+```
+
+The protocol checks cover both DORA exchanges, renewal, a same-MAC/client-PID
+address move with the old IP actually gone, the other client's unchanged lease,
+unprivileged simultaneous multicast/TCP peers, private-control denial to apps,
+lease persistence across daemon restart, uplink loss/recovery and full resource
+cleanup on success/failure/timeout/SIGTERM. These are network/control checks;
+actual camera enrollment, encoded video and live/archive decoding belong to the
+assembled Go qualification.
+
+See the [complete generated-media qualification guide](https://github.com/lesomnus/shale/blob/main/deploy/edge/QUALIFICATION.md)
+for the combined/independent runtime matrix, recovery faults, CI evidence and
+the separate optional physical PoE/Pi procedure.

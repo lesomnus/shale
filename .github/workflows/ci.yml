@@ -110,6 +110,7 @@ jobs:
           e2e+='|CameraProvisioningRecordsAndResumes|CameraDerivedCeilingsRecord|CameraControl.*'
           e2e+='|CameraWorker.*|CameraCredential.*|CameraPolicy.*'
           e2e+='|SourceCatalog.*|ProducerLifecycle.*|ProducerHistorical.*|ProducerApplication.*|ProducerManaged.*|LiveEpoch.*'
+          e2e+='|Edge.*|Qualification.*'
           go test -race -count=1 -timeout 20m -run "^Test($e2e)\$" ./internal/e2e/
   package:
     runs-on: ubuntu-latest
