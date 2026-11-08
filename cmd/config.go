@@ -53,6 +53,7 @@ type Config struct {
 	Storage      StorageConfig      `yaml:"storage"`
 	Producer     ProducerConfig     `yaml:"producer"`
 	CameraWorker CameraWorkerConfig `yaml:"camera_worker"`
+	Edge         EdgeConfig         `yaml:"edge"`
 	Reader       ReaderConfig       `yaml:"reader"`
 	Relay        RelayConfig        `yaml:"relay"`
 	// Export is the opt-in MP4 download endpoint on the tenant HTTP listener.
@@ -78,6 +79,26 @@ type CameraWorkerConfig struct {
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	RetryInterval     time.Duration `yaml:"retry_interval"`
 	LeaseSeconds      int64         `yaml:"lease_seconds"`
+	DiscoveryInterval time.Duration `yaml:"discovery_interval"`
+	DiscoveryTimeout  time.Duration `yaml:"discovery_timeout"`
+	Ffmpeg            string        `yaml:"ffmpeg"`
+	Ffprobe           string        `yaml:"ffprobe"`
+	CameraCAFile      string        `yaml:"camera_ca_file"`
+}
+
+// EdgeConfig selects managed outbound roles. Policies, presets and credential
+// material remain CP-owned. Nil Roles means both; an explicit empty list is invalid.
+type EdgeConfig struct {
+	Roles          []string                  `yaml:"roles"`
+	RetryInterval  time.Duration             `yaml:"retry_interval"`
+	StreamingCache *EdgeStreamingCacheConfig `yaml:"streaming_cache"`
+}
+
+// EdgeStreamingCacheConfig is opt-in and bounds only streaming credentials.
+// MaxEntries defaults to 32; MaxAge must explicitly be between 1s and 300s.
+type EdgeStreamingCacheConfig struct {
+	MaxAge     time.Duration `yaml:"max_age"`
+	MaxEntries int           `yaml:"max_entries"`
 }
 
 // ClientConfig is the CLI's connection (§32).

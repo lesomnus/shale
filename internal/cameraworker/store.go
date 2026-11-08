@@ -236,6 +236,7 @@ func runObservation(r provision.Run, prior *api.CameraJobObservation) (*api.Came
 	// A workflow checkpoint cannot manufacture Producer/live acknowledgments.
 	if prior != nil {
 		o.SetAppliedRevision(prior.GetAppliedRevision())
+		o.SetLiveCaptureEpoch(prior.GetLiveCaptureEpoch())
 		o.SetLiveDecodedFrames(prior.GetLiveDecodedFrames())
 		o.SetLiveFirstFrameAt(prior.GetLiveFirstFrameAt())
 		o.SetLiveLastFrameAt(prior.GetLiveLastFrameAt())

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
@@ -89,6 +90,11 @@ func New(c Config) (*Worker, error) {
 	return &Worker{cfg: c, agent: a}, nil
 }
 func (w *Worker) ID() pdid.Id { return w.agent.Id() }
+
+// HTTPClient uses this Worker's current machine certificate and pinned CP CA
+// for native data-plane verification. Camera-device trust is configured
+// separately; callers own and close this client's idle connections.
+func (w *Worker) HTTPClient() (*http.Client, error) { return w.agent.HTTPClient() }
 
 func operationKey() string {
 	var b [16]byte
