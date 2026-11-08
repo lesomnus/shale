@@ -172,7 +172,7 @@ func normalizedConfig(c Config) (Config, error) {
 	var err error
 	if c.Producer != nil {
 		value := *c.Producer
-		if value.Cp == "" {
+		if value.Cp == "" || value.HeartbeatInterval < 0 {
 			return Config{}, invalidRole("producer")
 		}
 		producerDir, err = privateStatePath(value.StateDir)

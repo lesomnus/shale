@@ -99,6 +99,7 @@ func TestManagedEdgeProducerRejectsAmbiguousCompatibilitySettings(t *testing.T) 
 		{"credential directory", func(c *cmd.Config) { c.Producer.Credentials.Directory = "fixture-secret" }},
 		{"credential provider", func(c *cmd.Config) { c.Producer.Credentials.Provider = "fixture-secret" }},
 		{"invalid buffer", func(c *cmd.Config) { c.Producer.Buffer = "fixture-secret" }},
+		{"negative heartbeat", func(c *cmd.Config) { c.Producer.HeartbeatInterval = -time.Second }},
 		{"invalid selector", func(c *cmd.Config) { c.Producer.Catalog.Assignment = "fixture-secret" }},
 		{"wrong selector domain", func(c *cmd.Config) { c.Producer.Catalog.Assignment = pdid.New(8).String() }},
 	} {

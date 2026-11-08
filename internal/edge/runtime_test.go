@@ -182,6 +182,17 @@ func TestSupervisorCanceledParentDoesNotConstructHost(t *testing.T) {
 	require.NoError(t, runWithFactories(ctx, runtimeTestConfig(t), runtimeFactories{}))
 }
 
+func TestSupervisorRejectsInvalidProducerHeartbeatBeforeConstructingRoles(t *testing.T) {
+	c := runtimeTestConfig(t)
+	c.Producer.HeartbeatInterval = -time.Second
+	require.ErrorIs(t, Validate(c), ErrInvalidConfig)
+	// Empty factories would panic if either constructor were reached. In
+	// particular a delayed time.NewTicker panic must not kill a healthy Worker.
+	require.ErrorIs(t, runWithFactories(t.Context(), c, runtimeFactories{}), ErrInvalidConfig)
+	c.Producer.HeartbeatInterval = 0
+	require.NoError(t, Validate(c), "zero selects the Producer's existing default")
+}
+
 func TestEdgeConfigurationSeparatesResolvedPrivateState(t *testing.T) {
 	c := runtimeTestConfig(t)
 	root := t.TempDir()
