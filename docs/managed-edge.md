@@ -104,3 +104,52 @@ authorized streaming credentials with an actual matching local applied proof;
 it does not cache bootstrap/management access or replace the current catalog,
 assignment authorization or a new BeginApply ticket. It is not offline cold
 startup or permission to activate a new capture while CP is unavailable.
+
+## Install or migrate a systemd host
+
+The Debian package includes `/etc/shale/shale-edge.yaml.example` and the
+`shale@.service` template. Set `cp` to the **tenant API, normally port 7400**,
+and set `tenant` and the deployment CA fingerprint. Port 7401 is the cluster
+API used by Storage/Relay, not the managed Worker/Producer endpoint. Use the
+package built with `serve edge` support; the template invokes
+`/usr/bin/shale --config /etc/shale/shale.yaml serve edge` for `shale@edge`.
+
+For a fresh host, review the example, copy it to `/etc/shale/shale.yaml`, and
+then enable `shale@edge`. It intentionally contains no `producer.sources`, USB
+input, demo mode, local Set alias or local credential directory. Keep those
+settings in a separate configuration if you still need standalone
+`shale serve producer`; they are not managed edge inputs. See the
+[camera LAN recipe](../deploy/edge/README.md) for optional Ethernet/DHCP setup.
+The renderer is `/usr/share/shale/edge/camera_lan.py` in the package.
+
+When replacing existing services:
+
+1. Inspect `systemctl list-units 'shale@*' --all` and any custom Shale units to
+   identify which processes use the existing Producer and Worker state. Back up
+   the active configuration and record the existing state paths. Preserve the
+   private keys, certificates and central assignments.
+2. Stop and disable the old units before starting `edge` with the same role
+   directories. For the template units this is
+   `sudo systemctl disable --now shale@producer shale@camera-worker`. Stop a
+   custom legacy `shale camera worker --host-config ...` unit explicitly too.
+   Do not run `edge` and its standalone constituents against the same identities.
+   Standalone Producer and Worker processes can still be used together when each
+   owns its separate role directory.
+3. Replace the active configuration with the reviewed managed example, retaining
+   the intended state paths. Remove the incompatible local/manual settings from
+   that active file. The usual paths remain `/var/lib/shale/producer` and
+   `/var/lib/shale/camera-worker`; neither directory needs to be recreated.
+4. Run `sudo systemctl enable --now shale@edge` and inspect
+   `journalctl -u shale@edge`. Each role must have its own CP approval and
+   assignment; starting the unit does not grant either role permission.
+
+To roll back, stop and disable `shale@edge` first, restore the previous
+configuration, then re-enable only the old units you intentionally replaced.
+Do not erase identities, central bindings, recording history or cached state
+to switch service layouts. The camera DHCP service has a separate lifetime and
+does not need to be stopped for a Shale process-layout change.
+
+The template has a 30-second stop timeout. Choose a drain timeout that fits the
+service manager's stop budget, or explicitly extend `TimeoutStopSec` with a
+drop-in when you need a longer graceful RAM drain. A process killed at that
+deadline can lose its remaining volatile queue.
