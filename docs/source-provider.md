@@ -25,8 +25,10 @@ an unknown keyframe interval remains zero.
 Runtime adapters must not cast or round this fractional FPS into the legacy
 integer `SourceConfig.Fps`. Managed copy capture can preserve source cadence
 without a legacy FPS override; its exact profile remains available to negotiation
-and acknowledgement. Extending the runtime's frame-rate representation belongs
-at that consumer boundary, with regression coverage for fractional input.
+and future acknowledgement. The initial Producer adapter uses `Encoder: copy`
+and leaves `Fps` unset, retaining the exact profile in its accepted catalog.
+Its negotiated ceiling includes the configured video ceiling plus the existing
+default budget for archive audio and the live Opus track.
 
 `Memory.Publish` validates and atomically accepts a deep copy. An exact duplicate
 is idempotent. An older generation or catalog revision returns `ErrStale`; a
@@ -66,6 +68,16 @@ query parameters, malformed query encoding and URI fragments. They do not
 silently strip credentials and then publish an input with changed behavior.
 Errors do not repeat the rejected endpoint.
 
+The Producer's file adapter preserves both RTSP user information and credential
+query parameters in a private, process-local read lease. Its public static
+catalog contains only the clean URI and an opaque reference. The lease binds to
+that exact clean endpoint and sanitizes subprocess errors, including encoded
+credential values. Such references are not recoverable activation credentials:
+restarting the Producer rereads the private local configuration. An existing
+explicit, versioned credential reference is retained with its exact scope and
+uses the configured AuthProvider. Combining a referenced credential and embedded
+URI credentials is rejected as ambiguous.
+
 `CredentialRef` contains only provider, stable ID, immutable version and purpose.
 It is not a grant or proof of recoverability. Credential consumers still check
 the current assignment, exact runtime scope and authorized immutable version
@@ -104,3 +116,64 @@ boundary. A runtime acknowledgement must correlate assignment generation,
 aggregate catalog revision and each binding/Source specification revision after
 registration, negotiation and actual capture application. Reading a snapshot
 alone is not applied state or proof of live/committed media readiness.
+
+## CP-backed initial loading
+
+The CLI continues to use `producer.sources` by default. A CP-managed Producer
+selects its catalog explicitly:
+
+```yaml
+producer:
+  catalog:
+    provider: cp
+    # Optional: pin a specific assignment ID rather than its unique Set.
+    # assignment: <CameraAssignment PDID>
+    poll_interval: 1s
+  credentials:
+    directory: /var/lib/shale/credentials
+    provider: local
+```
+
+Do not combine `catalog.provider: cp` with local `sources` or `demo`. `file` and
+`static` explicitly select the existing local configuration path. Credential
+configuration is independent of catalog selection: a thin reference never
+creates or authorizes a secret resolver. A reference to a central credential
+backend requires that separately configured AuthProvider; selecting `cp` alone
+does not implement credential distribution.
+
+Embedded callers can supply `producer.Config.SourceProvider`, or a mutually
+exclusive `SourceProviderFactory`. The factory receives `SourceSession` only
+after the host agent has authenticated and obtained its actual Producer, tenant,
+site and Set. Its connection follows machine-certificate renewal. `source/cp`
+uses this session for the single Producer-scoped `CameraAssignment.Snapshot`
+RPC, validates owner and scope, and does not request generic assignment inventory
+or Watch access. An omitted assignment ID uses the Set reference and fails if
+more than one matching assignment exists.
+
+`source/cp.Provider` uses deadline-bounded full reads for change polling and
+periodic resynchronization. A failed read leaves its accepted memory untouched
+and returns an error. The initial runtime verifies the snapshot scope, looks up
+each managed Source by its exact CP ID, and rejects identity, alias, Set, tenant
+or configured-label mismatches. It never creates a replacement ID for a managed
+binding. Legacy aliases without IDs still use normal registration.
+
+This implementation consumes one initial snapshot. A successfully empty catalog
+returns `producer.ErrInitialCatalogEmpty` with a clear runtime boundary; it does
+not synthesize a camera or interpret a failed CP read as empty. Dynamic updates,
+empty idle operation and actual-applied acknowledgements remain #199 work.
+
+## Worker publication adapter
+
+`provision/source.Publisher` accepts a narrow durable `Committer`. A publication
+receipt contains the stable Source binding and the committed assignment/catalog
+revision. The adapter validates that receipt before notifying a separately
+injected Producer-authenticated `Provider` and `Memory`. The Worker's commit
+capability grants no full-catalog read authority. Standalone workers can omit
+both Provider and Memory and use durable commit-only publication.
+
+The adapter refreshes a complete authorized catalog, never a snapshot invented
+from one camera's result. A failed or stale refresh after a successful commit
+returns the durable binding and a fixed, secret-free refresh classification;
+it does not retry device mutation. `Refresh` or normal resynchronization repairs
+the missed notification. A commit receipt is not evidence of live, ingest or
+committed recording readiness: those are delegated to the separate Observer.
