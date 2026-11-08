@@ -23,6 +23,19 @@ var (
 	ErrUnavailable = errors.New("source catalog unavailable")
 )
 
+// These stable wire domains come from the schema. Keeping the checks here does
+// not require importing generated servers, their registry or the internal core.
+const (
+	domainTenant     pdid.Domain = 1
+	domainSet        pdid.Domain = 7
+	domainSource     pdid.Domain = 8
+	domainSite       pdid.Domain = 19
+	domainProducer   pdid.Domain = 22
+	domainNetwork    pdid.Domain = 26
+	domainAssignment pdid.Domain = 28
+	domainBinding    pdid.Domain = 29
+)
+
 // Revision identifies a full snapshot. Generation fences assignment changes;
 // Catalog increases for changes to the source list or its specifications.
 // An empty AssignmentID and zero Generation identify a local static catalog.
@@ -107,7 +120,7 @@ func normalizeRevision(r Revision) (Revision, error) {
 	if r.Generation < 1 {
 		return Revision{}, invalid("assignment generation")
 	}
-	id, err := canonicalID(r.AssignmentID)
+	id, err := canonicalID(r.AssignmentID, domainAssignment)
 	if err != nil {
 		return Revision{}, err
 	}
@@ -154,9 +167,9 @@ func (s Spec) Clone() Spec {
 
 func invalid(field string) error { return fmt.Errorf("%w: %s", ErrInvalid, field) }
 
-func canonicalID(value string) (string, error) {
+func canonicalID(value string, domain pdid.Domain) (string, error) {
 	id, err := pdid.Parse(value)
-	if err != nil || id.IsZero() {
+	if err != nil || id.IsZero() || id.Domain() != domain {
 		return "", invalid("identifier")
 	}
 	return id.String(), nil
@@ -174,15 +187,18 @@ func Normalize(s Snapshot) (Snapshot, error) {
 		if out.Revision.Generation < 1 {
 			return Snapshot{}, invalid("assignment generation")
 		}
-		for _, field := range []*string{&out.Revision.AssignmentID, &out.Scope.TenantID, &out.Scope.SetID, &out.Scope.ProducerID, &out.Scope.NetworkID} {
-			value, err := canonicalID(*field)
+		for _, field := range []struct {
+			value  *string
+			domain pdid.Domain
+		}{{&out.Revision.AssignmentID, domainAssignment}, {&out.Scope.TenantID, domainTenant}, {&out.Scope.SetID, domainSet}, {&out.Scope.ProducerID, domainProducer}, {&out.Scope.NetworkID, domainNetwork}} {
+			value, err := canonicalID(*field.value, field.domain)
 			if err != nil {
 				return Snapshot{}, err
 			}
-			*field = value
+			*field.value = value
 		}
 		if out.Scope.SiteID != "" {
-			value, err := canonicalID(out.Scope.SiteID)
+			value, err := canonicalID(out.Scope.SiteID, domainSite)
 			if err != nil {
 				return Snapshot{}, err
 			}
@@ -205,13 +221,14 @@ func Normalize(s Snapshot) (Snapshot, error) {
 		}
 		aliases[spec.Alias] = true
 		for _, field := range []struct {
-			value *string
-			seen  map[string]bool
-		}{{&spec.SourceID, sources}, {&spec.BindingID, bindings}} {
+			value  *string
+			seen   map[string]bool
+			domain pdid.Domain
+		}{{&spec.SourceID, sources, domainSource}, {&spec.BindingID, bindings, domainBinding}} {
 			if *field.value == "" {
 				continue
 			}
-			value, err := canonicalID(*field.value)
+			value, err := canonicalID(*field.value, field.domain)
 			if err != nil {
 				return Snapshot{}, err
 			}
@@ -230,9 +247,12 @@ func validateSpec(s Spec, managed bool) error {
 	if s.Alias == "" || len(s.Alias) > 256 || (managed && (s.SourceID == "" || s.BindingID == "")) {
 		return invalid("source identity")
 	}
-	for _, id := range []string{s.SourceID, s.BindingID} {
-		if id != "" {
-			if _, err := canonicalID(id); err != nil {
+	for _, field := range []struct {
+		value  string
+		domain pdid.Domain
+	}{{s.SourceID, domainSource}, {s.BindingID, domainBinding}} {
+		if field.value != "" {
+			if _, err := canonicalID(field.value, field.domain); err != nil {
 				return err
 			}
 		}

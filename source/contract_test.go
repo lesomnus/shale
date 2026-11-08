@@ -93,6 +93,33 @@ func TestManagedIdentityAndRevisionValidation(t *testing.T) {
 	}
 }
 
+func TestManagedIdentifierDomains(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		edit func(*source.Snapshot)
+	}{
+		{"assignment", func(v *source.Snapshot) { v.Revision.AssignmentID = pdid.New(8).String() }},
+		{"tenant", func(v *source.Snapshot) { v.Scope.TenantID = pdid.New(8).String() }},
+		{"set", func(v *source.Snapshot) { v.Scope.SetID = pdid.New(8).String() }},
+		{"producer", func(v *source.Snapshot) { v.Scope.ProducerID = pdid.New(8).String() }},
+		{"network", func(v *source.Snapshot) { v.Scope.NetworkID = pdid.New(8).String() }},
+		{"site", func(v *source.Snapshot) { v.Scope.SiteID = pdid.New(8).String() }},
+		{"binding", func(v *source.Snapshot) { v.Sources[0].BindingID = pdid.New(8).String() }},
+		{"source", func(v *source.Snapshot) { v.Sources[0].SourceID = pdid.New(22).String() }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			v := managed(1)
+			tt.edit(&v)
+			_, err := source.Normalize(v)
+			require.ErrorIs(t, err, source.ErrInvalid, "another valid PDID is not this entity's identity")
+		})
+	}
+	v := managed(1)
+	v.Scope.SiteID = pdid.New(19).String()
+	_, err := source.Normalize(v)
+	require.NoError(t, err)
+}
+
 func TestSerializationNeverEchoesCredentialInputs(t *testing.T) {
 	const material = "private fixture +:/? password"
 	inputs := []string{

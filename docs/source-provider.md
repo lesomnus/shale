@@ -10,7 +10,8 @@ require a background goroutine or an unbounded notification queue.
 
 A managed snapshot names an assignment, its generation and its aggregate
 catalog revision. Its tenant, optional site, Set, Producer and camera-network
-scope are explicit. Managed identifiers must be valid PDIDs. Each specification
+scope are explicit. Managed identifiers must be valid PDIDs of their expected
+entity domains, not merely syntactically valid UUIDs. Each specification
 has an explicit binding and Source ID, alias and revision, a sanitized RTSP
 endpoint, a capture profile and an optional streaming credential reference.
 Aliases, Source IDs and binding IDs cannot repeat within a snapshot.
@@ -20,6 +21,12 @@ decrease and increase whenever capture membership or content changes. A source's
 own revision can be older than the aggregate revision: publishing another camera
 does not change this camera's capture generation. Fractional FPS is preserved;
 an unknown keyframe interval remains zero.
+
+Runtime adapters must not cast or round this fractional FPS into the legacy
+integer `SourceConfig.Fps`. Managed copy capture can preserve source cadence
+without a legacy FPS override; its exact profile remains available to negotiation
+and acknowledgement. Extending the runtime's frame-rate representation belongs
+at that consumer boundary, with regression coverage for fractional input.
 
 `Memory.Publish` validates and atomically accepts a deep copy. An exact duplicate
 is idempotent. An older generation or catalog revision returns `ErrStale`; a

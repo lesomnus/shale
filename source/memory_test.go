@@ -145,6 +145,10 @@ func TestMemoryUnavailableEmptyAndCancellationAreDistinct(t *testing.T) {
 	foreign.AssignmentID = pdid.New(28).String()
 	_, err = p.WaitForChange(ctx, foreign)
 	require.ErrorIs(t, err, source.ErrConflict)
+	wrongDomain := v.Revision
+	wrongDomain.AssignmentID = pdid.New(8).String()
+	_, err = p.WaitForChange(ctx, wrongDomain)
+	require.ErrorIs(t, err, source.ErrInvalid)
 }
 
 func TestMemoryConcurrentConsumersAndPublication(t *testing.T) {
