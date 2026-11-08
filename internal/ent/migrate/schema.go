@@ -604,6 +604,71 @@ var (
 			},
 		},
 	}
+	// CameraworkerColumns holds the columns for the "cameraworker" table.
+	CameraworkerColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "hardware_id", Type: field.TypeString},
+		{Name: "hostname", Type: field.TypeString},
+		{Name: "state", Type: field.TypeInt32},
+		{Name: "cert_serial", Type: field.TypeString},
+		{Name: "join", Type: field.TypeJson, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "date_adopted", Type: field.TypeTime, Nullable: true},
+		{Name: "date_seen", Type: field.TypeTime, Nullable: true},
+		{Name: "date_cert_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "version", Type: field.TypeString},
+		{Name: "approved_key_fingerprint", Type: field.TypeString},
+		{Name: "date_cert_issued", Type: field.TypeTime, Nullable: true},
+		{Name: "certificate", Type: field.TypeBytes, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+	}
+	// CameraworkerTable holds the schema information for the "cameraworker" table.
+	CameraworkerTable = &schema.Table{
+		Name:       "cameraworker",
+		Columns:    CameraworkerColumns,
+		PrimaryKey: []*schema.Column{CameraworkerColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cameraworker_tenant_tenant",
+				Columns:    []*schema.Column{CameraworkerColumns[20]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameraworker_site_site",
+				Columns:    []*schema.Column{CameraworkerColumns[21]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "cameraworker_page",
+				Unique:  false,
+				Columns: []*schema.Column{CameraworkerColumns[20], CameraworkerColumns[12], CameraworkerColumns[0]},
+			},
+			{
+				Name:    "cameraworker_slug",
+				Unique:  true,
+				Columns: []*schema.Column{CameraworkerColumns[1], CameraworkerColumns[20]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+			{
+				Name:    "cameraworker_hardware",
+				Unique:  false,
+				Columns: []*schema.Column{CameraworkerColumns[5], CameraworkerColumns[20]},
+			},
+		},
+	}
 	// DelegationColumns holds the columns for the "delegation" table.
 	DelegationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1611,6 +1676,7 @@ var (
 		CameradeviceTable,
 		CamerajobTable,
 		CameranetworkTable,
+		CameraworkerTable,
 		DelegationTable,
 		DeviceTable,
 		HolderTable,
@@ -1688,6 +1754,11 @@ func init() {
 	CameranetworkTable.ForeignKeys[1].RefTable = SiteTable
 	CameranetworkTable.Annotation = &entsql.Annotation{
 		Table: "cameranetwork",
+	}
+	CameraworkerTable.ForeignKeys[0].RefTable = TenantTable
+	CameraworkerTable.ForeignKeys[1].RefTable = SiteTable
+	CameraworkerTable.Annotation = &entsql.Annotation{
+		Table: "cameraworker",
 	}
 	DelegationTable.ForeignKeys[0].RefTable = TenantTable
 	DelegationTable.ForeignKeys[1].RefTable = HolderTable

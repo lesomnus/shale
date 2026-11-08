@@ -47,6 +47,7 @@ import (
 	entCameraDevice "github.com/lesomnus/shale/internal/ent/cameradevice"
 	entCameraJob "github.com/lesomnus/shale/internal/ent/camerajob"
 	entCameraNetwork "github.com/lesomnus/shale/internal/ent/cameranetwork"
+	entCameraWorker "github.com/lesomnus/shale/internal/ent/cameraworker"
 	entDelegation "github.com/lesomnus/shale/internal/ent/delegation"
 	entDevice "github.com/lesomnus/shale/internal/ent/device"
 	entHolder "github.com/lesomnus/shale/internal/ent/holder"
@@ -126,6 +127,7 @@ const (
 	CameraDeviceDomain     pdid.Domain = 27  // "camera-device"
 	CameraJobDomain        pdid.Domain = 30  // "camera-job"
 	CameraNetworkDomain    pdid.Domain = 26  // "camera-network"
+	CameraWorkerDomain     pdid.Domain = 31  // "camera-worker"
 	DelegationDomain       pdid.Domain = 25  // "delegation"
 	DeviceDomain           pdid.Domain = 13  // "device"
 	HolderDomain           pdid.Domain = 2   // "holder"
@@ -159,6 +161,7 @@ func init() {
 	pdid.Register("shale.CameraDevice", CameraDeviceDomain, "camera-device")
 	pdid.Register("shale.CameraJob", CameraJobDomain, "camera-job")
 	pdid.Register("shale.CameraNetwork", CameraNetworkDomain, "camera-network")
+	pdid.Register("shale.CameraWorker", CameraWorkerDomain, "camera-worker")
 	pdid.Register("shale.Delegation", DelegationDomain, "delegation")
 	pdid.Register("shale.Device", DeviceDomain, "device")
 	pdid.Register("shale.Holder", HolderDomain, "holder")
@@ -196,6 +199,7 @@ var Domains = map[string]pdid.Domain{
 	"shale.CameraDevice":     CameraDeviceDomain,
 	"shale.CameraJob":        CameraJobDomain,
 	"shale.CameraNetwork":    CameraNetworkDomain,
+	"shale.CameraWorker":     CameraWorkerDomain,
 	"shale.Delegation":       DelegationDomain,
 	"shale.Device":           DeviceDomain,
 	"shale.Holder":           HolderDomain,
@@ -250,6 +254,9 @@ var IndexRenames = []rename.Index{
 	{Table: "camerajob", From: "camerajob_tenant_id_date_created_id", To: "camerajob_page"},
 	{Table: "camerajob", From: "camerajob_tenant_id_request_key", To: "camerajob_intent"},
 	{Table: "cameranetwork", From: "cameranetwork_tenant_id_date_created_id", To: "cameranetwork_page"},
+	{Table: "cameraworker", From: "cameraworker_tenant_id_date_created_id", To: "cameraworker_page"},
+	{Table: "cameraworker", From: "cameraworker_alias_tenant_id", To: "cameraworker_slug"},
+	{Table: "cameraworker", From: "cameraworker_hardware_id_tenant_id", To: "cameraworker_hardware"},
 	{Table: "delegation", From: "delegation_date_created_id", To: "delegation_page"},
 	{Table: "delegation", From: "delegation_holder_id_date_ends", To: "delegation_holder"},
 	{Table: "device", From: "device_date_created_id", To: "device_page"},
@@ -422,6 +429,16 @@ func (wall) CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, er
 	}
 
 	return entCameraNetwork.TenantIdIn(vs...), nil
+}
+
+// CameraWorkerScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraWorker.TenantIdIn(vs...), nil
 }
 
 // DelegationScope: a row belongs to the tenant its "tenant" reaches.
@@ -693,6 +710,16 @@ func (x grouped) CameraNetworkScope(ctx context.Context) (predicate.CameraNetwor
 	}
 
 	return entCameraNetwork.SiteIdIn(vs...), nil
+}
+
+// CameraWorkerScope: in the Site its "site" names.
+func (x grouped) CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraWorker.SiteIdIn(vs...), nil
 }
 
 // DelegationScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -4669,6 +4696,534 @@ func (s sinkCameraNetwork) watchCameraNetworkKeys(
 		}
 
 		v, err := s.Get(ctx, api.CameraNetworkGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
+type sinkCameraWorker struct {
+	api.CameraWorkerServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) CameraWorker() api.CameraWorkerServiceServer {
+	v := sinkCameraWorker{s.Server.CameraWorker(), s.Server.Store, s.w, s.namer, s.joined}
+	v.CameraWorkerServiceServer = bare.CameraWorkerWithAddRule(v.CameraWorkerServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of CameraWorker writes, refusing
+// one that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.CameraWorker].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkCameraWorker) admit(ctx context.Context, req *api.CameraWorkerAddRequest) (*api.CameraWorkerAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "shale.CameraWorker", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkCameraWorker.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkCameraWorker) Add(ctx context.Context, req *api.CameraWorkerAddRequest) (*api.CameraWorker, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.CameraWorkerServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkCameraWorker.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkCameraWorker.Apply].
+func (s sinkCameraWorker) Patch(ctx context.Context, req *api.CameraWorkerPatchRequest) (*api.CameraWorker, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraWorker", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.CameraWorkerServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.CameraWorkerServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkCameraWorker) Erase(ctx context.Context, req *api.CameraWorkerRef) (*api.CameraWorkerEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraWorker", req)
+
+	return s.CameraWorkerServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkCameraWorker) Apply(ctx context.Context, req *api.CameraWorkerApplyRequest) (*api.CameraWorker, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraWorker", req.GetRef())
+
+	return s.CameraWorkerServiceServer.Apply(ctx, req)
+}
+
+// orderCameraWorker is how CameraWorkers come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderCameraWorker = []sqlpage.Order{
+	{Column: entCameraWorker.FieldDateCreated, Desc: false},
+	{Column: entCameraWorker.FieldId, Desc: false},
+}
+
+func afterCameraWorker(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextCameraWorker(last *ent.CameraWorker, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByCameraWorker is an order as ent orders a query by it.
+func orderByCameraWorker(by []sqlpage.Order) []entCameraWorker.OrderOption {
+	out := make([]entCameraWorker.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// CameraWorkerPageSize is what a request that did not say gets, and
+	// CameraWorkerPageLimit is the most it gets however loudly it asks.
+	CameraWorkerPageSize  = 20
+	CameraWorkerPageLimit = 100
+
+	// CameraWorkerFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	CameraWorkerFilterLimit = 32
+)
+
+// List answers with the CameraWorkers that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkCameraWorker) List(ctx context.Context, req *api.CameraWorkerListRequest) (*api.CameraWorkerListResponse, error) {
+	q := s.store.Db.CameraWorker.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.CameraWorkerNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > CameraWorkerFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), CameraWorkerFilterLimit)
+		}
+
+		ps := make([]predicate.CameraWorker, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterCameraWorker(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entCameraWorker.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderCameraWorker, afterCameraWorker, nextCameraWorker, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), CameraWorkerPageSize, CameraWorkerPageLimit)
+	us, err := q.Order(orderByCameraWorker(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.CameraWorker, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.CameraWorkerListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterCameraWorker turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterCameraWorker(f *api.CameraWorkerFilter) (predicate.CameraWorker, error) {
+	ps := make([]predicate.CameraWorker, 0, 1)
+	if f.HasRef() {
+		p, err := bare.CameraWorkerPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, entCameraWorker.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraWorker.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, entCameraWorker.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraWorker.HasSiteWith(q))
+		}
+	}
+	if m := f.GetLabels(); len(m) > 0 {
+		ks := make([]string, 0, len(m))
+		for k := range m {
+			ks = append(ks, k)
+		}
+		sort.Strings(ks)
+
+		for _, k := range ks {
+			ps = append(ps, predicate.CameraWorker(func(s *sql.Selector) {
+				s.Where(sql.And(
+					sqljson.HasKey(entCameraWorker.FieldLabels, sqljson.Path(k)),
+					sqljson.ValueEQ(entCameraWorker.FieldLabels, m[k], sqljson.Path(k)),
+				))
+			}))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entCameraWorker.And(ps...), nil
+}
+
+// CameraWorkerService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a CameraWorker. A service is named for the entity it
+// is about, so the name carries it.
+var CameraWorkerService = watch.ServiceOf(api.CameraWorkerService_Get_FullMethodName)
+
+// Watch answers with the CameraWorkers this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkCameraWorker) Watch(req *api.CameraWorkerWatchRequest, out grpc.ServerStreamingServer[api.CameraWorkerWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > CameraWorkerFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), CameraWorkerFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchCameraWorkerKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, CameraWorkerService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.CameraWorkerWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.CameraWorkerWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.CameraWorkerWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkCameraWorker) watchNow(
+	ctx context.Context, req *api.CameraWorkerWatchRequest, out grpc.ServerStreamingServer[api.CameraWorkerWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.CameraWorkerListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.CameraWorkerWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.CameraWorkerWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.CameraWorkerWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkCameraWorker) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.CameraWorker, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.CameraWorkerGetRequest_builder{
+		Ref: api.CameraWorkerRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchCameraWorkerKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkCameraWorker) watchCameraWorkerKeys(
+	ctx context.Context, fs []*api.CameraWorkerFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.CameraWorkerGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -12640,6 +13195,139 @@ func (s gateCameraNetwork) admit(ctx context.Context, req *api.CameraNetworkAddR
 	return req, nil
 }
 
+type gateCameraWorker struct {
+	Gate
+	api.CameraWorkerServiceServer
+}
+
+func (s Gate) CameraWorker() api.CameraWorkerServiceServer {
+	v := gateCameraWorker{s, s.Next().CameraWorker()}
+	v.CameraWorkerServiceServer = bare.CameraWorkerWithAddRule(v.CameraWorkerServiceServer, v.admit)
+	return v
+}
+
+// admit refuses a CameraWorker put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.CameraWorker].
+func (s gateCameraWorker) admit(ctx context.Context, req *api.CameraWorkerAddRequest) (*api.CameraWorkerAddRequest, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Tenant", ref, func() error {
+			_, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Site", ref, func() error {
+			_, err := s.Gate.Next().Site().Get(ctx, api.SiteGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
+// Patch refuses an edge moved onto a row this caller cannot see.
+//
+// The wall narrows the row being written and says nothing about what the
+// write points **at**. An edge is a read -- a `Select` walks it -- so one
+// moved out of the caller's scope is a way through the wall one hop later,
+// exactly as it would have been at `Add`.
+func (s gateCameraWorker) Patch(ctx context.Context, req *api.CameraWorkerPatchRequest) (*api.CameraWorker, error) {
+	if ref := req.GetSite(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Site", ref, func() error {
+			_, err := s.Gate.Next().Site().Get(ctx, api.SiteGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.CameraWorkerServiceServer.Patch(ctx, req)
+}
+
+// Apply refuses a document that moves an edge onto a row this caller cannot
+// see, as Patch refuses a request that does.
+//
+// A document names the row an edge points at by its key, and the server
+// behind writes that key into the column as it is -- compiling a document
+// reads nothing. So the read Patch is asked is asked here of the key the
+// document lands in the column, compiled the way the server behind will.
+func (s gateCameraWorker) Apply(ctx context.Context, req *api.CameraWorkerApplyRequest) (*api.CameraWorker, error) {
+	if !req.HasPatch() {
+		// Nothing written, and the server behind refuses it in its own words.
+		return s.CameraWorkerServiceServer.Apply(ctx, req)
+	}
+
+	plan, err := ormpatch.Compile(gateCameraWorkerEntity, req.GetPatch())
+	if err != nil {
+		// Refused here rather than passed on, in the codes the server behind
+		// gives the same document: one this layer cannot read is one it can
+		// say nothing about.
+		if errors.Is(err, ormpatch.ErrUnsupported) {
+			return nil, status.Errorf(codes.Unimplemented, "%s", err)
+		}
+
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+	}
+	if w, ok := plan.WriteTo(3); ok {
+		if k, ok := w.Op.(ormpatch.SetEdge); ok {
+			ref := api.SiteRef_builder{Id: k.Key.Bytes()}.Build()
+			if err := seen.Visible(ctx, s.Gate.drv, "Site", ref, func() error {
+				_, err := s.Gate.Next().Site().Get(ctx, api.SiteGetRequest_builder{
+					Ref: ref,
+				}.Build())
+				return err
+			}); err != nil {
+				if status.Code(err) == codes.NotFound {
+					return nil, gate.ErrNotFound("Site")
+				}
+
+				return nil, err
+			}
+		}
+	}
+
+	return s.CameraWorkerServiceServer.Apply(ctx, req)
+}
+
+// gateCameraWorkerEntity is what a CameraWorker document is compiled against: the entity
+// parsed from the file that declares it, as the server behind parses it.
+var gateCameraWorkerEntity = ormpatch.MustEntityOf((*api.CameraWorker)(nil).ProtoReflect().Descriptor().ParentFile(), "CameraWorker")
+
 type gateDelegation struct {
 	Gate
 	api.DelegationServiceServer
@@ -13560,6 +14248,8 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedCameraJob.md, describedCameraJob.secret, describedCameraJob.personal
 	case CameraNetworkDomain:
 		return describedCameraNetwork.md, describedCameraNetwork.secret, describedCameraNetwork.personal
+	case CameraWorkerDomain:
+		return describedCameraWorker.md, describedCameraWorker.secret, describedCameraWorker.personal
 	case DelegationDomain:
 		return describedDelegation.md, describedDelegation.secret, describedDelegation.personal
 	case DeviceDomain:
@@ -13655,6 +14345,9 @@ var (
 	describedCameraNetwork = describe((*api.CameraNetwork)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
+	describedCameraWorker = describe((*api.CameraWorker)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
 	describedDelegation = describe((*api.Delegation)(nil),
 		[]protoreflect.FieldNumber{11},
 		[]protoreflect.FieldNumber{})
@@ -13743,6 +14436,7 @@ func added(by string) bool {
 		api.CameraDeviceService_Add_FullMethodName,
 		api.CameraJobService_Add_FullMethodName,
 		api.CameraNetworkService_Add_FullMethodName,
+		api.CameraWorkerService_Add_FullMethodName,
 		api.DelegationService_Add_FullMethodName,
 		api.DeviceService_Add_FullMethodName,
 		api.HolderService_Add_FullMethodName,
@@ -13961,6 +14655,33 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 
 	case CameraNetworkDomain:
 		row, ok := image.(*api.CameraNetwork)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case CameraWorkerDomain:
+		row, ok := image.(*api.CameraWorker)
 		if !ok {
 			return uuid.Nil(), []byte{}, nil
 		}
@@ -14296,6 +15017,8 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 		vs, err = rowsCameraJob(ctx, s.Db, entCameraJob.IdEQ(uuid.UUID(key)))
 	case CameraNetworkDomain:
 		vs, err = rowsCameraNetwork(ctx, s.Db, entCameraNetwork.IdEQ(uuid.UUID(key)))
+	case CameraWorkerDomain:
+		vs, err = rowsCameraWorker(ctx, s.Db, entCameraWorker.IdEQ(uuid.UUID(key)))
 	case DelegationDomain:
 		vs, err = rowsDelegation(ctx, s.Db, entDelegation.IdEQ(uuid.UUID(key)))
 	case DeviceDomain:
@@ -14713,6 +15436,9 @@ func Digests(ctx context.Context, db *ent.Client, d *audit.Digest, p trail.Polic
 	if err := audit.CheckKind(ctx, d, checkedCameraNetwork(db), archived, &out); err != nil {
 		return out, fmt.Errorf("camera-network: %w", err)
 	}
+	if err := audit.CheckKind(ctx, d, checkedCameraWorker(db), archived, &out); err != nil {
+		return out, fmt.Errorf("camera-worker: %w", err)
+	}
 	if err := audit.CheckKind(ctx, d, checkedDelegation(db), archived, &out); err != nil {
 		return out, fmt.Errorf("delegation: %w", err)
 	}
@@ -15077,6 +15803,52 @@ func checkedCameraNetwork(db *ent.Client) audit.Kind {
 			var out map[pdid.Id]*audit.Recorded
 			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
 				rows, err := rowsCameraNetwork(ctx, db, entCameraNetwork.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedCameraWorker is what a check of the rows reads of the camera-worker kind.
+func checkedCameraWorker(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.CameraWorker) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsCameraWorker(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: CameraWorkerDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraWorker.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraWorker.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, CameraWorkerDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsCameraWorker(ctx, db, entCameraWorker.IdIn(uuids(ids)...))
 				if err != nil {
 					return err
 				}
@@ -16018,6 +16790,26 @@ func rowsCameraNetwork(ctx context.Context, db *ent.Client, ps ...predicate.Came
 	return out, nil
 }
 
+// rowsCameraWorker is the rows `ps` says of the camera-worker kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsCameraWorker(ctx context.Context, db *ent.Client, ps ...predicate.CameraWorker) ([]audit.Live, error) {
+	q := db.CameraWorker.Query().Where(ps...)
+	bare.CameraWorkerSelectInit(q, nil)
+
+	vs, err := q.Order(entCameraWorker.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsDelegation is the rows `ps` says of the delegation kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -16595,6 +17387,8 @@ func record(ctx context.Context, db *ent.Client, content audit.Contents, action 
 				rows, err = rowsCameraJob(ctx, db, entCameraJob.IdIn(uuids(page)...))
 			case CameraNetworkDomain:
 				rows, err = rowsCameraNetwork(ctx, db, entCameraNetwork.IdIn(uuids(page)...))
+			case CameraWorkerDomain:
+				rows, err = rowsCameraWorker(ctx, db, entCameraWorker.IdIn(uuids(page)...))
 			case DelegationDomain:
 				rows, err = rowsDelegation(ctx, db, entDelegation.IdIn(uuids(page)...))
 			case DeviceDomain:
@@ -16757,6 +17551,8 @@ func (s trailStore) Carry(ctx context.Context, digest *audit.Digest, d pdid.Doma
 			rows, err = rowsCameraJob(ctx, s.db, entCameraJob.IdIn(uuids(ids)...))
 		case CameraNetworkDomain:
 			rows, err = rowsCameraNetwork(ctx, s.db, entCameraNetwork.IdIn(uuids(ids)...))
+		case CameraWorkerDomain:
+			rows, err = rowsCameraWorker(ctx, s.db, entCameraWorker.IdIn(uuids(ids)...))
 		case DelegationDomain:
 			rows, err = rowsDelegation(ctx, s.db, entDelegation.IdIn(uuids(ids)...))
 		case DeviceDomain:
@@ -17899,6 +18695,90 @@ func (s interceptCameraJob) Report(ctx context.Context, req *api.CameraJobReport
 func (s interceptCameraJob) Publish(ctx context.Context, req *api.CameraJobPublishRequest) (*api.CameraJobPublishResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
 		api.CameraJobService_Publish_FullMethodName, req, s.CameraJobServiceServer.Publish)
+}
+
+func (s Intercept) CameraWorker() api.CameraWorkerServiceServer {
+	return interceptCameraWorker{s, s.Next().CameraWorker()}
+}
+
+type interceptCameraWorker struct {
+	Intercept
+	api.CameraWorkerServiceServer
+}
+
+func (s interceptCameraWorker) Add(ctx context.Context, req *api.CameraWorkerAddRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Add_FullMethodName, req, s.CameraWorkerServiceServer.Add)
+}
+
+func (s interceptCameraWorker) Get(ctx context.Context, req *api.CameraWorkerGetRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Get_FullMethodName, req, s.CameraWorkerServiceServer.Get)
+}
+
+func (s interceptCameraWorker) Patch(ctx context.Context, req *api.CameraWorkerPatchRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Patch_FullMethodName, req, s.CameraWorkerServiceServer.Patch)
+}
+
+func (s interceptCameraWorker) Apply(ctx context.Context, req *api.CameraWorkerApplyRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Apply_FullMethodName, req, s.CameraWorkerServiceServer.Apply)
+}
+
+func (s interceptCameraWorker) Erase(ctx context.Context, req *api.CameraWorkerRef) (*api.CameraWorkerEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Erase_FullMethodName, req, s.CameraWorkerServiceServer.Erase)
+}
+
+func (s interceptCameraWorker) List(ctx context.Context, req *api.CameraWorkerListRequest) (*api.CameraWorkerListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_List_FullMethodName, req, s.CameraWorkerServiceServer.List)
+}
+
+func (s interceptCameraWorker) Watch(req *api.CameraWorkerWatchRequest, out grpc.ServerStreamingServer[api.CameraWorkerWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Watch_FullMethodName, req, out, s.CameraWorkerServiceServer.Watch)
+}
+
+func (s interceptCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinRequest) (*api.CameraWorkerJoinResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Join_FullMethodName, req, s.CameraWorkerServiceServer.Join)
+}
+
+func (s interceptCameraWorker) Adopt(ctx context.Context, req *api.CameraWorkerAdoptRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Adopt_FullMethodName, req, s.CameraWorkerServiceServer.Adopt)
+}
+
+func (s interceptCameraWorker) RenewCertificate(ctx context.Context, req *api.CameraWorkerRenewCertificateRequest) (*api.CameraWorkerRenewCertificateResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_RenewCertificate_FullMethodName, req, s.CameraWorkerServiceServer.RenewCertificate)
+}
+
+func (s interceptCameraWorker) Heartbeat(ctx context.Context, req *api.CameraWorkerHeartbeatRequest) (*api.CameraWorkerHeartbeatResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Heartbeat_FullMethodName, req, s.CameraWorkerServiceServer.Heartbeat)
+}
+
+func (s interceptCameraWorker) Revoke(ctx context.Context, req *api.CameraWorkerRevokeRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Revoke_FullMethodName, req, s.CameraWorkerServiceServer.Revoke)
+}
+
+func (s interceptCameraWorker) Poll(ctx context.Context, req *api.CameraWorkerPollRequest) (*api.CameraWorkerPollResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Poll_FullMethodName, req, s.CameraWorkerServiceServer.Poll)
+}
+
+func (s interceptCameraWorker) CheckJob(ctx context.Context, req *api.CameraWorkerCheckJobRequest) (*api.CameraWorkerWork, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_CheckJob_FullMethodName, req, s.CameraWorkerServiceServer.CheckJob)
+}
+
+func (s interceptCameraWorker) ObserveJob(ctx context.Context, req *api.CameraWorkerCheckJobRequest) (*api.CameraWorkerObservation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_ObserveJob_FullMethodName, req, s.CameraWorkerServiceServer.ObserveJob)
 }
 
 func (s Intercept) Device() api.DeviceServiceServer {
@@ -20453,6 +21333,34 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.CameraJobReportRequest{}
 	case api.CameraJobService_Publish_FullMethodName:
 		v = &api.CameraJobPublishRequest{}
+	case api.CameraWorkerService_Add_FullMethodName:
+		v = &api.CameraWorkerAddRequest{}
+	case api.CameraWorkerService_Get_FullMethodName:
+		v = &api.CameraWorkerGetRequest{}
+	case api.CameraWorkerService_Patch_FullMethodName:
+		v = &api.CameraWorkerPatchRequest{}
+	case api.CameraWorkerService_Apply_FullMethodName:
+		v = &api.CameraWorkerApplyRequest{}
+	case api.CameraWorkerService_Erase_FullMethodName:
+		v = &api.CameraWorkerRef{}
+	case api.CameraWorkerService_List_FullMethodName:
+		v = &api.CameraWorkerListRequest{}
+	case api.CameraWorkerService_Join_FullMethodName:
+		v = &api.CameraWorkerJoinRequest{}
+	case api.CameraWorkerService_Adopt_FullMethodName:
+		v = &api.CameraWorkerAdoptRequest{}
+	case api.CameraWorkerService_RenewCertificate_FullMethodName:
+		v = &api.CameraWorkerRenewCertificateRequest{}
+	case api.CameraWorkerService_Heartbeat_FullMethodName:
+		v = &api.CameraWorkerHeartbeatRequest{}
+	case api.CameraWorkerService_Revoke_FullMethodName:
+		v = &api.CameraWorkerRevokeRequest{}
+	case api.CameraWorkerService_Poll_FullMethodName:
+		v = &api.CameraWorkerPollRequest{}
+	case api.CameraWorkerService_CheckJob_FullMethodName:
+		v = &api.CameraWorkerCheckJobRequest{}
+	case api.CameraWorkerService_ObserveJob_FullMethodName:
+		v = &api.CameraWorkerCheckJobRequest{}
 	case api.DeviceService_Add_FullMethodName:
 		v = &api.DeviceAddRequest{}
 	case api.DeviceService_Get_FullMethodName:
@@ -20897,6 +21805,34 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.CameraJob().Report(ctx, v.(*api.CameraJobReportRequest))
 	case api.CameraJobService_Publish_FullMethodName:
 		res, err = s.CameraJob().Publish(ctx, v.(*api.CameraJobPublishRequest))
+	case api.CameraWorkerService_Add_FullMethodName:
+		res, err = s.CameraWorker().Add(ctx, v.(*api.CameraWorkerAddRequest))
+	case api.CameraWorkerService_Get_FullMethodName:
+		res, err = s.CameraWorker().Get(ctx, v.(*api.CameraWorkerGetRequest))
+	case api.CameraWorkerService_Patch_FullMethodName:
+		res, err = s.CameraWorker().Patch(ctx, v.(*api.CameraWorkerPatchRequest))
+	case api.CameraWorkerService_Apply_FullMethodName:
+		res, err = s.CameraWorker().Apply(ctx, v.(*api.CameraWorkerApplyRequest))
+	case api.CameraWorkerService_Erase_FullMethodName:
+		res, err = s.CameraWorker().Erase(ctx, v.(*api.CameraWorkerRef))
+	case api.CameraWorkerService_List_FullMethodName:
+		res, err = s.CameraWorker().List(ctx, v.(*api.CameraWorkerListRequest))
+	case api.CameraWorkerService_Join_FullMethodName:
+		res, err = s.CameraWorker().Join(ctx, v.(*api.CameraWorkerJoinRequest))
+	case api.CameraWorkerService_Adopt_FullMethodName:
+		res, err = s.CameraWorker().Adopt(ctx, v.(*api.CameraWorkerAdoptRequest))
+	case api.CameraWorkerService_RenewCertificate_FullMethodName:
+		res, err = s.CameraWorker().RenewCertificate(ctx, v.(*api.CameraWorkerRenewCertificateRequest))
+	case api.CameraWorkerService_Heartbeat_FullMethodName:
+		res, err = s.CameraWorker().Heartbeat(ctx, v.(*api.CameraWorkerHeartbeatRequest))
+	case api.CameraWorkerService_Revoke_FullMethodName:
+		res, err = s.CameraWorker().Revoke(ctx, v.(*api.CameraWorkerRevokeRequest))
+	case api.CameraWorkerService_Poll_FullMethodName:
+		res, err = s.CameraWorker().Poll(ctx, v.(*api.CameraWorkerPollRequest))
+	case api.CameraWorkerService_CheckJob_FullMethodName:
+		res, err = s.CameraWorker().CheckJob(ctx, v.(*api.CameraWorkerCheckJobRequest))
+	case api.CameraWorkerService_ObserveJob_FullMethodName:
+		res, err = s.CameraWorker().ObserveJob(ctx, v.(*api.CameraWorkerCheckJobRequest))
 	case api.DeviceService_Add_FullMethodName:
 		res, err = s.Device().Add(ctx, v.(*api.DeviceAddRequest))
 	case api.DeviceService_Get_FullMethodName:
@@ -21118,6 +22054,7 @@ func Resources(s api.Server, drv dialect.Driver, guard batch.Guard, w *watch.Wat
 		&api.CameraDevice{},
 		&api.CameraJob{},
 		&api.CameraNetwork{},
+		&api.CameraWorker{},
 		&api.Delegation{},
 		&api.Device{},
 		&api.Holder{},
@@ -21523,6 +22460,52 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				return nil, err
 			}
 			query := db.CameraNetwork.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *api.CameraWorker:
+			ctx, err := read.Allow(ctx, api.CameraWorkerService_Get_FullMethodName, 1)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.CameraWorkerNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entCameraWorker.Table, []resourcesql.Column{
+				{Number: 1, Name: entCameraWorker.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entCameraWorker.TenantColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 3, Name: entCameraWorker.SiteColumn, Type: 64, Nullable: true, Key: 1},
+				{Number: 4, Name: entCameraWorker.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entCameraWorker.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entCameraWorker.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entCameraWorker.FieldHardwareId, Type: 9, Nullable: false, Key: 0},
+				{Number: 9, Name: entCameraWorker.FieldHostname, Type: 9, Nullable: false, Key: 0},
+				{Number: 10, Name: entCameraWorker.FieldState, Type: 14, Nullable: false, Key: 0},
+				{Number: 11, Name: entCameraWorker.FieldCertSerial, Type: 9, Nullable: false, Key: 0},
+				{Number: 13, Name: entCameraWorker.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entCameraWorker.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entCameraWorker.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+				{Number: 16, Name: entCameraWorker.FieldDateAdopted, Type: 65, Nullable: true, Key: 0},
+				{Number: 17, Name: entCameraWorker.FieldDateSeen, Type: 65, Nullable: true, Key: 0},
+				{Number: 18, Name: entCameraWorker.FieldDateCertExpires, Type: 65, Nullable: true, Key: 0},
+				{Number: 19, Name: entCameraWorker.FieldVersion, Type: 9, Nullable: false, Key: 0},
+				{Number: 20, Name: entCameraWorker.FieldApprovedKeyFingerprint, Type: 9, Nullable: false, Key: 0},
+				{Number: 21, Name: entCameraWorker.FieldDateCertIssued, Type: 65, Nullable: true, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.CameraWorker.Query()
 			if pred != nil {
 				query.Where(pred)
 			}
@@ -22329,6 +23312,14 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case api.CameraNetworkService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.CameraWorkerService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.CameraWorkerService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraWorkerService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraWorkerService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case api.DelegationService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case api.DelegationService_Patch_FullMethodName:
@@ -22483,7 +23474,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
+	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.CameraWorker", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
 	default:
 		return nil
 	}

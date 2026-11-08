@@ -14,10 +14,80 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/shale/api"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/shale/internal/pki"
 )
+
+type bootstrapWorkerServer struct {
+	api.UnimplementedCameraWorkerServiceServer
+}
+
+func (bootstrapWorkerServer) Join(ctx context.Context, _ *api.CameraWorkerJoinRequest) (*api.CameraWorkerJoinResponse, error) {
+	p, _ := peer.FromContext(ctx)
+	if info, ok := p.AuthInfo.(credentials.TLSInfo); !ok || len(info.State.PeerCertificates) != 0 {
+		return nil, status.Error(codes.PermissionDenied, "bootstrap must omit expired client certificate")
+	}
+	return api.CameraWorkerJoinResponse_builder{Answer: api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING}.Build()}.Build(), nil
+}
+func (bootstrapWorkerServer) Heartbeat(ctx context.Context, _ *api.CameraWorkerHeartbeatRequest) (*api.CameraWorkerHeartbeatResponse, error) {
+	p, _ := peer.FromContext(ctx)
+	if info, ok := p.AuthInfo.(credentials.TLSInfo); !ok || len(info.State.VerifiedChains) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "machine certificate required")
+	}
+	return api.CameraWorkerHeartbeatResponse_builder{}.Build(), nil
+}
+
+func TestExpiredCertificateHasOnlyExplicitPublicBootstrap(t *testing.T) {
+	x := require.New(t)
+	now := time.Now()
+	ca, err := pki.NewCA("bootstrap-ca", now)
+	x.NoError(err)
+	a := pinned(t, ca)
+	csr, err := a.key.CSR("expired-worker")
+	x.NoError(err)
+	id := pdid.New(31)
+	expired, err := ca.IssueClientHost(csr, id, now.Add(-pki.HostLifetime-time.Hour))
+	x.NoError(err)
+	x.NoError(a.Store.SetCert(pki.EncodeCerts(expired), ca.Bundle()))
+	x.NoError(a.Init())
+	x.False(a.Ready(now))
+	serverKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	x.NoError(err)
+	serverCert, err := ca.IssueServer(&serverKey.PublicKey, pki.CpName, pki.Names{IPs: []net.IP{net.ParseIP("127.0.0.1")}}, time.Hour, now)
+	x.NoError(err)
+	pool, err := pki.Pool(ca.Bundle())
+	x.NoError(err)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	x.NoError(err)
+	g := grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{{Certificate: [][]byte{serverCert.Raw}, PrivateKey: serverKey}}, ClientAuth: tls.VerifyClientCertIfGiven, ClientCAs: pool})))
+	api.RegisterCameraWorkerServiceServer(g, bootstrapWorkerServer{})
+	go g.Serve(listener)
+	t.Cleanup(func() { g.Stop(); listener.Close() })
+	a.Cp = "https://" + listener.Addr().String()
+	ctx, done := context.WithTimeout(context.Background(), 3*time.Second)
+	defer done()
+	normal, err := a.Dial(ctx)
+	x.NoError(err)
+	defer normal.Close()
+	_, err = api.NewCameraWorkerServiceClient(normal).Heartbeat(ctx, api.CameraWorkerHeartbeatRequest_builder{}.Build())
+	x.Error(err, "ordinary machine calls still present and reject the expired certificate")
+	bootstrap, err := a.DialBootstrap(ctx)
+	x.NoError(err)
+	defer bootstrap.Close()
+	_, err = api.NewCameraWorkerServiceClient(bootstrap).Join(ctx, api.CameraWorkerJoinRequest_builder{}.Build())
+	x.NoError(err, "explicit public bootstrap reaches Join without the expired certificate")
+	_, err = api.NewCameraWorkerServiceClient(bootstrap).Heartbeat(ctx, api.CameraWorkerHeartbeatRequest_builder{}.Build())
+	x.Equal(codes.Unauthenticated, status.Code(err), "bootstrap never supplies a machine authority fallback")
+}
 
 // server is an HTTPS server on 127.0.0.1 with a certificate from ca.
 func server(t *testing.T, ca *pki.CA) *httptest.Server {

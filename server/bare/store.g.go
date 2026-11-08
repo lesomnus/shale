@@ -19,6 +19,7 @@ import (
 	cameradevice "github.com/lesomnus/shale/internal/ent/cameradevice"
 	camerajob "github.com/lesomnus/shale/internal/ent/camerajob"
 	cameranetwork "github.com/lesomnus/shale/internal/ent/cameranetwork"
+	cameraworker "github.com/lesomnus/shale/internal/ent/cameraworker"
 	delegation "github.com/lesomnus/shale/internal/ent/delegation"
 	device "github.com/lesomnus/shale/internal/ent/device"
 	holder "github.com/lesomnus/shale/internal/ent/holder"
@@ -404,6 +405,7 @@ type Scope interface {
 	CameraJobScope(ctx context.Context) (predicate.CameraJob, error)
 	DeviceScope(ctx context.Context) (predicate.Device, error)
 	SinkScope(ctx context.Context) (predicate.Sink, error)
+	CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	LaminaScope(ctx context.Context) (predicate.Lamina, error)
@@ -476,6 +478,9 @@ func (Unscoped) DeviceScope(_ context.Context) (predicate.Device, error) {
 	return nil, nil
 }
 func (Unscoped) SinkScope(_ context.Context) (predicate.Sink, error) {
+	return nil, nil
+}
+func (Unscoped) CameraWorkerScope(_ context.Context) (predicate.CameraWorker, error) {
 	return nil, nil
 }
 func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
@@ -841,6 +846,26 @@ func (ss Scopes) SinkScope(ctx context.Context) (predicate.Sink, error) {
 	}
 
 	return sink.And(ps...), nil
+}
+
+func (ss Scopes) CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error) {
+	ps := make([]predicate.CameraWorker, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraWorkerScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return cameraworker.And(ps...), nil
 }
 
 func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
@@ -1278,7 +1303,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. AddressPolicy, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
+// check. AddressPolicy, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraWorker, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1339,7 +1364,10 @@ func (s Server) CameraBinding() api.CameraBindingServiceServer {
 func (s Server) CameraJob() api.CameraJobServiceServer { return CameraJobServiceServer{Store: s.Store} }
 func (s Server) Device() api.DeviceServiceServer       { return DeviceServiceServer{Store: s.Store} }
 func (s Server) Sink() api.SinkServiceServer           { return SinkServiceServer{Store: s.Store} }
-func (s Server) Holder() api.HolderServiceServer       { return HolderServiceServer{Store: s.Store} }
+func (s Server) CameraWorker() api.CameraWorkerServiceServer {
+	return CameraWorkerServiceServer{Store: s.Store}
+}
+func (s Server) Holder() api.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
 func (s Server) Delegation() api.DelegationServiceServer {
 	return DelegationServiceServer{Store: s.Store}
 }

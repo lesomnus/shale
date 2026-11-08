@@ -18,9 +18,20 @@ if [ -f "$destination" ] && [ "$(sha256sum "$destination" | cut -d ' ' -f 1)" = 
 fi
 partial=$(mktemp "${destination}.download.XXXXXX")
 trap 'rm -f "$partial"' EXIT HUP INT TERM
+# Authenticated release API requests avoid shared anonymous download throttling.
+# Never attach the workflow token to arbitrary download hosts or redirect targets.
+set --
+case "$url" in
+  https://api.github.com/repos/*)
+    if [ -n "${GH_TOKEN:-}" ]; then
+      set -- --header "Authorization: Bearer $GH_TOKEN"
+    fi
+    ;;
+esac
 curl --fail --location --silent --show-error --proto '=https' --proto-redir '=https' \
   --header 'Accept: application/octet-stream' \
   --connect-timeout 10 --max-time 60 --retry 4 --retry-delay 2 --retry-max-time 180 \
+  "$@" \
   --output "$partial" "$url"
 printf '%s  %s\n' "$expected" "$partial" | sha256sum --check --strict
 chmod 0755 "$partial"

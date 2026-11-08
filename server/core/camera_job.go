@@ -126,12 +126,30 @@ func (s Core) cameraJobRows(ctx context.Context, ref *api.CameraJobRef) (*api.Ca
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
+	if err := s.cameraExecutionScope(ctx, a); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := cameraSameScope(j.GetTenant().GetId(), j.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	b, err := nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: j.GetBinding().GetId()}.Build()}.Build())
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
+	if !bytes.Equal(b.GetAssignment().GetId(), a.GetId()) {
+		return nil, nil, nil, nil, denied("camera job", "binding belongs to another assignment")
+	}
+	if err := cameraSameScope(b.GetTenant().GetId(), b.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	d, err := nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: b.GetDevice().GetId()}.Build()}.Build())
 	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if !bytes.Equal(d.GetNetwork().GetId(), a.GetNetwork().GetId()) {
+		return nil, nil, nil, nil, denied("camera job", "device belongs to another network")
+	}
+	if err := cameraSameScope(d.GetTenant().GetId(), d.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
 		return nil, nil, nil, nil, err
 	}
 	if err := s.cameraLockDevice(ctx, d.GetId()); err != nil {
@@ -157,7 +175,7 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 	if err := cameraMessage(r); err != nil {
 		return nil, err
 	}
-	who, err := cameraOperator(ctx)
+	who, err := s.cameraExecutor(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +189,7 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJob
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) (result error) {
 		// Return the database's persisted timestamp precision (PostgreSQL uses
 		// microseconds), not the unsaved in-memory nanosecond mutation value.
 		defer func() {
@@ -227,14 +245,21 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 	return out, nil
 }
 func (s Core) cameraLease(j *api.CameraJob, a *api.CameraAssignment, d *api.CameraDevice, who pdid.Id, lease, assignment int64) error {
+	if err := s.cameraLeaseFence(j, a, d, who, lease, assignment); err != nil {
+		return err
+	}
+	if cameraTerminalStage(j.GetStage()) {
+		return failed("enrollment job is terminal")
+	}
+	return nil
+}
+
+func (s Core) cameraLeaseFence(j *api.CameraJob, a *api.CameraAssignment, d *api.CameraDevice, who pdid.Id, lease, assignment int64) error {
 	if lease == 0 || lease != j.GetLeaseGeneration() || lease != d.GetClaimGeneration() || !bytes.Equal(d.GetActiveJobId(), j.GetId()) || !bytes.Equal(j.GetLeaseOwner(), who.Bytes()) || j.GetLeaseExpires() == nil || !j.GetLeaseExpires().AsTime().After(s.d.now()) {
 		return failed("camera job lease expired or was replaced")
 	}
 	if assignment == 0 || assignment != a.GetGeneration() || assignment != j.GetAssignmentGeneration() {
 		return status.Error(codes.Aborted, "camera assignment was replaced")
-	}
-	if cameraTerminalStage(j.GetStage()) {
-		return failed("enrollment job is terminal")
 	}
 	return nil
 }
@@ -258,7 +283,7 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 	if err := cameraMessage(r); err != nil {
 		return nil, err
 	}
-	who, err := cameraOperator(ctx)
+	who, err := s.cameraExecutor(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +297,7 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJob
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) (result error) {
 		// Return the database's persisted timestamp precision (PostgreSQL uses
 		// microseconds), not the unsaved in-memory nanosecond mutation value.
 		defer func() {
@@ -285,6 +310,14 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 		j, a, b, d, err := c.cameraJobRows(ctx, r.GetRef())
 		if err != nil {
 			return err
+		}
+		// A machine's replay must still refer to its current assignment and
+		// physical-device fence. Operator historical acknowledgments retain
+		// their existing compatibility behavior.
+		if kindOf(who) == DomCameraWorker {
+			if err := c.cameraLeaseFence(j, a, d, who, r.GetLeaseGeneration(), r.GetAssignmentGeneration()); err != nil {
+				return err
+			}
 		}
 		if replay, err := cameraReplay(j, who, r.GetOperationKey(), hash); err != nil {
 			return err
@@ -363,7 +396,7 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 	if err := cameraMessage(r); err != nil {
 		return nil, err
 	}
-	who, err := cameraOperator(ctx)
+	who, err := s.cameraExecutor(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +444,7 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJobPublishResponse
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) (result error) {
 		defer func() {
 			if result == nil && out != nil {
 				j, err := nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetJob().GetId()}.Build()}.Build())
@@ -433,6 +466,14 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		j, a, b, d, err := c.cameraJobRows(ctx, r.GetRef())
 		if err != nil {
 			return err
+		}
+		// A machine's replay must still refer to its current assignment and
+		// physical-device fence. Operator historical acknowledgments retain
+		// their existing compatibility behavior.
+		if kindOf(who) == DomCameraWorker {
+			if err := c.cameraLeaseFence(j, a, d, who, r.GetLeaseGeneration(), r.GetAssignmentGeneration()); err != nil {
+				return err
+			}
 		}
 		if replay, err := cameraReplay(j, who, r.GetOperationKey(), hash); err != nil {
 			return err
@@ -493,6 +534,9 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		}
 		if !bytes.Equal(src.GetSet().GetId(), a.GetSet().GetId()) {
 			return denied("publish", "Source belongs to another immutable Set")
+		}
+		if err := cameraSameScope(src.GetTenant().GetId(), src.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
+			return err
 		}
 		for key, expected := range map[string]string{cameraBindingLabel: b.GetLogicalKey(), cameraDeviceLabel: d.GetDeviceKey()} {
 			if got := src.GetLabels()[key]; got != "" && got != expected {

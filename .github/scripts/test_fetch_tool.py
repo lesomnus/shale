@@ -21,6 +21,7 @@ class FetchToolTest(unittest.TestCase):
                         "-subj", "/CN=localhost", "-addext", "subjectAltName=DNS:localhost",
                         "-keyout", str(key), "-out", str(cert)], check=True, capture_output=True)
         cls.counts = {}
+        cls.auth = {}
         cls.payload = b"#!/bin/sh\nexit 0\n"
 
         class Handler(BaseHTTPRequestHandler):
@@ -29,6 +30,7 @@ class FetchToolTest(unittest.TestCase):
 
             def do_GET(self):
                 cls.counts[self.path] = cls.counts.get(self.path, 0) + 1
+                cls.auth[self.path] = self.headers.get("Authorization")
                 if self.path == "/missing":
                     self.send_error(404)
                 elif self.path == "/retry" and cls.counts[self.path] == 1:
@@ -55,9 +57,9 @@ class FetchToolTest(unittest.TestCase):
         cls.thread.join()
         cls.temp.cleanup()
 
-    def fetch(self, path, digest, destination):
+    def fetch(self, path, digest, destination, env=None):
         return subprocess.run(["sh", str(self.script), f"https://localhost:{self.server.server_port}{path}", digest, str(destination)],
-                              env=self.env, capture_output=True, text=True, timeout=20)
+                              env=env or self.env, capture_output=True, text=True, timeout=20)
 
     def test_504_retries_and_verified_cache_avoids_download(self):
         destination = self.base / "retry tool"
@@ -87,6 +89,13 @@ class FetchToolTest(unittest.TestCase):
         self.assertEqual(self.counts["/wrong-hash"], 1)
         self.assertFalse(destination.exists())
         self.assertFalse(list(self.base.glob("*.download.*")))
+
+    def test_workflow_token_is_not_sent_to_other_download_hosts(self):
+        destination = self.base / "non-github-tool"
+        env = {**self.env, "GH_TOKEN": "must-remain-local-to-github-api"}
+        result = self.fetch("/no-auth", hashlib.sha256(self.payload).hexdigest(), destination, env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIsNone(self.auth["/no-auth"])
 
 
 if __name__ == "__main__":

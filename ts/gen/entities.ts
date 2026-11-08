@@ -19,6 +19,7 @@ import { ArchivedSchema } from './shale/payday/archived_pb.js'
 import { AttemptSchema, LaminaSchema } from './shale/lamina_pb.js'
 import { AuditSchema } from './shale/payday/audit_pb.js'
 import { CameraAssignmentSchema, CameraBindingSchema, CameraDeviceSchema, CameraJobSchema, CameraNetworkSchema } from './shale/camera_pb.js'
+import { CameraWorkerSchema } from './shale/camera_worker_pb.js'
 import { DelegationSchema } from './shale/delegation_pb.js'
 import { DeviceSchema, SinkSchema } from './shale/storage_pb.js'
 import { HolderSchema } from './shale/payday/holder_pb.js'
@@ -36,6 +37,7 @@ import { ArchivedService } from './shale/payday/archived_svc_pb.js'
 import { AttemptService, LaminaService } from './shale/lamina_svc_pb.js'
 import { AuditService } from './shale/payday/audit_svc_pb.js'
 import { CameraAssignmentService, CameraBindingService, CameraDeviceService, CameraJobService, CameraNetworkService } from './shale/camera_svc_pb.js'
+import { CameraWorkerService } from './shale/camera_worker_svc_pb.js'
 import { DelegationService } from './shale/delegation_svc_pb.js'
 import { DeviceService, SinkService } from './shale/storage_svc_pb.js'
 import { HolderService } from './shale/payday/holder_svc_pb.js'
@@ -166,6 +168,19 @@ export const CameraNetwork = {
 	key: "id",
 	ids: ["id"],
 	service: CameraNetworkService,
+} as const satisfies EntityDesc
+
+/** shale.CameraWorker, as the store holds it. */
+export const CameraWorker = {
+	typeName: "shale.CameraWorker",
+	schema: CameraWorkerSchema,
+	domain: 31,
+	version: "dateUpdated",
+	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }],
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
+	service: CameraWorkerService,
 } as const satisfies EntityDesc
 
 /** shale.Delegation, as the store holds it. */
@@ -413,5 +428,5 @@ export const UploadPolicy = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
+export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraWorker, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
 

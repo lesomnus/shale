@@ -174,10 +174,16 @@ func (a *Agent) endpoint() (addr string, plain bool, err error) {
 // tlsConfig verifies the CP against the pinned bundle, or pins on first
 // contact (§33.4), and presents the host certificate when it has one.
 func (a *Agent) tlsConfig() (*tls.Config, error) {
+	return a.tlsConfigPresent(true)
+}
+
+func (a *Agent) tlsConfigPresent(present bool) (*tls.Config, error) {
 	cfg := &tls.Config{MinVersion: tls.VersionTLS12}
 
-	if cert, err := a.Certificate(); err == nil && cert != nil {
-		cfg.Certificates = []tls.Certificate{*cert}
+	if present {
+		if cert, err := a.Certificate(); err == nil && cert != nil {
+			cfg.Certificates = []tls.Certificate{*cert}
+		}
 	}
 
 	bundle, err := a.Store.Bundle()
@@ -230,6 +236,17 @@ func (a *Agent) tlsConfig() (*tls.Config, error) {
 // Dial connects to the CP: mTLS with the host certificate when it has one,
 // plaintext with the plain header in development.
 func (a *Agent) Dial(ctx context.Context) (*grpc.ClientConn, error) {
+	return a.dial(ctx, true)
+}
+
+// DialBootstrap is only for a public Join. An expired certificate is omitted so
+// TLS can reach that public endpoint; ordinary Dial never weakens machine auth.
+// The public RPC must independently verify the previously approved key.
+func (a *Agent) DialBootstrap(ctx context.Context) (*grpc.ClientConn, error) {
+	return a.dial(ctx, a.Ready(time.Now()))
+}
+
+func (a *Agent) dial(ctx context.Context, present bool) (*grpc.ClientConn, error) {
 	addr, plain, err := a.endpoint()
 	if err != nil {
 		return nil, err
@@ -238,11 +255,11 @@ func (a *Agent) Dial(ctx context.Context) (*grpc.ClientConn, error) {
 	opts := []grpc.DialOption{Keepalive()}
 	if plain {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if !a.id.IsZero() {
+		if present && !a.id.IsZero() {
 			opts = append(opts, auth.Inject(auth.PlainProvider(a.id.String()))...)
 		}
 	} else {
-		cfg, err := a.tlsConfig()
+		cfg, err := a.tlsConfigPresent(present)
 		if err != nil {
 			return nil, err
 		}
@@ -354,9 +371,19 @@ type JoinFunc func(ctx context.Context, conn *grpc.ClientConn, hj *api.HostJoin)
 // Join asks until adopted, storing the certificate and the bundle, and
 // answers the final adoption.
 func (a *Agent) Join(ctx context.Context, call JoinFunc) (Answer, error) {
+	return a.join(ctx, call, a.Dial)
+}
+
+// JoinBootstrap opts a role into public same-key recovery after expiry. Existing
+// host roles retain their original Join behavior unless they explicitly use it.
+func (a *Agent) JoinBootstrap(ctx context.Context, call JoinFunc) (Answer, error) {
+	return a.join(ctx, call, a.DialBootstrap)
+}
+
+func (a *Agent) join(ctx context.Context, call JoinFunc, dial func(context.Context) (*grpc.ClientConn, error)) (Answer, error) {
 	said := false
 	for {
-		conn, err := a.Dial(ctx)
+		conn, err := dial(ctx)
 		if err != nil {
 			return Answer{}, err
 		}

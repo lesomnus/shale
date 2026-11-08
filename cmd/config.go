@@ -49,11 +49,12 @@ type Config struct {
 	// single-organization cluster.
 	Tenant string `yaml:"tenant"`
 
-	Control  ControlConfig  `yaml:"control"`
-	Storage  StorageConfig  `yaml:"storage"`
-	Producer ProducerConfig `yaml:"producer"`
-	Reader   ReaderConfig   `yaml:"reader"`
-	Relay    RelayConfig    `yaml:"relay"`
+	Control      ControlConfig      `yaml:"control"`
+	Storage      StorageConfig      `yaml:"storage"`
+	Producer     ProducerConfig     `yaml:"producer"`
+	CameraWorker CameraWorkerConfig `yaml:"camera_worker"`
+	Reader       ReaderConfig       `yaml:"reader"`
+	Relay        RelayConfig        `yaml:"relay"`
 	// Export is the opt-in MP4 download endpoint on the tenant HTTP listener.
 	Export ExportConfig `yaml:"export"`
 
@@ -69,6 +70,14 @@ type Config struct {
 	// Dev is development mode (`--dev <dir>`): everything in one directory,
 	// plaintext allowed, one directory sink (§34.7).
 	Dev string `yaml:"dev"`
+}
+
+// CameraWorkerConfig configures the independent outbound machine role. Camera
+// policies and passwords are supplied by CP-authorized execution providers.
+type CameraWorkerConfig struct {
+	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
+	RetryInterval     time.Duration `yaml:"retry_interval"`
+	LeaseSeconds      int64         `yaml:"lease_seconds"`
 }
 
 // ClientConfig is the CLI's connection (§32).

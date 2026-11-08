@@ -245,6 +245,12 @@ func (s Core) whepEndpoints(r *ent.Relay, caller string, p *api.AddressParams) [
 // liveSources is the Live answer for these sources of a set: the relay of
 // the set's producer, a view token per source, and the WHEP URL (§39.4).
 func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sources []*api.Source) ([]*api.LiveSource, error) {
+	return s.liveSourcesUntil(ctx, f, set, sources, time.Time{})
+}
+
+// liveSourcesUntil additionally bounds a job-scoped execution capability by its
+// lease. Ordinary viewer calls retain the configured ViewTokenTTL.
+func (s Core) liveSourcesUntil(ctx context.Context, f *frame.Frame, set *api.Set, sources []*api.Source, notAfter time.Time) ([]*api.LiveSource, error) {
 	for _, src := range sources {
 		// A raw source (§38.9) has nothing a relay could show.
 		if !showable(src) {
@@ -280,6 +286,12 @@ func (s Core) liveSources(ctx context.Context, f *frame.Frame, set *api.Set, sou
 		return nil, status.Error(codes.FailedPrecondition, "the relay has no WHEP address for this caller")
 	}
 	exp := now.Add(b.ViewTokenTTL)
+	if !notAfter.IsZero() && notAfter.Before(exp) {
+		exp = notAfter
+	}
+	if !exp.After(now) {
+		return nil, failed("live capability lease expired")
+	}
 
 	var out []*api.LiveSource
 	for _, src := range sources {

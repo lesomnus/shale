@@ -198,8 +198,8 @@ message CameraAssignment {
   Producer producer = 10 [(orm.edge) = {}];
   // Routing intent, not an authenticated machine identity.
   string worker_slot = 11;
-  // Reserved for #195. Nonempty values are rejected until approved Worker
-  // identity validation is implemented; arbitrary UUIDs grant no authority.
+  // Approved CameraWorker identity in this exact tenant/site. Assignment APIs
+  // validate current adoption; the UUID alone is never an execution credential.
   bytes worker_id = 12 [(orm.field) = {type: TYPE_UUID nullable: true}];
   int64 generation = 16;
   // Monotonic aggregate revision; every catalog membership/spec change moves it.
