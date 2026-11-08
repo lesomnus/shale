@@ -354,76 +354,87 @@ func New(cfg Config) (*Producer, error) {
 // configureSources is initial construction only; dynamic reconciliation belongs
 // to the per-source lifecycle. No capture goroutines have started here.
 func (p *Producer) configureSources(sources []SourceConfig) error {
-	cfg := p.cfg
+	p.sourcesMu.Lock()
 	p.sources, p.order, p.push = map[string]*source{}, nil, nil
+	p.sourcesMu.Unlock()
 	for _, sc := range sources {
-		if err := validateCameraInput(cfg, sc); err != nil {
-			return fmt.Errorf("source %s: %w", sc.Alias, err)
+		v, err := p.sourceFor(sc)
+		if err != nil {
+			return err
 		}
-		if sc.Alias == "" {
-			return errors.New("a source needs an alias")
+		if err := p.installSource(v); err != nil {
+			return err
 		}
-		if _, dup := p.sources[sc.Alias]; dup {
-			return fmt.Errorf("source %s is listed twice", sc.Alias)
-		}
-		if sc.Kind != "" && sc.Kind != KindMP4 && sc.Kind != KindRaw {
-			return fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindMP4, KindRaw)
-		}
-		if err := sc.checkGst(); err != nil {
-			return fmt.Errorf("source %s: %w", sc.Alias, err)
-		}
-		if f := sc.Fragment; f != 0 && (f < MinFragDuration || f > MaxFragDuration) {
-			return fmt.Errorf("fragment_duration %s is outside %s to %s", f, MinFragDuration, MaxFragDuration)
-		}
-		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, taken: map[string]handed{}, wake: make(chan struct{}, 1)}
-		if sc.Input == InputPush {
-			if cfg.Push == "" {
-				return fmt.Errorf("source %s is pushed, and producer.push names no listener", sc.Alias)
-			}
-			if p.push == nil {
-				p.push = &Push{Addr: cfg.Push, Idle: cfg.PushIdle, Log: cfg.Log}
-			}
-			s.push = p.push.Add(sc.Alias)
-		}
-		if isDemo(sc.Input) {
-			if _, err := demoOf(sc.Input); err != nil {
-				return fmt.Errorf("source %s: %w", sc.Alias, err)
-			}
-			switch sc.audioCodec() {
-			case "", "aac", "opus", "none":
-			default:
-				return fmt.Errorf("source %s: a demo source's sound is made here, so audio.codec is aac, opus or none, not %q", sc.Alias, sc.audioCodec())
-			}
-		}
-		if sc.Kind == KindRaw {
-			if sc.Input != InputPush {
-				return fmt.Errorf("source %s: a raw source is pushed (input: push)", sc.Alias)
-			}
-			if sc.MaxBitrate <= 0 {
-				return fmt.Errorf("source %s: a raw source declares max_bitrate; there is no camera mode to guess it from", sc.Alias)
-			}
-		}
-		if sc.Idle != nil {
-			// A copied stream is never decoded, so there is nothing to
-			// measure; a `raw:` replay (tests) is fed its measurements.
-			copied := !strings.HasPrefix(sc.Input, "raw:") && (sc.Format == "h264" || sc.Format == "h265" || sc.Encoder == "copy")
-			if sc.Input == InputPush || sc.Command != "" || copied {
-				return fmt.Errorf("source %s: idle needs a source the producer encodes, to measure its frames (§38.10)", sc.Alias)
-			}
-			if sc.gstreamer() {
-				p.log.Warn("idle under capture: gstreamer splits the capture pipeline for the measure, which has cost recordings frames on the Pi; not recommended there (docs/producer-bench.md)", "source", sc.Alias)
-			}
-			s.dark = newDarkTracker(sc.Idle.darkAfter(), p.now)
-			s.dark.onChange = func(suppressed bool) { p.darkChanged(s, suppressed) }
-		}
-		if s.push == nil {
-			s.capture = p.newCapture(s)
-		}
-		p.sources[sc.Alias] = s
-		p.order = append(p.order, s)
+	}
+	return nil
+}
+
+// sourceFor constructs an unpublished incarnation. No observer can see a
+// partially validated configuration or a Source whose CP identity is unresolved.
+func (p *Producer) sourceFor(sc SourceConfig) (*source, error) {
+	cfg := p.cfg
+	if err := validateCameraInput(cfg, sc); err != nil {
+		return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+	}
+	if sc.Alias == "" {
+		return nil, errors.New("a source needs an alias")
 	}
 
-	return nil
+	if sc.Kind != "" && sc.Kind != KindMP4 && sc.Kind != KindRaw {
+		return nil, fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindMP4, KindRaw)
+	}
+	if err := sc.checkGst(); err != nil {
+		return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+	}
+	if f := sc.Fragment; f != 0 && (f < MinFragDuration || f > MaxFragDuration) {
+		return nil, fmt.Errorf("fragment_duration %s is outside %s to %s", f, MinFragDuration, MaxFragDuration)
+	}
+	s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, taken: map[string]handed{}, wake: make(chan struct{}, 1)}
+	if sc.Input == InputPush {
+		if cfg.Push == "" {
+			return nil, fmt.Errorf("source %s is pushed, and producer.push names no listener", sc.Alias)
+		}
+		if p.push == nil {
+			p.push = &Push{Addr: cfg.Push, Idle: cfg.PushIdle, Log: cfg.Log}
+		}
+		s.push = p.push.Add(sc.Alias)
+	}
+	if isDemo(sc.Input) {
+		if _, err := demoOf(sc.Input); err != nil {
+			return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+		}
+		switch sc.audioCodec() {
+		case "", "aac", "opus", "none":
+		default:
+			return nil, fmt.Errorf("source %s: a demo source's sound is made here, so audio.codec is aac, opus or none, not %q", sc.Alias, sc.audioCodec())
+		}
+	}
+	if sc.Kind == KindRaw {
+		if sc.Input != InputPush {
+			return nil, fmt.Errorf("source %s: a raw source is pushed (input: push)", sc.Alias)
+		}
+		if sc.MaxBitrate <= 0 {
+			return nil, fmt.Errorf("source %s: a raw source declares max_bitrate; there is no camera mode to guess it from", sc.Alias)
+		}
+	}
+	if sc.Idle != nil {
+		// A copied stream is never decoded, so there is nothing to
+		// measure; a `raw:` replay (tests) is fed its measurements.
+		copied := !strings.HasPrefix(sc.Input, "raw:") && (sc.Format == "h264" || sc.Format == "h265" || sc.Encoder == "copy")
+		if sc.Input == InputPush || sc.Command != "" || copied {
+			return nil, fmt.Errorf("source %s: idle needs a source the producer encodes, to measure its frames (§38.10)", sc.Alias)
+		}
+		if sc.gstreamer() {
+			p.log.Warn("idle under capture: gstreamer splits the capture pipeline for the measure, which has cost recordings frames on the Pi; not recommended there (docs/producer-bench.md)", "source", sc.Alias)
+		}
+		s.dark = newDarkTracker(sc.Idle.darkAfter(), p.now)
+		s.dark.onChange = func(suppressed bool) { p.darkChanged(s, suppressed) }
+	}
+	if s.push == nil {
+		s.capture = p.newCapture(s)
+	}
+
+	return s, nil
 }
 
 // Observe takes one line of a source's capture output, as the capture
