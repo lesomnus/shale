@@ -150,7 +150,8 @@ if sys.argv[1] in ('bound', 'renew'):
             daemon.terminate()
             daemon.wait(timeout=5)
             assert assigned in lease_file.read_text()
-            # Startup must read the old lease; use a new log to wait for this startup.
+            # Preserve the lease file and renew the same address after restart.
+            # Use a new log to wait for this startup.
             log_path.write_text("")
             daemon = start_dhcp()
             renew()

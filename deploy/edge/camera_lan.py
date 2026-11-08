@@ -63,7 +63,8 @@ class Network:
         for v in camera.get("addr_info", []):
             if v.get("family") == "inet" and v.get("local") != str(address.ip):
                 raise Invalid("camera interface already has another IPv4 address")
-        if not any(v.get("dst") == "default" and v.get("dev") == self.uplink for v in routes):
+        if not any(v.get("dst") == "default" and v.get("dev") == self.uplink
+                   and v.get("family", "inet") == "inet" for v in routes):
             raise Invalid("wireless uplink must already have an IPv4 default route")
         for route in routes:
             dev, dst = route.get("dev"), route.get("dst")
@@ -168,7 +169,8 @@ def inventory():
     def ip(*args):
         return json.loads(subprocess.check_output(["ip", "-j", *args], text=True))
     addresses = ip("-d", "address", "show")
-    routes = ip("-4", "route", "show", "table", "all") + ip("-6", "route", "show", "table", "all")
+    routes = [{**v, "family": "inet"} for v in ip("-4", "route", "show", "table", "all")]
+    routes += [{**v, "family": "inet6"} for v in ip("-6", "route", "show", "table", "all")]
     wireless = {v["ifname"] for v in addresses if Path("/sys/class/net", v["ifname"], "wireless").exists()}
     return addresses, routes, wireless
 

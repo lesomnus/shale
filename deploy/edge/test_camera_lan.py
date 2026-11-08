@@ -30,7 +30,7 @@ class CameraLANTest(unittest.TestCase):
     def test_real_host_must_have_distinct_wifi_default_and_no_overlap(self):
         n = self.network()
         n.check_host(*self.host())
-        for mutation in ("camera-default", "overlap-route", "overlap-address", "bridge-member", "existing-camera-ip", "not-wifi"):
+        for mutation in ("camera-default", "overlap-route", "overlap-address", "bridge-member", "existing-camera-ip", "ipv6-only-uplink", "not-wifi"):
             addresses, routes, wireless = self.host()
             if mutation == "camera-default":
                 routes.append({"dst": "default", "dev": "eth0"})
@@ -42,6 +42,9 @@ class CameraLANTest(unittest.TestCase):
                 addresses[0]["master"] = "br0"
             elif mutation == "existing-camera-ip":
                 addresses[0]["addr_info"] = [{"family": "inet", "local": "10.1.2.75", "prefixlen": 24}]
+            elif mutation == "ipv6-only-uplink":
+                addresses[1]["addr_info"] = []
+                routes = [{"dst": "default", "dev": "wlan0", "gateway": "fe80::1", "family": "inet6"}]
             else:
                 wireless.clear()
             with self.subTest(mutation=mutation), self.assertRaises(Invalid):
