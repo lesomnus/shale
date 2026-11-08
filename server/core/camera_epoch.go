@@ -79,7 +79,10 @@ func (s Core) cameraAllocationProfile(ctx context.Context, src *api.Source, epoc
 		if epoch == "" {
 			return nil, "", true, invalid("capture_epoch", "managed Source requires an explicit current or draining capture incarnation")
 		}
-		known := append([]*api.CameraApplication{b.GetStartingApplication(), b.GetAppliedApplication()}, b.GetPreviousApplications()...)
+		// The applied row is audit state and may outlive history eviction.
+		// When it is current, Starting names the same ticket; otherwise only
+		// the bounded history can authorize another retired upload.
+		known := append([]*api.CameraApplication{b.GetStartingApplication()}, b.GetPreviousApplications()...)
 		for _, candidate := range known {
 			if candidate.GetCaptureEpoch() == epoch && validIdentity(candidate) {
 				app = candidate

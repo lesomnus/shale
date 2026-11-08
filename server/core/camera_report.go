@@ -55,7 +55,7 @@ func (s Core) cameraSourceReports(ctx context.Context, p *api.Producer, reports 
 			if err != nil {
 				return err
 			}
-			known := append([]*api.CameraApplication{b.GetStartingApplication(), b.GetAppliedApplication()}, b.GetPreviousApplications()...)
+			known := append([]*api.CameraApplication{b.GetStartingApplication()}, b.GetPreviousApplications()...)
 			retired := false
 			for _, app := range known {
 				if app.GetCaptureEpoch() == report.GetCaptureEpoch() && bytes.Equal(app.GetProducerId(), a.GetProducer().GetId()) && app.GetDrainDeadline() != nil && app.GetDrainDeadline().AsTime().After(s.d.now()) {
