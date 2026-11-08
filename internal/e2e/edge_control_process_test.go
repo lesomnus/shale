@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/identity"
+	"github.com/protobuf-orm/ent/dialect"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -33,6 +35,8 @@ import (
 )
 
 const edgeControlProcessOptIn = "SHALE_EDGE_CONTROL_PROCESS"
+
+var errEdgeControlAlreadyRunning = errors.New("control services already running")
 
 var edgeControlProtocolOutput *os.File
 
@@ -57,7 +61,11 @@ func init() {
 // compiled test binary with SHALE_EDGE_CONTROL_PROCESS=1 and -test.run
 // '^TestEdgeControlProcess$', as UID/GID 65534 with all capability sets empty
 // and no_new_privs. Private stdin owns a bounded version=1 JSONL protocol:
-// start (state_dir, bind_ip), status, stop_cp, restart_cp and stop. Start requires
+// start (state_dir, bind_ip), status, stop_cp, restart_cp and stop. The fixed
+// job_insert_failure command requires enabled:true/false and creates/drops only
+// the SQLite camerajob INSERT failure trigger. Live status includes six physical
+// entity counts and the trigger flag; stopped services omit those DB facts.
+// The trigger persists across CP restart until explicitly disabled. Start requires
 // an existing empty private writable directory and an explicitly assigned IPv4
 // address, e.g. 10.23.0.1 in the coordinator's isolated CP namespace. All eight
 // service listeners and advertised addresses use that IP; no wildcard address
@@ -116,6 +124,7 @@ type edgeControlRequest struct {
 	Op       string `json:"op"`
 	StateDir string `json:"state_dir,omitempty"`
 	BindIP   string `json:"bind_ip,omitempty"`
+	Enabled  *bool  `json:"enabled,omitempty"`
 }
 
 type edgeControlResponse struct {
@@ -192,9 +201,11 @@ type edgeControlEndpoints struct {
 }
 
 type edgeControlStatus struct {
-	Process   edgeControlIdentity  `json:"process"`
-	Running   bool                 `json:"running"`
-	Endpoints edgeControlEndpoints `json:"endpoints"`
+	Process          edgeControlIdentity      `json:"process"`
+	Running          bool                     `json:"running"`
+	Endpoints        edgeControlEndpoints     `json:"endpoints"`
+	Counts           *edgeControlEntityCounts `json:"counts,omitempty"`
+	JobInsertFailure *bool                    `json:"job_insert_failure,omitempty"`
 }
 
 func edgeControlRequestFrom(line []byte) (edgeControlRequest, bool) {
@@ -212,6 +223,11 @@ func edgeControlRequestFrom(line []byte) (edgeControlRequest, bool) {
 	case "start":
 		allowed["state_dir"], allowed["bind_ip"] = true, true
 	case "status", "stop_cp", "restart_cp", "stop":
+	case "job_insert_failure":
+		allowed["enabled"] = true
+		if request.Enabled == nil {
+			return edgeControlRequest{}, false
+		}
 	default:
 		return edgeControlRequest{}, false
 	}
@@ -395,6 +411,7 @@ func TestEdgeControlProcessPrivilegeAndEndpointBoundary(t *testing.T) {
 }
 
 type edgeControlCluster struct {
+	mu        sync.Mutex
 	cluster   *cluster
 	bindIP    string
 	startedAt time.Time
@@ -502,8 +519,82 @@ func (e edgeControlEndpoints) onIP(ip string) bool {
 	return true
 }
 
-func (s *edgeControlCluster) status() *edgeControlStatus {
-	return &edgeControlStatus{Process: edgeControlPrivileges(), Running: s.cluster.cancel != nil, Endpoints: s.endpoints}
+func (s *edgeControlCluster) status(ctx context.Context) (*edgeControlStatus, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	result := &edgeControlStatus{Process: edgeControlPrivileges(), Running: s.cluster.cancel != nil, Endpoints: s.endpoints}
+	if !result.Running {
+		return result, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	if s.cluster.running.CP.Dialect != dialect.SQLite {
+		return nil, errors.New("control fixture database unavailable")
+	}
+	counts := &edgeControlEntityCounts{}
+	var enabled bool
+	err := s.cluster.running.CP.Db.QueryRowContext(ctx, edgeControlCountSQL).Scan(&counts.Device, &counts.Binding, &counts.Source, &counts.Job, &counts.Credential, &counts.CredentialVersion, &enabled)
+	if err != nil {
+		return nil, errors.New("control fixture counts unavailable")
+	}
+	result.Counts, result.JobInsertFailure = counts, &enabled
+	return result, nil
+}
+
+type edgeControlEntityCounts struct {
+	Device            int64 `json:"device"`
+	Binding           int64 `json:"binding"`
+	Source            int64 `json:"source"`
+	Job               int64 `json:"job"`
+	Credential        int64 `json:"credential"`
+	CredentialVersion int64 `json:"credential_version"`
+}
+
+const edgeControlCountSQL = `SELECT
+ (SELECT count(*) FROM cameradevice),
+ (SELECT count(*) FROM camerabinding),
+ (SELECT count(*) FROM source),
+ (SELECT count(*) FROM camerajob),
+ (SELECT count(*) FROM cameracredential),
+ (SELECT count(*) FROM cameracredentialversion),
+ EXISTS(SELECT 1 FROM sqlite_master WHERE type='trigger' AND name='edge_control_reject_camera_job')`
+
+// This private test control deliberately exposes one boolean fault, not SQL,
+// table names, paths, IDs or material. Physical row counts include erased rows
+// so an orphan cannot be hidden behind an erase flag. The SQLite trigger lives
+// with the fixture DB and survives stop_cp/restart_cp until explicitly disabled.
+func (s *edgeControlCluster) jobInsertFailure(ctx context.Context, enabled bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cluster.cancel == nil || s.cluster.running.CP.Dialect != dialect.SQLite {
+		return errors.New("control fixture database unavailable")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	statement := `DROP TRIGGER IF EXISTS edge_control_reject_camera_job`
+	if enabled {
+		statement = `CREATE TRIGGER IF NOT EXISTS edge_control_reject_camera_job BEFORE INSERT ON camerajob BEGIN SELECT RAISE(ABORT, 'fixture camera job insert rejected'); END`
+	}
+	if _, err := s.cluster.running.CP.Db.ExecContext(ctx, statement); err != nil {
+		return errors.New("control fixture fault unavailable")
+	}
+	return nil
+}
+
+func (s *edgeControlCluster) stopServices() { s.mu.Lock(); defer s.mu.Unlock(); s.cluster.stopCP() }
+func (s *edgeControlCluster) restartServices(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cluster.cancel != nil {
+		return errEdgeControlAlreadyRunning
+	}
+	prior := s.endpoints
+	s.startedAt = time.Now()
+	s.cluster.startCP()
+	if s.waitReady(ctx) != nil || s.endpoints != prior {
+		return errors.New("control restart failed")
+	}
+	return nil
 }
 
 func runEdgeControlProcess(t *testing.T, ctx context.Context, input io.Reader, output io.Writer) error {
@@ -546,7 +637,7 @@ func runEdgeControlProcess(t *testing.T, ctx context.Context, input io.Reader, o
 		}
 		<-readerDone
 		if fixture != nil {
-			fixture.cluster.stopCP()
+			fixture.stopServices()
 		}
 	}()
 	for {
@@ -587,7 +678,12 @@ func runEdgeControlProcess(t *testing.T, ctx context.Context, input io.Reader, o
 					_ = respond(r.ID, "error", "start-failed", nil)
 					return errors.New("control start failed")
 				}
-				if err = respond(r.ID, "ready", "", fixture.status()); err != nil {
+				state, statusErr := fixture.status(ctx)
+				if statusErr != nil {
+					_ = respond(r.ID, "error", "status-unavailable", nil)
+					return errors.New("control status unavailable")
+				}
+				if err = respond(r.ID, "ready", "", state); err != nil {
 					return err
 				}
 				continue
@@ -598,16 +694,13 @@ func runEdgeControlProcess(t *testing.T, ctx context.Context, input io.Reader, o
 			case "start":
 				code = "already-started"
 			case "stop_cp":
-				fixture.cluster.stopCP()
+				fixture.stopServices()
 			case "restart_cp":
-				if fixture.cluster.cancel != nil {
-					code = "already-running"
-					break
-				}
-				prior := fixture.endpoints
-				fixture.startedAt = time.Now()
-				fixture.cluster.startCP()
-				if fixture.waitReady(ctx) != nil || fixture.endpoints != prior {
+				if restartErr := fixture.restartServices(ctx); restartErr != nil {
+					if errors.Is(restartErr, errEdgeControlAlreadyRunning) {
+						code = "already-running"
+						break
+					}
 					if ctx.Err() != nil {
 						return nil
 					}
@@ -615,14 +708,22 @@ func runEdgeControlProcess(t *testing.T, ctx context.Context, input io.Reader, o
 					return errors.New("control restart failed")
 				}
 				event = "ready"
+			case "job_insert_failure":
+				if fixture.jobInsertFailure(ctx, *r.Enabled) != nil {
+					code = "job-insert-failure-unavailable"
+				}
 			case "stop":
-				fixture.cluster.stopCP()
+				fixture.stopServices()
 				return respond(r.ID, "stopped", "", nil)
 			}
 			if code != "" {
 				event = "error"
 			}
-			if err := respond(r.ID, event, code, fixture.status()); err != nil {
+			state, statusErr := fixture.status(ctx)
+			if statusErr != nil {
+				event, code = "error", "status-unavailable"
+			}
+			if err := respond(r.ID, event, code, state); err != nil {
 				return err
 			}
 		}
