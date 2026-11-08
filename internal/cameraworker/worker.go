@@ -50,6 +50,9 @@ type Config struct {
 type Worker struct {
 	cfg   Config
 	agent *hostagent.Agent
+	// Run owns one serial poll loop at a time. Preserve only its last attempted
+	// job across session reconnects so a failing camera cannot starve its peers.
+	lastAttempted string
 }
 
 func New(c Config) (*Worker, error) {
@@ -227,6 +230,31 @@ func (w *Worker) startExecution(ctx context.Context, conn *grpc.ClientConn, work
 	return stop
 }
 
+// pollStart rotates a fresh bounded CP snapshot after the previous attempt.
+// Missing jobs carry no local scheduling state; yielded remains bounded by the
+// current snapshot (the CP permits at most 500 jobs), never by process lifetime.
+// Neither the cursor nor a snapshot authorizes execution: Claim and CheckJob do.
+func (w *Worker) pollStart(work []*api.CameraWorkerWork, yielded map[string]bool) int {
+	start, found := 0, false
+	present := make(map[string]bool, len(work))
+	for i, v := range work {
+		id := string(v.GetJob().GetId())
+		present[id] = true
+		if id == w.lastAttempted {
+			start, found = (i+1)%len(work), true
+		}
+	}
+	if !found {
+		w.lastAttempted = ""
+	}
+	for id := range yielded {
+		if !present[id] {
+			delete(yielded, id)
+		}
+	}
+	return start
+}
+
 // One serial execution per Worker avoids local overlap; the CP's physical-device
 // fence also protects against competing Workers and restarts. Terminal or
 // superseded work is canceled before another executor starts.
@@ -267,6 +295,8 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 			return err
 		}
 		revision = snapshot.GetRevision()
+		pending := snapshot.GetJobs()
+		start := w.pollStart(pending, yielded)
 		if active != nil {
 			valid := false
 			for _, v := range snapshot.GetJobs() {
@@ -288,7 +318,8 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 		if active != nil {
 			continue
 		}
-		for _, v := range snapshot.GetJobs() {
+		for offset := range pending {
+			v := pending[(start+offset)%len(pending)]
 			j := v.GetJob()
 			if yielded[string(j.GetId())] {
 				continue
@@ -297,6 +328,9 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 			if len(j.GetLeaseOwner()) > 0 && !bytes.Equal(j.GetLeaseOwner(), w.ID().Bytes()) && j.GetLeaseExpires() != nil && j.GetLeaseExpires().AsTime().After(time.Now()) {
 				continue
 			}
+			// Advance before Claim/CheckJob, including when either response fails.
+			// Reconnection must not make one unsettled/denied job the first again.
+			w.lastAttempted = string(j.GetId())
 			claimed, err := jobs.Claim(ctx, api.CameraJobClaimRequest_builder{Ref: api.CameraJobRef_builder{Id: j.GetId()}.Build(), ExpectedVersion: j.GetDateUpdated(), OperationKey: operationKey(), LeaseSeconds: w.cfg.LeaseSeconds}.Build())
 			if err != nil {
 				// A changed snapshot or another unsettled intent for this physical

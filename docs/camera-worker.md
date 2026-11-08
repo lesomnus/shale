@@ -101,6 +101,10 @@ ongoing execution. It runs one local executor at a time. A reconnect/restart
 resumes the same unfinished CP job and pinned inputs; it never creates a new job
 or replaces an unsettled physical-camera intent. An executor which yields WAITING
 is retried after a reconnect/restart, rather than continuously reclaiming its job.
+Each fresh job list is visited after the last attempted job, including across
+session reconnects. A repeatedly failing camera therefore leaves other assigned
+cameras a turn; Claim, current CheckJob and physical-device fences still precede
+every execution. The cursor retains only one job ID and forgets removed work.
 
 The bare `cameraworker.New` library with no injected executor reports WAITING with
 `central_credentials_pending`. It performs no camera initialization, password
