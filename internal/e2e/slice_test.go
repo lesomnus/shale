@@ -113,8 +113,7 @@ func (c *cluster) operator() string {
 
 // serve runs `serve all` on the cluster's configuration until both APIs
 // and the built-in node answer. startCP calls it again on the same
-// configuration, which is why the listeners a restart needs are pinned by
-// the caller rather than taken at random.
+// configuration, retaining the API addresses already bound by the first run.
 func (c *cluster) serve() {
 	c.t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -161,10 +160,15 @@ func (c *cluster) stopCP() {
 	c.cancel, c.done = nil, nil
 }
 
-// startCP brings it back on the same addresses, state and database, as
-// restarting the process would.
+// startCP brings the APIs back on the same addresses, state and database.
+// The first run binds :0 directly: opening and closing sockets just to choose
+// ports can select the same port twice or lose it before ServeAll binds it.
+// Only the API addresses are retained; external hosts reconnect to them, while
+// HTTP and the built-in node/relay can bind fresh ephemeral ports.
 func (c *cluster) startCP() {
 	c.t.Helper()
+	c.cfg.Server.Addr = c.running.TenantAddr
+	c.cfg.Cluster.Addr = c.running.ClusterAddr
 	c.serve()
 }
 
