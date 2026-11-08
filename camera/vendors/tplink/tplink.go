@@ -34,9 +34,9 @@ const activationPublicKey = `-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4D6i0oD/Ga5qb//RfSe8MrPVIrMIGecCxkcGWGj9kxxk74qQNq8XUuXoy2PczQ30BpiRHrlkbtBEPeWLpq85tfubTUjhBz1NPNvWrC88uaYVGvzNpgzZOqDC35961uPTuvdUa8vztcUQjEZy16WbmetRjURFIiWJgFCmemyYVbQIDAQAB
 -----END PUBLIC KEY-----`
 
-// Driver delegates standard operations to ONVIF. The web extension is only used
-// for an explicitly supported first-password operation. It does not reuse the
-// browser's login helper, which also calls boot_set_date.
+// Driver delegates standard operations to ONVIF. The web extension supplies
+// explicitly supported first-password and image-frequency operations. It does
+// not reuse the browser's login helper, which also calls boot_set_date.
 type Driver struct {
 	ONVIF                *onvif.Client
 	HTTPClient           *http.Client
@@ -130,15 +130,23 @@ func (d *Driver) rpc(ctx context.Context, payload any) (rpcResult, error) {
 	if err != nil {
 		return result, err
 	}
+	status, err := d.rpcJSON(ctx, ep, payload, &result)
+	if err == nil && status == http.StatusForbidden {
+		err = errProtocol
+	}
+	return result, err
+}
+
+func (d *Driver) rpcJSON(ctx context.Context, ep string, payload, result any) (int, error) {
 	data, err := json.Marshal(payload)
 	if err != nil {
-		return result, camera.ErrInvalid
+		return 0, camera.ErrInvalid
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ep, bytes.NewReader(data))
 	if err != nil {
-		return result, camera.ErrInvalid
+		return 0, camera.ErrInvalid
 	}
 	req.Header.Set("Content-Type", "application/json;charset=utf-8")
 	req.Header.Set("X-Requested-With", "XMLHttpRequest")
@@ -151,23 +159,23 @@ func (d *Driver) rpc(ctx context.Context, payload any) (rpcResult, error) {
 	response, err := h.Do(req)
 	if err != nil {
 		if ctx.Err() != nil {
-			return result, ctx.Err()
+			return 0, ctx.Err()
 		}
-		return result, onvif.ErrTransport
+		return 0, onvif.ErrTransport
 	}
 	defer response.Body.Close()
 	data, err = io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))
 	if err != nil || len(data) > 1<<20 {
-		return result, errProtocol
+		return response.StatusCode, errProtocol
 	}
-	if response.StatusCode != 200 && response.StatusCode != 401 {
-		return result, errProtocol
+	if response.StatusCode != 200 && response.StatusCode != 401 && response.StatusCode != 403 {
+		return response.StatusCode, errProtocol
 	}
 	// HTTP 401 with data.code is the normal anonymous challenge response.
-	if err := json.Unmarshal(data, &result); err != nil {
-		return result, errProtocol
+	if err := json.Unmarshal(data, result); err != nil {
+		return response.StatusCode, errProtocol
 	}
-	return result, nil
+	return response.StatusCode, nil
 }
 
 // Activation reads an anonymous state challenge; it sends no password and never

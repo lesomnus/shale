@@ -11,6 +11,8 @@ manifest gracefully restarts that Producer, affecting all its feeds. Plans do
 not change the camera; applying requires an explicit request and the request's
 `allow_producer_restart` policy. Factory reset, firmware updates, cross-Set moves,
 idle Producers, hot reload and a camera-management UI are outside this release.
+Preset adjustments are available through durable status responses and the CLI's
+human-readable `camera status --summary` output.
 
 ## Local installation
 
@@ -35,6 +37,7 @@ Example `provisioner.yaml` (replace the example IDs with the existing assignment
 state_dir: /var/lib/shale/provisioner
 listen: 127.0.0.1:7415
 allow_loopback_http: true
+preset_file: /etc/shale/camera-presets.yaml
 networks:
   - id: floor4
     cidrs: [10.1.2.0/24]
@@ -125,6 +128,110 @@ shale camera serve --host-config /etc/shale/provisioner.yaml
 For a remote listener, replace the loopback address and supply `cert_file` and
 `key_file`; keep `allow_loopback_http: false`. `network.ca_file` can add a camera
 CA. `cp.ca_file` also trusts the CP-assigned relay during bounded live checking.
+
+## Device presets and permitted alternatives
+
+`preset_file` is optional administrator-owned YAML or JSON. It is loaded when
+the local host/worker is built. Remote targets use the worker's preset provider;
+the controller does not supply arbitrary rules in a job. Existing requests keep
+using their explicit `desired` values. Opt into matching presets with
+`"use_preset": true` and omit `desired` from that request. Mixing both is refused.
+
+For example, `/etc/shale/camera-presets.yaml` can contain:
+
+```yaml
+id: office-cameras
+revision: "3"
+rules:
+  - id: office-default
+    scope:
+      tenant_id: 00000000-0000-0000-0000-000000000001
+    settings:
+      video:
+        profile_token: profile_1
+        codec: h264
+        width: 1920
+        height: 1080
+        fps: 30
+        bitrate: 4096000
+    required: [video.codec]
+    fallbacks:
+      - video: {fps: 25}
+  - id: c420-frequency
+    scope:
+      tenant_id: 00000000-0000-0000-0000-000000000001
+    match:
+      manufacturer: TP-Link
+      model: EasyCam C420
+      hardware: "1.0"
+      firmware: 1.2.2 Build 260624 Rel.39352n
+    settings:
+      initialization:
+        power_line_frequency: 60
+    fallbacks:
+      - preserve: [initialization.power_line_frequency]
+        video: {fps: 25}
+```
+
+Scope selectors require a tenant; optional site, Set, Producer and network fields
+narrow a rule further. Device matching supports inventory `device_id`,
+`manufacturer`, `model`, `hardware`, `firmware`, `serial` and Ethernet `mac`.
+Strings match exactly; colon, hyphen and dotted MAC forms are normalized. A MAC
+rule must also specify `scope.network_id`. Missing evidence does not match a
+selector. Matching never grants access to a scope or creates an inventory claim.
+
+Rules merge from defaults through manufacturer, model/hardware/firmware,
+serial/MAC and finally inventory device overrides. Within a level, more scope
+and identity selectors are more specific. Conflicting equally specific rules
+are an error. Nonzero settings override inherited values; unspecified settings
+are preserved. A rule's `fallbacks` replaces inherited alternatives when present;
+`fallbacks: []` removes them. Required field names accumulate across rules.
+
+The requested settings are tried first, followed by each listed fallback patch
+in order. Unspecified fallback fields retain the requested value. A fallback's
+`preserve` list explicitly leaves those fields at the camera's current values
+instead; it cannot name a required field. `preserve` is valid only on fallback
+patches, not on the primary requested settings. In the example, 25 fps is allowed
+while H.264 remains required. The C420 rule explicitly allows the adapter to set
+60 Hz before capabilities are read again and 30 fps is planned. If that request
+is unsupported, its listed alternative preserves the current frequency and asks
+for 25 fps. Preserving a field does not restore its factory default or undo an
+earlier successful change.
+A preset never causes factory reset, guesses credentials or changes an unknown
+firmware's compatibility classification. Camera passwords remain in the separate
+`AuthProvider` store.
+
+Applying persists the selected preset reference/revision, matched rules and
+complete settings snapshot. Retrying the same job uses that snapshot even if
+the file has changed. Use a new job ID to apply changed policy and bump the human
+revision to label the change. A file provider's returned revision also includes
+content and resolved-snapshot digests, so editing a file without bumping its
+human revision still produces a different reference. A
+fallback records the requested and effective settings separately and still has
+to pass read-back and actual media qualification before enrollment becomes
+`active`. Unsupported settings may select a listed alternative. Authentication,
+identity, authorization or transport failures do not silently select another
+profile; an uncertain write is re-inspected on resume.
+
+`GET /v1/runs` and `GET /v1/runs/{id}` include `run.preset`, `run.effective`,
+`run.initialized` and `run.warnings`. Successful fallback remains `active` with
+warnings instead of becoming an error. Each warning contains a stable code,
+field, requested value, applied value and reason. To inspect it as text:
+
+```sh
+shale camera status --server https://provisioner.example --token-file /etc/shale/provisioner-operator.token --id front-door-v3 --summary
+```
+
+Omit `--id` to summarize all visible jobs. Without `--summary`, status preserves
+the default JSON response for automation. The status surface is the provisioner,
+not the storage disk-management page in the Shale console.
+
+Embedded applications can inject `camera.DevicePresetProvider` directly into
+`provision.Engine.Presets`. Within Shale, the CLI host builder also offers
+`provisionhost.BuildWithOptions(config, provisionhost.BuildOptions{Presets: p})`
+to replace file storage; do not set `preset_file` at the same time. The provider
+resolves policy, while the adapter plans/applies device operations and the
+engine owns durable retries and qualification.
 
 ## Claim, prepare credentials, plan and apply
 

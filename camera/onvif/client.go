@@ -69,6 +69,17 @@ func (c *Client) inspect(ctx context.Context, device camera.DeviceHint, material
 	device.Firmware = info.text("FirmwareVersion")
 	device.Serial = info.text("SerialNumber")
 	device.Hardware = info.text("HardwareId")
+	// A discovery/caller MAC is a hint, not authenticated device evidence.
+	device.MAC = ""
+	interfaces, err := c.request(ctx, base.String(), deviceNS, "GetNetworkInterfaces", "", material)
+	if err != nil && !errors.Is(err, camera.ErrUnsupported) {
+		return s, err
+	}
+	if err == nil {
+		// Prefer the interface owning this endpoint; do not arbitrarily select
+		// one of several interfaces when the endpoint is a DNS alias.
+		device.MAC = interfaceMAC(interfaces, base.Hostname())
+	}
 	now := time.Now().UTC()
 	evidence := camera.Evidence{Source: "onvif/device", At: now, Firmware: device.Firmware, Authenticated: material.Username != ""}
 	device.Evidence = append(device.Evidence, evidence)
