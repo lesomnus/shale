@@ -36,10 +36,11 @@ transactional/recorded/scoped layers; direct Ent reads are limited by already
 resolved tenant/site-scoped parent IDs.
 
 `worker_slot` is an administrator-selected routing label. It is not a machine
-identity or a permission to claim work. `worker_id` is reserved for #195 and must
-be unset in this release. Arbitrary UUIDs are rejected. Until adopted Worker
-identity exists, job Claim/Report/Publish are operator operations, and their
-lease owner is always the authenticated actor, never a request-supplied ID.
+identity or a permission to claim work. `worker_id` identifies an explicitly
+adopted CameraWorker in the exact tenant/site. Arbitrary UUIDs and unapproved
+machines are rejected. Job Claim/Report/Publish allow an operator or the current
+assigned Worker; the lease owner is the authenticated actor, never a
+request-supplied ID. See [the outbound Worker contract](camera-worker.md).
 
 ## Models and operations
 

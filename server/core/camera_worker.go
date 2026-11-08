@@ -241,7 +241,7 @@ func (s coreCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinReq
 		}
 		answer.Id = id.Bytes()
 		answer.Alias = alias
-		answer.Message = "waiting for adoption: shale camera-worker adopt " + alias
+		answer.Message = "waiting for adoption: shale camera-worker adopt @" + alias
 	case decPending:
 		if _, err := s.own(ctx).CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{
 			Ref:              api.CameraWorkerRef_builder{Id: js.id.Bytes()}.Build(),

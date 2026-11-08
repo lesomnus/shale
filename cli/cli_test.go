@@ -91,6 +91,7 @@ func TestFlagOverEnvironment(t *testing.T) {
 		{[]string{"--help"}, []string{"SHALE_CLIENT_AS", "SHALE_CLIENT_ADDR", "SHALE_CLIENT_CLUSTER_ADDR"}},
 		{[]string{"serve", "relay", "--help"}, []string{"SHALE_CP", "SHALE_STATE"}},
 		{[]string{"serve", "producer", "--help"}, []string{"SHALE_CP", "SHALE_STATE", "SHALE_PRODUCER_DEMO"}},
+		{[]string{"serve", "camera-worker", "--help"}, []string{"SHALE_CP", "SHALE_STATE"}},
 		{[]string{"producer", "push", "--help"}, []string{"SHALE_PRODUCER_PUSH"}},
 	} {
 		out, err := run(t, &cmd.Config{}, "", v.args...)

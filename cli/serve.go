@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera/credential"
 	"github.com/lesomnus/shale/cmd"
+	"github.com/lesomnus/shale/internal/cameraworker"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/relay"
@@ -90,6 +91,22 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 				}),
 			},
 			{
+				Name: "camera-worker", Brief: "an outbound camera Worker with its own adopted machine identity", Flags: common(),
+				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
+					apply(self)
+					ctx, done, err := Telemetry(ctx, c)
+					if err != nil {
+						return err
+					}
+					defer done()
+					w, err := cameraworker.New(CameraWorkerConfig(c))
+					if err != nil {
+						return err
+					}
+					return w.Run(ctx)
+				}),
+			},
+			{
 				Name: "reader", Brief: "the Reader agent beside a media server", Flags: common(),
 				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 					apply(self)
@@ -114,6 +131,12 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 
 		Handler: xli.RequireSubcommand(),
 	}
+}
+
+// CameraWorkerConfig is exported so combined-role hosts can inject a CP-backed
+// executor without giving the Worker a Producer's identity or local passwords.
+func CameraWorkerConfig(c *cmd.Config) cameraworker.Config {
+	return cameraworker.Config{StateDir: c.StateDir("camera-worker"), Cp: c.Cp, CaHash: c.CaHash, Tenant: c.Tenant, Dev: c.IsDev(), HeartbeatInterval: c.CameraWorker.HeartbeatInterval, RetryInterval: c.CameraWorker.RetryInterval, LeaseSeconds: c.CameraWorker.LeaseSeconds, Log: slog.Default()}
 }
 
 // serveControlPlane serves the given surfaces; `all` says which defaults
