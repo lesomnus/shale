@@ -244,6 +244,13 @@ class QualificationTopology(Topology):
         roles = {"edge": {"camera_interface": "eth0", "camera_address": "192.168.250.1", "camera_cidr": "192.168.250.0/24",
                            "uplink_interface": "wlan0", "uplink_address": "10.23.0.2", "exec_prefix": self.app("edge")},
                  "cp": {"interface": "eth0", "address": "10.23.0.1", "exec_prefix": self.app("cp")}}
+        # A replacement uses the same reachable PoE LAN, but a private mount
+        # namespace with a distinct fixture OS identity. Every application still
+        # runs through the same zero-capability setpriv prefix.
+        roles["replacement"] = {**roles["edge"], "exec_prefix": self.ns(
+            "edge", "env", "SHALE_REPLACEMENT_IDENTITY=1", "unshare", "--mount", "--propagation", "private",
+            "python3", "/test/replacement_identity.py", "setpriv", "--reuid=65534", "--regid=65534", "--clear-groups",
+            "--bounding-set=-all", "--inh-caps=-all", "--ambient-caps=-all", "--no-new-privs")}
         for role in CAMERAS:
             roles[role] = {"interface": "eth0", "address": self.addresses[role], "mac": CAMERAS[role],
                            "logical_identity": role + "-fixture", "exec_prefix": self.app(role)}
