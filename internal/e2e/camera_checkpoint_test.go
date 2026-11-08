@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestCameraPolicyLeasedCheckpointPinsBeforeDeviceWrite(t *testing.T) {
@@ -43,6 +44,10 @@ func TestCameraPolicyLeasedCheckpointPinsBeforeDeviceWrite(t *testing.T) {
 		now := time.Now().UTC()
 		r := provision.Run{Request: q, Stage: provision.Pending, Version: 1, CreatedAt: now, UpdatedAt: now, InitialRef: q.InitialRef, ManagementRef: q.ManagementRef, StreamingRef: q.StreamingRef, Binding: provision.BindingState{BindingID: q.BindingID, Alias: q.Alias}}
 		if err = store.Save(ctx, r); err != nil {
+			failures <- err
+			return err
+		}
+		if _, err = e.Checkpoint(ctx, "verify-phase-only", api.CameraJobStage_CAMERA_JOB_STAGE_VERIFYING, e.Snapshot().GetJob().GetObserved()); err != nil {
 			failures <- err
 			return err
 		}
@@ -118,4 +123,43 @@ func TestCameraPolicyLeasedCheckpointPinsBeforeDeviceWrite(t *testing.T) {
 	forged.GetProgress().GetStreamingRef().SetVersion("rotated-without-new-job")
 	_, err = api.NewCameraJobServiceClient(workerConn).Report(ctx, api.CameraJobReportRequest_builder{Ref: api.CameraJobRef_builder{Id: job.GetId()}.Build(), ExpectedVersion: claimed.GetDateUpdated(), OperationKey: "forge-credential", LeaseGeneration: claimed.GetLeaseGeneration(), AssignmentGeneration: claimed.GetAssignmentGeneration(), Stage: claimed.GetStage(), Observed: forged}.Build())
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
+	forged = proto.Clone(claimed.GetObserved()).(*api.CameraJobObservation)
+	forged.GetProgress().SetVersion(3)
+	claimedProfile := api.CameraCaptureProfile_builder{Codec: "h264", Width: 640, Height: 360, Fps: 15, MaxBitrateBps: 1_000_000}.Build()
+	forged.SetEffective(claimedProfile)
+	forged.SetVerified(api.CameraMediaEvidence_builder{Profile: claimedProfile, Decoded: true, DecodedFrames: 75, DurationSeconds: 5, ObservedAt: timestamppb.Now()}.Build())
+	_, err = api.NewCameraJobServiceClient(workerConn).Publish(ctx, api.CameraJobPublishRequest_builder{Ref: api.CameraJobRef_builder{Id: job.GetId()}.Build(), ExpectedVersion: claimed.GetDateUpdated(), OperationKey: "unselected-intent-publish", LeaseGeneration: claimed.GetLeaseGeneration(), AssignmentGeneration: claimed.GetAssignmentGeneration(), Spec: api.CameraCaptureSpec_builder{Input: "rtsp://192.0.2.10/main", Profile: claimedProfile, Credential: claimed.GetInputs().GetStreamingCredential()}.Build(), Observed: forged}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "outer proof cannot publish a pinned ruleset that has not selected or configured its candidate")
+
+	networks := api.NewCameraNetworkServiceClient(admin)
+	network, err := networks.Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: execution.Snapshot().GetNetwork().GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	configure := func(cidrs []string) {
+		t.Helper()
+		var e error
+		network, e = networks.Configure(ctx, api.CameraNetworkConfigureRequest_builder{Ref: api.CameraNetworkRef_builder{Id: network.GetId()}.Build(), Alias: network.GetAlias(), Name: network.GetName(), Cidrs: cidrs, InterfaceHint: network.GetInterfaceHint(), Multicast: network.GetMulticast(), ExpectedVersion: network.GetDateUpdated()}.Build())
+		require.NoError(t, e)
+	}
+	configure([]string{"192.0.2.0/24", "198.51.100.0/24"})
+	calls := 0
+	leased := cameraworker.LeasedDevices{Execution: execution, Verifier: policyCheckpointProbe(func(context.Context, cameramodel.MediaRequest) (cameramodel.VerifiedState, error) {
+		calls++
+		return cameramodel.VerifiedState{}, nil
+	})}
+	probe := cameramodel.MediaRequest{Scope: run.Request.Scope, NetworkScope: run.Request.Scope.NetworkID, Device: run.Request.Device, Profile: cameramodel.MediaProfile{StreamURI: "rtsp://198.51.100.20/pending-stream"}}
+	_, err = leased.Verify(ctx, probe)
+	require.NoError(t, err)
+	require.Equal(t, 1, calls)
+	// The device's management endpoint remains permitted and no capture has
+	// been published. Configure can remove only the pending media prefix.
+	configure([]string{"192.0.2.0/24"})
+	_, err = leased.Verify(ctx, probe)
+	require.ErrorIs(t, err, cameramodel.ErrForbidden)
+	require.Equal(t, 1, calls, "out-of-policy pending media must not reach a LAN callback")
+}
+
+type policyCheckpointProbe func(context.Context, cameramodel.MediaRequest) (cameramodel.VerifiedState, error)
+
+func (f policyCheckpointProbe) Verify(ctx context.Context, r cameramodel.MediaRequest) (cameramodel.VerifiedState, error) {
+	return f(ctx, r)
 }

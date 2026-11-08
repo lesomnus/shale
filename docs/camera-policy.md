@@ -146,6 +146,21 @@ responses cancel execution before another device write. A committed publication
 can be recovered without replaying it with newly measured probe timestamps.
 Authentication and readiness observation remain injected by the edge runtime.
 
+Before calling a publisher, the run journals the first complete deployment
+profile and operation ID. Later samples can vary within the verified limits;
+both the central committer and the standalone file publisher reuse the first
+payload and receipt. A sample above 1.3 times the pinned bitrate cannot enter
+publication again. Older unresolved publication checkpoints without either pin
+require explicit reconciliation before any further device operation; completed
+and canceled legacy runs retain their existing behavior.
+
+A media probe rechecks its RTSP address against the fresh job network prefixes
+immediately before the LAN callback. A pending media prefix may be removed even
+while the management endpoint remains permitted, so the earlier checkpoint is
+insufficient authorization. Unchanged historical checkpoints still validate the
+same capture declaration: changing only outer summaries cannot publish a
+different profile or bypass preset resolution and candidate selection.
+
 Checkpoint validation preserves activation-attempt flags, candidate order,
 resolved intent, authenticated identity and structured fallback warnings. Outer
 verification must match the saved independently decoded frame count, duration,

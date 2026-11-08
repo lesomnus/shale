@@ -2,6 +2,7 @@ package cameraworker
 
 import (
 	"context"
+	"math"
 	"strconv"
 
 	"github.com/lesomnus/shale/api"
@@ -42,15 +43,15 @@ func (c JobCommitter) Commit(ctx context.Context, d provision.Deployment) (publi
 	if err != nil || r.Verified == nil || r.Plan == nil || r.Stage != provision.Deploying || d.Profile.StreamURI != r.Verified.Profile.StreamURI {
 		return publication.Receipt{}, camera.ErrInvalid
 	}
+	if r.Binding.DeploymentID != "" && r.Binding.DeploymentID != d.OperationID {
+		return publication.Receipt{}, camera.ErrConflict
+	}
 	o, err := runObservation(r, j.GetObserved())
 	if err != nil {
 		return publication.Receipt{}, err
 	}
 	profile := captureProfile(d.Profile)
 	profile.SetKeyframeIntervalMs(o.GetEffective().GetKeyframeIntervalMs())
-	if !proto.Equal(profile, o.GetEffective()) {
-		return publication.Receipt{}, camera.ErrConflict
-	}
 	spec := api.CameraCaptureSpec_builder{BindingId: b.GetId(), SourceId: b.GetSource().GetId(), Alias: b.GetSourceAlias(), Input: d.Profile.StreamURI, Profile: profile, Credential: j.GetInputs().GetStreamingCredential(), Name: d.Request.Name}.Build()
 	if j.GetDatePublished() != nil {
 		// A previous Publish may have committed before its response was lost.
@@ -60,16 +61,13 @@ func (c JobCommitter) Commit(ctx context.Context, d provision.Deployment) (publi
 		if prior.GetProfile() == nil {
 			return publication.Receipt{}, camera.ErrConflict
 		}
-		oldProfile := proto.Clone(prior.GetProfile()).(*api.CameraCaptureProfile)
-		newProfile := proto.Clone(spec.GetProfile()).(*api.CameraCaptureProfile)
-		// A later probe's measured cadence can differ slightly. It cannot
-		// rewrite the already-published configuration of this same pinned job.
-		oldProfile.SetKeyframeIntervalMs(0)
-		newProfile.SetKeyframeIntervalMs(0)
-		if j.GetPublishedRevision() != prior.GetRevision() || !b.GetCollect() || prior.GetInput() != spec.GetInput() || !proto.Equal(oldProfile, newProfile) || !proto.Equal(prior.GetCredential(), spec.GetCredential()) {
+		if j.GetPublishedRevision() != prior.GetRevision() || !b.GetCollect() || prior.GetInput() != spec.GetInput() || !publishedProfileMatches(r.Plan.After, d.Profile, prior.GetProfile()) || !proto.Equal(prior.GetCredential(), spec.GetCredential()) {
 			return publication.Receipt{}, camera.ErrConflict
 		}
 		return publicationReceipt(w, d.OperationID), nil
+	}
+	if !proto.Equal(profile, o.GetEffective()) {
+		return publication.Receipt{}, camera.ErrConflict
 	}
 	key := "publish/" + strconv.FormatUint(r.Version, 10) + "/" + provision.Key(d.OperationID, stateHash(o))
 	_, err = c.Execution.Publish(ctx, key, spec, o)
@@ -77,4 +75,21 @@ func (c JobCommitter) Commit(ctx context.Context, d provision.Deployment) (publi
 		return publication.Receipt{}, privateExecutionError{err}
 	}
 	return publicationReceipt(c.Execution.Snapshot(), d.OperationID), nil
+}
+
+func publishedProfileMatches(configured, actual camera.MediaProfile, prior *api.CameraCaptureProfile) bool {
+	if prior == nil || actual.Codec != prior.GetCodec() || actual.Width != int(prior.GetWidth()) || actual.Height != int(prior.GetHeight()) {
+		return false
+	}
+	if configured.FPS > 0 {
+		if actual.FPS != configured.FPS || prior.GetFps() != configured.FPS {
+			return false
+		}
+	} else if actual.FPS <= 0 || math.Abs(actual.FPS-prior.GetFps()) > math.Max(0.5, prior.GetFps()*0.05) {
+		return false
+	}
+	if configured.Bitrate > 0 {
+		return actual.Bitrate == configured.Bitrate && prior.GetMaxBitrateBps() == configured.Bitrate
+	}
+	return actual.Bitrate > 0 && prior.GetMaxBitrateBps() > 0 && float64(actual.Bitrate) <= float64(prior.GetMaxBitrateBps())*1.3
 }

@@ -178,3 +178,59 @@ func TestJobCommitterRecoversPublicationWithoutReplayingNewProbeTimes(t *testing
 	_, err = (JobCommitter{Execution: e}).Commit(t.Context(), d)
 	require.ErrorIs(t, err, camera.ErrConflict)
 }
+
+type fixtureVerifier func(context.Context, camera.MediaRequest) (camera.VerifiedState, error)
+
+func (f fixtureVerifier) Verify(ctx context.Context, r camera.MediaRequest) (camera.VerifiedState, error) {
+	return f(ctx, r)
+}
+
+func TestLeasedVerifierRechecksPendingMediaPrefixAfterPolicyChange(t *testing.T) {
+	e, w := checkpointFixture(t)
+	w.GetNetwork().SetCidrs([]string{"192.0.2.0/24", "198.51.100.0/24"})
+	q := jobRequest(w)
+	calls := 0
+	d := LeasedDevices{Execution: e, Verifier: fixtureVerifier(func(context.Context, camera.MediaRequest) (camera.VerifiedState, error) {
+		calls++
+		return camera.VerifiedState{}, nil
+	})}
+	r := camera.MediaRequest{Scope: q.Scope, NetworkScope: q.Scope.NetworkID, Device: q.Device, Profile: camera.MediaProfile{StreamURI: "rtsp://198.51.100.20/main"}}
+	_, err := d.Verify(t.Context(), r)
+	require.NoError(t, err)
+	require.Equal(t, 1, calls)
+	// Management remains inside its allowed prefix. The pending unpublished
+	// RTSP address alone no longer belongs to this fresh network grant.
+	w.GetNetwork().SetCidrs([]string{"192.0.2.0/24"})
+	_, err = d.Verify(t.Context(), r)
+	require.ErrorIs(t, err, camera.ErrForbidden)
+	require.Equal(t, 1, calls)
+}
+
+func TestJobCommitterRecoversUnknownRateFactsWithoutReplacingPublishedSpec(t *testing.T) {
+	e, w := checkpointFixture(t)
+	r := checkpointRun(w)
+	configured := camera.MediaProfile{Token: "main", Codec: "h264", Width: 1280, Height: 720, GOP: 30, StreamURI: "rtsp://192.0.2.20/main"}
+	actual := configured
+	actual.FPS = 29.99
+	actual.Bitrate = 1_800_000
+	r.Stage = provision.Deploying
+	r.Plan = &camera.ChangePlan{ProfileToken: "main", Before: configured, After: configured, Revision: "1"}
+	r.Verified = &camera.VerifiedState{Profile: actual, Complete: true, Decoded: true, DecodedFrames: 150, Duration: 5 * time.Second, ObservedAt: r.UpdatedAt, ProfileRevision: "1"}
+	o, err := runObservation(r, nil)
+	require.NoError(t, err)
+	w.GetJob().SetObserved(o)
+	w.GetJob().SetPublishedRevision(9)
+	w.GetJob().SetDatePublished(timestamppb.New(r.UpdatedAt.Add(-time.Minute)))
+	w.GetJob().SetStage(api.CameraJobStage_CAMERA_JOB_STAGE_DEPLOYMENT_READY)
+	old := captureProfile(actual)
+	old.SetFps(29.97)
+	old.SetMaxBitrateBps(1_700_000)
+	w.GetBinding().SetCollect(true)
+	w.GetBinding().SetDesired(api.CameraCaptureSpec_builder{Profile: old, Input: actual.StreamURI, Credential: w.GetJob().GetInputs().GetStreamingCredential(), Revision: 9}.Build())
+	d := provision.Deployment{OperationID: "stable-unknown-operation", Request: r.Request, Profile: actual, Credential: *r.StreamingRef, Previous: r.Binding}
+	receipt, err := (JobCommitter{Execution: e}).Commit(t.Context(), d)
+	require.NoError(t, err)
+	require.Equal(t, int64(9), receipt.Revision.Catalog)
+	require.Equal(t, 29.97, w.GetBinding().GetDesired().GetProfile().GetFps())
+	require.Equal(t, int64(1_700_000), w.GetBinding().GetDesired().GetProfile().GetMaxBitrateBps())
+}

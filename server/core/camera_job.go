@@ -528,6 +528,9 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		if progress := r.GetObserved().GetProgress(); progress != nil && spec.GetInput() != progress.GetVerified().GetProfile().GetStreamUri() {
 			return invalid("input", "capture must use the independently verified stream address")
 		}
+		if progress := r.GetObserved().GetProgress(); progress != nil && (progress.GetPreset() == nil || progress.GetEffective() == nil || progress.GetPlan() == nil || progress.GetVerified() == nil || progress.GetDeploymentProfile() == nil || progress.GetBinding().GetDeploymentId() == "") {
+			return failed("typed camera publication requires resolved intent and its durable capture declaration")
+		}
 		if !proto.Equal(spec.GetCredential(), j.GetInputs().GetStreamingCredential()) {
 			return invalid("credential", "capture must use the pinned streaming credential version")
 		}

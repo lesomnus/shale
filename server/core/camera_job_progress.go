@@ -48,6 +48,9 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		if err := cameraProgressMedia(run, candidate, observed); err != nil {
 			return nil, err
 		}
+		if err := cameraProgressDeclaration(run, observed); err != nil {
+			return nil, err
+		}
 		return nil, cameraProgressWarnings(run.Warnings, observed.GetWarnings(), warnings)
 	}
 	var previous *provision.Run
@@ -62,6 +65,12 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		}
 		if old.ActivationAttempted && !run.ActivationAttempted || old.ActivationComplete && !run.ActivationComplete {
 			return nil, failed("a camera checkpoint cannot forget an activation attempt or completion")
+		}
+		if old.Binding.DeploymentID != "" && old.Binding.DeploymentID != run.Binding.DeploymentID || old.DeploymentProfile != nil && !reflect.DeepEqual(old.DeploymentProfile, run.DeploymentProfile) {
+			return nil, failed("a pending camera publication intent cannot change or be cleared")
+		}
+		if j.GetDatePublished() != nil && old.CandidateIndex != run.CandidateIndex {
+			return nil, failed("a published camera job cannot select another candidate")
 		}
 	} else if run.Version != 1 {
 		return nil, invalid("progress.version", "the first camera checkpoint version must be one")
@@ -101,8 +110,11 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		return nil, failed("a selected camera candidate cannot move backwards or be cleared")
 	}
 	if run.Preset == nil {
-		if j.GetPinnedPreset() != nil || previous != nil && previous.Preset != nil || run.Effective != nil || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.Verified != nil || run.CandidateIndex != 0 {
+		if j.GetPinnedPreset() != nil || previous != nil && previous.Preset != nil || run.Effective != nil || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.Verified != nil || run.DeploymentProfile != nil || run.CandidateIndex != 0 {
 			return nil, invalid("progress.preset", "configuration state requires its immutable preset snapshot")
+		}
+		if err := cameraProgressMedia(run, camera.PresetSettings{}, observed); err != nil {
+			return nil, err
 		}
 		return nil, cameraProgressWarnings(run.Warnings, observed.GetWarnings(), nil)
 	}
@@ -143,10 +155,13 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		return nil, invalid("progress.candidate", "checkpoint selects no allowed camera candidate")
 	}
 	if run.Effective == nil {
-		if run.CandidateIndex != 0 || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.Verified != nil {
+		if run.CandidateIndex != 0 || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.Verified != nil || run.DeploymentProfile != nil {
 			return nil, invalid("progress.effective", "configuration state requires an explicit selected candidate")
 		}
 		if err := cameraProgressWarnings(run.Warnings, observed.GetWarnings(), nil); err != nil {
+			return nil, err
+		}
+		if err := cameraProgressMedia(run, camera.PresetSettings{}, observed); err != nil {
 			return nil, err
 		}
 		return newPin, nil
@@ -164,7 +179,30 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 	if err := cameraProgressMedia(run, candidate, observed); err != nil {
 		return nil, err
 	}
+	if err := cameraProgressDeclaration(run, observed); err != nil {
+		return nil, err
+	}
 	return newPin, nil
+}
+
+func cameraProgressDeclaration(run provision.Run, observed *api.CameraJobObservation) error {
+	if run.DeploymentProfile == nil {
+		return nil
+	}
+	p := run.DeploymentProfile
+	if run.Binding.DeploymentID == "" || run.Verified == nil || run.Plan == nil || observed.GetEffective() == nil || p.StreamURI != run.Verified.Profile.StreamURI || !cameraProgressActualMatches(run.Verified.Profile, captureProfileForProgress(*p)) || float64(run.Verified.Profile.Bitrate) > float64(p.Bitrate)*1.3 {
+		return invalid("progress.deployment", "publication intent differs from independently verified capture")
+	}
+	declared := proto.Clone(observed.GetEffective()).(*api.CameraCaptureProfile)
+	declared.SetKeyframeIntervalMs(0)
+	if !proto.Equal(declared, captureProfileForProgress(*p)) || p.Token != run.Plan.ProfileToken || p.Token != run.Verified.Profile.Token {
+		return invalid("progress.deployment", "publication profile must retain the selected and verified capture declaration")
+	}
+	return nil
+}
+
+func captureProfileForProgress(p camera.MediaProfile) *api.CameraCaptureProfile {
+	return api.CameraCaptureProfile_builder{Codec: p.Codec, Width: int32(p.Width), Height: int32(p.Height), Fps: p.FPS, MaxBitrateBps: p.Bitrate}.Build()
 }
 
 func cameraProgressRefs(run provision.Run, input *api.CameraJobInputs, scope camera.EnrollmentScope) error {
@@ -239,7 +277,12 @@ func cameraProgressURIs(run provision.Run, cidrs []string, network string) error
 		}
 	}
 	if run.Verified != nil {
-		return profile(run.Verified.Profile)
+		if err := profile(run.Verified.Profile); err != nil {
+			return err
+		}
+	}
+	if run.DeploymentProfile != nil {
+		return profile(*run.DeploymentProfile)
 	}
 	return nil
 }

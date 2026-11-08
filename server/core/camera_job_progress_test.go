@@ -410,3 +410,65 @@ func TestCameraProgressCannotForgetActivationAttempt(t *testing.T) {
 		require.Error(t, err, "a resumed activation must not repeat an uncertain first-password write")
 	}
 }
+
+func TestCameraProgressCannotReplacePendingPublicationIntent(t *testing.T) {
+	for _, edit := range []func(*progressFixture){
+		func(f *progressFixture) { f.run.Binding.DeploymentID = "changed-operation" },
+		func(f *progressFixture) { f.run.Binding.DeploymentID = "" },
+		func(f *progressFixture) { f.run.DeploymentProfile = nil },
+		func(f *progressFixture) { f.run.DeploymentProfile.FPS = 15 },
+	} {
+		f := newProgressFixture(t, false)
+		p := f.run.Plan.After
+		f.run.Verified = &camera.VerifiedState{Profile: p, ProfileRevision: f.run.Effective.Video.Revision, Firmware: "1.0", Complete: true, Decoded: true, DecodedFrames: 150, ObservedAt: f.run.UpdatedAt, Duration: 5 * time.Second}
+		f.run.DeploymentProfile = &p
+		f.run.Binding.DeploymentID = "first-publication"
+		pin, err := f.check(t)
+		require.NoError(t, err)
+		f.j.SetPinnedPreset(pin)
+		f.j.SetObserved(progressObservation(t, f.run))
+		f.run.Version++
+		edit(&f)
+		_, err = f.check(t)
+		require.Error(t, err)
+	}
+}
+
+func TestCameraProgressPreconfigurationCannotAuthorizeOuterMediaProof(t *testing.T) {
+	for _, resolved := range []bool{false, true} {
+		f := newProgressFixture(t, false)
+		f.run.Effective, f.run.Plan, f.run.Verified, f.run.InitializationPlan, f.run.Initialized = nil, nil, nil, nil, nil
+		if !resolved {
+			f.run.Preset = nil
+		}
+		o := progressObservation(t, f.run)
+		profile := api.CameraCaptureProfile_builder{Codec: "h264", Width: 640, Height: 360, Fps: 15, MaxBitrateBps: 1_000_000}.Build()
+		o.SetEffective(profile)
+		o.SetVerified(api.CameraMediaEvidence_builder{Profile: profile, Decoded: true, DecodedFrames: 75, DurationSeconds: 5, ObservedAt: timestamppb.New(f.run.UpdatedAt)}.Build())
+		_, err := f.c.cameraProgress(t.Context(), f.j, f.a, f.b, f.d, o)
+		require.Error(t, err, "an unresolved or unselected checkpoint cannot authenticate a publication by supplying only outer media facts")
+	}
+}
+
+func TestCameraProgressHistoricalStatusCannotChangePublicationDeclaration(t *testing.T) {
+	f := newProgressFixture(t, false)
+	f.j.GetInputs().GetConfiguration().GetVideo().SetBitrateBps(0)
+	f.run.Preset.Requested.Video.Bitrate = 0
+	f.run.Effective.Video.Bitrate = 0
+	f.run.Plan.Before.Bitrate = 0
+	f.run.Plan.After.Bitrate = 0
+	p := f.run.Plan.After
+	p.Bitrate = 1_900_000
+	f.run.Verified = &camera.VerifiedState{Profile: p, ProfileRevision: f.run.Effective.Video.Revision, Firmware: "1.0", Complete: true, Decoded: true, DecodedFrames: 150, ObservedAt: f.run.UpdatedAt, Duration: 5 * time.Second}
+	f.run.DeploymentProfile = &p
+	f.run.Binding.DeploymentID = "first-publication"
+	o := progressObservation(t, f.run)
+	o.SetEffective(captureProfileForProgress(p))
+	pin, err := f.c.cameraProgress(t.Context(), f.j, f.a, f.b, f.d, o)
+	require.NoError(t, err)
+	f.j.SetObserved(proto.Clone(o).(*api.CameraJobObservation))
+	f.j.SetPinnedPreset(pin)
+	o.GetEffective().SetMaxBitrateBps(2_000_000)
+	_, err = f.c.cameraProgress(t.Context(), f.j, f.a, f.b, f.d, o)
+	require.Error(t, err, "unchanged progress cannot authorize an outer capture declaration different from its durable publication pin")
+}

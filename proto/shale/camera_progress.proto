@@ -202,4 +202,5 @@ message CameraProvisionState {
   CameraProvisionInitializationPlan initialization_plan = 21;
   CameraProvisionDeviceSettings initialized = 22;
   CameraProvisionWarnings warnings = 23;
+  CameraProvisionMediaProfile deployment_profile = 24;
 }

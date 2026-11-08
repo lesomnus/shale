@@ -2,6 +2,8 @@ package cameraworker
 
 import (
 	"context"
+	"net/netip"
+	"net/url"
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
@@ -119,14 +121,47 @@ func (d LeasedDevices) ApplyInitialization(ctx context.Context, h camera.DeviceH
 	return out, err
 }
 func (d LeasedDevices) Verify(ctx context.Context, r camera.MediaRequest) (out camera.VerifiedState, err error) {
-	if d.Verifier == nil {
+	if d.Verifier == nil || d.Execution == nil {
 		return out, camera.ErrInvalid
 	}
-	err = d.step(ctx, r.Device, func(ctx context.Context, h camera.DeviceHint) error {
-		var e error
+	err = d.Execution.Step(ctx, func(ctx context.Context, w *api.CameraWorkerWork) error {
+		h, e := freshTransport(r.Device, w)
+		if e != nil {
+			return e
+		}
+		scope := enrollmentScope(w.GetAssignment())
+		if r.Scope != scope || r.NetworkScope != scope.NetworkID || !currentMediaPrefix(r.Profile.StreamURI, w.GetNetwork().GetCidrs()) {
+			return camera.ErrForbidden
+		}
 		r.Device = h
 		out, e = d.Verifier.Verify(ctx, r)
 		return e
 	})
+	if err != nil {
+		err = privateExecutionError{err}
+	}
 	return out, err
+}
+
+// A pending RTSP URI is not yet the binding's desired input. It therefore
+// needs a fresh prefix check even when the CP can retain the management
+// endpoint while narrowing the network between checkpoint and probe.
+func currentMediaPrefix(raw string, cidrs []string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || len(raw) > 2048 || u.User != nil || u.Fragment != "" || u.Opaque != "" || u.Scheme != "rtsp" && u.Scheme != "rtsps" {
+		return false
+	}
+	ip, err := netip.ParseAddr(u.Hostname())
+	if err != nil || ip.IsUnspecified() || ip.IsMulticast() || len(cidrs) == 0 || len(cidrs) > 32 {
+		return false
+	}
+	allowed := false
+	for _, raw := range cidrs {
+		p, err := netip.ParsePrefix(raw)
+		if err != nil || p.Bits() == 0 || p != p.Masked() {
+			return false
+		}
+		allowed = allowed || p.Contains(ip.Unmap())
+	}
+	return allowed
 }

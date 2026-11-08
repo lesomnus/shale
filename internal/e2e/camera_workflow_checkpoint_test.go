@@ -15,6 +15,9 @@ import (
 	publication "github.com/lesomnus/shale/provision/source"
 	"github.com/lesomnus/shale/source"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 // This is a portable-engine/real-TLS-CP contract test with a scripted device.
@@ -25,6 +28,8 @@ type checkpointDevice struct {
 	profile                                            cameramodel.MediaProfile
 	frequency                                          int
 	videoWrites, initializationWrites, primaryAttempts int
+	omitRateFacts                                      bool
+	probes                                             int
 }
 
 func (d *checkpointDevice) Inspect(_ context.Context, h cameramodel.DeviceHint, _ cameramodel.CredentialLease) (cameramodel.Inspection, error) {
@@ -34,7 +39,12 @@ func (d *checkpointDevice) Inspect(_ context.Context, h cameramodel.DeviceHint, 
 	h.Model = "TestCam"
 	h.Serial = "workflow-unit"
 	h.Evidence = []cameramodel.Evidence{{Source: "scripted", Authenticated: true}}
-	return cameramodel.Inspection{Device: h, Activation: cameramodel.ActivationReady, Current: cameramodel.CurrentState{Profiles: []cameramodel.MediaProfile{d.profile}, Firmware: "scripted-1"}}, nil
+	profile := d.profile
+	if d.omitRateFacts {
+		profile.FPS = 0
+		profile.Bitrate = 0
+	}
+	return cameramodel.Inspection{Device: h, Activation: cameramodel.ActivationReady, Current: cameramodel.CurrentState{Profiles: []cameramodel.MediaProfile{profile}, Firmware: "scripted-1"}}, nil
 }
 func (d *checkpointDevice) Plan(_ context.Context, i cameramodel.Inspection, w cameramodel.DesiredState) (cameramodel.ChangePlan, error) {
 	d.mu.Lock()
@@ -96,8 +106,9 @@ func (d *checkpointDevice) Verify(_ context.Context, r cameramodel.MediaRequest)
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	p := d.profile
-	p.FPS -= 0.01
-	p.Bitrate -= 100_000
+	d.probes++
+	p.FPS -= 0.01 * float64(d.probes)
+	p.Bitrate -= 100_000 * int64(d.probes)
 	return cameramodel.VerifiedState{Profile: p, Complete: true, Decoded: true, DecodedFrames: 75, Duration: r.Duration, ObservedAt: time.Now().UTC(), Firmware: "scripted-1", ProfileRevision: r.Desired.Revision}, nil
 }
 
@@ -117,9 +128,22 @@ func (checkpointNotReady) Observe(context.Context, provision.Deployment, provisi
 }
 
 func TestCameraPolicyPortableWorkflowRetainsFallbackAndDurablePublication(t *testing.T) {
+	cameraPolicyPortableWorkflow(t, false)
+}
+func TestCameraPolicyUnknownRateFactsRecoverDurablePublication(t *testing.T) {
+	cameraPolicyPortableWorkflow(t, true)
+}
+func cameraPolicyPortableWorkflow(t *testing.T, omitRateFacts bool) {
 	server, cp, admin, ctx := cameraPolicyControl(t)
-	worker, _, agent := cameraWorkerMachine(t, ctx, server, cp, admin, "workflow-worker", nil)
-	preset, err := api.NewCameraPresetServiceClient(admin).Create(ctx, cameraPolicyPresetRequest("workflow-preset", "1", cameraPolicyRule("defaults", api.CameraPresetScope_builder{TenantId: cameraPolicyID(t, worker.GetTenant().GetId())}.Build())))
+	worker, workerConn, agent := cameraWorkerMachine(t, ctx, server, cp, admin, "workflow-worker", nil)
+	presetRequest := cameraPolicyPresetRequest("workflow-preset", "1", cameraPolicyRule("defaults", api.CameraPresetScope_builder{TenantId: cameraPolicyID(t, worker.GetTenant().GetId())}.Build()))
+	if omitRateFacts {
+		rule := presetRequest.GetRules()[0]
+		rule.GetSettings().GetVideo().SetFps(0)
+		rule.GetSettings().GetVideo().SetBitrateBps(0)
+		rule.GetAlternatives().GetCandidates()[0].GetVideo().SetFps(0)
+	}
+	preset, err := api.NewCameraPresetServiceClient(admin).Create(ctx, presetRequest)
 	require.NoError(t, err)
 	ref := func(purpose string) *api.CameraCredentialReference {
 		return api.CameraCredentialReference_builder{Provider: "fixture", Id: "workflow-" + purpose, Version: "original", Purpose: purpose}.Build()
@@ -131,11 +155,25 @@ func TestCameraPolicyPortableWorkflowRetainsFallbackAndDurablePublication(t *tes
 	require.NoError(t, err)
 	_, err = api.NewCameraDeviceServiceClient(admin).Observe(ctx, api.CameraDeviceObserveRequest_builder{Ref: api.CameraDeviceRef_builder{Id: device.GetId()}.Build(), ExpectedVersion: device.GetDateUpdated(), Endpoints: []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: "http://192.0.2.20/onvif/device_service"}.Build()}}.Build())
 	require.NoError(t, err)
-	d := &checkpointDevice{frequency: 50, profile: cameramodel.MediaProfile{Token: "main", Codec: "h264", Width: 640, Height: 360, FPS: 30, Bitrate: 2_000_000, GOP: 30, StreamURI: "rtsp://192.0.2.20/stream"}}
+	d := &checkpointDevice{omitRateFacts: omitRateFacts, frequency: 50, profile: cameramodel.MediaProfile{Token: "main", Codec: "h264", Width: 640, Height: 360, FPS: 30, Bitrate: 2_000_000, GOP: 30, StreamURI: "rtsp://192.0.2.20/stream"}}
+	var operationIDs []string
+	forgedDeclarations := 0
 	p := cameraworker.Provisioner{Devices: cameraworker.LeasedDevices{Inspector: d, Configurator: d, Initializer: d, Verifier: d}, Auth: func(*cameraworker.Execution) cameramodel.AuthProvider { return checkpointAuth{} }, Publisher: func(e *cameraworker.Execution) provision.SourcePublisher {
 		w := e.Snapshot()
 		a := w.GetAssignment()
-		return &publication.Publisher{AssignmentID: cameraPolicyID(t, a.GetId()), Scope: source.Scope{TenantID: cameraPolicyID(t, a.GetTenant().GetId()), SetID: cameraPolicyID(t, a.GetSet().GetId()), ProducerID: cameraPolicyID(t, a.GetProducer().GetId()), NetworkID: cameraPolicyID(t, a.GetNetwork().GetId())}, Committer: cameraworker.JobCommitter{Execution: e}, Observer: checkpointNotReady{}}
+		return &publication.Publisher{AssignmentID: cameraPolicyID(t, a.GetId()), Scope: source.Scope{TenantID: cameraPolicyID(t, a.GetTenant().GetId()), SetID: cameraPolicyID(t, a.GetSet().GetId()), ProducerID: cameraPolicyID(t, a.GetProducer().GetId()), NetworkID: cameraPolicyID(t, a.GetNetwork().GetId())}, Committer: sourceCatalogCommit(func(ctx context.Context, dep provision.Deployment) (publication.Receipt, error) {
+			operationIDs = append(operationIDs, dep.OperationID)
+			if j := e.Snapshot().GetJob(); omitRateFacts && j.GetDatePublished() == nil {
+				// The full Deploying checkpoint is already durable. Keeping its
+				// bytes unchanged must not permit a different outer declaration.
+				forged := proto.Clone(j.GetObserved()).(*api.CameraJobObservation)
+				forged.GetEffective().SetMaxBitrateBps(forged.GetEffective().GetMaxBitrateBps() + 100_000)
+				_, err := api.NewCameraJobServiceClient(workerConn).Publish(ctx, api.CameraJobPublishRequest_builder{Ref: api.CameraJobRef_builder{Id: j.GetId()}.Build(), ExpectedVersion: j.GetDateUpdated(), OperationKey: "rewrite-unchanged-publication", LeaseGeneration: j.GetLeaseGeneration(), AssignmentGeneration: j.GetAssignmentGeneration(), Observed: forged, Spec: api.CameraCaptureSpec_builder{Input: dep.Profile.StreamURI, Profile: forged.GetEffective(), Credential: j.GetInputs().GetStreamingCredential()}.Build()}.Build())
+				require.Equal(t, codes.InvalidArgument, status.Code(err))
+				forgedDeclarations++
+			}
+			return (cameraworker.JobCommitter{Execution: e}).Commit(ctx, dep)
+		}), Observer: checkpointNotReady{}}
 	}}
 	results := make(chan error, 1)
 	runtime, err := cameraworker.New(cameraworker.Config{StateDir: agent.Store.Dir, Cp: cp, Tenant: "acme", HardwareID: "workflow-worker", CaHash: pki.Fingerprint(server.CA.Cert), HeartbeatInterval: 100 * time.Millisecond, RetryInterval: 100 * time.Millisecond, LeaseSeconds: 30, Log: agent.Log, Executor: cameraworker.ExecutorFunc(func(ctx context.Context, e *cameraworker.Execution) error {
@@ -192,7 +230,16 @@ func TestCameraPolicyPortableWorkflowRetainsFallbackAndDurablePublication(t *tes
 	d.mu.Lock()
 	writes, inits, primary := d.videoWrites, d.initializationWrites, d.primaryAttempts
 	d.mu.Unlock()
-	require.Equal(t, 1, writes)
+	if omitRateFacts {
+		require.Zero(t, writes)
+	} else {
+		require.Equal(t, 1, writes)
+	}
+	require.Len(t, operationIDs, 2)
+	require.Equal(t, operationIDs[0], operationIDs[1], "recovery retains the publication intent before a new measurement")
+	if omitRateFacts {
+		require.Equal(t, 1, forgedDeclarations)
+	}
 	require.Equal(t, 1, inits)
 	require.Equal(t, 1, primary, "resume never retries the rejected preferred candidate")
 	sources, err := server.Ent.Source.Query().Count(ctx)

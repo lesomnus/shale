@@ -198,7 +198,9 @@ func runObservation(r provision.Run, prior *api.CameraJobObservation) (*api.Came
 	}
 	if r.Plan != nil {
 		p := r.Plan.After
-		if r.Verified != nil {
+		if r.DeploymentProfile != nil {
+			p = *r.DeploymentProfile
+		} else if r.Verified != nil {
 			v := r.Verified.Profile
 			if p.Codec == "" {
 				p.Codec = v.Codec
@@ -246,6 +248,11 @@ func (s *JobStore) Save(ctx context.Context, r provision.Run) error {
 	o, err := runObservation(r, w.GetJob().GetObserved())
 	if err != nil {
 		return err
+	}
+	if j, b := w.GetJob(), w.GetBinding(); j.GetDatePublished() != nil && j.GetPublishedRevision() > 0 && j.GetPublishedRevision() == b.GetDesired().GetRevision() && b.GetDesired().GetProfile() != nil {
+		// Preserve rate facts filled from the first probe. A later sample can
+		// vary while the same durable capture specification stays authoritative.
+		o.SetEffective(proto.Clone(b.GetDesired().GetProfile()).(*api.CameraCaptureProfile))
 	}
 	// Version + content identifies a retry without depending on timestamps or
 	// a mutable server DateUpdated, and fits the CP's bounded operation token.

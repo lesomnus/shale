@@ -3726,6 +3726,7 @@ type CameraProvisionState struct {
 	xxx_hidden_InitializationPlan  *CameraProvisionInitializationPlan `protobuf:"bytes,21,opt,name=initialization_plan,json=initializationPlan"`
 	xxx_hidden_Initialized         *CameraProvisionDeviceSettings     `protobuf:"bytes,22,opt,name=initialized"`
 	xxx_hidden_Warnings            *CameraProvisionWarnings           `protobuf:"bytes,23,opt,name=warnings"`
+	xxx_hidden_DeploymentProfile   *CameraProvisionMediaProfile       `protobuf:"bytes,24,opt,name=deployment_profile,json=deploymentProfile"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -3916,6 +3917,13 @@ func (x *CameraProvisionState) GetWarnings() *CameraProvisionWarnings {
 	return nil
 }
 
+func (x *CameraProvisionState) GetDeploymentProfile() *CameraProvisionMediaProfile {
+	if x != nil {
+		return x.xxx_hidden_DeploymentProfile
+	}
+	return nil
+}
+
 func (x *CameraProvisionState) SetSchemaVersion(v uint32) {
 	x.xxx_hidden_SchemaVersion = v
 }
@@ -4006,6 +4014,10 @@ func (x *CameraProvisionState) SetInitialized(v *CameraProvisionDeviceSettings) 
 
 func (x *CameraProvisionState) SetWarnings(v *CameraProvisionWarnings) {
 	x.xxx_hidden_Warnings = v
+}
+
+func (x *CameraProvisionState) SetDeploymentProfile(v *CameraProvisionMediaProfile) {
+	x.xxx_hidden_DeploymentProfile = v
 }
 
 func (x *CameraProvisionState) HasRequest() bool {
@@ -4127,6 +4139,13 @@ func (x *CameraProvisionState) HasWarnings() bool {
 	return x.xxx_hidden_Warnings != nil
 }
 
+func (x *CameraProvisionState) HasDeploymentProfile() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DeploymentProfile != nil
+}
+
 func (x *CameraProvisionState) ClearRequest() {
 	x.xxx_hidden_Request = nil
 }
@@ -4195,6 +4214,10 @@ func (x *CameraProvisionState) ClearWarnings() {
 	x.xxx_hidden_Warnings = nil
 }
 
+func (x *CameraProvisionState) ClearDeploymentProfile() {
+	x.xxx_hidden_DeploymentProfile = nil
+}
+
 type CameraProvisionState_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -4221,6 +4244,7 @@ type CameraProvisionState_builder struct {
 	InitializationPlan  *CameraProvisionInitializationPlan
 	Initialized         *CameraProvisionDeviceSettings
 	Warnings            *CameraProvisionWarnings
+	DeploymentProfile   *CameraProvisionMediaProfile
 }
 
 func (b0 CameraProvisionState_builder) Build() *CameraProvisionState {
@@ -4250,6 +4274,7 @@ func (b0 CameraProvisionState_builder) Build() *CameraProvisionState {
 	x.xxx_hidden_InitializationPlan = b.InitializationPlan
 	x.xxx_hidden_Initialized = b.Initialized
 	x.xxx_hidden_Warnings = b.Warnings
+	x.xxx_hidden_DeploymentProfile = b.DeploymentProfile
 	return m0
 }
 
@@ -4446,8 +4471,7 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\aapplied\x18\x04 \x01(\tR\aapplied\x12\x16\n" +
 	"\x06reason\x18\x05 \x01(\tR\x06reason\"N\n" +
 	"\x17CameraProvisionWarnings\x123\n" +
-	"\x05items\x18\x01 \x03(\v2\x1d.shale.CameraProvisionWarningR\x05items\"\xb9\n" +
-	"\n" +
+	"\x05items\x18\x01 \x03(\v2\x1d.shale.CameraProvisionWarningR\x05items\"\x8c\v\n" +
 	"\x14CameraProvisionState\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\rR\rschemaVersion\x127\n" +
 	"\arequest\x18\x02 \x01(\v2\x1d.shale.CameraProvisionRequestR\arequest\x12\x14\n" +
@@ -4477,7 +4501,8 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\x0fcandidate_index\x18\x14 \x01(\x05R\x0ecandidateIndex\x12Y\n" +
 	"\x13initialization_plan\x18\x15 \x01(\v2(.shale.CameraProvisionInitializationPlanR\x12initializationPlan\x12F\n" +
 	"\vinitialized\x18\x16 \x01(\v2$.shale.CameraProvisionDeviceSettingsR\vinitialized\x12:\n" +
-	"\bwarnings\x18\x17 \x01(\v2\x1e.shale.CameraProvisionWarningsR\bwarningsB$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\bwarnings\x18\x17 \x01(\v2\x1e.shale.CameraProvisionWarningsR\bwarnings\x12Q\n" +
+	"\x12deployment_profile\x18\x18 \x01(\v2\".shale.CameraProvisionMediaProfileR\x11deploymentProfileB$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_shale_camera_progress_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_shale_camera_progress_proto_goTypes = []any{
@@ -4583,11 +4608,12 @@ var file_shale_camera_progress_proto_depIdxs = []int32{
 	29, // 59: shale.CameraProvisionState.initialization_plan:type_name -> shale.CameraProvisionInitializationPlan
 	28, // 60: shale.CameraProvisionState.initialized:type_name -> shale.CameraProvisionDeviceSettings
 	31, // 61: shale.CameraProvisionState.warnings:type_name -> shale.CameraProvisionWarnings
-	62, // [62:62] is the sub-list for method output_type
-	62, // [62:62] is the sub-list for method input_type
-	62, // [62:62] is the sub-list for extension type_name
-	62, // [62:62] is the sub-list for extension extendee
-	0,  // [0:62] is the sub-list for field type_name
+	15, // 62: shale.CameraProvisionState.deployment_profile:type_name -> shale.CameraProvisionMediaProfile
+	63, // [63:63] is the sub-list for method output_type
+	63, // [63:63] is the sub-list for method input_type
+	63, // [63:63] is the sub-list for extension type_name
+	63, // [63:63] is the sub-list for extension extendee
+	0,  // [0:63] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_progress_proto_init() }
