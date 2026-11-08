@@ -14,6 +14,11 @@ import (
 	archived "github.com/lesomnus/shale/internal/ent/archived"
 	attempt "github.com/lesomnus/shale/internal/ent/attempt"
 	audit "github.com/lesomnus/shale/internal/ent/audit"
+	cameraassignment "github.com/lesomnus/shale/internal/ent/cameraassignment"
+	camerabinding "github.com/lesomnus/shale/internal/ent/camerabinding"
+	cameradevice "github.com/lesomnus/shale/internal/ent/cameradevice"
+	camerajob "github.com/lesomnus/shale/internal/ent/camerajob"
+	cameranetwork "github.com/lesomnus/shale/internal/ent/cameranetwork"
 	delegation "github.com/lesomnus/shale/internal/ent/delegation"
 	device "github.com/lesomnus/shale/internal/ent/device"
 	holder "github.com/lesomnus/shale/internal/ent/holder"
@@ -385,8 +390,6 @@ func snapshotOrNil(v proto.Message) proto.Message {
 // say about.
 type Scope interface {
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
-	HolderScope(ctx context.Context) (predicate.Holder, error)
-	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	SiteScope(ctx context.Context) (predicate.Site, error)
 	SetScope(ctx context.Context) (predicate.Set, error)
 	SourceScope(ctx context.Context) (predicate.Source, error)
@@ -394,8 +397,15 @@ type Scope interface {
 	RelayScope(ctx context.Context) (predicate.Relay, error)
 	ProducerScope(ctx context.Context) (predicate.Producer, error)
 	ReaderScope(ctx context.Context) (predicate.Reader, error)
+	CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, error)
+	CameraDeviceScope(ctx context.Context) (predicate.CameraDevice, error)
+	CameraAssignmentScope(ctx context.Context) (predicate.CameraAssignment, error)
+	CameraBindingScope(ctx context.Context) (predicate.CameraBinding, error)
+	CameraJobScope(ctx context.Context) (predicate.CameraJob, error)
 	DeviceScope(ctx context.Context) (predicate.Device, error)
 	SinkScope(ctx context.Context) (predicate.Sink, error)
+	HolderScope(ctx context.Context) (predicate.Holder, error)
+	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	LaminaScope(ctx context.Context) (predicate.Lamina, error)
 	AttemptScope(ctx context.Context) (predicate.Attempt, error)
 	SiteMemberScope(ctx context.Context) (predicate.SiteMember, error)
@@ -426,12 +436,6 @@ var _ Scope = Unscoped{}
 func (Unscoped) TenantScope(_ context.Context) (predicate.Tenant, error) {
 	return nil, nil
 }
-func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
-	return nil, nil
-}
-func (Unscoped) DelegationScope(_ context.Context) (predicate.Delegation, error) {
-	return nil, nil
-}
 func (Unscoped) SiteScope(_ context.Context) (predicate.Site, error) {
 	return nil, nil
 }
@@ -453,10 +457,31 @@ func (Unscoped) ProducerScope(_ context.Context) (predicate.Producer, error) {
 func (Unscoped) ReaderScope(_ context.Context) (predicate.Reader, error) {
 	return nil, nil
 }
+func (Unscoped) CameraNetworkScope(_ context.Context) (predicate.CameraNetwork, error) {
+	return nil, nil
+}
+func (Unscoped) CameraDeviceScope(_ context.Context) (predicate.CameraDevice, error) {
+	return nil, nil
+}
+func (Unscoped) CameraAssignmentScope(_ context.Context) (predicate.CameraAssignment, error) {
+	return nil, nil
+}
+func (Unscoped) CameraBindingScope(_ context.Context) (predicate.CameraBinding, error) {
+	return nil, nil
+}
+func (Unscoped) CameraJobScope(_ context.Context) (predicate.CameraJob, error) {
+	return nil, nil
+}
 func (Unscoped) DeviceScope(_ context.Context) (predicate.Device, error) {
 	return nil, nil
 }
 func (Unscoped) SinkScope(_ context.Context) (predicate.Sink, error) {
+	return nil, nil
+}
+func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
+	return nil, nil
+}
+func (Unscoped) DelegationScope(_ context.Context) (predicate.Delegation, error) {
 	return nil, nil
 }
 func (Unscoped) LaminaScope(_ context.Context) (predicate.Lamina, error) {
@@ -536,46 +561,6 @@ func (ss Scopes) TenantScope(ctx context.Context) (predicate.Tenant, error) {
 	}
 
 	return tenant.And(ps...), nil
-}
-
-func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
-	ps := make([]predicate.Holder, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.HolderScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return holder.And(ps...), nil
-}
-
-func (ss Scopes) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
-	ps := make([]predicate.Delegation, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.DelegationScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return delegation.And(ps...), nil
 }
 
 func (ss Scopes) SiteScope(ctx context.Context) (predicate.Site, error) {
@@ -718,6 +703,106 @@ func (ss Scopes) ReaderScope(ctx context.Context) (predicate.Reader, error) {
 	return reader.And(ps...), nil
 }
 
+func (ss Scopes) CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, error) {
+	ps := make([]predicate.CameraNetwork, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraNetworkScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return cameranetwork.And(ps...), nil
+}
+
+func (ss Scopes) CameraDeviceScope(ctx context.Context) (predicate.CameraDevice, error) {
+	ps := make([]predicate.CameraDevice, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraDeviceScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return cameradevice.And(ps...), nil
+}
+
+func (ss Scopes) CameraAssignmentScope(ctx context.Context) (predicate.CameraAssignment, error) {
+	ps := make([]predicate.CameraAssignment, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraAssignmentScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return cameraassignment.And(ps...), nil
+}
+
+func (ss Scopes) CameraBindingScope(ctx context.Context) (predicate.CameraBinding, error) {
+	ps := make([]predicate.CameraBinding, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraBindingScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return camerabinding.And(ps...), nil
+}
+
+func (ss Scopes) CameraJobScope(ctx context.Context) (predicate.CameraJob, error) {
+	ps := make([]predicate.CameraJob, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraJobScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return camerajob.And(ps...), nil
+}
+
 func (ss Scopes) DeviceScope(ctx context.Context) (predicate.Device, error) {
 	ps := make([]predicate.Device, 0, len(ss))
 	for _, s := range ss {
@@ -756,6 +841,46 @@ func (ss Scopes) SinkScope(ctx context.Context) (predicate.Sink, error) {
 	}
 
 	return sink.And(ps...), nil
+}
+
+func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
+	ps := make([]predicate.Holder, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.HolderScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return holder.And(ps...), nil
+}
+
+func (ss Scopes) DelegationScope(ctx context.Context) (predicate.Delegation, error) {
+	ps := make([]predicate.Delegation, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.DelegationScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return delegation.And(ps...), nil
 }
 
 func (ss Scopes) LaminaScope(ctx context.Context) (predicate.Lamina, error) {
@@ -1153,7 +1278,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. AddressPolicy, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
+// check. AddressPolicy, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1191,11 +1316,7 @@ func (s Server) WithDriver(drv dialect.Driver) (api.Server, error) {
 	return s, nil
 }
 
-func (s Server) Tenant() api.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
-func (s Server) Holder() api.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
-func (s Server) Delegation() api.DelegationServiceServer {
-	return DelegationServiceServer{Store: s.Store}
-}
+func (s Server) Tenant() api.TenantServiceServer     { return TenantServiceServer{Store: s.Store} }
 func (s Server) Site() api.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
 func (s Server) Set() api.SetServiceServer           { return SetServiceServer{Store: s.Store} }
 func (s Server) Source() api.SourceServiceServer     { return SourceServiceServer{Store: s.Store} }
@@ -1203,10 +1324,27 @@ func (s Server) Node() api.NodeServiceServer         { return NodeServiceServer{
 func (s Server) Relay() api.RelayServiceServer       { return RelayServiceServer{Store: s.Store} }
 func (s Server) Producer() api.ProducerServiceServer { return ProducerServiceServer{Store: s.Store} }
 func (s Server) Reader() api.ReaderServiceServer     { return ReaderServiceServer{Store: s.Store} }
-func (s Server) Device() api.DeviceServiceServer     { return DeviceServiceServer{Store: s.Store} }
-func (s Server) Sink() api.SinkServiceServer         { return SinkServiceServer{Store: s.Store} }
-func (s Server) Lamina() api.LaminaServiceServer     { return LaminaServiceServer{Store: s.Store} }
-func (s Server) Attempt() api.AttemptServiceServer   { return AttemptServiceServer{Store: s.Store} }
+func (s Server) CameraNetwork() api.CameraNetworkServiceServer {
+	return CameraNetworkServiceServer{Store: s.Store}
+}
+func (s Server) CameraDevice() api.CameraDeviceServiceServer {
+	return CameraDeviceServiceServer{Store: s.Store}
+}
+func (s Server) CameraAssignment() api.CameraAssignmentServiceServer {
+	return CameraAssignmentServiceServer{Store: s.Store}
+}
+func (s Server) CameraBinding() api.CameraBindingServiceServer {
+	return CameraBindingServiceServer{Store: s.Store}
+}
+func (s Server) CameraJob() api.CameraJobServiceServer { return CameraJobServiceServer{Store: s.Store} }
+func (s Server) Device() api.DeviceServiceServer       { return DeviceServiceServer{Store: s.Store} }
+func (s Server) Sink() api.SinkServiceServer           { return SinkServiceServer{Store: s.Store} }
+func (s Server) Holder() api.HolderServiceServer       { return HolderServiceServer{Store: s.Store} }
+func (s Server) Delegation() api.DelegationServiceServer {
+	return DelegationServiceServer{Store: s.Store}
+}
+func (s Server) Lamina() api.LaminaServiceServer   { return LaminaServiceServer{Store: s.Store} }
+func (s Server) Attempt() api.AttemptServiceServer { return AttemptServiceServer{Store: s.Store} }
 func (s Server) SiteMember() api.SiteMemberServiceServer {
 	return SiteMemberServiceServer{Store: s.Store}
 }

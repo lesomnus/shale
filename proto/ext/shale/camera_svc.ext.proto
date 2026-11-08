@@ -1,0 +1,124 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "shale/camera.proto";
+import "shale/set_svc.g.proto";
+import "shale/host_svc.g.proto";
+import "shale/site_svc.g.proto";
+import "shale/payday/tenant_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service CameraNetworkService { rpc Configure(CameraNetworkConfigureRequest) returns (CameraNetwork); }
+service CameraDeviceService {
+  rpc Claim(CameraDeviceClaimRequest) returns (CameraDevice);
+  rpc Observe(CameraDeviceObserveRequest) returns (CameraDevice);
+}
+service CameraAssignmentService {
+  rpc Assign(CameraAssignmentAssignRequest) returns (CameraAssignment);
+  rpc Snapshot(CameraAssignmentSnapshotRequest) returns (CameraCatalogSnapshot);
+  rpc Handover(CameraAssignmentHandoverRequest) returns (CameraAssignment);
+}
+service CameraBindingService {
+  rpc Bind(CameraBindingBindRequest) returns (CameraBinding);
+  rpc SetCollect(CameraBindingSetCollectRequest) returns (CameraBinding);
+}
+service CameraJobService {
+  rpc Create(CameraJobCreateRequest) returns (CameraJob);
+  rpc Claim(CameraJobClaimRequest) returns (CameraJob);
+  rpc Report(CameraJobReportRequest) returns (CameraJob);
+  rpc Publish(CameraJobPublishRequest) returns (CameraJobPublishResponse);
+}
+message CameraNetworkConfigureRequest {
+  CameraNetworkRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  repeated string cidrs = 8;
+  bool multicast = 9 [features.field_presence = IMPLICIT];
+  repeated string seeds = 10;
+  string interface_hint = 11 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp expected_version = 13;
+}
+message CameraDeviceClaimRequest {
+  CameraNetworkRef network = 1;
+  string device_key = 2 [features.field_presence = IMPLICIT];
+  string name = 3 [features.field_presence = IMPLICIT];
+  repeated CameraObservedEndpoint endpoints = 4;
+}
+message CameraDeviceObserveRequest {
+  CameraDeviceRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  CameraIdentityEvidence identity = 3;
+  repeated CameraObservedEndpoint endpoints = 4;
+}
+message CameraAssignmentAssignRequest {
+  CameraAssignmentRef ref = 1;
+  CameraNetworkRef network = 2;
+  ProducerRef producer = 3;
+  string worker_slot = 4 [features.field_presence = IMPLICIT];
+  bytes worker_id = 5 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp expected_version = 6;
+}
+message CameraAssignmentSnapshotRequest { CameraAssignmentRef ref = 1; }
+message CameraCatalogSnapshot {
+  CameraAssignment assignment = 1;
+  int64 revision = 2 [features.field_presence = IMPLICIT];
+  repeated CameraCaptureSpec sources = 3;
+}
+message CameraAssignmentHandoverRequest {
+  CameraAssignmentRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  int64 expected_generation = 3 [features.field_presence = IMPLICIT];
+  ProducerRef replacement = 4;
+}
+message CameraBindingBindRequest {
+  CameraAssignmentRef assignment = 1;
+  CameraDeviceRef device = 2;
+  string logical_key = 3 [features.field_presence = IMPLICIT];
+  string source_alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  // Explicitly import an existing Source. It must be in this immutable Set.
+  SourceRef source = 6;
+}
+message CameraBindingSetCollectRequest {
+  CameraBindingRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  bool collect = 3 [features.field_presence = IMPLICIT];
+}
+message CameraJobCreateRequest {
+  CameraBindingRef binding = 1;
+  string request_key = 2 [features.field_presence = IMPLICIT];
+  CameraJobInputs inputs = 3;
+}
+message CameraJobClaimRequest {
+  CameraJobRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  string operation_key = 3 [features.field_presence = IMPLICIT];
+  int64 lease_seconds = 4 [features.field_presence = IMPLICIT];
+}
+message CameraJobReportRequest {
+  CameraJobRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  string operation_key = 3 [features.field_presence = IMPLICIT];
+  int64 lease_generation = 4 [features.field_presence = IMPLICIT];
+  int64 assignment_generation = 5 [features.field_presence = IMPLICIT];
+  CameraJobStage stage = 6 [features.field_presence = IMPLICIT];
+  CameraJobObservation observed = 7;
+}
+message CameraJobPublishRequest {
+  CameraJobRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  string operation_key = 3 [features.field_presence = IMPLICIT];
+  int64 lease_generation = 4 [features.field_presence = IMPLICIT];
+  int64 assignment_generation = 5 [features.field_presence = IMPLICIT];
+  CameraCaptureSpec spec = 6;
+  CameraJobObservation observed = 7;
+}
+message CameraJobPublishResponse {
+  CameraJob job = 1;
+  CameraBinding binding = 2;
+  int64 catalog_revision = 3 [features.field_presence = IMPLICIT];
+}

@@ -1,0 +1,307 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/payday/tenant.proto";
+import "shale/site.proto";
+import "shale/set.proto";
+import "shale/host.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// References are not grants. Resolve always checks the current assignment,
+// purpose and immutable version. Credential material is never stored here.
+message CameraCredentialReference {
+  string provider = 1;
+  string id = 2;
+  string version = 3;
+  string purpose = 4;
+}
+message CameraRevisionReference {
+  string id = 1;
+  string revision = 2;
+}
+message CameraCaptureProfile {
+  string codec = 1;
+  int32 width = 2;
+  int32 height = 3;
+  double fps = 4;
+  int64 max_bitrate_bps = 5;
+  // Zero means unknown, not evidence of a random-access cadence (#190).
+  int64 keyframe_interval_ms = 6;
+}
+// CP-managed specifications deliberately exclude local commands, passwords and
+// vendor clients. File/USB compatibility adapters keep local settings separate.
+message CameraCaptureSpec {
+  bytes binding_id = 1;
+  bytes source_id = 2;
+  int64 revision = 3;
+  string input = 4;
+  CameraCaptureProfile profile = 5;
+  CameraCredentialReference credential = 6;
+  map<string, string> labels = 7;
+  string zone = 8;
+  string alias = 9;
+  string name = 10;
+}
+message CameraIdentityEvidence {
+  string manufacturer = 1;
+  string model = 2;
+  string hardware = 3;
+  string firmware = 4;
+  string serial = 5;
+  repeated string macs = 6;
+  bool authenticated = 7;
+}
+message CameraObservedEndpoint {
+  string uri = 1;
+  string provenance = 2;
+  google.protobuf.Timestamp observed_at = 3;
+}
+message CameraMediaEvidence {
+  CameraCaptureProfile profile = 1;
+  bool decoded = 2;
+  double duration_seconds = 3;
+  int64 decoded_frames = 4;
+  google.protobuf.Timestamp observed_at = 5;
+}
+message CameraWarning {
+  string code = 1;
+  string field = 2;
+}
+message CameraJobInputs {
+  CameraRevisionReference policy = 1;
+  CameraRevisionReference preset = 2;
+  CameraCaptureProfile desired = 3;
+  bool allow_activation = 4;
+  CameraCredentialReference initial_credential = 5;
+  CameraCredentialReference management_credential = 6;
+  CameraCredentialReference streaming_credential = 7;
+}
+message CameraJobObservation {
+  CameraCaptureProfile effective = 1;
+  CameraMediaEvidence verified = 2;
+  repeated CameraWarning warnings = 3;
+  string code = 4;
+  // The assigned observer's evidence, checked against the published revision
+  // and new committed CP metadata. A Live URL alone is not this evidence.
+  int64 live_decoded_frames = 5;
+  google.protobuf.Timestamp live_first_frame_at = 6;
+  google.protobuf.Timestamp live_last_frame_at = 7;
+}
+enum CameraJobStage {
+  CAMERA_JOB_STAGE_UNSPECIFIED = 0;
+  CAMERA_JOB_STAGE_PENDING = 1;
+  CAMERA_JOB_STAGE_CLAIMED = 2;
+  CAMERA_JOB_STAGE_APPLYING = 3;
+  CAMERA_JOB_STAGE_VERIFYING = 4;
+  CAMERA_JOB_STAGE_DEPLOYMENT_READY = 5;
+  CAMERA_JOB_STAGE_ACTIVE = 6;
+  CAMERA_JOB_STAGE_WAITING = 7;
+  CAMERA_JOB_STAGE_FAILED = 8;
+  CAMERA_JOB_STAGE_CANCELED = 9;
+}
+
+// CameraNetwork is tenant/site scoped; custom CP operations own its invariants.
+message CameraNetwork {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID key: true default: ""}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  Site site = 3 [(orm.edge) = {nullable: true immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  repeated string cidrs = 8;
+  bool multicast = 9;
+  repeated string seeds = 10;
+  // Local interface choice remains administrator-controlled. This is intent.
+  string interface_hint = 11;
+  int64 revision = 12;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]}
+      
+    ]
+  };
+  option (payday.entity) = {
+    domain: 26
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}]
+      size: 50 max: 500
+    }
+    watch: {}
+  };
+}
+
+// CameraDevice is tenant/site scoped; custom CP operations own its invariants.
+message CameraDevice {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID key: true default: ""}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  Site site = 3 [(orm.edge) = {nullable: true immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  CameraNetwork network = 8 [(orm.edge) = {immutable: true}];
+  // Explicit inventory claim. Never derive identity from a current IP.
+  string device_key = 9 [(orm.field) = {immutable: true}];
+  CameraIdentityEvidence identity = 10;
+  repeated CameraObservedEndpoint endpoints = 11;
+  int64 observation_revision = 12;
+  // One physical-device writer across jobs; fenced using server-side CAS.
+  bytes active_job_id = 16 [(orm.field) = {type: TYPE_UUID nullable: true}];
+  int64 claim_generation = 17;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]}
+      , {name: "identity" refs: [{name: "network", number: 8}, {name: "device_key", number: 9}] unique: true}
+    ]
+  };
+  option (payday.entity) = {
+    domain: 27
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}, {name: "network"}]
+      size: 50 max: 500
+    }
+    watch: {}
+  };
+}
+
+// CameraAssignment is tenant/site scoped; custom CP operations own its invariants.
+message CameraAssignment {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID key: true default: ""}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  Site site = 3 [(orm.edge) = {nullable: true immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  CameraNetwork network = 8 [(orm.edge) = {immutable: true}];
+  Set set = 9 [(orm.edge) = {immutable: true}];
+  Producer producer = 10 [(orm.edge) = {}];
+  // Routing intent, not an authenticated machine identity.
+  string worker_slot = 11;
+  // Reserved for #195. Nonempty values are rejected until approved Worker
+  // identity validation is implemented; arbitrary UUIDs grant no authority.
+  bytes worker_id = 12 [(orm.field) = {type: TYPE_UUID nullable: true}];
+  int64 generation = 16;
+  // Monotonic aggregate revision; every catalog membership/spec change moves it.
+  int64 catalog_revision = 17;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]}
+      , {name: "set" refs: [{name: "set", number: 9}] unique: true}
+    ]
+  };
+  option (payday.entity) = {
+    domain: 28
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}, {name: "network"}, {name: "producer"}, {name: "set"}]
+      size: 50 max: 500
+    }
+    watch: {}
+  };
+}
+
+// CameraBinding is tenant/site scoped; custom CP operations own its invariants.
+message CameraBinding {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID key: true default: ""}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  Site site = 3 [(orm.edge) = {nullable: true immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  CameraAssignment assignment = 8 [(orm.edge) = {immutable: true}];
+  CameraDevice device = 9 [(orm.edge) = {immutable: true}];
+  Source source = 10 [(orm.edge) = {immutable: true}];
+  string logical_key = 11 [(orm.field) = {immutable: true}];
+  string source_alias = 12 [(orm.field) = {immutable: true}];
+  CameraCaptureSpec desired = 16;
+  CameraJobObservation observed = 17;
+  int64 applied_revision = 18;
+  bool collect = 19;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]}
+      , {name: "source" refs: [{name: "source", number: 10}] unique: true}, {name: "logical" refs: [{name: "tenant", number: 2}, {name: "logical_key", number: 11}] unique: true}
+    ]
+  };
+  option (payday.entity) = {
+    domain: 29
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}, {name: "assignment"}, {name: "device"}, {name: "source"}]
+      size: 50 max: 500
+    }
+    watch: {}
+  };
+}
+
+// CameraJob is tenant/site scoped; custom CP operations own its invariants.
+message CameraJob {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID key: true default: ""}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  Site site = 3 [(orm.edge) = {nullable: true immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  CameraBinding binding = 8 [(orm.edge) = {immutable: true}];
+  CameraAssignment assignment = 9 [(orm.edge) = {immutable: true}];
+  string request_key = 10 [(orm.field) = {immutable: true}];
+  bytes request_hash = 11 [(orm.field) = {immutable: true}];
+  CameraJobStage stage = 12;
+  int64 lease_generation = 16;
+  int64 assignment_generation = 17;
+  bytes lease_owner = 18 [(orm.field) = {type: TYPE_UUID nullable: true}];
+  google.protobuf.Timestamp lease_expires = 19 [(orm.field) = {nullable: true}];
+  CameraJobInputs inputs = 20 [(orm.field) = {immutable: true}];
+  CameraJobObservation observed = 21;
+  int64 published_revision = 22;
+  google.protobuf.Timestamp date_published = 23 [(orm.field) = {nullable: true}];
+  string last_operation_key = 24;
+  bytes last_operation_hash = 25;
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]}
+      , {name: "intent" refs: [{name: "tenant", number: 2}, {name: "request_key", number: 10}] unique: true}
+    ]
+  };
+  option (payday.entity) = {
+    domain: 30
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}, {name: "assignment"}, {name: "binding"}]
+      size: 50 max: 500
+    }
+    watch: {}
+  };
+}

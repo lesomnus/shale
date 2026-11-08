@@ -32,6 +32,54 @@ type Attempt func(*sql.Selector)
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
 
+// CameraAssignment is the predicate function for cameraassignment builders.
+type CameraAssignment func(*sql.Selector)
+
+// CameraBinding is the predicate function for camerabinding builders.
+type CameraBinding func(*sql.Selector)
+
+// CameraBindingOrErr calls the predicate only if the error is not nit.
+func CameraBindingOrErr(p CameraBinding, err error) CameraBinding {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraDevice is the predicate function for cameradevice builders.
+type CameraDevice func(*sql.Selector)
+
+// CameraDeviceOrErr calls the predicate only if the error is not nit.
+func CameraDeviceOrErr(p CameraDevice, err error) CameraDevice {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraJob is the predicate function for camerajob builders.
+type CameraJob func(*sql.Selector)
+
+// CameraJobOrErr calls the predicate only if the error is not nit.
+func CameraJobOrErr(p CameraJob, err error) CameraJob {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraNetwork is the predicate function for cameranetwork builders.
+type CameraNetwork func(*sql.Selector)
+
 // Delegation is the predicate function for delegation builders.
 type Delegation func(*sql.Selector)
 

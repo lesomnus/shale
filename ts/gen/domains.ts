@@ -27,6 +27,21 @@ export const AttemptDomain = 10
 /** The domain identifiers of shale.Audit carry. */
 export const AuditDomain = 3
 
+/** The domain identifiers of shale.CameraAssignment carry. */
+export const CameraAssignmentDomain = 28
+
+/** The domain identifiers of shale.CameraBinding carry. */
+export const CameraBindingDomain = 29
+
+/** The domain identifiers of shale.CameraDevice carry. */
+export const CameraDeviceDomain = 27
+
+/** The domain identifiers of shale.CameraJob carry. */
+export const CameraJobDomain = 30
+
+/** The domain identifiers of shale.CameraNetwork carry. */
+export const CameraNetworkDomain = 26
+
 /** The domain identifiers of shale.Delegation carry. */
 export const DelegationDomain = 25
 
@@ -94,6 +109,11 @@ pdid.register("shale.AddressPolicy", AddressPolicyDomain, "address-policy")
 pdid.register("shale.Archived", ArchivedDomain, "archived")
 pdid.register("shale.Attempt", AttemptDomain, "attempt")
 pdid.register("shale.Audit", AuditDomain, "audit")
+pdid.register("shale.CameraAssignment", CameraAssignmentDomain, "camera-assignment")
+pdid.register("shale.CameraBinding", CameraBindingDomain, "camera-binding")
+pdid.register("shale.CameraDevice", CameraDeviceDomain, "camera-device")
+pdid.register("shale.CameraJob", CameraJobDomain, "camera-job")
+pdid.register("shale.CameraNetwork", CameraNetworkDomain, "camera-network")
 pdid.register("shale.Delegation", DelegationDomain, "delegation")
 pdid.register("shale.Device", DeviceDomain, "device")
 pdid.register("shale.Holder", HolderDomain, "holder")

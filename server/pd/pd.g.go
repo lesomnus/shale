@@ -42,6 +42,11 @@ import (
 	entArchived "github.com/lesomnus/shale/internal/ent/archived"
 	entAttempt "github.com/lesomnus/shale/internal/ent/attempt"
 	entAudit "github.com/lesomnus/shale/internal/ent/audit"
+	entCameraAssignment "github.com/lesomnus/shale/internal/ent/cameraassignment"
+	entCameraBinding "github.com/lesomnus/shale/internal/ent/camerabinding"
+	entCameraDevice "github.com/lesomnus/shale/internal/ent/cameradevice"
+	entCameraJob "github.com/lesomnus/shale/internal/ent/camerajob"
+	entCameraNetwork "github.com/lesomnus/shale/internal/ent/cameranetwork"
 	entDelegation "github.com/lesomnus/shale/internal/ent/delegation"
 	entDevice "github.com/lesomnus/shale/internal/ent/device"
 	entHolder "github.com/lesomnus/shale/internal/ent/holder"
@@ -111,31 +116,36 @@ func Check() error { return version.Same(Payday) }
 // trail says what kind of thing it was long after the row is gone. So a
 // number is chosen once and never given to something else.
 const (
-	AccessDomain          pdid.Domain = 6   // "access"
-	AddressPolicyDomain   pdid.Domain = 21  // "address-policy"
-	ArchivedDomain        pdid.Domain = 5   // "archived"
-	AttemptDomain         pdid.Domain = 10  // "attempt"
-	AuditDomain           pdid.Domain = 3   // "audit"
-	DelegationDomain      pdid.Domain = 25  // "delegation"
-	DeviceDomain          pdid.Domain = 13  // "device"
-	HolderDomain          pdid.Domain = 2   // "holder"
-	LaminaDomain          pdid.Domain = 9   // "lamina"
-	NodeDomain            pdid.Domain = 12  // "node"
-	OutboxDomain          pdid.Domain = 4   // "outbox"
-	OwedDomain            pdid.Domain = 254 // "owed"
-	PlacementPolicyDomain pdid.Domain = 16  // "placement-policy"
-	ProducerDomain        pdid.Domain = 22  // "producer"
-	ReaderDomain          pdid.Domain = 23  // "reader"
-	RelayDomain           pdid.Domain = 24  // "relay"
-	RowSealDomain         pdid.Domain = 255 // "row-seal"
-	SetDomain             pdid.Domain = 7   // "set"
-	SigningKeyDomain      pdid.Domain = 15  // "signing-key"
-	SinkDomain            pdid.Domain = 14  // "sink"
-	SiteDomain            pdid.Domain = 19  // "site"
-	SiteMemberDomain      pdid.Domain = 20  // "site-member"
-	SourceDomain          pdid.Domain = 8   // "source"
-	TenantDomain          pdid.Domain = 1   // "tenant"
-	UploadPolicyDomain    pdid.Domain = 18  // "upload-policy"
+	AccessDomain           pdid.Domain = 6   // "access"
+	AddressPolicyDomain    pdid.Domain = 21  // "address-policy"
+	ArchivedDomain         pdid.Domain = 5   // "archived"
+	AttemptDomain          pdid.Domain = 10  // "attempt"
+	AuditDomain            pdid.Domain = 3   // "audit"
+	CameraAssignmentDomain pdid.Domain = 28  // "camera-assignment"
+	CameraBindingDomain    pdid.Domain = 29  // "camera-binding"
+	CameraDeviceDomain     pdid.Domain = 27  // "camera-device"
+	CameraJobDomain        pdid.Domain = 30  // "camera-job"
+	CameraNetworkDomain    pdid.Domain = 26  // "camera-network"
+	DelegationDomain       pdid.Domain = 25  // "delegation"
+	DeviceDomain           pdid.Domain = 13  // "device"
+	HolderDomain           pdid.Domain = 2   // "holder"
+	LaminaDomain           pdid.Domain = 9   // "lamina"
+	NodeDomain             pdid.Domain = 12  // "node"
+	OutboxDomain           pdid.Domain = 4   // "outbox"
+	OwedDomain             pdid.Domain = 254 // "owed"
+	PlacementPolicyDomain  pdid.Domain = 16  // "placement-policy"
+	ProducerDomain         pdid.Domain = 22  // "producer"
+	ReaderDomain           pdid.Domain = 23  // "reader"
+	RelayDomain            pdid.Domain = 24  // "relay"
+	RowSealDomain          pdid.Domain = 255 // "row-seal"
+	SetDomain              pdid.Domain = 7   // "set"
+	SigningKeyDomain       pdid.Domain = 15  // "signing-key"
+	SinkDomain             pdid.Domain = 14  // "sink"
+	SiteDomain             pdid.Domain = 19  // "site"
+	SiteMemberDomain       pdid.Domain = 20  // "site-member"
+	SourceDomain           pdid.Domain = 8   // "source"
+	TenantDomain           pdid.Domain = 1   // "tenant"
+	UploadPolicyDomain     pdid.Domain = 18  // "upload-policy"
 )
 
 func init() {
@@ -144,6 +154,11 @@ func init() {
 	pdid.Register("shale.Archived", ArchivedDomain, "archived")
 	pdid.Register("shale.Attempt", AttemptDomain, "attempt")
 	pdid.Register("shale.Audit", AuditDomain, "audit")
+	pdid.Register("shale.CameraAssignment", CameraAssignmentDomain, "camera-assignment")
+	pdid.Register("shale.CameraBinding", CameraBindingDomain, "camera-binding")
+	pdid.Register("shale.CameraDevice", CameraDeviceDomain, "camera-device")
+	pdid.Register("shale.CameraJob", CameraJobDomain, "camera-job")
+	pdid.Register("shale.CameraNetwork", CameraNetworkDomain, "camera-network")
 	pdid.Register("shale.Delegation", DelegationDomain, "delegation")
 	pdid.Register("shale.Device", DeviceDomain, "device")
 	pdid.Register("shale.Holder", HolderDomain, "holder")
@@ -171,31 +186,36 @@ func init() {
 // Domains is the domain of each entity by the full name of its message,
 // which is the name a [Minter] is asked about.
 var Domains = map[string]pdid.Domain{
-	"shale.Access":          AccessDomain,
-	"shale.AddressPolicy":   AddressPolicyDomain,
-	"shale.Archived":        ArchivedDomain,
-	"shale.Attempt":         AttemptDomain,
-	"shale.Audit":           AuditDomain,
-	"shale.Delegation":      DelegationDomain,
-	"shale.Device":          DeviceDomain,
-	"shale.Holder":          HolderDomain,
-	"shale.Lamina":          LaminaDomain,
-	"shale.Node":            NodeDomain,
-	"shale.Outbox":          OutboxDomain,
-	"shale.Owed":            OwedDomain,
-	"shale.PlacementPolicy": PlacementPolicyDomain,
-	"shale.Producer":        ProducerDomain,
-	"shale.Reader":          ReaderDomain,
-	"shale.Relay":           RelayDomain,
-	"shale.RowSeal":         RowSealDomain,
-	"shale.Set":             SetDomain,
-	"shale.SigningKey":      SigningKeyDomain,
-	"shale.Sink":            SinkDomain,
-	"shale.Site":            SiteDomain,
-	"shale.SiteMember":      SiteMemberDomain,
-	"shale.Source":          SourceDomain,
-	"shale.Tenant":          TenantDomain,
-	"shale.UploadPolicy":    UploadPolicyDomain,
+	"shale.Access":           AccessDomain,
+	"shale.AddressPolicy":    AddressPolicyDomain,
+	"shale.Archived":         ArchivedDomain,
+	"shale.Attempt":          AttemptDomain,
+	"shale.Audit":            AuditDomain,
+	"shale.CameraAssignment": CameraAssignmentDomain,
+	"shale.CameraBinding":    CameraBindingDomain,
+	"shale.CameraDevice":     CameraDeviceDomain,
+	"shale.CameraJob":        CameraJobDomain,
+	"shale.CameraNetwork":    CameraNetworkDomain,
+	"shale.Delegation":       DelegationDomain,
+	"shale.Device":           DeviceDomain,
+	"shale.Holder":           HolderDomain,
+	"shale.Lamina":           LaminaDomain,
+	"shale.Node":             NodeDomain,
+	"shale.Outbox":           OutboxDomain,
+	"shale.Owed":             OwedDomain,
+	"shale.PlacementPolicy":  PlacementPolicyDomain,
+	"shale.Producer":         ProducerDomain,
+	"shale.Reader":           ReaderDomain,
+	"shale.Relay":            RelayDomain,
+	"shale.RowSeal":          RowSealDomain,
+	"shale.Set":              SetDomain,
+	"shale.SigningKey":       SigningKeyDomain,
+	"shale.Sink":             SinkDomain,
+	"shale.Site":             SiteDomain,
+	"shale.SiteMember":       SiteMemberDomain,
+	"shale.Source":           SourceDomain,
+	"shale.Tenant":           TenantDomain,
+	"shale.UploadPolicy":     UploadPolicyDomain,
 }
 
 // IndexRenames are the indexes this schema names, by what an earlier build
@@ -220,6 +240,16 @@ var IndexRenames = []rename.Index{
 	{Table: "audit", From: "audit_tenant_id_domain_date_created", To: "audit_by_tenant_domain"},
 	{Table: "audit", From: "audit_actor_id_date_created", To: "audit_by_actor"},
 	{Table: "audit", From: "audit_date_created_id", To: "audit_by_time"},
+	{Table: "cameraassignment", From: "cameraassignment_tenant_id_date_created_id", To: "cameraassignment_page"},
+	{Table: "cameraassignment", From: "cameraassignment_set_id", To: "cameraassignment_set"},
+	{Table: "camerabinding", From: "camerabinding_tenant_id_date_created_id", To: "camerabinding_page"},
+	{Table: "camerabinding", From: "camerabinding_source_id", To: "camerabinding_source"},
+	{Table: "camerabinding", From: "camerabinding_tenant_id_logical_key", To: "camerabinding_logical"},
+	{Table: "cameradevice", From: "cameradevice_tenant_id_date_created_id", To: "cameradevice_page"},
+	{Table: "cameradevice", From: "cameradevice_network_id_device_key", To: "cameradevice_identity"},
+	{Table: "camerajob", From: "camerajob_tenant_id_date_created_id", To: "camerajob_page"},
+	{Table: "camerajob", From: "camerajob_tenant_id_request_key", To: "camerajob_intent"},
+	{Table: "cameranetwork", From: "cameranetwork_tenant_id_date_created_id", To: "cameranetwork_page"},
 	{Table: "delegation", From: "delegation_date_created_id", To: "delegation_page"},
 	{Table: "delegation", From: "delegation_holder_id_date_ends", To: "delegation_holder"},
 	{Table: "device", From: "device_date_created_id", To: "device_page"},
@@ -342,6 +372,56 @@ func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	}
 
 	return entAudit.Or(entAudit.TenantIdIn(vs...), entAudit.ActorTenantIdIn(vs...), entAudit.CounterpartTenantIdIn(vs...)), nil
+}
+
+// CameraAssignmentScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) CameraAssignmentScope(ctx context.Context) (predicate.CameraAssignment, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraAssignment.TenantIdIn(vs...), nil
+}
+
+// CameraBindingScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) CameraBindingScope(ctx context.Context) (predicate.CameraBinding, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraBinding.TenantIdIn(vs...), nil
+}
+
+// CameraDeviceScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) CameraDeviceScope(ctx context.Context) (predicate.CameraDevice, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraDevice.TenantIdIn(vs...), nil
+}
+
+// CameraJobScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) CameraJobScope(ctx context.Context) (predicate.CameraJob, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraJob.TenantIdIn(vs...), nil
+}
+
+// CameraNetworkScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraNetwork.TenantIdIn(vs...), nil
 }
 
 // DelegationScope: a row belongs to the tenant its "tenant" reaches.
@@ -563,6 +643,56 @@ func (x grouped) AttemptScope(ctx context.Context) (predicate.Attempt, error) {
 // AuditScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	return nil, nil
+}
+
+// CameraAssignmentScope: in the Site its "site" names.
+func (x grouped) CameraAssignmentScope(ctx context.Context) (predicate.CameraAssignment, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraAssignment.SiteIdIn(vs...), nil
+}
+
+// CameraBindingScope: in the Site its "site" names.
+func (x grouped) CameraBindingScope(ctx context.Context) (predicate.CameraBinding, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraBinding.SiteIdIn(vs...), nil
+}
+
+// CameraDeviceScope: in the Site its "site" names.
+func (x grouped) CameraDeviceScope(ctx context.Context) (predicate.CameraDevice, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraDevice.SiteIdIn(vs...), nil
+}
+
+// CameraJobScope: in the Site its "site" names.
+func (x grouped) CameraJobScope(ctx context.Context) (predicate.CameraJob, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraJob.SiteIdIn(vs...), nil
+}
+
+// CameraNetworkScope: in the Site its "site" names.
+func (x grouped) CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, error) {
+	vs, all, err := frame.NarrowSet(ctx, x.of)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entCameraNetwork.SiteIdIn(vs...), nil
 }
 
 // DelegationScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -1767,6 +1897,2791 @@ func filterAudit(f *api.AuditFilter) (predicate.Audit, error) {
 	}
 
 	return entAudit.And(ps...), nil
+}
+
+type sinkCameraAssignment struct {
+	api.CameraAssignmentServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) CameraAssignment() api.CameraAssignmentServiceServer {
+	v := sinkCameraAssignment{s.Server.CameraAssignment(), s.Server.Store, s.w, s.namer, s.joined}
+	v.CameraAssignmentServiceServer = bare.CameraAssignmentWithAddRule(v.CameraAssignmentServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of CameraAssignment writes,
+// refusing one that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.CameraAssignment].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkCameraAssignment) admit(ctx context.Context, req *api.CameraAssignmentAddRequest) (*api.CameraAssignmentAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "shale.CameraAssignment", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkCameraAssignment.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkCameraAssignment) Add(ctx context.Context, req *api.CameraAssignmentAddRequest) (*api.CameraAssignment, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.CameraAssignmentServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkCameraAssignment.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkCameraAssignment.Apply].
+func (s sinkCameraAssignment) Patch(ctx context.Context, req *api.CameraAssignmentPatchRequest) (*api.CameraAssignment, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraAssignment", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.CameraAssignmentServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.CameraAssignmentServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkCameraAssignment) Erase(ctx context.Context, req *api.CameraAssignmentRef) (*api.CameraAssignmentEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraAssignment", req)
+
+	return s.CameraAssignmentServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkCameraAssignment) Apply(ctx context.Context, req *api.CameraAssignmentApplyRequest) (*api.CameraAssignment, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraAssignment", req.GetRef())
+
+	return s.CameraAssignmentServiceServer.Apply(ctx, req)
+}
+
+// orderCameraAssignment is how CameraAssignments come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderCameraAssignment = []sqlpage.Order{
+	{Column: entCameraAssignment.FieldDateCreated, Desc: false},
+	{Column: entCameraAssignment.FieldId, Desc: false},
+}
+
+func afterCameraAssignment(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextCameraAssignment(last *ent.CameraAssignment, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByCameraAssignment is an order as ent orders a query by it.
+func orderByCameraAssignment(by []sqlpage.Order) []entCameraAssignment.OrderOption {
+	out := make([]entCameraAssignment.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// CameraAssignmentPageSize is what a request that did not say gets, and
+	// CameraAssignmentPageLimit is the most it gets however loudly it asks.
+	CameraAssignmentPageSize  = 50
+	CameraAssignmentPageLimit = 500
+
+	// CameraAssignmentFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	CameraAssignmentFilterLimit = 32
+)
+
+// List answers with the CameraAssignments that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkCameraAssignment) List(ctx context.Context, req *api.CameraAssignmentListRequest) (*api.CameraAssignmentListResponse, error) {
+	q := s.store.Db.CameraAssignment.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.CameraAssignmentNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > CameraAssignmentFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), CameraAssignmentFilterLimit)
+		}
+
+		ps := make([]predicate.CameraAssignment, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterCameraAssignment(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entCameraAssignment.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderCameraAssignment, afterCameraAssignment, nextCameraAssignment, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), CameraAssignmentPageSize, CameraAssignmentPageLimit)
+	us, err := q.Order(orderByCameraAssignment(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.CameraAssignment, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.CameraAssignmentListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterCameraAssignment turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterCameraAssignment(f *api.CameraAssignmentFilter) (predicate.CameraAssignment, error) {
+	ps := make([]predicate.CameraAssignment, 0, 1)
+	if f.HasRef() {
+		p, err := bare.CameraAssignmentPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, entCameraAssignment.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraAssignment.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, entCameraAssignment.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraAssignment.HasSiteWith(q))
+		}
+	}
+	if f.HasNetwork() {
+		w := f.GetNetwork()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "network: %s", err)
+			}
+
+			ps = append(ps, entCameraAssignment.NetworkIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.CameraNetworkPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraAssignment.HasNetworkWith(q))
+		}
+	}
+	if f.HasProducer() {
+		w := f.GetProducer()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "producer: %s", err)
+			}
+
+			ps = append(ps, entCameraAssignment.ProducerIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.ProducerPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraAssignment.HasProducerWith(q))
+		}
+	}
+	if f.HasSet() {
+		w := f.GetSet()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "set: %s", err)
+			}
+
+			ps = append(ps, entCameraAssignment.SetIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SetPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraAssignment.HasSetWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entCameraAssignment.And(ps...), nil
+}
+
+// CameraAssignmentService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a CameraAssignment. A service is named for the entity it
+// is about, so the name carries it.
+var CameraAssignmentService = watch.ServiceOf(api.CameraAssignmentService_Get_FullMethodName)
+
+// Watch answers with the CameraAssignments this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkCameraAssignment) Watch(req *api.CameraAssignmentWatchRequest, out grpc.ServerStreamingServer[api.CameraAssignmentWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > CameraAssignmentFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), CameraAssignmentFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchCameraAssignmentKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, CameraAssignmentService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.CameraAssignmentWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.CameraAssignmentWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.CameraAssignmentWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkCameraAssignment) watchNow(
+	ctx context.Context, req *api.CameraAssignmentWatchRequest, out grpc.ServerStreamingServer[api.CameraAssignmentWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.CameraAssignmentListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.CameraAssignmentWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.CameraAssignmentWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.CameraAssignmentWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkCameraAssignment) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.CameraAssignment, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.CameraAssignmentGetRequest_builder{
+		Ref: api.CameraAssignmentRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchCameraAssignmentKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkCameraAssignment) watchCameraAssignmentKeys(
+	ctx context.Context, fs []*api.CameraAssignmentFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
+type sinkCameraBinding struct {
+	api.CameraBindingServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) CameraBinding() api.CameraBindingServiceServer {
+	v := sinkCameraBinding{s.Server.CameraBinding(), s.Server.Store, s.w, s.namer, s.joined}
+	v.CameraBindingServiceServer = bare.CameraBindingWithAddRule(v.CameraBindingServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of CameraBinding writes, refusing
+// one that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.CameraBinding].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkCameraBinding) admit(ctx context.Context, req *api.CameraBindingAddRequest) (*api.CameraBindingAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "shale.CameraBinding", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkCameraBinding.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkCameraBinding) Add(ctx context.Context, req *api.CameraBindingAddRequest) (*api.CameraBinding, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.CameraBindingServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkCameraBinding.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkCameraBinding.Apply].
+func (s sinkCameraBinding) Patch(ctx context.Context, req *api.CameraBindingPatchRequest) (*api.CameraBinding, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraBinding", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.CameraBindingServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.CameraBindingServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkCameraBinding) Erase(ctx context.Context, req *api.CameraBindingRef) (*api.CameraBindingEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraBinding", req)
+
+	return s.CameraBindingServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkCameraBinding) Apply(ctx context.Context, req *api.CameraBindingApplyRequest) (*api.CameraBinding, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraBinding", req.GetRef())
+
+	return s.CameraBindingServiceServer.Apply(ctx, req)
+}
+
+// orderCameraBinding is how CameraBindings come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderCameraBinding = []sqlpage.Order{
+	{Column: entCameraBinding.FieldDateCreated, Desc: false},
+	{Column: entCameraBinding.FieldId, Desc: false},
+}
+
+func afterCameraBinding(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextCameraBinding(last *ent.CameraBinding, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByCameraBinding is an order as ent orders a query by it.
+func orderByCameraBinding(by []sqlpage.Order) []entCameraBinding.OrderOption {
+	out := make([]entCameraBinding.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// CameraBindingPageSize is what a request that did not say gets, and
+	// CameraBindingPageLimit is the most it gets however loudly it asks.
+	CameraBindingPageSize  = 50
+	CameraBindingPageLimit = 500
+
+	// CameraBindingFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	CameraBindingFilterLimit = 32
+)
+
+// List answers with the CameraBindings that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkCameraBinding) List(ctx context.Context, req *api.CameraBindingListRequest) (*api.CameraBindingListResponse, error) {
+	q := s.store.Db.CameraBinding.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.CameraBindingNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > CameraBindingFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), CameraBindingFilterLimit)
+		}
+
+		ps := make([]predicate.CameraBinding, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterCameraBinding(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entCameraBinding.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderCameraBinding, afterCameraBinding, nextCameraBinding, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), CameraBindingPageSize, CameraBindingPageLimit)
+	us, err := q.Order(orderByCameraBinding(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.CameraBinding, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.CameraBindingListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterCameraBinding turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterCameraBinding(f *api.CameraBindingFilter) (predicate.CameraBinding, error) {
+	ps := make([]predicate.CameraBinding, 0, 1)
+	if f.HasRef() {
+		p, err := bare.CameraBindingPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, entCameraBinding.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraBinding.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, entCameraBinding.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraBinding.HasSiteWith(q))
+		}
+	}
+	if f.HasAssignment() {
+		w := f.GetAssignment()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "assignment: %s", err)
+			}
+
+			ps = append(ps, entCameraBinding.AssignmentIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.CameraAssignmentPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraBinding.HasAssignmentWith(q))
+		}
+	}
+	if f.HasDevice() {
+		w := f.GetDevice()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "device: %s", err)
+			}
+
+			ps = append(ps, entCameraBinding.DeviceIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.CameraDevicePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraBinding.HasDeviceWith(q))
+		}
+	}
+	if f.HasSource() {
+		w := f.GetSource()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "source: %s", err)
+			}
+
+			ps = append(ps, entCameraBinding.SourceIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SourcePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraBinding.HasSourceWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entCameraBinding.And(ps...), nil
+}
+
+// CameraBindingService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a CameraBinding. A service is named for the entity it
+// is about, so the name carries it.
+var CameraBindingService = watch.ServiceOf(api.CameraBindingService_Get_FullMethodName)
+
+// Watch answers with the CameraBindings this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkCameraBinding) Watch(req *api.CameraBindingWatchRequest, out grpc.ServerStreamingServer[api.CameraBindingWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > CameraBindingFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), CameraBindingFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchCameraBindingKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, CameraBindingService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.CameraBindingWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.CameraBindingWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.CameraBindingWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkCameraBinding) watchNow(
+	ctx context.Context, req *api.CameraBindingWatchRequest, out grpc.ServerStreamingServer[api.CameraBindingWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.CameraBindingListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.CameraBindingWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.CameraBindingWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.CameraBindingWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkCameraBinding) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.CameraBinding, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.CameraBindingGetRequest_builder{
+		Ref: api.CameraBindingRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchCameraBindingKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkCameraBinding) watchCameraBindingKeys(
+	ctx context.Context, fs []*api.CameraBindingFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.CameraBindingGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
+type sinkCameraDevice struct {
+	api.CameraDeviceServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) CameraDevice() api.CameraDeviceServiceServer {
+	v := sinkCameraDevice{s.Server.CameraDevice(), s.Server.Store, s.w, s.namer, s.joined}
+	v.CameraDeviceServiceServer = bare.CameraDeviceWithAddRule(v.CameraDeviceServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of CameraDevice writes, refusing
+// one that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.CameraDevice].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkCameraDevice) admit(ctx context.Context, req *api.CameraDeviceAddRequest) (*api.CameraDeviceAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "shale.CameraDevice", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkCameraDevice.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkCameraDevice) Add(ctx context.Context, req *api.CameraDeviceAddRequest) (*api.CameraDevice, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.CameraDeviceServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkCameraDevice.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkCameraDevice.Apply].
+func (s sinkCameraDevice) Patch(ctx context.Context, req *api.CameraDevicePatchRequest) (*api.CameraDevice, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraDevice", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.CameraDeviceServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.CameraDeviceServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkCameraDevice) Erase(ctx context.Context, req *api.CameraDeviceRef) (*api.CameraDeviceEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraDevice", req)
+
+	return s.CameraDeviceServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkCameraDevice) Apply(ctx context.Context, req *api.CameraDeviceApplyRequest) (*api.CameraDevice, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraDevice", req.GetRef())
+
+	return s.CameraDeviceServiceServer.Apply(ctx, req)
+}
+
+// orderCameraDevice is how CameraDevices come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderCameraDevice = []sqlpage.Order{
+	{Column: entCameraDevice.FieldDateCreated, Desc: false},
+	{Column: entCameraDevice.FieldId, Desc: false},
+}
+
+func afterCameraDevice(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextCameraDevice(last *ent.CameraDevice, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByCameraDevice is an order as ent orders a query by it.
+func orderByCameraDevice(by []sqlpage.Order) []entCameraDevice.OrderOption {
+	out := make([]entCameraDevice.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// CameraDevicePageSize is what a request that did not say gets, and
+	// CameraDevicePageLimit is the most it gets however loudly it asks.
+	CameraDevicePageSize  = 50
+	CameraDevicePageLimit = 500
+
+	// CameraDeviceFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	CameraDeviceFilterLimit = 32
+)
+
+// List answers with the CameraDevices that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkCameraDevice) List(ctx context.Context, req *api.CameraDeviceListRequest) (*api.CameraDeviceListResponse, error) {
+	q := s.store.Db.CameraDevice.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.CameraDeviceNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > CameraDeviceFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), CameraDeviceFilterLimit)
+		}
+
+		ps := make([]predicate.CameraDevice, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterCameraDevice(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entCameraDevice.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderCameraDevice, afterCameraDevice, nextCameraDevice, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), CameraDevicePageSize, CameraDevicePageLimit)
+	us, err := q.Order(orderByCameraDevice(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.CameraDevice, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.CameraDeviceListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterCameraDevice turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterCameraDevice(f *api.CameraDeviceFilter) (predicate.CameraDevice, error) {
+	ps := make([]predicate.CameraDevice, 0, 1)
+	if f.HasRef() {
+		p, err := bare.CameraDevicePick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, entCameraDevice.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraDevice.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, entCameraDevice.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraDevice.HasSiteWith(q))
+		}
+	}
+	if f.HasNetwork() {
+		w := f.GetNetwork()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "network: %s", err)
+			}
+
+			ps = append(ps, entCameraDevice.NetworkIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.CameraNetworkPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraDevice.HasNetworkWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entCameraDevice.And(ps...), nil
+}
+
+// CameraDeviceService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a CameraDevice. A service is named for the entity it
+// is about, so the name carries it.
+var CameraDeviceService = watch.ServiceOf(api.CameraDeviceService_Get_FullMethodName)
+
+// Watch answers with the CameraDevices this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkCameraDevice) Watch(req *api.CameraDeviceWatchRequest, out grpc.ServerStreamingServer[api.CameraDeviceWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > CameraDeviceFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), CameraDeviceFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchCameraDeviceKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, CameraDeviceService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.CameraDeviceWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.CameraDeviceWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.CameraDeviceWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkCameraDevice) watchNow(
+	ctx context.Context, req *api.CameraDeviceWatchRequest, out grpc.ServerStreamingServer[api.CameraDeviceWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.CameraDeviceListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.CameraDeviceWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.CameraDeviceWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.CameraDeviceWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkCameraDevice) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.CameraDevice, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.CameraDeviceGetRequest_builder{
+		Ref: api.CameraDeviceRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchCameraDeviceKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkCameraDevice) watchCameraDeviceKeys(
+	ctx context.Context, fs []*api.CameraDeviceFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.CameraDeviceGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
+type sinkCameraJob struct {
+	api.CameraJobServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) CameraJob() api.CameraJobServiceServer {
+	v := sinkCameraJob{s.Server.CameraJob(), s.Server.Store, s.w, s.namer, s.joined}
+	v.CameraJobServiceServer = bare.CameraJobWithAddRule(v.CameraJobServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of CameraJob writes, refusing one
+// that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.CameraJob].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkCameraJob) admit(ctx context.Context, req *api.CameraJobAddRequest) (*api.CameraJobAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "shale.CameraJob", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkCameraJob.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkCameraJob) Add(ctx context.Context, req *api.CameraJobAddRequest) (*api.CameraJob, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.CameraJobServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkCameraJob.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkCameraJob.Apply].
+func (s sinkCameraJob) Patch(ctx context.Context, req *api.CameraJobPatchRequest) (*api.CameraJob, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraJob", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.CameraJobServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.CameraJobServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkCameraJob) Erase(ctx context.Context, req *api.CameraJobRef) (*api.CameraJobEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraJob", req)
+
+	return s.CameraJobServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkCameraJob) Apply(ctx context.Context, req *api.CameraJobApplyRequest) (*api.CameraJob, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraJob", req.GetRef())
+
+	return s.CameraJobServiceServer.Apply(ctx, req)
+}
+
+// orderCameraJob is how CameraJobs come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderCameraJob = []sqlpage.Order{
+	{Column: entCameraJob.FieldDateCreated, Desc: false},
+	{Column: entCameraJob.FieldId, Desc: false},
+}
+
+func afterCameraJob(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextCameraJob(last *ent.CameraJob, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByCameraJob is an order as ent orders a query by it.
+func orderByCameraJob(by []sqlpage.Order) []entCameraJob.OrderOption {
+	out := make([]entCameraJob.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// CameraJobPageSize is what a request that did not say gets, and
+	// CameraJobPageLimit is the most it gets however loudly it asks.
+	CameraJobPageSize  = 50
+	CameraJobPageLimit = 500
+
+	// CameraJobFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	CameraJobFilterLimit = 32
+)
+
+// List answers with the CameraJobs that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkCameraJob) List(ctx context.Context, req *api.CameraJobListRequest) (*api.CameraJobListResponse, error) {
+	q := s.store.Db.CameraJob.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.CameraJobNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > CameraJobFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), CameraJobFilterLimit)
+		}
+
+		ps := make([]predicate.CameraJob, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterCameraJob(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entCameraJob.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderCameraJob, afterCameraJob, nextCameraJob, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), CameraJobPageSize, CameraJobPageLimit)
+	us, err := q.Order(orderByCameraJob(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.CameraJob, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.CameraJobListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterCameraJob turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterCameraJob(f *api.CameraJobFilter) (predicate.CameraJob, error) {
+	ps := make([]predicate.CameraJob, 0, 1)
+	if f.HasRef() {
+		p, err := bare.CameraJobPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, entCameraJob.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraJob.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, entCameraJob.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraJob.HasSiteWith(q))
+		}
+	}
+	if f.HasAssignment() {
+		w := f.GetAssignment()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "assignment: %s", err)
+			}
+
+			ps = append(ps, entCameraJob.AssignmentIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.CameraAssignmentPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraJob.HasAssignmentWith(q))
+		}
+	}
+	if f.HasBinding() {
+		w := f.GetBinding()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "binding: %s", err)
+			}
+
+			ps = append(ps, entCameraJob.BindingIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.CameraBindingPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraJob.HasBindingWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entCameraJob.And(ps...), nil
+}
+
+// CameraJobService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a CameraJob. A service is named for the entity it
+// is about, so the name carries it.
+var CameraJobService = watch.ServiceOf(api.CameraJobService_Get_FullMethodName)
+
+// Watch answers with the CameraJobs this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkCameraJob) Watch(req *api.CameraJobWatchRequest, out grpc.ServerStreamingServer[api.CameraJobWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > CameraJobFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), CameraJobFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchCameraJobKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, CameraJobService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.CameraJobWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.CameraJobWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.CameraJobWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkCameraJob) watchNow(
+	ctx context.Context, req *api.CameraJobWatchRequest, out grpc.ServerStreamingServer[api.CameraJobWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.CameraJobListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.CameraJobWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.CameraJobWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.CameraJobWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkCameraJob) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.CameraJob, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.CameraJobGetRequest_builder{
+		Ref: api.CameraJobRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchCameraJobKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkCameraJob) watchCameraJobKeys(
+	ctx context.Context, fs []*api.CameraJobFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.CameraJobGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
+type sinkCameraNetwork struct {
+	api.CameraNetworkServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) CameraNetwork() api.CameraNetworkServiceServer {
+	v := sinkCameraNetwork{s.Server.CameraNetwork(), s.Server.Store, s.w, s.namer, s.joined}
+	v.CameraNetworkServiceServer = bare.CameraNetworkWithAddRule(v.CameraNetworkServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of CameraNetwork writes, refusing
+// one that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.CameraNetwork].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkCameraNetwork) admit(ctx context.Context, req *api.CameraNetworkAddRequest) (*api.CameraNetworkAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "shale.CameraNetwork", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkCameraNetwork.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkCameraNetwork) Add(ctx context.Context, req *api.CameraNetworkAddRequest) (*api.CameraNetwork, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.CameraNetworkServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkCameraNetwork.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkCameraNetwork.Apply].
+func (s sinkCameraNetwork) Patch(ctx context.Context, req *api.CameraNetworkPatchRequest) (*api.CameraNetwork, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraNetwork", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.CameraNetworkServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.CameraNetworkServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkCameraNetwork) Erase(ctx context.Context, req *api.CameraNetworkRef) (*api.CameraNetworkEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraNetwork", req)
+
+	return s.CameraNetworkServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkCameraNetwork) Apply(ctx context.Context, req *api.CameraNetworkApplyRequest) (*api.CameraNetwork, error) {
+	seen.Forget(s.store.Db.Driver(), "CameraNetwork", req.GetRef())
+
+	return s.CameraNetworkServiceServer.Apply(ctx, req)
+}
+
+// orderCameraNetwork is how CameraNetworks come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderCameraNetwork = []sqlpage.Order{
+	{Column: entCameraNetwork.FieldDateCreated, Desc: false},
+	{Column: entCameraNetwork.FieldId, Desc: false},
+}
+
+func afterCameraNetwork(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextCameraNetwork(last *ent.CameraNetwork, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByCameraNetwork is an order as ent orders a query by it.
+func orderByCameraNetwork(by []sqlpage.Order) []entCameraNetwork.OrderOption {
+	out := make([]entCameraNetwork.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// CameraNetworkPageSize is what a request that did not say gets, and
+	// CameraNetworkPageLimit is the most it gets however loudly it asks.
+	CameraNetworkPageSize  = 50
+	CameraNetworkPageLimit = 500
+
+	// CameraNetworkFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	CameraNetworkFilterLimit = 32
+)
+
+// List answers with the CameraNetworks that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkCameraNetwork) List(ctx context.Context, req *api.CameraNetworkListRequest) (*api.CameraNetworkListResponse, error) {
+	q := s.store.Db.CameraNetwork.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.CameraNetworkNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > CameraNetworkFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), CameraNetworkFilterLimit)
+		}
+
+		ps := make([]predicate.CameraNetwork, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterCameraNetwork(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entCameraNetwork.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderCameraNetwork, afterCameraNetwork, nextCameraNetwork, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), CameraNetworkPageSize, CameraNetworkPageLimit)
+	us, err := q.Order(orderByCameraNetwork(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.CameraNetwork, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.CameraNetworkListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterCameraNetwork turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterCameraNetwork(f *api.CameraNetworkFilter) (predicate.CameraNetwork, error) {
+	ps := make([]predicate.CameraNetwork, 0, 1)
+	if f.HasRef() {
+		p, err := bare.CameraNetworkPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, entCameraNetwork.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraNetwork.HasTenantWith(q))
+		}
+	}
+	if f.HasSite() {
+		w := f.GetSite()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "site: %s", err)
+			}
+
+			ps = append(ps, entCameraNetwork.SiteIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.SitePick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entCameraNetwork.HasSiteWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entCameraNetwork.And(ps...), nil
+}
+
+// CameraNetworkService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a CameraNetwork. A service is named for the entity it
+// is about, so the name carries it.
+var CameraNetworkService = watch.ServiceOf(api.CameraNetworkService_Get_FullMethodName)
+
+// Watch answers with the CameraNetworks this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkCameraNetwork) Watch(req *api.CameraNetworkWatchRequest, out grpc.ServerStreamingServer[api.CameraNetworkWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > CameraNetworkFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), CameraNetworkFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchCameraNetworkKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, CameraNetworkService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.CameraNetworkWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.CameraNetworkWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.CameraNetworkWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkCameraNetwork) watchNow(
+	ctx context.Context, req *api.CameraNetworkWatchRequest, out grpc.ServerStreamingServer[api.CameraNetworkWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.CameraNetworkListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.CameraNetworkWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.CameraNetworkWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.CameraNetworkWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkCameraNetwork) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.CameraNetwork, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.CameraNetworkGetRequest_builder{
+		Ref: api.CameraNetworkRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchCameraNetworkKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkCameraNetwork) watchCameraNetworkKeys(
+	ctx context.Context, fs []*api.CameraNetworkFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.CameraNetworkGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
 }
 
 type sinkDelegation struct {
@@ -9221,6 +12136,510 @@ func (s gateAttempt) admit(ctx context.Context, req *api.AttemptAddRequest) (*ap
 	return req, nil
 }
 
+type gateCameraAssignment struct {
+	Gate
+	api.CameraAssignmentServiceServer
+}
+
+func (s Gate) CameraAssignment() api.CameraAssignmentServiceServer {
+	v := gateCameraAssignment{s, s.Next().CameraAssignment()}
+	v.CameraAssignmentServiceServer = bare.CameraAssignmentWithAddRule(v.CameraAssignmentServiceServer, v.admit)
+	return v
+}
+
+// admit refuses a CameraAssignment put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.CameraAssignment].
+func (s gateCameraAssignment) admit(ctx context.Context, req *api.CameraAssignmentAddRequest) (*api.CameraAssignmentAddRequest, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Tenant", ref, func() error {
+			_, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Site", ref, func() error {
+			_, err := s.Gate.Next().Site().Get(ctx, api.SiteGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetNetwork(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "CameraNetwork", ref, func() error {
+			_, err := s.Gate.Next().CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("CameraNetwork")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSet(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Set", ref, func() error {
+			_, err := s.Gate.Next().Set().Get(ctx, api.SetGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Set")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetProducer(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Producer", ref, func() error {
+			_, err := s.Gate.Next().Producer().Get(ctx, api.ProducerGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Producer")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
+// Patch refuses an edge moved onto a row this caller cannot see.
+//
+// The wall narrows the row being written and says nothing about what the
+// write points **at**. An edge is a read -- a `Select` walks it -- so one
+// moved out of the caller's scope is a way through the wall one hop later,
+// exactly as it would have been at `Add`.
+func (s gateCameraAssignment) Patch(ctx context.Context, req *api.CameraAssignmentPatchRequest) (*api.CameraAssignment, error) {
+	if ref := req.GetProducer(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Producer", ref, func() error {
+			_, err := s.Gate.Next().Producer().Get(ctx, api.ProducerGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Producer")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.CameraAssignmentServiceServer.Patch(ctx, req)
+}
+
+// Apply refuses a document that moves an edge onto a row this caller cannot
+// see, as Patch refuses a request that does.
+//
+// A document names the row an edge points at by its key, and the server
+// behind writes that key into the column as it is -- compiling a document
+// reads nothing. So the read Patch is asked is asked here of the key the
+// document lands in the column, compiled the way the server behind will.
+func (s gateCameraAssignment) Apply(ctx context.Context, req *api.CameraAssignmentApplyRequest) (*api.CameraAssignment, error) {
+	if !req.HasPatch() {
+		// Nothing written, and the server behind refuses it in its own words.
+		return s.CameraAssignmentServiceServer.Apply(ctx, req)
+	}
+
+	plan, err := ormpatch.Compile(gateCameraAssignmentEntity, req.GetPatch())
+	if err != nil {
+		// Refused here rather than passed on, in the codes the server behind
+		// gives the same document: one this layer cannot read is one it can
+		// say nothing about.
+		if errors.Is(err, ormpatch.ErrUnsupported) {
+			return nil, status.Errorf(codes.Unimplemented, "%s", err)
+		}
+
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+	}
+	if w, ok := plan.WriteTo(10); ok {
+		if k, ok := w.Op.(ormpatch.SetEdge); ok {
+			ref := api.ProducerRef_builder{Id: k.Key.Bytes()}.Build()
+			if err := seen.Visible(ctx, s.Gate.drv, "Producer", ref, func() error {
+				_, err := s.Gate.Next().Producer().Get(ctx, api.ProducerGetRequest_builder{
+					Ref: ref,
+				}.Build())
+				return err
+			}); err != nil {
+				if status.Code(err) == codes.NotFound {
+					return nil, gate.ErrNotFound("Producer")
+				}
+
+				return nil, err
+			}
+		}
+	}
+
+	return s.CameraAssignmentServiceServer.Apply(ctx, req)
+}
+
+// gateCameraAssignmentEntity is what a CameraAssignment document is compiled against: the entity
+// parsed from the file that declares it, as the server behind parses it.
+var gateCameraAssignmentEntity = ormpatch.MustEntityOf((*api.CameraAssignment)(nil).ProtoReflect().Descriptor().ParentFile(), "CameraAssignment")
+
+type gateCameraBinding struct {
+	Gate
+	api.CameraBindingServiceServer
+}
+
+func (s Gate) CameraBinding() api.CameraBindingServiceServer {
+	v := gateCameraBinding{s, s.Next().CameraBinding()}
+	v.CameraBindingServiceServer = bare.CameraBindingWithAddRule(v.CameraBindingServiceServer, v.admit)
+	return v
+}
+
+// admit refuses a CameraBinding put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.CameraBinding].
+func (s gateCameraBinding) admit(ctx context.Context, req *api.CameraBindingAddRequest) (*api.CameraBindingAddRequest, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Tenant", ref, func() error {
+			_, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Site", ref, func() error {
+			_, err := s.Gate.Next().Site().Get(ctx, api.SiteGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetAssignment(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "CameraAssignment", ref, func() error {
+			_, err := s.Gate.Next().CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("CameraAssignment")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetDevice(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "CameraDevice", ref, func() error {
+			_, err := s.Gate.Next().CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("CameraDevice")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSource(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Source", ref, func() error {
+			_, err := s.Gate.Next().Source().Get(ctx, api.SourceGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Source")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
+type gateCameraDevice struct {
+	Gate
+	api.CameraDeviceServiceServer
+}
+
+func (s Gate) CameraDevice() api.CameraDeviceServiceServer {
+	v := gateCameraDevice{s, s.Next().CameraDevice()}
+	v.CameraDeviceServiceServer = bare.CameraDeviceWithAddRule(v.CameraDeviceServiceServer, v.admit)
+	return v
+}
+
+// admit refuses a CameraDevice put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.CameraDevice].
+func (s gateCameraDevice) admit(ctx context.Context, req *api.CameraDeviceAddRequest) (*api.CameraDeviceAddRequest, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Tenant", ref, func() error {
+			_, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Site", ref, func() error {
+			_, err := s.Gate.Next().Site().Get(ctx, api.SiteGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetNetwork(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "CameraNetwork", ref, func() error {
+			_, err := s.Gate.Next().CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("CameraNetwork")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
+type gateCameraJob struct {
+	Gate
+	api.CameraJobServiceServer
+}
+
+func (s Gate) CameraJob() api.CameraJobServiceServer {
+	v := gateCameraJob{s, s.Next().CameraJob()}
+	v.CameraJobServiceServer = bare.CameraJobWithAddRule(v.CameraJobServiceServer, v.admit)
+	return v
+}
+
+// admit refuses a CameraJob put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.CameraJob].
+func (s gateCameraJob) admit(ctx context.Context, req *api.CameraJobAddRequest) (*api.CameraJobAddRequest, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Tenant", ref, func() error {
+			_, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Site", ref, func() error {
+			_, err := s.Gate.Next().Site().Get(ctx, api.SiteGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetBinding(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "CameraBinding", ref, func() error {
+			_, err := s.Gate.Next().CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("CameraBinding")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetAssignment(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "CameraAssignment", ref, func() error {
+			_, err := s.Gate.Next().CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("CameraAssignment")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
+type gateCameraNetwork struct {
+	Gate
+	api.CameraNetworkServiceServer
+}
+
+func (s Gate) CameraNetwork() api.CameraNetworkServiceServer {
+	v := gateCameraNetwork{s, s.Next().CameraNetwork()}
+	v.CameraNetworkServiceServer = bare.CameraNetworkWithAddRule(v.CameraNetworkServiceServer, v.admit)
+	return v
+}
+
+// admit refuses a CameraNetwork put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.CameraNetwork].
+func (s gateCameraNetwork) admit(ctx context.Context, req *api.CameraNetworkAddRequest) (*api.CameraNetworkAddRequest, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Tenant", ref, func() error {
+			_, err := s.Gate.Next().Tenant().Get(ctx, api.TenantGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetSite(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Site", ref, func() error {
+			_, err := s.Gate.Next().Site().Get(ctx, api.SiteGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Site")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
 type gateDelegation struct {
 	Gate
 	api.DelegationServiceServer
@@ -10131,6 +13550,16 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedAttempt.md, describedAttempt.secret, describedAttempt.personal
 	case AuditDomain:
 		return describedAudit.md, describedAudit.secret, describedAudit.personal
+	case CameraAssignmentDomain:
+		return describedCameraAssignment.md, describedCameraAssignment.secret, describedCameraAssignment.personal
+	case CameraBindingDomain:
+		return describedCameraBinding.md, describedCameraBinding.secret, describedCameraBinding.personal
+	case CameraDeviceDomain:
+		return describedCameraDevice.md, describedCameraDevice.secret, describedCameraDevice.personal
+	case CameraJobDomain:
+		return describedCameraJob.md, describedCameraJob.secret, describedCameraJob.personal
+	case CameraNetworkDomain:
+		return describedCameraNetwork.md, describedCameraNetwork.secret, describedCameraNetwork.personal
 	case DelegationDomain:
 		return describedDelegation.md, describedDelegation.secret, describedDelegation.personal
 	case DeviceDomain:
@@ -10209,6 +13638,21 @@ var (
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
 	describedAudit = describe((*api.Audit)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
+	describedCameraAssignment = describe((*api.CameraAssignment)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
+	describedCameraBinding = describe((*api.CameraBinding)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
+	describedCameraDevice = describe((*api.CameraDevice)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
+	describedCameraJob = describe((*api.CameraJob)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
+	describedCameraNetwork = describe((*api.CameraNetwork)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
 	describedDelegation = describe((*api.Delegation)(nil),
@@ -10294,6 +13738,11 @@ func added(by string) bool {
 	case api.AddressPolicyService_Add_FullMethodName,
 		api.AttemptService_Add_FullMethodName,
 		api.AuditService_Add_FullMethodName,
+		api.CameraAssignmentService_Add_FullMethodName,
+		api.CameraBindingService_Add_FullMethodName,
+		api.CameraDeviceService_Add_FullMethodName,
+		api.CameraJobService_Add_FullMethodName,
+		api.CameraNetworkService_Add_FullMethodName,
 		api.DelegationService_Add_FullMethodName,
 		api.DeviceService_Add_FullMethodName,
 		api.HolderService_Add_FullMethodName,
@@ -10396,6 +13845,141 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 		}
 
 		k, err := entuuid.FromBytes(row.GetTenantId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case CameraAssignmentDomain:
+		row, ok := image.(*api.CameraAssignment)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case CameraBindingDomain:
+		row, ok := image.(*api.CameraBinding)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case CameraDeviceDomain:
+		row, ok := image.(*api.CameraDevice)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case CameraJobDomain:
+		row, ok := image.(*api.CameraJob)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case CameraNetworkDomain:
+		row, ok := image.(*api.CameraNetwork)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
 		if err != nil {
 			return uuid.Nil(), nil, err
 		}
@@ -10702,6 +14286,16 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 		vs, err = rowsAddressPolicy(ctx, s.Db, entAddressPolicy.IdEQ(uuid.UUID(key)))
 	case AttemptDomain:
 		vs, err = rowsAttempt(ctx, s.Db, entAttempt.IdEQ(uuid.UUID(key)))
+	case CameraAssignmentDomain:
+		vs, err = rowsCameraAssignment(ctx, s.Db, entCameraAssignment.IdEQ(uuid.UUID(key)))
+	case CameraBindingDomain:
+		vs, err = rowsCameraBinding(ctx, s.Db, entCameraBinding.IdEQ(uuid.UUID(key)))
+	case CameraDeviceDomain:
+		vs, err = rowsCameraDevice(ctx, s.Db, entCameraDevice.IdEQ(uuid.UUID(key)))
+	case CameraJobDomain:
+		vs, err = rowsCameraJob(ctx, s.Db, entCameraJob.IdEQ(uuid.UUID(key)))
+	case CameraNetworkDomain:
+		vs, err = rowsCameraNetwork(ctx, s.Db, entCameraNetwork.IdEQ(uuid.UUID(key)))
 	case DelegationDomain:
 		vs, err = rowsDelegation(ctx, s.Db, entDelegation.IdEQ(uuid.UUID(key)))
 	case DeviceDomain:
@@ -11104,6 +14698,21 @@ func Digests(ctx context.Context, db *ent.Client, d *audit.Digest, p trail.Polic
 	if err := audit.CheckKind(ctx, d, checkedAttempt(db), archived, &out); err != nil {
 		return out, fmt.Errorf("attempt: %w", err)
 	}
+	if err := audit.CheckKind(ctx, d, checkedCameraAssignment(db), archived, &out); err != nil {
+		return out, fmt.Errorf("camera-assignment: %w", err)
+	}
+	if err := audit.CheckKind(ctx, d, checkedCameraBinding(db), archived, &out); err != nil {
+		return out, fmt.Errorf("camera-binding: %w", err)
+	}
+	if err := audit.CheckKind(ctx, d, checkedCameraDevice(db), archived, &out); err != nil {
+		return out, fmt.Errorf("camera-device: %w", err)
+	}
+	if err := audit.CheckKind(ctx, d, checkedCameraJob(db), archived, &out); err != nil {
+		return out, fmt.Errorf("camera-job: %w", err)
+	}
+	if err := audit.CheckKind(ctx, d, checkedCameraNetwork(db), archived, &out); err != nil {
+		return out, fmt.Errorf("camera-network: %w", err)
+	}
 	if err := audit.CheckKind(ctx, d, checkedDelegation(db), archived, &out); err != nil {
 		return out, fmt.Errorf("delegation: %w", err)
 	}
@@ -11238,6 +14847,236 @@ func checkedAttempt(db *ent.Client) audit.Kind {
 			var out map[pdid.Id]*audit.Recorded
 			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
 				rows, err := rowsAttempt(ctx, db, entAttempt.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedCameraAssignment is what a check of the rows reads of the camera-assignment kind.
+func checkedCameraAssignment(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.CameraAssignment) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsCameraAssignment(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: CameraAssignmentDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraAssignment.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraAssignment.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, CameraAssignmentDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsCameraAssignment(ctx, db, entCameraAssignment.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedCameraBinding is what a check of the rows reads of the camera-binding kind.
+func checkedCameraBinding(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.CameraBinding) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsCameraBinding(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: CameraBindingDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraBinding.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraBinding.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, CameraBindingDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsCameraBinding(ctx, db, entCameraBinding.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedCameraDevice is what a check of the rows reads of the camera-device kind.
+func checkedCameraDevice(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.CameraDevice) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsCameraDevice(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: CameraDeviceDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraDevice.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraDevice.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, CameraDeviceDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsCameraDevice(ctx, db, entCameraDevice.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedCameraJob is what a check of the rows reads of the camera-job kind.
+func checkedCameraJob(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.CameraJob) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsCameraJob(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: CameraJobDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraJob.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraJob.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, CameraJobDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsCameraJob(ctx, db, entCameraJob.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedCameraNetwork is what a check of the rows reads of the camera-network kind.
+func checkedCameraNetwork(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.CameraNetwork) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsCameraNetwork(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: CameraNetworkDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraNetwork.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entCameraNetwork.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, CameraNetworkDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsCameraNetwork(ctx, db, entCameraNetwork.IdIn(uuids(ids)...))
 				if err != nil {
 					return err
 				}
@@ -12079,6 +15918,106 @@ func rowsAttempt(ctx context.Context, db *ent.Client, ps ...predicate.Attempt) (
 	return out, nil
 }
 
+// rowsCameraAssignment is the rows `ps` says of the camera-assignment kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsCameraAssignment(ctx context.Context, db *ent.Client, ps ...predicate.CameraAssignment) ([]audit.Live, error) {
+	q := db.CameraAssignment.Query().Where(ps...)
+	bare.CameraAssignmentSelectInit(q, nil)
+
+	vs, err := q.Order(entCameraAssignment.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
+// rowsCameraBinding is the rows `ps` says of the camera-binding kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsCameraBinding(ctx context.Context, db *ent.Client, ps ...predicate.CameraBinding) ([]audit.Live, error) {
+	q := db.CameraBinding.Query().Where(ps...)
+	bare.CameraBindingSelectInit(q, nil)
+
+	vs, err := q.Order(entCameraBinding.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
+// rowsCameraDevice is the rows `ps` says of the camera-device kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsCameraDevice(ctx context.Context, db *ent.Client, ps ...predicate.CameraDevice) ([]audit.Live, error) {
+	q := db.CameraDevice.Query().Where(ps...)
+	bare.CameraDeviceSelectInit(q, nil)
+
+	vs, err := q.Order(entCameraDevice.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
+// rowsCameraJob is the rows `ps` says of the camera-job kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsCameraJob(ctx context.Context, db *ent.Client, ps ...predicate.CameraJob) ([]audit.Live, error) {
+	q := db.CameraJob.Query().Where(ps...)
+	bare.CameraJobSelectInit(q, nil)
+
+	vs, err := q.Order(entCameraJob.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
+// rowsCameraNetwork is the rows `ps` says of the camera-network kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsCameraNetwork(ctx context.Context, db *ent.Client, ps ...predicate.CameraNetwork) ([]audit.Live, error) {
+	q := db.CameraNetwork.Query().Where(ps...)
+	bare.CameraNetworkSelectInit(q, nil)
+
+	vs, err := q.Order(entCameraNetwork.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsDelegation is the rows `ps` says of the delegation kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -12646,6 +16585,16 @@ func record(ctx context.Context, db *ent.Client, content audit.Contents, action 
 				rows, err = rowsAddressPolicy(ctx, db, entAddressPolicy.IdIn(uuids(page)...))
 			case AttemptDomain:
 				rows, err = rowsAttempt(ctx, db, entAttempt.IdIn(uuids(page)...))
+			case CameraAssignmentDomain:
+				rows, err = rowsCameraAssignment(ctx, db, entCameraAssignment.IdIn(uuids(page)...))
+			case CameraBindingDomain:
+				rows, err = rowsCameraBinding(ctx, db, entCameraBinding.IdIn(uuids(page)...))
+			case CameraDeviceDomain:
+				rows, err = rowsCameraDevice(ctx, db, entCameraDevice.IdIn(uuids(page)...))
+			case CameraJobDomain:
+				rows, err = rowsCameraJob(ctx, db, entCameraJob.IdIn(uuids(page)...))
+			case CameraNetworkDomain:
+				rows, err = rowsCameraNetwork(ctx, db, entCameraNetwork.IdIn(uuids(page)...))
 			case DelegationDomain:
 				rows, err = rowsDelegation(ctx, db, entDelegation.IdIn(uuids(page)...))
 			case DeviceDomain:
@@ -12798,6 +16747,16 @@ func (s trailStore) Carry(ctx context.Context, digest *audit.Digest, d pdid.Doma
 			rows, err = rowsAddressPolicy(ctx, s.db, entAddressPolicy.IdIn(uuids(ids)...))
 		case AttemptDomain:
 			rows, err = rowsAttempt(ctx, s.db, entAttempt.IdIn(uuids(ids)...))
+		case CameraAssignmentDomain:
+			rows, err = rowsCameraAssignment(ctx, s.db, entCameraAssignment.IdIn(uuids(ids)...))
+		case CameraBindingDomain:
+			rows, err = rowsCameraBinding(ctx, s.db, entCameraBinding.IdIn(uuids(ids)...))
+		case CameraDeviceDomain:
+			rows, err = rowsCameraDevice(ctx, s.db, entCameraDevice.IdIn(uuids(ids)...))
+		case CameraJobDomain:
+			rows, err = rowsCameraJob(ctx, s.db, entCameraJob.IdIn(uuids(ids)...))
+		case CameraNetworkDomain:
+			rows, err = rowsCameraNetwork(ctx, s.db, entCameraNetwork.IdIn(uuids(ids)...))
 		case DelegationDomain:
 			rows, err = rowsDelegation(ctx, s.db, entDelegation.IdIn(uuids(ids)...))
 		case DeviceDomain:
@@ -13660,6 +17619,286 @@ func (s interceptReader) RenewCertificate(ctx context.Context, req *api.ReaderRe
 func (s interceptReader) Heartbeat(ctx context.Context, req *api.ReaderHeartbeatRequest) (*api.ReaderHeartbeatResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ReaderServiceServer,
 		api.ReaderService_Heartbeat_FullMethodName, req, s.ReaderServiceServer.Heartbeat)
+}
+
+func (s Intercept) CameraNetwork() api.CameraNetworkServiceServer {
+	return interceptCameraNetwork{s, s.Next().CameraNetwork()}
+}
+
+type interceptCameraNetwork struct {
+	Intercept
+	api.CameraNetworkServiceServer
+}
+
+func (s interceptCameraNetwork) Add(ctx context.Context, req *api.CameraNetworkAddRequest) (*api.CameraNetwork, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraNetworkServiceServer,
+		api.CameraNetworkService_Add_FullMethodName, req, s.CameraNetworkServiceServer.Add)
+}
+
+func (s interceptCameraNetwork) Get(ctx context.Context, req *api.CameraNetworkGetRequest) (*api.CameraNetwork, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraNetworkServiceServer,
+		api.CameraNetworkService_Get_FullMethodName, req, s.CameraNetworkServiceServer.Get)
+}
+
+func (s interceptCameraNetwork) Patch(ctx context.Context, req *api.CameraNetworkPatchRequest) (*api.CameraNetwork, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraNetworkServiceServer,
+		api.CameraNetworkService_Patch_FullMethodName, req, s.CameraNetworkServiceServer.Patch)
+}
+
+func (s interceptCameraNetwork) Apply(ctx context.Context, req *api.CameraNetworkApplyRequest) (*api.CameraNetwork, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraNetworkServiceServer,
+		api.CameraNetworkService_Apply_FullMethodName, req, s.CameraNetworkServiceServer.Apply)
+}
+
+func (s interceptCameraNetwork) Erase(ctx context.Context, req *api.CameraNetworkRef) (*api.CameraNetworkEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraNetworkServiceServer,
+		api.CameraNetworkService_Erase_FullMethodName, req, s.CameraNetworkServiceServer.Erase)
+}
+
+func (s interceptCameraNetwork) List(ctx context.Context, req *api.CameraNetworkListRequest) (*api.CameraNetworkListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraNetworkServiceServer,
+		api.CameraNetworkService_List_FullMethodName, req, s.CameraNetworkServiceServer.List)
+}
+
+func (s interceptCameraNetwork) Watch(req *api.CameraNetworkWatchRequest, out grpc.ServerStreamingServer[api.CameraNetworkWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CameraNetworkServiceServer,
+		api.CameraNetworkService_Watch_FullMethodName, req, out, s.CameraNetworkServiceServer.Watch)
+}
+
+func (s interceptCameraNetwork) Configure(ctx context.Context, req *api.CameraNetworkConfigureRequest) (*api.CameraNetwork, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraNetworkServiceServer,
+		api.CameraNetworkService_Configure_FullMethodName, req, s.CameraNetworkServiceServer.Configure)
+}
+
+func (s Intercept) CameraDevice() api.CameraDeviceServiceServer {
+	return interceptCameraDevice{s, s.Next().CameraDevice()}
+}
+
+type interceptCameraDevice struct {
+	Intercept
+	api.CameraDeviceServiceServer
+}
+
+func (s interceptCameraDevice) Add(ctx context.Context, req *api.CameraDeviceAddRequest) (*api.CameraDevice, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_Add_FullMethodName, req, s.CameraDeviceServiceServer.Add)
+}
+
+func (s interceptCameraDevice) Get(ctx context.Context, req *api.CameraDeviceGetRequest) (*api.CameraDevice, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_Get_FullMethodName, req, s.CameraDeviceServiceServer.Get)
+}
+
+func (s interceptCameraDevice) Patch(ctx context.Context, req *api.CameraDevicePatchRequest) (*api.CameraDevice, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_Patch_FullMethodName, req, s.CameraDeviceServiceServer.Patch)
+}
+
+func (s interceptCameraDevice) Apply(ctx context.Context, req *api.CameraDeviceApplyRequest) (*api.CameraDevice, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_Apply_FullMethodName, req, s.CameraDeviceServiceServer.Apply)
+}
+
+func (s interceptCameraDevice) Erase(ctx context.Context, req *api.CameraDeviceRef) (*api.CameraDeviceEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_Erase_FullMethodName, req, s.CameraDeviceServiceServer.Erase)
+}
+
+func (s interceptCameraDevice) List(ctx context.Context, req *api.CameraDeviceListRequest) (*api.CameraDeviceListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_List_FullMethodName, req, s.CameraDeviceServiceServer.List)
+}
+
+func (s interceptCameraDevice) Watch(req *api.CameraDeviceWatchRequest, out grpc.ServerStreamingServer[api.CameraDeviceWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_Watch_FullMethodName, req, out, s.CameraDeviceServiceServer.Watch)
+}
+
+func (s interceptCameraDevice) Claim(ctx context.Context, req *api.CameraDeviceClaimRequest) (*api.CameraDevice, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_Claim_FullMethodName, req, s.CameraDeviceServiceServer.Claim)
+}
+
+func (s interceptCameraDevice) Observe(ctx context.Context, req *api.CameraDeviceObserveRequest) (*api.CameraDevice, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraDeviceServiceServer,
+		api.CameraDeviceService_Observe_FullMethodName, req, s.CameraDeviceServiceServer.Observe)
+}
+
+func (s Intercept) CameraAssignment() api.CameraAssignmentServiceServer {
+	return interceptCameraAssignment{s, s.Next().CameraAssignment()}
+}
+
+type interceptCameraAssignment struct {
+	Intercept
+	api.CameraAssignmentServiceServer
+}
+
+func (s interceptCameraAssignment) Add(ctx context.Context, req *api.CameraAssignmentAddRequest) (*api.CameraAssignment, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Add_FullMethodName, req, s.CameraAssignmentServiceServer.Add)
+}
+
+func (s interceptCameraAssignment) Get(ctx context.Context, req *api.CameraAssignmentGetRequest) (*api.CameraAssignment, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Get_FullMethodName, req, s.CameraAssignmentServiceServer.Get)
+}
+
+func (s interceptCameraAssignment) Patch(ctx context.Context, req *api.CameraAssignmentPatchRequest) (*api.CameraAssignment, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Patch_FullMethodName, req, s.CameraAssignmentServiceServer.Patch)
+}
+
+func (s interceptCameraAssignment) Apply(ctx context.Context, req *api.CameraAssignmentApplyRequest) (*api.CameraAssignment, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Apply_FullMethodName, req, s.CameraAssignmentServiceServer.Apply)
+}
+
+func (s interceptCameraAssignment) Erase(ctx context.Context, req *api.CameraAssignmentRef) (*api.CameraAssignmentEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Erase_FullMethodName, req, s.CameraAssignmentServiceServer.Erase)
+}
+
+func (s interceptCameraAssignment) List(ctx context.Context, req *api.CameraAssignmentListRequest) (*api.CameraAssignmentListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_List_FullMethodName, req, s.CameraAssignmentServiceServer.List)
+}
+
+func (s interceptCameraAssignment) Watch(req *api.CameraAssignmentWatchRequest, out grpc.ServerStreamingServer[api.CameraAssignmentWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Watch_FullMethodName, req, out, s.CameraAssignmentServiceServer.Watch)
+}
+
+func (s interceptCameraAssignment) Assign(ctx context.Context, req *api.CameraAssignmentAssignRequest) (*api.CameraAssignment, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Assign_FullMethodName, req, s.CameraAssignmentServiceServer.Assign)
+}
+
+func (s interceptCameraAssignment) Snapshot(ctx context.Context, req *api.CameraAssignmentSnapshotRequest) (*api.CameraCatalogSnapshot, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Snapshot_FullMethodName, req, s.CameraAssignmentServiceServer.Snapshot)
+}
+
+func (s interceptCameraAssignment) Handover(ctx context.Context, req *api.CameraAssignmentHandoverRequest) (*api.CameraAssignment, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Handover_FullMethodName, req, s.CameraAssignmentServiceServer.Handover)
+}
+
+func (s Intercept) CameraBinding() api.CameraBindingServiceServer {
+	return interceptCameraBinding{s, s.Next().CameraBinding()}
+}
+
+type interceptCameraBinding struct {
+	Intercept
+	api.CameraBindingServiceServer
+}
+
+func (s interceptCameraBinding) Add(ctx context.Context, req *api.CameraBindingAddRequest) (*api.CameraBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraBindingServiceServer,
+		api.CameraBindingService_Add_FullMethodName, req, s.CameraBindingServiceServer.Add)
+}
+
+func (s interceptCameraBinding) Get(ctx context.Context, req *api.CameraBindingGetRequest) (*api.CameraBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraBindingServiceServer,
+		api.CameraBindingService_Get_FullMethodName, req, s.CameraBindingServiceServer.Get)
+}
+
+func (s interceptCameraBinding) Patch(ctx context.Context, req *api.CameraBindingPatchRequest) (*api.CameraBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraBindingServiceServer,
+		api.CameraBindingService_Patch_FullMethodName, req, s.CameraBindingServiceServer.Patch)
+}
+
+func (s interceptCameraBinding) Apply(ctx context.Context, req *api.CameraBindingApplyRequest) (*api.CameraBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraBindingServiceServer,
+		api.CameraBindingService_Apply_FullMethodName, req, s.CameraBindingServiceServer.Apply)
+}
+
+func (s interceptCameraBinding) Erase(ctx context.Context, req *api.CameraBindingRef) (*api.CameraBindingEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraBindingServiceServer,
+		api.CameraBindingService_Erase_FullMethodName, req, s.CameraBindingServiceServer.Erase)
+}
+
+func (s interceptCameraBinding) List(ctx context.Context, req *api.CameraBindingListRequest) (*api.CameraBindingListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraBindingServiceServer,
+		api.CameraBindingService_List_FullMethodName, req, s.CameraBindingServiceServer.List)
+}
+
+func (s interceptCameraBinding) Watch(req *api.CameraBindingWatchRequest, out grpc.ServerStreamingServer[api.CameraBindingWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CameraBindingServiceServer,
+		api.CameraBindingService_Watch_FullMethodName, req, out, s.CameraBindingServiceServer.Watch)
+}
+
+func (s interceptCameraBinding) Bind(ctx context.Context, req *api.CameraBindingBindRequest) (*api.CameraBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraBindingServiceServer,
+		api.CameraBindingService_Bind_FullMethodName, req, s.CameraBindingServiceServer.Bind)
+}
+
+func (s interceptCameraBinding) SetCollect(ctx context.Context, req *api.CameraBindingSetCollectRequest) (*api.CameraBinding, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraBindingServiceServer,
+		api.CameraBindingService_SetCollect_FullMethodName, req, s.CameraBindingServiceServer.SetCollect)
+}
+
+func (s Intercept) CameraJob() api.CameraJobServiceServer {
+	return interceptCameraJob{s, s.Next().CameraJob()}
+}
+
+type interceptCameraJob struct {
+	Intercept
+	api.CameraJobServiceServer
+}
+
+func (s interceptCameraJob) Add(ctx context.Context, req *api.CameraJobAddRequest) (*api.CameraJob, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Add_FullMethodName, req, s.CameraJobServiceServer.Add)
+}
+
+func (s interceptCameraJob) Get(ctx context.Context, req *api.CameraJobGetRequest) (*api.CameraJob, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Get_FullMethodName, req, s.CameraJobServiceServer.Get)
+}
+
+func (s interceptCameraJob) Patch(ctx context.Context, req *api.CameraJobPatchRequest) (*api.CameraJob, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Patch_FullMethodName, req, s.CameraJobServiceServer.Patch)
+}
+
+func (s interceptCameraJob) Apply(ctx context.Context, req *api.CameraJobApplyRequest) (*api.CameraJob, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Apply_FullMethodName, req, s.CameraJobServiceServer.Apply)
+}
+
+func (s interceptCameraJob) Erase(ctx context.Context, req *api.CameraJobRef) (*api.CameraJobEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Erase_FullMethodName, req, s.CameraJobServiceServer.Erase)
+}
+
+func (s interceptCameraJob) List(ctx context.Context, req *api.CameraJobListRequest) (*api.CameraJobListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_List_FullMethodName, req, s.CameraJobServiceServer.List)
+}
+
+func (s interceptCameraJob) Watch(req *api.CameraJobWatchRequest, out grpc.ServerStreamingServer[api.CameraJobWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CameraJobServiceServer,
+		api.CameraJobService_Watch_FullMethodName, req, out, s.CameraJobServiceServer.Watch)
+}
+
+func (s interceptCameraJob) Create(ctx context.Context, req *api.CameraJobCreateRequest) (*api.CameraJob, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Create_FullMethodName, req, s.CameraJobServiceServer.Create)
+}
+
+func (s interceptCameraJob) Claim(ctx context.Context, req *api.CameraJobClaimRequest) (*api.CameraJob, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Claim_FullMethodName, req, s.CameraJobServiceServer.Claim)
+}
+
+func (s interceptCameraJob) Report(ctx context.Context, req *api.CameraJobReportRequest) (*api.CameraJob, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Report_FullMethodName, req, s.CameraJobServiceServer.Report)
+}
+
+func (s interceptCameraJob) Publish(ctx context.Context, req *api.CameraJobPublishRequest) (*api.CameraJobPublishResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraJobServiceServer,
+		api.CameraJobService_Publish_FullMethodName, req, s.CameraJobServiceServer.Publish)
 }
 
 func (s Intercept) Device() api.DeviceServiceServer {
@@ -16130,6 +20369,90 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.ReaderRenewCertificateRequest{}
 	case api.ReaderService_Heartbeat_FullMethodName:
 		v = &api.ReaderHeartbeatRequest{}
+	case api.CameraNetworkService_Add_FullMethodName:
+		v = &api.CameraNetworkAddRequest{}
+	case api.CameraNetworkService_Get_FullMethodName:
+		v = &api.CameraNetworkGetRequest{}
+	case api.CameraNetworkService_Patch_FullMethodName:
+		v = &api.CameraNetworkPatchRequest{}
+	case api.CameraNetworkService_Apply_FullMethodName:
+		v = &api.CameraNetworkApplyRequest{}
+	case api.CameraNetworkService_Erase_FullMethodName:
+		v = &api.CameraNetworkRef{}
+	case api.CameraNetworkService_List_FullMethodName:
+		v = &api.CameraNetworkListRequest{}
+	case api.CameraNetworkService_Configure_FullMethodName:
+		v = &api.CameraNetworkConfigureRequest{}
+	case api.CameraDeviceService_Add_FullMethodName:
+		v = &api.CameraDeviceAddRequest{}
+	case api.CameraDeviceService_Get_FullMethodName:
+		v = &api.CameraDeviceGetRequest{}
+	case api.CameraDeviceService_Patch_FullMethodName:
+		v = &api.CameraDevicePatchRequest{}
+	case api.CameraDeviceService_Apply_FullMethodName:
+		v = &api.CameraDeviceApplyRequest{}
+	case api.CameraDeviceService_Erase_FullMethodName:
+		v = &api.CameraDeviceRef{}
+	case api.CameraDeviceService_List_FullMethodName:
+		v = &api.CameraDeviceListRequest{}
+	case api.CameraDeviceService_Claim_FullMethodName:
+		v = &api.CameraDeviceClaimRequest{}
+	case api.CameraDeviceService_Observe_FullMethodName:
+		v = &api.CameraDeviceObserveRequest{}
+	case api.CameraAssignmentService_Add_FullMethodName:
+		v = &api.CameraAssignmentAddRequest{}
+	case api.CameraAssignmentService_Get_FullMethodName:
+		v = &api.CameraAssignmentGetRequest{}
+	case api.CameraAssignmentService_Patch_FullMethodName:
+		v = &api.CameraAssignmentPatchRequest{}
+	case api.CameraAssignmentService_Apply_FullMethodName:
+		v = &api.CameraAssignmentApplyRequest{}
+	case api.CameraAssignmentService_Erase_FullMethodName:
+		v = &api.CameraAssignmentRef{}
+	case api.CameraAssignmentService_List_FullMethodName:
+		v = &api.CameraAssignmentListRequest{}
+	case api.CameraAssignmentService_Assign_FullMethodName:
+		v = &api.CameraAssignmentAssignRequest{}
+	case api.CameraAssignmentService_Snapshot_FullMethodName:
+		v = &api.CameraAssignmentSnapshotRequest{}
+	case api.CameraAssignmentService_Handover_FullMethodName:
+		v = &api.CameraAssignmentHandoverRequest{}
+	case api.CameraBindingService_Add_FullMethodName:
+		v = &api.CameraBindingAddRequest{}
+	case api.CameraBindingService_Get_FullMethodName:
+		v = &api.CameraBindingGetRequest{}
+	case api.CameraBindingService_Patch_FullMethodName:
+		v = &api.CameraBindingPatchRequest{}
+	case api.CameraBindingService_Apply_FullMethodName:
+		v = &api.CameraBindingApplyRequest{}
+	case api.CameraBindingService_Erase_FullMethodName:
+		v = &api.CameraBindingRef{}
+	case api.CameraBindingService_List_FullMethodName:
+		v = &api.CameraBindingListRequest{}
+	case api.CameraBindingService_Bind_FullMethodName:
+		v = &api.CameraBindingBindRequest{}
+	case api.CameraBindingService_SetCollect_FullMethodName:
+		v = &api.CameraBindingSetCollectRequest{}
+	case api.CameraJobService_Add_FullMethodName:
+		v = &api.CameraJobAddRequest{}
+	case api.CameraJobService_Get_FullMethodName:
+		v = &api.CameraJobGetRequest{}
+	case api.CameraJobService_Patch_FullMethodName:
+		v = &api.CameraJobPatchRequest{}
+	case api.CameraJobService_Apply_FullMethodName:
+		v = &api.CameraJobApplyRequest{}
+	case api.CameraJobService_Erase_FullMethodName:
+		v = &api.CameraJobRef{}
+	case api.CameraJobService_List_FullMethodName:
+		v = &api.CameraJobListRequest{}
+	case api.CameraJobService_Create_FullMethodName:
+		v = &api.CameraJobCreateRequest{}
+	case api.CameraJobService_Claim_FullMethodName:
+		v = &api.CameraJobClaimRequest{}
+	case api.CameraJobService_Report_FullMethodName:
+		v = &api.CameraJobReportRequest{}
+	case api.CameraJobService_Publish_FullMethodName:
+		v = &api.CameraJobPublishRequest{}
 	case api.DeviceService_Add_FullMethodName:
 		v = &api.DeviceAddRequest{}
 	case api.DeviceService_Get_FullMethodName:
@@ -16490,6 +20813,90 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.Reader().RenewCertificate(ctx, v.(*api.ReaderRenewCertificateRequest))
 	case api.ReaderService_Heartbeat_FullMethodName:
 		res, err = s.Reader().Heartbeat(ctx, v.(*api.ReaderHeartbeatRequest))
+	case api.CameraNetworkService_Add_FullMethodName:
+		res, err = s.CameraNetwork().Add(ctx, v.(*api.CameraNetworkAddRequest))
+	case api.CameraNetworkService_Get_FullMethodName:
+		res, err = s.CameraNetwork().Get(ctx, v.(*api.CameraNetworkGetRequest))
+	case api.CameraNetworkService_Patch_FullMethodName:
+		res, err = s.CameraNetwork().Patch(ctx, v.(*api.CameraNetworkPatchRequest))
+	case api.CameraNetworkService_Apply_FullMethodName:
+		res, err = s.CameraNetwork().Apply(ctx, v.(*api.CameraNetworkApplyRequest))
+	case api.CameraNetworkService_Erase_FullMethodName:
+		res, err = s.CameraNetwork().Erase(ctx, v.(*api.CameraNetworkRef))
+	case api.CameraNetworkService_List_FullMethodName:
+		res, err = s.CameraNetwork().List(ctx, v.(*api.CameraNetworkListRequest))
+	case api.CameraNetworkService_Configure_FullMethodName:
+		res, err = s.CameraNetwork().Configure(ctx, v.(*api.CameraNetworkConfigureRequest))
+	case api.CameraDeviceService_Add_FullMethodName:
+		res, err = s.CameraDevice().Add(ctx, v.(*api.CameraDeviceAddRequest))
+	case api.CameraDeviceService_Get_FullMethodName:
+		res, err = s.CameraDevice().Get(ctx, v.(*api.CameraDeviceGetRequest))
+	case api.CameraDeviceService_Patch_FullMethodName:
+		res, err = s.CameraDevice().Patch(ctx, v.(*api.CameraDevicePatchRequest))
+	case api.CameraDeviceService_Apply_FullMethodName:
+		res, err = s.CameraDevice().Apply(ctx, v.(*api.CameraDeviceApplyRequest))
+	case api.CameraDeviceService_Erase_FullMethodName:
+		res, err = s.CameraDevice().Erase(ctx, v.(*api.CameraDeviceRef))
+	case api.CameraDeviceService_List_FullMethodName:
+		res, err = s.CameraDevice().List(ctx, v.(*api.CameraDeviceListRequest))
+	case api.CameraDeviceService_Claim_FullMethodName:
+		res, err = s.CameraDevice().Claim(ctx, v.(*api.CameraDeviceClaimRequest))
+	case api.CameraDeviceService_Observe_FullMethodName:
+		res, err = s.CameraDevice().Observe(ctx, v.(*api.CameraDeviceObserveRequest))
+	case api.CameraAssignmentService_Add_FullMethodName:
+		res, err = s.CameraAssignment().Add(ctx, v.(*api.CameraAssignmentAddRequest))
+	case api.CameraAssignmentService_Get_FullMethodName:
+		res, err = s.CameraAssignment().Get(ctx, v.(*api.CameraAssignmentGetRequest))
+	case api.CameraAssignmentService_Patch_FullMethodName:
+		res, err = s.CameraAssignment().Patch(ctx, v.(*api.CameraAssignmentPatchRequest))
+	case api.CameraAssignmentService_Apply_FullMethodName:
+		res, err = s.CameraAssignment().Apply(ctx, v.(*api.CameraAssignmentApplyRequest))
+	case api.CameraAssignmentService_Erase_FullMethodName:
+		res, err = s.CameraAssignment().Erase(ctx, v.(*api.CameraAssignmentRef))
+	case api.CameraAssignmentService_List_FullMethodName:
+		res, err = s.CameraAssignment().List(ctx, v.(*api.CameraAssignmentListRequest))
+	case api.CameraAssignmentService_Assign_FullMethodName:
+		res, err = s.CameraAssignment().Assign(ctx, v.(*api.CameraAssignmentAssignRequest))
+	case api.CameraAssignmentService_Snapshot_FullMethodName:
+		res, err = s.CameraAssignment().Snapshot(ctx, v.(*api.CameraAssignmentSnapshotRequest))
+	case api.CameraAssignmentService_Handover_FullMethodName:
+		res, err = s.CameraAssignment().Handover(ctx, v.(*api.CameraAssignmentHandoverRequest))
+	case api.CameraBindingService_Add_FullMethodName:
+		res, err = s.CameraBinding().Add(ctx, v.(*api.CameraBindingAddRequest))
+	case api.CameraBindingService_Get_FullMethodName:
+		res, err = s.CameraBinding().Get(ctx, v.(*api.CameraBindingGetRequest))
+	case api.CameraBindingService_Patch_FullMethodName:
+		res, err = s.CameraBinding().Patch(ctx, v.(*api.CameraBindingPatchRequest))
+	case api.CameraBindingService_Apply_FullMethodName:
+		res, err = s.CameraBinding().Apply(ctx, v.(*api.CameraBindingApplyRequest))
+	case api.CameraBindingService_Erase_FullMethodName:
+		res, err = s.CameraBinding().Erase(ctx, v.(*api.CameraBindingRef))
+	case api.CameraBindingService_List_FullMethodName:
+		res, err = s.CameraBinding().List(ctx, v.(*api.CameraBindingListRequest))
+	case api.CameraBindingService_Bind_FullMethodName:
+		res, err = s.CameraBinding().Bind(ctx, v.(*api.CameraBindingBindRequest))
+	case api.CameraBindingService_SetCollect_FullMethodName:
+		res, err = s.CameraBinding().SetCollect(ctx, v.(*api.CameraBindingSetCollectRequest))
+	case api.CameraJobService_Add_FullMethodName:
+		res, err = s.CameraJob().Add(ctx, v.(*api.CameraJobAddRequest))
+	case api.CameraJobService_Get_FullMethodName:
+		res, err = s.CameraJob().Get(ctx, v.(*api.CameraJobGetRequest))
+	case api.CameraJobService_Patch_FullMethodName:
+		res, err = s.CameraJob().Patch(ctx, v.(*api.CameraJobPatchRequest))
+	case api.CameraJobService_Apply_FullMethodName:
+		res, err = s.CameraJob().Apply(ctx, v.(*api.CameraJobApplyRequest))
+	case api.CameraJobService_Erase_FullMethodName:
+		res, err = s.CameraJob().Erase(ctx, v.(*api.CameraJobRef))
+	case api.CameraJobService_List_FullMethodName:
+		res, err = s.CameraJob().List(ctx, v.(*api.CameraJobListRequest))
+	case api.CameraJobService_Create_FullMethodName:
+		res, err = s.CameraJob().Create(ctx, v.(*api.CameraJobCreateRequest))
+	case api.CameraJobService_Claim_FullMethodName:
+		res, err = s.CameraJob().Claim(ctx, v.(*api.CameraJobClaimRequest))
+	case api.CameraJobService_Report_FullMethodName:
+		res, err = s.CameraJob().Report(ctx, v.(*api.CameraJobReportRequest))
+	case api.CameraJobService_Publish_FullMethodName:
+		res, err = s.CameraJob().Publish(ctx, v.(*api.CameraJobPublishRequest))
 	case api.DeviceService_Add_FullMethodName:
 		res, err = s.Device().Add(ctx, v.(*api.DeviceAddRequest))
 	case api.DeviceService_Get_FullMethodName:
@@ -16706,6 +21113,11 @@ func Resources(s api.Server, drv dialect.Driver, guard batch.Guard, w *watch.Wat
 		&api.Archived{},
 		&api.Attempt{},
 		&api.Audit{},
+		&api.CameraAssignment{},
+		&api.CameraBinding{},
+		&api.CameraDevice{},
+		&api.CameraJob{},
+		&api.CameraNetwork{},
 		&api.Delegation{},
 		&api.Device{},
 		&api.Holder{},
@@ -16900,6 +21312,218 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				return nil, err
 			}
 			query := db.Audit.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *api.CameraAssignment:
+			ctx, err := read.Allow(ctx, api.CameraAssignmentService_Get_FullMethodName, 1)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.CameraAssignmentNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entCameraAssignment.Table, []resourcesql.Column{
+				{Number: 1, Name: entCameraAssignment.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entCameraAssignment.TenantColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 3, Name: entCameraAssignment.SiteColumn, Type: 64, Nullable: true, Key: 1},
+				{Number: 4, Name: entCameraAssignment.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entCameraAssignment.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entCameraAssignment.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entCameraAssignment.NetworkColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 9, Name: entCameraAssignment.SetColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 10, Name: entCameraAssignment.ProducerColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 11, Name: entCameraAssignment.FieldWorkerSlot, Type: 9, Nullable: false, Key: 0},
+				{Number: 16, Name: entCameraAssignment.FieldGeneration, Type: 3, Nullable: false, Key: 0},
+				{Number: 17, Name: entCameraAssignment.FieldCatalogRevision, Type: 3, Nullable: false, Key: 0},
+				{Number: 13, Name: entCameraAssignment.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entCameraAssignment.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entCameraAssignment.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.CameraAssignment.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *api.CameraBinding:
+			ctx, err := read.Allow(ctx, api.CameraBindingService_Get_FullMethodName, 1)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.CameraBindingNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entCameraBinding.Table, []resourcesql.Column{
+				{Number: 1, Name: entCameraBinding.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entCameraBinding.TenantColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 3, Name: entCameraBinding.SiteColumn, Type: 64, Nullable: true, Key: 1},
+				{Number: 4, Name: entCameraBinding.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entCameraBinding.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entCameraBinding.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entCameraBinding.AssignmentColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 9, Name: entCameraBinding.DeviceColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 10, Name: entCameraBinding.SourceColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 11, Name: entCameraBinding.FieldLogicalKey, Type: 9, Nullable: false, Key: 0},
+				{Number: 12, Name: entCameraBinding.FieldSourceAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 18, Name: entCameraBinding.FieldAppliedRevision, Type: 3, Nullable: false, Key: 0},
+				{Number: 19, Name: entCameraBinding.FieldCollect, Type: 8, Nullable: false, Key: 0},
+				{Number: 13, Name: entCameraBinding.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entCameraBinding.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entCameraBinding.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.CameraBinding.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *api.CameraDevice:
+			ctx, err := read.Allow(ctx, api.CameraDeviceService_Get_FullMethodName, 1)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.CameraDeviceNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entCameraDevice.Table, []resourcesql.Column{
+				{Number: 1, Name: entCameraDevice.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entCameraDevice.TenantColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 3, Name: entCameraDevice.SiteColumn, Type: 64, Nullable: true, Key: 1},
+				{Number: 4, Name: entCameraDevice.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entCameraDevice.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entCameraDevice.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entCameraDevice.NetworkColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 9, Name: entCameraDevice.FieldDeviceKey, Type: 9, Nullable: false, Key: 0},
+				{Number: 12, Name: entCameraDevice.FieldObservationRevision, Type: 3, Nullable: false, Key: 0},
+				{Number: 17, Name: entCameraDevice.FieldClaimGeneration, Type: 3, Nullable: false, Key: 0},
+				{Number: 13, Name: entCameraDevice.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entCameraDevice.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entCameraDevice.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.CameraDevice.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *api.CameraJob:
+			ctx, err := read.Allow(ctx, api.CameraJobService_Get_FullMethodName, 1)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.CameraJobNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entCameraJob.Table, []resourcesql.Column{
+				{Number: 1, Name: entCameraJob.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entCameraJob.TenantColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 3, Name: entCameraJob.SiteColumn, Type: 64, Nullable: true, Key: 1},
+				{Number: 4, Name: entCameraJob.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entCameraJob.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entCameraJob.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entCameraJob.BindingColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 9, Name: entCameraJob.AssignmentColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 10, Name: entCameraJob.FieldRequestKey, Type: 9, Nullable: false, Key: 0},
+				{Number: 11, Name: entCameraJob.FieldRequestHash, Type: 12, Nullable: false, Key: 0},
+				{Number: 12, Name: entCameraJob.FieldStage, Type: 14, Nullable: false, Key: 0},
+				{Number: 16, Name: entCameraJob.FieldLeaseGeneration, Type: 3, Nullable: false, Key: 0},
+				{Number: 17, Name: entCameraJob.FieldAssignmentGeneration, Type: 3, Nullable: false, Key: 0},
+				{Number: 19, Name: entCameraJob.FieldLeaseExpires, Type: 65, Nullable: true, Key: 0},
+				{Number: 22, Name: entCameraJob.FieldPublishedRevision, Type: 3, Nullable: false, Key: 0},
+				{Number: 23, Name: entCameraJob.FieldDatePublished, Type: 65, Nullable: true, Key: 0},
+				{Number: 24, Name: entCameraJob.FieldLastOperationKey, Type: 9, Nullable: false, Key: 0},
+				{Number: 25, Name: entCameraJob.FieldLastOperationHash, Type: 12, Nullable: false, Key: 0},
+				{Number: 13, Name: entCameraJob.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entCameraJob.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entCameraJob.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.CameraJob.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *api.CameraNetwork:
+			ctx, err := read.Allow(ctx, api.CameraNetworkService_Get_FullMethodName, 1)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.CameraNetworkNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entCameraNetwork.Table, []resourcesql.Column{
+				{Number: 1, Name: entCameraNetwork.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entCameraNetwork.TenantColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 3, Name: entCameraNetwork.SiteColumn, Type: 64, Nullable: true, Key: 1},
+				{Number: 4, Name: entCameraNetwork.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entCameraNetwork.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entCameraNetwork.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 9, Name: entCameraNetwork.FieldMulticast, Type: 8, Nullable: false, Key: 0},
+				{Number: 11, Name: entCameraNetwork.FieldInterfaceHint, Type: 9, Nullable: false, Key: 0},
+				{Number: 12, Name: entCameraNetwork.FieldRevision, Type: 3, Nullable: false, Key: 0},
+				{Number: 13, Name: entCameraNetwork.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entCameraNetwork.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entCameraNetwork.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.CameraNetwork.Query()
 			if pred != nil {
 				query.Where(pred)
 			}
@@ -17666,6 +22290,46 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case api.AuditService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.CameraAssignmentService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.CameraAssignmentService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraAssignmentService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraAssignmentService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.CameraBindingService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.CameraBindingService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraBindingService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraBindingService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.CameraDeviceService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.CameraDeviceService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraDeviceService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraDeviceService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.CameraJobService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.CameraJobService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraJobService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraJobService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.CameraNetworkService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.CameraNetworkService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraNetworkService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CameraNetworkService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case api.DelegationService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case api.DelegationService_Patch_FullMethodName:
@@ -17820,7 +22484,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
+	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
 	default:
 		return nil
 	}
