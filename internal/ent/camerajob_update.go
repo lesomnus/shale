@@ -261,6 +261,12 @@ func (_u *CameraJobUpdate) SetLastOperationHash(v []byte) *CameraJobUpdate {
 	return _u
 }
 
+// ClearLastOperationHash clears the value of the "last_operation_hash" field.
+func (_u *CameraJobUpdate) ClearLastOperationHash() *CameraJobUpdate {
+	_u.mutation.ClearLastOperationHash()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraJobUpdate) SetDateUpdated(v time.Time) *CameraJobUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -479,6 +485,9 @@ func (_u *CameraJobUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if e, ok := _u.mutation.FieldExpr(camerajob.FieldLastOperationHash); ok {
 		_spec.SetField(camerajob.FieldLastOperationHash, field.TypeBytes, e)
+	}
+	if _u.mutation.LastOperationHashCleared() {
+		_spec.ClearField(camerajob.FieldLastOperationHash, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerajob.FieldDateUpdated, field.TypeTime, value)
@@ -750,6 +759,12 @@ func (_u *CameraJobUpdateOne) SetLastOperationHash(v []byte) *CameraJobUpdateOne
 	return _u
 }
 
+// ClearLastOperationHash clears the value of the "last_operation_hash" field.
+func (_u *CameraJobUpdateOne) ClearLastOperationHash() *CameraJobUpdateOne {
+	_u.mutation.ClearLastOperationHash()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraJobUpdateOne) SetDateUpdated(v time.Time) *CameraJobUpdateOne {
 	_u.mutation.SetDateUpdated(v)
@@ -998,6 +1013,9 @@ func (_u *CameraJobUpdateOne) sqlSave(ctx context.Context) (_node *CameraJob, er
 	}
 	if e, ok := _u.mutation.FieldExpr(camerajob.FieldLastOperationHash); ok {
 		_spec.SetField(camerajob.FieldLastOperationHash, field.TypeBytes, e)
+	}
+	if _u.mutation.LastOperationHashCleared() {
+		_spec.ClearField(camerajob.FieldLastOperationHash, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerajob.FieldDateUpdated, field.TypeTime, value)

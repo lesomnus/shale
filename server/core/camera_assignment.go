@@ -55,7 +55,15 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 		return nil, err
 	}
 	var out *api.CameraAssignment
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: api.CameraAssignmentRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		n, err := nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: r.GetNetwork()}.Build())
 		if err != nil {
 			return err
@@ -121,7 +129,10 @@ func (s coreCameraAssignment) Assign(ctx context.Context, r *api.CameraAssignmen
 		out, err = nx.CameraAssignment().Patch(ctx, api.CameraAssignmentPatchRequest_builder{Ref: r.GetRef(), WorkerSlot: z.Ptr(r.GetWorkerSlot()), Generation: z.Ptr(a.GetGeneration() + 1), CatalogRevision: z.Ptr(a.GetCatalogRevision() + 1), DateUpdated: a.GetDateUpdated()}.Build())
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }
 func (s coreCameraAssignment) Snapshot(ctx context.Context, r *api.CameraAssignmentSnapshotRequest) (*api.CameraCatalogSnapshot, error) {
 	if err := cameraMessage(r); err != nil {
@@ -161,7 +172,10 @@ func (s coreCameraAssignment) Snapshot(ctx context.Context, r *api.CameraAssignm
 		out = api.CameraCatalogSnapshot_builder{Assignment: a, Revision: a.GetCatalogRevision(), Sources: specs}.Build()
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 func (s coreCameraAssignment) Handover(ctx context.Context, r *api.CameraAssignmentHandoverRequest) (*api.CameraAssignment, error) {
 	if err := cameraMessage(r); err != nil {
@@ -171,7 +185,15 @@ func (s coreCameraAssignment) Handover(ctx context.Context, r *api.CameraAssignm
 		return nil, err
 	}
 	var out *api.CameraAssignment
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: api.CameraAssignmentRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		c := New(nx, s.d)
 		a, err := c.cameraAssignmentRow(ctx, r.GetRef())
 		if err != nil {
@@ -216,5 +238,8 @@ func (s coreCameraAssignment) Handover(ctx context.Context, r *api.CameraAssignm
 		out, err = nx.CameraAssignment().Patch(ctx, api.CameraAssignmentPatchRequest_builder{Ref: r.GetRef(), Producer: api.ProducerRef_builder{Id: next.GetId()}.Build(), WorkerIdNull: z.Ptr(true), Generation: z.Ptr(a.GetGeneration() + 1), CatalogRevision: z.Ptr(a.GetCatalogRevision() + 1), DateUpdated: a.GetDateUpdated()}.Build())
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }

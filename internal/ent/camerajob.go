@@ -57,7 +57,7 @@ type CameraJob struct {
 	// LastOperationKey holds the value of the "last_operation_key" field.
 	LastOperationKey string `json:"last_operation_key,omitempty"`
 	// LastOperationHash holds the value of the "last_operation_hash" field.
-	LastOperationHash []byte `json:"last_operation_hash,omitempty"`
+	LastOperationHash *[]byte `json:"last_operation_hash,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -287,10 +287,7 @@ func (_m *CameraJob) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field last_operation_hash", values[i])
 			} else if value != nil {
-				_m.LastOperationHash = *value
-				if _m.LastOperationHash == nil {
-					_m.LastOperationHash = []byte{}
-				}
+				_m.LastOperationHash = value
 			}
 		case camerajob.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -445,8 +442,10 @@ func (_m *CameraJob) String() string {
 	builder.WriteString("last_operation_key=")
 	builder.WriteString(_m.LastOperationKey)
 	builder.WriteString(", ")
-	builder.WriteString("last_operation_hash=")
-	builder.WriteString(fmt.Sprintf("%v", _m.LastOperationHash))
+	if v := _m.LastOperationHash; v != nil {
+		builder.WriteString("last_operation_hash=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

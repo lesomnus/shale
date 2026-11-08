@@ -258,7 +258,9 @@ func (e *CameraJob) Proto() *api.CameraJob {
 		x.SetDatePublished(timestamppb.New(*e.DatePublished))
 	}
 	x.SetLastOperationKey(e.LastOperationKey)
-	x.SetLastOperationHash(e.LastOperationHash)
+	if e.LastOperationHash != nil {
+		x.SetLastOperationHash(*e.LastOperationHash)
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

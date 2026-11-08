@@ -14,9 +14,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/identity"
@@ -175,6 +177,12 @@ func TestCameraControlDurablePublication(t *testing.T) {
 		v, err := laminae.Get(ctx, api.LaminaGetRequest_builder{Ref: historyRef}.Build())
 		return err == nil && v.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED
 	}, 10*time.Second, 50*time.Millisecond, "the existing recording is committed before enrollment")
+	sources := api.NewSourceServiceClient(admin)
+	sourceRef := api.SourceRef_builder{Id: live.GetSourceId()}.Build()
+	legacy, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: sourceRef}.Build())
+	require.NoError(t, err)
+	_, err = sources.Patch(ctx, api.SourcePatchRequest_builder{Ref: sourceRef, Labels: map[string]string{"legacy-owner": "preserve"}, DateUpdated: legacy.GetDateUpdated()}.Build())
+	require.NoError(t, err)
 	producers, err := api.NewProducerServiceClient(admin).List(ctx, api.ProducerListRequest_builder{Size: 100}.Build())
 	require.NoError(t, err)
 	var host *api.Producer
@@ -254,7 +262,7 @@ func TestCameraControlDurablePublication(t *testing.T) {
 	require.NoError(t, err)
 	publish := api.CameraJobPublishRequest_builder{
 		Ref: jref, ExpectedVersion: job.GetDateUpdated(), OperationKey: "publish-1", LeaseGeneration: job.GetLeaseGeneration(), AssignmentGeneration: job.GetAssignmentGeneration(),
-		Spec:     api.CameraCaptureSpec_builder{BindingId: binding.GetId(), SourceId: live.GetSourceId(), Input: "rtsp://192.0.2.10/stream", Profile: profile, Credential: credential, Alias: "seed"}.Build(),
+		Spec:     api.CameraCaptureSpec_builder{BindingId: binding.GetId(), SourceId: live.GetSourceId(), Input: "rtsp://192.0.2.10/stream", Profile: profile, Credential: credential, Alias: "seed", Name: "Front door", Zone: "entry", Labels: map[string]string{"floor": "4F"}}.Build(),
 		Observed: observed,
 	}.Build()
 	publication, err := jobs.Publish(ctx, publish)
@@ -267,6 +275,14 @@ func TestCameraControlDurablePublication(t *testing.T) {
 	require.Len(t, snapshot.GetSources(), 1)
 	require.Equal(t, live.GetSourceId(), snapshot.GetSources()[0].GetSourceId())
 	require.Equal(t, publication.GetCatalogRevision(), snapshot.GetRevision())
+	metadata, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: sourceRef}.Build())
+	require.NoError(t, err)
+	require.Equal(t, "Front door", metadata.GetName())
+	require.Equal(t, "entry", metadata.GetZone())
+	require.Equal(t, "4F", metadata.GetLabels()["floor"])
+	require.Equal(t, "preserve", metadata.GetLabels()["legacy-owner"])
+	require.Equal(t, "front-door", metadata.GetLabels()["shale.provision.binding"])
+	require.Equal(t, "inventory-camera-1", metadata.GetLabels()["shale.provision.device"], "published capture labels must agree with normal Producer registration")
 	_, err = jobs.Report(ctx, api.CameraJobReportRequest_builder{
 		Ref: jref, ExpectedVersion: publication.GetJob().GetDateUpdated(), OperationKey: "unsupported-active",
 		LeaseGeneration: job.GetLeaseGeneration(), AssignmentGeneration: job.GetAssignmentGeneration(), Stage: api.CameraJobStage_CAMERA_JOB_STAGE_ACTIVE,
@@ -432,4 +448,129 @@ func TestCameraControlLeaseFencingAndHandover(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, api.HostState_HOST_STATE_ADOPTED, row.GetState())
 	require.Equal(t, set.GetId(), row.GetSet().GetId(), "handover reassigns the same immutable Set instead of migrating Sources")
+}
+
+// The trigger is a private-database fault injector, not the API under test:
+// fail the second write of Bind after Source.Add has already succeeded.
+func cameraBindingInsertFault(t *testing.T, c *cluster) func() {
+	t.Helper()
+	ctx := context.Background()
+	if c.cfg.Db.Driver == "pgx" {
+		_, err := c.running.CP.Db.ExecContext(ctx, `CREATE FUNCTION cxz_reject_camera_binding() RETURNS trigger AS $$
+BEGIN
+  IF NEW.logical_key = 'rollback-binding' THEN
+    RAISE EXCEPTION 'fixture binding write failure';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql`)
+		require.NoError(t, err)
+		_, err = c.running.CP.Db.ExecContext(ctx, `CREATE TRIGGER cxz_reject_camera_binding BEFORE INSERT ON camerabinding FOR EACH ROW EXECUTE FUNCTION cxz_reject_camera_binding()`)
+		require.NoError(t, err)
+		return func() {
+			_, err := c.running.CP.Db.ExecContext(ctx, `DROP TRIGGER IF EXISTS cxz_reject_camera_binding ON camerabinding`)
+			require.NoError(t, err)
+			_, err = c.running.CP.Db.ExecContext(ctx, `DROP FUNCTION IF EXISTS cxz_reject_camera_binding()`)
+			require.NoError(t, err)
+		}
+	}
+	_, err := c.running.CP.Db.ExecContext(ctx, `CREATE TRIGGER cxz_reject_camera_binding BEFORE INSERT ON camerabinding
+WHEN NEW.logical_key = 'rollback-binding'
+BEGIN SELECT RAISE(ABORT, 'fixture binding write failure'); END`)
+	require.NoError(t, err)
+	return func() {
+		_, err := c.running.CP.Db.ExecContext(ctx, `DROP TRIGGER IF EXISTS cxz_reject_camera_binding`)
+		require.NoError(t, err)
+	}
+}
+
+func TestCameraControlNewSourceAtomicityAndPendingStop(t *testing.T) {
+	c := cameraControlCluster(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	admin := c.dial("@acme/admin")
+	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", "av.mp4"))
+	require.NoError(t, err)
+	set, _, _ := liveProducer(t, ctx, c, admin, producer.SourceConfig{Alias: "seed", Input: "raw:" + sample, Format: "h264", Fps: 30, MaxBitrate: 2_000_000})
+	rows, err := api.NewProducerServiceClient(admin).List(ctx, api.ProducerListRequest_builder{Size: 100}.Build())
+	require.NoError(t, err)
+	var host *api.Producer
+	for _, v := range rows.GetItems() {
+		if string(v.GetSet().GetId()) == string(set.GetId()) {
+			host = v
+		}
+	}
+	require.NotNil(t, host)
+	n := cameraNetwork(t, admin, "camera-lan", nil)
+	nref := api.CameraNetworkRef_builder{Id: n.GetId()}.Build()
+	device, err := api.NewCameraDeviceServiceClient(admin).Claim(ctx, api.CameraDeviceClaimRequest_builder{Network: nref, DeviceKey: "new-device"}.Build())
+	require.NoError(t, err)
+	assignment, err := api.NewCameraAssignmentServiceClient(admin).Assign(ctx, api.CameraAssignmentAssignRequest_builder{Network: nref, Producer: api.ProducerRef_builder{Id: host.GetId()}.Build(), WorkerSlot: "floor4"}.Build())
+	require.NoError(t, err)
+	aref := api.CameraAssignmentRef_builder{Id: assignment.GetId()}.Build()
+	bindings := api.NewCameraBindingServiceClient(admin)
+	create := api.CameraBindingBindRequest_builder{Assignment: aref, Device: api.CameraDeviceRef_builder{Id: device.GetId()}.Build(), LogicalKey: "new-camera", SourceAlias: "fresh-camera"}.Build()
+	binding, err := bindings.Bind(ctx, create)
+	require.NoError(t, err, "a newly discovered camera can create its Source inside the binding transaction")
+	repeated, err := bindings.Bind(ctx, create)
+	require.NoError(t, err)
+	require.Equal(t, binding.GetId(), repeated.GetId())
+	require.Equal(t, binding.GetSource().GetId(), repeated.GetSource().GetId())
+	sources, err := api.NewSourceServiceClient(admin).List(ctx, api.SourceListRequest_builder{Filters: []*api.SourceFilter{api.SourceFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()}}.Build())
+	require.NoError(t, err)
+	require.Len(t, sources.GetItems(), 2, "one seed and one fresh camera, even after Bind replay")
+	func() {
+		undo := cameraBindingInsertFault(t, c)
+		defer undo()
+		_, err = bindings.Bind(ctx, api.CameraBindingBindRequest_builder{Assignment: aref, Device: api.CameraDeviceRef_builder{Id: device.GetId()}.Build(), LogicalKey: "rollback-binding", SourceAlias: "rollback-camera"}.Build())
+		require.Error(t, err, "the fixture fails Binding insertion after creating the Source")
+		_, err = api.NewSourceServiceClient(admin).Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Slug: api.SourceRefBySlug_builder{
+			Alias: z.Ptr("rollback-camera"), Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(),
+		}.Build()}.Build()}.Build())
+		require.Equal(t, codes.NotFound, status.Code(err))
+		var count int
+		require.NoError(t, c.running.CP.Db.QueryRowContext(ctx, `SELECT count(*) FROM source WHERE alias = 'rollback-camera'`).Scan(&count))
+		require.Zero(t, count, "rollback leaves no hidden or soft-erased orphan Source")
+	}()
+	first, err := anypb.New(api.CameraBindingBindRequest_builder{Assignment: aref, Device: api.CameraDeviceRef_builder{Id: device.GetId()}.Build(), LogicalKey: "batch-rollback", SourceAlias: "batch-camera"}.Build())
+	require.NoError(t, err)
+	second, err := anypb.New(api.CameraNetworkConfigureRequest_builder{Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "invalid-batch-network", Cidrs: []string{"not-a-cidr"}}.Build())
+	require.NoError(t, err)
+	_, err = pdpb.NewBatchServiceClient(admin).Do(ctx, pdpb.BatchRequest_builder{Ops: []*pdpb.Op{
+		pdpb.Op_builder{Method: api.CameraBindingService_Bind_FullMethodName, Request: first}.Build(),
+		pdpb.Op_builder{Method: api.CameraNetworkService_Configure_FullMethodName, Request: second}.Build(),
+	}}.Build())
+	require.Equal(t, codes.InvalidArgument, status.Code(err), "the second operation rejects its CIDR after Bind succeeds")
+	var batchSources, batchBindings int
+	require.NoError(t, c.running.CP.Db.QueryRowContext(ctx, `SELECT count(*) FROM source WHERE alias = 'batch-camera'`).Scan(&batchSources))
+	require.NoError(t, c.running.CP.Db.QueryRowContext(ctx, `SELECT count(*) FROM camerabinding WHERE logical_key = 'batch-rollback'`).Scan(&batchBindings))
+	require.Zero(t, batchSources, "Source creation joins the external batch transaction")
+	require.Zero(t, batchBindings, "Binding creation joins the external batch transaction")
+
+	// A newly bound camera has not been collected yet. An explicit stop must
+	// still cancel its pending work rather than taking a collect=false shortcut.
+	require.False(t, binding.GetCollect())
+	profile := api.CameraCaptureProfile_builder{Codec: "h264", Width: 1280, Height: 720, Fps: 30, MaxBitrateBps: 2_000_000}.Build()
+	credential := api.CameraCredentialReference_builder{Provider: "cp", Id: "new-camera-stream", Version: "1", Purpose: "streaming"}.Build()
+	jobs := api.NewCameraJobServiceClient(admin)
+	job, err := jobs.Create(ctx, api.CameraJobCreateRequest_builder{Binding: api.CameraBindingRef_builder{Id: binding.GetId()}.Build(), RequestKey: "initial-settings", Inputs: api.CameraJobInputs_builder{Desired: profile, StreamingCredential: credential}.Build()}.Build())
+	require.NoError(t, err)
+	jref := api.CameraJobRef_builder{Id: job.GetId()}.Build()
+	job, err = jobs.Claim(ctx, api.CameraJobClaimRequest_builder{Ref: jref, ExpectedVersion: job.GetDateUpdated(), OperationKey: "claim", LeaseSeconds: 60}.Build())
+	require.NoError(t, err)
+	observed := api.CameraJobObservation_builder{Effective: profile, Verified: api.CameraMediaEvidence_builder{Profile: profile, Decoded: true, DurationSeconds: 2, DecodedFrames: 60, ObservedAt: timestamppb.Now()}.Build()}.Build()
+	job, err = jobs.Report(ctx, api.CameraJobReportRequest_builder{Ref: jref, ExpectedVersion: job.GetDateUpdated(), OperationKey: "verify", LeaseGeneration: job.GetLeaseGeneration(), AssignmentGeneration: job.GetAssignmentGeneration(), Stage: api.CameraJobStage_CAMERA_JOB_STAGE_VERIFYING, Observed: observed}.Build())
+	require.NoError(t, err)
+	_, err = bindings.SetCollect(ctx, api.CameraBindingSetCollectRequest_builder{Ref: api.CameraBindingRef_builder{Id: binding.GetId()}.Build(), ExpectedVersion: binding.GetDateUpdated(), Collect: false}.Build())
+	require.NoError(t, err)
+	stoppedJob, err := jobs.Get(ctx, api.CameraJobGetRequest_builder{Ref: jref}.Build())
+	require.NoError(t, err)
+	require.Equal(t, api.CameraJobStage_CAMERA_JOB_STAGE_CANCELED, stoppedJob.GetStage(), "stop applies even before the first publication")
+	_, err = jobs.Publish(ctx, api.CameraJobPublishRequest_builder{Ref: jref, ExpectedVersion: job.GetDateUpdated(), OperationKey: "late-publish", LeaseGeneration: job.GetLeaseGeneration(), AssignmentGeneration: job.GetAssignmentGeneration(), Observed: observed,
+		Spec: api.CameraCaptureSpec_builder{BindingId: binding.GetId(), SourceId: binding.GetSource().GetId(), Input: "rtsp://192.0.2.11/stream", Profile: profile, Credential: credential, Alias: "fresh-camera"}.Build(),
+	}.Build())
+	require.Error(t, err, "late publication cannot restart a stopped camera")
+	snapshot, err := api.NewCameraAssignmentServiceClient(admin).Snapshot(ctx, api.CameraAssignmentSnapshotRequest_builder{Ref: aref}.Build())
+	require.NoError(t, err)
+	require.Empty(t, snapshot.GetSources())
 }

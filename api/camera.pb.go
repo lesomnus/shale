@@ -3430,10 +3430,11 @@ type CameraJob_builder struct {
 	PublishedRevision    int64
 	DatePublished        *timestamppb.Timestamp
 	LastOperationKey     string
-	LastOperationHash    []byte
-	DateUpdated          *timestamppb.Timestamp
-	DateErased           *timestamppb.Timestamp
-	DateCreated          *timestamppb.Timestamp
+	// Pending jobs have not acknowledged an operation yet.
+	LastOperationHash []byte
+	DateUpdated       *timestamppb.Timestamp
+	DateErased        *timestamppb.Timestamp
+	DateCreated       *timestamppb.Timestamp
 }
 
 func (b0 CameraJob_builder) Build() *CameraJob {
@@ -3718,7 +3719,7 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\n" +
 	"assignment\x1a\b\n" +
 	"\x06device\x1a\b\n" +
-	"\x06source 2(\xf4\x03:\x00\"\xdd\v\n" +
+	"\x06source 2(\xf4\x03:\x00\"\xe5\v\n" +
 	"\tCameraJob\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -3745,8 +3746,8 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\bobserved\x18\x15 \x01(\v2\x1b.shale.CameraJobObservationR\bobserved\x12-\n" +
 	"\x12published_revision\x18\x16 \x01(\x03R\x11publishedRevision\x12I\n" +
 	"\x0edate_published\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\rdatePublished\x12,\n" +
-	"\x12last_operation_key\x18\x18 \x01(\tR\x10lastOperationKey\x12.\n" +
-	"\x13last_operation_hash\x18\x19 \x01(\fR\x11lastOperationHash\x12F\n" +
+	"\x12last_operation_key\x18\x18 \x01(\tR\x10lastOperationKey\x126\n" +
+	"\x13last_operation_hash\x18\x19 \x01(\fB\x06\xea\x82\x16\x028\x01R\x11lastOperationHash\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

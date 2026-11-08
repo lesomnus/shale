@@ -571,6 +571,7 @@ func (m *Mutation) ResetLastOperationKey() {
 // SetLastOperationHash sets the "last_operation_hash" field.
 func (m *Mutation) SetLastOperationHash(b []byte) {
 	m.last_operation_hash = &b
+	delete(m.clearedFields, FieldLastOperationHash)
 	delete(m.exprs, FieldLastOperationHash)
 }
 
@@ -583,9 +584,23 @@ func (m *Mutation) LastOperationHash() (r []byte, exists bool) {
 	return *v, true
 }
 
+// ClearLastOperationHash clears the value of the "last_operation_hash" field.
+func (m *Mutation) ClearLastOperationHash() {
+	m.last_operation_hash = nil
+	delete(m.exprs, FieldLastOperationHash)
+	m.clearedFields[FieldLastOperationHash] = struct{}{}
+}
+
+// LastOperationHashCleared returns if the "last_operation_hash" field was cleared in this mutation.
+func (m *Mutation) LastOperationHashCleared() bool {
+	_, ok := m.clearedFields[FieldLastOperationHash]
+	return ok
+}
+
 // ResetLastOperationHash resets all changes to the "last_operation_hash" field.
 func (m *Mutation) ResetLastOperationHash() {
 	m.last_operation_hash = nil
+	delete(m.clearedFields, FieldLastOperationHash)
 	delete(m.exprs, FieldLastOperationHash)
 }
 
@@ -1542,6 +1557,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDatePublished) {
 		fields = append(fields, FieldDatePublished)
 	}
+	if m.FieldCleared(FieldLastOperationHash) {
+		fields = append(fields, FieldLastOperationHash)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -1582,6 +1600,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDatePublished:
 		m.ClearDatePublished()
+		return nil
+	case FieldLastOperationHash:
+		m.ClearLastOperationHash()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()

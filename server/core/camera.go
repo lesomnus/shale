@@ -237,7 +237,7 @@ func cameraObservation(v *api.CameraJobObservation, verified bool) error {
 }
 func (s Core) cameraLockAssignment(ctx context.Context, id []byte) error {
 	q := s.ent(ctx).CameraAssignment.Query().Where(cameraassignment.IdEQ(mustId(id).Uuid()))
-	if s.d.Drv.Dialect() != dialect.SQLite {
+	if s.driver().Dialect() != dialect.SQLite {
 		q.Modify(func(q *sql.Selector) { q.ForUpdate() })
 	}
 	_, err := q.Only(ctx)
@@ -245,7 +245,7 @@ func (s Core) cameraLockAssignment(ctx context.Context, id []byte) error {
 }
 func (s Core) cameraLockDevice(ctx context.Context, id []byte) error {
 	q := s.ent(ctx).CameraDevice.Query().Where(cameradevice.IdEQ(mustId(id).Uuid()))
-	if s.d.Drv.Dialect() != dialect.SQLite {
+	if s.driver().Dialect() != dialect.SQLite {
 		q.Modify(func(q *sql.Selector) { q.ForUpdate() })
 	}
 	_, err := q.Only(ctx)
@@ -301,7 +301,7 @@ func cameraMessage(m proto.Message) error {
 }
 func (s Core) cameraLockNetwork(ctx context.Context, id []byte) error {
 	q := s.ent(ctx).CameraNetwork.Query().Where(cameranetwork.IdEQ(mustId(id).Uuid()))
-	if s.d.Drv.Dialect() != dialect.SQLite {
+	if s.driver().Dialect() != dialect.SQLite {
 		q.Modify(func(q *sql.Selector) { q.ForUpdate() })
 	}
 	_, err := q.Only(ctx)

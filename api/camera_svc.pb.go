@@ -11386,6 +11386,7 @@ func (x *CameraJobAddRequest) SetLastOperationHash(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_LastOperationHash = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 23)
 }
 
 func (x *CameraJobAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -11462,6 +11463,13 @@ func (x *CameraJobAddRequest) HasDatePublished() bool {
 	return x.xxx_hidden_DatePublished != nil
 }
 
+func (x *CameraJobAddRequest) HasLastOperationHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
+}
+
 func (x *CameraJobAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -11509,6 +11517,11 @@ func (x *CameraJobAddRequest) ClearObserved() {
 
 func (x *CameraJobAddRequest) ClearDatePublished() {
 	x.xxx_hidden_DatePublished = nil
+}
+
+func (x *CameraJobAddRequest) ClearLastOperationHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
+	x.xxx_hidden_LastOperationHash = nil
 }
 
 func (x *CameraJobAddRequest) ClearDateCreated() {
@@ -11574,7 +11587,10 @@ func (b0 CameraJobAddRequest_builder) Build() *CameraJobAddRequest {
 	x.xxx_hidden_PublishedRevision = b.PublishedRevision
 	x.xxx_hidden_DatePublished = b.DatePublished
 	x.xxx_hidden_LastOperationKey = b.LastOperationKey
-	x.xxx_hidden_LastOperationHash = b.LastOperationHash
+	if b.LastOperationHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 23)
+		x.xxx_hidden_LastOperationHash = b.LastOperationHash
+	}
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -12721,32 +12737,33 @@ func (b0 CameraJobSelect_builder) Build() *CameraJobSelect {
 }
 
 type CameraJobPatchRequest struct {
-	state                           protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref                  *CameraJobRef          `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Alias                *string                `protobuf:"bytes,8,opt,name=alias"`
-	xxx_hidden_Name                 *string                `protobuf:"bytes,10,opt,name=name"`
-	xxx_hidden_Desc                 *string                `protobuf:"bytes,12,opt,name=desc"`
-	xxx_hidden_Labels               map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Stage                CameraJobStage         `protobuf:"varint,24,opt,name=stage,enum=shale.CameraJobStage"`
-	xxx_hidden_LeaseGeneration      int64                  `protobuf:"varint,32,opt,name=lease_generation,json=leaseGeneration"`
-	xxx_hidden_AssignmentGeneration int64                  `protobuf:"varint,34,opt,name=assignment_generation,json=assignmentGeneration"`
-	xxx_hidden_LeaseOwner           []byte                 `protobuf:"bytes,36,opt,name=lease_owner,json=leaseOwner"`
-	xxx_hidden_LeaseOwnerNull       bool                   `protobuf:"varint,37,opt,name=lease_owner_null,json=leaseOwnerNull"`
-	xxx_hidden_LeaseExpires         *timestamppb.Timestamp `protobuf:"bytes,38,opt,name=lease_expires,json=leaseExpires"`
-	xxx_hidden_LeaseExpiresNull     bool                   `protobuf:"varint,39,opt,name=lease_expires_null,json=leaseExpiresNull"`
-	xxx_hidden_Observed             *CameraJobObservation  `protobuf:"bytes,42,opt,name=observed"`
-	xxx_hidden_ObservedNull         bool                   `protobuf:"varint,43,opt,name=observed_null,json=observedNull"`
-	xxx_hidden_PublishedRevision    int64                  `protobuf:"varint,44,opt,name=published_revision,json=publishedRevision"`
-	xxx_hidden_DatePublished        *timestamppb.Timestamp `protobuf:"bytes,46,opt,name=date_published,json=datePublished"`
-	xxx_hidden_DatePublishedNull    bool                   `protobuf:"varint,47,opt,name=date_published_null,json=datePublishedNull"`
-	xxx_hidden_LastOperationKey     *string                `protobuf:"bytes,48,opt,name=last_operation_key,json=lastOperationKey"`
-	xxx_hidden_LastOperationHash    []byte                 `protobuf:"bytes,50,opt,name=last_operation_hash,json=lastOperationHash"`
-	xxx_hidden_DateUpdated          *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateUpdatedForce     bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
-	XXX_raceDetectHookData          protoimpl.RaceDetectHookData
-	XXX_presence                    [1]uint32
-	unknownFields                   protoimpl.UnknownFields
-	sizeCache                       protoimpl.SizeCache
+	state                            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref                   *CameraJobRef          `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Alias                 *string                `protobuf:"bytes,8,opt,name=alias"`
+	xxx_hidden_Name                  *string                `protobuf:"bytes,10,opt,name=name"`
+	xxx_hidden_Desc                  *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels                map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Stage                 CameraJobStage         `protobuf:"varint,24,opt,name=stage,enum=shale.CameraJobStage"`
+	xxx_hidden_LeaseGeneration       int64                  `protobuf:"varint,32,opt,name=lease_generation,json=leaseGeneration"`
+	xxx_hidden_AssignmentGeneration  int64                  `protobuf:"varint,34,opt,name=assignment_generation,json=assignmentGeneration"`
+	xxx_hidden_LeaseOwner            []byte                 `protobuf:"bytes,36,opt,name=lease_owner,json=leaseOwner"`
+	xxx_hidden_LeaseOwnerNull        bool                   `protobuf:"varint,37,opt,name=lease_owner_null,json=leaseOwnerNull"`
+	xxx_hidden_LeaseExpires          *timestamppb.Timestamp `protobuf:"bytes,38,opt,name=lease_expires,json=leaseExpires"`
+	xxx_hidden_LeaseExpiresNull      bool                   `protobuf:"varint,39,opt,name=lease_expires_null,json=leaseExpiresNull"`
+	xxx_hidden_Observed              *CameraJobObservation  `protobuf:"bytes,42,opt,name=observed"`
+	xxx_hidden_ObservedNull          bool                   `protobuf:"varint,43,opt,name=observed_null,json=observedNull"`
+	xxx_hidden_PublishedRevision     int64                  `protobuf:"varint,44,opt,name=published_revision,json=publishedRevision"`
+	xxx_hidden_DatePublished         *timestamppb.Timestamp `protobuf:"bytes,46,opt,name=date_published,json=datePublished"`
+	xxx_hidden_DatePublishedNull     bool                   `protobuf:"varint,47,opt,name=date_published_null,json=datePublishedNull"`
+	xxx_hidden_LastOperationKey      *string                `protobuf:"bytes,48,opt,name=last_operation_key,json=lastOperationKey"`
+	xxx_hidden_LastOperationHash     []byte                 `protobuf:"bytes,50,opt,name=last_operation_hash,json=lastOperationHash"`
+	xxx_hidden_LastOperationHashNull bool                   `protobuf:"varint,51,opt,name=last_operation_hash_null,json=lastOperationHashNull"`
+	xxx_hidden_DateUpdated           *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateUpdatedForce      bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
+	XXX_raceDetectHookData           protoimpl.RaceDetectHookData
+	XXX_presence                     [1]uint32
+	unknownFields                    protoimpl.UnknownFields
+	sizeCache                        protoimpl.SizeCache
 }
 
 func (x *CameraJobPatchRequest) Reset() {
@@ -12921,6 +12938,13 @@ func (x *CameraJobPatchRequest) GetLastOperationHash() []byte {
 	return nil
 }
 
+func (x *CameraJobPatchRequest) GetLastOperationHashNull() bool {
+	if x != nil {
+		return x.xxx_hidden_LastOperationHashNull
+	}
+	return false
+}
+
 func (x *CameraJobPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -12941,17 +12965,17 @@ func (x *CameraJobPatchRequest) SetRef(v *CameraJobRef) {
 
 func (x *CameraJobPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 22)
 }
 
 func (x *CameraJobPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 22)
 }
 
 func (x *CameraJobPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 22)
 }
 
 func (x *CameraJobPatchRequest) SetLabels(v map[string]string) {
@@ -12960,17 +12984,17 @@ func (x *CameraJobPatchRequest) SetLabels(v map[string]string) {
 
 func (x *CameraJobPatchRequest) SetStage(v CameraJobStage) {
 	x.xxx_hidden_Stage = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 22)
 }
 
 func (x *CameraJobPatchRequest) SetLeaseGeneration(v int64) {
 	x.xxx_hidden_LeaseGeneration = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 22)
 }
 
 func (x *CameraJobPatchRequest) SetAssignmentGeneration(v int64) {
 	x.xxx_hidden_AssignmentGeneration = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 22)
 }
 
 func (x *CameraJobPatchRequest) SetLeaseOwner(v []byte) {
@@ -12978,12 +13002,12 @@ func (x *CameraJobPatchRequest) SetLeaseOwner(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_LeaseOwner = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 22)
 }
 
 func (x *CameraJobPatchRequest) SetLeaseOwnerNull(v bool) {
 	x.xxx_hidden_LeaseOwnerNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 22)
 }
 
 func (x *CameraJobPatchRequest) SetLeaseExpires(v *timestamppb.Timestamp) {
@@ -12992,7 +13016,7 @@ func (x *CameraJobPatchRequest) SetLeaseExpires(v *timestamppb.Timestamp) {
 
 func (x *CameraJobPatchRequest) SetLeaseExpiresNull(v bool) {
 	x.xxx_hidden_LeaseExpiresNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 22)
 }
 
 func (x *CameraJobPatchRequest) SetObserved(v *CameraJobObservation) {
@@ -13001,12 +13025,12 @@ func (x *CameraJobPatchRequest) SetObserved(v *CameraJobObservation) {
 
 func (x *CameraJobPatchRequest) SetObservedNull(v bool) {
 	x.xxx_hidden_ObservedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 22)
 }
 
 func (x *CameraJobPatchRequest) SetPublishedRevision(v int64) {
 	x.xxx_hidden_PublishedRevision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 22)
 }
 
 func (x *CameraJobPatchRequest) SetDatePublished(v *timestamppb.Timestamp) {
@@ -13015,12 +13039,12 @@ func (x *CameraJobPatchRequest) SetDatePublished(v *timestamppb.Timestamp) {
 
 func (x *CameraJobPatchRequest) SetDatePublishedNull(v bool) {
 	x.xxx_hidden_DatePublishedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 22)
 }
 
 func (x *CameraJobPatchRequest) SetLastOperationKey(v string) {
 	x.xxx_hidden_LastOperationKey = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 22)
 }
 
 func (x *CameraJobPatchRequest) SetLastOperationHash(v []byte) {
@@ -13028,7 +13052,12 @@ func (x *CameraJobPatchRequest) SetLastOperationHash(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_LastOperationHash = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 22)
+}
+
+func (x *CameraJobPatchRequest) SetLastOperationHashNull(v bool) {
+	x.xxx_hidden_LastOperationHashNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 22)
 }
 
 func (x *CameraJobPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -13037,7 +13066,7 @@ func (x *CameraJobPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *CameraJobPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 22)
 }
 
 func (x *CameraJobPatchRequest) HasRef() bool {
@@ -13166,6 +13195,13 @@ func (x *CameraJobPatchRequest) HasLastOperationHash() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 18)
 }
 
+func (x *CameraJobPatchRequest) HasLastOperationHashNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
+}
+
 func (x *CameraJobPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -13177,7 +13213,7 @@ func (x *CameraJobPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
 }
 
 func (x *CameraJobPatchRequest) ClearRef() {
@@ -13266,12 +13302,17 @@ func (x *CameraJobPatchRequest) ClearLastOperationHash() {
 	x.xxx_hidden_LastOperationHash = nil
 }
 
+func (x *CameraJobPatchRequest) ClearLastOperationHashNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
+	x.xxx_hidden_LastOperationHashNull = false
+}
+
 func (x *CameraJobPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *CameraJobPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 20)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -13313,6 +13354,11 @@ type CameraJobPatchRequest_builder struct {
 	DatePublishedNull *bool
 	LastOperationKey  *string
 	LastOperationHash []byte
+	// Clear last_operation_hash instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and last_operation_hash clears.
+	LastOperationHashNull *bool
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -13335,68 +13381,72 @@ func (b0 CameraJobPatchRequest_builder) Build() *CameraJobPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 22)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 22)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 22)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	if b.Stage != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 22)
 		x.xxx_hidden_Stage = *b.Stage
 	}
 	if b.LeaseGeneration != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 22)
 		x.xxx_hidden_LeaseGeneration = *b.LeaseGeneration
 	}
 	if b.AssignmentGeneration != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 22)
 		x.xxx_hidden_AssignmentGeneration = *b.AssignmentGeneration
 	}
 	if b.LeaseOwner != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 22)
 		x.xxx_hidden_LeaseOwner = b.LeaseOwner
 	}
 	if b.LeaseOwnerNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 22)
 		x.xxx_hidden_LeaseOwnerNull = *b.LeaseOwnerNull
 	}
 	x.xxx_hidden_LeaseExpires = b.LeaseExpires
 	if b.LeaseExpiresNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 22)
 		x.xxx_hidden_LeaseExpiresNull = *b.LeaseExpiresNull
 	}
 	x.xxx_hidden_Observed = b.Observed
 	if b.ObservedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 22)
 		x.xxx_hidden_ObservedNull = *b.ObservedNull
 	}
 	if b.PublishedRevision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 22)
 		x.xxx_hidden_PublishedRevision = *b.PublishedRevision
 	}
 	x.xxx_hidden_DatePublished = b.DatePublished
 	if b.DatePublishedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 22)
 		x.xxx_hidden_DatePublishedNull = *b.DatePublishedNull
 	}
 	if b.LastOperationKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 22)
 		x.xxx_hidden_LastOperationKey = b.LastOperationKey
 	}
 	if b.LastOperationHash != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 22)
 		x.xxx_hidden_LastOperationHash = b.LastOperationHash
+	}
+	if b.LastOperationHashNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 22)
+		x.xxx_hidden_LastOperationHashNull = *b.LastOperationHashNull
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 22)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -15376,7 +15426,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x1eCameraBindingSetCollectRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraBindingRefR\x03ref\x12E\n" +
 	"\x10expected_version\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x0fexpectedVersion\x12\x1f\n" +
-	"\acollect\x18\x03 \x01(\bB\x05\xaa\x01\x02\b\x02R\acollect\"\x93\t\n" +
+	"\acollect\x18\x03 \x01(\bB\x05\xaa\x01\x02\b\x02R\acollect\"\x8c\t\n" +
 	"\x13CameraJobAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -15403,8 +15453,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\bobserved\x18\x15 \x01(\v2\x1b.shale.CameraJobObservationR\bobserved\x124\n" +
 	"\x12published_revision\x18\x16 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x11publishedRevision\x12A\n" +
 	"\x0edate_published\x18\x17 \x01(\v2\x1a.google.protobuf.TimestampR\rdatePublished\x123\n" +
-	"\x12last_operation_key\x18\x18 \x01(\tB\x05\xaa\x01\x02\b\x02R\x10lastOperationKey\x125\n" +
-	"\x13last_operation_hash\x18\x19 \x01(\fB\x05\xaa\x01\x02\b\x02R\x11lastOperationHash\x12=\n" +
+	"\x12last_operation_key\x18\x18 \x01(\tB\x05\xaa\x01\x02\b\x02R\x10lastOperationKey\x12.\n" +
+	"\x13last_operation_hash\x18\x19 \x01(\fR\x11lastOperationHash\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -15452,7 +15502,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x8b\b\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc4\b\n" +
 	"\x15CameraJobPatchRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.shale.CameraJobRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -15474,7 +15524,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x0edate_published\x18. \x01(\v2\x1a.google.protobuf.TimestampR\rdatePublished\x12.\n" +
 	"\x13date_published_null\x18/ \x01(\bR\x11datePublishedNull\x12,\n" +
 	"\x12last_operation_key\x180 \x01(\tR\x10lastOperationKey\x12.\n" +
-	"\x13last_operation_hash\x182 \x01(\fR\x11lastOperationHash\x12=\n" +
+	"\x13last_operation_hash\x182 \x01(\fR\x11lastOperationHash\x127\n" +
+	"\x18last_operation_hash_null\x183 \x01(\bR\x15lastOperationHashNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

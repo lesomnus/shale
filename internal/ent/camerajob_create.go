@@ -313,9 +313,6 @@ func (_c *CameraJobCreate) check() error {
 	if _, ok := _c.mutation.LastOperationKey(); !ok {
 		return &ValidationError{Name: "last_operation_key", err: errors.New(`ent: missing required field "CameraJob.last_operation_key"`)}
 	}
-	if _, ok := _c.mutation.LastOperationHash(); !ok {
-		return &ValidationError{Name: "last_operation_hash", err: errors.New(`ent: missing required field "CameraJob.last_operation_hash"`)}
-	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "CameraJob.date_updated"`)}
 	}
@@ -471,7 +468,7 @@ func (_c *CameraJobCreate) createSpec() (*CameraJob, *sqlgraph.CreateSpec, error
 	}
 	if value, ok := _c.mutation.LastOperationHash(); ok {
 		_spec.SetField(camerajob.FieldLastOperationHash, field.TypeBytes, value)
-		_node.LastOperationHash = value
+		_node.LastOperationHash = &value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(camerajob.FieldDateUpdated, field.TypeTime, value)

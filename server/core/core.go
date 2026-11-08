@@ -248,6 +248,11 @@ func (d *Deps) log() *slog.Logger {
 type Core struct {
 	api.Overlay
 	d *Deps
+	// Rebinding an external Payday Batch must also bind handwritten reads and
+	// custom transactions. Keep shared policy caches/mutexes in the original Deps.
+	boundDriver dialect.Driver
+	boundDB     *ent.Client
+	boundOwn    api.Server
 }
 
 // WithDeps is a Core with no server below it, for the few things a
@@ -255,7 +260,7 @@ type Core struct {
 func (s Core) WithDeps(d *Deps) Core { return Core{d: d} }
 
 // New stacks the layer over `next`.
-func New(next api.Server, d *Deps) Core { return Core{api.NewOverlay(next), d} }
+func New(next api.Server, d *Deps) Core { return Core{Overlay: api.NewOverlay(next), d: d} }
 
 // Build makes a builder of this layer so that it can be stacked.
 func Build(d *Deps) api.Builder { return builder{d} }
@@ -277,13 +282,37 @@ func (s Core) WithDriver(drv dialect.Driver) (api.Server, error) {
 		return nil, err
 	}
 
-	return New(next, s.d), nil
+	var own api.Server
+	if s.d.Own != nil {
+		own, err = enttx.Rebind(s.d.Own, drv)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return Core{Overlay: api.NewOverlay(next), d: s.d, boundDriver: drv, boundDB: ent.NewClient(ent.Driver(drv)), boundOwn: own}, nil
+}
+
+func (s Core) driver() dialect.Driver {
+	if s.boundDriver != nil {
+		return s.boundDriver
+	}
+	return s.d.Drv
 }
 
 // tx runs `fn` with the stack below this layer rebound onto one transaction,
 // so several writes land or fail together.
 func (s Core) tx(ctx context.Context, fn func(ctx context.Context, next api.Server) error) error {
-	drv, tx, err := dialect.BeginTx(ctx, s.d.Drv)
+	// A composed core operation (camera Bind -> Source.Add) joins its caller's
+	// transaction. Starting a pool transaction here would commit a child row
+	// independently or deadlock SQLite while the parent still holds a lock.
+	if bound, ok := ctx.Value(txKey{}).(txBound); ok {
+		next, err := enttx.Rebind(s.Next(), bound.drv)
+		if err != nil {
+			return err
+		}
+		return fn(ctx, next)
+	}
+	drv, tx, err := dialect.BeginTx(ctx, s.driver())
 	if err != nil {
 		return err
 	}
@@ -319,7 +348,7 @@ func (s Core) inTx(ctx context.Context, drv dialect.Driver) (context.Context, er
 		return nil, err
 	}
 
-	return context.WithValue(ctx, txKey{}, txBound{ent: ent.NewClient(ent.Driver(drv)), own: own}), nil
+	return context.WithValue(ctx, txKey{}, txBound{ent: ent.NewClient(ent.Driver(drv)), own: own, drv: drv}), nil
 }
 
 type txKey struct{}
@@ -327,6 +356,7 @@ type txKey struct{}
 type txBound struct {
 	ent *ent.Client
 	own api.Server
+	drv dialect.Driver
 }
 
 // ent is the rows, through the transaction the context is in, else the
@@ -336,6 +366,9 @@ func (s Core) ent(ctx context.Context) *ent.Client {
 		return v.ent
 	}
 
+	if s.boundDB != nil {
+		return s.boundDB
+	}
 	return s.d.Ent
 }
 
@@ -346,12 +379,18 @@ func (s Core) own(ctx context.Context) api.Server {
 		return v.own
 	}
 
+	if s.boundOwn != nil {
+		return s.boundOwn
+	}
 	return s.d.Own
 }
 
 // ownTx is the same over the server with no wall.
 func (s Core) ownTx(ctx context.Context, fn func(ctx context.Context, own api.Server) error) error {
-	drv, tx, err := dialect.BeginTx(ctx, s.d.Drv)
+	if bound, ok := ctx.Value(txKey{}).(txBound); ok {
+		return fn(ctx, bound.own)
+	}
+	drv, tx, err := dialect.BeginTx(ctx, s.driver())
 	if err != nil {
 		return err
 	}

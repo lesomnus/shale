@@ -1022,7 +1022,7 @@ message CameraJobAddRequest {
   int64 published_revision = 22 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_published = 23;
   string last_operation_key = 24 [features.field_presence = IMPLICIT];
-  bytes last_operation_hash = 25 [features.field_presence = IMPLICIT];
+  bytes last_operation_hash = 25;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -1107,6 +1107,11 @@ message CameraJobPatchRequest {
   bool date_published_null = 47;
   string last_operation_key = 48;
   bytes last_operation_hash = 50;
+  // Clear last_operation_hash instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and last_operation_hash clears.
+  bool last_operation_hash_null = 51;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

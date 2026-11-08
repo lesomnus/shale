@@ -56,7 +56,15 @@ func (s coreCameraNetwork) Configure(ctx context.Context, r *api.CameraNetworkCo
 		}
 	}
 	var out *api.CameraNetwork
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		if r.GetRef() == nil {
 			if r.GetTenant() == nil {
 				return invalid("tenant", "a tenant is required")
@@ -127,7 +135,10 @@ func (s coreCameraNetwork) Configure(ctx context.Context, r *api.CameraNetworkCo
 		out, err = nx.CameraNetwork().Patch(ctx, api.CameraNetworkPatchRequest_builder{Ref: r.GetRef(), Alias: z.Ptr(r.GetAlias()), Name: z.Ptr(r.GetName()), Cidrs: r.GetCidrs(), Multicast: z.Ptr(r.GetMulticast()), Seeds: r.GetSeeds(), InterfaceHint: z.Ptr(r.GetInterfaceHint()), Revision: z.Ptr(v.GetRevision() + 1), DateUpdated: r.GetExpectedVersion()}.Build())
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }
 func (s coreCameraDevice) Claim(ctx context.Context, r *api.CameraDeviceClaimRequest) (*api.CameraDevice, error) {
 	if err := cameraMessage(r); err != nil {
@@ -143,7 +154,15 @@ func (s coreCameraDevice) Claim(ctx context.Context, r *api.CameraDeviceClaimReq
 		return nil, invalid("device_key", "an IP address is not a physical inventory identity")
 	}
 	var out *api.CameraDevice
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		n, err := nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: r.GetNetwork()}.Build())
 		if err != nil {
 			return err
@@ -170,7 +189,10 @@ func (s coreCameraDevice) Claim(ctx context.Context, r *api.CameraDeviceClaimReq
 		out, err = nx.CameraDevice().Add(ctx, api.CameraDeviceAddRequest_builder{Tenant: api.TenantRef_builder{Id: n.GetTenant().GetId()}.Build(), Site: cameraSite(n.GetSite()), Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), DeviceKey: r.GetDeviceKey(), Name: r.GetName(), Endpoints: r.GetEndpoints(), ObservationRevision: 1}.Build())
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }
 func (s coreCameraDevice) Observe(ctx context.Context, r *api.CameraDeviceObserveRequest) (*api.CameraDevice, error) {
 	if err := cameraMessage(r); err != nil {
@@ -180,7 +202,15 @@ func (s coreCameraDevice) Observe(ctx context.Context, r *api.CameraDeviceObserv
 		return nil, err
 	}
 	var out *api.CameraDevice
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		v, err := nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: r.GetRef()}.Build())
 		if err != nil {
 			return err
@@ -225,5 +255,8 @@ func (s coreCameraDevice) Observe(ctx context.Context, r *api.CameraDeviceObserv
 	if status.Code(err) == codes.NotFound {
 		return nil, err
 	}
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }

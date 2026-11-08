@@ -503,7 +503,7 @@ var (
 		{Name: "published_revision", Type: field.TypeInt64},
 		{Name: "date_published", Type: field.TypeTime, Nullable: true},
 		{Name: "last_operation_key", Type: field.TypeString},
-		{Name: "last_operation_hash", Type: field.TypeBytes},
+		{Name: "last_operation_hash", Type: field.TypeBytes, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},

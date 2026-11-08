@@ -11,6 +11,11 @@ The requested scope is discovery, first-time setup when supported, capability
 inspection, configuration, and enrollment into Shale. The caller injects an
 `AuthProvider`. Factory reset is outside this scope.
 
+For the subsequent CP-authoritative inventory, assignments and job contracts,
+see [central camera authority](camera-control-plane.md). The initial local
+workflow below remains supported; it does not imply that CP already distributes
+credentials or runs dynamic Source consumers.
+
 ## Architecture
 
 Extract a reusable provisioning core and device libraries. A CLI, an embedded

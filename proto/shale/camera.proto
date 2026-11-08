@@ -287,7 +287,8 @@ message CameraJob {
   int64 published_revision = 22;
   google.protobuf.Timestamp date_published = 23 [(orm.field) = {nullable: true}];
   string last_operation_key = 24;
-  bytes last_operation_hash = 25;
+  // Pending jobs have not acknowledged an operation yet.
+  bytes last_operation_hash = 25 [(orm.field) = {nullable: true}];
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

@@ -3521,7 +3521,7 @@ func (m *CameraJobMutation) OldLastOperationKey(ctx context.Context) (v string, 
 // OldLastOperationHash returns the old "last_operation_hash" field's value of the CameraJob entity.
 // If the CameraJob object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CameraJobMutation) OldLastOperationHash(ctx context.Context) (v []byte, err error) {
+func (m *CameraJobMutation) OldLastOperationHash(ctx context.Context) (v *[]byte, err error) {
 	if !m.Op().Is(OpUpdateOne) {
 		return v, errors.New("OldLastOperationHash is only allowed on UpdateOne operations")
 	}

@@ -48,7 +48,15 @@ func (s coreCameraBinding) Bind(ctx context.Context, r *api.CameraBindingBindReq
 		}
 	}
 	var out *api.CameraBinding
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		c := New(nx, s.d)
 		a, err := c.cameraAssignmentRow(ctx, r.GetAssignment())
 		if err != nil {
@@ -141,7 +149,10 @@ func (s coreCameraBinding) Bind(ctx context.Context, r *api.CameraBindingBindReq
 		_, err = c.cameraCatalogAdvance(ctx, a)
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }
 func (s coreCameraBinding) SetCollect(ctx context.Context, r *api.CameraBindingSetCollectRequest) (*api.CameraBinding, error) {
 	if err := cameraMessage(r); err != nil {
@@ -151,7 +162,15 @@ func (s coreCameraBinding) SetCollect(ctx context.Context, r *api.CameraBindingS
 		return nil, err
 	}
 	var out *api.CameraBinding
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		b, err := nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: r.GetRef()}.Build())
 		if err != nil {
 			return err
@@ -168,7 +187,7 @@ func (s coreCameraBinding) SetCollect(ctx context.Context, r *api.CameraBindingS
 		if err := cameraVersion(r.GetExpectedVersion(), b.GetDateUpdated()); err != nil {
 			return err
 		}
-		if b.GetCollect() == r.GetCollect() {
+		if b.GetCollect() == r.GetCollect() && r.GetCollect() {
 			out = b
 			return nil
 		}
@@ -196,5 +215,8 @@ func (s coreCameraBinding) SetCollect(ctx context.Context, r *api.CameraBindingS
 		_, err = c.cameraCatalogAdvance(ctx, a)
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }

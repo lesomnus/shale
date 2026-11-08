@@ -3068,7 +3068,9 @@ func (st CameraJobServiceServer) create(ctx context.Context, req *api.CameraJobA
 		q.SetDatePublished(req.GetDatePublished().AsTime())
 	}
 	q.SetLastOperationKey(req.GetLastOperationKey())
-	q.SetLastOperationHash(req.GetLastOperationHash())
+	if req.HasLastOperationHash() {
+		q.SetLastOperationHash(req.GetLastOperationHash())
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())

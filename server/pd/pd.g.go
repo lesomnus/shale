@@ -21476,7 +21476,6 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 22, Name: entCameraJob.FieldPublishedRevision, Type: 3, Nullable: false, Key: 0},
 				{Number: 23, Name: entCameraJob.FieldDatePublished, Type: 65, Nullable: true, Key: 0},
 				{Number: 24, Name: entCameraJob.FieldLastOperationKey, Type: 9, Nullable: false, Key: 0},
-				{Number: 25, Name: entCameraJob.FieldLastOperationHash, Type: 12, Nullable: false, Key: 0},
 				{Number: 13, Name: entCameraJob.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entCameraJob.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: entCameraJob.FieldDateCreated, Type: 65, Nullable: false, Key: 0},

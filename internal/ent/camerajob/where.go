@@ -906,6 +906,16 @@ func LastOperationHashLTE(v []byte) predicate.CameraJob {
 	return predicate.CameraJob(sql.FieldLTE(FieldLastOperationHash, v))
 }
 
+// LastOperationHashIsNil applies the IsNil predicate on the "last_operation_hash" field.
+func LastOperationHashIsNil() predicate.CameraJob {
+	return predicate.CameraJob(sql.FieldIsNull(FieldLastOperationHash))
+}
+
+// LastOperationHashNotNil applies the NotNil predicate on the "last_operation_hash" field.
+func LastOperationHashNotNil() predicate.CameraJob {
+	return predicate.CameraJob(sql.FieldNotNull(FieldLastOperationHash))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.CameraJob {
 	return predicate.CameraJob(sql.FieldEQ(FieldDateUpdated, v))

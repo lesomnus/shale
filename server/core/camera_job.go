@@ -73,7 +73,15 @@ func (s coreCameraJob) Create(ctx context.Context, r *api.CameraJobCreateRequest
 		return nil, err
 	}
 	var out *api.CameraJob
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		b, err := nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: r.GetBinding()}.Build())
 		if err != nil {
 			return err
@@ -100,7 +108,10 @@ func (s coreCameraJob) Create(ctx context.Context, r *api.CameraJobCreateRequest
 		out, err = nx.CameraJob().Add(ctx, api.CameraJobAddRequest_builder{Tenant: api.TenantRef_builder{Id: a.GetTenant().GetId()}.Build(), Site: cameraSite(a.GetSite()), Binding: api.CameraBindingRef_builder{Id: b.GetId()}.Build(), Assignment: api.CameraAssignmentRef_builder{Id: a.GetId()}.Build(), RequestKey: r.GetRequestKey(), RequestHash: hash, Stage: api.CameraJobStage_CAMERA_JOB_STAGE_PENDING, AssignmentGeneration: a.GetGeneration(), Inputs: r.GetInputs()}.Build())
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }
 
 // Lock in assignment -> physical device order. The job's immutable assignment
@@ -160,7 +171,15 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJob
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		c := New(nx, s.d)
 		j, a, _, d, err := c.cameraJobRows(ctx, r.GetRef())
 		if err != nil {
@@ -202,7 +221,10 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 		out, err = nx.CameraJob().Patch(ctx, api.CameraJobPatchRequest_builder{Ref: r.GetRef(), Stage: z.Ptr(stage), LeaseOwner: who.Bytes(), LeaseGeneration: z.Ptr(gen), LeaseExpires: timestamppb.New(now.Add(time.Duration(r.GetLeaseSeconds()) * time.Second)), AssignmentGeneration: z.Ptr(a.GetGeneration()), LastOperationKey: z.Ptr(r.GetOperationKey()), LastOperationHash: hash, DateUpdated: j.GetDateUpdated()}.Build())
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }
 func (s Core) cameraLease(j *api.CameraJob, a *api.CameraAssignment, d *api.CameraDevice, who pdid.Id, lease, assignment int64) error {
 	if lease == 0 || lease != j.GetLeaseGeneration() || lease != d.GetClaimGeneration() || !bytes.Equal(d.GetActiveJobId(), j.GetId()) || !bytes.Equal(j.GetLeaseOwner(), who.Bytes()) || j.GetLeaseExpires() == nil || !j.GetLeaseExpires().AsTime().After(s.d.now()) {
@@ -250,7 +272,15 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJob
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		// Return the database's persisted timestamp precision (PostgreSQL uses
+		// microseconds), not the unsaved in-memory nanosecond mutation value.
+		defer func() {
+			if result == nil && out != nil {
+				out, result = nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetId()}.Build()}.Build())
+			}
+		}()
+
 		c := New(nx, s.d)
 		j, a, b, d, err := c.cameraJobRows(ctx, r.GetRef())
 		if err != nil {
@@ -285,7 +315,10 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 		}
 		return err
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }
 func (s Core) cameraActive(ctx context.Context, j *api.CameraJob, a *api.CameraAssignment, b *api.CameraBinding, o *api.CameraJobObservation) error {
 	if err := cameraObservation(o, true); err != nil {
@@ -378,7 +411,24 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJobPublishResponse
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+		defer func() {
+			if result == nil && out != nil {
+				j, err := nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetJob().GetId()}.Build()}.Build())
+				if err != nil {
+					result = err
+					return
+				}
+				b, err := nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: out.GetBinding().GetId()}.Build()}.Build())
+				if err != nil {
+					result = err
+					return
+				}
+				out.SetJob(j)
+				out.SetBinding(b)
+			}
+		}()
+
 		c := New(nx, s.d)
 		j, a, b, d, err := c.cameraJobRows(ctx, r.GetRef())
 		if err != nil {
@@ -434,6 +484,38 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 			labels[k] = v
 		}
 		ready.SetLabels(labels)
+		// The normal Producer registration path verifies configuration labels
+		// against its Source row. Publish their authority metadata atomically with
+		// the desired specification, preserving unrelated existing labels.
+		src, err := nx.Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: b.GetSource().GetId()}.Build()}.Build())
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(src.GetSet().GetId(), a.GetSet().GetId()) {
+			return denied("publish", "Source belongs to another immutable Set")
+		}
+		for key, expected := range map[string]string{cameraBindingLabel: b.GetLogicalKey(), cameraDeviceLabel: d.GetDeviceKey()} {
+			if got := src.GetLabels()[key]; got != "" && got != expected {
+				return failed("Source binding metadata changed; resolve ownership before publication")
+			}
+		}
+		merged := map[string]string{}
+		for key, value := range src.GetLabels() {
+			merged[key] = value
+		}
+		for key, value := range labels {
+			merged[key] = value
+		}
+		patch := api.SourcePatchRequest_builder{Ref: api.SourceRef_builder{Id: src.GetId()}.Build(), Labels: merged, DateUpdated: src.GetDateUpdated()}
+		if ready.GetName() != "" {
+			patch.Name = z.Ptr(ready.GetName())
+		}
+		if ready.GetZone() != "" {
+			patch.Zone = z.Ptr(ready.GetZone())
+		}
+		if _, err := nx.Source().Patch(ctx, patch.Build()); err != nil {
+			return err
+		}
 		b, err = nx.CameraBinding().Patch(ctx, api.CameraBindingPatchRequest_builder{Ref: api.CameraBindingRef_builder{Id: b.GetId()}.Build(), Desired: ready, Observed: r.GetObserved(), Collect: z.Ptr(true), DateUpdated: b.GetDateUpdated()}.Build())
 		if err != nil {
 			return err
@@ -449,7 +531,10 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		out = api.CameraJobPublishResponse_builder{Job: j, Binding: b, CatalogRevision: a.GetCatalogRevision()}.Build()
 		return nil
 	})
-	return out, cameraConflict(err)
+	if err != nil {
+		return nil, cameraConflict(err)
+	}
+	return out, nil
 }
 
 // A replayed Claim is a current execution grant, not a historical write ack.

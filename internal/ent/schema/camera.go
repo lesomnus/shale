@@ -372,7 +372,9 @@ func (CameraJob) Fields() []ent.Field {
 			Nillable().
 			Optional(),
 		field.String("last_operation_key"),
-		field.Bytes("last_operation_hash"),
+		field.Bytes("last_operation_hash").
+			Nillable().
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
