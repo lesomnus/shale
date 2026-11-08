@@ -1,7 +1,8 @@
 # TP-Link compatibility boundary
 
 The default extension targets **EasyCam C420, hardware 1.0, firmware 1.2.2
-Build260624**. A manufacturer name is not permission to obtain credentials or to
+Build260624** (reported by ONVIF as `1.2.2 Build 260624 Rel.39352n`). Both
+spellings of this build are recognized. A manufacturer name is not permission to obtain credentials or to
 activate every member of that manufacturer's product family. For a fresh device
 whose identity is not yet available, an enrollment administrator may explicitly
 pin `ProfileC420V122` and the managed web endpoint. Unknown protocols return

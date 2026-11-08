@@ -1,7 +1,9 @@
 package producer
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"io"
 	"log/slog"
 	"os/exec"
@@ -106,8 +108,63 @@ func TestCaptureAudioFallback(t *testing.T) {
 	require.Len(t, audio, 2)
 	require.Equal(t, "mp4a", audio[0].Entry, "the restart encodes it as AAC")
 	require.Equal(t, "Opus", audio[1].Entry, "with Opus beside it for live (§38.7)")
+	requireBrowserOpusRate(t, audio[1])
 	require.Equal(t, "aac", c.AudioFallback())
 	require.Equal(t, int64(0), c.Restarts(), "a restart on purpose is not a restart")
+}
+
+// Chrome compares the AudioSampleEntry rate with dOps.inputSampleRate while
+// parsing MP4. FFmpeg otherwise carries an 8 kHz input rate into dOps/mdhd even
+// though the Opus sample entry says 48 kHz; libopus must receive resampled audio.
+func requireBrowserOpusRate(t *testing.T, track *fmp4.Track) {
+	t.Helper()
+	require.NotNil(t, track)
+	require.Equal(t, "Opus", track.Entry)
+	require.GreaterOrEqual(t, len(track.Config), 11, "the Opus track carries its complete dOps configuration")
+	require.Equal(t, 48000, track.SampleRate, "Opus MP4 sample entries use 48 kHz")
+	require.Equal(t, uint32(track.SampleRate), binary.BigEndian.Uint32(track.Config[4:8]), "dOps input rate must match the AudioSampleEntry for browser parsing")
+	require.Equal(t, uint32(track.SampleRate), track.Timescale, "encoded packets and MP4 timing use the same 48 kHz clock")
+}
+
+func TestCaptureOpusSampleRateFromLowRateInput(t *testing.T) {
+	ffmpeg, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		t.Skip("no ffmpeg on this host")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	encode := func(args []string, input []byte) []byte {
+		t.Helper()
+		command := exec.CommandContext(ctx, ffmpeg, args...)
+		command.Stdin = bytes.NewReader(input)
+		var diagnostic bytes.Buffer
+		command.Stderr = &diagnostic
+		data, err := command.Output()
+		require.NoError(t, err, diagnostic.String())
+		return data
+	}
+	config := SourceConfig{Input: "file:testdata/ulaw.mkv", Format: "h264", Audio: &AudioConfig{Codec: "aac"}, ExtraOutputArgs: []string{"-t", "0.3"}}
+	archive := encode(Args(config, "copy", 2_000_000, 2*time.Second), nil)
+	config.Audio.Codec = "opus"
+	single := encode(Args(config, "copy", 2_000_000, 2*time.Second), nil)
+	live := encode(LiveArgs(64_000, FragDuration), archive)
+	for _, test := range []struct {
+		name   string
+		data   []byte
+		audios int
+	}{{"archive plus Opus", archive, 2}, {"Opus only", single, 1}, {"live helper", live, 1}} {
+		t.Run(test.name, func(t *testing.T) {
+			unit, err := fmp4.NewReader(bytes.NewReader(test.data)).Next()
+			require.NoError(t, err)
+			require.NotNil(t, unit.Init)
+			require.Len(t, unit.Init.Audio(), test.audios)
+			requireBrowserOpusRate(t, unit.Init.Opus())
+			if test.audios == 2 {
+				require.Equal(t, "mp4a", unit.Init.Audio()[0].Entry)
+				require.Equal(t, 8000, unit.Init.Audio()[0].SampleRate, "the archive's AAC rate is preserved")
+			}
+		})
+	}
 }
 
 // A source with `idle:` runs ffmpeg at info level with a measuring branch

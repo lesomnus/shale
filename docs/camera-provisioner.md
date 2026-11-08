@@ -55,7 +55,7 @@ targets:
     cp:
       url: https://shale.example:7400
       ca_file: /etc/shale/ca.pem
-      token_file: /etc/shale/provisioner-cp.token
+      session_file: /etc/shale/provisioner-cp.session
 clients:
   - token_file: /etc/shale/provisioner-operator.token
     scopes: [*assignment]
@@ -67,6 +67,32 @@ The CP identity must be authorized to inspect the assigned Producer/Set, the
 does not impersonate the Producer. The Producer creates/reuses its Source
 through its normal adopted identity. Partial or forbidden alias enumeration is
 an error, not evidence that an alias is free.
+
+Sign the provisioner identity in to the **tenant** API with `shale --addr
+https://shale.example:7400 login @tenant/provisioner`. The CLI stores the complete
+`__Host-shale_tenant=…` cookie pair in its private user configuration directory
+(`$XDG_CONFIG_HOME/shale/session-https___shale.example_7400`, or
+`~/.config/shale/session-https___shale.example_7400`). Securely copy that file to
+the example `session_file`, owned by the provisioner service account with mode
+`0600`, or point `session_file` directly to the CLI's saved file. Keep the complete
+pair, including its name, with at most one final newline. A development CP uses
+`shale_tenant` instead. A cluster session, bare cookie value, bearer token, cookie
+jar, or `Set-Cookie` header is not a tenant session file.
+
+The provisioner rereads the file for each CP call, so a renewed login at the same
+path takes effect without restarting it. The CP verifies the sealed session,
+expiry and the person's current standing; an invalid or expired session cannot
+complete provisioning. Sign in again when it expires (currently 24 hours) and
+resume the existing job. This session is a provisioner control credential; it is
+separate from camera passwords and the standalone host/worker bearer tokens.
+
+Choose exactly one CP authentication method: `session_file`, `token_file` for an
+endpoint that explicitly supports that bearer credential, or the matching
+`cert_file`/`key_file` pair for an appropriately authorized mTLS identity. Current
+Shale person sign-in uses the session file; putting its contents in `token_file`
+does not authenticate it. Combining methods is refused. Worker HTTP connections
+accept their configured bearer token and reject `session_file`. Plain HTTP is
+available only with `allow_loopback_http: true` and a loopback CP URL.
 
 The assigned Producer must also be able to resolve the exact streaming versions
 written into the manifest. Its normal Shale configuration needs:
@@ -84,6 +110,11 @@ For a separate runtime store, preload the same immutable references/versions.
 Configuring the provisioner's provider alone does not configure the Producer.
 The deployer checks that its generated streaming reference can be resolved by
 the configured Producer resolver before replacing the manifest.
+
+The existing manifest must also contain a nonempty `producer.sources` sequence.
+For an isolated lab, start and adopt a Producer with an explicit synthetic source
+entry, such as `input: demo:testsrc2`. The `producer.demo` count alone creates
+runtime sources without populating that editable manifest sequence.
 
 Start the host with:
 

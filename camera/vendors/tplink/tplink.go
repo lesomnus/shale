@@ -64,7 +64,10 @@ var _ camera.Bootstrapper = (*Driver)(nil)
 // Scope and access still come from the caller's enrollment policy/provider.
 func Match(device camera.DeviceHint) bool {
 	vendor := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(device.Manufacturer), "-", ""))
-	firmware := device.Firmware == "1.2.2 Build260624" || strings.HasPrefix(device.Firmware, "1.2.2 Build260624 Rel.")
+	// GetDeviceInformation on the installed C420 includes a space after Build;
+	// the firmware UI spells the same build without it.
+	version := strings.Replace(device.Firmware, "Build 260624", "Build260624", 1)
+	firmware := version == "1.2.2 Build260624" || strings.HasPrefix(version, "1.2.2 Build260624 Rel.")
 	return vendor == "tplink" && strings.EqualFold(device.Model, "EasyCam C420") && device.Hardware == "1.0" && firmware
 }
 
