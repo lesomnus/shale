@@ -10,6 +10,8 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"os/exec"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -59,14 +61,15 @@ func TestEdgeControlFaultInputBoundary(t *testing.T) {
 }
 
 type edgeControlFaultClient struct {
-	writer       *io.PipeWriter
-	reader       *io.PipeReader
-	responses    chan edgeControlResponse
-	responseDone chan struct{}
-	done         chan error
-	cancel       context.CancelFunc
-	id           int64
-	closeOnce    sync.Once
+	writer         *io.PipeWriter
+	reader         *io.PipeReader
+	responses      chan edgeControlResponse
+	responseDone   chan struct{}
+	done           chan error
+	cancel         context.CancelFunc
+	id             int64
+	closeOnce      sync.Once
+	requestTimeout time.Duration
 }
 
 func newEdgeControlFaultClient(t *testing.T) *edgeControlFaultClient {
@@ -121,6 +124,16 @@ func (c *edgeControlFaultClient) close(t *testing.T) {
 
 func (c *edgeControlFaultClient) call(t *testing.T, op string, fields map[string]any) *edgeControlStatus {
 	t.Helper()
+	accepted := op != "start"
+	defer func() {
+		if !accepted {
+			c.close(t)
+		}
+	}()
+	timeout := c.requestTimeout
+	if timeout == 0 {
+		timeout = 45 * time.Second
+	}
 	c.id++
 	r := map[string]any{"version": 1, "id": c.id, "op": op}
 	for key, value := range fields {
@@ -134,15 +147,72 @@ func (c *edgeControlFaultClient) call(t *testing.T, op string, fields map[string
 		require.Empty(t, response.Code, "fixed private control command failed")
 		require.NotEqual(t, "error", response.Event)
 		if op == "start" {
+			require.Equal(t, "ready", response.Event)
 			// start(t) registered its cluster cleanup during the asynchronous
 			// command. Register our join afterward so a failing assertion first
 			// stops the protocol owner, avoiding concurrent bare-cluster cleanup.
 			t.Cleanup(func() { c.close(t) })
+			accepted = true
 		}
 		return response.Status
-	case <-time.After(45 * time.Second):
+	case <-time.After(timeout):
 		t.Fatal("bounded private control command did not return")
 		return nil
+	}
+}
+
+func TestEdgeControlFaultFirstStartFailureHelper(t *testing.T) {
+	mode := os.Getenv("SHALE_EDGE_CONTROL_FAULT_FAILURE_HELPER")
+	if mode == "" {
+		t.Skip("expected-failure child helper")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	input, writer := io.Pipe()
+	reader, output := io.Pipe()
+	c := &edgeControlFaultClient{writer: writer, reader: reader, responses: make(chan edgeControlResponse, 1), responseDone: make(chan struct{}), done: make(chan error, 1), cancel: cancel, requestTimeout: 25 * time.Millisecond}
+	closed := make(chan struct{})
+	t.Cleanup(func() { c.close(t) })
+	// This models start(t)'s cleanup being registered during the asynchronous
+	// first command. It MUST observe the protocol owner already joined.
+	t.Cleanup(func() {
+		select {
+		case <-closed:
+			_, _ = os.Stdout.WriteString("first-start-owner-joined\n")
+		default:
+			_, _ = os.Stdout.WriteString("first-start-owner-still-alive\n")
+		}
+	})
+	go func() {
+		defer input.Close()
+		defer output.Close()
+		_, _ = bufio.NewReader(input).ReadString('\n')
+		if mode == "error" {
+			c.responses <- edgeControlResponse{Version: 1, ID: 1, Event: "error", Code: "fixture-start-failed"}
+		}
+		<-ctx.Done()
+		close(closed)
+		close(c.responseDone)
+		c.done <- nil
+	}()
+	c.call(t, "start", nil)
+	t.Fatal("first start should fail in this child")
+}
+
+func TestEdgeControlFaultFirstStartCleanup(t *testing.T) {
+	binary, err := os.Executable()
+	require.NoError(t, err)
+	for _, mode := range []string{"error", "timeout"} {
+		t.Run(mode, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+			command := exec.CommandContext(ctx, binary, "-test.run=^TestEdgeControlFaultFirstStartFailureHelper$", "-test.timeout=8s")
+			command.Env = append(os.Environ(), "SHALE_EDGE_CONTROL_FAULT_FAILURE_HELPER="+mode)
+			output, err := command.CombinedOutput()
+			require.Error(t, err, "the child deliberately exercises first-start failure")
+			if !strings.Contains(string(output), "first-start-owner-joined") || strings.Contains(string(output), "first-start-owner-still-alive") {
+				t.Fatal("first-start failure reached bare-cluster cleanup before protocol join")
+			}
+		})
 	}
 }
 
