@@ -187,13 +187,16 @@ func edgeCameraStartValid(request edgeCameraRequest) bool {
 
 func runEdgeCameraProcess(t *testing.T, ctx context.Context, input io.Reader, output io.Writer) error {
 	t.Helper()
+	ctx, cancel := context.WithCancel(ctx)
 	encoder := json.NewEncoder(output)
 	respond := func(id int64, event, code string, status *edgeCameraStatus) error {
 		return encoder.Encode(edgeCameraResponse{Version: 1, ID: id, Event: event, Code: code, Status: status})
 	}
 	requests := make(chan []byte)
 	readError := make(chan error, 1)
+	readerDone := make(chan struct{})
 	go func() {
+		defer close(readerDone)
 		scanner := bufio.NewScanner(input)
 		scanner.Buffer(make([]byte, 4096), 64<<10)
 		for scanner.Scan() {
@@ -211,6 +214,13 @@ func runEdgeCameraProcess(t *testing.T, ctx context.Context, input io.Reader, ou
 	var closeProbe func()
 	var hold edgeCameraHold
 	defer func() {
+		cancel()
+		// This process owns private stdin. Blocking inputs must be closers;
+		// finite non-closers also leave a pending send through cancellation.
+		if closer, ok := input.(io.Closer); ok {
+			_ = closer.Close()
+		}
+		<-readerDone
 		if hold.release != nil {
 			hold.release()
 		}
@@ -389,4 +399,42 @@ func TestEdgeCameraProcessInputBoundary(t *testing.T) {
 	if output.String() != "{\"version\":1,\"event\":\"error\",\"code\":\"invalid-input\"}\n" {
 		t.Fatal("oversized input was echoed")
 	}
+}
+
+func TestEdgeCameraProcessReaderCancellation(t *testing.T) {
+	t.Run("owned-pipe", func(t *testing.T) {
+		reader, writer := io.Pipe()
+		defer writer.Close()
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		var output bytes.Buffer
+		done := make(chan error, 1)
+		go func() { done <- runEdgeCameraProcess(t, ctx, reader, &output) }()
+		// The first complete request is consumed before the scanner blocks
+		// again on its private pipe. Cancellation must close and join it.
+		if _, err := io.WriteString(writer, "{\"version\":1,\"id\":1,\"op\":\"status\"}\n"); err != nil {
+			t.Fatal("private request was not consumed")
+		}
+		cancel()
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Fatal("private pipe cancellation failed")
+			}
+		case <-time.After(time.Second):
+			t.Fatal("private pipe reader did not join")
+		}
+		if _, err := writer.Write([]byte("private")); !errors.Is(err, io.ErrClosedPipe) {
+			t.Fatal("private input was not closed")
+		}
+	})
+	t.Run("finite-non-closer", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		var output bytes.Buffer
+		input := strings.NewReader(strings.Repeat("{\"version\":1,\"id\":1,\"op\":\"status\"}\n", 64))
+		if err := runEdgeCameraProcess(t, ctx, input, &output); err != nil {
+			t.Fatal("finite input cancellation failed")
+		}
+	})
 }
