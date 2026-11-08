@@ -217,7 +217,12 @@ func (s coreCameraBinding) SetCollect(ctx context.Context, r *api.CameraBindingS
 				}
 			}
 		}
-		out, err = nx.CameraBinding().Patch(ctx, api.CameraBindingPatchRequest_builder{Ref: r.GetRef(), Collect: z.Ptr(r.GetCollect()), DateUpdated: b.GetDateUpdated()}.Build())
+		patch := api.CameraBindingPatchRequest_builder{Ref: r.GetRef(), Collect: z.Ptr(r.GetCollect()), DateUpdated: b.GetDateUpdated()}
+		if !r.GetCollect() {
+			patch.StartingApplication = cameraDrainApplication(b.GetStartingApplication(), c.d.now())
+			patch.AppliedApplication = cameraDrainApplication(b.GetAppliedApplication(), c.d.now())
+		}
+		out, err = nx.CameraBinding().Patch(ctx, patch.Build())
 		if err != nil {
 			return err
 		}

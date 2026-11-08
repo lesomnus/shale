@@ -369,7 +369,7 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 			return err
 		}
 		if r.GetStage() == api.CameraJobStage_CAMERA_JOB_STAGE_ACTIVE {
-			_, err = nx.CameraBinding().Patch(ctx, api.CameraBindingPatchRequest_builder{Ref: api.CameraBindingRef_builder{Id: b.GetId()}.Build(), Observed: r.GetObserved(), AppliedRevision: z.Ptr(j.GetPublishedRevision()), DateUpdated: b.GetDateUpdated()}.Build())
+			_, err = nx.CameraBinding().Patch(ctx, api.CameraBindingPatchRequest_builder{Ref: api.CameraBindingRef_builder{Id: b.GetId()}.Build(), Observed: r.GetObserved(), DateUpdated: b.GetDateUpdated()}.Build())
 		}
 		return err
 	})
@@ -385,13 +385,22 @@ func (s Core) cameraActive(ctx context.Context, j *api.CameraJob, a *api.CameraA
 	if j.GetDatePublished() == nil || j.GetPublishedRevision() == 0 || b.GetDesired() == nil || b.GetDesired().GetRevision() != j.GetPublishedRevision() || !b.GetCollect() {
 		return failed("capture deployment is not current")
 	}
-	after := j.GetDatePublished().AsTime()
-	if o.GetAppliedRevision() != j.GetPublishedRevision() {
-		return failed("the published capture revision has not been acknowledged as applied")
+	src, err := s.own(ctx).Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: b.GetSource().GetId()}.Build()}.Build())
+	if err != nil {
+		return err
 	}
-	if o.GetLiveDecodedFrames() < 2 || !cameraFresh(o.GetLiveFirstFrameAt(), after) || !cameraFresh(o.GetLiveLastFrameAt(), after) || !o.GetLiveLastFrameAt().AsTime().After(o.GetLiveFirstFrameAt().AsTime()) {
-		return failed("advancing decoded live frames after publication are required")
+	app, managed, err := s.currentSourceApplication(ctx, src)
+	if err != nil {
+		return err
 	}
+	if !managed || app.GetTarget().GetSpecRevision() != j.GetPublishedRevision() || app.GetTarget().GetAssignmentGeneration() != a.GetGeneration() || o.GetAppliedRevision() != j.GetPublishedRevision() {
+		return failed("the exact published capture requires its real Producer application acknowledgment")
+	}
+	after := app.GetDateStarted().AsTime().Add(-5 * time.Second)
+	if o.GetLiveCaptureEpoch() != app.GetCaptureEpoch() || o.GetLiveDecodedFrames() < 2 || !cameraFresh(o.GetLiveFirstFrameAt(), app.GetDateApplied().AsTime().Add(-5*time.Second)) || !cameraFresh(o.GetLiveLastFrameAt(), app.GetDateApplied().AsTime().Add(-5*time.Second)) || !o.GetLiveLastFrameAt().AsTime().After(o.GetLiveFirstFrameAt().AsTime()) {
+		return failed("advancing decoded live frames of the exact applied capture incarnation are required")
+	}
+
 	p, err := s.Next().Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: a.GetProducer().GetId()}.Build()}.Build())
 	if err != nil {
 		return err
@@ -401,14 +410,14 @@ func (s Core) cameraActive(ctx context.Context, j *api.CameraJob, a *api.CameraA
 	}
 	input := false
 	for _, v := range p.GetStatus().GetSources() {
-		if bytes.Equal(v.GetSourceId(), b.GetSource().GetId()) && v.GetInputUp() && v.GetFrameRate() > 0 {
+		if bytes.Equal(v.GetSourceId(), b.GetSource().GetId()) && v.GetCaptureEpoch() == app.GetCaptureEpoch() && v.GetInputUp() && v.GetFrameRate() > 0 {
 			input = true
 		}
 	}
 	if !input {
 		return failed("assigned Producer has not reported this source ingesting")
 	}
-	count, err := s.ent(ctx).Lamina.Query().Where(lamina.SourceIdEQ(mustId(b.GetSource().GetId()).Uuid()), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_COMMITTED)), lamina.IncompleteEQ(false), lamina.DateCommittedGTE(after), lamina.DateStartedGTE(after)).Count(ctx)
+	count, err := s.ent(ctx).Lamina.Query().Where(lamina.SourceIdEQ(mustId(b.GetSource().GetId()).Uuid()), lamina.CaptureEpochEQ(app.GetCaptureEpoch()), lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_COMMITTED)), lamina.IncompleteEQ(false), lamina.DateCommittedGTE(after), lamina.DateStartedGTE(after)).Count(ctx)
 	if err != nil {
 		return err
 	}

@@ -28,6 +28,9 @@ func TestProducerApplicationTicketsFenceDelayedAcknowledgments(t *testing.T) {
 	pub, _ := sourceCatalogPublish(t, admin, a, prepared)
 	owner := c.dial(sourceCatalogID(t, host.GetId()))
 	apps := api.NewCameraAssignmentServiceClient(owner)
+	_, err := api.NewSetServiceClient(owner).Negotiate(ctx, api.SetNegotiateRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build(), Catalog: api.CameraApplyTarget_builder{AssignmentId: a.GetId(), AssignmentGeneration: a.GetGeneration(), CatalogRevision: pub.GetCatalogRevision()}.Build(), Sources: []*api.SourceProposal{api.SourceProposal_builder{Source: api.SourceRef_builder{Id: pub.GetBinding().GetSource().GetId()}.Build(), Profile: api.SegmentProfile_builder{MaxBitrate: 1_128_000, DurationSeconds: 30}.Build(), ContentType: "video/mp4", LiveCapable: true}.Build()}}.Build())
+	require.NoError(t, err)
+
 	target := api.CameraApplyTarget_builder{AssignmentId: a.GetId(), BindingId: pub.GetBinding().GetId(), SourceId: pub.GetBinding().GetSource().GetId(), AssignmentGeneration: a.GetGeneration(), CatalogRevision: pub.GetCatalogRevision(), SpecRevision: pub.GetCatalogRevision()}.Build()
 	for _, conn := range []*grpc.ClientConn{admin, exportReader(t, c, admin)} {
 		_, err := api.NewCameraAssignmentServiceClient(conn).BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, IntentKey: "not-the-producer"}.Build())
@@ -41,6 +44,9 @@ func TestProducerApplicationTicketsFenceDelayedAcknowledgments(t *testing.T) {
 	retry, err := apps.BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: 0, IntentKey: "first-process"}.Build())
 	require.NoError(t, err)
 	require.True(t, proto.Equal(first, retry), "lost Begin response retries must not allocate a different incarnation")
+	replayBinding, err := api.NewCameraBindingServiceClient(admin).Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: pub.GetBinding().GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.Empty(t, replayBinding.GetPreviousApplications(), "lost Begin replay never appends duplicate historical tickets")
 	_, err = apps.BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: 0, IntentKey: "delayed-stale-begin"}.Build())
 	require.Equal(t, codes.Aborted, status.Code(err))
 	second, err := apps.BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: first.GetSequence(), IntentKey: "second-process-same-spec"}.Build())

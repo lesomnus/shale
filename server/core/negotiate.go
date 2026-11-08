@@ -215,6 +215,11 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 			return nil, err
 		}
 	}
+	if managed, err := s.cameraManagedSet(ctx, set.GetId()); err != nil {
+		return nil, err
+	} else if managed {
+		return nil, failed("managed Set admission requires its current catalog identity")
+	}
 
 	var adjustments []*api.Adjustment
 	adjustFor := func(source []byte) func(field, proposed, agreed, reason string) {

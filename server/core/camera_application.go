@@ -105,6 +105,9 @@ func (s coreCameraAssignment) BeginApply(ctx context.Context, r *api.CameraBegin
 	err := s.producerApplicationTx(ctx, r.GetTarget(), func(ctx context.Context, nx api.Server, a *api.CameraAssignment, b *api.CameraBinding) error {
 		prior := b.GetStartingApplication()
 		if prior.GetIntentKey() == r.GetIntentKey() {
+			if prior.GetDrainCutoff() != nil {
+				return status.Error(codes.Aborted, "capture starting intent has ended")
+			}
 			if !proto.Equal(prior.GetTarget(), r.GetTarget()) {
 				return status.Error(codes.Aborted, "capture intent key was reused")
 			}
@@ -114,12 +117,24 @@ func (s coreCameraAssignment) BeginApply(ctx context.Context, r *api.CameraBegin
 		if r.GetExpectedSequence() != prior.GetSequence() || r.GetTarget().GetCatalogRevision() != a.GetCatalogRevision() {
 			return status.Error(codes.Aborted, "capture starting sequence or catalog changed")
 		}
+		for _, old := range b.GetPreviousApplications() {
+			if old.GetIntentKey() == r.GetIntentKey() {
+				return status.Error(codes.Aborted, "capture starting intent was superseded")
+			}
+		}
 		var nonce [16]byte
 		if _, err := rand.Read(nonce[:]); err != nil {
 			return status.Error(codes.Internal, "cannot allocate capture epoch")
 		}
-		app := api.CameraApplication_builder{Target: r.GetTarget(), Sequence: prior.GetSequence() + 1, CaptureEpoch: hex.EncodeToString(nonce[:]), IntentKey: r.GetIntentKey(), DateStarted: timestamppb.New(s.d.now()), ProducerId: a.GetProducer().GetId()}.Build()
-		next, err := nx.CameraBinding().Patch(ctx, api.CameraBindingPatchRequest_builder{Ref: api.CameraBindingRef_builder{Id: b.GetId()}.Build(), StartingApplication: app, DateUpdated: b.GetDateUpdated()}.Build())
+		source, err := nx.Source().Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: b.GetSource().GetId()}.Build()}.Build())
+		if err != nil {
+			return err
+		}
+		if source.GetProfile().GetMaxBitrate() <= 0 || source.GetProfile().GetDurationSeconds() <= 0 {
+			return failed("managed capture must negotiate its storage profile before BeginApply")
+		}
+		app := api.CameraApplication_builder{Target: r.GetTarget(), Sequence: prior.GetSequence() + 1, CaptureEpoch: hex.EncodeToString(nonce[:]), IntentKey: r.GetIntentKey(), DateStarted: timestamppb.New(s.d.now()), ProducerId: a.GetProducer().GetId(), SegmentProfile: source.GetProfile()}.Build()
+		next, err := nx.CameraBinding().Patch(ctx, api.CameraBindingPatchRequest_builder{Ref: api.CameraBindingRef_builder{Id: b.GetId()}.Build(), StartingApplication: app, AppliedApplication: cameraDrainApplication(b.GetAppliedApplication(), s.d.now()), PreviousApplications: cameraDrainHistory(b, s.d.now()), DateUpdated: b.GetDateUpdated()}.Build())
 		if err != nil {
 			return err
 		}
@@ -162,6 +177,9 @@ func (s coreCameraAssignment) Applied(ctx context.Context, r *api.CameraAppliedR
 	var out *api.CameraApplication
 	err := s.producerApplicationTx(ctx, r.GetTarget(), func(ctx context.Context, nx api.Server, a *api.CameraAssignment, b *api.CameraBinding) error {
 		starting := b.GetStartingApplication()
+		if starting.GetDrainCutoff() != nil {
+			return status.Error(codes.Aborted, "capture starting intent has ended")
+		}
 		if starting.GetSequence() != r.GetSequence() || starting.GetCaptureEpoch() != r.GetCaptureEpoch() || !proto.Equal(starting.GetTarget(), r.GetTarget()) || !bytes.Equal(starting.GetProducerId(), a.GetProducer().GetId()) {
 			return status.Error(codes.Aborted, "capture starting ticket was superseded")
 		}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cespare/xxhash/v2"
+	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -301,8 +302,19 @@ func LaminaKey(started time.Time, lamina, attempt pdid.Id) string {
 // allocateSlot is one allocation: idempotent per (source, segment). `after`
 // is the lamina of the segment the producer says ended before this one,
 // or Nil.
-func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, src *api.Source, started time.Time, after pdid.Id, actor pdid.Id, tenant pdid.Id) (*api.Allocation, error) {
+func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, src *api.Source, started time.Time, after pdid.Id, actor pdid.Id, tenant pdid.Id, captureEpoch string, prefetch bool) (*api.Allocation, error) {
 	prof := segmentOf(src, a.set, a.bounds)
+	frozen, epochValue, managed, err := New(next, s.d).cameraAllocationProfile(ctx, src, captureEpoch, started, prefetch, actor, tenant)
+	if err != nil {
+		return nil, err
+	}
+	if managed {
+		if frozen == nil {
+			return nil, failed("managed source is waiting for a starting ticket")
+		}
+		prof = frozen
+		captureEpoch = epochValue
+	}
 	if prof == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "source %s has no max_bitrate; negotiate first", src.GetAlias())
 	}
@@ -329,7 +341,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 	srcId := mustId(src.GetId())
 	slotStart := slotOf(started, a.set.GetId(), int(src.GetOrdinal()), len(a.members), duration)
 	inSlot, err := s.ent(ctx).Lamina.Query().
-		Where(lamina.SourceIdEQ(srcId.Uuid()), lamina.DateStartedGTE(slotStart.UTC()), lamina.DateStartedLT(slotStart.UTC().Add(duration))).
+		Where(lamina.SourceIdEQ(srcId.Uuid()), lamina.CaptureEpochEQ(captureEpoch), lamina.DateStartedGTE(slotStart.UTC()), lamina.DateStartedLT(slotStart.UTC().Add(duration))).
 		Order(ent.Asc(lamina.FieldDateStarted)).
 		WithSink().
 		All(ctx)
@@ -370,6 +382,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			// nothing to upload to.
 			return api.Allocation_builder{
 				LaminaId:       objId.Bytes(),
+				CaptureEpoch:   captureEpoch,
 				SourceId:       src.GetId(),
 				Ordinal:        src.GetOrdinal(),
 				DateStarted:    timestamppb.New(started),
@@ -446,6 +459,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 				DatesSynced:      true,
 				PlacementVersion: a.placeV,
 				Epoch:            placement.Epoch(started.Unix(), int64(epoch.Seconds())),
+				CaptureEpoch:     z.Ptr(captureEpoch),
 			}
 			if !none {
 				add.DateDeleted = timestamppb.New(started.Add(del))
@@ -502,6 +516,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 
 		record := api.LaminaRecord_builder{
 			FormatVersion:         1,
+			CaptureEpoch:          captureEpoch,
 			TenantId:              tenant.Bytes(),
 			SiteId:                siteId,
 			SetId:                 a.set.GetId(),
@@ -566,6 +581,7 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 
 	return api.Allocation_builder{
 		LaminaId:       objId.Bytes(),
+		CaptureEpoch:   captureEpoch,
 		SourceId:       src.GetId(),
 		Ordinal:        src.GetOrdinal(),
 		DateStarted:    timestamppb.New(started),
@@ -623,17 +639,38 @@ func (s coreSet) Allocate(ctx context.Context, req *api.SetAllocateRequest) (*ap
 		}
 	}
 
+	managedSet, err := s.cameraManagedSet(ctx, set.GetId())
+	if err != nil {
+		return nil, err
+	}
+	if managedSet && kindOf(f.Actor) != DomProducer {
+		return nil, denied("managed allocation", "only the assigned Producer may prefetch camera media")
+	}
 	var out []*api.Allocation
-	err = s.tx(ctx, func(ctx context.Context, next api.Server) error {
+	transaction := s.tx
+	if managedSet {
+		transaction = s.ownTx
+	}
+	err = transaction(ctx, func(ctx context.Context, next api.Server) error {
 		for _, m := range a.members {
+			frozen, sourceEpoch, managed, err := New(next, s.d).cameraAllocationProfile(ctx, m, "", now, true, f.Actor, f.Tenant)
+			if err != nil {
+				return err
+			}
+			if managedSet && !managed || managed && frozen == nil {
+				continue
+			}
 			prof := segmentOf(m, set, a.bounds)
+			if managed {
+				prof = frozen
+			}
 			if prof == nil {
 				continue
 			}
 			d := time.Duration(prof.GetDurationSeconds()) * time.Second
 			start := slotOf(now, set.GetId(), int(m.GetOrdinal()), len(a.members), d)
 			for !start.After(now.Add(horizon)) {
-				al, err := s.allocateSlot(ctx, next, a, m, start, pdid.Nil, f.Actor, f.Tenant)
+				al, err := New(next, s.d).allocateSlot(ctx, next, a, m, start, pdid.Nil, f.Actor, f.Tenant, sourceEpoch, true)
 				if err != nil {
 					return err
 				}
