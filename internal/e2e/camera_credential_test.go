@@ -195,6 +195,33 @@ func cameraCredentialMachineGrants(t *testing.T, scoped bool) {
 	require.NoError(t, err)
 	stream, err := credentials.Prepare(ctx, api.CameraCredentialPrepareRequest_builder{Device: dref, Binding: bref, Purpose: "streaming", IntentKey: "stream-account", Reuse: management.GetCredential()}.Build())
 	require.NoError(t, err)
+	// Another device in this same network/site is not authorized by the first
+	// device's job or Source, even for this already approved machine identity.
+	otherDevice, err := api.NewCameraDeviceServiceClient(admin).Claim(ctx, api.CameraDeviceClaimRequest_builder{Network: nref, DeviceKey: "tls-credential-other-camera"}.Build())
+	if err != nil {
+		t.Fatal("second scoped credential device could not be prepared")
+	}
+	otherDeviceRef := api.CameraDeviceRef_builder{Id: otherDevice.GetId()}.Build()
+	otherInitial, err := credentials.Prepare(ctx, api.CameraCredentialPrepareRequest_builder{Device: otherDeviceRef, Purpose: "initial_admin", IntentKey: "other-initial-account"}.Build())
+	if err != nil {
+		t.Fatal("second device initial reference could not be prepared")
+	}
+	otherManagement, err := credentials.Prepare(ctx, api.CameraCredentialPrepareRequest_builder{Device: otherDeviceRef, Purpose: "management", IntentKey: "other-management-account", Reuse: otherInitial.GetCredential()}.Build())
+	if err != nil {
+		t.Fatal("second device management reference could not be prepared")
+	}
+	otherStream, err := credentials.Prepare(ctx, api.CameraCredentialPrepareRequest_builder{Device: otherDeviceRef, Purpose: "streaming", IntentKey: "other-stream-account", Reuse: otherManagement.GetCredential()}.Build())
+	if err != nil {
+		t.Fatal("second device streaming reference could not be prepared")
+	}
+	denyResolve := func(client api.CameraCredentialServiceClient, request *api.CameraCredentialResolveRequest) {
+		t.Helper()
+		response, resolveErr := client.Resolve(ctx, request)
+		hasMaterial := len(response.GetMaterial()) != 0
+		clear(response.GetMaterial())
+		require.Equal(t, codes.PermissionDenied, status.Code(resolveErr), "the exact current device/version grant must reject a substituted credential")
+		require.False(t, hasMaterial, "a rejected credential resolve returned material")
+	}
 	profile := api.CameraCaptureProfile_builder{Codec: "h264", Width: 1280, Height: 720, Fps: 30, MaxBitrateBps: 2_000_000}.Build()
 	jobs := api.NewCameraJobServiceClient(workerConn)
 	job, err := api.NewCameraJobServiceClient(admin).Create(ctx, api.CameraJobCreateRequest_builder{Binding: bref, RequestKey: "credential-job", Inputs: api.CameraJobInputs_builder{Desired: profile, AllowActivation: true, InitialCredential: initial.GetCredential(), ManagementCredential: management.GetCredential(), StreamingCredential: stream.GetCredential()}.Build()}.Build())
@@ -210,6 +237,12 @@ func cameraCredentialMachineGrants(t *testing.T, scoped bool) {
 		require.NotEmpty(t, v.GetMaterial())
 		clear(v.GetMaterial())
 	}
+	for _, foreign := range []*api.CameraCredentialReference{otherManagement.GetCredential(), otherStream.GetCredential()} {
+		denyResolve(workerCredentials, api.CameraCredentialResolveRequest_builder{Credential: foreign, Job: grant}.Build())
+	}
+	wrongVersion := proto.Clone(stream.GetCredential()).(*api.CameraCredentialReference)
+	wrongVersion.SetVersion("ungranted-version")
+	denyResolve(workerCredentials, api.CameraCredentialResolveRequest_builder{Credential: wrongVersion, Job: grant}.Build())
 	_, err = workerCredentials.Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential(), Job: grant, CacheSeconds: 30, SourceRevision: 1}.Build())
 	require.Equal(t, codes.PermissionDenied, status.Code(err), "Workers cannot ask for an offline streaming cache grant")
 	_, err = api.NewCameraCredentialServiceClient(otherConn).Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential(), Job: grant}.Build())
@@ -249,6 +282,12 @@ func cameraCredentialMachineGrants(t *testing.T, scoped bool) {
 	exactMaterial := bytes.Clone(lease.GetMaterial())
 	defer clear(exactMaterial)
 	clear(lease.GetMaterial())
+	producerCredentials := api.NewCameraCredentialServiceClient(producerConn)
+	for _, substituted := range []*api.CameraCredentialReference{otherStream.GetCredential(), wrongVersion} {
+		request := proto.Clone(resolveStream).(*api.CameraCredentialResolveRequest)
+		request.SetCredential(substituted)
+		denyResolve(producerCredentials, request)
+	}
 	// A separately approved Worker recovers the exact pinned secret after
 	// assignment replacement; the old machine cannot reuse its old job grant.
 	replacementWorker, replacementWorkerConn, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "credential-replacement-worker", site)
