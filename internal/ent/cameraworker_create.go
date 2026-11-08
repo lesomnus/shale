@@ -291,9 +291,6 @@ func (_c *CameraWorkerCreate) check() error {
 	if _, ok := _c.mutation.ApprovedKeyFingerprint(); !ok {
 		return &ValidationError{Name: "approved_key_fingerprint", err: errors.New(`ent: missing required field "CameraWorker.approved_key_fingerprint"`)}
 	}
-	if _, ok := _c.mutation.Certificate(); !ok {
-		return &ValidationError{Name: "certificate", err: errors.New(`ent: missing required field "CameraWorker.certificate"`)}
-	}
 	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "CameraWorker.tenant_id"`)}
 	}
@@ -435,7 +432,7 @@ func (_c *CameraWorkerCreate) createSpec() (*CameraWorker, *sqlgraph.CreateSpec,
 	}
 	if value, ok := _c.mutation.Certificate(); ok {
 		_spec.SetField(cameraworker.FieldCertificate, field.TypeBytes, value)
-		_node.Certificate = value
+		_node.Certificate = &value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

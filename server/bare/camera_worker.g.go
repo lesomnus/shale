@@ -202,7 +202,9 @@ func (st CameraWorkerServiceServer) create(ctx context.Context, req *api.CameraW
 	if req.HasDateCertIssued() {
 		q.SetDateCertIssued(req.GetDateCertIssued().AsTime())
 	}
-	q.SetCertificate(req.GetCertificate())
+	if req.HasCertificate() {
+		q.SetCertificate(req.GetCertificate())
+	}
 	return q, ds, nil
 }
 

@@ -75,7 +75,7 @@ message CameraWorkerAddRequest {
   string version = 19 [features.field_presence = IMPLICIT];
   string approved_key_fingerprint = 20 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_cert_issued = 21;
-  bytes certificate = 22 [features.field_presence = IMPLICIT];
+  bytes certificate = 22;
 }
 
 message CameraWorkerGetRequest {
@@ -183,6 +183,11 @@ message CameraWorkerPatchRequest {
   // outright: setting both this and date_cert_issued clears.
   bool date_cert_issued_null = 43;
   bytes certificate = 44;
+  // Clear certificate instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and certificate clears.
+  bool certificate_null = 45;
 }
 
 message CameraWorkerApplyRequest {

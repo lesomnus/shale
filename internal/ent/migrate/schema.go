@@ -625,7 +625,7 @@ var (
 		{Name: "version", Type: field.TypeString},
 		{Name: "approved_key_fingerprint", Type: field.TypeString},
 		{Name: "date_cert_issued", Type: field.TypeTime, Nullable: true},
-		{Name: "certificate", Type: field.TypeBytes},
+		{Name: "certificate", Type: field.TypeBytes, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 	}

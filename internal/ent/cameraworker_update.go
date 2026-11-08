@@ -309,6 +309,12 @@ func (_u *CameraWorkerUpdate) SetCertificate(v []byte) *CameraWorkerUpdate {
 	return _u
 }
 
+// ClearCertificate clears the value of the "certificate" field.
+func (_u *CameraWorkerUpdate) ClearCertificate() *CameraWorkerUpdate {
+	_u.mutation.ClearCertificate()
+	return _u
+}
+
 // SetSiteId sets the "site_id" field.
 func (_u *CameraWorkerUpdate) SetSiteId(v uuid.UUID) *CameraWorkerUpdate {
 	_u.mutation.SetSiteId(v)
@@ -539,6 +545,9 @@ func (_u *CameraWorkerUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if e, ok := _u.mutation.FieldExpr(cameraworker.FieldCertificate); ok {
 		_spec.SetField(cameraworker.FieldCertificate, field.TypeBytes, e)
+	}
+	if _u.mutation.CertificateCleared() {
+		_spec.ClearField(cameraworker.FieldCertificate, field.TypeBytes)
 	}
 	if _u.mutation.SiteCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -868,6 +877,12 @@ func (_u *CameraWorkerUpdateOne) SetCertificate(v []byte) *CameraWorkerUpdateOne
 	return _u
 }
 
+// ClearCertificate clears the value of the "certificate" field.
+func (_u *CameraWorkerUpdateOne) ClearCertificate() *CameraWorkerUpdateOne {
+	_u.mutation.ClearCertificate()
+	return _u
+}
+
 // SetSiteId sets the "site_id" field.
 func (_u *CameraWorkerUpdateOne) SetSiteId(v uuid.UUID) *CameraWorkerUpdateOne {
 	_u.mutation.SetSiteId(v)
@@ -1128,6 +1143,9 @@ func (_u *CameraWorkerUpdateOne) sqlSave(ctx context.Context) (_node *CameraWork
 	}
 	if e, ok := _u.mutation.FieldExpr(cameraworker.FieldCertificate); ok {
 		_spec.SetField(cameraworker.FieldCertificate, field.TypeBytes, e)
+	}
+	if _u.mutation.CertificateCleared() {
+		_spec.ClearField(cameraworker.FieldCertificate, field.TypeBytes)
 	}
 	if _u.mutation.SiteCleared() {
 		edge := &sqlgraph.EdgeSpec{

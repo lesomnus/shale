@@ -300,6 +300,7 @@ func (x *CameraWorkerAddRequest) SetCertificate(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Certificate = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 20)
 }
 
 func (x *CameraWorkerAddRequest) HasId() bool {
@@ -365,6 +366,13 @@ func (x *CameraWorkerAddRequest) HasDateCertIssued() bool {
 	return x.xxx_hidden_DateCertIssued != nil
 }
 
+func (x *CameraWorkerAddRequest) HasCertificate() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
+}
+
 func (x *CameraWorkerAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -400,6 +408,11 @@ func (x *CameraWorkerAddRequest) ClearDateCertExpires() {
 
 func (x *CameraWorkerAddRequest) ClearDateCertIssued() {
 	x.xxx_hidden_DateCertIssued = nil
+}
+
+func (x *CameraWorkerAddRequest) ClearCertificate() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
+	x.xxx_hidden_Certificate = nil
 }
 
 type CameraWorkerAddRequest_builder struct {
@@ -453,7 +466,10 @@ func (b0 CameraWorkerAddRequest_builder) Build() *CameraWorkerAddRequest {
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_ApprovedKeyFingerprint = b.ApprovedKeyFingerprint
 	x.xxx_hidden_DateCertIssued = b.DateCertIssued
-	x.xxx_hidden_Certificate = b.Certificate
+	if b.Certificate != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 20)
+		x.xxx_hidden_Certificate = b.Certificate
+	}
 	return m0
 }
 
@@ -1546,6 +1562,7 @@ type CameraWorkerPatchRequest struct {
 	xxx_hidden_DateCertIssued         *timestamppb.Timestamp `protobuf:"bytes,42,opt,name=date_cert_issued,json=dateCertIssued"`
 	xxx_hidden_DateCertIssuedNull     bool                   `protobuf:"varint,43,opt,name=date_cert_issued_null,json=dateCertIssuedNull"`
 	xxx_hidden_Certificate            []byte                 `protobuf:"bytes,44,opt,name=certificate"`
+	xxx_hidden_CertificateNull        bool                   `protobuf:"varint,45,opt,name=certificate_null,json=certificateNull"`
 	XXX_raceDetectHookData            protoimpl.RaceDetectHookData
 	XXX_presence                      [1]uint32
 	unknownFields                     protoimpl.UnknownFields
@@ -1785,6 +1802,13 @@ func (x *CameraWorkerPatchRequest) GetCertificate() []byte {
 	return nil
 }
 
+func (x *CameraWorkerPatchRequest) GetCertificateNull() bool {
+	if x != nil {
+		return x.xxx_hidden_CertificateNull
+	}
+	return false
+}
+
 func (x *CameraWorkerPatchRequest) SetRef(v *CameraWorkerRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -1795,22 +1819,22 @@ func (x *CameraWorkerPatchRequest) SetSite(v *SiteRef) {
 
 func (x *CameraWorkerPatchRequest) SetSiteNull(v bool) {
 	x.xxx_hidden_SiteNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetLabels(v map[string]string) {
@@ -1819,22 +1843,22 @@ func (x *CameraWorkerPatchRequest) SetLabels(v map[string]string) {
 
 func (x *CameraWorkerPatchRequest) SetHardwareId(v string) {
 	x.xxx_hidden_HardwareId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetHostname(v string) {
 	x.xxx_hidden_Hostname = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetState(v HostState) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetCertSerial(v string) {
 	x.xxx_hidden_CertSerial = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetJoin(v *HostJoin) {
@@ -1843,7 +1867,7 @@ func (x *CameraWorkerPatchRequest) SetJoin(v *HostJoin) {
 
 func (x *CameraWorkerPatchRequest) SetJoinNull(v bool) {
 	x.xxx_hidden_JoinNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1852,7 +1876,7 @@ func (x *CameraWorkerPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *CameraWorkerPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
@@ -1861,7 +1885,7 @@ func (x *CameraWorkerPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
 
 func (x *CameraWorkerPatchRequest) SetDateAdoptedNull(v bool) {
 	x.xxx_hidden_DateAdoptedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
@@ -1870,7 +1894,7 @@ func (x *CameraWorkerPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
 
 func (x *CameraWorkerPatchRequest) SetDateSeenNull(v bool) {
 	x.xxx_hidden_DateSeenNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
@@ -1879,17 +1903,17 @@ func (x *CameraWorkerPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) 
 
 func (x *CameraWorkerPatchRequest) SetDateCertExpiresNull(v bool) {
 	x.xxx_hidden_DateCertExpiresNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetVersion(v string) {
 	x.xxx_hidden_Version = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetApprovedKeyFingerprint(v string) {
 	x.xxx_hidden_ApprovedKeyFingerprint = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetDateCertIssued(v *timestamppb.Timestamp) {
@@ -1898,7 +1922,7 @@ func (x *CameraWorkerPatchRequest) SetDateCertIssued(v *timestamppb.Timestamp) {
 
 func (x *CameraWorkerPatchRequest) SetDateCertIssuedNull(v bool) {
 	x.xxx_hidden_DateCertIssuedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 27)
 }
 
 func (x *CameraWorkerPatchRequest) SetCertificate(v []byte) {
@@ -1906,7 +1930,12 @@ func (x *CameraWorkerPatchRequest) SetCertificate(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Certificate = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 25, 26)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 25, 27)
+}
+
+func (x *CameraWorkerPatchRequest) SetCertificateNull(v bool) {
+	x.xxx_hidden_CertificateNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 27)
 }
 
 func (x *CameraWorkerPatchRequest) HasRef() bool {
@@ -2084,6 +2113,13 @@ func (x *CameraWorkerPatchRequest) HasCertificate() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 25)
 }
 
+func (x *CameraWorkerPatchRequest) HasCertificateNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 26)
+}
+
 func (x *CameraWorkerPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -2201,6 +2237,11 @@ func (x *CameraWorkerPatchRequest) ClearCertificate() {
 	x.xxx_hidden_Certificate = nil
 }
 
+func (x *CameraWorkerPatchRequest) ClearCertificateNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 26)
+	x.xxx_hidden_CertificateNull = false
+}
+
 type CameraWorkerPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2266,6 +2307,11 @@ type CameraWorkerPatchRequest_builder struct {
 	// outright: setting both this and date_cert_issued clears.
 	DateCertIssuedNull *bool
 	Certificate        []byte
+	// Clear certificate instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and certificate clears.
+	CertificateNull *bool
 }
 
 func (b0 CameraWorkerPatchRequest_builder) Build() *CameraWorkerPatchRequest {
@@ -2275,79 +2321,83 @@ func (b0 CameraWorkerPatchRequest_builder) Build() *CameraWorkerPatchRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Site = b.Site
 	if b.SiteNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 27)
 		x.xxx_hidden_SiteNull = *b.SiteNull
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 27)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 27)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 27)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 27)
 		x.xxx_hidden_HardwareId = b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 27)
 		x.xxx_hidden_Hostname = b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 27)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 27)
 		x.xxx_hidden_CertSerial = b.CertSerial
 	}
 	x.xxx_hidden_Join = b.Join
 	if b.JoinNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 27)
 		x.xxx_hidden_JoinNull = *b.JoinNull
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 27)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_DateAdopted = b.DateAdopted
 	if b.DateAdoptedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 27)
 		x.xxx_hidden_DateAdoptedNull = *b.DateAdoptedNull
 	}
 	x.xxx_hidden_DateSeen = b.DateSeen
 	if b.DateSeenNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 27)
 		x.xxx_hidden_DateSeenNull = *b.DateSeenNull
 	}
 	x.xxx_hidden_DateCertExpires = b.DateCertExpires
 	if b.DateCertExpiresNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 27)
 		x.xxx_hidden_DateCertExpiresNull = *b.DateCertExpiresNull
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 27)
 		x.xxx_hidden_Version = b.Version
 	}
 	if b.ApprovedKeyFingerprint != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 27)
 		x.xxx_hidden_ApprovedKeyFingerprint = b.ApprovedKeyFingerprint
 	}
 	x.xxx_hidden_DateCertIssued = b.DateCertIssued
 	if b.DateCertIssuedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 27)
 		x.xxx_hidden_DateCertIssuedNull = *b.DateCertIssuedNull
 	}
 	if b.Certificate != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 25, 26)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 25, 27)
 		x.xxx_hidden_Certificate = b.Certificate
+	}
+	if b.CertificateNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 27)
+		x.xxx_hidden_CertificateNull = *b.CertificateNull
 	}
 	return m0
 }
@@ -4398,7 +4448,7 @@ var File_shale_camera_worker_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1fshale/camera_worker_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x18shale/camera_svc.g.proto\x1a\x19shale/camera_worker.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x16shale/host_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xde\a\n" +
+	"\x1fshale/camera_worker_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x18shale/camera_svc.g.proto\x1a\x19shale/camera_worker.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x16shale/host_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xd7\a\n" +
 	"\x16CameraWorkerAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -4421,8 +4471,8 @@ const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\x11date_cert_expires\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateCertExpires\x12\x1f\n" +
 	"\aversion\x18\x13 \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x12?\n" +
 	"\x18approved_key_fingerprint\x18\x14 \x01(\tB\x05\xaa\x01\x02\b\x02R\x16approvedKeyFingerprint\x12D\n" +
-	"\x10date_cert_issued\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampR\x0edateCertIssued\x12'\n" +
-	"\vcertificate\x18\x16 \x01(\fB\x05\xaa\x01\x02\b\x02R\vcertificate\x1a9\n" +
+	"\x10date_cert_issued\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampR\x0edateCertIssued\x12 \n" +
+	"\vcertificate\x18\x16 \x01(\fR\vcertificate\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"u\n" +
@@ -4462,7 +4512,7 @@ const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\aversion\x18\x13 \x01(\bR\aversion\x128\n" +
 	"\x18approved_key_fingerprint\x18\x14 \x01(\bR\x16approvedKeyFingerprint\x12(\n" +
 	"\x10date_cert_issued\x18\x15 \x01(\bR\x0edateCertIssued\x12 \n" +
-	"\vcertificate\x18\x16 \x01(\bR\vcertificate\"\xae\t\n" +
+	"\vcertificate\x18\x16 \x01(\bR\vcertificate\"\xd9\t\n" +
 	"\x18CameraWorkerPatchRequest\x12(\n" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.CameraWorkerRefR\x03ref\x12\"\n" +
 	"\x04site\x18\x06 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
@@ -4492,7 +4542,8 @@ const file_shale_camera_worker_svc_g_proto_rawDesc = "" +
 	"\x18approved_key_fingerprint\x18( \x01(\tR\x16approvedKeyFingerprint\x12D\n" +
 	"\x10date_cert_issued\x18* \x01(\v2\x1a.google.protobuf.TimestampR\x0edateCertIssued\x121\n" +
 	"\x15date_cert_issued_null\x18+ \x01(\bR\x12dateCertIssuedNull\x12 \n" +
-	"\vcertificate\x18, \x01(\fR\vcertificate\x1a9\n" +
+	"\vcertificate\x18, \x01(\fR\vcertificate\x12)\n" +
+	"\x10certificate_null\x18- \x01(\bR\x0fcertificateNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +

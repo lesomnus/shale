@@ -22501,7 +22501,6 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 19, Name: entCameraWorker.FieldVersion, Type: 9, Nullable: false, Key: 0},
 				{Number: 20, Name: entCameraWorker.FieldApprovedKeyFingerprint, Type: 9, Nullable: false, Key: 0},
 				{Number: 21, Name: entCameraWorker.FieldDateCertIssued, Type: 65, Nullable: true, Key: 0},
-				{Number: 22, Name: entCameraWorker.FieldCertificate, Type: 12, Nullable: false, Key: 0},
 			}, v)
 			if err != nil {
 				return nil, err

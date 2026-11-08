@@ -72,6 +72,9 @@ func (s Core) cameraWorkerActor(ctx context.Context) (*api.CameraWorker, error) 
 	if current.GetState() != api.HostState_HOST_STATE_ADOPTED || current.GetCertSerial() == "" || current.GetCertSerial() != prior.GetCertSerial() || !bytes.Equal(current.GetTenant().GetId(), f.Tenant.Bytes()) {
 		return nil, denied("camera worker", "worker adoption or certificate was revoked")
 	}
+	if current.GetDateCertExpires() == nil || !current.GetDateCertExpires().AsTime().After(s.d.now()) {
+		return nil, denied("camera worker", "worker certificate expired; use public same-key bootstrap")
+	}
 	return current, nil
 }
 

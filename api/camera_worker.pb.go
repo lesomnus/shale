@@ -501,7 +501,7 @@ var File_shale_camera_worker_proto protoreflect.FileDescriptor
 
 const file_shale_camera_worker_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/camera_worker.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x10shale/site.proto\x1a\x19shale/payday/tenant.proto\"\xa2\n" +
+	"\x19shale/camera_worker.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x10shale/site.proto\x1a\x19shale/payday/tenant.proto\"\xaa\n" +
 	"\n" +
 	"\fCameraWorker\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
@@ -528,8 +528,8 @@ const file_shale_camera_worker_proto_rawDesc = "" +
 	"\x11date_cert_expires\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateCertExpires\x12\x18\n" +
 	"\aversion\x18\x13 \x01(\tR\aversion\x128\n" +
 	"\x18approved_key_fingerprint\x18\x14 \x01(\tR\x16approvedKeyFingerprint\x12L\n" +
-	"\x10date_cert_issued\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0edateCertIssued\x12 \n" +
-	"\vcertificate\x18\x16 \x01(\fR\vcertificate\x1a9\n" +
+	"\x10date_cert_issued\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0edateCertIssued\x12(\n" +
+	"\vcertificate\x18\x16 \x01(\fB\x06\xea\x82\x16\x028\x01R\vcertificate\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xcb\x01\xca\xfc\x15|\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +

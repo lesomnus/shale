@@ -579,6 +579,7 @@ func (m *Mutation) ResetDateCertIssued() {
 // SetCertificate sets the "certificate" field.
 func (m *Mutation) SetCertificate(b []byte) {
 	m.certificate = &b
+	delete(m.clearedFields, FieldCertificate)
 	delete(m.exprs, FieldCertificate)
 }
 
@@ -591,9 +592,23 @@ func (m *Mutation) Certificate() (r []byte, exists bool) {
 	return *v, true
 }
 
+// ClearCertificate clears the value of the "certificate" field.
+func (m *Mutation) ClearCertificate() {
+	m.certificate = nil
+	delete(m.exprs, FieldCertificate)
+	m.clearedFields[FieldCertificate] = struct{}{}
+}
+
+// CertificateCleared returns if the "certificate" field was cleared in this mutation.
+func (m *Mutation) CertificateCleared() bool {
+	_, ok := m.clearedFields[FieldCertificate]
+	return ok
+}
+
 // ResetCertificate resets all changes to the "certificate" field.
 func (m *Mutation) ResetCertificate() {
 	m.certificate = nil
+	delete(m.clearedFields, FieldCertificate)
 	delete(m.exprs, FieldCertificate)
 }
 
@@ -1293,6 +1308,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCertIssued) {
 		fields = append(fields, FieldDateCertIssued)
 	}
+	if m.FieldCleared(FieldCertificate) {
+		fields = append(fields, FieldCertificate)
+	}
 	if m.FieldCleared(FieldSiteId) {
 		fields = append(fields, FieldSiteId)
 	}
@@ -1333,6 +1351,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateCertIssued:
 		m.ClearDateCertIssued()
+		return nil
+	case FieldCertificate:
+		m.ClearCertificate()
 		return nil
 	case FieldSiteId:
 		m.ClearSiteId()

@@ -59,7 +59,7 @@ type CameraWorker struct {
 	// DateCertIssued holds the value of the "date_cert_issued" field.
 	DateCertIssued *time.Time `json:"date_cert_issued,omitempty"`
 	// Certificate holds the value of the "certificate" field.
-	Certificate []byte `json:"certificate,omitempty"`
+	Certificate *[]byte `json:"certificate,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -262,10 +262,7 @@ func (_m *CameraWorker) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field certificate", values[i])
 			} else if value != nil {
-				_m.Certificate = *value
-				if _m.Certificate == nil {
-					_m.Certificate = []byte{}
-				}
+				_m.Certificate = value
 			}
 		case cameraworker.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -389,8 +386,10 @@ func (_m *CameraWorker) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	builder.WriteString("certificate=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Certificate))
+	if v := _m.Certificate; v != nil {
+		builder.WriteString("certificate=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

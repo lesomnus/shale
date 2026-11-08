@@ -1111,6 +1111,16 @@ func CertificateLTE(v []byte) predicate.CameraWorker {
 	return predicate.CameraWorker(sql.FieldLTE(FieldCertificate, v))
 }
 
+// CertificateIsNil applies the IsNil predicate on the "certificate" field.
+func CertificateIsNil() predicate.CameraWorker {
+	return predicate.CameraWorker(sql.FieldIsNull(FieldCertificate))
+}
+
+// CertificateNotNil applies the NotNil predicate on the "certificate" field.
+func CertificateNotNil() predicate.CameraWorker {
+	return predicate.CameraWorker(sql.FieldNotNull(FieldCertificate))
+}
+
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.CameraWorker {
 	return predicate.CameraWorker(sql.FieldEQ(FieldTenantId, v))

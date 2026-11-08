@@ -4519,7 +4519,7 @@ func (m *CameraWorkerMutation) OldDateCertIssued(ctx context.Context) (v *time.T
 // OldCertificate returns the old "certificate" field's value of the CameraWorker entity.
 // If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CameraWorkerMutation) OldCertificate(ctx context.Context) (v []byte, err error) {
+func (m *CameraWorkerMutation) OldCertificate(ctx context.Context) (v *[]byte, err error) {
 	if !m.Op().Is(OpUpdateOne) {
 		return v, errors.New("OldCertificate is only allowed on UpdateOne operations")
 	}
