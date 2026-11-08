@@ -42,6 +42,12 @@ export const CameraJobDomain = 30
 /** The domain identifiers of shale.CameraNetwork carry. */
 export const CameraNetworkDomain = 26
 
+/** The domain identifiers of shale.CameraPolicy carry. */
+export const CameraPolicyDomain = 41
+
+/** The domain identifiers of shale.CameraPreset carry. */
+export const CameraPresetDomain = 40
+
 /** The domain identifiers of shale.CameraWorker carry. */
 export const CameraWorkerDomain = 31
 
@@ -117,6 +123,8 @@ pdid.register("shale.CameraBinding", CameraBindingDomain, "camera-binding")
 pdid.register("shale.CameraDevice", CameraDeviceDomain, "camera-device")
 pdid.register("shale.CameraJob", CameraJobDomain, "camera-job")
 pdid.register("shale.CameraNetwork", CameraNetworkDomain, "camera-network")
+pdid.register("shale.CameraPolicy", CameraPolicyDomain, "camera-policy")
+pdid.register("shale.CameraPreset", CameraPresetDomain, "camera-preset")
 pdid.register("shale.CameraWorker", CameraWorkerDomain, "camera-worker")
 pdid.register("shale.Delegation", DelegationDomain, "delegation")
 pdid.register("shale.Device", DeviceDomain, "device")

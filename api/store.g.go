@@ -39,6 +39,8 @@ type Server interface {
 	CameraAssignment() CameraAssignmentServiceServer
 	CameraBinding() CameraBindingServiceServer
 	CameraJob() CameraJobServiceServer
+	CameraPreset() CameraPresetServiceServer
+	CameraPolicy() CameraPolicyServiceServer
 	Device() DeviceServiceServer
 	Sink() SinkServiceServer
 	CameraWorker() CameraWorkerServiceServer
@@ -77,6 +79,8 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterCameraAssignmentServiceServer(g, s.CameraAssignment())
 	RegisterCameraBindingServiceServer(g, s.CameraBinding())
 	RegisterCameraJobServiceServer(g, s.CameraJob())
+	RegisterCameraPresetServiceServer(g, s.CameraPreset())
+	RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
 	RegisterDeviceServiceServer(g, s.Device())
 	RegisterSinkServiceServer(g, s.Sink())
 	RegisterCameraWorkerServiceServer(g, s.CameraWorker())
@@ -111,6 +115,8 @@ type UnimplementedServer struct {
 	CameraAssignmentServer CameraAssignmentServiceServer
 	CameraBindingServer    CameraBindingServiceServer
 	CameraJobServer        CameraJobServiceServer
+	CameraPresetServer     CameraPresetServiceServer
+	CameraPolicyServer     CameraPolicyServiceServer
 	DeviceServer           DeviceServiceServer
 	SinkServer             SinkServiceServer
 	CameraWorkerServer     CameraWorkerServiceServer
@@ -155,6 +161,12 @@ func (UnimplementedServer) CameraBinding() CameraBindingServiceServer {
 }
 func (UnimplementedServer) CameraJob() CameraJobServiceServer {
 	return UnimplementedCameraJobServiceServer{}
+}
+func (UnimplementedServer) CameraPreset() CameraPresetServiceServer {
+	return UnimplementedCameraPresetServiceServer{}
+}
+func (UnimplementedServer) CameraPolicy() CameraPolicyServiceServer {
+	return UnimplementedCameraPolicyServiceServer{}
 }
 func (UnimplementedServer) Device() DeviceServiceServer { return UnimplementedDeviceServiceServer{} }
 func (UnimplementedServer) Sink() SinkServiceServer     { return UnimplementedSinkServiceServer{} }
@@ -205,6 +217,8 @@ type StaticServer struct {
 	CameraAssignmentServer CameraAssignmentServiceServer
 	CameraBindingServer    CameraBindingServiceServer
 	CameraJobServer        CameraJobServiceServer
+	CameraPresetServer     CameraPresetServiceServer
+	CameraPolicyServer     CameraPolicyServiceServer
 	DeviceServer           DeviceServiceServer
 	SinkServer             SinkServiceServer
 	CameraWorkerServer     CameraWorkerServiceServer
@@ -240,6 +254,8 @@ func (s StaticServer) CameraAssignment() CameraAssignmentServiceServer {
 }
 func (s StaticServer) CameraBinding() CameraBindingServiceServer     { return s.CameraBindingServer }
 func (s StaticServer) CameraJob() CameraJobServiceServer             { return s.CameraJobServer }
+func (s StaticServer) CameraPreset() CameraPresetServiceServer       { return s.CameraPresetServer }
+func (s StaticServer) CameraPolicy() CameraPolicyServiceServer       { return s.CameraPolicyServer }
 func (s StaticServer) Device() DeviceServiceServer                   { return s.DeviceServer }
 func (s StaticServer) Sink() SinkServiceServer                       { return s.SinkServer }
 func (s StaticServer) CameraWorker() CameraWorkerServiceServer       { return s.CameraWorkerServer }
@@ -273,6 +289,8 @@ type Client interface {
 	CameraAssignment() CameraAssignmentServiceClient
 	CameraBinding() CameraBindingServiceClient
 	CameraJob() CameraJobServiceClient
+	CameraPreset() CameraPresetServiceClient
+	CameraPolicy() CameraPolicyServiceClient
 	Device() DeviceServiceClient
 	Sink() SinkServiceClient
 	CameraWorker() CameraWorkerServiceClient
@@ -308,6 +326,8 @@ func NewClient(c *grpc.ClientConn) Client {
 		_CameraAssignment: NewCameraAssignmentServiceClient(c),
 		_CameraBinding:    NewCameraBindingServiceClient(c),
 		_CameraJob:        NewCameraJobServiceClient(c),
+		_CameraPreset:     NewCameraPresetServiceClient(c),
+		_CameraPolicy:     NewCameraPolicyServiceClient(c),
 		_Device:           NewDeviceServiceClient(c),
 		_Sink:             NewSinkServiceClient(c),
 		_CameraWorker:     NewCameraWorkerServiceClient(c),
@@ -343,6 +363,8 @@ type client struct {
 	_CameraAssignment CameraAssignmentServiceClient
 	_CameraBinding    CameraBindingServiceClient
 	_CameraJob        CameraJobServiceClient
+	_CameraPreset     CameraPresetServiceClient
+	_CameraPolicy     CameraPolicyServiceClient
 	_Device           DeviceServiceClient
 	_Sink             SinkServiceClient
 	_CameraWorker     CameraWorkerServiceClient
@@ -376,6 +398,8 @@ func (c *client) CameraDevice() CameraDeviceServiceClient         { return c._Ca
 func (c *client) CameraAssignment() CameraAssignmentServiceClient { return c._CameraAssignment }
 func (c *client) CameraBinding() CameraBindingServiceClient       { return c._CameraBinding }
 func (c *client) CameraJob() CameraJobServiceClient               { return c._CameraJob }
+func (c *client) CameraPreset() CameraPresetServiceClient         { return c._CameraPreset }
+func (c *client) CameraPolicy() CameraPolicyServiceClient         { return c._CameraPolicy }
 func (c *client) Device() DeviceServiceClient                     { return c._Device }
 func (c *client) Sink() SinkServiceClient                         { return c._Sink }
 func (c *client) CameraWorker() CameraWorkerServiceClient         { return c._CameraWorker }

@@ -604,6 +604,122 @@ var (
 			},
 		},
 	}
+	// CamerapolicyColumns holds the columns for the "camerapolicy" table.
+	CamerapolicyColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "policy_key", Type: field.TypeString},
+		{Name: "revision", Type: field.TypeString},
+		{Name: "enrollment", Type: field.TypeJson, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "network_id", Type: field.TypeUuid},
+		{Name: "preset_id", Type: field.TypeUuid},
+	}
+	// CamerapolicyTable holds the schema information for the "camerapolicy" table.
+	CamerapolicyTable = &schema.Table{
+		Name:       "camerapolicy",
+		Columns:    CamerapolicyColumns,
+		PrimaryKey: []*schema.Column{CamerapolicyColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "camerapolicy_tenant_tenant",
+				Columns:    []*schema.Column{CamerapolicyColumns[11]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "camerapolicy_site_site",
+				Columns:    []*schema.Column{CamerapolicyColumns[12]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "camerapolicy_cameranetwork_network",
+				Columns:    []*schema.Column{CamerapolicyColumns[13]},
+				RefColumns: []*schema.Column{CameranetworkColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "camerapolicy_camerapreset_preset",
+				Columns:    []*schema.Column{CamerapolicyColumns[14]},
+				RefColumns: []*schema.Column{CamerapresetColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "camerapolicy_page",
+				Unique:  false,
+				Columns: []*schema.Column{CamerapolicyColumns[11], CamerapolicyColumns[10], CamerapolicyColumns[0]},
+			},
+			{
+				Name:    "camerapolicy_revision",
+				Unique:  true,
+				Columns: []*schema.Column{CamerapolicyColumns[11], CamerapolicyColumns[5], CamerapolicyColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// CamerapresetColumns holds the columns for the "camerapreset" table.
+	CamerapresetColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "preset_key", Type: field.TypeString},
+		{Name: "revision", Type: field.TypeString},
+		{Name: "rules", Type: field.TypeJson, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+	}
+	// CamerapresetTable holds the schema information for the "camerapreset" table.
+	CamerapresetTable = &schema.Table{
+		Name:       "camerapreset",
+		Columns:    CamerapresetColumns,
+		PrimaryKey: []*schema.Column{CamerapresetColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "camerapreset_tenant_tenant",
+				Columns:    []*schema.Column{CamerapresetColumns[11]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "camerapreset_site_site",
+				Columns:    []*schema.Column{CamerapresetColumns[12]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "camerapreset_page",
+				Unique:  false,
+				Columns: []*schema.Column{CamerapresetColumns[11], CamerapresetColumns[10], CamerapresetColumns[0]},
+			},
+			{
+				Name:    "camerapreset_revision",
+				Unique:  true,
+				Columns: []*schema.Column{CamerapresetColumns[11], CamerapresetColumns[5], CamerapresetColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// CameraworkerColumns holds the columns for the "cameraworker" table.
 	CameraworkerColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1676,6 +1792,8 @@ var (
 		CameradeviceTable,
 		CamerajobTable,
 		CameranetworkTable,
+		CamerapolicyTable,
+		CamerapresetTable,
 		CameraworkerTable,
 		DelegationTable,
 		DeviceTable,
@@ -1754,6 +1872,18 @@ func init() {
 	CameranetworkTable.ForeignKeys[1].RefTable = SiteTable
 	CameranetworkTable.Annotation = &entsql.Annotation{
 		Table: "cameranetwork",
+	}
+	CamerapolicyTable.ForeignKeys[0].RefTable = TenantTable
+	CamerapolicyTable.ForeignKeys[1].RefTable = SiteTable
+	CamerapolicyTable.ForeignKeys[2].RefTable = CameranetworkTable
+	CamerapolicyTable.ForeignKeys[3].RefTable = CamerapresetTable
+	CamerapolicyTable.Annotation = &entsql.Annotation{
+		Table: "camerapolicy",
+	}
+	CamerapresetTable.ForeignKeys[0].RefTable = TenantTable
+	CamerapresetTable.ForeignKeys[1].RefTable = SiteTable
+	CamerapresetTable.Annotation = &entsql.Annotation{
+		Table: "camerapreset",
 	}
 	CameraworkerTable.ForeignKeys[0].RefTable = TenantTable
 	CameraworkerTable.ForeignKeys[1].RefTable = SiteTable

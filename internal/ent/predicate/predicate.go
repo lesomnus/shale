@@ -80,6 +80,34 @@ func CameraJobOrErr(p CameraJob, err error) CameraJob {
 // CameraNetwork is the predicate function for cameranetwork builders.
 type CameraNetwork func(*sql.Selector)
 
+// CameraPolicy is the predicate function for camerapolicy builders.
+type CameraPolicy func(*sql.Selector)
+
+// CameraPolicyOrErr calls the predicate only if the error is not nit.
+func CameraPolicyOrErr(p CameraPolicy, err error) CameraPolicy {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraPreset is the predicate function for camerapreset builders.
+type CameraPreset func(*sql.Selector)
+
+// CameraPresetOrErr calls the predicate only if the error is not nit.
+func CameraPresetOrErr(p CameraPreset, err error) CameraPreset {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // CameraWorker is the predicate function for cameraworker builders.
 type CameraWorker func(*sql.Selector)
 

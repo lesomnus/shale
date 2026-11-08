@@ -10,6 +10,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent/camerabinding"
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
+	"github.com/lesomnus/shale/internal/ent/camerapolicy"
+	"github.com/lesomnus/shale/internal/ent/camerapreset"
 	"github.com/lesomnus/shale/internal/ent/cameraworker"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/lamina"
@@ -72,6 +74,16 @@ func init() {
 	// camerajobDescObserved is the schema descriptor for observed field.
 	camerajobDescObserved := camerajobFields[13].Descriptor()
 	camerajob.ValueScanner.Observed = camerajobDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
+	camerapolicyFields := schema.CameraPolicy{}.Fields()
+	_ = camerapolicyFields
+	// camerapolicyDescEnrollment is the schema descriptor for enrollment field.
+	camerapolicyDescEnrollment := camerapolicyFields[7].Descriptor()
+	camerapolicy.ValueScanner.Enrollment = camerapolicyDescEnrollment.ValueScanner.(field.TypeValueScanner[*api.CameraEnrollmentPolicy])
+	camerapresetFields := schema.CameraPreset{}.Fields()
+	_ = camerapresetFields
+	// camerapresetDescRules is the schema descriptor for rules field.
+	camerapresetDescRules := camerapresetFields[7].Descriptor()
+	camerapreset.ValueScanner.Rules = camerapresetDescRules.ValueScanner.(field.TypeValueScanner[[]*api.CameraPresetRule])
 	cameraworkerFields := schema.CameraWorker{}.Fields()
 	_ = cameraworkerFields
 	// cameraworkerDescJoin is the schema descriptor for join field.

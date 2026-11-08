@@ -1,0 +1,218 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "shale/camera_policy.proto";
+import "shale/camera_preset_svc.g.proto";
+import "shale/camera_svc.g.proto";
+import "shale/payday/tenant_svc.g.proto";
+import "shale/site_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service CameraPolicyService {
+  // Add creates a new CameraPolicy
+  rpc Add(CameraPolicyAddRequest) returns (CameraPolicy);
+  // Get retrieves a CameraPolicy
+  rpc Get(CameraPolicyGetRequest) returns (CameraPolicy);
+  // Patch updates an existing CameraPolicy
+  rpc Patch(CameraPolicyPatchRequest) returns (CameraPolicy);
+  // Apply applies a patch document to an existing CameraPolicy
+  rpc Apply(CameraPolicyApplyRequest) returns (CameraPolicy);
+  // Erase deletes a CameraPolicy
+  rpc Erase(CameraPolicyRef) returns (CameraPolicyEraseResponse);
+  // List reads CameraPolicys a page at a time.
+  rpc List(CameraPolicyListRequest) returns (CameraPolicyListResponse);
+  // Watch the CameraPolicys this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(CameraPolicyWatchRequest) returns (stream CameraPolicyWatchResponse);
+}
+
+message CameraPolicyAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  CameraNetworkRef network = 8;
+  string policy_key = 9 [features.field_presence = IMPLICIT];
+  string revision = 10 [features.field_presence = IMPLICIT];
+  CameraPresetRef preset = 11;
+  CameraEnrollmentPolicy enrollment = 12;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message CameraPolicyGetRequest {
+  CameraPolicyRef ref = 1;
+  CameraPolicySelect select = 2;
+}
+
+message CameraPolicyRef {
+  oneof key {
+    bytes id = 1;
+    CameraPolicyRefByRevision revision = 2;
+  }
+}
+
+message CameraPolicyRefByRevision {
+  TenantRef tenant = 2;
+  string policy_key = 9;
+  string revision = 10;
+}
+
+message CameraPolicySelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  CameraNetworkSelect network = 8;
+  bool policy_key = 9;
+  bool revision = 10;
+  CameraPresetSelect preset = 11;
+  bool enrollment = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message CameraPolicyPatchRequest {
+  CameraPolicyRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message CameraPolicyApplyRequest {
+  CameraPolicyRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message CameraPolicyEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message CameraPolicyListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated CameraPolicyFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message CameraPolicyListResponse {
+  repeated CameraPolicy items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraPolicyFilter {
+  CameraPolicyRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  CameraNetworkRef network = 4;
+}
+
+message CameraPolicyWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated CameraPolicyFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraPolicyWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated CameraPolicyWatchItem items = 1;
+}
+
+message CameraPolicyWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  CameraPolicy value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
