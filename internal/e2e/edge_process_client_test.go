@@ -111,6 +111,8 @@ type qualificationProcess struct {
 	waitError    error
 	readError    error
 	expectedKill bool
+	finalized    bool
+	finalError   error
 }
 
 func startQualificationProcess(t *testing.T, ctx context.Context, role isolatedRole, testName, optIn string) *qualificationProcess {
@@ -204,8 +206,23 @@ func (p *qualificationProcess) request(ctx context.Context, op string, fields ma
 	if err = pipe.SetWriteDeadline(deadline); err != nil {
 		return qualificationResponse{}, errors.New("sidecar command deadline failed")
 	}
-	defer pipe.SetWriteDeadline(time.Time{})
+	writeCanceled := make(chan struct{})
+	stopWriteCancellation := context.AfterFunc(ctx, func() {
+		defer close(writeCanceled)
+		_ = pipe.SetWriteDeadline(time.Now())
+	})
+	defer func() {
+		// Join a callback which already began before clearing the deadline. An
+		// old cancellation must not poison the next serialized request's write.
+		if !stopWriteCancellation() {
+			<-writeCanceled
+		}
+		_ = pipe.SetWriteDeadline(time.Time{})
+	}()
 	if _, err = p.input.Write(append(encoded, '\n')); err != nil {
+		if ctx.Err() != nil {
+			return qualificationResponse{}, ctx.Err()
+		}
 		return qualificationResponse{}, errors.New("sidecar command write failed")
 	}
 	select {
@@ -236,9 +253,16 @@ func (p *qualificationProcess) finalize(ctx context.Context) error {
 		return ctx.Err()
 	}
 	p.mu.Lock()
-	expectedKill := p.expectedKill
-	p.mu.Unlock()
-	if expectedKill {
+	defer p.mu.Unlock()
+	if !p.finalized {
+		p.finalError = p.finalErrorLocked()
+		p.finalized = true
+	}
+	return p.finalError
+}
+
+func (p *qualificationProcess) finalErrorLocked() error {
+	if p.expectedKill {
 		exited, ok := p.waitError.(*exec.ExitError)
 		if !ok {
 			return errors.New("sidecar crash did not terminate its process")
@@ -252,6 +276,9 @@ func (p *qualificationProcess) finalize(ctx context.Context) error {
 	}
 	if p.readError != nil {
 		return errors.New("sidecar response stream did not finish cleanly")
+	}
+	if len(p.replies) != 0 {
+		return errors.New("sidecar emitted unsolicited responses")
 	}
 	if _, overflow := p.logs.snapshot(); overflow {
 		return errors.New("sidecar diagnostic budget exceeded")
