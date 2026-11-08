@@ -29,3 +29,5 @@ jobs:
         run: |
           docker build -t shale-camera-lan-test -f deploy/edge/test.Dockerfile deploy/edge
           docker run --rm --network=none --privileged shale-camera-lan-test
+      - name: isolated topology coordinator contract
+        run: docker run --rm --network=none --privileged shale-camera-lan-test python3 topology_test.py

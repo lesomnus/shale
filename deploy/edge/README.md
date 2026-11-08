@@ -191,3 +191,79 @@ docker run --rm --network=none --privileged shale-camera-lan-test
 No physical interface, existing namespace, camera or host-network container is
 used. Namespace/process cleanup runs on failure as well. Run this only on a
 dedicated test runner that permits the required namespace capabilities.
+
+## Topology runner for assembled end-to-end tests
+
+`topology.py` reuses the generated DHCP configuration and builds three fresh
+network namespaces inside the same disposable, network-disabled test container:
+
+```text
+camera eth0 <-- dedicated camera LAN --> eth0 edge wlan0 <-- simulated Wi-Fi --> eth0 CP
+DHCP lease                              192.168.250.1     10.23.0.2           10.23.0.1
+```
+
+The camera obtains its address from an actual DHCP exchange before a test starts.
+The runner checks server DORA log entries, a persisted lease and absent
+router/DNS/NTP options. It configures the WS-Discovery multicast route on the
+camera LAN and disables edge IPv4 forwarding. There is no bridge, NAT, physical
+interface or route from CP to the camera LAN. The Wi-Fi link is a veth simulation;
+it does not model radio behavior.
+
+The runner executes one coordinator command in the CP namespace and exports
+`SHALE_TOPOLOGY_FILE`, the absolute path to a version-1 JSON manifest. The manifest
+contains `roles.edge`, `roles.camera` and `roles.cp`, their addresses/interfaces,
+`exec_prefix` argument arrays, the multicast destination, and DHCP evidence paths.
+The coordinator runs as root solely to launch test processes in the prepared
+namespaces. DHCP is a separate process with its own limited network capabilities.
+Every application's `exec_prefix` uses UID/GID 65534, empty supplementary groups,
+no capabilities (including an empty bounding set), and `no_new_privs`.
+
+Append a command to a role's `exec_prefix` and execute the resulting argument array
+directly. Do not join a Go runtime thread to a namespace, pass the prefix through
+a shell, or give the application a privileged prefix. The `ip netns exec` helper
+performs namespace entry before executing the unprivileged application. The root
+coordinator keeps access to the named namespaces and may use `exec.Command` to
+start, stop or restart each role as the scenario requires. For example:
+
+```go
+argv := append(append([]string{}, topology.Roles["edge"].ExecPrefix...),
+    "/test/shale", "serve", "edge", "--config", configPath)
+edge := exec.CommandContext(ctx, argv[0], argv[1:]...)
+```
+
+This is an execution-contract example; the future assembled test supplies actual
+CLI arguments, central services, credentials, readiness checks and assertions.
+Tests must create writable state/config directories for UID/GID 65534, including
+traversable parents. Prefer a dedicated subdirectory below a test temporary
+directory, and chown that subdirectory explicitly. Ordinary unprivileged sockets
+can perform discovery and connect to camera RTSP; camera fixture listeners should
+use ports above 1023. Host filesystem mounts are unnecessary: build or copy test
+binaries and fixtures into a test image with `COPY`.
+
+```sh
+docker run --rm --network=none --privileged shale-camera-lan-test \
+  python3 topology.py -- python3 topology_smoke.py
+# A future image can inject a compiled coordinator instead:
+# python3 topology.py -- /test/e2e.test -test.run '^TestAssembledEdge$'
+```
+
+`--timeout` bounds the coordinator's lifetime (default 120 seconds), and its exit
+code becomes the runner's exit code. `--artifacts /tmp/run-name` creates a fresh
+directory and retains `topology.json`, DHCP logs/lease and `result.json` inside
+the container. `result.json` records the coordinator exit code and whether cleanup
+completed; the manifest's namespace prefixes are valid only while the runner is
+active. Without `--artifacts`, temporary evidence is deleted after cleanup. Use
+`docker cp` from a stopped container when evidence must be retained outside it.
+
+The supervisor terminates child process groups and remaining processes in its
+namespaces, reaps detached descendants and deletes its namespaces/veth pairs on
+success, coordinator failure, timeout or SIGTERM/SIGINT. SIGKILL still requires
+removing the disposable container. It refuses to start unless explicitly enabled
+by the test image, running as root, and the outer namespace contains only loopback.
+
+`python3 topology_test.py` explicitly exercises this contract in the test
+container. Its unprivileged socket peers check a multicast probe/reply, RTSP
+OPTIONS routing and the outbound CP path; these are transport checks, not the
+production ONVIF adapter, RTSP video, central policy or an assembled Go end-to-end
+test. It also checks success/failure/timeout/SIGTERM cleanup, including a detached
+role child. No hardware or media qualification is inferred from these checks.
