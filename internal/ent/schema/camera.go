@@ -269,6 +269,10 @@ func (CameraBinding) Fields() []ent.Field {
 			Optional(),
 		field.Int64("applied_revision"),
 		field.Bool("collect"),
+		field.Json("starting_application", &api.CameraApplication{}).ValueScanner(entpb.ValueScanner[*api.CameraApplication]{}).
+			Optional(),
+		field.Json("applied_application", &api.CameraApplication{}).ValueScanner(entpb.ValueScanner[*api.CameraApplication]{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

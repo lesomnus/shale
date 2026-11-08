@@ -143,6 +143,30 @@ func (_u *CameraBindingUpdate) SetNillableCollect(v *bool) *CameraBindingUpdate 
 	return _u
 }
 
+// SetStartingApplication sets the "starting_application" field.
+func (_u *CameraBindingUpdate) SetStartingApplication(v *api.CameraApplication) *CameraBindingUpdate {
+	_u.mutation.SetStartingApplication(v)
+	return _u
+}
+
+// ClearStartingApplication clears the value of the "starting_application" field.
+func (_u *CameraBindingUpdate) ClearStartingApplication() *CameraBindingUpdate {
+	_u.mutation.ClearStartingApplication()
+	return _u
+}
+
+// SetAppliedApplication sets the "applied_application" field.
+func (_u *CameraBindingUpdate) SetAppliedApplication(v *api.CameraApplication) *CameraBindingUpdate {
+	_u.mutation.SetAppliedApplication(v)
+	return _u
+}
+
+// ClearAppliedApplication clears the value of the "applied_application" field.
+func (_u *CameraBindingUpdate) ClearAppliedApplication() *CameraBindingUpdate {
+	_u.mutation.ClearAppliedApplication()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraBindingUpdate) SetDateUpdated(v time.Time) *CameraBindingUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -318,6 +342,38 @@ func (_u *CameraBindingUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldCollect); ok {
 		_spec.SetField(camerabinding.FieldCollect, field.TypeBool, e)
 	}
+	if value, ok := _u.mutation.StartingApplication(); ok {
+		vv, err := camerabinding.ValueScanner.StartingApplication.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldStartingApplication); ok {
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, e)
+	}
+	if _u.mutation.StartingApplicationCleared() {
+		_spec.ClearField(camerabinding.FieldStartingApplication, field.TypeJson)
+	}
+	if value, ok := _u.mutation.AppliedApplication(); ok {
+		vv, err := camerabinding.ValueScanner.AppliedApplication.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldAppliedApplication); ok {
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, e)
+	}
+	if _u.mutation.AppliedApplicationCleared() {
+		_spec.ClearField(camerabinding.FieldAppliedApplication, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -468,6 +524,30 @@ func (_u *CameraBindingUpdateOne) SetNillableCollect(v *bool) *CameraBindingUpda
 	if v != nil {
 		_u.SetCollect(*v)
 	}
+	return _u
+}
+
+// SetStartingApplication sets the "starting_application" field.
+func (_u *CameraBindingUpdateOne) SetStartingApplication(v *api.CameraApplication) *CameraBindingUpdateOne {
+	_u.mutation.SetStartingApplication(v)
+	return _u
+}
+
+// ClearStartingApplication clears the value of the "starting_application" field.
+func (_u *CameraBindingUpdateOne) ClearStartingApplication() *CameraBindingUpdateOne {
+	_u.mutation.ClearStartingApplication()
+	return _u
+}
+
+// SetAppliedApplication sets the "applied_application" field.
+func (_u *CameraBindingUpdateOne) SetAppliedApplication(v *api.CameraApplication) *CameraBindingUpdateOne {
+	_u.mutation.SetAppliedApplication(v)
+	return _u
+}
+
+// ClearAppliedApplication clears the value of the "applied_application" field.
+func (_u *CameraBindingUpdateOne) ClearAppliedApplication() *CameraBindingUpdateOne {
+	_u.mutation.ClearAppliedApplication()
 	return _u
 }
 
@@ -675,6 +755,38 @@ func (_u *CameraBindingUpdateOne) sqlSave(ctx context.Context) (_node *CameraBin
 	}
 	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldCollect); ok {
 		_spec.SetField(camerabinding.FieldCollect, field.TypeBool, e)
+	}
+	if value, ok := _u.mutation.StartingApplication(); ok {
+		vv, err := camerabinding.ValueScanner.StartingApplication.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldStartingApplication); ok {
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, e)
+	}
+	if _u.mutation.StartingApplicationCleared() {
+		_spec.ClearField(camerabinding.FieldStartingApplication, field.TypeJson)
+	}
+	if value, ok := _u.mutation.AppliedApplication(); ok {
+		vv, err := camerabinding.ValueScanner.AppliedApplication.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(camerabinding.FieldAppliedApplication); ok {
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, e)
+	}
+	if _u.mutation.AppliedApplicationCleared() {
+		_spec.ClearField(camerabinding.FieldAppliedApplication, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)

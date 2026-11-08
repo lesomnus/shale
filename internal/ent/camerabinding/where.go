@@ -536,6 +536,26 @@ func CollectNEQ(v bool) predicate.CameraBinding {
 	return predicate.CameraBinding(sql.FieldNEQ(FieldCollect, v))
 }
 
+// StartingApplicationIsNil applies the IsNil predicate on the "starting_application" field.
+func StartingApplicationIsNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldIsNull(FieldStartingApplication))
+}
+
+// StartingApplicationNotNil applies the NotNil predicate on the "starting_application" field.
+func StartingApplicationNotNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNotNull(FieldStartingApplication))
+}
+
+// AppliedApplicationIsNil applies the IsNil predicate on the "applied_application" field.
+func AppliedApplicationIsNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldIsNull(FieldAppliedApplication))
+}
+
+// AppliedApplicationNotNil applies the NotNil predicate on the "applied_application" field.
+func AppliedApplicationNotNil() predicate.CameraBinding {
+	return predicate.CameraBinding(sql.FieldNotNull(FieldAppliedApplication))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.CameraBinding {
 	return predicate.CameraBinding(sql.FieldEQ(FieldDateUpdated, v))

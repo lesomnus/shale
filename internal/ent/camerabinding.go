@@ -45,6 +45,10 @@ type CameraBinding struct {
 	AppliedRevision int64 `json:"applied_revision,omitempty"`
 	// Collect holds the value of the "collect" field.
 	Collect bool `json:"collect,omitempty"`
+	// StartingApplication holds the value of the "starting_application" field.
+	StartingApplication *api.CameraApplication `json:"starting_application,omitempty"`
+	// AppliedApplication holds the value of the "applied_application" field.
+	AppliedApplication *api.CameraApplication `json:"applied_application,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -162,6 +166,10 @@ func (*CameraBinding) scanValues(columns []string) ([]any, error) {
 			values[i] = camerabinding.ValueScanner.Desired.ScanValue()
 		case camerabinding.FieldObserved:
 			values[i] = camerabinding.ValueScanner.Observed.ScanValue()
+		case camerabinding.FieldStartingApplication:
+			values[i] = camerabinding.ValueScanner.StartingApplication.ScanValue()
+		case camerabinding.FieldAppliedApplication:
+			values[i] = camerabinding.ValueScanner.AppliedApplication.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -244,6 +252,18 @@ func (_m *CameraBinding) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field collect", values[i])
 			} else if value.Valid {
 				_m.Collect = value.Bool
+			}
+		case camerabinding.FieldStartingApplication:
+			if value, err := camerabinding.ValueScanner.StartingApplication.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.StartingApplication = value
+			}
+		case camerabinding.FieldAppliedApplication:
+			if value, err := camerabinding.ValueScanner.AppliedApplication.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.AppliedApplication = value
 			}
 		case camerabinding.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -384,6 +404,12 @@ func (_m *CameraBinding) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("collect=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Collect))
+	builder.WriteString(", ")
+	builder.WriteString("starting_application=")
+	builder.WriteString(fmt.Sprintf("%v", _m.StartingApplication))
+	builder.WriteString(", ")
+	builder.WriteString("applied_application=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AppliedApplication))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

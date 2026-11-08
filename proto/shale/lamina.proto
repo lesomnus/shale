@@ -88,6 +88,8 @@ message Lamina {
   // Why a SKIPPED lamina holds nothing; unspecified otherwise. The default
   // is what the rows from before the column get.
   LaminaSkipReason skip_reason = 29 [(orm.field) = {default: ""}];
+  // Capture incarnation, unrelated to the placement epoch bucket above.
+  string capture_epoch = 30 [(orm.field) = {immutable: true default: ""}];
 
   option (orm.message) = {
     rpc: {crud: true}

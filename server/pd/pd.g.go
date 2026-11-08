@@ -21520,6 +21520,21 @@ func (s interceptCameraAssignment) Handover(ctx context.Context, req *api.Camera
 		api.CameraAssignmentService_Handover_FullMethodName, req, s.CameraAssignmentServiceServer.Handover)
 }
 
+func (s interceptCameraAssignment) Application(ctx context.Context, req *api.CameraApplicationRequest) (*api.CameraApplyState, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Application_FullMethodName, req, s.CameraAssignmentServiceServer.Application)
+}
+
+func (s interceptCameraAssignment) BeginApply(ctx context.Context, req *api.CameraBeginApplyRequest) (*api.CameraApplication, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_BeginApply_FullMethodName, req, s.CameraAssignmentServiceServer.BeginApply)
+}
+
+func (s interceptCameraAssignment) Applied(ctx context.Context, req *api.CameraAppliedRequest) (*api.CameraApplication, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraAssignmentServiceServer,
+		api.CameraAssignmentService_Applied_FullMethodName, req, s.CameraAssignmentServiceServer.Applied)
+}
+
 func (s Intercept) CameraBinding() api.CameraBindingServiceServer {
 	return interceptCameraBinding{s, s.Next().CameraBinding()}
 }
@@ -24464,6 +24479,12 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.CameraAssignmentSnapshotRequest{}
 	case api.CameraAssignmentService_Handover_FullMethodName:
 		v = &api.CameraAssignmentHandoverRequest{}
+	case api.CameraAssignmentService_Application_FullMethodName:
+		v = &api.CameraApplicationRequest{}
+	case api.CameraAssignmentService_BeginApply_FullMethodName:
+		v = &api.CameraBeginApplyRequest{}
+	case api.CameraAssignmentService_Applied_FullMethodName:
+		v = &api.CameraAppliedRequest{}
 	case api.CameraBindingService_Add_FullMethodName:
 		v = &api.CameraBindingAddRequest{}
 	case api.CameraBindingService_Get_FullMethodName:
@@ -25004,6 +25025,12 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.CameraAssignment().Snapshot(ctx, v.(*api.CameraAssignmentSnapshotRequest))
 	case api.CameraAssignmentService_Handover_FullMethodName:
 		res, err = s.CameraAssignment().Handover(ctx, v.(*api.CameraAssignmentHandoverRequest))
+	case api.CameraAssignmentService_Application_FullMethodName:
+		res, err = s.CameraAssignment().Application(ctx, v.(*api.CameraApplicationRequest))
+	case api.CameraAssignmentService_BeginApply_FullMethodName:
+		res, err = s.CameraAssignment().BeginApply(ctx, v.(*api.CameraBeginApplyRequest))
+	case api.CameraAssignmentService_Applied_FullMethodName:
+		res, err = s.CameraAssignment().Applied(ctx, v.(*api.CameraAppliedRequest))
 	case api.CameraBindingService_Add_FullMethodName:
 		res, err = s.CameraBinding().Add(ctx, v.(*api.CameraBindingAddRequest))
 	case api.CameraBindingService_Get_FullMethodName:
@@ -26143,6 +26170,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 27, Name: entLamina.FieldChecksum, Type: 12, Nullable: false, Key: 0},
 				{Number: 28, Name: entLamina.FieldEpoch, Type: 3, Nullable: false, Key: 0},
 				{Number: 29, Name: entLamina.FieldSkipReason, Type: 14, Nullable: false, Key: 0},
+				{Number: 30, Name: entLamina.FieldCaptureEpoch, Type: 9, Nullable: false, Key: 0},
 			}, v)
 			if err != nil {
 				return nil, err

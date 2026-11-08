@@ -353,6 +353,8 @@ var (
 		{Name: "observed", Type: field.TypeJson, Nullable: true},
 		{Name: "applied_revision", Type: field.TypeInt64},
 		{Name: "collect", Type: field.TypeBool},
+		{Name: "starting_application", Type: field.TypeJson, Nullable: true},
+		{Name: "applied_application", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -370,31 +372,31 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "camerabinding_tenant_tenant",
-				Columns:    []*schema.Column{CamerabindingColumns[14]},
+				Columns:    []*schema.Column{CamerabindingColumns[16]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "camerabinding_site_site",
-				Columns:    []*schema.Column{CamerabindingColumns[15]},
+				Columns:    []*schema.Column{CamerabindingColumns[17]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "camerabinding_cameraassignment_assignment",
-				Columns:    []*schema.Column{CamerabindingColumns[16]},
+				Columns:    []*schema.Column{CamerabindingColumns[18]},
 				RefColumns: []*schema.Column{CameraassignmentColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "camerabinding_cameradevice_device",
-				Columns:    []*schema.Column{CamerabindingColumns[17]},
+				Columns:    []*schema.Column{CamerabindingColumns[19]},
 				RefColumns: []*schema.Column{CameradeviceColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "camerabinding_source_source",
-				Columns:    []*schema.Column{CamerabindingColumns[18]},
+				Columns:    []*schema.Column{CamerabindingColumns[20]},
 				RefColumns: []*schema.Column{SourceColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -403,12 +405,12 @@ var (
 			{
 				Name:    "camerabinding_page",
 				Unique:  false,
-				Columns: []*schema.Column{CamerabindingColumns[14], CamerabindingColumns[13], CamerabindingColumns[0]},
+				Columns: []*schema.Column{CamerabindingColumns[16], CamerabindingColumns[15], CamerabindingColumns[0]},
 			},
 			{
 				Name:    "camerabinding_source",
 				Unique:  true,
-				Columns: []*schema.Column{CamerabindingColumns[18]},
+				Columns: []*schema.Column{CamerabindingColumns[20]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -416,7 +418,7 @@ var (
 			{
 				Name:    "camerabinding_logical",
 				Unique:  true,
-				Columns: []*schema.Column{CamerabindingColumns[14], CamerabindingColumns[5]},
+				Columns: []*schema.Column{CamerabindingColumns[16], CamerabindingColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -1093,6 +1095,7 @@ var (
 		{Name: "checksum", Type: field.TypeBytes, Nullable: true},
 		{Name: "epoch", Type: field.TypeInt64},
 		{Name: "skip_reason", Type: field.TypeInt32, Nullable: true, Default: 0},
+		{Name: "capture_epoch", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid},
@@ -1107,31 +1110,31 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "lamina_tenant_tenant",
-				Columns:    []*schema.Column{LaminaColumns[19]},
+				Columns:    []*schema.Column{LaminaColumns[20]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "lamina_site_site",
-				Columns:    []*schema.Column{LaminaColumns[20]},
+				Columns:    []*schema.Column{LaminaColumns[21]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "lamina_set_set",
-				Columns:    []*schema.Column{LaminaColumns[21]},
+				Columns:    []*schema.Column{LaminaColumns[22]},
 				RefColumns: []*schema.Column{SetColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "lamina_source_source",
-				Columns:    []*schema.Column{LaminaColumns[22]},
+				Columns:    []*schema.Column{LaminaColumns[23]},
 				RefColumns: []*schema.Column{SourceColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "lamina_sink_sink",
-				Columns:    []*schema.Column{LaminaColumns[23]},
+				Columns:    []*schema.Column{LaminaColumns[24]},
 				RefColumns: []*schema.Column{SinkColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -1140,27 +1143,27 @@ var (
 			{
 				Name:    "lamina_page",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[19], LaminaColumns[4], LaminaColumns[0]},
+				Columns: []*schema.Column{LaminaColumns[20], LaminaColumns[4], LaminaColumns[0]},
 			},
 			{
 				Name:    "lamina_source_time",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[22], LaminaColumns[5]},
+				Columns: []*schema.Column{LaminaColumns[23], LaminaColumns[5]},
 			},
 			{
 				Name:    "lamina_set_time",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[21], LaminaColumns[5]},
+				Columns: []*schema.Column{LaminaColumns[22], LaminaColumns[5]},
 			},
 			{
 				Name:    "lamina_location",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[23], LaminaColumns[1]},
+				Columns: []*schema.Column{LaminaColumns[24], LaminaColumns[1]},
 			},
 			{
 				Name:    "lamina_gc",
 				Unique:  false,
-				Columns: []*schema.Column{LaminaColumns[23], LaminaColumns[10]},
+				Columns: []*schema.Column{LaminaColumns[24], LaminaColumns[10]},
 			},
 			{
 				Name:    "lamina_state",

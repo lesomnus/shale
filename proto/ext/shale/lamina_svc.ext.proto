@@ -66,6 +66,7 @@ message LaminaAllocateRequest {
   // segment and this one begins in the same slot (§15): the answer is
   // another lamina, whatever state the last one is in.
   LaminaRef after = 3;
+  string capture_epoch = 4 [features.field_presence = IMPLICIT];
 }
 
 message LaminaReallocateRequest {

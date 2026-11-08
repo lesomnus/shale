@@ -48,6 +48,8 @@ const (
 	FieldEpoch = "epoch"
 	// FieldSkipReason holds the string denoting the skip_reason field in the database.
 	FieldSkipReason = "skip_reason"
+	// FieldCaptureEpoch holds the string denoting the capture_epoch field in the database.
+	FieldCaptureEpoch = "capture_epoch"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
@@ -128,6 +130,7 @@ var Columns = []string{
 	FieldChecksum,
 	FieldEpoch,
 	FieldSkipReason,
+	FieldCaptureEpoch,
 	FieldTenantId,
 	FieldSiteId,
 	FieldSetId,
@@ -148,6 +151,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultSkipReason holds the default value on creation for the "skip_reason" field.
 	DefaultSkipReason int32
+	// DefaultCaptureEpoch holds the default value on creation for the "capture_epoch" field.
+	DefaultCaptureEpoch string
 )
 
 // OrderOption defines the ordering options for the Lamina queries.
@@ -241,6 +246,11 @@ func ByEpoch(opts ...sql.OrderTermOption) OrderOption {
 // BySkipReason orders the results by the skip_reason field.
 func BySkipReason(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSkipReason, opts...).ToFunc()
+}
+
+// ByCaptureEpoch orders the results by the capture_epoch field.
+func ByCaptureEpoch(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCaptureEpoch, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

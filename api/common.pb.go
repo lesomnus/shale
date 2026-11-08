@@ -1058,6 +1058,7 @@ type Allocation struct {
 	xxx_hidden_LaminaKey      string                 `protobuf:"bytes,10,opt,name=lamina_key,json=laminaKey"`
 	xxx_hidden_Profile        *SegmentProfile        `protobuf:"bytes,11,opt,name=profile"`
 	xxx_hidden_Link           *LinkProfile           `protobuf:"bytes,12,opt,name=link"`
+	xxx_hidden_CaptureEpoch   string                 `protobuf:"bytes,13,opt,name=capture_epoch,json=captureEpoch"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -1173,6 +1174,13 @@ func (x *Allocation) GetLink() *LinkProfile {
 	return nil
 }
 
+func (x *Allocation) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *Allocation) SetLaminaId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1225,6 +1233,10 @@ func (x *Allocation) SetProfile(v *SegmentProfile) {
 
 func (x *Allocation) SetLink(v *LinkProfile) {
 	x.xxx_hidden_Link = v
+}
+
+func (x *Allocation) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
 }
 
 func (x *Allocation) HasDateStarted() bool {
@@ -1287,6 +1299,7 @@ type Allocation_builder struct {
 	LaminaKey      string
 	Profile        *SegmentProfile
 	Link           *LinkProfile
+	CaptureEpoch   string
 }
 
 func (b0 Allocation_builder) Build() *Allocation {
@@ -1305,6 +1318,7 @@ func (b0 Allocation_builder) Build() *Allocation {
 	x.xxx_hidden_LaminaKey = b.LaminaKey
 	x.xxx_hidden_Profile = b.Profile
 	x.xxx_hidden_Link = b.Link
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	return m0
 }
 
@@ -1832,6 +1846,7 @@ type SourceReport struct {
 	xxx_hidden_SecondsTotal       int64                  `protobuf:"varint,11,opt,name=seconds_total,json=secondsTotal"`
 	xxx_hidden_Error              string                 `protobuf:"bytes,12,opt,name=error"`
 	xxx_hidden_Dark               bool                   `protobuf:"varint,13,opt,name=dark"`
+	xxx_hidden_CaptureEpoch       string                 `protobuf:"bytes,14,opt,name=capture_epoch,json=captureEpoch"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -1952,6 +1967,13 @@ func (x *SourceReport) GetDark() bool {
 	return false
 }
 
+func (x *SourceReport) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *SourceReport) SetSourceId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -2007,6 +2029,10 @@ func (x *SourceReport) SetDark(v bool) {
 	x.xxx_hidden_Dark = v
 }
 
+func (x *SourceReport) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
 type SourceReport_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2025,6 +2051,8 @@ type SourceReport_builder struct {
 	// Dark says the source's scene has been dark past `idle.dark_after`
 	// and its segments are being skipped (§38.10).
 	Dark bool
+	// Empty for legacy static sources; otherwise the exact applied incarnation.
+	CaptureEpoch string
 }
 
 func (b0 SourceReport_builder) Build() *SourceReport {
@@ -2044,6 +2072,7 @@ func (b0 SourceReport_builder) Build() *SourceReport {
 	x.xxx_hidden_SecondsTotal = b.SecondsTotal
 	x.xxx_hidden_Error = b.Error
 	x.xxx_hidden_Dark = b.Dark
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	return m0
 }
 
@@ -3304,6 +3333,7 @@ type LaminaRecord struct {
 	xxx_hidden_Checksum              []byte                 `protobuf:"bytes,18,opt,name=checksum"`
 	xxx_hidden_PlacementVersion      int64                  `protobuf:"varint,19,opt,name=placement_version,json=placementVersion"`
 	xxx_hidden_Crc32C                bool                   `protobuf:"varint,20,opt,name=crc32c"`
+	xxx_hidden_CaptureEpoch          string                 `protobuf:"bytes,21,opt,name=capture_epoch,json=captureEpoch"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -3473,6 +3503,13 @@ func (x *LaminaRecord) GetCrc32C() bool {
 	return false
 }
 
+func (x *LaminaRecord) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *LaminaRecord) SetFormatVersion(v int32) {
 	x.xxx_hidden_FormatVersion = v
 }
@@ -3574,6 +3611,10 @@ func (x *LaminaRecord) SetCrc32C(v bool) {
 	x.xxx_hidden_Crc32C = v
 }
 
+func (x *LaminaRecord) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
 type LaminaRecord_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -3598,7 +3639,8 @@ type LaminaRecord_builder struct {
 	PlacementVersion      int64
 	// Crc32c asks the node to compute a CRC32C while receiving and keep it
 	// in `checksum` (§30), which the set's `checksum` flag turns on.
-	Crc32C bool
+	Crc32C       bool
+	CaptureEpoch string
 }
 
 func (b0 LaminaRecord_builder) Build() *LaminaRecord {
@@ -3625,6 +3667,7 @@ func (b0 LaminaRecord_builder) Build() *LaminaRecord {
 	x.xxx_hidden_Checksum = b.Checksum
 	x.xxx_hidden_PlacementVersion = b.PlacementVersion
 	x.xxx_hidden_Crc32C = b.Crc32C
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	return m0
 }
 
@@ -3654,6 +3697,7 @@ type TokenClaims struct {
 	xxx_hidden_Delegator             []byte                 `protobuf:"bytes,20,opt,name=delegator"`
 	xxx_hidden_ExportFrom            *timestamppb.Timestamp `protobuf:"bytes,21,opt,name=export_from,json=exportFrom"`
 	xxx_hidden_ExportTo              *timestamppb.Timestamp `protobuf:"bytes,22,opt,name=export_to,json=exportTo"`
+	xxx_hidden_CaptureEpoch          string                 `protobuf:"bytes,23,opt,name=capture_epoch,json=captureEpoch"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -3837,6 +3881,13 @@ func (x *TokenClaims) GetExportTo() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *TokenClaims) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *TokenClaims) SetKid(v string) {
 	x.xxx_hidden_Kid = v
 }
@@ -3946,6 +3997,10 @@ func (x *TokenClaims) SetExportTo(v *timestamppb.Timestamp) {
 	x.xxx_hidden_ExportTo = v
 }
 
+func (x *TokenClaims) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
 func (x *TokenClaims) HasExp() bool {
 	if x == nil {
 		return false
@@ -4041,6 +4096,8 @@ type TokenClaims_builder struct {
 	// caller-controlled network address is carried by a capability.
 	ExportFrom *timestamppb.Timestamp
 	ExportTo   *timestamppb.Timestamp
+	// view: never serve a different capture incarnation under this capability.
+	CaptureEpoch string
 }
 
 func (b0 TokenClaims_builder) Build() *TokenClaims {
@@ -4069,6 +4126,7 @@ func (b0 TokenClaims_builder) Build() *TokenClaims {
 	x.xxx_hidden_Delegator = b.Delegator
 	x.xxx_hidden_ExportFrom = b.ExportFrom
 	x.xxx_hidden_ExportTo = b.ExportTo
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	return m0
 }
 
@@ -4987,7 +5045,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\tendpoints\x18\x04 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12\x14\n" +
 	"\x05token\x18\x05 \x01(\tR\x05token\x12\x1d\n" +
 	"\n" +
-	"lamina_key\x18\x06 \x01(\tR\tlaminaKey\"\xed\x03\n" +
+	"lamina_key\x18\x06 \x01(\tR\tlaminaKey\"\x92\x04\n" +
 	"\n" +
 	"Allocation\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1b\n" +
@@ -5006,7 +5064,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"lamina_key\x18\n" +
 	" \x01(\tR\tlaminaKey\x12/\n" +
 	"\aprofile\x18\v \x01(\v2\x15.shale.SegmentProfileR\aprofile\x12&\n" +
-	"\x04link\x18\f \x01(\v2\x12.shale.LinkProfileR\x04link\"\xe6\x01\n" +
+	"\x04link\x18\f \x01(\v2\x12.shale.LinkProfileR\x04link\x12#\n" +
+	"\rcapture_epoch\x18\r \x01(\tR\fcaptureEpoch\"\xe6\x01\n" +
 	"\x0fRelayAssignment\x12\x19\n" +
 	"\brelay_id\x18\x01 \x01(\fR\arelayId\x12-\n" +
 	"\tendpoints\x18\x02 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12#\n" +
@@ -5035,7 +5094,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\vtemperature\x18\x02 \x01(\x01R\vtemperature\x12\x1d\n" +
 	"\n" +
 	"uplink_bps\x18\x03 \x01(\x03R\tuplinkBps\x12!\n" +
-	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\xbe\x03\n" +
+	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\xe3\x03\n" +
 	"\fSourceReport\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12\x19\n" +
 	"\binput_up\x18\x02 \x01(\bR\ainputUp\x12\x1d\n" +
@@ -5053,7 +5112,8 @@ const file_shale_common_proto_rawDesc = "" +
 	" \x01(\x03R\bepisodes\x12#\n" +
 	"\rseconds_total\x18\v \x01(\x03R\fsecondsTotal\x12\x14\n" +
 	"\x05error\x18\f \x01(\tR\x05error\x12\x12\n" +
-	"\x04dark\x18\r \x01(\bR\x04dark\"\xa5\x01\n" +
+	"\x04dark\x18\r \x01(\bR\x04dark\x12#\n" +
+	"\rcapture_epoch\x18\x0e \x01(\tR\fcaptureEpoch\"\xa5\x01\n" +
 	"\x0eProducerStatus\x12-\n" +
 	"\asources\x18\x01 \x03(\v2\x13.shale.SourceReportR\asources\x12#\n" +
 	"\x04load\x18\x02 \x01(\v2\x0f.shale.HostLoadR\x04load\x12?\n" +
@@ -5133,7 +5193,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\ringress_bytes\x18\b \x01(\x03R\fingressBytes\x12!\n" +
 	"\frewind_bytes\x18\t \x01(\x03R\vrewindBytes\x12#\n" +
 	"\rrewind_budget\x18\n" +
-	" \x01(\x03R\frewindBudget\"\xb2\x05\n" +
+	" \x01(\x03R\frewindBudget\"\xd7\x05\n" +
 	"\fLaminaRecord\x12%\n" +
 	"\x0eformat_version\x18\x01 \x01(\x05R\rformatVersion\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\fR\btenantId\x12\x17\n" +
@@ -5158,7 +5218,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x0fdate_deleted_ms\x18\x11 \x01(\x03R\rdateDeletedMs\x12\x1a\n" +
 	"\bchecksum\x18\x12 \x01(\fR\bchecksum\x12+\n" +
 	"\x11placement_version\x18\x13 \x01(\x03R\x10placementVersion\x12\x16\n" +
-	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\"\xae\x06\n" +
+	"\x06crc32c\x18\x14 \x01(\bR\x06crc32c\x12#\n" +
+	"\rcapture_epoch\x18\x15 \x01(\tR\fcaptureEpoch\"\xd3\x06\n" +
 	"\vTokenClaims\x12\x10\n" +
 	"\x03kid\x18\x01 \x01(\tR\x03kid\x12,\n" +
 	"\x03exp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12,\n" +
@@ -5186,7 +5247,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\tdelegator\x18\x14 \x01(\fR\tdelegator\x12;\n" +
 	"\vexport_from\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"exportFrom\x127\n" +
-	"\texport_to\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\bexportTo\"\xd9\x03\n" +
+	"\texport_to\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\bexportTo\x12#\n" +
+	"\rcapture_epoch\x18\x17 \x01(\tR\fcaptureEpoch\"\xd9\x03\n" +
 	"\fLaminaStored\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1d\n" +
 	"\n" +

@@ -583,6 +583,9 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.SkipReasonCleared() {
 		_spec.ClearField(lamina.FieldSkipReason, field.TypeInt32)
 	}
+	if _u.mutation.CaptureEpochCleared() {
+		_spec.ClearField(lamina.FieldCaptureEpoch, field.TypeString)
+	}
 	if _u.mutation.SinkCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1215,6 +1218,9 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 	}
 	if _u.mutation.SkipReasonCleared() {
 		_spec.ClearField(lamina.FieldSkipReason, field.TypeInt32)
+	}
+	if _u.mutation.CaptureEpochCleared() {
+		_spec.ClearField(lamina.FieldCaptureEpoch, field.TypeString)
 	}
 	if _u.mutation.SinkCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -89,6 +89,18 @@ func (_c *CameraBindingCreate) SetCollect(v bool) *CameraBindingCreate {
 	return _c
 }
 
+// SetStartingApplication sets the "starting_application" field.
+func (_c *CameraBindingCreate) SetStartingApplication(v *api.CameraApplication) *CameraBindingCreate {
+	_c.mutation.SetStartingApplication(v)
+	return _c
+}
+
+// SetAppliedApplication sets the "applied_application" field.
+func (_c *CameraBindingCreate) SetAppliedApplication(v *api.CameraApplication) *CameraBindingCreate {
+	_c.mutation.SetAppliedApplication(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraBindingCreate) SetDateUpdated(v time.Time) *CameraBindingCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -384,6 +396,28 @@ func (_c *CameraBindingCreate) createSpec() (*CameraBinding, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.Collect(); ok {
 		_spec.SetField(camerabinding.FieldCollect, field.TypeBool, value)
 		_node.Collect = value
+	}
+	if value, ok := _c.mutation.StartingApplication(); ok {
+		vv, err := camerabinding.ValueScanner.StartingApplication.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(camerabinding.FieldStartingApplication, field.TypeJson, vv)
+		_node.StartingApplication = value
+	}
+	if value, ok := _c.mutation.AppliedApplication(); ok {
+		vv, err := camerabinding.ValueScanner.AppliedApplication.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(camerabinding.FieldAppliedApplication, field.TypeJson, vv)
+		_node.AppliedApplication = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(camerabinding.FieldDateUpdated, field.TypeTime, value)

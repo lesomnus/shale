@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/ingest.proto.
  */
 export const file_shale_ingest: GenFile = /*@__PURE__*/
-  fileDesc("ChJzaGFsZS9pbmdlc3QucHJvdG8SBXNoYWxlIr4BCg1BdHRhY2hSZXF1ZXN0EisKBWhlbGxvGAEgASgLMhouc2hhbGUuQXR0YWNoUmVxdWVzdC5IZWxsb0gAEikKBGRhdGEYAiABKAsyGS5zaGFsZS5BdHRhY2hSZXF1ZXN0LkRhdGFIABoeCgVIZWxsbxIVCg1wdWJsaXNoX3Rva2VuGAEgASgJGioKBERhdGESEQoJc291cmNlX2lkGAEgASgMEg8KB3BheWxvYWQYAiABKAxCCQoHbWVzc2FnZSL6AQoOQXR0YWNoUmVzcG9uc2USLAoFc3RhcnQYASABKAsyGy5zaGFsZS5BdHRhY2hSZXNwb25zZS5TdGFydEgAEioKBHN0b3AYAiABKAsyGi5zaGFsZS5BdHRhY2hSZXNwb25zZS5TdG9wSAASMAoHd2VsY29tZRgDIAEoCzIdLnNoYWxlLkF0dGFjaFJlc3BvbnNlLldlbGNvbWVIABoaCgVTdGFydBIRCglzb3VyY2VfaWQYASABKAwaGQoEU3RvcBIRCglzb3VyY2VfaWQYASABKAwaGgoHV2VsY29tZRIPCgdzb3VyY2VzGAEgAygMQgkKB21lc3NhZ2UySAoLUmVsYXlJbmdlc3QSOQoGQXR0YWNoEhQuc2hhbGUuQXR0YWNoUmVxdWVzdBoVLnNoYWxlLkF0dGFjaFJlc3BvbnNlKAEwAUIkWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaZIDAggCYghlZGl0aW9uc3DoBw");
+  fileDesc("ChJzaGFsZS9pbmdlc3QucHJvdG8SBXNoYWxlIsYCCg1BdHRhY2hSZXF1ZXN0EisKBWhlbGxvGAEgASgLMhouc2hhbGUuQXR0YWNoUmVxdWVzdC5IZWxsb0gAEikKBGRhdGEYAiABKAsyGS5zaGFsZS5BdHRhY2hSZXF1ZXN0LkRhdGFIABIrCgVyZXNldBgDIAEoCzIaLnNoYWxlLkF0dGFjaFJlcXVlc3QuUmVzZXRIABoeCgVIZWxsbxIVCg1wdWJsaXNoX3Rva2VuGAEgASgJGkEKBERhdGESEQoJc291cmNlX2lkGAEgASgMEg8KB3BheWxvYWQYAiABKAwSFQoNY2FwdHVyZV9lcG9jaBgDIAEoCRpCCgVSZXNldBIRCglzb3VyY2VfaWQYASABKAwSFQoNY2FwdHVyZV9lcG9jaBgCIAEoCRIPCgdzdG9wcGVkGAMgASgIQgkKB21lc3NhZ2Ui+gEKDkF0dGFjaFJlc3BvbnNlEiwKBXN0YXJ0GAEgASgLMhsuc2hhbGUuQXR0YWNoUmVzcG9uc2UuU3RhcnRIABIqCgRzdG9wGAIgASgLMhouc2hhbGUuQXR0YWNoUmVzcG9uc2UuU3RvcEgAEjAKB3dlbGNvbWUYAyABKAsyHS5zaGFsZS5BdHRhY2hSZXNwb25zZS5XZWxjb21lSAAaGgoFU3RhcnQSEQoJc291cmNlX2lkGAEgASgMGhkKBFN0b3ASEQoJc291cmNlX2lkGAEgASgMGhoKB1dlbGNvbWUSDwoHc291cmNlcxgBIAMoDEIJCgdtZXNzYWdlMkgKC1JlbGF5SW5nZXN0EjkKBkF0dGFjaBIULnNoYWxlLkF0dGFjaFJlcXVlc3QaFS5zaGFsZS5BdHRhY2hSZXNwb25zZSgBMAFCJFodZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGmSAwIIAmIIZWRpdGlvbnNw6Ac");
 
 /**
  * @generated from message shale.AttachRequest
@@ -32,6 +32,12 @@ export type AttachRequest = Message<"shale.AttachRequest"> & {
      */
     value: AttachRequest_Data;
     case: "data";
+  } | {
+    /**
+     * @generated from field: shale.AttachRequest.Reset reset = 3;
+     */
+    value: AttachRequest_Reset;
+    case: "reset";
   } | { case: undefined; value?: undefined };
 };
 
@@ -71,13 +77,16 @@ export type AttachRequest_Data = Message<"shale.AttachRequest.Data"> & {
   sourceId: Uint8Array;
 
   /**
-   * MPEG-TS packets, a whole number of them, the same bytes the producer
-   * stores; the first bytes after a Start begin at a keyframe with the
-   * tables prepended.
+   * fMP4 init or complete fragment. Each incarnation starts at a keyframe.
    *
    * @generated from field: bytes payload = 2;
    */
   payload: Uint8Array;
+
+  /**
+   * @generated from field: string capture_epoch = 3;
+   */
+  captureEpoch: string;
 };
 
 /**
@@ -86,6 +95,35 @@ export type AttachRequest_Data = Message<"shale.AttachRequest.Data"> & {
  */
 export const AttachRequest_DataSchema: GenMessage<AttachRequest_Data> = /*@__PURE__*/
   messageDesc(file_shale_ingest, 0, 1);
+
+/**
+ * Reliable source control, independent of the bounded lossy media queue.
+ *
+ * @generated from message shale.AttachRequest.Reset
+ */
+export type AttachRequest_Reset = Message<"shale.AttachRequest.Reset"> & {
+  /**
+   * @generated from field: bytes source_id = 1;
+   */
+  sourceId: Uint8Array;
+
+  /**
+   * @generated from field: string capture_epoch = 2;
+   */
+  captureEpoch: string;
+
+  /**
+   * @generated from field: bool stopped = 3;
+   */
+  stopped: boolean;
+};
+
+/**
+ * Describes the message shale.AttachRequest.Reset.
+ * Use `create(AttachRequest_ResetSchema)` to create a new message.
+ */
+export const AttachRequest_ResetSchema: GenMessage<AttachRequest_Reset> = /*@__PURE__*/
+  messageDesc(file_shale_ingest, 0, 2);
 
 /**
  * @generated from message shale.AttachResponse
