@@ -20,9 +20,24 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: pinned cluster tools
+        # Prepopulate the action's cache with verified executables. Its downloader
+        # otherwise saves HTTP error bodies without a transport retry.
+        # Official kind v0.31.0 linux-amd64 release asset, via its API download.
+        run: |
+          sh .github/scripts/fetch-tool.sh \
+            https://api.github.com/repos/kubernetes-sigs/kind/releases/assets/330009836 \
+            eb244cbafcc157dff60cf68693c14c9a75c4e6e6fedaf9cd71c58117cb93e3fa \
+            "$RUNNER_TOOL_CACHE/kind/v0.31.0/amd64/kind/bin/kind"
+          sh .github/scripts/fetch-tool.sh \
+            https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl \
+            a2e984a18a0c063279d692533031c1eff93a262afcc0afdc517375432d060989 \
+            "$RUNNER_TOOL_CACHE/kubectl/bin/kubectl"
       - uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1
         with:
           cluster_name: shale
+          version: v0.31.0
+          kubectl_version: v1.35.0
       - name: image
         run: |
           # Two invocations: package copies what build wrote into ./output.

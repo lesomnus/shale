@@ -170,11 +170,12 @@ func TestAlsaDevice(t *testing.T) {
 func TestCaptureStopsGracefully(t *testing.T) {
 	dir := t.TempDir()
 	mark := filepath.Join(dir, "interrupted")
-	child := filepath.Join(dir, "child")
 	// Both sides of a pipeline trap the interrupt, as gst-launch -e and
 	// the shell around it would; the stdout stays open until they end.
-	cmd := "(trap 'echo first >>" + mark + "; exit 0' INT; echo up >" + child + "; while :; do echo f; sleep 0.05; done)" +
-		" | (trap 'echo second >>" + mark + "; exit 0' INT; cat)"
+	// Each side announces readiness only after installing its handler.
+	cmd := "dir=" + captureFixtureQuote(dir) + "; " +
+		`(trap 'echo first >>"$dir/interrupted"; exit 0' INT; echo up >"$dir/first"; while :; do echo f; sleep 0.05; done)` +
+		` | (trap 'echo second >>"$dir/interrupted"; exit 0' INT; echo up >"$dir/second"; cat)`
 	c := &Capture{
 		Source:  SourceConfig{Alias: "a", Command: cmd},
 		Log:     slogOf(nil),
@@ -186,7 +187,15 @@ func TestCaptureStopsGracefully(t *testing.T) {
 		defer close(done)
 		c.Run(ctx, func(r io.Reader) { io.Copy(io.Discard, r) })
 	}()
-	require.Eventually(t, func() bool { _, err := os.Stat(child); return err == nil }, 5*time.Second, 20*time.Millisecond)
+	t.Cleanup(func() {
+		cancel()
+		select {
+		case <-done:
+		case <-time.After(stopGrace + 5*time.Second):
+			t.Error("the capture did not end during cleanup")
+		}
+	})
+	waitCaptureFixtureReady(t, dir)
 	began := time.Now()
 	cancel()
 	select {
@@ -203,8 +212,12 @@ func TestCaptureStopsGracefully(t *testing.T) {
 // A capture that ignores the interrupt is killed, group and all, once the
 // grace is over.
 func TestCaptureKilledAfterGrace(t *testing.T) {
+	dir := t.TempDir()
+	cmd := "dir=" + captureFixtureQuote(dir) + "; trap '' INT; " +
+		`(trap '' INT; echo up >"$dir/first"; while :; do sleep 0.05; done)` +
+		` | (trap '' INT; echo up >"$dir/second"; cat)`
 	c := &Capture{
-		Source:  SourceConfig{Alias: "a", Command: "trap '' INT; (trap '' INT; while :; do sleep 0.05; done) | cat"},
+		Source:  SourceConfig{Alias: "a", Command: cmd},
 		Log:     slogOf(nil),
 		Profile: func() (int64, time.Duration) { return 1_000_000, 2 * time.Second },
 	}
@@ -214,7 +227,15 @@ func TestCaptureKilledAfterGrace(t *testing.T) {
 		defer close(done)
 		c.Run(ctx, func(r io.Reader) { io.Copy(io.Discard, r) })
 	}()
-	require.Eventually(t, c.Up, 5*time.Second, 20*time.Millisecond)
+	t.Cleanup(func() {
+		cancel()
+		select {
+		case <-done:
+		case <-time.After(stopGrace + 5*time.Second):
+			t.Error("the capture did not end during cleanup")
+		}
+	})
+	waitCaptureFixtureReady(t, dir)
 	began := time.Now()
 	cancel()
 	select {
@@ -223,6 +244,22 @@ func TestCaptureKilledAfterGrace(t *testing.T) {
 		t.Fatal("the capture outlived its kill")
 	}
 	require.GreaterOrEqual(t, time.Since(began), stopGrace-100*time.Millisecond, "the interrupt was ignored, so the kill ended it")
+}
+
+func captureFixtureQuote(path string) string {
+	return "'" + strings.ReplaceAll(path, "'", "'\"'\"'") + "'"
+}
+
+func waitCaptureFixtureReady(t *testing.T, dir string) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		for _, side := range []string{"first", "second"} {
+			if _, err := os.Stat(filepath.Join(dir, side)); err != nil {
+				return false
+			}
+		}
+		return true
+	}, 5*time.Second, 20*time.Millisecond, "both pipeline handlers must be installed")
 }
 
 // A source with `idle:` (§38.10): the picture the encoder takes, teed, one

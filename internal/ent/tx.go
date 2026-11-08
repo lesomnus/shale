@@ -22,6 +22,16 @@ type Tx struct {
 	Attempt *AttemptClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// CameraAssignment is the client for interacting with the CameraAssignment builders.
+	CameraAssignment *CameraAssignmentClient
+	// CameraBinding is the client for interacting with the CameraBinding builders.
+	CameraBinding *CameraBindingClient
+	// CameraDevice is the client for interacting with the CameraDevice builders.
+	CameraDevice *CameraDeviceClient
+	// CameraJob is the client for interacting with the CameraJob builders.
+	CameraJob *CameraJobClient
+	// CameraNetwork is the client for interacting with the CameraNetwork builders.
+	CameraNetwork *CameraNetworkClient
 	// Delegation is the client for interacting with the Delegation builders.
 	Delegation *DelegationClient
 	// Device is the client for interacting with the Device builders.
@@ -198,6 +208,11 @@ func (tx *Tx) init() {
 	tx.Archived = NewArchivedClient(tx.config)
 	tx.Attempt = NewAttemptClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
+	tx.CameraAssignment = NewCameraAssignmentClient(tx.config)
+	tx.CameraBinding = NewCameraBindingClient(tx.config)
+	tx.CameraDevice = NewCameraDeviceClient(tx.config)
+	tx.CameraJob = NewCameraJobClient(tx.config)
+	tx.CameraNetwork = NewCameraNetworkClient(tx.config)
 	tx.Delegation = NewDelegationClient(tx.config)
 	tx.Device = NewDeviceClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)

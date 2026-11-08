@@ -37,6 +37,8 @@ var tenantServices = []string{
 	"/shale.SetService/", "/shale.SourceService/", "/shale.LaminaService/", "/shale.AttemptService/",
 	"/shale.SiteService/", "/shale.SiteMemberService/", "/shale.ProducerService/", "/shale.ReaderService/",
 	"/shale.HolderService/", "/shale.AuditService/", "/shale.DelegationService/",
+	"/shale.CameraNetworkService/", "/shale.CameraDeviceService/", "/shale.CameraAssignmentService/",
+	"/shale.CameraBindingService/", "/shale.CameraJobService/",
 }
 
 // IsClusterService says whether a method belongs to the cluster surface.
@@ -82,6 +84,14 @@ func denied(method, why string) error {
 // on the cluster API is no exception: what a general write would set there
 // is a state nothing else agrees with just the same.
 func closedToEveryone(m string) bool {
+	// Camera authority rows change only through validated, fenced operations.
+	if strings.HasPrefix(m, "/shale.Camera") {
+		for _, verb := range []string{"/Add", "/Patch", "/Apply", "/Erase"} {
+			if strings.HasSuffix(m, verb) {
+				return true
+			}
+		}
+	}
 	switch {
 	case strings.HasPrefix(m, "/shale.LaminaService/"):
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Erase")

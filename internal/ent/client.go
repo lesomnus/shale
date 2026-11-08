@@ -16,6 +16,11 @@ import (
 	"github.com/lesomnus/shale/internal/ent/archived"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/audit"
+	"github.com/lesomnus/shale/internal/ent/cameraassignment"
+	"github.com/lesomnus/shale/internal/ent/camerabinding"
+	"github.com/lesomnus/shale/internal/ent/cameradevice"
+	"github.com/lesomnus/shale/internal/ent/camerajob"
+	"github.com/lesomnus/shale/internal/ent/cameranetwork"
 	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
@@ -55,6 +60,16 @@ type Client struct {
 	Attempt *AttemptClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// CameraAssignment is the client for interacting with the CameraAssignment builders.
+	CameraAssignment *CameraAssignmentClient
+	// CameraBinding is the client for interacting with the CameraBinding builders.
+	CameraBinding *CameraBindingClient
+	// CameraDevice is the client for interacting with the CameraDevice builders.
+	CameraDevice *CameraDeviceClient
+	// CameraJob is the client for interacting with the CameraJob builders.
+	CameraJob *CameraJobClient
+	// CameraNetwork is the client for interacting with the CameraNetwork builders.
+	CameraNetwork *CameraNetworkClient
 	// Delegation is the client for interacting with the Delegation builders.
 	Delegation *DelegationClient
 	// Device is the client for interacting with the Device builders.
@@ -110,6 +125,11 @@ func (c *Client) init() {
 	c.Archived = NewArchivedClient(c.config)
 	c.Attempt = NewAttemptClient(c.config)
 	c.Audit = NewAuditClient(c.config)
+	c.CameraAssignment = NewCameraAssignmentClient(c.config)
+	c.CameraBinding = NewCameraBindingClient(c.config)
+	c.CameraDevice = NewCameraDeviceClient(c.config)
+	c.CameraJob = NewCameraJobClient(c.config)
+	c.CameraNetwork = NewCameraNetworkClient(c.config)
 	c.Delegation = NewDelegationClient(c.config)
 	c.Device = NewDeviceClient(c.config)
 	c.Holder = NewHolderClient(c.config)
@@ -220,33 +240,38 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:             ctx,
-		config:          cfg,
-		Access:          NewAccessClient(cfg),
-		AddressPolicy:   NewAddressPolicyClient(cfg),
-		Archived:        NewArchivedClient(cfg),
-		Attempt:         NewAttemptClient(cfg),
-		Audit:           NewAuditClient(cfg),
-		Delegation:      NewDelegationClient(cfg),
-		Device:          NewDeviceClient(cfg),
-		Holder:          NewHolderClient(cfg),
-		Lamina:          NewLaminaClient(cfg),
-		Node:            NewNodeClient(cfg),
-		Outbox:          NewOutboxClient(cfg),
-		Owed:            NewOwedClient(cfg),
-		PlacementPolicy: NewPlacementPolicyClient(cfg),
-		Producer:        NewProducerClient(cfg),
-		Reader:          NewReaderClient(cfg),
-		Relay:           NewRelayClient(cfg),
-		RowSeal:         NewRowSealClient(cfg),
-		Set:             NewSetClient(cfg),
-		SigningKey:      NewSigningKeyClient(cfg),
-		Sink:            NewSinkClient(cfg),
-		Site:            NewSiteClient(cfg),
-		SiteMember:      NewSiteMemberClient(cfg),
-		Source:          NewSourceClient(cfg),
-		Tenant:          NewTenantClient(cfg),
-		UploadPolicy:    NewUploadPolicyClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		Access:           NewAccessClient(cfg),
+		AddressPolicy:    NewAddressPolicyClient(cfg),
+		Archived:         NewArchivedClient(cfg),
+		Attempt:          NewAttemptClient(cfg),
+		Audit:            NewAuditClient(cfg),
+		CameraAssignment: NewCameraAssignmentClient(cfg),
+		CameraBinding:    NewCameraBindingClient(cfg),
+		CameraDevice:     NewCameraDeviceClient(cfg),
+		CameraJob:        NewCameraJobClient(cfg),
+		CameraNetwork:    NewCameraNetworkClient(cfg),
+		Delegation:       NewDelegationClient(cfg),
+		Device:           NewDeviceClient(cfg),
+		Holder:           NewHolderClient(cfg),
+		Lamina:           NewLaminaClient(cfg),
+		Node:             NewNodeClient(cfg),
+		Outbox:           NewOutboxClient(cfg),
+		Owed:             NewOwedClient(cfg),
+		PlacementPolicy:  NewPlacementPolicyClient(cfg),
+		Producer:         NewProducerClient(cfg),
+		Reader:           NewReaderClient(cfg),
+		Relay:            NewRelayClient(cfg),
+		RowSeal:          NewRowSealClient(cfg),
+		Set:              NewSetClient(cfg),
+		SigningKey:       NewSigningKeyClient(cfg),
+		Sink:             NewSinkClient(cfg),
+		Site:             NewSiteClient(cfg),
+		SiteMember:       NewSiteMemberClient(cfg),
+		Source:           NewSourceClient(cfg),
+		Tenant:           NewTenantClient(cfg),
+		UploadPolicy:     NewUploadPolicyClient(cfg),
 	}, nil
 }
 
@@ -264,33 +289,38 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:             ctx,
-		config:          cfg,
-		Access:          NewAccessClient(cfg),
-		AddressPolicy:   NewAddressPolicyClient(cfg),
-		Archived:        NewArchivedClient(cfg),
-		Attempt:         NewAttemptClient(cfg),
-		Audit:           NewAuditClient(cfg),
-		Delegation:      NewDelegationClient(cfg),
-		Device:          NewDeviceClient(cfg),
-		Holder:          NewHolderClient(cfg),
-		Lamina:          NewLaminaClient(cfg),
-		Node:            NewNodeClient(cfg),
-		Outbox:          NewOutboxClient(cfg),
-		Owed:            NewOwedClient(cfg),
-		PlacementPolicy: NewPlacementPolicyClient(cfg),
-		Producer:        NewProducerClient(cfg),
-		Reader:          NewReaderClient(cfg),
-		Relay:           NewRelayClient(cfg),
-		RowSeal:         NewRowSealClient(cfg),
-		Set:             NewSetClient(cfg),
-		SigningKey:      NewSigningKeyClient(cfg),
-		Sink:            NewSinkClient(cfg),
-		Site:            NewSiteClient(cfg),
-		SiteMember:      NewSiteMemberClient(cfg),
-		Source:          NewSourceClient(cfg),
-		Tenant:          NewTenantClient(cfg),
-		UploadPolicy:    NewUploadPolicyClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		Access:           NewAccessClient(cfg),
+		AddressPolicy:    NewAddressPolicyClient(cfg),
+		Archived:         NewArchivedClient(cfg),
+		Attempt:          NewAttemptClient(cfg),
+		Audit:            NewAuditClient(cfg),
+		CameraAssignment: NewCameraAssignmentClient(cfg),
+		CameraBinding:    NewCameraBindingClient(cfg),
+		CameraDevice:     NewCameraDeviceClient(cfg),
+		CameraJob:        NewCameraJobClient(cfg),
+		CameraNetwork:    NewCameraNetworkClient(cfg),
+		Delegation:       NewDelegationClient(cfg),
+		Device:           NewDeviceClient(cfg),
+		Holder:           NewHolderClient(cfg),
+		Lamina:           NewLaminaClient(cfg),
+		Node:             NewNodeClient(cfg),
+		Outbox:           NewOutboxClient(cfg),
+		Owed:             NewOwedClient(cfg),
+		PlacementPolicy:  NewPlacementPolicyClient(cfg),
+		Producer:         NewProducerClient(cfg),
+		Reader:           NewReaderClient(cfg),
+		Relay:            NewRelayClient(cfg),
+		RowSeal:          NewRowSealClient(cfg),
+		Set:              NewSetClient(cfg),
+		SigningKey:       NewSigningKeyClient(cfg),
+		Sink:             NewSinkClient(cfg),
+		Site:             NewSiteClient(cfg),
+		SiteMember:       NewSiteMemberClient(cfg),
+		Source:           NewSourceClient(cfg),
+		Tenant:           NewTenantClient(cfg),
+		UploadPolicy:     NewUploadPolicyClient(cfg),
 	}, nil
 }
 
@@ -366,7 +396,8 @@ func (c *Client) InTx() bool {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.Delegation,
+		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.CameraAssignment,
+		c.CameraBinding, c.CameraDevice, c.CameraJob, c.CameraNetwork, c.Delegation,
 		c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed, c.PlacementPolicy,
 		c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set, c.SigningKey, c.Sink, c.Site,
 		c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
@@ -379,7 +410,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.Delegation,
+		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.CameraAssignment,
+		c.CameraBinding, c.CameraDevice, c.CameraJob, c.CameraNetwork, c.Delegation,
 		c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed, c.PlacementPolicy,
 		c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set, c.SigningKey, c.Sink, c.Site,
 		c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
@@ -401,6 +433,16 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Attempt.mutate(ctx, m)
 	case *AuditMutation:
 		return c.Audit.mutate(ctx, m)
+	case *CameraAssignmentMutation:
+		return c.CameraAssignment.mutate(ctx, m)
+	case *CameraBindingMutation:
+		return c.CameraBinding.mutate(ctx, m)
+	case *CameraDeviceMutation:
+		return c.CameraDevice.mutate(ctx, m)
+	case *CameraJobMutation:
+		return c.CameraJob.mutate(ctx, m)
+	case *CameraNetworkMutation:
+		return c.CameraNetwork.mutate(ctx, m)
 	case *DelegationMutation:
 		return c.Delegation.mutate(ctx, m)
 	case *DeviceMutation:
@@ -1188,6 +1230,975 @@ func (c *AuditClient) mutate(ctx context.Context, m *AuditMutation) (Value, erro
 		return (&AuditDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Audit mutation op: %q", m.Op())
+	}
+}
+
+// CameraAssignmentClient is a client for the CameraAssignment schema.
+type CameraAssignmentClient struct {
+	config
+}
+
+// NewCameraAssignmentClient returns a client for the CameraAssignment from the given config.
+func NewCameraAssignmentClient(c config) *CameraAssignmentClient {
+	return &CameraAssignmentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cameraassignment.Hooks(f(g(h())))`.
+func (c *CameraAssignmentClient) Use(hooks ...Hook) {
+	c.hooks.CameraAssignment = append(c.hooks.CameraAssignment, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cameraassignment.Intercept(f(g(h())))`.
+func (c *CameraAssignmentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraAssignment = append(c.inters.CameraAssignment, interceptors...)
+}
+
+// Create returns a builder for creating a CameraAssignment entity.
+func (c *CameraAssignmentClient) Create() *CameraAssignmentCreate {
+	mutation := newCameraAssignmentMutation(c.config, OpCreate)
+	return &CameraAssignmentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraAssignment entities.
+func (c *CameraAssignmentClient) CreateBulk(builders ...*CameraAssignmentCreate) *CameraAssignmentCreateBulk {
+	return &CameraAssignmentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraAssignmentClient) MapCreateBulk(slice any, setFunc func(*CameraAssignmentCreate, int)) *CameraAssignmentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraAssignmentCreateBulk{err: fmt.Errorf("calling to CameraAssignmentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraAssignmentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraAssignmentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraAssignment.
+func (c *CameraAssignmentClient) Update() *CameraAssignmentUpdate {
+	mutation := newCameraAssignmentMutation(c.config, OpUpdate)
+	return &CameraAssignmentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraAssignmentClient) UpdateOne(_m *CameraAssignment) *CameraAssignmentUpdateOne {
+	mutation := newCameraAssignmentMutation(c.config, OpUpdateOne, withCameraAssignment(_m))
+	return &CameraAssignmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraAssignmentClient) UpdateOneId(id uuid.UUID) *CameraAssignmentUpdateOne {
+	mutation := newCameraAssignmentMutation(c.config, OpUpdateOne, withCameraAssignmentId(id))
+	return &CameraAssignmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraAssignment.
+func (c *CameraAssignmentClient) Delete() *CameraAssignmentDelete {
+	mutation := newCameraAssignmentMutation(c.config, OpDelete)
+	return &CameraAssignmentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraAssignmentClient) DeleteOne(_m *CameraAssignment) *CameraAssignmentDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraAssignmentClient) DeleteOneId(id uuid.UUID) *CameraAssignmentDeleteOne {
+	builder := c.Delete().Where(cameraassignment.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraAssignmentDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraAssignment.
+func (c *CameraAssignmentClient) Query() *CameraAssignmentQuery {
+	return &CameraAssignmentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraAssignment},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraAssignment entity by its id.
+func (c *CameraAssignmentClient) Get(ctx context.Context, id uuid.UUID) (*CameraAssignment, error) {
+	return c.Query().Where(cameraassignment.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraAssignmentClient) GetX(ctx context.Context, id uuid.UUID) *CameraAssignment {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraAssignment.
+func (c *CameraAssignmentClient) QueryTenant(_m *CameraAssignment) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameraassignment.Table, cameraassignment.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameraassignment.TenantTable, cameraassignment.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraAssignment.
+func (c *CameraAssignmentClient) QuerySite(_m *CameraAssignment) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameraassignment.Table, cameraassignment.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameraassignment.SiteTable, cameraassignment.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNetwork queries the network edge of a CameraAssignment.
+func (c *CameraAssignmentClient) QueryNetwork(_m *CameraAssignment) *CameraNetworkQuery {
+	query := (&CameraNetworkClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameraassignment.Table, cameraassignment.FieldId, id),
+			sqlgraph.To(cameranetwork.Table, cameranetwork.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameraassignment.NetworkTable, cameraassignment.NetworkColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySet queries the set edge of a CameraAssignment.
+func (c *CameraAssignmentClient) QuerySet(_m *CameraAssignment) *SetQuery {
+	query := (&SetClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameraassignment.Table, cameraassignment.FieldId, id),
+			sqlgraph.To(set.Table, set.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameraassignment.SetTable, cameraassignment.SetColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProducer queries the producer edge of a CameraAssignment.
+func (c *CameraAssignmentClient) QueryProducer(_m *CameraAssignment) *ProducerQuery {
+	query := (&ProducerClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameraassignment.Table, cameraassignment.FieldId, id),
+			sqlgraph.To(producer.Table, producer.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameraassignment.ProducerTable, cameraassignment.ProducerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraAssignmentClient) Hooks() []Hook {
+	return c.hooks.CameraAssignment
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraAssignmentClient) Interceptors() []Interceptor {
+	return c.inters.CameraAssignment
+}
+
+func (c *CameraAssignmentClient) mutate(ctx context.Context, m *CameraAssignmentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraAssignmentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraAssignmentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraAssignmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraAssignmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraAssignment mutation op: %q", m.Op())
+	}
+}
+
+// CameraBindingClient is a client for the CameraBinding schema.
+type CameraBindingClient struct {
+	config
+}
+
+// NewCameraBindingClient returns a client for the CameraBinding from the given config.
+func NewCameraBindingClient(c config) *CameraBindingClient {
+	return &CameraBindingClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `camerabinding.Hooks(f(g(h())))`.
+func (c *CameraBindingClient) Use(hooks ...Hook) {
+	c.hooks.CameraBinding = append(c.hooks.CameraBinding, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `camerabinding.Intercept(f(g(h())))`.
+func (c *CameraBindingClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraBinding = append(c.inters.CameraBinding, interceptors...)
+}
+
+// Create returns a builder for creating a CameraBinding entity.
+func (c *CameraBindingClient) Create() *CameraBindingCreate {
+	mutation := newCameraBindingMutation(c.config, OpCreate)
+	return &CameraBindingCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraBinding entities.
+func (c *CameraBindingClient) CreateBulk(builders ...*CameraBindingCreate) *CameraBindingCreateBulk {
+	return &CameraBindingCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraBindingClient) MapCreateBulk(slice any, setFunc func(*CameraBindingCreate, int)) *CameraBindingCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraBindingCreateBulk{err: fmt.Errorf("calling to CameraBindingClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraBindingCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraBindingCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraBinding.
+func (c *CameraBindingClient) Update() *CameraBindingUpdate {
+	mutation := newCameraBindingMutation(c.config, OpUpdate)
+	return &CameraBindingUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraBindingClient) UpdateOne(_m *CameraBinding) *CameraBindingUpdateOne {
+	mutation := newCameraBindingMutation(c.config, OpUpdateOne, withCameraBinding(_m))
+	return &CameraBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraBindingClient) UpdateOneId(id uuid.UUID) *CameraBindingUpdateOne {
+	mutation := newCameraBindingMutation(c.config, OpUpdateOne, withCameraBindingId(id))
+	return &CameraBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraBinding.
+func (c *CameraBindingClient) Delete() *CameraBindingDelete {
+	mutation := newCameraBindingMutation(c.config, OpDelete)
+	return &CameraBindingDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraBindingClient) DeleteOne(_m *CameraBinding) *CameraBindingDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraBindingClient) DeleteOneId(id uuid.UUID) *CameraBindingDeleteOne {
+	builder := c.Delete().Where(camerabinding.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraBindingDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraBinding.
+func (c *CameraBindingClient) Query() *CameraBindingQuery {
+	return &CameraBindingQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraBinding},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraBinding entity by its id.
+func (c *CameraBindingClient) Get(ctx context.Context, id uuid.UUID) (*CameraBinding, error) {
+	return c.Query().Where(camerabinding.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraBindingClient) GetX(ctx context.Context, id uuid.UUID) *CameraBinding {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraBinding.
+func (c *CameraBindingClient) QueryTenant(_m *CameraBinding) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerabinding.Table, camerabinding.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerabinding.TenantTable, camerabinding.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraBinding.
+func (c *CameraBindingClient) QuerySite(_m *CameraBinding) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerabinding.Table, camerabinding.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerabinding.SiteTable, camerabinding.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAssignment queries the assignment edge of a CameraBinding.
+func (c *CameraBindingClient) QueryAssignment(_m *CameraBinding) *CameraAssignmentQuery {
+	query := (&CameraAssignmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerabinding.Table, camerabinding.FieldId, id),
+			sqlgraph.To(cameraassignment.Table, cameraassignment.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerabinding.AssignmentTable, camerabinding.AssignmentColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDevice queries the device edge of a CameraBinding.
+func (c *CameraBindingClient) QueryDevice(_m *CameraBinding) *CameraDeviceQuery {
+	query := (&CameraDeviceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerabinding.Table, camerabinding.FieldId, id),
+			sqlgraph.To(cameradevice.Table, cameradevice.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerabinding.DeviceTable, camerabinding.DeviceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySource queries the source edge of a CameraBinding.
+func (c *CameraBindingClient) QuerySource(_m *CameraBinding) *SourceQuery {
+	query := (&SourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerabinding.Table, camerabinding.FieldId, id),
+			sqlgraph.To(source.Table, source.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerabinding.SourceTable, camerabinding.SourceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraBindingClient) Hooks() []Hook {
+	return c.hooks.CameraBinding
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraBindingClient) Interceptors() []Interceptor {
+	return c.inters.CameraBinding
+}
+
+func (c *CameraBindingClient) mutate(ctx context.Context, m *CameraBindingMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraBindingCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraBindingUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraBindingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraBindingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraBinding mutation op: %q", m.Op())
+	}
+}
+
+// CameraDeviceClient is a client for the CameraDevice schema.
+type CameraDeviceClient struct {
+	config
+}
+
+// NewCameraDeviceClient returns a client for the CameraDevice from the given config.
+func NewCameraDeviceClient(c config) *CameraDeviceClient {
+	return &CameraDeviceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cameradevice.Hooks(f(g(h())))`.
+func (c *CameraDeviceClient) Use(hooks ...Hook) {
+	c.hooks.CameraDevice = append(c.hooks.CameraDevice, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cameradevice.Intercept(f(g(h())))`.
+func (c *CameraDeviceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraDevice = append(c.inters.CameraDevice, interceptors...)
+}
+
+// Create returns a builder for creating a CameraDevice entity.
+func (c *CameraDeviceClient) Create() *CameraDeviceCreate {
+	mutation := newCameraDeviceMutation(c.config, OpCreate)
+	return &CameraDeviceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraDevice entities.
+func (c *CameraDeviceClient) CreateBulk(builders ...*CameraDeviceCreate) *CameraDeviceCreateBulk {
+	return &CameraDeviceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraDeviceClient) MapCreateBulk(slice any, setFunc func(*CameraDeviceCreate, int)) *CameraDeviceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraDeviceCreateBulk{err: fmt.Errorf("calling to CameraDeviceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraDeviceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraDeviceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraDevice.
+func (c *CameraDeviceClient) Update() *CameraDeviceUpdate {
+	mutation := newCameraDeviceMutation(c.config, OpUpdate)
+	return &CameraDeviceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraDeviceClient) UpdateOne(_m *CameraDevice) *CameraDeviceUpdateOne {
+	mutation := newCameraDeviceMutation(c.config, OpUpdateOne, withCameraDevice(_m))
+	return &CameraDeviceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraDeviceClient) UpdateOneId(id uuid.UUID) *CameraDeviceUpdateOne {
+	mutation := newCameraDeviceMutation(c.config, OpUpdateOne, withCameraDeviceId(id))
+	return &CameraDeviceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraDevice.
+func (c *CameraDeviceClient) Delete() *CameraDeviceDelete {
+	mutation := newCameraDeviceMutation(c.config, OpDelete)
+	return &CameraDeviceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraDeviceClient) DeleteOne(_m *CameraDevice) *CameraDeviceDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraDeviceClient) DeleteOneId(id uuid.UUID) *CameraDeviceDeleteOne {
+	builder := c.Delete().Where(cameradevice.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraDeviceDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraDevice.
+func (c *CameraDeviceClient) Query() *CameraDeviceQuery {
+	return &CameraDeviceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraDevice},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraDevice entity by its id.
+func (c *CameraDeviceClient) Get(ctx context.Context, id uuid.UUID) (*CameraDevice, error) {
+	return c.Query().Where(cameradevice.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraDeviceClient) GetX(ctx context.Context, id uuid.UUID) *CameraDevice {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraDevice.
+func (c *CameraDeviceClient) QueryTenant(_m *CameraDevice) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameradevice.Table, cameradevice.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameradevice.TenantTable, cameradevice.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraDevice.
+func (c *CameraDeviceClient) QuerySite(_m *CameraDevice) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameradevice.Table, cameradevice.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameradevice.SiteTable, cameradevice.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNetwork queries the network edge of a CameraDevice.
+func (c *CameraDeviceClient) QueryNetwork(_m *CameraDevice) *CameraNetworkQuery {
+	query := (&CameraNetworkClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameradevice.Table, cameradevice.FieldId, id),
+			sqlgraph.To(cameranetwork.Table, cameranetwork.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameradevice.NetworkTable, cameradevice.NetworkColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraDeviceClient) Hooks() []Hook {
+	return c.hooks.CameraDevice
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraDeviceClient) Interceptors() []Interceptor {
+	return c.inters.CameraDevice
+}
+
+func (c *CameraDeviceClient) mutate(ctx context.Context, m *CameraDeviceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraDeviceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraDeviceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraDeviceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraDeviceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraDevice mutation op: %q", m.Op())
+	}
+}
+
+// CameraJobClient is a client for the CameraJob schema.
+type CameraJobClient struct {
+	config
+}
+
+// NewCameraJobClient returns a client for the CameraJob from the given config.
+func NewCameraJobClient(c config) *CameraJobClient {
+	return &CameraJobClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `camerajob.Hooks(f(g(h())))`.
+func (c *CameraJobClient) Use(hooks ...Hook) {
+	c.hooks.CameraJob = append(c.hooks.CameraJob, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `camerajob.Intercept(f(g(h())))`.
+func (c *CameraJobClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraJob = append(c.inters.CameraJob, interceptors...)
+}
+
+// Create returns a builder for creating a CameraJob entity.
+func (c *CameraJobClient) Create() *CameraJobCreate {
+	mutation := newCameraJobMutation(c.config, OpCreate)
+	return &CameraJobCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraJob entities.
+func (c *CameraJobClient) CreateBulk(builders ...*CameraJobCreate) *CameraJobCreateBulk {
+	return &CameraJobCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraJobClient) MapCreateBulk(slice any, setFunc func(*CameraJobCreate, int)) *CameraJobCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraJobCreateBulk{err: fmt.Errorf("calling to CameraJobClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraJobCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraJobCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraJob.
+func (c *CameraJobClient) Update() *CameraJobUpdate {
+	mutation := newCameraJobMutation(c.config, OpUpdate)
+	return &CameraJobUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraJobClient) UpdateOne(_m *CameraJob) *CameraJobUpdateOne {
+	mutation := newCameraJobMutation(c.config, OpUpdateOne, withCameraJob(_m))
+	return &CameraJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraJobClient) UpdateOneId(id uuid.UUID) *CameraJobUpdateOne {
+	mutation := newCameraJobMutation(c.config, OpUpdateOne, withCameraJobId(id))
+	return &CameraJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraJob.
+func (c *CameraJobClient) Delete() *CameraJobDelete {
+	mutation := newCameraJobMutation(c.config, OpDelete)
+	return &CameraJobDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraJobClient) DeleteOne(_m *CameraJob) *CameraJobDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraJobClient) DeleteOneId(id uuid.UUID) *CameraJobDeleteOne {
+	builder := c.Delete().Where(camerajob.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraJobDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraJob.
+func (c *CameraJobClient) Query() *CameraJobQuery {
+	return &CameraJobQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraJob},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraJob entity by its id.
+func (c *CameraJobClient) Get(ctx context.Context, id uuid.UUID) (*CameraJob, error) {
+	return c.Query().Where(camerajob.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraJobClient) GetX(ctx context.Context, id uuid.UUID) *CameraJob {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraJob.
+func (c *CameraJobClient) QueryTenant(_m *CameraJob) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerajob.Table, camerajob.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerajob.TenantTable, camerajob.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraJob.
+func (c *CameraJobClient) QuerySite(_m *CameraJob) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerajob.Table, camerajob.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerajob.SiteTable, camerajob.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBinding queries the binding edge of a CameraJob.
+func (c *CameraJobClient) QueryBinding(_m *CameraJob) *CameraBindingQuery {
+	query := (&CameraBindingClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerajob.Table, camerajob.FieldId, id),
+			sqlgraph.To(camerabinding.Table, camerabinding.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerajob.BindingTable, camerajob.BindingColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAssignment queries the assignment edge of a CameraJob.
+func (c *CameraJobClient) QueryAssignment(_m *CameraJob) *CameraAssignmentQuery {
+	query := (&CameraAssignmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(camerajob.Table, camerajob.FieldId, id),
+			sqlgraph.To(cameraassignment.Table, cameraassignment.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, camerajob.AssignmentTable, camerajob.AssignmentColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraJobClient) Hooks() []Hook {
+	return c.hooks.CameraJob
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraJobClient) Interceptors() []Interceptor {
+	return c.inters.CameraJob
+}
+
+func (c *CameraJobClient) mutate(ctx context.Context, m *CameraJobMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraJobCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraJobUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraJobDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraJob mutation op: %q", m.Op())
+	}
+}
+
+// CameraNetworkClient is a client for the CameraNetwork schema.
+type CameraNetworkClient struct {
+	config
+}
+
+// NewCameraNetworkClient returns a client for the CameraNetwork from the given config.
+func NewCameraNetworkClient(c config) *CameraNetworkClient {
+	return &CameraNetworkClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cameranetwork.Hooks(f(g(h())))`.
+func (c *CameraNetworkClient) Use(hooks ...Hook) {
+	c.hooks.CameraNetwork = append(c.hooks.CameraNetwork, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cameranetwork.Intercept(f(g(h())))`.
+func (c *CameraNetworkClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraNetwork = append(c.inters.CameraNetwork, interceptors...)
+}
+
+// Create returns a builder for creating a CameraNetwork entity.
+func (c *CameraNetworkClient) Create() *CameraNetworkCreate {
+	mutation := newCameraNetworkMutation(c.config, OpCreate)
+	return &CameraNetworkCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraNetwork entities.
+func (c *CameraNetworkClient) CreateBulk(builders ...*CameraNetworkCreate) *CameraNetworkCreateBulk {
+	return &CameraNetworkCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraNetworkClient) MapCreateBulk(slice any, setFunc func(*CameraNetworkCreate, int)) *CameraNetworkCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraNetworkCreateBulk{err: fmt.Errorf("calling to CameraNetworkClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraNetworkCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraNetworkCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraNetwork.
+func (c *CameraNetworkClient) Update() *CameraNetworkUpdate {
+	mutation := newCameraNetworkMutation(c.config, OpUpdate)
+	return &CameraNetworkUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraNetworkClient) UpdateOne(_m *CameraNetwork) *CameraNetworkUpdateOne {
+	mutation := newCameraNetworkMutation(c.config, OpUpdateOne, withCameraNetwork(_m))
+	return &CameraNetworkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraNetworkClient) UpdateOneId(id uuid.UUID) *CameraNetworkUpdateOne {
+	mutation := newCameraNetworkMutation(c.config, OpUpdateOne, withCameraNetworkId(id))
+	return &CameraNetworkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraNetwork.
+func (c *CameraNetworkClient) Delete() *CameraNetworkDelete {
+	mutation := newCameraNetworkMutation(c.config, OpDelete)
+	return &CameraNetworkDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraNetworkClient) DeleteOne(_m *CameraNetwork) *CameraNetworkDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraNetworkClient) DeleteOneId(id uuid.UUID) *CameraNetworkDeleteOne {
+	builder := c.Delete().Where(cameranetwork.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraNetworkDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraNetwork.
+func (c *CameraNetworkClient) Query() *CameraNetworkQuery {
+	return &CameraNetworkQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraNetwork},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraNetwork entity by its id.
+func (c *CameraNetworkClient) Get(ctx context.Context, id uuid.UUID) (*CameraNetwork, error) {
+	return c.Query().Where(cameranetwork.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraNetworkClient) GetX(ctx context.Context, id uuid.UUID) *CameraNetwork {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraNetwork.
+func (c *CameraNetworkClient) QueryTenant(_m *CameraNetwork) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameranetwork.Table, cameranetwork.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameranetwork.TenantTable, cameranetwork.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraNetwork.
+func (c *CameraNetworkClient) QuerySite(_m *CameraNetwork) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameranetwork.Table, cameranetwork.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameranetwork.SiteTable, cameranetwork.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraNetworkClient) Hooks() []Hook {
+	return c.hooks.CameraNetwork
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraNetworkClient) Interceptors() []Interceptor {
+	return c.inters.CameraNetwork
+}
+
+func (c *CameraNetworkClient) mutate(ctx context.Context, m *CameraNetworkMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraNetworkCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraNetworkUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraNetworkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraNetworkDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraNetwork mutation op: %q", m.Op())
 	}
 }
 
@@ -4270,15 +5281,17 @@ func (c *UploadPolicyClient) mutate(ctx context.Context, m *UploadPolicyMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Access, AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder,
-		Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal,
-		Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
+		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
+		CameraBinding, CameraDevice, CameraJob, CameraNetwork, Delegation, Device,
+		Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay,
+		RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
 		UploadPolicy []ent.Hook
 	}
 	inters struct {
-		Access, AddressPolicy, Archived, Attempt, Audit, Delegation, Device, Holder,
-		Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal,
-		Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
+		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
+		CameraBinding, CameraDevice, CameraJob, CameraNetwork, Delegation, Device,
+		Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay,
+		RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
 		UploadPolicy []ent.Interceptor
 	}
 )

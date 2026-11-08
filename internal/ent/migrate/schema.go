@@ -267,6 +267,343 @@ var (
 			},
 		},
 	}
+	// CameraassignmentColumns holds the columns for the "cameraassignment" table.
+	CameraassignmentColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "worker_slot", Type: field.TypeString},
+		{Name: "worker_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "generation", Type: field.TypeInt64},
+		{Name: "catalog_revision", Type: field.TypeInt64},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "network_id", Type: field.TypeUuid},
+		{Name: "set_id", Type: field.TypeUuid},
+		{Name: "producer_id", Type: field.TypeUuid},
+	}
+	// CameraassignmentTable holds the schema information for the "cameraassignment" table.
+	CameraassignmentTable = &schema.Table{
+		Name:       "cameraassignment",
+		Columns:    CameraassignmentColumns,
+		PrimaryKey: []*schema.Column{CameraassignmentColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cameraassignment_tenant_tenant",
+				Columns:    []*schema.Column{CameraassignmentColumns[12]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameraassignment_site_site",
+				Columns:    []*schema.Column{CameraassignmentColumns[13]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "cameraassignment_cameranetwork_network",
+				Columns:    []*schema.Column{CameraassignmentColumns[14]},
+				RefColumns: []*schema.Column{CameranetworkColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameraassignment_set_set",
+				Columns:    []*schema.Column{CameraassignmentColumns[15]},
+				RefColumns: []*schema.Column{SetColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameraassignment_producer_producer",
+				Columns:    []*schema.Column{CameraassignmentColumns[16]},
+				RefColumns: []*schema.Column{ProducerColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "cameraassignment_page",
+				Unique:  false,
+				Columns: []*schema.Column{CameraassignmentColumns[12], CameraassignmentColumns[11], CameraassignmentColumns[0]},
+			},
+			{
+				Name:    "cameraassignment_set",
+				Unique:  true,
+				Columns: []*schema.Column{CameraassignmentColumns[15]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// CamerabindingColumns holds the columns for the "camerabinding" table.
+	CamerabindingColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "logical_key", Type: field.TypeString},
+		{Name: "source_alias", Type: field.TypeString},
+		{Name: "desired", Type: field.TypeJson, Nullable: true},
+		{Name: "observed", Type: field.TypeJson, Nullable: true},
+		{Name: "applied_revision", Type: field.TypeInt64},
+		{Name: "collect", Type: field.TypeBool},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "assignment_id", Type: field.TypeUuid},
+		{Name: "device_id", Type: field.TypeUuid},
+		{Name: "source_id", Type: field.TypeUuid},
+	}
+	// CamerabindingTable holds the schema information for the "camerabinding" table.
+	CamerabindingTable = &schema.Table{
+		Name:       "camerabinding",
+		Columns:    CamerabindingColumns,
+		PrimaryKey: []*schema.Column{CamerabindingColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "camerabinding_tenant_tenant",
+				Columns:    []*schema.Column{CamerabindingColumns[14]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "camerabinding_site_site",
+				Columns:    []*schema.Column{CamerabindingColumns[15]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "camerabinding_cameraassignment_assignment",
+				Columns:    []*schema.Column{CamerabindingColumns[16]},
+				RefColumns: []*schema.Column{CameraassignmentColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "camerabinding_cameradevice_device",
+				Columns:    []*schema.Column{CamerabindingColumns[17]},
+				RefColumns: []*schema.Column{CameradeviceColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "camerabinding_source_source",
+				Columns:    []*schema.Column{CamerabindingColumns[18]},
+				RefColumns: []*schema.Column{SourceColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "camerabinding_page",
+				Unique:  false,
+				Columns: []*schema.Column{CamerabindingColumns[14], CamerabindingColumns[13], CamerabindingColumns[0]},
+			},
+			{
+				Name:    "camerabinding_source",
+				Unique:  true,
+				Columns: []*schema.Column{CamerabindingColumns[18]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+			{
+				Name:    "camerabinding_logical",
+				Unique:  true,
+				Columns: []*schema.Column{CamerabindingColumns[14], CamerabindingColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// CameradeviceColumns holds the columns for the "cameradevice" table.
+	CameradeviceColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "device_key", Type: field.TypeString},
+		{Name: "identity", Type: field.TypeJson, Nullable: true},
+		{Name: "endpoints", Type: field.TypeJson, Nullable: true},
+		{Name: "observation_revision", Type: field.TypeInt64},
+		{Name: "active_job_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "claim_generation", Type: field.TypeInt64},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "network_id", Type: field.TypeUuid},
+	}
+	// CameradeviceTable holds the schema information for the "cameradevice" table.
+	CameradeviceTable = &schema.Table{
+		Name:       "cameradevice",
+		Columns:    CameradeviceColumns,
+		PrimaryKey: []*schema.Column{CameradeviceColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cameradevice_tenant_tenant",
+				Columns:    []*schema.Column{CameradeviceColumns[14]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameradevice_site_site",
+				Columns:    []*schema.Column{CameradeviceColumns[15]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "cameradevice_cameranetwork_network",
+				Columns:    []*schema.Column{CameradeviceColumns[16]},
+				RefColumns: []*schema.Column{CameranetworkColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "cameradevice_page",
+				Unique:  false,
+				Columns: []*schema.Column{CameradeviceColumns[14], CameradeviceColumns[13], CameradeviceColumns[0]},
+			},
+			{
+				Name:    "cameradevice_identity",
+				Unique:  true,
+				Columns: []*schema.Column{CameradeviceColumns[16], CameradeviceColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// CamerajobColumns holds the columns for the "camerajob" table.
+	CamerajobColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "request_key", Type: field.TypeString},
+		{Name: "request_hash", Type: field.TypeBytes},
+		{Name: "stage", Type: field.TypeInt32},
+		{Name: "lease_generation", Type: field.TypeInt64},
+		{Name: "assignment_generation", Type: field.TypeInt64},
+		{Name: "lease_owner", Type: field.TypeUuid, Nullable: true},
+		{Name: "lease_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "inputs", Type: field.TypeJson, Nullable: true},
+		{Name: "observed", Type: field.TypeJson, Nullable: true},
+		{Name: "published_revision", Type: field.TypeInt64},
+		{Name: "date_published", Type: field.TypeTime, Nullable: true},
+		{Name: "last_operation_key", Type: field.TypeString},
+		{Name: "last_operation_hash", Type: field.TypeBytes, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "binding_id", Type: field.TypeUuid},
+		{Name: "assignment_id", Type: field.TypeUuid},
+	}
+	// CamerajobTable holds the schema information for the "camerajob" table.
+	CamerajobTable = &schema.Table{
+		Name:       "camerajob",
+		Columns:    CamerajobColumns,
+		PrimaryKey: []*schema.Column{CamerajobColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "camerajob_tenant_tenant",
+				Columns:    []*schema.Column{CamerajobColumns[21]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "camerajob_site_site",
+				Columns:    []*schema.Column{CamerajobColumns[22]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "camerajob_camerabinding_binding",
+				Columns:    []*schema.Column{CamerajobColumns[23]},
+				RefColumns: []*schema.Column{CamerabindingColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "camerajob_cameraassignment_assignment",
+				Columns:    []*schema.Column{CamerajobColumns[24]},
+				RefColumns: []*schema.Column{CameraassignmentColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "camerajob_page",
+				Unique:  false,
+				Columns: []*schema.Column{CamerajobColumns[21], CamerajobColumns[20], CamerajobColumns[0]},
+			},
+			{
+				Name:    "camerajob_intent",
+				Unique:  true,
+				Columns: []*schema.Column{CamerajobColumns[21], CamerajobColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// CameranetworkColumns holds the columns for the "cameranetwork" table.
+	CameranetworkColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "cidrs", Type: field.TypeJson, Nullable: true},
+		{Name: "multicast", Type: field.TypeBool},
+		{Name: "seeds", Type: field.TypeJson, Nullable: true},
+		{Name: "interface_hint", Type: field.TypeString},
+		{Name: "revision", Type: field.TypeInt64},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+	}
+	// CameranetworkTable holds the schema information for the "cameranetwork" table.
+	CameranetworkTable = &schema.Table{
+		Name:       "cameranetwork",
+		Columns:    CameranetworkColumns,
+		PrimaryKey: []*schema.Column{CameranetworkColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cameranetwork_tenant_tenant",
+				Columns:    []*schema.Column{CameranetworkColumns[13]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameranetwork_site_site",
+				Columns:    []*schema.Column{CameranetworkColumns[14]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "cameranetwork_page",
+				Unique:  false,
+				Columns: []*schema.Column{CameranetworkColumns[13], CameranetworkColumns[12], CameranetworkColumns[0]},
+			},
+		},
+	}
 	// DelegationColumns holds the columns for the "delegation" table.
 	DelegationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1269,6 +1606,11 @@ var (
 		ArchivedTable,
 		AttemptTable,
 		AuditTable,
+		CameraassignmentTable,
+		CamerabindingTable,
+		CameradeviceTable,
+		CamerajobTable,
+		CameranetworkTable,
 		DelegationTable,
 		DeviceTable,
 		HolderTable,
@@ -1312,6 +1654,40 @@ func init() {
 	}
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
+	}
+	CameraassignmentTable.ForeignKeys[0].RefTable = TenantTable
+	CameraassignmentTable.ForeignKeys[1].RefTable = SiteTable
+	CameraassignmentTable.ForeignKeys[2].RefTable = CameranetworkTable
+	CameraassignmentTable.ForeignKeys[3].RefTable = SetTable
+	CameraassignmentTable.ForeignKeys[4].RefTable = ProducerTable
+	CameraassignmentTable.Annotation = &entsql.Annotation{
+		Table: "cameraassignment",
+	}
+	CamerabindingTable.ForeignKeys[0].RefTable = TenantTable
+	CamerabindingTable.ForeignKeys[1].RefTable = SiteTable
+	CamerabindingTable.ForeignKeys[2].RefTable = CameraassignmentTable
+	CamerabindingTable.ForeignKeys[3].RefTable = CameradeviceTable
+	CamerabindingTable.ForeignKeys[4].RefTable = SourceTable
+	CamerabindingTable.Annotation = &entsql.Annotation{
+		Table: "camerabinding",
+	}
+	CameradeviceTable.ForeignKeys[0].RefTable = TenantTable
+	CameradeviceTable.ForeignKeys[1].RefTable = SiteTable
+	CameradeviceTable.ForeignKeys[2].RefTable = CameranetworkTable
+	CameradeviceTable.Annotation = &entsql.Annotation{
+		Table: "cameradevice",
+	}
+	CamerajobTable.ForeignKeys[0].RefTable = TenantTable
+	CamerajobTable.ForeignKeys[1].RefTable = SiteTable
+	CamerajobTable.ForeignKeys[2].RefTable = CamerabindingTable
+	CamerajobTable.ForeignKeys[3].RefTable = CameraassignmentTable
+	CamerajobTable.Annotation = &entsql.Annotation{
+		Table: "camerajob",
+	}
+	CameranetworkTable.ForeignKeys[0].RefTable = TenantTable
+	CameranetworkTable.ForeignKeys[1].RefTable = SiteTable
+	CameranetworkTable.Annotation = &entsql.Annotation{
+		Table: "cameranetwork",
 	}
 	DelegationTable.ForeignKeys[0].RefTable = TenantTable
 	DelegationTable.ForeignKeys[1].RefTable = HolderTable

@@ -7,6 +7,9 @@ import (
 	"github.com/lesomnus/shale/internal/ent/access"
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
 	"github.com/lesomnus/shale/internal/ent/audit"
+	"github.com/lesomnus/shale/internal/ent/camerabinding"
+	"github.com/lesomnus/shale/internal/ent/cameradevice"
+	"github.com/lesomnus/shale/internal/ent/camerajob"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
@@ -44,6 +47,30 @@ func init() {
 	auditDescDomain := auditFields[11].Descriptor()
 	// audit.DefaultDomain holds the default value on creation for the domain field.
 	audit.DefaultDomain = auditDescDomain.Default.(uint32)
+	camerabindingFields := schema.CameraBinding{}.Fields()
+	_ = camerabindingFields
+	// camerabindingDescDesired is the schema descriptor for desired field.
+	camerabindingDescDesired := camerabindingFields[7].Descriptor()
+	camerabinding.ValueScanner.Desired = camerabindingDescDesired.ValueScanner.(field.TypeValueScanner[*api.CameraCaptureSpec])
+	// camerabindingDescObserved is the schema descriptor for observed field.
+	camerabindingDescObserved := camerabindingFields[8].Descriptor()
+	camerabinding.ValueScanner.Observed = camerabindingDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
+	cameradeviceFields := schema.CameraDevice{}.Fields()
+	_ = cameradeviceFields
+	// cameradeviceDescIdentity is the schema descriptor for identity field.
+	cameradeviceDescIdentity := cameradeviceFields[6].Descriptor()
+	cameradevice.ValueScanner.Identity = cameradeviceDescIdentity.ValueScanner.(field.TypeValueScanner[*api.CameraIdentityEvidence])
+	// cameradeviceDescEndpoints is the schema descriptor for endpoints field.
+	cameradeviceDescEndpoints := cameradeviceFields[7].Descriptor()
+	cameradevice.ValueScanner.Endpoints = cameradeviceDescEndpoints.ValueScanner.(field.TypeValueScanner[[]*api.CameraObservedEndpoint])
+	camerajobFields := schema.CameraJob{}.Fields()
+	_ = camerajobFields
+	// camerajobDescInputs is the schema descriptor for inputs field.
+	camerajobDescInputs := camerajobFields[12].Descriptor()
+	camerajob.ValueScanner.Inputs = camerajobDescInputs.ValueScanner.(field.TypeValueScanner[*api.CameraJobInputs])
+	// camerajobDescObserved is the schema descriptor for observed field.
+	camerajobDescObserved := camerajobFields[13].Descriptor()
+	camerajob.ValueScanner.Observed = camerajobDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
 	deviceFields := schema.Device{}.Fields()
 	_ = deviceFields
 	// deviceDescQuarantine is the schema descriptor for quarantine field.
