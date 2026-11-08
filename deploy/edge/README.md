@@ -132,3 +132,21 @@ Run `python3 -m unittest discover -s deploy/edge -p 'test_*.py'` for range,
 interface, route-collision and generated-scope checks. Physical Pi/camera
 qualification is an explicit separate deployment step; tests do not reset a
 production camera.
+
+The protocol fixture uses fresh Linux network namespaces inside an explicitly
+privileged container with no external network. It runs dnsmasq as a non-root
+user with the unit's three ambient capabilities and sends actual DHCP requests
+from synthetic camera and uplink peers. It checks address acquisition, absent
+router/DNS/NTP options, lease recovery across daemon restart, camera access
+during a simulated uplink flap and refusal to serve the uplink. NetworkManager's
+Wi-Fi route restoration is simulated; physical reboot/radio qualification is
+not inferred from this test.
+
+```sh
+docker build -t shale-camera-lan-test -f deploy/edge/test.Dockerfile deploy/edge
+docker run --rm --network=none --privileged shale-camera-lan-test
+```
+
+No physical interface, existing namespace, camera or host-network container is
+used. Namespace/process cleanup runs on failure as well. Run this only on a
+dedicated test runner that permits the required namespace capabilities.
