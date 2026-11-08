@@ -35,6 +35,8 @@ type edgeRPCBackend struct {
 	publishes atomic.Int64
 	resolves  atomic.Int64
 	streams   atomic.Int64
+	sets      atomic.Int64
+	allocated atomic.Int64
 	mu        sync.Mutex
 	seen      metadata.MD
 }
@@ -63,6 +65,31 @@ func (s edgeRPCJobBackend) Publish(ctx context.Context, r *api.CameraJobPublishR
 type edgeRPCCredentialBackend struct {
 	api.UnimplementedCameraCredentialServiceServer
 	b *edgeRPCBackend
+}
+
+type edgeRPCSetBackend struct {
+	api.UnimplementedSetServiceServer
+	b *edgeRPCBackend
+}
+
+func (s edgeRPCSetBackend) Allocate(ctx context.Context, r *api.SetAllocateRequest) (*api.SetAllocateResponse, error) {
+	s.b.headers(ctx)
+	if r.GetHorizonSeconds() < 0 {
+		return nil, status.Error(codes.PermissionDenied, edgeRPCPrivateSentinel)
+	}
+	s.b.sets.Add(1)
+	return api.SetAllocateResponse_builder{ProfileVersion: 1}.Build(), nil
+}
+
+type edgeRPCLaminaBackend struct {
+	api.UnimplementedLaminaServiceServer
+	b *edgeRPCBackend
+}
+
+func (s edgeRPCLaminaBackend) Allocate(ctx context.Context, _ *api.LaminaAllocateRequest) (*api.Allocation, error) {
+	s.b.headers(ctx)
+	s.b.allocated.Add(1)
+	return api.Allocation_builder{CaptureEpoch: "fixture-epoch"}.Build(), nil
 }
 
 func (s edgeRPCCredentialBackend) Resolve(ctx context.Context, r *api.CameraCredentialResolveRequest) (*api.CameraCredentialLease, error) {
@@ -160,6 +187,8 @@ func edgeRPCFixture(t *testing.T, useTCP bool, parents ...context.Context) (*edg
 	api.RegisterCameraPolicyServiceServer(server, edgeRPCPolicyBackend{b: b})
 	api.RegisterCameraJobServiceServer(server, edgeRPCJobBackend{b: b})
 	api.RegisterCameraCredentialServiceServer(server, edgeRPCCredentialBackend{b: b})
+	api.RegisterSetServiceServer(server, edgeRPCSetBackend{b: b})
+	api.RegisterLaminaServiceServer(server, edgeRPCLaminaBackend{b: b})
 	grpcfixture.RegisterTestServiceServer(server, b)
 	var listen net.Listener
 	var err error
@@ -201,6 +230,128 @@ func edgeRPCBound(t *testing.T) context.Context {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	t.Cleanup(cancel)
 	return ctx
+}
+
+func TestEdgeRPCFaultAllocationsRemainHeldAcrossCallerCancellation(t *testing.T) {
+	for _, tcp := range []bool{false, true} {
+		t.Run(fmt.Sprintf("tcp=%v", tcp), func(t *testing.T) {
+			p, b, conn := edgeRPCFixture(t, tcp)
+			ctx := edgeRPCBound(t)
+			gate, err := p.ArmAllocations()
+			require.NoError(t, err)
+			defer gate.Release()
+			_, err = p.Arm(edgeRPCFaultPublish)
+			require.Equal(t, codes.FailedPrecondition, status.Code(err))
+			_, err = api.NewSetServiceClient(conn).Allocate(ctx, api.SetAllocateRequest_builder{HorizonSeconds: -1}.Build())
+			require.Equal(t, codes.PermissionDenied, status.Code(err))
+			select {
+			case <-gate.Matched():
+				t.Fatal("backend failure matched the allocation SUCCESS gate")
+			default:
+			}
+			type result struct {
+				code    codes.Code
+				payload bool
+			}
+			allocateSet := func(ctx context.Context) <-chan result {
+				done := make(chan result, 1)
+				go func() {
+					reply, err := api.NewSetServiceClient(conn).Allocate(ctx, &api.SetAllocateRequest{})
+					done <- result{status.Code(err), reply != nil}
+				}()
+				return done
+			}
+			firstCtx, cancelFirst := context.WithCancel(ctx)
+			defer cancelFirst()
+			first := allocateSet(firstCtx)
+			select {
+			case <-gate.Matched():
+			case <-ctx.Done():
+				t.Fatal("backend allocation never reached its committed checkpoint")
+			}
+			require.EqualValues(t, 1, b.sets.Load())
+			lamina := make(chan result, 1)
+			go func() {
+				reply, err := api.NewLaminaServiceClient(conn).Allocate(ctx, &api.LaminaAllocateRequest{})
+				lamina <- result{status.Code(err), reply != nil}
+			}()
+			require.Eventually(t, func() bool { return b.allocated.Load() == 1 }, time.Second, time.Millisecond)
+			cancelFirst()
+			select {
+			case got := <-first:
+				require.Equal(t, codes.Canceled, got.code)
+				require.False(t, got.payload)
+			case <-ctx.Done():
+				t.Fatal("canceled allocation caller did not join")
+			}
+			// Canceling one held call must not let either allocation path deliver
+			// capabilities on a subsequent successful retry.
+			retry := allocateSet(ctx)
+			require.Eventually(t, func() bool { return b.sets.Load() == 2 }, time.Second, time.Millisecond)
+			_, err = grpcfixture.NewTestServiceClient(conn).UnaryCall(ctx, &grpcfixture.SimpleRequest{})
+			require.NoError(t, err, "unrelated RPCs must continue through an allocation hold")
+			select {
+			case <-lamina:
+				t.Fatal("held Lamina allocation delivered a capability")
+			case <-retry:
+				t.Fatal("allocation retry escaped the persistent gate")
+			case <-time.After(30 * time.Millisecond):
+			}
+			gate.Release()
+			gate.Release()
+			for _, done := range []<-chan result{lamina, retry} {
+				select {
+				case got := <-done:
+					require.Equal(t, codes.Unavailable, got.code)
+					require.False(t, got.payload, "release must discard the old allocation capability")
+				case <-ctx.Done():
+					t.Fatal("released allocation did not join")
+				}
+			}
+			fresh, err := api.NewSetServiceClient(conn).Allocate(ctx, &api.SetAllocateRequest{})
+			require.NoError(t, err)
+			require.EqualValues(t, 1, fresh.GetProfileVersion())
+			allocated, err := api.NewLaminaServiceClient(conn).Allocate(ctx, &api.LaminaAllocateRequest{})
+			require.NoError(t, err)
+			require.Equal(t, "fixture-epoch", allocated.GetCaptureEpoch())
+			require.EqualValues(t, 3, b.sets.Load())
+			require.EqualValues(t, 2, b.allocated.Load())
+			// Explicit release also disarms a gate that has not matched a call.
+			unmatched, err := p.ArmAllocations()
+			require.NoError(t, err)
+			unmatched.Release()
+			_, err = api.NewSetServiceClient(conn).Allocate(ctx, &api.SetAllocateRequest{})
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestEdgeRPCFaultAllocationCloseJoinsHeldCall(t *testing.T) {
+	parent, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	p, _, conn := edgeRPCFixture(t, true, parent)
+	gate, err := p.ArmAllocations()
+	require.NoError(t, err)
+	ctx := edgeRPCBound(t)
+	done := make(chan error, 1)
+	go func() {
+		_, err := api.NewSetServiceClient(conn).Allocate(ctx, &api.SetAllocateRequest{})
+		done <- err
+	}()
+	select {
+	case <-gate.Matched():
+	case <-time.After(time.Second):
+		t.Fatal("allocation did not reach its response gate")
+	}
+	cancel()
+	require.NoError(t, p.Close())
+	select {
+	case err := <-done:
+		require.Contains(t, []codes.Code{codes.Canceled, codes.Unavailable}, status.Code(err))
+	case <-time.After(time.Second):
+		t.Fatal("proxy close did not join held allocation")
+	}
+	gate.Release()
 }
 
 func TestEdgeRPCFaultPostCommitAndMetadata(t *testing.T) {

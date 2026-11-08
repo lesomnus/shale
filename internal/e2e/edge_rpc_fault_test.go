@@ -47,18 +47,27 @@ func (k edgeRPCFaultKind) method() string {
 }
 
 type edgeRPCGate struct {
-	kind    edgeRPCFaultKind
-	matched chan struct{}
-	release chan struct{}
-	once    sync.Once
-	claimed bool // proxy.mu
+	kind        edgeRPCFaultKind
+	allocations bool
+	matched     chan struct{}
+	release     chan struct{}
+	once        sync.Once
+	detach      func()
+	claimed     bool // proxy.mu
 }
 
 // Matched closes only AFTER one matching backend unary RPC returned SUCCESS.
 // Release drops its response with a fixed Unavailable. It does not undo a
 // transaction or repeat a request. Cancellation can independently lose the reply.
 func (g *edgeRPCGate) Matched() <-chan struct{} { return g.matched }
-func (g *edgeRPCGate) Release()                 { g.once.Do(func() { close(g.release) }) }
+func (g *edgeRPCGate) Release() {
+	g.once.Do(func() {
+		if g.detach != nil {
+			g.detach()
+		}
+		close(g.release)
+	})
+}
 
 type edgeRPCFrame struct{ data []byte }
 
@@ -150,6 +159,22 @@ func (p *edgeRPCFaultProxy) Arm(kind edgeRPCFaultKind) (*edgeRPCGate, error) {
 	if kind.method() == "" {
 		return nil, status.Error(codes.InvalidArgument, "unsupported edge RPC gate")
 	}
+	return p.arm(kind, false)
+}
+
+// ArmAllocations holds EVERY successful reply from the two fixed allocation
+// RPCs. Backend PENDING rows exist, but no upload capability reaches a Producer.
+// A canceled caller does not disarm it; only Release permits subsequent calls.
+// Release drops all held replies rather than delivering an old capability.
+func (p *edgeRPCFaultProxy) ArmAllocations() (*edgeRPCGate, error) {
+	return p.arm(0, true)
+}
+
+func edgeRPCAllocation(method string) bool {
+	return method == api.SetService_Allocate_FullMethodName || method == api.LaminaService_Allocate_FullMethodName
+}
+
+func (p *edgeRPCFaultProxy) arm(kind edgeRPCFaultKind, allocations bool) (*edgeRPCGate, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.closed {
@@ -158,7 +183,10 @@ func (p *edgeRPCFaultProxy) Arm(kind edgeRPCFaultKind) (*edgeRPCGate, error) {
 	if p.gate != nil {
 		return nil, status.Error(codes.FailedPrecondition, "edge RPC gate already armed")
 	}
-	g := &edgeRPCGate{kind: kind, matched: make(chan struct{}), release: make(chan struct{})}
+	g := &edgeRPCGate{kind: kind, allocations: allocations, matched: make(chan struct{}), release: make(chan struct{})}
+	if allocations {
+		g.detach = func() { p.disarm(g) }
+	}
 	p.gate = g
 	return g, nil
 }
@@ -167,11 +195,20 @@ func (p *edgeRPCFaultProxy) matched(method string) *edgeRPCGate {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	g := p.gate
-	if g == nil || g.claimed || g.kind.method() != method {
+	if g == nil {
 		return nil
 	}
-	g.claimed = true
-	close(g.matched)
+	matches := g.kind.method() == method
+	if g.allocations {
+		matches = edgeRPCAllocation(method)
+	}
+	if !matches || !g.allocations && g.claimed {
+		return nil
+	}
+	if !g.claimed {
+		g.claimed = true
+		close(g.matched)
+	}
 	return g
 }
 
@@ -208,6 +245,9 @@ func (p *edgeRPCFaultProxy) forward(_ any, front grpc.ServerStream) error {
 	defer cancel()
 	md, _ := metadata.FromIncomingContext(front.Context())
 	ctx = metadata.NewOutgoingContext(ctx, md.Copy())
+	if edgeRPCAllocation(method) {
+		return p.unary(ctx, front, method)
+	}
 	for _, kind := range []edgeRPCFaultKind{edgeRPCFaultObserve, edgeRPCFaultReport, edgeRPCFaultPublish, edgeRPCFaultResolve} {
 		if method == kind.method() {
 			return p.unary(ctx, front, method)
@@ -259,7 +299,9 @@ func (p *edgeRPCFaultProxy) unary(ctx context.Context, front grpc.ServerStream, 
 	}
 	// Invoke includes the final successful status, not just the first payload.
 	if gate := p.matched(method); gate != nil {
-		defer p.disarm(gate)
+		if !gate.allocations {
+			defer p.disarm(gate)
+		}
 		select {
 		case <-gate.release:
 			return status.Error(codes.Unavailable, "edge RPC response intentionally unavailable")
