@@ -35,12 +35,17 @@ type Options struct {
 	Scope camera.EnrollmentScope
 	// Workers use already prepared/pinned JobInputs. An explicit ExistingRef
 	// remains exact; a missing one selects only this purpose's pinned ref.
-	References     map[camera.AuthPurpose]camera.CredentialRef
-	Job            func(context.Context) (*api.CameraWorkerCheckJobRequest, error)
-	SourceID       string
-	SourceRevision int64
-	LeaseDuration  time.Duration
-	Now            func() time.Time
+	References           map[camera.AuthPurpose]camera.CredentialRef
+	Job                  func(context.Context) (*api.CameraWorkerCheckJobRequest, error)
+	SourceID             string
+	SourceRevision       int64
+	AssignmentID         string
+	AssignmentGeneration int64
+	LeaseDuration        time.Duration
+	// Nil by default. Entries require separate actual-media confirmation;
+	// enabling a cache does not grant offline catalog/application authority.
+	Cache *StreamingCache
+	Now   func() time.Time
 }
 
 type Provider struct {
@@ -64,7 +69,7 @@ func New(conn grpc.ClientConnInterface, opts Options) (*Provider, error) {
 // NewResolver supports an Execution-bound Worker resolver that attaches its
 // current CheckJob grant and lifetime, without exposing the machine connection.
 func NewResolver(resolve ResolveFunc, opts Options) (*Provider, error) {
-	if resolve == nil || opts.Scope.TenantID == "" || opts.Role != Producer && opts.Role != Worker || opts.SourceRevision < 0 {
+	if resolve == nil || opts.Scope.TenantID == "" || opts.Role != Producer && opts.Role != Worker || opts.SourceRevision < 0 || opts.Cache != nil && (opts.Role != Producer || opts.Cache.cacheState == nil) {
 		return nil, camera.ErrInvalid
 	}
 	if opts.LeaseDuration == 0 {
@@ -90,6 +95,7 @@ func (p *Provider) ForSource(source camera.SourceAuthContext) camera.AuthProvide
 	}
 	copy := *p
 	copy.opts.SourceID, copy.opts.SourceRevision, copy.opts.Scope = source.SourceID, source.Revision, source.Scope
+	copy.opts.AssignmentID, copy.opts.AssignmentGeneration = source.AssignmentID, source.AssignmentGeneration
 	return &copy
 }
 
@@ -218,6 +224,10 @@ func (p *Provider) Acquire(ctx context.Context, request camera.AuthRequest) (cam
 		return nil, ErrRejected
 	}
 	wire := api.CameraCredentialResolveRequest_builder{Credential: api.CameraCredentialReference_builder{Provider: Name, Id: ref.ID, Version: ref.Version, Purpose: string(ref.Purpose)}.Build(), LeaseSeconds: int64(p.opts.LeaseDuration / time.Second), Access: string(access), SourceRevision: p.opts.SourceRevision}.Build()
+	sourceContext := camera.SourceAuthContext{SourceID: p.opts.SourceID, Revision: p.opts.SourceRevision, Scope: request.Scope, AssignmentID: p.opts.AssignmentID, AssignmentGeneration: p.opts.AssignmentGeneration}
+	if p.opts.Cache != nil && p.opts.SourceID != "" && p.opts.SourceRevision > 0 && p.opts.AssignmentID != "" && p.opts.AssignmentGeneration > 0 {
+		wire.SetCacheSeconds(int64(p.opts.Cache.age / time.Second))
+	}
 	if p.opts.SourceID != "" {
 		source, err := pdid.Parse(p.opts.SourceID)
 		if err != nil || source.Domain() != 8 {
@@ -237,8 +247,22 @@ func (p *Provider) Acquire(ctx context.Context, request camera.AuthRequest) (cam
 		defer func() { clear(response.GetMaterial()); response.SetMaterial(nil) }()
 	}
 	if err != nil {
-		return nil, failure(ctx, err)
+		failure := failure(ctx, err)
+		if errors.Is(failure, ErrUnavailable) && ctx.Err() == nil && p.opts.Cache != nil {
+			if lease, cacheErr := p.opts.Cache.recover(ctx, sourceContext, ref, access, p.opts.LeaseDuration); cacheErr == nil {
+				return lease, nil
+			}
+		} else if p.opts.Cache != nil && !errors.Is(failure, context.Canceled) && !errors.Is(failure, context.DeadlineExceeded) {
+			_ = p.opts.Cache.InvalidateSource(p.opts.SourceID)
+		}
+		return nil, failure
 	}
+	validLease := false
+	defer func() {
+		if !validLease && p.opts.Cache != nil {
+			_ = p.opts.Cache.InvalidateSource(p.opts.SourceID)
+		}
+	}()
 	if response == nil || response.GetCredential() == nil || response.GetExpires() == nil || response.GetExpires().CheckValid() != nil || !response.GetExpires().AsTime().After(p.opts.Now()) || response.GetExpires().AsTime().After(p.opts.Now().Add(300*time.Second)) {
 		return nil, ErrInvalidLease
 	}
@@ -265,6 +289,12 @@ func (p *Provider) Acquire(ctx context.Context, request camera.AuthRequest) (cam
 	if p.opts.SourceRevision > 0 && response.GetDelivery().GetSourceRevision() != p.opts.SourceRevision {
 		return nil, ErrInvalidLease
 	}
+	if p.opts.AssignmentID != "" {
+		actual, _ := id(response.GetDelivery().GetAssignmentId(), 28, false)
+		if actual != p.opts.AssignmentID || response.GetDelivery().GetAssignmentGeneration() != p.opts.AssignmentGeneration {
+			return nil, ErrInvalidLease
+		}
+	}
 	decoded, err := material.Parse(response.GetMaterial())
 	if err != nil {
 		return nil, ErrInvalidLease
@@ -276,6 +306,10 @@ func (p *Provider) Acquire(ctx context.Context, request camera.AuthRequest) (cam
 	})
 	if err != nil {
 		return nil, failure(ctx, err)
+	}
+	validLease = true
+	if p.opts.Cache != nil {
+		p.opts.Cache.remember(sourceContext, ref, response)
 	}
 	return lease, nil
 }

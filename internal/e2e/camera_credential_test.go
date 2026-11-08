@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/hex"
+	"io"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -13,8 +15,11 @@ import (
 	cameramodel "github.com/lesomnus/shale/camera"
 	cpauth "github.com/lesomnus/shale/camera/credential/cp"
 	"github.com/lesomnus/shale/camera/credential/material"
+	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/identity"
+	"github.com/lesomnus/shale/internal/pki"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -149,13 +154,31 @@ func TestCameraCredentialDurabilityAndOrdinaryRedaction(t *testing.T) {
 // This exercises authority and real machine certificates. Media evidence below
 // is an operator/Worker checkpoint fixture; real independent decode is #202.
 func TestCameraCredentialWorkerProducerAndPurposeGrants(t *testing.T) {
+	for _, scoped := range []bool{false, true} {
+		t.Run(map[bool]string{false: "no-site", true: "site"}[scoped], func(t *testing.T) { cameraCredentialMachineGrants(t, scoped) })
+	}
+}
+
+func cameraCredentialMachineGrants(t *testing.T, scoped bool) {
 	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
 	defer cancel()
 	server, cp, admin := cameraTLSControl(t)
-	worker, workerConn, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "credential-worker", nil)
-	_, otherConn, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "credential-other-worker", nil)
-	producer, _, producerConn := cameraWorkerProducer(t, ctx, server, cp, admin, "credential-producer", nil)
-	n := cameraNetwork(t, admin, "credential-scope-lan", nil)
+	var site, otherSite *api.SiteRef
+	if scoped {
+		tenant := "acme"
+		for _, target := range []struct {
+			alias string
+			ref   **api.SiteRef
+		}{{"credential-west", &site}, {"credential-east", &otherSite}} {
+			v, err := api.NewSiteServiceClient(admin).Add(ctx, api.SiteAddRequest_builder{Tenant: api.TenantRef_builder{Alias: &tenant}.Build(), Alias: target.alias}.Build())
+			require.NoError(t, err)
+			*target.ref = api.SiteRef_builder{Id: v.GetId()}.Build()
+		}
+	}
+	worker, workerConn, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "credential-worker", site)
+	_, otherConn, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "credential-other-worker", otherSite)
+	producer, _, producerConn := cameraWorkerProducer(t, ctx, server, cp, admin, "credential-producer", site)
+	n := cameraNetwork(t, admin, "credential-scope-lan", site)
 	nref := api.CameraNetworkRef_builder{Id: n.GetId()}.Build()
 	a, err := api.NewCameraAssignmentServiceClient(admin).Assign(ctx, api.CameraAssignmentAssignRequest_builder{Network: nref, Producer: api.ProducerRef_builder{Id: producer.GetId()}.Build(), WorkerSlot: "edge", WorkerId: worker.GetId()}.Build())
 	require.NoError(t, err)
@@ -187,6 +210,8 @@ func TestCameraCredentialWorkerProducerAndPurposeGrants(t *testing.T) {
 		require.NotEmpty(t, v.GetMaterial())
 		clear(v.GetMaterial())
 	}
+	_, err = workerCredentials.Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential(), Job: grant, CacheSeconds: 30, SourceRevision: 1}.Build())
+	require.Equal(t, codes.PermissionDenied, status.Code(err), "Workers cannot ask for an offline streaming cache grant")
 	_, err = api.NewCameraCredentialServiceClient(otherConn).Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential(), Job: grant}.Build())
 	require.Error(t, err)
 	wrongPurpose := proto.Clone(stream.GetCredential()).(*api.CameraCredentialReference)
@@ -207,19 +232,81 @@ func TestCameraCredentialWorkerProducerAndPurposeGrants(t *testing.T) {
 	pub, err := jobs.Publish(ctx, api.CameraJobPublishRequest_builder{Ref: jref, ExpectedVersion: job.GetDateUpdated(), OperationKey: "credential-publish", LeaseGeneration: job.GetLeaseGeneration(), AssignmentGeneration: job.GetAssignmentGeneration(), Spec: api.CameraCaptureSpec_builder{BindingId: b.GetId(), SourceId: b.GetSource().GetId(), Alias: "credential-door", Input: "rtsp://192.0.2.10/stream", Profile: profile, Credential: stream.GetCredential()}.Build(), Observed: observed}.Build())
 	require.NoError(t, err)
 	scope := cameramodel.EnrollmentScope{TenantID: credentialID(t, d.GetTenant().GetId()), SetID: credentialID(t, a.GetSet().GetId()), ProducerID: credentialID(t, producer.GetId()), NetworkID: credentialID(t, n.GetId())}
+	if site != nil {
+		scope.SiteID = credentialID(t, site.GetId())
+	}
 	provider, err := cpauth.New(producerConn, cpauth.Options{Role: cpauth.Producer, Scope: scope, SourceID: credentialID(t, b.GetSource().GetId()), SourceRevision: pub.GetBinding().GetDesired().GetRevision()})
 	require.NoError(t, err)
 	ref := cameramodel.CredentialRef{Provider: "cp", ID: stream.GetCredential().GetId(), Version: stream.GetCredential().GetVersion(), Purpose: cameramodel.AuthStreaming, Scope: scope, Recoverable: true}
 	consumerLease, err := cameramodel.Acquire(ctx, provider, cameramodel.AuthRequest{Scope: scope, Purpose: cameramodel.AuthStreaming, ExistingRef: &ref, Requirement: cameramodel.AuthRequirement{Access: cameramodel.AccessRead, Recoverable: true}})
 	require.NoError(t, err)
 	require.NoError(t, consumerLease.Close())
-	lease, err := api.NewCameraCredentialServiceClient(producerConn).Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential(), Source: api.SourceRef_builder{Id: b.GetSource().GetId()}.Build(), SourceRevision: pub.GetBinding().GetDesired().GetRevision()}.Build())
+	resolveStream := api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential(), Source: api.SourceRef_builder{Id: b.GetSource().GetId()}.Build(), SourceRevision: pub.GetBinding().GetDesired().GetRevision(), CacheSeconds: 300}.Build()
+	lease, err := api.NewCameraCredentialServiceClient(producerConn).Resolve(ctx, resolveStream)
 	require.NoError(t, err)
+	require.NotNil(t, lease.GetCacheUntil())
+	require.LessOrEqual(t, time.Until(lease.GetCacheUntil().AsTime()), 300*time.Second)
+	exactMaterial := bytes.Clone(lease.GetMaterial())
+	defer clear(exactMaterial)
 	clear(lease.GetMaterial())
+	// A separately approved Worker recovers the exact pinned secret after
+	// assignment replacement; the old machine cannot reuse its old job grant.
+	replacementWorker, replacementWorkerConn, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "credential-replacement-worker", site)
+	assignments := api.NewCameraAssignmentServiceClient(admin)
+	aref := api.CameraAssignmentRef_builder{Id: a.GetId()}.Build()
+	a, err = assignments.Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: aref}.Build())
+	require.NoError(t, err)
+	a, err = assignments.Assign(ctx, api.CameraAssignmentAssignRequest_builder{Ref: aref, ExpectedVersion: a.GetDateUpdated(), Network: nref, Producer: api.ProducerRef_builder{Id: producer.GetId()}.Build(), WorkerSlot: "replacement", WorkerId: replacementWorker.GetId()}.Build())
+	require.NoError(t, err)
+	_, err = workerCredentials.Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential(), Job: grant}.Build())
+	require.Error(t, err)
+	job, err = api.NewCameraJobServiceClient(admin).Get(ctx, api.CameraJobGetRequest_builder{Ref: jref}.Build())
+	require.NoError(t, err)
+	job, err = api.NewCameraJobServiceClient(replacementWorkerConn).Claim(ctx, api.CameraJobClaimRequest_builder{Ref: jref, ExpectedVersion: job.GetDateUpdated(), OperationKey: "replacement-recover", LeaseSeconds: 60}.Build())
+	require.NoError(t, err)
+	recovered, err := api.NewCameraCredentialServiceClient(replacementWorkerConn).Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential(), Job: api.CameraWorkerCheckJobRequest_builder{Ref: jref, LeaseGeneration: job.GetLeaseGeneration(), AssignmentGeneration: job.GetAssignmentGeneration()}.Build()}.Build())
+	require.NoError(t, err)
+	require.Equal(t, exactMaterial, recovered.GetMaterial())
+	clear(recovered.GetMaterial())
+	// Producer handover uses a NEW private key and preserves the Set, Source
+	// and credential version. No old key/credential file is copied.
+	agent := &hostagent.Agent{Kind: 22, HardwareId: "credential-replacement-producer", Store: pki.Store{Dir: t.TempDir()}, Cp: cp, CaHash: pki.Fingerprint(server.CA.Cert), Log: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	require.NoError(t, agent.Init())
+	bootstrap, err := agent.Dial(ctx)
+	require.NoError(t, err)
+	defer bootstrap.Close()
+	join := func(ctx context.Context, conn *grpc.ClientConn, h *api.HostJoin) (hostagent.Answer, error) {
+		v, err := api.NewProducerServiceClient(conn).Join(ctx, api.ProducerJoinRequest_builder{Tenant: "acme", Host: h}.Build())
+		if err != nil {
+			return hostagent.Answer{}, err
+		}
+		return hostagent.Answer{JoinAnswer: v.GetAnswer()}, nil
+	}
+	host, err := agent.HostJoin()
+	require.NoError(t, err)
+	pending, err := join(ctx, bootstrap, host)
+	require.NoError(t, err)
+	a, err = assignments.Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: aref}.Build())
+	require.NoError(t, err)
+	_, err = assignments.Handover(ctx, api.CameraAssignmentHandoverRequest_builder{Ref: aref, ExpectedVersion: a.GetDateUpdated(), ExpectedGeneration: a.GetGeneration(), Replacement: api.ProducerRef_builder{Id: pending.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	_, err = agent.Join(ctx, join)
+	require.NoError(t, err)
+	newProducerConn, err := agent.Dial(ctx)
+	require.NoError(t, err)
+	defer newProducerConn.Close()
+	recovered, err = api.NewCameraCredentialServiceClient(newProducerConn).Resolve(ctx, resolveStream)
+	require.NoError(t, err)
+	require.Equal(t, exactMaterial, recovered.GetMaterial())
+	clear(recovered.GetMaterial())
+	_, err = api.NewCameraCredentialServiceClient(producerConn).Resolve(ctx, resolveStream)
+	require.Error(t, err)
 	_, err = credentials.Revoke(ctx, api.CameraCredentialRevokeRequest_builder{Credential: stream.GetCredential()}.Build())
 	require.NoError(t, err)
+	_, err = api.NewCameraCredentialServiceClient(newProducerConn).Resolve(ctx, resolveStream)
+	require.Equal(t, codes.PermissionDenied, status.Code(err), "revocation also rejects the separately approved replacement")
 	_, err = api.NewCameraCredentialServiceClient(producerConn).Resolve(ctx, api.CameraCredentialResolveRequest_builder{Credential: stream.GetCredential()}.Build())
-	require.Equal(t, codes.PermissionDenied, status.Code(err))
+	require.Contains(t, []codes.Code{codes.PermissionDenied, codes.Unauthenticated}, status.Code(err))
 	audit, err := server.Ent.Audit.Query().All(ctx)
 	require.NoError(t, err)
 	found := false

@@ -327,7 +327,14 @@ func (s *sqlStore) Prepare(ctx context.Context, req Preparation, generate Genera
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return Version{}, err
 	}
-	hash := sqlRequestHash("prepare", req.Intent.Access, req.Reuse, nil, nil)
+	kind := "prepare"
+	if req.FallbackReuse {
+		if req.Reuse == nil {
+			return Version{}, ErrInput
+		}
+		kind = "prepare-fallback"
+	}
+	hash := sqlRequestHash(kind, req.Intent.Access, req.Reuse, nil, nil)
 	if c != nil {
 		if old, err := s.intent(ctx, c, req.Intent.Key); err == nil {
 			out, err := sqlVersion(c, req.Intent.Subject, old)
@@ -353,7 +360,7 @@ func (s *sqlStore) Prepare(ctx context.Context, req Preparation, generate Genera
 	var reused *Reference
 	if c != nil && c.CurrentVersion != "" {
 		current := sqlRef(c, req.Intent.Subject, c.CurrentVersion)
-		if req.Reuse != nil && *req.Reuse != current {
+		if req.Reuse != nil && !req.FallbackReuse && *req.Reuse != current {
 			return Version{}, ErrConflict
 		}
 		reused = &current

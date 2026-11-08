@@ -96,8 +96,12 @@ type Preparation struct {
 	// Explicitly reuse this account under another delivery purpose. The
 	// subject's tenant/device must match and the installed material is not
 	// rotated. Purpose separation does not imply separate camera accounts.
-	Reuse    *Reference
-	username string
+	Reuse *Reference
+	// FallbackReuse is for an internally authorized enrollment bundle: an
+	// existing purpose-specific account wins, otherwise Reuse supplies the
+	// installed device account. Ordinary explicit Reuse remains strict.
+	FallbackReuse bool
+	username      string
 }
 
 type ImportRequest struct {

@@ -166,9 +166,11 @@ func (*credentialLease) Format(s fmt.State, _ rune) {
 // provider after machine authentication and Source registration. The provider
 // still needs the CP's current delivery grant; this metadata is not a grant.
 type SourceAuthContext struct {
-	SourceID string
-	Revision int64
-	Scope    EnrollmentScope
+	SourceID             string
+	Revision             int64
+	Scope                EnrollmentScope
+	AssignmentID         string
+	AssignmentGeneration int64
 }
 
 // SourceAuthProvider optionally creates a provider for one capture's Source.

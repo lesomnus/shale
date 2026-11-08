@@ -58,8 +58,8 @@ assignments and 500 unfinished jobs. It exposes only assignments whose current
 empty view. No generic Source, Set, Lamina, inventory, or credential read API is
 opened. Producer permissions are unchanged.
 
-A Worker can call only its heartbeat, renewal, Poll, CheckJob, ObserveJob and the
-job Claim/Report/Publish execution verbs. Configuration, inventory registration,
+A Worker can call its heartbeat, renewal, Poll, CheckJob, ObserveJob, the job
+Claim/Report/Publish verbs and exact job-scoped credential Resolve. Configuration, inventory registration,
 assignment, binding, handover and revocation remain operator operations. Each
 execution call checks the current adopted identity/certificate serial and exact
 assignment. Job grants additionally check the assignment generation, lease owner,
@@ -102,9 +102,10 @@ is retried after a reconnect/restart, rather than continuously reclaiming its jo
 
 The default executor deliberately reports WAITING with
 `central_credentials_pending`. It performs no camera initialization, password
-change, local FileProvider fallback or Source publication. Durable CP credential
-delivery (#196) and the full policy/preset checkpoint contract (#197) must be
-injected before production device adaptation can run. The seam keeps the complete
+change, local FileProvider fallback or Source publication. The central
+[credential provider](camera-credentials.md) is available through
+`Execution.Credentials()`. The full policy/preset and edge execution adapters
+must be injected before production device adaptation can run. The seam keeps the complete
 typed job so those layers can add immutable inputs and typed progress without a
 lossy conversion to the old local Run model.
 

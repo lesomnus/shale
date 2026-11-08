@@ -19,7 +19,9 @@ import (
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/credential"
+	credentialcp "github.com/lesomnus/shale/camera/credential/cp"
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/cameraworker"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
@@ -406,8 +408,21 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		Log:               slog.Default(),
 	}
 	cfg.Ffprobe = pc.Ffprobe
-	if pc.Credentials.Directory != "" {
+	centralCredentials := pc.Credentials.Provider == credentialcp.Name || pc.Credentials.Provider == "" && pc.Credentials.Directory == "" && catalogMode == "cp"
+	if centralCredentials && pc.Credentials.Directory != "" {
+		return cfg, errors.New("CP credentials cannot select a local directory")
+	}
+	if centralCredentials {
+		cfg.AuthProviderFactory = func(ctx context.Context, session producer.SourceSession) (camera.AuthProvider, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			return credentialcp.New(session.Conn, credentialcp.Options{Role: credentialcp.Producer, Scope: camera.EnrollmentScope{TenantID: session.TenantID, SiteID: session.SiteID, SetID: session.SetID, ProducerID: session.ProducerID}})
+		}
+	} else if pc.Credentials.Directory != "" {
 		cfg.AuthProvider = credential.FileProvider{Dir: pc.Credentials.Directory, Name: pc.Credentials.Provider}
+	} else if pc.Credentials.Provider != "" {
+		return cfg, errors.New("standalone credential providers require an explicit directory")
 	}
 	cfg.Upload = producer.UploadConfig{ResumeTimeout: pc.ResumeTimeout, RetryAfterCap: pc.RetryAfterCap, PlacementRetries: pc.PlacementRetries}
 	if catalogMode == "cp" {

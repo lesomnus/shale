@@ -51,8 +51,11 @@ type Config struct {
 	Ffmpeg                string
 	Ffprobe               string
 	AuthProvider          camera.AuthProvider
-	OnvifInspector        camera.Inspector
-	MediaVerifier         camera.MediaVerifier
+	// Opened after machine authentication and Set adoption. A failure never
+	// selects another credential provider implicitly.
+	AuthProviderFactory func(context.Context, SourceSession) (camera.AuthProvider, error)
+	OnvifInspector      camera.Inspector
+	MediaVerifier       camera.MediaVerifier
 	// Gst is gst-launch, for the sources captured through GStreamer
 	// (§38.3); `gst-launch-1.0` on PATH by default.
 	Gst string
@@ -322,6 +325,9 @@ func New(cfg Config) (*Producer, error) {
 	if cfg.SourceProvider != nil && cfg.SourceProviderFactory != nil {
 		return nil, catalog.ErrInvalid
 	}
+	if cfg.AuthProvider != nil && cfg.AuthProviderFactory != nil {
+		return nil, camera.ErrInvalid
+	}
 	if (cfg.SourceProvider != nil || cfg.SourceProviderFactory != nil) && len(cfg.Sources) != 0 {
 		return nil, errors.New("source provider and local sources must be selected explicitly")
 	}
@@ -499,6 +505,11 @@ func (p *Producer) Run(ctx context.Context) error {
 	}
 	if err := p.register(ctx); err != nil {
 		return err
+	}
+	for _, s := range p.order {
+		if s.capture != nil {
+			s.capture.AuthProvider = p.sourceAuth(s)
+		}
 	}
 	if err := p.negotiate(ctx); err != nil {
 		return err
@@ -797,7 +808,7 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 func (p *Producer) newCapture(s *source) *Capture {
 	return &Capture{
 		Ffmpeg:       p.cfg.Ffmpeg,
-		AuthProvider: p.cfg.AuthProvider,
+		AuthProvider: p.sourceAuth(s),
 		Gst:          p.cfg.Gst,
 		Source:       s.cfg,
 		Log:          p.log,

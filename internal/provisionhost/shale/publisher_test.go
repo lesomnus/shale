@@ -57,6 +57,30 @@ func publisherFixture(t *testing.T) (*FilePublisher, provision.Deployment, *fake
 	p := &FilePublisher{ConfigPath: path, StateDir: filepath.Join(dir, "deployments"), Scope: scope, Authority: a, Restart: func(context.Context) error { *restarts++; return nil }}
 	return p, d, a, restarts
 }
+
+type publisherAuthFunc func(context.Context, camera.AuthRequest) (camera.CredentialLease, error)
+
+func (f publisherAuthFunc) Acquire(ctx context.Context, r camera.AuthRequest) (camera.CredentialLease, error) {
+	return f(ctx, r)
+}
+
+func TestFileDeployInjectedPreflightNeverFallsBack(t *testing.T) {
+	p, d, _, restarts := publisherFixture(t)
+	before, err := os.ReadFile(p.ConfigPath)
+	require.NoError(t, err)
+	called := 0
+	p.AuthProvider = publisherAuthFunc(func(context.Context, camera.AuthRequest) (camera.CredentialLease, error) {
+		called++
+		return nil, camera.ErrForbidden
+	})
+	_, err = p.Publish(t.Context(), d)
+	require.ErrorIs(t, err, camera.ErrForbidden)
+	require.Equal(t, 1, called)
+	require.Zero(t, *restarts)
+	after, err := os.ReadFile(p.ConfigPath)
+	require.NoError(t, err)
+	require.Equal(t, before, after, "valid local files cannot bypass an injected central denial")
+}
 func TestFileDeployRetryDHCPAndRollbackPreserveOtherSources(t *testing.T) {
 	p, d, _, restarts := publisherFixture(t)
 	ctx := context.Background()

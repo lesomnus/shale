@@ -267,7 +267,8 @@ type OnvifConfig struct {
 	CredentialRef *camera.CredentialRef `yaml:"credential_ref,omitempty"`
 }
 
-// CredentialStoreConfig names a local private provider store, never material.
+// CredentialStoreConfig selects CP delivery or an explicit standalone private
+// store. A directory selects the legacy file provider; CP never falls back to it.
 type CredentialStoreConfig struct {
 	Directory string `yaml:"directory"`
 	Provider  string `yaml:"provider"`

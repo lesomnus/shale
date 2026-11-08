@@ -57,6 +57,9 @@ type FilePublisher struct {
 	Scope      camera.EnrollmentScope
 	Authority  Authority
 	Restart    RestartFunc
+	// The caller supplies the same resolver available to capture, or an
+	// explicitly job-bound resolver. No provider is chosen after a failure.
+	AuthProvider camera.AuthProvider
 }
 
 func (p *FilePublisher) Impacts(q provision.Request) []provision.Impact {
@@ -121,10 +124,13 @@ func (p *FilePublisher) Publish(ctx context.Context, d provision.Deployment) (pr
 	// can consume it. Check the configured local resolver before any restart.
 	credentials := mapping(mapping(doc.Content[0], "producer"), "credentials")
 	directory, providerName := scalar(credentials, "directory"), scalar(credentials, "provider")
-	if directory == "" || !filepath.IsAbs(directory) {
-		return provision.BindingState{}, camera.ErrAuthRequired
+	resolver := p.AuthProvider
+	if resolver == nil {
+		if directory == "" || !filepath.IsAbs(directory) || providerName == "cp" {
+			return provision.BindingState{}, camera.ErrAuthRequired
+		}
+		resolver = credential.FileProvider{Dir: directory, Name: providerName}
 	}
-	resolver := credential.FileProvider{Dir: directory, Name: providerName}
 	lease, err := camera.Acquire(ctx, resolver, camera.AuthRequest{Scope: d.Request.Scope, Device: d.Request.Device, Purpose: camera.AuthStreaming, Requirement: camera.AuthRequirement{Access: camera.AccessRead, Recoverable: true}, ExistingRef: &d.Credential})
 	if err != nil {
 		return provision.BindingState{}, err
