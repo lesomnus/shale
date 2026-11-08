@@ -86,6 +86,20 @@ func (p *Publisher) deployment(d provision.Deployment) (catalog.Snapshot, string
 	if actual.Scope != expected.Scope {
 		return catalog.Snapshot{}, "", camera.ErrForbidden
 	}
+	if ref := d.Credential; ref != (camera.CredentialRef{}) &&
+		(!ref.Authorizes(d.Request.Scope, camera.AuthStreaming) || !ref.Recoverable) {
+		return catalog.Snapshot{}, "", camera.ErrForbidden
+	}
+	if uri := d.Profile.StreamURI; uri != "" {
+		// Reuse the shareable-catalog URI contract without creating fake managed
+		// identifiers. A raw credential must not reach even a durable Committer.
+		_, err := catalog.Normalize(catalog.Snapshot{Revision: catalog.Revision{Catalog: 1}, Sources: []catalog.Spec{{
+			Alias: "publication", Revision: 1, Input: uri,
+		}}})
+		if err != nil {
+			return catalog.Snapshot{}, "", catalog.ErrInvalid
+		}
+	}
 	alias := d.Previous.Alias
 	if alias == "" {
 		alias = d.Request.Alias

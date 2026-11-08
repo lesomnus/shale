@@ -330,3 +330,65 @@ func TestPublisherForeignSnapshotCannotInitializeEmptyMemory(t *testing.T) {
 		})
 	}
 }
+
+func TestPublisherRejectsUnsafeDeploymentBeforeCommit(t *testing.T) {
+	for _, name := range []string{"incomplete-reference", "tenant", "site", "set", "producer", "network", "purpose", "not-recoverable", "userinfo", "auth-query", "fragment"} {
+		t.Run(name, func(t *testing.T) {
+			f := setup(t)
+			f.deployment.Credential = camera.CredentialRef{Provider: "cp", ID: "door-stream", Version: "1", Purpose: camera.AuthStreaming, Scope: f.deployment.Request.Scope, Recoverable: true}
+			f.deployment.Profile.StreamURI = "rtsp://192.0.2.2/main?profile=main"
+			switch name {
+			case "incomplete-reference":
+				f.deployment.Credential.Version = ""
+			case "tenant":
+				f.deployment.Credential.Scope.TenantID = pdid.New(1).String()
+			case "site":
+				f.deployment.Credential.Scope.SiteID = ""
+			case "set":
+				f.deployment.Credential.Scope.SetID = pdid.New(7).String()
+			case "producer":
+				f.deployment.Credential.Scope.ProducerID = pdid.New(22).String()
+			case "network":
+				f.deployment.Credential.Scope.NetworkID = pdid.New(26).String()
+			case "purpose":
+				f.deployment.Credential.Purpose = camera.AuthManagement
+			case "not-recoverable":
+				f.deployment.Credential.Recoverable = false
+			case "userinfo":
+				f.deployment.Profile.StreamURI = "rtsp://operator:publication-private-secret@192.0.2.2/main"
+			case "auth-query":
+				f.deployment.Profile.StreamURI = "rtsp://192.0.2.2/main?opaque_auth=publication-private-secret%2frest"
+			case "fragment":
+				f.deployment.Profile.StreamURI = "rtsp://192.0.2.2/main#publication-private-secret"
+			}
+			commits, reads := 0, 0
+			f.publisher.Committer = commitFunc(func(context.Context, provision.Deployment) (publication.Receipt, error) {
+				commits++
+				return f.receipt, nil
+			})
+			f.publisher.Provider = providerFunc(func(context.Context) (catalog.Snapshot, error) {
+				reads++
+				return f.next, nil
+			})
+			_, err := f.publisher.Publish(context.Background(), f.deployment)
+			require.Error(t, err)
+			require.Zero(t, commits, "a durable implementation must not receive an unsafe credential or URI")
+			require.Zero(t, reads)
+			require.NotContains(t, fmt.Sprintf("%v %+v %#v", err, err, err), "publication-private-secret")
+			require.Equal(t, f.initial, accepted(t, f.publisher))
+		})
+	}
+}
+
+func TestPublisherAllowsUnauthenticatedOrExactRecoverableStreamingReference(t *testing.T) {
+	for _, authenticated := range []bool{false, true} {
+		f := setup(t)
+		f.deployment.Profile.StreamURI = "rtsp://192.0.2.2/main?profile=main"
+		if authenticated {
+			f.deployment.Credential = camera.CredentialRef{Provider: "cp", ID: "door-stream", Version: "1", Purpose: camera.AuthStreaming, Scope: f.deployment.Request.Scope, Recoverable: true}
+		}
+		_, err := f.publisher.Publish(context.Background(), f.deployment)
+		require.NoError(t, err)
+		require.Equal(t, f.next, accepted(t, f.publisher))
+	}
+}
