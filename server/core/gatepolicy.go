@@ -164,7 +164,10 @@ type TenantPolicy struct {
 }
 
 var producerMay = map[string]bool{
-	api.SetService_Get_FullMethodName: true, api.SetService_List_FullMethodName: true,
+	// The custom Snapshot rechecks current Producer/Set ownership. This does
+	// not grant generated inventory Get/List/Watch or Worker job operations.
+	api.CameraAssignmentService_Snapshot_FullMethodName: true,
+	api.SetService_Get_FullMethodName:                   true, api.SetService_List_FullMethodName: true,
 	api.SetService_Negotiate_FullMethodName: true, api.SetService_Allocate_FullMethodName: true,
 	api.SourceService_Get_FullMethodName: true, api.SourceService_List_FullMethodName: true,
 	api.SourceService_Add_FullMethodName: true,

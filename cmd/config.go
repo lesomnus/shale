@@ -273,6 +273,14 @@ type CredentialStoreConfig struct {
 	Provider  string `yaml:"provider"`
 }
 
+// SourceCatalogConfig chooses where a Producer reads initial capture intent.
+// CP access uses the Producer's adopted machine connection, never a person token.
+type SourceCatalogConfig struct {
+	Provider     string        `yaml:"provider"`
+	Assignment   string        `yaml:"assignment"`
+	PollInterval time.Duration `yaml:"poll_interval"`
+}
+
 // IdleConfig is a source's `idle:` (§38.10).
 type IdleConfig struct {
 	// DarkAfter is how long the scene stays dark before its segments are
@@ -329,8 +337,9 @@ type AuthConfig struct {
 type ProducerConfig struct {
 	// Set is the alias of the set this producer records; registered from
 	// this configuration when missing and the producer is adopted for it.
-	Set     string         `yaml:"set"`
-	Sources []SourceConfig `yaml:"sources"`
+	Set     string              `yaml:"set"`
+	Sources []SourceConfig      `yaml:"sources"`
+	Catalog SourceCatalogConfig `yaml:"catalog"`
 	// Retain is `committed` (default), the whole segment in RAM until the
 	// node's 201, or `written`, only what is above the offset the node
 	// last reported durable: less RAM, and a segment whose node dies is

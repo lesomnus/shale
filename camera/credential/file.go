@@ -242,6 +242,13 @@ func (l *lease) Close() error {
 	return nil
 }
 
+// InputLease optionally preserves a private legacy credential transport, such as
+// an RTSP query token. It is a lease capability, not source-catalog data. The
+// provider must bind it to the exact clean endpoint and sanitize callback errors.
+type InputLease interface {
+	WithInput(context.Context, string, func(string, Sanitizer) error) error
+}
+
 // WithInput resolves exactly the named streaming credential for one runtime
 // operation. The authenticated URI only exists inside use; callers must sanitize
 // subprocess diagnostics before returning them. Ref scope/purpose are checked
@@ -263,6 +270,9 @@ func WithInput(ctx context.Context, provider camera.AuthProvider, scope camera.E
 	defer l.Close()
 	if l.Ref() != *ref {
 		return ErrUnavailable
+	}
+	if inputLease, ok := l.(InputLease); ok {
+		return inputLease.WithInput(ctx, input, use)
 	}
 	return l.Use(ctx, func(material camera.CredentialMaterial) error {
 		u, err := parseInput(input)

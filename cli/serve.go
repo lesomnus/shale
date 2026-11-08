@@ -26,6 +26,8 @@ import (
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/relay"
 	"github.com/lesomnus/shale/internal/storage"
+	catalog "github.com/lesomnus/shale/source"
+	catalogcp "github.com/lesomnus/shale/source/cp"
 )
 
 // NewCmdServe is `shale serve <role>` (§34.1): one binary, one command per
@@ -378,6 +380,13 @@ func serveProducer(ctx context.Context, c *cmd.Config) error {
 // ProducerConfig maps the file onto the producer's settings.
 func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 	pc := c.Producer
+	catalogMode := strings.ToLower(pc.Catalog.Provider)
+	if catalogMode != "" && catalogMode != "static" && catalogMode != "file" && catalogMode != "cp" {
+		return producer.Config{}, errors.New("producer.catalog.provider: static, file or cp")
+	}
+	if pc.Catalog.PollInterval < 0 || (catalogMode != "cp" && (pc.Catalog.Assignment != "" || pc.Catalog.PollInterval != 0)) {
+		return producer.Config{}, errors.New("catalog assignment/poll settings require the CP provider")
+	}
 	cfg := producer.Config{
 		StateDir:          c.StateDir("producer"),
 		Cp:                c.Cp,
@@ -401,6 +410,18 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		cfg.AuthProvider = credential.FileProvider{Dir: pc.Credentials.Directory, Name: pc.Credentials.Provider}
 	}
 	cfg.Upload = producer.UploadConfig{ResumeTimeout: pc.ResumeTimeout, RetryAfterCap: pc.RetryAfterCap, PlacementRetries: pc.PlacementRetries}
+	if catalogMode == "cp" {
+		if len(pc.Sources) != 0 || pc.Demo != 0 {
+			return cfg, errors.New("CP catalog and local/demo sources cannot be combined implicitly")
+		}
+		assignment, poll := pc.Catalog.Assignment, pc.Catalog.PollInterval
+		cfg.SourceProviderFactory = func(ctx context.Context, session producer.SourceSession) (catalog.Provider, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			return catalogcp.New(session.Conn, catalogcp.Options{ProducerID: session.ProducerID, TenantID: session.TenantID, SiteID: session.SiteID, SetID: session.SetID, AssignmentID: assignment, PollInterval: poll})
+		}
+	}
 	switch strings.ToLower(pc.Mode) {
 	case "buffered":
 		cfg.Mode = api.UploadMode_UPLOAD_MODE_BUFFERED

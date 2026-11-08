@@ -24,11 +24,24 @@ func (s Core) CameraAssignment() api.CameraAssignmentServiceServer {
 	return coreCameraAssignment{s, s.Next().CameraAssignment()}
 }
 func (s Core) cameraAssignmentRow(ctx context.Context, r *api.CameraAssignmentRef) (*api.CameraAssignment, error) {
+	return s.cameraAssignmentRowChecked(ctx, r, s.cameraExecutionScope, s.cameraExecutionParents)
+}
+
+// Catalog reads and Worker execution use the same lock order, with separate
+// authority checks. A Producer catalog grant never grants camera-job execution.
+func (s Core) producerCatalogRow(ctx context.Context, r *api.CameraAssignmentRef, who, tenant pdid.Id) (*api.CameraAssignment, error) {
+	check := func(ctx context.Context, a *api.CameraAssignment) error {
+		return s.producerCatalogOwner(ctx, who, tenant, a)
+	}
+	return s.cameraAssignmentRowChecked(ctx, r, check, check)
+}
+
+func (s Core) cameraAssignmentRowChecked(ctx context.Context, r *api.CameraAssignmentRef, before, after func(context.Context, *api.CameraAssignment) error) (*api.CameraAssignment, error) {
 	a, err := s.Next().CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: r}.Build())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.cameraExecutionScope(ctx, a); err != nil {
+	if err := before(ctx, a); err != nil {
 		return nil, err
 	}
 	n, err := s.Next().CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: a.GetNetwork().GetId()}.Build()}.Build())
@@ -48,7 +61,7 @@ func (s Core) cameraAssignmentRow(ctx context.Context, r *api.CameraAssignmentRe
 	if err != nil {
 		return nil, err
 	}
-	if err := s.cameraExecutionParents(ctx, a); err != nil {
+	if err := after(ctx, a); err != nil {
 		return nil, err
 	}
 	return a, nil
@@ -171,13 +184,28 @@ func (s coreCameraAssignment) Snapshot(ctx context.Context, r *api.CameraAssignm
 	if err := cameraMessage(r); err != nil {
 		return nil, err
 	}
-	if _, err := cameraOperator(ctx); err != nil {
+	f, err := actor(ctx)
+	if err != nil {
 		return nil, err
 	}
+	isProducer := kindOf(f.Actor) == DomProducer
+	if !isProducer {
+		if _, err := cameraOperator(ctx); err != nil {
+			return nil, err
+		}
+	}
 	var out *api.CameraCatalogSnapshot
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		c := New(nx, s.d)
-		a, err := c.cameraAssignmentRow(ctx, r.GetRef())
+		var a *api.CameraAssignment
+		var err error
+		if isProducer {
+			// Reject foreign refs before locking and recheck current ownership
+			// after locking, independently of the Worker's execution scope.
+			a, err = c.producerCatalogRow(ctx, r.GetRef(), f.Actor, f.Tenant)
+		} else {
+			a, err = c.cameraAssignmentRow(ctx, r.GetRef())
+		}
 		if err != nil {
 			return err
 		}
@@ -209,6 +237,26 @@ func (s coreCameraAssignment) Snapshot(ctx context.Context, r *api.CameraAssignm
 		return nil, err
 	}
 	return out, nil
+}
+
+func (s Core) producerCatalogOwner(ctx context.Context, actor, tenant pdid.Id, a *api.CameraAssignment) error {
+	p, err := s.own(ctx).Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: actor.Bytes()}.Build()}.Build())
+	if err != nil {
+		return err
+	}
+	return producerCatalogAssignment(actor, tenant, p, a)
+}
+
+func producerCatalogAssignment(actor, tenant pdid.Id, p *api.Producer, a *api.CameraAssignment) error {
+	if actor.Domain() != DomProducer || p == nil || a == nil ||
+		p.GetState() != api.HostState_HOST_STATE_ADOPTED || p.GetDateErased() != nil ||
+		!bytes.Equal(p.GetId(), actor.Bytes()) || !bytes.Equal(a.GetProducer().GetId(), actor.Bytes()) ||
+		!bytes.Equal(p.GetTenant().GetId(), tenant.Bytes()) || !bytes.Equal(a.GetTenant().GetId(), tenant.Bytes()) ||
+		len(p.GetSet().GetId()) == 0 || !bytes.Equal(p.GetSet().GetId(), a.GetSet().GetId()) ||
+		!bytes.Equal(p.GetSite().GetId(), a.GetSite().GetId()) {
+		return denied("camera catalog", "assignment does not belong to this adopted Producer")
+	}
+	return nil
 }
 func (s coreCameraAssignment) Handover(ctx context.Context, r *api.CameraAssignmentHandoverRequest) (*api.CameraAssignment, error) {
 	if err := cameraMessage(r); err != nil {
