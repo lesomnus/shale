@@ -82,8 +82,7 @@ func (p *Producer) refreshCeiling(ctx context.Context, s *source) error {
 	return nil
 }
 
-func (p *Producer) onvifProfile(ctx context.Context, source SourceConfig) (camera.MediaProfile, error) {
-	var result camera.MediaProfile
+func onvifEndpoint(source SourceConfig) (string, error) {
 	cfg := source.Onvif
 	if cfg == nil {
 		cfg = &OnvifConfig{}
@@ -92,16 +91,29 @@ func (p *Producer) onvifProfile(ctx context.Context, source SourceConfig) (camer
 	if endpoint == "" {
 		u, err := url.Parse(source.Input)
 		if err != nil || u.Hostname() == "" {
-			return result, camera.ErrInvalid
+			return "", camera.ErrInvalid
 		}
 		endpoint = (&url.URL{Scheme: "http", Host: net.JoinHostPort(u.Hostname(), "80"), Path: "/onvif/device_service"}).String()
 	}
 	if u, err := url.Parse(endpoint); err != nil || u.User != nil {
-		return result, camera.ErrInvalid
+		return "", camera.ErrInvalid
+	}
+	return endpoint, nil
+}
+
+func (p *Producer) onvifProfile(ctx context.Context, source SourceConfig) (camera.MediaProfile, error) {
+	var result camera.MediaProfile
+	cfg := source.Onvif
+	if cfg == nil {
+		cfg = &OnvifConfig{}
+	}
+	endpoint, err := onvifEndpoint(source)
+	if err != nil {
+		return result, err
 	}
 	device := camera.DeviceHint{Endpoints: []camera.Endpoint{{URL: endpoint, NetworkScope: source.Scope.NetworkID}}}
 	var lease camera.CredentialLease
-	var err error
+	sanitize := credential.InputSanitizer(source.Input)
 	if cfg.CredentialRef != nil {
 		lease, err = camera.Acquire(ctx, p.cfg.AuthProvider, camera.AuthRequest{Scope: source.Scope, Device: device, Purpose: camera.AuthManagement, Requirement: camera.AuthRequirement{Access: camera.AccessRead}, ExistingRef: cfg.CredentialRef})
 		if err != nil {
@@ -112,6 +124,15 @@ func (p *Producer) onvifProfile(ctx context.Context, source SourceConfig) (camer
 		// Legacy manually configured input explicitly supplied these credentials.
 		// New reference inputs require a separately authorized management reference.
 		lease = camera.NewCredentialLease(camera.CredentialRef{Provider: "manual", ID: source.Alias, Version: "1", Scope: source.Scope, Purpose: camera.AuthManagement}, camera.CredentialMaterial{Username: u.User.Username(), Password: password}, time.Now().Add(time.Minute))
+	} else if source.InputCredential != nil {
+		if private, ok := p.cfg.AuthProvider.(interface {
+			legacyManagement(context.Context, camera.EnrollmentScope, camera.CredentialRef, string, string) (camera.CredentialLease, credential.Sanitizer, error)
+		}); ok {
+			lease, sanitize, err = private.legacyManagement(ctx, source.Scope, *source.InputCredential, source.Input, endpoint)
+			if err != nil {
+				return result, err
+			}
+		}
 	}
 	if lease != nil {
 		defer lease.Close()
@@ -122,7 +143,7 @@ func (p *Producer) onvifProfile(ctx context.Context, source SourceConfig) (camer
 	}
 	inspected, err := inspector.Inspect(ctx, device, lease)
 	if err != nil {
-		return result, credential.SanitizeError(err, credential.InputSanitizer(source.Input))
+		return result, credential.SanitizeError(err, sanitize)
 	}
 	for _, profile := range inspected.Current.Profiles {
 		if cfg.ProfileToken != "" && profile.Token == cfg.ProfileToken {

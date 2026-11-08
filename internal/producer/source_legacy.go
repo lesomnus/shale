@@ -53,7 +53,17 @@ func legacyCatalog(configs []SourceConfig, session SourceSession, fallback camer
 			// These are process-local read references, not durable enrollment
 			// credentials. Restart rereads the existing private configuration.
 			ref := camera.CredentialRef{Provider: "legacy-input", ID: hex.EncodeToString(nonce[:]), Version: "1", Scope: scope, Purpose: camera.AuthStreaming, Recoverable: false}
-			auth.inputs[ref] = legacyInput{clean: clean, input: cfg.Input, material: material, sanitize: sanitize}
+			input := legacyInput{clean: clean, input: cfg.Input, material: material, sanitize: sanitize}
+			if u, _ := url.Parse(cfg.Input); u != nil && u.User != nil && (cfg.MaxBitrateOnvif || cfg.Onvif != nil) && (cfg.Onvif == nil || cfg.Onvif.CredentialRef == nil) {
+				// Legacy ONVIF inference explicitly reused URI user information.
+				// Keep that intent private and endpoint-bound; this does not make
+				// a streaming reference a general management grant.
+				input.managementEndpoint, err = onvifEndpoint(cfg)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+			}
+			auth.inputs[ref] = input
 			cfg.Input, cfg.InputCredential, cfg.Scope = clean, &ref, scope
 		}
 		spec := catalog.Spec{Alias: cfg.Alias, Name: cfg.Name, Input: clean, Labels: cfg.Labels, Zone: cfg.Zone, Profile: catalog.Profile{Codec: cfg.Format, FPS: float64(cfg.Fps), MaxBitrate: cfg.MaxBitrate, KeyframeInterval: cfg.KeyframeInterval}}
@@ -120,16 +130,6 @@ func cloneLocalConfig(v SourceConfig) SourceConfig {
 	return out
 }
 
-func credentialQuery(key string) bool {
-	k := strings.ToLower(key)
-	for _, word := range []string{"password", "passwd", "secret", "token", "credential", "auth"} {
-		if strings.Contains(k, word) {
-			return true
-		}
-	}
-	return k == "user" || k == "username" || k == "pwd" || k == "pass" || k == "apikey" || k == "api_key" || k == "sig" || k == "signature"
-}
-
 func splitLegacyInput(input string) (string, bool, credential.Sanitizer, camera.CredentialMaterial, error) {
 	var material camera.CredentialMaterial
 	u, err := url.Parse(input)
@@ -147,35 +147,32 @@ func splitLegacyInput(input string) (string, bool, credential.Sanitizer, camera.
 		return "", false, credential.Sanitizer{}, material, catalog.ErrInvalid
 	}
 	private := u.User != nil || u.Fragment != ""
-	var secrets []string
 	if u.User != nil {
 		material.Username = u.User.Username()
 		material.Password, _ = u.User.Password()
-		secrets = append(secrets, material.Username, material.Password)
 		u.User = nil
 	}
-	for key, values := range query {
-		if credentialQuery(key) {
+	for key := range query {
+		if credential.SensitiveQueryKey(key) {
 			private = true
-			secrets = append(secrets, values...)
 			query.Del(key)
 		}
 	}
 	if u.Fragment != "" {
-		secrets = append(secrets, u.Fragment)
 		u.Fragment = ""
 	}
 	if !private {
 		return input, false, credential.Sanitizer{}, material, nil
 	}
 	u.RawQuery = query.Encode()
-	return u.String(), true, credential.NewSanitizer(secrets...), material, nil
+	return u.String(), true, credential.InputSanitizer(input), material, nil
 }
 
 type legacyInput struct {
-	clean, input string
-	material     camera.CredentialMaterial
-	sanitize     credential.Sanitizer
+	clean, input       string
+	material           camera.CredentialMaterial
+	sanitize           credential.Sanitizer
+	managementEndpoint string
 }
 
 type legacyInputProvider struct {
@@ -206,6 +203,25 @@ func (p *legacyInputProvider) Acquire(ctx context.Context, q camera.AuthRequest)
 		return nil, camera.ErrAuthRequired
 	}
 	return p.fallback.Acquire(ctx, q)
+}
+
+// This package-private capability exists only for an original local URI which
+// explicitly requested ONVIF inference. It is read-only, nonrecoverable and
+// bound to the original management endpoint, scope and clean streaming input.
+// It cannot be requested through the ordinary AuthProvider reference API.
+func (p *legacyInputProvider) legacyManagement(ctx context.Context, scope camera.EnrollmentScope, ref camera.CredentialRef, input, endpoint string) (camera.CredentialLease, credential.Sanitizer, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, credential.Sanitizer{}, err
+	}
+	private, ok := p.inputs[ref]
+	if !ok {
+		return nil, credential.Sanitizer{}, nil
+	}
+	if private.managementEndpoint == "" || private.managementEndpoint != endpoint || private.clean != input || !ref.Authorizes(scope, camera.AuthStreaming) {
+		return nil, credential.Sanitizer{}, camera.ErrForbidden
+	}
+	ref.Purpose, ref.Recoverable = camera.AuthManagement, false
+	return camera.NewCredentialLease(ref, private.material, time.Now().Add(time.Minute)), private.sanitize, nil
 }
 
 type legacyInputLease struct {

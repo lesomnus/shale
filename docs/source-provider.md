@@ -78,6 +78,13 @@ explicit, versioned credential reference is retained with its exact scope and
 uses the configured AuthProvider. Combining a referenced credential and embedded
 URI credentials is rejected as ambiguous.
 
+For a local URI which previously supplied user information for ONVIF profile
+inference, the private adapter also preserves that original read-only management
+intent. It binds the lease to the exact source scope, clean RTSP input and
+original management endpoint. This nonrecoverable package-private capability
+does not make a streaming reference usable for generic management or device
+writes. An explicit management reference continues to use the normal provider.
+
 `CredentialRef` contains only provider, stable ID, immutable version and purpose.
 It is not a grant or proof of recoverability. Credential consumers still check
 the current assignment, exact runtime scope and authorized immutable version

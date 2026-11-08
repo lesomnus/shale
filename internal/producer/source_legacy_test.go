@@ -1,18 +1,166 @@
 package producer
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/url"
+	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/credential"
+	"github.com/lesomnus/shale/camera/onvif"
+	"github.com/lesomnus/shale/internal/cameratest"
 	"github.com/stretchr/testify/require"
 )
+
+func TestLegacyCaptureQueryTokenDiagnostics(t *testing.T) {
+	ctx := context.Background()
+	const raw = "%61bc%2fd%65f%2Btail"
+	const decoded = "abc/def+tail"
+	input := "rtsp://abc:fixture-password@camera.invalid/live?opaque_auth=" + raw
+	_, configs, auth, err := legacyCatalog([]SourceConfig{{Alias: "door", Input: input, Encoder: "copy"}}, SourceSession{TenantID: "t", SetID: "s", ProducerID: "p"}, nil)
+	require.NoError(t, err)
+	src := configs["door"]
+	require.NoError(t, credential.WithInput(ctx, auth, src.Scope, camera.DeviceHint{}, src.InputCredential, src.Input, func(actual string, _ credential.Sanitizer) error {
+		require.True(t, actual == input, "private capture input must not be rewritten")
+		return nil
+	}))
+	binary := filepath.Join(t.TempDir(), "capture-tool")
+	require.NoError(t, os.WriteFile(binary, []byte("#!/bin/sh\nprintf '%s\\n' \"$*\" >&2\nprintf '%s\\n' 'failure "+raw+"' 'failure "+decoded+"' >&2\nexit 1\n"), 0700))
+	var logs bytes.Buffer
+	c := &Capture{Source: src, AuthProvider: auth, Ffmpeg: binary, Log: slog.New(slog.NewTextHandler(&logs, nil)), Profile: func() (int64, time.Duration) { return 2_000_000, time.Second }}
+	var observed []string
+	c.OnLine = func(line string) bool { observed = append(observed, line); return false }
+	err = c.once(ctx, func(r io.Reader) { _, _ = io.Copy(io.Discard, r) })
+	require.Error(t, err)
+	require.NotEmpty(t, logs.String())
+	require.NotEmpty(t, observed)
+	diagnostics := logs.String() + c.LastError() + err.Error() + fmt.Sprint(observed)
+	for _, secret := range []string{raw, decoded, "abc%2fdef%2Btail", "/def+tail", "fixture-password"} {
+		require.NotContains(t, diagnostics, secret)
+	}
+}
+
+func TestLegacyCredentialOctetsKeepPrivateTransportWithoutDiagnosticPanic(t *testing.T) {
+	ctx := context.Background()
+	input := "rtsp://camera.invalid/live?auth=%ff"
+	_, configs, auth, err := legacyCatalog([]SourceConfig{{Alias: "door", Input: input}}, SourceSession{TenantID: "t", SetID: "s", ProducerID: "p"}, nil)
+	require.NoError(t, err)
+	src := configs["door"]
+	sentinel := errors.New("fixture failure")
+	err = credential.WithInput(ctx, auth, src.Scope, camera.DeviceHint{}, src.InputCredential, src.Input, func(actual string, _ credential.Sanitizer) error {
+		require.True(t, actual == input, "valid URL octets must remain unchanged in the private callback")
+		return fmt.Errorf("failed %%ff %s: %w", string([]byte{0xff}), sentinel)
+	})
+	require.ErrorIs(t, err, sentinel)
+	require.Equal(t, "[redacted]", err.Error())
+}
+
+type legacyInspect func(context.Context, camera.DeviceHint, camera.CredentialLease) (camera.Inspection, error)
+
+func (f legacyInspect) Inspect(ctx context.Context, d camera.DeviceHint, l camera.CredentialLease) (camera.Inspection, error) {
+	return f(ctx, d, l)
+}
+
+func TestLegacyOnvifReadAuthenticationSurvivesNormalization(t *testing.T) {
+	ctx := context.Background()
+	const username = "reader"
+	const password = "fixture +:/? password"
+	profile := camera.MediaProfile{Token: "main", Name: "Main", Codec: "h264", Width: 1280, Height: 720, FPS: 29.97, Bitrate: 2_000_000, StreamURI: "rtsp://127.0.0.1/main"}
+	fixture := cameratest.ServeONVIF(t, profile)
+	fixture.RequireCredentials(username, password)
+	input := "rtsp://" + url.UserPassword(username, password).String() + "@127.0.0.1/main"
+	p, _ := catalogRuntime(t, Config{Sources: []SourceConfig{{Alias: "door", Input: input, MaxBitrateOnvif: true, Onvif: &OnvifConfig{Endpoint: fixture.URL, ProfileToken: "main"}}}})
+	require.NoError(t, p.loadSourceCatalog(ctx))
+	src := p.order[0]
+	require.NotContains(t, src.cfg.Input, "@")
+	b, err := json.Marshal(p.initialCatalog)
+	require.NoError(t, err)
+	require.NotContains(t, string(b), password)
+	require.NotContains(t, string(b), fixture.URL, "management settings remain in the private sidecar")
+	var leases []camera.CredentialLease
+	p.cfg.OnvifInspector = legacyInspect(func(ctx context.Context, device camera.DeviceHint, lease camera.CredentialLease) (camera.Inspection, error) {
+		require.NotNil(t, lease, "stripping the public URI must not remove explicit local ONVIF authentication")
+		require.True(t, lease.Ref().Authorizes(src.cfg.Scope, camera.AuthManagement))
+		require.False(t, lease.Ref().Recoverable)
+		require.NoError(t, lease.Use(ctx, func(material camera.CredentialMaterial) error {
+			require.True(t, material.Username == username && material.Password == password, "the exact original credential must reach the authenticated inspector")
+			return nil
+		}))
+		leases = append(leases, lease)
+		return (&onvif.Client{}).Inspect(ctx, device, lease)
+	})
+	for _, bitrate := range []int64{2_000_000, 4_000_000} {
+		profile.Bitrate = bitrate
+		fixture.SetVideo(profile)
+		require.NoError(t, p.refreshCeiling(ctx, src))
+		require.Equal(t, bitrate+src.cfg.audioShare(), p.startingCeiling(src), "each negotiation reads the camera again with a fresh private lease")
+	}
+	require.Len(t, leases, 2)
+	configurationWrites, activationWrites := fixture.Writes()
+	require.Zero(t, configurationWrites)
+	require.Zero(t, activationWrites, "legacy management compatibility only inspects the device")
+	for _, lease := range leases {
+		require.ErrorIs(t, lease.Use(ctx, func(camera.CredentialMaterial) error { t.Fatal("released management lease reused"); return nil }), camera.ErrExpired)
+	}
+	ref := *src.cfg.InputCredential
+	ref.Purpose = camera.AuthManagement
+	_, err = camera.Acquire(ctx, p.cfg.AuthProvider, camera.AuthRequest{Scope: src.cfg.Scope, Purpose: camera.AuthManagement, ExistingRef: &ref, Requirement: camera.AuthRequirement{Access: camera.AccessRead}})
+	require.Error(t, err, "the private compatibility path must not grant generic management-reference access")
+	private := p.cfg.AuthProvider.(*legacyInputProvider)
+	wrong := src.cfg.Scope
+	wrong.NetworkID = "other"
+	_, _, err = private.legacyManagement(ctx, wrong, *src.cfg.InputCredential, src.cfg.Input, fixture.URL)
+	require.ErrorIs(t, err, camera.ErrForbidden)
+	_, _, err = private.legacyManagement(ctx, src.cfg.Scope, *src.cfg.InputCredential, src.cfg.Input, fixture.URL+"/other")
+	require.ErrorIs(t, err, camera.ErrForbidden)
+	p.cfg.OnvifInspector = legacyInspect(func(context.Context, camera.DeviceHint, camera.CredentialLease) (camera.Inspection, error) {
+		return camera.Inspection{}, fmt.Errorf("failed credential %s", password)
+	})
+	_, err = p.onvifProfile(ctx, src.cfg)
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), password)
+}
+
+func TestLegacyOnvifCapabilityRequiresOriginalLocalIntent(t *testing.T) {
+	ctx := context.Background()
+	_, configs, auth, err := legacyCatalog([]SourceConfig{
+		{Alias: "inferred", Input: "rtsp://reader:fixture@192.0.2.10/main", MaxBitrateOnvif: true},
+		{Alias: "stream-only", Input: "rtsp://reader:fixture@192.0.2.11/main"},
+	}, SourceSession{TenantID: "t", SetID: "s", ProducerID: "p"}, nil)
+	require.NoError(t, err)
+	calls := 0
+	p := &Producer{cfg: Config{AuthProvider: auth, OnvifInspector: legacyInspect(func(ctx context.Context, d camera.DeviceHint, l camera.CredentialLease) (camera.Inspection, error) {
+		calls++
+		require.Equal(t, "http://192.0.2.10:80/onvif/device_service", d.Endpoints[0].URL)
+		require.NotNil(t, l)
+		require.Equal(t, camera.AuthManagement, l.Ref().Purpose)
+		return camera.Inspection{Current: camera.CurrentState{Profiles: []camera.MediaProfile{{StreamURI: "rtsp://192.0.2.10/main", Bitrate: 2_000_000}}}}, nil
+	})}}
+	_, err = p.onvifProfile(ctx, configs["inferred"])
+	require.NoError(t, err, "max_bitrate:onvif preserves the original default endpoint inference")
+	_, err = p.onvifProfile(ctx, configs["stream-only"])
+	require.ErrorIs(t, err, camera.ErrForbidden, "a stream-only legacy credential cannot acquire new management intent")
+	require.Equal(t, 1, calls)
+	other := configs["inferred"]
+	ref := *other.InputCredential
+	ref.ID = "unrelated-explicit-reference"
+	other.InputCredential = &ref
+	p.cfg.OnvifInspector = legacyInspect(func(_ context.Context, _ camera.DeviceHint, lease camera.CredentialLease) (camera.Inspection, error) {
+		require.Nil(t, lease, "an unrelated reference must reach an unauthenticated inspector without legacy material")
+		return camera.Inspection{}, camera.ErrAuthRequired
+	})
+	_, err = p.onvifProfile(ctx, other)
+	require.ErrorIs(t, err, camera.ErrAuthRequired, "an unrelated reference cannot borrow the private legacy capability")
+}
 
 func TestLegacyCatalogPrivateTransportAndSidecar(t *testing.T) {
 	ctx := context.Background()
