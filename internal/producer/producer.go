@@ -104,8 +104,8 @@ type Stats struct {
 
 // Stats sums the counters over every source.
 func (p *Producer) Stats() Stats {
-	var st Stats
-	for _, s := range p.order {
+	sources, st := p.accountedSources()
+	for _, s := range sources {
 		s.mu.Lock()
 		st.Stored += s.stored
 		st.Lost += s.lost
@@ -179,9 +179,12 @@ type Producer struct {
 	id   pdid.Id
 
 	set            *api.Set
+	sourcesMu      sync.RWMutex
 	members        int
 	sources        map[string]*source
 	order          []*source
+	draining       map[*source]bool
+	retired        Stats
 	catalog        catalog.Provider
 	initialCatalog catalog.Snapshot
 	initialSpecs   map[string]catalog.Spec
@@ -427,7 +430,7 @@ func (p *Producer) configureSources(sources []SourceConfig) error {
 // does for the process it runs (§38.10); exported so a test can be the
 // process.
 func (p *Producer) Observe(alias, line string) bool {
-	s := p.sources[alias]
+	s := p.sourceByAlias(alias)
 	if s == nil || s.dark == nil {
 		return false
 	}
@@ -533,7 +536,7 @@ func (p *Producer) Run(ctx context.Context) error {
 		p.log.Info("push: listening", "addr", p.cfg.Push)
 		g.Go(func() error { return p.push.Serve(ctx) })
 	}
-	for _, s := range p.order {
+	for _, s := range p.activeSources() {
 		s := s
 		g.Go(func() error { return p.capture(ctx, s) })
 		g.Go(func() error { return p.uploads(ctx, s) })
@@ -590,7 +593,7 @@ func (p *Producer) waitForSet(ctx context.Context) error {
 
 // register makes sure every configured source exists in the set (§38.4).
 func (p *Producer) register(ctx context.Context) error {
-	for _, s := range p.order {
+	for _, s := range p.activeSources() {
 		if err := p.refreshCeiling(ctx, s); err != nil {
 			return err
 		}
@@ -614,9 +617,11 @@ func (p *Producer) register(ctx context.Context) error {
 		}
 		after = vs.GetNext()
 	}
+	p.sourcesMu.Lock()
 	p.members = len(byAlias)
+	p.sourcesMu.Unlock()
 
-	for _, s := range p.order {
+	for _, s := range p.activeSources() {
 		if spec, ok := p.initialSpecs[s.cfg.Alias]; ok && spec.SourceID != "" {
 			id, err := identifierSource(spec.SourceID)
 			if err != nil {
@@ -660,7 +665,9 @@ func (p *Producer) register(ctx context.Context) error {
 		}
 		p.log.Info("registered source", "alias", v.GetAlias(), "ordinal", v.GetOrdinal())
 		s.row = v
+		p.sourcesMu.Lock()
 		p.members++
+		p.sourcesMu.Unlock()
 	}
 
 	return nil
@@ -687,7 +694,7 @@ func (p *Producer) negotiate(ctx context.Context) error {
 	defer p.negotiating.Unlock()
 	var proposals []*api.SourceProposal
 	var total int64
-	for _, s := range p.order {
+	for _, s := range p.activeSources() {
 		if err := p.refreshCeiling(ctx, s); err != nil {
 			return err
 		}
@@ -759,7 +766,7 @@ func (p *Producer) negotiate(ctx context.Context) error {
 		p.uploader.Mode = mode
 	}
 	for _, ag := range resp.GetSources() {
-		for _, s := range p.order {
+		for _, s := range p.activeSources() {
 			if string(s.row.GetId()) != string(ag.GetSourceId()) {
 				continue
 			}
@@ -767,7 +774,7 @@ func (p *Producer) negotiate(ctx context.Context) error {
 			d := time.Duration(prof.GetDurationSeconds()) * time.Second
 			sched := Schedule{
 				Duration: d,
-				Phase:    core.Phase(p.set.GetId(), int(s.row.GetOrdinal()), p.members, d),
+				Phase:    core.Phase(p.set.GetId(), int(s.row.GetOrdinal()), p.memberCount(), d),
 				Ceiling:  prof.GetMaxBitrate() / 8 * prof.GetDurationSeconds(),
 			}
 			s.mu.Lock()
@@ -1365,7 +1372,7 @@ var errTaken = errors.New("the answer names a lamina an earlier segment has")
 // is held, which under `retain: written` is less than their length (§16).
 func (p *Producer) overBudget() bool {
 	var total int64
-	for _, s := range p.order {
+	for _, s := range p.retainedSources() {
 		s.mu.Lock()
 		for _, seg := range s.pending {
 			total += seg.Held()
@@ -1444,7 +1451,7 @@ func (p *Producer) allocations(ctx context.Context) error {
 				}
 			}
 			for _, al := range resp.GetAllocations() {
-				for _, s := range p.order {
+				for _, s := range p.activeSources() {
 					if string(s.row.GetId()) != string(al.GetSourceId()) {
 						continue
 					}
@@ -1480,7 +1487,7 @@ func (p *Producer) ticks(ctx context.Context) error {
 		}
 		raise := false
 		now := p.now()
-		for _, s := range p.order {
+		for _, s := range p.activeSources() {
 			if s.dark != nil {
 				s.dark.tick(now)
 			}
@@ -1519,7 +1526,7 @@ func (p *Producer) heartbeats(ctx context.Context) error {
 
 func (p *Producer) heartbeat(ctx context.Context) error {
 	var reports []*api.SourceReport
-	for _, s := range p.order {
+	for _, s := range p.activeSources() {
 		s.mu.Lock()
 		var st CutStats
 		if s.cutter != nil {
@@ -1575,7 +1582,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 	p.m.cpu.Record(ctx, cpuLoad())
 	p.m.temperature.Record(ctx, socTemperature())
 	var uplink int64
-	for _, s := range p.order {
+	for _, s := range p.activeSources() {
 		s.mu.Lock()
 		uplink += s.rate(60)
 		s.mu.Unlock()
