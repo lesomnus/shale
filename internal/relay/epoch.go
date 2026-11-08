@@ -59,12 +59,10 @@ func (s *source) closeEpochPeers(keys []string) {
 	}
 }
 
-func (s *source) authorize(f feeder, grant *api.CaptureEpochGrant, always bool, window time.Duration) error {
-	s.mu.Lock()
-	if err := s.checkGrant(grant); err != nil {
-		s.mu.Unlock()
-		return err
-	}
+// authorizeLocked commits a grant after the entire attachment was validated
+// with every affected source locked. The returned action performs slow peer
+// shutdown and stream control only after all source locks have been released.
+func (s *source) authorizeLocked(f feeder, grant *api.CaptureEpochGrant, always bool, window time.Duration) func() {
 	wasStarted := s.started
 	var close []string
 	if grant != nil {
@@ -84,15 +82,15 @@ func (s *source) authorize(f feeder, grant *api.CaptureEpochGrant, always bool, 
 	start := !s.stopped && (always || len(s.viewers) > 0 || prime) && (!s.started || old != f || len(close) > 0)
 	s.started = !s.stopped && (always || len(s.viewers) > 0 || prime)
 	stop := wasStarted && !s.started
-	s.mu.Unlock()
-	s.closeEpochPeers(close)
-	if start {
-		f.start(s.id)
+	return func() {
+		s.closeEpochPeers(close)
+		if start {
+			f.start(s.id)
+		}
+		if stop {
+			f.stop(s.id)
+		}
 	}
-	if stop {
-		f.stop(s.id)
-	}
-	return nil
 }
 
 func (s *source) resetEpoch(f feeder, grant *api.CaptureEpochGrant, epoch string, stopped bool) bool {
@@ -124,19 +122,18 @@ func (s *source) resetEpoch(f feeder, grant *api.CaptureEpochGrant, epoch string
 	return true
 }
 
-func (s *source) removePublisher(f feeder) {
-	s.mu.Lock()
+// removePublisherLocked participates in the same multi-source commit as
+// authorizeLocked, including the old membership's removed sources.
+func (s *source) removePublisherLocked(f feeder) func() {
 	if s.feeder != f {
-		s.mu.Unlock()
-		return
+		return nil
 	}
 	keys := s.invalidateLocked()
 	s.feeder, s.started = nil, false
 	if s.managed {
 		s.epochDenied, s.stopped = true, true
 	}
-	s.mu.Unlock()
-	s.closeEpochPeers(keys)
+	return func() { s.closeEpochPeers(keys) }
 }
 
 // viewEpochLocked also requires an init received under the exact managed

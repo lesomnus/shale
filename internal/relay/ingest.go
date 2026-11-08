@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"slices"
 	"sync"
 	"time"
 
@@ -131,7 +132,6 @@ func (a *attachment) authorize(claims *api.TokenClaims) (bool, error) {
 		next[id] = a.r.sources.get(id)
 	}
 	grants := map[pdid.Id]*api.CaptureEpochGrant{}
-	higher := false
 	for _, g := range claims.GetCaptureEpochs() {
 		id, e := pdid.From(g.GetSourceId())
 		if g == nil || e != nil || next[id] == nil || grants[id] != nil || !validEpoch(g.GetCaptureEpoch()) || g.GetSequence() < 0 || g.GetCaptureEpoch() != "" && g.GetSequence() == 0 {
@@ -139,55 +139,83 @@ func (a *attachment) authorize(claims *api.TokenClaims) (bool, error) {
 		}
 		grants[id] = g
 	}
-	for id, s := range next {
-		s.mu.Lock()
-		err := s.checkGrant(grants[id])
-		if g := grants[id]; g != nil && g.GetSequence() > s.epochSequence {
-			higher = true
-		}
-		s.mu.Unlock()
-		if err != nil {
-			return false, nil
-		}
-	}
-	if a.claims != nil {
-		changed, shrink := len(a.sources) != len(next), false
-		for id := range a.sources {
-			if next[id] == nil {
-				changed, shrink = true, true
-			}
-		}
-		for id := range next {
-			if a.sources[id] == nil {
-				changed = true
-			}
-		}
-		if changed && !claims.GetIat().AsTime().After(a.membershipAt) && (shrink || !higher) {
-			return false, nil
-		}
-	}
-	a.mu.Lock()
-	a.updating = true
-	a.mu.Unlock()
 	always := claims.GetLive() != api.LivePolicy_LIVE_POLICY_ON_DEMAND
 	window := time.Duration(max(0, min(claims.GetRewindSeconds(), int64(24*time.Hour/time.Second)))) * time.Second
-	for id, s := range next {
-		if err := s.authorize(a, grants[id], always, window); err != nil {
-			a.mu.Lock()
-			a.updating = false
-			a.mu.Unlock()
-			return false, nil
-		}
-	}
+	// Lock the union in a stable order: a concurrent Hello, Reset or removal
+	// cannot invalidate one grant between the preflight and a partial commit.
+	// No source state changes until every grant and membership fence passes.
+	all := make(map[pdid.Id]*source, len(a.sources)+len(next))
 	for id, s := range a.sources {
-		if next[id] == nil {
-			s.removePublisher(a)
-			a.stop(id)
-		}
+		all[id] = s
 	}
-	a.sources, a.grants, a.actor, a.tenant, a.claims = next, grants, actor, append([]byte(nil), claims.GetActorTenant()...), proto.Clone(claims).(*api.TokenClaims)
-	if claims.GetIat().AsTime().After(a.membershipAt) {
-		a.membershipAt = claims.GetIat().AsTime()
+	for id, s := range next {
+		all[id] = s
+	}
+	ids := make([]pdid.Id, 0, len(all))
+	for id := range all {
+		ids = append(ids, id)
+	}
+	slices.SortFunc(ids, func(x, y pdid.Id) int { return bytes.Compare(x.Bytes(), y.Bytes()) })
+	var after []func()
+	accepted := func() bool {
+		for _, id := range ids {
+			all[id].mu.Lock()
+		}
+		defer func() {
+			for i := len(ids) - 1; i >= 0; i-- {
+				all[ids[i]].mu.Unlock()
+			}
+		}()
+		higher := false
+		for id, s := range next {
+			if s.checkGrant(grants[id]) != nil {
+				return false
+			}
+			if g := grants[id]; g != nil && g.GetSequence() > s.epochSequence {
+				higher = true
+			}
+		}
+		if a.claims != nil {
+			changed, shrink := len(a.sources) != len(next), false
+			for id := range a.sources {
+				if next[id] == nil {
+					changed, shrink = true, true
+				}
+			}
+			for id := range next {
+				if a.sources[id] == nil {
+					changed = true
+				}
+			}
+			if changed && !claims.GetIat().AsTime().After(a.membershipAt) && (shrink || !higher) {
+				return false
+			}
+		}
+		a.mu.Lock()
+		a.updating = true
+		a.mu.Unlock()
+		for id, s := range next {
+			after = append(after, s.authorizeLocked(a, grants[id], always, window))
+		}
+		for id, s := range a.sources {
+			if next[id] == nil {
+				if action := s.removePublisherLocked(a); action != nil {
+					after = append(after, action)
+				}
+				after = append(after, func() { a.stop(id) })
+			}
+		}
+		a.sources, a.grants, a.actor, a.tenant, a.claims = next, grants, actor, append([]byte(nil), claims.GetActorTenant()...), proto.Clone(claims).(*api.TokenClaims)
+		if claims.GetIat().AsTime().After(a.membershipAt) {
+			a.membershipAt = claims.GetIat().AsTime()
+		}
+		return true
+	}()
+	if !accepted {
+		return false, nil
+	}
+	for _, action := range after {
+		action()
 	}
 	a.welcome()
 	return true, nil

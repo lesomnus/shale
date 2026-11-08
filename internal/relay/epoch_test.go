@@ -238,3 +238,82 @@ func TestCaptureEpochMembershipFenceNeverMovesBackwards(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok)
 }
+
+// A rejected initial attachment has no registered membership to detach. Its
+// multi-source authorization must therefore commit all grants before closing
+// any old peer or performing another externally blocking side effect.
+func TestCaptureEpochConcurrentAttachCommitsBeforeClosingPeers(t *testing.T) {
+	f := newEpochFixture(t)
+	aID, bID := pdid.New(8), pdid.New(8)
+	ok, err := f.apply(f.claims([]pdid.Id{aID, bID}, epochGrant(aID, "a-1", 1), epochGrant(bID, "b-1", 1)))
+	require.NoError(t, err)
+	require.True(t, ok)
+	a, av := f.cachedViewer(aID, "actor.atomic-a")
+	b, bv := f.cachedViewer(bID, "actor.atomic-b")
+	viewers := map[pdid.Id]*viewer{aID: av, bID: bv}
+	av.mu.Lock()
+	bv.mu.Lock()
+	locked := map[pdid.Id]bool{aID: true, bID: true}
+	t.Cleanup(func() {
+		for id, v := range viewers {
+			if locked[id] {
+				v.mu.Unlock()
+			}
+		}
+	})
+	attachmentFor := func() *attachment {
+		return &attachment{r: f.r, stream: &epochStream{ctx: t.Context()}, sources: map[pdid.Id]*source{}, grants: map[pdid.Id]*api.CaptureEpochGrant{}, pending: map[pdid.Id]bool{}, updating: true}
+	}
+	left, right := attachmentFor(), attachmentFor()
+	type result struct {
+		ok  bool
+		err error
+	}
+	done := make(chan result, 1)
+	go func() {
+		ok, err := left.authorize(f.claims([]pdid.Id{aID, bID}, epochGrant(aID, "a-2", 2), epochGrant(bID, "b-2", 2)))
+		done <- result{ok, err}
+	}()
+	var first pdid.Id
+	require.Eventually(t, func() bool {
+		f.r.whep.mu.Lock()
+		defer f.r.whep.mu.Unlock()
+		for id, v := range viewers {
+			if f.r.whep.sessions[v.key] == nil {
+				first = id
+				return true
+			}
+		}
+		return false
+	}, time.Second, time.Millisecond, "the first old peer must be closing")
+	other := aID
+	if first == aID {
+		other = bID
+	}
+	viewers[other].mu.Unlock()
+	locked[other] = false
+	// A concurrent fresh stream advances only the other Source while the
+	// first peer's Close is blocked. This may not turn left into a rejected
+	// initial attachment that left the first Source owned by a dead feeder.
+	ok, err = right.authorize(f.claims([]pdid.Id{other}, epochGrant(other, "concurrent-3", 3)))
+	require.NoError(t, err)
+	require.True(t, ok)
+	viewers[first].mu.Unlock()
+	locked[first] = false
+	select {
+	case got := <-done:
+		require.NoError(t, got.err)
+		require.True(t, got.ok, "all source grants must commit before closing peers")
+	case <-time.After(time.Second):
+		t.Fatal("authorization did not finish after the peer was released")
+	}
+	firstSource := a
+	if first == bID {
+		firstSource = b
+	}
+	firstSource.mu.Lock()
+	require.Equal(t, left, firstSource.feeder)
+	require.EqualValues(t, 2, firstSource.epochSequence)
+	firstSource.mu.Unlock()
+	require.Contains(t, left.sources, first, "the live feeder must own a registered source for input and cleanup")
+}
