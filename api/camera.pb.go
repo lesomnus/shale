@@ -1260,6 +1260,7 @@ type CameraJobObservation struct {
 	xxx_hidden_LiveDecodedFrames int64                  `protobuf:"varint,5,opt,name=live_decoded_frames,json=liveDecodedFrames"`
 	xxx_hidden_LiveFirstFrameAt  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=live_first_frame_at,json=liveFirstFrameAt"`
 	xxx_hidden_LiveLastFrameAt   *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=live_last_frame_at,json=liveLastFrameAt"`
+	xxx_hidden_AppliedRevision   int64                  `protobuf:"varint,8,opt,name=applied_revision,json=appliedRevision"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -1340,6 +1341,13 @@ func (x *CameraJobObservation) GetLiveLastFrameAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *CameraJobObservation) GetAppliedRevision() int64 {
+	if x != nil {
+		return x.xxx_hidden_AppliedRevision
+	}
+	return 0
+}
+
 func (x *CameraJobObservation) SetEffective(v *CameraCaptureProfile) {
 	x.xxx_hidden_Effective = v
 }
@@ -1366,6 +1374,10 @@ func (x *CameraJobObservation) SetLiveFirstFrameAt(v *timestamppb.Timestamp) {
 
 func (x *CameraJobObservation) SetLiveLastFrameAt(v *timestamppb.Timestamp) {
 	x.xxx_hidden_LiveLastFrameAt = v
+}
+
+func (x *CameraJobObservation) SetAppliedRevision(v int64) {
+	x.xxx_hidden_AppliedRevision = v
 }
 
 func (x *CameraJobObservation) HasEffective() bool {
@@ -1424,6 +1436,9 @@ type CameraJobObservation_builder struct {
 	LiveDecodedFrames int64
 	LiveFirstFrameAt  *timestamppb.Timestamp
 	LiveLastFrameAt   *timestamppb.Timestamp
+	// Execution acknowledgement, separate from media being available. #194 uses
+	// an authorized operator report; #198/#199 correlate Producer runtime acks.
+	AppliedRevision int64
 }
 
 func (b0 CameraJobObservation_builder) Build() *CameraJobObservation {
@@ -1437,6 +1452,7 @@ func (b0 CameraJobObservation_builder) Build() *CameraJobObservation {
 	x.xxx_hidden_LiveDecodedFrames = b.LiveDecodedFrames
 	x.xxx_hidden_LiveFirstFrameAt = b.LiveFirstFrameAt
 	x.xxx_hidden_LiveLastFrameAt = b.LiveLastFrameAt
+	x.xxx_hidden_AppliedRevision = b.AppliedRevision
 	return m0
 }
 
@@ -3522,7 +3538,7 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x10allow_activation\x18\x04 \x01(\bR\x0fallowActivation\x12O\n" +
 	"\x12initial_credential\x18\x05 \x01(\v2 .shale.CameraCredentialReferenceR\x11initialCredential\x12U\n" +
 	"\x15management_credential\x18\x06 \x01(\v2 .shale.CameraCredentialReferenceR\x14managementCredential\x12S\n" +
-	"\x14streaming_credential\x18\a \x01(\v2 .shale.CameraCredentialReferenceR\x13streamingCredential\"\x93\x03\n" +
+	"\x14streaming_credential\x18\a \x01(\v2 .shale.CameraCredentialReferenceR\x13streamingCredential\"\xbe\x03\n" +
 	"\x14CameraJobObservation\x129\n" +
 	"\teffective\x18\x01 \x01(\v2\x1b.shale.CameraCaptureProfileR\teffective\x126\n" +
 	"\bverified\x18\x02 \x01(\v2\x1a.shale.CameraMediaEvidenceR\bverified\x120\n" +
@@ -3530,7 +3546,8 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x04code\x18\x04 \x01(\tR\x04code\x12.\n" +
 	"\x13live_decoded_frames\x18\x05 \x01(\x03R\x11liveDecodedFrames\x12I\n" +
 	"\x13live_first_frame_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x10liveFirstFrameAt\x12G\n" +
-	"\x12live_last_frame_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x0fliveLastFrameAt\"\x98\x06\n" +
+	"\x12live_last_frame_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x0fliveLastFrameAt\x12)\n" +
+	"\x10applied_revision\x18\b \x01(\x03R\x0fappliedRevision\"\x98\x06\n" +
 	"\rCameraNetwork\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +

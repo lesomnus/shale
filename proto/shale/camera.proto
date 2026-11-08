@@ -92,6 +92,9 @@ message CameraJobObservation {
   int64 live_decoded_frames = 5;
   google.protobuf.Timestamp live_first_frame_at = 6;
   google.protobuf.Timestamp live_last_frame_at = 7;
+  // Execution acknowledgement, separate from media being available. #194 uses
+  // an authorized operator report; #198/#199 correlate Producer runtime acks.
+  int64 applied_revision = 8;
 }
 enum CameraJobStage {
   CAMERA_JOB_STAGE_UNSPECIFIED = 0;
