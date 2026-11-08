@@ -24,11 +24,24 @@ func (s Core) CameraAssignment() api.CameraAssignmentServiceServer {
 	return coreCameraAssignment{s, s.Next().CameraAssignment()}
 }
 func (s Core) cameraAssignmentRow(ctx context.Context, r *api.CameraAssignmentRef) (*api.CameraAssignment, error) {
+	return s.cameraAssignmentRowChecked(ctx, r, s.cameraExecutionScope, s.cameraExecutionParents)
+}
+
+// Catalog reads and Worker execution use the same lock order, with separate
+// authority checks. A Producer catalog grant never grants camera-job execution.
+func (s Core) producerCatalogRow(ctx context.Context, r *api.CameraAssignmentRef, who, tenant pdid.Id) (*api.CameraAssignment, error) {
+	check := func(ctx context.Context, a *api.CameraAssignment) error {
+		return s.producerCatalogOwner(ctx, who, tenant, a)
+	}
+	return s.cameraAssignmentRowChecked(ctx, r, check, check)
+}
+
+func (s Core) cameraAssignmentRowChecked(ctx context.Context, r *api.CameraAssignmentRef, before, after func(context.Context, *api.CameraAssignment) error) (*api.CameraAssignment, error) {
 	a, err := s.Next().CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: r}.Build())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.cameraExecutionScope(ctx, a); err != nil {
+	if err := before(ctx, a); err != nil {
 		return nil, err
 	}
 	n, err := s.Next().CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: a.GetNetwork().GetId()}.Build()}.Build())
@@ -48,7 +61,7 @@ func (s Core) cameraAssignmentRow(ctx context.Context, r *api.CameraAssignmentRe
 	if err != nil {
 		return nil, err
 	}
-	if err := s.cameraExecutionParents(ctx, a); err != nil {
+	if err := after(ctx, a); err != nil {
 		return nil, err
 	}
 	return a, nil
@@ -184,26 +197,17 @@ func (s coreCameraAssignment) Snapshot(ctx context.Context, r *api.CameraAssignm
 	var out *api.CameraCatalogSnapshot
 	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		c := New(nx, s.d)
+		var a *api.CameraAssignment
+		var err error
 		if isProducer {
-			// Reject a known foreign ref before taking its assignment/network locks.
-			a, err := nx.CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: r.GetRef()}.Build())
-			if err != nil {
-				return err
-			}
-			if err := c.producerCatalogOwner(ctx, f.Actor, f.Tenant, a); err != nil {
-				return err
-			}
+			// Reject foreign refs before locking and recheck current ownership
+			// after locking, independently of the Worker's execution scope.
+			a, err = c.producerCatalogRow(ctx, r.GetRef(), f.Actor, f.Tenant)
+		} else {
+			a, err = c.cameraAssignmentRow(ctx, r.GetRef())
 		}
-		a, err := c.cameraAssignmentRow(ctx, r.GetRef())
 		if err != nil {
 			return err
-		}
-		if isProducer {
-			// Handover, revocation or Set reassignment cannot authorize a stale
-			// cached provider merely because the first read used to be its own.
-			if err := c.producerCatalogOwner(ctx, f.Actor, f.Tenant, a); err != nil {
-				return err
-			}
 		}
 		rows, err := c.ent(ctx).CameraBinding.Query().Where(camerabinding.AssignmentIdEQ(mustId(a.GetId()).Uuid()), camerabinding.DateErasedIsNil(), camerabinding.CollectEQ(true)).Order(ent.Asc(camerabinding.FieldSourceAlias)).Limit(501).All(ctx)
 		if err != nil {
