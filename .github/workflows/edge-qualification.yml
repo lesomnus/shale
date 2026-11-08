@@ -1,0 +1,161 @@
+name: edge-qualification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: edge-qualification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    env:
+      CGO_ENABLED: '0'
+      GOMAXPROCS: '2'
+      GOFLAGS: '-p=2'
+      QUALIFICATION_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: record exact source revision
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p "$RUNNER_TEMP/shale-edge-qualification-evidence"
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          expected = os.environ['QUALIFICATION_SOURCE_SHA']
+          actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert re.fullmatch(r'[0-9a-f]{40,64}', expected) and actual == expected
+          status = {'version': 1, 'source_sha': actual, 'binary_sha256': None, 'runner_exit': None,
+                    'matrix': ['combined', 'independent', 'recovery', 'operations'],
+                    'witnesses': {}, 'cleanup': {'checked': False}, 'passed': False}
+          path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'shale-edge-qualification-evidence/status.json'
+          path.write_text(json.dumps(status, indent=2) + '\n')
+          PY
+      - name: compile fresh Linux qualification binary
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -eu
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -tags grpcnotrace \
+            -o "$RUNNER_TEMP/shale-edge-qualification.test" ./internal/e2e
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          path = root / 'shale-edge-qualification-evidence/status.json'
+          status = json.loads(path.read_text())
+          with (root / 'shale-edge-qualification.test').open('rb') as binary:
+              status['binary_sha256'] = hashlib.file_digest(binary, 'sha256').hexdigest()
+          path.write_text(json.dumps(status, indent=2) + '\n')
+          PY
+      - name: qualify every assembled group
+        timeout-minutes: 22
+        shell: bash
+        run: |
+          set +e
+          python3 deploy/edge/qualification_test.py \
+            --test-binary "$RUNNER_TEMP/shale-edge-qualification.test" \
+            --case all --timeout 1000 \
+            > "$RUNNER_TEMP/shale-edge-qualification.raw.log" 2>&1
+          qualification_exit=$?
+          printf '%s\n' "$qualification_exit" > "$RUNNER_TEMP/shale-edge-qualification.exit"
+          exit "$qualification_exit"
+      - name: cleanup owned fixtures and emit safe evidence
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          evidence = root / 'shale-edge-qualification-evidence'
+          evidence.mkdir(exist_ok=True)
+          path = evidence / 'status.json'
+          status = json.loads(path.read_text()) if path.exists() else {'version': 1, 'passed': False}
+          raw_path = root / 'shale-edge-qualification.raw.log'
+          raw = b''
+          oversized = False
+          if raw_path.exists():
+              with raw_path.open('rb') as stream:
+                  raw = stream.read((4 << 20) + 1)
+              oversized = len(raw) > 4 << 20
+          text = raw[:4 << 20].decode('utf-8', errors='replace')
+          # These are the runner's random owned names, never a global Docker purge.
+          names = sorted(set(re.findall(r'shale-edge-qualification-[0-9a-f]{12}\b', text)))
+          safe_names = names if len(names) <= 4 else []
+          def docker(*args):
+              try:
+                  return subprocess.run(['docker', *args], capture_output=True, timeout=15).returncode
+              except (OSError, subprocess.TimeoutExpired):
+                  return -1
+          available = docker('info', '--format', '{{.ServerVersion}}') == 0
+          cleanup_error = False
+          containers, images = [], []
+          for name in safe_names:
+              for args in (('rm', '-f', name), ('image', 'rm', name)):
+                  cleanup_error = docker(*args) == -1 or cleanup_error
+              container_state = docker('container', 'inspect', name)
+              image_state = docker('image', 'inspect', name)
+              cleanup_error = -1 in (container_state, image_state) or cleanup_error
+              if container_state == 0:
+                  containers.append(name)
+              if image_state == 0:
+                  images.append(name)
+          available = available and docker('info', '--format', '{{.ServerVersion}}') == 0
+          status['cleanup'] = {'checked': available, 'ownership_verified': len(names) == 1,
+                               'containers_remaining': len(containers),
+                               'images_remaining': len(images), 'error': cleanup_error or len(names) > 4}
+          expected = ['combined', 'independent', 'recovery', 'operations']
+          witnessed = set()
+          summary = []
+          for line in text.splitlines():
+              clean = line.strip()
+              match = re.fullmatch(r'SHQA_RESULT_V1 (combined|independent|recovery|operations)', clean)
+              if match:
+                  witnessed.add(match.group(1))
+                  summary.append(clean)
+              elif re.fullmatch(r'--- (PASS|FAIL): TestEdgeIsolated(CentralWorkflow|Recovery|Operations)(/(combined|independent))? \([0-9.]+s\)', clean):
+                  summary.append(clean)
+              else:
+                  location = re.search(r'\b(edge_[a-z0-9_]+_test\.go):([0-9]+):', line)
+                  if location:
+                      summary.append('test location: ' + location.group(1) + ':' + location.group(2))
+          exit_path = root / 'shale-edge-qualification.exit'
+          status['runner_exit'] = int(exit_path.read_text().strip()) if exit_path.exists() else None
+          status['witnesses'] = {mode: mode in witnessed for mode in expected}
+          status['raw_log_oversized'] = oversized
+          status['passed'] = (status['runner_exit'] == 0 and status.get('binary_sha256') is not None
+                              and all(status['witnesses'].values()) and available and not cleanup_error
+                              and not containers and not images and len(names) == 1 and not oversized)
+          path.write_text(json.dumps(status, indent=2) + '\n')
+          # No raw logs, request/status bodies, media, keys or fixture state leave the runner.
+          summary = list(dict.fromkeys(summary))[:300]
+          (evidence / 'summary.txt').write_text('\n'.join(summary) + '\n')
+          raw_path.unlink(missing_ok=True)
+          (root / 'shale-edge-qualification.test').unlink(missing_ok=True)
+          print(json.dumps(status, sort_keys=True))
+          for line in summary:
+              print(line)
+          raise SystemExit(0 if status['passed'] else 1)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: edge-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/shale-edge-qualification-evidence/
+          if-no-files-found: error
+          retention-days: 7

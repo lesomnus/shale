@@ -343,3 +343,7 @@ lease persistence across daemon restart, uplink loss/recovery and full resource
 cleanup on success/failure/timeout/SIGTERM. These are network/control checks;
 actual camera enrollment, encoded video and live/archive decoding belong to the
 assembled Go qualification.
+
+See the [complete generated-media qualification guide](https://github.com/lesomnus/shale/blob/main/deploy/edge/QUALIFICATION.md)
+for the combined/independent runtime matrix, recovery faults, CI evidence and
+the separate optional physical PoE/Pi procedure.

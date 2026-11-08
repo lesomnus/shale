@@ -153,3 +153,7 @@ The template has a 30-second stop timeout. Choose a drain timeout that fits the
 service manager's stop budget, or explicitly extend `TimeoutStopSec` with a
 drop-in when you need a longer graceful RAM drain. A process killed at that
 deadline can lose its remaining volatile queue.
+
+The [managed edge qualification guide](https://github.com/lesomnus/shale/blob/main/deploy/edge/QUALIFICATION.md)
+describes the isolated generated-media suite, focused authority/cache/RAM tests,
+CI evidence and the separate optional physical PoE/Pi checks.
