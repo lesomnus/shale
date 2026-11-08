@@ -49,6 +49,23 @@ func CameraBindingOrErr(p CameraBinding, err error) CameraBinding {
 	}
 }
 
+// CameraCredential is the predicate function for cameracredential builders.
+type CameraCredential func(*sql.Selector)
+
+// CameraCredentialVersion is the predicate function for cameracredentialversion builders.
+type CameraCredentialVersion func(*sql.Selector)
+
+// CameraCredentialVersionOrErr calls the predicate only if the error is not nit.
+func CameraCredentialVersionOrErr(p CameraCredentialVersion, err error) CameraCredentialVersion {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // CameraDevice is the predicate function for cameradevice builders.
 type CameraDevice func(*sql.Selector)
 

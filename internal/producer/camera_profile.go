@@ -63,7 +63,7 @@ func (p *Producer) refreshCeiling(ctx context.Context, s *source) error {
 		return camera.ErrForbidden
 	}
 	if verifier == nil {
-		verifier = &media.Verifier{AuthProvider: p.cfg.AuthProvider, Ffmpeg: p.cfg.Ffmpeg, Ffprobe: p.cfg.Ffprobe, NetworkScope: network}
+		verifier = &media.Verifier{AuthProvider: p.sourceAuth(s), Ffmpeg: p.cfg.Ffmpeg, Ffprobe: p.cfg.Ffprobe, NetworkScope: network}
 	}
 	result, err := verifier.Verify(ctx, camera.MediaRequest{Scope: scope, Profile: camera.MediaProfile{StreamURI: s.cfg.Input}, CredentialRef: s.cfg.InputCredential, NetworkScope: network, Duration: 3 * time.Second})
 	if err != nil {
@@ -168,7 +168,7 @@ func validateCameraInput(cfg Config, source SourceConfig) error {
 		if err != nil || u.Host == "" || u.User != nil || (u.Scheme != "rtsp" && u.Scheme != "rtsps") {
 			return camera.ErrInvalid
 		}
-		if cfg.AuthProvider == nil {
+		if cfg.AuthProvider == nil && cfg.AuthProviderFactory == nil {
 			return camera.ErrAuthRequired
 		}
 	}
@@ -176,7 +176,7 @@ func validateCameraInput(cfg Config, source SourceConfig) error {
 		if !source.Onvif.CredentialRef.Authorizes(source.Scope, camera.AuthManagement) {
 			return camera.ErrForbidden
 		}
-		if cfg.AuthProvider == nil {
+		if cfg.AuthProvider == nil && cfg.AuthProviderFactory == nil {
 			return camera.ErrAuthRequired
 		}
 	}

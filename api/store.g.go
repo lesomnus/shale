@@ -40,10 +40,12 @@ type Server interface {
 	CameraAssignment() CameraAssignmentServiceServer
 	CameraBinding() CameraBindingServiceServer
 	CameraJob() CameraJobServiceServer
-	CameraPolicy() CameraPolicyServiceServer
+	CameraCredential() CameraCredentialServiceServer
+	CameraCredentialVersion() CameraCredentialVersionServiceServer
 	Device() DeviceServiceServer
 	Sink() SinkServiceServer
 	CameraWorker() CameraWorkerServiceServer
+	CameraPolicy() CameraPolicyServiceServer
 	Holder() HolderServiceServer
 	Delegation() DelegationServiceServer
 	Lamina() LaminaServiceServer
@@ -80,10 +82,12 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterCameraAssignmentServiceServer(g, s.CameraAssignment())
 	RegisterCameraBindingServiceServer(g, s.CameraBinding())
 	RegisterCameraJobServiceServer(g, s.CameraJob())
-	RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
+	RegisterCameraCredentialServiceServer(g, s.CameraCredential())
+	RegisterCameraCredentialVersionServiceServer(g, s.CameraCredentialVersion())
 	RegisterDeviceServiceServer(g, s.Device())
 	RegisterSinkServiceServer(g, s.Sink())
 	RegisterCameraWorkerServiceServer(g, s.CameraWorker())
+	RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterDelegationServiceServer(g, s.Delegation())
 	RegisterLaminaServiceServer(g, s.Lamina())
@@ -102,39 +106,41 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 }
 
 type UnimplementedServer struct {
-	TenantServer           TenantServiceServer
-	SiteServer             SiteServiceServer
-	SetServer              SetServiceServer
-	SourceServer           SourceServiceServer
-	NodeServer             NodeServiceServer
-	RelayServer            RelayServiceServer
-	ProducerServer         ProducerServiceServer
-	ReaderServer           ReaderServiceServer
-	CameraPresetServer     CameraPresetServiceServer
-	CameraNetworkServer    CameraNetworkServiceServer
-	CameraDeviceServer     CameraDeviceServiceServer
-	CameraAssignmentServer CameraAssignmentServiceServer
-	CameraBindingServer    CameraBindingServiceServer
-	CameraJobServer        CameraJobServiceServer
-	CameraPolicyServer     CameraPolicyServiceServer
-	DeviceServer           DeviceServiceServer
-	SinkServer             SinkServiceServer
-	CameraWorkerServer     CameraWorkerServiceServer
-	HolderServer           HolderServiceServer
-	DelegationServer       DelegationServiceServer
-	LaminaServer           LaminaServiceServer
-	AttemptServer          AttemptServiceServer
-	SiteMemberServer       SiteMemberServiceServer
-	AccessServer           AccessServiceServer
-	ArchivedServer         ArchivedServiceServer
-	AuditServer            AuditServiceServer
-	OutboxServer           OutboxServiceServer
-	OwedServer             OwedServiceServer
-	RowSealServer          RowSealServiceServer
-	SigningKeyServer       SigningKeyServiceServer
-	PlacementPolicyServer  PlacementPolicyServiceServer
-	UploadPolicyServer     UploadPolicyServiceServer
-	AddressPolicyServer    AddressPolicyServiceServer
+	TenantServer                  TenantServiceServer
+	SiteServer                    SiteServiceServer
+	SetServer                     SetServiceServer
+	SourceServer                  SourceServiceServer
+	NodeServer                    NodeServiceServer
+	RelayServer                   RelayServiceServer
+	ProducerServer                ProducerServiceServer
+	ReaderServer                  ReaderServiceServer
+	CameraPresetServer            CameraPresetServiceServer
+	CameraNetworkServer           CameraNetworkServiceServer
+	CameraDeviceServer            CameraDeviceServiceServer
+	CameraAssignmentServer        CameraAssignmentServiceServer
+	CameraBindingServer           CameraBindingServiceServer
+	CameraJobServer               CameraJobServiceServer
+	CameraCredentialServer        CameraCredentialServiceServer
+	CameraCredentialVersionServer CameraCredentialVersionServiceServer
+	DeviceServer                  DeviceServiceServer
+	SinkServer                    SinkServiceServer
+	CameraWorkerServer            CameraWorkerServiceServer
+	CameraPolicyServer            CameraPolicyServiceServer
+	HolderServer                  HolderServiceServer
+	DelegationServer              DelegationServiceServer
+	LaminaServer                  LaminaServiceServer
+	AttemptServer                 AttemptServiceServer
+	SiteMemberServer              SiteMemberServiceServer
+	AccessServer                  AccessServiceServer
+	ArchivedServer                ArchivedServiceServer
+	AuditServer                   AuditServiceServer
+	OutboxServer                  OutboxServiceServer
+	OwedServer                    OwedServiceServer
+	RowSealServer                 RowSealServiceServer
+	SigningKeyServer              SigningKeyServiceServer
+	PlacementPolicyServer         PlacementPolicyServiceServer
+	UploadPolicyServer            UploadPolicyServiceServer
+	AddressPolicyServer           AddressPolicyServiceServer
 }
 
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
@@ -165,13 +171,19 @@ func (UnimplementedServer) CameraBinding() CameraBindingServiceServer {
 func (UnimplementedServer) CameraJob() CameraJobServiceServer {
 	return UnimplementedCameraJobServiceServer{}
 }
-func (UnimplementedServer) CameraPolicy() CameraPolicyServiceServer {
-	return UnimplementedCameraPolicyServiceServer{}
+func (UnimplementedServer) CameraCredential() CameraCredentialServiceServer {
+	return UnimplementedCameraCredentialServiceServer{}
+}
+func (UnimplementedServer) CameraCredentialVersion() CameraCredentialVersionServiceServer {
+	return UnimplementedCameraCredentialVersionServiceServer{}
 }
 func (UnimplementedServer) Device() DeviceServiceServer { return UnimplementedDeviceServiceServer{} }
 func (UnimplementedServer) Sink() SinkServiceServer     { return UnimplementedSinkServiceServer{} }
 func (UnimplementedServer) CameraWorker() CameraWorkerServiceServer {
 	return UnimplementedCameraWorkerServiceServer{}
+}
+func (UnimplementedServer) CameraPolicy() CameraPolicyServiceServer {
+	return UnimplementedCameraPolicyServiceServer{}
 }
 func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
 func (UnimplementedServer) Delegation() DelegationServiceServer {
@@ -204,39 +216,41 @@ func (UnimplementedServer) AddressPolicy() AddressPolicyServiceServer {
 }
 
 type StaticServer struct {
-	TenantServer           TenantServiceServer
-	SiteServer             SiteServiceServer
-	SetServer              SetServiceServer
-	SourceServer           SourceServiceServer
-	NodeServer             NodeServiceServer
-	RelayServer            RelayServiceServer
-	ProducerServer         ProducerServiceServer
-	ReaderServer           ReaderServiceServer
-	CameraPresetServer     CameraPresetServiceServer
-	CameraNetworkServer    CameraNetworkServiceServer
-	CameraDeviceServer     CameraDeviceServiceServer
-	CameraAssignmentServer CameraAssignmentServiceServer
-	CameraBindingServer    CameraBindingServiceServer
-	CameraJobServer        CameraJobServiceServer
-	CameraPolicyServer     CameraPolicyServiceServer
-	DeviceServer           DeviceServiceServer
-	SinkServer             SinkServiceServer
-	CameraWorkerServer     CameraWorkerServiceServer
-	HolderServer           HolderServiceServer
-	DelegationServer       DelegationServiceServer
-	LaminaServer           LaminaServiceServer
-	AttemptServer          AttemptServiceServer
-	SiteMemberServer       SiteMemberServiceServer
-	AccessServer           AccessServiceServer
-	ArchivedServer         ArchivedServiceServer
-	AuditServer            AuditServiceServer
-	OutboxServer           OutboxServiceServer
-	OwedServer             OwedServiceServer
-	RowSealServer          RowSealServiceServer
-	SigningKeyServer       SigningKeyServiceServer
-	PlacementPolicyServer  PlacementPolicyServiceServer
-	UploadPolicyServer     UploadPolicyServiceServer
-	AddressPolicyServer    AddressPolicyServiceServer
+	TenantServer                  TenantServiceServer
+	SiteServer                    SiteServiceServer
+	SetServer                     SetServiceServer
+	SourceServer                  SourceServiceServer
+	NodeServer                    NodeServiceServer
+	RelayServer                   RelayServiceServer
+	ProducerServer                ProducerServiceServer
+	ReaderServer                  ReaderServiceServer
+	CameraPresetServer            CameraPresetServiceServer
+	CameraNetworkServer           CameraNetworkServiceServer
+	CameraDeviceServer            CameraDeviceServiceServer
+	CameraAssignmentServer        CameraAssignmentServiceServer
+	CameraBindingServer           CameraBindingServiceServer
+	CameraJobServer               CameraJobServiceServer
+	CameraCredentialServer        CameraCredentialServiceServer
+	CameraCredentialVersionServer CameraCredentialVersionServiceServer
+	DeviceServer                  DeviceServiceServer
+	SinkServer                    SinkServiceServer
+	CameraWorkerServer            CameraWorkerServiceServer
+	CameraPolicyServer            CameraPolicyServiceServer
+	HolderServer                  HolderServiceServer
+	DelegationServer              DelegationServiceServer
+	LaminaServer                  LaminaServiceServer
+	AttemptServer                 AttemptServiceServer
+	SiteMemberServer              SiteMemberServiceServer
+	AccessServer                  AccessServiceServer
+	ArchivedServer                ArchivedServiceServer
+	AuditServer                   AuditServiceServer
+	OutboxServer                  OutboxServiceServer
+	OwedServer                    OwedServiceServer
+	RowSealServer                 RowSealServiceServer
+	SigningKeyServer              SigningKeyServiceServer
+	PlacementPolicyServer         PlacementPolicyServiceServer
+	UploadPolicyServer            UploadPolicyServiceServer
+	AddressPolicyServer           AddressPolicyServiceServer
 }
 
 func (s StaticServer) Tenant() TenantServiceServer               { return s.TenantServer }
@@ -253,12 +267,18 @@ func (s StaticServer) CameraDevice() CameraDeviceServiceServer   { return s.Came
 func (s StaticServer) CameraAssignment() CameraAssignmentServiceServer {
 	return s.CameraAssignmentServer
 }
-func (s StaticServer) CameraBinding() CameraBindingServiceServer     { return s.CameraBindingServer }
-func (s StaticServer) CameraJob() CameraJobServiceServer             { return s.CameraJobServer }
-func (s StaticServer) CameraPolicy() CameraPolicyServiceServer       { return s.CameraPolicyServer }
+func (s StaticServer) CameraBinding() CameraBindingServiceServer { return s.CameraBindingServer }
+func (s StaticServer) CameraJob() CameraJobServiceServer         { return s.CameraJobServer }
+func (s StaticServer) CameraCredential() CameraCredentialServiceServer {
+	return s.CameraCredentialServer
+}
+func (s StaticServer) CameraCredentialVersion() CameraCredentialVersionServiceServer {
+	return s.CameraCredentialVersionServer
+}
 func (s StaticServer) Device() DeviceServiceServer                   { return s.DeviceServer }
 func (s StaticServer) Sink() SinkServiceServer                       { return s.SinkServer }
 func (s StaticServer) CameraWorker() CameraWorkerServiceServer       { return s.CameraWorkerServer }
+func (s StaticServer) CameraPolicy() CameraPolicyServiceServer       { return s.CameraPolicyServer }
 func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
 func (s StaticServer) Lamina() LaminaServiceServer                   { return s.LaminaServer }
@@ -290,10 +310,12 @@ type Client interface {
 	CameraAssignment() CameraAssignmentServiceClient
 	CameraBinding() CameraBindingServiceClient
 	CameraJob() CameraJobServiceClient
-	CameraPolicy() CameraPolicyServiceClient
+	CameraCredential() CameraCredentialServiceClient
+	CameraCredentialVersion() CameraCredentialVersionServiceClient
 	Device() DeviceServiceClient
 	Sink() SinkServiceClient
 	CameraWorker() CameraWorkerServiceClient
+	CameraPolicy() CameraPolicyServiceClient
 	Holder() HolderServiceClient
 	Delegation() DelegationServiceClient
 	Lamina() LaminaServiceClient
@@ -313,76 +335,80 @@ type Client interface {
 
 func NewClient(c *grpc.ClientConn) Client {
 	return &client{
-		_Tenant:           NewTenantServiceClient(c),
-		_Site:             NewSiteServiceClient(c),
-		_Set:              NewSetServiceClient(c),
-		_Source:           NewSourceServiceClient(c),
-		_Node:             NewNodeServiceClient(c),
-		_Relay:            NewRelayServiceClient(c),
-		_Producer:         NewProducerServiceClient(c),
-		_Reader:           NewReaderServiceClient(c),
-		_CameraPreset:     NewCameraPresetServiceClient(c),
-		_CameraNetwork:    NewCameraNetworkServiceClient(c),
-		_CameraDevice:     NewCameraDeviceServiceClient(c),
-		_CameraAssignment: NewCameraAssignmentServiceClient(c),
-		_CameraBinding:    NewCameraBindingServiceClient(c),
-		_CameraJob:        NewCameraJobServiceClient(c),
-		_CameraPolicy:     NewCameraPolicyServiceClient(c),
-		_Device:           NewDeviceServiceClient(c),
-		_Sink:             NewSinkServiceClient(c),
-		_CameraWorker:     NewCameraWorkerServiceClient(c),
-		_Holder:           NewHolderServiceClient(c),
-		_Delegation:       NewDelegationServiceClient(c),
-		_Lamina:           NewLaminaServiceClient(c),
-		_Attempt:          NewAttemptServiceClient(c),
-		_SiteMember:       NewSiteMemberServiceClient(c),
-		_Access:           NewAccessServiceClient(c),
-		_Archived:         NewArchivedServiceClient(c),
-		_Audit:            NewAuditServiceClient(c),
-		_Outbox:           NewOutboxServiceClient(c),
-		_Owed:             NewOwedServiceClient(c),
-		_RowSeal:          NewRowSealServiceClient(c),
-		_SigningKey:       NewSigningKeyServiceClient(c),
-		_PlacementPolicy:  NewPlacementPolicyServiceClient(c),
-		_UploadPolicy:     NewUploadPolicyServiceClient(c),
-		_AddressPolicy:    NewAddressPolicyServiceClient(c),
+		_Tenant:                  NewTenantServiceClient(c),
+		_Site:                    NewSiteServiceClient(c),
+		_Set:                     NewSetServiceClient(c),
+		_Source:                  NewSourceServiceClient(c),
+		_Node:                    NewNodeServiceClient(c),
+		_Relay:                   NewRelayServiceClient(c),
+		_Producer:                NewProducerServiceClient(c),
+		_Reader:                  NewReaderServiceClient(c),
+		_CameraPreset:            NewCameraPresetServiceClient(c),
+		_CameraNetwork:           NewCameraNetworkServiceClient(c),
+		_CameraDevice:            NewCameraDeviceServiceClient(c),
+		_CameraAssignment:        NewCameraAssignmentServiceClient(c),
+		_CameraBinding:           NewCameraBindingServiceClient(c),
+		_CameraJob:               NewCameraJobServiceClient(c),
+		_CameraCredential:        NewCameraCredentialServiceClient(c),
+		_CameraCredentialVersion: NewCameraCredentialVersionServiceClient(c),
+		_Device:                  NewDeviceServiceClient(c),
+		_Sink:                    NewSinkServiceClient(c),
+		_CameraWorker:            NewCameraWorkerServiceClient(c),
+		_CameraPolicy:            NewCameraPolicyServiceClient(c),
+		_Holder:                  NewHolderServiceClient(c),
+		_Delegation:              NewDelegationServiceClient(c),
+		_Lamina:                  NewLaminaServiceClient(c),
+		_Attempt:                 NewAttemptServiceClient(c),
+		_SiteMember:              NewSiteMemberServiceClient(c),
+		_Access:                  NewAccessServiceClient(c),
+		_Archived:                NewArchivedServiceClient(c),
+		_Audit:                   NewAuditServiceClient(c),
+		_Outbox:                  NewOutboxServiceClient(c),
+		_Owed:                    NewOwedServiceClient(c),
+		_RowSeal:                 NewRowSealServiceClient(c),
+		_SigningKey:              NewSigningKeyServiceClient(c),
+		_PlacementPolicy:         NewPlacementPolicyServiceClient(c),
+		_UploadPolicy:            NewUploadPolicyServiceClient(c),
+		_AddressPolicy:           NewAddressPolicyServiceClient(c),
 	}
 }
 
 type client struct {
-	_Tenant           TenantServiceClient
-	_Site             SiteServiceClient
-	_Set              SetServiceClient
-	_Source           SourceServiceClient
-	_Node             NodeServiceClient
-	_Relay            RelayServiceClient
-	_Producer         ProducerServiceClient
-	_Reader           ReaderServiceClient
-	_CameraPreset     CameraPresetServiceClient
-	_CameraNetwork    CameraNetworkServiceClient
-	_CameraDevice     CameraDeviceServiceClient
-	_CameraAssignment CameraAssignmentServiceClient
-	_CameraBinding    CameraBindingServiceClient
-	_CameraJob        CameraJobServiceClient
-	_CameraPolicy     CameraPolicyServiceClient
-	_Device           DeviceServiceClient
-	_Sink             SinkServiceClient
-	_CameraWorker     CameraWorkerServiceClient
-	_Holder           HolderServiceClient
-	_Delegation       DelegationServiceClient
-	_Lamina           LaminaServiceClient
-	_Attempt          AttemptServiceClient
-	_SiteMember       SiteMemberServiceClient
-	_Access           AccessServiceClient
-	_Archived         ArchivedServiceClient
-	_Audit            AuditServiceClient
-	_Outbox           OutboxServiceClient
-	_Owed             OwedServiceClient
-	_RowSeal          RowSealServiceClient
-	_SigningKey       SigningKeyServiceClient
-	_PlacementPolicy  PlacementPolicyServiceClient
-	_UploadPolicy     UploadPolicyServiceClient
-	_AddressPolicy    AddressPolicyServiceClient
+	_Tenant                  TenantServiceClient
+	_Site                    SiteServiceClient
+	_Set                     SetServiceClient
+	_Source                  SourceServiceClient
+	_Node                    NodeServiceClient
+	_Relay                   RelayServiceClient
+	_Producer                ProducerServiceClient
+	_Reader                  ReaderServiceClient
+	_CameraPreset            CameraPresetServiceClient
+	_CameraNetwork           CameraNetworkServiceClient
+	_CameraDevice            CameraDeviceServiceClient
+	_CameraAssignment        CameraAssignmentServiceClient
+	_CameraBinding           CameraBindingServiceClient
+	_CameraJob               CameraJobServiceClient
+	_CameraCredential        CameraCredentialServiceClient
+	_CameraCredentialVersion CameraCredentialVersionServiceClient
+	_Device                  DeviceServiceClient
+	_Sink                    SinkServiceClient
+	_CameraWorker            CameraWorkerServiceClient
+	_CameraPolicy            CameraPolicyServiceClient
+	_Holder                  HolderServiceClient
+	_Delegation              DelegationServiceClient
+	_Lamina                  LaminaServiceClient
+	_Attempt                 AttemptServiceClient
+	_SiteMember              SiteMemberServiceClient
+	_Access                  AccessServiceClient
+	_Archived                ArchivedServiceClient
+	_Audit                   AuditServiceClient
+	_Outbox                  OutboxServiceClient
+	_Owed                    OwedServiceClient
+	_RowSeal                 RowSealServiceClient
+	_SigningKey              SigningKeyServiceClient
+	_PlacementPolicy         PlacementPolicyServiceClient
+	_UploadPolicy            UploadPolicyServiceClient
+	_AddressPolicy           AddressPolicyServiceClient
 }
 
 func (c *client) Tenant() TenantServiceClient                     { return c._Tenant }
@@ -399,25 +425,29 @@ func (c *client) CameraDevice() CameraDeviceServiceClient         { return c._Ca
 func (c *client) CameraAssignment() CameraAssignmentServiceClient { return c._CameraAssignment }
 func (c *client) CameraBinding() CameraBindingServiceClient       { return c._CameraBinding }
 func (c *client) CameraJob() CameraJobServiceClient               { return c._CameraJob }
-func (c *client) CameraPolicy() CameraPolicyServiceClient         { return c._CameraPolicy }
-func (c *client) Device() DeviceServiceClient                     { return c._Device }
-func (c *client) Sink() SinkServiceClient                         { return c._Sink }
-func (c *client) CameraWorker() CameraWorkerServiceClient         { return c._CameraWorker }
-func (c *client) Holder() HolderServiceClient                     { return c._Holder }
-func (c *client) Delegation() DelegationServiceClient             { return c._Delegation }
-func (c *client) Lamina() LaminaServiceClient                     { return c._Lamina }
-func (c *client) Attempt() AttemptServiceClient                   { return c._Attempt }
-func (c *client) SiteMember() SiteMemberServiceClient             { return c._SiteMember }
-func (c *client) Access() AccessServiceClient                     { return c._Access }
-func (c *client) Archived() ArchivedServiceClient                 { return c._Archived }
-func (c *client) Audit() AuditServiceClient                       { return c._Audit }
-func (c *client) Outbox() OutboxServiceClient                     { return c._Outbox }
-func (c *client) Owed() OwedServiceClient                         { return c._Owed }
-func (c *client) RowSeal() RowSealServiceClient                   { return c._RowSeal }
-func (c *client) SigningKey() SigningKeyServiceClient             { return c._SigningKey }
-func (c *client) PlacementPolicy() PlacementPolicyServiceClient   { return c._PlacementPolicy }
-func (c *client) UploadPolicy() UploadPolicyServiceClient         { return c._UploadPolicy }
-func (c *client) AddressPolicy() AddressPolicyServiceClient       { return c._AddressPolicy }
+func (c *client) CameraCredential() CameraCredentialServiceClient { return c._CameraCredential }
+func (c *client) CameraCredentialVersion() CameraCredentialVersionServiceClient {
+	return c._CameraCredentialVersion
+}
+func (c *client) Device() DeviceServiceClient                   { return c._Device }
+func (c *client) Sink() SinkServiceClient                       { return c._Sink }
+func (c *client) CameraWorker() CameraWorkerServiceClient       { return c._CameraWorker }
+func (c *client) CameraPolicy() CameraPolicyServiceClient       { return c._CameraPolicy }
+func (c *client) Holder() HolderServiceClient                   { return c._Holder }
+func (c *client) Delegation() DelegationServiceClient           { return c._Delegation }
+func (c *client) Lamina() LaminaServiceClient                   { return c._Lamina }
+func (c *client) Attempt() AttemptServiceClient                 { return c._Attempt }
+func (c *client) SiteMember() SiteMemberServiceClient           { return c._SiteMember }
+func (c *client) Access() AccessServiceClient                   { return c._Access }
+func (c *client) Archived() ArchivedServiceClient               { return c._Archived }
+func (c *client) Audit() AuditServiceClient                     { return c._Audit }
+func (c *client) Outbox() OutboxServiceClient                   { return c._Outbox }
+func (c *client) Owed() OwedServiceClient                       { return c._Owed }
+func (c *client) RowSeal() RowSealServiceClient                 { return c._RowSeal }
+func (c *client) SigningKey() SigningKeyServiceClient           { return c._SigningKey }
+func (c *client) PlacementPolicy() PlacementPolicyServiceClient { return c._PlacementPolicy }
+func (c *client) UploadPolicy() UploadPolicyServiceClient       { return c._UploadPolicy }
+func (c *client) AddressPolicy() AddressPolicyServiceClient     { return c._AddressPolicy }
 
 // Middleware is a server that delegates to another server.
 type Middleware interface {

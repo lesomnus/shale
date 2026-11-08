@@ -167,6 +167,7 @@ for capture_arg do
 done
 printf '%s\n' "$capture_stage" >&2
 while [ ! -f "$SHALE_TEST_CAPTURE_READY/$capture_stage" ]; do sleep 0.01; done
+printf '%s-tail\n' "$capture_stage" >&2
 printf 'synthetic capture'
 exit 1
 `
@@ -233,8 +234,10 @@ exit 1
 				t.Fatal("attempt did not join its diagnostic readers", ctx.Err())
 			}
 			require.Contains(t, logs.String(), "first")
+			require.Contains(t, logs.String(), "first-tail", "the process exit must not close unread diagnostic bytes")
 			if remux {
 				require.Contains(t, logs.String(), "second")
+				require.Contains(t, logs.String(), "second-tail")
 			}
 		})
 	}
@@ -269,4 +272,33 @@ func TestCaptureAttemptStartupFailuresDoNotWaitForUnstartedReaders(t *testing.T)
 			}
 		})
 	}
+}
+
+func TestCaptureDiagnosticsFrameBeforeRedactionAndFlushTail(t *testing.T) {
+	var logs bytes.Buffer
+	var observed []string
+	c := &Capture{Log: slog.New(slog.NewTextHandler(&logs, nil)), OnLine: func(line string) bool { observed = append(observed, line); return false }}
+	w := &captureDiagnostics{capture: c, sanitize: credential.NewSanitizer("split-password")}
+	for _, chunk := range []string{"failure split-pa", "ssword"} {
+		_, err := w.Write([]byte(chunk))
+		require.NoError(t, err)
+		require.Empty(t, observed, "incomplete diagnostics must not reach observers")
+	}
+	_, err := w.Write([]byte("\nlast split-pass"))
+	require.NoError(t, err)
+	require.Equal(t, []string{"failure [redacted]"}, observed)
+	_, err = w.Write([]byte("word"))
+	require.NoError(t, err)
+	w.finish()
+	w.finish()
+	require.Equal(t, []string{"failure [redacted]", "last [redacted]"}, observed)
+	require.NotContains(t, logs.String(), "split-password")
+	// An oversized line is discarded as a whole; its continuation cannot
+	// become a new unredacted diagnostic, and later bounded lines still work.
+	_, err = w.Write([]byte(strings.Repeat("x", (1<<20)+1)))
+	require.NoError(t, err)
+	_, err = w.Write([]byte("split-password\nnext\n"))
+	require.NoError(t, err)
+	w.finish()
+	require.Equal(t, []string{"failure [redacted]", "last [redacted]", "next"}, observed)
 }

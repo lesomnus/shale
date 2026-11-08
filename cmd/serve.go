@@ -43,6 +43,8 @@ import (
 	"github.com/lesomnus/payday/web"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/cameracredential"
+	"github.com/lesomnus/shale/internal/camerasecret"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/identity"
@@ -283,6 +285,16 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		RelayDownAfter:     c.Control.RelayDownAfter,
 		SinkAutoAdoptAfter: c.Control.SinkAutoAdoptAfter,
 		AllocationTTL:      c.Control.AllocationTTL,
+	}
+	// The same recoverable CP KEK protects signing keys and camera credentials
+	// through independent domain-separated keys. Resolve it lazily: init may
+	// create the KEK after the server is assembled; a missing key fails closed.
+	deps.Credentials = func(current dialect.Driver) (cameracredential.Store, error) {
+		backend, err := camerasecret.NewAESGCM(s.Kek)
+		if err != nil {
+			return nil, camerasecret.ErrUnavailable
+		}
+		return cameracredential.NewSQLFactory(ungated, backend, backend, cameracredential.SQLOptions{})(current)
 	}
 	if c.Export.Enabled {
 		deps.ExportURL = func() string { return c.Export.endpoint() }
@@ -714,6 +726,8 @@ func registerTenant(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterCameraWorkerServiceServer(g, s.CameraWorker())
 	api.RegisterCameraPresetServiceServer(g, s.CameraPreset())
 	api.RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
+	api.RegisterCameraCredentialServiceServer(g, s.CameraCredential())
+	api.RegisterCameraCredentialVersionServiceServer(g, s.CameraCredentialVersion())
 }
 
 // registerCluster mounts the cluster API: its own services, and the tenant

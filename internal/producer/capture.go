@@ -753,10 +753,6 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 	ceiling, keyframe := c.Profile()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	var stderrReaders sync.WaitGroup
-	// A completed attempt owns its diagnostics too: no reader may retain its
-	// credential sanitizer or call back into the next capture attempt.
-	defer stderrReaders.Wait()
 	c.mu.Lock()
 	c.cancel, c.kicked = cancel, false
 	fallback := c.audioFallback
@@ -868,15 +864,16 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 		return err
 	}
 	defer stdout.Close()
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-	defer stderr.Close()
+	// Give exec a Writer so Wait joins its own copying goroutine before it
+	// closes the pipe. StderrPipe would let Wait discard unread diagnostics
+	// when the process exits before our scanner gets scheduled.
+	stderr := &captureDiagnostics{capture: c, sanitize: sanitize}
+	cmd.Stderr = stderr
+	defer stderr.finish()
 	// The second stage (§38.3), when the encoder needs one: the first's
 	// TS in, fragmented MP4 out.
 	var second *exec.Cmd
-	var secondStderr io.ReadCloser
+	var secondStderr *captureDiagnostics
 	if remux {
 		if remuxArgs == nil {
 			remuxArgs = RemuxArgs(src.aacArchive(), src.fragment())
@@ -893,13 +890,10 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 			return err
 		}
 		defer out.Close()
-		errs, err := second.StderrPipe()
-		if err != nil {
-			return err
-		}
-		defer errs.Close()
+		secondStderr = &captureDiagnostics{capture: c, sanitize: sanitize}
+		second.Stderr = secondStderr
+		defer secondStderr.finish()
 		stdout = out
-		secondStderr = errs
 	}
 	if err := cmd.Start(); err != nil {
 		return err
@@ -919,28 +913,17 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 	c.up = true
 	c.started = time.Now()
 	c.mu.Unlock()
-	scan := func(stderr io.Reader) {
-		stderrReaders.Add(1)
-		go func() {
-			defer stderrReaders.Done()
-			c.scanStderrWith(stderr, sanitize)
-		}()
-	}
-	scan(stderr)
-	if secondStderr != nil {
-		scan(secondStderr)
-	}
-
 	read(stdout)
 	err = cmd.Wait()
+	stderr.finish()
 	if second != nil {
 		if err2 := second.Wait(); err == nil {
 			err = err2
 		}
+		secondStderr.finish()
 	}
-	// Wait closes process-owned pipes, so blocked reads are released. Join
-	// before clearing attempt state or releasing the credential lease.
-	stderrReaders.Wait()
+	// Both Wait calls have joined their diagnostic callbacks before clearing
+	// attempt state or releasing the credential lease.
 	c.mu.Lock()
 	c.up = false
 	c.cancel = nil
@@ -965,27 +948,82 @@ func (c *Capture) scanStderrWith(stderr io.Reader, sanitize credential.Sanitizer
 	sc := bufio.NewScanner(stderr)
 	sc.Buffer(make([]byte, 64<<10), 1<<20)
 	for sc.Scan() {
-		line := sanitize.Redact(strings.TrimSpace(sc.Text()))
-		if line == "" {
-			continue
-		}
-		if c.OnLine != nil && c.OnLine(line) {
-			continue
-		}
-		if c.audioRefused(line) {
-			continue
-		}
-		if c.Source.Idle != nil && !c.Source.gstreamer() && !strings.HasPrefix(line, "[") {
-			// At info level ffmpeg also describes its inputs and
-			// outputs at the start; what a component says is tagged.
-			// GStreamer measures elsewhere and says only what is wrong.
-			continue
-		}
-		c.mu.Lock()
-		c.lastErr = line
-		c.mu.Unlock()
-		c.Log.Info("ffmpeg", "source", c.Source.Alias, "line", line)
+		c.stderrLine(sc.Text(), sanitize)
 	}
+}
+
+func (c *Capture) stderrLine(raw string, sanitize credential.Sanitizer) {
+	line := sanitize.Redact(strings.TrimSpace(raw))
+	if line == "" {
+		return
+	}
+	if c.OnLine != nil && c.OnLine(line) {
+		return
+	}
+	if c.audioRefused(line) {
+		return
+	}
+	if c.Source.Idle != nil && !c.Source.gstreamer() && !strings.HasPrefix(line, "[") {
+		// At info level ffmpeg also describes its inputs and
+		// outputs at the start; what a component says is tagged.
+		// GStreamer measures elsewhere and says only what is wrong.
+		return
+	}
+	c.mu.Lock()
+	c.lastErr = line
+	c.mu.Unlock()
+	c.Log.Info("ffmpeg", "source", c.Source.Alias, "line", line)
+}
+
+// captureDiagnostics is owned by one command's exec copying goroutine. It
+// frames complete lines before redaction; a split write cannot expose a partial
+// credential to OnLine or logs. finish runs only after Wait joins that goroutine.
+type captureDiagnostics struct {
+	capture  *Capture
+	sanitize credential.Sanitizer
+	pending  []byte
+	discard  bool
+}
+
+func (w *captureDiagnostics) Write(p []byte) (int, error) {
+	n := len(p)
+	for len(p) > 0 {
+		end := bytes.IndexByte(p, '\n')
+		size := len(p)
+		if end >= 0 {
+			size = end
+		}
+		if !w.discard {
+			if len(w.pending)+size > 1<<20 {
+				clear(w.pending)
+				w.pending = nil
+				w.discard = true
+			} else {
+				w.pending = append(w.pending, p[:size]...)
+			}
+		}
+		p = p[size:]
+		if end < 0 {
+			break
+		}
+		if !w.discard {
+			w.capture.stderrLine(string(w.pending), w.sanitize)
+		}
+		clear(w.pending)
+		w.pending = w.pending[:0]
+		w.discard = false
+		p = p[1:]
+	}
+	return n, nil
+}
+
+func (w *captureDiagnostics) finish() {
+	if !w.discard && len(w.pending) > 0 {
+		w.capture.stderrLine(string(w.pending), w.sanitize)
+	}
+	clear(w.pending)
+	w.pending = nil
+	w.discard = false
 }
 
 // aacArchive says the archive's audio track is AAC: what a camera's copied

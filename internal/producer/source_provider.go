@@ -44,6 +44,17 @@ func (p *Producer) sourceSession() SourceSession {
 
 func (p *Producer) loadSourceCatalog(ctx context.Context) error {
 	session := p.sourceSession()
+	if p.cfg.AuthProviderFactory != nil {
+		provider, err := p.cfg.AuthProviderFactory(ctx, session)
+		if err != nil {
+			return providerError(err)
+		}
+		if provider == nil {
+			return camera.ErrAuthRequired
+		}
+		p.cfg.AuthProvider = provider
+		p.cfg.AuthProviderFactory = nil
+	}
 	provider := p.cfg.SourceProvider
 	if p.cfg.SourceProviderFactory != nil {
 		var err error
@@ -116,6 +127,22 @@ func (p *Producer) loadSourceCatalog(ctx context.Context) error {
 	// local commands/USB settings remain a private compatibility sidecar.
 	p.cfg.Sources = configs
 	return p.configureSources(configs)
+}
+
+func (p *Producer) sourceAuth(s *source) camera.AuthProvider {
+	provider := p.cfg.AuthProvider
+	if scoped, ok := provider.(camera.SourceAuthProvider); ok {
+		value := camera.SourceAuthContext{Scope: s.cfg.Scope}
+		value.AssignmentID, value.AssignmentGeneration = p.initialCatalog.Revision.AssignmentID, p.initialCatalog.Revision.Generation
+		if spec, ok := p.initialSpecs[s.cfg.Alias]; ok {
+			value.SourceID, value.Revision = spec.SourceID, spec.Revision
+		}
+		if value.SourceID == "" && s.row != nil {
+			value.SourceID = mustId(s.row.GetId()).String()
+		}
+		return scoped.ForSource(value)
+	}
+	return provider
 }
 
 func providerError(err error) error {

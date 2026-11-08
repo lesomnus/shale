@@ -33,11 +33,14 @@ func TestProducerConfigCatalogSelection(t *testing.T) {
 	cfg, err := ProducerConfig(&c)
 	require.NoError(t, err)
 	require.NotNil(t, cfg.SourceProviderFactory)
+	require.NotNil(t, cfg.AuthProviderFactory, "managed catalogs default to central machine credential delivery")
 	require.Nil(t, cfg.SourceProvider)
 	require.Empty(t, cfg.Sources, "CP sources are not synthesized before machine authentication")
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	_, err = cfg.SourceProviderFactory(ctx, producer.SourceSession{})
+	require.ErrorIs(t, err, context.Canceled)
+	_, err = cfg.AuthProviderFactory(ctx, producer.SourceSession{})
 	require.ErrorIs(t, err, context.Canceled)
 
 	for _, tc := range []struct {
@@ -66,6 +69,17 @@ func TestProducerConfigCatalogSelection(t *testing.T) {
 		require.Nil(t, cfg.SourceProviderFactory)
 		require.Len(t, cfg.Sources, 1)
 	}
+}
+
+func TestProducerCentralCredentialsNeverSelectLocalFallback(t *testing.T) {
+	c := cmd.Config{}
+	c.Producer.Catalog.Provider = "cp"
+	c.Producer.Credentials = cmd.CredentialStoreConfig{Provider: "cp", Directory: t.TempDir()}
+	_, err := ProducerConfig(&c)
+	require.Error(t, err)
+	c.Producer.Credentials = cmd.CredentialStoreConfig{Provider: "vault"}
+	_, err = ProducerConfig(&c)
+	require.Error(t, err)
 }
 
 func TestProducerConfigCameraReferenceAndOnvif(t *testing.T) {

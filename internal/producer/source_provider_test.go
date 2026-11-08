@@ -139,3 +139,36 @@ func TestSourceCatalogReferenceIsNotAuthority(t *testing.T) {
 	p.cfg.SourceProvider = testCatalog{value: v}
 	require.ErrorIs(t, p.loadSourceCatalog(context.Background()), camera.ErrAuthRequired, "a reference cannot create an AuthProvider")
 }
+
+type sourceAuthProbe struct{ seen []camera.SourceAuthContext }
+
+func (*sourceAuthProbe) Acquire(context.Context, camera.AuthRequest) (camera.CredentialLease, error) {
+	return nil, camera.ErrAuthRequired
+}
+func (p *sourceAuthProbe) ForSource(s camera.SourceAuthContext) camera.AuthProvider {
+	p.seen = append(p.seen, s)
+	return p
+}
+
+func TestCredentialFactoryOpensAfterAdoptionAndBindsExactSource(t *testing.T) {
+	opened := 0
+	auth := &sourceAuthProbe{}
+	p, v := catalogRuntime(t, Config{SourceProvider: testCatalog{}, AuthProviderFactory: func(_ context.Context, session SourceSession) (camera.AuthProvider, error) {
+		opened++
+		require.NotEmpty(t, session.ProducerID)
+		require.NotEmpty(t, session.SetID)
+		require.NotNil(t, session.Conn)
+		return auth, nil
+	}})
+	require.Zero(t, opened)
+	v.Sources[0].Credential = &catalog.CredentialRef{Provider: "cp", ID: pdid.New(32).String(), Version: "v1", Purpose: "streaming"}
+	p.cfg.SourceProvider = testCatalog{value: v}
+	require.NoError(t, p.loadSourceCatalog(t.Context()))
+	require.Equal(t, 1, opened)
+	require.NotEmpty(t, auth.seen)
+	require.Equal(t, v.Sources[0].SourceID, auth.seen[len(auth.seen)-1].SourceID)
+	require.Equal(t, v.Sources[0].Revision, auth.seen[len(auth.seen)-1].Revision)
+	require.Equal(t, p.order[0].cfg.Scope, auth.seen[len(auth.seen)-1].Scope)
+	_, err := New(Config{Sources: []SourceConfig{{Alias: "usb", Input: "v4l2:/dev/video0"}}, AuthProvider: auth, AuthProviderFactory: func(context.Context, SourceSession) (camera.AuthProvider, error) { return auth, nil }})
+	require.ErrorIs(t, err, camera.ErrInvalid)
+}
