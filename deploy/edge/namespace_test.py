@@ -5,6 +5,7 @@ import ipaddress
 import json
 import os
 from pathlib import Path
+import signal
 import subprocess
 import tempfile
 import time
@@ -59,8 +60,10 @@ def main():
 import ipaddress, json, os, subprocess, sys
 if sys.argv[1] in ('bound', 'renew'):
     values = {key: os.environ.get(key, '') for key in ('ip', 'subnet', 'router', 'dns', 'ntpsrv')}
-    with open(os.environ['RESULT'], 'w') as f:
+    values['event'] = sys.argv[1]
+    with open(os.environ['RESULT'] + '.tmp', 'w') as f:
         json.dump(values, f)
+    os.replace(os.environ['RESULT'] + '.tmp', os.environ['RESULT'])
     prefix = ipaddress.IPv4Network('0.0.0.0/' + values['subnet']).prefixlen
     subprocess.run(['ip', '-4', 'addr', 'replace', values['ip'] + '/' + str(prefix), 'dev', os.environ['interface']], check=True)
 """)
@@ -104,14 +107,42 @@ if sys.argv[1] in ('bound', 'renew'):
                 assert not values["router"] and not values["dns"] and not values["ntpsrv"], values
                 return values["ip"]
 
+            def wait_bound(path, process, previous=0):
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline:
+                    if process.poll() is not None:
+                        raise AssertionError("DHCP client stopped: " + (base / "client.log").read_text())
+                    if path.exists() and path.stat().st_mtime_ns > previous:
+                        values = json.loads(path.read_text())
+                        assert not values["router"] and not values["dns"] and not values["ntpsrv"], values
+                        return values
+                    time.sleep(0.02)
+                raise AssertionError("client did not receive the expected DHCP acknowledgement")
+
             daemon = start_dhcp()
-            assigned = client("camera", "first.json")
+            result = base / "continuous.json"
+            with (base / "client.log").open("w") as log:
+                camera = subprocess.Popen(["ip", "netns", "exec", namespaces["camera"], "busybox", "udhcpc",
+                                           "-f", "-n", "-i", "eth0", "-t", "4", "-T", "2", "-s", str(hook)],
+                                          env={**os.environ, "RESULT": str(result)}, stdout=log, stderr=subprocess.STDOUT)
+            processes.append(camera)
+            initial = wait_bound(result, camera)
+            assigned = initial["ip"]
+            assert initial["event"] == "bound"
+            assert ipaddress.IPv4Address(assigned) in ipaddress.IPv4Network("192.168.250.0/24")
+
+            def renew():
+                previous = result.stat().st_mtime_ns
+                camera.send_signal(signal.SIGUSR1)
+                values = wait_bound(result, camera, previous)
+                assert values["event"] == "renew" and values["ip"] == assigned, values
+
             lease_file = leases / "leases"
             assert assigned in lease_file.read_text(), "lease was not persisted"
             client("uplink", "forbidden.json", expect=False)
             # A Wi-Fi flap leaves LAN DHCP and the local camera path alive.
             run("ip", "-n", namespaces["server"], "link", "set", "wlan0", "down")
-            assert client("camera", "wifi-down.json") == assigned
+            renew()
             run("ip", "-n", namespaces["server"], "link", "set", "wlan0", "up")
             # Stand in for NetworkManager restoring the existing Wi-Fi route.
             run("ip", "-n", namespaces["server"], "route", "replace", "default", "via", "10.23.0.1", "dev", "wlan0")
@@ -122,7 +153,7 @@ if sys.argv[1] in ('bound', 'renew'):
             # Startup must read the old lease; use a new log to wait for this startup.
             log_path.write_text("")
             daemon = start_dhcp()
-            assert client("camera", "restart.json") == assigned
+            renew()
             client("uplink", "still-forbidden.json", expect=False)
             print("DHCP DORA/renewal, lease restart, Wi-Fi flap and uplink isolation passed")
     finally:
