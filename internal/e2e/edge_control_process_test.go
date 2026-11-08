@@ -27,7 +27,9 @@ import (
 	"github.com/lesomnus/shale/internal/identity"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 const edgeControlProcessOptIn = "SHALE_EDGE_CONTROL_PROCESS"
@@ -407,6 +409,9 @@ func startEdgeControlCluster(t *testing.T, ctx context.Context, r edgeControlReq
 		c.Db.Driver = "sqlite3"
 		c.Db.Dsn = "file:" + filepath.Join(r.StateDir, "control", "shale.db") + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
 		c.Auth.Operators = identity.OperatorsConfig{Tenant: "acme"}
+		// Use the native authorized download path for later independent MP4
+		// qualification. The private protocol never accepts exporter settings.
+		c.Export.Enabled = true
 		c.Server.Addr, c.Cluster.Addr = address, address
 		c.Server.Http.Addr, c.Cluster.Http.Addr = address, address
 		// Storage.Advertise is a complete address, unlike Relay's host
@@ -423,6 +428,26 @@ func startEdgeControlCluster(t *testing.T, ctx context.Context, r edgeControlReq
 		return nil, err
 	}
 	return s, nil
+}
+
+func TestEdgeControlProcessExportAvailable(t *testing.T) {
+	t.Setenv("SHALE_E2E_DB_DSN", "")
+	dir := t.TempDir()
+	if os.Chmod(dir, 0700) != nil {
+		t.Fatal("private fixture directory unavailable")
+	}
+	fixture, err := startEdgeControlCluster(t, t.Context(), edgeControlRequest{Version: 1, ID: 1, Op: "start", StateDir: dir, BindIP: "127.0.0.1"})
+	if err != nil {
+		t.Fatal("control fixture unavailable")
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	_, err = api.NewLaminaServiceClient(fixture.cluster.dial("@acme/admin")).Export(ctx, &api.LaminaExportRequest{})
+	// The handler checks the enabled export endpoint before validating source
+	// input. This requires real RPC admission, but no media, token or download.
+	if status.Code(err) != codes.InvalidArgument {
+		t.Fatal("native export was not available for request validation")
+	}
 }
 
 func (s *edgeControlCluster) waitReady(ctx context.Context) error {
