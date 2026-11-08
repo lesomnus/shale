@@ -17,6 +17,10 @@ import time
 from camera_lan import Network
 
 
+class TopologyInterrupted(RuntimeError):
+    """Keep a requested runner shutdown distinct from an operation failure."""
+
+
 def run(*argv, **kw):
     return subprocess.run(argv, check=True, capture_output=True, text=True, **kw)
 
@@ -234,7 +238,7 @@ def require_isolation():
         raise RuntimeError("outer namespace must contain only loopback; use docker --network=none")
 
 
-def main():
+def main(factory=Topology):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifacts", type=Path, help="create and retain this fresh artifact directory")
     parser.add_argument("--timeout", type=float, default=120, help="coordinator timeout in seconds")
@@ -251,14 +255,15 @@ def main():
     if args.artifacts:
         artifacts = args.artifacts.resolve()
         artifacts.mkdir(mode=0o755)
+        artifacts.chmod(0o755)
     else:
         temporary = tempfile.TemporaryDirectory(prefix="shale-topology-")
         artifacts = Path(temporary.name)
         artifacts.chmod(0o755)
-    topology = Topology(artifacts)
+    topology = factory(artifacts)
 
     def interrupted(signum, _frame):
-        raise RuntimeError("topology interrupted by signal " + str(signum))
+        raise TopologyInterrupted("topology interrupted by signal " + str(signum))
 
     for signum in (signal.SIGTERM, signal.SIGINT):
         signal.signal(signum, interrupted)
