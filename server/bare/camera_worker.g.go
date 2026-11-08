@@ -202,6 +202,7 @@ func (st CameraWorkerServiceServer) create(ctx context.Context, req *api.CameraW
 	if req.HasDateCertIssued() {
 		q.SetDateCertIssued(req.GetDateCertIssued().AsTime())
 	}
+	q.SetCertificate(req.GetCertificate())
 	return q, ds, nil
 }
 
@@ -383,6 +384,9 @@ func CameraWorkerSelectedFields(m *api.CameraWorkerSelect) []string {
 	if m.GetDateCertIssued() {
 		vs = append(vs, cameraworker.FieldDateCertIssued)
 	}
+	if m.GetCertificate() {
+		vs = append(vs, cameraworker.FieldCertificate)
+	}
 
 	return vs
 }
@@ -468,7 +472,7 @@ func CameraWorkerGetKey(ctx context.Context, db *ent.Client, ref *api.CameraWork
 var cameraWorkerOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_worker_proto, "CameraWorker")
 
 var cameraWorkerPatchColumns = entpatch.Columns{
-	1: cameraworker.FieldId, 2: cameraworker.TenantColumn, 3: cameraworker.SiteColumn, 4: cameraworker.FieldAlias, 5: cameraworker.FieldName, 6: cameraworker.FieldDesc, 7: cameraworker.FieldLabels, 8: cameraworker.FieldHardwareId, 9: cameraworker.FieldHostname, 10: cameraworker.FieldState, 11: cameraworker.FieldCertSerial, 12: cameraworker.FieldJoin, 13: cameraworker.FieldDateUpdated, 14: cameraworker.FieldDateErased, 15: cameraworker.FieldDateCreated, 16: cameraworker.FieldDateAdopted, 17: cameraworker.FieldDateSeen, 18: cameraworker.FieldDateCertExpires, 19: cameraworker.FieldVersion, 20: cameraworker.FieldApprovedKeyFingerprint, 21: cameraworker.FieldDateCertIssued}
+	1: cameraworker.FieldId, 2: cameraworker.TenantColumn, 3: cameraworker.SiteColumn, 4: cameraworker.FieldAlias, 5: cameraworker.FieldName, 6: cameraworker.FieldDesc, 7: cameraworker.FieldLabels, 8: cameraworker.FieldHardwareId, 9: cameraworker.FieldHostname, 10: cameraworker.FieldState, 11: cameraworker.FieldCertSerial, 12: cameraworker.FieldJoin, 13: cameraworker.FieldDateUpdated, 14: cameraworker.FieldDateErased, 15: cameraworker.FieldDateCreated, 16: cameraworker.FieldDateAdopted, 17: cameraworker.FieldDateSeen, 18: cameraworker.FieldDateCertExpires, 19: cameraworker.FieldVersion, 20: cameraworker.FieldApprovedKeyFingerprint, 21: cameraworker.FieldDateCertIssued, 22: cameraworker.FieldCertificate}
 
 func (s CameraWorkerServiceServer) Apply(ctx context.Context, req *api.CameraWorkerApplyRequest) (*api.CameraWorker, error) {
 	if !req.HasPatch() {

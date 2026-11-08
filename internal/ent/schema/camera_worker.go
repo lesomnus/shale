@@ -55,6 +55,7 @@ func (CameraWorker) Fields() []ent.Field {
 		field.Time("date_cert_issued").
 			Nillable().
 			Optional(),
+		field.Bytes("certificate"),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").

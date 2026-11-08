@@ -37,6 +37,7 @@ type Mutation struct {
 	version                  *string
 	approved_key_fingerprint *string
 	date_cert_issued         *time.Time
+	certificate              *[]byte
 	clearedFields            map[string]struct{}
 	exprs                    map[string]sql.Querier
 	tenant                   *uuid.UUID
@@ -575,6 +576,27 @@ func (m *Mutation) ResetDateCertIssued() {
 	delete(m.exprs, FieldDateCertIssued)
 }
 
+// SetCertificate sets the "certificate" field.
+func (m *Mutation) SetCertificate(b []byte) {
+	m.certificate = &b
+	delete(m.exprs, FieldCertificate)
+}
+
+// Certificate returns the value of the "certificate" field in the mutation.
+func (m *Mutation) Certificate() (r []byte, exists bool) {
+	v := m.certificate
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCertificate resets all changes to the "certificate" field.
+func (m *Mutation) ResetCertificate() {
+	m.certificate = nil
+	delete(m.exprs, FieldCertificate)
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -715,7 +737,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 21)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -769,6 +791,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_cert_issued != nil || m.exprs[FieldDateCertIssued] != nil {
 		fields = append(fields, FieldDateCertIssued)
+	}
+	if m.certificate != nil || m.exprs[FieldCertificate] != nil {
+		fields = append(fields, FieldCertificate)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -826,6 +851,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.ApprovedKeyFingerprint()
 	case FieldDateCertIssued:
 		return m.DateCertIssued()
+	case FieldCertificate:
+		return m.Certificate()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldSiteId:
@@ -1029,6 +1056,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateCertIssued(v)
 		return nil
+	case FieldCertificate:
+		v, ok := value.([]byte)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCertificate(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -1107,6 +1144,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetApprovedKeyFingerprint()
 	case FieldDateCertIssued:
 		m.ResetDateCertIssued()
+	case FieldCertificate:
+		m.ResetCertificate()
 	case FieldTenantId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	case FieldSiteId:
@@ -1182,6 +1221,9 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldDateCertIssued]; ok {
 		fields = append(fields, FieldDateCertIssued)
+	}
+	if _, ok := m.exprs[FieldCertificate]; ok {
+		fields = append(fields, FieldCertificate)
 	}
 	return fields
 }
@@ -1356,6 +1398,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateCertIssued:
 		m.ResetDateCertIssued()
+		return nil
+	case FieldCertificate:
+		m.ResetCertificate()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

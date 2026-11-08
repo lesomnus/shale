@@ -50,6 +50,8 @@ const (
 	FieldApprovedKeyFingerprint = "approved_key_fingerprint"
 	// FieldDateCertIssued holds the string denoting the date_cert_issued field in the database.
 	FieldDateCertIssued = "date_cert_issued"
+	// FieldCertificate holds the string denoting the certificate field in the database.
+	FieldCertificate = "certificate"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
@@ -97,6 +99,7 @@ var Columns = []string{
 	FieldVersion,
 	FieldApprovedKeyFingerprint,
 	FieldDateCertIssued,
+	FieldCertificate,
 	FieldTenantId,
 	FieldSiteId,
 }

@@ -58,6 +58,8 @@ type CameraWorker struct {
 	ApprovedKeyFingerprint string `json:"approved_key_fingerprint,omitempty"`
 	// DateCertIssued holds the value of the "date_cert_issued" field.
 	DateCertIssued *time.Time `json:"date_cert_issued,omitempty"`
+	// Certificate holds the value of the "certificate" field.
+	Certificate []byte `json:"certificate,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -106,7 +108,7 @@ func (*CameraWorker) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case cameraworker.FieldLabels:
+		case cameraworker.FieldLabels, cameraworker.FieldCertificate:
 			values[i] = new([]byte)
 		case cameraworker.FieldState:
 			values[i] = new(sql.NullInt64)
@@ -256,6 +258,15 @@ func (_m *CameraWorker) assignValues(columns []string, values []any) error {
 				_m.DateCertIssued = new(time.Time)
 				*_m.DateCertIssued = value.Time
 			}
+		case cameraworker.FieldCertificate:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field certificate", values[i])
+			} else if value != nil {
+				_m.Certificate = *value
+				if _m.Certificate == nil {
+					_m.Certificate = []byte{}
+				}
+			}
 		case cameraworker.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -377,6 +388,9 @@ func (_m *CameraWorker) String() string {
 		builder.WriteString("date_cert_issued=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("certificate=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Certificate))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

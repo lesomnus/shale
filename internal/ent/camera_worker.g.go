@@ -56,5 +56,6 @@ func (e *CameraWorker) Proto() *api.CameraWorker {
 	if e.DateCertIssued != nil {
 		x.SetDateCertIssued(timestamppb.New(*e.DateCertIssued))
 	}
+	x.SetCertificate(e.Certificate)
 	return x
 }

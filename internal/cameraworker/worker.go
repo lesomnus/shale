@@ -84,7 +84,7 @@ func operationKey() string {
 func (w *Worker) Run(ctx context.Context) error {
 	for ctx.Err() == nil {
 		if !w.agent.Ready(time.Now()) {
-			_, err := w.agent.Join(ctx, func(ctx context.Context, conn *grpc.ClientConn, host *api.HostJoin) (hostagent.Answer, error) {
+			_, err := w.agent.JoinBootstrap(ctx, func(ctx context.Context, conn *grpc.ClientConn, host *api.HostJoin) (hostagent.Answer, error) {
 				v, err := api.NewCameraWorkerServiceClient(conn).Join(ctx, api.CameraWorkerJoinRequest_builder{Host: host, Tenant: w.cfg.Tenant}.Build())
 				if err != nil {
 					return hostagent.Answer{}, err

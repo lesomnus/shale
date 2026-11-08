@@ -4516,6 +4516,23 @@ func (m *CameraWorkerMutation) OldDateCertIssued(ctx context.Context) (v *time.T
 	return oldValue.DateCertIssued, nil
 }
 
+// OldCertificate returns the old "certificate" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldCertificate(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCertificate is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCertificate requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCertificate: %w", err)
+	}
+	return oldValue.Certificate, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the CameraWorker entity.
 // If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -4591,6 +4608,8 @@ func (m *CameraWorkerMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldApprovedKeyFingerprint(ctx)
 	case cameraworker.FieldDateCertIssued:
 		return m.OldDateCertIssued(ctx)
+	case cameraworker.FieldCertificate:
+		return m.OldCertificate(ctx)
 	case cameraworker.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case cameraworker.FieldSiteId:

@@ -625,6 +625,7 @@ var (
 		{Name: "version", Type: field.TypeString},
 		{Name: "approved_key_fingerprint", Type: field.TypeString},
 		{Name: "date_cert_issued", Type: field.TypeTime, Nullable: true},
+		{Name: "certificate", Type: field.TypeBytes},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 	}
@@ -636,13 +637,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cameraworker_tenant_tenant",
-				Columns:    []*schema.Column{CameraworkerColumns[19]},
+				Columns:    []*schema.Column{CameraworkerColumns[20]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "cameraworker_site_site",
-				Columns:    []*schema.Column{CameraworkerColumns[20]},
+				Columns:    []*schema.Column{CameraworkerColumns[21]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -651,12 +652,12 @@ var (
 			{
 				Name:    "cameraworker_page",
 				Unique:  false,
-				Columns: []*schema.Column{CameraworkerColumns[19], CameraworkerColumns[12], CameraworkerColumns[0]},
+				Columns: []*schema.Column{CameraworkerColumns[20], CameraworkerColumns[12], CameraworkerColumns[0]},
 			},
 			{
 				Name:    "cameraworker_slug",
 				Unique:  true,
-				Columns: []*schema.Column{CameraworkerColumns[1], CameraworkerColumns[19]},
+				Columns: []*schema.Column{CameraworkerColumns[1], CameraworkerColumns[20]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -664,7 +665,7 @@ var (
 			{
 				Name:    "cameraworker_hardware",
 				Unique:  false,
-				Columns: []*schema.Column{CameraworkerColumns[5], CameraworkerColumns[19]},
+				Columns: []*schema.Column{CameraworkerColumns[5], CameraworkerColumns[20]},
 			},
 		},
 	}

@@ -29,6 +29,13 @@ fixed for this identity; a site-less Worker can serve only site-less assignments
 Use a replacement identity for another site. A new key needs explicit operator
 adoption. RenewCertificate verifies a signed CSR for the already-approved key,
 replaces its serial and rejects the old certificate even on an open connection.
+After an offline certificate expires, the explicit public bootstrap path omits
+that expired client certificate only for Join. A signed CSR for the same approved
+key can recover a fresh certificate; a valid approved certificate is returned
+without rotating its serial. The approved certificate is stored separately from
+a pending new-key Join, so an anonymous new request cannot block key recovery.
+Revoked/erased identities receive no automatic readoption. Ordinary machine RPCs
+retain normal mTLS checks and reject expired or replaced certificates.
 Generated Add/Patch/Erase are closed. Operators revoke with
 `CameraWorkerService.Revoke` and its expected version.
 

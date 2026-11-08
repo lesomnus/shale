@@ -15,8 +15,6 @@ import (
 	"github.com/lesomnus/shale/internal/ent/cameraworker"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/z"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -118,7 +116,7 @@ func (s coreCameraWorker) Adopt(ctx context.Context, r *api.CameraWorkerAdoptReq
 		}
 		rec.SetCertificate(cert)
 		rec.SetRejoin(false)
-		patch := api.CameraWorkerPatchRequest_builder{Ref: api.CameraWorkerRef_builder{Id: w.GetId()}.Build(), State: z.Ptr(api.HostState_HOST_STATE_ADOPTED), Join: rec, CertSerial: z.Ptr(serial), DateAdopted: timestamppb.New(s.d.now()), DateCertIssued: timestamppb.New(s.d.now()), DateCertExpires: timestamppb.New(exp), DateUpdated: w.GetDateUpdated(), ApprovedKeyFingerprint: z.Ptr(key)}
+		patch := api.CameraWorkerPatchRequest_builder{Ref: api.CameraWorkerRef_builder{Id: w.GetId()}.Build(), State: z.Ptr(api.HostState_HOST_STATE_ADOPTED), Join: rec, CertSerial: z.Ptr(serial), DateAdopted: timestamppb.New(s.d.now()), DateCertIssued: timestamppb.New(s.d.now()), DateCertExpires: timestamppb.New(exp), DateUpdated: w.GetDateUpdated(), ApprovedKeyFingerprint: z.Ptr(key), Certificate: cert}
 		if site != nil {
 			patch.Site = site
 		} else {
@@ -214,13 +212,22 @@ func (s coreCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinReq
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	}
+	// A pending new-key request never replaces the currently approved public
+	// certificate or blocks recovery of that approved key.
+	if row != nil && api.HostState(row.State) == api.HostState_HOST_STATE_ADOPTED && row.ApprovedKeyFingerprint == key {
+		return s.resumeApprovedWorker(ctx, pdid.Id(row.Id), hj, key, from)
+	}
 	var js *joinState
 	if row != nil {
 		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
 	}
 
 	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle()}
-	switch s.decide(js, hj) {
+	decision := s.decide(js, hj)
+	if row != nil && api.HostState(row.State) == api.HostState_HOST_STATE_ADOPTED {
+		decision = decRejoin
+	}
+	switch decision {
 	case decCreate:
 		id := pdid.New(DomCameraWorker)
 		alias := aliasFor(hj.GetHostname(), func(a string) bool {
@@ -277,50 +284,84 @@ func (s coreCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinReq
 }
 
 func (s coreCameraWorker) RenewCertificate(ctx context.Context, req *api.CameraWorkerRenewCertificateRequest) (*api.CameraWorkerRenewCertificateResponse, error) {
-	_, currentErr := s.cameraWorkerActor(ctx)
-	if currentErr != nil {
-		return nil, currentErr
-	}
-	f, err := actor(ctx)
-	if err != nil {
+	if err := cameraMessage(req); err != nil {
 		return nil, err
-	}
-	if kindOf(f.Actor) != DomCameraWorker {
-		return nil, status.Error(codes.PermissionDenied, "only a camera worker renews its own certificate")
 	}
 	key, err := workerCSRKey(req.GetCsr())
 	if err != nil {
 		return nil, err
 	}
-	r, err := s.own(ctx).CameraWorker().Get(ctx, api.CameraWorkerGetRequest_builder{Ref: api.CameraWorkerRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+	var out *api.CameraWorkerRenewCertificateResponse
+	err = s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+		// The frame retains the presented serial. A concurrent adoption/revoke must
+		// not be overwritten by a renewal authorized against the previous identity.
+		r, err := s.cameraWorkerActor(ctx)
+		if err != nil {
+			return err
+		}
+		if r.GetApprovedKeyFingerprint() == "" || key != r.GetApprovedKeyFingerprint() {
+			return denied("worker renew", "a new key requires explicit operator adoption")
+		}
+		rec := r.GetJoin()
+		if rec == nil {
+			rec = &api.HostJoin{}
+		} else {
+			rec = proto.Clone(rec).(*api.HostJoin)
+		}
+		rec.SetCsr(req.GetCsr())
+		rec.SetKeyFingerprint(key[:23])
+		rec.SetRejoin(false)
+		cert, serial, expiry, err := s.issueWorker(rec, mustId(r.GetId()))
+		if err != nil {
+			return err
+		}
+		rec.SetCertificate(cert)
+		if _, err = own.CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{Ref: api.CameraWorkerRef_builder{Id: r.GetId()}.Build(), Join: rec, Certificate: cert, CertSerial: z.Ptr(serial), DateCertIssued: timestamppb.New(s.d.now()), DateCertExpires: timestamppb.New(expiry), DateUpdated: r.GetDateUpdated()}.Build()); err != nil {
+			return err
+		}
+		out = api.CameraWorkerRenewCertificateResponse_builder{Certificate: cert, CaBundle: s.bundle()}.Build()
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	if r.GetApprovedKeyFingerprint() == "" || key != r.GetApprovedKeyFingerprint() {
-		return nil, denied("worker renew", "a new key requires explicit operator adoption")
-	}
-	rec := r.GetJoin()
-	if rec == nil {
-		rec = &api.HostJoin{}
-	}
-	rec.SetCsr(req.GetCsr())
-	rec.SetKeyFingerprint(key[:23])
-	rec.SetRejoin(false)
-	pem, serial, exp, err := s.issueWorker(rec, f.Actor)
-	if err != nil {
-		return nil, err
-	}
-	rec.SetCertificate(pem)
-	if _, err := s.own(ctx).CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{
-		Ref:              api.CameraWorkerRef_builder{Id: r.GetId()}.Build(),
-		Join:             rec,
-		CertSerial:       z.Ptr(serial),
-		DateCertIssued:   timestamppb.New(s.d.now()),
-		DateCertExpires:  timestamppb.New(exp),
-		DateUpdatedForce: z.Ptr(true),
-	}.Build()); err != nil {
-		return nil, err
-	}
+	return out, nil
+}
 
-	return api.CameraWorkerRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle()}.Build(), nil
+// resumeApprovedWorker is public certificate recovery, not new-key adoption.
+// Valid certificates are returned unchanged; only expiry permits reissuance, so
+// replaying a public CSR cannot revoke a still-working certificate's serial.
+func (s coreCameraWorker) resumeApprovedWorker(ctx context.Context, id pdid.Id, hj *api.HostJoin, key, from string) (*api.CameraWorkerJoinResponse, error) {
+	var out *api.CameraWorkerJoinResponse
+	err := s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+		w, err := own.CameraWorker().Get(ctx, api.CameraWorkerGetRequest_builder{Ref: api.CameraWorkerRef_builder{Id: id.Bytes()}.Build()}.Build())
+		if err != nil {
+			return err
+		}
+		if w.GetState() != api.HostState_HOST_STATE_ADOPTED || w.GetApprovedKeyFingerprint() != key || w.GetCertSerial() == "" {
+			return denied("worker join", "worker approval changed")
+		}
+		cert := w.GetCertificate()
+		if w.GetDateCertExpires() == nil || !w.GetDateCertExpires().AsTime().After(s.d.now()) {
+			rec := s.joinRecord(hj, from, false)
+			issued, serial, expiry, err := s.issueWorker(rec, id)
+			if err != nil {
+				return err
+			}
+			rec.SetCertificate(issued)
+			if _, err = own.CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{Ref: api.CameraWorkerRef_builder{Id: id.Bytes()}.Build(), Join: rec, Certificate: issued, CertSerial: z.Ptr(serial), DateCertIssued: timestamppb.New(s.d.now()), DateCertExpires: timestamppb.New(expiry), DateUpdated: w.GetDateUpdated()}.Build()); err != nil {
+				return err
+			}
+			cert = issued
+		}
+		if len(cert) == 0 {
+			return failed("approved worker has no stored certificate")
+		}
+		out = api.CameraWorkerJoinResponse_builder{Answer: api.JoinAnswer_builder{Id: w.GetId(), Alias: w.GetAlias(), State: api.HostState_HOST_STATE_ADOPTED, Certificate: cert, CaBundle: s.bundle()}.Build()}.Build()
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }

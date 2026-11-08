@@ -38,6 +38,8 @@ message CameraWorker {
   string approved_key_fingerprint = 20;
   // Moves on renewal; date_adopted remains the operator approval time.
   google.protobuf.Timestamp date_cert_issued = 21 [(orm.field) = {nullable: true}];
+  // Approved public certificate, independent of a pending new-key Join request.
+  bytes certificate = 22;
   option (orm.message) = {
     rpc: {crud: true}
     indexes: [
