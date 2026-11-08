@@ -423,6 +423,134 @@ var (
 			},
 		},
 	}
+	// CameracredentialColumns holds the columns for the "cameracredential" table.
+	CameracredentialColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "binding_key", Type: field.TypeString},
+		{Name: "purpose", Type: field.TypeString},
+		{Name: "current_version", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "date_revoked", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "device_id", Type: field.TypeUuid},
+		{Name: "binding_id", Type: field.TypeUuid, Nullable: true},
+	}
+	// CameracredentialTable holds the schema information for the "cameracredential" table.
+	CameracredentialTable = &schema.Table{
+		Name:       "cameracredential",
+		Columns:    CameracredentialColumns,
+		PrimaryKey: []*schema.Column{CameracredentialColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cameracredential_tenant_tenant",
+				Columns:    []*schema.Column{CameracredentialColumns[8]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameracredential_site_site",
+				Columns:    []*schema.Column{CameracredentialColumns[9]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "cameracredential_cameradevice_device",
+				Columns:    []*schema.Column{CameracredentialColumns[10]},
+				RefColumns: []*schema.Column{CameradeviceColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameracredential_camerabinding_binding",
+				Columns:    []*schema.Column{CameracredentialColumns[11]},
+				RefColumns: []*schema.Column{CamerabindingColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "cameracredential_page",
+				Unique:  false,
+				Columns: []*schema.Column{CameracredentialColumns[8], CameracredentialColumns[6], CameracredentialColumns[0]},
+			},
+			{
+				Name:    "cameracredential_subject",
+				Unique:  true,
+				Columns: []*schema.Column{CameracredentialColumns[10], CameracredentialColumns[1], CameracredentialColumns[2]},
+			},
+		},
+	}
+	// CameracredentialversionColumns holds the columns for the "cameracredentialversion" table.
+	CameracredentialversionColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "version", Type: field.TypeString},
+		{Name: "intent_key", Type: field.TypeString},
+		{Name: "access", Type: field.TypeString},
+		{Name: "backend", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "sealed_envelope", Type: field.TypeBytes},
+		{Name: "import_tag", Type: field.TypeBytes, Nullable: true},
+		{Name: "origin", Type: field.TypeInt32},
+		{Name: "date_revoked", Type: field.TypeTime, Nullable: true},
+		{Name: "legacy", Type: field.TypeJson, Nullable: true},
+		{Name: "legacy_key", Type: field.TypeString, Nullable: true},
+		{Name: "reused_from", Type: field.TypeJson, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "credential_id", Type: field.TypeUuid},
+	}
+	// CameracredentialversionTable holds the schema information for the "cameracredentialversion" table.
+	CameracredentialversionTable = &schema.Table{
+		Name:       "cameracredentialversion",
+		Columns:    CameracredentialversionColumns,
+		PrimaryKey: []*schema.Column{CameracredentialversionColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cameracredentialversion_tenant_tenant",
+				Columns:    []*schema.Column{CameracredentialversionColumns[15]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cameracredentialversion_site_site",
+				Columns:    []*schema.Column{CameracredentialversionColumns[16]},
+				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "cameracredentialversion_cameracredential_credential",
+				Columns:    []*schema.Column{CameracredentialversionColumns[17]},
+				RefColumns: []*schema.Column{CameracredentialColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "cameracredentialversion_page",
+				Unique:  false,
+				Columns: []*schema.Column{CameracredentialversionColumns[15], CameracredentialversionColumns[7], CameracredentialversionColumns[0]},
+			},
+			{
+				Name:    "cameracredentialversion_version",
+				Unique:  true,
+				Columns: []*schema.Column{CameracredentialversionColumns[1], CameracredentialversionColumns[17]},
+			},
+			{
+				Name:    "cameracredentialversion_intent",
+				Unique:  true,
+				Columns: []*schema.Column{CameracredentialversionColumns[2], CameracredentialversionColumns[17]},
+			},
+			{
+				Name:    "cameracredentialversion_legacy",
+				Unique:  true,
+				Columns: []*schema.Column{CameracredentialversionColumns[13]},
+			},
+		},
+	}
 	// CameradeviceColumns holds the columns for the "cameradevice" table.
 	CameradeviceColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1786,6 +1914,8 @@ var (
 		AuditTable,
 		CameraassignmentTable,
 		CamerabindingTable,
+		CameracredentialTable,
+		CameracredentialversionTable,
 		CameradeviceTable,
 		CamerajobTable,
 		CameranetworkTable,
@@ -1851,6 +1981,19 @@ func init() {
 	CamerabindingTable.ForeignKeys[4].RefTable = SourceTable
 	CamerabindingTable.Annotation = &entsql.Annotation{
 		Table: "camerabinding",
+	}
+	CameracredentialTable.ForeignKeys[0].RefTable = TenantTable
+	CameracredentialTable.ForeignKeys[1].RefTable = SiteTable
+	CameracredentialTable.ForeignKeys[2].RefTable = CameradeviceTable
+	CameracredentialTable.ForeignKeys[3].RefTable = CamerabindingTable
+	CameracredentialTable.Annotation = &entsql.Annotation{
+		Table: "cameracredential",
+	}
+	CameracredentialversionTable.ForeignKeys[0].RefTable = TenantTable
+	CameracredentialversionTable.ForeignKeys[1].RefTable = SiteTable
+	CameracredentialversionTable.ForeignKeys[2].RefTable = CameracredentialTable
+	CameracredentialversionTable.Annotation = &entsql.Annotation{
+		Table: "cameracredentialversion",
 	}
 	CameradeviceTable.ForeignKeys[0].RefTable = TenantTable
 	CameradeviceTable.ForeignKeys[1].RefTable = SiteTable

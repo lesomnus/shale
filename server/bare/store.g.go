@@ -16,6 +16,8 @@ import (
 	audit "github.com/lesomnus/shale/internal/ent/audit"
 	cameraassignment "github.com/lesomnus/shale/internal/ent/cameraassignment"
 	camerabinding "github.com/lesomnus/shale/internal/ent/camerabinding"
+	cameracredential "github.com/lesomnus/shale/internal/ent/cameracredential"
+	cameracredentialversion "github.com/lesomnus/shale/internal/ent/cameracredentialversion"
 	cameradevice "github.com/lesomnus/shale/internal/ent/cameradevice"
 	camerajob "github.com/lesomnus/shale/internal/ent/camerajob"
 	cameranetwork "github.com/lesomnus/shale/internal/ent/cameranetwork"
@@ -406,9 +408,11 @@ type Scope interface {
 	CameraAssignmentScope(ctx context.Context) (predicate.CameraAssignment, error)
 	CameraBindingScope(ctx context.Context) (predicate.CameraBinding, error)
 	CameraJobScope(ctx context.Context) (predicate.CameraJob, error)
-	CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error)
+	CameraCredentialScope(ctx context.Context) (predicate.CameraCredential, error)
 	DeviceScope(ctx context.Context) (predicate.Device, error)
 	SinkScope(ctx context.Context) (predicate.Sink, error)
+	CameraCredentialVersionScope(ctx context.Context) (predicate.CameraCredentialVersion, error)
+	CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error)
 	CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	DelegationScope(ctx context.Context) (predicate.Delegation, error)
@@ -481,13 +485,19 @@ func (Unscoped) CameraBindingScope(_ context.Context) (predicate.CameraBinding, 
 func (Unscoped) CameraJobScope(_ context.Context) (predicate.CameraJob, error) {
 	return nil, nil
 }
-func (Unscoped) CameraPolicyScope(_ context.Context) (predicate.CameraPolicy, error) {
+func (Unscoped) CameraCredentialScope(_ context.Context) (predicate.CameraCredential, error) {
 	return nil, nil
 }
 func (Unscoped) DeviceScope(_ context.Context) (predicate.Device, error) {
 	return nil, nil
 }
 func (Unscoped) SinkScope(_ context.Context) (predicate.Sink, error) {
+	return nil, nil
+}
+func (Unscoped) CameraCredentialVersionScope(_ context.Context) (predicate.CameraCredentialVersion, error) {
+	return nil, nil
+}
+func (Unscoped) CameraPolicyScope(_ context.Context) (predicate.CameraPolicy, error) {
 	return nil, nil
 }
 func (Unscoped) CameraWorkerScope(_ context.Context) (predicate.CameraWorker, error) {
@@ -838,10 +848,10 @@ func (ss Scopes) CameraJobScope(ctx context.Context) (predicate.CameraJob, error
 	return camerajob.And(ps...), nil
 }
 
-func (ss Scopes) CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error) {
-	ps := make([]predicate.CameraPolicy, 0, len(ss))
+func (ss Scopes) CameraCredentialScope(ctx context.Context) (predicate.CameraCredential, error) {
+	ps := make([]predicate.CameraCredential, 0, len(ss))
 	for _, s := range ss {
-		p, err := s.CameraPolicyScope(ctx)
+		p, err := s.CameraCredentialScope(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -855,7 +865,7 @@ func (ss Scopes) CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy,
 		return nil, nil
 	}
 
-	return camerapolicy.And(ps...), nil
+	return cameracredential.And(ps...), nil
 }
 
 func (ss Scopes) DeviceScope(ctx context.Context) (predicate.Device, error) {
@@ -896,6 +906,46 @@ func (ss Scopes) SinkScope(ctx context.Context) (predicate.Sink, error) {
 	}
 
 	return sink.And(ps...), nil
+}
+
+func (ss Scopes) CameraCredentialVersionScope(ctx context.Context) (predicate.CameraCredentialVersion, error) {
+	ps := make([]predicate.CameraCredentialVersion, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraCredentialVersionScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return cameracredentialversion.And(ps...), nil
+}
+
+func (ss Scopes) CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error) {
+	ps := make([]predicate.CameraPolicy, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraPolicyScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return camerapolicy.And(ps...), nil
 }
 
 func (ss Scopes) CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error) {
@@ -1353,7 +1403,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. AddressPolicy, CameraAssignment, CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
+// check. AddressPolicy, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1415,11 +1465,17 @@ func (s Server) CameraBinding() api.CameraBindingServiceServer {
 	return CameraBindingServiceServer{Store: s.Store}
 }
 func (s Server) CameraJob() api.CameraJobServiceServer { return CameraJobServiceServer{Store: s.Store} }
-func (s Server) CameraPolicy() api.CameraPolicyServiceServer {
-	return CameraPolicyServiceServer{Store: s.Store}
+func (s Server) CameraCredential() api.CameraCredentialServiceServer {
+	return CameraCredentialServiceServer{Store: s.Store}
 }
 func (s Server) Device() api.DeviceServiceServer { return DeviceServiceServer{Store: s.Store} }
 func (s Server) Sink() api.SinkServiceServer     { return SinkServiceServer{Store: s.Store} }
+func (s Server) CameraCredentialVersion() api.CameraCredentialVersionServiceServer {
+	return CameraCredentialVersionServiceServer{Store: s.Store}
+}
+func (s Server) CameraPolicy() api.CameraPolicyServiceServer {
+	return CameraPolicyServiceServer{Store: s.Store}
+}
 func (s Server) CameraWorker() api.CameraWorkerServiceServer {
 	return CameraWorkerServiceServer{Store: s.Store}
 }

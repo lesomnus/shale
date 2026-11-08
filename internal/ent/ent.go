@@ -16,6 +16,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent/audit"
 	"github.com/lesomnus/shale/internal/ent/cameraassignment"
 	"github.com/lesomnus/shale/internal/ent/camerabinding"
+	"github.com/lesomnus/shale/internal/ent/cameracredential"
+	"github.com/lesomnus/shale/internal/ent/cameracredentialversion"
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
 	"github.com/lesomnus/shale/internal/ent/cameranetwork"
@@ -105,39 +107,41 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			access.Table:           access.ValidColumn,
-			addresspolicy.Table:    addresspolicy.ValidColumn,
-			archived.Table:         archived.ValidColumn,
-			attempt.Table:          attempt.ValidColumn,
-			audit.Table:            audit.ValidColumn,
-			cameraassignment.Table: cameraassignment.ValidColumn,
-			camerabinding.Table:    camerabinding.ValidColumn,
-			cameradevice.Table:     cameradevice.ValidColumn,
-			camerajob.Table:        camerajob.ValidColumn,
-			cameranetwork.Table:    cameranetwork.ValidColumn,
-			camerapolicy.Table:     camerapolicy.ValidColumn,
-			camerapreset.Table:     camerapreset.ValidColumn,
-			cameraworker.Table:     cameraworker.ValidColumn,
-			delegation.Table:       delegation.ValidColumn,
-			device.Table:           device.ValidColumn,
-			holder.Table:           holder.ValidColumn,
-			lamina.Table:           lamina.ValidColumn,
-			node.Table:             node.ValidColumn,
-			outbox.Table:           outbox.ValidColumn,
-			owed.Table:             owed.ValidColumn,
-			placementpolicy.Table:  placementpolicy.ValidColumn,
-			producer.Table:         producer.ValidColumn,
-			reader.Table:           reader.ValidColumn,
-			relay.Table:            relay.ValidColumn,
-			rowseal.Table:          rowseal.ValidColumn,
-			set.Table:              set.ValidColumn,
-			signingkey.Table:       signingkey.ValidColumn,
-			sink.Table:             sink.ValidColumn,
-			site.Table:             site.ValidColumn,
-			sitemember.Table:       sitemember.ValidColumn,
-			source.Table:           source.ValidColumn,
-			tenant.Table:           tenant.ValidColumn,
-			uploadpolicy.Table:     uploadpolicy.ValidColumn,
+			access.Table:                  access.ValidColumn,
+			addresspolicy.Table:           addresspolicy.ValidColumn,
+			archived.Table:                archived.ValidColumn,
+			attempt.Table:                 attempt.ValidColumn,
+			audit.Table:                   audit.ValidColumn,
+			cameraassignment.Table:        cameraassignment.ValidColumn,
+			camerabinding.Table:           camerabinding.ValidColumn,
+			cameracredential.Table:        cameracredential.ValidColumn,
+			cameracredentialversion.Table: cameracredentialversion.ValidColumn,
+			cameradevice.Table:            cameradevice.ValidColumn,
+			camerajob.Table:               camerajob.ValidColumn,
+			cameranetwork.Table:           cameranetwork.ValidColumn,
+			camerapolicy.Table:            camerapolicy.ValidColumn,
+			camerapreset.Table:            camerapreset.ValidColumn,
+			cameraworker.Table:            cameraworker.ValidColumn,
+			delegation.Table:              delegation.ValidColumn,
+			device.Table:                  device.ValidColumn,
+			holder.Table:                  holder.ValidColumn,
+			lamina.Table:                  lamina.ValidColumn,
+			node.Table:                    node.ValidColumn,
+			outbox.Table:                  outbox.ValidColumn,
+			owed.Table:                    owed.ValidColumn,
+			placementpolicy.Table:         placementpolicy.ValidColumn,
+			producer.Table:                producer.ValidColumn,
+			reader.Table:                  reader.ValidColumn,
+			relay.Table:                   relay.ValidColumn,
+			rowseal.Table:                 rowseal.ValidColumn,
+			set.Table:                     set.ValidColumn,
+			signingkey.Table:              signingkey.ValidColumn,
+			sink.Table:                    sink.ValidColumn,
+			site.Table:                    site.ValidColumn,
+			sitemember.Table:              sitemember.ValidColumn,
+			source.Table:                  source.ValidColumn,
+			tenant.Table:                  tenant.ValidColumn,
+			uploadpolicy.Table:            uploadpolicy.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

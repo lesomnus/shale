@@ -8,6 +8,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
 	"github.com/lesomnus/shale/internal/ent/audit"
 	"github.com/lesomnus/shale/internal/ent/camerabinding"
+	"github.com/lesomnus/shale/internal/ent/cameracredentialversion"
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
 	"github.com/lesomnus/shale/internal/ent/camerapolicy"
@@ -58,6 +59,14 @@ func init() {
 	// camerabindingDescObserved is the schema descriptor for observed field.
 	camerabindingDescObserved := camerabindingFields[8].Descriptor()
 	camerabinding.ValueScanner.Observed = camerabindingDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
+	cameracredentialversionFields := schema.CameraCredentialVersion{}.Fields()
+	_ = cameracredentialversionFields
+	// cameracredentialversionDescLegacy is the schema descriptor for legacy field.
+	cameracredentialversionDescLegacy := cameracredentialversionFields[12].Descriptor()
+	cameracredentialversion.ValueScanner.Legacy = cameracredentialversionDescLegacy.ValueScanner.(field.TypeValueScanner[*api.CameraLegacyCredentialReference])
+	// cameracredentialversionDescReusedFrom is the schema descriptor for reused_from field.
+	cameracredentialversionDescReusedFrom := cameracredentialversionFields[14].Descriptor()
+	cameracredentialversion.ValueScanner.ReusedFrom = cameracredentialversionDescReusedFrom.ValueScanner.(field.TypeValueScanner[*api.CameraCredentialReference])
 	cameradeviceFields := schema.CameraDevice{}.Fields()
 	_ = cameradeviceFields
 	// cameradeviceDescIdentity is the schema descriptor for identity field.

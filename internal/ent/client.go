@@ -18,6 +18,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent/audit"
 	"github.com/lesomnus/shale/internal/ent/cameraassignment"
 	"github.com/lesomnus/shale/internal/ent/camerabinding"
+	"github.com/lesomnus/shale/internal/ent/cameracredential"
+	"github.com/lesomnus/shale/internal/ent/cameracredentialversion"
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
 	"github.com/lesomnus/shale/internal/ent/cameranetwork"
@@ -67,6 +69,10 @@ type Client struct {
 	CameraAssignment *CameraAssignmentClient
 	// CameraBinding is the client for interacting with the CameraBinding builders.
 	CameraBinding *CameraBindingClient
+	// CameraCredential is the client for interacting with the CameraCredential builders.
+	CameraCredential *CameraCredentialClient
+	// CameraCredentialVersion is the client for interacting with the CameraCredentialVersion builders.
+	CameraCredentialVersion *CameraCredentialVersionClient
 	// CameraDevice is the client for interacting with the CameraDevice builders.
 	CameraDevice *CameraDeviceClient
 	// CameraJob is the client for interacting with the CameraJob builders.
@@ -136,6 +142,8 @@ func (c *Client) init() {
 	c.Audit = NewAuditClient(c.config)
 	c.CameraAssignment = NewCameraAssignmentClient(c.config)
 	c.CameraBinding = NewCameraBindingClient(c.config)
+	c.CameraCredential = NewCameraCredentialClient(c.config)
+	c.CameraCredentialVersion = NewCameraCredentialVersionClient(c.config)
 	c.CameraDevice = NewCameraDeviceClient(c.config)
 	c.CameraJob = NewCameraJobClient(c.config)
 	c.CameraNetwork = NewCameraNetworkClient(c.config)
@@ -252,41 +260,43 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:              ctx,
-		config:           cfg,
-		Access:           NewAccessClient(cfg),
-		AddressPolicy:    NewAddressPolicyClient(cfg),
-		Archived:         NewArchivedClient(cfg),
-		Attempt:          NewAttemptClient(cfg),
-		Audit:            NewAuditClient(cfg),
-		CameraAssignment: NewCameraAssignmentClient(cfg),
-		CameraBinding:    NewCameraBindingClient(cfg),
-		CameraDevice:     NewCameraDeviceClient(cfg),
-		CameraJob:        NewCameraJobClient(cfg),
-		CameraNetwork:    NewCameraNetworkClient(cfg),
-		CameraPolicy:     NewCameraPolicyClient(cfg),
-		CameraPreset:     NewCameraPresetClient(cfg),
-		CameraWorker:     NewCameraWorkerClient(cfg),
-		Delegation:       NewDelegationClient(cfg),
-		Device:           NewDeviceClient(cfg),
-		Holder:           NewHolderClient(cfg),
-		Lamina:           NewLaminaClient(cfg),
-		Node:             NewNodeClient(cfg),
-		Outbox:           NewOutboxClient(cfg),
-		Owed:             NewOwedClient(cfg),
-		PlacementPolicy:  NewPlacementPolicyClient(cfg),
-		Producer:         NewProducerClient(cfg),
-		Reader:           NewReaderClient(cfg),
-		Relay:            NewRelayClient(cfg),
-		RowSeal:          NewRowSealClient(cfg),
-		Set:              NewSetClient(cfg),
-		SigningKey:       NewSigningKeyClient(cfg),
-		Sink:             NewSinkClient(cfg),
-		Site:             NewSiteClient(cfg),
-		SiteMember:       NewSiteMemberClient(cfg),
-		Source:           NewSourceClient(cfg),
-		Tenant:           NewTenantClient(cfg),
-		UploadPolicy:     NewUploadPolicyClient(cfg),
+		ctx:                     ctx,
+		config:                  cfg,
+		Access:                  NewAccessClient(cfg),
+		AddressPolicy:           NewAddressPolicyClient(cfg),
+		Archived:                NewArchivedClient(cfg),
+		Attempt:                 NewAttemptClient(cfg),
+		Audit:                   NewAuditClient(cfg),
+		CameraAssignment:        NewCameraAssignmentClient(cfg),
+		CameraBinding:           NewCameraBindingClient(cfg),
+		CameraCredential:        NewCameraCredentialClient(cfg),
+		CameraCredentialVersion: NewCameraCredentialVersionClient(cfg),
+		CameraDevice:            NewCameraDeviceClient(cfg),
+		CameraJob:               NewCameraJobClient(cfg),
+		CameraNetwork:           NewCameraNetworkClient(cfg),
+		CameraPolicy:            NewCameraPolicyClient(cfg),
+		CameraPreset:            NewCameraPresetClient(cfg),
+		CameraWorker:            NewCameraWorkerClient(cfg),
+		Delegation:              NewDelegationClient(cfg),
+		Device:                  NewDeviceClient(cfg),
+		Holder:                  NewHolderClient(cfg),
+		Lamina:                  NewLaminaClient(cfg),
+		Node:                    NewNodeClient(cfg),
+		Outbox:                  NewOutboxClient(cfg),
+		Owed:                    NewOwedClient(cfg),
+		PlacementPolicy:         NewPlacementPolicyClient(cfg),
+		Producer:                NewProducerClient(cfg),
+		Reader:                  NewReaderClient(cfg),
+		Relay:                   NewRelayClient(cfg),
+		RowSeal:                 NewRowSealClient(cfg),
+		Set:                     NewSetClient(cfg),
+		SigningKey:              NewSigningKeyClient(cfg),
+		Sink:                    NewSinkClient(cfg),
+		Site:                    NewSiteClient(cfg),
+		SiteMember:              NewSiteMemberClient(cfg),
+		Source:                  NewSourceClient(cfg),
+		Tenant:                  NewTenantClient(cfg),
+		UploadPolicy:            NewUploadPolicyClient(cfg),
 	}, nil
 }
 
@@ -304,41 +314,43 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:              ctx,
-		config:           cfg,
-		Access:           NewAccessClient(cfg),
-		AddressPolicy:    NewAddressPolicyClient(cfg),
-		Archived:         NewArchivedClient(cfg),
-		Attempt:          NewAttemptClient(cfg),
-		Audit:            NewAuditClient(cfg),
-		CameraAssignment: NewCameraAssignmentClient(cfg),
-		CameraBinding:    NewCameraBindingClient(cfg),
-		CameraDevice:     NewCameraDeviceClient(cfg),
-		CameraJob:        NewCameraJobClient(cfg),
-		CameraNetwork:    NewCameraNetworkClient(cfg),
-		CameraPolicy:     NewCameraPolicyClient(cfg),
-		CameraPreset:     NewCameraPresetClient(cfg),
-		CameraWorker:     NewCameraWorkerClient(cfg),
-		Delegation:       NewDelegationClient(cfg),
-		Device:           NewDeviceClient(cfg),
-		Holder:           NewHolderClient(cfg),
-		Lamina:           NewLaminaClient(cfg),
-		Node:             NewNodeClient(cfg),
-		Outbox:           NewOutboxClient(cfg),
-		Owed:             NewOwedClient(cfg),
-		PlacementPolicy:  NewPlacementPolicyClient(cfg),
-		Producer:         NewProducerClient(cfg),
-		Reader:           NewReaderClient(cfg),
-		Relay:            NewRelayClient(cfg),
-		RowSeal:          NewRowSealClient(cfg),
-		Set:              NewSetClient(cfg),
-		SigningKey:       NewSigningKeyClient(cfg),
-		Sink:             NewSinkClient(cfg),
-		Site:             NewSiteClient(cfg),
-		SiteMember:       NewSiteMemberClient(cfg),
-		Source:           NewSourceClient(cfg),
-		Tenant:           NewTenantClient(cfg),
-		UploadPolicy:     NewUploadPolicyClient(cfg),
+		ctx:                     ctx,
+		config:                  cfg,
+		Access:                  NewAccessClient(cfg),
+		AddressPolicy:           NewAddressPolicyClient(cfg),
+		Archived:                NewArchivedClient(cfg),
+		Attempt:                 NewAttemptClient(cfg),
+		Audit:                   NewAuditClient(cfg),
+		CameraAssignment:        NewCameraAssignmentClient(cfg),
+		CameraBinding:           NewCameraBindingClient(cfg),
+		CameraCredential:        NewCameraCredentialClient(cfg),
+		CameraCredentialVersion: NewCameraCredentialVersionClient(cfg),
+		CameraDevice:            NewCameraDeviceClient(cfg),
+		CameraJob:               NewCameraJobClient(cfg),
+		CameraNetwork:           NewCameraNetworkClient(cfg),
+		CameraPolicy:            NewCameraPolicyClient(cfg),
+		CameraPreset:            NewCameraPresetClient(cfg),
+		CameraWorker:            NewCameraWorkerClient(cfg),
+		Delegation:              NewDelegationClient(cfg),
+		Device:                  NewDeviceClient(cfg),
+		Holder:                  NewHolderClient(cfg),
+		Lamina:                  NewLaminaClient(cfg),
+		Node:                    NewNodeClient(cfg),
+		Outbox:                  NewOutboxClient(cfg),
+		Owed:                    NewOwedClient(cfg),
+		PlacementPolicy:         NewPlacementPolicyClient(cfg),
+		Producer:                NewProducerClient(cfg),
+		Reader:                  NewReaderClient(cfg),
+		Relay:                   NewRelayClient(cfg),
+		RowSeal:                 NewRowSealClient(cfg),
+		Set:                     NewSetClient(cfg),
+		SigningKey:              NewSigningKeyClient(cfg),
+		Sink:                    NewSinkClient(cfg),
+		Site:                    NewSiteClient(cfg),
+		SiteMember:              NewSiteMemberClient(cfg),
+		Source:                  NewSourceClient(cfg),
+		Tenant:                  NewTenantClient(cfg),
+		UploadPolicy:            NewUploadPolicyClient(cfg),
 	}, nil
 }
 
@@ -415,11 +427,11 @@ func (c *Client) InTx() bool {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.CameraAssignment,
-		c.CameraBinding, c.CameraDevice, c.CameraJob, c.CameraNetwork, c.CameraPolicy,
-		c.CameraPreset, c.CameraWorker, c.Delegation, c.Device, c.Holder, c.Lamina,
-		c.Node, c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reader, c.Relay,
-		c.RowSeal, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source,
-		c.Tenant, c.UploadPolicy,
+		c.CameraBinding, c.CameraCredential, c.CameraCredentialVersion, c.CameraDevice,
+		c.CameraJob, c.CameraNetwork, c.CameraPolicy, c.CameraPreset, c.CameraWorker,
+		c.Delegation, c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed,
+		c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set,
+		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
 	} {
 		n.Use(hooks...)
 	}
@@ -430,11 +442,11 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.CameraAssignment,
-		c.CameraBinding, c.CameraDevice, c.CameraJob, c.CameraNetwork, c.CameraPolicy,
-		c.CameraPreset, c.CameraWorker, c.Delegation, c.Device, c.Holder, c.Lamina,
-		c.Node, c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reader, c.Relay,
-		c.RowSeal, c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source,
-		c.Tenant, c.UploadPolicy,
+		c.CameraBinding, c.CameraCredential, c.CameraCredentialVersion, c.CameraDevice,
+		c.CameraJob, c.CameraNetwork, c.CameraPolicy, c.CameraPreset, c.CameraWorker,
+		c.Delegation, c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed,
+		c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set,
+		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -457,6 +469,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CameraAssignment.mutate(ctx, m)
 	case *CameraBindingMutation:
 		return c.CameraBinding.mutate(ctx, m)
+	case *CameraCredentialMutation:
+		return c.CameraCredential.mutate(ctx, m)
+	case *CameraCredentialVersionMutation:
+		return c.CameraCredentialVersion.mutate(ctx, m)
 	case *CameraDeviceMutation:
 		return c.CameraDevice.mutate(ctx, m)
 	case *CameraJobMutation:
@@ -1682,6 +1698,384 @@ func (c *CameraBindingClient) mutate(ctx context.Context, m *CameraBindingMutati
 		return (&CameraBindingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CameraBinding mutation op: %q", m.Op())
+	}
+}
+
+// CameraCredentialClient is a client for the CameraCredential schema.
+type CameraCredentialClient struct {
+	config
+}
+
+// NewCameraCredentialClient returns a client for the CameraCredential from the given config.
+func NewCameraCredentialClient(c config) *CameraCredentialClient {
+	return &CameraCredentialClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cameracredential.Hooks(f(g(h())))`.
+func (c *CameraCredentialClient) Use(hooks ...Hook) {
+	c.hooks.CameraCredential = append(c.hooks.CameraCredential, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cameracredential.Intercept(f(g(h())))`.
+func (c *CameraCredentialClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraCredential = append(c.inters.CameraCredential, interceptors...)
+}
+
+// Create returns a builder for creating a CameraCredential entity.
+func (c *CameraCredentialClient) Create() *CameraCredentialCreate {
+	mutation := newCameraCredentialMutation(c.config, OpCreate)
+	return &CameraCredentialCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraCredential entities.
+func (c *CameraCredentialClient) CreateBulk(builders ...*CameraCredentialCreate) *CameraCredentialCreateBulk {
+	return &CameraCredentialCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraCredentialClient) MapCreateBulk(slice any, setFunc func(*CameraCredentialCreate, int)) *CameraCredentialCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraCredentialCreateBulk{err: fmt.Errorf("calling to CameraCredentialClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraCredentialCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraCredentialCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraCredential.
+func (c *CameraCredentialClient) Update() *CameraCredentialUpdate {
+	mutation := newCameraCredentialMutation(c.config, OpUpdate)
+	return &CameraCredentialUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraCredentialClient) UpdateOne(_m *CameraCredential) *CameraCredentialUpdateOne {
+	mutation := newCameraCredentialMutation(c.config, OpUpdateOne, withCameraCredential(_m))
+	return &CameraCredentialUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraCredentialClient) UpdateOneId(id uuid.UUID) *CameraCredentialUpdateOne {
+	mutation := newCameraCredentialMutation(c.config, OpUpdateOne, withCameraCredentialId(id))
+	return &CameraCredentialUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraCredential.
+func (c *CameraCredentialClient) Delete() *CameraCredentialDelete {
+	mutation := newCameraCredentialMutation(c.config, OpDelete)
+	return &CameraCredentialDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraCredentialClient) DeleteOne(_m *CameraCredential) *CameraCredentialDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraCredentialClient) DeleteOneId(id uuid.UUID) *CameraCredentialDeleteOne {
+	builder := c.Delete().Where(cameracredential.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraCredentialDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraCredential.
+func (c *CameraCredentialClient) Query() *CameraCredentialQuery {
+	return &CameraCredentialQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraCredential},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraCredential entity by its id.
+func (c *CameraCredentialClient) Get(ctx context.Context, id uuid.UUID) (*CameraCredential, error) {
+	return c.Query().Where(cameracredential.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraCredentialClient) GetX(ctx context.Context, id uuid.UUID) *CameraCredential {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraCredential.
+func (c *CameraCredentialClient) QueryTenant(_m *CameraCredential) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameracredential.Table, cameracredential.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameracredential.TenantTable, cameracredential.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraCredential.
+func (c *CameraCredentialClient) QuerySite(_m *CameraCredential) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameracredential.Table, cameracredential.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameracredential.SiteTable, cameracredential.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDevice queries the device edge of a CameraCredential.
+func (c *CameraCredentialClient) QueryDevice(_m *CameraCredential) *CameraDeviceQuery {
+	query := (&CameraDeviceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameracredential.Table, cameracredential.FieldId, id),
+			sqlgraph.To(cameradevice.Table, cameradevice.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameracredential.DeviceTable, cameracredential.DeviceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBinding queries the binding edge of a CameraCredential.
+func (c *CameraCredentialClient) QueryBinding(_m *CameraCredential) *CameraBindingQuery {
+	query := (&CameraBindingClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameracredential.Table, cameracredential.FieldId, id),
+			sqlgraph.To(camerabinding.Table, camerabinding.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameracredential.BindingTable, cameracredential.BindingColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraCredentialClient) Hooks() []Hook {
+	return c.hooks.CameraCredential
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraCredentialClient) Interceptors() []Interceptor {
+	return c.inters.CameraCredential
+}
+
+func (c *CameraCredentialClient) mutate(ctx context.Context, m *CameraCredentialMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraCredentialCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraCredentialUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraCredentialUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraCredentialDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraCredential mutation op: %q", m.Op())
+	}
+}
+
+// CameraCredentialVersionClient is a client for the CameraCredentialVersion schema.
+type CameraCredentialVersionClient struct {
+	config
+}
+
+// NewCameraCredentialVersionClient returns a client for the CameraCredentialVersion from the given config.
+func NewCameraCredentialVersionClient(c config) *CameraCredentialVersionClient {
+	return &CameraCredentialVersionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cameracredentialversion.Hooks(f(g(h())))`.
+func (c *CameraCredentialVersionClient) Use(hooks ...Hook) {
+	c.hooks.CameraCredentialVersion = append(c.hooks.CameraCredentialVersion, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cameracredentialversion.Intercept(f(g(h())))`.
+func (c *CameraCredentialVersionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CameraCredentialVersion = append(c.inters.CameraCredentialVersion, interceptors...)
+}
+
+// Create returns a builder for creating a CameraCredentialVersion entity.
+func (c *CameraCredentialVersionClient) Create() *CameraCredentialVersionCreate {
+	mutation := newCameraCredentialVersionMutation(c.config, OpCreate)
+	return &CameraCredentialVersionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CameraCredentialVersion entities.
+func (c *CameraCredentialVersionClient) CreateBulk(builders ...*CameraCredentialVersionCreate) *CameraCredentialVersionCreateBulk {
+	return &CameraCredentialVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CameraCredentialVersionClient) MapCreateBulk(slice any, setFunc func(*CameraCredentialVersionCreate, int)) *CameraCredentialVersionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CameraCredentialVersionCreateBulk{err: fmt.Errorf("calling to CameraCredentialVersionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CameraCredentialVersionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CameraCredentialVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CameraCredentialVersion.
+func (c *CameraCredentialVersionClient) Update() *CameraCredentialVersionUpdate {
+	mutation := newCameraCredentialVersionMutation(c.config, OpUpdate)
+	return &CameraCredentialVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CameraCredentialVersionClient) UpdateOne(_m *CameraCredentialVersion) *CameraCredentialVersionUpdateOne {
+	mutation := newCameraCredentialVersionMutation(c.config, OpUpdateOne, withCameraCredentialVersion(_m))
+	return &CameraCredentialVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CameraCredentialVersionClient) UpdateOneId(id uuid.UUID) *CameraCredentialVersionUpdateOne {
+	mutation := newCameraCredentialVersionMutation(c.config, OpUpdateOne, withCameraCredentialVersionId(id))
+	return &CameraCredentialVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CameraCredentialVersion.
+func (c *CameraCredentialVersionClient) Delete() *CameraCredentialVersionDelete {
+	mutation := newCameraCredentialVersionMutation(c.config, OpDelete)
+	return &CameraCredentialVersionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CameraCredentialVersionClient) DeleteOne(_m *CameraCredentialVersion) *CameraCredentialVersionDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CameraCredentialVersionClient) DeleteOneId(id uuid.UUID) *CameraCredentialVersionDeleteOne {
+	builder := c.Delete().Where(cameracredentialversion.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CameraCredentialVersionDeleteOne{builder}
+}
+
+// Query returns a query builder for CameraCredentialVersion.
+func (c *CameraCredentialVersionClient) Query() *CameraCredentialVersionQuery {
+	return &CameraCredentialVersionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCameraCredentialVersion},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CameraCredentialVersion entity by its id.
+func (c *CameraCredentialVersionClient) Get(ctx context.Context, id uuid.UUID) (*CameraCredentialVersion, error) {
+	return c.Query().Where(cameracredentialversion.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CameraCredentialVersionClient) GetX(ctx context.Context, id uuid.UUID) *CameraCredentialVersion {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a CameraCredentialVersion.
+func (c *CameraCredentialVersionClient) QueryTenant(_m *CameraCredentialVersion) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameracredentialversion.Table, cameracredentialversion.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameracredentialversion.TenantTable, cameracredentialversion.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySite queries the site edge of a CameraCredentialVersion.
+func (c *CameraCredentialVersionClient) QuerySite(_m *CameraCredentialVersion) *SiteQuery {
+	query := (&SiteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameracredentialversion.Table, cameracredentialversion.FieldId, id),
+			sqlgraph.To(site.Table, site.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameracredentialversion.SiteTable, cameracredentialversion.SiteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCredential queries the credential edge of a CameraCredentialVersion.
+func (c *CameraCredentialVersionClient) QueryCredential(_m *CameraCredentialVersion) *CameraCredentialQuery {
+	query := (&CameraCredentialClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cameracredentialversion.Table, cameracredentialversion.FieldId, id),
+			sqlgraph.To(cameracredential.Table, cameracredential.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, cameracredentialversion.CredentialTable, cameracredentialversion.CredentialColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CameraCredentialVersionClient) Hooks() []Hook {
+	return c.hooks.CameraCredentialVersion
+}
+
+// Interceptors returns the client interceptors.
+func (c *CameraCredentialVersionClient) Interceptors() []Interceptor {
+	return c.inters.CameraCredentialVersion
+}
+
+func (c *CameraCredentialVersionClient) mutate(ctx context.Context, m *CameraCredentialVersionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CameraCredentialVersionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CameraCredentialVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CameraCredentialVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CameraCredentialVersionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CameraCredentialVersion mutation op: %q", m.Op())
 	}
 }
 
@@ -5835,16 +6229,18 @@ func (c *UploadPolicyClient) mutate(ctx context.Context, m *UploadPolicyMutation
 type (
 	hooks struct {
 		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
-		CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraPolicy,
-		CameraPreset, CameraWorker, Delegation, Device, Holder, Lamina, Node, Outbox,
-		Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink,
-		Site, SiteMember, Source, Tenant, UploadPolicy []ent.Hook
+		CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice,
+		CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation,
+		Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader,
+		Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
+		UploadPolicy []ent.Hook
 	}
 	inters struct {
 		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
-		CameraBinding, CameraDevice, CameraJob, CameraNetwork, CameraPolicy,
-		CameraPreset, CameraWorker, Delegation, Device, Holder, Lamina, Node, Outbox,
-		Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink,
-		Site, SiteMember, Source, Tenant, UploadPolicy []ent.Interceptor
+		CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice,
+		CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation,
+		Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader,
+		Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
+		UploadPolicy []ent.Interceptor
 	}
 )
