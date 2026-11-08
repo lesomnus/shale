@@ -73,8 +73,15 @@ The package also includes `/etc/shale/shale-edge.yaml.example`, the optional
 renderer `/usr/share/shale/edge/camera_lan.py`, and the guides under
 `/usr/share/doc/shale/docs/managed-edge.md` and
 `/usr/share/doc/shale/deploy/edge/README.md`. The two guides retain their relative
-links in the package. The renderer's OS dependencies are optional package
+links in the package, including the linked CP policy, credential and driver
+guides. The renderer's OS dependencies are optional package
 suggestions; installing Shale does not configure interfaces or enable DHCP.
+
+From a source checkout, `python3 -m unittest discover -s deploy/deb -p 'test_*.py'`
+checks both package architectures' installed files, permissions, guide links
+and the packaged renderer's offline execution. This uses a stub binary instead
+of compiling Go or the console; it does not qualify the application binary or
+change any network/service state.
 
 ```sh
 sudo dpkg -i shale_0.1.0_amd64.deb
