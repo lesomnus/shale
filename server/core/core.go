@@ -26,6 +26,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/cameracredential"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
@@ -34,37 +35,42 @@ import (
 // Domains of the entities, as declared in the schema (§35.3). They are read
 // off identifiers to tell what kind of actor is calling.
 const (
-	DomTenant           pdid.Domain = 1
-	DomHolder           pdid.Domain = 2
-	DomSet              pdid.Domain = 7
-	DomSource           pdid.Domain = 8
-	DomLamina           pdid.Domain = 9
-	DomAttempt          pdid.Domain = 10
-	DomNode             pdid.Domain = 12
-	DomDevice           pdid.Domain = 13
-	DomSink             pdid.Domain = 14
-	DomSigningKey       pdid.Domain = 15
-	DomPlacementPolicy  pdid.Domain = 16
-	DomUploadPolicy     pdid.Domain = 18
-	DomSite             pdid.Domain = 19
-	DomSiteMember       pdid.Domain = 20
-	DomAddressPolicy    pdid.Domain = 21
-	DomProducer         pdid.Domain = 22
-	DomReader           pdid.Domain = 23
-	DomRelay            pdid.Domain = 24
-	DomDelegation       pdid.Domain = 25
-	DomCameraNetwork    pdid.Domain = 26
-	DomCameraDevice     pdid.Domain = 27
-	DomCameraAssignment pdid.Domain = 28
-	DomCameraBinding    pdid.Domain = 29
-	DomCameraJob        pdid.Domain = 30
-	DomCameraWorker     pdid.Domain = 31
-	DomCameraPreset     pdid.Domain = 40
-	DomCameraPolicy     pdid.Domain = 41
+	DomTenant                  pdid.Domain = 1
+	DomHolder                  pdid.Domain = 2
+	DomSet                     pdid.Domain = 7
+	DomSource                  pdid.Domain = 8
+	DomLamina                  pdid.Domain = 9
+	DomAttempt                 pdid.Domain = 10
+	DomNode                    pdid.Domain = 12
+	DomDevice                  pdid.Domain = 13
+	DomSink                    pdid.Domain = 14
+	DomSigningKey              pdid.Domain = 15
+	DomPlacementPolicy         pdid.Domain = 16
+	DomUploadPolicy            pdid.Domain = 18
+	DomSite                    pdid.Domain = 19
+	DomSiteMember              pdid.Domain = 20
+	DomAddressPolicy           pdid.Domain = 21
+	DomProducer                pdid.Domain = 22
+	DomReader                  pdid.Domain = 23
+	DomRelay                   pdid.Domain = 24
+	DomDelegation              pdid.Domain = 25
+	DomCameraNetwork           pdid.Domain = 26
+	DomCameraDevice            pdid.Domain = 27
+	DomCameraAssignment        pdid.Domain = 28
+	DomCameraBinding           pdid.Domain = 29
+	DomCameraJob               pdid.Domain = 30
+	DomCameraWorker            pdid.Domain = 31
+	DomCameraPreset            pdid.Domain = 40
+	DomCameraPolicy            pdid.Domain = 41
+	DomCameraCredential        pdid.Domain = 32
+	DomCameraCredentialVersion pdid.Domain = 33
 )
 
 // Deps is what the layer needs besides the servers below it.
 type Deps struct {
+	// Credentials binds the central credential Store to the current transaction.
+	// A nil factory fails closed; it never selects a local file/default password.
+	Credentials cameracredential.StoreFactory
 	// Ent is the client the layer reads with where the generated List cannot
 	// say what it needs (a time range, an open attempt). Every such read
 	// narrows by the caller's tenant itself.

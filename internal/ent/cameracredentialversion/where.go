@@ -116,6 +116,16 @@ func LegacyKey(v string) predicate.CameraCredentialVersion {
 	return predicate.CameraCredentialVersion(sql.FieldEQ(FieldLegacyKey, v))
 }
 
+// RequestHash applies equality check predicate on the "request_hash" field. It's identical to RequestHashEQ.
+func RequestHash(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldEQ(FieldRequestHash, v))
+}
+
+// PrepareTag applies equality check predicate on the "prepare_tag" field. It's identical to PrepareTagEQ.
+func PrepareTag(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldEQ(FieldPrepareTag, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.CameraCredentialVersion {
 	return predicate.CameraCredentialVersion(sql.FieldEQ(FieldTenantId, v))
@@ -804,6 +814,96 @@ func ReusedFromIsNil() predicate.CameraCredentialVersion {
 // ReusedFromNotNil applies the NotNil predicate on the "reused_from" field.
 func ReusedFromNotNil() predicate.CameraCredentialVersion {
 	return predicate.CameraCredentialVersion(sql.FieldNotNull(FieldReusedFrom))
+}
+
+// RequestHashEQ applies the EQ predicate on the "request_hash" field.
+func RequestHashEQ(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldEQ(FieldRequestHash, v))
+}
+
+// RequestHashNEQ applies the NEQ predicate on the "request_hash" field.
+func RequestHashNEQ(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldNEQ(FieldRequestHash, v))
+}
+
+// RequestHashIn applies the In predicate on the "request_hash" field.
+func RequestHashIn(vs ...[]byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldIn(FieldRequestHash, vs...))
+}
+
+// RequestHashNotIn applies the NotIn predicate on the "request_hash" field.
+func RequestHashNotIn(vs ...[]byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldNotIn(FieldRequestHash, vs...))
+}
+
+// RequestHashGT applies the GT predicate on the "request_hash" field.
+func RequestHashGT(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldGT(FieldRequestHash, v))
+}
+
+// RequestHashGTE applies the GTE predicate on the "request_hash" field.
+func RequestHashGTE(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldGTE(FieldRequestHash, v))
+}
+
+// RequestHashLT applies the LT predicate on the "request_hash" field.
+func RequestHashLT(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldLT(FieldRequestHash, v))
+}
+
+// RequestHashLTE applies the LTE predicate on the "request_hash" field.
+func RequestHashLTE(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldLTE(FieldRequestHash, v))
+}
+
+// PrepareTagEQ applies the EQ predicate on the "prepare_tag" field.
+func PrepareTagEQ(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldEQ(FieldPrepareTag, v))
+}
+
+// PrepareTagNEQ applies the NEQ predicate on the "prepare_tag" field.
+func PrepareTagNEQ(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldNEQ(FieldPrepareTag, v))
+}
+
+// PrepareTagIn applies the In predicate on the "prepare_tag" field.
+func PrepareTagIn(vs ...[]byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldIn(FieldPrepareTag, vs...))
+}
+
+// PrepareTagNotIn applies the NotIn predicate on the "prepare_tag" field.
+func PrepareTagNotIn(vs ...[]byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldNotIn(FieldPrepareTag, vs...))
+}
+
+// PrepareTagGT applies the GT predicate on the "prepare_tag" field.
+func PrepareTagGT(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldGT(FieldPrepareTag, v))
+}
+
+// PrepareTagGTE applies the GTE predicate on the "prepare_tag" field.
+func PrepareTagGTE(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldGTE(FieldPrepareTag, v))
+}
+
+// PrepareTagLT applies the LT predicate on the "prepare_tag" field.
+func PrepareTagLT(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldLT(FieldPrepareTag, v))
+}
+
+// PrepareTagLTE applies the LTE predicate on the "prepare_tag" field.
+func PrepareTagLTE(v []byte) predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldLTE(FieldPrepareTag, v))
+}
+
+// PrepareTagIsNil applies the IsNil predicate on the "prepare_tag" field.
+func PrepareTagIsNil() predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldIsNull(FieldPrepareTag))
+}
+
+// PrepareTagNotNil applies the NotNil predicate on the "prepare_tag" field.
+func PrepareTagNotNil() predicate.CameraCredentialVersion {
+	return predicate.CameraCredentialVersion(sql.FieldNotNull(FieldPrepareTag))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

@@ -8,12 +8,20 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
+import type { CameraCredentialReference } from "./camera_pb.js";
+import { file_shale_camera } from "./camera_pb.js";
 import type { CameraCredential, CameraCredentialSchema } from "./camera_credential_pb.js";
 import { file_shale_camera_credential } from "./camera_credential_pb.js";
+import type { CameraCredentialOrigin, CameraLegacyCredentialReference } from "./camera_credential_version_pb.js";
+import { file_shale_camera_credential_version } from "./camera_credential_version_pb.js";
 import type { CameraBindingRef, CameraBindingSelect, CameraDeviceRef, CameraDeviceSelect } from "./camera_svc_pb.js";
 import { file_shale_camera_svc_g } from "./camera_svc_pb.js";
+import type { CameraWorkerCheckJobRequest } from "./camera_worker_svc_pb.js";
+import { file_shale_camera_worker_svc_g } from "./camera_worker_svc_pb.js";
 import type { TenantRef, TenantSelect } from "./payday/tenant_svc_pb.js";
 import { file_shale_payday_tenant_svc_g } from "./payday/tenant_svc_pb.js";
+import type { SourceRef } from "./set_svc_pb.js";
+import { file_shale_set_svc_g } from "./set_svc_pb.js";
 import type { SiteRef, SiteSelect } from "./site_svc_pb.js";
 import { file_shale_site_svc_g } from "./site_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -22,7 +30,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/camera_credential_svc.g.proto.
  */
 export const file_shale_camera_credential_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("CiNzaGFsZS9jYW1lcmFfY3JlZGVudGlhbF9zdmMuZy5wcm90bxIFc2hhbGUi8gIKGkNhbWVyYUNyZWRlbnRpYWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhImCgZkZXZpY2UYCCABKAsyFi5zaGFsZS5DYW1lcmFEZXZpY2VSZWYSKAoHYmluZGluZxgJIAEoCzIXLnNoYWxlLkNhbWVyYUJpbmRpbmdSZWYSGgoLYmluZGluZ19rZXkYCiABKAlCBaoBAggCEhYKB3B1cnBvc2UYCyABKAlCBaoBAggCEh4KD2N1cnJlbnRfdmVyc2lvbhgMIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3Jldm9rZWQYECABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInQKGkNhbWVyYUNyZWRlbnRpYWxHZXRSZXF1ZXN0EicKA3JlZhgBIAEoCzIaLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWYSLQoGc2VsZWN0GAIgASgLMh0uc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFNlbGVjdCJiChNDYW1lcmFDcmVkZW50aWFsUmVmEgwKAmlkGAEgASgMSAASNgoHc3ViamVjdBgIIAEoCzIjLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZCeVN1YmplY3RIAEIFCgNrZXkibAocQ2FtZXJhQ3JlZGVudGlhbFJlZkJ5U3ViamVjdBImCgZkZXZpY2UYCCABKAsyFi5zaGFsZS5DYW1lcmFEZXZpY2VSZWYSEwoLYmluZGluZ19rZXkYCiABKAkSDwoHcHVycG9zZRgLIAEoCSLZAgoWQ2FtZXJhQ3JlZGVudGlhbFNlbGVjdBILCgNhbGwYASABKAgSIwoGdGVuYW50GAIgASgLMhMuc2hhbGUuVGVuYW50U2VsZWN0Eh8KBHNpdGUYAyABKAsyES5zaGFsZS5TaXRlU2VsZWN0EikKBmRldmljZRgIIAEoCzIZLnNoYWxlLkNhbWVyYURldmljZVNlbGVjdBIrCgdiaW5kaW5nGAkgASgLMhouc2hhbGUuQ2FtZXJhQmluZGluZ1NlbGVjdBITCgtiaW5kaW5nX2tleRgKIAEoCBIPCgdwdXJwb3NlGAsgASgIEhcKD2N1cnJlbnRfdmVyc2lvbhgMIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEhQKDGRhdGVfcmV2b2tlZBgQIAEoCCL7AQocQ2FtZXJhQ3JlZGVudGlhbFBhdGNoUmVxdWVzdBInCgNyZWYYASABKAsyGi5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmEhcKD2N1cnJlbnRfdmVyc2lvbhgYIAEoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIwCgxkYXRlX3Jldm9rZWQYICABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcmV2b2tlZF9udWxsGCEgASgIImQKHENhbWVyYUNyZWRlbnRpYWxBcHBseVJlcXVlc3QSJwoDcmVmGAEgASgLMhouc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIi8KHUNhbWVyYUNyZWRlbnRpYWxFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKQAQobQ2FtZXJhQ3JlZGVudGlhbExpc3RSZXF1ZXN0Ei4KB2ZpbHRlcnMYASADKAsyHS5zaGFsZS5DYW1lcmFDcmVkZW50aWFsRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJbChxDYW1lcmFDcmVkZW50aWFsTGlzdFJlc3BvbnNlEiYKBWl0ZW1zGAEgAygLMhcuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbBITCgRuZXh0GAIgASgJQgWqAQIIAiLTAQoWQ2FtZXJhQ3JlZGVudGlhbEZpbHRlchInCgNyZWYYASABKAsyGi5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhImCgZkZXZpY2UYBCABKAsyFi5zaGFsZS5DYW1lcmFEZXZpY2VSZWYSKAoHYmluZGluZxgFIAEoCzIXLnNoYWxlLkNhbWVyYUJpbmRpbmdSZWYibAocQ2FtZXJhQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBIuCgdmaWx0ZXJzGAEgAygLMh0uc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbEZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiJQCh1DYW1lcmFDcmVkZW50aWFsV2F0Y2hSZXNwb25zZRIvCgVpdGVtcxgBIAMoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxXYXRjaEl0ZW0iZgoZQ2FtZXJhQ3JlZGVudGlhbFdhdGNoSXRlbRIKCgJpZBgBIAEoDBImCgV2YWx1ZRgCIAEoCzIXLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWwSFQoGYWN0aW9uGAMgASgJQgWqAQIIAjKfBAoXQ2FtZXJhQ3JlZGVudGlhbFNlcnZpY2USQQoDQWRkEiEuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbEFkZFJlcXVlc3QaFy5zaGFsZS5DYW1lcmFDcmVkZW50aWFsEkEKA0dldBIhLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxHZXRSZXF1ZXN0Ghcuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbBJFCgVQYXRjaBIjLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxQYXRjaFJlcXVlc3QaFy5zaGFsZS5DYW1lcmFDcmVkZW50aWFsEkUKBUFwcGx5EiMuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbEFwcGx5UmVxdWVzdBoXLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWwSSQoFRXJhc2USGi5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmGiQuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbEVyYXNlUmVzcG9uc2USTwoETGlzdBIiLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxMaXN0UmVxdWVzdBojLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxMaXN0UmVzcG9uc2USVAoFV2F0Y2gSIy5zaGFsZS5DYW1lcmFDcmVkZW50aWFsV2F0Y2hSZXF1ZXN0GiQuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFdhdGNoUmVzcG9uc2UwAUIfWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaWIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_patch_patch, file_shale_camera_credential, file_shale_camera_svc_g, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
+  fileDesc("CiNzaGFsZS9jYW1lcmFfY3JlZGVudGlhbF9zdmMuZy5wcm90bxIFc2hhbGUi8gIKGkNhbWVyYUNyZWRlbnRpYWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhImCgZkZXZpY2UYCCABKAsyFi5zaGFsZS5DYW1lcmFEZXZpY2VSZWYSKAoHYmluZGluZxgJIAEoCzIXLnNoYWxlLkNhbWVyYUJpbmRpbmdSZWYSGgoLYmluZGluZ19rZXkYCiABKAlCBaoBAggCEhYKB3B1cnBvc2UYCyABKAlCBaoBAggCEh4KD2N1cnJlbnRfdmVyc2lvbhgMIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX3Jldm9rZWQYECABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInQKGkNhbWVyYUNyZWRlbnRpYWxHZXRSZXF1ZXN0EicKA3JlZhgBIAEoCzIaLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWYSLQoGc2VsZWN0GAIgASgLMh0uc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFNlbGVjdCJiChNDYW1lcmFDcmVkZW50aWFsUmVmEgwKAmlkGAEgASgMSAASNgoHc3ViamVjdBgIIAEoCzIjLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZCeVN1YmplY3RIAEIFCgNrZXkibAocQ2FtZXJhQ3JlZGVudGlhbFJlZkJ5U3ViamVjdBImCgZkZXZpY2UYCCABKAsyFi5zaGFsZS5DYW1lcmFEZXZpY2VSZWYSEwoLYmluZGluZ19rZXkYCiABKAkSDwoHcHVycG9zZRgLIAEoCSLZAgoWQ2FtZXJhQ3JlZGVudGlhbFNlbGVjdBILCgNhbGwYASABKAgSIwoGdGVuYW50GAIgASgLMhMuc2hhbGUuVGVuYW50U2VsZWN0Eh8KBHNpdGUYAyABKAsyES5zaGFsZS5TaXRlU2VsZWN0EikKBmRldmljZRgIIAEoCzIZLnNoYWxlLkNhbWVyYURldmljZVNlbGVjdBIrCgdiaW5kaW5nGAkgASgLMhouc2hhbGUuQ2FtZXJhQmluZGluZ1NlbGVjdBITCgtiaW5kaW5nX2tleRgKIAEoCBIPCgdwdXJwb3NlGAsgASgIEhcKD2N1cnJlbnRfdmVyc2lvbhgMIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIEhQKDGRhdGVfcmV2b2tlZBgQIAEoCCL7AQocQ2FtZXJhQ3JlZGVudGlhbFBhdGNoUmVxdWVzdBInCgNyZWYYASABKAsyGi5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmEhcKD2N1cnJlbnRfdmVyc2lvbhgYIAEoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBIwCgxkYXRlX3Jldm9rZWQYICABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfcmV2b2tlZF9udWxsGCEgASgIImQKHENhbWVyYUNyZWRlbnRpYWxBcHBseVJlcXVlc3QSJwoDcmVmGAEgASgLMhouc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIi8KHUNhbWVyYUNyZWRlbnRpYWxFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKQAQobQ2FtZXJhQ3JlZGVudGlhbExpc3RSZXF1ZXN0Ei4KB2ZpbHRlcnMYASADKAsyHS5zaGFsZS5DYW1lcmFDcmVkZW50aWFsRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJbChxDYW1lcmFDcmVkZW50aWFsTGlzdFJlc3BvbnNlEiYKBWl0ZW1zGAEgAygLMhcuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbBITCgRuZXh0GAIgASgJQgWqAQIIAiLTAQoWQ2FtZXJhQ3JlZGVudGlhbEZpbHRlchInCgNyZWYYASABKAsyGi5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhIcCgRzaXRlGAMgASgLMg4uc2hhbGUuU2l0ZVJlZhImCgZkZXZpY2UYBCABKAsyFi5zaGFsZS5DYW1lcmFEZXZpY2VSZWYSKAoHYmluZGluZxgFIAEoCzIXLnNoYWxlLkNhbWVyYUJpbmRpbmdSZWYibAocQ2FtZXJhQ3JlZGVudGlhbFdhdGNoUmVxdWVzdBIuCgdmaWx0ZXJzGAEgAygLMh0uc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbEZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiJQCh1DYW1lcmFDcmVkZW50aWFsV2F0Y2hSZXNwb25zZRIvCgVpdGVtcxgBIAMoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxXYXRjaEl0ZW0iZgoZQ2FtZXJhQ3JlZGVudGlhbFdhdGNoSXRlbRIKCgJpZBgBIAEoDBImCgV2YWx1ZRgCIAEoCzIXLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWwSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiKGAgoeQ2FtZXJhQ3JlZGVudGlhbFByZXBhcmVSZXF1ZXN0EiYKBmRldmljZRgBIAEoCzIWLnNoYWxlLkNhbWVyYURldmljZVJlZhIoCgdiaW5kaW5nGAIgASgLMhcuc2hhbGUuQ2FtZXJhQmluZGluZ1JlZhIWCgdwdXJwb3NlGAMgASgJQgWqAQIIAhIZCgppbnRlbnRfa2V5GAQgASgJQgWqAQIIAhIXCgh1c2VybmFtZRgFIAEoDEIFqgECCAISFQoGYWNjZXNzGAYgASgJQgWqAQIIAhIvCgVyZXVzZRgHIAEoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2UipgIKGENhbWVyYUNyZWRlbnRpYWxQcmVwYXJlZBI0CgpjcmVkZW50aWFsGAEgASgLMiAuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFJlZmVyZW5jZRIRCglkZXZpY2VfaWQYAiABKAwSEgoKYmluZGluZ19pZBgDIAEoDBIVCgZhY2Nlc3MYBCABKAlCBaoBAggCEjQKBm9yaWdpbhgFIAEoDjIdLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxPcmlnaW5CBaoBAggCEhYKB2JhY2tlbmQYBiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFgoHcmV2b2tlZBgIIAEoCEIFqgECCAIiyAIKHUNhbWVyYUNyZWRlbnRpYWxJbXBvcnRSZXF1ZXN0EiYKBmRldmljZRgBIAEoCzIWLnNoYWxlLkNhbWVyYURldmljZVJlZhIoCgdiaW5kaW5nGAIgASgLMhcuc2hhbGUuQ2FtZXJhQmluZGluZ1JlZhIWCgdwdXJwb3NlGAMgASgJQgWqAQIIAhIZCgppbnRlbnRfa2V5GAQgASgJQgWqAQIIAhIVCgZhY2Nlc3MYBSABKAlCBaoBAggCEhcKCG1hdGVyaWFsGAYgASgMQgWqAQIIAhI6ChBleHBlY3RlZF9jdXJyZW50GAcgASgLMiAuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFJlZmVyZW5jZRI2CgZsZWdhY3kYCCABKAsyJi5zaGFsZS5DYW1lcmFMZWdhY3lDcmVkZW50aWFsUmVmZXJlbmNlIpwCCh5DYW1lcmFDcmVkZW50aWFsUmVzb2x2ZVJlcXVlc3QSNAoKY3JlZGVudGlhbBgBIAEoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2USLwoDam9iGAIgASgLMiIuc2hhbGUuQ2FtZXJhV29ya2VyQ2hlY2tKb2JSZXF1ZXN0EiAKBnNvdXJjZRgDIAEoCzIQLnNoYWxlLlNvdXJjZVJlZhIcCg1jYWNoZV9zZWNvbmRzGAQgASgDQgWqAQIIAhIcCg1sZWFzZV9zZWNvbmRzGAUgASgDQgWqAQIIAhIeCg9zb3VyY2VfcmV2aXNpb24YBiABKANCBaoBAggCEhUKBmFjY2VzcxgHIAEoCUIFqgECCAIijgIKFUNhbWVyYUNyZWRlbnRpYWxMZWFzZRIXCghtYXRlcmlhbBgBIAEoDEIFqgECCAISNAoKY3JlZGVudGlhbBgCIAEoCzIgLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxSZWZlcmVuY2USKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoIZGVsaXZlcnkYBCABKAsyHy5zaGFsZS5DYW1lcmFDcmVkZW50aWFsRGVsaXZlcnkSLwoLY2FjaGVfdW50aWwYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhUKBmFjY2VzcxgGIAEoCUIFqgECCAIivwIKGENhbWVyYUNyZWRlbnRpYWxEZWxpdmVyeRIRCgl0ZW5hbnRfaWQYASABKAwSDwoHc2l0ZV9pZBgCIAEoDBIOCgZzZXRfaWQYAyABKAwSEwoLcHJvZHVjZXJfaWQYBCABKAwSEgoKbmV0d29ya19pZBgFIAEoDBIRCglkZXZpY2VfaWQYBiABKAwSEgoKYmluZGluZ19pZBgHIAEoDBIRCglzb3VyY2VfaWQYCCABKAwSFQoNYXNzaWdubWVudF9pZBgJIAEoDBIkChVhc3NpZ25tZW50X2dlbmVyYXRpb24YCiABKANCBaoBAggCEh4KD3NvdXJjZV9yZXZpc2lvbhgLIAEoA0IFqgECCAISHwoQbGVhc2VfZ2VuZXJhdGlvbhgMIAEoA0IFqgECCAISDgoGam9iX2lkGA0gASgMIlUKHUNhbWVyYUNyZWRlbnRpYWxSZXZva2VSZXF1ZXN0EjQKCmNyZWRlbnRpYWwYASABKAsyIC5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmZXJlbmNlIiAKHkNhbWVyYUNyZWRlbnRpYWxSZXZva2VSZXNwb25zZTLqBgoXQ2FtZXJhQ3JlZGVudGlhbFNlcnZpY2USQQoDQWRkEiEuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbEFkZFJlcXVlc3QaFy5zaGFsZS5DYW1lcmFDcmVkZW50aWFsEkEKA0dldBIhLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxHZXRSZXF1ZXN0Ghcuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbBJFCgVQYXRjaBIjLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxQYXRjaFJlcXVlc3QaFy5zaGFsZS5DYW1lcmFDcmVkZW50aWFsEkUKBUFwcGx5EiMuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbEFwcGx5UmVxdWVzdBoXLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWwSSQoFRXJhc2USGi5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVmGiQuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbEVyYXNlUmVzcG9uc2USTwoETGlzdBIiLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxMaXN0UmVxdWVzdBojLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxMaXN0UmVzcG9uc2USVAoFV2F0Y2gSIy5zaGFsZS5DYW1lcmFDcmVkZW50aWFsV2F0Y2hSZXF1ZXN0GiQuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFdhdGNoUmVzcG9uc2UwARJRCgdQcmVwYXJlEiUuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFByZXBhcmVSZXF1ZXN0Gh8uc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFByZXBhcmVkEk8KBkltcG9ydBIkLnNoYWxlLkNhbWVyYUNyZWRlbnRpYWxJbXBvcnRSZXF1ZXN0Gh8uc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFByZXBhcmVkEk4KB1Jlc29sdmUSJS5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmVzb2x2ZVJlcXVlc3QaHC5zaGFsZS5DYW1lcmFDcmVkZW50aWFsTGVhc2USVQoGUmV2b2tlEiQuc2hhbGUuQ2FtZXJhQ3JlZGVudGlhbFJldm9rZVJlcXVlc3QaJS5zaGFsZS5DYW1lcmFDcmVkZW50aWFsUmV2b2tlUmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_patch_patch, file_shale_camera, file_shale_camera_credential, file_shale_camera_credential_version, file_shale_camera_svc_g, file_shale_camera_worker_svc_g, file_shale_payday_tenant_svc_g, file_shale_set_svc_g, file_shale_site_svc_g]);
 
 /**
  * @generated from message shale.CameraCredentialAddRequest
@@ -561,6 +569,382 @@ export const CameraCredentialWatchItemSchema: GenMessage<CameraCredentialWatchIt
   messageDesc(file_shale_camera_credential_svc_g, 13);
 
 /**
+ * These are explicit secret-transfer operations, not ordinary inventory CRUD.
+ * Handlers decode raw material directly into a redacted in-process value; raw
+ * request/response protobufs are never status, audit, log or Source DTOs.
+ *
+ * @generated from message shale.CameraCredentialPrepareRequest
+ */
+export type CameraCredentialPrepareRequest = Message<"shale.CameraCredentialPrepareRequest"> & {
+  /**
+   * @generated from field: shale.CameraDeviceRef device = 1;
+   */
+  device?: CameraDeviceRef | undefined;
+
+  /**
+   * @generated from field: shale.CameraBindingRef binding = 2;
+   */
+  binding?: CameraBindingRef | undefined;
+
+  /**
+   * @generated from field: string purpose = 3 [features.field_presence = IMPLICIT];
+   */
+  purpose: string;
+
+  /**
+   * @generated from field: string intent_key = 4 [features.field_presence = IMPLICIT];
+   */
+  intentKey: string;
+
+  /**
+   * Empty selects the configured initial-administrator username (admin).
+   *
+   * @generated from field: bytes username = 5 [features.field_presence = IMPLICIT];
+   */
+  username: Uint8Array;
+
+  /**
+   * @generated from field: string access = 6 [features.field_presence = IMPLICIT];
+   */
+  access: string;
+
+  /**
+   * Copy an already installed account into another explicit delivery purpose.
+   *
+   * @generated from field: shale.CameraCredentialReference reuse = 7;
+   */
+  reuse?: CameraCredentialReference | undefined;
+};
+
+/**
+ * Describes the message shale.CameraCredentialPrepareRequest.
+ * Use `create(CameraCredentialPrepareRequestSchema)` to create a new message.
+ */
+export const CameraCredentialPrepareRequestSchema: GenMessage<CameraCredentialPrepareRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_credential_svc_g, 14);
+
+/**
+ * Preparation returns references only. The enclosing transaction has committed
+ * before an RPC response makes these recoverable references available to a
+ * Worker. A policy's internal preparation and Job.Create share that transaction.
+ *
+ * @generated from message shale.CameraCredentialPrepared
+ */
+export type CameraCredentialPrepared = Message<"shale.CameraCredentialPrepared"> & {
+  /**
+   * @generated from field: shale.CameraCredentialReference credential = 1;
+   */
+  credential?: CameraCredentialReference | undefined;
+
+  /**
+   * @generated from field: bytes device_id = 2;
+   */
+  deviceId: Uint8Array;
+
+  /**
+   * @generated from field: bytes binding_id = 3;
+   */
+  bindingId: Uint8Array;
+
+  /**
+   * @generated from field: string access = 4 [features.field_presence = IMPLICIT];
+   */
+  access: string;
+
+  /**
+   * @generated from field: shale.CameraCredentialOrigin origin = 5 [features.field_presence = IMPLICIT];
+   */
+  origin: CameraCredentialOrigin;
+
+  /**
+   * @generated from field: string backend = 6 [features.field_presence = IMPLICIT];
+   */
+  backend: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_created = 7;
+   */
+  dateCreated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: bool revoked = 8 [features.field_presence = IMPLICIT];
+   */
+  revoked: boolean;
+};
+
+/**
+ * Describes the message shale.CameraCredentialPrepared.
+ * Use `create(CameraCredentialPreparedSchema)` to create a new message.
+ */
+export const CameraCredentialPreparedSchema: GenMessage<CameraCredentialPrepared> = /*@__PURE__*/
+  messageDesc(file_shale_camera_credential_svc_g, 15);
+
+/**
+ * @generated from message shale.CameraCredentialImportRequest
+ */
+export type CameraCredentialImportRequest = Message<"shale.CameraCredentialImportRequest"> & {
+  /**
+   * @generated from field: shale.CameraDeviceRef device = 1;
+   */
+  device?: CameraDeviceRef | undefined;
+
+  /**
+   * @generated from field: shale.CameraBindingRef binding = 2;
+   */
+  binding?: CameraBindingRef | undefined;
+
+  /**
+   * @generated from field: string purpose = 3 [features.field_presence = IMPLICIT];
+   */
+  purpose: string;
+
+  /**
+   * @generated from field: string intent_key = 4 [features.field_presence = IMPLICIT];
+   */
+  intentKey: string;
+
+  /**
+   * @generated from field: string access = 5 [features.field_presence = IMPLICIT];
+   */
+  access: string;
+
+  /**
+   * Explicit lossless Material binary, not JSON username/password strings.
+   *
+   * @generated from field: bytes material = 6 [features.field_presence = IMPLICIT];
+   */
+  material: Uint8Array;
+
+  /**
+   * @generated from field: shale.CameraCredentialReference expected_current = 7;
+   */
+  expectedCurrent?: CameraCredentialReference | undefined;
+
+  /**
+   * @generated from field: shale.CameraLegacyCredentialReference legacy = 8;
+   */
+  legacy?: CameraLegacyCredentialReference | undefined;
+};
+
+/**
+ * Describes the message shale.CameraCredentialImportRequest.
+ * Use `create(CameraCredentialImportRequestSchema)` to create a new message.
+ */
+export const CameraCredentialImportRequestSchema: GenMessage<CameraCredentialImportRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_credential_svc_g, 16);
+
+/**
+ * @generated from message shale.CameraCredentialResolveRequest
+ */
+export type CameraCredentialResolveRequest = Message<"shale.CameraCredentialResolveRequest"> & {
+  /**
+   * @generated from field: shale.CameraCredentialReference credential = 1;
+   */
+  credential?: CameraCredentialReference | undefined;
+
+  /**
+   * Required for Workers; exact pinned JobInputs purpose/reference only.
+   *
+   * @generated from field: shale.CameraWorkerCheckJobRequest job = 2;
+   */
+  job?: CameraWorkerCheckJobRequest | undefined;
+
+  /**
+   * Producer streaming delivery is bound to this current assigned Source.
+   * A binding-specific reference may identify it without this optional field.
+   *
+   * @generated from field: shale.SourceRef source = 3;
+   */
+  source?: SourceRef | undefined;
+
+  /**
+   * Zero disables an offline streaming cache grant. Workers cannot request it.
+   *
+   * @generated from field: int64 cache_seconds = 4 [features.field_presence = IMPLICIT];
+   */
+  cacheSeconds: bigint;
+
+  /**
+   * @generated from field: int64 lease_seconds = 5 [features.field_presence = IMPLICIT];
+   */
+  leaseSeconds: bigint;
+
+  /**
+   * @generated from field: int64 source_revision = 6 [features.field_presence = IMPLICIT];
+   */
+  sourceRevision: bigint;
+
+  /**
+   * @generated from field: string access = 7 [features.field_presence = IMPLICIT];
+   */
+  access: string;
+};
+
+/**
+ * Describes the message shale.CameraCredentialResolveRequest.
+ * Use `create(CameraCredentialResolveRequestSchema)` to create a new message.
+ */
+export const CameraCredentialResolveRequestSchema: GenMessage<CameraCredentialResolveRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_credential_svc_g, 17);
+
+/**
+ * @generated from message shale.CameraCredentialLease
+ */
+export type CameraCredentialLease = Message<"shale.CameraCredentialLease"> & {
+  /**
+   * Plaintext only on this authenticated, explicitly requested transfer.
+   *
+   * @generated from field: bytes material = 1 [features.field_presence = IMPLICIT];
+   */
+  material: Uint8Array;
+
+  /**
+   * @generated from field: shale.CameraCredentialReference credential = 2;
+   */
+  credential?: CameraCredentialReference | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires = 3;
+   */
+  expires?: Timestamp | undefined;
+
+  /**
+   * @generated from field: shale.CameraCredentialDelivery delivery = 4;
+   */
+  delivery?: CameraCredentialDelivery | undefined;
+
+  /**
+   * A cache grant does not attest that capture applied the source. The client
+   * additionally requires its own matching applied-state acknowledgement.
+   *
+   * @generated from field: google.protobuf.Timestamp cache_until = 5;
+   */
+  cacheUntil?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string access = 6 [features.field_presence = IMPLICIT];
+   */
+  access: string;
+};
+
+/**
+ * Describes the message shale.CameraCredentialLease.
+ * Use `create(CameraCredentialLeaseSchema)` to create a new message.
+ */
+export const CameraCredentialLeaseSchema: GenMessage<CameraCredentialLease> = /*@__PURE__*/
+  messageDesc(file_shale_camera_credential_svc_g, 18);
+
+/**
+ * Current delivery metadata is deliberately separate from the immutable secret
+ * identity/AAD, so a separately adopted replacement machine can recover it.
+ *
+ * @generated from message shale.CameraCredentialDelivery
+ */
+export type CameraCredentialDelivery = Message<"shale.CameraCredentialDelivery"> & {
+  /**
+   * @generated from field: bytes tenant_id = 1;
+   */
+  tenantId: Uint8Array;
+
+  /**
+   * @generated from field: bytes site_id = 2;
+   */
+  siteId: Uint8Array;
+
+  /**
+   * @generated from field: bytes set_id = 3;
+   */
+  setId: Uint8Array;
+
+  /**
+   * @generated from field: bytes producer_id = 4;
+   */
+  producerId: Uint8Array;
+
+  /**
+   * @generated from field: bytes network_id = 5;
+   */
+  networkId: Uint8Array;
+
+  /**
+   * @generated from field: bytes device_id = 6;
+   */
+  deviceId: Uint8Array;
+
+  /**
+   * @generated from field: bytes binding_id = 7;
+   */
+  bindingId: Uint8Array;
+
+  /**
+   * @generated from field: bytes source_id = 8;
+   */
+  sourceId: Uint8Array;
+
+  /**
+   * @generated from field: bytes assignment_id = 9;
+   */
+  assignmentId: Uint8Array;
+
+  /**
+   * @generated from field: int64 assignment_generation = 10 [features.field_presence = IMPLICIT];
+   */
+  assignmentGeneration: bigint;
+
+  /**
+   * @generated from field: int64 source_revision = 11 [features.field_presence = IMPLICIT];
+   */
+  sourceRevision: bigint;
+
+  /**
+   * @generated from field: int64 lease_generation = 12 [features.field_presence = IMPLICIT];
+   */
+  leaseGeneration: bigint;
+
+  /**
+   * @generated from field: bytes job_id = 13;
+   */
+  jobId: Uint8Array;
+};
+
+/**
+ * Describes the message shale.CameraCredentialDelivery.
+ * Use `create(CameraCredentialDeliverySchema)` to create a new message.
+ */
+export const CameraCredentialDeliverySchema: GenMessage<CameraCredentialDelivery> = /*@__PURE__*/
+  messageDesc(file_shale_camera_credential_svc_g, 19);
+
+/**
+ * @generated from message shale.CameraCredentialRevokeRequest
+ */
+export type CameraCredentialRevokeRequest = Message<"shale.CameraCredentialRevokeRequest"> & {
+  /**
+   * @generated from field: shale.CameraCredentialReference credential = 1;
+   */
+  credential?: CameraCredentialReference | undefined;
+};
+
+/**
+ * Describes the message shale.CameraCredentialRevokeRequest.
+ * Use `create(CameraCredentialRevokeRequestSchema)` to create a new message.
+ */
+export const CameraCredentialRevokeRequestSchema: GenMessage<CameraCredentialRevokeRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_credential_svc_g, 20);
+
+/**
+ * @generated from message shale.CameraCredentialRevokeResponse
+ */
+export type CameraCredentialRevokeResponse = Message<"shale.CameraCredentialRevokeResponse"> & {
+};
+
+/**
+ * Describes the message shale.CameraCredentialRevokeResponse.
+ * Use `create(CameraCredentialRevokeResponseSchema)` to create a new message.
+ */
+export const CameraCredentialRevokeResponseSchema: GenMessage<CameraCredentialRevokeResponse> = /*@__PURE__*/
+  messageDesc(file_shale_camera_credential_svc_g, 21);
+
+/**
  * @generated from service shale.CameraCredentialService
  */
 export const CameraCredentialService: GenService<{
@@ -643,6 +1027,38 @@ export const CameraCredentialService: GenService<{
     methodKind: "server_streaming";
     input: typeof CameraCredentialWatchRequestSchema;
     output: typeof CameraCredentialWatchResponseSchema;
+  },
+  /**
+   * @generated from rpc shale.CameraCredentialService.Prepare
+   */
+  prepare: {
+    methodKind: "unary";
+    input: typeof CameraCredentialPrepareRequestSchema;
+    output: typeof CameraCredentialPreparedSchema;
+  },
+  /**
+   * @generated from rpc shale.CameraCredentialService.Import
+   */
+  import: {
+    methodKind: "unary";
+    input: typeof CameraCredentialImportRequestSchema;
+    output: typeof CameraCredentialPreparedSchema;
+  },
+  /**
+   * @generated from rpc shale.CameraCredentialService.Resolve
+   */
+  resolve: {
+    methodKind: "unary";
+    input: typeof CameraCredentialResolveRequestSchema;
+    output: typeof CameraCredentialLeaseSchema;
+  },
+  /**
+   * @generated from rpc shale.CameraCredentialService.Revoke
+   */
+  revoke: {
+    methodKind: "unary";
+    input: typeof CameraCredentialRevokeRequestSchema;
+    output: typeof CameraCredentialRevokeResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_shale_camera_credential_svc_g, 0);

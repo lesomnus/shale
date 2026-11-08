@@ -33,6 +33,7 @@ type Execution struct {
 	workers      api.CameraWorkerServiceClient
 	jobs         api.CameraJobServiceClient
 	presets      api.CameraPresetServiceClient
+	credentials  api.CameraCredentialServiceClient
 	leaseSeconds int64
 	cancel       context.CancelFunc
 }

@@ -59,6 +59,12 @@ func (CameraCredentialVersion) Fields() []ent.Field {
 		field.Json("reused_from", &api.CameraCredentialReference{}).ValueScanner(entpb.ValueScanner[*api.CameraCredentialReference]{}).
 			Immutable().
 			Optional(),
+		field.Bytes("request_hash").
+			Immutable(),
+		field.Bytes("prepare_tag").
+			Nillable().
+			Immutable().
+			Optional(),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").

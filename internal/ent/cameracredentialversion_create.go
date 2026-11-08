@@ -143,6 +143,18 @@ func (_c *CameraCredentialVersionCreate) SetReusedFrom(v *api.CameraCredentialRe
 	return _c
 }
 
+// SetRequestHash sets the "request_hash" field.
+func (_c *CameraCredentialVersionCreate) SetRequestHash(v []byte) *CameraCredentialVersionCreate {
+	_c.mutation.SetRequestHash(v)
+	return _c
+}
+
+// SetPrepareTag sets the "prepare_tag" field.
+func (_c *CameraCredentialVersionCreate) SetPrepareTag(v []byte) *CameraCredentialVersionCreate {
+	_c.mutation.SetPrepareTag(v)
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *CameraCredentialVersionCreate) SetTenantId(v uuid.UUID) *CameraCredentialVersionCreate {
 	_c.mutation.SetTenantId(v)
@@ -247,6 +259,9 @@ func (_c *CameraCredentialVersionCreate) check() error {
 	}
 	if _, ok := _c.mutation.Origin(); !ok {
 		return &ValidationError{Name: "origin", err: errors.New(`ent: missing required field "CameraCredentialVersion.origin"`)}
+	}
+	if _, ok := _c.mutation.RequestHash(); !ok {
+		return &ValidationError{Name: "request_hash", err: errors.New(`ent: missing required field "CameraCredentialVersion.request_hash"`)}
 	}
 	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "CameraCredentialVersion.tenant_id"`)}
@@ -383,6 +398,14 @@ func (_c *CameraCredentialVersionCreate) createSpec() (*CameraCredentialVersion,
 		}
 		_spec.SetField(cameracredentialversion.FieldReusedFrom, field.TypeJson, vv)
 		_node.ReusedFrom = value
+	}
+	if value, ok := _c.mutation.RequestHash(); ok {
+		_spec.SetField(cameracredentialversion.FieldRequestHash, field.TypeBytes, value)
+		_node.RequestHash = value
+	}
+	if value, ok := _c.mutation.PrepareTag(); ok {
+		_spec.SetField(cameracredentialversion.FieldPrepareTag, field.TypeBytes, value)
+		_node.PrepareTag = &value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

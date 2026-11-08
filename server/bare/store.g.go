@@ -409,11 +409,11 @@ type Scope interface {
 	CameraBindingScope(ctx context.Context) (predicate.CameraBinding, error)
 	CameraJobScope(ctx context.Context) (predicate.CameraJob, error)
 	CameraCredentialScope(ctx context.Context) (predicate.CameraCredential, error)
+	CameraCredentialVersionScope(ctx context.Context) (predicate.CameraCredentialVersion, error)
 	DeviceScope(ctx context.Context) (predicate.Device, error)
 	SinkScope(ctx context.Context) (predicate.Sink, error)
-	CameraCredentialVersionScope(ctx context.Context) (predicate.CameraCredentialVersion, error)
-	CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error)
 	CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error)
+	CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	LaminaScope(ctx context.Context) (predicate.Lamina, error)
@@ -488,19 +488,19 @@ func (Unscoped) CameraJobScope(_ context.Context) (predicate.CameraJob, error) {
 func (Unscoped) CameraCredentialScope(_ context.Context) (predicate.CameraCredential, error) {
 	return nil, nil
 }
+func (Unscoped) CameraCredentialVersionScope(_ context.Context) (predicate.CameraCredentialVersion, error) {
+	return nil, nil
+}
 func (Unscoped) DeviceScope(_ context.Context) (predicate.Device, error) {
 	return nil, nil
 }
 func (Unscoped) SinkScope(_ context.Context) (predicate.Sink, error) {
 	return nil, nil
 }
-func (Unscoped) CameraCredentialVersionScope(_ context.Context) (predicate.CameraCredentialVersion, error) {
+func (Unscoped) CameraWorkerScope(_ context.Context) (predicate.CameraWorker, error) {
 	return nil, nil
 }
 func (Unscoped) CameraPolicyScope(_ context.Context) (predicate.CameraPolicy, error) {
-	return nil, nil
-}
-func (Unscoped) CameraWorkerScope(_ context.Context) (predicate.CameraWorker, error) {
 	return nil, nil
 }
 func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
@@ -868,6 +868,26 @@ func (ss Scopes) CameraCredentialScope(ctx context.Context) (predicate.CameraCre
 	return cameracredential.And(ps...), nil
 }
 
+func (ss Scopes) CameraCredentialVersionScope(ctx context.Context) (predicate.CameraCredentialVersion, error) {
+	ps := make([]predicate.CameraCredentialVersion, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraCredentialVersionScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return cameracredentialversion.And(ps...), nil
+}
+
 func (ss Scopes) DeviceScope(ctx context.Context) (predicate.Device, error) {
 	ps := make([]predicate.Device, 0, len(ss))
 	for _, s := range ss {
@@ -908,10 +928,10 @@ func (ss Scopes) SinkScope(ctx context.Context) (predicate.Sink, error) {
 	return sink.And(ps...), nil
 }
 
-func (ss Scopes) CameraCredentialVersionScope(ctx context.Context) (predicate.CameraCredentialVersion, error) {
-	ps := make([]predicate.CameraCredentialVersion, 0, len(ss))
+func (ss Scopes) CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error) {
+	ps := make([]predicate.CameraWorker, 0, len(ss))
 	for _, s := range ss {
-		p, err := s.CameraCredentialVersionScope(ctx)
+		p, err := s.CameraWorkerScope(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -925,7 +945,7 @@ func (ss Scopes) CameraCredentialVersionScope(ctx context.Context) (predicate.Ca
 		return nil, nil
 	}
 
-	return cameracredentialversion.And(ps...), nil
+	return cameraworker.And(ps...), nil
 }
 
 func (ss Scopes) CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error) {
@@ -946,26 +966,6 @@ func (ss Scopes) CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy,
 	}
 
 	return camerapolicy.And(ps...), nil
-}
-
-func (ss Scopes) CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error) {
-	ps := make([]predicate.CameraWorker, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.CameraWorkerScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return cameraworker.And(ps...), nil
 }
 
 func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
@@ -1468,16 +1468,16 @@ func (s Server) CameraJob() api.CameraJobServiceServer { return CameraJobService
 func (s Server) CameraCredential() api.CameraCredentialServiceServer {
 	return CameraCredentialServiceServer{Store: s.Store}
 }
-func (s Server) Device() api.DeviceServiceServer { return DeviceServiceServer{Store: s.Store} }
-func (s Server) Sink() api.SinkServiceServer     { return SinkServiceServer{Store: s.Store} }
 func (s Server) CameraCredentialVersion() api.CameraCredentialVersionServiceServer {
 	return CameraCredentialVersionServiceServer{Store: s.Store}
 }
-func (s Server) CameraPolicy() api.CameraPolicyServiceServer {
-	return CameraPolicyServiceServer{Store: s.Store}
-}
+func (s Server) Device() api.DeviceServiceServer { return DeviceServiceServer{Store: s.Store} }
+func (s Server) Sink() api.SinkServiceServer     { return SinkServiceServer{Store: s.Store} }
 func (s Server) CameraWorker() api.CameraWorkerServiceServer {
 	return CameraWorkerServiceServer{Store: s.Store}
+}
+func (s Server) CameraPolicy() api.CameraPolicyServiceServer {
+	return CameraPolicyServiceServer{Store: s.Store}
 }
 func (s Server) Holder() api.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
 func (s Server) Delegation() api.DelegationServiceServer {

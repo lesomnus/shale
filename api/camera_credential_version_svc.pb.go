@@ -40,6 +40,8 @@ type CameraCredentialVersionAddRequest struct {
 	xxx_hidden_Legacy         *CameraLegacyCredentialReference `protobuf:"bytes,20,opt,name=legacy"`
 	xxx_hidden_LegacyKey      *string                          `protobuf:"bytes,21,opt,name=legacy_key,json=legacyKey"`
 	xxx_hidden_ReusedFrom     *CameraCredentialReference       `protobuf:"bytes,22,opt,name=reused_from,json=reusedFrom"`
+	xxx_hidden_RequestHash    []byte                           `protobuf:"bytes,23,opt,name=request_hash,json=requestHash"`
+	xxx_hidden_PrepareTag     []byte                           `protobuf:"bytes,24,opt,name=prepare_tag,json=prepareTag"`
 	XXX_raceDetectHookData    protoimpl.RaceDetectHookData
 	XXX_presence              [1]uint32
 	unknownFields             protoimpl.UnknownFields
@@ -186,12 +188,26 @@ func (x *CameraCredentialVersionAddRequest) GetReusedFrom() *CameraCredentialRef
 	return nil
 }
 
+func (x *CameraCredentialVersionAddRequest) GetRequestHash() []byte {
+	if x != nil {
+		return x.xxx_hidden_RequestHash
+	}
+	return nil
+}
+
+func (x *CameraCredentialVersionAddRequest) GetPrepareTag() []byte {
+	if x != nil {
+		return x.xxx_hidden_PrepareTag
+	}
+	return nil
+}
+
 func (x *CameraCredentialVersionAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 18)
 }
 
 func (x *CameraCredentialVersionAddRequest) SetTenant(v *TenantRef) {
@@ -238,7 +254,7 @@ func (x *CameraCredentialVersionAddRequest) SetImportTag(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_ImportTag = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 18)
 }
 
 func (x *CameraCredentialVersionAddRequest) SetOrigin(v CameraCredentialOrigin) {
@@ -255,11 +271,26 @@ func (x *CameraCredentialVersionAddRequest) SetLegacy(v *CameraLegacyCredentialR
 
 func (x *CameraCredentialVersionAddRequest) SetLegacyKey(v string) {
 	x.xxx_hidden_LegacyKey = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 16)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 18)
 }
 
 func (x *CameraCredentialVersionAddRequest) SetReusedFrom(v *CameraCredentialReference) {
 	x.xxx_hidden_ReusedFrom = v
+}
+
+func (x *CameraCredentialVersionAddRequest) SetRequestHash(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_RequestHash = v
+}
+
+func (x *CameraCredentialVersionAddRequest) SetPrepareTag(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_PrepareTag = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 18)
 }
 
 func (x *CameraCredentialVersionAddRequest) HasId() bool {
@@ -332,6 +363,13 @@ func (x *CameraCredentialVersionAddRequest) HasReusedFrom() bool {
 	return x.xxx_hidden_ReusedFrom != nil
 }
 
+func (x *CameraCredentialVersionAddRequest) HasPrepareTag() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
+}
+
 func (x *CameraCredentialVersionAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -375,6 +413,11 @@ func (x *CameraCredentialVersionAddRequest) ClearReusedFrom() {
 	x.xxx_hidden_ReusedFrom = nil
 }
 
+func (x *CameraCredentialVersionAddRequest) ClearPrepareTag() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 17)
+	x.xxx_hidden_PrepareTag = nil
+}
+
 type CameraCredentialVersionAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -394,6 +437,8 @@ type CameraCredentialVersionAddRequest_builder struct {
 	Legacy         *CameraLegacyCredentialReference
 	LegacyKey      *string
 	ReusedFrom     *CameraCredentialReference
+	RequestHash    []byte
+	PrepareTag     []byte
 }
 
 func (b0 CameraCredentialVersionAddRequest_builder) Build() *CameraCredentialVersionAddRequest {
@@ -401,7 +446,7 @@ func (b0 CameraCredentialVersionAddRequest_builder) Build() *CameraCredentialVer
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 18)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -414,17 +459,22 @@ func (b0 CameraCredentialVersionAddRequest_builder) Build() *CameraCredentialVer
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_SealedEnvelope = b.SealedEnvelope
 	if b.ImportTag != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 18)
 		x.xxx_hidden_ImportTag = b.ImportTag
 	}
 	x.xxx_hidden_Origin = b.Origin
 	x.xxx_hidden_DateRevoked = b.DateRevoked
 	x.xxx_hidden_Legacy = b.Legacy
 	if b.LegacyKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 16)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 18)
 		x.xxx_hidden_LegacyKey = b.LegacyKey
 	}
 	x.xxx_hidden_ReusedFrom = b.ReusedFrom
+	x.xxx_hidden_RequestHash = b.RequestHash
+	if b.PrepareTag != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 18)
+		x.xxx_hidden_PrepareTag = b.PrepareTag
+	}
 	return m0
 }
 
@@ -1083,6 +1133,8 @@ type CameraCredentialVersionSelect struct {
 	xxx_hidden_Legacy         bool                    `protobuf:"varint,20,opt,name=legacy"`
 	xxx_hidden_LegacyKey      bool                    `protobuf:"varint,21,opt,name=legacy_key,json=legacyKey"`
 	xxx_hidden_ReusedFrom     bool                    `protobuf:"varint,22,opt,name=reused_from,json=reusedFrom"`
+	xxx_hidden_RequestHash    bool                    `protobuf:"varint,23,opt,name=request_hash,json=requestHash"`
+	xxx_hidden_PrepareTag     bool                    `protobuf:"varint,24,opt,name=prepare_tag,json=prepareTag"`
 	XXX_raceDetectHookData    protoimpl.RaceDetectHookData
 	XXX_presence              [1]uint32
 	unknownFields             protoimpl.UnknownFields
@@ -1240,9 +1292,23 @@ func (x *CameraCredentialVersionSelect) GetReusedFrom() bool {
 	return false
 }
 
+func (x *CameraCredentialVersionSelect) GetRequestHash() bool {
+	if x != nil {
+		return x.xxx_hidden_RequestHash
+	}
+	return false
+}
+
+func (x *CameraCredentialVersionSelect) GetPrepareTag() bool {
+	if x != nil {
+		return x.xxx_hidden_PrepareTag
+	}
+	return false
+}
+
 func (x *CameraCredentialVersionSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetTenant(v *TenantSelect) {
@@ -1259,72 +1325,82 @@ func (x *CameraCredentialVersionSelect) SetCredential(v *CameraCredentialSelect)
 
 func (x *CameraCredentialVersionSelect) SetVersion(v bool) {
 	x.xxx_hidden_Version = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetIntentKey(v bool) {
 	x.xxx_hidden_IntentKey = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetAccess(v bool) {
 	x.xxx_hidden_Access = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetBackend(v bool) {
 	x.xxx_hidden_Backend = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetSealedEnvelope(v bool) {
 	x.xxx_hidden_SealedEnvelope = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetImportTag(v bool) {
 	x.xxx_hidden_ImportTag = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetOrigin(v bool) {
 	x.xxx_hidden_Origin = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetDateRevoked(v bool) {
 	x.xxx_hidden_DateRevoked = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetLegacy(v bool) {
 	x.xxx_hidden_Legacy = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetLegacyKey(v bool) {
 	x.xxx_hidden_LegacyKey = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 20)
 }
 
 func (x *CameraCredentialVersionSelect) SetReusedFrom(v bool) {
 	x.xxx_hidden_ReusedFrom = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 18)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 20)
+}
+
+func (x *CameraCredentialVersionSelect) SetRequestHash(v bool) {
+	x.xxx_hidden_RequestHash = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 20)
+}
+
+func (x *CameraCredentialVersionSelect) SetPrepareTag(v bool) {
+	x.xxx_hidden_PrepareTag = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 20)
 }
 
 func (x *CameraCredentialVersionSelect) HasAll() bool {
@@ -1453,6 +1529,20 @@ func (x *CameraCredentialVersionSelect) HasReusedFrom() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
 }
 
+func (x *CameraCredentialVersionSelect) HasRequestHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 18)
+}
+
+func (x *CameraCredentialVersionSelect) HasPrepareTag() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
+}
+
 func (x *CameraCredentialVersionSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -1540,6 +1630,16 @@ func (x *CameraCredentialVersionSelect) ClearReusedFrom() {
 	x.xxx_hidden_ReusedFrom = false
 }
 
+func (x *CameraCredentialVersionSelect) ClearRequestHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 18)
+	x.xxx_hidden_RequestHash = false
+}
+
+func (x *CameraCredentialVersionSelect) ClearPrepareTag() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
+	x.xxx_hidden_PrepareTag = false
+}
+
 type CameraCredentialVersionSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1561,6 +1661,8 @@ type CameraCredentialVersionSelect_builder struct {
 	Legacy         *bool
 	LegacyKey      *bool
 	ReusedFrom     *bool
+	RequestHash    *bool
+	PrepareTag     *bool
 }
 
 func (b0 CameraCredentialVersionSelect_builder) Build() *CameraCredentialVersionSelect {
@@ -1568,67 +1670,75 @@ func (b0 CameraCredentialVersionSelect_builder) Build() *CameraCredentialVersion
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 20)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	x.xxx_hidden_Credential = b.Credential
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 20)
 		x.xxx_hidden_Version = *b.Version
 	}
 	if b.IntentKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 20)
 		x.xxx_hidden_IntentKey = *b.IntentKey
 	}
 	if b.Access != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 20)
 		x.xxx_hidden_Access = *b.Access
 	}
 	if b.Backend != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 20)
 		x.xxx_hidden_Backend = *b.Backend
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 20)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 20)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 20)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.SealedEnvelope != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 20)
 		x.xxx_hidden_SealedEnvelope = *b.SealedEnvelope
 	}
 	if b.ImportTag != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 20)
 		x.xxx_hidden_ImportTag = *b.ImportTag
 	}
 	if b.Origin != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 20)
 		x.xxx_hidden_Origin = *b.Origin
 	}
 	if b.DateRevoked != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 20)
 		x.xxx_hidden_DateRevoked = *b.DateRevoked
 	}
 	if b.Legacy != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 20)
 		x.xxx_hidden_Legacy = *b.Legacy
 	}
 	if b.LegacyKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 20)
 		x.xxx_hidden_LegacyKey = *b.LegacyKey
 	}
 	if b.ReusedFrom != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 18)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 20)
 		x.xxx_hidden_ReusedFrom = *b.ReusedFrom
+	}
+	if b.RequestHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 20)
+		x.xxx_hidden_RequestHash = *b.RequestHash
+	}
+	if b.PrepareTag != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 20)
+		x.xxx_hidden_PrepareTag = *b.PrepareTag
 	}
 	return m0
 }
@@ -2622,7 +2732,7 @@ var File_shale_camera_credential_version_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_credential_version_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"+shale/camera_credential_version_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a#shale/camera_credential_svc.g.proto\x1a%shale/camera_credential_version.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xf1\x05\n" +
+	"+shale/camera_credential_version_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a#shale/camera_credential_svc.g.proto\x1a%shale/camera_credential_version.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xbc\x06\n" +
 	"!CameraCredentialVersionAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -2646,7 +2756,10 @@ const file_shale_camera_credential_version_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"legacy_key\x18\x15 \x01(\tR\tlegacyKey\x12A\n" +
 	"\vreused_from\x18\x16 \x01(\v2 .shale.CameraCredentialReferenceR\n" +
-	"reusedFrom\"\x96\x01\n" +
+	"reusedFrom\x12(\n" +
+	"\frequest_hash\x18\x17 \x01(\fB\x05\xaa\x01\x02\b\x02R\vrequestHash\x12\x1f\n" +
+	"\vprepare_tag\x18\x18 \x01(\fR\n" +
+	"prepareTag\"\x96\x01\n" +
 	"!CameraCredentialVersionGetRequest\x123\n" +
 	"\x03ref\x18\x01 \x01(\v2!.shale.CameraCredentialVersionRefR\x03ref\x12<\n" +
 	"\x06select\x18\x02 \x01(\v2$.shale.CameraCredentialVersionSelectR\x06select\"\x87\x02\n" +
@@ -2671,7 +2784,7 @@ const file_shale_camera_credential_version_svc_g_proto_rawDesc = "" +
 	"credential\"C\n" +
 	"\"CameraCredentialVersionRefByLegacy\x12\x1d\n" +
 	"\n" +
-	"legacy_key\x18\x15 \x01(\tR\tlegacyKey\"\xf1\x04\n" +
+	"legacy_key\x18\x15 \x01(\tR\tlegacyKey\"\xb5\x05\n" +
 	"\x1dCameraCredentialVersionSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -2698,7 +2811,10 @@ const file_shale_camera_credential_version_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"legacy_key\x18\x15 \x01(\bR\tlegacyKey\x12\x1f\n" +
 	"\vreused_from\x18\x16 \x01(\bR\n" +
-	"reusedFrom\"\xb2\x02\n" +
+	"reusedFrom\x12!\n" +
+	"\frequest_hash\x18\x17 \x01(\bR\vrequestHash\x12\x1f\n" +
+	"\vprepare_tag\x18\x18 \x01(\bR\n" +
+	"prepareTag\"\xb2\x02\n" +
 	"#CameraCredentialVersionPatchRequest\x123\n" +
 	"\x03ref\x18\x01 \x01(\v2!.shale.CameraCredentialVersionRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +

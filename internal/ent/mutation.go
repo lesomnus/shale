@@ -3399,6 +3399,40 @@ func (m *CameraCredentialVersionMutation) OldReusedFrom(ctx context.Context) (v 
 	return oldValue.ReusedFrom, nil
 }
 
+// OldRequestHash returns the old "request_hash" field's value of the CameraCredentialVersion entity.
+// If the CameraCredentialVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraCredentialVersionMutation) OldRequestHash(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldRequestHash is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldRequestHash requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestHash: %w", err)
+	}
+	return oldValue.RequestHash, nil
+}
+
+// OldPrepareTag returns the old "prepare_tag" field's value of the CameraCredentialVersion entity.
+// If the CameraCredentialVersion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraCredentialVersionMutation) OldPrepareTag(ctx context.Context) (v *[]byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPrepareTag is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPrepareTag requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrepareTag: %w", err)
+	}
+	return oldValue.PrepareTag, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the CameraCredentialVersion entity.
 // If the CameraCredentialVersion object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -3483,6 +3517,10 @@ func (m *CameraCredentialVersionMutation) OldField(ctx context.Context, name str
 		return m.OldLegacyKey(ctx)
 	case cameracredentialversion.FieldReusedFrom:
 		return m.OldReusedFrom(ctx)
+	case cameracredentialversion.FieldRequestHash:
+		return m.OldRequestHash(ctx)
+	case cameracredentialversion.FieldPrepareTag:
+		return m.OldPrepareTag(ctx)
 	case cameracredentialversion.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case cameracredentialversion.FieldSiteId:

@@ -33,6 +33,8 @@ type Mutation struct {
 	legacy            **api.CameraLegacyCredentialReference
 	legacy_key        *string
 	reused_from       **api.CameraCredentialReference
+	request_hash      *[]byte
+	prepare_tag       *[]byte
 	clearedFields     map[string]struct{}
 	exprs             map[string]sql.Querier
 	tenant            *uuid.UUID
@@ -450,6 +452,58 @@ func (m *Mutation) ResetReusedFrom() {
 	delete(m.clearedFields, FieldReusedFrom)
 }
 
+// SetRequestHash sets the "request_hash" field.
+func (m *Mutation) SetRequestHash(b []byte) {
+	m.request_hash = &b
+}
+
+// RequestHash returns the value of the "request_hash" field in the mutation.
+func (m *Mutation) RequestHash() (r []byte, exists bool) {
+	v := m.request_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRequestHash resets all changes to the "request_hash" field.
+func (m *Mutation) ResetRequestHash() {
+	m.request_hash = nil
+}
+
+// SetPrepareTag sets the "prepare_tag" field.
+func (m *Mutation) SetPrepareTag(b []byte) {
+	m.prepare_tag = &b
+	delete(m.clearedFields, FieldPrepareTag)
+}
+
+// PrepareTag returns the value of the "prepare_tag" field in the mutation.
+func (m *Mutation) PrepareTag() (r []byte, exists bool) {
+	v := m.prepare_tag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPrepareTag clears the value of the "prepare_tag" field.
+func (m *Mutation) ClearPrepareTag() {
+	m.prepare_tag = nil
+	m.clearedFields[FieldPrepareTag] = struct{}{}
+}
+
+// PrepareTagCleared returns if the "prepare_tag" field was cleared in this mutation.
+func (m *Mutation) PrepareTagCleared() bool {
+	_, ok := m.clearedFields[FieldPrepareTag]
+	return ok
+}
+
+// ResetPrepareTag resets all changes to the "prepare_tag" field.
+func (m *Mutation) ResetPrepareTag() {
+	m.prepare_tag = nil
+	delete(m.clearedFields, FieldPrepareTag)
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -636,7 +690,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 19)
 	if m.version != nil {
 		fields = append(fields, FieldVersion)
 	}
@@ -678,6 +732,12 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.reused_from != nil {
 		fields = append(fields, FieldReusedFrom)
+	}
+	if m.request_hash != nil {
+		fields = append(fields, FieldRequestHash)
+	}
+	if m.prepare_tag != nil {
+		fields = append(fields, FieldPrepareTag)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -730,6 +790,10 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.LegacyKey()
 	case FieldReusedFrom:
 		return m.ReusedFrom()
+	case FieldRequestHash:
+		return m.RequestHash()
+	case FieldPrepareTag:
+		return m.PrepareTag()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldSiteId:
@@ -895,6 +959,26 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetReusedFrom(v)
 		return nil
+	case FieldRequestHash:
+		v, ok := value.([]byte)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestHash(v)
+		return nil
+	case FieldPrepareTag:
+		v, ok := value.([]byte)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrepareTag(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -974,6 +1058,10 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 	case FieldLegacyKey:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldReusedFrom:
+		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
+	case FieldRequestHash:
+		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
+	case FieldPrepareTag:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldTenantId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
@@ -1076,6 +1164,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldReusedFrom) {
 		fields = append(fields, FieldReusedFrom)
 	}
+	if m.FieldCleared(FieldPrepareTag) {
+		fields = append(fields, FieldPrepareTag)
+	}
 	if m.FieldCleared(FieldSiteId) {
 		fields = append(fields, FieldSiteId)
 	}
@@ -1113,6 +1204,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldReusedFrom:
 		m.ClearReusedFrom()
+		return nil
+	case FieldPrepareTag:
+		m.ClearPrepareTag()
 		return nil
 	case FieldSiteId:
 		m.ClearSiteId()
@@ -1166,6 +1260,12 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldReusedFrom:
 		m.ResetReusedFrom()
+		return nil
+	case FieldRequestHash:
+		m.ResetRequestHash()
+		return nil
+	case FieldPrepareTag:
+		m.ResetPrepareTag()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

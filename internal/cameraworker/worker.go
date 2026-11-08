@@ -183,7 +183,7 @@ func (w *Worker) heartbeat(ctx context.Context, conn *grpc.ClientConn) error {
 func (w *Worker) execute(ctx context.Context, conn *grpc.ClientConn, work *api.CameraWorkerWork, finished chan<- error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	e := &Execution{life: ctx, work: work, workers: api.NewCameraWorkerServiceClient(conn), jobs: api.NewCameraJobServiceClient(conn), presets: api.NewCameraPresetServiceClient(conn), leaseSeconds: w.cfg.LeaseSeconds, cancel: cancel}
+	e := &Execution{life: ctx, work: work, workers: api.NewCameraWorkerServiceClient(conn), jobs: api.NewCameraJobServiceClient(conn), presets: api.NewCameraPresetServiceClient(conn), credentials: api.NewCameraCredentialServiceClient(conn), leaseSeconds: w.cfg.LeaseSeconds, cancel: cancel}
 	keepDone := make(chan error, 1)
 	go func() { keepDone <- e.keep(ctx) }()
 	err := w.cfg.Executor.Execute(ctx, e)

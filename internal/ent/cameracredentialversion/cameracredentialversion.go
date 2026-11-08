@@ -42,6 +42,10 @@ const (
 	FieldLegacyKey = "legacy_key"
 	// FieldReusedFrom holds the string denoting the reused_from field in the database.
 	FieldReusedFrom = "reused_from"
+	// FieldRequestHash holds the string denoting the request_hash field in the database.
+	FieldRequestHash = "request_hash"
+	// FieldPrepareTag holds the string denoting the prepare_tag field in the database.
+	FieldPrepareTag = "prepare_tag"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
@@ -96,6 +100,8 @@ var Columns = []string{
 	FieldLegacy,
 	FieldLegacyKey,
 	FieldReusedFrom,
+	FieldRequestHash,
+	FieldPrepareTag,
 	FieldTenantId,
 	FieldSiteId,
 	FieldCredentialId,

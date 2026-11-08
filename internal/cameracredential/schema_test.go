@@ -16,6 +16,7 @@ func TestVersionGeneratedResponsesAreMetadataOnly(t *testing.T) {
 	row := api.CameraCredentialVersion_builder{
 		Version: "v1", IntentKey: "prepare-1", Access: "read", Backend: "cp-aes256gcm-hkdf-sha256-v1",
 		SealedEnvelope: []byte("synthetic-sealed-envelope"), ImportTag: []byte("synthetic-keyed-import-tag"),
+		RequestHash: []byte("nonsecret-metadata-fingerprint"), PrepareTag: []byte("synthetic-keyed-username-tag"),
 	}.Build()
 	fake := &versionRows{row: row}
 	public := pd.NewSecret(versionServer{rows: fake}).CameraCredentialVersion()
@@ -57,7 +58,7 @@ func TestVersionGeneratedResponsesAreMetadataOnly(t *testing.T) {
 		t.Fatal("watch did not deliver its snapshot")
 	}
 	assertMetadata(t, stream.got.GetItems()[0].GetValue())
-	if len(row.GetSealedEnvelope()) == 0 || len(row.GetImportTag()) == 0 {
+	if len(row.GetSealedEnvelope()) == 0 || len(row.GetImportTag()) == 0 || len(row.GetRequestHash()) == 0 || len(row.GetPrepareTag()) == 0 {
 		t.Fatal("ordinary redaction modified the persisted private record")
 	}
 }
@@ -67,7 +68,7 @@ func assertMetadata(t *testing.T, row *api.CameraCredentialVersion) {
 	if row == nil || row.GetVersion() != "v1" || row.GetIntentKey() != "prepare-1" {
 		t.Fatal("redaction lost ordinary reference metadata")
 	}
-	if len(row.GetSealedEnvelope()) != 0 || len(row.GetImportTag()) != 0 {
+	if len(row.GetSealedEnvelope()) != 0 || len(row.GetImportTag()) != 0 || len(row.GetRequestHash()) != 0 || len(row.GetPrepareTag()) != 0 {
 		t.Fatal("ordinary response contains sealed credential storage")
 	}
 }

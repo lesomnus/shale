@@ -16753,7 +16753,7 @@ var (
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
 	describedCameraCredentialVersion = describe((*api.CameraCredentialVersion)(nil),
-		[]protoreflect.FieldNumber{16, 17},
+		[]protoreflect.FieldNumber{16, 17, 23, 24},
 		[]protoreflect.FieldNumber{})
 	describedCameraDevice = describe((*api.CameraDevice)(nil),
 		[]protoreflect.FieldNumber{},
@@ -20645,7 +20645,7 @@ func hideCameraCredentialVersion(v *api.CameraCredentialVersion) *api.CameraCred
 
 	m := v.ProtoReflect()
 	fs := m.Descriptor().Fields()
-	for _, n := range []protoreflect.FieldNumber{16, 17} {
+	for _, n := range []protoreflect.FieldNumber{16, 17, 23, 24} {
 		m.Clear(fs.ByNumber(n))
 	}
 
@@ -21638,6 +21638,90 @@ func (s interceptCameraJob) Publish(ctx context.Context, req *api.CameraJobPubli
 		api.CameraJobService_Publish_FullMethodName, req, s.CameraJobServiceServer.Publish)
 }
 
+func (s Intercept) CameraWorker() api.CameraWorkerServiceServer {
+	return interceptCameraWorker{s, s.Next().CameraWorker()}
+}
+
+type interceptCameraWorker struct {
+	Intercept
+	api.CameraWorkerServiceServer
+}
+
+func (s interceptCameraWorker) Add(ctx context.Context, req *api.CameraWorkerAddRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Add_FullMethodName, req, s.CameraWorkerServiceServer.Add)
+}
+
+func (s interceptCameraWorker) Get(ctx context.Context, req *api.CameraWorkerGetRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Get_FullMethodName, req, s.CameraWorkerServiceServer.Get)
+}
+
+func (s interceptCameraWorker) Patch(ctx context.Context, req *api.CameraWorkerPatchRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Patch_FullMethodName, req, s.CameraWorkerServiceServer.Patch)
+}
+
+func (s interceptCameraWorker) Apply(ctx context.Context, req *api.CameraWorkerApplyRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Apply_FullMethodName, req, s.CameraWorkerServiceServer.Apply)
+}
+
+func (s interceptCameraWorker) Erase(ctx context.Context, req *api.CameraWorkerRef) (*api.CameraWorkerEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Erase_FullMethodName, req, s.CameraWorkerServiceServer.Erase)
+}
+
+func (s interceptCameraWorker) List(ctx context.Context, req *api.CameraWorkerListRequest) (*api.CameraWorkerListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_List_FullMethodName, req, s.CameraWorkerServiceServer.List)
+}
+
+func (s interceptCameraWorker) Watch(req *api.CameraWorkerWatchRequest, out grpc.ServerStreamingServer[api.CameraWorkerWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Watch_FullMethodName, req, out, s.CameraWorkerServiceServer.Watch)
+}
+
+func (s interceptCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinRequest) (*api.CameraWorkerJoinResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Join_FullMethodName, req, s.CameraWorkerServiceServer.Join)
+}
+
+func (s interceptCameraWorker) Adopt(ctx context.Context, req *api.CameraWorkerAdoptRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Adopt_FullMethodName, req, s.CameraWorkerServiceServer.Adopt)
+}
+
+func (s interceptCameraWorker) RenewCertificate(ctx context.Context, req *api.CameraWorkerRenewCertificateRequest) (*api.CameraWorkerRenewCertificateResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_RenewCertificate_FullMethodName, req, s.CameraWorkerServiceServer.RenewCertificate)
+}
+
+func (s interceptCameraWorker) Heartbeat(ctx context.Context, req *api.CameraWorkerHeartbeatRequest) (*api.CameraWorkerHeartbeatResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Heartbeat_FullMethodName, req, s.CameraWorkerServiceServer.Heartbeat)
+}
+
+func (s interceptCameraWorker) Revoke(ctx context.Context, req *api.CameraWorkerRevokeRequest) (*api.CameraWorker, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Revoke_FullMethodName, req, s.CameraWorkerServiceServer.Revoke)
+}
+
+func (s interceptCameraWorker) Poll(ctx context.Context, req *api.CameraWorkerPollRequest) (*api.CameraWorkerPollResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_Poll_FullMethodName, req, s.CameraWorkerServiceServer.Poll)
+}
+
+func (s interceptCameraWorker) CheckJob(ctx context.Context, req *api.CameraWorkerCheckJobRequest) (*api.CameraWorkerWork, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_CheckJob_FullMethodName, req, s.CameraWorkerServiceServer.CheckJob)
+}
+
+func (s interceptCameraWorker) ObserveJob(ctx context.Context, req *api.CameraWorkerCheckJobRequest) (*api.CameraWorkerObservation, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
+		api.CameraWorkerService_ObserveJob_FullMethodName, req, s.CameraWorkerServiceServer.ObserveJob)
+}
+
 func (s Intercept) CameraCredential() api.CameraCredentialServiceServer {
 	return interceptCameraCredential{s, s.Next().CameraCredential()}
 }
@@ -21680,6 +21764,26 @@ func (s interceptCameraCredential) List(ctx context.Context, req *api.CameraCred
 func (s interceptCameraCredential) Watch(req *api.CameraCredentialWatchRequest, out grpc.ServerStreamingServer[api.CameraCredentialWatchResponse]) error {
 	return grpcx.RunStream(s.stream, s.CameraCredentialServiceServer,
 		api.CameraCredentialService_Watch_FullMethodName, req, out, s.CameraCredentialServiceServer.Watch)
+}
+
+func (s interceptCameraCredential) Prepare(ctx context.Context, req *api.CameraCredentialPrepareRequest) (*api.CameraCredentialPrepared, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraCredentialServiceServer,
+		api.CameraCredentialService_Prepare_FullMethodName, req, s.CameraCredentialServiceServer.Prepare)
+}
+
+func (s interceptCameraCredential) Import(ctx context.Context, req *api.CameraCredentialImportRequest) (*api.CameraCredentialPrepared, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraCredentialServiceServer,
+		api.CameraCredentialService_Import_FullMethodName, req, s.CameraCredentialServiceServer.Import)
+}
+
+func (s interceptCameraCredential) Resolve(ctx context.Context, req *api.CameraCredentialResolveRequest) (*api.CameraCredentialLease, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraCredentialServiceServer,
+		api.CameraCredentialService_Resolve_FullMethodName, req, s.CameraCredentialServiceServer.Resolve)
+}
+
+func (s interceptCameraCredential) Revoke(ctx context.Context, req *api.CameraCredentialRevokeRequest) (*api.CameraCredentialRevokeResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraCredentialServiceServer,
+		api.CameraCredentialService_Revoke_FullMethodName, req, s.CameraCredentialServiceServer.Revoke)
 }
 
 func (s Intercept) CameraCredentialVersion() api.CameraCredentialVersionServiceServer {
@@ -21842,90 +21946,6 @@ func (s interceptCameraPolicy) Enroll(ctx context.Context, req *api.CameraPolicy
 func (s interceptCameraPolicy) Observe(ctx context.Context, req *api.CameraPolicyObserveRequest) (*api.CameraPolicyObserveResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
 		api.CameraPolicyService_Observe_FullMethodName, req, s.CameraPolicyServiceServer.Observe)
-}
-
-func (s Intercept) CameraWorker() api.CameraWorkerServiceServer {
-	return interceptCameraWorker{s, s.Next().CameraWorker()}
-}
-
-type interceptCameraWorker struct {
-	Intercept
-	api.CameraWorkerServiceServer
-}
-
-func (s interceptCameraWorker) Add(ctx context.Context, req *api.CameraWorkerAddRequest) (*api.CameraWorker, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Add_FullMethodName, req, s.CameraWorkerServiceServer.Add)
-}
-
-func (s interceptCameraWorker) Get(ctx context.Context, req *api.CameraWorkerGetRequest) (*api.CameraWorker, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Get_FullMethodName, req, s.CameraWorkerServiceServer.Get)
-}
-
-func (s interceptCameraWorker) Patch(ctx context.Context, req *api.CameraWorkerPatchRequest) (*api.CameraWorker, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Patch_FullMethodName, req, s.CameraWorkerServiceServer.Patch)
-}
-
-func (s interceptCameraWorker) Apply(ctx context.Context, req *api.CameraWorkerApplyRequest) (*api.CameraWorker, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Apply_FullMethodName, req, s.CameraWorkerServiceServer.Apply)
-}
-
-func (s interceptCameraWorker) Erase(ctx context.Context, req *api.CameraWorkerRef) (*api.CameraWorkerEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Erase_FullMethodName, req, s.CameraWorkerServiceServer.Erase)
-}
-
-func (s interceptCameraWorker) List(ctx context.Context, req *api.CameraWorkerListRequest) (*api.CameraWorkerListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_List_FullMethodName, req, s.CameraWorkerServiceServer.List)
-}
-
-func (s interceptCameraWorker) Watch(req *api.CameraWorkerWatchRequest, out grpc.ServerStreamingServer[api.CameraWorkerWatchResponse]) error {
-	return grpcx.RunStream(s.stream, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Watch_FullMethodName, req, out, s.CameraWorkerServiceServer.Watch)
-}
-
-func (s interceptCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinRequest) (*api.CameraWorkerJoinResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Join_FullMethodName, req, s.CameraWorkerServiceServer.Join)
-}
-
-func (s interceptCameraWorker) Adopt(ctx context.Context, req *api.CameraWorkerAdoptRequest) (*api.CameraWorker, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Adopt_FullMethodName, req, s.CameraWorkerServiceServer.Adopt)
-}
-
-func (s interceptCameraWorker) RenewCertificate(ctx context.Context, req *api.CameraWorkerRenewCertificateRequest) (*api.CameraWorkerRenewCertificateResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_RenewCertificate_FullMethodName, req, s.CameraWorkerServiceServer.RenewCertificate)
-}
-
-func (s interceptCameraWorker) Heartbeat(ctx context.Context, req *api.CameraWorkerHeartbeatRequest) (*api.CameraWorkerHeartbeatResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Heartbeat_FullMethodName, req, s.CameraWorkerServiceServer.Heartbeat)
-}
-
-func (s interceptCameraWorker) Revoke(ctx context.Context, req *api.CameraWorkerRevokeRequest) (*api.CameraWorker, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Revoke_FullMethodName, req, s.CameraWorkerServiceServer.Revoke)
-}
-
-func (s interceptCameraWorker) Poll(ctx context.Context, req *api.CameraWorkerPollRequest) (*api.CameraWorkerPollResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_Poll_FullMethodName, req, s.CameraWorkerServiceServer.Poll)
-}
-
-func (s interceptCameraWorker) CheckJob(ctx context.Context, req *api.CameraWorkerCheckJobRequest) (*api.CameraWorkerWork, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_CheckJob_FullMethodName, req, s.CameraWorkerServiceServer.CheckJob)
-}
-
-func (s interceptCameraWorker) ObserveJob(ctx context.Context, req *api.CameraWorkerCheckJobRequest) (*api.CameraWorkerObservation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraWorkerServiceServer,
-		api.CameraWorkerService_ObserveJob_FullMethodName, req, s.CameraWorkerServiceServer.ObserveJob)
 }
 
 func (s Intercept) Device() api.DeviceServiceServer {
@@ -24480,6 +24500,34 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.CameraJobReportRequest{}
 	case api.CameraJobService_Publish_FullMethodName:
 		v = &api.CameraJobPublishRequest{}
+	case api.CameraWorkerService_Add_FullMethodName:
+		v = &api.CameraWorkerAddRequest{}
+	case api.CameraWorkerService_Get_FullMethodName:
+		v = &api.CameraWorkerGetRequest{}
+	case api.CameraWorkerService_Patch_FullMethodName:
+		v = &api.CameraWorkerPatchRequest{}
+	case api.CameraWorkerService_Apply_FullMethodName:
+		v = &api.CameraWorkerApplyRequest{}
+	case api.CameraWorkerService_Erase_FullMethodName:
+		v = &api.CameraWorkerRef{}
+	case api.CameraWorkerService_List_FullMethodName:
+		v = &api.CameraWorkerListRequest{}
+	case api.CameraWorkerService_Join_FullMethodName:
+		v = &api.CameraWorkerJoinRequest{}
+	case api.CameraWorkerService_Adopt_FullMethodName:
+		v = &api.CameraWorkerAdoptRequest{}
+	case api.CameraWorkerService_RenewCertificate_FullMethodName:
+		v = &api.CameraWorkerRenewCertificateRequest{}
+	case api.CameraWorkerService_Heartbeat_FullMethodName:
+		v = &api.CameraWorkerHeartbeatRequest{}
+	case api.CameraWorkerService_Revoke_FullMethodName:
+		v = &api.CameraWorkerRevokeRequest{}
+	case api.CameraWorkerService_Poll_FullMethodName:
+		v = &api.CameraWorkerPollRequest{}
+	case api.CameraWorkerService_CheckJob_FullMethodName:
+		v = &api.CameraWorkerCheckJobRequest{}
+	case api.CameraWorkerService_ObserveJob_FullMethodName:
+		v = &api.CameraWorkerCheckJobRequest{}
 	case api.CameraCredentialService_Add_FullMethodName:
 		v = &api.CameraCredentialAddRequest{}
 	case api.CameraCredentialService_Get_FullMethodName:
@@ -24492,6 +24540,14 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.CameraCredentialRef{}
 	case api.CameraCredentialService_List_FullMethodName:
 		v = &api.CameraCredentialListRequest{}
+	case api.CameraCredentialService_Prepare_FullMethodName:
+		v = &api.CameraCredentialPrepareRequest{}
+	case api.CameraCredentialService_Import_FullMethodName:
+		v = &api.CameraCredentialImportRequest{}
+	case api.CameraCredentialService_Resolve_FullMethodName:
+		v = &api.CameraCredentialResolveRequest{}
+	case api.CameraCredentialService_Revoke_FullMethodName:
+		v = &api.CameraCredentialRevokeRequest{}
 	case api.CameraCredentialVersionService_Add_FullMethodName:
 		v = &api.CameraCredentialVersionAddRequest{}
 	case api.CameraCredentialVersionService_Get_FullMethodName:
@@ -24540,34 +24596,6 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.CameraPolicyEnrollRequest{}
 	case api.CameraPolicyService_Observe_FullMethodName:
 		v = &api.CameraPolicyObserveRequest{}
-	case api.CameraWorkerService_Add_FullMethodName:
-		v = &api.CameraWorkerAddRequest{}
-	case api.CameraWorkerService_Get_FullMethodName:
-		v = &api.CameraWorkerGetRequest{}
-	case api.CameraWorkerService_Patch_FullMethodName:
-		v = &api.CameraWorkerPatchRequest{}
-	case api.CameraWorkerService_Apply_FullMethodName:
-		v = &api.CameraWorkerApplyRequest{}
-	case api.CameraWorkerService_Erase_FullMethodName:
-		v = &api.CameraWorkerRef{}
-	case api.CameraWorkerService_List_FullMethodName:
-		v = &api.CameraWorkerListRequest{}
-	case api.CameraWorkerService_Join_FullMethodName:
-		v = &api.CameraWorkerJoinRequest{}
-	case api.CameraWorkerService_Adopt_FullMethodName:
-		v = &api.CameraWorkerAdoptRequest{}
-	case api.CameraWorkerService_RenewCertificate_FullMethodName:
-		v = &api.CameraWorkerRenewCertificateRequest{}
-	case api.CameraWorkerService_Heartbeat_FullMethodName:
-		v = &api.CameraWorkerHeartbeatRequest{}
-	case api.CameraWorkerService_Revoke_FullMethodName:
-		v = &api.CameraWorkerRevokeRequest{}
-	case api.CameraWorkerService_Poll_FullMethodName:
-		v = &api.CameraWorkerPollRequest{}
-	case api.CameraWorkerService_CheckJob_FullMethodName:
-		v = &api.CameraWorkerCheckJobRequest{}
-	case api.CameraWorkerService_ObserveJob_FullMethodName:
-		v = &api.CameraWorkerCheckJobRequest{}
 	case api.DeviceService_Add_FullMethodName:
 		v = &api.DeviceAddRequest{}
 	case api.DeviceService_Get_FullMethodName:
@@ -25012,6 +25040,34 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.CameraJob().Report(ctx, v.(*api.CameraJobReportRequest))
 	case api.CameraJobService_Publish_FullMethodName:
 		res, err = s.CameraJob().Publish(ctx, v.(*api.CameraJobPublishRequest))
+	case api.CameraWorkerService_Add_FullMethodName:
+		res, err = s.CameraWorker().Add(ctx, v.(*api.CameraWorkerAddRequest))
+	case api.CameraWorkerService_Get_FullMethodName:
+		res, err = s.CameraWorker().Get(ctx, v.(*api.CameraWorkerGetRequest))
+	case api.CameraWorkerService_Patch_FullMethodName:
+		res, err = s.CameraWorker().Patch(ctx, v.(*api.CameraWorkerPatchRequest))
+	case api.CameraWorkerService_Apply_FullMethodName:
+		res, err = s.CameraWorker().Apply(ctx, v.(*api.CameraWorkerApplyRequest))
+	case api.CameraWorkerService_Erase_FullMethodName:
+		res, err = s.CameraWorker().Erase(ctx, v.(*api.CameraWorkerRef))
+	case api.CameraWorkerService_List_FullMethodName:
+		res, err = s.CameraWorker().List(ctx, v.(*api.CameraWorkerListRequest))
+	case api.CameraWorkerService_Join_FullMethodName:
+		res, err = s.CameraWorker().Join(ctx, v.(*api.CameraWorkerJoinRequest))
+	case api.CameraWorkerService_Adopt_FullMethodName:
+		res, err = s.CameraWorker().Adopt(ctx, v.(*api.CameraWorkerAdoptRequest))
+	case api.CameraWorkerService_RenewCertificate_FullMethodName:
+		res, err = s.CameraWorker().RenewCertificate(ctx, v.(*api.CameraWorkerRenewCertificateRequest))
+	case api.CameraWorkerService_Heartbeat_FullMethodName:
+		res, err = s.CameraWorker().Heartbeat(ctx, v.(*api.CameraWorkerHeartbeatRequest))
+	case api.CameraWorkerService_Revoke_FullMethodName:
+		res, err = s.CameraWorker().Revoke(ctx, v.(*api.CameraWorkerRevokeRequest))
+	case api.CameraWorkerService_Poll_FullMethodName:
+		res, err = s.CameraWorker().Poll(ctx, v.(*api.CameraWorkerPollRequest))
+	case api.CameraWorkerService_CheckJob_FullMethodName:
+		res, err = s.CameraWorker().CheckJob(ctx, v.(*api.CameraWorkerCheckJobRequest))
+	case api.CameraWorkerService_ObserveJob_FullMethodName:
+		res, err = s.CameraWorker().ObserveJob(ctx, v.(*api.CameraWorkerCheckJobRequest))
 	case api.CameraCredentialService_Add_FullMethodName:
 		res, err = s.CameraCredential().Add(ctx, v.(*api.CameraCredentialAddRequest))
 	case api.CameraCredentialService_Get_FullMethodName:
@@ -25024,6 +25080,14 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.CameraCredential().Erase(ctx, v.(*api.CameraCredentialRef))
 	case api.CameraCredentialService_List_FullMethodName:
 		res, err = s.CameraCredential().List(ctx, v.(*api.CameraCredentialListRequest))
+	case api.CameraCredentialService_Prepare_FullMethodName:
+		res, err = s.CameraCredential().Prepare(ctx, v.(*api.CameraCredentialPrepareRequest))
+	case api.CameraCredentialService_Import_FullMethodName:
+		res, err = s.CameraCredential().Import(ctx, v.(*api.CameraCredentialImportRequest))
+	case api.CameraCredentialService_Resolve_FullMethodName:
+		res, err = s.CameraCredential().Resolve(ctx, v.(*api.CameraCredentialResolveRequest))
+	case api.CameraCredentialService_Revoke_FullMethodName:
+		res, err = s.CameraCredential().Revoke(ctx, v.(*api.CameraCredentialRevokeRequest))
 	case api.CameraCredentialVersionService_Add_FullMethodName:
 		res, err = s.CameraCredentialVersion().Add(ctx, v.(*api.CameraCredentialVersionAddRequest))
 	case api.CameraCredentialVersionService_Get_FullMethodName:
@@ -25072,34 +25136,6 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.CameraPolicy().Enroll(ctx, v.(*api.CameraPolicyEnrollRequest))
 	case api.CameraPolicyService_Observe_FullMethodName:
 		res, err = s.CameraPolicy().Observe(ctx, v.(*api.CameraPolicyObserveRequest))
-	case api.CameraWorkerService_Add_FullMethodName:
-		res, err = s.CameraWorker().Add(ctx, v.(*api.CameraWorkerAddRequest))
-	case api.CameraWorkerService_Get_FullMethodName:
-		res, err = s.CameraWorker().Get(ctx, v.(*api.CameraWorkerGetRequest))
-	case api.CameraWorkerService_Patch_FullMethodName:
-		res, err = s.CameraWorker().Patch(ctx, v.(*api.CameraWorkerPatchRequest))
-	case api.CameraWorkerService_Apply_FullMethodName:
-		res, err = s.CameraWorker().Apply(ctx, v.(*api.CameraWorkerApplyRequest))
-	case api.CameraWorkerService_Erase_FullMethodName:
-		res, err = s.CameraWorker().Erase(ctx, v.(*api.CameraWorkerRef))
-	case api.CameraWorkerService_List_FullMethodName:
-		res, err = s.CameraWorker().List(ctx, v.(*api.CameraWorkerListRequest))
-	case api.CameraWorkerService_Join_FullMethodName:
-		res, err = s.CameraWorker().Join(ctx, v.(*api.CameraWorkerJoinRequest))
-	case api.CameraWorkerService_Adopt_FullMethodName:
-		res, err = s.CameraWorker().Adopt(ctx, v.(*api.CameraWorkerAdoptRequest))
-	case api.CameraWorkerService_RenewCertificate_FullMethodName:
-		res, err = s.CameraWorker().RenewCertificate(ctx, v.(*api.CameraWorkerRenewCertificateRequest))
-	case api.CameraWorkerService_Heartbeat_FullMethodName:
-		res, err = s.CameraWorker().Heartbeat(ctx, v.(*api.CameraWorkerHeartbeatRequest))
-	case api.CameraWorkerService_Revoke_FullMethodName:
-		res, err = s.CameraWorker().Revoke(ctx, v.(*api.CameraWorkerRevokeRequest))
-	case api.CameraWorkerService_Poll_FullMethodName:
-		res, err = s.CameraWorker().Poll(ctx, v.(*api.CameraWorkerPollRequest))
-	case api.CameraWorkerService_CheckJob_FullMethodName:
-		res, err = s.CameraWorker().CheckJob(ctx, v.(*api.CameraWorkerCheckJobRequest))
-	case api.CameraWorkerService_ObserveJob_FullMethodName:
-		res, err = s.CameraWorker().ObserveJob(ctx, v.(*api.CameraWorkerCheckJobRequest))
 	case api.DeviceService_Add_FullMethodName:
 		res, err = s.Device().Add(ctx, v.(*api.DeviceAddRequest))
 	case api.DeviceService_Get_FullMethodName:
@@ -25353,6 +25389,8 @@ var resourceSecrets = map[protoreflect.FullName][]protoreflect.FieldNumber{
 	"shale.CameraCredentialVersion": {
 		16,
 		17,
+		23,
+		24,
 	},
 	"shale.Delegation": {
 		11,

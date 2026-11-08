@@ -218,6 +218,10 @@ func (st CameraCredentialVersionServiceServer) create(ctx context.Context, req *
 	if req.HasReusedFrom() {
 		q.SetReusedFrom(req.GetReusedFrom())
 	}
+	q.SetRequestHash(req.GetRequestHash())
+	if req.HasPrepareTag() {
+		q.SetPrepareTag(req.GetPrepareTag())
+	}
 	return q, ds, nil
 }
 
@@ -387,6 +391,12 @@ func CameraCredentialVersionSelectedFields(m *api.CameraCredentialVersionSelect)
 	if m.GetReusedFrom() {
 		vs = append(vs, cameracredentialversion.FieldReusedFrom)
 	}
+	if m.GetRequestHash() {
+		vs = append(vs, cameracredentialversion.FieldRequestHash)
+	}
+	if m.GetPrepareTag() {
+		vs = append(vs, cameracredentialversion.FieldPrepareTag)
+	}
 
 	return vs
 }
@@ -468,7 +478,7 @@ func CameraCredentialVersionGetKey(ctx context.Context, db *ent.Client, ref *api
 var cameraCredentialVersionOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_credential_version_proto, "CameraCredentialVersion")
 
 var cameraCredentialVersionPatchColumns = entpatch.Columns{
-	1: cameracredentialversion.FieldId, 2: cameracredentialversion.TenantColumn, 3: cameracredentialversion.SiteColumn, 8: cameracredentialversion.CredentialColumn, 9: cameracredentialversion.FieldVersion, 10: cameracredentialversion.FieldIntentKey, 11: cameracredentialversion.FieldAccess, 12: cameracredentialversion.FieldBackend, 13: cameracredentialversion.FieldDateUpdated, 14: cameracredentialversion.FieldDateErased, 15: cameracredentialversion.FieldDateCreated, 16: cameracredentialversion.FieldSealedEnvelope, 17: cameracredentialversion.FieldImportTag, 18: cameracredentialversion.FieldOrigin, 19: cameracredentialversion.FieldDateRevoked, 20: cameracredentialversion.FieldLegacy, 21: cameracredentialversion.FieldLegacyKey, 22: cameracredentialversion.FieldReusedFrom}
+	1: cameracredentialversion.FieldId, 2: cameracredentialversion.TenantColumn, 3: cameracredentialversion.SiteColumn, 8: cameracredentialversion.CredentialColumn, 9: cameracredentialversion.FieldVersion, 10: cameracredentialversion.FieldIntentKey, 11: cameracredentialversion.FieldAccess, 12: cameracredentialversion.FieldBackend, 13: cameracredentialversion.FieldDateUpdated, 14: cameracredentialversion.FieldDateErased, 15: cameracredentialversion.FieldDateCreated, 16: cameracredentialversion.FieldSealedEnvelope, 17: cameracredentialversion.FieldImportTag, 18: cameracredentialversion.FieldOrigin, 19: cameracredentialversion.FieldDateRevoked, 20: cameracredentialversion.FieldLegacy, 21: cameracredentialversion.FieldLegacyKey, 22: cameracredentialversion.FieldReusedFrom, 23: cameracredentialversion.FieldRequestHash, 24: cameracredentialversion.FieldPrepareTag}
 
 func (s CameraCredentialVersionServiceServer) Apply(ctx context.Context, req *api.CameraCredentialVersionApplyRequest) (*api.CameraCredentialVersion, error) {
 	if !req.HasPatch() {

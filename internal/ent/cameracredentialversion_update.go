@@ -183,6 +183,9 @@ func (_u *CameraCredentialVersionUpdate) sqlSave(ctx context.Context) (_node int
 	if _u.mutation.ReusedFromCleared() {
 		_spec.ClearField(cameracredentialversion.FieldReusedFrom, field.TypeJson)
 	}
+	if _u.mutation.PrepareTagCleared() {
+		_spec.ClearField(cameracredentialversion.FieldPrepareTag, field.TypeBytes)
+	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -388,6 +391,9 @@ func (_u *CameraCredentialVersionUpdateOne) sqlSave(ctx context.Context) (_node 
 	}
 	if _u.mutation.ReusedFromCleared() {
 		_spec.ClearField(cameracredentialversion.FieldReusedFrom, field.TypeJson)
+	}
+	if _u.mutation.PrepareTagCleared() {
+		_spec.ClearField(cameracredentialversion.FieldPrepareTag, field.TypeBytes)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &CameraCredentialVersion{config: _u.config}

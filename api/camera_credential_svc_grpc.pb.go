@@ -19,13 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CameraCredentialService_Add_FullMethodName   = "/shale.CameraCredentialService/Add"
-	CameraCredentialService_Get_FullMethodName   = "/shale.CameraCredentialService/Get"
-	CameraCredentialService_Patch_FullMethodName = "/shale.CameraCredentialService/Patch"
-	CameraCredentialService_Apply_FullMethodName = "/shale.CameraCredentialService/Apply"
-	CameraCredentialService_Erase_FullMethodName = "/shale.CameraCredentialService/Erase"
-	CameraCredentialService_List_FullMethodName  = "/shale.CameraCredentialService/List"
-	CameraCredentialService_Watch_FullMethodName = "/shale.CameraCredentialService/Watch"
+	CameraCredentialService_Add_FullMethodName     = "/shale.CameraCredentialService/Add"
+	CameraCredentialService_Get_FullMethodName     = "/shale.CameraCredentialService/Get"
+	CameraCredentialService_Patch_FullMethodName   = "/shale.CameraCredentialService/Patch"
+	CameraCredentialService_Apply_FullMethodName   = "/shale.CameraCredentialService/Apply"
+	CameraCredentialService_Erase_FullMethodName   = "/shale.CameraCredentialService/Erase"
+	CameraCredentialService_List_FullMethodName    = "/shale.CameraCredentialService/List"
+	CameraCredentialService_Watch_FullMethodName   = "/shale.CameraCredentialService/Watch"
+	CameraCredentialService_Prepare_FullMethodName = "/shale.CameraCredentialService/Prepare"
+	CameraCredentialService_Import_FullMethodName  = "/shale.CameraCredentialService/Import"
+	CameraCredentialService_Resolve_FullMethodName = "/shale.CameraCredentialService/Resolve"
+	CameraCredentialService_Revoke_FullMethodName  = "/shale.CameraCredentialService/Revoke"
 )
 
 // CameraCredentialServiceClient is the client API for CameraCredentialService service.
@@ -56,6 +60,10 @@ type CameraCredentialServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *CameraCredentialWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraCredentialWatchResponse], error)
+	Prepare(ctx context.Context, in *CameraCredentialPrepareRequest, opts ...grpc.CallOption) (*CameraCredentialPrepared, error)
+	Import(ctx context.Context, in *CameraCredentialImportRequest, opts ...grpc.CallOption) (*CameraCredentialPrepared, error)
+	Resolve(ctx context.Context, in *CameraCredentialResolveRequest, opts ...grpc.CallOption) (*CameraCredentialLease, error)
+	Revoke(ctx context.Context, in *CameraCredentialRevokeRequest, opts ...grpc.CallOption) (*CameraCredentialRevokeResponse, error)
 }
 
 type cameraCredentialServiceClient struct {
@@ -145,6 +153,46 @@ func (c *cameraCredentialServiceClient) Watch(ctx context.Context, in *CameraCre
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CameraCredentialService_WatchClient = grpc.ServerStreamingClient[CameraCredentialWatchResponse]
 
+func (c *cameraCredentialServiceClient) Prepare(ctx context.Context, in *CameraCredentialPrepareRequest, opts ...grpc.CallOption) (*CameraCredentialPrepared, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraCredentialPrepared)
+	err := c.cc.Invoke(ctx, CameraCredentialService_Prepare_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraCredentialServiceClient) Import(ctx context.Context, in *CameraCredentialImportRequest, opts ...grpc.CallOption) (*CameraCredentialPrepared, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraCredentialPrepared)
+	err := c.cc.Invoke(ctx, CameraCredentialService_Import_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraCredentialServiceClient) Resolve(ctx context.Context, in *CameraCredentialResolveRequest, opts ...grpc.CallOption) (*CameraCredentialLease, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraCredentialLease)
+	err := c.cc.Invoke(ctx, CameraCredentialService_Resolve_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraCredentialServiceClient) Revoke(ctx context.Context, in *CameraCredentialRevokeRequest, opts ...grpc.CallOption) (*CameraCredentialRevokeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraCredentialRevokeResponse)
+	err := c.cc.Invoke(ctx, CameraCredentialService_Revoke_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CameraCredentialServiceServer is the server API for CameraCredentialService service.
 // All implementations must embed UnimplementedCameraCredentialServiceServer
 // for forward compatibility.
@@ -173,6 +221,10 @@ type CameraCredentialServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*CameraCredentialWatchRequest, grpc.ServerStreamingServer[CameraCredentialWatchResponse]) error
+	Prepare(context.Context, *CameraCredentialPrepareRequest) (*CameraCredentialPrepared, error)
+	Import(context.Context, *CameraCredentialImportRequest) (*CameraCredentialPrepared, error)
+	Resolve(context.Context, *CameraCredentialResolveRequest) (*CameraCredentialLease, error)
+	Revoke(context.Context, *CameraCredentialRevokeRequest) (*CameraCredentialRevokeResponse, error)
 	mustEmbedUnimplementedCameraCredentialServiceServer()
 }
 
@@ -203,6 +255,18 @@ func (UnimplementedCameraCredentialServiceServer) List(context.Context, *CameraC
 }
 func (UnimplementedCameraCredentialServiceServer) Watch(*CameraCredentialWatchRequest, grpc.ServerStreamingServer[CameraCredentialWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedCameraCredentialServiceServer) Prepare(context.Context, *CameraCredentialPrepareRequest) (*CameraCredentialPrepared, error) {
+	return nil, status.Error(codes.Unimplemented, "method Prepare not implemented")
+}
+func (UnimplementedCameraCredentialServiceServer) Import(context.Context, *CameraCredentialImportRequest) (*CameraCredentialPrepared, error) {
+	return nil, status.Error(codes.Unimplemented, "method Import not implemented")
+}
+func (UnimplementedCameraCredentialServiceServer) Resolve(context.Context, *CameraCredentialResolveRequest) (*CameraCredentialLease, error) {
+	return nil, status.Error(codes.Unimplemented, "method Resolve not implemented")
+}
+func (UnimplementedCameraCredentialServiceServer) Revoke(context.Context, *CameraCredentialRevokeRequest) (*CameraCredentialRevokeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
 }
 func (UnimplementedCameraCredentialServiceServer) mustEmbedUnimplementedCameraCredentialServiceServer() {
 }
@@ -345,6 +409,78 @@ func _CameraCredentialService_Watch_Handler(srv interface{}, stream grpc.ServerS
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CameraCredentialService_WatchServer = grpc.ServerStreamingServer[CameraCredentialWatchResponse]
 
+func _CameraCredentialService_Prepare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraCredentialPrepareRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraCredentialServiceServer).Prepare(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraCredentialService_Prepare_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraCredentialServiceServer).Prepare(ctx, req.(*CameraCredentialPrepareRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraCredentialService_Import_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraCredentialImportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraCredentialServiceServer).Import(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraCredentialService_Import_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraCredentialServiceServer).Import(ctx, req.(*CameraCredentialImportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraCredentialService_Resolve_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraCredentialResolveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraCredentialServiceServer).Resolve(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraCredentialService_Resolve_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraCredentialServiceServer).Resolve(ctx, req.(*CameraCredentialResolveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraCredentialService_Revoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraCredentialRevokeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraCredentialServiceServer).Revoke(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraCredentialService_Revoke_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraCredentialServiceServer).Revoke(ctx, req.(*CameraCredentialRevokeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CameraCredentialService_ServiceDesc is the grpc.ServiceDesc for CameraCredentialService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -375,6 +511,22 @@ var CameraCredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _CameraCredentialService_List_Handler,
+		},
+		{
+			MethodName: "Prepare",
+			Handler:    _CameraCredentialService_Prepare_Handler,
+		},
+		{
+			MethodName: "Import",
+			Handler:    _CameraCredentialService_Import_Handler,
+		},
+		{
+			MethodName: "Resolve",
+			Handler:    _CameraCredentialService_Resolve_Handler,
+		},
+		{
+			MethodName: "Revoke",
+			Handler:    _CameraCredentialService_Revoke_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

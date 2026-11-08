@@ -251,6 +251,8 @@ type CameraCredentialVersion struct {
 	xxx_hidden_Legacy         *CameraLegacyCredentialReference `protobuf:"bytes,20,opt,name=legacy"`
 	xxx_hidden_LegacyKey      string                           `protobuf:"bytes,21,opt,name=legacy_key,json=legacyKey"`
 	xxx_hidden_ReusedFrom     *CameraCredentialReference       `protobuf:"bytes,22,opt,name=reused_from,json=reusedFrom"`
+	xxx_hidden_RequestHash    []byte                           `protobuf:"bytes,23,opt,name=request_hash,json=requestHash"`
+	xxx_hidden_PrepareTag     []byte                           `protobuf:"bytes,24,opt,name=prepare_tag,json=prepareTag"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -406,6 +408,20 @@ func (x *CameraCredentialVersion) GetReusedFrom() *CameraCredentialReference {
 	return nil
 }
 
+func (x *CameraCredentialVersion) GetRequestHash() []byte {
+	if x != nil {
+		return x.xxx_hidden_RequestHash
+	}
+	return nil
+}
+
+func (x *CameraCredentialVersion) GetPrepareTag() []byte {
+	if x != nil {
+		return x.xxx_hidden_PrepareTag
+	}
+	return nil
+}
+
 func (x *CameraCredentialVersion) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -485,6 +501,20 @@ func (x *CameraCredentialVersion) SetLegacyKey(v string) {
 
 func (x *CameraCredentialVersion) SetReusedFrom(v *CameraCredentialReference) {
 	x.xxx_hidden_ReusedFrom = v
+}
+
+func (x *CameraCredentialVersion) SetRequestHash(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_RequestHash = v
+}
+
+func (x *CameraCredentialVersion) SetPrepareTag(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_PrepareTag = v
 }
 
 func (x *CameraCredentialVersion) HasTenant() bool {
@@ -610,6 +640,12 @@ type CameraCredentialVersion_builder struct {
 	// Hash of nonsecret legacy reference/scope metadata, not its password.
 	LegacyKey  string
 	ReusedFrom *CameraCredentialReference
+	// Fingerprint of NONSECRET request metadata only. Username, password,
+	// Material and encrypted payload bytes must never enter an unkeyed hash.
+	RequestHash []byte
+	// Keyed equality for the requested new-account username. Even when an
+	// existing account is preserved, changing input on a replay is a conflict.
+	PrepareTag []byte
 }
 
 func (b0 CameraCredentialVersion_builder) Build() *CameraCredentialVersion {
@@ -634,6 +670,8 @@ func (b0 CameraCredentialVersion_builder) Build() *CameraCredentialVersion {
 	x.xxx_hidden_Legacy = b.Legacy
 	x.xxx_hidden_LegacyKey = b.LegacyKey
 	x.xxx_hidden_ReusedFrom = b.ReusedFrom
+	x.xxx_hidden_RequestHash = b.RequestHash
+	x.xxx_hidden_PrepareTag = b.PrepareTag
 	return m0
 }
 
@@ -651,7 +689,8 @@ const file_shale_camera_credential_version_proto_rawDesc = "" +
 	"network_id\x18\x04 \x01(\tR\tnetworkId\x12 \n" +
 	"\vrecoverable\x18\x05 \x01(\bR\vrecoverable\x12\x17\n" +
 	"\asite_id\x18\x06 \x01(\tR\x06siteId\x12\x15\n" +
-	"\x06set_id\x18\a \x01(\tR\x05setId\"\xe4\t\n" +
+	"\x06set_id\x18\a \x01(\tR\x05setId\"\xc6\n" +
+	"\n" +
 	"\x17CameraCredentialVersion\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -678,7 +717,10 @@ const file_shale_camera_credential_version_proto_rawDesc = "" +
 	"\n" +
 	"legacy_key\x18\x15 \x01(\tB\b\xea\x82\x16\x048\x01@\x01R\tlegacyKey\x12I\n" +
 	"\vreused_from\x18\x16 \x01(\v2 .shale.CameraCredentialReferenceB\x06\xea\x82\x16\x02@\x01R\n" +
-	"reusedFrom:\x85\x02\xca\xfc\x15\xb0\x01\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
+	"reusedFrom\x12/\n" +
+	"\frequest_hash\x18\x17 \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\b\x01R\vrequestHash\x12/\n" +
+	"\vprepare_tag\x18\x18 \x01(\fB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\b\x01R\n" +
+	"prepareTag:\x85\x02\xca\xfc\x15\xb0\x01\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +

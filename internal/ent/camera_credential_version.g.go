@@ -59,5 +59,9 @@ func (e *CameraCredentialVersion) Proto() *api.CameraCredentialVersion {
 	if e.ReusedFrom != nil {
 		x.SetReusedFrom(e.ReusedFrom)
 	}
+	x.SetRequestHash(e.RequestHash)
+	if e.PrepareTag != nil {
+		x.SetPrepareTag(*e.PrepareTag)
+	}
 	return x
 }

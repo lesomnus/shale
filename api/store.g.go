@@ -41,11 +41,11 @@ type Server interface {
 	CameraBinding() CameraBindingServiceServer
 	CameraJob() CameraJobServiceServer
 	CameraCredential() CameraCredentialServiceServer
+	CameraCredentialVersion() CameraCredentialVersionServiceServer
 	Device() DeviceServiceServer
 	Sink() SinkServiceServer
-	CameraCredentialVersion() CameraCredentialVersionServiceServer
-	CameraPolicy() CameraPolicyServiceServer
 	CameraWorker() CameraWorkerServiceServer
+	CameraPolicy() CameraPolicyServiceServer
 	Holder() HolderServiceServer
 	Delegation() DelegationServiceServer
 	Lamina() LaminaServiceServer
@@ -83,11 +83,11 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterCameraBindingServiceServer(g, s.CameraBinding())
 	RegisterCameraJobServiceServer(g, s.CameraJob())
 	RegisterCameraCredentialServiceServer(g, s.CameraCredential())
+	RegisterCameraCredentialVersionServiceServer(g, s.CameraCredentialVersion())
 	RegisterDeviceServiceServer(g, s.Device())
 	RegisterSinkServiceServer(g, s.Sink())
-	RegisterCameraCredentialVersionServiceServer(g, s.CameraCredentialVersion())
-	RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
 	RegisterCameraWorkerServiceServer(g, s.CameraWorker())
+	RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterDelegationServiceServer(g, s.Delegation())
 	RegisterLaminaServiceServer(g, s.Lamina())
@@ -121,11 +121,11 @@ type UnimplementedServer struct {
 	CameraBindingServer           CameraBindingServiceServer
 	CameraJobServer               CameraJobServiceServer
 	CameraCredentialServer        CameraCredentialServiceServer
+	CameraCredentialVersionServer CameraCredentialVersionServiceServer
 	DeviceServer                  DeviceServiceServer
 	SinkServer                    SinkServiceServer
-	CameraCredentialVersionServer CameraCredentialVersionServiceServer
-	CameraPolicyServer            CameraPolicyServiceServer
 	CameraWorkerServer            CameraWorkerServiceServer
+	CameraPolicyServer            CameraPolicyServiceServer
 	HolderServer                  HolderServiceServer
 	DelegationServer              DelegationServiceServer
 	LaminaServer                  LaminaServiceServer
@@ -174,16 +174,16 @@ func (UnimplementedServer) CameraJob() CameraJobServiceServer {
 func (UnimplementedServer) CameraCredential() CameraCredentialServiceServer {
 	return UnimplementedCameraCredentialServiceServer{}
 }
-func (UnimplementedServer) Device() DeviceServiceServer { return UnimplementedDeviceServiceServer{} }
-func (UnimplementedServer) Sink() SinkServiceServer     { return UnimplementedSinkServiceServer{} }
 func (UnimplementedServer) CameraCredentialVersion() CameraCredentialVersionServiceServer {
 	return UnimplementedCameraCredentialVersionServiceServer{}
 }
-func (UnimplementedServer) CameraPolicy() CameraPolicyServiceServer {
-	return UnimplementedCameraPolicyServiceServer{}
-}
+func (UnimplementedServer) Device() DeviceServiceServer { return UnimplementedDeviceServiceServer{} }
+func (UnimplementedServer) Sink() SinkServiceServer     { return UnimplementedSinkServiceServer{} }
 func (UnimplementedServer) CameraWorker() CameraWorkerServiceServer {
 	return UnimplementedCameraWorkerServiceServer{}
+}
+func (UnimplementedServer) CameraPolicy() CameraPolicyServiceServer {
+	return UnimplementedCameraPolicyServiceServer{}
 }
 func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
 func (UnimplementedServer) Delegation() DelegationServiceServer {
@@ -231,11 +231,11 @@ type StaticServer struct {
 	CameraBindingServer           CameraBindingServiceServer
 	CameraJobServer               CameraJobServiceServer
 	CameraCredentialServer        CameraCredentialServiceServer
+	CameraCredentialVersionServer CameraCredentialVersionServiceServer
 	DeviceServer                  DeviceServiceServer
 	SinkServer                    SinkServiceServer
-	CameraCredentialVersionServer CameraCredentialVersionServiceServer
-	CameraPolicyServer            CameraPolicyServiceServer
 	CameraWorkerServer            CameraWorkerServiceServer
+	CameraPolicyServer            CameraPolicyServiceServer
 	HolderServer                  HolderServiceServer
 	DelegationServer              DelegationServiceServer
 	LaminaServer                  LaminaServiceServer
@@ -272,13 +272,13 @@ func (s StaticServer) CameraJob() CameraJobServiceServer         { return s.Came
 func (s StaticServer) CameraCredential() CameraCredentialServiceServer {
 	return s.CameraCredentialServer
 }
-func (s StaticServer) Device() DeviceServiceServer { return s.DeviceServer }
-func (s StaticServer) Sink() SinkServiceServer     { return s.SinkServer }
 func (s StaticServer) CameraCredentialVersion() CameraCredentialVersionServiceServer {
 	return s.CameraCredentialVersionServer
 }
-func (s StaticServer) CameraPolicy() CameraPolicyServiceServer       { return s.CameraPolicyServer }
+func (s StaticServer) Device() DeviceServiceServer                   { return s.DeviceServer }
+func (s StaticServer) Sink() SinkServiceServer                       { return s.SinkServer }
 func (s StaticServer) CameraWorker() CameraWorkerServiceServer       { return s.CameraWorkerServer }
+func (s StaticServer) CameraPolicy() CameraPolicyServiceServer       { return s.CameraPolicyServer }
 func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
 func (s StaticServer) Lamina() LaminaServiceServer                   { return s.LaminaServer }
@@ -311,11 +311,11 @@ type Client interface {
 	CameraBinding() CameraBindingServiceClient
 	CameraJob() CameraJobServiceClient
 	CameraCredential() CameraCredentialServiceClient
+	CameraCredentialVersion() CameraCredentialVersionServiceClient
 	Device() DeviceServiceClient
 	Sink() SinkServiceClient
-	CameraCredentialVersion() CameraCredentialVersionServiceClient
-	CameraPolicy() CameraPolicyServiceClient
 	CameraWorker() CameraWorkerServiceClient
+	CameraPolicy() CameraPolicyServiceClient
 	Holder() HolderServiceClient
 	Delegation() DelegationServiceClient
 	Lamina() LaminaServiceClient
@@ -350,11 +350,11 @@ func NewClient(c *grpc.ClientConn) Client {
 		_CameraBinding:           NewCameraBindingServiceClient(c),
 		_CameraJob:               NewCameraJobServiceClient(c),
 		_CameraCredential:        NewCameraCredentialServiceClient(c),
+		_CameraCredentialVersion: NewCameraCredentialVersionServiceClient(c),
 		_Device:                  NewDeviceServiceClient(c),
 		_Sink:                    NewSinkServiceClient(c),
-		_CameraCredentialVersion: NewCameraCredentialVersionServiceClient(c),
-		_CameraPolicy:            NewCameraPolicyServiceClient(c),
 		_CameraWorker:            NewCameraWorkerServiceClient(c),
+		_CameraPolicy:            NewCameraPolicyServiceClient(c),
 		_Holder:                  NewHolderServiceClient(c),
 		_Delegation:              NewDelegationServiceClient(c),
 		_Lamina:                  NewLaminaServiceClient(c),
@@ -389,11 +389,11 @@ type client struct {
 	_CameraBinding           CameraBindingServiceClient
 	_CameraJob               CameraJobServiceClient
 	_CameraCredential        CameraCredentialServiceClient
+	_CameraCredentialVersion CameraCredentialVersionServiceClient
 	_Device                  DeviceServiceClient
 	_Sink                    SinkServiceClient
-	_CameraCredentialVersion CameraCredentialVersionServiceClient
-	_CameraPolicy            CameraPolicyServiceClient
 	_CameraWorker            CameraWorkerServiceClient
+	_CameraPolicy            CameraPolicyServiceClient
 	_Holder                  HolderServiceClient
 	_Delegation              DelegationServiceClient
 	_Lamina                  LaminaServiceClient
@@ -426,13 +426,13 @@ func (c *client) CameraAssignment() CameraAssignmentServiceClient { return c._Ca
 func (c *client) CameraBinding() CameraBindingServiceClient       { return c._CameraBinding }
 func (c *client) CameraJob() CameraJobServiceClient               { return c._CameraJob }
 func (c *client) CameraCredential() CameraCredentialServiceClient { return c._CameraCredential }
-func (c *client) Device() DeviceServiceClient                     { return c._Device }
-func (c *client) Sink() SinkServiceClient                         { return c._Sink }
 func (c *client) CameraCredentialVersion() CameraCredentialVersionServiceClient {
 	return c._CameraCredentialVersion
 }
-func (c *client) CameraPolicy() CameraPolicyServiceClient       { return c._CameraPolicy }
+func (c *client) Device() DeviceServiceClient                   { return c._Device }
+func (c *client) Sink() SinkServiceClient                       { return c._Sink }
 func (c *client) CameraWorker() CameraWorkerServiceClient       { return c._CameraWorker }
+func (c *client) CameraPolicy() CameraPolicyServiceClient       { return c._CameraPolicy }
 func (c *client) Holder() HolderServiceClient                   { return c._Holder }
 func (c *client) Delegation() DelegationServiceClient           { return c._Delegation }
 func (c *client) Lamina() LaminaServiceClient                   { return c._Lamina }

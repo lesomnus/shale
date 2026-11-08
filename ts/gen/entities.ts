@@ -160,7 +160,7 @@ export const CameraCredentialVersion = {
 	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }, { field: "credential", to: "shale.CameraCredential" }],
 	key: "id",
 	ids: ["id"],
-	secrets: ["sealedEnvelope", "importTag"],
+	secrets: ["sealedEnvelope", "importTag", "requestHash", "prepareTag"],
 	service: CameraCredentialVersionService,
 } as const satisfies EntityDesc
 

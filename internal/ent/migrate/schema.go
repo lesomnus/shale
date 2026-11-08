@@ -499,6 +499,8 @@ var (
 		{Name: "legacy", Type: field.TypeJson, Nullable: true},
 		{Name: "legacy_key", Type: field.TypeString, Nullable: true},
 		{Name: "reused_from", Type: field.TypeJson, Nullable: true},
+		{Name: "request_hash", Type: field.TypeBytes},
+		{Name: "prepare_tag", Type: field.TypeBytes, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "credential_id", Type: field.TypeUuid},
@@ -511,19 +513,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cameracredentialversion_tenant_tenant",
-				Columns:    []*schema.Column{CameracredentialversionColumns[15]},
+				Columns:    []*schema.Column{CameracredentialversionColumns[17]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "cameracredentialversion_site_site",
-				Columns:    []*schema.Column{CameracredentialversionColumns[16]},
+				Columns:    []*schema.Column{CameracredentialversionColumns[18]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "cameracredentialversion_cameracredential_credential",
-				Columns:    []*schema.Column{CameracredentialversionColumns[17]},
+				Columns:    []*schema.Column{CameracredentialversionColumns[19]},
 				RefColumns: []*schema.Column{CameracredentialColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -532,17 +534,17 @@ var (
 			{
 				Name:    "cameracredentialversion_page",
 				Unique:  false,
-				Columns: []*schema.Column{CameracredentialversionColumns[15], CameracredentialversionColumns[7], CameracredentialversionColumns[0]},
+				Columns: []*schema.Column{CameracredentialversionColumns[17], CameracredentialversionColumns[7], CameracredentialversionColumns[0]},
 			},
 			{
 				Name:    "cameracredentialversion_version",
 				Unique:  true,
-				Columns: []*schema.Column{CameracredentialversionColumns[1], CameracredentialversionColumns[17]},
+				Columns: []*schema.Column{CameracredentialversionColumns[1], CameracredentialversionColumns[19]},
 			},
 			{
 				Name:    "cameracredentialversion_intent",
 				Unique:  true,
-				Columns: []*schema.Column{CameracredentialversionColumns[2], CameracredentialversionColumns[17]},
+				Columns: []*schema.Column{CameracredentialversionColumns[2], CameracredentialversionColumns[19]},
 			},
 			{
 				Name:    "cameracredentialversion_legacy",

@@ -7,12 +7,13 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/camera/credential/material"
 	"github.com/lesomnus/shale/internal/camerasecret"
 	"github.com/protobuf-orm/ent/dialect"
 )
 
 var (
-	ErrInput       = errors.New("camera credential: invalid input")
+	ErrInput       = material.ErrInvalid
 	ErrConflict    = errors.New("camera credential: intent conflicts with existing preparation")
 	ErrNotFound    = errors.New("camera credential: version not found")
 	ErrRevoked     = errors.New("camera credential: revoked")
@@ -95,7 +96,8 @@ type Preparation struct {
 	// Explicitly reuse this account under another delivery purpose. The
 	// subject's tenant/device must match and the installed material is not
 	// rotated. Purpose separation does not imply separate camera accounts.
-	Reuse *Reference
+	Reuse    *Reference
+	username string
 }
 
 type ImportRequest struct {
@@ -125,6 +127,10 @@ type StoreFactory func(dialect.Driver) (Store, error)
 // version. A retry reuses its recorded identity before comparing an import tag
 // or invoking a Generator. It must not generate a new initial password merely
 // because a second binding/profile is added to the same activated device.
+// An unseen intent reusing a current account persists a same-material version
+// with Origin Reused, so a later import cannot change what that intent replays.
+// A new version reference does not mean the installed password was rotated;
+// previous Source/Job version pins remain independently resolvable.
 // Import compares exact keyed payload tags and immutable request metadata;
 // conflicting retries fail without replacing the installed material.
 //

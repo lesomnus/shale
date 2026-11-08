@@ -40,6 +40,7 @@ var tenantServices = []string{
 	"/shale.CameraNetworkService/", "/shale.CameraDeviceService/", "/shale.CameraAssignmentService/",
 	"/shale.CameraBindingService/", "/shale.CameraJobService/", "/shale.CameraWorkerService/",
 	"/shale.CameraPresetService/", "/shale.CameraPolicyService/",
+	"/shale.CameraCredentialService/", "/shale.CameraCredentialVersionService/",
 }
 
 // IsClusterService says whether a method belongs to the cluster surface.
@@ -168,6 +169,7 @@ var producerMay = map[string]bool{
 	// The custom Snapshot rechecks current Producer/Set ownership. This does
 	// not grant generated inventory Get/List/Watch or Worker job operations.
 	api.CameraAssignmentService_Snapshot_FullMethodName: true,
+	api.CameraCredentialService_Resolve_FullMethodName:  true,
 	api.SetService_Get_FullMethodName:                   true, api.SetService_List_FullMethodName: true,
 	api.SetService_Negotiate_FullMethodName: true, api.SetService_Allocate_FullMethodName: true,
 	api.SourceService_Get_FullMethodName: true, api.SourceService_List_FullMethodName: true,
@@ -184,6 +186,7 @@ var producerMay = map[string]bool{
 // A worker uses only bounded assignment/job operations. Generic Source/Lamina
 // reads and tenant-wide camera CRUD never become worker capabilities.
 var cameraWorkerMay = map[string]bool{
+	api.CameraCredentialService_Resolve_FullMethodName:      true,
 	api.CameraWorkerService_Heartbeat_FullMethodName:        true,
 	api.CameraWorkerService_RenewCertificate_FullMethodName: true,
 	api.CameraWorkerService_Poll_FullMethodName:             true,

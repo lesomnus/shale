@@ -3,6 +3,7 @@ package camera
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 )
@@ -71,6 +72,9 @@ type CredentialMaterial struct {
 
 func (CredentialMaterial) String() string   { return "[camera credential]" }
 func (CredentialMaterial) GoString() string { return "[camera credential]" }
+func (CredentialMaterial) Format(s fmt.State, _ rune) {
+	_, _ = io.WriteString(s, "[camera credential]")
+}
 
 type CredentialLease interface {
 	Ref() CredentialRef
@@ -154,6 +158,24 @@ func (l *credentialLease) Close() error {
 }
 func (*credentialLease) String() string   { return "[camera credential lease]" }
 func (*credentialLease) GoString() string { return "[camera credential lease]" }
+func (*credentialLease) Format(s fmt.State, _ rune) {
+	_, _ = io.WriteString(s, "[camera credential lease]")
+}
+
+// SourceAuthContext supplies the immutable source revision to a credential
+// provider after machine authentication and Source registration. The provider
+// still needs the CP's current delivery grant; this metadata is not a grant.
+type SourceAuthContext struct {
+	SourceID string
+	Revision int64
+	Scope    EnrollmentScope
+}
+
+// SourceAuthProvider optionally creates a provider for one capture's Source.
+// Static/file providers remain valid AuthProviders without implementing it.
+type SourceAuthProvider interface {
+	ForSource(SourceAuthContext) AuthProvider
+}
 
 // StaticCredential is a provider configuration entry, not job/inventory state.
 // Persist it using the caller's secret store. Material is never serialized.

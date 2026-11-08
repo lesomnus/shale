@@ -2119,11 +2119,1501 @@ func (b0 CameraCredentialWatchItem_builder) Build() *CameraCredentialWatchItem {
 	return m0
 }
 
+// These are explicit secret-transfer operations, not ordinary inventory CRUD.
+// Handlers decode raw material directly into a redacted in-process value; raw
+// request/response protobufs are never status, audit, log or Source DTOs.
+type CameraCredentialPrepareRequest struct {
+	state                protoimpl.MessageState     `protogen:"opaque.v1"`
+	xxx_hidden_Device    *CameraDeviceRef           `protobuf:"bytes,1,opt,name=device"`
+	xxx_hidden_Binding   *CameraBindingRef          `protobuf:"bytes,2,opt,name=binding"`
+	xxx_hidden_Purpose   string                     `protobuf:"bytes,3,opt,name=purpose"`
+	xxx_hidden_IntentKey string                     `protobuf:"bytes,4,opt,name=intent_key,json=intentKey"`
+	xxx_hidden_Username  []byte                     `protobuf:"bytes,5,opt,name=username"`
+	xxx_hidden_Access    string                     `protobuf:"bytes,6,opt,name=access"`
+	xxx_hidden_Reuse     *CameraCredentialReference `protobuf:"bytes,7,opt,name=reuse"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *CameraCredentialPrepareRequest) Reset() {
+	*x = CameraCredentialPrepareRequest{}
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraCredentialPrepareRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraCredentialPrepareRequest) ProtoMessage() {}
+
+func (x *CameraCredentialPrepareRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraCredentialPrepareRequest) GetDevice() *CameraDeviceRef {
+	if x != nil {
+		return x.xxx_hidden_Device
+	}
+	return nil
+}
+
+func (x *CameraCredentialPrepareRequest) GetBinding() *CameraBindingRef {
+	if x != nil {
+		return x.xxx_hidden_Binding
+	}
+	return nil
+}
+
+func (x *CameraCredentialPrepareRequest) GetPurpose() string {
+	if x != nil {
+		return x.xxx_hidden_Purpose
+	}
+	return ""
+}
+
+func (x *CameraCredentialPrepareRequest) GetIntentKey() string {
+	if x != nil {
+		return x.xxx_hidden_IntentKey
+	}
+	return ""
+}
+
+func (x *CameraCredentialPrepareRequest) GetUsername() []byte {
+	if x != nil {
+		return x.xxx_hidden_Username
+	}
+	return nil
+}
+
+func (x *CameraCredentialPrepareRequest) GetAccess() string {
+	if x != nil {
+		return x.xxx_hidden_Access
+	}
+	return ""
+}
+
+func (x *CameraCredentialPrepareRequest) GetReuse() *CameraCredentialReference {
+	if x != nil {
+		return x.xxx_hidden_Reuse
+	}
+	return nil
+}
+
+func (x *CameraCredentialPrepareRequest) SetDevice(v *CameraDeviceRef) {
+	x.xxx_hidden_Device = v
+}
+
+func (x *CameraCredentialPrepareRequest) SetBinding(v *CameraBindingRef) {
+	x.xxx_hidden_Binding = v
+}
+
+func (x *CameraCredentialPrepareRequest) SetPurpose(v string) {
+	x.xxx_hidden_Purpose = v
+}
+
+func (x *CameraCredentialPrepareRequest) SetIntentKey(v string) {
+	x.xxx_hidden_IntentKey = v
+}
+
+func (x *CameraCredentialPrepareRequest) SetUsername(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Username = v
+}
+
+func (x *CameraCredentialPrepareRequest) SetAccess(v string) {
+	x.xxx_hidden_Access = v
+}
+
+func (x *CameraCredentialPrepareRequest) SetReuse(v *CameraCredentialReference) {
+	x.xxx_hidden_Reuse = v
+}
+
+func (x *CameraCredentialPrepareRequest) HasDevice() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Device != nil
+}
+
+func (x *CameraCredentialPrepareRequest) HasBinding() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Binding != nil
+}
+
+func (x *CameraCredentialPrepareRequest) HasReuse() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Reuse != nil
+}
+
+func (x *CameraCredentialPrepareRequest) ClearDevice() {
+	x.xxx_hidden_Device = nil
+}
+
+func (x *CameraCredentialPrepareRequest) ClearBinding() {
+	x.xxx_hidden_Binding = nil
+}
+
+func (x *CameraCredentialPrepareRequest) ClearReuse() {
+	x.xxx_hidden_Reuse = nil
+}
+
+type CameraCredentialPrepareRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Device    *CameraDeviceRef
+	Binding   *CameraBindingRef
+	Purpose   string
+	IntentKey string
+	// Empty selects the configured initial-administrator username (admin).
+	Username []byte
+	Access   string
+	// Copy an already installed account into another explicit delivery purpose.
+	Reuse *CameraCredentialReference
+}
+
+func (b0 CameraCredentialPrepareRequest_builder) Build() *CameraCredentialPrepareRequest {
+	m0 := &CameraCredentialPrepareRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Device = b.Device
+	x.xxx_hidden_Binding = b.Binding
+	x.xxx_hidden_Purpose = b.Purpose
+	x.xxx_hidden_IntentKey = b.IntentKey
+	x.xxx_hidden_Username = b.Username
+	x.xxx_hidden_Access = b.Access
+	x.xxx_hidden_Reuse = b.Reuse
+	return m0
+}
+
+// Preparation returns references only. The enclosing transaction has committed
+// before an RPC response makes these recoverable references available to a
+// Worker. A policy's internal preparation and Job.Create share that transaction.
+type CameraCredentialPrepared struct {
+	state                  protoimpl.MessageState     `protogen:"opaque.v1"`
+	xxx_hidden_Credential  *CameraCredentialReference `protobuf:"bytes,1,opt,name=credential"`
+	xxx_hidden_DeviceId    []byte                     `protobuf:"bytes,2,opt,name=device_id,json=deviceId"`
+	xxx_hidden_BindingId   []byte                     `protobuf:"bytes,3,opt,name=binding_id,json=bindingId"`
+	xxx_hidden_Access      string                     `protobuf:"bytes,4,opt,name=access"`
+	xxx_hidden_Origin      CameraCredentialOrigin     `protobuf:"varint,5,opt,name=origin,enum=shale.CameraCredentialOrigin"`
+	xxx_hidden_Backend     string                     `protobuf:"bytes,6,opt,name=backend"`
+	xxx_hidden_DateCreated *timestamppb.Timestamp     `protobuf:"bytes,7,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Revoked     bool                       `protobuf:"varint,8,opt,name=revoked"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *CameraCredentialPrepared) Reset() {
+	*x = CameraCredentialPrepared{}
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraCredentialPrepared) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraCredentialPrepared) ProtoMessage() {}
+
+func (x *CameraCredentialPrepared) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraCredentialPrepared) GetCredential() *CameraCredentialReference {
+	if x != nil {
+		return x.xxx_hidden_Credential
+	}
+	return nil
+}
+
+func (x *CameraCredentialPrepared) GetDeviceId() []byte {
+	if x != nil {
+		return x.xxx_hidden_DeviceId
+	}
+	return nil
+}
+
+func (x *CameraCredentialPrepared) GetBindingId() []byte {
+	if x != nil {
+		return x.xxx_hidden_BindingId
+	}
+	return nil
+}
+
+func (x *CameraCredentialPrepared) GetAccess() string {
+	if x != nil {
+		return x.xxx_hidden_Access
+	}
+	return ""
+}
+
+func (x *CameraCredentialPrepared) GetOrigin() CameraCredentialOrigin {
+	if x != nil {
+		return x.xxx_hidden_Origin
+	}
+	return CameraCredentialOrigin_CAMERA_CREDENTIAL_ORIGIN_UNSPECIFIED
+}
+
+func (x *CameraCredentialPrepared) GetBackend() string {
+	if x != nil {
+		return x.xxx_hidden_Backend
+	}
+	return ""
+}
+
+func (x *CameraCredentialPrepared) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *CameraCredentialPrepared) GetRevoked() bool {
+	if x != nil {
+		return x.xxx_hidden_Revoked
+	}
+	return false
+}
+
+func (x *CameraCredentialPrepared) SetCredential(v *CameraCredentialReference) {
+	x.xxx_hidden_Credential = v
+}
+
+func (x *CameraCredentialPrepared) SetDeviceId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_DeviceId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 8)
+}
+
+func (x *CameraCredentialPrepared) SetBindingId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_BindingId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
+}
+
+func (x *CameraCredentialPrepared) SetAccess(v string) {
+	x.xxx_hidden_Access = v
+}
+
+func (x *CameraCredentialPrepared) SetOrigin(v CameraCredentialOrigin) {
+	x.xxx_hidden_Origin = v
+}
+
+func (x *CameraCredentialPrepared) SetBackend(v string) {
+	x.xxx_hidden_Backend = v
+}
+
+func (x *CameraCredentialPrepared) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *CameraCredentialPrepared) SetRevoked(v bool) {
+	x.xxx_hidden_Revoked = v
+}
+
+func (x *CameraCredentialPrepared) HasCredential() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Credential != nil
+}
+
+func (x *CameraCredentialPrepared) HasDeviceId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *CameraCredentialPrepared) HasBindingId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *CameraCredentialPrepared) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *CameraCredentialPrepared) ClearCredential() {
+	x.xxx_hidden_Credential = nil
+}
+
+func (x *CameraCredentialPrepared) ClearDeviceId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_DeviceId = nil
+}
+
+func (x *CameraCredentialPrepared) ClearBindingId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_BindingId = nil
+}
+
+func (x *CameraCredentialPrepared) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+type CameraCredentialPrepared_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Credential  *CameraCredentialReference
+	DeviceId    []byte
+	BindingId   []byte
+	Access      string
+	Origin      CameraCredentialOrigin
+	Backend     string
+	DateCreated *timestamppb.Timestamp
+	Revoked     bool
+}
+
+func (b0 CameraCredentialPrepared_builder) Build() *CameraCredentialPrepared {
+	m0 := &CameraCredentialPrepared{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Credential = b.Credential
+	if b.DeviceId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 8)
+		x.xxx_hidden_DeviceId = b.DeviceId
+	}
+	if b.BindingId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
+		x.xxx_hidden_BindingId = b.BindingId
+	}
+	x.xxx_hidden_Access = b.Access
+	x.xxx_hidden_Origin = b.Origin
+	x.xxx_hidden_Backend = b.Backend
+	x.xxx_hidden_DateCreated = b.DateCreated
+	x.xxx_hidden_Revoked = b.Revoked
+	return m0
+}
+
+type CameraCredentialImportRequest struct {
+	state                      protoimpl.MessageState           `protogen:"opaque.v1"`
+	xxx_hidden_Device          *CameraDeviceRef                 `protobuf:"bytes,1,opt,name=device"`
+	xxx_hidden_Binding         *CameraBindingRef                `protobuf:"bytes,2,opt,name=binding"`
+	xxx_hidden_Purpose         string                           `protobuf:"bytes,3,opt,name=purpose"`
+	xxx_hidden_IntentKey       string                           `protobuf:"bytes,4,opt,name=intent_key,json=intentKey"`
+	xxx_hidden_Access          string                           `protobuf:"bytes,5,opt,name=access"`
+	xxx_hidden_Material        []byte                           `protobuf:"bytes,6,opt,name=material"`
+	xxx_hidden_ExpectedCurrent *CameraCredentialReference       `protobuf:"bytes,7,opt,name=expected_current,json=expectedCurrent"`
+	xxx_hidden_Legacy          *CameraLegacyCredentialReference `protobuf:"bytes,8,opt,name=legacy"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *CameraCredentialImportRequest) Reset() {
+	*x = CameraCredentialImportRequest{}
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraCredentialImportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraCredentialImportRequest) ProtoMessage() {}
+
+func (x *CameraCredentialImportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraCredentialImportRequest) GetDevice() *CameraDeviceRef {
+	if x != nil {
+		return x.xxx_hidden_Device
+	}
+	return nil
+}
+
+func (x *CameraCredentialImportRequest) GetBinding() *CameraBindingRef {
+	if x != nil {
+		return x.xxx_hidden_Binding
+	}
+	return nil
+}
+
+func (x *CameraCredentialImportRequest) GetPurpose() string {
+	if x != nil {
+		return x.xxx_hidden_Purpose
+	}
+	return ""
+}
+
+func (x *CameraCredentialImportRequest) GetIntentKey() string {
+	if x != nil {
+		return x.xxx_hidden_IntentKey
+	}
+	return ""
+}
+
+func (x *CameraCredentialImportRequest) GetAccess() string {
+	if x != nil {
+		return x.xxx_hidden_Access
+	}
+	return ""
+}
+
+func (x *CameraCredentialImportRequest) GetMaterial() []byte {
+	if x != nil {
+		return x.xxx_hidden_Material
+	}
+	return nil
+}
+
+func (x *CameraCredentialImportRequest) GetExpectedCurrent() *CameraCredentialReference {
+	if x != nil {
+		return x.xxx_hidden_ExpectedCurrent
+	}
+	return nil
+}
+
+func (x *CameraCredentialImportRequest) GetLegacy() *CameraLegacyCredentialReference {
+	if x != nil {
+		return x.xxx_hidden_Legacy
+	}
+	return nil
+}
+
+func (x *CameraCredentialImportRequest) SetDevice(v *CameraDeviceRef) {
+	x.xxx_hidden_Device = v
+}
+
+func (x *CameraCredentialImportRequest) SetBinding(v *CameraBindingRef) {
+	x.xxx_hidden_Binding = v
+}
+
+func (x *CameraCredentialImportRequest) SetPurpose(v string) {
+	x.xxx_hidden_Purpose = v
+}
+
+func (x *CameraCredentialImportRequest) SetIntentKey(v string) {
+	x.xxx_hidden_IntentKey = v
+}
+
+func (x *CameraCredentialImportRequest) SetAccess(v string) {
+	x.xxx_hidden_Access = v
+}
+
+func (x *CameraCredentialImportRequest) SetMaterial(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Material = v
+}
+
+func (x *CameraCredentialImportRequest) SetExpectedCurrent(v *CameraCredentialReference) {
+	x.xxx_hidden_ExpectedCurrent = v
+}
+
+func (x *CameraCredentialImportRequest) SetLegacy(v *CameraLegacyCredentialReference) {
+	x.xxx_hidden_Legacy = v
+}
+
+func (x *CameraCredentialImportRequest) HasDevice() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Device != nil
+}
+
+func (x *CameraCredentialImportRequest) HasBinding() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Binding != nil
+}
+
+func (x *CameraCredentialImportRequest) HasExpectedCurrent() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ExpectedCurrent != nil
+}
+
+func (x *CameraCredentialImportRequest) HasLegacy() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Legacy != nil
+}
+
+func (x *CameraCredentialImportRequest) ClearDevice() {
+	x.xxx_hidden_Device = nil
+}
+
+func (x *CameraCredentialImportRequest) ClearBinding() {
+	x.xxx_hidden_Binding = nil
+}
+
+func (x *CameraCredentialImportRequest) ClearExpectedCurrent() {
+	x.xxx_hidden_ExpectedCurrent = nil
+}
+
+func (x *CameraCredentialImportRequest) ClearLegacy() {
+	x.xxx_hidden_Legacy = nil
+}
+
+type CameraCredentialImportRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Device    *CameraDeviceRef
+	Binding   *CameraBindingRef
+	Purpose   string
+	IntentKey string
+	Access    string
+	// Explicit lossless Material binary, not JSON username/password strings.
+	Material        []byte
+	ExpectedCurrent *CameraCredentialReference
+	Legacy          *CameraLegacyCredentialReference
+}
+
+func (b0 CameraCredentialImportRequest_builder) Build() *CameraCredentialImportRequest {
+	m0 := &CameraCredentialImportRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Device = b.Device
+	x.xxx_hidden_Binding = b.Binding
+	x.xxx_hidden_Purpose = b.Purpose
+	x.xxx_hidden_IntentKey = b.IntentKey
+	x.xxx_hidden_Access = b.Access
+	x.xxx_hidden_Material = b.Material
+	x.xxx_hidden_ExpectedCurrent = b.ExpectedCurrent
+	x.xxx_hidden_Legacy = b.Legacy
+	return m0
+}
+
+type CameraCredentialResolveRequest struct {
+	state                     protoimpl.MessageState       `protogen:"opaque.v1"`
+	xxx_hidden_Credential     *CameraCredentialReference   `protobuf:"bytes,1,opt,name=credential"`
+	xxx_hidden_Job            *CameraWorkerCheckJobRequest `protobuf:"bytes,2,opt,name=job"`
+	xxx_hidden_Source         *SourceRef                   `protobuf:"bytes,3,opt,name=source"`
+	xxx_hidden_CacheSeconds   int64                        `protobuf:"varint,4,opt,name=cache_seconds,json=cacheSeconds"`
+	xxx_hidden_LeaseSeconds   int64                        `protobuf:"varint,5,opt,name=lease_seconds,json=leaseSeconds"`
+	xxx_hidden_SourceRevision int64                        `protobuf:"varint,6,opt,name=source_revision,json=sourceRevision"`
+	xxx_hidden_Access         string                       `protobuf:"bytes,7,opt,name=access"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *CameraCredentialResolveRequest) Reset() {
+	*x = CameraCredentialResolveRequest{}
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraCredentialResolveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraCredentialResolveRequest) ProtoMessage() {}
+
+func (x *CameraCredentialResolveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraCredentialResolveRequest) GetCredential() *CameraCredentialReference {
+	if x != nil {
+		return x.xxx_hidden_Credential
+	}
+	return nil
+}
+
+func (x *CameraCredentialResolveRequest) GetJob() *CameraWorkerCheckJobRequest {
+	if x != nil {
+		return x.xxx_hidden_Job
+	}
+	return nil
+}
+
+func (x *CameraCredentialResolveRequest) GetSource() *SourceRef {
+	if x != nil {
+		return x.xxx_hidden_Source
+	}
+	return nil
+}
+
+func (x *CameraCredentialResolveRequest) GetCacheSeconds() int64 {
+	if x != nil {
+		return x.xxx_hidden_CacheSeconds
+	}
+	return 0
+}
+
+func (x *CameraCredentialResolveRequest) GetLeaseSeconds() int64 {
+	if x != nil {
+		return x.xxx_hidden_LeaseSeconds
+	}
+	return 0
+}
+
+func (x *CameraCredentialResolveRequest) GetSourceRevision() int64 {
+	if x != nil {
+		return x.xxx_hidden_SourceRevision
+	}
+	return 0
+}
+
+func (x *CameraCredentialResolveRequest) GetAccess() string {
+	if x != nil {
+		return x.xxx_hidden_Access
+	}
+	return ""
+}
+
+func (x *CameraCredentialResolveRequest) SetCredential(v *CameraCredentialReference) {
+	x.xxx_hidden_Credential = v
+}
+
+func (x *CameraCredentialResolveRequest) SetJob(v *CameraWorkerCheckJobRequest) {
+	x.xxx_hidden_Job = v
+}
+
+func (x *CameraCredentialResolveRequest) SetSource(v *SourceRef) {
+	x.xxx_hidden_Source = v
+}
+
+func (x *CameraCredentialResolveRequest) SetCacheSeconds(v int64) {
+	x.xxx_hidden_CacheSeconds = v
+}
+
+func (x *CameraCredentialResolveRequest) SetLeaseSeconds(v int64) {
+	x.xxx_hidden_LeaseSeconds = v
+}
+
+func (x *CameraCredentialResolveRequest) SetSourceRevision(v int64) {
+	x.xxx_hidden_SourceRevision = v
+}
+
+func (x *CameraCredentialResolveRequest) SetAccess(v string) {
+	x.xxx_hidden_Access = v
+}
+
+func (x *CameraCredentialResolveRequest) HasCredential() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Credential != nil
+}
+
+func (x *CameraCredentialResolveRequest) HasJob() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Job != nil
+}
+
+func (x *CameraCredentialResolveRequest) HasSource() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Source != nil
+}
+
+func (x *CameraCredentialResolveRequest) ClearCredential() {
+	x.xxx_hidden_Credential = nil
+}
+
+func (x *CameraCredentialResolveRequest) ClearJob() {
+	x.xxx_hidden_Job = nil
+}
+
+func (x *CameraCredentialResolveRequest) ClearSource() {
+	x.xxx_hidden_Source = nil
+}
+
+type CameraCredentialResolveRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Credential *CameraCredentialReference
+	// Required for Workers; exact pinned JobInputs purpose/reference only.
+	Job *CameraWorkerCheckJobRequest
+	// Producer streaming delivery is bound to this current assigned Source.
+	// A binding-specific reference may identify it without this optional field.
+	Source *SourceRef
+	// Zero disables an offline streaming cache grant. Workers cannot request it.
+	CacheSeconds   int64
+	LeaseSeconds   int64
+	SourceRevision int64
+	Access         string
+}
+
+func (b0 CameraCredentialResolveRequest_builder) Build() *CameraCredentialResolveRequest {
+	m0 := &CameraCredentialResolveRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Credential = b.Credential
+	x.xxx_hidden_Job = b.Job
+	x.xxx_hidden_Source = b.Source
+	x.xxx_hidden_CacheSeconds = b.CacheSeconds
+	x.xxx_hidden_LeaseSeconds = b.LeaseSeconds
+	x.xxx_hidden_SourceRevision = b.SourceRevision
+	x.xxx_hidden_Access = b.Access
+	return m0
+}
+
+type CameraCredentialLease struct {
+	state                 protoimpl.MessageState     `protogen:"opaque.v1"`
+	xxx_hidden_Material   []byte                     `protobuf:"bytes,1,opt,name=material"`
+	xxx_hidden_Credential *CameraCredentialReference `protobuf:"bytes,2,opt,name=credential"`
+	xxx_hidden_Expires    *timestamppb.Timestamp     `protobuf:"bytes,3,opt,name=expires"`
+	xxx_hidden_Delivery   *CameraCredentialDelivery  `protobuf:"bytes,4,opt,name=delivery"`
+	xxx_hidden_CacheUntil *timestamppb.Timestamp     `protobuf:"bytes,5,opt,name=cache_until,json=cacheUntil"`
+	xxx_hidden_Access     string                     `protobuf:"bytes,6,opt,name=access"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *CameraCredentialLease) Reset() {
+	*x = CameraCredentialLease{}
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraCredentialLease) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraCredentialLease) ProtoMessage() {}
+
+func (x *CameraCredentialLease) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraCredentialLease) GetMaterial() []byte {
+	if x != nil {
+		return x.xxx_hidden_Material
+	}
+	return nil
+}
+
+func (x *CameraCredentialLease) GetCredential() *CameraCredentialReference {
+	if x != nil {
+		return x.xxx_hidden_Credential
+	}
+	return nil
+}
+
+func (x *CameraCredentialLease) GetExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Expires
+	}
+	return nil
+}
+
+func (x *CameraCredentialLease) GetDelivery() *CameraCredentialDelivery {
+	if x != nil {
+		return x.xxx_hidden_Delivery
+	}
+	return nil
+}
+
+func (x *CameraCredentialLease) GetCacheUntil() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_CacheUntil
+	}
+	return nil
+}
+
+func (x *CameraCredentialLease) GetAccess() string {
+	if x != nil {
+		return x.xxx_hidden_Access
+	}
+	return ""
+}
+
+func (x *CameraCredentialLease) SetMaterial(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Material = v
+}
+
+func (x *CameraCredentialLease) SetCredential(v *CameraCredentialReference) {
+	x.xxx_hidden_Credential = v
+}
+
+func (x *CameraCredentialLease) SetExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Expires = v
+}
+
+func (x *CameraCredentialLease) SetDelivery(v *CameraCredentialDelivery) {
+	x.xxx_hidden_Delivery = v
+}
+
+func (x *CameraCredentialLease) SetCacheUntil(v *timestamppb.Timestamp) {
+	x.xxx_hidden_CacheUntil = v
+}
+
+func (x *CameraCredentialLease) SetAccess(v string) {
+	x.xxx_hidden_Access = v
+}
+
+func (x *CameraCredentialLease) HasCredential() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Credential != nil
+}
+
+func (x *CameraCredentialLease) HasExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Expires != nil
+}
+
+func (x *CameraCredentialLease) HasDelivery() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Delivery != nil
+}
+
+func (x *CameraCredentialLease) HasCacheUntil() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_CacheUntil != nil
+}
+
+func (x *CameraCredentialLease) ClearCredential() {
+	x.xxx_hidden_Credential = nil
+}
+
+func (x *CameraCredentialLease) ClearExpires() {
+	x.xxx_hidden_Expires = nil
+}
+
+func (x *CameraCredentialLease) ClearDelivery() {
+	x.xxx_hidden_Delivery = nil
+}
+
+func (x *CameraCredentialLease) ClearCacheUntil() {
+	x.xxx_hidden_CacheUntil = nil
+}
+
+type CameraCredentialLease_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Plaintext only on this authenticated, explicitly requested transfer.
+	Material   []byte
+	Credential *CameraCredentialReference
+	Expires    *timestamppb.Timestamp
+	Delivery   *CameraCredentialDelivery
+	// A cache grant does not attest that capture applied the source. The client
+	// additionally requires its own matching applied-state acknowledgement.
+	CacheUntil *timestamppb.Timestamp
+	Access     string
+}
+
+func (b0 CameraCredentialLease_builder) Build() *CameraCredentialLease {
+	m0 := &CameraCredentialLease{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Material = b.Material
+	x.xxx_hidden_Credential = b.Credential
+	x.xxx_hidden_Expires = b.Expires
+	x.xxx_hidden_Delivery = b.Delivery
+	x.xxx_hidden_CacheUntil = b.CacheUntil
+	x.xxx_hidden_Access = b.Access
+	return m0
+}
+
+// Current delivery metadata is deliberately separate from the immutable secret
+// identity/AAD, so a separately adopted replacement machine can recover it.
+type CameraCredentialDelivery struct {
+	state                           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_TenantId             []byte                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId"`
+	xxx_hidden_SiteId               []byte                 `protobuf:"bytes,2,opt,name=site_id,json=siteId"`
+	xxx_hidden_SetId                []byte                 `protobuf:"bytes,3,opt,name=set_id,json=setId"`
+	xxx_hidden_ProducerId           []byte                 `protobuf:"bytes,4,opt,name=producer_id,json=producerId"`
+	xxx_hidden_NetworkId            []byte                 `protobuf:"bytes,5,opt,name=network_id,json=networkId"`
+	xxx_hidden_DeviceId             []byte                 `protobuf:"bytes,6,opt,name=device_id,json=deviceId"`
+	xxx_hidden_BindingId            []byte                 `protobuf:"bytes,7,opt,name=binding_id,json=bindingId"`
+	xxx_hidden_SourceId             []byte                 `protobuf:"bytes,8,opt,name=source_id,json=sourceId"`
+	xxx_hidden_AssignmentId         []byte                 `protobuf:"bytes,9,opt,name=assignment_id,json=assignmentId"`
+	xxx_hidden_AssignmentGeneration int64                  `protobuf:"varint,10,opt,name=assignment_generation,json=assignmentGeneration"`
+	xxx_hidden_SourceRevision       int64                  `protobuf:"varint,11,opt,name=source_revision,json=sourceRevision"`
+	xxx_hidden_LeaseGeneration      int64                  `protobuf:"varint,12,opt,name=lease_generation,json=leaseGeneration"`
+	xxx_hidden_JobId                []byte                 `protobuf:"bytes,13,opt,name=job_id,json=jobId"`
+	XXX_raceDetectHookData          protoimpl.RaceDetectHookData
+	XXX_presence                    [1]uint32
+	unknownFields                   protoimpl.UnknownFields
+	sizeCache                       protoimpl.SizeCache
+}
+
+func (x *CameraCredentialDelivery) Reset() {
+	*x = CameraCredentialDelivery{}
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraCredentialDelivery) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraCredentialDelivery) ProtoMessage() {}
+
+func (x *CameraCredentialDelivery) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraCredentialDelivery) GetTenantId() []byte {
+	if x != nil {
+		return x.xxx_hidden_TenantId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetSiteId() []byte {
+	if x != nil {
+		return x.xxx_hidden_SiteId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetSetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_SetId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetProducerId() []byte {
+	if x != nil {
+		return x.xxx_hidden_ProducerId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetNetworkId() []byte {
+	if x != nil {
+		return x.xxx_hidden_NetworkId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetDeviceId() []byte {
+	if x != nil {
+		return x.xxx_hidden_DeviceId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetBindingId() []byte {
+	if x != nil {
+		return x.xxx_hidden_BindingId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetSourceId() []byte {
+	if x != nil {
+		return x.xxx_hidden_SourceId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetAssignmentId() []byte {
+	if x != nil {
+		return x.xxx_hidden_AssignmentId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) GetAssignmentGeneration() int64 {
+	if x != nil {
+		return x.xxx_hidden_AssignmentGeneration
+	}
+	return 0
+}
+
+func (x *CameraCredentialDelivery) GetSourceRevision() int64 {
+	if x != nil {
+		return x.xxx_hidden_SourceRevision
+	}
+	return 0
+}
+
+func (x *CameraCredentialDelivery) GetLeaseGeneration() int64 {
+	if x != nil {
+		return x.xxx_hidden_LeaseGeneration
+	}
+	return 0
+}
+
+func (x *CameraCredentialDelivery) GetJobId() []byte {
+	if x != nil {
+		return x.xxx_hidden_JobId
+	}
+	return nil
+}
+
+func (x *CameraCredentialDelivery) SetTenantId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_TenantId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 13)
+}
+
+func (x *CameraCredentialDelivery) SetSiteId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_SiteId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 13)
+}
+
+func (x *CameraCredentialDelivery) SetSetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_SetId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
+}
+
+func (x *CameraCredentialDelivery) SetProducerId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_ProducerId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
+}
+
+func (x *CameraCredentialDelivery) SetNetworkId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_NetworkId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 13)
+}
+
+func (x *CameraCredentialDelivery) SetDeviceId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_DeviceId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 13)
+}
+
+func (x *CameraCredentialDelivery) SetBindingId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_BindingId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 13)
+}
+
+func (x *CameraCredentialDelivery) SetSourceId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_SourceId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 13)
+}
+
+func (x *CameraCredentialDelivery) SetAssignmentId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_AssignmentId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 13)
+}
+
+func (x *CameraCredentialDelivery) SetAssignmentGeneration(v int64) {
+	x.xxx_hidden_AssignmentGeneration = v
+}
+
+func (x *CameraCredentialDelivery) SetSourceRevision(v int64) {
+	x.xxx_hidden_SourceRevision = v
+}
+
+func (x *CameraCredentialDelivery) SetLeaseGeneration(v int64) {
+	x.xxx_hidden_LeaseGeneration = v
+}
+
+func (x *CameraCredentialDelivery) SetJobId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_JobId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
+}
+
+func (x *CameraCredentialDelivery) HasTenantId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *CameraCredentialDelivery) HasSiteId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *CameraCredentialDelivery) HasSetId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *CameraCredentialDelivery) HasProducerId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *CameraCredentialDelivery) HasNetworkId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *CameraCredentialDelivery) HasDeviceId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *CameraCredentialDelivery) HasBindingId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *CameraCredentialDelivery) HasSourceId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *CameraCredentialDelivery) HasAssignmentId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *CameraCredentialDelivery) HasJobId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
+func (x *CameraCredentialDelivery) ClearTenantId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_TenantId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearSiteId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_SiteId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearSetId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_SetId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearProducerId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_ProducerId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearNetworkId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_NetworkId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearDeviceId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_DeviceId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearBindingId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_BindingId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearSourceId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_SourceId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearAssignmentId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_AssignmentId = nil
+}
+
+func (x *CameraCredentialDelivery) ClearJobId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_JobId = nil
+}
+
+type CameraCredentialDelivery_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	TenantId             []byte
+	SiteId               []byte
+	SetId                []byte
+	ProducerId           []byte
+	NetworkId            []byte
+	DeviceId             []byte
+	BindingId            []byte
+	SourceId             []byte
+	AssignmentId         []byte
+	AssignmentGeneration int64
+	SourceRevision       int64
+	LeaseGeneration      int64
+	JobId                []byte
+}
+
+func (b0 CameraCredentialDelivery_builder) Build() *CameraCredentialDelivery {
+	m0 := &CameraCredentialDelivery{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.TenantId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 13)
+		x.xxx_hidden_TenantId = b.TenantId
+	}
+	if b.SiteId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 13)
+		x.xxx_hidden_SiteId = b.SiteId
+	}
+	if b.SetId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
+		x.xxx_hidden_SetId = b.SetId
+	}
+	if b.ProducerId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
+		x.xxx_hidden_ProducerId = b.ProducerId
+	}
+	if b.NetworkId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 13)
+		x.xxx_hidden_NetworkId = b.NetworkId
+	}
+	if b.DeviceId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 13)
+		x.xxx_hidden_DeviceId = b.DeviceId
+	}
+	if b.BindingId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 13)
+		x.xxx_hidden_BindingId = b.BindingId
+	}
+	if b.SourceId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 13)
+		x.xxx_hidden_SourceId = b.SourceId
+	}
+	if b.AssignmentId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 13)
+		x.xxx_hidden_AssignmentId = b.AssignmentId
+	}
+	x.xxx_hidden_AssignmentGeneration = b.AssignmentGeneration
+	x.xxx_hidden_SourceRevision = b.SourceRevision
+	x.xxx_hidden_LeaseGeneration = b.LeaseGeneration
+	if b.JobId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
+		x.xxx_hidden_JobId = b.JobId
+	}
+	return m0
+}
+
+type CameraCredentialRevokeRequest struct {
+	state                 protoimpl.MessageState     `protogen:"opaque.v1"`
+	xxx_hidden_Credential *CameraCredentialReference `protobuf:"bytes,1,opt,name=credential"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *CameraCredentialRevokeRequest) Reset() {
+	*x = CameraCredentialRevokeRequest{}
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraCredentialRevokeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraCredentialRevokeRequest) ProtoMessage() {}
+
+func (x *CameraCredentialRevokeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraCredentialRevokeRequest) GetCredential() *CameraCredentialReference {
+	if x != nil {
+		return x.xxx_hidden_Credential
+	}
+	return nil
+}
+
+func (x *CameraCredentialRevokeRequest) SetCredential(v *CameraCredentialReference) {
+	x.xxx_hidden_Credential = v
+}
+
+func (x *CameraCredentialRevokeRequest) HasCredential() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Credential != nil
+}
+
+func (x *CameraCredentialRevokeRequest) ClearCredential() {
+	x.xxx_hidden_Credential = nil
+}
+
+type CameraCredentialRevokeRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Credential *CameraCredentialReference
+}
+
+func (b0 CameraCredentialRevokeRequest_builder) Build() *CameraCredentialRevokeRequest {
+	m0 := &CameraCredentialRevokeRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Credential = b.Credential
+	return m0
+}
+
+type CameraCredentialRevokeResponse struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CameraCredentialRevokeResponse) Reset() {
+	*x = CameraCredentialRevokeResponse{}
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraCredentialRevokeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraCredentialRevokeResponse) ProtoMessage() {}
+
+func (x *CameraCredentialRevokeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_credential_svc_g_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type CameraCredentialRevokeResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 CameraCredentialRevokeResponse_builder) Build() *CameraCredentialRevokeResponse {
+	m0 := &CameraCredentialRevokeResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
 var File_shale_camera_credential_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_credential_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"#shale/camera_credential_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1dshale/camera_credential.proto\x1a\x18shale/camera_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xd4\x03\n" +
+	"#shale/camera_credential_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x1dshale/camera_credential.proto\x1a%shale/camera_credential_version.proto\x1a\x18shale/camera_svc.g.proto\x1a\x1fshale/camera_worker_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xd4\x03\n" +
 	"\x1aCameraCredentialAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -2200,7 +3690,81 @@ const file_shale_camera_credential_svc_g_proto_rawDesc = "" +
 	"\x19CameraCredentialWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12-\n" +
 	"\x05value\x18\x02 \x01(\v2\x17.shale.CameraCredentialR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x9f\x04\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xc4\x02\n" +
+	"\x1eCameraCredentialPrepareRequest\x12.\n" +
+	"\x06device\x18\x01 \x01(\v2\x16.shale.CameraDeviceRefR\x06device\x121\n" +
+	"\abinding\x18\x02 \x01(\v2\x17.shale.CameraBindingRefR\abinding\x12\x1f\n" +
+	"\apurpose\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\apurpose\x12$\n" +
+	"\n" +
+	"intent_key\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\tintentKey\x12!\n" +
+	"\busername\x18\x05 \x01(\fB\x05\xaa\x01\x02\b\x02R\busername\x12\x1d\n" +
+	"\x06access\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06access\x126\n" +
+	"\x05reuse\x18\a \x01(\v2 .shale.CameraCredentialReferenceR\x05reuse\"\xf6\x02\n" +
+	"\x18CameraCredentialPrepared\x12@\n" +
+	"\n" +
+	"credential\x18\x01 \x01(\v2 .shale.CameraCredentialReferenceR\n" +
+	"credential\x12\x1b\n" +
+	"\tdevice_id\x18\x02 \x01(\fR\bdeviceId\x12\x1d\n" +
+	"\n" +
+	"binding_id\x18\x03 \x01(\fR\tbindingId\x12\x1d\n" +
+	"\x06access\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06access\x12<\n" +
+	"\x06origin\x18\x05 \x01(\x0e2\x1d.shale.CameraCredentialOriginB\x05\xaa\x01\x02\b\x02R\x06origin\x12\x1f\n" +
+	"\abackend\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\abackend\x12=\n" +
+	"\fdate_created\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12\x1f\n" +
+	"\arevoked\x18\b \x01(\bB\x05\xaa\x01\x02\b\x02R\arevoked\"\x98\x03\n" +
+	"\x1dCameraCredentialImportRequest\x12.\n" +
+	"\x06device\x18\x01 \x01(\v2\x16.shale.CameraDeviceRefR\x06device\x121\n" +
+	"\abinding\x18\x02 \x01(\v2\x17.shale.CameraBindingRefR\abinding\x12\x1f\n" +
+	"\apurpose\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\apurpose\x12$\n" +
+	"\n" +
+	"intent_key\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\tintentKey\x12\x1d\n" +
+	"\x06access\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06access\x12!\n" +
+	"\bmaterial\x18\x06 \x01(\fB\x05\xaa\x01\x02\b\x02R\bmaterial\x12K\n" +
+	"\x10expected_current\x18\a \x01(\v2 .shale.CameraCredentialReferenceR\x0fexpectedCurrent\x12>\n" +
+	"\x06legacy\x18\b \x01(\v2&.shale.CameraLegacyCredentialReferenceR\x06legacy\"\xe9\x02\n" +
+	"\x1eCameraCredentialResolveRequest\x12@\n" +
+	"\n" +
+	"credential\x18\x01 \x01(\v2 .shale.CameraCredentialReferenceR\n" +
+	"credential\x124\n" +
+	"\x03job\x18\x02 \x01(\v2\".shale.CameraWorkerCheckJobRequestR\x03job\x12(\n" +
+	"\x06source\x18\x03 \x01(\v2\x10.shale.SourceRefR\x06source\x12*\n" +
+	"\rcache_seconds\x18\x04 \x01(\x03B\x05\xaa\x01\x02\b\x02R\fcacheSeconds\x12*\n" +
+	"\rlease_seconds\x18\x05 \x01(\x03B\x05\xaa\x01\x02\b\x02R\fleaseSeconds\x12.\n" +
+	"\x0fsource_revision\x18\x06 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0esourceRevision\x12\x1d\n" +
+	"\x06access\x18\a \x01(\tB\x05\xaa\x01\x02\b\x02R\x06access\"\xcb\x02\n" +
+	"\x15CameraCredentialLease\x12!\n" +
+	"\bmaterial\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\bmaterial\x12@\n" +
+	"\n" +
+	"credential\x18\x02 \x01(\v2 .shale.CameraCredentialReferenceR\n" +
+	"credential\x124\n" +
+	"\aexpires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\x12;\n" +
+	"\bdelivery\x18\x04 \x01(\v2\x1f.shale.CameraCredentialDeliveryR\bdelivery\x12;\n" +
+	"\vcache_until\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"cacheUntil\x12\x1d\n" +
+	"\x06access\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06access\"\xda\x03\n" +
+	"\x18CameraCredentialDelivery\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\fR\btenantId\x12\x17\n" +
+	"\asite_id\x18\x02 \x01(\fR\x06siteId\x12\x15\n" +
+	"\x06set_id\x18\x03 \x01(\fR\x05setId\x12\x1f\n" +
+	"\vproducer_id\x18\x04 \x01(\fR\n" +
+	"producerId\x12\x1d\n" +
+	"\n" +
+	"network_id\x18\x05 \x01(\fR\tnetworkId\x12\x1b\n" +
+	"\tdevice_id\x18\x06 \x01(\fR\bdeviceId\x12\x1d\n" +
+	"\n" +
+	"binding_id\x18\a \x01(\fR\tbindingId\x12\x1b\n" +
+	"\tsource_id\x18\b \x01(\fR\bsourceId\x12#\n" +
+	"\rassignment_id\x18\t \x01(\fR\fassignmentId\x12:\n" +
+	"\x15assignment_generation\x18\n" +
+	" \x01(\x03B\x05\xaa\x01\x02\b\x02R\x14assignmentGeneration\x12.\n" +
+	"\x0fsource_revision\x18\v \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0esourceRevision\x120\n" +
+	"\x10lease_generation\x18\f \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0fleaseGeneration\x12\x15\n" +
+	"\x06job_id\x18\r \x01(\fR\x05jobId\"a\n" +
+	"\x1dCameraCredentialRevokeRequest\x12@\n" +
+	"\n" +
+	"credential\x18\x01 \x01(\v2 .shale.CameraCredentialReferenceR\n" +
+	"credential\" \n" +
+	"\x1eCameraCredentialRevokeResponse2\xea\x06\n" +
 	"\x17CameraCredentialService\x12A\n" +
 	"\x03Add\x12!.shale.CameraCredentialAddRequest\x1a\x17.shale.CameraCredential\x12A\n" +
 	"\x03Get\x12!.shale.CameraCredentialGetRequest\x1a\x17.shale.CameraCredential\x12E\n" +
@@ -2208,85 +3772,128 @@ const file_shale_camera_credential_svc_g_proto_rawDesc = "" +
 	"\x05Apply\x12#.shale.CameraCredentialApplyRequest\x1a\x17.shale.CameraCredential\x12I\n" +
 	"\x05Erase\x12\x1a.shale.CameraCredentialRef\x1a$.shale.CameraCredentialEraseResponse\x12O\n" +
 	"\x04List\x12\".shale.CameraCredentialListRequest\x1a#.shale.CameraCredentialListResponse\x12T\n" +
-	"\x05Watch\x12#.shale.CameraCredentialWatchRequest\x1a$.shale.CameraCredentialWatchResponse0\x01B\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
+	"\x05Watch\x12#.shale.CameraCredentialWatchRequest\x1a$.shale.CameraCredentialWatchResponse0\x01\x12Q\n" +
+	"\aPrepare\x12%.shale.CameraCredentialPrepareRequest\x1a\x1f.shale.CameraCredentialPrepared\x12O\n" +
+	"\x06Import\x12$.shale.CameraCredentialImportRequest\x1a\x1f.shale.CameraCredentialPrepared\x12N\n" +
+	"\aResolve\x12%.shale.CameraCredentialResolveRequest\x1a\x1c.shale.CameraCredentialLease\x12U\n" +
+	"\x06Revoke\x12$.shale.CameraCredentialRevokeRequest\x1a%.shale.CameraCredentialRevokeResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_camera_credential_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_shale_camera_credential_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_shale_camera_credential_svc_g_proto_goTypes = []any{
-	(*CameraCredentialAddRequest)(nil),    // 0: shale.CameraCredentialAddRequest
-	(*CameraCredentialGetRequest)(nil),    // 1: shale.CameraCredentialGetRequest
-	(*CameraCredentialRef)(nil),           // 2: shale.CameraCredentialRef
-	(*CameraCredentialRefBySubject)(nil),  // 3: shale.CameraCredentialRefBySubject
-	(*CameraCredentialSelect)(nil),        // 4: shale.CameraCredentialSelect
-	(*CameraCredentialPatchRequest)(nil),  // 5: shale.CameraCredentialPatchRequest
-	(*CameraCredentialApplyRequest)(nil),  // 6: shale.CameraCredentialApplyRequest
-	(*CameraCredentialEraseResponse)(nil), // 7: shale.CameraCredentialEraseResponse
-	(*CameraCredentialListRequest)(nil),   // 8: shale.CameraCredentialListRequest
-	(*CameraCredentialListResponse)(nil),  // 9: shale.CameraCredentialListResponse
-	(*CameraCredentialFilter)(nil),        // 10: shale.CameraCredentialFilter
-	(*CameraCredentialWatchRequest)(nil),  // 11: shale.CameraCredentialWatchRequest
-	(*CameraCredentialWatchResponse)(nil), // 12: shale.CameraCredentialWatchResponse
-	(*CameraCredentialWatchItem)(nil),     // 13: shale.CameraCredentialWatchItem
-	(*TenantRef)(nil),                     // 14: shale.TenantRef
-	(*SiteRef)(nil),                       // 15: shale.SiteRef
-	(*CameraDeviceRef)(nil),               // 16: shale.CameraDeviceRef
-	(*CameraBindingRef)(nil),              // 17: shale.CameraBindingRef
-	(*timestamppb.Timestamp)(nil),         // 18: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                  // 19: shale.TenantSelect
-	(*SiteSelect)(nil),                    // 20: shale.SiteSelect
-	(*CameraDeviceSelect)(nil),            // 21: shale.CameraDeviceSelect
-	(*CameraBindingSelect)(nil),           // 22: shale.CameraBindingSelect
-	(*patchpb.Patch)(nil),                 // 23: patch.Patch
-	(*CameraCredential)(nil),              // 24: shale.CameraCredential
+	(*CameraCredentialAddRequest)(nil),      // 0: shale.CameraCredentialAddRequest
+	(*CameraCredentialGetRequest)(nil),      // 1: shale.CameraCredentialGetRequest
+	(*CameraCredentialRef)(nil),             // 2: shale.CameraCredentialRef
+	(*CameraCredentialRefBySubject)(nil),    // 3: shale.CameraCredentialRefBySubject
+	(*CameraCredentialSelect)(nil),          // 4: shale.CameraCredentialSelect
+	(*CameraCredentialPatchRequest)(nil),    // 5: shale.CameraCredentialPatchRequest
+	(*CameraCredentialApplyRequest)(nil),    // 6: shale.CameraCredentialApplyRequest
+	(*CameraCredentialEraseResponse)(nil),   // 7: shale.CameraCredentialEraseResponse
+	(*CameraCredentialListRequest)(nil),     // 8: shale.CameraCredentialListRequest
+	(*CameraCredentialListResponse)(nil),    // 9: shale.CameraCredentialListResponse
+	(*CameraCredentialFilter)(nil),          // 10: shale.CameraCredentialFilter
+	(*CameraCredentialWatchRequest)(nil),    // 11: shale.CameraCredentialWatchRequest
+	(*CameraCredentialWatchResponse)(nil),   // 12: shale.CameraCredentialWatchResponse
+	(*CameraCredentialWatchItem)(nil),       // 13: shale.CameraCredentialWatchItem
+	(*CameraCredentialPrepareRequest)(nil),  // 14: shale.CameraCredentialPrepareRequest
+	(*CameraCredentialPrepared)(nil),        // 15: shale.CameraCredentialPrepared
+	(*CameraCredentialImportRequest)(nil),   // 16: shale.CameraCredentialImportRequest
+	(*CameraCredentialResolveRequest)(nil),  // 17: shale.CameraCredentialResolveRequest
+	(*CameraCredentialLease)(nil),           // 18: shale.CameraCredentialLease
+	(*CameraCredentialDelivery)(nil),        // 19: shale.CameraCredentialDelivery
+	(*CameraCredentialRevokeRequest)(nil),   // 20: shale.CameraCredentialRevokeRequest
+	(*CameraCredentialRevokeResponse)(nil),  // 21: shale.CameraCredentialRevokeResponse
+	(*TenantRef)(nil),                       // 22: shale.TenantRef
+	(*SiteRef)(nil),                         // 23: shale.SiteRef
+	(*CameraDeviceRef)(nil),                 // 24: shale.CameraDeviceRef
+	(*CameraBindingRef)(nil),                // 25: shale.CameraBindingRef
+	(*timestamppb.Timestamp)(nil),           // 26: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                    // 27: shale.TenantSelect
+	(*SiteSelect)(nil),                      // 28: shale.SiteSelect
+	(*CameraDeviceSelect)(nil),              // 29: shale.CameraDeviceSelect
+	(*CameraBindingSelect)(nil),             // 30: shale.CameraBindingSelect
+	(*patchpb.Patch)(nil),                   // 31: patch.Patch
+	(*CameraCredential)(nil),                // 32: shale.CameraCredential
+	(*CameraCredentialReference)(nil),       // 33: shale.CameraCredentialReference
+	(CameraCredentialOrigin)(0),             // 34: shale.CameraCredentialOrigin
+	(*CameraLegacyCredentialReference)(nil), // 35: shale.CameraLegacyCredentialReference
+	(*CameraWorkerCheckJobRequest)(nil),     // 36: shale.CameraWorkerCheckJobRequest
+	(*SourceRef)(nil),                       // 37: shale.SourceRef
 }
 var file_shale_camera_credential_svc_g_proto_depIdxs = []int32{
-	14, // 0: shale.CameraCredentialAddRequest.tenant:type_name -> shale.TenantRef
-	15, // 1: shale.CameraCredentialAddRequest.site:type_name -> shale.SiteRef
-	16, // 2: shale.CameraCredentialAddRequest.device:type_name -> shale.CameraDeviceRef
-	17, // 3: shale.CameraCredentialAddRequest.binding:type_name -> shale.CameraBindingRef
-	18, // 4: shale.CameraCredentialAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	18, // 5: shale.CameraCredentialAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	22, // 0: shale.CameraCredentialAddRequest.tenant:type_name -> shale.TenantRef
+	23, // 1: shale.CameraCredentialAddRequest.site:type_name -> shale.SiteRef
+	24, // 2: shale.CameraCredentialAddRequest.device:type_name -> shale.CameraDeviceRef
+	25, // 3: shale.CameraCredentialAddRequest.binding:type_name -> shale.CameraBindingRef
+	26, // 4: shale.CameraCredentialAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	26, // 5: shale.CameraCredentialAddRequest.date_revoked:type_name -> google.protobuf.Timestamp
 	2,  // 6: shale.CameraCredentialGetRequest.ref:type_name -> shale.CameraCredentialRef
 	4,  // 7: shale.CameraCredentialGetRequest.select:type_name -> shale.CameraCredentialSelect
 	3,  // 8: shale.CameraCredentialRef.subject:type_name -> shale.CameraCredentialRefBySubject
-	16, // 9: shale.CameraCredentialRefBySubject.device:type_name -> shale.CameraDeviceRef
-	19, // 10: shale.CameraCredentialSelect.tenant:type_name -> shale.TenantSelect
-	20, // 11: shale.CameraCredentialSelect.site:type_name -> shale.SiteSelect
-	21, // 12: shale.CameraCredentialSelect.device:type_name -> shale.CameraDeviceSelect
-	22, // 13: shale.CameraCredentialSelect.binding:type_name -> shale.CameraBindingSelect
+	24, // 9: shale.CameraCredentialRefBySubject.device:type_name -> shale.CameraDeviceRef
+	27, // 10: shale.CameraCredentialSelect.tenant:type_name -> shale.TenantSelect
+	28, // 11: shale.CameraCredentialSelect.site:type_name -> shale.SiteSelect
+	29, // 12: shale.CameraCredentialSelect.device:type_name -> shale.CameraDeviceSelect
+	30, // 13: shale.CameraCredentialSelect.binding:type_name -> shale.CameraBindingSelect
 	2,  // 14: shale.CameraCredentialPatchRequest.ref:type_name -> shale.CameraCredentialRef
-	18, // 15: shale.CameraCredentialPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	18, // 16: shale.CameraCredentialPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
+	26, // 15: shale.CameraCredentialPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	26, // 16: shale.CameraCredentialPatchRequest.date_revoked:type_name -> google.protobuf.Timestamp
 	2,  // 17: shale.CameraCredentialApplyRequest.ref:type_name -> shale.CameraCredentialRef
-	23, // 18: shale.CameraCredentialApplyRequest.patch:type_name -> patch.Patch
+	31, // 18: shale.CameraCredentialApplyRequest.patch:type_name -> patch.Patch
 	10, // 19: shale.CameraCredentialListRequest.filters:type_name -> shale.CameraCredentialFilter
-	24, // 20: shale.CameraCredentialListResponse.items:type_name -> shale.CameraCredential
+	32, // 20: shale.CameraCredentialListResponse.items:type_name -> shale.CameraCredential
 	2,  // 21: shale.CameraCredentialFilter.ref:type_name -> shale.CameraCredentialRef
-	14, // 22: shale.CameraCredentialFilter.tenant:type_name -> shale.TenantRef
-	15, // 23: shale.CameraCredentialFilter.site:type_name -> shale.SiteRef
-	16, // 24: shale.CameraCredentialFilter.device:type_name -> shale.CameraDeviceRef
-	17, // 25: shale.CameraCredentialFilter.binding:type_name -> shale.CameraBindingRef
+	22, // 22: shale.CameraCredentialFilter.tenant:type_name -> shale.TenantRef
+	23, // 23: shale.CameraCredentialFilter.site:type_name -> shale.SiteRef
+	24, // 24: shale.CameraCredentialFilter.device:type_name -> shale.CameraDeviceRef
+	25, // 25: shale.CameraCredentialFilter.binding:type_name -> shale.CameraBindingRef
 	10, // 26: shale.CameraCredentialWatchRequest.filters:type_name -> shale.CameraCredentialFilter
 	13, // 27: shale.CameraCredentialWatchResponse.items:type_name -> shale.CameraCredentialWatchItem
-	24, // 28: shale.CameraCredentialWatchItem.value:type_name -> shale.CameraCredential
-	0,  // 29: shale.CameraCredentialService.Add:input_type -> shale.CameraCredentialAddRequest
-	1,  // 30: shale.CameraCredentialService.Get:input_type -> shale.CameraCredentialGetRequest
-	5,  // 31: shale.CameraCredentialService.Patch:input_type -> shale.CameraCredentialPatchRequest
-	6,  // 32: shale.CameraCredentialService.Apply:input_type -> shale.CameraCredentialApplyRequest
-	2,  // 33: shale.CameraCredentialService.Erase:input_type -> shale.CameraCredentialRef
-	8,  // 34: shale.CameraCredentialService.List:input_type -> shale.CameraCredentialListRequest
-	11, // 35: shale.CameraCredentialService.Watch:input_type -> shale.CameraCredentialWatchRequest
-	24, // 36: shale.CameraCredentialService.Add:output_type -> shale.CameraCredential
-	24, // 37: shale.CameraCredentialService.Get:output_type -> shale.CameraCredential
-	24, // 38: shale.CameraCredentialService.Patch:output_type -> shale.CameraCredential
-	24, // 39: shale.CameraCredentialService.Apply:output_type -> shale.CameraCredential
-	7,  // 40: shale.CameraCredentialService.Erase:output_type -> shale.CameraCredentialEraseResponse
-	9,  // 41: shale.CameraCredentialService.List:output_type -> shale.CameraCredentialListResponse
-	12, // 42: shale.CameraCredentialService.Watch:output_type -> shale.CameraCredentialWatchResponse
-	36, // [36:43] is the sub-list for method output_type
-	29, // [29:36] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	32, // 28: shale.CameraCredentialWatchItem.value:type_name -> shale.CameraCredential
+	24, // 29: shale.CameraCredentialPrepareRequest.device:type_name -> shale.CameraDeviceRef
+	25, // 30: shale.CameraCredentialPrepareRequest.binding:type_name -> shale.CameraBindingRef
+	33, // 31: shale.CameraCredentialPrepareRequest.reuse:type_name -> shale.CameraCredentialReference
+	33, // 32: shale.CameraCredentialPrepared.credential:type_name -> shale.CameraCredentialReference
+	34, // 33: shale.CameraCredentialPrepared.origin:type_name -> shale.CameraCredentialOrigin
+	26, // 34: shale.CameraCredentialPrepared.date_created:type_name -> google.protobuf.Timestamp
+	24, // 35: shale.CameraCredentialImportRequest.device:type_name -> shale.CameraDeviceRef
+	25, // 36: shale.CameraCredentialImportRequest.binding:type_name -> shale.CameraBindingRef
+	33, // 37: shale.CameraCredentialImportRequest.expected_current:type_name -> shale.CameraCredentialReference
+	35, // 38: shale.CameraCredentialImportRequest.legacy:type_name -> shale.CameraLegacyCredentialReference
+	33, // 39: shale.CameraCredentialResolveRequest.credential:type_name -> shale.CameraCredentialReference
+	36, // 40: shale.CameraCredentialResolveRequest.job:type_name -> shale.CameraWorkerCheckJobRequest
+	37, // 41: shale.CameraCredentialResolveRequest.source:type_name -> shale.SourceRef
+	33, // 42: shale.CameraCredentialLease.credential:type_name -> shale.CameraCredentialReference
+	26, // 43: shale.CameraCredentialLease.expires:type_name -> google.protobuf.Timestamp
+	19, // 44: shale.CameraCredentialLease.delivery:type_name -> shale.CameraCredentialDelivery
+	26, // 45: shale.CameraCredentialLease.cache_until:type_name -> google.protobuf.Timestamp
+	33, // 46: shale.CameraCredentialRevokeRequest.credential:type_name -> shale.CameraCredentialReference
+	0,  // 47: shale.CameraCredentialService.Add:input_type -> shale.CameraCredentialAddRequest
+	1,  // 48: shale.CameraCredentialService.Get:input_type -> shale.CameraCredentialGetRequest
+	5,  // 49: shale.CameraCredentialService.Patch:input_type -> shale.CameraCredentialPatchRequest
+	6,  // 50: shale.CameraCredentialService.Apply:input_type -> shale.CameraCredentialApplyRequest
+	2,  // 51: shale.CameraCredentialService.Erase:input_type -> shale.CameraCredentialRef
+	8,  // 52: shale.CameraCredentialService.List:input_type -> shale.CameraCredentialListRequest
+	11, // 53: shale.CameraCredentialService.Watch:input_type -> shale.CameraCredentialWatchRequest
+	14, // 54: shale.CameraCredentialService.Prepare:input_type -> shale.CameraCredentialPrepareRequest
+	16, // 55: shale.CameraCredentialService.Import:input_type -> shale.CameraCredentialImportRequest
+	17, // 56: shale.CameraCredentialService.Resolve:input_type -> shale.CameraCredentialResolveRequest
+	20, // 57: shale.CameraCredentialService.Revoke:input_type -> shale.CameraCredentialRevokeRequest
+	32, // 58: shale.CameraCredentialService.Add:output_type -> shale.CameraCredential
+	32, // 59: shale.CameraCredentialService.Get:output_type -> shale.CameraCredential
+	32, // 60: shale.CameraCredentialService.Patch:output_type -> shale.CameraCredential
+	32, // 61: shale.CameraCredentialService.Apply:output_type -> shale.CameraCredential
+	7,  // 62: shale.CameraCredentialService.Erase:output_type -> shale.CameraCredentialEraseResponse
+	9,  // 63: shale.CameraCredentialService.List:output_type -> shale.CameraCredentialListResponse
+	12, // 64: shale.CameraCredentialService.Watch:output_type -> shale.CameraCredentialWatchResponse
+	15, // 65: shale.CameraCredentialService.Prepare:output_type -> shale.CameraCredentialPrepared
+	15, // 66: shale.CameraCredentialService.Import:output_type -> shale.CameraCredentialPrepared
+	18, // 67: shale.CameraCredentialService.Resolve:output_type -> shale.CameraCredentialLease
+	21, // 68: shale.CameraCredentialService.Revoke:output_type -> shale.CameraCredentialRevokeResponse
+	58, // [58:69] is the sub-list for method output_type
+	47, // [47:58] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_credential_svc_g_proto_init() }
@@ -2294,9 +3901,13 @@ func file_shale_camera_credential_svc_g_proto_init() {
 	if File_shale_camera_credential_svc_g_proto != nil {
 		return
 	}
+	file_shale_camera_proto_init()
 	file_shale_camera_credential_proto_init()
+	file_shale_camera_credential_version_proto_init()
 	file_shale_camera_svc_g_proto_init()
+	file_shale_camera_worker_svc_g_proto_init()
 	file_shale_payday_tenant_svc_g_proto_init()
+	file_shale_set_svc_g_proto_init()
 	file_shale_site_svc_g_proto_init()
 	file_shale_camera_credential_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*cameraCredentialRef_Id)(nil),
@@ -2308,7 +3919,7 @@ func file_shale_camera_credential_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_credential_svc_g_proto_rawDesc), len(file_shale_camera_credential_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

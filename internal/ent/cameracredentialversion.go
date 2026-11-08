@@ -50,6 +50,10 @@ type CameraCredentialVersion struct {
 	LegacyKey *string `json:"legacy_key,omitempty"`
 	// ReusedFrom holds the value of the "reused_from" field.
 	ReusedFrom *api.CameraCredentialReference `json:"reused_from,omitempty"`
+	// RequestHash holds the value of the "request_hash" field.
+	RequestHash []byte `json:"request_hash,omitempty"`
+	// PrepareTag holds the value of the "prepare_tag" field.
+	PrepareTag *[]byte `json:"prepare_tag,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -113,7 +117,7 @@ func (*CameraCredentialVersion) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case cameracredentialversion.FieldSealedEnvelope, cameracredentialversion.FieldImportTag:
+		case cameracredentialversion.FieldSealedEnvelope, cameracredentialversion.FieldImportTag, cameracredentialversion.FieldRequestHash, cameracredentialversion.FieldPrepareTag:
 			values[i] = new([]byte)
 		case cameracredentialversion.FieldOrigin:
 			values[i] = new(sql.NullInt64)
@@ -240,6 +244,21 @@ func (_m *CameraCredentialVersion) assignValues(columns []string, values []any) 
 			} else {
 				_m.ReusedFrom = value
 			}
+		case cameracredentialversion.FieldRequestHash:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field request_hash", values[i])
+			} else if value != nil {
+				_m.RequestHash = *value
+				if _m.RequestHash == nil {
+					_m.RequestHash = []byte{}
+				}
+			}
+		case cameracredentialversion.FieldPrepareTag:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field prepare_tag", values[i])
+			} else if value != nil {
+				_m.PrepareTag = value
+			}
 		case cameracredentialversion.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -358,6 +377,14 @@ func (_m *CameraCredentialVersion) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("reused_from=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ReusedFrom))
+	builder.WriteString(", ")
+	builder.WriteString("request_hash=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RequestHash))
+	builder.WriteString(", ")
+	if v := _m.PrepareTag; v != nil {
+		builder.WriteString("prepare_tag=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))
