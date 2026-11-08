@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -34,7 +35,38 @@ type edgeMediaOptions struct {
 	HTTP        *http.Client
 }
 
+// edgeMediaEndpoint is an ephemeral native capability. An explicit epoch must
+// be confirmed by the HTTP 201 response before any SDP or media is accepted.
+// The independent oracle does not import the production media probe.
+type edgeMediaEndpoint struct {
+	URL, Token, ExpectedEpoch string
+}
+
+func (e edgeMediaEndpoint) validate() error {
+	u, err := url.Parse(e.URL)
+	if err != nil || len(e.URL) > 4096 || u.Hostname() == "" || u.User != nil || u.Opaque != "" || u.Fragment != "" || u.Scheme != "http" && u.Scheme != "https" || len(e.Token) == 0 || len(e.Token) > 16384 || len(e.ExpectedEpoch) > 128 {
+		return errors.New("invalid WHEP capability")
+	}
+	for _, b := range []byte(e.Token) {
+		if b < 0x21 || b > 0x7e {
+			return errors.New("invalid WHEP capability")
+		}
+	}
+	for _, b := range []byte(e.ExpectedEpoch) {
+		if b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '-' || b == '_' || b == '.' || b == ':' || b == '/' {
+			continue
+		}
+		return errors.New("invalid WHEP capability")
+	}
+	return nil
+}
+
+var errEdgeCaptureEpoch = errors.New("WHEP capture epoch does not match capability")
+
 type edgeMediaEvidence struct {
+	// The expected capability epoch, confirmed by the native HTTP response.
+	// Receiver/decoder timestamps alone never establish this correlation.
+	CaptureEpoch      string
 	AccessUnits       int
 	DecodedFrames     int
 	RTPAdvances       int
@@ -42,8 +74,7 @@ type edgeMediaEvidence struct {
 	// Receiver-local complete-AU receipt times plus RTP progress prove incoming
 	// media advanced; they do not identify a camera capture or publication epoch.
 	FirstReceivedAt, LastReceivedAt time.Time
-	// Independent decoder output observation times, after network capture. Later
-	// cutover qualification must separately correlate the Producer/Source epoch.
+	// Independent decoder output observation times, after network capture.
 	FirstDecodedAt, LastDecodedAt time.Time
 	Bytes                         int
 }
@@ -125,6 +156,10 @@ func (c *edgeAccessUnits) push(u accessUnit) (bool, error) {
 // qualifyWHEP proves actual WebRTC video decodes independently. A Live URL,
 // packets, parameter-set bytes or an IDR marker alone cannot satisfy it.
 func qualifyWHEP(parent context.Context, live *api.LiveSource, options edgeMediaOptions) (evidence edgeMediaEvidence, result error) {
+	endpoint := edgeMediaEndpoint{URL: live.GetWhepUrl(), Token: live.GetViewToken(), ExpectedEpoch: live.GetCaptureEpoch()}
+	if err := endpoint.validate(); err != nil {
+		return evidence, err
+	}
 	if options.Timeout == 0 {
 		options.Timeout = 15 * time.Second
 	}
@@ -197,7 +232,7 @@ func qualifyWHEP(parent context.Context, live *api.LiveSource, options edgeMedia
 			defer finish()
 			req, err := http.NewRequestWithContext(cleanup, http.MethodDelete, session, nil)
 			if err == nil {
-				req.Header.Set("Authorization", token.Scheme+" "+live.GetViewToken())
+				req.Header.Set("Authorization", token.Scheme+" "+endpoint.Token)
 				if resp, err := options.HTTP.Do(req); err == nil {
 					resp.Body.Close()
 				}
@@ -205,7 +240,7 @@ func qualifyWHEP(parent context.Context, live *api.LiveSource, options edgeMedia
 		}
 	}
 	defer stopViewer()
-	session, err = offerEdgeWHEP(ctx, options.HTTP, pc, live)
+	session, err = offerEdgeWHEP(ctx, options.HTTP, pc, endpoint)
 	if err != nil {
 		return evidence, err
 	}
@@ -226,13 +261,14 @@ func qualifyWHEP(parent context.Context, live *api.LiveSource, options edgeMedia
 	if err != nil {
 		return evidence, err
 	}
+	if decoded < 2 || decoded > media.evidence.AccessUnits || media.evidence.RTPAdvances < 1 || !last.After(first) {
+		return edgeMediaEvidence{}, errors.New("decoded video did not advance")
+	}
 	evidence = media.evidence
+	evidence.CaptureEpoch = endpoint.ExpectedEpoch
 	evidence.DecodedFrames = decoded
 	evidence.FirstDecodedAt = first
 	evidence.LastDecodedAt = last
-	if decoded < 2 || decoded > evidence.AccessUnits || evidence.RTPAdvances < 1 || !last.After(first) {
-		return evidence, errors.New("decoded video did not advance")
-	}
 	return evidence, nil
 }
 
@@ -294,7 +330,16 @@ func readEdgeVideo(ctx context.Context, tracks <-chan *webrtc.TrackRemote, optio
 
 // offerEdgeWHEP is context bounded, including ICE gathering and SDP I/O. Errors
 // contain no response body, URL or bearer capability.
-func offerEdgeWHEP(ctx context.Context, client *http.Client, pc *webrtc.PeerConnection, live *api.LiveSource) (string, error) {
+func offerEdgeWHEP(ctx context.Context, client *http.Client, pc *webrtc.PeerConnection, endpoint edgeMediaEndpoint) (string, error) {
+	if err := endpoint.validate(); err != nil {
+		return "", err
+	}
+	if client == nil {
+		client = http.DefaultClient
+	}
+	copy := *client
+	copy.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	client = &copy
 	offer, err := pc.CreateOffer(nil)
 	if err != nil {
 		return "", errors.New("create WHEP offer")
@@ -308,12 +353,12 @@ func offerEdgeWHEP(ctx context.Context, client *http.Client, pc *webrtc.PeerConn
 	case <-ctx.Done():
 		return "", ctx.Err()
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, live.GetWhepUrl(), strings.NewReader(pc.LocalDescription().SDP))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.URL, strings.NewReader(pc.LocalDescription().SDP))
 	if err != nil {
 		return "", errors.New("invalid WHEP request")
 	}
 	req.Header.Set("Content-Type", "application/sdp")
-	req.Header.Set("Authorization", token.Scheme+" "+live.GetViewToken())
+	req.Header.Set("Authorization", token.Scheme+" "+endpoint.Token)
 	resp, err := client.Do(req)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -325,7 +370,7 @@ func offerEdgeWHEP(ctx context.Context, client *http.Client, pc *webrtc.PeerConn
 	if resp.StatusCode != http.StatusCreated {
 		return "", fmt.Errorf("WHEP returned HTTP %d", resp.StatusCode)
 	}
-	base, err := url.Parse(live.GetWhepUrl())
+	base, err := url.Parse(endpoint.URL)
 	if err != nil {
 		return "", errors.New("invalid WHEP endpoint")
 	}
@@ -334,10 +379,18 @@ func offerEdgeWHEP(ctx context.Context, client *http.Client, pc *webrtc.PeerConn
 		return "", errors.New("WHEP has no session location")
 	}
 	resolved := base.ResolveReference(location)
-	if resolved.Scheme != base.Scheme || resolved.Host != base.Host || resolved.User != nil || resolved.Fragment != "" {
+	if resolved.Scheme != base.Scheme || resolved.Host != base.Host || resolved.User != nil || resolved.Opaque != "" || resolved.Fragment != "" {
 		return "", errors.New("WHEP session changed origin")
 	}
 	session := resolved.String()
+	if endpoint.ExpectedEpoch != "" {
+		returned := resp.Header.Values("Shale-Capture-Epoch")
+		if len(returned) != 1 || returned[0] != endpoint.ExpectedEpoch {
+			// A validated same-origin allocation still needs cleanup when its
+			// correlation fails. Never read or decode this response's media.
+			return session, errEdgeCaptureEpoch
+		}
+	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, (1<<20)+1))
 	if err != nil || len(body) > 1<<20 {
 		return session, errors.New("invalid WHEP answer size")
@@ -351,6 +404,8 @@ func offerEdgeWHEP(ctx context.Context, client *http.Client, pc *webrtc.PeerConn
 type edgeDecodeFrames struct {
 	pending     []byte
 	frames      int
+	maxFrames   int
+	lastPTS     int64
 	first, last time.Time
 }
 
@@ -373,8 +428,13 @@ func (d *edgeDecodeFrames) Write(p []byte) (int, error) {
 		if len(fields) != 6 {
 			return 0, errors.New("invalid decoder frame evidence")
 		}
-		size, err := strconv.Atoi(strings.TrimSpace(fields[4]))
-		if err != nil || size <= 0 || len(strings.TrimSpace(fields[5])) != 32 {
+		stream, streamErr := strconv.Atoi(strings.TrimSpace(fields[0]))
+		_, dtsErr := strconv.ParseInt(strings.TrimSpace(fields[1]), 10, 64)
+		pts, ptsErr := strconv.ParseInt(strings.TrimSpace(fields[2]), 10, 64)
+		duration, durationErr := strconv.ParseInt(strings.TrimSpace(fields[3]), 10, 64)
+		size, sizeErr := strconv.Atoi(strings.TrimSpace(fields[4]))
+		digest, digestErr := hex.DecodeString(strings.TrimSpace(fields[5]))
+		if streamErr != nil || stream != 0 || dtsErr != nil || ptsErr != nil || durationErr != nil || duration <= 0 || sizeErr != nil || size <= 0 || size > 64<<20 || digestErr != nil || len(digest) != 16 || d.frames > 0 && pts <= d.lastPTS || d.maxFrames > 0 && d.frames >= d.maxFrames {
 			return 0, errors.New("invalid decoded frame checksum")
 		}
 		now := time.Now()
@@ -382,16 +442,21 @@ func (d *edgeDecodeFrames) Write(p []byte) (int, error) {
 			d.first = now
 		}
 		d.last = now
+		d.lastPTS = pts
 		d.frames++
 	}
 	return len(p), nil
 }
 
+func (d *edgeDecodeFrames) complete() bool {
+	return len(bytes.TrimSpace(d.pending)) == 0 && d.frames >= 2 && d.last.After(d.first)
+}
+
 func decodeEdgeH264(ctx context.Context, ffmpeg string, annexB []byte, maxFrames int) (int, time.Time, time.Time, error) {
-	cmd := exec.CommandContext(ctx, ffmpeg, "-hide_banner", "-loglevel", "error", "-xerror", "-err_detect", "explode", "-threads", "1", "-f", "h264", "-i", "pipe:0", "-an", "-fps_mode", "passthrough", "-frames:v", strconv.Itoa(maxFrames), "-threads", "1", "-f", "framemd5", "pipe:1")
+	cmd := exec.CommandContext(ctx, ffmpeg, "-hide_banner", "-loglevel", "error", "-xerror", "-err_detect", "explode", "-threads", "1", "-f", "h264", "-i", "pipe:0", "-an", "-fps_mode", "passthrough", "-frames:v", strconv.Itoa(maxFrames), "-threads", "1", "-c:v", "rawvideo", "-f", "framemd5", "pipe:1")
 	cmd.WaitDelay = 2 * time.Second
 	cmd.Stdin = bytes.NewReader(annexB)
-	frames := &edgeDecodeFrames{}
+	frames := &edgeDecodeFrames{maxFrames: maxFrames}
 	cmd.Stdout = frames
 	// Discard diagnostic text: decoder rejection is evidence, while stderr may
 	// include arbitrary camera-supplied NAL/SEI data and is not needed in logs.
@@ -401,6 +466,9 @@ func decodeEdgeH264(ctx context.Context, ffmpeg string, annexB []byte, maxFrames
 			return 0, time.Time{}, time.Time{}, ctx.Err()
 		}
 		return 0, time.Time{}, time.Time{}, errors.New("independent H264 decoder rejected captured media")
+	}
+	if !frames.complete() {
+		return 0, time.Time{}, time.Time{}, errors.New("independent H264 decoder produced incomplete frame evidence")
 	}
 	return frames.frames, frames.first, frames.last, nil
 }
@@ -419,6 +487,7 @@ func TestEdgeMediaDecodesActualWHEPVideo(t *testing.T) {
 	_, live := liveSource(t, ctx, c, admin, "av.mp4")
 	evidence, err := qualifyWHEP(ctx, live, edgeMediaOptions{})
 	require.NoError(t, err)
+	require.Equal(t, live.GetCaptureEpoch(), evidence.CaptureEpoch)
 	require.Equal(t, 8, evidence.AccessUnits)
 	require.Greater(t, evidence.DecodedFrames, 1, "independent decoder must produce advancing frames")
 	require.Equal(t, 7, evidence.RTPAdvances)
