@@ -47,6 +47,27 @@ check or promise an exact request frequency. Inactive role sections are ignored 
 Camera policy, presets, bootstrap intent and credential material come from the
 authorized CP workflow, never additional edge policy or password files.
 
+Configure and activate the [central enrollment policy and preset](camera-policy.md)
+for the assigned camera network, including its interface and allowed CIDRs.
+Discovery runs on that assignment, and initialized cameras can use an
+[imported central management account](camera-credentials.md). First-password
+activation additionally requires the policy's activation permission and an
+explicit installed bootstrap compatibility profile. The
+[scoped drivers](camera-worker-drivers.md) keep standard ONVIF media operations
+independent of that vendor selection.
+
+A successful CP publication precedes the local memory hint. The Producer reads
+the full catalog with its own authenticated connection before accepting it;
+periodic resnapshot also recovers a missing hint or process restart. Worker-only
+and Producer-only processes use the same central publication and catalog path.
+
+The installed readiness observer waits for the exact Producer capture epoch,
+fresh ingest, a complete committed recording, and advancing WebRTC video that
+FFmpeg independently decodes. A Source row or successful Live API is insufficient.
+The current live readiness decoder supports H264; another codec remains an
+explicit unsupported workflow outcome. Its frame times describe decoder output,
+not sensor capture time or measured camera-to-viewer latency.
+
 The supervisor validates both selected configurations and constructs both hosts
 before starting either role's CP or LAN loop. Constructors may create/read the
 private machine state and keys. State directories must differ even after
