@@ -68,6 +68,15 @@ it never grants the Worker broad catalog access or supplies a successful media
 observation. Failed API calls alone do not establish rollback: tests compare
 durable inventory, exact versions and actual device/media state.
 
+`first_capture_upload` holds successful Set/Lamina allocation responses while
+the real Producer captures and reports current-epoch input progress. The test
+kills that Producer before its first upload capability is delivered, then
+requires a new epoch, a newly committed complete recording and independently
+decoded live/MP4 media. The hold is persistent across concurrent allocation
+calls and caller cancellation. Actual partially transmitted/incomplete storage
+is separately covered by `TestBacklogAfterOutageWritten`; this checkpoint does
+not claim that an HTTP PUT had already started.
+
 Transport recovery intentionally omits a new initial/activation credential grant.
 Management and streaming pins remain exact, and the original initial account's
 version remains centrally recoverable. Retaining usable initial material does

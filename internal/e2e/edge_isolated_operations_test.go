@@ -19,10 +19,18 @@ const isolatedOperationsPassword = "CameraOperations42Pass"
 
 func TestEdgeIsolatedOperations(t *testing.T) {
 	_ = qualificationTopology(t)
-	t.Run("two_cameras_dhcp_stop_capacity", isolatedOperationsCameras)
-	t.Run("wifi_and_control_restart", isolatedOperationsConnectivity)
-	t.Run("approved_machine_replacement", isolatedOperationsReplacement)
-	if !t.Failed() {
+	ran := 0
+	for _, test := range []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{"two_cameras_dhcp_stop_capacity", isolatedOperationsCameras},
+		{"wifi_and_control_restart", isolatedOperationsConnectivity},
+		{"approved_machine_replacement", isolatedOperationsReplacement},
+	} {
+		t.Run(test.name, func(t *testing.T) { test.run(t); ran++ })
+	}
+	if !t.Failed() && ran == 3 {
 		fmt.Println("SHQA_RESULT_V1 operations")
 	}
 }

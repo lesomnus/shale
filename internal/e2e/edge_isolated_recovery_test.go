@@ -22,13 +22,25 @@ const isolatedRecoveryPassword = "CameraRecovery42Pass"
 // decoding decide readiness. Only disposable topology process groups are killed.
 func TestEdgeIsolatedRecovery(t *testing.T) {
 	_ = qualificationTopology(t)
-	t.Run("job_insert_rollback", isolatedRecoveryJobRollback)
-	t.Run("observe_committed_response_loss", isolatedRecoveryObserveLoss)
-	t.Run("activation_response_loss", isolatedRecoveryActivationLoss)
-	t.Run("accepted_configuration", isolatedRecoveryConfigurationLoss)
-	t.Run("publication_committed_response_loss", isolatedRecoveryPublicationLoss)
-	t.Run("first_capture_upload", isolatedRecoveryCaptureCrash)
-	if !t.Failed() {
+	cases := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{"job_insert_rollback", isolatedRecoveryJobRollback},
+		{"observe_committed_response_loss", isolatedRecoveryObserveLoss},
+		{"activation_response_loss", isolatedRecoveryActivationLoss},
+		{"accepted_configuration", isolatedRecoveryConfigurationLoss},
+		{"publication_committed_response_loss", isolatedRecoveryPublicationLoss},
+		{"first_capture_upload", isolatedRecoveryCaptureCrash},
+	}
+	executed := 0
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			test.run(t)
+			executed++ // Filtered, skipped or interrupted bodies cannot attest the group.
+		})
+	}
+	if executed == len(cases) && !t.Failed() {
 		fmt.Println("SHQA_RESULT_V1 recovery")
 	}
 }
@@ -290,24 +302,35 @@ func isolatedRecoveryPublicationLoss(t *testing.T) {
 func isolatedRecoveryCaptureCrash(t *testing.T) {
 	f, initial, worker, producer := isolatedRecoveryPrepare(t)
 	defer f.FinalizeAndScan([]string{isolatedRecoveryPassword})
+	// Hold every successful allocation response before publication. The real
+	// backend creates PENDING records, while the default Producer can capture
+	// and report input progress without receiving any upload capability. This
+	// is an allocation-before-upload boundary, not a race against a fast PUT.
+	gate, err := f.Proxy.ArmAllocations()
+	require.NoError(t, err)
+	defer gate.Release()
 	f.ActivatePolicy(isolatedRecoveryUsername, true)
 	f.RestartRole("worker")
+	isolatedRecoveryMatched(t, f, gate)
 	job := isolatedRecoveryJob(t, f)
 	var first *api.Lamina
 	require.Eventually(t, func() bool {
 		binding := isolatedRecoveryBinding(t, f, job)
+		app, starting := binding.GetAppliedApplication(), binding.GetStartingApplication()
+		if app.GetDateApplied() == nil || app.GetCaptureEpoch() == "" || app.GetCaptureEpoch() != starting.GetCaptureEpoch() || !proto.Equal(app.GetTarget(), starting.GetTarget()) ||
+			!bytes.Equal(app.GetTarget().GetAssignmentId(), f.Assignment.GetId()) || app.GetTarget().GetAssignmentGeneration() != f.Assignment.GetGeneration() ||
+			binding.GetDesired().GetRevision() < 1 || app.GetTarget().GetSpecRevision() != binding.GetDesired().GetRevision() {
+			return false
+		}
 		rows, err := api.NewLaminaServiceClient(f.Admin).List(f.Ctx, api.LaminaListRequest_builder{Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: binding.GetSource().GetId()}.Build()}.Build()}, Size: 500}.Build())
 		if err != nil || isolatedRecoveryCamera(t, f).Sessions == 0 {
 			return false
 		}
-		// Set.Allocate can prefetch many future PENDING slots. Select the
-		// earliest current slot and reject any already completed first upload.
+		// Set.Allocate can prefetch many future PENDING slots. Correlate the
+		// earliest current record with the actual applied capture incarnation.
 		var record *api.Lamina
 		for _, candidate := range rows.GetItems() {
-			if candidate.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED || candidate.GetDateCommitted() != nil {
-				return false
-			}
-			if candidate.GetCaptureEpoch() == "" || candidate.GetState() != api.LaminaState_LAMINA_STATE_PENDING || candidate.GetDateStarted() == nil || candidate.GetDateStarted().AsTime().After(time.Now()) {
+			if candidate.GetCaptureEpoch() != app.GetCaptureEpoch() || candidate.GetState() != api.LaminaState_LAMINA_STATE_PENDING || candidate.GetDateCommitted() != nil || candidate.GetDateStarted() == nil || candidate.GetDateStarted().AsTime().After(time.Now()) {
 				continue
 			}
 			if record == nil || candidate.GetDateStarted().AsTime().Before(record.GetDateStarted().AsTime()) {
@@ -322,32 +345,39 @@ func isolatedRecoveryCaptureCrash(t *testing.T) {
 			return false
 		}
 		for _, source := range current.GetStatus().GetSources() {
-			if bytes.Equal(source.GetSourceId(), binding.GetSource().GetId()) && source.GetInputUp() && source.GetCaptureEpoch() == record.GetCaptureEpoch() {
+			if bytes.Equal(source.GetSourceId(), binding.GetSource().GetId()) && source.GetInputUp() && source.GetFrameRate() > 0 && source.GetCaptureEpoch() == record.GetCaptureEpoch() {
 				first = record
 				return true
 			}
 		}
 		return false
-	}, 65*time.Second, 10*time.Millisecond, "first live upload must still be uncommitted with an actual current input session")
-	f.CrashRole("producer")
+	}, 65*time.Second, 10*time.Millisecond, "held allocation must identify actual current capture before any upload capability is delivered")
 	before := isolatedRecoveryJob(t, f)
 	binding := isolatedRecoveryBinding(t, f, before)
-	require.NotEqual(t, api.CameraJobStage_CAMERA_JOB_STAGE_ACTIVE, before.GetStage(), "first-upload crash checkpoint was missed")
+	rows, err := api.NewLaminaServiceClient(f.Admin).List(f.Ctx, api.LaminaListRequest_builder{Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: binding.GetSource().GetId()}.Build()}.Build()}, Size: 500}.Build())
+	require.NoError(t, err)
+	for _, record := range rows.GetItems() {
+		require.NotEqual(t, api.LaminaState_LAMINA_STATE_COMMITTED, record.GetState(), "held allocation responses must prevent the first upload from committing")
+		require.Nil(t, record.GetDateCommitted())
+	}
+	require.NotEqual(t, api.CameraJobStage_CAMERA_JOB_STAGE_ACTIVE, before.GetStage(), "capture must remain unqualified while all allocation capabilities are held")
+	f.CrashRole("producer")
 	require.Eventually(t, func() bool { return isolatedRecoveryCamera(t, f).Sessions == 0 }, 10*time.Second, 25*time.Millisecond, "SIGKILL must also end the owned capture child/session")
+	gate.Release() // Old callers are dead; their held capabilities are dropped.
 	crashedAt := time.Now()
 	isolatedRecoverySameRole(t, f, "worker", worker, crashedAt)
 	f.RestartRole("producer")
 	media := f.VerifyMedia("camera", first)
 	isolatedRecoveryFreshRecord(t, media.Record, crashedAt)
 	require.NotEqual(t, first.GetCaptureEpoch(), media.Record.GetCaptureEpoch(), "recovery requires a fresh native capture epoch")
-	require.False(t, bytes.Equal(first.GetId(), media.Record.GetId()), "a new complete recording must follow the interrupted upload")
+	require.False(t, bytes.Equal(first.GetId(), media.Record.GetId()), "a new complete recording must follow the interrupted allocation")
 	require.True(t, bytes.Equal(binding.GetSource().GetId(), media.Binding.GetSource().GetId()), "capture recovery must retain the logical Source and history")
 	isolatedRecoveryPins(t, before, media.Job)
 	isolatedRecoveryCredentials(t, f, initial, media.Job)
 	isolatedRecoverySameRole(t, f, "producer", producer, crashedAt)
 	history, err := api.NewLaminaServiceClient(f.Admin).Get(f.Ctx, api.LaminaGetRequest_builder{Ref: api.LaminaRef_builder{Id: first.GetId()}.Build()}.Build())
-	require.NoError(t, err, "interrupted history must not disappear when capture restarts")
+	require.NoError(t, err, "interrupted allocation history must not disappear when capture restarts")
 	require.Equal(t, first.GetCaptureEpoch(), history.GetCaptureEpoch())
-	require.True(t, history.GetState() != api.LaminaState_LAMINA_STATE_COMMITTED || history.GetIncomplete(), "interrupted first upload must not become a complete old-epoch success")
+	require.True(t, history.GetState() != api.LaminaState_LAMINA_STATE_COMMITTED || history.GetIncomplete(), "interrupted allocation must not become a complete old-epoch success")
 	isolatedRecoveryInventory(t, f)
 }
