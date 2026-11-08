@@ -106,3 +106,57 @@ fallbacks, matching precedence, pinned restart/candidate recovery, required-fiel
 rejection, an opt-in automatic decision and stable Source identity. Final edge
 qualification separately proves actual decoded live media and newly committed
 recordings after Producer application; policy resolution is not readiness.
+
+## Implemented surfaces
+
+Operators use `CameraPreset.Create`, `CameraPolicy.Create`, and
+`CameraPolicy.Activate` to publish immutable revisions and CAS the network's
+active pointer. `CameraPolicy.Enroll` explicitly creates another intent for an
+existing binding. Generic mutations of either revision entity remain closed.
+
+The assigned Worker sends `CameraPolicy.Observe` with its assignment generation.
+CP first commits the sanitized inventory observation, then prepares credentials
+and creates the binding/Source/job in one recorded transaction. A preparation
+failure rolls back that transaction and records a fixed enrollment outcome on
+the visible device. Outcomes include `policy_missing`, `policy_manual`,
+`policy_not_matched`, `credential_preparer_unavailable`, `credentials_unavailable`,
+`capacity_exceeded`, `reconciliation_pending`, and `enrolled`.
+
+An optional `Deps.PrepareCameraEnrollment` callback receives the current recorded
+server and transaction driver. Its return value contains purpose-bound durable
+references only. The credential implementation is connected by the combined
+edge integration; this policy layer never stores a password. The policy's
+optional activation username defaults to `admin` and affects newly prepared
+activation material only. Existing/imported accounts retain their usernames.
+
+`CameraPreset.ResolveForJob` returns only the currently leased job's resolved
+snapshot. The first reported snapshot is validated against the immutable rules
+and atomically pinned on that job. `internal/cameraworker.JobStore` stores the
+complete typed portable workflow, bounded to 32 KiB, through ordinary leased
+reports. Poll snapshots fail explicitly above two MiB instead of truncating
+assignments or presenting an empty catalog. An exact unchanged historical
+checkpoint can be carried in a status-only report after replacement; edits
+must use today's full delivery scope and retain every pinned material version.
+
+The `Provisioner`, `JobPresets`, `LeasedDevices`, and `JobCommitter` adapters
+connect the portable engine without adding a CP dependency to `camera` or
+`provision`. Every device operation obtains a fresh grant and lease deadline;
+only its endpoint transport hints follow current observations. Lost checkpoint
+responses cancel execution before another device write. A committed publication
+can be recovered without replaying it with newly measured probe timestamps.
+Authentication and readiness observation remain injected by the edge runtime.
+
+Checkpoint validation preserves activation-attempt flags, candidate order,
+resolved intent, authenticated identity and structured fallback warnings. Outer
+verification must match the saved independently decoded frame count, duration,
+observation time and measured bitrate. Configured GOP values cannot substitute
+for observed cadence. Legacy jobs without typed state retain their existing
+explicit compatibility path; a job with policy/preset/direct configuration
+cannot publish by omitting the typed checkpoint.
+
+A repeated discovery reuses an unfinished job without regenerating secrets.
+When a completed binding's address changes, transport reconciliation retains
+the old policy and credential versions, the same binding and Source, and
+disables first-time activation. A terminal failure is not an implicit retry:
+an operator creates a new enrollment intent. An active-policy edit alone never
+reapplies settings to an existing camera.

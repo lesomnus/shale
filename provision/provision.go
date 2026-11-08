@@ -389,6 +389,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	if captureProfile.FPS == 0 {
 		captureProfile.FPS = verified.Profile.FPS
 	}
+	if captureProfile.Bitrate == 0 {
+		captureProfile.Bitrate = verified.Profile.Bitrate
+	}
 	if captureProfile.GOP == 0 {
 		captureProfile.GOP = verified.Profile.GOP
 	}
