@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
 	"golang.org/x/sync/errgroup"
@@ -37,6 +38,11 @@ type Config struct {
 	RetryInterval     time.Duration
 	LeaseSeconds      int64
 	Executor          Executor
+	// Discovery is opt-in. The composition root supplies its LAN transport;
+	// assignments and network intent always come from the authenticated CP.
+	Discoverer        camera.Discoverer
+	DiscoveryInterval time.Duration
+	DiscoveryTimeout  time.Duration
 	Log               *slog.Logger
 }
 
@@ -58,8 +64,17 @@ func New(c Config) (*Worker, error) {
 	if c.LeaseSeconds == 0 {
 		c.LeaseSeconds = 30
 	}
+	if c.DiscoveryInterval == 0 {
+		c.DiscoveryInterval = 30 * time.Second
+	}
+	if c.DiscoveryTimeout == 0 {
+		c.DiscoveryTimeout = 2 * time.Second
+	}
 	if c.HeartbeatInterval < time.Millisecond || c.RetryInterval < time.Millisecond || c.LeaseSeconds < 3 || c.LeaseSeconds > 300 {
 		return nil, errors.New("invalid camera worker timing")
+	}
+	if c.DiscoveryInterval < time.Second || c.DiscoveryInterval > time.Hour || c.DiscoveryTimeout < time.Millisecond || c.DiscoveryTimeout > 30*time.Second {
+		return nil, errors.New("invalid camera worker discovery timing")
 	}
 	if c.Log == nil {
 		c.Log = slog.Default()
@@ -147,6 +162,11 @@ func (w *Worker) session(ctx context.Context, conn *grpc.ClientConn) error {
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return w.heartbeat(ctx, conn) })
 	g.Go(func() error { return w.poll(ctx, conn) })
+	if w.cfg.Discoverer != nil {
+		g.Go(func() error {
+			return w.discover(ctx, api.NewCameraWorkerServiceClient(conn), api.NewCameraPolicyServiceClient(conn))
+		})
+	}
 	return g.Wait()
 }
 func (w *Worker) heartbeat(ctx context.Context, conn *grpc.ClientConn) error {

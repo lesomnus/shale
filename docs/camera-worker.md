@@ -58,8 +58,9 @@ assignments and 500 unfinished jobs. It exposes only assignments whose current
 empty view. No generic Source, Set, Lamina, inventory, or credential read API is
 opened. Producer permissions are unchanged.
 
-A Worker can call its heartbeat, renewal, Poll, CheckJob, ObserveJob, the job
-Claim/Report/Publish verbs and exact job-scoped credential Resolve. Configuration, inventory registration,
+A Worker can call its heartbeat, renewal, Poll, CheckJob, ObserveJob,
+assignment-scoped policy Observe, job Claim/Report/Publish, and exact job-scoped
+preset and credential resolution. Generic configuration, inventory registration,
 assignment, binding, handover and revocation remain operator operations. Each
 execution call checks the current adopted identity/certificate serial and exact
 assignment. Job grants additionally check the assignment generation, lease owner,
@@ -114,6 +115,42 @@ an uncertain mutation, a later executor must reconcile this same pinned job and
 recoverable credentials before another write. Previously issued data-plane
 capabilities last until their bounded expiry; already-started streams are not
 instantly revoked. This role does not claim immediate data-plane revocation.
+
+## Optional outbound discovery
+
+The Worker library enables LAN discovery only when its composition root injects
+`Config.Discoverer`. It uses the adopted Worker's existing outbound CP connection;
+discovery adds no listener, credential provider, policy file or Producer authority.
+The interval defaults to 30 seconds (one second to one hour), and the hard scan
+timeout defaults to two seconds (one millisecond to 30 seconds). The discoverer's
+observation window is 90% of that timeout, leaving time to complete before the
+hard context deadline. Each discovery Poll and policy Observe RPC has its own
+ten-second deadline.
+
+Each LAN call follows a fresh nonblocking Poll for that assignment. The current
+network supplies its interface hint, multicast choice, explicit seeds and allowed
+prefixes. Removed or replaced assignments cannot use a historical snapshot to
+start another scan. Seeds and returned endpoints must be credential-free IP
+literals within those prefixes. A scan returning more than 256 observations is
+rejected. Observe carries the generation used for the scan, and the CP rechecks
+current assignment and identity authority before accepting it.
+
+Only a nonzero UUID EPR (`urn:uuid:...`) or a canonical unicast six-byte MAC within
+the assigned network supplies a rediscovery hint. Inventory IDs, CandidateID,
+endpoint URLs and IP addresses never supply that key; address-only seeds are
+skipped. If one scan associates the same hint with different candidate IDs or
+transport hosts, that whole key is skipped with a fixed ambiguity warning.
+Duplicate packets for one candidate and host can merge endpoints. These hints
+never authenticate a physical identity: discovery authentication flags are
+cleared, and the CP preserves previously authenticated inventory evidence. After
+a DHCP address change, leased inspection must confirm the authenticated physical
+identity; an address hint never grants inventory ownership or credential access.
+
+Discovery runs independently of heartbeat, job polling and lease renewal. Errors
+produce fixed messages without device text and retry at the next interval; they
+do not cancel an executing job. Session cancellation and certificate renewal
+cancel and join discovery cleanup before closing the old CP connection. Injected
+discoverers must honor context cancellation.
 
 ## Explicit HTTP compatibility
 
