@@ -117,7 +117,7 @@ func (w *Worker) Run(ctx context.Context) error {
 			bootstrap = true
 		}
 		if !errors.Is(err, errReconnect) {
-			w.cfg.Log.Warn("camera worker connection stopped; device work canceled", "error", err)
+			w.logSessionFailure(err)
 		}
 		select {
 		case <-ctx.Done():
@@ -126,6 +126,21 @@ func (w *Worker) Run(ctx context.Context) error {
 		}
 	}
 	return ctx.Err()
+}
+
+// Device drivers may include authenticated URLs, credentials or response bodies
+// in errors. Preserve the error for control flow, but never serialize its text or
+// details to the Worker log, even when it is wrapped in a gRPC status.
+func (w *Worker) logSessionFailure(err error) {
+	code := status.Code(err)
+	kind := "none"
+	switch {
+	case errors.Is(err, context.Canceled):
+		code, kind = codes.Canceled, "canceled"
+	case errors.Is(err, context.DeadlineExceeded):
+		code, kind = codes.DeadlineExceeded, "deadline_exceeded"
+	}
+	w.cfg.Log.Warn("camera worker connection stopped; device work canceled", "code", code.String(), "context", kind)
 }
 
 func (w *Worker) session(ctx context.Context, conn *grpc.ClientConn) error {
