@@ -32,6 +32,9 @@ func cameraInputs(v *api.CameraJobInputs) error {
 	if v == nil {
 		return invalid("inputs", "pinned enrollment inputs are required")
 	}
+	if err := cameraBootstrap(v.GetBootstrap()); err != nil {
+		return err
+	}
 	if err := cameraProfile(v.GetDesired(), false); err != nil {
 		return err
 	}
@@ -524,7 +527,7 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		if j.GetStage() != api.CameraJobStage_CAMERA_JOB_STAGE_VERIFYING {
 			return failed("camera must be independently verified before deployment")
 		}
-		if (j.GetInputs().GetPolicy() != nil || j.GetInputs().GetPreset() != nil || j.GetInputs().GetConfiguration() != nil || j.GetObserved().GetProgress() != nil) && r.GetObserved().GetProgress() == nil {
+		if (j.GetInputs().GetPolicy() != nil || j.GetInputs().GetPreset() != nil || j.GetInputs().GetConfiguration() != nil || j.GetInputs().GetBootstrap() != nil || j.GetObserved().GetProgress() != nil) && r.GetObserved().GetProgress() == nil {
 			return failed("pinned camera configuration requires its durable typed checkpoint before publication")
 		}
 		pin, err := c.cameraProgress(ctx, j, a, b, d, r.GetObserved())

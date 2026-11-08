@@ -18,6 +18,7 @@ import (
 
 func TestCameraPolicyScopedObservationAndAtomicEnrollment(t *testing.T) {
 	server, cp, admin, ctx := cameraPolicyControl(t)
+	server.Deps.PrepareCameraEnrollment = nil // exercise an explicitly unconfigured embedding
 	worker, conn, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "auto-worker", nil)
 	_, other, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "auto-other", nil)
 	producer, _, producerConn := cameraWorkerProducer(t, ctx, server, cp, admin, "auto-producer", nil)

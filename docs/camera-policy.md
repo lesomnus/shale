@@ -1,7 +1,24 @@
 # Central camera policy and pinned execution
 
-This document records the implementation contract for issue #197. The central
-API and adapters must satisfy the boundaries below before the issue is closed.
+An optional `CameraEnrollmentPolicy.bootstrap` pins an explicit compatibility
+profile identifier, `http` or `https` web scheme, and web port (1–65535). All
+three values are required when present; the CP validates syntax without
+guessing firmware, choosing defaults, or consulting an installed driver. The
+profile contains no address, URL, credential, or activation grant. A Worker may
+report an explicitly selected profile as unsupported if it is not installed.
+
+Enrollment copies this selection into immutable `CameraJobInputs.bootstrap`.
+An operator may also supply it on a direct job; a policy-derived job must match
+the exact policy value, including absence. The portable request and typed
+checkpoint retain the selection through retries, transport recovery and
+assignment replacement. Bootstrap jobs require a typed checkpoint before
+publication. Absent pins preserve legacy behavior, while activation continues
+to require `allow_activation`, scoped credentials and a current execution lease.
+The installed web transport derives its host only from freshly authorized camera
+addresses; the pin supplies the scheme and port only.
+
+This document describes the central API and execution contracts introduced in
+#197 and used by the managed edge.
 
 ## Authority and revisions
 
@@ -124,8 +141,8 @@ the visible device. Outcomes include `policy_missing`, `policy_manual`,
 
 An optional `Deps.PrepareCameraEnrollment` callback receives the current recorded
 server and transaction driver. Its return value contains purpose-bound durable
-references only. The credential implementation is connected by the combined
-edge integration; this policy layer never stores a password. The policy's
+references only. The default CP Build connects its credential store through this
+callback; the policy layer retains only references. The policy's
 optional activation username defaults to `admin` and affects newly prepared
 activation material only. Existing/imported accounts retain their usernames.
 

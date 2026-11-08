@@ -136,6 +136,29 @@ func fixture(t *testing.T) (provision.Request, *device, *publisher, *provision.E
 	e := &provision.Engine{Store: s, Auth: auth, Inspector: d, Configurator: d, Bootstrapper: d, Verifier: verifier{}, Publisher: p}
 	return q, d, p, e, dir
 }
+
+func TestBootstrapPinIsDurableDetachedAndDoesNotGrantActivation(t *testing.T) {
+	q, d, _, e, _ := fixture(t)
+	q.AllowActivation = false
+	q.Bootstrap = &camera.BootstrapSettings{CompatibilityProfile: "fixture-v1", WebScheme: "https", WebPort: 8443}
+	require.NoError(t, q.Validate())
+	r, err := e.Execute(t.Context(), q, true)
+	require.ErrorIs(t, err, camera.ErrManualActivation)
+	require.Zero(t, d.activations)
+	require.Equal(t, q.Bootstrap, r.Request.Bootstrap)
+	require.NotSame(t, q.Bootstrap, r.Request.Bootstrap)
+	q.Bootstrap.WebPort = 443
+	require.Equal(t, 8443, r.Request.Bootstrap.WebPort)
+	persisted, err := e.Store.Load(t.Context(), q.ID)
+	require.NoError(t, err)
+	require.Equal(t, r.Request.Bootstrap, persisted.Request.Bootstrap)
+	_, err = e.Execute(t.Context(), q, true)
+	require.ErrorIs(t, err, provision.ErrConflict, "recovery cannot choose another transport for the same request")
+	require.Zero(t, d.activations)
+	q.Bootstrap = &camera.BootstrapSettings{}
+	require.ErrorIs(t, q.Validate(), camera.ErrInvalid)
+}
+
 func TestExternalCallerPlansWithoutWritesThenActivatesAndResumes(t *testing.T) {
 	q, d, p, e, dir := fixture(t)
 	ctx := context.Background()

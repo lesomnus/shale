@@ -43,8 +43,6 @@ import (
 	"github.com/lesomnus/payday/web"
 
 	"github.com/lesomnus/shale/api"
-	"github.com/lesomnus/shale/internal/cameracredential"
-	"github.com/lesomnus/shale/internal/camerasecret"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/identity"
@@ -289,13 +287,8 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// The same recoverable CP KEK protects signing keys and camera credentials
 	// through independent domain-separated keys. Resolve it lazily: init may
 	// create the KEK after the server is assembled; a missing key fails closed.
-	deps.Credentials = func(current dialect.Driver) (cameracredential.Store, error) {
-		backend, err := camerasecret.NewAESGCM(s.Kek)
-		if err != nil {
-			return nil, camerasecret.ErrUnavailable
-		}
-		return cameracredential.NewSQLFactory(ungated, backend, backend, cameracredential.SQLOptions{})(current)
-	}
+	deps.Credentials = s.cameraCredentialFactory(ungated)
+	deps.PrepareCameraEnrollment = s.prepareCameraEnrollment
 	if c.Export.Enabled {
 		deps.ExportURL = func() string { return c.Export.endpoint() }
 	}

@@ -53,7 +53,7 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 
 	return &xli.Command{
 		Name:  "serve",
-		Brief: "run one role",
+		Brief: "run service roles",
 
 		Commands: []*xli.Command{
 			{
@@ -98,16 +98,14 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 				Name: "camera-worker", Brief: "an outbound camera Worker with its own adopted machine identity", Flags: common(),
 				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 					apply(self)
-					ctx, done, err := Telemetry(ctx, c)
-					if err != nil {
-						return err
-					}
-					defer done()
-					w, err := cameraworker.New(CameraWorkerConfig(c))
-					if err != nil {
-						return err
-					}
-					return w.Run(ctx)
+					return serveEdge(ctx, c, []string{"worker"})
+				}),
+			},
+			{
+				Name: "edge", Brief: "managed camera Worker and Producer roles in one process", Flags: common(),
+				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
+					apply(self)
+					return serveEdge(ctx, c, nil)
 				}),
 			},
 			{
@@ -140,7 +138,7 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 // CameraWorkerConfig is exported so combined-role hosts can inject a CP-backed
 // executor without giving the Worker a Producer's identity or local passwords.
 func CameraWorkerConfig(c *cmd.Config) cameraworker.Config {
-	return cameraworker.Config{StateDir: c.StateDir("camera-worker"), Cp: c.Cp, CaHash: c.CaHash, Tenant: c.Tenant, Dev: c.IsDev(), HeartbeatInterval: c.CameraWorker.HeartbeatInterval, RetryInterval: c.CameraWorker.RetryInterval, LeaseSeconds: c.CameraWorker.LeaseSeconds, Log: slog.Default()}
+	return cameraworker.Config{StateDir: c.StateDir("camera-worker"), Cp: c.Cp, CaHash: c.CaHash, Tenant: c.Tenant, Dev: c.IsDev(), HeartbeatInterval: c.CameraWorker.HeartbeatInterval, RetryInterval: c.CameraWorker.RetryInterval, LeaseSeconds: c.CameraWorker.LeaseSeconds, DiscoveryInterval: c.CameraWorker.DiscoveryInterval, DiscoveryTimeout: c.CameraWorker.DiscoveryTimeout, Log: slog.Default()}
 }
 
 // serveControlPlane serves the given surfaces; `all` says which defaults

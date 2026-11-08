@@ -5,12 +5,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/internal/camerabootstrap"
 	"github.com/lesomnus/shale/internal/cameraprogress"
 	"github.com/lesomnus/shale/provision"
 	"google.golang.org/protobuf/proto"
@@ -32,6 +34,7 @@ func jobRequest(w *api.CameraWorkerWork) provision.Request {
 	a, b, j := w.GetAssignment(), w.GetBinding(), w.GetJob()
 	scope := enrollmentScope(a)
 	q := provision.Request{ID: cameraID(j.GetId()), BindingID: b.GetLogicalKey(), Scope: scope, Device: deviceHint(w), UsePreset: true, Alias: b.GetSourceAlias(), Provider: "cp", AllowActivation: j.GetInputs().GetAllowActivation(), ProbeDuration: 5 * time.Second}
+	q.Bootstrap = camerabootstrap.Decode(j.GetInputs().GetBootstrap())
 	ref := func(v *api.CameraCredentialReference) *camera.CredentialRef {
 		if v == nil {
 			return nil
@@ -96,7 +99,7 @@ func (s *JobStore) Reserve(ctx context.Context, q provision.Request) error {
 	want := jobRequest(w)
 	// The request's discovery hints and endpoints may be historical. They do
 	// not authorize another inventory device or mutable policy/credential input.
-	if q.ID != want.ID || q.BindingID != want.BindingID || q.Scope != want.Scope || q.Device.ID != want.Device.ID || q.Alias != want.Alias || q.Provider != want.Provider || q.AllowActivation != want.AllowActivation || !q.UsePreset || q.Desired != (camera.DesiredState{}) || q.AllowProducerRestart {
+	if q.ID != want.ID || q.BindingID != want.BindingID || q.Scope != want.Scope || q.Device.ID != want.Device.ID || q.Alias != want.Alias || q.Provider != want.Provider || q.AllowActivation != want.AllowActivation || !reflect.DeepEqual(q.Bootstrap, want.Bootstrap) || !q.UsePreset || q.Desired != (camera.DesiredState{}) || q.AllowProducerRestart {
 		return camera.ErrForbidden
 	}
 	return q.Validate()
@@ -150,6 +153,9 @@ func (s *JobStore) Load(ctx context.Context, id string) (provision.Run, error) {
 	// Immutable material versions survive replacement. Only the explicit
 	// delivery scope and fresh transport endpoints follow today's assignment.
 	q := jobRequest(w)
+	if !reflect.DeepEqual(r.Request.Bootstrap, q.Bootstrap) {
+		return provision.Run{}, camera.ErrForbidden
+	}
 	r.Request.Scope = q.Scope
 	r.Request.Device.Endpoints = q.Device.Endpoints
 	for _, ref := range []*camera.CredentialRef{r.Request.InitialRef, r.Request.ManagementRef, r.Request.StreamingRef, r.InitialRef, r.ManagementRef, r.StreamingRef} {
@@ -230,6 +236,7 @@ func runObservation(r provision.Run, prior *api.CameraJobObservation) (*api.Came
 	// A workflow checkpoint cannot manufacture Producer/live acknowledgments.
 	if prior != nil {
 		o.SetAppliedRevision(prior.GetAppliedRevision())
+		o.SetLiveCaptureEpoch(prior.GetLiveCaptureEpoch())
 		o.SetLiveDecodedFrames(prior.GetLiveDecodedFrames())
 		o.SetLiveFirstFrameAt(prior.GetLiveFirstFrameAt())
 		o.SetLiveLastFrameAt(prior.GetLiveLastFrameAt())
@@ -242,7 +249,7 @@ func (s *JobStore) Save(ctx context.Context, r provision.Run) error {
 	if err != nil {
 		return err
 	}
-	if r.Request.ID != cameraID(w.GetJob().GetId()) {
+	if r.Request.ID != cameraID(w.GetJob().GetId()) || !reflect.DeepEqual(r.Request.Bootstrap, jobRequest(w).Bootstrap) {
 		return camera.ErrForbidden
 	}
 	o, err := runObservation(r, w.GetJob().GetObserved())

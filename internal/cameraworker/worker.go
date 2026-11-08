@@ -7,10 +7,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
 	"golang.org/x/sync/errgroup"
@@ -37,12 +39,20 @@ type Config struct {
 	RetryInterval     time.Duration
 	LeaseSeconds      int64
 	Executor          Executor
+	// Discovery is opt-in. The composition root supplies its LAN transport;
+	// assignments and network intent always come from the authenticated CP.
+	Discoverer        camera.Discoverer
+	DiscoveryInterval time.Duration
+	DiscoveryTimeout  time.Duration
 	Log               *slog.Logger
 }
 
 type Worker struct {
 	cfg   Config
 	agent *hostagent.Agent
+	// Run owns one serial poll loop at a time. Preserve only its last attempted
+	// job across session reconnects so a failing camera cannot starve its peers.
+	lastAttempted string
 }
 
 func New(c Config) (*Worker, error) {
@@ -58,8 +68,17 @@ func New(c Config) (*Worker, error) {
 	if c.LeaseSeconds == 0 {
 		c.LeaseSeconds = 30
 	}
+	if c.DiscoveryInterval == 0 {
+		c.DiscoveryInterval = 30 * time.Second
+	}
+	if c.DiscoveryTimeout == 0 {
+		c.DiscoveryTimeout = 2 * time.Second
+	}
 	if c.HeartbeatInterval < time.Millisecond || c.RetryInterval < time.Millisecond || c.LeaseSeconds < 3 || c.LeaseSeconds > 300 {
 		return nil, errors.New("invalid camera worker timing")
+	}
+	if c.DiscoveryInterval < time.Second || c.DiscoveryInterval > time.Hour || c.DiscoveryTimeout < time.Millisecond || c.DiscoveryTimeout > 30*time.Second {
+		return nil, errors.New("invalid camera worker discovery timing")
 	}
 	if c.Log == nil {
 		c.Log = slog.Default()
@@ -74,6 +93,11 @@ func New(c Config) (*Worker, error) {
 	return &Worker{cfg: c, agent: a}, nil
 }
 func (w *Worker) ID() pdid.Id { return w.agent.Id() }
+
+// HTTPClient uses this Worker's current machine certificate and pinned CP CA
+// for native data-plane verification. Camera-device trust is configured
+// separately; callers own and close this client's idle connections.
+func (w *Worker) HTTPClient() (*http.Client, error) { return w.agent.HTTPClient() }
 
 func operationKey() string {
 	var b [16]byte
@@ -147,6 +171,11 @@ func (w *Worker) session(ctx context.Context, conn *grpc.ClientConn) error {
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return w.heartbeat(ctx, conn) })
 	g.Go(func() error { return w.poll(ctx, conn) })
+	if w.cfg.Discoverer != nil {
+		g.Go(func() error {
+			return w.discover(ctx, api.NewCameraWorkerServiceClient(conn), api.NewCameraPolicyServiceClient(conn))
+		})
+	}
 	return g.Wait()
 }
 func (w *Worker) heartbeat(ctx context.Context, conn *grpc.ClientConn) error {
@@ -201,6 +230,31 @@ func (w *Worker) startExecution(ctx context.Context, conn *grpc.ClientConn, work
 	return stop
 }
 
+// pollStart rotates a fresh bounded CP snapshot after the previous attempt.
+// Missing jobs carry no local scheduling state; yielded remains bounded by the
+// current snapshot (the CP permits at most 500 jobs), never by process lifetime.
+// Neither the cursor nor a snapshot authorizes execution: Claim and CheckJob do.
+func (w *Worker) pollStart(work []*api.CameraWorkerWork, yielded map[string]bool) int {
+	start, found := 0, false
+	present := make(map[string]bool, len(work))
+	for i, v := range work {
+		id := string(v.GetJob().GetId())
+		present[id] = true
+		if id == w.lastAttempted {
+			start, found = (i+1)%len(work), true
+		}
+	}
+	if !found {
+		w.lastAttempted = ""
+	}
+	for id := range yielded {
+		if !present[id] {
+			delete(yielded, id)
+		}
+	}
+	return start
+}
+
 // One serial execution per Worker avoids local overlap; the CP's physical-device
 // fence also protects against competing Workers and restarts. Terminal or
 // superseded work is canceled before another executor starts.
@@ -241,6 +295,8 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 			return err
 		}
 		revision = snapshot.GetRevision()
+		pending := snapshot.GetJobs()
+		start := w.pollStart(pending, yielded)
 		if active != nil {
 			valid := false
 			for _, v := range snapshot.GetJobs() {
@@ -262,7 +318,8 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 		if active != nil {
 			continue
 		}
-		for _, v := range snapshot.GetJobs() {
+		for offset := range pending {
+			v := pending[(start+offset)%len(pending)]
 			j := v.GetJob()
 			if yielded[string(j.GetId())] {
 				continue
@@ -271,6 +328,9 @@ func (w *Worker) poll(ctx context.Context, conn *grpc.ClientConn) error {
 			if len(j.GetLeaseOwner()) > 0 && !bytes.Equal(j.GetLeaseOwner(), w.ID().Bytes()) && j.GetLeaseExpires() != nil && j.GetLeaseExpires().AsTime().After(time.Now()) {
 				continue
 			}
+			// Advance before Claim/CheckJob, including when either response fails.
+			// Reconnection must not make one unsettled/denied job the first again.
+			w.lastAttempted = string(j.GetId())
 			claimed, err := jobs.Claim(ctx, api.CameraJobClaimRequest_builder{Ref: api.CameraJobRef_builder{Id: j.GetId()}.Build(), ExpectedVersion: j.GetDateUpdated(), OperationKey: operationKey(), LeaseSeconds: w.cfg.LeaseSeconds}.Build())
 			if err != nil {
 				// A changed snapshot or another unsettled intent for this physical

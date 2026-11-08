@@ -42,8 +42,11 @@ accounts and shares a sufficiently privileged installed account only for a
 missing purpose. It generates a new initial account only with activation
 permission. Initialized cameras can use management/streaming imports without an
 initial-admin reference; those with no usable account remain waiting. An error
-rolls back the enclosing transaction. The edge composition wires this helper
-without impersonating an operator or calling an outward RPC inside a job.
+rolls back the enclosing transaction. The default CP Build wires this helper to
+the enrollment request's recorded Server and current Driver, using the CP KEK
+and the existing initial-password generator. It does not impersonate an operator
+or call an outward RPC inside a job. An embedding may explicitly replace or
+disable this callback; a missing or failed preparer leaves enrollment waiting.
 
 Resolve explicitly transfers plaintext over the authenticated CP connection.
 Use its callback-based lease promptly and close it. Never log or persist raw
@@ -87,8 +90,8 @@ accepts an injected preflight resolver. Its legacy fallback requires an explicit
 absolute private directory; injected failures never select another provider.
 The caller must provide the resolver that capture can actually use.
 
-The outbound Worker's default executor still waits until central policy and edge
-execution adapters are wired. Credential delivery alone enables no camera writes.
+Worker execution still requires the explicitly configured managed edge adapters
+and policy. Default CP credential preparation alone enables no camera writes.
 
 ## Optional streaming cache
 
@@ -102,8 +105,8 @@ Only an online streaming grant with CP `cache_until`, exact Source/revision/ref
 and assignment generation enters pending memory. Persistence requires matching
 actual-media proof from the current capture: initialization, an IDR, advancing
 video and the exact credential lease used. CP status, publication receipts and
-old capture epochs are insufficient. The Source application observer is connected
-by the later edge composition.
+old capture epochs are insufficient. The managed edge connects the Source
+application observer when its bounded streaming cache is explicitly enabled.
 
 Fallback is limited to transport unavailability and the authenticated original
 deadline: at most five minutes and 64 entries. Worker/initial/management accounts

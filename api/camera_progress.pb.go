@@ -868,6 +868,7 @@ type CameraProvisionRequest struct {
 	xxx_hidden_AllowActivation      bool                          `protobuf:"varint,13,opt,name=allow_activation,json=allowActivation"`
 	xxx_hidden_AllowProducerRestart bool                          `protobuf:"varint,14,opt,name=allow_producer_restart,json=allowProducerRestart"`
 	xxx_hidden_ProbeDurationNs      int64                         `protobuf:"varint,15,opt,name=probe_duration_ns,json=probeDurationNs"`
+	xxx_hidden_Bootstrap            *CameraBootstrapProfile       `protobuf:"bytes,16,opt,name=bootstrap"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -1002,6 +1003,13 @@ func (x *CameraProvisionRequest) GetProbeDurationNs() int64 {
 	return 0
 }
 
+func (x *CameraProvisionRequest) GetBootstrap() *CameraBootstrapProfile {
+	if x != nil {
+		return x.xxx_hidden_Bootstrap
+	}
+	return nil
+}
+
 func (x *CameraProvisionRequest) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -1062,6 +1070,10 @@ func (x *CameraProvisionRequest) SetProbeDurationNs(v int64) {
 	x.xxx_hidden_ProbeDurationNs = v
 }
 
+func (x *CameraProvisionRequest) SetBootstrap(v *CameraBootstrapProfile) {
+	x.xxx_hidden_Bootstrap = v
+}
+
 func (x *CameraProvisionRequest) HasScope() bool {
 	if x == nil {
 		return false
@@ -1104,6 +1116,13 @@ func (x *CameraProvisionRequest) HasStreamingRef() bool {
 	return x.xxx_hidden_StreamingRef != nil
 }
 
+func (x *CameraProvisionRequest) HasBootstrap() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Bootstrap != nil
+}
+
 func (x *CameraProvisionRequest) ClearScope() {
 	x.xxx_hidden_Scope = nil
 }
@@ -1128,6 +1147,10 @@ func (x *CameraProvisionRequest) ClearStreamingRef() {
 	x.xxx_hidden_StreamingRef = nil
 }
 
+func (x *CameraProvisionRequest) ClearBootstrap() {
+	x.xxx_hidden_Bootstrap = nil
+}
+
 type CameraProvisionRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1146,6 +1169,7 @@ type CameraProvisionRequest_builder struct {
 	AllowActivation      bool
 	AllowProducerRestart bool
 	ProbeDurationNs      int64
+	Bootstrap            *CameraBootstrapProfile
 }
 
 func (b0 CameraProvisionRequest_builder) Build() *CameraProvisionRequest {
@@ -1167,6 +1191,7 @@ func (b0 CameraProvisionRequest_builder) Build() *CameraProvisionRequest {
 	x.xxx_hidden_AllowActivation = b.AllowActivation
 	x.xxx_hidden_AllowProducerRestart = b.AllowProducerRestart
 	x.xxx_hidden_ProbeDurationNs = b.ProbeDurationNs
+	x.xxx_hidden_Bootstrap = b.Bootstrap
 	return m0
 }
 
@@ -4282,7 +4307,7 @@ var File_shale_camera_progress_proto protoreflect.FileDescriptor
 
 const file_shale_camera_progress_proto_rawDesc = "" +
 	"\n" +
-	"\x1bshale/camera_progress.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19shale/camera_preset.proto\".\n" +
+	"\x1bshale/camera_progress.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19shale/camera_preset.proto\x1a\x1cshale/camera_bootstrap.proto\".\n" +
 	"\x16CameraProvisionStrings\x12\x14\n" +
 	"\x05items\x18\x01 \x03(\tR\x05items\".\n" +
 	"\x16CameraProvisionDoubles\x12\x14\n" +
@@ -4320,7 +4345,7 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\aversion\x18\x03 \x01(\tR\aversion\x12\x18\n" +
 	"\apurpose\x18\x04 \x01(\tR\apurpose\x12 \n" +
 	"\vrecoverable\x18\x05 \x01(\bR\vrecoverable\x12.\n" +
-	"\x05scope\x18\x06 \x01(\v2\x18.shale.CameraPresetScopeR\x05scope\"\xaf\x05\n" +
+	"\x05scope\x18\x06 \x01(\v2\x18.shale.CameraPresetScopeR\x05scope\"\xec\x05\n" +
 	"\x16CameraProvisionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -4340,7 +4365,8 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\rstreaming_ref\x18\f \x01(\v2#.shale.CameraProvisionCredentialRefR\fstreamingRef\x12)\n" +
 	"\x10allow_activation\x18\r \x01(\bR\x0fallowActivation\x124\n" +
 	"\x16allow_producer_restart\x18\x0e \x01(\bR\x14allowProducerRestart\x12*\n" +
-	"\x11probe_duration_ns\x18\x0f \x01(\x03R\x0fprobeDurationNs\"I\n" +
+	"\x11probe_duration_ns\x18\x0f \x01(\x03R\x0fprobeDurationNs\x12;\n" +
+	"\tbootstrap\x18\x10 \x01(\v2\x1d.shale.CameraBootstrapProfileR\tbootstrap\"I\n" +
 	"\x19CameraProvisionResolution\x12\x14\n" +
 	"\x05width\x18\x01 \x01(\x05R\x05width\x12\x16\n" +
 	"\x06height\x18\x02 \x01(\x05R\x06height\"T\n" +
@@ -4542,8 +4568,9 @@ var file_shale_camera_progress_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),              // 33: google.protobuf.Timestamp
 	(*CameraPresetScope)(nil),                  // 34: shale.CameraPresetScope
 	(*CameraPresetVideo)(nil),                  // 35: shale.CameraPresetVideo
-	(*CameraPresetSettings)(nil),               // 36: shale.CameraPresetSettings
-	(*CameraResolvedPreset)(nil),               // 37: shale.CameraResolvedPreset
+	(*CameraBootstrapProfile)(nil),             // 36: shale.CameraBootstrapProfile
+	(*CameraPresetSettings)(nil),               // 37: shale.CameraPresetSettings
+	(*CameraResolvedPreset)(nil),               // 38: shale.CameraResolvedPreset
 }
 var file_shale_camera_progress_proto_depIdxs = []int32{
 	3,  // 0: shale.CameraProvisionEndpoints.items:type_name -> shale.CameraProvisionEndpoint
@@ -4558,62 +4585,63 @@ var file_shale_camera_progress_proto_depIdxs = []int32{
 	8,  // 9: shale.CameraProvisionRequest.management_ref:type_name -> shale.CameraProvisionCredentialRef
 	8,  // 10: shale.CameraProvisionRequest.initial_ref:type_name -> shale.CameraProvisionCredentialRef
 	8,  // 11: shale.CameraProvisionRequest.streaming_ref:type_name -> shale.CameraProvisionCredentialRef
-	10, // 12: shale.CameraProvisionResolutions.items:type_name -> shale.CameraProvisionResolution
-	0,  // 13: shale.CameraProvisionProfileCapability.codecs:type_name -> shale.CameraProvisionStrings
-	11, // 14: shale.CameraProvisionProfileCapability.resolutions:type_name -> shale.CameraProvisionResolutions
-	1,  // 15: shale.CameraProvisionProfileCapability.frame_rates:type_name -> shale.CameraProvisionDoubles
-	2,  // 16: shale.CameraProvisionProfileCapability.bitrates:type_name -> shale.CameraProvisionIntegers
-	6,  // 17: shale.CameraProvisionProfileCapability.evidence:type_name -> shale.CameraProvisionEvidenceList
-	12, // 18: shale.CameraProvisionProfileCapabilities.items:type_name -> shale.CameraProvisionProfileCapability
-	13, // 19: shale.CameraProvisionCapabilities.profiles:type_name -> shale.CameraProvisionProfileCapabilities
-	6,  // 20: shale.CameraProvisionCapabilities.evidence:type_name -> shale.CameraProvisionEvidenceList
-	6,  // 21: shale.CameraProvisionMediaProfile.evidence:type_name -> shale.CameraProvisionEvidenceList
-	15, // 22: shale.CameraProvisionMediaProfiles.items:type_name -> shale.CameraProvisionMediaProfile
-	16, // 23: shale.CameraProvisionCurrentState.profiles:type_name -> shale.CameraProvisionMediaProfiles
-	33, // 24: shale.CameraProvisionCurrentState.observed_at:type_name -> google.protobuf.Timestamp
-	7,  // 25: shale.CameraProvisionInspection.device:type_name -> shale.CameraProvisionDevice
-	14, // 26: shale.CameraProvisionInspection.capabilities:type_name -> shale.CameraProvisionCapabilities
-	17, // 27: shale.CameraProvisionInspection.current:type_name -> shale.CameraProvisionCurrentState
-	15, // 28: shale.CameraProvisionChangePlan.before:type_name -> shale.CameraProvisionMediaProfile
-	15, // 29: shale.CameraProvisionChangePlan.after:type_name -> shale.CameraProvisionMediaProfile
-	0,  // 30: shale.CameraProvisionChangePlan.changes:type_name -> shale.CameraProvisionStrings
-	15, // 31: shale.CameraProvisionVerifiedState.profile:type_name -> shale.CameraProvisionMediaProfile
-	6,  // 32: shale.CameraProvisionVerifiedState.evidence:type_name -> shale.CameraProvisionEvidenceList
-	33, // 33: shale.CameraProvisionVerifiedState.observed_at:type_name -> google.protobuf.Timestamp
-	33, // 34: shale.CameraProvisionEvent.at:type_name -> google.protobuf.Timestamp
-	21, // 35: shale.CameraProvisionEvents.items:type_name -> shale.CameraProvisionEvent
-	23, // 36: shale.CameraProvisionImpacts.items:type_name -> shale.CameraProvisionImpact
-	33, // 37: shale.CameraProvisionBinding.deployed_at:type_name -> google.protobuf.Timestamp
-	33, // 38: shale.CameraProvisionBinding.committed_at:type_name -> google.protobuf.Timestamp
-	36, // 39: shale.CameraProvisionSettings.value:type_name -> shale.CameraPresetSettings
-	37, // 40: shale.CameraProvisionPreset.value:type_name -> shale.CameraResolvedPreset
-	28, // 41: shale.CameraProvisionInitializationPlan.before:type_name -> shale.CameraProvisionDeviceSettings
-	28, // 42: shale.CameraProvisionInitializationPlan.after:type_name -> shale.CameraProvisionDeviceSettings
-	0,  // 43: shale.CameraProvisionInitializationPlan.changes:type_name -> shale.CameraProvisionStrings
-	30, // 44: shale.CameraProvisionWarnings.items:type_name -> shale.CameraProvisionWarning
-	9,  // 45: shale.CameraProvisionState.request:type_name -> shale.CameraProvisionRequest
-	33, // 46: shale.CameraProvisionState.created_at:type_name -> google.protobuf.Timestamp
-	33, // 47: shale.CameraProvisionState.updated_at:type_name -> google.protobuf.Timestamp
-	18, // 48: shale.CameraProvisionState.inspection:type_name -> shale.CameraProvisionInspection
-	19, // 49: shale.CameraProvisionState.plan:type_name -> shale.CameraProvisionChangePlan
-	20, // 50: shale.CameraProvisionState.verified:type_name -> shale.CameraProvisionVerifiedState
-	8,  // 51: shale.CameraProvisionState.initial_ref:type_name -> shale.CameraProvisionCredentialRef
-	8,  // 52: shale.CameraProvisionState.management_ref:type_name -> shale.CameraProvisionCredentialRef
-	8,  // 53: shale.CameraProvisionState.streaming_ref:type_name -> shale.CameraProvisionCredentialRef
-	25, // 54: shale.CameraProvisionState.binding:type_name -> shale.CameraProvisionBinding
-	22, // 55: shale.CameraProvisionState.events:type_name -> shale.CameraProvisionEvents
-	24, // 56: shale.CameraProvisionState.impacts:type_name -> shale.CameraProvisionImpacts
-	27, // 57: shale.CameraProvisionState.preset:type_name -> shale.CameraProvisionPreset
-	26, // 58: shale.CameraProvisionState.effective:type_name -> shale.CameraProvisionSettings
-	29, // 59: shale.CameraProvisionState.initialization_plan:type_name -> shale.CameraProvisionInitializationPlan
-	28, // 60: shale.CameraProvisionState.initialized:type_name -> shale.CameraProvisionDeviceSettings
-	31, // 61: shale.CameraProvisionState.warnings:type_name -> shale.CameraProvisionWarnings
-	15, // 62: shale.CameraProvisionState.deployment_profile:type_name -> shale.CameraProvisionMediaProfile
-	63, // [63:63] is the sub-list for method output_type
-	63, // [63:63] is the sub-list for method input_type
-	63, // [63:63] is the sub-list for extension type_name
-	63, // [63:63] is the sub-list for extension extendee
-	0,  // [0:63] is the sub-list for field type_name
+	36, // 12: shale.CameraProvisionRequest.bootstrap:type_name -> shale.CameraBootstrapProfile
+	10, // 13: shale.CameraProvisionResolutions.items:type_name -> shale.CameraProvisionResolution
+	0,  // 14: shale.CameraProvisionProfileCapability.codecs:type_name -> shale.CameraProvisionStrings
+	11, // 15: shale.CameraProvisionProfileCapability.resolutions:type_name -> shale.CameraProvisionResolutions
+	1,  // 16: shale.CameraProvisionProfileCapability.frame_rates:type_name -> shale.CameraProvisionDoubles
+	2,  // 17: shale.CameraProvisionProfileCapability.bitrates:type_name -> shale.CameraProvisionIntegers
+	6,  // 18: shale.CameraProvisionProfileCapability.evidence:type_name -> shale.CameraProvisionEvidenceList
+	12, // 19: shale.CameraProvisionProfileCapabilities.items:type_name -> shale.CameraProvisionProfileCapability
+	13, // 20: shale.CameraProvisionCapabilities.profiles:type_name -> shale.CameraProvisionProfileCapabilities
+	6,  // 21: shale.CameraProvisionCapabilities.evidence:type_name -> shale.CameraProvisionEvidenceList
+	6,  // 22: shale.CameraProvisionMediaProfile.evidence:type_name -> shale.CameraProvisionEvidenceList
+	15, // 23: shale.CameraProvisionMediaProfiles.items:type_name -> shale.CameraProvisionMediaProfile
+	16, // 24: shale.CameraProvisionCurrentState.profiles:type_name -> shale.CameraProvisionMediaProfiles
+	33, // 25: shale.CameraProvisionCurrentState.observed_at:type_name -> google.protobuf.Timestamp
+	7,  // 26: shale.CameraProvisionInspection.device:type_name -> shale.CameraProvisionDevice
+	14, // 27: shale.CameraProvisionInspection.capabilities:type_name -> shale.CameraProvisionCapabilities
+	17, // 28: shale.CameraProvisionInspection.current:type_name -> shale.CameraProvisionCurrentState
+	15, // 29: shale.CameraProvisionChangePlan.before:type_name -> shale.CameraProvisionMediaProfile
+	15, // 30: shale.CameraProvisionChangePlan.after:type_name -> shale.CameraProvisionMediaProfile
+	0,  // 31: shale.CameraProvisionChangePlan.changes:type_name -> shale.CameraProvisionStrings
+	15, // 32: shale.CameraProvisionVerifiedState.profile:type_name -> shale.CameraProvisionMediaProfile
+	6,  // 33: shale.CameraProvisionVerifiedState.evidence:type_name -> shale.CameraProvisionEvidenceList
+	33, // 34: shale.CameraProvisionVerifiedState.observed_at:type_name -> google.protobuf.Timestamp
+	33, // 35: shale.CameraProvisionEvent.at:type_name -> google.protobuf.Timestamp
+	21, // 36: shale.CameraProvisionEvents.items:type_name -> shale.CameraProvisionEvent
+	23, // 37: shale.CameraProvisionImpacts.items:type_name -> shale.CameraProvisionImpact
+	33, // 38: shale.CameraProvisionBinding.deployed_at:type_name -> google.protobuf.Timestamp
+	33, // 39: shale.CameraProvisionBinding.committed_at:type_name -> google.protobuf.Timestamp
+	37, // 40: shale.CameraProvisionSettings.value:type_name -> shale.CameraPresetSettings
+	38, // 41: shale.CameraProvisionPreset.value:type_name -> shale.CameraResolvedPreset
+	28, // 42: shale.CameraProvisionInitializationPlan.before:type_name -> shale.CameraProvisionDeviceSettings
+	28, // 43: shale.CameraProvisionInitializationPlan.after:type_name -> shale.CameraProvisionDeviceSettings
+	0,  // 44: shale.CameraProvisionInitializationPlan.changes:type_name -> shale.CameraProvisionStrings
+	30, // 45: shale.CameraProvisionWarnings.items:type_name -> shale.CameraProvisionWarning
+	9,  // 46: shale.CameraProvisionState.request:type_name -> shale.CameraProvisionRequest
+	33, // 47: shale.CameraProvisionState.created_at:type_name -> google.protobuf.Timestamp
+	33, // 48: shale.CameraProvisionState.updated_at:type_name -> google.protobuf.Timestamp
+	18, // 49: shale.CameraProvisionState.inspection:type_name -> shale.CameraProvisionInspection
+	19, // 50: shale.CameraProvisionState.plan:type_name -> shale.CameraProvisionChangePlan
+	20, // 51: shale.CameraProvisionState.verified:type_name -> shale.CameraProvisionVerifiedState
+	8,  // 52: shale.CameraProvisionState.initial_ref:type_name -> shale.CameraProvisionCredentialRef
+	8,  // 53: shale.CameraProvisionState.management_ref:type_name -> shale.CameraProvisionCredentialRef
+	8,  // 54: shale.CameraProvisionState.streaming_ref:type_name -> shale.CameraProvisionCredentialRef
+	25, // 55: shale.CameraProvisionState.binding:type_name -> shale.CameraProvisionBinding
+	22, // 56: shale.CameraProvisionState.events:type_name -> shale.CameraProvisionEvents
+	24, // 57: shale.CameraProvisionState.impacts:type_name -> shale.CameraProvisionImpacts
+	27, // 58: shale.CameraProvisionState.preset:type_name -> shale.CameraProvisionPreset
+	26, // 59: shale.CameraProvisionState.effective:type_name -> shale.CameraProvisionSettings
+	29, // 60: shale.CameraProvisionState.initialization_plan:type_name -> shale.CameraProvisionInitializationPlan
+	28, // 61: shale.CameraProvisionState.initialized:type_name -> shale.CameraProvisionDeviceSettings
+	31, // 62: shale.CameraProvisionState.warnings:type_name -> shale.CameraProvisionWarnings
+	15, // 63: shale.CameraProvisionState.deployment_profile:type_name -> shale.CameraProvisionMediaProfile
+	64, // [64:64] is the sub-list for method output_type
+	64, // [64:64] is the sub-list for method input_type
+	64, // [64:64] is the sub-list for extension type_name
+	64, // [64:64] is the sub-list for extension extendee
+	0,  // [0:64] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_progress_proto_init() }
@@ -4622,6 +4650,7 @@ func file_shale_camera_progress_proto_init() {
 		return
 	}
 	file_shale_camera_preset_proto_init()
+	file_shale_camera_bootstrap_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

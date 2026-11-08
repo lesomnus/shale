@@ -54,6 +54,7 @@ func checkpointRun(w *api.CameraWorkerWork) provision.Run {
 
 func TestJobStoreRetainsPinnedStateAndRebindsOnlyDeliveryAndTransport(t *testing.T) {
 	e, w := checkpointFixture(t)
+	w.GetJob().GetInputs().SetBootstrap(api.CameraBootstrapProfile_builder{CompatibilityProfile: "fixture-v1", WebScheme: "https", WebPort: 8443}.Build())
 	s := &JobStore{Execution: e}
 	r := checkpointRun(w)
 	r.ActivationAttempted = true
@@ -70,12 +71,49 @@ func TestJobStoreRetainsPinnedStateAndRebindsOnlyDeliveryAndTransport(t *testing
 	require.Equal(t, r.Version, got.Version)
 	require.Equal(t, r.InitialRef.ID, got.InitialRef.ID)
 	require.Equal(t, r.InitialRef.Version, got.InitialRef.Version)
+	require.Equal(t, r.Request.Bootstrap, got.Request.Bootstrap)
+	require.NotSame(t, r.Request.Bootstrap, got.Request.Bootstrap)
 	require.NotEqual(t, oldScope.ProducerID, got.InitialRef.Scope.ProducerID)
 	require.Equal(t, enrollmentScope(w.GetAssignment()), got.Request.Scope)
 	require.Equal(t, "http://192.0.2.77/onvif/device_service", got.Request.Device.Endpoints[0].URL)
 	require.Equal(t, "http://192.0.2.20/onvif/device_service", r.Request.Device.Endpoints[0].URL, "state is detached")
 	_, err = s.Load(t.Context(), pdid.New(30).String())
 	require.ErrorIs(t, err, camera.ErrForbidden)
+}
+
+func TestJobStoreBootstrapCannotChangeOrOverrideActivation(t *testing.T) {
+	for _, pinned := range []bool{false, true} {
+		t.Run(map[bool]string{false: "legacy", true: "pinned"}[pinned], func(t *testing.T) {
+			e, w := checkpointFixture(t)
+			w.GetJob().GetInputs().SetAllowActivation(false)
+			if pinned {
+				w.GetJob().GetInputs().SetBootstrap(api.CameraBootstrapProfile_builder{CompatibilityProfile: "fixture-v1", WebScheme: "https", WebPort: 8443}.Build())
+			}
+			s := &JobStore{Execution: e}
+			q := jobRequest(w)
+			require.False(t, q.AllowActivation)
+			require.NoError(t, s.Reserve(t.Context(), q))
+			r := checkpointRun(w)
+			require.NoError(t, s.Save(t.Context(), r))
+			if pinned {
+				q.Bootstrap.WebPort = 443
+				require.Equal(t, int32(8443), w.GetJob().GetInputs().GetBootstrap().GetWebPort(), "request owns its pointer")
+			} else {
+				q.Bootstrap = &camera.BootstrapSettings{CompatibilityProfile: "fixture-v1", WebScheme: "https", WebPort: 8443}
+			}
+			require.ErrorIs(t, s.Reserve(t.Context(), q), camera.ErrForbidden)
+			r.Request.Bootstrap = q.Bootstrap
+			require.ErrorIs(t, s.Save(t.Context(), r), camera.ErrForbidden)
+			if pinned {
+				q.Bootstrap = nil
+				require.ErrorIs(t, s.Reserve(t.Context(), q), camera.ErrForbidden)
+			}
+			// An inconsistent saved pin cannot become a fresh request on resume.
+			w.GetJob().GetObserved().GetProgress().GetRequest().SetBootstrap(api.CameraBootstrapProfile_builder{CompatibilityProfile: "other", WebScheme: "http", WebPort: 80}.Build())
+			_, err := s.Load(t.Context(), q.ID)
+			require.ErrorIs(t, err, camera.ErrForbidden)
+		})
+	}
 }
 
 func TestJobStoreLostCheckpointStopsFollowingDeviceWrites(t *testing.T) {
