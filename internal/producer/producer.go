@@ -29,6 +29,7 @@ import (
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
+	catalog "github.com/lesomnus/shale/source"
 )
 
 // DomProducer is the domain byte of a Producer (§35.3).
@@ -42,12 +43,16 @@ type Config struct {
 	Dev      bool
 	Tenant   string
 
-	Sources        []SourceConfig
-	Ffmpeg         string
-	Ffprobe        string
-	AuthProvider   camera.AuthProvider
-	OnvifInspector camera.Inspector
-	MediaVerifier  camera.MediaVerifier
+	Sources []SourceConfig
+	// A provider factory is opened only after machine authentication and Set
+	// adoption. Direct providers support embedded/static/in-process callers.
+	SourceProvider        catalog.Provider
+	SourceProviderFactory func(context.Context, SourceSession) (catalog.Provider, error)
+	Ffmpeg                string
+	Ffprobe               string
+	AuthProvider          camera.AuthProvider
+	OnvifInspector        camera.Inspector
+	MediaVerifier         camera.MediaVerifier
 	// Gst is gst-launch, for the sources captured through GStreamer
 	// (§38.3); `gst-launch-1.0` on PATH by default.
 	Gst string
@@ -170,10 +175,13 @@ type Producer struct {
 	conn atomic.Pointer[grpc.ClientConn]
 	id   pdid.Id
 
-	set     *api.Set
-	members int
-	sources map[string]*source
-	order   []*source
+	set            *api.Set
+	members        int
+	sources        map[string]*source
+	order          []*source
+	catalog        catalog.Provider
+	initialCatalog catalog.Snapshot
+	initialSpecs   map[string]catalog.Spec
 
 	uploader *Uploader
 	relay    *relayLink
@@ -311,7 +319,13 @@ type source struct {
 // New prepares a producer; Run does the work.
 func New(cfg Config) (*Producer, error) {
 	cfg.defaults()
-	if len(cfg.Sources) == 0 {
+	if cfg.SourceProvider != nil && cfg.SourceProviderFactory != nil {
+		return nil, catalog.ErrInvalid
+	}
+	if (cfg.SourceProvider != nil || cfg.SourceProviderFactory != nil) && len(cfg.Sources) != 0 {
+		return nil, errors.New("source provider and local sources must be selected explicitly")
+	}
+	if len(cfg.Sources) == 0 && cfg.SourceProvider == nil && cfg.SourceProviderFactory == nil {
 		return nil, errors.New("no sources configured")
 	}
 	if cfg.Retain != RetainCommitted && cfg.Retain != RetainWritten {
@@ -321,29 +335,41 @@ func New(cfg Config) (*Producer, error) {
 	p.relay = newRelayLink(p)
 	p.m = newMetrics(context.Background())
 	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
-	for _, sc := range cfg.Sources {
+	if err := p.configureSources(cfg.Sources); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+// configureSources is initial construction only; dynamic reconciliation belongs
+// to the per-source lifecycle. No capture goroutines have started here.
+func (p *Producer) configureSources(sources []SourceConfig) error {
+	cfg := p.cfg
+	p.sources, p.order, p.push = map[string]*source{}, nil, nil
+	for _, sc := range sources {
 		if err := validateCameraInput(cfg, sc); err != nil {
-			return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+			return fmt.Errorf("source %s: %w", sc.Alias, err)
 		}
 		if sc.Alias == "" {
-			return nil, errors.New("a source needs an alias")
+			return errors.New("a source needs an alias")
 		}
 		if _, dup := p.sources[sc.Alias]; dup {
-			return nil, fmt.Errorf("source %s is listed twice", sc.Alias)
+			return fmt.Errorf("source %s is listed twice", sc.Alias)
 		}
 		if sc.Kind != "" && sc.Kind != KindMP4 && sc.Kind != KindRaw {
-			return nil, fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindMP4, KindRaw)
+			return fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindMP4, KindRaw)
 		}
 		if err := sc.checkGst(); err != nil {
-			return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+			return fmt.Errorf("source %s: %w", sc.Alias, err)
 		}
 		if f := sc.Fragment; f != 0 && (f < MinFragDuration || f > MaxFragDuration) {
-			return nil, fmt.Errorf("fragment_duration %s is outside %s to %s", f, MinFragDuration, MaxFragDuration)
+			return fmt.Errorf("fragment_duration %s is outside %s to %s", f, MinFragDuration, MaxFragDuration)
 		}
 		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, taken: map[string]handed{}, wake: make(chan struct{}, 1)}
 		if sc.Input == InputPush {
 			if cfg.Push == "" {
-				return nil, fmt.Errorf("source %s is pushed, and producer.push names no listener", sc.Alias)
+				return fmt.Errorf("source %s is pushed, and producer.push names no listener", sc.Alias)
 			}
 			if p.push == nil {
 				p.push = &Push{Addr: cfg.Push, Idle: cfg.PushIdle, Log: cfg.Log}
@@ -352,20 +378,20 @@ func New(cfg Config) (*Producer, error) {
 		}
 		if isDemo(sc.Input) {
 			if _, err := demoOf(sc.Input); err != nil {
-				return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+				return fmt.Errorf("source %s: %w", sc.Alias, err)
 			}
 			switch sc.audioCodec() {
 			case "", "aac", "opus", "none":
 			default:
-				return nil, fmt.Errorf("source %s: a demo source's sound is made here, so audio.codec is aac, opus or none, not %q", sc.Alias, sc.audioCodec())
+				return fmt.Errorf("source %s: a demo source's sound is made here, so audio.codec is aac, opus or none, not %q", sc.Alias, sc.audioCodec())
 			}
 		}
 		if sc.Kind == KindRaw {
 			if sc.Input != InputPush {
-				return nil, fmt.Errorf("source %s: a raw source is pushed (input: push)", sc.Alias)
+				return fmt.Errorf("source %s: a raw source is pushed (input: push)", sc.Alias)
 			}
 			if sc.MaxBitrate <= 0 {
-				return nil, fmt.Errorf("source %s: a raw source declares max_bitrate; there is no camera mode to guess it from", sc.Alias)
+				return fmt.Errorf("source %s: a raw source declares max_bitrate; there is no camera mode to guess it from", sc.Alias)
 			}
 		}
 		if sc.Idle != nil {
@@ -373,7 +399,7 @@ func New(cfg Config) (*Producer, error) {
 			// measure; a `raw:` replay (tests) is fed its measurements.
 			copied := !strings.HasPrefix(sc.Input, "raw:") && (sc.Format == "h264" || sc.Format == "h265" || sc.Encoder == "copy")
 			if sc.Input == InputPush || sc.Command != "" || copied {
-				return nil, fmt.Errorf("source %s: idle needs a source the producer encodes, to measure its frames (§38.10)", sc.Alias)
+				return fmt.Errorf("source %s: idle needs a source the producer encodes, to measure its frames (§38.10)", sc.Alias)
 			}
 			if sc.gstreamer() {
 				p.log.Warn("idle under capture: gstreamer splits the capture pipeline for the measure, which has cost recordings frames on the Pi; not recommended there (docs/producer-bench.md)", "source", sc.Alias)
@@ -388,7 +414,7 @@ func New(cfg Config) (*Producer, error) {
 		p.order = append(p.order, s)
 	}
 
-	return p, nil
+	return nil
 }
 
 // Observe takes one line of a source's capture output, as the capture
@@ -463,6 +489,9 @@ func (p *Producer) Run(ctx context.Context) error {
 	defer func() { p.conn.Load().Close() }()
 
 	if err := p.waitForSet(ctx); err != nil {
+		return err
+	}
+	if err := p.loadSourceCatalog(ctx); err != nil {
 		return err
 	}
 	if err := p.validateCameraAssignment(); err != nil {
@@ -577,6 +606,26 @@ func (p *Producer) register(ctx context.Context) error {
 	p.members = len(byAlias)
 
 	for _, s := range p.order {
+		if spec, ok := p.initialSpecs[s.cfg.Alias]; ok && spec.SourceID != "" {
+			id, err := identifierSource(spec.SourceID)
+			if err != nil {
+				return err
+			}
+			v, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: id}.Build()}.Build())
+			if err != nil {
+				return err
+			}
+			if err := p.validateCatalogSource(s, v.GetId(), v.GetTenant().GetId(), v.GetSet().GetId(), v.GetAlias()); err != nil {
+				return err
+			}
+			for key, want := range s.cfg.Labels {
+				if v.GetLabels()[key] != want {
+					return catalog.ErrConflict
+				}
+			}
+			s.row = v
+			continue
+		}
 		if v, ok := byAlias[s.cfg.Alias]; ok {
 			for key, want := range s.cfg.Labels {
 				if v.GetLabels()[key] != want {

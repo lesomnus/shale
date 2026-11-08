@@ -126,6 +126,7 @@ func TestSerializationNeverEchoesCredentialInputs(t *testing.T) {
 		"rtsp://operator:" + url.PathEscape(material) + "@192.0.2.10/stream",
 		"rtsp://192.0.2.10/stream?%75sername=" + url.QueryEscape(material),
 		"rtsp://192.0.2.10/stream?ACCESS_TOKEN=" + url.QueryEscape(material),
+		"rtsp://192.0.2.10/stream?opaque_auth=" + url.QueryEscape(material),
 		"rtsp://192.0.2.10/stream?password=%not-encoding-" + material,
 		"rtsp://192.0.2.10/stream#" + material,
 	}

@@ -293,7 +293,7 @@ func validateInput(input string, managed bool) error {
 	}
 	for field := range query {
 		k := strings.ToLower(field)
-		if strings.Contains(k, "password") || strings.Contains(k, "passwd") || strings.Contains(k, "secret") || strings.Contains(k, "token") || strings.Contains(k, "credential") || strings.Contains(k, "authorization") || k == "user" || k == "username" || k == "auth" || k == "pwd" || k == "pass" || k == "apikey" || k == "api_key" || k == "sig" || k == "signature" {
+		if strings.Contains(k, "password") || strings.Contains(k, "passwd") || strings.Contains(k, "secret") || strings.Contains(k, "token") || strings.Contains(k, "credential") || strings.Contains(k, "auth") || k == "user" || k == "username" || k == "pwd" || k == "pass" || k == "apikey" || k == "api_key" || k == "sig" || k == "signature" {
 			return invalid("capture input query contains credentials")
 		}
 	}
