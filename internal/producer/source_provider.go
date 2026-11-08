@@ -11,6 +11,8 @@ import (
 	"github.com/lesomnus/shale/camera"
 	catalog "github.com/lesomnus/shale/source"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // SourceSession is supplied only after host authentication and Set assignment.
@@ -121,6 +123,9 @@ func providerError(err error) error {
 		if errors.Is(err, safe) {
 			return safe
 		}
+	}
+	if code := status.Code(err); code != codes.Unknown {
+		return status.Error(code, "source catalog request failed")
 	}
 	return catalog.ErrUnavailable
 }

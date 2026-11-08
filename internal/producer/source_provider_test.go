@@ -11,6 +11,8 @@ import (
 	"github.com/lesomnus/shale/camera"
 	catalog "github.com/lesomnus/shale/source"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type testCatalog struct {
@@ -108,6 +110,10 @@ func TestSourceCatalogInitialBoundaries(t *testing.T) {
 	require.NotContains(t, err.Error(), "private credential")
 	p.cfg.SourceProvider = testCatalog{err: context.Canceled}
 	require.ErrorIs(t, p.loadSourceCatalog(context.Background()), context.Canceled)
+	p.cfg.SourceProvider = testCatalog{err: status.Error(codes.PermissionDenied, "private credential endpoint")}
+	err = p.loadSourceCatalog(context.Background())
+	require.Equal(t, codes.PermissionDenied, status.Code(err), "authorization failures retain a safe actionable status")
+	require.NotContains(t, err.Error(), "private credential")
 	p.cfg.SourceProvider = nil
 	p.cfg.SourceProviderFactory = func(context.Context, SourceSession) (catalog.Provider, error) { return nil, nil }
 	require.ErrorIs(t, p.loadSourceCatalog(context.Background()), catalog.ErrInvalid)
