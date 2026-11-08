@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -139,6 +140,11 @@ func qualifyWHEP(parent context.Context, live *api.LiveSource, options edgeMedia
 	if options.HTTP == nil {
 		options.HTTP = http.DefaultClient
 	}
+	// WHEP capabilities authorize one endpoint. Copy the caller's client, then
+	// use the same redirect-disabled instance for offer and session cleanup.
+	client := *options.HTTP
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	options.HTTP = &client
 	if options.Timeout <= 0 || options.Timeout > time.Minute || options.AccessUnits < 2 || options.AccessUnits > 120 || options.MaxBytes < 1024 || options.MaxBytes > 64<<20 {
 		return evidence, errors.New("invalid media qualification bounds")
 	}
@@ -515,5 +521,67 @@ func TestEdgeMediaWHEPNegotiationIsContextBounded(t *testing.T) {
 	case <-requestDone:
 	case <-time.After(time.Second):
 		t.Fatal("WHEP request outlived cancellation")
+	}
+}
+
+func TestEdgeMediaNeverRedirectsViewCapabilities(t *testing.T) {
+	for _, phase := range []string{"offer", "cleanup"} {
+		for _, sameOrigin := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/same_origin_%t", phase, sameOrigin), func(t *testing.T) {
+				const capability = "private-view-capability-must-not-follow-redirects"
+				var remoteRequests, localRequests, cleanupRequests, originalRedirects atomic.Int32
+				var cleanupAuthorized atomic.Bool
+				sink := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					remoteRequests.Add(1)
+					w.WriteHeader(http.StatusNoContent)
+				}))
+				defer sink.Close()
+				redirect := func(w http.ResponseWriter) {
+					target := sink.URL + "/redirected"
+					if sameOrigin {
+						target = "/redirected"
+					}
+					w.Header().Set("Location", target)
+					w.WriteHeader(http.StatusTemporaryRedirect)
+				}
+				endpoint := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					switch r.URL.Path {
+					case "/whep":
+						if phase == "offer" {
+							redirect(w)
+							return
+						}
+						w.Header().Set("Location", "/session")
+						w.WriteHeader(http.StatusCreated)
+						io.WriteString(w, "invalid-sdp")
+					case "/session":
+						if r.Method == http.MethodDelete {
+							cleanupRequests.Add(1)
+							cleanupAuthorized.Store(r.Header.Get("Authorization") == token.Scheme+" "+capability)
+						}
+						redirect(w)
+					default:
+						localRequests.Add(1)
+						w.WriteHeader(http.StatusNoContent)
+					}
+				}))
+				defer endpoint.Close()
+				client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { originalRedirects.Add(1); return nil }}
+				_, err := qualifyWHEP(context.Background(), api.LiveSource_builder{WhepUrl: endpoint.URL + "/whep", ViewToken: capability}.Build(), edgeMediaOptions{HTTP: client, Timeout: 2 * time.Second})
+				require.Error(t, err)
+				require.NotContains(t, err.Error(), capability)
+				require.Zero(t, remoteRequests.Load(), "the other HTTP origin must never receive the capability")
+				require.Zero(t, localRequests.Load(), "even a same-origin redirect is outside the WHEP request contract")
+				require.Zero(t, originalRedirects.Load(), "the qualification client must override redirect policy")
+				if phase == "cleanup" {
+					require.Equal(t, int32(1), cleanupRequests.Load())
+					require.True(t, cleanupAuthorized.Load(), "exercise an authenticated DELETE before its redirect is refused")
+				} else {
+					require.Zero(t, cleanupRequests.Load())
+				}
+				require.NoError(t, client.CheckRedirect(nil, nil))
+				require.Equal(t, int32(1), originalRedirects.Load(), "caller client's redirect policy must remain unchanged")
+			})
+		}
 	}
 }
