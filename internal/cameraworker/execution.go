@@ -104,6 +104,9 @@ func (e *Execution) Step(ctx context.Context, operation func(context.Context, *a
 	}
 	bounded, done := context.WithDeadline(ctx, expiry.AsTime())
 	defer done()
+	if err := bounded.Err(); err != nil {
+		return err
+	}
 	return operation(bounded, work)
 }
 

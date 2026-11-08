@@ -78,6 +78,15 @@ func TestStepKeepsFullPinnedInputsAndLeaseDeadline(t *testing.T) {
 	require.ErrorIs(t, err, context.Canceled)
 }
 
+func TestGrantExpiringInTransitNeverStartsDeviceOperation(t *testing.T) {
+	e, life := executionFixture(t)
+	e.work.GetJob().SetLeaseExpires(timestamppb.New(time.Now().Add(-time.Second)))
+	called := false
+	err := e.Step(life, func(context.Context, *api.CameraWorkerWork) error { called = true; return nil })
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.False(t, called)
+}
+
 func TestUncertainCheckpointCannotProceedToAnotherDeviceWrite(t *testing.T) {
 	e, life := executionFixture(t)
 	e.jobs = jobClient{report: func(_ context.Context, r *api.CameraJobReportRequest) (*api.CameraJob, error) {
