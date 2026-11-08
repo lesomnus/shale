@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/server/core"
 	catalog "github.com/lesomnus/shale/source"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -267,12 +268,21 @@ func (p *Producer) reconcileSources(ctx context.Context, next catalog.Snapshot) 
 		}
 	}
 
+	// Existing captures can grow their queues during the CP commit and another
+	// source's drain. Recheck the entire pending start batch before publishing
+	// any new incarnation; merely having one free byte is not segment capacity.
+	var reserve int64
+	for _, s := range proposed {
+		if startable[s] {
+			reserve += core.MaxLength(s.profile)
+		}
+	}
+	if reserve > p.cfg.Buffer-p.heldBytes() {
+		return status.Error(codes.ResourceExhausted, "managed capture awaits retained RAM drain")
+	}
 	for _, s := range proposed {
 		if !startable[s] {
 			continue
-		}
-		if p.heldBytes() >= p.cfg.Buffer {
-			return status.Error(codes.ResourceExhausted, "managed capture awaits retained RAM drain")
 		}
 		if err := p.installSource(s); err != nil {
 			return err
