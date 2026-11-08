@@ -29,7 +29,7 @@ import (
 )
 
 // A tenant CP only: real TLS/host certificates without starting cameras or nodes.
-func cameraTLSControl(t *testing.T) (*cmd.Server, string, *grpc.ClientConn) {
+func cameraTLSControl(t *testing.T, options ...func(*cmd.Config)) (*cmd.Server, string, *grpc.ClientConn) {
 	t.Helper()
 	x := require.New(t)
 	ctx := context.Background()
@@ -46,6 +46,9 @@ func cameraTLSControl(t *testing.T) (*cmd.Server, string, *grpc.ClientConn) {
 		_, err = db.Exec("drop schema public cascade; create schema public")
 		x.NoError(err)
 		x.NoError(db.Close())
+	}
+	for _, option := range options {
+		option(c)
 	}
 	x.NoError(cli.Init(ctx, c, "acme", "admin", "ops", io.Discard, nil))
 	s, err := cmd.Build(ctx, *c)

@@ -712,6 +712,8 @@ func registerTenant(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterCameraBindingServiceServer(g, s.CameraBinding())
 	api.RegisterCameraJobServiceServer(g, s.CameraJob())
 	api.RegisterCameraWorkerServiceServer(g, s.CameraWorker())
+	api.RegisterCameraPresetServiceServer(g, s.CameraPreset())
+	api.RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
 }
 
 // registerCluster mounts the cluster API: its own services, and the tenant

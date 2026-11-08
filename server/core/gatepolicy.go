@@ -39,6 +39,7 @@ var tenantServices = []string{
 	"/shale.HolderService/", "/shale.AuditService/", "/shale.DelegationService/",
 	"/shale.CameraNetworkService/", "/shale.CameraDeviceService/", "/shale.CameraAssignmentService/",
 	"/shale.CameraBindingService/", "/shale.CameraJobService/", "/shale.CameraWorkerService/",
+	"/shale.CameraPresetService/", "/shale.CameraPolicyService/",
 }
 
 // IsClusterService says whether a method belongs to the cluster surface.
@@ -191,6 +192,8 @@ var cameraWorkerMay = map[string]bool{
 	api.CameraJobService_Claim_FullMethodName:               true,
 	api.CameraJobService_Report_FullMethodName:              true,
 	api.CameraJobService_Publish_FullMethodName:             true,
+	api.CameraPresetService_ResolveForJob_FullMethodName:    true,
+	api.CameraPolicyService_Observe_FullMethodName:          true,
 }
 
 var readerMay = map[string]bool{
