@@ -19,9 +19,11 @@ jobs:
       - name: pinned generation tool
         # Same Buf release and SHA as the pinned Payday tool. Retry only HTTP
         # transport; an actual generation difference must fail on its first run.
+        # Official v1.72.0 buf-Linux-x86_64 release asset; the API download route
+        # avoids the release-page route that repeatedly returned HTTP 504.
         run: |
           sh .github/scripts/fetch-tool.sh \
-            https://github.com/bufbuild/buf/releases/download/v1.72.0/buf-Linux-x86_64 \
+            https://api.github.com/repos/bufbuild/buf/releases/assets/480772580 \
             8720830e26a733da55bb89bcd3cb44849c0965fc0c44fb5d691cccdc64dca5af \
             "$RUNNER_TEMP/shale-ci-tools/buf"
           echo "PD_BUF=$RUNNER_TEMP/shale-ci-tools/buf" >> "$GITHUB_ENV"

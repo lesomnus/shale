@@ -19,6 +19,7 @@ fi
 partial=$(mktemp "${destination}.download.XXXXXX")
 trap 'rm -f "$partial"' EXIT HUP INT TERM
 curl --fail --location --silent --show-error --proto '=https' --proto-redir '=https' \
+  --header 'Accept: application/octet-stream' \
   --connect-timeout 10 --max-time 60 --retry 4 --retry-delay 2 --retry-max-time 180 \
   --output "$partial" "$url"
 printf '%s  %s\n' "$expected" "$partial" | sha256sum --check --strict
