@@ -3,8 +3,9 @@
 `shale serve camera-worker` is a separate machine role. It discovers its approved
 work through the tenant CP API, keeps its own private key and client-only mTLS
 certificate, and opens no incoming listener. It can run independently of a
-Producer. The combined host and CP-backed camera execution providers are separate
-steps in the camera provisioning plan.
+Producer. The CLI installs the CP-backed discovery and execution adapters; the
+[managed edge](managed-edge.md) can also compose it with a separately approved
+Producer in one process.
 
 ```yaml
 state: /var/lib/shale
@@ -81,8 +82,8 @@ since publication, and the bound Source live capability when available. That vie
 token expires no later than the current job lease or normal viewer-token TTL.
 An unavailable relay produces no live capability; it does not make a job ACTIVE.
 Actual decoded frames, fresh input evidence, recording and applied-revision checks
-remain required by the CP's ACTIVE transition. Runtime applied acknowledgments and
-the complete WebRTC end-to-end verifier are later integration layers.
+remain required by the CP's ACTIVE transition. The managed edge wires current
+Producer applied acknowledgments and the native H264/WebRTC decoder observer.
 
 ## Execution and recovery seam
 
@@ -101,14 +102,14 @@ resumes the same unfinished CP job and pinned inputs; it never creates a new job
 or replaces an unsettled physical-camera intent. An executor which yields WAITING
 is retried after a reconnect/restart, rather than continuously reclaiming its job.
 
-The default executor deliberately reports WAITING with
+The bare `cameraworker.New` library with no injected executor reports WAITING with
 `central_credentials_pending`. It performs no camera initialization, password
 change, local FileProvider fallback or Source publication. The central
 [credential provider](camera-credentials.md) is available through
-`Execution.Credentials()`. The full policy/preset and edge execution adapters
-must be injected before production device adaptation can run. The seam keeps the complete
-typed job so those layers can add immutable inputs and typed progress without a
-lossy conversion to the old local Run model.
+`Execution.Credentials()`. The managed CLI composition injects the policy/preset,
+scoped drivers, independent media verifier and CP publisher/observer adapters.
+Other embeddings select their executor explicitly. The seam retains the complete
+typed job and recoverable progress without a lossy conversion to a local Run.
 
 A CP lease cannot recall a camera firmware write already sent over the LAN. After
 an uncertain mutation, a later executor must reconcile this same pinned job and

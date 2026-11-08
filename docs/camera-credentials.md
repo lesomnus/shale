@@ -105,8 +105,8 @@ Only an online streaming grant with CP `cache_until`, exact Source/revision/ref
 and assignment generation enters pending memory. Persistence requires matching
 actual-media proof from the current capture: initialization, an IDR, advancing
 video and the exact credential lease used. CP status, publication receipts and
-old capture epochs are insufficient. The Source application observer is connected
-by the later edge composition.
+old capture epochs are insufficient. The managed edge connects the Source
+application observer when its bounded streaming cache is explicitly enabled.
 
 Fallback is limited to transport unavailability and the authenticated original
 deadline: at most five minutes and 64 entries. Worker/initial/management accounts
