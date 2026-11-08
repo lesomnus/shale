@@ -10,7 +10,7 @@ install -d -o shale -g shale -m 0700 /var/lib/shale
 install -d -m 0755 /etc/shale
 # /etc/shale/shale.yaml: see below
 systemctl daemon-reload
-systemctl enable --now shale@storage       # or all, control, cluster, producer, reader, relay
+systemctl enable --now shale@storage       # or all, control, cluster, producer, reader, relay, edge, camera-worker
 journalctl -fu shale@storage
 ```
 
@@ -65,9 +65,23 @@ storage:
 ## The package
 
 `deploy/deb/build.sh [version] [amd64|arm64]` builds a Debian package with
-the binary, the template unit, and `/etc/shale/shale.yaml.example`; its
+the binary, the template unit, and configuration examples in `/etc/shale`; its
 postinst makes the `shale` user and `/var/lib/shale`, and starts nothing.
 CI attaches one per architecture to every run.
+
+The package also includes `/etc/shale/shale-edge.yaml.example`, the optional
+renderer `/usr/share/shale/edge/camera_lan.py`, and the guides under
+`/usr/share/doc/shale/docs/managed-edge.md` and
+`/usr/share/doc/shale/deploy/edge/README.md`. The two guides retain their relative
+links in the package, including the linked CP policy, credential and driver
+guides. The renderer's OS dependencies are optional package
+suggestions; installing Shale does not configure interfaces or enable DHCP.
+
+From a source checkout, `python3 -m unittest discover -s deploy/deb -p 'test_*.py'`
+checks both package architectures' installed files, permissions, guide links
+and the packaged renderer's offline execution. This uses a stub binary instead
+of compiling Go or the console; it does not qualify the application binary or
+change any network/service state.
 
 ```sh
 sudo dpkg -i shale_0.1.0_amd64.deb
@@ -75,8 +89,30 @@ sudo cp /etc/shale/shale.yaml.example /etc/shale/shale.yaml   # then edit
 sudo systemctl enable --now shale@storage
 ```
 
-The service user needs the `video` group for cameras and `audio` for
+The service user needs the `video` group for USB cameras and `audio` for
 microphones (the package adds both); `arecord -l` names the card.
+
+## A managed camera edge host
+
+For ONVIF cameras managed by the CP, use `/etc/shale/shale-edge.yaml.example`
+as the starting point for `/etc/shale/shale.yaml`, then run `shale@edge`.
+Use the **tenant API on 7400**, `tenant` and the deployment's `ca_hash`.
+The example contains no USB/manual Sources or local policy/credential files:
+those are supplied by the approved central workflow. `shale@camera-worker`
+runs only the managed Worker; `shale@producer` retains its standalone behavior.
+`shale@all` does not include either managed edge role.
+
+Read `docs/managed-edge.md` in the source tree or
+`/usr/share/doc/shale/docs/managed-edge.md` in the Debian package before
+switching existing services. In particular, stop and disable the standalone
+Producer and Worker units before `shale@edge` uses their state directories.
+Preserve both machine identities; approve and assign each role separately.
+Do not delete state to perform the migration.
+
+For a dedicated Ethernet camera LAN with Wi-Fi uplink, see
+`deploy/edge/README.md` or `/usr/share/doc/shale/deploy/edge/README.md`.
+Its optional DHCP daemon is a separate service. The Shale service needs no
+DHCP network capabilities, bridge, NAT or IP forwarding.
 
 ## A Raspberry Pi as a producer
 

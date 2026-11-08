@@ -27,9 +27,11 @@ state: /var/lib/shale
 #   checkpoints:
 #     key: /etc/shale/checkpoints.pem     # an archive is refused without one (§26.5)
 
-# --- every other role: the cluster API to join (§33.4) ---------------------
+# --- storage/relay roles: the cluster API to join (§33.4) ------------------
 # cp: https://cp.example.com:7401
 # ca_hash: sha256:...                     # printed by `shale init`
+# Producers and managed edge roles use the tenant API on 7400 instead.
+# For shale@edge / shale@camera-worker, start with shale-edge.yaml.example.
 
 # --- a storage node (shale@storage) ----------------------------------------
 # storage:
