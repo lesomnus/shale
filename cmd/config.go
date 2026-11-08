@@ -352,9 +352,11 @@ type ProducerConfig struct {
 	IdleTimeout       time.Duration `yaml:"idle_timeout"`
 	AbandonTimeout    time.Duration `yaml:"abandon_timeout"`
 	AllocationHorizon time.Duration `yaml:"allocation_horizon"`
-	ResumeTimeout     time.Duration `yaml:"resume_timeout"`
-	RetryAfterCap     time.Duration `yaml:"retry_after_cap"`
-	PlacementRetries  int           `yaml:"placement_retries"`
+	// DrainTimeout bounds a stopped managed source's upload FIFO, at most 5m.
+	DrainTimeout     time.Duration `yaml:"drain_timeout"`
+	ResumeTimeout    time.Duration `yaml:"resume_timeout"`
+	RetryAfterCap    time.Duration `yaml:"retry_after_cap"`
+	PlacementRetries int           `yaml:"placement_retries"`
 	// Uplink is the link's capacity, e.g. "20Mbps", for the link check.
 	Uplink string `yaml:"uplink"`
 	// Buffer is the RAM budget for segments not yet stored, e.g. "512MiB"

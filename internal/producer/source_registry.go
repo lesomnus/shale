@@ -31,6 +31,9 @@ func (p *Producer) installSource(s *source) error {
 // source locks, network calls or process shutdown. A source's immutable capture
 // configuration belongs to that incarnation; replacement never rewrites it.
 func (p *Producer) activeSources() []*source {
+	if p.loading.Load() {
+		return nil
+	}
 	p.sourcesMu.RLock()
 	defer p.sourcesMu.RUnlock()
 	return slices.Clone(p.order)
@@ -49,6 +52,9 @@ func (p *Producer) retainedSources() []*source {
 }
 
 func (p *Producer) sourceByAlias(alias string) *source {
+	if p.loading.Load() {
+		return nil
+	}
 	p.sourcesMu.RLock()
 	defer p.sourcesMu.RUnlock()
 	return p.sources[alias]
@@ -99,7 +105,27 @@ func (p *Producer) forgetDrainedSource(s *source) {
 	s.mu.Lock()
 	p.retired.Stored += s.stored
 	p.retired.Lost += s.lost
+	p.retired.LostBytes += s.lostBytes
 	p.retired.Cut += s.cut
 	s.mu.Unlock()
 	delete(p.draining, s)
+}
+
+func (p *Producer) acceptedCatalog() catalog.Snapshot {
+	p.sourcesMu.RLock()
+	defer p.sourcesMu.RUnlock()
+	return p.initialCatalog.Clone()
+}
+func (p *Producer) acceptCatalog(v catalog.Snapshot) {
+	p.sourcesMu.Lock()
+	defer p.sourcesMu.Unlock()
+	p.initialCatalog = v.Clone()
+}
+
+// stagedSources is used only by initial registration while loading hides the
+// not-yet-resolved rows from heartbeat, live and allocation consumers.
+func (p *Producer) stagedSources() []*source {
+	p.sourcesMu.RLock()
+	defer p.sourcesMu.RUnlock()
+	return slices.Clone(p.order)
 }

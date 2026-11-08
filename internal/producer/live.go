@@ -58,6 +58,10 @@ var errNoFfmpeg = errors.New("no ffmpeg for the live helper")
 // startHelper runs a helper for a source. It is called with the link's
 // lock held and takes it never; the caller decides what to do without one.
 func (l *relayLink) startHelper(id pdid.Id, s *source) (*helper, error) {
+	return l.startHelperEpoch(id, s, "")
+}
+
+func (l *relayLink) startHelperEpoch(id pdid.Id, s *source, epoch string) (*helper, error) {
 	ctx := l.ctx
 	if ctx == nil {
 		ctx = context.Background()
@@ -125,7 +129,7 @@ func (l *relayLink) startHelper(id pdid.Id, s *source) (*helper, error) {
 			if err != nil {
 				return
 			}
-			l.sendData(id, u.Bytes())
+			l.sendDataEpoch(id, epoch, u.Bytes())
 		}
 	}()
 	go func() {

@@ -103,7 +103,8 @@ func TestSourceCatalogInitialBoundaries(t *testing.T) {
 	p, v := catalogRuntime(t, Config{SourceProvider: testCatalog{}})
 	v.Sources, v.Revision.Catalog = nil, 0
 	p.cfg.SourceProvider = testCatalog{value: v}
-	require.ErrorIs(t, p.loadSourceCatalog(context.Background()), ErrInitialCatalogEmpty)
+	require.NoError(t, p.loadSourceCatalog(context.Background()))
+	require.Empty(t, p.activeSources(), "approved empty catalogs wait without a synthetic camera")
 	p.cfg.SourceProvider = testCatalog{err: errors.New("private credential endpoint")}
 	err := p.loadSourceCatalog(context.Background())
 	require.ErrorIs(t, err, catalog.ErrUnavailable)
@@ -171,4 +172,19 @@ func TestCredentialFactoryOpensAfterAdoptionAndBindsExactSource(t *testing.T) {
 	require.Equal(t, p.order[0].cfg.Scope, auth.seen[len(auth.seen)-1].Scope)
 	_, err := New(Config{Sources: []SourceConfig{{Alias: "usb", Input: "v4l2:/dev/video0"}}, AuthProvider: auth, AuthProviderFactory: func(context.Context, SourceSession) (camera.AuthProvider, error) { return auth, nil }})
 	require.ErrorIs(t, err, camera.ErrInvalid)
+}
+
+func TestSourceCatalogHiddenInitialRowsRetainManagedSpec(t *testing.T) {
+	p, v := catalogRuntime(t, Config{SourceProvider: testCatalog{}})
+	p.cfg.SourceProvider = testCatalog{value: v}
+	p.loading.Store(true)
+	require.NoError(t, p.loadSourceCatalog(context.Background()))
+	require.Empty(t, p.activeSources(), "incomplete rows stay hidden from heartbeat and live")
+	staged := p.stagedSources()
+	require.Len(t, staged, 1)
+	require.NotNil(t, staged[0].spec, "hidden initial capture still carries managed execution identity")
+	require.Equal(t, v.Revision, staged[0].catalogRevision)
+	require.Equal(t, v.Sources[0], *staged[0].spec)
+	p.loading.Store(false)
+	require.True(t, sameCapture(p.activeSources()[0], v.Sources[0], v.Revision), "first reconciliation reuses the initialized incarnation instead of adding a duplicate alias")
 }

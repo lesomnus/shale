@@ -116,6 +116,10 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 	tried := map[string]bool{}
 
 	for round := 0; round <= u.Cfg.PlacementRetries; round++ {
+		if al.GetCaptureEpoch() != seg.CaptureEpoch {
+			res.Err = errors.New("allocation capture incarnation differs from queued segment")
+			return res
+		}
 		for _, cand := range al.GetCandidates() {
 			key := string(cand.GetAttemptId())
 			if tried[key] {

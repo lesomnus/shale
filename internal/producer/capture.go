@@ -590,6 +590,11 @@ type Capture struct {
 	// OnDark is told every dark second a GStreamer capture measured, for a
 	// source with `idle:` (§38.10); ffmpeg's are lines, for OnLine.
 	OnDark func()
+	// BeforeAttempt obtains a fresh server fence before opening any managed
+	// input. A disconnected capture cannot start a new incarnation offline.
+	BeforeAttempt func(context.Context) error
+	OnCredential  func(*camera.CredentialRef)
+	OnAttemptDone func(context.Context)
 
 	mu       sync.Mutex
 	restarts int64
@@ -740,7 +745,24 @@ func (c *Capture) gst() string {
 const healthyRun = time.Minute
 
 func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
+	if c.BeforeAttempt != nil {
+		if err := c.BeforeAttempt(ctx); err != nil {
+			return err
+		}
+	}
+	if c.OnAttemptDone != nil {
+		defer c.OnAttemptDone(ctx)
+	}
 	return credential.WithInput(ctx, c.AuthProvider, c.Source.Scope, camera.DeviceHint{}, c.Source.InputCredential, c.Source.Input, func(input string, sanitize credential.Sanitizer) error {
+		if c.OnCredential != nil {
+			var used *camera.CredentialRef
+			if c.Source.InputCredential != nil {
+				ref := *c.Source.InputCredential
+				used = &ref
+			}
+			// WithInput invokes this only after an exact reference lease check.
+			c.OnCredential(used)
+		}
 		src := c.Source
 		src.Input = input
 		return c.onceResolved(ctx, read, src, sanitize)

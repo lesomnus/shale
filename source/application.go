@@ -83,10 +83,11 @@ type ApplyController interface {
 type StopReason string
 
 const (
-	StopRemoved    StopReason = "removed"
-	StopSuperseded StopReason = "superseded"
-	StopRevoked    StopReason = "revoked"
-	StopShutdown   StopReason = "shutdown"
+	StopRemoved      StopReason = "removed"
+	StopSuperseded   StopReason = "superseded"
+	StopRevoked      StopReason = "revoked"
+	StopShutdown     StopReason = "shutdown"
+	StopDisconnected StopReason = "disconnected"
 )
 
 type StoppedProof struct {
