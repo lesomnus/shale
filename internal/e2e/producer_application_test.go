@@ -184,8 +184,13 @@ func TestProducerApplicationRequiresAdmittedSpecification(t *testing.T) {
 				_, err = sets.Patch(ctx, api.SetPatchRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build(), DateUpdated: set.GetDateUpdated(), MaxBitrateTotal: z.Ptr(int64(10_000_000))}.Build())
 				require.NoError(t, err)
 			}
+			beforeAdmission, err := sets.Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+			require.NoError(t, err)
 			_, err = api.NewSetServiceClient(owner).Negotiate(ctx, request)
 			require.NoError(t, err)
+			afterAdmission, err := sets.Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
+			require.NoError(t, err)
+			require.True(t, afterAdmission.GetDateUpdated().AsTime().After(beforeAdmission.GetDateUpdated().AsTime()), "a new admission fences the Set version even when its media profile did not change")
 			started, err := apps.BeginApply(ctx, api.CameraBeginApplyRequest_builder{Target: target, ExpectedSequence: applied.GetSequence(), IntentKey: "admitted-replacement"}.Build())
 			require.NoError(t, err)
 			require.NotEqual(t, applied.GetCaptureEpoch(), started.GetCaptureEpoch())

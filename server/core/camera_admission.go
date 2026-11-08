@@ -145,7 +145,9 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 		if r.GetPreview() {
 			return nil
 		}
-		if changed || set.GetProfileVersion() != version {
+		// A new per-source admission also writes the Set CAS, even when its
+		// media profile is unchanged, to fence a concurrent Set cap update.
+		if changed || set.GetProfileVersion() != version || len(admissions) > 0 {
 			if _, err := nx.Set().Patch(ctx, api.SetPatchRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build(), Link: link, ProfileVersion: &version, DateUpdated: set.GetDateUpdated()}.Build()); err != nil {
 				return err
 			}
