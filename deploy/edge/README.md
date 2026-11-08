@@ -57,21 +57,36 @@ Review the four files:
 
 Keep a working Wi-Fi management session. Review active Ethernet profiles with
 `nmcli connection show`; disable autoconnect for any conflicting old Ethernet
-profile explicitly. Do not disable or replace the Wi-Fi profile. The installer
-does not guess which unrelated profiles can be removed.
+profile explicitly. Do not disable or replace the Wi-Fi profile. This
+first-install recipe refuses existing target files or symlinks. For an upgrade,
+back up the existing profile/configuration/unit and plan their explicit restore
+before changing them; do not use the fresh-install rollback to delete a prior
+installation. The recipe does not guess which unrelated profiles can be removed.
 
 ```sh
-sudo install -m 0600 camera-lan/shale-camera-lan.nmconnection \
+sudo sh -eu <<'INSTALL'
+for target in \
+  /etc/NetworkManager/system-connections/shale-camera-lan.nmconnection \
+  /etc/shale/camera-dhcp.conf \
+  /etc/systemd/system/shale-camera-dhcp.service
+do
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    echo "Refusing to replace existing $target; preserve it before an upgrade." >&2
+    exit 1
+  fi
+done
+install -m 0600 camera-lan/shale-camera-lan.nmconnection \
   /etc/NetworkManager/system-connections/shale-camera-lan.nmconnection
-sudo install -d -m 0755 /etc/shale
-sudo install -m 0644 camera-lan/camera-dhcp.conf /etc/shale/camera-dhcp.conf
-sudo install -m 0644 camera-lan/shale-camera-dhcp.service /etc/systemd/system/
-sudo dnsmasq --test --conf-file=/etc/shale/camera-dhcp.conf
-sudo systemd-analyze verify /etc/systemd/system/shale-camera-dhcp.service
-sudo nmcli connection reload
-sudo nmcli connection up shale-camera-lan
-sudo systemctl daemon-reload
-sudo systemctl enable --now shale-camera-dhcp.service
+[ -d /etc/shale ] || install -d -m 0755 /etc/shale
+install -m 0644 camera-lan/camera-dhcp.conf /etc/shale/camera-dhcp.conf
+install -m 0644 camera-lan/shale-camera-dhcp.service /etc/systemd/system/
+dnsmasq --test --conf-file=/etc/shale/camera-dhcp.conf
+systemd-analyze verify /etc/systemd/system/shale-camera-dhcp.service
+nmcli connection reload
+nmcli connection up shale-camera-lan
+systemctl daemon-reload
+systemctl enable --now shale-camera-dhcp.service
+INSTALL
 ```
 
 The unit's dynamic systemd user owns `/var/lib/shale-camera-dhcp`. Leases survive
