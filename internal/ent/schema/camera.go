@@ -35,6 +35,9 @@ func (CameraNetwork) Fields() []ent.Field {
 			Optional(),
 		field.String("interface_hint"),
 		field.Int64("revision"),
+		field.Uuid("active_policy_id").
+			Nillable().
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

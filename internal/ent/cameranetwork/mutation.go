@@ -15,30 +15,31 @@ import (
 
 // Mutation represents an operation that mutates the CameraNetwork nodes in the graph.
 type Mutation struct {
-	op             ent.Op
-	typ            string
-	alias          *string
-	name           *string
-	desc           *string
-	labels         *map[string]string
-	cidrs          *[]string
-	appendcidrs    []string
-	multicast      *bool
-	seeds          *[]string
-	appendseeds    []string
-	interface_hint *string
-	revision       *int64
-	addrevision    *int64
-	date_updated   *time.Time
-	date_erased    *time.Time
-	date_created   *time.Time
-	clearedFields  map[string]struct{}
-	exprs          map[string]sql.Querier
-	tenant         *uuid.UUID
-	clearedtenant  bool
-	site           *uuid.UUID
-	clearedsite    bool
-	predicates     []predicate.CameraNetwork
+	op               ent.Op
+	typ              string
+	alias            *string
+	name             *string
+	desc             *string
+	labels           *map[string]string
+	cidrs            *[]string
+	appendcidrs      []string
+	multicast        *bool
+	seeds            *[]string
+	appendseeds      []string
+	interface_hint   *string
+	revision         *int64
+	addrevision      *int64
+	active_policy_id *uuid.UUID
+	date_updated     *time.Time
+	date_erased      *time.Time
+	date_created     *time.Time
+	clearedFields    map[string]struct{}
+	exprs            map[string]sql.Querier
+	tenant           *uuid.UUID
+	clearedtenant    bool
+	site             *uuid.UUID
+	clearedsite      bool
+	predicates       []predicate.CameraNetwork
 }
 
 // NewMutation creates a new Mutation for the CameraNetwork entity.
@@ -341,6 +342,42 @@ func (m *Mutation) ResetRevision() {
 	delete(m.exprs, FieldRevision)
 }
 
+// SetActivePolicyId sets the "active_policy_id" field.
+func (m *Mutation) SetActivePolicyId(u uuid.UUID) {
+	m.active_policy_id = &u
+	delete(m.clearedFields, FieldActivePolicyId)
+	delete(m.exprs, FieldActivePolicyId)
+}
+
+// ActivePolicyId returns the value of the "active_policy_id" field in the mutation.
+func (m *Mutation) ActivePolicyId() (r uuid.UUID, exists bool) {
+	v := m.active_policy_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearActivePolicyId clears the value of the "active_policy_id" field.
+func (m *Mutation) ClearActivePolicyId() {
+	m.active_policy_id = nil
+	delete(m.exprs, FieldActivePolicyId)
+	m.clearedFields[FieldActivePolicyId] = struct{}{}
+}
+
+// ActivePolicyIdCleared returns if the "active_policy_id" field was cleared in this mutation.
+func (m *Mutation) ActivePolicyIdCleared() bool {
+	_, ok := m.clearedFields[FieldActivePolicyId]
+	return ok
+}
+
+// ResetActivePolicyId resets all changes to the "active_policy_id" field.
+func (m *Mutation) ResetActivePolicyId() {
+	m.active_policy_id = nil
+	delete(m.clearedFields, FieldActivePolicyId)
+	delete(m.exprs, FieldActivePolicyId)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -571,7 +608,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -598,6 +635,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.revision != nil || m.exprs[FieldRevision] != nil {
 		fields = append(fields, FieldRevision)
+	}
+	if m.active_policy_id != nil || m.exprs[FieldActivePolicyId] != nil {
+		fields = append(fields, FieldActivePolicyId)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -646,6 +686,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.InterfaceHint()
 	case FieldRevision:
 		return m.Revision()
+	case FieldActivePolicyId:
+		return m.ActivePolicyId()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -765,6 +807,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRevision(v)
 		return nil
+	case FieldActivePolicyId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActivePolicyId(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -855,6 +907,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetInterfaceHint()
 	case FieldRevision:
 		m.ResetRevision()
+	case FieldActivePolicyId:
+		m.ResetActivePolicyId()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -912,6 +966,9 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldRevision]; ok {
 		fields = append(fields, FieldRevision)
+	}
+	if _, ok := m.exprs[FieldActivePolicyId]; ok {
+		fields = append(fields, FieldActivePolicyId)
 	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
@@ -972,6 +1029,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldSeeds) {
 		fields = append(fields, FieldSeeds)
 	}
+	if m.FieldCleared(FieldActivePolicyId) {
+		fields = append(fields, FieldActivePolicyId)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -1003,6 +1063,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldSeeds:
 		m.ClearSeeds()
+		return nil
+	case FieldActivePolicyId:
+		m.ClearActivePolicyId()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -1047,6 +1110,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldRevision:
 		m.ResetRevision()
+		return nil
+	case FieldActivePolicyId:
+		m.ResetActivePolicyId()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

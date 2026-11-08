@@ -86,6 +86,11 @@ func Revision(v int64) predicate.CameraNetwork {
 	return predicate.CameraNetwork(sql.FieldEQ(FieldRevision, v))
 }
 
+// ActivePolicyId applies equality check predicate on the "active_policy_id" field. It's identical to ActivePolicyIdEQ.
+func ActivePolicyId(v uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldEQ(FieldActivePolicyId, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.CameraNetwork {
 	return predicate.CameraNetwork(sql.FieldEQ(FieldDateUpdated, v))
@@ -449,6 +454,56 @@ func RevisionLT(v int64) predicate.CameraNetwork {
 // RevisionLTE applies the LTE predicate on the "revision" field.
 func RevisionLTE(v int64) predicate.CameraNetwork {
 	return predicate.CameraNetwork(sql.FieldLTE(FieldRevision, v))
+}
+
+// ActivePolicyIdEQ applies the EQ predicate on the "active_policy_id" field.
+func ActivePolicyIdEQ(v uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldEQ(FieldActivePolicyId, v))
+}
+
+// ActivePolicyIdNEQ applies the NEQ predicate on the "active_policy_id" field.
+func ActivePolicyIdNEQ(v uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldNEQ(FieldActivePolicyId, v))
+}
+
+// ActivePolicyIdIn applies the In predicate on the "active_policy_id" field.
+func ActivePolicyIdIn(vs ...uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldIn(FieldActivePolicyId, vs...))
+}
+
+// ActivePolicyIdNotIn applies the NotIn predicate on the "active_policy_id" field.
+func ActivePolicyIdNotIn(vs ...uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldNotIn(FieldActivePolicyId, vs...))
+}
+
+// ActivePolicyIdGT applies the GT predicate on the "active_policy_id" field.
+func ActivePolicyIdGT(v uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldGT(FieldActivePolicyId, v))
+}
+
+// ActivePolicyIdGTE applies the GTE predicate on the "active_policy_id" field.
+func ActivePolicyIdGTE(v uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldGTE(FieldActivePolicyId, v))
+}
+
+// ActivePolicyIdLT applies the LT predicate on the "active_policy_id" field.
+func ActivePolicyIdLT(v uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldLT(FieldActivePolicyId, v))
+}
+
+// ActivePolicyIdLTE applies the LTE predicate on the "active_policy_id" field.
+func ActivePolicyIdLTE(v uuid.UUID) predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldLTE(FieldActivePolicyId, v))
+}
+
+// ActivePolicyIdIsNil applies the IsNil predicate on the "active_policy_id" field.
+func ActivePolicyIdIsNil() predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldIsNull(FieldActivePolicyId))
+}
+
+// ActivePolicyIdNotNil applies the NotNil predicate on the "active_policy_id" field.
+func ActivePolicyIdNotNil() predicate.CameraNetwork {
+	return predicate.CameraNetwork(sql.FieldNotNull(FieldActivePolicyId))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

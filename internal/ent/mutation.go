@@ -3981,6 +3981,23 @@ func (m *CameraNetworkMutation) OldRevision(ctx context.Context) (v int64, err e
 	return oldValue.Revision, nil
 }
 
+// OldActivePolicyId returns the old "active_policy_id" field's value of the CameraNetwork entity.
+// If the CameraNetwork object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraNetworkMutation) OldActivePolicyId(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldActivePolicyId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldActivePolicyId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActivePolicyId: %w", err)
+	}
+	return oldValue.ActivePolicyId, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the CameraNetwork entity.
 // If the CameraNetwork object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -4089,6 +4106,8 @@ func (m *CameraNetworkMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldInterfaceHint(ctx)
 	case cameranetwork.FieldRevision:
 		return m.OldRevision(ctx)
+	case cameranetwork.FieldActivePolicyId:
+		return m.OldActivePolicyId(ctx)
 	case cameranetwork.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case cameranetwork.FieldDateErased:

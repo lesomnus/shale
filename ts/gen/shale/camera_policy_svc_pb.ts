@@ -8,11 +8,13 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
+import type { CameraBinding, CameraDevice, CameraIdentityEvidence, CameraJob, CameraJobSchema, CameraNetworkSchema, CameraObservedEndpoint } from "./camera_pb.js";
+import { file_shale_camera } from "./camera_pb.js";
 import type { CameraEnrollmentPolicy, CameraPolicy, CameraPolicySchema } from "./camera_policy_pb.js";
 import { file_shale_camera_policy } from "./camera_policy_pb.js";
 import type { CameraPresetRef, CameraPresetSelect } from "./camera_preset_svc_pb.js";
 import { file_shale_camera_preset_svc_g } from "./camera_preset_svc_pb.js";
-import type { CameraNetworkRef, CameraNetworkSelect } from "./camera_svc_pb.js";
+import type { CameraAssignmentRef, CameraBindingRef, CameraNetworkRef, CameraNetworkSelect } from "./camera_svc_pb.js";
 import { file_shale_camera_svc_g } from "./camera_svc_pb.js";
 import type { TenantRef, TenantSelect } from "./payday/tenant_svc_pb.js";
 import { file_shale_payday_tenant_svc_g } from "./payday/tenant_svc_pb.js";
@@ -24,7 +26,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/camera_policy_svc.g.proto.
  */
 export const file_shale_camera_policy_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9zaGFsZS9jYW1lcmFfcG9saWN5X3N2Yy5nLnByb3RvEgVzaGFsZSL5AwoWQ2FtZXJhUG9saWN5QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjkKBmxhYmVscxgHIAMoCzIpLnNoYWxlLkNhbWVyYVBvbGljeUFkZFJlcXVlc3QuTGFiZWxzRW50cnkSKAoHbmV0d29yaxgIIAEoCzIXLnNoYWxlLkNhbWVyYU5ldHdvcmtSZWYSGQoKcG9saWN5X2tleRgJIAEoCUIFqgECCAISFwoIcmV2aXNpb24YCiABKAlCBaoBAggCEiYKBnByZXNldBgLIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIxCgplbnJvbGxtZW50GAwgASgLMh0uc2hhbGUuQ2FtZXJhRW5yb2xsbWVudFBvbGljeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiaAoWQ2FtZXJhUG9saWN5R2V0UmVxdWVzdBIjCgNyZWYYASABKAsyFi5zaGFsZS5DYW1lcmFQb2xpY3lSZWYSKQoGc2VsZWN0GAIgASgLMhkuc2hhbGUuQ2FtZXJhUG9saWN5U2VsZWN0IlwKD0NhbWVyYVBvbGljeVJlZhIMCgJpZBgBIAEoDEgAEjQKCHJldmlzaW9uGAIgASgLMiAuc2hhbGUuQ2FtZXJhUG9saWN5UmVmQnlSZXZpc2lvbkgAQgUKA2tleSJjChlDYW1lcmFQb2xpY3lSZWZCeVJldmlzaW9uEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhISCgpwb2xpY3lfa2V5GAkgASgJEhAKCHJldmlzaW9uGAogASgJIvUCChJDYW1lcmFQb2xpY3lTZWxlY3QSCwoDYWxsGAEgASgIEiMKBnRlbmFudBgCIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdBIfCgRzaXRlGAMgASgLMhEuc2hhbGUuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEisKB25ldHdvcmsYCCABKAsyGi5zaGFsZS5DYW1lcmFOZXR3b3JrU2VsZWN0EhIKCnBvbGljeV9rZXkYCSABKAgSEAoIcmV2aXNpb24YCiABKAgSKQoGcHJlc2V0GAsgASgLMhkuc2hhbGUuQ2FtZXJhUHJlc2V0U2VsZWN0EhIKCmVucm9sbG1lbnQYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKkAgoYQ2FtZXJhUG9saWN5UGF0Y2hSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVBvbGljeVJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSOwoGbGFiZWxzGA4gAygLMisuc2hhbGUuQ2FtZXJhUG9saWN5UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiXAoYQ2FtZXJhUG9saWN5QXBwbHlSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVBvbGljeVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIisKGUNhbWVyYVBvbGljeUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIogBChdDYW1lcmFQb2xpY3lMaXN0UmVxdWVzdBIqCgdmaWx0ZXJzGAEgAygLMhkuc2hhbGUuQ2FtZXJhUG9saWN5RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJTChhDYW1lcmFQb2xpY3lMaXN0UmVzcG9uc2USIgoFaXRlbXMYASADKAsyEy5zaGFsZS5DYW1lcmFQb2xpY3kSEwoEbmV4dBgCIAEoCUIFqgECCAIiowEKEkNhbWVyYVBvbGljeUZpbHRlchIjCgNyZWYYASABKAsyFi5zaGFsZS5DYW1lcmFQb2xpY3lSZWYSIAoGdGVuYW50GAIgASgLMhAuc2hhbGUuVGVuYW50UmVmEhwKBHNpdGUYAyABKAsyDi5zaGFsZS5TaXRlUmVmEigKB25ldHdvcmsYBCABKAsyFy5zaGFsZS5DYW1lcmFOZXR3b3JrUmVmImQKGENhbWVyYVBvbGljeVdhdGNoUmVxdWVzdBIqCgdmaWx0ZXJzGAEgAygLMhkuc2hhbGUuQ2FtZXJhUG9saWN5RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIkgKGUNhbWVyYVBvbGljeVdhdGNoUmVzcG9uc2USKwoFaXRlbXMYASADKAsyHC5zaGFsZS5DYW1lcmFQb2xpY3lXYXRjaEl0ZW0iXgoVQ2FtZXJhUG9saWN5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEiIKBXZhbHVlGAIgASgLMhMuc2hhbGUuQ2FtZXJhUG9saWN5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIy4wMKE0NhbWVyYVBvbGljeVNlcnZpY2USOQoDQWRkEh0uc2hhbGUuQ2FtZXJhUG9saWN5QWRkUmVxdWVzdBoTLnNoYWxlLkNhbWVyYVBvbGljeRI5CgNHZXQSHS5zaGFsZS5DYW1lcmFQb2xpY3lHZXRSZXF1ZXN0GhMuc2hhbGUuQ2FtZXJhUG9saWN5Ej0KBVBhdGNoEh8uc2hhbGUuQ2FtZXJhUG9saWN5UGF0Y2hSZXF1ZXN0GhMuc2hhbGUuQ2FtZXJhUG9saWN5Ej0KBUFwcGx5Eh8uc2hhbGUuQ2FtZXJhUG9saWN5QXBwbHlSZXF1ZXN0GhMuc2hhbGUuQ2FtZXJhUG9saWN5EkEKBUVyYXNlEhYuc2hhbGUuQ2FtZXJhUG9saWN5UmVmGiAuc2hhbGUuQ2FtZXJhUG9saWN5RXJhc2VSZXNwb25zZRJHCgRMaXN0Eh4uc2hhbGUuQ2FtZXJhUG9saWN5TGlzdFJlcXVlc3QaHy5zaGFsZS5DYW1lcmFQb2xpY3lMaXN0UmVzcG9uc2USTAoFV2F0Y2gSHy5zaGFsZS5DYW1lcmFQb2xpY3lXYXRjaFJlcXVlc3QaIC5zaGFsZS5DYW1lcmFQb2xpY3lXYXRjaFJlc3BvbnNlMAFCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_patch_patch, file_shale_camera_policy, file_shale_camera_preset_svc_g, file_shale_camera_svc_g, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
+  fileDesc("Ch9zaGFsZS9jYW1lcmFfcG9saWN5X3N2Yy5nLnByb3RvEgVzaGFsZSL5AwoWQ2FtZXJhUG9saWN5QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjkKBmxhYmVscxgHIAMoCzIpLnNoYWxlLkNhbWVyYVBvbGljeUFkZFJlcXVlc3QuTGFiZWxzRW50cnkSKAoHbmV0d29yaxgIIAEoCzIXLnNoYWxlLkNhbWVyYU5ldHdvcmtSZWYSGQoKcG9saWN5X2tleRgJIAEoCUIFqgECCAISFwoIcmV2aXNpb24YCiABKAlCBaoBAggCEiYKBnByZXNldBgLIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIxCgplbnJvbGxtZW50GAwgASgLMh0uc2hhbGUuQ2FtZXJhRW5yb2xsbWVudFBvbGljeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiaAoWQ2FtZXJhUG9saWN5R2V0UmVxdWVzdBIjCgNyZWYYASABKAsyFi5zaGFsZS5DYW1lcmFQb2xpY3lSZWYSKQoGc2VsZWN0GAIgASgLMhkuc2hhbGUuQ2FtZXJhUG9saWN5U2VsZWN0IlwKD0NhbWVyYVBvbGljeVJlZhIMCgJpZBgBIAEoDEgAEjQKCHJldmlzaW9uGAIgASgLMiAuc2hhbGUuQ2FtZXJhUG9saWN5UmVmQnlSZXZpc2lvbkgAQgUKA2tleSJjChlDYW1lcmFQb2xpY3lSZWZCeVJldmlzaW9uEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhISCgpwb2xpY3lfa2V5GAkgASgJEhAKCHJldmlzaW9uGAogASgJIvUCChJDYW1lcmFQb2xpY3lTZWxlY3QSCwoDYWxsGAEgASgIEiMKBnRlbmFudBgCIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdBIfCgRzaXRlGAMgASgLMhEuc2hhbGUuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEisKB25ldHdvcmsYCCABKAsyGi5zaGFsZS5DYW1lcmFOZXR3b3JrU2VsZWN0EhIKCnBvbGljeV9rZXkYCSABKAgSEAoIcmV2aXNpb24YCiABKAgSKQoGcHJlc2V0GAsgASgLMhkuc2hhbGUuQ2FtZXJhUHJlc2V0U2VsZWN0EhIKCmVucm9sbG1lbnQYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKkAgoYQ2FtZXJhUG9saWN5UGF0Y2hSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVBvbGljeVJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSOwoGbGFiZWxzGA4gAygLMisuc2hhbGUuQ2FtZXJhUG9saWN5UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiXAoYQ2FtZXJhUG9saWN5QXBwbHlSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVBvbGljeVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIisKGUNhbWVyYVBvbGljeUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIogBChdDYW1lcmFQb2xpY3lMaXN0UmVxdWVzdBIqCgdmaWx0ZXJzGAEgAygLMhkuc2hhbGUuQ2FtZXJhUG9saWN5RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJTChhDYW1lcmFQb2xpY3lMaXN0UmVzcG9uc2USIgoFaXRlbXMYASADKAsyEy5zaGFsZS5DYW1lcmFQb2xpY3kSEwoEbmV4dBgCIAEoCUIFqgECCAIiowEKEkNhbWVyYVBvbGljeUZpbHRlchIjCgNyZWYYASABKAsyFi5zaGFsZS5DYW1lcmFQb2xpY3lSZWYSIAoGdGVuYW50GAIgASgLMhAuc2hhbGUuVGVuYW50UmVmEhwKBHNpdGUYAyABKAsyDi5zaGFsZS5TaXRlUmVmEigKB25ldHdvcmsYBCABKAsyFy5zaGFsZS5DYW1lcmFOZXR3b3JrUmVmImQKGENhbWVyYVBvbGljeVdhdGNoUmVxdWVzdBIqCgdmaWx0ZXJzGAEgAygLMhkuc2hhbGUuQ2FtZXJhUG9saWN5RmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIkgKGUNhbWVyYVBvbGljeVdhdGNoUmVzcG9uc2USKwoFaXRlbXMYASADKAsyHC5zaGFsZS5DYW1lcmFQb2xpY3lXYXRjaEl0ZW0iXgoVQ2FtZXJhUG9saWN5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEiIKBXZhbHVlGAIgASgLMhMuc2hhbGUuQ2FtZXJhUG9saWN5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIi6QEKGUNhbWVyYVBvbGljeUNyZWF0ZVJlcXVlc3QSKAoHbmV0d29yaxgBIAEoCzIXLnNoYWxlLkNhbWVyYU5ldHdvcmtSZWYSJgoGcHJlc2V0GAIgASgLMhYuc2hhbGUuQ2FtZXJhUHJlc2V0UmVmEhkKCnBvbGljeV9rZXkYAyABKAlCBaoBAggCEhcKCHJldmlzaW9uGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhIxCgplbnJvbGxtZW50GAYgASgLMh0uc2hhbGUuQ2FtZXJhRW5yb2xsbWVudFBvbGljeSKAAQobQ2FtZXJhUG9saWN5QWN0aXZhdGVSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVBvbGljeVJlZhI8ChhleHBlY3RlZF9uZXR3b3JrX3ZlcnNpb24YAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIokBChlDYW1lcmFQb2xpY3lFbnJvbGxSZXF1ZXN0EigKB2JpbmRpbmcYASABKAsyFy5zaGFsZS5DYW1lcmFCaW5kaW5nUmVmEiYKBnBvbGljeRgCIAEoCzIWLnNoYWxlLkNhbWVyYVBvbGljeVJlZhIaCgtyZXF1ZXN0X2tleRgDIAEoCUIFqgECCAIi8gEKGkNhbWVyYVBvbGljeU9ic2VydmVSZXF1ZXN0Ei4KCmFzc2lnbm1lbnQYASABKAsyGi5zaGFsZS5DYW1lcmFBc3NpZ25tZW50UmVmEiQKFWFzc2lnbm1lbnRfZ2VuZXJhdGlvbhgCIAEoA0IFqgECCAISGwoMZGlzY292ZXJ5X2lkGAMgASgJQgWqAQIIAhIvCghpZGVudGl0eRgEIAEoCzIdLnNoYWxlLkNhbWVyYUlkZW50aXR5RXZpZGVuY2USMAoJZW5kcG9pbnRzGAUgAygLMh0uc2hhbGUuQ2FtZXJhT2JzZXJ2ZWRFbmRwb2ludCKdAQobQ2FtZXJhUG9saWN5T2JzZXJ2ZVJlc3BvbnNlEiMKBmRldmljZRgBIAEoCzITLnNoYWxlLkNhbWVyYURldmljZRIlCgdiaW5kaW5nGAIgASgLMhQuc2hhbGUuQ2FtZXJhQmluZGluZxIdCgNqb2IYAyABKAsyEC5zaGFsZS5DYW1lcmFKb2ISEwoEY29kZRgEIAEoCUIFqgECCAIy+gUKE0NhbWVyYVBvbGljeVNlcnZpY2USOQoDQWRkEh0uc2hhbGUuQ2FtZXJhUG9saWN5QWRkUmVxdWVzdBoTLnNoYWxlLkNhbWVyYVBvbGljeRI5CgNHZXQSHS5zaGFsZS5DYW1lcmFQb2xpY3lHZXRSZXF1ZXN0GhMuc2hhbGUuQ2FtZXJhUG9saWN5Ej0KBVBhdGNoEh8uc2hhbGUuQ2FtZXJhUG9saWN5UGF0Y2hSZXF1ZXN0GhMuc2hhbGUuQ2FtZXJhUG9saWN5Ej0KBUFwcGx5Eh8uc2hhbGUuQ2FtZXJhUG9saWN5QXBwbHlSZXF1ZXN0GhMuc2hhbGUuQ2FtZXJhUG9saWN5EkEKBUVyYXNlEhYuc2hhbGUuQ2FtZXJhUG9saWN5UmVmGiAuc2hhbGUuQ2FtZXJhUG9saWN5RXJhc2VSZXNwb25zZRJHCgRMaXN0Eh4uc2hhbGUuQ2FtZXJhUG9saWN5TGlzdFJlcXVlc3QaHy5zaGFsZS5DYW1lcmFQb2xpY3lMaXN0UmVzcG9uc2USTAoFV2F0Y2gSHy5zaGFsZS5DYW1lcmFQb2xpY3lXYXRjaFJlcXVlc3QaIC5zaGFsZS5DYW1lcmFQb2xpY3lXYXRjaFJlc3BvbnNlMAESPwoGQ3JlYXRlEiAuc2hhbGUuQ2FtZXJhUG9saWN5Q3JlYXRlUmVxdWVzdBoTLnNoYWxlLkNhbWVyYVBvbGljeRJECghBY3RpdmF0ZRIiLnNoYWxlLkNhbWVyYVBvbGljeUFjdGl2YXRlUmVxdWVzdBoULnNoYWxlLkNhbWVyYU5ldHdvcmsSPAoGRW5yb2xsEiAuc2hhbGUuQ2FtZXJhUG9saWN5RW5yb2xsUmVxdWVzdBoQLnNoYWxlLkNhbWVyYUpvYhJQCgdPYnNlcnZlEiEuc2hhbGUuQ2FtZXJhUG9saWN5T2JzZXJ2ZVJlcXVlc3QaIi5zaGFsZS5DYW1lcmFQb2xpY3lPYnNlcnZlUmVzcG9uc2VCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_patch_patch, file_shale_camera, file_shale_camera_policy, file_shale_camera_preset_svc_g, file_shale_camera_svc_g, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
 
 /**
  * @generated from message shale.CameraPolicyAddRequest
@@ -588,6 +590,168 @@ export const CameraPolicyWatchItemSchema: GenMessage<CameraPolicyWatchItem> = /*
   messageDesc(file_shale_camera_policy_svc_g, 13);
 
 /**
+ * @generated from message shale.CameraPolicyCreateRequest
+ */
+export type CameraPolicyCreateRequest = Message<"shale.CameraPolicyCreateRequest"> & {
+  /**
+   * @generated from field: shale.CameraNetworkRef network = 1;
+   */
+  network?: CameraNetworkRef | undefined;
+
+  /**
+   * @generated from field: shale.CameraPresetRef preset = 2;
+   */
+  preset?: CameraPresetRef | undefined;
+
+  /**
+   * @generated from field: string policy_key = 3 [features.field_presence = IMPLICIT];
+   */
+  policyKey: string;
+
+  /**
+   * @generated from field: string revision = 4 [features.field_presence = IMPLICIT];
+   */
+  revision: string;
+
+  /**
+   * @generated from field: string name = 5 [features.field_presence = IMPLICIT];
+   */
+  name: string;
+
+  /**
+   * @generated from field: shale.CameraEnrollmentPolicy enrollment = 6;
+   */
+  enrollment?: CameraEnrollmentPolicy | undefined;
+};
+
+/**
+ * Describes the message shale.CameraPolicyCreateRequest.
+ * Use `create(CameraPolicyCreateRequestSchema)` to create a new message.
+ */
+export const CameraPolicyCreateRequestSchema: GenMessage<CameraPolicyCreateRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_policy_svc_g, 14);
+
+/**
+ * @generated from message shale.CameraPolicyActivateRequest
+ */
+export type CameraPolicyActivateRequest = Message<"shale.CameraPolicyActivateRequest"> & {
+  /**
+   * @generated from field: shale.CameraPolicyRef ref = 1;
+   */
+  ref?: CameraPolicyRef | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expected_network_version = 2;
+   */
+  expectedNetworkVersion?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message shale.CameraPolicyActivateRequest.
+ * Use `create(CameraPolicyActivateRequestSchema)` to create a new message.
+ */
+export const CameraPolicyActivateRequestSchema: GenMessage<CameraPolicyActivateRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_policy_svc_g, 15);
+
+/**
+ * @generated from message shale.CameraPolicyEnrollRequest
+ */
+export type CameraPolicyEnrollRequest = Message<"shale.CameraPolicyEnrollRequest"> & {
+  /**
+   * @generated from field: shale.CameraBindingRef binding = 1;
+   */
+  binding?: CameraBindingRef | undefined;
+
+  /**
+   * @generated from field: shale.CameraPolicyRef policy = 2;
+   */
+  policy?: CameraPolicyRef | undefined;
+
+  /**
+   * @generated from field: string request_key = 3 [features.field_presence = IMPLICIT];
+   */
+  requestKey: string;
+};
+
+/**
+ * Describes the message shale.CameraPolicyEnrollRequest.
+ * Use `create(CameraPolicyEnrollRequestSchema)` to create a new message.
+ */
+export const CameraPolicyEnrollRequestSchema: GenMessage<CameraPolicyEnrollRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_policy_svc_g, 16);
+
+/**
+ * @generated from message shale.CameraPolicyObserveRequest
+ */
+export type CameraPolicyObserveRequest = Message<"shale.CameraPolicyObserveRequest"> & {
+  /**
+   * @generated from field: shale.CameraAssignmentRef assignment = 1;
+   */
+  assignment?: CameraAssignmentRef | undefined;
+
+  /**
+   * @generated from field: int64 assignment_generation = 2 [features.field_presence = IMPLICIT];
+   */
+  assignmentGeneration: bigint;
+
+  /**
+   * A discovery deduplication hint, never authenticated inventory ownership.
+   *
+   * @generated from field: string discovery_id = 3 [features.field_presence = IMPLICIT];
+   */
+  discoveryId: string;
+
+  /**
+   * @generated from field: shale.CameraIdentityEvidence identity = 4;
+   */
+  identity?: CameraIdentityEvidence | undefined;
+
+  /**
+   * @generated from field: repeated shale.CameraObservedEndpoint endpoints = 5;
+   */
+  endpoints: CameraObservedEndpoint[];
+};
+
+/**
+ * Describes the message shale.CameraPolicyObserveRequest.
+ * Use `create(CameraPolicyObserveRequestSchema)` to create a new message.
+ */
+export const CameraPolicyObserveRequestSchema: GenMessage<CameraPolicyObserveRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_policy_svc_g, 17);
+
+/**
+ * @generated from message shale.CameraPolicyObserveResponse
+ */
+export type CameraPolicyObserveResponse = Message<"shale.CameraPolicyObserveResponse"> & {
+  /**
+   * @generated from field: shale.CameraDevice device = 1;
+   */
+  device?: CameraDevice | undefined;
+
+  /**
+   * @generated from field: shale.CameraBinding binding = 2;
+   */
+  binding?: CameraBinding | undefined;
+
+  /**
+   * @generated from field: shale.CameraJob job = 3;
+   */
+  job?: CameraJob | undefined;
+
+  /**
+   * @generated from field: string code = 4 [features.field_presence = IMPLICIT];
+   */
+  code: string;
+};
+
+/**
+ * Describes the message shale.CameraPolicyObserveResponse.
+ * Use `create(CameraPolicyObserveResponseSchema)` to create a new message.
+ */
+export const CameraPolicyObserveResponseSchema: GenMessage<CameraPolicyObserveResponse> = /*@__PURE__*/
+  messageDesc(file_shale_camera_policy_svc_g, 18);
+
+/**
  * @generated from service shale.CameraPolicyService
  */
 export const CameraPolicyService: GenService<{
@@ -670,6 +834,42 @@ export const CameraPolicyService: GenService<{
     methodKind: "server_streaming";
     input: typeof CameraPolicyWatchRequestSchema;
     output: typeof CameraPolicyWatchResponseSchema;
+  },
+  /**
+   * @generated from rpc shale.CameraPolicyService.Create
+   */
+  create: {
+    methodKind: "unary";
+    input: typeof CameraPolicyCreateRequestSchema;
+    output: typeof CameraPolicySchema;
+  },
+  /**
+   * @generated from rpc shale.CameraPolicyService.Activate
+   */
+  activate: {
+    methodKind: "unary";
+    input: typeof CameraPolicyActivateRequestSchema;
+    output: typeof CameraNetworkSchema;
+  },
+  /**
+   * Explicit reapply creates a new pinned job against the same binding/Source.
+   *
+   * @generated from rpc shale.CameraPolicyService.Enroll
+   */
+  enroll: {
+    methodKind: "unary";
+    input: typeof CameraPolicyEnrollRequestSchema;
+    output: typeof CameraJobSchema;
+  },
+  /**
+   * Scoped observations never grant general inventory mutation or credentials.
+   *
+   * @generated from rpc shale.CameraPolicyService.Observe
+   */
+  observe: {
+    methodKind: "unary";
+    input: typeof CameraPolicyObserveRequestSchema;
+    output: typeof CameraPolicyObserveResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_shale_camera_policy_svc_g, 0);

@@ -191,6 +191,13 @@ func (st CameraNetworkServiceServer) create(ctx context.Context, req *api.Camera
 	}
 	q.SetInterfaceHint(req.GetInterfaceHint())
 	q.SetRevision(req.GetRevision())
+	if req.HasActivePolicyId() {
+		if v, err := entuuid.FromBytes(req.GetActivePolicyId()); err != nil {
+			return nil, nil, status.Errorf(codes.InvalidArgument, "active_policy_id: %s", err)
+		} else {
+			q.SetActivePolicyId(v)
+		}
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -351,6 +358,9 @@ func CameraNetworkSelectedFields(m *api.CameraNetworkSelect) []string {
 	if m.GetRevision() {
 		vs = append(vs, cameranetwork.FieldRevision)
 	}
+	if m.GetActivePolicyId() {
+		vs = append(vs, cameranetwork.FieldActivePolicyId)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, cameranetwork.FieldDateUpdated)
 	}
@@ -435,7 +445,7 @@ func CameraNetworkGetKey(ctx context.Context, db *ent.Client, ref *api.CameraNet
 var cameraNetworkOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, "CameraNetwork")
 
 var cameraNetworkPatchColumns = entpatch.Columns{
-	1: cameranetwork.FieldId, 2: cameranetwork.TenantColumn, 3: cameranetwork.SiteColumn, 4: cameranetwork.FieldAlias, 5: cameranetwork.FieldName, 6: cameranetwork.FieldDesc, 7: cameranetwork.FieldLabels, 8: cameranetwork.FieldCidrs, 9: cameranetwork.FieldMulticast, 10: cameranetwork.FieldSeeds, 11: cameranetwork.FieldInterfaceHint, 12: cameranetwork.FieldRevision, 13: cameranetwork.FieldDateUpdated, 14: cameranetwork.FieldDateErased, 15: cameranetwork.FieldDateCreated}
+	1: cameranetwork.FieldId, 2: cameranetwork.TenantColumn, 3: cameranetwork.SiteColumn, 4: cameranetwork.FieldAlias, 5: cameranetwork.FieldName, 6: cameranetwork.FieldDesc, 7: cameranetwork.FieldLabels, 8: cameranetwork.FieldCidrs, 9: cameranetwork.FieldMulticast, 10: cameranetwork.FieldSeeds, 11: cameranetwork.FieldInterfaceHint, 12: cameranetwork.FieldRevision, 16: cameranetwork.FieldActivePolicyId, 13: cameranetwork.FieldDateUpdated, 14: cameranetwork.FieldDateErased, 15: cameranetwork.FieldDateCreated}
 
 func (s CameraNetworkServiceServer) Apply(ctx context.Context, req *api.CameraNetworkApplyRequest) (*api.CameraNetwork, error) {
 	if !req.HasPatch() {

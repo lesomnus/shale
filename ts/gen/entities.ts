@@ -170,7 +170,7 @@ export const CameraNetwork = {
 	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }],
 	alias: "alias",
 	key: "id",
-	ids: ["id"],
+	ids: ["id", "activePolicyId"],
 	service: CameraNetworkService,
 } as const satisfies EntityDesc
 

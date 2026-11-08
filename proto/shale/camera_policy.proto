@@ -40,7 +40,7 @@ message CameraPolicy {
     rpc: {crud: true}
     indexes: [
       {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]},
-      {name: "revision" refs: [{name: "tenant", number: 2}, {name: "policy_key", number: 9}, {name: "revision", number: 10}] unique: true}
+      {name: "revision" refs: [{name: "tenant", number: 2}, {name: "policy_key", number: 9}, {name: "revision", number: 10}] unique: true includes_erased: true}
     ]
   };
   option (payday.entity) = {

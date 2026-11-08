@@ -35,6 +35,9 @@ func (e *CameraNetwork) Proto() *api.CameraNetwork {
 	x.SetSeeds(e.Seeds)
 	x.SetInterfaceHint(e.InterfaceHint)
 	x.SetRevision(e.Revision)
+	if e.ActivePolicyId != nil {
+		x.SetActivePolicyId(e.ActivePolicyId[:])
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

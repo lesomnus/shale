@@ -974,11 +974,14 @@ func (b0 CameraMediaEvidence_builder) Build() *CameraMediaEvidence {
 }
 
 type CameraWarning struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Code  string                 `protobuf:"bytes,1,opt,name=code"`
-	xxx_hidden_Field string                 `protobuf:"bytes,2,opt,name=field"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Code      string                 `protobuf:"bytes,1,opt,name=code"`
+	xxx_hidden_Field     string                 `protobuf:"bytes,2,opt,name=field"`
+	xxx_hidden_Requested string                 `protobuf:"bytes,3,opt,name=requested"`
+	xxx_hidden_Applied   string                 `protobuf:"bytes,4,opt,name=applied"`
+	xxx_hidden_Reason    string                 `protobuf:"bytes,5,opt,name=reason"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *CameraWarning) Reset() {
@@ -1020,6 +1023,27 @@ func (x *CameraWarning) GetField() string {
 	return ""
 }
 
+func (x *CameraWarning) GetRequested() string {
+	if x != nil {
+		return x.xxx_hidden_Requested
+	}
+	return ""
+}
+
+func (x *CameraWarning) GetApplied() string {
+	if x != nil {
+		return x.xxx_hidden_Applied
+	}
+	return ""
+}
+
+func (x *CameraWarning) GetReason() string {
+	if x != nil {
+		return x.xxx_hidden_Reason
+	}
+	return ""
+}
+
 func (x *CameraWarning) SetCode(v string) {
 	x.xxx_hidden_Code = v
 }
@@ -1028,11 +1052,26 @@ func (x *CameraWarning) SetField(v string) {
 	x.xxx_hidden_Field = v
 }
 
+func (x *CameraWarning) SetRequested(v string) {
+	x.xxx_hidden_Requested = v
+}
+
+func (x *CameraWarning) SetApplied(v string) {
+	x.xxx_hidden_Applied = v
+}
+
+func (x *CameraWarning) SetReason(v string) {
+	x.xxx_hidden_Reason = v
+}
+
 type CameraWarning_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Code  string
-	Field string
+	Code      string
+	Field     string
+	Requested string
+	Applied   string
+	Reason    string
 }
 
 func (b0 CameraWarning_builder) Build() *CameraWarning {
@@ -1041,6 +1080,9 @@ func (b0 CameraWarning_builder) Build() *CameraWarning {
 	_, _ = b, x
 	x.xxx_hidden_Code = b.Code
 	x.xxx_hidden_Field = b.Field
+	x.xxx_hidden_Requested = b.Requested
+	x.xxx_hidden_Applied = b.Applied
+	x.xxx_hidden_Reason = b.Reason
 	return m0
 }
 
@@ -1053,6 +1095,7 @@ type CameraJobInputs struct {
 	xxx_hidden_InitialCredential    *CameraCredentialReference `protobuf:"bytes,5,opt,name=initial_credential,json=initialCredential"`
 	xxx_hidden_ManagementCredential *CameraCredentialReference `protobuf:"bytes,6,opt,name=management_credential,json=managementCredential"`
 	xxx_hidden_StreamingCredential  *CameraCredentialReference `protobuf:"bytes,7,opt,name=streaming_credential,json=streamingCredential"`
+	xxx_hidden_Configuration        *CameraPresetSettings      `protobuf:"bytes,8,opt,name=configuration"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -1131,6 +1174,13 @@ func (x *CameraJobInputs) GetStreamingCredential() *CameraCredentialReference {
 	return nil
 }
 
+func (x *CameraJobInputs) GetConfiguration() *CameraPresetSettings {
+	if x != nil {
+		return x.xxx_hidden_Configuration
+	}
+	return nil
+}
+
 func (x *CameraJobInputs) SetPolicy(v *CameraRevisionReference) {
 	x.xxx_hidden_Policy = v
 }
@@ -1157,6 +1207,10 @@ func (x *CameraJobInputs) SetManagementCredential(v *CameraCredentialReference) 
 
 func (x *CameraJobInputs) SetStreamingCredential(v *CameraCredentialReference) {
 	x.xxx_hidden_StreamingCredential = v
+}
+
+func (x *CameraJobInputs) SetConfiguration(v *CameraPresetSettings) {
+	x.xxx_hidden_Configuration = v
 }
 
 func (x *CameraJobInputs) HasPolicy() bool {
@@ -1201,6 +1255,13 @@ func (x *CameraJobInputs) HasStreamingCredential() bool {
 	return x.xxx_hidden_StreamingCredential != nil
 }
 
+func (x *CameraJobInputs) HasConfiguration() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Configuration != nil
+}
+
 func (x *CameraJobInputs) ClearPolicy() {
 	x.xxx_hidden_Policy = nil
 }
@@ -1225,6 +1286,10 @@ func (x *CameraJobInputs) ClearStreamingCredential() {
 	x.xxx_hidden_StreamingCredential = nil
 }
 
+func (x *CameraJobInputs) ClearConfiguration() {
+	x.xxx_hidden_Configuration = nil
+}
+
 type CameraJobInputs_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1235,6 +1300,7 @@ type CameraJobInputs_builder struct {
 	InitialCredential    *CameraCredentialReference
 	ManagementCredential *CameraCredentialReference
 	StreamingCredential  *CameraCredentialReference
+	Configuration        *CameraPresetSettings
 }
 
 func (b0 CameraJobInputs_builder) Build() *CameraJobInputs {
@@ -1248,6 +1314,7 @@ func (b0 CameraJobInputs_builder) Build() *CameraJobInputs {
 	x.xxx_hidden_InitialCredential = b.InitialCredential
 	x.xxx_hidden_ManagementCredential = b.ManagementCredential
 	x.xxx_hidden_StreamingCredential = b.StreamingCredential
+	x.xxx_hidden_Configuration = b.Configuration
 	return m0
 }
 
@@ -1261,6 +1328,7 @@ type CameraJobObservation struct {
 	xxx_hidden_LiveFirstFrameAt  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=live_first_frame_at,json=liveFirstFrameAt"`
 	xxx_hidden_LiveLastFrameAt   *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=live_last_frame_at,json=liveLastFrameAt"`
 	xxx_hidden_AppliedRevision   int64                  `protobuf:"varint,8,opt,name=applied_revision,json=appliedRevision"`
+	xxx_hidden_Progress          *CameraProvisionState  `protobuf:"bytes,9,opt,name=progress"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -1348,6 +1416,13 @@ func (x *CameraJobObservation) GetAppliedRevision() int64 {
 	return 0
 }
 
+func (x *CameraJobObservation) GetProgress() *CameraProvisionState {
+	if x != nil {
+		return x.xxx_hidden_Progress
+	}
+	return nil
+}
+
 func (x *CameraJobObservation) SetEffective(v *CameraCaptureProfile) {
 	x.xxx_hidden_Effective = v
 }
@@ -1380,6 +1455,10 @@ func (x *CameraJobObservation) SetAppliedRevision(v int64) {
 	x.xxx_hidden_AppliedRevision = v
 }
 
+func (x *CameraJobObservation) SetProgress(v *CameraProvisionState) {
+	x.xxx_hidden_Progress = v
+}
+
 func (x *CameraJobObservation) HasEffective() bool {
 	if x == nil {
 		return false
@@ -1408,6 +1487,13 @@ func (x *CameraJobObservation) HasLiveLastFrameAt() bool {
 	return x.xxx_hidden_LiveLastFrameAt != nil
 }
 
+func (x *CameraJobObservation) HasProgress() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Progress != nil
+}
+
 func (x *CameraJobObservation) ClearEffective() {
 	x.xxx_hidden_Effective = nil
 }
@@ -1422,6 +1508,10 @@ func (x *CameraJobObservation) ClearLiveFirstFrameAt() {
 
 func (x *CameraJobObservation) ClearLiveLastFrameAt() {
 	x.xxx_hidden_LiveLastFrameAt = nil
+}
+
+func (x *CameraJobObservation) ClearProgress() {
+	x.xxx_hidden_Progress = nil
 }
 
 type CameraJobObservation_builder struct {
@@ -1439,6 +1529,9 @@ type CameraJobObservation_builder struct {
 	// Execution acknowledgement, separate from media being available. #194 uses
 	// an authorized operator report; #198/#199 correlate Producer runtime acks.
 	AppliedRevision int64
+	// Full typed portable workflow state; configuration intent is durable before
+	// device writes and cannot be replaced by a later policy revision.
+	Progress *CameraProvisionState
 }
 
 func (b0 CameraJobObservation_builder) Build() *CameraJobObservation {
@@ -1453,29 +1546,31 @@ func (b0 CameraJobObservation_builder) Build() *CameraJobObservation {
 	x.xxx_hidden_LiveFirstFrameAt = b.LiveFirstFrameAt
 	x.xxx_hidden_LiveLastFrameAt = b.LiveLastFrameAt
 	x.xxx_hidden_AppliedRevision = b.AppliedRevision
+	x.xxx_hidden_Progress = b.Progress
 	return m0
 }
 
 // CameraNetwork is tenant/site scoped; custom CP operations own its invariants.
 type CameraNetwork struct {
-	state                    protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant        *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Site          *Site                  `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Alias         string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name          string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc          string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels        map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Cidrs         []string               `protobuf:"bytes,8,rep,name=cidrs"`
-	xxx_hidden_Multicast     bool                   `protobuf:"varint,9,opt,name=multicast"`
-	xxx_hidden_Seeds         []string               `protobuf:"bytes,10,rep,name=seeds"`
-	xxx_hidden_InterfaceHint string                 `protobuf:"bytes,11,opt,name=interface_hint,json=interfaceHint"`
-	xxx_hidden_Revision      int64                  `protobuf:"varint,12,opt,name=revision"`
-	xxx_hidden_DateUpdated   *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased    *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id             []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant         *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Site           *Site                  `protobuf:"bytes,3,opt,name=site"`
+	xxx_hidden_Alias          string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name           string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc           string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels         map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Cidrs          []string               `protobuf:"bytes,8,rep,name=cidrs"`
+	xxx_hidden_Multicast      bool                   `protobuf:"varint,9,opt,name=multicast"`
+	xxx_hidden_Seeds          []string               `protobuf:"bytes,10,rep,name=seeds"`
+	xxx_hidden_InterfaceHint  string                 `protobuf:"bytes,11,opt,name=interface_hint,json=interfaceHint"`
+	xxx_hidden_Revision       int64                  `protobuf:"varint,12,opt,name=revision"`
+	xxx_hidden_ActivePolicyId []byte                 `protobuf:"bytes,16,opt,name=active_policy_id,json=activePolicyId"`
+	xxx_hidden_DateUpdated    *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased     *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated    *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *CameraNetwork) Reset() {
@@ -1587,6 +1682,13 @@ func (x *CameraNetwork) GetRevision() int64 {
 	return 0
 }
 
+func (x *CameraNetwork) GetActivePolicyId() []byte {
+	if x != nil {
+		return x.xxx_hidden_ActivePolicyId
+	}
+	return nil
+}
+
 func (x *CameraNetwork) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -1657,6 +1759,13 @@ func (x *CameraNetwork) SetInterfaceHint(v string) {
 
 func (x *CameraNetwork) SetRevision(v int64) {
 	x.xxx_hidden_Revision = v
+}
+
+func (x *CameraNetwork) SetActivePolicyId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_ActivePolicyId = v
 }
 
 func (x *CameraNetwork) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1742,9 +1851,11 @@ type CameraNetwork_builder struct {
 	// Local interface choice remains administrator-controlled. This is intent.
 	InterfaceHint string
 	Revision      int64
-	DateUpdated   *timestamppb.Timestamp
-	DateErased    *timestamppb.Timestamp
-	DateCreated   *timestamppb.Timestamp
+	// Immutable CameraPolicy revision selected through explicit operator CAS.
+	ActivePolicyId []byte
+	DateUpdated    *timestamppb.Timestamp
+	DateErased     *timestamppb.Timestamp
+	DateCreated    *timestamppb.Timestamp
 }
 
 func (b0 CameraNetwork_builder) Build() *CameraNetwork {
@@ -1763,6 +1874,7 @@ func (b0 CameraNetwork_builder) Build() *CameraNetwork {
 	x.xxx_hidden_Seeds = b.Seeds
 	x.xxx_hidden_InterfaceHint = b.InterfaceHint
 	x.xxx_hidden_Revision = b.Revision
+	x.xxx_hidden_ActivePolicyId = b.ActivePolicyId
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -3473,7 +3585,7 @@ var File_shale_camera_proto protoreflect.FileDescriptor
 
 const file_shale_camera_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/camera.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\x1a\x0fshale/set.proto\x1a\x10shale/host.proto\"{\n" +
+	"\x12shale/camera.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\x1a\x0fshale/set.proto\x1a\x10shale/host.proto\x1a\x1bshale/camera_progress.proto\x1a\x19shale/camera_preset.proto\"{\n" +
 	"\x19CameraCredentialReference\x12\x1a\n" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x18\n" +
@@ -3528,10 +3640,13 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x10duration_seconds\x18\x03 \x01(\x01R\x0fdurationSeconds\x12%\n" +
 	"\x0edecoded_frames\x18\x04 \x01(\x03R\rdecodedFrames\x12;\n" +
 	"\vobserved_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"observedAt\"9\n" +
+	"observedAt\"\x89\x01\n" +
 	"\rCameraWarning\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x14\n" +
-	"\x05field\x18\x02 \x01(\tR\x05field\"\xe0\x03\n" +
+	"\x05field\x18\x02 \x01(\tR\x05field\x12\x1c\n" +
+	"\trequested\x18\x03 \x01(\tR\trequested\x12\x18\n" +
+	"\aapplied\x18\x04 \x01(\tR\aapplied\x12\x16\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\"\xa3\x04\n" +
 	"\x0fCameraJobInputs\x126\n" +
 	"\x06policy\x18\x01 \x01(\v2\x1e.shale.CameraRevisionReferenceR\x06policy\x126\n" +
 	"\x06preset\x18\x02 \x01(\v2\x1e.shale.CameraRevisionReferenceR\x06preset\x125\n" +
@@ -3539,7 +3654,8 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x10allow_activation\x18\x04 \x01(\bR\x0fallowActivation\x12O\n" +
 	"\x12initial_credential\x18\x05 \x01(\v2 .shale.CameraCredentialReferenceR\x11initialCredential\x12U\n" +
 	"\x15management_credential\x18\x06 \x01(\v2 .shale.CameraCredentialReferenceR\x14managementCredential\x12S\n" +
-	"\x14streaming_credential\x18\a \x01(\v2 .shale.CameraCredentialReferenceR\x13streamingCredential\"\xbe\x03\n" +
+	"\x14streaming_credential\x18\a \x01(\v2 .shale.CameraCredentialReferenceR\x13streamingCredential\x12A\n" +
+	"\rconfiguration\x18\b \x01(\v2\x1b.shale.CameraPresetSettingsR\rconfiguration\"\xf7\x03\n" +
 	"\x14CameraJobObservation\x129\n" +
 	"\teffective\x18\x01 \x01(\v2\x1b.shale.CameraCaptureProfileR\teffective\x126\n" +
 	"\bverified\x18\x02 \x01(\v2\x1a.shale.CameraMediaEvidenceR\bverified\x120\n" +
@@ -3548,7 +3664,8 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x13live_decoded_frames\x18\x05 \x01(\x03R\x11liveDecodedFrames\x12I\n" +
 	"\x13live_first_frame_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x10liveFirstFrameAt\x12G\n" +
 	"\x12live_last_frame_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x0fliveLastFrameAt\x12)\n" +
-	"\x10applied_revision\x18\b \x01(\x03R\x0fappliedRevision\"\x98\x06\n" +
+	"\x10applied_revision\x18\b \x01(\x03R\x0fappliedRevision\x127\n" +
+	"\bprogress\x18\t \x01(\v2\x1b.shale.CameraProvisionStateR\bprogress\"\xcc\x06\n" +
 	"\rCameraNetwork\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -3562,7 +3679,8 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x05seeds\x18\n" +
 	" \x03(\tR\x05seeds\x12%\n" +
 	"\x0einterface_hint\x18\v \x01(\tR\rinterfaceHint\x12\x1a\n" +
-	"\brevision\x18\f \x01(\x03R\brevision\x12F\n" +
+	"\brevision\x18\f \x01(\x03R\brevision\x122\n" +
+	"\x10active_policy_id\x18\x10 \x01(\fB\b\xea\x82\x16\x04\x10@8\x01R\x0eactivePolicyId\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -3813,11 +3931,13 @@ var file_shale_camera_proto_goTypes = []any{
 	nil,                               // 20: shale.CameraBinding.LabelsEntry
 	nil,                               // 21: shale.CameraJob.LabelsEntry
 	(*timestamppb.Timestamp)(nil),     // 22: google.protobuf.Timestamp
-	(*Tenant)(nil),                    // 23: shale.Tenant
-	(*Site)(nil),                      // 24: shale.Site
-	(*Set)(nil),                       // 25: shale.Set
-	(*Producer)(nil),                  // 26: shale.Producer
-	(*Source)(nil),                    // 27: shale.Source
+	(*CameraPresetSettings)(nil),      // 23: shale.CameraPresetSettings
+	(*CameraProvisionState)(nil),      // 24: shale.CameraProvisionState
+	(*Tenant)(nil),                    // 25: shale.Tenant
+	(*Site)(nil),                      // 26: shale.Site
+	(*Set)(nil),                       // 27: shale.Set
+	(*Producer)(nil),                  // 28: shale.Producer
+	(*Source)(nil),                    // 29: shale.Source
 }
 var file_shale_camera_proto_depIdxs = []int32{
 	3,  // 0: shale.CameraCaptureSpec.profile:type_name -> shale.CameraCaptureProfile
@@ -3832,64 +3952,66 @@ var file_shale_camera_proto_depIdxs = []int32{
 	1,  // 9: shale.CameraJobInputs.initial_credential:type_name -> shale.CameraCredentialReference
 	1,  // 10: shale.CameraJobInputs.management_credential:type_name -> shale.CameraCredentialReference
 	1,  // 11: shale.CameraJobInputs.streaming_credential:type_name -> shale.CameraCredentialReference
-	3,  // 12: shale.CameraJobObservation.effective:type_name -> shale.CameraCaptureProfile
-	7,  // 13: shale.CameraJobObservation.verified:type_name -> shale.CameraMediaEvidence
-	8,  // 14: shale.CameraJobObservation.warnings:type_name -> shale.CameraWarning
-	22, // 15: shale.CameraJobObservation.live_first_frame_at:type_name -> google.protobuf.Timestamp
-	22, // 16: shale.CameraJobObservation.live_last_frame_at:type_name -> google.protobuf.Timestamp
-	23, // 17: shale.CameraNetwork.tenant:type_name -> shale.Tenant
-	24, // 18: shale.CameraNetwork.site:type_name -> shale.Site
-	17, // 19: shale.CameraNetwork.labels:type_name -> shale.CameraNetwork.LabelsEntry
-	22, // 20: shale.CameraNetwork.date_updated:type_name -> google.protobuf.Timestamp
-	22, // 21: shale.CameraNetwork.date_erased:type_name -> google.protobuf.Timestamp
-	22, // 22: shale.CameraNetwork.date_created:type_name -> google.protobuf.Timestamp
-	23, // 23: shale.CameraDevice.tenant:type_name -> shale.Tenant
-	24, // 24: shale.CameraDevice.site:type_name -> shale.Site
-	18, // 25: shale.CameraDevice.labels:type_name -> shale.CameraDevice.LabelsEntry
-	11, // 26: shale.CameraDevice.network:type_name -> shale.CameraNetwork
-	5,  // 27: shale.CameraDevice.identity:type_name -> shale.CameraIdentityEvidence
-	6,  // 28: shale.CameraDevice.endpoints:type_name -> shale.CameraObservedEndpoint
-	22, // 29: shale.CameraDevice.date_updated:type_name -> google.protobuf.Timestamp
-	22, // 30: shale.CameraDevice.date_erased:type_name -> google.protobuf.Timestamp
-	22, // 31: shale.CameraDevice.date_created:type_name -> google.protobuf.Timestamp
-	23, // 32: shale.CameraAssignment.tenant:type_name -> shale.Tenant
-	24, // 33: shale.CameraAssignment.site:type_name -> shale.Site
-	19, // 34: shale.CameraAssignment.labels:type_name -> shale.CameraAssignment.LabelsEntry
-	11, // 35: shale.CameraAssignment.network:type_name -> shale.CameraNetwork
-	25, // 36: shale.CameraAssignment.set:type_name -> shale.Set
-	26, // 37: shale.CameraAssignment.producer:type_name -> shale.Producer
-	22, // 38: shale.CameraAssignment.date_updated:type_name -> google.protobuf.Timestamp
-	22, // 39: shale.CameraAssignment.date_erased:type_name -> google.protobuf.Timestamp
-	22, // 40: shale.CameraAssignment.date_created:type_name -> google.protobuf.Timestamp
-	23, // 41: shale.CameraBinding.tenant:type_name -> shale.Tenant
-	24, // 42: shale.CameraBinding.site:type_name -> shale.Site
-	20, // 43: shale.CameraBinding.labels:type_name -> shale.CameraBinding.LabelsEntry
-	13, // 44: shale.CameraBinding.assignment:type_name -> shale.CameraAssignment
-	12, // 45: shale.CameraBinding.device:type_name -> shale.CameraDevice
-	27, // 46: shale.CameraBinding.source:type_name -> shale.Source
-	4,  // 47: shale.CameraBinding.desired:type_name -> shale.CameraCaptureSpec
-	10, // 48: shale.CameraBinding.observed:type_name -> shale.CameraJobObservation
-	22, // 49: shale.CameraBinding.date_updated:type_name -> google.protobuf.Timestamp
-	22, // 50: shale.CameraBinding.date_erased:type_name -> google.protobuf.Timestamp
-	22, // 51: shale.CameraBinding.date_created:type_name -> google.protobuf.Timestamp
-	23, // 52: shale.CameraJob.tenant:type_name -> shale.Tenant
-	24, // 53: shale.CameraJob.site:type_name -> shale.Site
-	21, // 54: shale.CameraJob.labels:type_name -> shale.CameraJob.LabelsEntry
-	14, // 55: shale.CameraJob.binding:type_name -> shale.CameraBinding
-	13, // 56: shale.CameraJob.assignment:type_name -> shale.CameraAssignment
-	0,  // 57: shale.CameraJob.stage:type_name -> shale.CameraJobStage
-	22, // 58: shale.CameraJob.lease_expires:type_name -> google.protobuf.Timestamp
-	9,  // 59: shale.CameraJob.inputs:type_name -> shale.CameraJobInputs
-	10, // 60: shale.CameraJob.observed:type_name -> shale.CameraJobObservation
-	22, // 61: shale.CameraJob.date_published:type_name -> google.protobuf.Timestamp
-	22, // 62: shale.CameraJob.date_updated:type_name -> google.protobuf.Timestamp
-	22, // 63: shale.CameraJob.date_erased:type_name -> google.protobuf.Timestamp
-	22, // 64: shale.CameraJob.date_created:type_name -> google.protobuf.Timestamp
-	65, // [65:65] is the sub-list for method output_type
-	65, // [65:65] is the sub-list for method input_type
-	65, // [65:65] is the sub-list for extension type_name
-	65, // [65:65] is the sub-list for extension extendee
-	0,  // [0:65] is the sub-list for field type_name
+	23, // 12: shale.CameraJobInputs.configuration:type_name -> shale.CameraPresetSettings
+	3,  // 13: shale.CameraJobObservation.effective:type_name -> shale.CameraCaptureProfile
+	7,  // 14: shale.CameraJobObservation.verified:type_name -> shale.CameraMediaEvidence
+	8,  // 15: shale.CameraJobObservation.warnings:type_name -> shale.CameraWarning
+	22, // 16: shale.CameraJobObservation.live_first_frame_at:type_name -> google.protobuf.Timestamp
+	22, // 17: shale.CameraJobObservation.live_last_frame_at:type_name -> google.protobuf.Timestamp
+	24, // 18: shale.CameraJobObservation.progress:type_name -> shale.CameraProvisionState
+	25, // 19: shale.CameraNetwork.tenant:type_name -> shale.Tenant
+	26, // 20: shale.CameraNetwork.site:type_name -> shale.Site
+	17, // 21: shale.CameraNetwork.labels:type_name -> shale.CameraNetwork.LabelsEntry
+	22, // 22: shale.CameraNetwork.date_updated:type_name -> google.protobuf.Timestamp
+	22, // 23: shale.CameraNetwork.date_erased:type_name -> google.protobuf.Timestamp
+	22, // 24: shale.CameraNetwork.date_created:type_name -> google.protobuf.Timestamp
+	25, // 25: shale.CameraDevice.tenant:type_name -> shale.Tenant
+	26, // 26: shale.CameraDevice.site:type_name -> shale.Site
+	18, // 27: shale.CameraDevice.labels:type_name -> shale.CameraDevice.LabelsEntry
+	11, // 28: shale.CameraDevice.network:type_name -> shale.CameraNetwork
+	5,  // 29: shale.CameraDevice.identity:type_name -> shale.CameraIdentityEvidence
+	6,  // 30: shale.CameraDevice.endpoints:type_name -> shale.CameraObservedEndpoint
+	22, // 31: shale.CameraDevice.date_updated:type_name -> google.protobuf.Timestamp
+	22, // 32: shale.CameraDevice.date_erased:type_name -> google.protobuf.Timestamp
+	22, // 33: shale.CameraDevice.date_created:type_name -> google.protobuf.Timestamp
+	25, // 34: shale.CameraAssignment.tenant:type_name -> shale.Tenant
+	26, // 35: shale.CameraAssignment.site:type_name -> shale.Site
+	19, // 36: shale.CameraAssignment.labels:type_name -> shale.CameraAssignment.LabelsEntry
+	11, // 37: shale.CameraAssignment.network:type_name -> shale.CameraNetwork
+	27, // 38: shale.CameraAssignment.set:type_name -> shale.Set
+	28, // 39: shale.CameraAssignment.producer:type_name -> shale.Producer
+	22, // 40: shale.CameraAssignment.date_updated:type_name -> google.protobuf.Timestamp
+	22, // 41: shale.CameraAssignment.date_erased:type_name -> google.protobuf.Timestamp
+	22, // 42: shale.CameraAssignment.date_created:type_name -> google.protobuf.Timestamp
+	25, // 43: shale.CameraBinding.tenant:type_name -> shale.Tenant
+	26, // 44: shale.CameraBinding.site:type_name -> shale.Site
+	20, // 45: shale.CameraBinding.labels:type_name -> shale.CameraBinding.LabelsEntry
+	13, // 46: shale.CameraBinding.assignment:type_name -> shale.CameraAssignment
+	12, // 47: shale.CameraBinding.device:type_name -> shale.CameraDevice
+	29, // 48: shale.CameraBinding.source:type_name -> shale.Source
+	4,  // 49: shale.CameraBinding.desired:type_name -> shale.CameraCaptureSpec
+	10, // 50: shale.CameraBinding.observed:type_name -> shale.CameraJobObservation
+	22, // 51: shale.CameraBinding.date_updated:type_name -> google.protobuf.Timestamp
+	22, // 52: shale.CameraBinding.date_erased:type_name -> google.protobuf.Timestamp
+	22, // 53: shale.CameraBinding.date_created:type_name -> google.protobuf.Timestamp
+	25, // 54: shale.CameraJob.tenant:type_name -> shale.Tenant
+	26, // 55: shale.CameraJob.site:type_name -> shale.Site
+	21, // 56: shale.CameraJob.labels:type_name -> shale.CameraJob.LabelsEntry
+	14, // 57: shale.CameraJob.binding:type_name -> shale.CameraBinding
+	13, // 58: shale.CameraJob.assignment:type_name -> shale.CameraAssignment
+	0,  // 59: shale.CameraJob.stage:type_name -> shale.CameraJobStage
+	22, // 60: shale.CameraJob.lease_expires:type_name -> google.protobuf.Timestamp
+	9,  // 61: shale.CameraJob.inputs:type_name -> shale.CameraJobInputs
+	10, // 62: shale.CameraJob.observed:type_name -> shale.CameraJobObservation
+	22, // 63: shale.CameraJob.date_published:type_name -> google.protobuf.Timestamp
+	22, // 64: shale.CameraJob.date_updated:type_name -> google.protobuf.Timestamp
+	22, // 65: shale.CameraJob.date_erased:type_name -> google.protobuf.Timestamp
+	22, // 66: shale.CameraJob.date_created:type_name -> google.protobuf.Timestamp
+	67, // [67:67] is the sub-list for method output_type
+	67, // [67:67] is the sub-list for method input_type
+	67, // [67:67] is the sub-list for extension type_name
+	67, // [67:67] is the sub-list for extension extendee
+	0,  // [0:67] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_proto_init() }
@@ -3901,6 +4023,8 @@ func file_shale_camera_proto_init() {
 	file_shale_site_proto_init()
 	file_shale_set_proto_init()
 	file_shale_host_proto_init()
+	file_shale_camera_progress_proto_init()
+	file_shale_camera_preset_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

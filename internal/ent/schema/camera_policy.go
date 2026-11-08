@@ -84,8 +84,7 @@ func (CameraPolicy) Indexes() []ent.Index {
 			StorageKey("camerapolicy_page"),
 		index.Fields("tenant_id", "policy_key", "revision").
 			StorageKey("camerapolicy_revision").
-			Unique().
-			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+			Unique(),
 	}
 }
 

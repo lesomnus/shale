@@ -171,6 +171,7 @@ message CameraNetworkAddRequest {
   repeated string seeds = 10;
   string interface_hint = 11 [features.field_presence = IMPLICIT];
   int64 revision = 12 [features.field_presence = IMPLICIT];
+  bytes active_policy_id = 16;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -198,6 +199,7 @@ message CameraNetworkSelect {
   bool seeds = 10;
   bool interface_hint = 11;
   bool revision = 12;
+  bool active_policy_id = 16;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -214,6 +216,12 @@ message CameraNetworkPatchRequest {
   repeated string seeds = 20;
   string interface_hint = 22;
   int64 revision = 24;
+  bytes active_policy_id = 32;
+  // Clear active_policy_id instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and active_policy_id clears.
+  bool active_policy_id_null = 33;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

@@ -70,8 +70,7 @@ func (CameraPreset) Indexes() []ent.Index {
 			StorageKey("camerapreset_page"),
 		index.Fields("tenant_id", "preset_key", "revision").
 			StorageKey("camerapreset_revision").
-			Unique().
-			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+			Unique(),
 	}
 }
 

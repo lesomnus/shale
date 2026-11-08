@@ -19498,50 +19498,6 @@ func (s interceptSite) Watch(req *api.SiteWatchRequest, out grpc.ServerStreaming
 		api.SiteService_Watch_FullMethodName, req, out, s.SiteServiceServer.Watch)
 }
 
-func (s Intercept) CameraPreset() api.CameraPresetServiceServer {
-	return interceptCameraPreset{s, s.Next().CameraPreset()}
-}
-
-type interceptCameraPreset struct {
-	Intercept
-	api.CameraPresetServiceServer
-}
-
-func (s interceptCameraPreset) Add(ctx context.Context, req *api.CameraPresetAddRequest) (*api.CameraPreset, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
-		api.CameraPresetService_Add_FullMethodName, req, s.CameraPresetServiceServer.Add)
-}
-
-func (s interceptCameraPreset) Get(ctx context.Context, req *api.CameraPresetGetRequest) (*api.CameraPreset, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
-		api.CameraPresetService_Get_FullMethodName, req, s.CameraPresetServiceServer.Get)
-}
-
-func (s interceptCameraPreset) Patch(ctx context.Context, req *api.CameraPresetPatchRequest) (*api.CameraPreset, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
-		api.CameraPresetService_Patch_FullMethodName, req, s.CameraPresetServiceServer.Patch)
-}
-
-func (s interceptCameraPreset) Apply(ctx context.Context, req *api.CameraPresetApplyRequest) (*api.CameraPreset, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
-		api.CameraPresetService_Apply_FullMethodName, req, s.CameraPresetServiceServer.Apply)
-}
-
-func (s interceptCameraPreset) Erase(ctx context.Context, req *api.CameraPresetRef) (*api.CameraPresetEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
-		api.CameraPresetService_Erase_FullMethodName, req, s.CameraPresetServiceServer.Erase)
-}
-
-func (s interceptCameraPreset) List(ctx context.Context, req *api.CameraPresetListRequest) (*api.CameraPresetListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
-		api.CameraPresetService_List_FullMethodName, req, s.CameraPresetServiceServer.List)
-}
-
-func (s interceptCameraPreset) Watch(req *api.CameraPresetWatchRequest, out grpc.ServerStreamingServer[api.CameraPresetWatchResponse]) error {
-	return grpcx.RunStream(s.stream, s.CameraPresetServiceServer,
-		api.CameraPresetService_Watch_FullMethodName, req, out, s.CameraPresetServiceServer.Watch)
-}
-
 func (s Intercept) Set() api.SetServiceServer {
 	return interceptSet{s, s.Next().Set()}
 }
@@ -20206,6 +20162,60 @@ func (s interceptCameraJob) Publish(ctx context.Context, req *api.CameraJobPubli
 		api.CameraJobService_Publish_FullMethodName, req, s.CameraJobServiceServer.Publish)
 }
 
+func (s Intercept) CameraPreset() api.CameraPresetServiceServer {
+	return interceptCameraPreset{s, s.Next().CameraPreset()}
+}
+
+type interceptCameraPreset struct {
+	Intercept
+	api.CameraPresetServiceServer
+}
+
+func (s interceptCameraPreset) Add(ctx context.Context, req *api.CameraPresetAddRequest) (*api.CameraPreset, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
+		api.CameraPresetService_Add_FullMethodName, req, s.CameraPresetServiceServer.Add)
+}
+
+func (s interceptCameraPreset) Get(ctx context.Context, req *api.CameraPresetGetRequest) (*api.CameraPreset, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
+		api.CameraPresetService_Get_FullMethodName, req, s.CameraPresetServiceServer.Get)
+}
+
+func (s interceptCameraPreset) Patch(ctx context.Context, req *api.CameraPresetPatchRequest) (*api.CameraPreset, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
+		api.CameraPresetService_Patch_FullMethodName, req, s.CameraPresetServiceServer.Patch)
+}
+
+func (s interceptCameraPreset) Apply(ctx context.Context, req *api.CameraPresetApplyRequest) (*api.CameraPreset, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
+		api.CameraPresetService_Apply_FullMethodName, req, s.CameraPresetServiceServer.Apply)
+}
+
+func (s interceptCameraPreset) Erase(ctx context.Context, req *api.CameraPresetRef) (*api.CameraPresetEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
+		api.CameraPresetService_Erase_FullMethodName, req, s.CameraPresetServiceServer.Erase)
+}
+
+func (s interceptCameraPreset) List(ctx context.Context, req *api.CameraPresetListRequest) (*api.CameraPresetListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
+		api.CameraPresetService_List_FullMethodName, req, s.CameraPresetServiceServer.List)
+}
+
+func (s interceptCameraPreset) Watch(req *api.CameraPresetWatchRequest, out grpc.ServerStreamingServer[api.CameraPresetWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CameraPresetServiceServer,
+		api.CameraPresetService_Watch_FullMethodName, req, out, s.CameraPresetServiceServer.Watch)
+}
+
+func (s interceptCameraPreset) Create(ctx context.Context, req *api.CameraPresetCreateRequest) (*api.CameraPreset, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
+		api.CameraPresetService_Create_FullMethodName, req, s.CameraPresetServiceServer.Create)
+}
+
+func (s interceptCameraPreset) ResolveForJob(ctx context.Context, req *api.CameraPresetResolveForJobRequest) (*api.CameraResolvedPreset, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPresetServiceServer,
+		api.CameraPresetService_ResolveForJob_FullMethodName, req, s.CameraPresetServiceServer.ResolveForJob)
+}
+
 func (s Intercept) CameraPolicy() api.CameraPolicyServiceServer {
 	return interceptCameraPolicy{s, s.Next().CameraPolicy()}
 }
@@ -20248,6 +20258,26 @@ func (s interceptCameraPolicy) List(ctx context.Context, req *api.CameraPolicyLi
 func (s interceptCameraPolicy) Watch(req *api.CameraPolicyWatchRequest, out grpc.ServerStreamingServer[api.CameraPolicyWatchResponse]) error {
 	return grpcx.RunStream(s.stream, s.CameraPolicyServiceServer,
 		api.CameraPolicyService_Watch_FullMethodName, req, out, s.CameraPolicyServiceServer.Watch)
+}
+
+func (s interceptCameraPolicy) Create(ctx context.Context, req *api.CameraPolicyCreateRequest) (*api.CameraPolicy, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
+		api.CameraPolicyService_Create_FullMethodName, req, s.CameraPolicyServiceServer.Create)
+}
+
+func (s interceptCameraPolicy) Activate(ctx context.Context, req *api.CameraPolicyActivateRequest) (*api.CameraNetwork, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
+		api.CameraPolicyService_Activate_FullMethodName, req, s.CameraPolicyServiceServer.Activate)
+}
+
+func (s interceptCameraPolicy) Enroll(ctx context.Context, req *api.CameraPolicyEnrollRequest) (*api.CameraJob, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
+		api.CameraPolicyService_Enroll_FullMethodName, req, s.CameraPolicyServiceServer.Enroll)
+}
+
+func (s interceptCameraPolicy) Observe(ctx context.Context, req *api.CameraPolicyObserveRequest) (*api.CameraPolicyObserveResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
+		api.CameraPolicyService_Observe_FullMethodName, req, s.CameraPolicyServiceServer.Observe)
 }
 
 func (s Intercept) CameraWorker() api.CameraWorkerServiceServer {
@@ -22682,18 +22712,6 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.SiteRef{}
 	case api.SiteService_List_FullMethodName:
 		v = &api.SiteListRequest{}
-	case api.CameraPresetService_Add_FullMethodName:
-		v = &api.CameraPresetAddRequest{}
-	case api.CameraPresetService_Get_FullMethodName:
-		v = &api.CameraPresetGetRequest{}
-	case api.CameraPresetService_Patch_FullMethodName:
-		v = &api.CameraPresetPatchRequest{}
-	case api.CameraPresetService_Apply_FullMethodName:
-		v = &api.CameraPresetApplyRequest{}
-	case api.CameraPresetService_Erase_FullMethodName:
-		v = &api.CameraPresetRef{}
-	case api.CameraPresetService_List_FullMethodName:
-		v = &api.CameraPresetListRequest{}
 	case api.SetService_Add_FullMethodName:
 		v = &api.SetAddRequest{}
 	case api.SetService_Get_FullMethodName:
@@ -22898,6 +22916,22 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.CameraJobReportRequest{}
 	case api.CameraJobService_Publish_FullMethodName:
 		v = &api.CameraJobPublishRequest{}
+	case api.CameraPresetService_Add_FullMethodName:
+		v = &api.CameraPresetAddRequest{}
+	case api.CameraPresetService_Get_FullMethodName:
+		v = &api.CameraPresetGetRequest{}
+	case api.CameraPresetService_Patch_FullMethodName:
+		v = &api.CameraPresetPatchRequest{}
+	case api.CameraPresetService_Apply_FullMethodName:
+		v = &api.CameraPresetApplyRequest{}
+	case api.CameraPresetService_Erase_FullMethodName:
+		v = &api.CameraPresetRef{}
+	case api.CameraPresetService_List_FullMethodName:
+		v = &api.CameraPresetListRequest{}
+	case api.CameraPresetService_Create_FullMethodName:
+		v = &api.CameraPresetCreateRequest{}
+	case api.CameraPresetService_ResolveForJob_FullMethodName:
+		v = &api.CameraPresetResolveForJobRequest{}
 	case api.CameraPolicyService_Add_FullMethodName:
 		v = &api.CameraPolicyAddRequest{}
 	case api.CameraPolicyService_Get_FullMethodName:
@@ -22910,6 +22944,14 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.CameraPolicyRef{}
 	case api.CameraPolicyService_List_FullMethodName:
 		v = &api.CameraPolicyListRequest{}
+	case api.CameraPolicyService_Create_FullMethodName:
+		v = &api.CameraPolicyCreateRequest{}
+	case api.CameraPolicyService_Activate_FullMethodName:
+		v = &api.CameraPolicyActivateRequest{}
+	case api.CameraPolicyService_Enroll_FullMethodName:
+		v = &api.CameraPolicyEnrollRequest{}
+	case api.CameraPolicyService_Observe_FullMethodName:
+		v = &api.CameraPolicyObserveRequest{}
 	case api.CameraWorkerService_Add_FullMethodName:
 		v = &api.CameraWorkerAddRequest{}
 	case api.CameraWorkerService_Get_FullMethodName:
@@ -23178,18 +23220,6 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.Site().Erase(ctx, v.(*api.SiteRef))
 	case api.SiteService_List_FullMethodName:
 		res, err = s.Site().List(ctx, v.(*api.SiteListRequest))
-	case api.CameraPresetService_Add_FullMethodName:
-		res, err = s.CameraPreset().Add(ctx, v.(*api.CameraPresetAddRequest))
-	case api.CameraPresetService_Get_FullMethodName:
-		res, err = s.CameraPreset().Get(ctx, v.(*api.CameraPresetGetRequest))
-	case api.CameraPresetService_Patch_FullMethodName:
-		res, err = s.CameraPreset().Patch(ctx, v.(*api.CameraPresetPatchRequest))
-	case api.CameraPresetService_Apply_FullMethodName:
-		res, err = s.CameraPreset().Apply(ctx, v.(*api.CameraPresetApplyRequest))
-	case api.CameraPresetService_Erase_FullMethodName:
-		res, err = s.CameraPreset().Erase(ctx, v.(*api.CameraPresetRef))
-	case api.CameraPresetService_List_FullMethodName:
-		res, err = s.CameraPreset().List(ctx, v.(*api.CameraPresetListRequest))
 	case api.SetService_Add_FullMethodName:
 		res, err = s.Set().Add(ctx, v.(*api.SetAddRequest))
 	case api.SetService_Get_FullMethodName:
@@ -23394,6 +23424,22 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.CameraJob().Report(ctx, v.(*api.CameraJobReportRequest))
 	case api.CameraJobService_Publish_FullMethodName:
 		res, err = s.CameraJob().Publish(ctx, v.(*api.CameraJobPublishRequest))
+	case api.CameraPresetService_Add_FullMethodName:
+		res, err = s.CameraPreset().Add(ctx, v.(*api.CameraPresetAddRequest))
+	case api.CameraPresetService_Get_FullMethodName:
+		res, err = s.CameraPreset().Get(ctx, v.(*api.CameraPresetGetRequest))
+	case api.CameraPresetService_Patch_FullMethodName:
+		res, err = s.CameraPreset().Patch(ctx, v.(*api.CameraPresetPatchRequest))
+	case api.CameraPresetService_Apply_FullMethodName:
+		res, err = s.CameraPreset().Apply(ctx, v.(*api.CameraPresetApplyRequest))
+	case api.CameraPresetService_Erase_FullMethodName:
+		res, err = s.CameraPreset().Erase(ctx, v.(*api.CameraPresetRef))
+	case api.CameraPresetService_List_FullMethodName:
+		res, err = s.CameraPreset().List(ctx, v.(*api.CameraPresetListRequest))
+	case api.CameraPresetService_Create_FullMethodName:
+		res, err = s.CameraPreset().Create(ctx, v.(*api.CameraPresetCreateRequest))
+	case api.CameraPresetService_ResolveForJob_FullMethodName:
+		res, err = s.CameraPreset().ResolveForJob(ctx, v.(*api.CameraPresetResolveForJobRequest))
 	case api.CameraPolicyService_Add_FullMethodName:
 		res, err = s.CameraPolicy().Add(ctx, v.(*api.CameraPolicyAddRequest))
 	case api.CameraPolicyService_Get_FullMethodName:
@@ -23406,6 +23452,14 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.CameraPolicy().Erase(ctx, v.(*api.CameraPolicyRef))
 	case api.CameraPolicyService_List_FullMethodName:
 		res, err = s.CameraPolicy().List(ctx, v.(*api.CameraPolicyListRequest))
+	case api.CameraPolicyService_Create_FullMethodName:
+		res, err = s.CameraPolicy().Create(ctx, v.(*api.CameraPolicyCreateRequest))
+	case api.CameraPolicyService_Activate_FullMethodName:
+		res, err = s.CameraPolicy().Activate(ctx, v.(*api.CameraPolicyActivateRequest))
+	case api.CameraPolicyService_Enroll_FullMethodName:
+		res, err = s.CameraPolicy().Enroll(ctx, v.(*api.CameraPolicyEnrollRequest))
+	case api.CameraPolicyService_Observe_FullMethodName:
+		res, err = s.CameraPolicy().Observe(ctx, v.(*api.CameraPolicyObserveRequest))
 	case api.CameraWorkerService_Add_FullMethodName:
 		res, err = s.CameraWorker().Add(ctx, v.(*api.CameraWorkerAddRequest))
 	case api.CameraWorkerService_Get_FullMethodName:

@@ -1,0 +1,204 @@
+edition = "2023";
+package shale;
+import "google/protobuf/timestamp.proto";
+import "shale/camera_preset.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// This is a complete typed portable Run checkpoint, not a material/secret DTO.
+// Wrappers preserve absent versus explicitly empty collections across the wire.
+// It deliberately does not import camera.proto: JobObservation imports this.
+message CameraProvisionStrings { repeated string items = 1; }
+message CameraProvisionDoubles { repeated double items = 1; }
+message CameraProvisionIntegers { repeated int64 items = 1; }
+message CameraProvisionEndpoint { string url = 1; string network_scope = 2; }
+message CameraProvisionEndpoints { repeated CameraProvisionEndpoint items = 1; }
+message CameraProvisionEvidence {
+  string source = 1;
+  google.protobuf.Timestamp at = 2;
+  string firmware = 3;
+  bool authenticated = 4;
+}
+message CameraProvisionEvidenceList { repeated CameraProvisionEvidence items = 1; }
+message CameraProvisionDevice {
+  string id = 1;
+  string candidate_id = 2;
+  CameraProvisionEndpoints endpoints = 3;
+  string manufacturer = 4;
+  string model = 5;
+  string hardware = 6;
+  string firmware = 7;
+  string serial = 8;
+  string mac = 9;
+  string discovery_id = 10;
+  CameraProvisionEvidenceList evidence = 11;
+}
+message CameraProvisionCredentialRef {
+  string provider = 1;
+  string id = 2;
+  string version = 3;
+  string purpose = 4;
+  bool recoverable = 5;
+  CameraPresetScope scope = 6;
+}
+message CameraProvisionRequest {
+  string id = 1;
+  string binding_id = 2;
+  CameraPresetScope scope = 3;
+  CameraProvisionDevice device = 4;
+  CameraPresetVideo desired = 5;
+  bool use_preset = 6;
+  string alias = 7;
+  string name = 8;
+  string provider = 9;
+  CameraProvisionCredentialRef management_ref = 10;
+  CameraProvisionCredentialRef initial_ref = 11;
+  CameraProvisionCredentialRef streaming_ref = 12;
+  bool allow_activation = 13;
+  bool allow_producer_restart = 14;
+  int64 probe_duration_ns = 15;
+}
+message CameraProvisionResolution { int32 width = 1; int32 height = 2; }
+message CameraProvisionResolutions { repeated CameraProvisionResolution items = 1; }
+message CameraProvisionProfileCapability {
+  string token = 1;
+  CameraProvisionStrings codecs = 2;
+  CameraProvisionResolutions resolutions = 3;
+  CameraProvisionDoubles frame_rates = 4;
+  CameraProvisionIntegers bitrates = 5;
+  double frame_rate_min = 6;
+  double frame_rate_max = 7;
+  int64 bitrate_min = 8;
+  int64 bitrate_max = 9;
+  int32 gop_min = 10;
+  int32 gop_max = 11;
+  CameraProvisionEvidenceList evidence = 12;
+}
+message CameraProvisionProfileCapabilities { repeated CameraProvisionProfileCapability items = 1; }
+message CameraProvisionCapabilities {
+  CameraProvisionProfileCapabilities profiles = 1;
+  CameraProvisionEvidenceList evidence = 2;
+}
+message CameraProvisionMediaProfile {
+  string token = 1;
+  string name = 2;
+  string codec = 3;
+  int32 width = 4;
+  int32 height = 5;
+  double fps = 6;
+  int64 bitrate = 7;
+  int32 gop = 8;
+  string stream_uri = 9;
+  CameraProvisionEvidenceList evidence = 10;
+}
+message CameraProvisionMediaProfiles { repeated CameraProvisionMediaProfile items = 1; }
+message CameraProvisionCurrentState {
+  CameraProvisionMediaProfiles profiles = 1;
+  string firmware = 2;
+  google.protobuf.Timestamp observed_at = 3;
+}
+message CameraProvisionInspection {
+  CameraProvisionDevice device = 1;
+  string activation = 2;
+  CameraProvisionCapabilities capabilities = 3;
+  CameraProvisionCurrentState current = 4;
+}
+message CameraProvisionChangePlan {
+  string profile_token = 1;
+  CameraProvisionMediaProfile before = 2;
+  CameraProvisionMediaProfile after = 3;
+  CameraProvisionStrings changes = 4;
+  string revision = 5;
+}
+message CameraProvisionVerifiedState {
+  CameraProvisionMediaProfile profile = 1;
+  string audio_codec = 2;
+  double arrival_fps = 3;
+  int64 arrival_bitrate = 4;
+  int64 duration_ns = 5;
+  int64 max_gap_ns = 6;
+  bool decoded = 7;
+  bool complete = 8;
+  CameraProvisionEvidenceList evidence = 9;
+  google.protobuf.Timestamp observed_at = 10;
+  string firmware = 11;
+  string profile_revision = 12;
+}
+message CameraProvisionEvent {
+  google.protobuf.Timestamp at = 1;
+  string stage = 2;
+  string code = 3;
+}
+message CameraProvisionEvents { repeated CameraProvisionEvent items = 1; }
+message CameraProvisionImpact {
+  string kind = 1;
+  string producer_id = 2;
+  bool restart_may_be_required = 3;
+  bool affects_other_sources = 4;
+}
+message CameraProvisionImpacts { repeated CameraProvisionImpact items = 1; }
+message CameraProvisionBinding {
+  string binding_id = 1;
+  string alias = 2;
+  string source_id = 3;
+  string deployment_id = 4;
+  google.protobuf.Timestamp deployed_at = 5;
+  bool ingest = 6;
+  bool live = 7;
+  bool committed = 8;
+  google.protobuf.Timestamp committed_at = 9;
+}
+message CameraProvisionSettings {
+  CameraPresetSettings value = 1;
+  bool preserve_present = 2;
+}
+// Existing resolved-preset values are reused. Presence metadata records the
+// portable slices that ordinary protobuf repeated fields cannot distinguish.
+message CameraProvisionPreset {
+  CameraResolvedPreset value = 1;
+  bool matched_rules_present = 2;
+  bool alternatives_present = 3;
+  bool required_present = 4;
+  bool requested_preserve_present = 5;
+  repeated bool alternative_preserve_present = 6;
+}
+message CameraProvisionDeviceSettings { int32 power_line_frequency = 1; }
+message CameraProvisionInitializationPlan {
+  CameraProvisionDeviceSettings before = 1;
+  CameraProvisionDeviceSettings after = 2;
+  CameraProvisionStrings changes = 3;
+  string revision = 4;
+}
+message CameraProvisionWarning {
+  string code = 1;
+  string field = 2;
+  string requested = 3;
+  string applied = 4;
+  string reason = 5;
+}
+message CameraProvisionWarnings { repeated CameraProvisionWarning items = 1; }
+message CameraProvisionState {
+  uint32 schema_version = 1;
+  CameraProvisionRequest request = 2;
+  string stage = 3;
+  uint64 version = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  CameraProvisionInspection inspection = 7;
+  CameraProvisionChangePlan plan = 8;
+  CameraProvisionVerifiedState verified = 9;
+  CameraProvisionCredentialRef initial_ref = 10;
+  CameraProvisionCredentialRef management_ref = 11;
+  CameraProvisionCredentialRef streaming_ref = 12;
+  bool activation_attempted = 13;
+  bool activation_complete = 14;
+  CameraProvisionBinding binding = 15;
+  CameraProvisionEvents events = 16;
+  CameraProvisionImpacts impacts = 17;
+  CameraProvisionPreset preset = 18;
+  CameraProvisionSettings effective = 19;
+  int32 candidate_index = 20;
+  CameraProvisionInitializationPlan initialization_plan = 21;
+  CameraProvisionDeviceSettings initialized = 22;
+  CameraProvisionWarnings warnings = 23;
+}

@@ -80,7 +80,7 @@ message CameraPreset {
     rpc: {crud: true}
     indexes: [
       {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]},
-      {name: "revision" refs: [{name: "tenant", number: 2}, {name: "preset_key", number: 8}, {name: "revision", number: 9}] unique: true}
+      {name: "revision" refs: [{name: "tenant", number: 2}, {name: "preset_key", number: 8}, {name: "revision", number: 9}] unique: true includes_erased: true}
     ]
   };
   option (payday.entity) = {

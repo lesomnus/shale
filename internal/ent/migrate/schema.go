@@ -571,6 +571,7 @@ var (
 		{Name: "seeds", Type: field.TypeJson, Nullable: true},
 		{Name: "interface_hint", Type: field.TypeString},
 		{Name: "revision", Type: field.TypeInt64},
+		{Name: "active_policy_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -585,13 +586,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cameranetwork_tenant_tenant",
-				Columns:    []*schema.Column{CameranetworkColumns[13]},
+				Columns:    []*schema.Column{CameranetworkColumns[14]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "cameranetwork_site_site",
-				Columns:    []*schema.Column{CameranetworkColumns[14]},
+				Columns:    []*schema.Column{CameranetworkColumns[15]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -600,7 +601,7 @@ var (
 			{
 				Name:    "cameranetwork_page",
 				Unique:  false,
-				Columns: []*schema.Column{CameranetworkColumns[13], CameranetworkColumns[12], CameranetworkColumns[0]},
+				Columns: []*schema.Column{CameranetworkColumns[14], CameranetworkColumns[13], CameranetworkColumns[0]},
 			},
 		},
 	}
@@ -663,9 +664,6 @@ var (
 				Name:    "camerapolicy_revision",
 				Unique:  true,
 				Columns: []*schema.Column{CamerapolicyColumns[11], CamerapolicyColumns[5], CamerapolicyColumns[6]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "date_erased IS NULL",
-				},
 			},
 		},
 	}
@@ -714,9 +712,6 @@ var (
 				Name:    "camerapreset_revision",
 				Unique:  true,
 				Columns: []*schema.Column{CamerapresetColumns[11], CamerapresetColumns[5], CamerapresetColumns[6]},
-				Annotation: &entsql.IndexAnnotation{
-					Where: "date_erased IS NULL",
-				},
 			},
 		},
 	}

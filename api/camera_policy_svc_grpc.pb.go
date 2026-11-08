@@ -19,13 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CameraPolicyService_Add_FullMethodName   = "/shale.CameraPolicyService/Add"
-	CameraPolicyService_Get_FullMethodName   = "/shale.CameraPolicyService/Get"
-	CameraPolicyService_Patch_FullMethodName = "/shale.CameraPolicyService/Patch"
-	CameraPolicyService_Apply_FullMethodName = "/shale.CameraPolicyService/Apply"
-	CameraPolicyService_Erase_FullMethodName = "/shale.CameraPolicyService/Erase"
-	CameraPolicyService_List_FullMethodName  = "/shale.CameraPolicyService/List"
-	CameraPolicyService_Watch_FullMethodName = "/shale.CameraPolicyService/Watch"
+	CameraPolicyService_Add_FullMethodName      = "/shale.CameraPolicyService/Add"
+	CameraPolicyService_Get_FullMethodName      = "/shale.CameraPolicyService/Get"
+	CameraPolicyService_Patch_FullMethodName    = "/shale.CameraPolicyService/Patch"
+	CameraPolicyService_Apply_FullMethodName    = "/shale.CameraPolicyService/Apply"
+	CameraPolicyService_Erase_FullMethodName    = "/shale.CameraPolicyService/Erase"
+	CameraPolicyService_List_FullMethodName     = "/shale.CameraPolicyService/List"
+	CameraPolicyService_Watch_FullMethodName    = "/shale.CameraPolicyService/Watch"
+	CameraPolicyService_Create_FullMethodName   = "/shale.CameraPolicyService/Create"
+	CameraPolicyService_Activate_FullMethodName = "/shale.CameraPolicyService/Activate"
+	CameraPolicyService_Enroll_FullMethodName   = "/shale.CameraPolicyService/Enroll"
+	CameraPolicyService_Observe_FullMethodName  = "/shale.CameraPolicyService/Observe"
 )
 
 // CameraPolicyServiceClient is the client API for CameraPolicyService service.
@@ -56,6 +60,12 @@ type CameraPolicyServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *CameraPolicyWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraPolicyWatchResponse], error)
+	Create(ctx context.Context, in *CameraPolicyCreateRequest, opts ...grpc.CallOption) (*CameraPolicy, error)
+	Activate(ctx context.Context, in *CameraPolicyActivateRequest, opts ...grpc.CallOption) (*CameraNetwork, error)
+	// Explicit reapply creates a new pinned job against the same binding/Source.
+	Enroll(ctx context.Context, in *CameraPolicyEnrollRequest, opts ...grpc.CallOption) (*CameraJob, error)
+	// Scoped observations never grant general inventory mutation or credentials.
+	Observe(ctx context.Context, in *CameraPolicyObserveRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error)
 }
 
 type cameraPolicyServiceClient struct {
@@ -145,6 +155,46 @@ func (c *cameraPolicyServiceClient) Watch(ctx context.Context, in *CameraPolicyW
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CameraPolicyService_WatchClient = grpc.ServerStreamingClient[CameraPolicyWatchResponse]
 
+func (c *cameraPolicyServiceClient) Create(ctx context.Context, in *CameraPolicyCreateRequest, opts ...grpc.CallOption) (*CameraPolicy, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraPolicy)
+	err := c.cc.Invoke(ctx, CameraPolicyService_Create_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraPolicyServiceClient) Activate(ctx context.Context, in *CameraPolicyActivateRequest, opts ...grpc.CallOption) (*CameraNetwork, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraNetwork)
+	err := c.cc.Invoke(ctx, CameraPolicyService_Activate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraPolicyServiceClient) Enroll(ctx context.Context, in *CameraPolicyEnrollRequest, opts ...grpc.CallOption) (*CameraJob, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraJob)
+	err := c.cc.Invoke(ctx, CameraPolicyService_Enroll_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraPolicyServiceClient) Observe(ctx context.Context, in *CameraPolicyObserveRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraPolicyObserveResponse)
+	err := c.cc.Invoke(ctx, CameraPolicyService_Observe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CameraPolicyServiceServer is the server API for CameraPolicyService service.
 // All implementations must embed UnimplementedCameraPolicyServiceServer
 // for forward compatibility.
@@ -173,6 +223,12 @@ type CameraPolicyServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*CameraPolicyWatchRequest, grpc.ServerStreamingServer[CameraPolicyWatchResponse]) error
+	Create(context.Context, *CameraPolicyCreateRequest) (*CameraPolicy, error)
+	Activate(context.Context, *CameraPolicyActivateRequest) (*CameraNetwork, error)
+	// Explicit reapply creates a new pinned job against the same binding/Source.
+	Enroll(context.Context, *CameraPolicyEnrollRequest) (*CameraJob, error)
+	// Scoped observations never grant general inventory mutation or credentials.
+	Observe(context.Context, *CameraPolicyObserveRequest) (*CameraPolicyObserveResponse, error)
 	mustEmbedUnimplementedCameraPolicyServiceServer()
 }
 
@@ -203,6 +259,18 @@ func (UnimplementedCameraPolicyServiceServer) List(context.Context, *CameraPolic
 }
 func (UnimplementedCameraPolicyServiceServer) Watch(*CameraPolicyWatchRequest, grpc.ServerStreamingServer[CameraPolicyWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedCameraPolicyServiceServer) Create(context.Context, *CameraPolicyCreateRequest) (*CameraPolicy, error) {
+	return nil, status.Error(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedCameraPolicyServiceServer) Activate(context.Context, *CameraPolicyActivateRequest) (*CameraNetwork, error) {
+	return nil, status.Error(codes.Unimplemented, "method Activate not implemented")
+}
+func (UnimplementedCameraPolicyServiceServer) Enroll(context.Context, *CameraPolicyEnrollRequest) (*CameraJob, error) {
+	return nil, status.Error(codes.Unimplemented, "method Enroll not implemented")
+}
+func (UnimplementedCameraPolicyServiceServer) Observe(context.Context, *CameraPolicyObserveRequest) (*CameraPolicyObserveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Observe not implemented")
 }
 func (UnimplementedCameraPolicyServiceServer) mustEmbedUnimplementedCameraPolicyServiceServer() {}
 func (UnimplementedCameraPolicyServiceServer) testEmbeddedByValue()                             {}
@@ -344,6 +412,78 @@ func _CameraPolicyService_Watch_Handler(srv interface{}, stream grpc.ServerStrea
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CameraPolicyService_WatchServer = grpc.ServerStreamingServer[CameraPolicyWatchResponse]
 
+func _CameraPolicyService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPolicyCreateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPolicyServiceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPolicyService_Create_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPolicyServiceServer).Create(ctx, req.(*CameraPolicyCreateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraPolicyService_Activate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPolicyActivateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPolicyServiceServer).Activate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPolicyService_Activate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPolicyServiceServer).Activate(ctx, req.(*CameraPolicyActivateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraPolicyService_Enroll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPolicyEnrollRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPolicyServiceServer).Enroll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPolicyService_Enroll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPolicyServiceServer).Enroll(ctx, req.(*CameraPolicyEnrollRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraPolicyService_Observe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPolicyObserveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPolicyServiceServer).Observe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPolicyService_Observe_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPolicyServiceServer).Observe(ctx, req.(*CameraPolicyObserveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CameraPolicyService_ServiceDesc is the grpc.ServiceDesc for CameraPolicyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -374,6 +514,22 @@ var CameraPolicyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _CameraPolicyService_List_Handler,
+		},
+		{
+			MethodName: "Create",
+			Handler:    _CameraPolicyService_Create_Handler,
+		},
+		{
+			MethodName: "Activate",
+			Handler:    _CameraPolicyService_Activate_Handler,
+		},
+		{
+			MethodName: "Enroll",
+			Handler:    _CameraPolicyService_Enroll_Handler,
+		},
+		{
+			MethodName: "Observe",
+			Handler:    _CameraPolicyService_Observe_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

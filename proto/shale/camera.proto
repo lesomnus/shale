@@ -9,6 +9,8 @@ import "shale/payday/tenant.proto";
 import "shale/site.proto";
 import "shale/set.proto";
 import "shale/host.proto";
+import "shale/camera_progress.proto";
+import "shale/camera_preset.proto";
 
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
@@ -72,6 +74,9 @@ message CameraMediaEvidence {
 message CameraWarning {
   string code = 1;
   string field = 2;
+  string requested = 3;
+  string applied = 4;
+  string reason = 5;
 }
 message CameraJobInputs {
   CameraRevisionReference policy = 1;
@@ -81,6 +86,7 @@ message CameraJobInputs {
   CameraCredentialReference initial_credential = 5;
   CameraCredentialReference management_credential = 6;
   CameraCredentialReference streaming_credential = 7;
+  CameraPresetSettings configuration = 8;
 }
 message CameraJobObservation {
   CameraCaptureProfile effective = 1;
@@ -95,6 +101,9 @@ message CameraJobObservation {
   // Execution acknowledgement, separate from media being available. #194 uses
   // an authorized operator report; #198/#199 correlate Producer runtime acks.
   int64 applied_revision = 8;
+  // Full typed portable workflow state; configuration intent is durable before
+  // device writes and cannot be replaced by a later policy revision.
+  CameraProvisionState progress = 9;
 }
 enum CameraJobStage {
   CAMERA_JOB_STAGE_UNSPECIFIED = 0;
@@ -124,6 +133,8 @@ message CameraNetwork {
   // Local interface choice remains administrator-controlled. This is intent.
   string interface_hint = 11;
   int64 revision = 12;
+  // Immutable CameraPolicy revision selected through explicit operator CAS.
+  bytes active_policy_id = 16 [(orm.field) = {type: TYPE_UUID nullable: true}];
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

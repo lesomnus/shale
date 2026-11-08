@@ -19,13 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CameraPresetService_Add_FullMethodName   = "/shale.CameraPresetService/Add"
-	CameraPresetService_Get_FullMethodName   = "/shale.CameraPresetService/Get"
-	CameraPresetService_Patch_FullMethodName = "/shale.CameraPresetService/Patch"
-	CameraPresetService_Apply_FullMethodName = "/shale.CameraPresetService/Apply"
-	CameraPresetService_Erase_FullMethodName = "/shale.CameraPresetService/Erase"
-	CameraPresetService_List_FullMethodName  = "/shale.CameraPresetService/List"
-	CameraPresetService_Watch_FullMethodName = "/shale.CameraPresetService/Watch"
+	CameraPresetService_Add_FullMethodName           = "/shale.CameraPresetService/Add"
+	CameraPresetService_Get_FullMethodName           = "/shale.CameraPresetService/Get"
+	CameraPresetService_Patch_FullMethodName         = "/shale.CameraPresetService/Patch"
+	CameraPresetService_Apply_FullMethodName         = "/shale.CameraPresetService/Apply"
+	CameraPresetService_Erase_FullMethodName         = "/shale.CameraPresetService/Erase"
+	CameraPresetService_List_FullMethodName          = "/shale.CameraPresetService/List"
+	CameraPresetService_Watch_FullMethodName         = "/shale.CameraPresetService/Watch"
+	CameraPresetService_Create_FullMethodName        = "/shale.CameraPresetService/Create"
+	CameraPresetService_ResolveForJob_FullMethodName = "/shale.CameraPresetService/ResolveForJob"
 )
 
 // CameraPresetServiceClient is the client API for CameraPresetService service.
@@ -56,6 +58,10 @@ type CameraPresetServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *CameraPresetWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CameraPresetWatchResponse], error)
+	Create(ctx context.Context, in *CameraPresetCreateRequest, opts ...grpc.CallOption) (*CameraPreset, error)
+	// Resolve only the immutable ruleset pinned by this currently leased job.
+	// Inspection hints choose settings; the job's authority chooses access.
+	ResolveForJob(ctx context.Context, in *CameraPresetResolveForJobRequest, opts ...grpc.CallOption) (*CameraResolvedPreset, error)
 }
 
 type cameraPresetServiceClient struct {
@@ -145,6 +151,26 @@ func (c *cameraPresetServiceClient) Watch(ctx context.Context, in *CameraPresetW
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CameraPresetService_WatchClient = grpc.ServerStreamingClient[CameraPresetWatchResponse]
 
+func (c *cameraPresetServiceClient) Create(ctx context.Context, in *CameraPresetCreateRequest, opts ...grpc.CallOption) (*CameraPreset, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraPreset)
+	err := c.cc.Invoke(ctx, CameraPresetService_Create_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cameraPresetServiceClient) ResolveForJob(ctx context.Context, in *CameraPresetResolveForJobRequest, opts ...grpc.CallOption) (*CameraResolvedPreset, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraResolvedPreset)
+	err := c.cc.Invoke(ctx, CameraPresetService_ResolveForJob_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CameraPresetServiceServer is the server API for CameraPresetService service.
 // All implementations must embed UnimplementedCameraPresetServiceServer
 // for forward compatibility.
@@ -173,6 +199,10 @@ type CameraPresetServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*CameraPresetWatchRequest, grpc.ServerStreamingServer[CameraPresetWatchResponse]) error
+	Create(context.Context, *CameraPresetCreateRequest) (*CameraPreset, error)
+	// Resolve only the immutable ruleset pinned by this currently leased job.
+	// Inspection hints choose settings; the job's authority chooses access.
+	ResolveForJob(context.Context, *CameraPresetResolveForJobRequest) (*CameraResolvedPreset, error)
 	mustEmbedUnimplementedCameraPresetServiceServer()
 }
 
@@ -203,6 +233,12 @@ func (UnimplementedCameraPresetServiceServer) List(context.Context, *CameraPrese
 }
 func (UnimplementedCameraPresetServiceServer) Watch(*CameraPresetWatchRequest, grpc.ServerStreamingServer[CameraPresetWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedCameraPresetServiceServer) Create(context.Context, *CameraPresetCreateRequest) (*CameraPreset, error) {
+	return nil, status.Error(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedCameraPresetServiceServer) ResolveForJob(context.Context, *CameraPresetResolveForJobRequest) (*CameraResolvedPreset, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveForJob not implemented")
 }
 func (UnimplementedCameraPresetServiceServer) mustEmbedUnimplementedCameraPresetServiceServer() {}
 func (UnimplementedCameraPresetServiceServer) testEmbeddedByValue()                             {}
@@ -344,6 +380,42 @@ func _CameraPresetService_Watch_Handler(srv interface{}, stream grpc.ServerStrea
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type CameraPresetService_WatchServer = grpc.ServerStreamingServer[CameraPresetWatchResponse]
 
+func _CameraPresetService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPresetCreateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPresetServiceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPresetService_Create_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPresetServiceServer).Create(ctx, req.(*CameraPresetCreateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CameraPresetService_ResolveForJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPresetResolveForJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPresetServiceServer).ResolveForJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPresetService_ResolveForJob_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPresetServiceServer).ResolveForJob(ctx, req.(*CameraPresetResolveForJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CameraPresetService_ServiceDesc is the grpc.ServiceDesc for CameraPresetService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -374,6 +446,14 @@ var CameraPresetService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _CameraPresetService_List_Handler,
+		},
+		{
+			MethodName: "Create",
+			Handler:    _CameraPresetService_Create_Handler,
+		},
+		{
+			MethodName: "ResolveForJob",
+			Handler:    _CameraPresetService_ResolveForJob_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

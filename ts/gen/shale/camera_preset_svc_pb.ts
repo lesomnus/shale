@@ -8,8 +8,12 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../patch/patch_pb.js";
 import { file_patch_patch } from "../patch/patch_pb.js";
-import type { CameraPreset, CameraPresetRule, CameraPresetSchema } from "./camera_preset_pb.js";
+import type { CameraIdentityEvidence } from "./camera_pb.js";
+import { file_shale_camera } from "./camera_pb.js";
+import type { CameraPreset, CameraPresetRule, CameraPresetSchema, CameraResolvedPresetSchema } from "./camera_preset_pb.js";
 import { file_shale_camera_preset } from "./camera_preset_pb.js";
+import type { CameraJobRef } from "./camera_svc_pb.js";
+import { file_shale_camera_svc_g } from "./camera_svc_pb.js";
 import type { TenantRef, TenantSelect } from "./payday/tenant_svc_pb.js";
 import { file_shale_payday_tenant_svc_g } from "./payday/tenant_svc_pb.js";
 import type { SiteRef, SiteSelect } from "./site_svc_pb.js";
@@ -20,7 +24,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/camera_preset_svc.g.proto.
  */
 export const file_shale_camera_preset_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9zaGFsZS9jYW1lcmFfcHJlc2V0X3N2Yy5nLnByb3RvEgVzaGFsZSKcAwoWQ2FtZXJhUHJlc2V0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjkKBmxhYmVscxgHIAMoCzIpLnNoYWxlLkNhbWVyYVByZXNldEFkZFJlcXVlc3QuTGFiZWxzRW50cnkSGQoKcHJlc2V0X2tleRgIIAEoCUIFqgECCAISFwoIcmV2aXNpb24YCSABKAlCBaoBAggCEiYKBXJ1bGVzGAogAygLMhcuc2hhbGUuQ2FtZXJhUHJlc2V0UnVsZRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiaAoWQ2FtZXJhUHJlc2V0R2V0UmVxdWVzdBIjCgNyZWYYASABKAsyFi5zaGFsZS5DYW1lcmFQcmVzZXRSZWYSKQoGc2VsZWN0GAIgASgLMhkuc2hhbGUuQ2FtZXJhUHJlc2V0U2VsZWN0IlwKD0NhbWVyYVByZXNldFJlZhIMCgJpZBgBIAEoDEgAEjQKCHJldmlzaW9uGAIgASgLMiAuc2hhbGUuQ2FtZXJhUHJlc2V0UmVmQnlSZXZpc2lvbkgAQgUKA2tleSJjChlDYW1lcmFQcmVzZXRSZWZCeVJldmlzaW9uEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhISCgpwcmVzZXRfa2V5GAggASgJEhAKCHJldmlzaW9uGAkgASgJIpgCChJDYW1lcmFQcmVzZXRTZWxlY3QSCwoDYWxsGAEgASgIEiMKBnRlbmFudBgCIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdBIfCgRzaXRlGAMgASgLMhEuc2hhbGUuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhIKCnByZXNldF9rZXkYCCABKAgSEAoIcmV2aXNpb24YCSABKAgSDQoFcnVsZXMYCiABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKkAgoYQ2FtZXJhUHJlc2V0UGF0Y2hSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSOwoGbGFiZWxzGA4gAygLMisuc2hhbGUuQ2FtZXJhUHJlc2V0UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiXAoYQ2FtZXJhUHJlc2V0QXBwbHlSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIisKGUNhbWVyYVByZXNldEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIogBChdDYW1lcmFQcmVzZXRMaXN0UmVxdWVzdBIqCgdmaWx0ZXJzGAEgAygLMhkuc2hhbGUuQ2FtZXJhUHJlc2V0RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJTChhDYW1lcmFQcmVzZXRMaXN0UmVzcG9uc2USIgoFaXRlbXMYASADKAsyEy5zaGFsZS5DYW1lcmFQcmVzZXQSEwoEbmV4dBgCIAEoCUIFqgECCAIieQoSQ2FtZXJhUHJlc2V0RmlsdGVyEiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYiZAoYQ2FtZXJhUHJlc2V0V2F0Y2hSZXF1ZXN0EioKB2ZpbHRlcnMYASADKAsyGS5zaGFsZS5DYW1lcmFQcmVzZXRGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiSAoZQ2FtZXJhUHJlc2V0V2F0Y2hSZXNwb25zZRIrCgVpdGVtcxgBIAMoCzIcLnNoYWxlLkNhbWVyYVByZXNldFdhdGNoSXRlbSJeChVDYW1lcmFQcmVzZXRXYXRjaEl0ZW0SCgoCaWQYASABKAwSIgoFdmFsdWUYAiABKAsyEy5zaGFsZS5DYW1lcmFQcmVzZXQSFQoGYWN0aW9uGAMgASgJQgWqAQIIAjLjAwoTQ2FtZXJhUHJlc2V0U2VydmljZRI5CgNBZGQSHS5zaGFsZS5DYW1lcmFQcmVzZXRBZGRSZXF1ZXN0GhMuc2hhbGUuQ2FtZXJhUHJlc2V0EjkKA0dldBIdLnNoYWxlLkNhbWVyYVByZXNldEdldFJlcXVlc3QaEy5zaGFsZS5DYW1lcmFQcmVzZXQSPQoFUGF0Y2gSHy5zaGFsZS5DYW1lcmFQcmVzZXRQYXRjaFJlcXVlc3QaEy5zaGFsZS5DYW1lcmFQcmVzZXQSPQoFQXBwbHkSHy5zaGFsZS5DYW1lcmFQcmVzZXRBcHBseVJlcXVlc3QaEy5zaGFsZS5DYW1lcmFQcmVzZXQSQQoFRXJhc2USFi5zaGFsZS5DYW1lcmFQcmVzZXRSZWYaIC5zaGFsZS5DYW1lcmFQcmVzZXRFcmFzZVJlc3BvbnNlEkcKBExpc3QSHi5zaGFsZS5DYW1lcmFQcmVzZXRMaXN0UmVxdWVzdBofLnNoYWxlLkNhbWVyYVByZXNldExpc3RSZXNwb25zZRJMCgVXYXRjaBIfLnNoYWxlLkNhbWVyYVByZXNldFdhdGNoUmVxdWVzdBogLnNoYWxlLkNhbWVyYVByZXNldFdhdGNoUmVzcG9uc2UwAUIfWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaWIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_patch_patch, file_shale_camera_preset, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
+  fileDesc("Ch9zaGFsZS9jYW1lcmFfcHJlc2V0X3N2Yy5nLnByb3RvEgVzaGFsZSKcAwoWQ2FtZXJhUHJlc2V0QWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjkKBmxhYmVscxgHIAMoCzIpLnNoYWxlLkNhbWVyYVByZXNldEFkZFJlcXVlc3QuTGFiZWxzRW50cnkSGQoKcHJlc2V0X2tleRgIIAEoCUIFqgECCAISFwoIcmV2aXNpb24YCSABKAlCBaoBAggCEiYKBXJ1bGVzGAogAygLMhcuc2hhbGUuQ2FtZXJhUHJlc2V0UnVsZRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiaAoWQ2FtZXJhUHJlc2V0R2V0UmVxdWVzdBIjCgNyZWYYASABKAsyFi5zaGFsZS5DYW1lcmFQcmVzZXRSZWYSKQoGc2VsZWN0GAIgASgLMhkuc2hhbGUuQ2FtZXJhUHJlc2V0U2VsZWN0IlwKD0NhbWVyYVByZXNldFJlZhIMCgJpZBgBIAEoDEgAEjQKCHJldmlzaW9uGAIgASgLMiAuc2hhbGUuQ2FtZXJhUHJlc2V0UmVmQnlSZXZpc2lvbkgAQgUKA2tleSJjChlDYW1lcmFQcmVzZXRSZWZCeVJldmlzaW9uEiAKBnRlbmFudBgCIAEoCzIQLnNoYWxlLlRlbmFudFJlZhISCgpwcmVzZXRfa2V5GAggASgJEhAKCHJldmlzaW9uGAkgASgJIpgCChJDYW1lcmFQcmVzZXRTZWxlY3QSCwoDYWxsGAEgASgIEiMKBnRlbmFudBgCIAEoCzITLnNoYWxlLlRlbmFudFNlbGVjdBIfCgRzaXRlGAMgASgLMhEuc2hhbGUuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhIKCnByZXNldF9rZXkYCCABKAgSEAoIcmV2aXNpb24YCSABKAgSDQoFcnVsZXMYCiABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKkAgoYQ2FtZXJhUHJlc2V0UGF0Y2hSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSOwoGbGFiZWxzGA4gAygLMisuc2hhbGUuQ2FtZXJhUHJlc2V0UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiXAoYQ2FtZXJhUHJlc2V0QXBwbHlSZXF1ZXN0EiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIisKGUNhbWVyYVByZXNldEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIogBChdDYW1lcmFQcmVzZXRMaXN0UmVxdWVzdBIqCgdmaWx0ZXJzGAEgAygLMhkuc2hhbGUuQ2FtZXJhUHJlc2V0RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJTChhDYW1lcmFQcmVzZXRMaXN0UmVzcG9uc2USIgoFaXRlbXMYASADKAsyEy5zaGFsZS5DYW1lcmFQcmVzZXQSEwoEbmV4dBgCIAEoCUIFqgECCAIieQoSQ2FtZXJhUHJlc2V0RmlsdGVyEiMKA3JlZhgBIAEoCzIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhIgCgZ0ZW5hbnQYAiABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgDIAEoCzIOLnNoYWxlLlNpdGVSZWYiZAoYQ2FtZXJhUHJlc2V0V2F0Y2hSZXF1ZXN0EioKB2ZpbHRlcnMYASADKAsyGS5zaGFsZS5DYW1lcmFQcmVzZXRGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiSAoZQ2FtZXJhUHJlc2V0V2F0Y2hSZXNwb25zZRIrCgVpdGVtcxgBIAMoCzIcLnNoYWxlLkNhbWVyYVByZXNldFdhdGNoSXRlbSJeChVDYW1lcmFQcmVzZXRXYXRjaEl0ZW0SCgoCaWQYASABKAwSIgoFdmFsdWUYAiABKAsyEy5zaGFsZS5DYW1lcmFQcmVzZXQSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiLMAQoZQ2FtZXJhUHJlc2V0Q3JlYXRlUmVxdWVzdBIgCgZ0ZW5hbnQYASABKAsyEC5zaGFsZS5UZW5hbnRSZWYSHAoEc2l0ZRgCIAEoCzIOLnNoYWxlLlNpdGVSZWYSGQoKcHJlc2V0X2tleRgDIAEoCUIFqgECCAISFwoIcmV2aXNpb24YBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEiYKBXJ1bGVzGAYgAygLMhcuc2hhbGUuQ2FtZXJhUHJlc2V0UnVsZSK8AQogQ2FtZXJhUHJlc2V0UmVzb2x2ZUZvckpvYlJlcXVlc3QSIAoDam9iGAEgASgLMhMuc2hhbGUuQ2FtZXJhSm9iUmVmEh8KEGxlYXNlX2dlbmVyYXRpb24YAiABKANCBaoBAggCEiQKFWFzc2lnbm1lbnRfZ2VuZXJhdGlvbhgDIAEoA0IFqgECCAISLwoIaWRlbnRpdHkYBCABKAsyHS5zaGFsZS5DYW1lcmFJZGVudGl0eUV2aWRlbmNlMvsEChNDYW1lcmFQcmVzZXRTZXJ2aWNlEjkKA0FkZBIdLnNoYWxlLkNhbWVyYVByZXNldEFkZFJlcXVlc3QaEy5zaGFsZS5DYW1lcmFQcmVzZXQSOQoDR2V0Eh0uc2hhbGUuQ2FtZXJhUHJlc2V0R2V0UmVxdWVzdBoTLnNoYWxlLkNhbWVyYVByZXNldBI9CgVQYXRjaBIfLnNoYWxlLkNhbWVyYVByZXNldFBhdGNoUmVxdWVzdBoTLnNoYWxlLkNhbWVyYVByZXNldBI9CgVBcHBseRIfLnNoYWxlLkNhbWVyYVByZXNldEFwcGx5UmVxdWVzdBoTLnNoYWxlLkNhbWVyYVByZXNldBJBCgVFcmFzZRIWLnNoYWxlLkNhbWVyYVByZXNldFJlZhogLnNoYWxlLkNhbWVyYVByZXNldEVyYXNlUmVzcG9uc2USRwoETGlzdBIeLnNoYWxlLkNhbWVyYVByZXNldExpc3RSZXF1ZXN0Gh8uc2hhbGUuQ2FtZXJhUHJlc2V0TGlzdFJlc3BvbnNlEkwKBVdhdGNoEh8uc2hhbGUuQ2FtZXJhUHJlc2V0V2F0Y2hSZXF1ZXN0GiAuc2hhbGUuQ2FtZXJhUHJlc2V0V2F0Y2hSZXNwb25zZTABEj8KBkNyZWF0ZRIgLnNoYWxlLkNhbWVyYVByZXNldENyZWF0ZVJlcXVlc3QaEy5zaGFsZS5DYW1lcmFQcmVzZXQSVQoNUmVzb2x2ZUZvckpvYhInLnNoYWxlLkNhbWVyYVByZXNldFJlc29sdmVGb3JKb2JSZXF1ZXN0Ghsuc2hhbGUuQ2FtZXJhUmVzb2x2ZWRQcmVzZXRCH1odZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGliCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_patch_patch, file_shale_camera, file_shale_camera_preset, file_shale_camera_svc_g, file_shale_payday_tenant_svc_g, file_shale_site_svc_g]);
 
 /**
  * @generated from message shale.CameraPresetAddRequest
@@ -559,6 +563,80 @@ export const CameraPresetWatchItemSchema: GenMessage<CameraPresetWatchItem> = /*
   messageDesc(file_shale_camera_preset_svc_g, 13);
 
 /**
+ * @generated from message shale.CameraPresetCreateRequest
+ */
+export type CameraPresetCreateRequest = Message<"shale.CameraPresetCreateRequest"> & {
+  /**
+   * @generated from field: shale.TenantRef tenant = 1;
+   */
+  tenant?: TenantRef | undefined;
+
+  /**
+   * @generated from field: shale.SiteRef site = 2;
+   */
+  site?: SiteRef | undefined;
+
+  /**
+   * @generated from field: string preset_key = 3 [features.field_presence = IMPLICIT];
+   */
+  presetKey: string;
+
+  /**
+   * @generated from field: string revision = 4 [features.field_presence = IMPLICIT];
+   */
+  revision: string;
+
+  /**
+   * @generated from field: string name = 5 [features.field_presence = IMPLICIT];
+   */
+  name: string;
+
+  /**
+   * @generated from field: repeated shale.CameraPresetRule rules = 6;
+   */
+  rules: CameraPresetRule[];
+};
+
+/**
+ * Describes the message shale.CameraPresetCreateRequest.
+ * Use `create(CameraPresetCreateRequestSchema)` to create a new message.
+ */
+export const CameraPresetCreateRequestSchema: GenMessage<CameraPresetCreateRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_preset_svc_g, 14);
+
+/**
+ * @generated from message shale.CameraPresetResolveForJobRequest
+ */
+export type CameraPresetResolveForJobRequest = Message<"shale.CameraPresetResolveForJobRequest"> & {
+  /**
+   * @generated from field: shale.CameraJobRef job = 1;
+   */
+  job?: CameraJobRef | undefined;
+
+  /**
+   * @generated from field: int64 lease_generation = 2 [features.field_presence = IMPLICIT];
+   */
+  leaseGeneration: bigint;
+
+  /**
+   * @generated from field: int64 assignment_generation = 3 [features.field_presence = IMPLICIT];
+   */
+  assignmentGeneration: bigint;
+
+  /**
+   * @generated from field: shale.CameraIdentityEvidence identity = 4;
+   */
+  identity?: CameraIdentityEvidence | undefined;
+};
+
+/**
+ * Describes the message shale.CameraPresetResolveForJobRequest.
+ * Use `create(CameraPresetResolveForJobRequestSchema)` to create a new message.
+ */
+export const CameraPresetResolveForJobRequestSchema: GenMessage<CameraPresetResolveForJobRequest> = /*@__PURE__*/
+  messageDesc(file_shale_camera_preset_svc_g, 15);
+
+/**
  * @generated from service shale.CameraPresetService
  */
 export const CameraPresetService: GenService<{
@@ -641,6 +719,25 @@ export const CameraPresetService: GenService<{
     methodKind: "server_streaming";
     input: typeof CameraPresetWatchRequestSchema;
     output: typeof CameraPresetWatchResponseSchema;
+  },
+  /**
+   * @generated from rpc shale.CameraPresetService.Create
+   */
+  create: {
+    methodKind: "unary";
+    input: typeof CameraPresetCreateRequestSchema;
+    output: typeof CameraPresetSchema;
+  },
+  /**
+   * Resolve only the immutable ruleset pinned by this currently leased job.
+   * Inspection hints choose settings; the job's authority chooses access.
+   *
+   * @generated from rpc shale.CameraPresetService.ResolveForJob
+   */
+  resolveForJob: {
+    methodKind: "unary";
+    input: typeof CameraPresetResolveForJobRequestSchema;
+    output: typeof CameraResolvedPresetSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_shale_camera_preset_svc_g, 0);

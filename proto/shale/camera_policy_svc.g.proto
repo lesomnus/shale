@@ -3,6 +3,7 @@ package shale;
 
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
+import "shale/camera.proto";
 import "shale/camera_policy.proto";
 import "shale/camera_preset_svc.g.proto";
 import "shale/camera_svc.g.proto";
@@ -36,6 +37,12 @@ service CameraPolicyService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(CameraPolicyWatchRequest) returns (stream CameraPolicyWatchResponse);
+  rpc Create(CameraPolicyCreateRequest) returns (CameraPolicy);
+  rpc Activate(CameraPolicyActivateRequest) returns (CameraNetwork);
+  // Explicit reapply creates a new pinned job against the same binding/Source.
+  rpc Enroll(CameraPolicyEnrollRequest) returns (CameraJob);
+  // Scoped observations never grant general inventory mutation or credentials.
+  rpc Observe(CameraPolicyObserveRequest) returns (CameraPolicyObserveResponse);
 }
 
 message CameraPolicyAddRequest {
@@ -215,4 +222,40 @@ message CameraPolicyWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraPolicyCreateRequest {
+  CameraNetworkRef network = 1;
+  CameraPresetRef preset = 2;
+  string policy_key = 3 [features.field_presence = IMPLICIT];
+  string revision = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  CameraEnrollmentPolicy enrollment = 6;
+}
+
+message CameraPolicyActivateRequest {
+  CameraPolicyRef ref = 1;
+  google.protobuf.Timestamp expected_network_version = 2;
+}
+
+message CameraPolicyEnrollRequest {
+  CameraBindingRef binding = 1;
+  CameraPolicyRef policy = 2;
+  string request_key = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraPolicyObserveRequest {
+  CameraAssignmentRef assignment = 1;
+  int64 assignment_generation = 2 [features.field_presence = IMPLICIT];
+  // A discovery deduplication hint, never authenticated inventory ownership.
+  string discovery_id = 3 [features.field_presence = IMPLICIT];
+  CameraIdentityEvidence identity = 4;
+  repeated CameraObservedEndpoint endpoints = 5;
+}
+
+message CameraPolicyObserveResponse {
+  CameraDevice device = 1;
+  CameraBinding binding = 2;
+  CameraJob job = 3;
+  string code = 4 [features.field_presence = IMPLICIT];
 }

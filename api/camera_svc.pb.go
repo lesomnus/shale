@@ -23,24 +23,25 @@ const (
 )
 
 type CameraNetworkAddRequest struct {
-	state                    protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant        *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Site          *SiteRef               `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Alias         string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name          string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc          string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels        map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Cidrs         []string               `protobuf:"bytes,8,rep,name=cidrs"`
-	xxx_hidden_Multicast     bool                   `protobuf:"varint,9,opt,name=multicast"`
-	xxx_hidden_Seeds         []string               `protobuf:"bytes,10,rep,name=seeds"`
-	xxx_hidden_InterfaceHint string                 `protobuf:"bytes,11,opt,name=interface_hint,json=interfaceHint"`
-	xxx_hidden_Revision      int64                  `protobuf:"varint,12,opt,name=revision"`
-	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
-	XXX_presence             [1]uint32
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id             []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant         *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Site           *SiteRef               `protobuf:"bytes,3,opt,name=site"`
+	xxx_hidden_Alias          string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name           string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc           string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels         map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Cidrs          []string               `protobuf:"bytes,8,rep,name=cidrs"`
+	xxx_hidden_Multicast      bool                   `protobuf:"varint,9,opt,name=multicast"`
+	xxx_hidden_Seeds          []string               `protobuf:"bytes,10,rep,name=seeds"`
+	xxx_hidden_InterfaceHint  string                 `protobuf:"bytes,11,opt,name=interface_hint,json=interfaceHint"`
+	xxx_hidden_Revision       int64                  `protobuf:"varint,12,opt,name=revision"`
+	xxx_hidden_ActivePolicyId []byte                 `protobuf:"bytes,16,opt,name=active_policy_id,json=activePolicyId"`
+	xxx_hidden_DateCreated    *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData    protoimpl.RaceDetectHookData
+	XXX_presence              [1]uint32
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *CameraNetworkAddRequest) Reset() {
@@ -152,6 +153,13 @@ func (x *CameraNetworkAddRequest) GetRevision() int64 {
 	return 0
 }
 
+func (x *CameraNetworkAddRequest) GetActivePolicyId() []byte {
+	if x != nil {
+		return x.xxx_hidden_ActivePolicyId
+	}
+	return nil
+}
+
 func (x *CameraNetworkAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -164,7 +172,7 @@ func (x *CameraNetworkAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 13)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 14)
 }
 
 func (x *CameraNetworkAddRequest) SetTenant(v *TenantRef) {
@@ -211,6 +219,14 @@ func (x *CameraNetworkAddRequest) SetRevision(v int64) {
 	x.xxx_hidden_Revision = v
 }
 
+func (x *CameraNetworkAddRequest) SetActivePolicyId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_ActivePolicyId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 14)
+}
+
 func (x *CameraNetworkAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
@@ -236,6 +252,13 @@ func (x *CameraNetworkAddRequest) HasSite() bool {
 	return x.xxx_hidden_Site != nil
 }
 
+func (x *CameraNetworkAddRequest) HasActivePolicyId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
 func (x *CameraNetworkAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -256,6 +279,11 @@ func (x *CameraNetworkAddRequest) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
+func (x *CameraNetworkAddRequest) ClearActivePolicyId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_ActivePolicyId = nil
+}
+
 func (x *CameraNetworkAddRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
@@ -263,19 +291,20 @@ func (x *CameraNetworkAddRequest) ClearDateCreated() {
 type CameraNetworkAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id            []byte
-	Tenant        *TenantRef
-	Site          *SiteRef
-	Alias         string
-	Name          string
-	Desc          string
-	Labels        map[string]string
-	Cidrs         []string
-	Multicast     bool
-	Seeds         []string
-	InterfaceHint string
-	Revision      int64
-	DateCreated   *timestamppb.Timestamp
+	Id             []byte
+	Tenant         *TenantRef
+	Site           *SiteRef
+	Alias          string
+	Name           string
+	Desc           string
+	Labels         map[string]string
+	Cidrs          []string
+	Multicast      bool
+	Seeds          []string
+	InterfaceHint  string
+	Revision       int64
+	ActivePolicyId []byte
+	DateCreated    *timestamppb.Timestamp
 }
 
 func (b0 CameraNetworkAddRequest_builder) Build() *CameraNetworkAddRequest {
@@ -283,7 +312,7 @@ func (b0 CameraNetworkAddRequest_builder) Build() *CameraNetworkAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 13)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 14)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -297,6 +326,10 @@ func (b0 CameraNetworkAddRequest_builder) Build() *CameraNetworkAddRequest {
 	x.xxx_hidden_Seeds = b.Seeds
 	x.xxx_hidden_InterfaceHint = b.InterfaceHint
 	x.xxx_hidden_Revision = b.Revision
+	if b.ActivePolicyId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 14)
+		x.xxx_hidden_ActivePolicyId = b.ActivePolicyId
+	}
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -521,26 +554,27 @@ type cameraNetworkRef_Id struct {
 func (*cameraNetworkRef_Id) isCameraNetworkRef_Key() {}
 
 type CameraNetworkSelect struct {
-	state                    protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_All           bool                   `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_Tenant        *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Site          *SiteSelect            `protobuf:"bytes,3,opt,name=site"`
-	xxx_hidden_Alias         bool                   `protobuf:"varint,4,opt,name=alias"`
-	xxx_hidden_Name          bool                   `protobuf:"varint,5,opt,name=name"`
-	xxx_hidden_Desc          bool                   `protobuf:"varint,6,opt,name=desc"`
-	xxx_hidden_Labels        bool                   `protobuf:"varint,7,opt,name=labels"`
-	xxx_hidden_Cidrs         bool                   `protobuf:"varint,8,opt,name=cidrs"`
-	xxx_hidden_Multicast     bool                   `protobuf:"varint,9,opt,name=multicast"`
-	xxx_hidden_Seeds         bool                   `protobuf:"varint,10,opt,name=seeds"`
-	xxx_hidden_InterfaceHint bool                   `protobuf:"varint,11,opt,name=interface_hint,json=interfaceHint"`
-	xxx_hidden_Revision      bool                   `protobuf:"varint,12,opt,name=revision"`
-	xxx_hidden_DateUpdated   bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased    bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated   bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
-	XXX_presence             [1]uint32
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_All            bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Tenant         *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Site           *SiteSelect            `protobuf:"bytes,3,opt,name=site"`
+	xxx_hidden_Alias          bool                   `protobuf:"varint,4,opt,name=alias"`
+	xxx_hidden_Name           bool                   `protobuf:"varint,5,opt,name=name"`
+	xxx_hidden_Desc           bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels         bool                   `protobuf:"varint,7,opt,name=labels"`
+	xxx_hidden_Cidrs          bool                   `protobuf:"varint,8,opt,name=cidrs"`
+	xxx_hidden_Multicast      bool                   `protobuf:"varint,9,opt,name=multicast"`
+	xxx_hidden_Seeds          bool                   `protobuf:"varint,10,opt,name=seeds"`
+	xxx_hidden_InterfaceHint  bool                   `protobuf:"varint,11,opt,name=interface_hint,json=interfaceHint"`
+	xxx_hidden_Revision       bool                   `protobuf:"varint,12,opt,name=revision"`
+	xxx_hidden_ActivePolicyId bool                   `protobuf:"varint,16,opt,name=active_policy_id,json=activePolicyId"`
+	xxx_hidden_DateUpdated    bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased     bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated    bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData    protoimpl.RaceDetectHookData
+	XXX_presence              [1]uint32
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *CameraNetworkSelect) Reset() {
@@ -652,6 +686,13 @@ func (x *CameraNetworkSelect) GetRevision() bool {
 	return false
 }
 
+func (x *CameraNetworkSelect) GetActivePolicyId() bool {
+	if x != nil {
+		return x.xxx_hidden_ActivePolicyId
+	}
+	return false
+}
+
 func (x *CameraNetworkSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -675,7 +716,7 @@ func (x *CameraNetworkSelect) GetDateCreated() bool {
 
 func (x *CameraNetworkSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 16)
 }
 
 func (x *CameraNetworkSelect) SetTenant(v *TenantSelect) {
@@ -688,62 +729,67 @@ func (x *CameraNetworkSelect) SetSite(v *SiteSelect) {
 
 func (x *CameraNetworkSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 16)
 }
 
 func (x *CameraNetworkSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 16)
 }
 
 func (x *CameraNetworkSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 16)
 }
 
 func (x *CameraNetworkSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 16)
 }
 
 func (x *CameraNetworkSelect) SetCidrs(v bool) {
 	x.xxx_hidden_Cidrs = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 16)
 }
 
 func (x *CameraNetworkSelect) SetMulticast(v bool) {
 	x.xxx_hidden_Multicast = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 16)
 }
 
 func (x *CameraNetworkSelect) SetSeeds(v bool) {
 	x.xxx_hidden_Seeds = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 16)
 }
 
 func (x *CameraNetworkSelect) SetInterfaceHint(v bool) {
 	x.xxx_hidden_InterfaceHint = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 16)
 }
 
 func (x *CameraNetworkSelect) SetRevision(v bool) {
 	x.xxx_hidden_Revision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 16)
+}
+
+func (x *CameraNetworkSelect) SetActivePolicyId(v bool) {
+	x.xxx_hidden_ActivePolicyId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 16)
 }
 
 func (x *CameraNetworkSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 16)
 }
 
 func (x *CameraNetworkSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 16)
 }
 
 func (x *CameraNetworkSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 15)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 16)
 }
 
 func (x *CameraNetworkSelect) HasAll() bool {
@@ -830,25 +876,32 @@ func (x *CameraNetworkSelect) HasRevision() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
-func (x *CameraNetworkSelect) HasDateUpdated() bool {
+func (x *CameraNetworkSelect) HasActivePolicyId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
-func (x *CameraNetworkSelect) HasDateErased() bool {
+func (x *CameraNetworkSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 13)
 }
 
-func (x *CameraNetworkSelect) HasDateCreated() bool {
+func (x *CameraNetworkSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
+}
+
+func (x *CameraNetworkSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 15)
 }
 
 func (x *CameraNetworkSelect) ClearAll() {
@@ -909,39 +962,45 @@ func (x *CameraNetworkSelect) ClearRevision() {
 	x.xxx_hidden_Revision = false
 }
 
-func (x *CameraNetworkSelect) ClearDateUpdated() {
+func (x *CameraNetworkSelect) ClearActivePolicyId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_ActivePolicyId = false
+}
+
+func (x *CameraNetworkSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *CameraNetworkSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 14)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *CameraNetworkSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 14)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
 	x.xxx_hidden_DateCreated = false
 }
 
 type CameraNetworkSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	All           *bool
-	Tenant        *TenantSelect
-	Site          *SiteSelect
-	Alias         *bool
-	Name          *bool
-	Desc          *bool
-	Labels        *bool
-	Cidrs         *bool
-	Multicast     *bool
-	Seeds         *bool
-	InterfaceHint *bool
-	Revision      *bool
-	DateUpdated   *bool
-	DateErased    *bool
-	DateCreated   *bool
+	All            *bool
+	Tenant         *TenantSelect
+	Site           *SiteSelect
+	Alias          *bool
+	Name           *bool
+	Desc           *bool
+	Labels         *bool
+	Cidrs          *bool
+	Multicast      *bool
+	Seeds          *bool
+	InterfaceHint  *bool
+	Revision       *bool
+	ActivePolicyId *bool
+	DateUpdated    *bool
+	DateErased     *bool
+	DateCreated    *bool
 }
 
 func (b0 CameraNetworkSelect_builder) Build() *CameraNetworkSelect {
@@ -949,80 +1008,86 @@ func (b0 CameraNetworkSelect_builder) Build() *CameraNetworkSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 16)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 16)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 16)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 16)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 16)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	if b.Cidrs != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 16)
 		x.xxx_hidden_Cidrs = *b.Cidrs
 	}
 	if b.Multicast != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 16)
 		x.xxx_hidden_Multicast = *b.Multicast
 	}
 	if b.Seeds != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 16)
 		x.xxx_hidden_Seeds = *b.Seeds
 	}
 	if b.InterfaceHint != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 16)
 		x.xxx_hidden_InterfaceHint = *b.InterfaceHint
 	}
 	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 16)
 		x.xxx_hidden_Revision = *b.Revision
 	}
+	if b.ActivePolicyId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 16)
+		x.xxx_hidden_ActivePolicyId = *b.ActivePolicyId
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 16)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 16)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 15)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 16)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
 }
 
 type CameraNetworkPatchRequest struct {
-	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref              *CameraNetworkRef      `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
-	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
-	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
-	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Cidrs            []string               `protobuf:"bytes,16,rep,name=cidrs"`
-	xxx_hidden_Multicast        bool                   `protobuf:"varint,18,opt,name=multicast"`
-	xxx_hidden_Seeds            []string               `protobuf:"bytes,20,rep,name=seeds"`
-	xxx_hidden_InterfaceHint    *string                `protobuf:"bytes,22,opt,name=interface_hint,json=interfaceHint"`
-	xxx_hidden_Revision         int64                  `protobuf:"varint,24,opt,name=revision"`
-	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
-	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
-	XXX_presence                [1]uint32
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	state                         protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref                *CameraNetworkRef      `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Alias              *string                `protobuf:"bytes,8,opt,name=alias"`
+	xxx_hidden_Name               *string                `protobuf:"bytes,10,opt,name=name"`
+	xxx_hidden_Desc               *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels             map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Cidrs              []string               `protobuf:"bytes,16,rep,name=cidrs"`
+	xxx_hidden_Multicast          bool                   `protobuf:"varint,18,opt,name=multicast"`
+	xxx_hidden_Seeds              []string               `protobuf:"bytes,20,rep,name=seeds"`
+	xxx_hidden_InterfaceHint      *string                `protobuf:"bytes,22,opt,name=interface_hint,json=interfaceHint"`
+	xxx_hidden_Revision           int64                  `protobuf:"varint,24,opt,name=revision"`
+	xxx_hidden_ActivePolicyId     []byte                 `protobuf:"bytes,32,opt,name=active_policy_id,json=activePolicyId"`
+	xxx_hidden_ActivePolicyIdNull bool                   `protobuf:"varint,33,opt,name=active_policy_id_null,json=activePolicyIdNull"`
+	xxx_hidden_DateUpdated        *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateUpdatedForce   bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
+	XXX_raceDetectHookData        protoimpl.RaceDetectHookData
+	XXX_presence                  [1]uint32
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
 }
 
 func (x *CameraNetworkPatchRequest) Reset() {
@@ -1132,6 +1197,20 @@ func (x *CameraNetworkPatchRequest) GetRevision() int64 {
 	return 0
 }
 
+func (x *CameraNetworkPatchRequest) GetActivePolicyId() []byte {
+	if x != nil {
+		return x.xxx_hidden_ActivePolicyId
+	}
+	return nil
+}
+
+func (x *CameraNetworkPatchRequest) GetActivePolicyIdNull() bool {
+	if x != nil {
+		return x.xxx_hidden_ActivePolicyIdNull
+	}
+	return false
+}
+
 func (x *CameraNetworkPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -1152,17 +1231,17 @@ func (x *CameraNetworkPatchRequest) SetRef(v *CameraNetworkRef) {
 
 func (x *CameraNetworkPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 14)
 }
 
 func (x *CameraNetworkPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 14)
 }
 
 func (x *CameraNetworkPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 14)
 }
 
 func (x *CameraNetworkPatchRequest) SetLabels(v map[string]string) {
@@ -1175,7 +1254,7 @@ func (x *CameraNetworkPatchRequest) SetCidrs(v []string) {
 
 func (x *CameraNetworkPatchRequest) SetMulticast(v bool) {
 	x.xxx_hidden_Multicast = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 14)
 }
 
 func (x *CameraNetworkPatchRequest) SetSeeds(v []string) {
@@ -1184,12 +1263,25 @@ func (x *CameraNetworkPatchRequest) SetSeeds(v []string) {
 
 func (x *CameraNetworkPatchRequest) SetInterfaceHint(v string) {
 	x.xxx_hidden_InterfaceHint = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 14)
 }
 
 func (x *CameraNetworkPatchRequest) SetRevision(v int64) {
 	x.xxx_hidden_Revision = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 14)
+}
+
+func (x *CameraNetworkPatchRequest) SetActivePolicyId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_ActivePolicyId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 14)
+}
+
+func (x *CameraNetworkPatchRequest) SetActivePolicyIdNull(v bool) {
+	x.xxx_hidden_ActivePolicyIdNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 14)
 }
 
 func (x *CameraNetworkPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1198,7 +1290,7 @@ func (x *CameraNetworkPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *CameraNetworkPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 14)
 }
 
 func (x *CameraNetworkPatchRequest) HasRef() bool {
@@ -1250,6 +1342,20 @@ func (x *CameraNetworkPatchRequest) HasRevision() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
+func (x *CameraNetworkPatchRequest) HasActivePolicyId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *CameraNetworkPatchRequest) HasActivePolicyIdNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
 func (x *CameraNetworkPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -1261,7 +1367,7 @@ func (x *CameraNetworkPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 13)
 }
 
 func (x *CameraNetworkPatchRequest) ClearRef() {
@@ -1298,28 +1404,44 @@ func (x *CameraNetworkPatchRequest) ClearRevision() {
 	x.xxx_hidden_Revision = 0
 }
 
+func (x *CameraNetworkPatchRequest) ClearActivePolicyId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	x.xxx_hidden_ActivePolicyId = nil
+}
+
+func (x *CameraNetworkPatchRequest) ClearActivePolicyIdNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	x.xxx_hidden_ActivePolicyIdNull = false
+}
+
 func (x *CameraNetworkPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *CameraNetworkPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
 type CameraNetworkPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref           *CameraNetworkRef
-	Alias         *string
-	Name          *string
-	Desc          *string
-	Labels        map[string]string
-	Cidrs         []string
-	Multicast     *bool
-	Seeds         []string
-	InterfaceHint *string
-	Revision      *int64
+	Ref            *CameraNetworkRef
+	Alias          *string
+	Name           *string
+	Desc           *string
+	Labels         map[string]string
+	Cidrs          []string
+	Multicast      *bool
+	Seeds          []string
+	InterfaceHint  *string
+	Revision       *int64
+	ActivePolicyId []byte
+	// Clear active_policy_id instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and active_policy_id clears.
+	ActivePolicyIdNull *bool
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1342,35 +1464,43 @@ func (b0 CameraNetworkPatchRequest_builder) Build() *CameraNetworkPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 14)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 14)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 14)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Cidrs = b.Cidrs
 	if b.Multicast != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 14)
 		x.xxx_hidden_Multicast = *b.Multicast
 	}
 	x.xxx_hidden_Seeds = b.Seeds
 	if b.InterfaceHint != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 14)
 		x.xxx_hidden_InterfaceHint = b.InterfaceHint
 	}
 	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 14)
 		x.xxx_hidden_Revision = *b.Revision
+	}
+	if b.ActivePolicyId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 14)
+		x.xxx_hidden_ActivePolicyId = b.ActivePolicyId
+	}
+	if b.ActivePolicyIdNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 14)
+		x.xxx_hidden_ActivePolicyIdNull = *b.ActivePolicyIdNull
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 14)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -14964,7 +15094,7 @@ var File_shale_camera_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/camera_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x16shale/host_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xaa\x04\n" +
+	"\x18shale/camera_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/camera.proto\x1a\x16shale/host_svc.g.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\"\xd4\x04\n" +
 	"\x17CameraNetworkAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -14978,7 +15108,8 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x05seeds\x18\n" +
 	" \x03(\tR\x05seeds\x12,\n" +
 	"\x0einterface_hint\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\rinterfaceHint\x12!\n" +
-	"\brevision\x18\f \x01(\x03B\x05\xaa\x01\x02\b\x02R\brevision\x12=\n" +
+	"\brevision\x18\f \x01(\x03B\x05\xaa\x01\x02\b\x02R\brevision\x12(\n" +
+	"\x10active_policy_id\x18\x10 \x01(\fR\x0eactivePolicyId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -14988,7 +15119,7 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x06select\x18\x02 \x01(\v2\x1a.shale.CameraNetworkSelectR\x06select\"+\n" +
 	"\x10CameraNetworkRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
-	"\x03key\"\xc5\x03\n" +
+	"\x03key\"\xef\x03\n" +
 	"\x13CameraNetworkSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -15002,11 +15133,12 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\x05seeds\x18\n" +
 	" \x01(\bR\x05seeds\x12%\n" +
 	"\x0einterface_hint\x18\v \x01(\bR\rinterfaceHint\x12\x1a\n" +
-	"\brevision\x18\f \x01(\bR\brevision\x12!\n" +
+	"\brevision\x18\f \x01(\bR\brevision\x12(\n" +
+	"\x10active_policy_id\x18\x10 \x01(\bR\x0eactivePolicyId\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xff\x03\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xdc\x04\n" +
 	"\x19CameraNetworkPatchRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.CameraNetworkRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -15018,7 +15150,9 @@ const file_shale_camera_svc_g_proto_rawDesc = "" +
 	"\tmulticast\x18\x12 \x01(\bR\tmulticast\x12\x14\n" +
 	"\x05seeds\x18\x14 \x03(\tR\x05seeds\x12%\n" +
 	"\x0einterface_hint\x18\x16 \x01(\tR\rinterfaceHint\x12\x1a\n" +
-	"\brevision\x18\x18 \x01(\x03R\brevision\x12=\n" +
+	"\brevision\x18\x18 \x01(\x03R\brevision\x12(\n" +
+	"\x10active_policy_id\x18  \x01(\fR\x0eactivePolicyId\x121\n" +
+	"\x15active_policy_id_null\x18! \x01(\bR\x12activePolicyIdNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

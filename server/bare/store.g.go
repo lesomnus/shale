@@ -400,12 +400,12 @@ type Scope interface {
 	RelayScope(ctx context.Context) (predicate.Relay, error)
 	ProducerScope(ctx context.Context) (predicate.Producer, error)
 	ReaderScope(ctx context.Context) (predicate.Reader, error)
+	CameraPresetScope(ctx context.Context) (predicate.CameraPreset, error)
 	CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, error)
 	CameraDeviceScope(ctx context.Context) (predicate.CameraDevice, error)
 	CameraAssignmentScope(ctx context.Context) (predicate.CameraAssignment, error)
 	CameraBindingScope(ctx context.Context) (predicate.CameraBinding, error)
 	CameraJobScope(ctx context.Context) (predicate.CameraJob, error)
-	CameraPresetScope(ctx context.Context) (predicate.CameraPreset, error)
 	CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error)
 	DeviceScope(ctx context.Context) (predicate.Device, error)
 	SinkScope(ctx context.Context) (predicate.Sink, error)
@@ -463,6 +463,9 @@ func (Unscoped) ProducerScope(_ context.Context) (predicate.Producer, error) {
 func (Unscoped) ReaderScope(_ context.Context) (predicate.Reader, error) {
 	return nil, nil
 }
+func (Unscoped) CameraPresetScope(_ context.Context) (predicate.CameraPreset, error) {
+	return nil, nil
+}
 func (Unscoped) CameraNetworkScope(_ context.Context) (predicate.CameraNetwork, error) {
 	return nil, nil
 }
@@ -476,9 +479,6 @@ func (Unscoped) CameraBindingScope(_ context.Context) (predicate.CameraBinding, 
 	return nil, nil
 }
 func (Unscoped) CameraJobScope(_ context.Context) (predicate.CameraJob, error) {
-	return nil, nil
-}
-func (Unscoped) CameraPresetScope(_ context.Context) (predicate.CameraPreset, error) {
 	return nil, nil
 }
 func (Unscoped) CameraPolicyScope(_ context.Context) (predicate.CameraPolicy, error) {
@@ -718,6 +718,26 @@ func (ss Scopes) ReaderScope(ctx context.Context) (predicate.Reader, error) {
 	return reader.And(ps...), nil
 }
 
+func (ss Scopes) CameraPresetScope(ctx context.Context) (predicate.CameraPreset, error) {
+	ps := make([]predicate.CameraPreset, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CameraPresetScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return camerapreset.And(ps...), nil
+}
+
 func (ss Scopes) CameraNetworkScope(ctx context.Context) (predicate.CameraNetwork, error) {
 	ps := make([]predicate.CameraNetwork, 0, len(ss))
 	for _, s := range ss {
@@ -816,26 +836,6 @@ func (ss Scopes) CameraJobScope(ctx context.Context) (predicate.CameraJob, error
 	}
 
 	return camerajob.And(ps...), nil
-}
-
-func (ss Scopes) CameraPresetScope(ctx context.Context) (predicate.CameraPreset, error) {
-	ps := make([]predicate.CameraPreset, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.CameraPresetScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return camerapreset.And(ps...), nil
 }
 
 func (ss Scopes) CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error) {
@@ -1399,6 +1399,9 @@ func (s Server) Node() api.NodeServiceServer         { return NodeServiceServer{
 func (s Server) Relay() api.RelayServiceServer       { return RelayServiceServer{Store: s.Store} }
 func (s Server) Producer() api.ProducerServiceServer { return ProducerServiceServer{Store: s.Store} }
 func (s Server) Reader() api.ReaderServiceServer     { return ReaderServiceServer{Store: s.Store} }
+func (s Server) CameraPreset() api.CameraPresetServiceServer {
+	return CameraPresetServiceServer{Store: s.Store}
+}
 func (s Server) CameraNetwork() api.CameraNetworkServiceServer {
 	return CameraNetworkServiceServer{Store: s.Store}
 }
@@ -1412,9 +1415,6 @@ func (s Server) CameraBinding() api.CameraBindingServiceServer {
 	return CameraBindingServiceServer{Store: s.Store}
 }
 func (s Server) CameraJob() api.CameraJobServiceServer { return CameraJobServiceServer{Store: s.Store} }
-func (s Server) CameraPreset() api.CameraPresetServiceServer {
-	return CameraPresetServiceServer{Store: s.Store}
-}
 func (s Server) CameraPolicy() api.CameraPolicyServiceServer {
 	return CameraPolicyServiceServer{Store: s.Store}
 }

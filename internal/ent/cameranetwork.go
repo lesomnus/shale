@@ -39,6 +39,8 @@ type CameraNetwork struct {
 	InterfaceHint string `json:"interface_hint,omitempty"`
 	// Revision holds the value of the "revision" field.
 	Revision int64 `json:"revision,omitempty"`
+	// ActivePolicyId holds the value of the "active_policy_id" field.
+	ActivePolicyId *uuid.UUID `json:"active_policy_id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -103,7 +105,7 @@ func (*CameraNetwork) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case cameranetwork.FieldDateUpdated, cameranetwork.FieldDateErased, cameranetwork.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case cameranetwork.FieldSiteId:
+		case cameranetwork.FieldActivePolicyId, cameranetwork.FieldSiteId:
 			values[i] = new(sql.Null[uuid.UUID])
 		case cameranetwork.FieldId, cameranetwork.FieldTenantId:
 			values[i] = new(uuid.UUID)
@@ -187,6 +189,13 @@ func (_m *CameraNetwork) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field revision", values[i])
 			} else if value.Valid {
 				_m.Revision = value.Int64
+			}
+		case cameranetwork.FieldActivePolicyId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field active_policy_id", values[i])
+			} else if value.Valid {
+				_m.ActivePolicyId = new(uuid.UUID)
+				*_m.ActivePolicyId = value.V
 			}
 		case cameranetwork.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -291,6 +300,11 @@ func (_m *CameraNetwork) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("revision=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Revision))
+	builder.WriteString(", ")
+	if v := _m.ActivePolicyId; v != nil {
+		builder.WriteString("active_policy_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

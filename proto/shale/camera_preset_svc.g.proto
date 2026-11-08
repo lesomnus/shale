@@ -3,7 +3,9 @@ package shale;
 
 import "google/protobuf/timestamp.proto";
 import "patch/patch.proto";
+import "shale/camera.proto";
 import "shale/camera_preset.proto";
+import "shale/camera_svc.g.proto";
 import "shale/payday/tenant_svc.g.proto";
 import "shale/site_svc.g.proto";
 
@@ -34,6 +36,10 @@ service CameraPresetService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(CameraPresetWatchRequest) returns (stream CameraPresetWatchResponse);
+  rpc Create(CameraPresetCreateRequest) returns (CameraPreset);
+  // Resolve only the immutable ruleset pinned by this currently leased job.
+  // Inspection hints choose settings; the job's authority chooses access.
+  rpc ResolveForJob(CameraPresetResolveForJobRequest) returns (CameraResolvedPreset);
 }
 
 message CameraPresetAddRequest {
@@ -208,4 +214,20 @@ message CameraPresetWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraPresetCreateRequest {
+  TenantRef tenant = 1;
+  SiteRef site = 2;
+  string preset_key = 3 [features.field_presence = IMPLICIT];
+  string revision = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  repeated CameraPresetRule rules = 6;
+}
+
+message CameraPresetResolveForJobRequest {
+  CameraJobRef job = 1;
+  int64 lease_generation = 2 [features.field_presence = IMPLICIT];
+  int64 assignment_generation = 3 [features.field_presence = IMPLICIT];
+  CameraIdentityEvidence identity = 4;
 }

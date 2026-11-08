@@ -79,6 +79,20 @@ func (_c *CameraNetworkCreate) SetRevision(v int64) *CameraNetworkCreate {
 	return _c
 }
 
+// SetActivePolicyId sets the "active_policy_id" field.
+func (_c *CameraNetworkCreate) SetActivePolicyId(v uuid.UUID) *CameraNetworkCreate {
+	_c.mutation.SetActivePolicyId(v)
+	return _c
+}
+
+// SetNillableActivePolicyId sets the "active_policy_id" field if the given value is not nil.
+func (_c *CameraNetworkCreate) SetNillableActivePolicyId(v *uuid.UUID) *CameraNetworkCreate {
+	if v != nil {
+		_c.SetActivePolicyId(*v)
+	}
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraNetworkCreate) SetDateUpdated(v time.Time) *CameraNetworkCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -299,6 +313,10 @@ func (_c *CameraNetworkCreate) createSpec() (*CameraNetwork, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.Revision(); ok {
 		_spec.SetField(cameranetwork.FieldRevision, field.TypeInt64, value)
 		_node.Revision = value
+	}
+	if value, ok := _c.mutation.ActivePolicyId(); ok {
+		_spec.SetField(cameranetwork.FieldActivePolicyId, field.TypeUuid, value)
+		_node.ActivePolicyId = &value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(cameranetwork.FieldDateUpdated, field.TypeTime, value)
