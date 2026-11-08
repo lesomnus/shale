@@ -28,6 +28,29 @@ func encodeSettings(v camera.PresetSettings) *api.CameraPresetSettings {
 	}.Build()
 }
 
+// EncodeSettings and DecodeSettings are shared by typed provisioning checkpoints.
+// They validate partial patches without materializing or normalizing them.
+func EncodeSettings(v camera.PresetSettings) (*api.CameraPresetSettings, error) {
+	if err := camera.ValidatePresetSettings(v); err != nil {
+		return nil, err
+	}
+	if !representable(v) {
+		return nil, camera.ErrInvalid
+	}
+	return encodeSettings(v), nil
+}
+
+func DecodeSettings(v *api.CameraPresetSettings) (camera.PresetSettings, error) {
+	if v == nil {
+		return camera.PresetSettings{}, camera.ErrInvalid
+	}
+	out := settings(v)
+	if err := camera.ValidatePresetSettings(out); err != nil {
+		return camera.PresetSettings{}, err
+	}
+	return out, nil
+}
+
 func decodeRule(v *api.CameraPresetRule) preset.Rule {
 	s, m := v.GetScope(), v.GetMatch()
 	out := preset.Rule{
@@ -61,6 +84,20 @@ func Provider(id, revision string, rules []*api.CameraPresetRule) (*preset.Provi
 		config.Rules[i] = decodeRule(rule)
 	}
 	return preset.New(config)
+}
+
+// SameRules uses the portable provider's canonical fingerprint, preserving
+// policy presence while ignoring rule/set-field ordering and MAC spelling.
+func SameRules(a, b []*api.CameraPresetRule) (bool, error) {
+	x, err := Provider("comparison", "1", a)
+	if err != nil {
+		return false, err
+	}
+	y, err := Provider("comparison", "1", b)
+	if err != nil {
+		return false, err
+	}
+	return x.Reference() == y.Reference(), nil
 }
 
 // EncodeRules returns a detached wire representation. Empty non-nil fallbacks

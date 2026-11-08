@@ -3,6 +3,7 @@ package camerapreset
 import (
 	"context"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/lesomnus/shale/api"
@@ -129,4 +130,24 @@ func TestWireRejectsInvalidOrUnrepresentableSettings(t *testing.T) {
 	config.Rules[0].Settings.Video.FPS = math.NaN()
 	_, err = EncodeRules(config.Rules)
 	require.ErrorIs(t, err, camera.ErrInvalid)
+}
+
+func TestCanonicalRuleComparisonPreservesPolicyPresence(t *testing.T) {
+	config := presetContract()
+	a, err := EncodeRules(config.Rules)
+	require.NoError(t, err)
+	slices.Reverse(config.Rules)
+	b, err := EncodeRules(config.Rules)
+	require.NoError(t, err)
+	same, err := SameRules(a, b)
+	require.NoError(t, err)
+	require.True(t, same, "reordering a ruleset is not a new policy revision")
+	for _, rule := range b {
+		if rule.GetId() == "serial" {
+			rule.ClearAlternatives()
+		}
+	}
+	same, err = SameRules(a, b)
+	require.NoError(t, err)
+	require.False(t, same, "clearing inherited alternatives differs from inheriting them")
 }
