@@ -31,3 +31,5 @@ jobs:
           docker run --rm --network=none --privileged shale-camera-lan-test
       - name: isolated topology coordinator contract
         run: docker run --rm --network=none --privileged shale-camera-lan-test python3 topology_test.py
+      - name: isolated two-camera DHCP address move and controls
+        run: docker run --rm --network=none --privileged shale-camera-lan-test python3 qualification_topology_test.py

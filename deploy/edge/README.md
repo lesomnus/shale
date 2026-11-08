@@ -267,3 +267,79 @@ OPTIONS routing and the outbound CP path; these are transport checks, not the
 production ONVIF adapter, RTSP video, central policy or an assembled Go end-to-end
 test. It also checks success/failure/timeout/SIGTERM cleanup, including a detached
 role child. No hardware or media qualification is inferred from these checks.
+
+## Two-camera qualification topology
+
+From a source checkout, the opt-in `qualification_topology.py` wrapper uses the
+same isolation gate and coordinator contract with two independent camera peers:
+
+```text
+camera  eth0 (DHCP .20) --+-- edge eth0 bridge (.1)  wlan0 -- CP
+camera2 eth0 (DHCP .21) --+
+```
+
+The bridge models the isolated PoE switch inside the owned edge namespace;
+Wi-Fi stays on a separate link. Both camera clients keep distinct fixed MACs,
+and ordinary application processes use the same UID/GID 65534, zero-capability
+prefix as the original runner. CP has no camera-LAN route and edge forwarding
+remains disabled. The original `topology.py` defaults to its three-namespace
+layout. No production interface or network configuration changes for this test.
+
+The manifest keeps its version-1 fields and adds `roles.camera2`. Each camera
+role includes `mac` and a stable `logical_identity`. The outer wrapper owns both
+DHCP clients and the daemon. Camera/edge application processes can read the
+public manifest; only the root coordinator can traverse the `0700` control
+directory. Requests and responses are fixed `0600` JSON files at the manifest's
+`control.request_file` and `control.response_file` paths.
+
+Write one request at a time by atomically renaming a completed temporary file to
+`request.json`. Match the response's `version` and `id`; an older response may
+still occupy `response.json` until the new operation completes. Remove the
+previous response before submitting a retry with the same ID, as the Python
+helper does. For example:
+
+```json
+{"version":1,"id":"camera-move-1","op":"move_camera","role":"camera","address":"192.168.250.30"}
+```
+
+| Operation | Additional fields | Effect |
+| --- | --- | --- |
+| `status` | none | Current client/daemon PIDs, observed MACs/IPs and DHCP leases |
+| `move_camera` | `role`, `address` | Release and reacquire an in-pool address using the same client/MAC |
+| `renew_camera` | `role` | Renew that client's lease |
+| `restart_dhcp` | none | Restart the owned daemon while retaining its leases and clients |
+| `uplink_down` / `uplink_up` | none | Toggle only the prepared edge Wi-Fi simulation |
+
+Roles are exactly `camera` or `camera2`; requested addresses must be unused by
+the other camera and lie in `192.168.250.20`–`192.168.250.99`. Unknown fields,
+versions and operations are rejected. Requests accept no command, interface,
+path, credential or SQL. IDs are 1–64 ASCII letters/digits/underscores/dashes.
+Requests are at most 4 KiB and responses at most 64 KiB. Each operation has a
+20-second limit bounded further by the coordinator deadline. The Python
+`control_request` helper waits at most 30 seconds and checks response correlation.
+Up to 128 completed IDs are retained for exact-response retries during one run;
+reusing a retained ID with different contents is rejected. Use a fresh `status`
+ID to obtain current state after a previous receipt.
+
+An address move releases the client's existing lease, removes its previous owned
+IPv4 address in the DHCP hook, updates the private reservation file, signals
+dnsmasq to reload it and reacquires through DHCP. The daemon and other camera
+continue running. The wrapper updates the public manifest after the new address
+is bound. An already-running camera fixture should listen on its namespace's
+wildcard address and keep its logical identity while its advertised endpoint is
+updated by the assembled test. The control API does not restart that fixture.
+
+```sh
+docker run --rm --network=none --privileged shale-camera-lan-test \
+  python3 qualification_topology.py -- python3 qualification_smoke.py
+docker run --rm --network=none --privileged shale-camera-lan-test \
+  python3 qualification_topology_test.py
+```
+
+The protocol checks cover both DORA exchanges, renewal, a same-MAC/client-PID
+address move with the old IP actually gone, the other client's unchanged lease,
+unprivileged simultaneous multicast/TCP peers, private-control denial to apps,
+lease persistence across daemon restart, uplink loss/recovery and full resource
+cleanup on success/failure/timeout/SIGTERM. These are network/control checks;
+actual camera enrollment, encoded video and live/archive decoding belong to the
+assembled Go qualification.
