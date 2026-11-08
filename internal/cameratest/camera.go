@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -28,6 +30,8 @@ func defaultIdentity(i CameraIdentity) CameraIdentity {
 
 type CameraOptions struct {
 	IP           string
+	HTTPPort     int
+	RTSPPort     int
 	RTSPPath     string
 	Profile      camera.MediaProfile
 	Modes        []camera.MediaProfile
@@ -47,8 +51,8 @@ func ServeCamera(t testing.TB, o CameraOptions) *Camera {
 	if o.IP == "" {
 		o.IP = "127.0.0.1"
 	}
-	media := ServeRTSPCamera(t, RTSPOptions{ListenAddress: net.JoinHostPort(o.IP, "0"), Path: o.RTSPPath, Profile: o.Profile, SetupTimeout: o.SetupTimeout})
-	onvif := ServeONVIFWithOptions(t, media.Profile(), ONVIFOptions{ListenAddress: net.JoinHostPort(o.IP, "0"), Identity: o.Identity, Media: media, Modes: o.Modes})
+	media := ServeRTSPCamera(t, RTSPOptions{ListenAddress: net.JoinHostPort(o.IP, strconv.Itoa(o.RTSPPort)), Path: o.RTSPPath, Profile: o.Profile, SetupTimeout: o.SetupTimeout})
+	onvif := ServeONVIFWithOptions(t, media.Profile(), ONVIFOptions{ListenAddress: net.JoinHostPort(o.IP, strconv.Itoa(o.HTTPPort)), Identity: o.Identity, Media: media, Modes: o.Modes})
 	return &Camera{ONVIF: onvif, Media: media}
 }
 func (c *Camera) Endpoints() CameraEndpoints {
@@ -69,10 +73,33 @@ func (c *Camera) Reset(ctx context.Context, p camera.MediaProfile) error {
 // Rebind moves test listeners and terminates old HTTP/RTSP sessions. It does
 // not implement DHCP or modify the host's interfaces, addresses or routes.
 func (c *Camera) Rebind(ip string) (CameraEndpoints, error) {
-	if _, err := c.Media.Rebind(net.JoinHostPort(ip, "0")); err != nil {
+	return c.rebind(ip, "0", "0")
+}
+
+// RebindAddress models DHCP changing a camera's address while its configured
+// service ports remain stable. Repeating an already completed address change
+// is harmless; the existing Rebind still exercises arbitrary endpoint changes.
+func (c *Camera) RebindAddress(ip string) (CameraEndpoints, error) {
+	before := c.Endpoints()
+	http, err := url.Parse(before.ONVIF)
+	if err != nil {
+		return CameraEndpoints{}, camera.ErrInvalid
+	}
+	rtsp, err := url.Parse(before.RTSP)
+	if err != nil || http.Port() == "" || rtsp.Port() == "" || net.ParseIP(ip) == nil {
+		return CameraEndpoints{}, camera.ErrInvalid
+	}
+	if http.Hostname() == ip && rtsp.Hostname() == ip {
+		return before, nil
+	}
+	return c.rebind(ip, http.Port(), rtsp.Port())
+}
+
+func (c *Camera) rebind(ip, httpPort, rtspPort string) (CameraEndpoints, error) {
+	if _, err := c.Media.Rebind(net.JoinHostPort(ip, rtspPort)); err != nil {
 		return CameraEndpoints{}, err
 	}
-	if err := c.ONVIF.rebind(net.JoinHostPort(ip, "0")); err != nil {
+	if err := c.ONVIF.rebind(net.JoinHostPort(ip, httpPort)); err != nil {
 		return CameraEndpoints{}, err
 	}
 	c.ONVIF.SetVideo(c.Media.Profile())

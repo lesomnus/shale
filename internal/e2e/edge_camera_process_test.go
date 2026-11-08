@@ -24,6 +24,25 @@ import (
 
 const edgeCameraProcessOptIn = "SHALE_EDGE_CAMERA_PROCESS"
 
+var edgeCameraProtocolOutput *os.File
+
+// Separate protocol output before testing can print even a verbose prelude.
+// Only the explicitly selected camera subprocess changes its descriptors.
+func init() {
+	if os.Getenv(edgeCameraProcessOptIn) != "1" {
+		return
+	}
+	failed := func() { _, _ = os.Stderr.WriteString("prepare camera protocol output failed\n"); os.Exit(2) }
+	var err error
+	edgeCameraProtocolOutput, err = edgeCameraOwnedFile(os.Stdout, "camera-public-json")
+	if err != nil {
+		failed()
+	}
+	if unix.Dup2(int(os.Stderr.Fd()), int(os.Stdout.Fd())) != nil {
+		failed()
+	}
+}
+
 // TestEdgeCameraProcess is a subprocess fixture, not an assembled E2E test.
 // Launch the compiled test binary with SHALE_EDGE_CAMERA_PROCESS=1 and
 // -test.run '^TestEdgeCameraProcess$'. A private stdin JSONL stream owns all
@@ -46,35 +65,51 @@ func TestEdgeCameraProcess(t *testing.T) {
 	if os.Getenv(edgeCameraProcessOptIn) != "1" {
 		t.Skip("opt-in isolated camera subprocess")
 	}
-	fd, err := unix.Dup(int(os.Stdout.Fd()))
-	if err != nil {
-		t.Fatal("prepare camera protocol output")
-	}
-	unix.CloseOnExec(fd)
-	public := os.NewFile(uintptr(fd), "camera-public-json")
+	public := edgeCameraProtocolOutput
 	defer public.Close()
-	if unix.Dup2(int(os.Stderr.Fd()), int(os.Stdout.Fd())) != nil {
-		t.Fatal("separate camera diagnostics")
+	input, err := edgeCameraOwnedFile(os.Stdin, "camera-private-input")
+	if err != nil {
+		t.Fatal("prepare camera protocol input")
 	}
+	defer input.Close()
+	defer os.Stdin.Close()
 	ctx, cancel := signal.NotifyContext(t.Context(), syscall.SIGTERM, os.Interrupt)
 	defer cancel()
-	if err := runEdgeCameraProcess(t, ctx, os.Stdin, public); err != nil {
+	if err := runEdgeCameraProcess(t, ctx, input, public); err != nil {
 		t.Error("camera process stopped after a protocol or fixture failure")
 	}
 }
 
+// An inherited pipe may be outside Go's poller. Set the duplicate nonblocking
+// before NewFile so closing the owned file interrupts a pending Read or Write.
+func edgeCameraOwnedFile(source *os.File, name string) (*os.File, error) {
+	fd, err := unix.Dup(int(source.Fd()))
+	if err != nil {
+		return nil, err
+	}
+	unix.CloseOnExec(fd)
+	if err := unix.SetNonblock(fd, true); err != nil {
+		_ = unix.Close(fd)
+		return nil, err
+	}
+	return os.NewFile(uintptr(fd), name), nil
+}
+
 type edgeCameraRequest struct {
-	Version   int                       `json:"version"`
-	ID        int64                     `json:"id"`
-	Op        string                    `json:"op"`
-	IP        string                    `json:"ip,omitempty"`
-	Interface string                    `json:"interface,omitempty"`
-	Profile   camapi.MediaProfile       `json:"profile,omitempty"`
-	Modes     []camapi.MediaProfile     `json:"modes,omitempty"`
-	Identity  cameratest.CameraIdentity `json:"identity,omitempty"`
-	Username  string                    `json:"username,omitempty"`
-	Password  string                    `json:"password,omitempty"`
-	Active    *bool                     `json:"active,omitempty"`
+	Version       int                       `json:"version"`
+	ID            int64                     `json:"id"`
+	Op            string                    `json:"op"`
+	IP            string                    `json:"ip,omitempty"`
+	Interface     string                    `json:"interface,omitempty"`
+	Profile       camapi.MediaProfile       `json:"profile,omitempty"`
+	Modes         []camapi.MediaProfile     `json:"modes,omitempty"`
+	Identity      cameratest.CameraIdentity `json:"identity,omitempty"`
+	Username      string                    `json:"username,omitempty"`
+	Password      string                    `json:"password,omitempty"`
+	Active        *bool                     `json:"active,omitempty"`
+	PreservePorts bool                      `json:"preserve_ports,omitempty"`
+	HTTPPort      int                       `json:"http_port,omitempty"`
+	RTSPPort      int                       `json:"rtsp_port,omitempty"`
 }
 
 type edgeCameraStatus struct {
@@ -140,11 +175,12 @@ func edgeCameraRequestFrom(line []byte) (edgeCameraRequest, bool) {
 	allowed := map[string]bool{"version": true, "id": true, "op": true}
 	switch request.Op {
 	case "start":
-		for _, name := range []string{"ip", "interface", "profile", "modes", "identity", "username", "password", "active"} {
+		for _, name := range []string{"ip", "interface", "profile", "modes", "identity", "username", "password", "active", "http_port", "rtsp_port"} {
 			allowed[name] = true
 		}
 	case "rebind":
 		allowed["ip"], allowed["interface"] = true, true
+		allowed["preserve_ports"] = true
 	case "set_active":
 		allowed["active"] = true
 	}
@@ -166,6 +202,11 @@ func edgeCameraAddress(ip, name string) bool {
 }
 
 func edgeCameraStartValid(request edgeCameraRequest) bool {
+	for _, port := range []int{request.HTTPPort, request.RTSPPort} {
+		if port != 0 && (port < 1024 || port > 65535) {
+			return false
+		}
+	}
 	if request.Op != "start" || !edgeCameraAddress(request.IP, request.Interface) || request.Active == nil ||
 		request.Username == "" || request.Password == "" || !edgeCameraString(request.Username, 64) ||
 		strings.Contains(request.Username, ":") || !edgeCameraString(request.Password, 256) || !edgeCameraProfile(request.Profile) || len(request.Modes) > 8 {
@@ -190,6 +231,13 @@ func runEdgeCameraProcess(t *testing.T, ctx context.Context, input io.Reader, ou
 	ctx, cancel := context.WithCancel(ctx)
 	encoder := json.NewEncoder(output)
 	respond := func(id int64, event, code string, status *edgeCameraStatus) error {
+		// A coordinator that stops reading cannot hold cancellation forever in
+		// an output write. The subprocess owns a pollable protocol descriptor.
+		if bounded, ok := output.(interface{ SetWriteDeadline(time.Time) error }); ok {
+			if err := bounded.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				return errors.New("camera output unavailable")
+			}
+		}
 		return encoder.Encode(edgeCameraResponse{Version: 1, ID: id, Event: event, Code: code, Status: status})
 	}
 	requests := make(chan []byte)
@@ -253,6 +301,9 @@ func runEdgeCameraProcess(t *testing.T, ctx context.Context, input io.Reader, ou
 				}
 				return nil
 			}
+			if ctx.Err() != nil {
+				return nil
+			}
 			request, valid := edgeCameraRequestFrom(line)
 			if !valid {
 				if err := respond(0, "error", "invalid-input", nil); err != nil {
@@ -272,7 +323,7 @@ func runEdgeCameraProcess(t *testing.T, ctx context.Context, input io.Reader, ou
 				if identity.DiscoveryID == "" {
 					identity.DiscoveryID = "urn:uuid:00000000-0000-4000-8000-000000000001"
 				}
-				fixture = cameratest.ServeCamera(t, cameratest.CameraOptions{IP: request.IP, RTSPPath: "/main",
+				fixture = cameratest.ServeCamera(t, cameratest.CameraOptions{IP: request.IP, HTTPPort: request.HTTPPort, RTSPPort: request.RTSPPort, RTSPPath: "/main",
 					Profile: request.Profile, Modes: request.Modes, Identity: identity, SetupTimeout: 15 * time.Second})
 				fixture.RequireCredentials(request.Username, request.Password)
 				fixture.ONVIF.SetUnactivated(!*request.Active)
@@ -296,7 +347,11 @@ func runEdgeCameraProcess(t *testing.T, ctx context.Context, input io.Reader, ou
 					break
 				}
 				closeProbe()
-				if _, err := fixture.Rebind(request.IP); err != nil {
+				rebind := fixture.Rebind
+				if request.PreservePorts {
+					rebind = fixture.RebindAddress
+				}
+				if _, err := rebind(request.IP); err != nil {
 					_ = respond(request.ID, "error", "rebind-failed", nil)
 					return errors.New("camera rebind failed")
 				}
