@@ -65,6 +65,13 @@ lease generation/expiry and physical-device fence. Replayed machine write
 acknowledgments must still match that fence. Poll checks identity again while
 waiting and before returning a view.
 
+The grouped database wall cannot represent exactly `site = NULL` with its
+all-sites flag disabled. Only these explicit Worker execution methods use a
+private transaction with the normal write recorders. That boundary checks the
+complete assignment/network/Set/Producer and job/binding/device scope graph
+before a response or mutation. Operators keep their normal wall, and a Worker
+never receives an all-sites flag or access to generic private-store methods.
+
 `CheckJob` returns the complete typed pinned Work envelope. `ObserveJob` adds only
 that leased job's assigned Producer status, complete committed recording evidence
 since publication, and the bound Source live capability when available. That view

@@ -28,7 +28,14 @@ func (s Core) cameraAssignmentRow(ctx context.Context, r *api.CameraAssignmentRe
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.Next().CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: a.GetNetwork().GetId()}.Build()}.Build()); err != nil {
+	if err := s.cameraExecutionScope(ctx, a); err != nil {
+		return nil, err
+	}
+	n, err := s.Next().CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: a.GetNetwork().GetId()}.Build()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err := cameraSameScope(a.GetTenant().GetId(), a.GetSite().GetId(), n.GetTenant().GetId(), n.GetSite().GetId()); err != nil {
 		return nil, err
 	}
 	if err := s.cameraLockNetwork(ctx, a.GetNetwork().GetId()); err != nil {
@@ -37,7 +44,14 @@ func (s Core) cameraAssignmentRow(ctx context.Context, r *api.CameraAssignmentRe
 	if err := s.cameraLockAssignment(ctx, a.GetId()); err != nil {
 		return nil, err
 	}
-	return s.Next().CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: r}.Build())
+	a, err = s.Next().CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: r}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.cameraExecutionParents(ctx, a); err != nil {
+		return nil, err
+	}
+	return a, nil
 }
 func (s Core) cameraCatalogAdvance(ctx context.Context, a *api.CameraAssignment) (*api.CameraAssignment, error) {
 	return s.Next().CameraAssignment().Patch(ctx, api.CameraAssignmentPatchRequest_builder{Ref: api.CameraAssignmentRef_builder{Id: a.GetId()}.Build(), CatalogRevision: z.Ptr(a.GetCatalogRevision() + 1), DateUpdated: a.GetDateUpdated()}.Build())

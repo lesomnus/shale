@@ -36,7 +36,7 @@ func (s coreCameraWorker) Poll(ctx context.Context, r *api.CameraWorkerPollReque
 			return nil, err
 		}
 		var out *api.CameraWorkerPollResponse
-		err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+		err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) error {
 			c := New(nx, s.d)
 			rows, err := c.ent(ctx).CameraAssignment.Query().Where(cameraassignment.WorkerIdEQ(mustId(w.GetId()).Uuid()), cameraassignment.DateErasedIsNil()).Order(ent.Asc(cameraassignment.FieldNetworkId), ent.Asc(cameraassignment.FieldId)).Limit(101).All(ctx)
 			if err != nil {
@@ -134,7 +134,7 @@ func (s coreCameraWorker) CheckJob(ctx context.Context, r *api.CameraWorkerCheck
 		return nil, err
 	}
 	var out *api.CameraWorkerWork
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) error {
 		var err error
 		out, err = New(nx, s.d).cameraWorkerWork(ctx, r)
 		return err
@@ -155,7 +155,7 @@ func (s coreCameraWorker) ObserveJob(ctx context.Context, r *api.CameraWorkerChe
 		return nil, err
 	}
 	var out *api.CameraWorkerObservation
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err := s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) error {
 		c := New(nx, s.d)
 		work, err := c.cameraWorkerWork(ctx, r)
 		if err != nil {
@@ -185,6 +185,9 @@ func (s coreCameraWorker) ObserveJob(ctx context.Context, r *api.CameraWorkerChe
 		}
 		if !bytes.Equal(src.GetSet().GetId(), a.GetSet().GetId()) {
 			return failed("binding source moved to another set")
+		}
+		if err := cameraSameScope(src.GetTenant().GetId(), src.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
+			return err
 		}
 		set, err := nx.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: a.GetSet().GetId()}.Build()}.Build())
 		if err != nil {

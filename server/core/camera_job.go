@@ -129,12 +129,27 @@ func (s Core) cameraJobRows(ctx context.Context, ref *api.CameraJobRef) (*api.Ca
 	if err := s.cameraExecutionScope(ctx, a); err != nil {
 		return nil, nil, nil, nil, err
 	}
+	if err := cameraSameScope(j.GetTenant().GetId(), j.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	b, err := nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: j.GetBinding().GetId()}.Build()}.Build())
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
+	if !bytes.Equal(b.GetAssignment().GetId(), a.GetId()) {
+		return nil, nil, nil, nil, denied("camera job", "binding belongs to another assignment")
+	}
+	if err := cameraSameScope(b.GetTenant().GetId(), b.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	d, err := nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: b.GetDevice().GetId()}.Build()}.Build())
 	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if !bytes.Equal(d.GetNetwork().GetId(), a.GetNetwork().GetId()) {
+		return nil, nil, nil, nil, denied("camera job", "device belongs to another network")
+	}
+	if err := cameraSameScope(d.GetTenant().GetId(), d.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
 		return nil, nil, nil, nil, err
 	}
 	if err := s.cameraLockDevice(ctx, d.GetId()); err != nil {
@@ -174,7 +189,7 @@ func (s coreCameraJob) Claim(ctx context.Context, r *api.CameraJobClaimRequest) 
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJob
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) (result error) {
 		// Return the database's persisted timestamp precision (PostgreSQL uses
 		// microseconds), not the unsaved in-memory nanosecond mutation value.
 		defer func() {
@@ -282,7 +297,7 @@ func (s coreCameraJob) Report(ctx context.Context, r *api.CameraJobReportRequest
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJob
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) (result error) {
 		// Return the database's persisted timestamp precision (PostgreSQL uses
 		// microseconds), not the unsaved in-memory nanosecond mutation value.
 		defer func() {
@@ -429,7 +444,7 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 	canonical.ClearExpectedVersion()
 	hash := cameraHash(canonical)
 	var out *api.CameraJobPublishResponse
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) (result error) {
+	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) (result error) {
 		defer func() {
 			if result == nil && out != nil {
 				j, err := nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: out.GetJob().GetId()}.Build()}.Build())
@@ -519,6 +534,9 @@ func (s coreCameraJob) Publish(ctx context.Context, r *api.CameraJobPublishReque
 		}
 		if !bytes.Equal(src.GetSet().GetId(), a.GetSet().GetId()) {
 			return denied("publish", "Source belongs to another immutable Set")
+		}
+		if err := cameraSameScope(src.GetTenant().GetId(), src.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
+			return err
 		}
 		for key, expected := range map[string]string{cameraBindingLabel: b.GetLogicalKey(), cameraDeviceLabel: d.GetDeviceKey()} {
 			if got := src.GetLabels()[key]; got != "" && got != expected {

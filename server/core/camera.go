@@ -55,6 +55,27 @@ func (s Core) cameraExecutor(ctx context.Context) (pdid.Id, error) {
 	}
 	return f.Actor, nil
 }
+
+// The framework's grouped wall cannot express only Site=NULL without an
+// all-sites flag. Worker custom execution instead uses the recorded private
+// stack, then validates the exact current authority graph before any effect or
+// response. Generic RPCs never receive this path. Operators retain their wall.
+func (s Core) cameraExecutionTx(ctx context.Context, fn func(context.Context, api.Server) error) error {
+	f, err := actor(ctx)
+	if err != nil {
+		return err
+	}
+	if kindOf(f.Actor) == DomCameraWorker {
+		if _, err := s.cameraWorkerActor(ctx); err != nil {
+			return err
+		}
+		return s.ownTx(ctx, fn)
+	}
+	if _, err := cameraOperator(ctx); err != nil {
+		return err
+	}
+	return s.tx(ctx, fn)
+}
 func (s Core) cameraExecutionScope(ctx context.Context, a *api.CameraAssignment) error {
 	f, err := actor(ctx)
 	if err != nil {
@@ -71,6 +92,35 @@ func (s Core) cameraExecutionScope(ctx context.Context, a *api.CameraAssignment)
 		return denied("camera job", "job is not assigned to this worker")
 	}
 	return cameraSameScope(a.GetTenant().GetId(), a.GetSite().GetId(), w.GetTenant().GetId(), w.GetSite().GetId())
+}
+
+func (s Core) cameraExecutionParents(ctx context.Context, a *api.CameraAssignment) error {
+	f, err := actor(ctx)
+	if err != nil {
+		return err
+	}
+	if kindOf(f.Actor) != DomCameraWorker {
+		return nil
+	}
+	if err := s.cameraExecutionScope(ctx, a); err != nil {
+		return err
+	}
+	nx := s.own(ctx)
+	set, err := nx.Set().Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: a.GetSet().GetId()}.Build()}.Build())
+	if err != nil {
+		return err
+	}
+	if err := cameraSameScope(a.GetTenant().GetId(), a.GetSite().GetId(), set.GetTenant().GetId(), set.GetSite().GetId()); err != nil {
+		return err
+	}
+	p, err := nx.Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: a.GetProducer().GetId()}.Build()}.Build())
+	if err != nil {
+		return err
+	}
+	if p.GetState() != api.HostState_HOST_STATE_ADOPTED || !bytes.Equal(p.GetSet().GetId(), set.GetId()) {
+		return failed("assigned producer is no longer adopted for this set")
+	}
+	return cameraSameScope(a.GetTenant().GetId(), a.GetSite().GetId(), p.GetTenant().GetId(), p.GetSite().GetId())
 }
 
 func cameraVersion(want, got *timestamppb.Timestamp) error {
