@@ -34,13 +34,17 @@ type edgeMediaOptions struct {
 }
 
 type edgeMediaEvidence struct {
-	AccessUnits                     int
-	DecodedFrames                   int
-	RTPAdvances                     int
-	FirstRTP, LastRTP               uint32
+	AccessUnits       int
+	DecodedFrames     int
+	RTPAdvances       int
+	FirstRTP, LastRTP uint32
+	// Receiver-local complete-AU receipt times plus RTP progress prove incoming
+	// media advanced; they do not identify a camera capture or publication epoch.
 	FirstReceivedAt, LastReceivedAt time.Time
-	FirstDecodedAt, LastDecodedAt   time.Time
-	Bytes                           int
+	// Independent decoder output observation times, after network capture. Later
+	// cutover qualification must separately correlate the Producer/Source epoch.
+	FirstDecodedAt, LastDecodedAt time.Time
+	Bytes                         int
 }
 
 type edgeMediaCapture struct {
@@ -393,6 +397,30 @@ func decodeEdgeH264(ctx context.Context, ffmpeg string, annexB []byte, maxFrames
 		return 0, time.Time{}, time.Time{}, errors.New("independent H264 decoder rejected captured media")
 	}
 	return frames.frames, frames.first, frames.last, nil
+}
+
+// This proof intentionally uses the existing legacy Producer/Relay path. The
+// assembled CP-managed edge scenario will reuse qualifyWHEP after its dependent
+// policy, credential and runtime APIs have landed.
+func TestEdgeMediaDecodesActualWHEPVideo(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg unavailable")
+	}
+	c := start(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	admin := c.dial("@acme/admin")
+	_, live := liveSource(t, ctx, c, admin, "av.mp4")
+	evidence, err := qualifyWHEP(ctx, live, edgeMediaOptions{})
+	require.NoError(t, err)
+	require.Equal(t, 8, evidence.AccessUnits)
+	require.Greater(t, evidence.DecodedFrames, 1, "independent decoder must produce advancing frames")
+	require.Equal(t, 7, evidence.RTPAdvances)
+	require.Greater(t, int32(evidence.LastRTP-evidence.FirstRTP), int32(0))
+	require.True(t, evidence.LastReceivedAt.After(evidence.FirstReceivedAt))
+	require.True(t, evidence.LastDecodedAt.After(evidence.FirstDecodedAt))
+	require.Greater(t, evidence.Bytes, 0)
+	t.Logf("WHEP decoded %d frames from %d complete AUs, RTP advances=%d, captured=%d bytes", evidence.DecodedFrames, evidence.AccessUnits, evidence.RTPAdvances, evidence.Bytes)
 }
 
 func TestEdgeMediaMarkersDoNotProveDecoding(t *testing.T) {
