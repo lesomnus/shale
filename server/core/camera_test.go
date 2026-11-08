@@ -97,11 +97,52 @@ func TestCameraAuthorityGateIsOperatorOnly(t *testing.T) {
 	for _, method := range []string{api.CameraNetworkService_Get_FullMethodName, api.CameraNetworkService_Configure_FullMethodName, api.CameraJobService_Claim_FullMethodName, api.CameraAssignmentService_Snapshot_FullMethodName} {
 		require.NoError(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: admin, Action: method}))
 		require.Error(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: person, Action: method}))
-		require.Error(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: pdid.New(DomProducer), Action: method}))
+		if method == api.CameraAssignmentService_Snapshot_FullMethodName {
+			require.NoError(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: pdid.New(DomProducer), Action: method}))
+		} else {
+			require.Error(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: pdid.New(DomProducer), Action: method}))
+		}
 		require.Error(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: pdid.New(DomReader), Action: method}))
 	}
 	for _, method := range []string{api.CameraJobService_Add_FullMethodName, api.CameraJobService_Patch_FullMethodName, api.CameraAssignmentService_Apply_FullMethodName, api.CameraDeviceService_Erase_FullMethodName} {
 		require.Error(t, p.May(context.Background(), gate.Call{Tenant: tenant, Actor: admin, Action: method}))
+	}
+}
+
+func TestProducerCatalogChecksCurrentAssignment(t *testing.T) {
+	actor, tenant, set, site := pdid.New(DomProducer), pdid.New(DomTenant), pdid.New(DomSet), pdid.New(DomSite)
+	p := api.Producer_builder{Id: actor.Bytes(), Tenant: api.Tenant_builder{Id: tenant.Bytes()}.Build(), Set: api.Set_builder{Id: set.Bytes()}.Build(), Site: api.Site_builder{Id: site.Bytes()}.Build(), State: api.HostState_HOST_STATE_ADOPTED}.Build()
+	a := api.CameraAssignment_builder{Producer: p, Tenant: p.GetTenant(), Set: p.GetSet(), Site: p.GetSite()}.Build()
+	require.NoError(t, producerCatalogAssignment(actor, tenant, p, a))
+	for _, tt := range []struct {
+		name string
+		edit func(*api.Producer, *api.CameraAssignment)
+	}{
+		{"pending host", func(p *api.Producer, _ *api.CameraAssignment) { p.SetState(api.HostState_HOST_STATE_PENDING) }},
+		{"erased host", func(p *api.Producer, _ *api.CameraAssignment) { p.SetDateErased(timestamppb.Now()) }},
+		{"other producer", func(_ *api.Producer, a *api.CameraAssignment) {
+			a.SetProducer(api.Producer_builder{Id: pdid.New(DomProducer).Bytes()}.Build())
+		}},
+		{"other tenant", func(_ *api.Producer, a *api.CameraAssignment) {
+			a.SetTenant(api.Tenant_builder{Id: pdid.New(DomTenant).Bytes()}.Build())
+		}},
+		{"other set", func(_ *api.Producer, a *api.CameraAssignment) {
+			a.SetSet(api.Set_builder{Id: pdid.New(DomSet).Bytes()}.Build())
+		}},
+		{"other site", func(_ *api.Producer, a *api.CameraAssignment) {
+			a.SetSite(api.Site_builder{Id: pdid.New(DomSite).Bytes()}.Build())
+		}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			p2 := proto.Clone(p).(*api.Producer)
+			a2 := proto.Clone(a).(*api.CameraAssignment)
+			tt.edit(p2, a2)
+			require.Equal(t, codes.PermissionDenied, status.Code(producerCatalogAssignment(actor, tenant, p2, a2)))
+		})
+	}
+	policy := TenantPolicy{}
+	for _, method := range []string{api.CameraAssignmentService_Get_FullMethodName, api.CameraAssignmentService_List_FullMethodName, api.CameraAssignmentService_Watch_FullMethodName, api.CameraJobService_Claim_FullMethodName, api.CameraJobService_Publish_FullMethodName} {
+		require.Equal(t, codes.PermissionDenied, status.Code(policy.May(context.Background(), gate.Call{Actor: actor, Tenant: tenant, Action: method})))
 	}
 }
 

@@ -171,15 +171,39 @@ func (s coreCameraAssignment) Snapshot(ctx context.Context, r *api.CameraAssignm
 	if err := cameraMessage(r); err != nil {
 		return nil, err
 	}
-	if _, err := cameraOperator(ctx); err != nil {
+	f, err := actor(ctx)
+	if err != nil {
 		return nil, err
 	}
+	isProducer := kindOf(f.Actor) == DomProducer
+	if !isProducer {
+		if _, err := cameraOperator(ctx); err != nil {
+			return nil, err
+		}
+	}
 	var out *api.CameraCatalogSnapshot
-	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		c := New(nx, s.d)
+		if isProducer {
+			// Reject a known foreign ref before taking its assignment/network locks.
+			a, err := nx.CameraAssignment().Get(ctx, api.CameraAssignmentGetRequest_builder{Ref: r.GetRef()}.Build())
+			if err != nil {
+				return err
+			}
+			if err := c.producerCatalogOwner(ctx, f.Actor, f.Tenant, a); err != nil {
+				return err
+			}
+		}
 		a, err := c.cameraAssignmentRow(ctx, r.GetRef())
 		if err != nil {
 			return err
+		}
+		if isProducer {
+			// Handover, revocation or Set reassignment cannot authorize a stale
+			// cached provider merely because the first read used to be its own.
+			if err := c.producerCatalogOwner(ctx, f.Actor, f.Tenant, a); err != nil {
+				return err
+			}
 		}
 		rows, err := c.ent(ctx).CameraBinding.Query().Where(camerabinding.AssignmentIdEQ(mustId(a.GetId()).Uuid()), camerabinding.DateErasedIsNil(), camerabinding.CollectEQ(true)).Order(ent.Asc(camerabinding.FieldSourceAlias)).Limit(501).All(ctx)
 		if err != nil {
@@ -209,6 +233,26 @@ func (s coreCameraAssignment) Snapshot(ctx context.Context, r *api.CameraAssignm
 		return nil, err
 	}
 	return out, nil
+}
+
+func (s Core) producerCatalogOwner(ctx context.Context, actor, tenant pdid.Id, a *api.CameraAssignment) error {
+	p, err := s.own(ctx).Producer().Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: actor.Bytes()}.Build()}.Build())
+	if err != nil {
+		return err
+	}
+	return producerCatalogAssignment(actor, tenant, p, a)
+}
+
+func producerCatalogAssignment(actor, tenant pdid.Id, p *api.Producer, a *api.CameraAssignment) error {
+	if actor.Domain() != DomProducer || p == nil || a == nil ||
+		p.GetState() != api.HostState_HOST_STATE_ADOPTED || p.GetDateErased() != nil ||
+		!bytes.Equal(p.GetId(), actor.Bytes()) || !bytes.Equal(a.GetProducer().GetId(), actor.Bytes()) ||
+		!bytes.Equal(p.GetTenant().GetId(), tenant.Bytes()) || !bytes.Equal(a.GetTenant().GetId(), tenant.Bytes()) ||
+		len(p.GetSet().GetId()) == 0 || !bytes.Equal(p.GetSet().GetId(), a.GetSet().GetId()) ||
+		!bytes.Equal(p.GetSite().GetId(), a.GetSite().GetId()) {
+		return denied("camera catalog", "assignment does not belong to this adopted Producer")
+	}
+	return nil
 }
 func (s coreCameraAssignment) Handover(ctx context.Context, r *api.CameraAssignmentHandoverRequest) (*api.CameraAssignment, error) {
 	if err := cameraMessage(r); err != nil {
