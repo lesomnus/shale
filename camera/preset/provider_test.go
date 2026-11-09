@@ -27,6 +27,45 @@ func testDevice() camera.DeviceHint {
 	return camera.DeviceHint{ID: "camera-1", Manufacturer: "TP-Link", Model: "EasyCam C420", Hardware: "1.0", Firmware: "build-1", Serial: "serial-1", MAC: "A8-29-DC-C6-23-15", Evidence: []camera.Evidence{{Source: "onvif/device", Authenticated: true}}}
 }
 
+func TestConfigExportIsDetachedAndRetainsSourceRevisionAndFallbackPresence(t *testing.T) {
+	config := testRules()
+	config.Rules[0].Fallbacks = []camera.PresetSettings{}
+	config.Rules[0].Settings.Preserve = []string{camera.PresetFieldGOP}
+	config.Rules[2].Fallbacks[0].Preserve = []string{camera.PresetFieldBitrate}
+	p, err := New(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := p.Reference()
+	got := p.Config()
+	if got.Revision != "v7" || got.ID != "office-presets" {
+		t.Fatal("export must retain the source revision, not its computed fingerprint")
+	}
+	byID := func(c Config, id string) *Rule {
+		for i := range c.Rules {
+			if c.Rules[i].ID == id {
+				return &c.Rules[i]
+			}
+		}
+		return nil
+	}
+	if byID(got, "tenant").Fallbacks == nil || len(byID(got, "tenant").Fallbacks) != 0 || byID(got, "office").Fallbacks != nil {
+		t.Fatal("export lost absent versus explicitly empty fallback overrides")
+	}
+	byID(got, "tenant").Settings.Preserve[0] = camera.PresetFieldFPS
+	byID(got, "tenant").Required[0] = camera.PresetFieldFPS
+	byID(got, "model").Fallbacks[0].Video.FPS = 1
+	byID(got, "model").Fallbacks[0].Preserve[0] = camera.PresetFieldFPS
+	got.Rules[0].ID = "changed"
+	next := p.Config()
+	if p.Reference() != ref || byID(next, "tenant").Settings.Preserve[0] != camera.PresetFieldGOP || byID(next, "tenant").Required[0] != camera.PresetFieldCodec || byID(next, "model").Fallbacks[0].Video.FPS != 25 || byID(next, "model").Fallbacks[0].Preserve[0] != camera.PresetFieldBitrate {
+		t.Fatal("export aliases live provider configuration")
+	}
+	if (new(Provider)).Config().Rules != nil || (*Provider)(nil).Config().Rules != nil {
+		t.Fatal("empty and nil providers must not invent source rules")
+	}
+}
+
 func TestResolveHierarchyAndSnapshotIsolation(t *testing.T) {
 	config := testRules()
 	p, err := New(config)
