@@ -96,6 +96,10 @@ func New(o Options) (*Driver, error) {
 	d.client, d.transport = d.httpClient(o.Roots, o.Timeout)
 	d.baseline = onvif.NewClient(d.client)
 	if d.identity != nil {
+		// These explicitly approved C420s can boot with a stale RTC on an
+		// isolated LAN. Only WS-Security uses their public UTC sample; neither
+		// the camera clock nor host-side authorization time is changed.
+		d.baseline.UseDeviceTimeForAuthentication = true
 		d.webClient, d.webTransport, err = d.pinnedWebClient(o.Timeout)
 		if err != nil {
 			d.Close()
