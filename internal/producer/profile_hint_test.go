@@ -48,12 +48,12 @@ func (g *profileHintGate) wait(ctx context.Context) error {
 }
 
 type profileHintCP struct {
-	version, calls, bitrate atomic.Int64
-	hint                    int64
-	allocation              *api.Allocation
-	response                *profileHintGate
-	mu                      sync.Mutex
-	commit                  *profileHintGate
+	version, calls, bitrate, lastCatalog atomic.Int64
+	hint                                 int64
+	allocation                           *api.Allocation
+	response                             *profileHintGate
+	mu                                   sync.Mutex
+	commit                               *profileHintGate
 }
 type profileHintSets struct {
 	api.UnimplementedSetServiceServer
@@ -66,6 +66,9 @@ type profileHintProducers struct {
 
 func (f profileHintSets) Negotiate(ctx context.Context, r *api.SetNegotiateRequest) (*api.SetNegotiateResponse, error) {
 	f.calls.Add(1)
+	if !r.GetPreview() {
+		f.lastCatalog.Store(r.GetCatalog().GetCatalogRevision())
+	}
 	var agreed []*api.SourceAgreed
 	for _, proposal := range r.GetSources() {
 		profile := proto.Clone(proposal.GetProfile()).(*api.SegmentProfile)
@@ -127,9 +130,10 @@ func newProfileHintFixture(t *testing.T, hint int64) *profileHintFixture {
 	profile := api.SegmentProfile_builder{MaxBitrate: oldHintBitrate, DurationSeconds: 4}.Build()
 	started := time.Now().Truncate(4 * time.Second)
 	budget := core.MaxLength(profile)
-	signed, err := key.Sign(api.TokenClaims_builder{Exp: timestamppb.New(time.Now().Add(time.Hour)), Iat: timestamppb.Now(), MaxLength: budget, Mode: api.UploadMode_UPLOAD_MODE_LIVE}.Build())
+	node := pdid.New(24).Bytes()
+	signed, err := key.Sign(api.TokenClaims_builder{Exp: timestamppb.New(time.Now().Add(time.Hour)), Iat: timestamppb.Now(), Aud: node, Op: api.TokenOp_TOKEN_OP_PUT, CaptureEpoch: "old-frozen-epoch", MaxLength: budget, Mode: api.UploadMode_UPLOAD_MODE_LIVE}.Build())
 	require.NoError(t, err)
-	allocation := api.Allocation_builder{SourceId: old.row.GetId(), LaminaId: pdid.New(9).Bytes(), ProfileVersion: 1, CaptureEpoch: "old-frozen-epoch", Profile: profile, MaxLength: budget, DateStarted: timestamppb.New(started), DateExpires: timestamppb.New(time.Now().Add(time.Hour)), Candidates: []*api.Candidate{api.Candidate_builder{Token: signed}.Build()}}.Build()
+	allocation := api.Allocation_builder{SourceId: old.row.GetId(), LaminaId: pdid.New(9).Bytes(), ProfileVersion: 1, CaptureEpoch: "old-frozen-epoch", Profile: profile, MaxLength: budget, DateStarted: timestamppb.New(started), DateExpires: timestamppb.New(time.Now().Add(time.Hour)), Candidates: []*api.Candidate{api.Candidate_builder{Token: signed, NodeId: node}.Build()}}.Build()
 	cp := &profileHintCP{hint: hint, allocation: allocation, response: newProfileHintGate(t)}
 	cp.version.Store(1)
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
@@ -200,6 +204,8 @@ func (f *profileHintFixture) finish(t *testing.T, handler string, cancel context
 		require.True(t, proto.Equal(f.cp.allocation, got), "the old FIFO retains its complete frozen allocation")
 		claims, err := f.verifier.Verify(got.GetCandidates()[0].GetToken())
 		require.NoError(t, err)
+		require.NoError(t, token.Check(claims, got.GetCandidates()[0].GetNodeId(), api.TokenOp_TOKEN_OP_PUT))
+		require.Equal(t, "old-frozen-epoch", claims.GetCaptureEpoch())
 		require.Equal(t, f.cp.allocation.GetMaxLength(), claims.GetMaxLength())
 		if f.next.profile != nil {
 			require.Greater(t, claims.GetMaxLength(), core.MaxLength(f.next.profile), "an old signed budget remains larger than the replacement profile")
@@ -290,4 +296,98 @@ func TestNewerProfileHintRefreshesTheCurrentProfile(t *testing.T) {
 			require.Equal(t, oldHintBitrate, f.cp.bitrate.Load())
 		})
 	}
+}
+
+func TestNonNewerProfileHintsDoNotWaitForNegotiation(t *testing.T) {
+	for _, handler := range []string{"heartbeat", "allocations"} {
+		for _, hint := range []int64{0, 1, 2} {
+			t.Run(handler+"/"+string(rune('0'+hint)), func(t *testing.T) {
+				f := newProfileHintFixture(t, hint)
+				f.p.acceptCatalog(f.snapshot)
+				f.cp.version.Store(2)
+				require.NoError(t, f.p.negotiateSources(f.ctx, []*source{f.next}, f.snapshot, false))
+				before := f.cp.calls.Load()
+				// A slow lifecycle negotiation must not hold up routine reports
+				// or an old FIFO response which cannot require another RPC.
+				f.p.negotiating.Lock()
+				defer f.p.negotiating.Unlock()
+				cancel, done := f.start(t, handler)
+				f.cp.response.open()
+				f.finish(t, handler, cancel, done)
+				require.Equal(t, before, f.cp.calls.Load())
+			})
+		}
+	}
+}
+
+func TestNewerProfileHintSelectsCurrentSourcesAndCatalogAfterLock(t *testing.T) {
+	for _, handler := range []string{"heartbeat", "allocations"} {
+		t.Run(handler, func(t *testing.T) {
+			f := newProfileHintFixture(t, 4)
+			gate := newProfileHintGate(t)
+			f.cp.mu.Lock()
+			f.cp.commit = gate
+			f.cp.mu.Unlock()
+			f.p.acceptCatalog(f.snapshot)
+			f.cp.version.Store(3)
+			committed := make(chan error, 1)
+			go func() { committed <- f.p.negotiateSources(f.ctx, []*source{f.next}, f.snapshot, false) }()
+			select {
+			case <-gate.entered:
+			case <-f.ctx.Done():
+				t.Fatal("current profile commit did not reach its response barrier")
+			}
+			cancel, done := f.start(t, handler)
+			f.cp.response.open()
+			waitProfileHintNegotiationLock(t, handler)
+			latest := f.snapshot.Clone()
+			latest.Revision.Catalog++
+			f.p.acceptCatalog(latest)
+			f.p.retireSource(f.old)
+			require.NoError(t, f.p.installSource(f.next))
+			f.cp.version.Store(4)
+			gate.open()
+			require.NoError(t, <-committed)
+			if handler == "allocations" {
+				require.Eventually(t, func() bool { return f.p.agreed().version == 4 }, 5*time.Second, time.Millisecond, "the newer allocation hint must finish negotiation")
+				cancel()
+			}
+			select {
+			case err := <-done:
+				require.NoError(t, err)
+			case <-f.ctx.Done():
+				t.Fatal("current profile hint handler did not complete")
+			}
+			require.Equal(t, int64(4), f.p.agreed().version)
+			require.Equal(t, latest.Revision.Catalog, f.cp.lastCatalog.Load(), "a queued hint must use the catalog accepted after it began waiting")
+			require.Equal(t, newHintBitrate, f.cp.bitrate.Load(), "a queued hint must propose the currently installed capture")
+		})
+	}
+}
+
+func TestProfileHintRechecksLoadingAfterNegotiationLock(t *testing.T) {
+	f := newProfileHintFixture(t, 4)
+	gate := newProfileHintGate(t)
+	f.cp.mu.Lock()
+	f.cp.commit = gate
+	f.cp.mu.Unlock()
+	f.p.acceptCatalog(f.snapshot)
+	f.cp.version.Store(3)
+	committed := make(chan error, 1)
+	go func() { committed <- f.p.negotiateSources(f.ctx, []*source{f.next}, f.snapshot, false) }()
+	select {
+	case <-gate.entered:
+	case <-f.ctx.Done():
+		t.Fatal("loading profile commit did not reach its response barrier")
+	}
+	cancel, done := f.start(t, "heartbeat")
+	f.cp.response.open()
+	waitProfileHintNegotiationLock(t, "heartbeat")
+	f.p.loading.Store(true)
+	before := f.cp.calls.Load()
+	gate.open()
+	require.NoError(t, <-committed)
+	f.finish(t, "heartbeat", cancel, done)
+	require.Equal(t, before, f.cp.calls.Load(), "a queued newer hint cannot negotiate while sources are loading")
+	require.Equal(t, newHintBitrate, f.cp.bitrate.Load())
 }
