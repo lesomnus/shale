@@ -82,9 +82,17 @@ type CameraWorkerConfig struct {
 	DiscoveryInterval time.Duration `yaml:"discovery_interval"`
 	DiscoveryTimeout  time.Duration `yaml:"discovery_timeout"`
 	InitialNeighbors  bool          `yaml:"initial_neighbors"`
-	Ffmpeg            string        `yaml:"ffmpeg"`
-	Ffprobe           string        `yaml:"ffprobe"`
-	CameraCAFile      string        `yaml:"camera_ca_file"`
+	// DHCPLeases opt in to read-only address hints from locally administered
+	// dnsmasq files. Current network authority and endpoints still come from CP.
+	DHCPLeases   []CameraDHCPLeaseConfig `yaml:"dhcp_leases"`
+	Ffmpeg       string                  `yaml:"ffmpeg"`
+	Ffprobe      string                  `yaml:"ffprobe"`
+	CameraCAFile string                  `yaml:"camera_ca_file"`
+}
+
+type CameraDHCPLeaseConfig struct {
+	Interface string `yaml:"interface"`
+	File      string `yaml:"file"`
 }
 
 // EdgeConfig selects managed outbound roles. Policies, presets and credential

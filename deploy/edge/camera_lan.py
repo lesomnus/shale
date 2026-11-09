@@ -125,15 +125,19 @@ log-facility=-
 """
         service = """[Unit]
 Description=DHCP for the isolated Shale camera LAN
-After=NetworkManager.service network-online.target
+After=NetworkManager.service network-online.target systemd-sysusers.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-DynamicUser=yes
+DynamicUser=no
 User=shale-camera-dhcp
+Group=shale-camera-discovery
 StateDirectory=shale-camera-dhcp
-StateDirectoryMode=0700
+StateDirectoryMode=0750
+UMask=0027
+ExecStartPre=/usr/bin/touch /var/lib/shale-camera-dhcp/leases
+ExecStartPre=/usr/bin/chmod 0640 /var/lib/shale-camera-dhcp/leases
 ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/shale/camera-dhcp.conf
 Restart=on-failure
 RestartSec=3
@@ -150,6 +154,19 @@ RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET
 [Install]
 WantedBy=multi-user.target
 """
+        sysusers = """# Static, non-login DHCP identity; no membership in the Shale credential group.
+g shale-camera-discovery -
+u shale-camera-dhcp - "Shale camera DHCP" /nonexistent /usr/sbin/nologin
+m shale-camera-dhcp shale-camera-discovery
+"""
+        edge_group = """# Install only as shale@edge.service.d/20-camera-dhcp.conf.
+[Service]
+SupplementaryGroups=shale-camera-discovery
+"""
+        worker_group = """# Install only as shale@camera-worker.service.d/20-camera-dhcp.conf.
+[Service]
+SupplementaryGroups=shale-camera-discovery
+"""
         manifest = json.dumps({
             "interface": self.interface, "uplink": self.uplink,
             "address": str(address), "cidr": str(address.network),
@@ -162,6 +179,9 @@ WantedBy=multi-user.target
             "camera-dhcp.conf": (0o644, dhcp),
             "shale-camera-dhcp.service": (0o644, service),
             "camera-network.json": (0o644, manifest),
+            "shale-camera-dhcp.sysusers.conf": (0o644, sysusers),
+            "shale-edge-dhcp.conf": (0o644, edge_group),
+            "shale-camera-worker-dhcp.conf": (0o644, worker_group),
         }
 
 

@@ -62,10 +62,13 @@ func (r *replicaProvider) Snapshot(ctx context.Context) (source.Snapshot, error)
 	if v.Revision.AssignmentID == "" || v.Scope.ProducerID != s.ProducerID || v.Scope.TenantID != s.TenantID || v.Scope.SiteID != s.SiteID || v.Scope.SetID != s.SetID {
 		return source.Snapshot{}, source.ErrConflict
 	}
-	if err = r.memory.Publish(ctx, v); err != nil {
+	if err = r.memory.Publish(ctx, v); err != nil && !errors.Is(err, source.ErrStale) {
 		return source.Snapshot{}, err
 	}
-	return v, nil
+	// A concurrent authenticated refresh may have accepted a newer full catalog
+	// while this upstream read was in flight. Return that accepted snapshot;
+	// upstream failures and conflicting content above remain failures.
+	return r.memory.Snapshot(ctx)
 }
 
 // Full CP reads repair lost hints. The bounded memory wait makes local commits

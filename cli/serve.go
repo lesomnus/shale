@@ -140,8 +140,21 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 // executor without giving the Worker a Producer's identity or local passwords.
 func CameraWorkerConfig(c *cmd.Config) cameraworker.Config {
 	worker := cameraworker.Config{StateDir: c.StateDir("camera-worker"), Cp: c.Cp, CaHash: c.CaHash, Tenant: c.Tenant, Dev: c.IsDev(), HeartbeatInterval: c.CameraWorker.HeartbeatInterval, RetryInterval: c.CameraWorker.RetryInterval, LeaseSeconds: c.CameraWorker.LeaseSeconds, DiscoveryInterval: c.CameraWorker.DiscoveryInterval, DiscoveryTimeout: c.CameraWorker.DiscoveryTimeout, Log: slog.Default()}
+	var initial cameradiscovery.InitialProviders
 	if c.CameraWorker.InitialNeighbors {
-		worker.InitialObservations = cameradiscovery.NeighborObservations{Source: cameradiscovery.SystemNeighbors{}}
+		initial = append(initial, cameradiscovery.NeighborObservations{Source: cameradiscovery.SystemNeighbors{}})
+	}
+	if len(c.CameraWorker.DHCPLeases) > 0 {
+		files := make(cameradiscovery.DNSMasqLeaseFiles, len(c.CameraWorker.DHCPLeases))
+		for i, file := range c.CameraWorker.DHCPLeases {
+			files[i] = cameradiscovery.DNSMasqLeaseFile{Interface: file.Interface, Path: file.File}
+		}
+		initial = append(initial, cameradiscovery.DHCPObservations{Source: files})
+	}
+	if len(initial) == 1 {
+		worker.InitialObservations = initial[0]
+	} else if len(initial) > 1 {
+		worker.InitialObservations = initial
 	}
 	return worker
 }

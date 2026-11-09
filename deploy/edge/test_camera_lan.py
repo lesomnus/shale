@@ -68,6 +68,26 @@ class CameraLANTest(unittest.TestCase):
         self.assertIn("StateDirectory=shale-camera-dhcp", service)
         self.assertNotIn("NET_ADMIN", profile)
 
+    def test_lease_readers_have_no_dhcp_write_or_camera_credential_group(self):
+        files = self.network().files()
+        unit = files["shale-camera-dhcp.service"][1]
+        for line in ("DynamicUser=no", "User=shale-camera-dhcp", "Group=shale-camera-discovery",
+                     "StateDirectoryMode=0750", "UMask=0027",
+                     "ExecStartPre=/usr/bin/chmod 0640 /var/lib/shale-camera-dhcp/leases"):
+            self.assertIn(line + "\n", unit)
+        self.assertNotIn("DynamicUser=yes", unit)
+        self.assertNotIn("Group=shale\n", unit)
+        users = files["shale-camera-dhcp.sysusers.conf"][1]
+        self.assertIn("g shale-camera-discovery -\n", users)
+        self.assertIn('u shale-camera-dhcp - "Shale camera DHCP" /nonexistent /usr/sbin/nologin\n', users)
+        self.assertIn("m shale-camera-dhcp shale-camera-discovery\n", users)
+        self.assertNotIn("m shale-camera-dhcp shale\n", users)
+        for name in ("shale-edge-dhcp.conf", "shale-camera-worker-dhcp.conf"):
+            dropin = files[name][1]
+            self.assertEqual(dropin.splitlines()[1:], ["[Service]", "SupplementaryGroups=shale-camera-discovery"])
+            self.assertNotIn("User=", dropin)
+            self.assertNotIn("Capabilities=", dropin)
+
 
 if __name__ == "__main__":
     unittest.main()

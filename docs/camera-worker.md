@@ -184,8 +184,61 @@ files and needs no additional capabilities. It considers only those seed hosts,
 at most 32 seeds and 1024 cache entries. Missing, failed, incomplete, multicast
 or conflicting mappings provide no candidate. Another normal network operation
 must populate a missing kernel cache entry; an IP seed alone remains insufficient.
-Other embeddings may inject a bounded DHCP or vendor observation implementation
-through the same seam.
+Other embeddings may inject another bounded observation implementation through
+the same seam.
+
+### DHCP lease hints for newly connected cameras
+
+A local DHCP server already knows the addresses it has assigned, including new
+factory cameras that do not yet answer ONVIF. Opt in to reading its dnsmasq lease
+file rather than enumerating the network or requiring each new IP as a seed:
+
+```yaml
+camera_worker:
+  initial_neighbors: true
+  dhcp_leases:
+    - interface: eth0
+      file: /var/lib/shale-camera-dhcp/leases
+```
+
+Each configured file belongs to one exact interface and must be readable by the
+Worker. Interfaces without a configured file do not query another interface's
+leases. The local administrator controls the file path; DHCP hostname and client
+ID fields cannot supply a URL, path, credential, model or inventory identity.
+This option does not run or configure a DHCP server.
+
+The [camera-LAN recipe](../deploy/edge/README.md) supplies a static non-login DHCP
+account and a dedicated `shale-camera-discovery` group: DHCP state 0750, lease
+file 0640, and a supplementary-group drop-in only for the selected non-root
+`shale@edge` or `shale@camera-worker` instance. The older DynamicUser recipe's
+private 0700 ancestor is not readable through a group change alone; use its
+explicit lease-preserving migration. Do not make Worker root or add DHCP to the
+Shale machine-credential group to bypass this boundary.
+
+The assigned CP network must still name its `interface_hint`, current CIDRs and
+at least one HTTP(S) seed management endpoint. DHCP candidates reuse only the
+scheme, port and path of those seed endpoints at active lease hosts within those
+CIDRs. For example, `http://192.168.250.205:2020/onvif/device_service` supplies a
+management template for a new `192.168.250.42` lease; it does not authorize hosts
+outside the current assigned prefixes. Media-only RTSP seeds are not templates.
+No packet is sent by this provider and no whole-prefix or neighbor-cache scan is
+performed. The ordinary WS-Discovery and optional seed-neighbor sources remain
+independently composed with these hints.
+
+Only usable IPv4 unicast/MAC pairs are considered. Expired, malformed,
+out-of-prefix, network/broadcast or conflicting mappings do not yield a candidate.
+Dnsmasq expiry `0` means an explicitly infinite lease. Reading is bounded to one
+MiB, 4096 lines and 1024 usable lease rows, with at most 128 candidate hosts per
+network. A missing file before the first lease is an empty source; an unreadable
+or oversized source fails that discovery attempt without canceling an executing
+camera job. Linux opens refuse symlinks and cannot wait for a replacement FIFO.
+
+These are unauthenticated observations, including leases for non-camera devices.
+They do not grant activation, approve a certificate or let a camera reclaim an
+existing inventory row. The current automatic-enrollment policy, capacity,
+device trust and leased execution checks decide whether a discovered candidate
+can become a camera. A later DHCP move of an already authenticated camera still
+requires the separate endpoint-reconciliation authority described below.
 
 An initial canonical MAC observation reuses an explicitly registered
 `mac/<MAC>` inventory key in that same network. A later EPR at the same endpoint

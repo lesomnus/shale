@@ -6,12 +6,15 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
+	cameradiscovery "github.com/lesomnus/shale/camera/discovery"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/stretchr/testify/require"
@@ -247,6 +250,7 @@ func TestDiscoveryRefreshesAssignmentAndNetworkImmediatelyBeforeLAN(t *testing.T
 		scans++
 		require.Equal(t, 2, polls)
 		require.Equal(t, "camera-new", scope.Interface)
+		require.Equal(t, []string{"198.51.100.0/24"}, scope.CIDRs)
 		require.Equal(t, "http://198.51.100.10/onvif", scope.Seeds[0].URL)
 		require.Less(t, scope.Timeout, w.cfg.DiscoveryTimeout)
 		_, ok := ctx.Deadline()
@@ -276,6 +280,41 @@ func TestDiscoveryRefreshesAssignmentAndNetworkImmediatelyBeforeLAN(t *testing.T
 	w.discoverAssigned(t.Context(), workers, policies)
 	require.Equal(t, 1, scans)
 	require.Equal(t, 1, observes)
+}
+
+func TestDHCPDiscoveryUsesFreshAssignmentBeforeReadingLocalLeaseHints(t *testing.T) {
+	w, assigned, _ := discoveryFixture(t)
+	fresh := proto.Clone(assigned).(*api.CameraWorkerAssignment)
+	fresh.GetAssignment().SetGeneration(8)
+	fresh.GetNetwork().SetCidrs([]string{"198.51.100.0/24"})
+	fresh.GetNetwork().SetSeeds([]string{"http://198.51.100.10:2020/onvif/device_service"})
+	fresh.GetNetwork().SetInterfaceHint("camera-new")
+	path := filepath.Join(t.TempDir(), "leases")
+	require.NoError(t, os.WriteFile(path, []byte("0 02:00:00:00:00:01 192.0.2.42 * *\n0 02:00:00:00:00:02 198.51.100.42 * *\n"), 0600))
+	initial := cameradiscovery.DHCPObservations{Source: cameradiscovery.DNSMasqLeaseFiles{{Interface: "camera-new", Path: path}}}
+	w.cfg.Discoverer = cameradiscovery.WithInitial{Provider: initial}
+	polls, observes := 0, 0
+	workers := discoveryWorkerClient{poll: func(context.Context, *api.CameraWorkerPollRequest) (*api.CameraWorkerPollResponse, error) {
+		polls++
+		v := fresh
+		if polls == 1 {
+			v = assigned
+		}
+		return api.CameraWorkerPollResponse_builder{Assignments: []*api.CameraWorkerAssignment{v}}.Build(), nil
+	}}
+	policies := discoveryPolicyClient{observe: func(_ context.Context, r *api.CameraPolicyObserveRequest) (*api.CameraPolicyObserveResponse, error) {
+		observes++
+		require.Equal(t, int64(8), r.GetAssignmentGeneration())
+		require.Equal(t, "mac/02:00:00:00:00:02", r.GetDiscoveryId())
+		require.Equal(t, "http://198.51.100.42:2020/onvif/device_service", r.GetEndpoints()[0].GetUri())
+		require.False(t, r.GetIdentity().GetAuthenticated())
+		require.Empty(t, r.GetIdentity().GetManufacturer())
+		require.Empty(t, r.GetIdentity().GetSerial())
+		return &api.CameraPolicyObserveResponse{}, nil
+	}}
+	w.discoverAssigned(t.Context(), workers, policies)
+	require.Equal(t, 2, polls)
+	require.Equal(t, 1, observes, "the stale assignment's lease never reaches CP")
 }
 
 func TestDiscoveryTimeoutAndObserveDenialRetryWithoutLeakingErrors(t *testing.T) {

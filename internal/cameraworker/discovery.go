@@ -150,7 +150,7 @@ func discoveryScope(v *api.CameraWorkerAssignment, worker []byte, timeout time.D
 	}
 	// Leave room for a discoverer's normal observation-window completion before
 	// the hard parent deadline, which must remain a cancellation/error boundary.
-	scope := camera.DiscoveryScope{ID: id, Interface: n.GetInterfaceHint(), Multicast: n.GetMulticast(), Timeout: timeout - timeout/10}
+	scope := camera.DiscoveryScope{ID: id, Interface: n.GetInterfaceHint(), CIDRs: slices.Clone(n.GetCidrs()), Multicast: n.GetMulticast(), Timeout: timeout - timeout/10}
 	for _, raw := range n.GetSeeds() {
 		if _, err := discoveryEndpoint(raw, n.GetCidrs()); err != nil {
 			return camera.DiscoveryScope{}, err

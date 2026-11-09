@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -74,6 +75,99 @@ func committedCatalog(r *replicaProvider, receipt publication.Receipt) source.Sn
 	return source.Snapshot{Revision: receipt.Revision, Scope: source.Scope{TenantID: r.session.TenantID, SetID: r.session.SetID, ProducerID: r.session.ProducerID}, Sources: []source.Spec{{BindingID: pdid.New(29).String(), SourceID: receipt.Binding.SourceID, Revision: receipt.Revision.Catalog, Alias: receipt.Binding.Alias, Input: "rtsp://192.0.2.10/main", Profile: source.Profile{Codec: "h264", Width: 160, Height: 90, FPS: 10, MaxBitrate: 128000}, Credential: &source.CredentialRef{Provider: "cp", ID: pdid.New(32).String(), Version: "1", Purpose: "streaming"}}}}
 }
 
+type brokerWaitResult struct {
+	revision source.Revision
+	snapshot source.Snapshot
+	err      error
+}
+
+// Hold one completed upstream read without holding the upstream's own mutex.
+// A concurrent durable commit can refresh and publish its newer full snapshot
+// before that older response reaches replicaProvider's monotonic memory.
+type brokerReadBarrier struct {
+	source.Provider
+	next     atomic.Bool
+	captured chan struct{}
+	release  chan struct{}
+	once     sync.Once
+}
+
+func (p *brokerReadBarrier) Snapshot(ctx context.Context) (source.Snapshot, error) {
+	v, err := p.Provider.Snapshot(ctx)
+	if err != nil {
+		return v, err
+	}
+	if p.next.Swap(false) {
+		close(p.captured)
+		select {
+		case <-p.release:
+		case <-ctx.Done():
+			return source.Snapshot{}, ctx.Err()
+		}
+	}
+	return v, nil
+}
+
+func (p *brokerReadBarrier) resume() { p.once.Do(func() { close(p.release) }) }
+
+func TestBrokerDelayedSnapshotDoesNotAbortDurableCommitWake(t *testing.T) {
+	for _, consumer := range []string{"snapshot", "wait"} {
+		t.Run(consumer, func(t *testing.T) {
+			b, upstream, r, d, receipt := brokerFixture(t)
+			initial, err := r.Snapshot(t.Context())
+			require.NoError(t, err)
+			barrier := &brokerReadBarrier{Provider: upstream, captured: make(chan struct{}), release: make(chan struct{})}
+			barrier.next.Store(true)
+			r.upstream = barrier
+			t.Cleanup(barrier.resume)
+			ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+			defer cancel()
+			done := make(chan brokerWaitResult, 1)
+			go func() {
+				var result brokerWaitResult
+				if consumer == "wait" {
+					result.revision, result.err = r.WaitForChange(ctx, initial.Revision)
+				} else {
+					result.snapshot, result.err = r.Snapshot(ctx)
+					result.revision = result.snapshot.Revision
+				}
+				done <- result
+			}()
+			select {
+			case <-barrier.captured:
+			case <-ctx.Done():
+				t.Fatal("upstream response was not captured")
+			}
+			commit := notifyingCommitter{broker: b, commit: brokerCommitFunc(func(context.Context, provision.Deployment) (publication.Receipt, error) {
+				v := committedCatalog(r, receipt)
+				v.Scope = initial.Scope
+				upstream.set(v, nil)
+				return receipt, nil
+			})}
+			got, err := commit.Commit(ctx, d)
+			require.NoError(t, err)
+			require.Equal(t, receipt, got)
+			accepted, err := r.memory.Snapshot(ctx)
+			require.NoError(t, err)
+			require.Equal(t, receipt.Revision, accepted.Revision, "the durable refresh precedes releasing the old response")
+			barrier.resume()
+			select {
+			case result := <-done:
+				require.NoError(t, result.err, "an older completed read cannot undo a newer accepted full catalog")
+				require.Equal(t, receipt.Revision, result.revision)
+				if consumer == "snapshot" {
+					require.Equal(t, accepted, result.snapshot)
+				}
+			case <-ctx.Done():
+				t.Fatal("durable commit did not wake the delayed reader")
+			}
+			current, err := r.memory.Snapshot(ctx)
+			require.NoError(t, err)
+			require.Equal(t, accepted, current)
+		})
+	}
+}
+
 func TestBrokerCommitNotifiesOnlyAfterDurableSuccessAndWakesReader(t *testing.T) {
 	b, upstream, r, d, receipt := brokerFixture(t)
 	initial, err := r.Snapshot(t.Context())
@@ -81,12 +175,10 @@ func TestBrokerCommitNotifiesOnlyAfterDurableSuccessAndWakesReader(t *testing.T)
 	upstream.reads = make(chan struct{}, 4)
 	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
-	done := make(chan source.Revision, 1)
+	done := make(chan brokerWaitResult, 1)
 	go func() {
 		revision, err := r.WaitForChange(ctx, initial.Revision)
-		if err == nil {
-			done <- revision
-		}
+		done <- brokerWaitResult{revision: revision, err: err}
 	}()
 	<-upstream.reads
 	commit := notifyingCommitter{broker: b, commit: brokerCommitFunc(func(context.Context, provision.Deployment) (publication.Receipt, error) {
@@ -102,8 +194,9 @@ func TestBrokerCommitNotifiesOnlyAfterDurableSuccessAndWakesReader(t *testing.T)
 	require.NoError(t, err)
 	require.Equal(t, receipt, got)
 	select {
-	case rev := <-done:
-		require.Equal(t, receipt.Revision, rev)
+	case result := <-done:
+		require.NoError(t, result.err)
+		require.Equal(t, receipt.Revision, result.revision)
 	case <-ctx.Done():
 		t.Fatal("committed catalog did not wake reader")
 	}
@@ -159,4 +252,41 @@ func TestBrokerCannotSeedFromWorkerReceiptAndRejectsForeignProducer(t *testing.T
 	commit := notifyingCommitter{broker: newSourceBroker(), commit: brokerCommitFunc(func(context.Context, provision.Deployment) (publication.Receipt, error) { return receipt, nil })}
 	_, err = commit.Commit(t.Context(), d)
 	require.NoError(t, err)
+}
+
+func TestBrokerNewerMemoryDoesNotHideUpstreamErrorsOrConflicts(t *testing.T) {
+	_, upstream, r, _, receipt := brokerFixture(t)
+	initial, err := r.Snapshot(t.Context())
+	require.NoError(t, err)
+	v := committedCatalog(r, receipt)
+	v.Scope = initial.Scope
+	upstream.set(v, nil)
+	accepted, err := r.Snapshot(t.Context())
+	require.NoError(t, err)
+	for _, upstreamErr := range []error{source.ErrUnavailable, source.ErrStale, context.Canceled} {
+		upstream.set(initial, upstreamErr)
+		got, err := r.Snapshot(t.Context())
+		require.ErrorIs(t, err, upstreamErr, "only a local Publish race may use accepted memory")
+		require.Equal(t, source.Snapshot{}, got)
+	}
+	for _, change := range []string{"foreign-producer", "foreign-assignment", "contradictory-version"} {
+		t.Run(change, func(t *testing.T) {
+			bad := initial.Clone()
+			switch change {
+			case "foreign-producer":
+				bad.Scope.ProducerID = pdid.New(22).String()
+			case "foreign-assignment":
+				bad.Revision.AssignmentID = pdid.New(28).String()
+			case "contradictory-version":
+				bad = accepted.Clone()
+				bad.Sources[0].Name = "conflicting same-version content"
+			}
+			upstream.set(bad, nil)
+			_, err := r.Snapshot(t.Context())
+			require.ErrorIs(t, err, source.ErrConflict)
+			current, err := r.memory.Snapshot(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, accepted, current)
+		})
+	}
 }
