@@ -183,7 +183,7 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 	if err := cameraProgressWarnings(run.Warnings, observed.GetWarnings(), camera.WarningsFor(candidates[0], candidate)); err != nil {
 		return nil, err
 	}
-	if err := cameraProgressPlan(run, candidate); err != nil {
+	if err := cameraProgressPlan(run, candidate, previous); err != nil {
 		return nil, err
 	}
 	if err := cameraProgressMedia(run, candidate, observed); err != nil {
@@ -397,16 +397,22 @@ func cameraProgressWarnings(run []camera.PresetWarning, observed []*api.CameraWa
 	return nil
 }
 
-func cameraProgressPlan(run provision.Run, candidate camera.PresetSettings) error {
-	frequency := candidate.Initialization.PowerLineFrequency
-	if run.InitializationPlan != nil && (frequency == 0 || run.InitializationPlan.After != candidate.Initialization) || run.Initialized != nil && (frequency == 0 || *run.Initialized != candidate.Initialization) {
-		return invalid("progress.initialization", "initialization must retain the selected frequency intent")
+func cameraProgressPlan(run provision.Run, candidate camera.PresetSettings, previous *provision.Run) error {
+	initialization := candidate.Initialization != (camera.DeviceSettings{})
+	if run.InitializationPlan != nil && (!initialization || camera.ValidateInitializationPlan(*run.InitializationPlan, candidate.Initialization) != nil) || run.Initialized != nil && (!initialization || *run.Initialized != candidate.Initialization) {
+		return invalid("progress.initialization", "initialization must retain the selected explicit device settings")
+	}
+	if previous != nil && previous.CandidateIndex == run.CandidateIndex && previous.InitializationPlan != nil && previous.InitializationPlan.VideoMainBefore != nil && !reflect.DeepEqual(previous.InitializationPlan, run.InitializationPlan) {
+		return failed("a native initialization precondition cannot change or be cleared")
+	}
+	if run.Initialized != nil && candidate.Initialization.SmartCodec != "" && run.InitializationPlan == nil {
+		return invalid("progress.initialization", "smart codec verification requires its native precondition")
 	}
 	if run.Plan == nil {
 		return nil
 	}
-	if frequency != 0 && run.Initialized == nil {
-		return invalid("progress.initialization", "frequency initialization must be verified before a video plan")
+	if initialization && run.Initialized == nil {
+		return invalid("progress.initialization", "device initialization must be verified before a video plan")
 	}
 	p, v := run.Plan, candidate.Video
 	if p.ProfileToken == "" || p.Before.Token != p.ProfileToken || p.After.Token != p.ProfileToken || v.ProfileToken != "" && v.ProfileToken != p.ProfileToken || p.Revision != v.Revision {

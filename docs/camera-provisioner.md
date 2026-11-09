@@ -168,6 +168,8 @@ rules:
     settings:
       initialization:
         power_line_frequency: 60
+        smart_codec: "off"
+    required: [initialization.smart_codec]
     fallbacks:
       - preserve: [initialization.power_line_frequency]
         video: {fps: 25}
@@ -200,6 +202,22 @@ earlier successful change.
 A preset never causes factory reset, guesses credentials or changes an unknown
 firmware's compatibility classification. Camera passwords remain in the separate
 `AuthProvider` store.
+
+`initialization.smart_codec` accepts `"off"` or `"on"`. Omit it, or use an empty
+string, to preserve the current mode. It merges independently of
+`power_line_frequency`, so a smart-codec-only rule does not change the frequency.
+An optional fallback can use `preserve: [initialization.smart_codec]`; this is
+refused when that field is required. A selected fallback records the requested
+and effective mode in the structured warning. Hardware and firmware support is
+adapter-specific; an unsupported explicit mode is not silently ignored.
+
+An explicit smart-codec edit journals a closed, eight-field native main-profile
+snapshot before writing. The adapter changes only the requested mode. If a
+retry still needs that write, every other native field must match the saved
+precondition. If the mode is already correct, the retry performs no main-profile
+write and retains the original snapshot. This prevents an uncertain response
+from turning into a write based on a new baseline. Frequency-only jobs retain
+their earlier checkpoint format.
 
 Applying persists the selected preset reference/revision, matched rules and
 complete settings snapshot. Retrying the same job uses that snapshot even if

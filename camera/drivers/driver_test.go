@@ -222,6 +222,9 @@ func TestVendorInitializationRechecksCurrentAuthenticatedFirmware(t *testing.T) 
 	if _, err := d.PlanInitialization(context.Background(), h, lease, camera.DeviceSettings{PowerLineFrequency: 60}); !errors.Is(err, camera.ErrUnsupported) {
 		t.Errorf("stale firmware initialization plan: %v", err)
 	}
+	if _, err := d.PlanInitialization(context.Background(), h, lease, camera.DeviceSettings{SmartCodec: "off"}); !errors.Is(err, camera.ErrUnsupported) {
+		t.Errorf("smart-only setting bypassed current firmware qualification: %v", err)
+	}
 	if _, err := d.ApplyInitialization(context.Background(), h, lease, camera.InitializationPlan{Before: camera.DeviceSettings{PowerLineFrequency: 50}, After: camera.DeviceSettings{PowerLineFrequency: 60}, Revision: "tplink/c420/image-frequency-v1", Changes: []string{"power_line_frequency"}}); !errors.Is(err, camera.ErrUnsupported) {
 		t.Errorf("stale firmware initialization apply: %v", err)
 	}

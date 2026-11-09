@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"slices"
 
 	"github.com/lesomnus/shale/camera"
 )
@@ -147,7 +148,7 @@ func (e *Engine) configure(ctx context.Context, r *Run, inspection camera.Inspec
 		if err != nil {
 			return inspection, candidate.Video, false, err
 		}
-		if candidate.Initialization.PowerLineFrequency != 0 {
+		if candidate.Initialization != (camera.DeviceSettings{}) {
 			initializer := e.initializer()
 			checked, err := initializer.PlanInitialization(ctx, readback.Device, lease, candidate.Initialization)
 			if err != nil {
@@ -174,21 +175,29 @@ func (e *Engine) configure(ctx context.Context, r *Run, inspection camera.Inspec
 // initialize is deliberately separate from password activation. A frequency
 // change can unlock media options, so it must finish before video planning.
 func (e *Engine) initialize(ctx context.Context, r *Run, inspection camera.Inspection, lease camera.CredentialLease, candidate camera.PresetSettings, apply bool) (camera.Inspection, bool, error) {
-	if candidate.Initialization.PowerLineFrequency == 0 {
+	if candidate.Initialization == (camera.DeviceSettings{}) {
 		return inspection, true, nil
 	}
 	initializer := e.initializer()
 	if initializer == nil {
 		return inspection, false, unsupportedAlternative()
 	}
-	plan, err := initializer.PlanInitialization(ctx, inspection.Device, lease, candidate.Initialization)
+	var plan camera.InitializationPlan
+	var err error
+	if saved := r.InitializationPlan; saved != nil && saved.VideoMainBefore != nil {
+		plan = *saved
+		snapshot := *saved.VideoMainBefore
+		plan.VideoMainBefore, plan.Changes = &snapshot, slices.Clone(saved.Changes)
+	} else {
+		plan, err = initializer.PlanInitialization(ctx, inspection.Device, lease, candidate.Initialization)
+	}
 	if err != nil {
 		if unsupportedSetting(err) {
 			return inspection, false, unsupportedAlternative()
 		}
 		return inspection, false, err
 	}
-	if plan.After != candidate.Initialization {
+	if camera.ValidateInitializationPlan(plan, candidate.Initialization) != nil {
 		return inspection, false, camera.ErrConflict
 	}
 	r.InitializationPlan = &plan
@@ -209,7 +218,7 @@ func (e *Engine) initialize(ctx context.Context, r *Run, inspection camera.Inspe
 					// No independent proof of an unchanged device: do not advance.
 					return inspection, false, readErr
 				}
-				if observed.Before != plan.Before {
+				if observed.Before != plan.Before || plan.VideoMainBefore != nil && !reflect.DeepEqual(observed.VideoMainBefore, plan.VideoMainBefore) {
 					return inspection, false, camera.ErrConflict
 				}
 				return inspection, false, unsupportedAlternative()

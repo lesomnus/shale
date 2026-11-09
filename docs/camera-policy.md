@@ -276,3 +276,13 @@ operation, not a continuously running controller. Do not add `preset_file` to
 the managed edge's `shale.yaml`: that older setting belongs only to the
 standalone provisioner. Device initialization settings such as 60Hz still need
 an independently qualified adapter for the camera's actual firmware.
+
+The same preset publisher accepts `initialization.smart_codec: "off"` or
+`"on"`. Omission preserves the current mode; this field does not implicitly
+change power-line frequency, bitrate, FPS or GOP. List
+`initialization.smart_codec` in `required` when preserving the current mode is
+not an acceptable fallback. Use a newly published immutable preset and a new
+enrollment intent to change an existing job's settings. CP checkpoints bind the
+explicit mode to a bounded native before snapshot and reject unsolicited or
+modified snapshots. The selected mode is read back before video configuration
+and checked again afterward; an applied mode does not by itself prove a GOP.
