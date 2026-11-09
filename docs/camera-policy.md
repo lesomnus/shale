@@ -37,6 +37,17 @@ Operator access follows the existing tenant/site wall. Machine access is custom
 and job/assignment scoped; an approved Worker cannot list a tenant's rulesets,
 edit policy, assign itself or impersonate a Producer.
 
+## Explicit device TLS identity
+
+An enrollment revision may contain `device_tls_identities`, each approving one
+exact CameraDevice ID and public-key SPKI digest for an explicit HTTPS bootstrap
+profile. Enrollment copies only that device's approval into the immutable job;
+normal PKI remains the default. This does not grant activation, ownership or
+credential access based on discovery hints.
+
+The [device TLS contract](camera-tls-identity.md) defines operator approval,
+per-device scope, checkpoint recovery, transport verification and key withdrawal.
+
 ## Preset representation
 
 Reuse `camera/preset.Provider` for rule validation, precedence, conflict checks,

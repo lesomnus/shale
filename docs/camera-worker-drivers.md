@@ -39,8 +39,23 @@ Standard ONVIF media configuration uses its existing fresh capability and plan
 precondition checks independently of that vendor pin.
 
 The owned HTTP transport accepts only IP literals in the supplied prefixes,
-refuses redirects and environment proxies, and retains certificate validation.
+refuses redirects and environment proxies, and normally retains certificate validation.
 Optional camera trust roots do not carry a CP machine identity. Public hints
 exclude credential queries, userinfo and vendor session paths; transient vendor
 session paths remain private to the scoped HTTP exchange. Close the driver after
 each operation, normally through the bundle's `Release` callback.
+
+For an explicit job `DeviceTLSIdentity`, the composition root also supplies the
+exact inventory ID and hosts from the current granted device endpoints. The
+constructor validates every host against the current prefixes and owns detached
+copies. A driver operation for another inventory ID or host is rejected before
+LAN I/O. The optional TLS key approval applies only to a separate vendor HTTPS
+web transport at the pinned bootstrap port; HTTP, another port and redirects are
+not accepted by that transport. Standard ONVIF uses its own normal PKI client.
+
+The SPKI key check permits an explicitly approved factory web certificate with
+no SAN or trusted issuer. It runs during TLS negotiation, before HTTP credential
+payloads can be sent, and does not fall back to normal CA verification on a key
+mismatch. It does not discover or authenticate a physical camera by itself.
+The central [policy contract](camera-policy.md#explicit-device-tls-identity)
+defines operator approval, immutable job selection and withdrawal/rotation.
