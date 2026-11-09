@@ -18,12 +18,8 @@ import (
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/cameraassignment"
 	"github.com/lesomnus/shale/internal/ent/camerabinding"
-	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
-	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/z"
-	"github.com/protobuf-orm/ent/dialect/sql"
-	"github.com/protobuf-orm/ent/dialect/sql/sqljson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -90,18 +86,7 @@ func (s Core) cameraObserveDevice(ctx context.Context, n *api.CameraNetwork, r *
 	if err != nil {
 		return nil, err
 	}
-	selectors := []predicate.CameraDevice{cameradevice.DeviceKeyIn(keys...)}
-	if strings.HasPrefix(r.GetDiscoveryId(), "urn:uuid:") {
-		selectors = append(selectors, func(q *sql.Selector) {
-			q.Where(sqljson.ValueEQ(cameradevice.FieldEnrollment, r.GetDiscoveryId(), sqljson.Path("discoveryId")))
-		})
-	}
-	if mac != "" {
-		selectors = append(selectors, func(q *sql.Selector) {
-			q.Where(sqljson.ValueContains(cameradevice.FieldIdentity, mac, sqljson.Path("macs")))
-		})
-	}
-	rows, err := s.ent(ctx).CameraDevice.Query().Where(cameradevice.NetworkIdEQ(mustId(n.GetId()).Uuid()), cameradevice.DateErasedIsNil(), cameradevice.Or(selectors...)).Limit(3).All(ctx)
+	rows, err := s.cameraObservationInventory(ctx, n, r, keys, mac)
 	if err != nil {
 		return nil, err
 	}

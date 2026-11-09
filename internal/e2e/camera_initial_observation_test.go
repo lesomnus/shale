@@ -112,3 +112,109 @@ func TestCameraInitialObservationPreservesManualInventoryBindingAndSource(t *tes
 	_, err = client.Observe(ctx, stale)
 	require.Equal(t, codes.Aborted, status.Code(err))
 }
+
+func TestCameraInitialObservationLegacyMACAndUnresolvedEndpointOwnership(t *testing.T) {
+	server, cp, admin, ctx := cameraPolicyControl(t)
+	worker, machine, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "legacy-initial-worker", nil)
+	producer, _, _ := cameraWorkerProducer(t, ctx, server, cp, admin, "legacy-initial-producer", nil)
+	n := cameraPolicyNetwork(t, ctx, admin, "legacy-initial-lan", nil)
+	a, err := api.NewCameraAssignmentServiceClient(admin).Assign(ctx, api.CameraAssignmentAssignRequest_builder{Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), Producer: api.ProducerRef_builder{Id: producer.GetId()}.Build(), WorkerSlot: "edge", WorkerId: worker.GetId()}.Build())
+	require.NoError(t, err)
+	const mac = "a8:29:dc:c6:24:31"
+	const legacyMAC = "A8-29-DC-C6-24-31"
+	const epr = "urn:uuid:60c1ccab-2b74-4229-84a6-446fb7bc1cc9"
+	eps := []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: "http://192.0.2.10:2020/onvif/device_service"}.Build()}
+	devices := api.NewCameraDeviceServiceClient(admin)
+	d, err := devices.Claim(ctx, api.CameraDeviceClaimRequest_builder{Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), DeviceKey: "operator-camera-a", Endpoints: eps}.Build())
+	require.NoError(t, err)
+	d, err = devices.Observe(ctx, api.CameraDeviceObserveRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), ExpectedVersion: d.GetDateUpdated(), Identity: api.CameraIdentityEvidence_builder{Macs: []string{legacyMAC}, Manufacturer: "fixture", Model: "known", Serial: "physical-unit", Authenticated: true}.Build(), Endpoints: eps}.Build())
+	require.NoError(t, err)
+	b, err := api.NewCameraBindingServiceClient(admin).Bind(ctx, api.CameraBindingBindRequest_builder{Assignment: api.CameraAssignmentRef_builder{Id: a.GetId()}.Build(), Device: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), LogicalKey: "legacy-operator-camera", SourceAlias: "legacy-stream"}.Build())
+	require.NoError(t, err)
+	var preparations atomic.Int32
+	server.Deps.PrepareCameraEnrollment = func(_ context.Context, q core.CameraEnrollmentPreparation) (core.CameraEnrollmentCredentials, error) {
+		preparations.Add(1)
+		ref := func(purpose string) *api.CameraCredentialReference {
+			return api.CameraCredentialReference_builder{Provider: "fixture", Id: cameraPolicyID(t, q.Binding.GetId()) + "/" + purpose, Version: "1", Purpose: purpose}.Build()
+		}
+		return core.CameraEnrollmentCredentials{Initial: ref("initial_admin"), Management: ref("management"), Streaming: ref("streaming")}, nil
+	}
+	preset, err := api.NewCameraPresetServiceClient(admin).Create(ctx, cameraPolicyPresetRequest("legacy-preset", "1", cameraPolicyRule("defaults", api.CameraPresetScope_builder{TenantId: cameraPolicyID(t, n.GetTenant().GetId())}.Build())))
+	require.NoError(t, err)
+	policyRequest := cameraPolicyCreateRequest(n, preset, "legacy-policy", "1")
+	policyRequest.GetEnrollment().SetAllowActivation(true)
+	policy, err := api.NewCameraPolicyServiceClient(admin).Create(ctx, policyRequest)
+	require.NoError(t, err)
+	_, err = api.NewCameraPolicyServiceClient(admin).Activate(ctx, api.CameraPolicyActivateRequest_builder{Ref: api.CameraPolicyRef_builder{Id: policy.GetId()}.Build(), ExpectedNetworkVersion: n.GetDateUpdated()}.Build())
+	require.NoError(t, err)
+	client := api.NewCameraPolicyServiceClient(machine)
+	eprOnly := api.CameraPolicyObserveRequest_builder{Assignment: api.CameraAssignmentRef_builder{Id: a.GetId()}.Build(), AssignmentGeneration: a.GetGeneration(), DiscoveryId: epr, Endpoints: eps}.Build()
+	for _, uri := range []string{eps[0].GetUri(), "http://192.0.2.10:8080/another-onvif-service", "http://[::ffff:192.0.2.10]:2020/onvif/device_service"} {
+		unknown := proto.Clone(eprOnly).(*api.CameraPolicyObserveRequest)
+		unknown.GetEndpoints()[0].SetUri(uri)
+		_, err = client.Observe(ctx, unknown)
+		require.Equal(t, codes.Aborted, status.Code(err), "an unresolved EPR cannot acquire another writer at the same IP host")
+	}
+	count, err := server.Ent.CameraDevice.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
+	require.Equal(t, 1, mustCameraBindingCount(t, ctx, server))
+	count, err = server.Ent.Source.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
+	count, err = server.Ent.CameraJob.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, count)
+	require.Zero(t, preparations.Load(), "collision detection precedes durable secret preparation")
+	known := proto.Clone(eprOnly).(*api.CameraPolicyObserveRequest)
+	known.SetDiscoveryId("mac/" + mac)
+	known.SetIdentity(api.CameraIdentityEvidence_builder{Macs: []string{mac}}.Build())
+	result, err := client.Observe(ctx, known)
+	require.NoError(t, err)
+	require.Equal(t, d.GetId(), result.GetDevice().GetId())
+	require.Equal(t, b.GetId(), result.GetBinding().GetId())
+	require.Equal(t, b.GetSource().GetId(), result.GetBinding().GetSource().GetId())
+	require.Equal(t, []string{legacyMAC}, result.GetDevice().GetIdentity().GetMacs(), "format-equivalent lookup preserves authenticated evidence and checkpoint proofs verbatim")
+	require.Equal(t, "physical-unit", result.GetDevice().GetIdentity().GetSerial())
+	require.Equal(t, int32(1), preparations.Load())
+	known.SetDiscoveryId(epr)
+	result, err = client.Observe(ctx, known)
+	require.NoError(t, err)
+	require.Equal(t, d.GetId(), result.GetDevice().GetId())
+	require.Equal(t, b.GetId(), result.GetBinding().GetId())
+	require.Equal(t, int32(1), preparations.Load())
+	// A canonical index candidate must not hide a format-equivalent legacy row.
+	duplicateEP := []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: "http://192.0.2.20:2020/onvif/device_service"}.Build()}
+	duplicate, err := devices.Claim(ctx, api.CameraDeviceClaimRequest_builder{Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), DeviceKey: "mac/" + mac, Endpoints: duplicateEP}.Build())
+	require.NoError(t, err)
+	_, err = devices.Observe(ctx, api.CameraDeviceObserveRequest_builder{Ref: api.CameraDeviceRef_builder{Id: duplicate.GetId()}.Build(), ExpectedVersion: duplicate.GetDateUpdated(), Identity: api.CameraIdentityEvidence_builder{Macs: []string{mac}}.Build(), Endpoints: duplicateEP}.Build())
+	require.NoError(t, err)
+	canonical := proto.Clone(known).(*api.CameraPolicyObserveRequest)
+	canonical.SetDiscoveryId("mac/" + mac)
+	canonical.SetEndpoints(duplicateEP)
+	_, err = client.Observe(ctx, canonical)
+	require.Equal(t, codes.Aborted, status.Code(err))
+	// Nor may an existing unclaimed canonical row move onto another owned host.
+	const otherMAC = "02:00:00:00:00:02"
+	otherEP := []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: "http://192.0.2.30:2020/onvif/device_service"}.Build()}
+	unclaimed, err := devices.Claim(ctx, api.CameraDeviceClaimRequest_builder{Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), DeviceKey: "mac/" + otherMAC, Endpoints: otherEP}.Build())
+	require.NoError(t, err)
+	_, err = devices.Observe(ctx, api.CameraDeviceObserveRequest_builder{Ref: api.CameraDeviceRef_builder{Id: unclaimed.GetId()}.Build(), ExpectedVersion: unclaimed.GetDateUpdated(), Identity: api.CameraIdentityEvidence_builder{Macs: []string{otherMAC}}.Build(), Endpoints: otherEP}.Build())
+	require.NoError(t, err)
+	theft := proto.Clone(known).(*api.CameraPolicyObserveRequest)
+	theft.SetDiscoveryId("mac/" + otherMAC)
+	theft.SetIdentity(api.CameraIdentityEvidence_builder{Macs: []string{otherMAC}}.Build())
+	_, err = client.Observe(ctx, theft)
+	require.Equal(t, codes.Aborted, status.Code(err))
+	unchanged, err := devices.Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: unclaimed.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.Equal(t, otherEP[0].GetUri(), unchanged.GetEndpoints()[0].GetUri())
+	require.Equal(t, 1, mustCameraBindingCount(t, ctx, server))
+	count, err = server.Ent.Source.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
+	count, err = server.Ent.CameraJob.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
+	require.Equal(t, int32(1), preparations.Load(), "neither indexed-candidate ambiguity may prepare another bundle")
+}

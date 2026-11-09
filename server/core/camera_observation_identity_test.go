@@ -3,7 +3,9 @@ package core
 import (
 	"testing"
 
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/ent"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,6 +22,42 @@ func TestCameraInitialMACKeyReusesExplicitInventoryKey(t *testing.T) {
 	r.GetIdentity().SetMacs([]string{"02:00:00:00:00:02"})
 	_, _, _, err = cameraObservationKeys(r)
 	require.Error(t, err)
+}
+
+func TestCameraInitialFallbackFindsLegacyMACAndRejectsUnresolvedEndpointOwner(t *testing.T) {
+	const mac = "a8:29:dc:c6:24:31"
+	row := &ent.CameraDevice{Id: pdid.New(DomCameraDevice).Uuid(), DeviceKey: "operator-camera-a", Identity: api.CameraIdentityEvidence_builder{Macs: []string{"A8-29-DC-C6-24-31"}, Authenticated: true}.Build(), Endpoints: []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: "http://192.0.2.10:2020/onvif"}.Build()}}
+	r := api.CameraPolicyObserveRequest_builder{DiscoveryId: "mac/" + mac, Identity: api.CameraIdentityEvidence_builder{Macs: []string{mac}}.Build(), Endpoints: row.Endpoints}.Build()
+	_, keys, _, err := cameraObservationKeys(r)
+	require.NoError(t, err)
+	rows, err := cameraSelectObservationInventory([]*ent.CameraDevice{row}, r, keys, mac)
+	require.NoError(t, err)
+	require.Equal(t, []*ent.CameraDevice{row}, rows)
+	r.SetDiscoveryId("urn:uuid:9c654a77-3a86-4466-b189-7bbdc38ad248")
+	r.GetIdentity().SetMacs(nil)
+	for _, uri := range []string{"http://192.0.2.10:2020/onvif", "http://192.0.2.10:9999/other", "http://[::ffff:192.0.2.10]:2020/onvif"} {
+		r.SetEndpoints([]*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: uri}.Build()})
+		_, err = cameraSelectObservationInventory([]*ent.CameraDevice{row}, r, nil, "")
+		require.Equal(t, codes.Aborted, status.Code(err), "a host collision is denied, never used as identity: %s", uri)
+	}
+	_, err = cameraSelectObservationInventory(make([]*ent.CameraDevice, cameraObservationLookupLimit+1), r, nil, "")
+	require.Equal(t, codes.ResourceExhausted, status.Code(err))
+	canonical := &ent.CameraDevice{Id: pdid.New(DomCameraDevice).Uuid(), DeviceKey: "mac/" + mac, Identity: api.CameraIdentityEvidence_builder{Macs: []string{mac}}.Build(), Endpoints: []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: "http://192.0.2.20/onvif"}.Build()}}
+	r.SetDiscoveryId("mac/" + mac)
+	r.GetIdentity().SetMacs([]string{mac})
+	r.SetEndpoints(canonical.Endpoints)
+	_, err = cameraSelectObservationInventory([]*ent.CameraDevice{canonical, row}, r, keys, mac)
+	require.Equal(t, codes.Aborted, status.Code(err), "a canonical hit cannot hide a format-equivalent legacy MAC row")
+	const another = "02:00:00:00:00:01"
+	canonical.DeviceKey = "mac/" + another
+	canonical.Identity.SetMacs([]string{another})
+	r.SetDiscoveryId("mac/" + another)
+	r.GetIdentity().SetMacs([]string{another})
+	r.SetEndpoints(row.Endpoints)
+	_, keys, _, err = cameraObservationKeys(r)
+	require.NoError(t, err)
+	_, err = cameraSelectObservationInventory([]*ent.CameraDevice{canonical, row}, r, keys, another)
+	require.Equal(t, codes.Aborted, status.Code(err), "an indexed unclaimed candidate cannot move onto another owned host")
 }
 
 func TestCameraObservationReconciliationNeverRedirectsAuthenticatedOrActiveDevice(t *testing.T) {

@@ -190,6 +190,11 @@ can be recorded as discovery evidence while retaining the inventory, binding
 and Source. A known EPR and MAC that identify different rows are rejected rather
 than merged. Existing manual logical bindings are reused only for the exact
 same assignment and device; conflicting bindings require operator reconciliation.
+CP checks one locked snapshot of at most 256 existing rows in that network for
+legacy MAC formatting and endpoint-host collisions. A larger inventory requires
+explicit operator enrollment or smaller camera networks. An unresolved EPR at an
+already owned IP host is rejected; an address alone never merges records or
+creates another physical writer.
 
 Discovery never replaces authenticated physical identity. It also cannot change
 the transport endpoints of an authenticated device or active job. Such a move
