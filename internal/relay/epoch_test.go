@@ -35,6 +35,18 @@ func (s *epochStream) Send(v *api.AttachResponse) error {
 }
 func (*epochStream) Recv() (*api.AttachRequest, error) { return nil, io.EOF }
 
+func (s *epochStream) starts(id pdid.Id) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n := 0
+	for _, sent := range s.sent {
+		if string(sent.GetStart().GetSourceId()) == string(id.Bytes()) {
+			n++
+		}
+	}
+	return n
+}
+
 type epochFixture struct {
 	t             *testing.T
 	r             *Relay
@@ -215,6 +227,104 @@ func TestCaptureEpochPendingDenyAndPublicationIdentity(t *testing.T) {
 	ok, err = f.a.authorize(wrong)
 	require.Error(t, err)
 	require.False(t, ok, "expired publication cannot alter source state even within verifier skew")
+}
+
+func TestCaptureEpochRetryPrimeAfterEarlyStart(t *testing.T) {
+	f := newEpochFixture(t)
+	aID, bID := pdid.New(8), pdid.New(8)
+	ok, err := f.apply(f.claims([]pdid.Id{aID, bID}, epochGrant(aID, "a-1", 1), epochGrant(bID, "b-1", 1)))
+	require.NoError(t, err)
+	require.True(t, ok)
+	a := f.r.sources.get(aID)
+	b, bv := f.cachedViewer(bID, "other-source")
+	stream := f.a.stream.(*epochStream)
+	bStarts := stream.starts(bID)
+	require.True(t, a.resetEpoch(f.a, f.a.grants[aID], "a-1", true))
+	f.at = f.at.Add(time.Nanosecond)
+	ok, err = f.apply(f.claims([]pdid.Id{aID, bID}, epochGrant(aID, "a-2", 2), epochGrant(bID, "b-1", 1)))
+	require.NoError(t, err)
+	require.True(t, ok)
+	starts := stream.starts(aID)
+	require.Equal(t, 2, starts)
+	// A heartbeat can publish this grant before Begin's response installs the
+	// new local epoch. The Producer still considers the old capture stopped,
+	// so it discards the preceding Start. Its retained Reset comes afterwards.
+	require.Nil(t, a.init)
+	require.True(t, a.resetEpoch(f.a, f.a.grants[aID], "a-2", false))
+	require.Equal(t, starts+1, stream.starts(aID), "the current Reset must retry a prime that arrived before the Producer was ready")
+	require.Equal(t, "a-2", a.epoch)
+	require.True(t, a.started)
+	require.False(t, a.epochDenied)
+	require.Equal(t, bStarts, stream.starts(bID))
+	require.Equal(t, "b-1", b.initEpoch)
+	require.EqualValues(t, 99, b.ring.bytes)
+	select {
+	case <-bv.done:
+		t.Fatal("retrying one source's prime must preserve the other source's peer")
+	default:
+	}
+	// Once init has arrived, ordinary Hello/Reset refreshes preserve it and
+	// do not issue extra Start messages or disturb current viewers.
+	a.mu.Lock()
+	a.init, a.initEpoch = &fmp4.Init{Bytes: []byte("current-init")}, "a-2"
+	a.mu.Unlock()
+	require.True(t, a.resetEpoch(f.a, f.a.grants[aID], "a-2", false))
+	require.Equal(t, starts+1, stream.starts(aID))
+	t.Run("legacy-reset-does-not-reprime", func(t *testing.T) {
+		legacy := newEpochFixture(t)
+		id := pdid.New(8)
+		ok, err := legacy.apply(legacy.claims([]pdid.Id{id}))
+		require.NoError(t, err)
+		require.True(t, ok)
+		s := legacy.r.sources.get(id)
+		before := legacy.a.stream.(*epochStream).starts(id)
+		require.True(t, s.resetEpoch(legacy.a, nil, "", false))
+		require.Equal(t, before, legacy.a.stream.(*epochStream).starts(id))
+	})
+}
+
+func TestCaptureEpochOldStopCannotDenyNewGrant(t *testing.T) {
+	for _, stale := range []string{"old", ""} {
+		t.Run("stale-"+stale, func(t *testing.T) {
+			f := newEpochFixture(t)
+			id := pdid.New(8)
+			ok, err := f.apply(f.claims([]pdid.Id{id}, epochGrant(id, "old", 1)))
+			require.NoError(t, err)
+			require.True(t, ok)
+			f.at = f.at.Add(time.Nanosecond)
+			fresh := f.claims([]pdid.Id{id}, epochGrant(id, "new", 2))
+			ok, err = f.apply(fresh)
+			require.NoError(t, err)
+			require.True(t, ok)
+			s := f.r.sources.get(id)
+			// A queued stop for the old local capture can follow a Hello from
+			// an independently refreshed grant. It cannot deny the new Begin.
+			require.False(t, s.resetEpoch(f.a, f.a.grants[id], stale, true))
+			require.Equal(t, "new", s.epoch)
+			require.EqualValues(t, 2, s.epochSequence)
+			require.False(t, s.epochDenied)
+			require.True(t, s.started)
+			require.True(t, s.resetEpoch(f.a, f.a.grants[id], "new", true), "the exact current stop remains authoritative")
+			ok, err = f.apply(fresh)
+			require.NoError(t, err)
+			require.False(t, ok, "a stopped capture cannot resume at the same sequence")
+			f.at = f.at.Add(time.Nanosecond)
+			ok, err = f.apply(f.claims([]pdid.Id{id}, epochGrant(id, "newer", 3)))
+			require.NoError(t, err)
+			require.True(t, ok)
+		})
+	}
+	t.Run("empty-denial-stop-is-idempotent", func(t *testing.T) {
+		f := newEpochFixture(t)
+		id := pdid.New(8)
+		ok, err := f.apply(f.claims([]pdid.Id{id}, epochGrant(id, "", 0)))
+		require.NoError(t, err)
+		require.True(t, ok)
+		s := f.r.sources.get(id)
+		require.True(t, s.resetEpoch(f.a, f.a.grants[id], "", true))
+		require.True(t, s.epochDenied)
+		require.False(t, s.started)
+	})
 }
 
 func TestCaptureEpochMembershipFenceNeverMovesBackwards(t *testing.T) {
