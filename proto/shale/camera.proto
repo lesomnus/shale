@@ -135,6 +135,9 @@ message CameraJobInputs {
   CameraPresetSettings configuration = 8;
   // Absent retains legacy bootstrap behavior. Present pins all three fields.
   CameraBootstrapProfile bootstrap = 9;
+  // Exact selected device identity from the operator-approved policy revision.
+  // Callers cannot add, change or omit that policy's selected approval.
+  CameraDeviceTLSIdentity device_tls_identity = 10;
 }
 message CameraJobObservation {
   CameraCaptureProfile effective = 1;
