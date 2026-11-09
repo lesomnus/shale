@@ -19,7 +19,7 @@ var (
 	errCameraEnrollmentCredentials  = errors.New("central enrollment credentials are unavailable")
 )
 
-func cameraEnrollmentInputs(p *api.CameraPolicy, preset *api.CameraPreset, activation bool) *api.CameraJobInputs {
+func cameraEnrollmentInputs(p *api.CameraPolicy, preset *api.CameraPreset, activation bool, device []byte) *api.CameraJobInputs {
 	out := api.CameraJobInputs_builder{
 		Policy:          api.CameraRevisionReference_builder{Id: mustId(p.GetId()).String(), Revision: p.GetRevision()}.Build(),
 		Preset:          api.CameraRevisionReference_builder{Id: mustId(preset.GetId()).String(), Revision: preset.GetRevision()}.Build(),
@@ -28,6 +28,7 @@ func cameraEnrollmentInputs(p *api.CameraPolicy, preset *api.CameraPreset, activ
 	if bootstrap := p.GetEnrollment().GetBootstrap(); bootstrap != nil {
 		out.SetBootstrap(proto.Clone(bootstrap).(*api.CameraBootstrapProfile))
 	}
+	out.SetDeviceTlsIdentity(cameraSelectedTLSIdentity(p, device))
 	return out
 }
 
@@ -54,7 +55,7 @@ func (s Core) cameraEnrollJob(ctx context.Context, a *api.CameraAssignment, b *a
 	if err := cameraPresetScope(preset, a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
 		return nil, err
 	}
-	inputs := cameraEnrollmentInputs(p, preset, activation)
+	inputs := cameraEnrollmentInputs(p, preset, activation, b.GetDevice().GetId())
 	old, err := s.ent(ctx).CameraJob.Query().Where(camerajob.TenantIdEQ(mustId(a.GetTenant().GetId()).Uuid()), camerajob.RequestKeyEQ(key), camerajob.DateErasedIsNil()).Only(ctx)
 	if err == nil {
 		// Idempotency is decided before touching a credential backend. Keep the

@@ -25,6 +25,12 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		}
 		return nil, nil // explicit compatibility with jobs without typed state
 	}
+	if pin := j.GetInputs().GetDeviceTlsIdentity(); pin != nil && pin.GetDeviceId() != mustId(d.GetId()).String() {
+		return nil, invalid("progress.device_tls_identity", "checkpoint TLS identity belongs to another camera device")
+	}
+	if !proto.Equal(next.GetRequest().GetDeviceTlsIdentity(), j.GetInputs().GetDeviceTlsIdentity()) {
+		return nil, invalid("progress.device_tls_identity", "checkpoint must retain the exact pinned device TLS identity")
+	}
 	run, err := cameraprogress.Decode(next)
 	if err != nil {
 		return nil, invalid("progress", "invalid bounded typed camera checkpoint")

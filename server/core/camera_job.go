@@ -35,6 +35,14 @@ func cameraInputs(v *api.CameraJobInputs) error {
 	if err := cameraBootstrap(v.GetBootstrap()); err != nil {
 		return err
 	}
+	if err := cameraTLSIdentity(v.GetDeviceTlsIdentity()); err != nil {
+		return err
+	}
+	if v.GetDeviceTlsIdentity() != nil {
+		if err := cameraTLSBootstrap(v.GetBootstrap()); err != nil {
+			return err
+		}
+	}
 	if err := cameraProfile(v.GetDesired(), false); err != nil {
 		return err
 	}
@@ -104,7 +112,11 @@ func (s coreCameraJob) create(ctx context.Context, r *api.CameraJobCreateRequest
 		if err != nil {
 			return err
 		}
-		pinned, err := c.cameraPinnedInputs(ctx, a, r.GetInputs())
+		d, err := nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: b.GetDevice().GetId()}.Build()}.Build())
+		if err != nil {
+			return err
+		}
+		pinned, err := c.cameraPinnedInputs(ctx, a, d, r.GetInputs())
 		if err != nil {
 			return err
 		}
