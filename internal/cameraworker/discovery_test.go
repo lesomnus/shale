@@ -86,6 +86,37 @@ func TestDiscoveryConfigurationIsOptionalAndBounded(t *testing.T) {
 	}
 }
 
+type initialObservationFunc func(context.Context, camera.DiscoveryScope) ([]camera.Observation, error)
+
+func (f initialObservationFunc) ObserveInitial(ctx context.Context, scope camera.DiscoveryScope) ([]camera.Observation, error) {
+	return f(ctx, scope)
+}
+
+func TestInitialObservationsAreInjectedAndRemainOrdinaryScopedRequests(t *testing.T) {
+	w, assigned, _ := discoveryFixture(t)
+	scope, err := discoveryScope(assigned, w.ID().Bytes(), time.Second)
+	require.NoError(t, err)
+	observed := observation(scope.ID, "http://192.0.2.10/onvif")
+	observed.Device.DiscoveryID = ""
+	observed.Device.MAC = "02:00:00:00:00:01"
+	provider := initialObservationFunc(func(context.Context, camera.DiscoveryScope) ([]camera.Observation, error) {
+		return []camera.Observation{observed}, nil
+	})
+	built, err := New(Config{StateDir: t.TempDir(), Cp: "cp.example", InitialObservations: provider})
+	require.NoError(t, err)
+	require.NotNil(t, built.cfg.Discoverer)
+	observations, err := built.cfg.Discoverer.Discover(t.Context(), scope)
+	require.NoError(t, err)
+	requests, ambiguous, err := discoveryRequests(assigned, scope, observations)
+	require.NoError(t, err)
+	require.False(t, ambiguous)
+	require.Len(t, requests, 1)
+	require.Equal(t, "mac/02:00:00:00:00:01", requests[0].GetDiscoveryId())
+	require.Equal(t, []string{"02:00:00:00:00:01"}, requests[0].GetIdentity().GetMacs())
+	require.False(t, requests[0].GetIdentity().GetAuthenticated())
+	require.Equal(t, assigned.GetAssignment().GetGeneration(), requests[0].GetAssignmentGeneration())
+}
+
 func TestDiscoveryIdentityNeverUsesAddressOrInventoryClaim(t *testing.T) {
 	for _, tc := range []struct {
 		hint camera.DeviceHint

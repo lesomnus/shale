@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
+	cameradiscovery "github.com/lesomnus/shale/camera/discovery"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
 	"golang.org/x/sync/errgroup"
@@ -41,10 +42,11 @@ type Config struct {
 	Executor          Executor
 	// Discovery is opt-in. The composition root supplies its LAN transport;
 	// assignments and network intent always come from the authenticated CP.
-	Discoverer        camera.Discoverer
-	DiscoveryInterval time.Duration
-	DiscoveryTimeout  time.Duration
-	Log               *slog.Logger
+	Discoverer          camera.Discoverer
+	InitialObservations camera.InitialObservationProvider
+	DiscoveryInterval   time.Duration
+	DiscoveryTimeout    time.Duration
+	Log                 *slog.Logger
 }
 
 type Worker struct {
@@ -85,6 +87,9 @@ func New(c Config) (*Worker, error) {
 	}
 	if c.Executor == nil {
 		c.Executor = ExecutorFunc(pendingExecutor)
+	}
+	if c.InitialObservations != nil {
+		c.Discoverer = cameradiscovery.WithInitial{Discoverer: c.Discoverer, Provider: c.InitialObservations}
 	}
 	a := &hostagent.Agent{Kind: Domain, HardwareId: c.HardwareID, Store: pki.Store{Dir: c.StateDir}, Cp: c.Cp, CaHash: c.CaHash, Dev: c.Dev, Log: c.Log}
 	if err := a.Init(); err != nil {

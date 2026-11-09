@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/credential"
 	credentialcp "github.com/lesomnus/shale/camera/credential/cp"
+	cameradiscovery "github.com/lesomnus/shale/camera/discovery"
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/cameraworker"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
@@ -138,7 +139,11 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 // CameraWorkerConfig is exported so combined-role hosts can inject a CP-backed
 // executor without giving the Worker a Producer's identity or local passwords.
 func CameraWorkerConfig(c *cmd.Config) cameraworker.Config {
-	return cameraworker.Config{StateDir: c.StateDir("camera-worker"), Cp: c.Cp, CaHash: c.CaHash, Tenant: c.Tenant, Dev: c.IsDev(), HeartbeatInterval: c.CameraWorker.HeartbeatInterval, RetryInterval: c.CameraWorker.RetryInterval, LeaseSeconds: c.CameraWorker.LeaseSeconds, DiscoveryInterval: c.CameraWorker.DiscoveryInterval, DiscoveryTimeout: c.CameraWorker.DiscoveryTimeout, Log: slog.Default()}
+	worker := cameraworker.Config{StateDir: c.StateDir("camera-worker"), Cp: c.Cp, CaHash: c.CaHash, Tenant: c.Tenant, Dev: c.IsDev(), HeartbeatInterval: c.CameraWorker.HeartbeatInterval, RetryInterval: c.CameraWorker.RetryInterval, LeaseSeconds: c.CameraWorker.LeaseSeconds, DiscoveryInterval: c.CameraWorker.DiscoveryInterval, DiscoveryTimeout: c.CameraWorker.DiscoveryTimeout, Log: slog.Default()}
+	if c.CameraWorker.InitialNeighbors {
+		worker.InitialObservations = cameradiscovery.NeighborObservations{Source: cameradiscovery.SystemNeighbors{}}
+	}
+	return worker
 }
 
 // serveControlPlane serves the given surfaces; `all` says which defaults

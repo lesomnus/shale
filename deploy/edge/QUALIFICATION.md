@@ -34,7 +34,7 @@ emits its witness only after its assertions and cleanup checks pass.
 | `combined` | `TestEdgeIsolatedCentralWorkflow/combined` | One edge process with independently approved Worker and Producer identities |
 | `independent` | `TestEdgeIsolatedCentralWorkflow/independent` | Separate Worker/Producer processes consuming the same central policy and catalog |
 | `recovery` | `TestEdgeIsolatedRecovery` | Six rollback, response-loss and crash checkpoints retain pinned inventory and usable credentials |
-| `operations` | `TestEdgeIsolatedOperations` | Two cameras, DHCP movement, selective stop/capacity, uplink/CP recovery and approved replacement |
+| `operations` | `TestEdgeIsolatedOperations` | Two cameras, operator-approved DHCP movement, selective stop/capacity, uplink/CP recovery and approved replacement |
 
 Use an individual selector while debugging. The full suite is required for
 assembled qualification. The coordinator timeout is bounded by the runner;
@@ -53,7 +53,7 @@ untested revision passed: use the CI result for the exact recorded source SHA.
 | --- | --- |
 | Adopted zero-source host, actual Ethernet discovery and immutable CP preset | Both baseline modes begin idle, discover the DHCP camera, import/prepare central references, activate once and change the real encoded profile from 160×90 to 320×180 |
 | Real live viewing and a new playable recording | Current Producer application/epoch, native WHEP epoch confirmation, complete advancing H264 access units, independent FFmpeg decoding and a new complete COMMITTED lamina; native MP4 export is independently demuxed and decoded |
-| Duplicate observations, DHCP change and retained Source/history/pins | Operations reconcile the same binding and Source at a new leased address, preserve exact management/streaming credential and policy/preset references and keep the other camera active; recovery verifies immutable initialization inputs and inventory counts |
+| Duplicate observations, approved DHCP change and retained Source/history/pins | After explicit operator approval of the moved transport, operations reconcile the same binding and Source at a new leased address, preserve exact management/streaming credential and policy/preset references and keep the other camera active; recovery verifies immutable initialization inputs and inventory counts |
 | Credential/configuration/publication uncertainty and process crashes | Recovery covers job-insert rollback, committed Observe response loss, activation response loss, accepted configuration, committed publication response loss and first capture/upload; original/prepared credential versions remain resolvable and activation/configuration do not repeat |
 | Restarts, missing hints and CP/Wi-Fi outages | Baselines stop/start edge roles and require stable machine keys/Source with a new capture epoch and new media; recovery/operations exercise resnapshot and loss/restart paths. CP snapshot failure is not an empty catalog. The CP provider uses bounded resnapshot, so notification loss cannot be treated as proof of deletion |
 | Selective add/change/stop, capacity and finite buffering | Operations keep an unrelated camera's capture epoch and new media while another changes/stops, and explicitly reject inventory capacity. Strict media admission and live-peer continuity also have focused Producer/Relay tests. The focused RAM test described below separately proves queue loss/recovery |
@@ -76,6 +76,13 @@ decoded live/MP4 media. The hold is persistent across concurrent allocation
 calls and caller cancellation. Actual partially transmitted/incomplete storage
 is separately covered by `TestBacklogAfterOutageWritten`; this checkpoint does
 not claim that an HTTP PUT had already started.
+
+For an authenticated device, a DHCP lease or public EPR alone cannot redirect
+credentials to a new host. The operations fixture explicitly approves the new
+endpoints through the operator's versioned `CameraDevice.Observe`, retaining its
+authenticated identity. It does not claim unattended DHCP address recovery.
+Its third physical camera uses a separate, unowned address so capacity admission
+cannot bypass retained inventory ownership at the old camera's address.
 
 Transport recovery intentionally omits a new initial/activation credential grant.
 Management and streaming pins remain exact, and the original initial account's

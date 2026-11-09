@@ -87,6 +87,13 @@ type Discoverer interface {
 	Discover(context.Context, DiscoveryScope) ([]Observation, error)
 }
 
+// InitialObservationProvider supplies scoped transport evidence for devices
+// which cannot advertise ONVIF before activation. Its observations remain
+// unauthenticated hints; neither an address nor a MAC grants enrollment access.
+type InitialObservationProvider interface {
+	ObserveInitial(context.Context, DiscoveryScope) ([]Observation, error)
+}
+
 type ActivationState string
 
 const (
