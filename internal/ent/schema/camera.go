@@ -107,6 +107,8 @@ func (CameraDevice) Fields() []ent.Field {
 		field.Int64("claim_generation"),
 		field.Json("enrollment", &api.CameraEnrollmentObservation{}).ValueScanner(entpb.ValueScanner[*api.CameraEnrollmentObservation]{}).
 			Optional(),
+		field.Json("factory_tls", &api.CameraFactoryTLSState{}).ValueScanner(entpb.ValueScanner[*api.CameraFactoryTLSState]{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

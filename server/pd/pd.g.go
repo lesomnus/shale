@@ -21963,6 +21963,11 @@ func (s interceptCameraPolicy) Observe(ctx context.Context, req *api.CameraPolic
 		api.CameraPolicyService_Observe_FullMethodName, req, s.CameraPolicyServiceServer.Observe)
 }
 
+func (s interceptCameraPolicy) TrustFactoryTLS(ctx context.Context, req *api.CameraPolicyTrustFactoryTLSRequest) (*api.CameraPolicyObserveResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
+		api.CameraPolicyService_TrustFactoryTLS_FullMethodName, req, s.CameraPolicyServiceServer.TrustFactoryTLS)
+}
+
 func (s Intercept) Device() api.DeviceServiceServer {
 	return interceptDevice{s, s.Next().Device()}
 }
@@ -24617,6 +24622,8 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &api.CameraPolicyEnrollRequest{}
 	case api.CameraPolicyService_Observe_FullMethodName:
 		v = &api.CameraPolicyObserveRequest{}
+	case api.CameraPolicyService_TrustFactoryTLS_FullMethodName:
+		v = &api.CameraPolicyTrustFactoryTLSRequest{}
 	case api.DeviceService_Add_FullMethodName:
 		v = &api.DeviceAddRequest{}
 	case api.DeviceService_Get_FullMethodName:
@@ -25163,6 +25170,8 @@ func dispatch(ctx context.Context, s api.Server, m string, v proto.Message) (*an
 		res, err = s.CameraPolicy().Enroll(ctx, v.(*api.CameraPolicyEnrollRequest))
 	case api.CameraPolicyService_Observe_FullMethodName:
 		res, err = s.CameraPolicy().Observe(ctx, v.(*api.CameraPolicyObserveRequest))
+	case api.CameraPolicyService_TrustFactoryTLS_FullMethodName:
+		res, err = s.CameraPolicy().TrustFactoryTLS(ctx, v.(*api.CameraPolicyTrustFactoryTLSRequest))
 	case api.DeviceService_Add_FullMethodName:
 		res, err = s.Device().Add(ctx, v.(*api.DeviceAddRequest))
 	case api.DeviceService_Get_FullMethodName:

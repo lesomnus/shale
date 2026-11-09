@@ -376,6 +376,7 @@ message CameraDeviceAddRequest {
   bytes active_job_id = 16;
   int64 claim_generation = 17 [features.field_presence = IMPLICIT];
   CameraEnrollmentObservation enrollment = 18;
+  CameraFactoryTLSState factory_tls = 19;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -412,6 +413,7 @@ message CameraDeviceSelect {
   bool active_job_id = 16;
   bool claim_generation = 17;
   bool enrollment = 18;
+  bool factory_tls = 19;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -444,6 +446,12 @@ message CameraDevicePatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and enrollment clears.
   bool enrollment_null = 37;
+  CameraFactoryTLSState factory_tls = 38;
+  // Clear factory_tls instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and factory_tls clears.
+  bool factory_tls_null = 39;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

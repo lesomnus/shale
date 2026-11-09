@@ -19,17 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CameraPolicyService_Add_FullMethodName      = "/shale.CameraPolicyService/Add"
-	CameraPolicyService_Get_FullMethodName      = "/shale.CameraPolicyService/Get"
-	CameraPolicyService_Patch_FullMethodName    = "/shale.CameraPolicyService/Patch"
-	CameraPolicyService_Apply_FullMethodName    = "/shale.CameraPolicyService/Apply"
-	CameraPolicyService_Erase_FullMethodName    = "/shale.CameraPolicyService/Erase"
-	CameraPolicyService_List_FullMethodName     = "/shale.CameraPolicyService/List"
-	CameraPolicyService_Watch_FullMethodName    = "/shale.CameraPolicyService/Watch"
-	CameraPolicyService_Create_FullMethodName   = "/shale.CameraPolicyService/Create"
-	CameraPolicyService_Activate_FullMethodName = "/shale.CameraPolicyService/Activate"
-	CameraPolicyService_Enroll_FullMethodName   = "/shale.CameraPolicyService/Enroll"
-	CameraPolicyService_Observe_FullMethodName  = "/shale.CameraPolicyService/Observe"
+	CameraPolicyService_Add_FullMethodName             = "/shale.CameraPolicyService/Add"
+	CameraPolicyService_Get_FullMethodName             = "/shale.CameraPolicyService/Get"
+	CameraPolicyService_Patch_FullMethodName           = "/shale.CameraPolicyService/Patch"
+	CameraPolicyService_Apply_FullMethodName           = "/shale.CameraPolicyService/Apply"
+	CameraPolicyService_Erase_FullMethodName           = "/shale.CameraPolicyService/Erase"
+	CameraPolicyService_List_FullMethodName            = "/shale.CameraPolicyService/List"
+	CameraPolicyService_Watch_FullMethodName           = "/shale.CameraPolicyService/Watch"
+	CameraPolicyService_Create_FullMethodName          = "/shale.CameraPolicyService/Create"
+	CameraPolicyService_Activate_FullMethodName        = "/shale.CameraPolicyService/Activate"
+	CameraPolicyService_Enroll_FullMethodName          = "/shale.CameraPolicyService/Enroll"
+	CameraPolicyService_Observe_FullMethodName         = "/shale.CameraPolicyService/Observe"
+	CameraPolicyService_TrustFactoryTLS_FullMethodName = "/shale.CameraPolicyService/TrustFactoryTLS"
 )
 
 // CameraPolicyServiceClient is the client API for CameraPolicyService service.
@@ -66,6 +67,8 @@ type CameraPolicyServiceClient interface {
 	Enroll(ctx context.Context, in *CameraPolicyEnrollRequest, opts ...grpc.CallOption) (*CameraJob, error)
 	// Scoped observations never grant general inventory mutation or credentials.
 	Observe(ctx context.Context, in *CameraPolicyObserveRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error)
+	// First trust is available only before any binding, job, or camera secret.
+	TrustFactoryTLS(ctx context.Context, in *CameraPolicyTrustFactoryTLSRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error)
 }
 
 type cameraPolicyServiceClient struct {
@@ -195,6 +198,16 @@ func (c *cameraPolicyServiceClient) Observe(ctx context.Context, in *CameraPolic
 	return out, nil
 }
 
+func (c *cameraPolicyServiceClient) TrustFactoryTLS(ctx context.Context, in *CameraPolicyTrustFactoryTLSRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraPolicyObserveResponse)
+	err := c.cc.Invoke(ctx, CameraPolicyService_TrustFactoryTLS_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CameraPolicyServiceServer is the server API for CameraPolicyService service.
 // All implementations must embed UnimplementedCameraPolicyServiceServer
 // for forward compatibility.
@@ -229,6 +242,8 @@ type CameraPolicyServiceServer interface {
 	Enroll(context.Context, *CameraPolicyEnrollRequest) (*CameraJob, error)
 	// Scoped observations never grant general inventory mutation or credentials.
 	Observe(context.Context, *CameraPolicyObserveRequest) (*CameraPolicyObserveResponse, error)
+	// First trust is available only before any binding, job, or camera secret.
+	TrustFactoryTLS(context.Context, *CameraPolicyTrustFactoryTLSRequest) (*CameraPolicyObserveResponse, error)
 	mustEmbedUnimplementedCameraPolicyServiceServer()
 }
 
@@ -271,6 +286,9 @@ func (UnimplementedCameraPolicyServiceServer) Enroll(context.Context, *CameraPol
 }
 func (UnimplementedCameraPolicyServiceServer) Observe(context.Context, *CameraPolicyObserveRequest) (*CameraPolicyObserveResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Observe not implemented")
+}
+func (UnimplementedCameraPolicyServiceServer) TrustFactoryTLS(context.Context, *CameraPolicyTrustFactoryTLSRequest) (*CameraPolicyObserveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method TrustFactoryTLS not implemented")
 }
 func (UnimplementedCameraPolicyServiceServer) mustEmbedUnimplementedCameraPolicyServiceServer() {}
 func (UnimplementedCameraPolicyServiceServer) testEmbeddedByValue()                             {}
@@ -484,6 +502,24 @@ func _CameraPolicyService_Observe_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CameraPolicyService_TrustFactoryTLS_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPolicyTrustFactoryTLSRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPolicyServiceServer).TrustFactoryTLS(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPolicyService_TrustFactoryTLS_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPolicyServiceServer).TrustFactoryTLS(ctx, req.(*CameraPolicyTrustFactoryTLSRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CameraPolicyService_ServiceDesc is the grpc.ServiceDesc for CameraPolicyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -530,6 +566,10 @@ var CameraPolicyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Observe",
 			Handler:    _CameraPolicyService_Observe_Handler,
+		},
+		{
+			MethodName: "TrustFactoryTLS",
+			Handler:    _CameraPolicyService_TrustFactoryTLS_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

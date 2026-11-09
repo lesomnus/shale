@@ -36,6 +36,8 @@ const (
 	FieldClaimGeneration = "claim_generation"
 	// FieldEnrollment holds the string denoting the enrollment field in the database.
 	FieldEnrollment = "enrollment"
+	// FieldFactoryTls holds the string denoting the factory_tls field in the database.
+	FieldFactoryTls = "factory_tls"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -93,6 +95,7 @@ var Columns = []string{
 	FieldActiveJobId,
 	FieldClaimGeneration,
 	FieldEnrollment,
+	FieldFactoryTls,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -117,6 +120,7 @@ var (
 		Identity   field.TypeValueScanner[*api.CameraIdentityEvidence]
 		Endpoints  field.TypeValueScanner[[]*api.CameraObservedEndpoint]
 		Enrollment field.TypeValueScanner[*api.CameraEnrollmentObservation]
+		FactoryTls field.TypeValueScanner[*api.CameraFactoryTLSState]
 	}
 )
 

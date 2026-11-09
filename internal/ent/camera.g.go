@@ -86,6 +86,9 @@ func (e *CameraDevice) Proto() *api.CameraDevice {
 	if e.Enrollment != nil {
 		x.SetEnrollment(e.Enrollment)
 	}
+	if e.FactoryTls != nil {
+		x.SetFactoryTls(e.FactoryTls)
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

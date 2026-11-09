@@ -28,6 +28,10 @@ message CameraEnrollmentPolicy {
   // receives only its device's identity, detached from the immutable policy.
   // Present entries require an explicit HTTPS bootstrap destination.
   repeated CameraDeviceTLSIdentity device_tls_identities = 8;
+  // Explicit first-use trust on this isolated private camera LAN only. A
+  // credential-free known-factory challenge must precede binding or secrets.
+  // Existing identities, credentials, jobs and changed keys never opt in.
+  bool trust_new_factory_tls = 9;
 }
 // One immutable policy revision. The network selects its active policy by CAS.
 message CameraPolicy {
