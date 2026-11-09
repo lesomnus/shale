@@ -69,8 +69,11 @@ type DeviceHint struct {
 // DiscoveryScope is selected by an authorized caller. An empty interface uses
 // the OS routing table; explicit addresses work without multicast.
 type DiscoveryScope struct {
-	ID           string        `json:"id"`
-	Interface    string        `json:"interface,omitempty"`
+	ID        string `json:"id"`
+	Interface string `json:"interface,omitempty"`
+	// CIDRs bounds optional address sources such as DHCP leases. An address
+	// hint never expands this caller-authorized network or grants enrollment.
+	CIDRs        []string      `json:"cidrs,omitempty"`
 	LocalAddress string        `json:"local_address,omitempty"`
 	Seeds        []Endpoint    `json:"seeds,omitempty"`
 	Timeout      time.Duration `json:"timeout"`
