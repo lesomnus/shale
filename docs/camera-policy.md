@@ -203,3 +203,66 @@ the old policy and credential versions, the same binding and Source, and
 disables first-time activation. A terminal failure is not an implicit retry:
 an operator creates a new enrollment intent. An active-policy edit alone never
 reapplies settings to an existing camera.
+
+## Publishing a declarative preset
+
+Keep model defaults in the strict portable `camera/preset` YAML or JSON format
+shown in [the provisioner guide](camera-provisioner.md). The same declaration
+can now be published to CP without running a standalone provisioner or putting
+policy files on a managed Pi:
+
+```sh
+shale --config operator.yaml camera-preset publish --file camera-presets.yaml --dry-run
+shale --config operator.yaml camera-preset publish --file camera-presets.yaml --name "Office cameras"
+```
+
+`--dry-run` validates and prints the typed `CameraPreset.Create` request locally.
+It does not connect, read the CLI session, or load CP authentication/TLS files.
+The normal command uses the same tenant connector, configured CP trust and
+operator authentication as other CLI operations. JSON output prints UUIDs in the
+usual CLI form; `-o protojson` selects protobuf's exact JSON representation.
+
+The document `id` becomes `preset_key` and its source `revision` becomes the
+immutable CP revision. The portable provider's internal fingerprint suffix is
+not appended to that revision. An equivalent rule ordering produces the same
+request; absent fallback inheritance and explicit `fallbacks: []` remain
+different. Publishing unchanged content at the same revision reuses the stored
+revision. Changed content must use a new revision and otherwise receives a
+conflict from CP.
+
+Every rule must name the same canonical tenant UUID. `--tenant UUID` explicitly
+checks that target; otherwise it is inferred only from that one consistent
+tenant in the document. `--site UUID` publishes a site-specific row and requires
+every rule to name that exact site. With no `--site`, the row is a tenant
+template and may retain site-specific rule selectors. Scope flags do not rewrite
+rules or confer access. Dry-run checks format and target consistency; the normal
+CP API still authorizes all referenced inventory and the caller's current scope.
+
+This command publishes only a preset revision. It does not create or replace a
+network policy, enable automatic enrollment, approve device trust, rotate
+credentials, or reapply an existing camera. The following normal RPC commands
+are available for those separate, explicit policy operations:
+
+```sh
+shale --config operator.yaml camera-policy create - -o json < camera-policy.json
+shale --config operator.yaml camera-network get NETWORK_UUID '{"select":{"all":true}}' -o json
+shale --config operator.yaml camera-policy activate POLICY_UUID '{"expectedNetworkVersion":"2026-11-09T12:00:00Z"}' -o json
+shale --config operator.yaml camera-policy enroll - -o json < enrollment-intent.json
+```
+
+Replace the example IDs and timestamp with the intended network/policy and the
+network's exact current `dateUpdated`. The create request names the network,
+published preset, policy key/revision, and the reviewed enrollment declaration.
+Keep existing grants, bootstrap choice and device trust approvals unless their
+changes are explicitly intended. Activation CAS changes only the network's
+active pointer. An enrollment intent separately names `binding`, `policy` and a
+new stable `requestKey`; it preserves the logical Source and does not silently
+rewrite an existing job's snapshot.
+
+`camera-preset create` also accepts the typed JSON request directly. These RPC
+commands use inline JSON or a literal `-` for stdin; they do not interpret
+`@file` or a filename as request input. A file publication is one operator
+operation, not a continuously running controller. Do not add `preset_file` to
+the managed edge's `shale.yaml`: that older setting belongs only to the
+standalone provisioner. Device initialization settings such as 60Hz still need
+an independently qualified adapter for the camera's actual firmware.

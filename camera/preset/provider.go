@@ -76,6 +76,28 @@ func (p *Provider) Reference() camera.PresetRef {
 	return p.ref
 }
 
+// Config returns a detached, validated source declaration. Its revision is the
+// source revision, before Reference appends a fingerprint. Publishers can retain
+// the portable rules without exposing mutable provider state or losing the
+// distinction between absent and explicitly empty fallback overrides.
+func (p *Provider) Config() Config {
+	if p == nil {
+		return Config{}
+	}
+	out := p.config
+	out.Rules = slices.Clone(out.Rules)
+	for i := range out.Rules {
+		rule := &out.Rules[i]
+		rule.Settings.Preserve = slices.Clone(rule.Settings.Preserve)
+		rule.Required = slices.Clone(rule.Required)
+		rule.Fallbacks = slices.Clone(rule.Fallbacks)
+		for j := range rule.Fallbacks {
+			rule.Fallbacks[j].Preserve = slices.Clone(rule.Fallbacks[j].Preserve)
+		}
+	}
+	return out
+}
+
 func New(config Config) (*Provider, error) {
 	if strings.TrimSpace(config.ID) == "" || strings.TrimSpace(config.Revision) == "" || len(config.Rules) == 0 || len(config.Rules) > maxRules {
 		return nil, fmt.Errorf("%w: invalid preset ruleset reference or rule count", camera.ErrInvalid)
