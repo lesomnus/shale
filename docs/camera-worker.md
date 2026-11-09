@@ -124,8 +124,9 @@ instantly revoked. This role does not claim immediate data-plane revocation.
 ## Optional outbound discovery
 
 The Worker library enables LAN discovery only when its composition root injects
-`Config.Discoverer`. It uses the adopted Worker's existing outbound CP connection;
-discovery adds no listener, credential provider, policy file or Producer authority.
+`Config.Discoverer` or `Config.InitialObservations`. It uses the adopted Worker's
+existing outbound CP connection; discovery adds no listener, credential provider,
+policy file or Producer authority.
 The interval defaults to 30 seconds (one second to one hour), and the hard scan
 timeout defaults to two seconds (one millisecond to 30 seconds). The discoverer's
 observation window is 90% of that timeout, leaving time to complete before the
@@ -156,6 +157,45 @@ produce fixed messages without device text and retry at the next interval; they
 do not cancel an executing job. Session cancellation and certificate renewal
 cancel and join discovery cleanup before closing the old CP connection. Injected
 discoverers must honor context cancellation.
+
+### Initial observations before ONVIF activation
+
+Some factory cameras do not answer WS-Discovery until their first password is
+set. The portable `camera.InitialObservationProvider` seam can supply an initial
+candidate without making that candidate an authenticated device. The managed
+Worker composes this provider with its regular discoverer. All observations
+still pass the current assignment generation, endpoint prefixes, central
+enrollment policy and credential preparation checks.
+
+On Linux, opt in to the read-only neighbor-cache provider with:
+
+```yaml
+camera_worker:
+  initial_neighbors: true
+```
+
+Configure the camera network in CP with an exact `interface_hint` and explicit
+seed endpoint IPs. The provider runs the ordinary unprivileged iproute2 command
+`ip -j neighbor show dev <interface>`; it sends no probes, reads no DHCP lease
+files and needs no additional capabilities. It considers only those seed hosts,
+at most 32 seeds and 1024 cache entries. Missing, failed, incomplete, multicast
+or conflicting mappings provide no candidate. Another normal network operation
+must populate a missing kernel cache entry; an IP seed alone remains insufficient.
+Other embeddings may inject a bounded DHCP or vendor observation implementation
+through the same seam.
+
+An initial canonical MAC observation reuses an explicitly registered
+`mac/<MAC>` inventory key in that same network. A later EPR at the same endpoint
+can be recorded as discovery evidence while retaining the inventory, binding
+and Source. A known EPR and MAC that identify different rows are rejected rather
+than merged. Existing manual logical bindings are reused only for the exact
+same assignment and device; conflicting bindings require operator reconciliation.
+
+Discovery never replaces authenticated physical identity. It also cannot change
+the transport endpoints of an authenticated device or active job. Such a move
+requires an explicit operator reconciliation followed by fresh leased inspection;
+a fresh MAC/EPR alone cannot redirect that device's credentials. Ordinary PKI or
+separately approved per-device TLS trust remains independent of these hints.
 
 ## Explicit HTTP compatibility
 
