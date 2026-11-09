@@ -59,3 +59,10 @@ payloads can be sent, and does not fall back to normal CA verification on a key
 mismatch. It does not discover or authenticate a physical camera by itself.
 The central [policy contract](camera-policy.md#explicit-device-tls-identity)
 defines operator approval, immutable job selection and withdrawal/rotation.
+
+The installed C420 profiles include exact hardware1.0/firmware1.2.0 Build251020
+and1.2.2 Build260624 entries. The explicit `easycam-c420-hw1-known-v1` profile
+selects their shared anonymous first-password protocol, then requires fresh
+authenticated inspection to select one of those qualified firmware builds for
+frequency initialization. Unknown firmware does not gain initialization support
+from the common profile. Existing version-specific pins remain version-specific.

@@ -59,7 +59,7 @@ func New(o Options) (*Driver, error) {
 		if err := o.Bootstrap.Validate(); err != nil {
 			return nil, err
 		}
-		if o.Bootstrap.CompatibilityProfile != tplink.ProfileC420V122 {
+		if o.Bootstrap.CompatibilityProfile != tplink.ProfileC420V122 && o.Bootstrap.CompatibilityProfile != tplink.ProfileC420V120 && o.Bootstrap.CompatibilityProfile != tplink.ProfileC420Known {
 			return nil, camera.ErrUnsupported
 		}
 	}
