@@ -167,7 +167,8 @@ func TestCameraProvisioningRecordsAndResumes(t *testing.T) {
 	newEngine := func(state provision.Store, pub provision.SourcePublisher) *provision.Engine {
 		return &provision.Engine{Store: state, Auth: provider, Inspector: inspector, Configurator: inspector, Verifier: &media.Verifier{AuthProvider: provider, NetworkScope: "lan"}, Publisher: pub}
 	}
-	request := provision.Request{ID: "enroll-main-v1", BindingID: "main-role", Scope: scope, Device: device.Hint("physical-camera-1"), Desired: cameramodel.DesiredState{ProfileToken: "main", Codec: "h264", Width: 160, Height: 90, FPS: 10, Bitrate: 1_000_000, GOP: 10, Revision: "v1"}, Alias: "provisioned-main", Provider: "local", ManagementRef: &management, StreamingRef: &streaming, AllowProducerRestart: true, ProbeDuration: 2 * time.Second}
+	// Leave room for two independently observed keyframes after RTSP startup.
+	request := provision.Request{ID: "enroll-main-v1", BindingID: "main-role", Scope: scope, Device: device.Hint("physical-camera-1"), Desired: cameramodel.DesiredState{ProfileToken: "main", Codec: "h264", Width: 160, Height: 90, FPS: 10, Bitrate: 1_000_000, GOP: 10, Revision: "v1"}, Alias: "provisioned-main", Provider: "local", ManagementRef: &management, StreamingRef: &streaming, AllowProducerRestart: true, ProbeDuration: 2500 * time.Millisecond}
 	interrupted := &interruptAfterCameraDeploy{SourcePublisher: publisher}
 	first, err := newEngine(store, interrupted).Execute(ctx, request, true)
 	require.ErrorIs(t, err, provision.ErrNotReady)
@@ -181,6 +182,8 @@ func TestCameraProvisioningRecordsAndResumes(t *testing.T) {
 	require.Equal(t, provision.Active, active.Stage)
 	require.True(t, active.Binding.Ingest && active.Binding.Live && active.Binding.Committed)
 	require.True(t, active.Verified.Decoded)
+	require.Greater(t, active.Verified.Profile.GOP, 0)
+	require.LessOrEqual(t, active.Verified.Profile.GOP, request.Desired.GOP+2)
 	require.Equal(t, 1, restarts, "resume must not redeploy an already installed manifest")
 	originalSource := active.Binding.SourceID
 	repeated, err := newEngine(reopened, publisher).Execute(ctx, request, true)
