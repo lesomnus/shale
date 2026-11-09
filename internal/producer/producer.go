@@ -718,15 +718,40 @@ func (p *Producer) startingCeiling(s *source) int64 {
 
 // negotiate proposes the profile and applies what was agreed (§12.6).
 func (p *Producer) negotiate(ctx context.Context) error {
+	p.negotiating.Lock()
+	defer p.negotiating.Unlock()
 	if p.loading.Load() {
 		return nil
 	}
-	return p.negotiateSources(ctx, p.activeSources(), p.acceptedCatalog(), false)
+	return p.negotiateSourcesLocked(ctx, p.activeSources(), p.acceptedCatalog(), false)
+}
+
+// Profile versions are monotonic CP counters. A heartbeat/allocation response
+// can arrive after a newer negotiation, or become stale while awaiting this
+// lock. Only a hint still newer than the latest agreement can start an RPC.
+func (p *Producer) negotiateNewer(ctx context.Context, version int64) error {
+	// A monotonic agreement cannot make a non-newer hint useful later. Avoid
+	// delaying routine reports and old FIFO allocations behind a slow RPC.
+	if version <= 0 || version <= p.agreed().version {
+		return nil
+	}
+	p.negotiating.Lock()
+	defer p.negotiating.Unlock()
+	if p.loading.Load() || version <= 0 || version <= p.agreed().version {
+		return nil
+	}
+	// Select current capture/catalog state after the fence, not before waiting
+	// behind a lifecycle negotiation that can replace either snapshot.
+	return p.negotiateSourcesLocked(ctx, p.activeSources(), p.acceptedCatalog(), false)
 }
 
 func (p *Producer) negotiateSources(ctx context.Context, sources []*source, snapshot catalog.Snapshot, preview bool) error {
 	p.negotiating.Lock()
 	defer p.negotiating.Unlock()
+	return p.negotiateSourcesLocked(ctx, sources, snapshot, preview)
+}
+
+func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source, snapshot catalog.Snapshot, preview bool) error {
 	var proposals []*api.SourceProposal
 	var total int64
 	for _, s := range sources {
@@ -1532,11 +1557,8 @@ func (p *Producer) allocations(ctx context.Context) error {
 		if err != nil {
 			p.log.Warn("allocate", "err", err.Error())
 		} else {
-			if was := p.agreed().version; resp.GetProfileVersion() != was {
-				p.log.Info("profile changed; negotiating again", "was", was, "now", resp.GetProfileVersion())
-				if err := p.negotiate(ctx); err != nil {
-					p.log.Warn("negotiate", "err", err.Error())
-				}
+			if err := p.negotiateNewer(ctx, resp.GetProfileVersion()); err != nil {
+				p.log.Warn("negotiate", "err", err.Error())
 			}
 			for _, al := range resp.GetAllocations() {
 				for _, s := range p.activeSources() {
@@ -1698,10 +1720,8 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		return err
 	}
 	p.relay.set(resp.GetRelay())
-	if resp.GetProfileVersion() != 0 && resp.GetProfileVersion() != p.agreed().version {
-		if err := p.negotiate(ctx); err != nil {
-			p.log.Warn("negotiate", "err", err.Error())
-		}
+	if err := p.negotiateNewer(ctx, resp.GetProfileVersion()); err != nil {
+		p.log.Warn("negotiate", "err", err.Error())
 	}
 	for _, sg := range resp.GetSuggestions() {
 		p.log.Info("suggestion", "source", mustId(sg.GetSourceId()).String(), "max_bitrate", sg.GetMaxBitrate(), "suggested", sg.GetSuggested(), "applied", sg.GetApplied(), "why", sg.GetReason())
