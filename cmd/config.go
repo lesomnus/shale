@@ -81,6 +81,7 @@ type CameraWorkerConfig struct {
 	LeaseSeconds      int64         `yaml:"lease_seconds"`
 	DiscoveryInterval time.Duration `yaml:"discovery_interval"`
 	DiscoveryTimeout  time.Duration `yaml:"discovery_timeout"`
+	InitialNeighbors  bool          `yaml:"initial_neighbors"`
 	Ffmpeg            string        `yaml:"ffmpeg"`
 	Ffprobe           string        `yaml:"ffprobe"`
 	CameraCAFile      string        `yaml:"camera_ca_file"`
