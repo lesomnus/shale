@@ -95,7 +95,7 @@ func (s *source) authorizeLocked(f feeder, grant *api.CaptureEpochGrant, always 
 
 func (s *source) resetEpoch(f feeder, grant *api.CaptureEpochGrant, epoch string, stopped bool) bool {
 	s.mu.Lock()
-	if s.feeder != f || s.checkGrant(grant) != nil || s.managed && (grant == nil || !stopped && (epoch == "" || epoch != grant.GetCaptureEpoch())) || !s.managed && epoch != "" {
+	if s.feeder != f || s.checkGrant(grant) != nil || s.managed && (grant == nil || epoch != grant.GetCaptureEpoch() || !stopped && epoch == "") || !s.managed && epoch != "" {
 		s.mu.Unlock()
 		return false
 	}
@@ -104,7 +104,15 @@ func (s *source) resetEpoch(f feeder, grant *api.CaptureEpochGrant, epoch string
 		return false
 	}
 	if epoch == s.epoch && stopped == s.stopped {
+		// A refreshed signed grant can reach the relay before Begin's reply
+		// installs the Producer's local epoch. Its first Start is then ignored.
+		// This retained current Reset acknowledges local readiness: repeat the
+		// prime until init arrives, without disturbing established sources.
+		prime := s.managed && !stopped && s.started && s.init == nil
 		s.mu.Unlock()
+		if prime {
+			f.start(s.id)
+		}
 		return true
 	}
 	keys := s.invalidateLocked()
