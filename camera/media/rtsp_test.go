@@ -17,7 +17,7 @@ import (
 func TestActualRTSPQualification(t *testing.T) {
 	requireMediaTools(t)
 	address := cameratest.ServeRTSP(t)
-	req := camera.MediaRequest{Scope: camera.EnrollmentScope{TenantID: "tenant", NetworkID: "lan"}, NetworkScope: "lan", Profile: camera.MediaProfile{StreamURI: address, Codec: "h264", Width: 160, Height: 90, FPS: 10}, Duration: 2 * time.Second, RequireDecode: true}
+	req := camera.MediaRequest{Scope: camera.EnrollmentScope{TenantID: "tenant", NetworkID: "lan"}, NetworkScope: "lan", Profile: camera.MediaProfile{StreamURI: address, Codec: "h264", Width: 160, Height: 90, FPS: 10}, Desired: camera.DesiredState{GOP: 10}, Duration: 2500 * time.Millisecond, RequireDecode: true}
 	v := media.Verifier{NetworkScope: "lan", StartupTimeout: 3 * time.Second}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

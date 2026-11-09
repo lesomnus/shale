@@ -548,7 +548,7 @@ func verifiedMatches(reported, actual camera.MediaProfile, w camera.DesiredState
 	if reported.Codec != "" && codec(actual.Codec) != codec(reported.Codec) || reported.Width > 0 && actual.Width != reported.Width || reported.Height > 0 && actual.Height != reported.Height || reported.FPS > 0 && math.Abs(actual.FPS-reported.FPS) > reported.FPS*.15 {
 		return false
 	}
-	if w.Codec != "" && codec(actual.Codec) != codec(w.Codec) || w.Width > 0 && w.Width != actual.Width || w.Height > 0 && w.Height != actual.Height || w.FPS > 0 && math.Abs(actual.FPS-w.FPS) > w.FPS*.15 || w.Bitrate > 0 && actual.Bitrate > w.Bitrate*13/10 || w.GOP > 0 && actual.GOP > w.GOP+2 {
+	if w.Codec != "" && codec(actual.Codec) != codec(w.Codec) || w.Width > 0 && w.Width != actual.Width || w.Height > 0 && w.Height != actual.Height || w.FPS > 0 && math.Abs(actual.FPS-w.FPS) > w.FPS*.15 || w.Bitrate > 0 && actual.Bitrate > w.Bitrate*13/10 || w.GOP > 0 && (actual.GOP <= 0 || actual.GOP > w.GOP+2) {
 		return false
 	}
 	return true

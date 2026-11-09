@@ -142,7 +142,9 @@ func TestCameraProvisionerUsesCPSession(t *testing.T) {
 			defer built.Close()
 			handler, err := built.Host.Handler()
 			require.NoError(t, err)
-			q := provision.Request{ID: "session-camera", BindingID: "main-role", Scope: scope, Device: device.Hint("physical-camera"), Desired: cameramodel.DesiredState{ProfileToken: "main", Codec: "h264", Width: 160, Height: 90, FPS: 10, GOP: 10, Revision: "v1"}, Alias: "session-main", Provider: "cameras", ManagementRef: &management, StreamingRef: &streaming, AllowProducerRestart: true, ProbeDuration: 1500 * time.Millisecond}
+			// Observe two real keyframes after RTSP startup before testing the
+			// CP authentication boundary; a single keyframe cannot prove GOP.
+			q := provision.Request{ID: "session-camera", BindingID: "main-role", Scope: scope, Device: device.Hint("physical-camera"), Desired: cameramodel.DesiredState{ProfileToken: "main", Codec: "h264", Width: 160, Height: 90, FPS: 10, GOP: 10, Revision: "v1"}, Alias: "session-main", Provider: "cameras", ManagementRef: &management, StreamingRef: &streaming, AllowProducerRestart: true, ProbeDuration: 2500 * time.Millisecond}
 			body, err := json.Marshal(map[string]any{"request": q, "apply": true})
 			require.NoError(t, err)
 			req := httptest.NewRequest(http.MethodPost, "/v1/execute", bytes.NewReader(body)).WithContext(ctx)
@@ -154,6 +156,8 @@ func TestCameraProvisionerUsesCPSession(t *testing.T) {
 			require.NoError(t, json.Unmarshal(response.Body.Bytes(), &result))
 			require.NotNil(t, result.Run.Verified, "request must reach the CP authority after media qualification")
 			require.True(t, result.Run.Verified.Decoded)
+			require.Greater(t, result.Run.Verified.Profile.GOP, 0)
+			require.LessOrEqual(t, result.Run.Verified.Profile.GOP, q.Desired.GOP+2)
 			require.NotEqual(t, provision.Active, result.Run.Stage)
 			require.NotEmpty(t, result.Code)
 			after, err := os.ReadFile(configPath)
