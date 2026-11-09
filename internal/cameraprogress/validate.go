@@ -147,10 +147,12 @@ func validateRun(r provision.Run) error {
 			}
 		}
 		if v.Type() == reflect.TypeFor[camera.DeviceSettings]() {
-			f := v.Interface().(camera.DeviceSettings).PowerLineFrequency
-			if f != 0 && f != 50 && f != 60 {
+			if v.Interface().(camera.DeviceSettings).Validate() != nil {
 				return false
 			}
+		}
+		if v.Type() == reflect.TypeFor[camera.InitializationVideoMain]() && v.Interface().(camera.InitializationVideoMain).Validate() != nil {
+			return false
 		}
 		switch v.Kind() {
 		case reflect.String:

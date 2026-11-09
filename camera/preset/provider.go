@@ -343,5 +343,5 @@ func samePatch(a, b Rule) bool {
 }
 
 func knownField(field string) bool {
-	return slices.Contains([]string{camera.PresetFieldFrequency, camera.PresetFieldProfile, camera.PresetFieldCodec, camera.PresetFieldResolution, camera.PresetFieldFPS, camera.PresetFieldBitrate, camera.PresetFieldGOP}, field)
+	return slices.Contains([]string{camera.PresetFieldFrequency, camera.PresetFieldSmartCodec, camera.PresetFieldProfile, camera.PresetFieldCodec, camera.PresetFieldResolution, camera.PresetFieldFPS, camera.PresetFieldBitrate, camera.PresetFieldGOP}, field)
 }

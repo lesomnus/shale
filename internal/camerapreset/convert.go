@@ -13,7 +13,7 @@ import (
 func settings(v *api.CameraPresetSettings) camera.PresetSettings {
 	x := v.GetVideo()
 	return camera.PresetSettings{
-		Initialization: camera.DeviceSettings{PowerLineFrequency: int(v.GetPowerLineFrequency())},
+		Initialization: camera.DeviceSettings{PowerLineFrequency: int(v.GetPowerLineFrequency()), SmartCodec: v.GetSmartCodec()},
 		Video:          camera.DesiredState{ProfileToken: x.GetProfileToken(), Codec: x.GetCodec(), Width: int(x.GetWidth()), Height: int(x.GetHeight()), FPS: x.GetFps(), Bitrate: x.GetBitrateBps(), GOP: int(x.GetGopFrames()), Revision: x.GetRevision(), AllowFallback: x.GetAllowFallback()},
 		Preserve:       slices.Clone(v.GetPreserve()),
 	}
@@ -23,6 +23,7 @@ func encodeSettings(v camera.PresetSettings) *api.CameraPresetSettings {
 	x := v.Video
 	return api.CameraPresetSettings_builder{
 		PowerLineFrequency: int32(v.Initialization.PowerLineFrequency),
+		SmartCodec:         v.Initialization.SmartCodec,
 		Video:              api.CameraPresetVideo_builder{ProfileToken: x.ProfileToken, Codec: x.Codec, Width: int32(x.Width), Height: int32(x.Height), Fps: x.FPS, BitrateBps: x.Bitrate, GopFrames: int32(x.GOP), Revision: x.Revision, AllowFallback: x.AllowFallback}.Build(),
 		Preserve:           slices.Clone(v.Preserve),
 	}.Build()

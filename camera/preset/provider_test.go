@@ -286,6 +286,7 @@ rules:
     settings:
       initialization:
         power_line_frequency: 60
+        smart_codec: off
       video:
         profile_token: main
         codec: h264
@@ -295,9 +296,9 @@ rules:
     fallbacks:
       - video:
           fps: 25
-    required: [video.codec]
+    required: [video.codec, initialization.smart_codec]
 `
-	jsonDoc := `{"id":"office","revision":"v1","rules":[{"id":"c420","scope":{"tenant_id":"tenant"},"match":{"model":"EasyCam C420"},"settings":{"initialization":{"power_line_frequency":60},"video":{"profile_token":"main","codec":"h264","width":1920,"height":1080,"fps":30}},"fallbacks":[{"video":{"fps":25}}],"required":["video.codec"]}]}`
+	jsonDoc := `{"id":"office","revision":"v1","rules":[{"id":"c420","scope":{"tenant_id":"tenant"},"match":{"model":"EasyCam C420"},"settings":{"initialization":{"power_line_frequency":60,"smart_codec":"off"},"video":{"profile_token":"main","codec":"h264","width":1920,"height":1080,"fps":30}},"fallbacks":[{"video":{"fps":25}}],"required":["video.codec","initialization.smart_codec"]}]}`
 	for _, doc := range []string{yamlDoc, jsonDoc} {
 		p, err := Decode(strings.NewReader(doc))
 		if err != nil {
@@ -308,7 +309,7 @@ rules:
 			t.Fatal(err)
 		}
 		candidates, err := out.Candidates()
-		if err != nil || len(candidates) != 2 || candidates[0].Video.ProfileToken != "main" || candidates[1].Video.FPS != 25 {
+		if err != nil || len(candidates) != 2 || candidates[0].Video.ProfileToken != "main" || candidates[1].Video.FPS != 25 || candidates[0].Initialization.SmartCodec != "off" || candidates[1].Initialization.SmartCodec != "off" {
 			t.Fatalf("decoded wrong settings: %+v, %v", candidates, err)
 		}
 	}

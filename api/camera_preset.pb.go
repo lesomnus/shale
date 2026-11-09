@@ -199,6 +199,7 @@ type CameraPresetSettings struct {
 	xxx_hidden_PowerLineFrequency int32                  `protobuf:"varint,1,opt,name=power_line_frequency,json=powerLineFrequency"`
 	xxx_hidden_Video              *CameraPresetVideo     `protobuf:"bytes,2,opt,name=video"`
 	xxx_hidden_Preserve           []string               `protobuf:"bytes,3,rep,name=preserve"`
+	xxx_hidden_SmartCodec         string                 `protobuf:"bytes,4,opt,name=smart_codec,json=smartCodec"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -249,6 +250,13 @@ func (x *CameraPresetSettings) GetPreserve() []string {
 	return nil
 }
 
+func (x *CameraPresetSettings) GetSmartCodec() string {
+	if x != nil {
+		return x.xxx_hidden_SmartCodec
+	}
+	return ""
+}
+
 func (x *CameraPresetSettings) SetPowerLineFrequency(v int32) {
 	x.xxx_hidden_PowerLineFrequency = v
 }
@@ -259,6 +267,10 @@ func (x *CameraPresetSettings) SetVideo(v *CameraPresetVideo) {
 
 func (x *CameraPresetSettings) SetPreserve(v []string) {
 	x.xxx_hidden_Preserve = v
+}
+
+func (x *CameraPresetSettings) SetSmartCodec(v string) {
+	x.xxx_hidden_SmartCodec = v
 }
 
 func (x *CameraPresetSettings) HasVideo() bool {
@@ -278,6 +290,8 @@ type CameraPresetSettings_builder struct {
 	PowerLineFrequency int32
 	Video              *CameraPresetVideo
 	Preserve           []string
+	// Empty preserves current state; explicit values are off/on.
+	SmartCodec string
 }
 
 func (b0 CameraPresetSettings_builder) Build() *CameraPresetSettings {
@@ -287,6 +301,7 @@ func (b0 CameraPresetSettings_builder) Build() *CameraPresetSettings {
 	x.xxx_hidden_PowerLineFrequency = b.PowerLineFrequency
 	x.xxx_hidden_Video = b.Video
 	x.xxx_hidden_Preserve = b.Preserve
+	x.xxx_hidden_SmartCodec = b.SmartCodec
 	return m0
 }
 
@@ -1217,11 +1232,13 @@ const file_shale_camera_preset_proto_rawDesc = "" +
 	"\n" +
 	"gop_frames\x18\a \x01(\x05R\tgopFrames\x12\x1a\n" +
 	"\brevision\x18\b \x01(\tR\brevision\x12%\n" +
-	"\x0eallow_fallback\x18\t \x01(\bR\rallowFallback\"\x94\x01\n" +
+	"\x0eallow_fallback\x18\t \x01(\bR\rallowFallback\"\xb5\x01\n" +
 	"\x14CameraPresetSettings\x120\n" +
 	"\x14power_line_frequency\x18\x01 \x01(\x05R\x12powerLineFrequency\x12.\n" +
 	"\x05video\x18\x02 \x01(\v2\x18.shale.CameraPresetVideoR\x05video\x12\x1a\n" +
-	"\bpreserve\x18\x03 \x03(\tR\bpreserve\"W\n" +
+	"\bpreserve\x18\x03 \x03(\tR\bpreserve\x12\x1f\n" +
+	"\vsmart_codec\x18\x04 \x01(\tR\n" +
+	"smartCodec\"W\n" +
 	"\x18CameraPresetAlternatives\x12;\n" +
 	"\n" +
 	"candidates\x18\x01 \x03(\v2\x1b.shale.CameraPresetSettingsR\n" +

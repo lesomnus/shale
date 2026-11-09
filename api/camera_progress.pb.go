@@ -3394,6 +3394,7 @@ func (b0 CameraProvisionPreset_builder) Build() *CameraProvisionPreset {
 type CameraProvisionDeviceSettings struct {
 	state                         protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_PowerLineFrequency int32                  `protobuf:"varint,1,opt,name=power_line_frequency,json=powerLineFrequency"`
+	xxx_hidden_SmartCodec         string                 `protobuf:"bytes,2,opt,name=smart_codec,json=smartCodec"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -3430,14 +3431,26 @@ func (x *CameraProvisionDeviceSettings) GetPowerLineFrequency() int32 {
 	return 0
 }
 
+func (x *CameraProvisionDeviceSettings) GetSmartCodec() string {
+	if x != nil {
+		return x.xxx_hidden_SmartCodec
+	}
+	return ""
+}
+
 func (x *CameraProvisionDeviceSettings) SetPowerLineFrequency(v int32) {
 	x.xxx_hidden_PowerLineFrequency = v
+}
+
+func (x *CameraProvisionDeviceSettings) SetSmartCodec(v string) {
+	x.xxx_hidden_SmartCodec = v
 }
 
 type CameraProvisionDeviceSettings_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	PowerLineFrequency int32
+	SmartCodec         string
 }
 
 func (b0 CameraProvisionDeviceSettings_builder) Build() *CameraProvisionDeviceSettings {
@@ -3445,22 +3458,179 @@ func (b0 CameraProvisionDeviceSettings_builder) Build() *CameraProvisionDeviceSe
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_PowerLineFrequency = b.PowerLineFrequency
+	x.xxx_hidden_SmartCodec = b.SmartCodec
+	return m0
+}
+
+type CameraProvisionInitializationVideoMain struct {
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_EncodeType   string                 `protobuf:"bytes,1,opt,name=encode_type,json=encodeType"`
+	xxx_hidden_Resolution   string                 `protobuf:"bytes,2,opt,name=resolution"`
+	xxx_hidden_FrameRate    string                 `protobuf:"bytes,3,opt,name=frame_rate,json=frameRate"`
+	xxx_hidden_BitrateType  string                 `protobuf:"bytes,4,opt,name=bitrate_type,json=bitrateType"`
+	xxx_hidden_Quality      string                 `protobuf:"bytes,5,opt,name=quality"`
+	xxx_hidden_Bitrate      string                 `protobuf:"bytes,6,opt,name=bitrate"`
+	xxx_hidden_SmartCodec   string                 `protobuf:"bytes,7,opt,name=smart_codec,json=smartCodec"`
+	xxx_hidden_AdaptiveMode string                 `protobuf:"bytes,8,opt,name=adaptive_mode,json=adaptiveMode"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *CameraProvisionInitializationVideoMain) Reset() {
+	*x = CameraProvisionInitializationVideoMain{}
+	mi := &file_shale_camera_progress_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraProvisionInitializationVideoMain) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraProvisionInitializationVideoMain) ProtoMessage() {}
+
+func (x *CameraProvisionInitializationVideoMain) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_progress_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraProvisionInitializationVideoMain) GetEncodeType() string {
+	if x != nil {
+		return x.xxx_hidden_EncodeType
+	}
+	return ""
+}
+
+func (x *CameraProvisionInitializationVideoMain) GetResolution() string {
+	if x != nil {
+		return x.xxx_hidden_Resolution
+	}
+	return ""
+}
+
+func (x *CameraProvisionInitializationVideoMain) GetFrameRate() string {
+	if x != nil {
+		return x.xxx_hidden_FrameRate
+	}
+	return ""
+}
+
+func (x *CameraProvisionInitializationVideoMain) GetBitrateType() string {
+	if x != nil {
+		return x.xxx_hidden_BitrateType
+	}
+	return ""
+}
+
+func (x *CameraProvisionInitializationVideoMain) GetQuality() string {
+	if x != nil {
+		return x.xxx_hidden_Quality
+	}
+	return ""
+}
+
+func (x *CameraProvisionInitializationVideoMain) GetBitrate() string {
+	if x != nil {
+		return x.xxx_hidden_Bitrate
+	}
+	return ""
+}
+
+func (x *CameraProvisionInitializationVideoMain) GetSmartCodec() string {
+	if x != nil {
+		return x.xxx_hidden_SmartCodec
+	}
+	return ""
+}
+
+func (x *CameraProvisionInitializationVideoMain) GetAdaptiveMode() string {
+	if x != nil {
+		return x.xxx_hidden_AdaptiveMode
+	}
+	return ""
+}
+
+func (x *CameraProvisionInitializationVideoMain) SetEncodeType(v string) {
+	x.xxx_hidden_EncodeType = v
+}
+
+func (x *CameraProvisionInitializationVideoMain) SetResolution(v string) {
+	x.xxx_hidden_Resolution = v
+}
+
+func (x *CameraProvisionInitializationVideoMain) SetFrameRate(v string) {
+	x.xxx_hidden_FrameRate = v
+}
+
+func (x *CameraProvisionInitializationVideoMain) SetBitrateType(v string) {
+	x.xxx_hidden_BitrateType = v
+}
+
+func (x *CameraProvisionInitializationVideoMain) SetQuality(v string) {
+	x.xxx_hidden_Quality = v
+}
+
+func (x *CameraProvisionInitializationVideoMain) SetBitrate(v string) {
+	x.xxx_hidden_Bitrate = v
+}
+
+func (x *CameraProvisionInitializationVideoMain) SetSmartCodec(v string) {
+	x.xxx_hidden_SmartCodec = v
+}
+
+func (x *CameraProvisionInitializationVideoMain) SetAdaptiveMode(v string) {
+	x.xxx_hidden_AdaptiveMode = v
+}
+
+type CameraProvisionInitializationVideoMain_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	EncodeType   string
+	Resolution   string
+	FrameRate    string
+	BitrateType  string
+	Quality      string
+	Bitrate      string
+	SmartCodec   string
+	AdaptiveMode string
+}
+
+func (b0 CameraProvisionInitializationVideoMain_builder) Build() *CameraProvisionInitializationVideoMain {
+	m0 := &CameraProvisionInitializationVideoMain{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_EncodeType = b.EncodeType
+	x.xxx_hidden_Resolution = b.Resolution
+	x.xxx_hidden_FrameRate = b.FrameRate
+	x.xxx_hidden_BitrateType = b.BitrateType
+	x.xxx_hidden_Quality = b.Quality
+	x.xxx_hidden_Bitrate = b.Bitrate
+	x.xxx_hidden_SmartCodec = b.SmartCodec
+	x.xxx_hidden_AdaptiveMode = b.AdaptiveMode
 	return m0
 }
 
 type CameraProvisionInitializationPlan struct {
-	state               protoimpl.MessageState         `protogen:"opaque.v1"`
-	xxx_hidden_Before   *CameraProvisionDeviceSettings `protobuf:"bytes,1,opt,name=before"`
-	xxx_hidden_After    *CameraProvisionDeviceSettings `protobuf:"bytes,2,opt,name=after"`
-	xxx_hidden_Changes  *CameraProvisionStrings        `protobuf:"bytes,3,opt,name=changes"`
-	xxx_hidden_Revision string                         `protobuf:"bytes,4,opt,name=revision"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                      protoimpl.MessageState                  `protogen:"opaque.v1"`
+	xxx_hidden_Before          *CameraProvisionDeviceSettings          `protobuf:"bytes,1,opt,name=before"`
+	xxx_hidden_After           *CameraProvisionDeviceSettings          `protobuf:"bytes,2,opt,name=after"`
+	xxx_hidden_Changes         *CameraProvisionStrings                 `protobuf:"bytes,3,opt,name=changes"`
+	xxx_hidden_Revision        string                                  `protobuf:"bytes,4,opt,name=revision"`
+	xxx_hidden_VideoMainBefore *CameraProvisionInitializationVideoMain `protobuf:"bytes,5,opt,name=video_main_before,json=videoMainBefore"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *CameraProvisionInitializationPlan) Reset() {
 	*x = CameraProvisionInitializationPlan{}
-	mi := &file_shale_camera_progress_proto_msgTypes[29]
+	mi := &file_shale_camera_progress_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3472,7 +3642,7 @@ func (x *CameraProvisionInitializationPlan) String() string {
 func (*CameraProvisionInitializationPlan) ProtoMessage() {}
 
 func (x *CameraProvisionInitializationPlan) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_progress_proto_msgTypes[29]
+	mi := &file_shale_camera_progress_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3511,6 +3681,13 @@ func (x *CameraProvisionInitializationPlan) GetRevision() string {
 	return ""
 }
 
+func (x *CameraProvisionInitializationPlan) GetVideoMainBefore() *CameraProvisionInitializationVideoMain {
+	if x != nil {
+		return x.xxx_hidden_VideoMainBefore
+	}
+	return nil
+}
+
 func (x *CameraProvisionInitializationPlan) SetBefore(v *CameraProvisionDeviceSettings) {
 	x.xxx_hidden_Before = v
 }
@@ -3525,6 +3702,10 @@ func (x *CameraProvisionInitializationPlan) SetChanges(v *CameraProvisionStrings
 
 func (x *CameraProvisionInitializationPlan) SetRevision(v string) {
 	x.xxx_hidden_Revision = v
+}
+
+func (x *CameraProvisionInitializationPlan) SetVideoMainBefore(v *CameraProvisionInitializationVideoMain) {
+	x.xxx_hidden_VideoMainBefore = v
 }
 
 func (x *CameraProvisionInitializationPlan) HasBefore() bool {
@@ -3548,6 +3729,13 @@ func (x *CameraProvisionInitializationPlan) HasChanges() bool {
 	return x.xxx_hidden_Changes != nil
 }
 
+func (x *CameraProvisionInitializationPlan) HasVideoMainBefore() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_VideoMainBefore != nil
+}
+
 func (x *CameraProvisionInitializationPlan) ClearBefore() {
 	x.xxx_hidden_Before = nil
 }
@@ -3560,13 +3748,18 @@ func (x *CameraProvisionInitializationPlan) ClearChanges() {
 	x.xxx_hidden_Changes = nil
 }
 
+func (x *CameraProvisionInitializationPlan) ClearVideoMainBefore() {
+	x.xxx_hidden_VideoMainBefore = nil
+}
+
 type CameraProvisionInitializationPlan_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Before   *CameraProvisionDeviceSettings
-	After    *CameraProvisionDeviceSettings
-	Changes  *CameraProvisionStrings
-	Revision string
+	Before          *CameraProvisionDeviceSettings
+	After           *CameraProvisionDeviceSettings
+	Changes         *CameraProvisionStrings
+	Revision        string
+	VideoMainBefore *CameraProvisionInitializationVideoMain
 }
 
 func (b0 CameraProvisionInitializationPlan_builder) Build() *CameraProvisionInitializationPlan {
@@ -3577,6 +3770,7 @@ func (b0 CameraProvisionInitializationPlan_builder) Build() *CameraProvisionInit
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Changes = b.Changes
 	x.xxx_hidden_Revision = b.Revision
+	x.xxx_hidden_VideoMainBefore = b.VideoMainBefore
 	return m0
 }
 
@@ -3593,7 +3787,7 @@ type CameraProvisionWarning struct {
 
 func (x *CameraProvisionWarning) Reset() {
 	*x = CameraProvisionWarning{}
-	mi := &file_shale_camera_progress_proto_msgTypes[30]
+	mi := &file_shale_camera_progress_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3605,7 +3799,7 @@ func (x *CameraProvisionWarning) String() string {
 func (*CameraProvisionWarning) ProtoMessage() {}
 
 func (x *CameraProvisionWarning) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_progress_proto_msgTypes[30]
+	mi := &file_shale_camera_progress_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3702,7 +3896,7 @@ type CameraProvisionWarnings struct {
 
 func (x *CameraProvisionWarnings) Reset() {
 	*x = CameraProvisionWarnings{}
-	mi := &file_shale_camera_progress_proto_msgTypes[31]
+	mi := &file_shale_camera_progress_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3714,7 +3908,7 @@ func (x *CameraProvisionWarnings) String() string {
 func (*CameraProvisionWarnings) ProtoMessage() {}
 
 func (x *CameraProvisionWarnings) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_progress_proto_msgTypes[31]
+	mi := &file_shale_camera_progress_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3784,7 +3978,7 @@ type CameraProvisionState struct {
 
 func (x *CameraProvisionState) Reset() {
 	*x = CameraProvisionState{}
-	mi := &file_shale_camera_progress_proto_msgTypes[32]
+	mi := &file_shale_camera_progress_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3796,7 +3990,7 @@ func (x *CameraProvisionState) String() string {
 func (*CameraProvisionState) ProtoMessage() {}
 
 func (x *CameraProvisionState) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_progress_proto_msgTypes[32]
+	mi := &file_shale_camera_progress_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4509,14 +4703,31 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\x14alternatives_present\x18\x03 \x01(\bR\x13alternativesPresent\x12)\n" +
 	"\x10required_present\x18\x04 \x01(\bR\x0frequiredPresent\x12<\n" +
 	"\x1arequested_preserve_present\x18\x05 \x01(\bR\x18requestedPreservePresent\x12@\n" +
-	"\x1calternative_preserve_present\x18\x06 \x03(\bR\x1aalternativePreservePresent\"Q\n" +
+	"\x1calternative_preserve_present\x18\x06 \x03(\bR\x1aalternativePreservePresent\"r\n" +
 	"\x1dCameraProvisionDeviceSettings\x120\n" +
-	"\x14power_line_frequency\x18\x01 \x01(\x05R\x12powerLineFrequency\"\xf2\x01\n" +
+	"\x14power_line_frequency\x18\x01 \x01(\x05R\x12powerLineFrequency\x12\x1f\n" +
+	"\vsmart_codec\x18\x02 \x01(\tR\n" +
+	"smartCodec\"\xa5\x02\n" +
+	"&CameraProvisionInitializationVideoMain\x12\x1f\n" +
+	"\vencode_type\x18\x01 \x01(\tR\n" +
+	"encodeType\x12\x1e\n" +
+	"\n" +
+	"resolution\x18\x02 \x01(\tR\n" +
+	"resolution\x12\x1d\n" +
+	"\n" +
+	"frame_rate\x18\x03 \x01(\tR\tframeRate\x12!\n" +
+	"\fbitrate_type\x18\x04 \x01(\tR\vbitrateType\x12\x18\n" +
+	"\aquality\x18\x05 \x01(\tR\aquality\x12\x18\n" +
+	"\abitrate\x18\x06 \x01(\tR\abitrate\x12\x1f\n" +
+	"\vsmart_codec\x18\a \x01(\tR\n" +
+	"smartCodec\x12#\n" +
+	"\radaptive_mode\x18\b \x01(\tR\fadaptiveMode\"\xcd\x02\n" +
 	"!CameraProvisionInitializationPlan\x12<\n" +
 	"\x06before\x18\x01 \x01(\v2$.shale.CameraProvisionDeviceSettingsR\x06before\x12:\n" +
 	"\x05after\x18\x02 \x01(\v2$.shale.CameraProvisionDeviceSettingsR\x05after\x127\n" +
 	"\achanges\x18\x03 \x01(\v2\x1d.shale.CameraProvisionStringsR\achanges\x12\x1a\n" +
-	"\brevision\x18\x04 \x01(\tR\brevision\"\x92\x01\n" +
+	"\brevision\x18\x04 \x01(\tR\brevision\x12Y\n" +
+	"\x11video_main_before\x18\x05 \x01(\v2-.shale.CameraProvisionInitializationVideoMainR\x0fvideoMainBefore\"\x92\x01\n" +
 	"\x16CameraProvisionWarning\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x14\n" +
 	"\x05field\x18\x02 \x01(\tR\x05field\x12\x1c\n" +
@@ -4557,64 +4768,65 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\bwarnings\x18\x17 \x01(\v2\x1e.shale.CameraProvisionWarningsR\bwarnings\x12Q\n" +
 	"\x12deployment_profile\x18\x18 \x01(\v2\".shale.CameraProvisionMediaProfileR\x11deploymentProfileB$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_camera_progress_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_shale_camera_progress_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_shale_camera_progress_proto_goTypes = []any{
-	(*CameraProvisionStrings)(nil),             // 0: shale.CameraProvisionStrings
-	(*CameraProvisionDoubles)(nil),             // 1: shale.CameraProvisionDoubles
-	(*CameraProvisionIntegers)(nil),            // 2: shale.CameraProvisionIntegers
-	(*CameraProvisionEndpoint)(nil),            // 3: shale.CameraProvisionEndpoint
-	(*CameraProvisionEndpoints)(nil),           // 4: shale.CameraProvisionEndpoints
-	(*CameraProvisionEvidence)(nil),            // 5: shale.CameraProvisionEvidence
-	(*CameraProvisionEvidenceList)(nil),        // 6: shale.CameraProvisionEvidenceList
-	(*CameraProvisionDevice)(nil),              // 7: shale.CameraProvisionDevice
-	(*CameraProvisionCredentialRef)(nil),       // 8: shale.CameraProvisionCredentialRef
-	(*CameraProvisionRequest)(nil),             // 9: shale.CameraProvisionRequest
-	(*CameraProvisionResolution)(nil),          // 10: shale.CameraProvisionResolution
-	(*CameraProvisionResolutions)(nil),         // 11: shale.CameraProvisionResolutions
-	(*CameraProvisionProfileCapability)(nil),   // 12: shale.CameraProvisionProfileCapability
-	(*CameraProvisionProfileCapabilities)(nil), // 13: shale.CameraProvisionProfileCapabilities
-	(*CameraProvisionCapabilities)(nil),        // 14: shale.CameraProvisionCapabilities
-	(*CameraProvisionMediaProfile)(nil),        // 15: shale.CameraProvisionMediaProfile
-	(*CameraProvisionMediaProfiles)(nil),       // 16: shale.CameraProvisionMediaProfiles
-	(*CameraProvisionCurrentState)(nil),        // 17: shale.CameraProvisionCurrentState
-	(*CameraProvisionInspection)(nil),          // 18: shale.CameraProvisionInspection
-	(*CameraProvisionChangePlan)(nil),          // 19: shale.CameraProvisionChangePlan
-	(*CameraProvisionVerifiedState)(nil),       // 20: shale.CameraProvisionVerifiedState
-	(*CameraProvisionEvent)(nil),               // 21: shale.CameraProvisionEvent
-	(*CameraProvisionEvents)(nil),              // 22: shale.CameraProvisionEvents
-	(*CameraProvisionImpact)(nil),              // 23: shale.CameraProvisionImpact
-	(*CameraProvisionImpacts)(nil),             // 24: shale.CameraProvisionImpacts
-	(*CameraProvisionBinding)(nil),             // 25: shale.CameraProvisionBinding
-	(*CameraProvisionSettings)(nil),            // 26: shale.CameraProvisionSettings
-	(*CameraProvisionPreset)(nil),              // 27: shale.CameraProvisionPreset
-	(*CameraProvisionDeviceSettings)(nil),      // 28: shale.CameraProvisionDeviceSettings
-	(*CameraProvisionInitializationPlan)(nil),  // 29: shale.CameraProvisionInitializationPlan
-	(*CameraProvisionWarning)(nil),             // 30: shale.CameraProvisionWarning
-	(*CameraProvisionWarnings)(nil),            // 31: shale.CameraProvisionWarnings
-	(*CameraProvisionState)(nil),               // 32: shale.CameraProvisionState
-	(*timestamppb.Timestamp)(nil),              // 33: google.protobuf.Timestamp
-	(*CameraPresetScope)(nil),                  // 34: shale.CameraPresetScope
-	(*CameraPresetVideo)(nil),                  // 35: shale.CameraPresetVideo
-	(*CameraBootstrapProfile)(nil),             // 36: shale.CameraBootstrapProfile
-	(*CameraDeviceTLSIdentity)(nil),            // 37: shale.CameraDeviceTLSIdentity
-	(*CameraPresetSettings)(nil),               // 38: shale.CameraPresetSettings
-	(*CameraResolvedPreset)(nil),               // 39: shale.CameraResolvedPreset
+	(*CameraProvisionStrings)(nil),                 // 0: shale.CameraProvisionStrings
+	(*CameraProvisionDoubles)(nil),                 // 1: shale.CameraProvisionDoubles
+	(*CameraProvisionIntegers)(nil),                // 2: shale.CameraProvisionIntegers
+	(*CameraProvisionEndpoint)(nil),                // 3: shale.CameraProvisionEndpoint
+	(*CameraProvisionEndpoints)(nil),               // 4: shale.CameraProvisionEndpoints
+	(*CameraProvisionEvidence)(nil),                // 5: shale.CameraProvisionEvidence
+	(*CameraProvisionEvidenceList)(nil),            // 6: shale.CameraProvisionEvidenceList
+	(*CameraProvisionDevice)(nil),                  // 7: shale.CameraProvisionDevice
+	(*CameraProvisionCredentialRef)(nil),           // 8: shale.CameraProvisionCredentialRef
+	(*CameraProvisionRequest)(nil),                 // 9: shale.CameraProvisionRequest
+	(*CameraProvisionResolution)(nil),              // 10: shale.CameraProvisionResolution
+	(*CameraProvisionResolutions)(nil),             // 11: shale.CameraProvisionResolutions
+	(*CameraProvisionProfileCapability)(nil),       // 12: shale.CameraProvisionProfileCapability
+	(*CameraProvisionProfileCapabilities)(nil),     // 13: shale.CameraProvisionProfileCapabilities
+	(*CameraProvisionCapabilities)(nil),            // 14: shale.CameraProvisionCapabilities
+	(*CameraProvisionMediaProfile)(nil),            // 15: shale.CameraProvisionMediaProfile
+	(*CameraProvisionMediaProfiles)(nil),           // 16: shale.CameraProvisionMediaProfiles
+	(*CameraProvisionCurrentState)(nil),            // 17: shale.CameraProvisionCurrentState
+	(*CameraProvisionInspection)(nil),              // 18: shale.CameraProvisionInspection
+	(*CameraProvisionChangePlan)(nil),              // 19: shale.CameraProvisionChangePlan
+	(*CameraProvisionVerifiedState)(nil),           // 20: shale.CameraProvisionVerifiedState
+	(*CameraProvisionEvent)(nil),                   // 21: shale.CameraProvisionEvent
+	(*CameraProvisionEvents)(nil),                  // 22: shale.CameraProvisionEvents
+	(*CameraProvisionImpact)(nil),                  // 23: shale.CameraProvisionImpact
+	(*CameraProvisionImpacts)(nil),                 // 24: shale.CameraProvisionImpacts
+	(*CameraProvisionBinding)(nil),                 // 25: shale.CameraProvisionBinding
+	(*CameraProvisionSettings)(nil),                // 26: shale.CameraProvisionSettings
+	(*CameraProvisionPreset)(nil),                  // 27: shale.CameraProvisionPreset
+	(*CameraProvisionDeviceSettings)(nil),          // 28: shale.CameraProvisionDeviceSettings
+	(*CameraProvisionInitializationVideoMain)(nil), // 29: shale.CameraProvisionInitializationVideoMain
+	(*CameraProvisionInitializationPlan)(nil),      // 30: shale.CameraProvisionInitializationPlan
+	(*CameraProvisionWarning)(nil),                 // 31: shale.CameraProvisionWarning
+	(*CameraProvisionWarnings)(nil),                // 32: shale.CameraProvisionWarnings
+	(*CameraProvisionState)(nil),                   // 33: shale.CameraProvisionState
+	(*timestamppb.Timestamp)(nil),                  // 34: google.protobuf.Timestamp
+	(*CameraPresetScope)(nil),                      // 35: shale.CameraPresetScope
+	(*CameraPresetVideo)(nil),                      // 36: shale.CameraPresetVideo
+	(*CameraBootstrapProfile)(nil),                 // 37: shale.CameraBootstrapProfile
+	(*CameraDeviceTLSIdentity)(nil),                // 38: shale.CameraDeviceTLSIdentity
+	(*CameraPresetSettings)(nil),                   // 39: shale.CameraPresetSettings
+	(*CameraResolvedPreset)(nil),                   // 40: shale.CameraResolvedPreset
 }
 var file_shale_camera_progress_proto_depIdxs = []int32{
 	3,  // 0: shale.CameraProvisionEndpoints.items:type_name -> shale.CameraProvisionEndpoint
-	33, // 1: shale.CameraProvisionEvidence.at:type_name -> google.protobuf.Timestamp
+	34, // 1: shale.CameraProvisionEvidence.at:type_name -> google.protobuf.Timestamp
 	5,  // 2: shale.CameraProvisionEvidenceList.items:type_name -> shale.CameraProvisionEvidence
 	4,  // 3: shale.CameraProvisionDevice.endpoints:type_name -> shale.CameraProvisionEndpoints
 	6,  // 4: shale.CameraProvisionDevice.evidence:type_name -> shale.CameraProvisionEvidenceList
-	34, // 5: shale.CameraProvisionCredentialRef.scope:type_name -> shale.CameraPresetScope
-	34, // 6: shale.CameraProvisionRequest.scope:type_name -> shale.CameraPresetScope
+	35, // 5: shale.CameraProvisionCredentialRef.scope:type_name -> shale.CameraPresetScope
+	35, // 6: shale.CameraProvisionRequest.scope:type_name -> shale.CameraPresetScope
 	7,  // 7: shale.CameraProvisionRequest.device:type_name -> shale.CameraProvisionDevice
-	35, // 8: shale.CameraProvisionRequest.desired:type_name -> shale.CameraPresetVideo
+	36, // 8: shale.CameraProvisionRequest.desired:type_name -> shale.CameraPresetVideo
 	8,  // 9: shale.CameraProvisionRequest.management_ref:type_name -> shale.CameraProvisionCredentialRef
 	8,  // 10: shale.CameraProvisionRequest.initial_ref:type_name -> shale.CameraProvisionCredentialRef
 	8,  // 11: shale.CameraProvisionRequest.streaming_ref:type_name -> shale.CameraProvisionCredentialRef
-	36, // 12: shale.CameraProvisionRequest.bootstrap:type_name -> shale.CameraBootstrapProfile
-	37, // 13: shale.CameraProvisionRequest.device_tls_identity:type_name -> shale.CameraDeviceTLSIdentity
+	37, // 12: shale.CameraProvisionRequest.bootstrap:type_name -> shale.CameraBootstrapProfile
+	38, // 13: shale.CameraProvisionRequest.device_tls_identity:type_name -> shale.CameraDeviceTLSIdentity
 	10, // 14: shale.CameraProvisionResolutions.items:type_name -> shale.CameraProvisionResolution
 	0,  // 15: shale.CameraProvisionProfileCapability.codecs:type_name -> shale.CameraProvisionStrings
 	11, // 16: shale.CameraProvisionProfileCapability.resolutions:type_name -> shale.CameraProvisionResolutions
@@ -4627,7 +4839,7 @@ var file_shale_camera_progress_proto_depIdxs = []int32{
 	6,  // 23: shale.CameraProvisionMediaProfile.evidence:type_name -> shale.CameraProvisionEvidenceList
 	15, // 24: shale.CameraProvisionMediaProfiles.items:type_name -> shale.CameraProvisionMediaProfile
 	16, // 25: shale.CameraProvisionCurrentState.profiles:type_name -> shale.CameraProvisionMediaProfiles
-	33, // 26: shale.CameraProvisionCurrentState.observed_at:type_name -> google.protobuf.Timestamp
+	34, // 26: shale.CameraProvisionCurrentState.observed_at:type_name -> google.protobuf.Timestamp
 	7,  // 27: shale.CameraProvisionInspection.device:type_name -> shale.CameraProvisionDevice
 	14, // 28: shale.CameraProvisionInspection.capabilities:type_name -> shale.CameraProvisionCapabilities
 	17, // 29: shale.CameraProvisionInspection.current:type_name -> shale.CameraProvisionCurrentState
@@ -4636,41 +4848,42 @@ var file_shale_camera_progress_proto_depIdxs = []int32{
 	0,  // 32: shale.CameraProvisionChangePlan.changes:type_name -> shale.CameraProvisionStrings
 	15, // 33: shale.CameraProvisionVerifiedState.profile:type_name -> shale.CameraProvisionMediaProfile
 	6,  // 34: shale.CameraProvisionVerifiedState.evidence:type_name -> shale.CameraProvisionEvidenceList
-	33, // 35: shale.CameraProvisionVerifiedState.observed_at:type_name -> google.protobuf.Timestamp
-	33, // 36: shale.CameraProvisionEvent.at:type_name -> google.protobuf.Timestamp
+	34, // 35: shale.CameraProvisionVerifiedState.observed_at:type_name -> google.protobuf.Timestamp
+	34, // 36: shale.CameraProvisionEvent.at:type_name -> google.protobuf.Timestamp
 	21, // 37: shale.CameraProvisionEvents.items:type_name -> shale.CameraProvisionEvent
 	23, // 38: shale.CameraProvisionImpacts.items:type_name -> shale.CameraProvisionImpact
-	33, // 39: shale.CameraProvisionBinding.deployed_at:type_name -> google.protobuf.Timestamp
-	33, // 40: shale.CameraProvisionBinding.committed_at:type_name -> google.protobuf.Timestamp
-	38, // 41: shale.CameraProvisionSettings.value:type_name -> shale.CameraPresetSettings
-	39, // 42: shale.CameraProvisionPreset.value:type_name -> shale.CameraResolvedPreset
+	34, // 39: shale.CameraProvisionBinding.deployed_at:type_name -> google.protobuf.Timestamp
+	34, // 40: shale.CameraProvisionBinding.committed_at:type_name -> google.protobuf.Timestamp
+	39, // 41: shale.CameraProvisionSettings.value:type_name -> shale.CameraPresetSettings
+	40, // 42: shale.CameraProvisionPreset.value:type_name -> shale.CameraResolvedPreset
 	28, // 43: shale.CameraProvisionInitializationPlan.before:type_name -> shale.CameraProvisionDeviceSettings
 	28, // 44: shale.CameraProvisionInitializationPlan.after:type_name -> shale.CameraProvisionDeviceSettings
 	0,  // 45: shale.CameraProvisionInitializationPlan.changes:type_name -> shale.CameraProvisionStrings
-	30, // 46: shale.CameraProvisionWarnings.items:type_name -> shale.CameraProvisionWarning
-	9,  // 47: shale.CameraProvisionState.request:type_name -> shale.CameraProvisionRequest
-	33, // 48: shale.CameraProvisionState.created_at:type_name -> google.protobuf.Timestamp
-	33, // 49: shale.CameraProvisionState.updated_at:type_name -> google.protobuf.Timestamp
-	18, // 50: shale.CameraProvisionState.inspection:type_name -> shale.CameraProvisionInspection
-	19, // 51: shale.CameraProvisionState.plan:type_name -> shale.CameraProvisionChangePlan
-	20, // 52: shale.CameraProvisionState.verified:type_name -> shale.CameraProvisionVerifiedState
-	8,  // 53: shale.CameraProvisionState.initial_ref:type_name -> shale.CameraProvisionCredentialRef
-	8,  // 54: shale.CameraProvisionState.management_ref:type_name -> shale.CameraProvisionCredentialRef
-	8,  // 55: shale.CameraProvisionState.streaming_ref:type_name -> shale.CameraProvisionCredentialRef
-	25, // 56: shale.CameraProvisionState.binding:type_name -> shale.CameraProvisionBinding
-	22, // 57: shale.CameraProvisionState.events:type_name -> shale.CameraProvisionEvents
-	24, // 58: shale.CameraProvisionState.impacts:type_name -> shale.CameraProvisionImpacts
-	27, // 59: shale.CameraProvisionState.preset:type_name -> shale.CameraProvisionPreset
-	26, // 60: shale.CameraProvisionState.effective:type_name -> shale.CameraProvisionSettings
-	29, // 61: shale.CameraProvisionState.initialization_plan:type_name -> shale.CameraProvisionInitializationPlan
-	28, // 62: shale.CameraProvisionState.initialized:type_name -> shale.CameraProvisionDeviceSettings
-	31, // 63: shale.CameraProvisionState.warnings:type_name -> shale.CameraProvisionWarnings
-	15, // 64: shale.CameraProvisionState.deployment_profile:type_name -> shale.CameraProvisionMediaProfile
-	65, // [65:65] is the sub-list for method output_type
-	65, // [65:65] is the sub-list for method input_type
-	65, // [65:65] is the sub-list for extension type_name
-	65, // [65:65] is the sub-list for extension extendee
-	0,  // [0:65] is the sub-list for field type_name
+	29, // 46: shale.CameraProvisionInitializationPlan.video_main_before:type_name -> shale.CameraProvisionInitializationVideoMain
+	31, // 47: shale.CameraProvisionWarnings.items:type_name -> shale.CameraProvisionWarning
+	9,  // 48: shale.CameraProvisionState.request:type_name -> shale.CameraProvisionRequest
+	34, // 49: shale.CameraProvisionState.created_at:type_name -> google.protobuf.Timestamp
+	34, // 50: shale.CameraProvisionState.updated_at:type_name -> google.protobuf.Timestamp
+	18, // 51: shale.CameraProvisionState.inspection:type_name -> shale.CameraProvisionInspection
+	19, // 52: shale.CameraProvisionState.plan:type_name -> shale.CameraProvisionChangePlan
+	20, // 53: shale.CameraProvisionState.verified:type_name -> shale.CameraProvisionVerifiedState
+	8,  // 54: shale.CameraProvisionState.initial_ref:type_name -> shale.CameraProvisionCredentialRef
+	8,  // 55: shale.CameraProvisionState.management_ref:type_name -> shale.CameraProvisionCredentialRef
+	8,  // 56: shale.CameraProvisionState.streaming_ref:type_name -> shale.CameraProvisionCredentialRef
+	25, // 57: shale.CameraProvisionState.binding:type_name -> shale.CameraProvisionBinding
+	22, // 58: shale.CameraProvisionState.events:type_name -> shale.CameraProvisionEvents
+	24, // 59: shale.CameraProvisionState.impacts:type_name -> shale.CameraProvisionImpacts
+	27, // 60: shale.CameraProvisionState.preset:type_name -> shale.CameraProvisionPreset
+	26, // 61: shale.CameraProvisionState.effective:type_name -> shale.CameraProvisionSettings
+	30, // 62: shale.CameraProvisionState.initialization_plan:type_name -> shale.CameraProvisionInitializationPlan
+	28, // 63: shale.CameraProvisionState.initialized:type_name -> shale.CameraProvisionDeviceSettings
+	32, // 64: shale.CameraProvisionState.warnings:type_name -> shale.CameraProvisionWarnings
+	15, // 65: shale.CameraProvisionState.deployment_profile:type_name -> shale.CameraProvisionMediaProfile
+	66, // [66:66] is the sub-list for method output_type
+	66, // [66:66] is the sub-list for method input_type
+	66, // [66:66] is the sub-list for extension type_name
+	66, // [66:66] is the sub-list for extension extendee
+	0,  // [0:66] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_progress_proto_init() }
@@ -4686,7 +4899,7 @@ func file_shale_camera_progress_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_progress_proto_rawDesc), len(file_shale_camera_progress_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

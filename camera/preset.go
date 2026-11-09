@@ -28,7 +28,15 @@ type PresetRef struct {
 // current setting. Changing power-line frequency can change the frame rates
 // reported by a device, so media capabilities must be inspected again afterward.
 type DeviceSettings struct {
-	PowerLineFrequency int `json:"power_line_frequency,omitempty" yaml:"power_line_frequency,omitempty"`
+	PowerLineFrequency int    `json:"power_line_frequency,omitempty" yaml:"power_line_frequency,omitempty"`
+	SmartCodec         string `json:"smart_codec,omitempty" yaml:"smart_codec,omitempty"`
+}
+
+func (s DeviceSettings) Validate() error {
+	if s.PowerLineFrequency != 0 && s.PowerLineFrequency != 50 && s.PowerLineFrequency != 60 || s.SmartCodec != "" && s.SmartCodec != "off" && s.SmartCodec != "on" {
+		return ErrInvalid
+	}
+	return nil
 }
 
 type PresetSettings struct {
@@ -60,10 +68,11 @@ type DevicePresetProvider interface {
 }
 
 type InitializationPlan struct {
-	Before   DeviceSettings `json:"before"`
-	After    DeviceSettings `json:"after"`
-	Changes  []string       `json:"changes,omitempty"`
-	Revision string         `json:"revision"`
+	Before          DeviceSettings           `json:"before"`
+	After           DeviceSettings           `json:"after"`
+	Changes         []string                 `json:"changes,omitempty"`
+	Revision        string                   `json:"revision"`
+	VideoMainBefore *InitializationVideoMain `json:"video_main_before,omitempty"`
 }
 
 // DeviceInitializer applies prerequisites after authentication and before media
@@ -88,6 +97,7 @@ type PresetWarning struct {
 
 const (
 	PresetFieldFrequency  = "initialization.power_line_frequency"
+	PresetFieldSmartCodec = "initialization.smart_codec"
 	PresetFieldCodec      = "video.codec"
 	PresetFieldResolution = "video.resolution"
 	PresetFieldFPS        = "video.fps"
@@ -100,8 +110,8 @@ const (
 // include both dimensions. Revision and AllowFallback are workflow metadata;
 // neither may authorize fallback outside the explicit candidate list.
 func ValidatePresetSettings(s PresetSettings) error {
-	if f := s.Initialization.PowerLineFrequency; f != 0 && f != 50 && f != 60 {
-		return fmt.Errorf("%w: invalid power-line frequency", ErrInvalid)
+	if err := s.Initialization.Validate(); err != nil {
+		return fmt.Errorf("%w: invalid device initialization setting", ErrInvalid)
 	}
 	v := s.Video
 	if v.Width < 0 || v.Height < 0 || (v.Width == 0) != (v.Height == 0) || v.FPS < 0 || math.IsNaN(v.FPS) || math.IsInf(v.FPS, 0) || v.Bitrate < 0 || v.GOP < 0 {
@@ -124,7 +134,10 @@ func ValidatePresetSettings(s PresetSettings) error {
 // documented interpretation of model/device overrides and fallback patches.
 func MergePresetSettings(base, override PresetSettings) PresetSettings {
 	if override.Initialization.PowerLineFrequency != 0 {
-		base.Initialization = override.Initialization
+		base.Initialization.PowerLineFrequency = override.Initialization.PowerLineFrequency
+	}
+	if override.Initialization.SmartCodec != "" {
+		base.Initialization.SmartCodec = override.Initialization.SmartCodec
 	}
 	v, o := &base.Video, override.Video
 	if o.ProfileToken != "" {
@@ -152,6 +165,8 @@ func MergePresetSettings(base, override PresetSettings) PresetSettings {
 		switch f {
 		case PresetFieldFrequency:
 			base.Initialization.PowerLineFrequency = 0
+		case PresetFieldSmartCodec:
+			base.Initialization.SmartCodec = ""
 		case PresetFieldProfile:
 			v.ProfileToken = ""
 		case PresetFieldCodec:
@@ -254,7 +269,7 @@ func (p DevicePreset) Clone() DevicePreset {
 // supplement Reason with the rejected candidate's structured failure category.
 func WarningsFor(requested, effective PresetSettings) []PresetWarning {
 	var out []PresetWarning
-	for _, f := range []string{PresetFieldFrequency, PresetFieldProfile, PresetFieldCodec, PresetFieldResolution, PresetFieldFPS, PresetFieldBitrate, PresetFieldGOP} {
+	for _, f := range []string{PresetFieldFrequency, PresetFieldSmartCodec, PresetFieldProfile, PresetFieldCodec, PresetFieldResolution, PresetFieldFPS, PresetFieldBitrate, PresetFieldGOP} {
 		want, got := presetField(requested, f), presetField(effective, f)
 		if want != got {
 			if got == "" {
@@ -267,7 +282,7 @@ func WarningsFor(requested, effective PresetSettings) []PresetWarning {
 }
 
 func knownPresetField(f string) bool {
-	return slices.Contains([]string{PresetFieldFrequency, PresetFieldProfile, PresetFieldCodec, PresetFieldResolution, PresetFieldFPS, PresetFieldBitrate, PresetFieldGOP}, f)
+	return slices.Contains([]string{PresetFieldFrequency, PresetFieldSmartCodec, PresetFieldProfile, PresetFieldCodec, PresetFieldResolution, PresetFieldFPS, PresetFieldBitrate, PresetFieldGOP}, f)
 }
 
 func presetField(s PresetSettings, f string) string {
@@ -280,6 +295,8 @@ func presetField(s PresetSettings, f string) string {
 	switch f {
 	case PresetFieldFrequency:
 		return integer(int64(s.Initialization.PowerLineFrequency))
+	case PresetFieldSmartCodec:
+		return s.Initialization.SmartCodec
 	case PresetFieldProfile:
 		return s.Video.ProfileToken
 	case PresetFieldCodec:
