@@ -74,6 +74,23 @@ func TestFullRunWireRoundTrip(t *testing.T) {
 	require.Equal(t, want.InitializationPlan, got.InitializationPlan)
 }
 
+func TestDeviceTLSIdentityWireRecoveryOwnsAndValidatesTheExactDevice(t *testing.T) {
+	want := checkpoint()
+	want.Request.DeviceTLSIdentity = &camera.DeviceTLSIdentity{DeviceID: string(want.Request.Device.ID), SPKISHA256: "sha256:" + strings.Repeat("a", 64)}
+	value, got := wireRoundTrip(t, want)
+	require.Equal(t, want, got)
+	require.NotSame(t, want.Request.DeviceTLSIdentity, got.Request.DeviceTLSIdentity)
+	want.Request.DeviceTLSIdentity.SPKISHA256 = "sha256:" + strings.Repeat("b", 64)
+	require.Equal(t, "sha256:"+strings.Repeat("a", 64), value.GetRequest().GetDeviceTlsIdentity().GetSpkiSha256())
+	value.GetRequest().GetDeviceTlsIdentity().SetDeviceId("another-device")
+	_, err := Decode(value)
+	require.ErrorIs(t, err, ErrInvalid)
+	value.GetRequest().GetDeviceTlsIdentity().SetDeviceId(string(got.Request.Device.ID))
+	value.GetRequest().GetDeviceTlsIdentity().SetSpkiSha256("sha256:" + strings.Repeat("A", 64))
+	_, err = Decode(value)
+	require.ErrorIs(t, err, ErrInvalid)
+}
+
 func TestLegacyCheckpointWithoutBootstrapRoundTrip(t *testing.T) {
 	want := checkpoint()
 	want.Request.Bootstrap = nil

@@ -24,6 +24,10 @@ message CameraEnrollmentPolicy {
   string initial_username = 6;
   // Copied into each job; no scheme, port or firmware inference is permitted.
   CameraBootstrapProfile bootstrap = 7;
+  // Each approval names one device in this exact network/site/tenant. A job
+  // receives only its device's identity, detached from the immutable policy.
+  // Present entries require an explicit HTTPS bootstrap destination.
+  repeated CameraDeviceTLSIdentity device_tls_identities = 8;
 }
 // One immutable policy revision. The network selects its active policy by CAS.
 message CameraPolicy {

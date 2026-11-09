@@ -15,11 +15,16 @@ import (
 // Resolve names immutable revisions and authorizes their entire scope before
 // they become job inputs. The network's current active pointer is deliberately
 // not consulted: an operator can explicitly reapply an older pinned revision.
-func (s Core) cameraPinnedInputs(ctx context.Context, a *api.CameraAssignment, input *api.CameraJobInputs) (*api.CameraJobInputs, error) {
+func (s Core) cameraPinnedInputs(ctx context.Context, a *api.CameraAssignment, d *api.CameraDevice, input *api.CameraJobInputs) (*api.CameraJobInputs, error) {
 	if input == nil {
 		return nil, invalid("inputs", "pinned job inputs are required")
 	}
 	out := proto.Clone(input).(*api.CameraJobInputs)
+	if out.GetPolicy() == nil {
+		if err := cameraExactTLSIdentity(nil, a, d, out); err != nil {
+			return nil, err
+		}
+	}
 	if ref := out.GetPolicy(); ref != nil {
 		id, err := cameraPresetID(ref.GetId(), DomCameraPolicy)
 		if err != nil {
@@ -40,6 +45,9 @@ func (s Core) cameraPinnedInputs(ctx context.Context, a *api.CameraAssignment, i
 		}
 		if !proto.Equal(out.GetBootstrap(), p.GetEnrollment().GetBootstrap()) {
 			return nil, denied("bootstrap", "bootstrap does not match the pinned policy revision")
+		}
+		if err := cameraExactTLSIdentity(p, a, d, out); err != nil {
+			return nil, err
 		}
 		pinned, err := s.Next().CameraPreset().Get(ctx, api.CameraPresetGetRequest_builder{Ref: api.CameraPresetRef_builder{Id: p.GetPreset().GetId()}.Build()}.Build())
 		if err != nil {

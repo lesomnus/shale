@@ -155,6 +155,9 @@ func (s Core) cameraEnrollmentPolicy(ctx context.Context, n *api.CameraNetwork, 
 	if err := cameraBootstrap(p.GetBootstrap()); err != nil {
 		return err
 	}
+	if err := s.cameraPolicyTLSIdentities(ctx, n, p); err != nil {
+		return err
+	}
 	if p.GetAutomatic() && (p.GetMaxDevices() == 0 || (!p.GetAllowAny() && len(p.GetEligible()) == 0)) {
 		return invalid("enrollment", "automatic enrollment requires a device limit and explicit eligibility")
 	}

@@ -64,6 +64,7 @@ type Request struct {
 	AllowProducerRestart bool                      `json:"allow_producer_restart"`
 	ProbeDuration        time.Duration             `json:"probe_duration,omitempty"`
 	Bootstrap            *camera.BootstrapSettings `json:"bootstrap,omitempty"`
+	DeviceTLSIdentity    *camera.DeviceTLSIdentity `json:"device_tls_identity,omitempty"`
 }
 
 type Event struct {
@@ -168,6 +169,9 @@ func (q Request) Validate() error {
 	if q.Bootstrap != nil && q.Bootstrap.Validate() != nil {
 		return camera.ErrInvalid
 	}
+	if q.DeviceTLSIdentity != nil && (q.DeviceTLSIdentity.Validate() != nil || q.DeviceTLSIdentity.DeviceID != string(q.Device.ID) || q.Bootstrap == nil || q.Bootstrap.WebScheme != "https") {
+		return camera.ErrInvalid
+	}
 	if q.ID == "" || q.BindingID == "" || q.Device.ID == "" || (!q.UsePreset && q.Desired.Revision == "") || q.Provider == "" || q.Scope.TenantID == "" || q.Scope.SetID == "" || q.Scope.ProducerID == "" || q.Scope.NetworkID == "" || len(q.Device.Endpoints) == 0 {
 		return camera.ErrInvalid
 	}
@@ -211,6 +215,10 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	if q.Bootstrap != nil {
 		bootstrap := *q.Bootstrap
 		q.Bootstrap = &bootstrap
+	}
+	if q.DeviceTLSIdentity != nil {
+		identity := *q.DeviceTLSIdentity
+		q.DeviceTLSIdentity = &identity
 	}
 	if err = q.Validate(); err != nil {
 		return out, err

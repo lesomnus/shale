@@ -1875,6 +1875,7 @@ type CameraJobInputs struct {
 	xxx_hidden_StreamingCredential  *CameraCredentialReference `protobuf:"bytes,7,opt,name=streaming_credential,json=streamingCredential"`
 	xxx_hidden_Configuration        *CameraPresetSettings      `protobuf:"bytes,8,opt,name=configuration"`
 	xxx_hidden_Bootstrap            *CameraBootstrapProfile    `protobuf:"bytes,9,opt,name=bootstrap"`
+	xxx_hidden_DeviceTlsIdentity    *CameraDeviceTLSIdentity   `protobuf:"bytes,10,opt,name=device_tls_identity,json=deviceTlsIdentity"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -1967,6 +1968,13 @@ func (x *CameraJobInputs) GetBootstrap() *CameraBootstrapProfile {
 	return nil
 }
 
+func (x *CameraJobInputs) GetDeviceTlsIdentity() *CameraDeviceTLSIdentity {
+	if x != nil {
+		return x.xxx_hidden_DeviceTlsIdentity
+	}
+	return nil
+}
+
 func (x *CameraJobInputs) SetPolicy(v *CameraRevisionReference) {
 	x.xxx_hidden_Policy = v
 }
@@ -2001,6 +2009,10 @@ func (x *CameraJobInputs) SetConfiguration(v *CameraPresetSettings) {
 
 func (x *CameraJobInputs) SetBootstrap(v *CameraBootstrapProfile) {
 	x.xxx_hidden_Bootstrap = v
+}
+
+func (x *CameraJobInputs) SetDeviceTlsIdentity(v *CameraDeviceTLSIdentity) {
+	x.xxx_hidden_DeviceTlsIdentity = v
 }
 
 func (x *CameraJobInputs) HasPolicy() bool {
@@ -2059,6 +2071,13 @@ func (x *CameraJobInputs) HasBootstrap() bool {
 	return x.xxx_hidden_Bootstrap != nil
 }
 
+func (x *CameraJobInputs) HasDeviceTlsIdentity() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DeviceTlsIdentity != nil
+}
+
 func (x *CameraJobInputs) ClearPolicy() {
 	x.xxx_hidden_Policy = nil
 }
@@ -2091,6 +2110,10 @@ func (x *CameraJobInputs) ClearBootstrap() {
 	x.xxx_hidden_Bootstrap = nil
 }
 
+func (x *CameraJobInputs) ClearDeviceTlsIdentity() {
+	x.xxx_hidden_DeviceTlsIdentity = nil
+}
+
 type CameraJobInputs_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2104,6 +2127,9 @@ type CameraJobInputs_builder struct {
 	Configuration        *CameraPresetSettings
 	// Absent retains legacy bootstrap behavior. Present pins all three fields.
 	Bootstrap *CameraBootstrapProfile
+	// Exact selected device identity from the operator-approved policy revision.
+	// Callers cannot add, change or omit that policy's selected approval.
+	DeviceTlsIdentity *CameraDeviceTLSIdentity
 }
 
 func (b0 CameraJobInputs_builder) Build() *CameraJobInputs {
@@ -2119,6 +2145,7 @@ func (b0 CameraJobInputs_builder) Build() *CameraJobInputs {
 	x.xxx_hidden_StreamingCredential = b.StreamingCredential
 	x.xxx_hidden_Configuration = b.Configuration
 	x.xxx_hidden_Bootstrap = b.Bootstrap
+	x.xxx_hidden_DeviceTlsIdentity = b.DeviceTlsIdentity
 	return m0
 }
 
@@ -4655,7 +4682,7 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x05field\x18\x02 \x01(\tR\x05field\x12\x1c\n" +
 	"\trequested\x18\x03 \x01(\tR\trequested\x12\x18\n" +
 	"\aapplied\x18\x04 \x01(\tR\aapplied\x12\x16\n" +
-	"\x06reason\x18\x05 \x01(\tR\x06reason\"\xe0\x04\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\"\xb0\x05\n" +
 	"\x0fCameraJobInputs\x126\n" +
 	"\x06policy\x18\x01 \x01(\v2\x1e.shale.CameraRevisionReferenceR\x06policy\x126\n" +
 	"\x06preset\x18\x02 \x01(\v2\x1e.shale.CameraRevisionReferenceR\x06preset\x125\n" +
@@ -4665,7 +4692,9 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x15management_credential\x18\x06 \x01(\v2 .shale.CameraCredentialReferenceR\x14managementCredential\x12S\n" +
 	"\x14streaming_credential\x18\a \x01(\v2 .shale.CameraCredentialReferenceR\x13streamingCredential\x12A\n" +
 	"\rconfiguration\x18\b \x01(\v2\x1b.shale.CameraPresetSettingsR\rconfiguration\x12;\n" +
-	"\tbootstrap\x18\t \x01(\v2\x1d.shale.CameraBootstrapProfileR\tbootstrap\"\xa5\x04\n" +
+	"\tbootstrap\x18\t \x01(\v2\x1d.shale.CameraBootstrapProfileR\tbootstrap\x12N\n" +
+	"\x13device_tls_identity\x18\n" +
+	" \x01(\v2\x1e.shale.CameraDeviceTLSIdentityR\x11deviceTlsIdentity\"\xa5\x04\n" +
 	"\x14CameraJobObservation\x129\n" +
 	"\teffective\x18\x01 \x01(\v2\x1b.shale.CameraCaptureProfileR\teffective\x126\n" +
 	"\bverified\x18\x02 \x01(\v2\x1a.shale.CameraMediaEvidenceR\bverified\x120\n" +
@@ -4960,13 +4989,14 @@ var file_shale_camera_proto_goTypes = []any{
 	(*SegmentProfile)(nil),              // 28: shale.SegmentProfile
 	(*CameraPresetSettings)(nil),        // 29: shale.CameraPresetSettings
 	(*CameraBootstrapProfile)(nil),      // 30: shale.CameraBootstrapProfile
-	(*CameraProvisionState)(nil),        // 31: shale.CameraProvisionState
-	(*Tenant)(nil),                      // 32: shale.Tenant
-	(*Site)(nil),                        // 33: shale.Site
-	(*Set)(nil),                         // 34: shale.Set
-	(*Producer)(nil),                    // 35: shale.Producer
-	(*Source)(nil),                      // 36: shale.Source
-	(*CameraResolvedPreset)(nil),        // 37: shale.CameraResolvedPreset
+	(*CameraDeviceTLSIdentity)(nil),     // 31: shale.CameraDeviceTLSIdentity
+	(*CameraProvisionState)(nil),        // 32: shale.CameraProvisionState
+	(*Tenant)(nil),                      // 33: shale.Tenant
+	(*Site)(nil),                        // 34: shale.Site
+	(*Set)(nil),                         // 35: shale.Set
+	(*Producer)(nil),                    // 36: shale.Producer
+	(*Source)(nil),                      // 37: shale.Source
+	(*CameraResolvedPreset)(nil),        // 38: shale.CameraResolvedPreset
 }
 var file_shale_camera_proto_depIdxs = []int32{
 	3,  // 0: shale.CameraCaptureSpec.profile:type_name -> shale.CameraCaptureProfile
@@ -4997,70 +5027,71 @@ var file_shale_camera_proto_depIdxs = []int32{
 	1,  // 25: shale.CameraJobInputs.streaming_credential:type_name -> shale.CameraCredentialReference
 	29, // 26: shale.CameraJobInputs.configuration:type_name -> shale.CameraPresetSettings
 	30, // 27: shale.CameraJobInputs.bootstrap:type_name -> shale.CameraBootstrapProfile
-	3,  // 28: shale.CameraJobObservation.effective:type_name -> shale.CameraCaptureProfile
-	12, // 29: shale.CameraJobObservation.verified:type_name -> shale.CameraMediaEvidence
-	13, // 30: shale.CameraJobObservation.warnings:type_name -> shale.CameraWarning
-	27, // 31: shale.CameraJobObservation.live_first_frame_at:type_name -> google.protobuf.Timestamp
-	27, // 32: shale.CameraJobObservation.live_last_frame_at:type_name -> google.protobuf.Timestamp
-	31, // 33: shale.CameraJobObservation.progress:type_name -> shale.CameraProvisionState
-	32, // 34: shale.CameraNetwork.tenant:type_name -> shale.Tenant
-	33, // 35: shale.CameraNetwork.site:type_name -> shale.Site
-	22, // 36: shale.CameraNetwork.labels:type_name -> shale.CameraNetwork.LabelsEntry
-	27, // 37: shale.CameraNetwork.date_updated:type_name -> google.protobuf.Timestamp
-	27, // 38: shale.CameraNetwork.date_erased:type_name -> google.protobuf.Timestamp
-	27, // 39: shale.CameraNetwork.date_created:type_name -> google.protobuf.Timestamp
-	32, // 40: shale.CameraDevice.tenant:type_name -> shale.Tenant
-	33, // 41: shale.CameraDevice.site:type_name -> shale.Site
-	23, // 42: shale.CameraDevice.labels:type_name -> shale.CameraDevice.LabelsEntry
-	16, // 43: shale.CameraDevice.network:type_name -> shale.CameraNetwork
-	9,  // 44: shale.CameraDevice.identity:type_name -> shale.CameraIdentityEvidence
-	10, // 45: shale.CameraDevice.endpoints:type_name -> shale.CameraObservedEndpoint
-	11, // 46: shale.CameraDevice.enrollment:type_name -> shale.CameraEnrollmentObservation
-	27, // 47: shale.CameraDevice.date_updated:type_name -> google.protobuf.Timestamp
-	27, // 48: shale.CameraDevice.date_erased:type_name -> google.protobuf.Timestamp
-	27, // 49: shale.CameraDevice.date_created:type_name -> google.protobuf.Timestamp
-	32, // 50: shale.CameraAssignment.tenant:type_name -> shale.Tenant
-	33, // 51: shale.CameraAssignment.site:type_name -> shale.Site
-	24, // 52: shale.CameraAssignment.labels:type_name -> shale.CameraAssignment.LabelsEntry
-	16, // 53: shale.CameraAssignment.network:type_name -> shale.CameraNetwork
-	34, // 54: shale.CameraAssignment.set:type_name -> shale.Set
-	35, // 55: shale.CameraAssignment.producer:type_name -> shale.Producer
-	27, // 56: shale.CameraAssignment.date_updated:type_name -> google.protobuf.Timestamp
-	27, // 57: shale.CameraAssignment.date_erased:type_name -> google.protobuf.Timestamp
-	27, // 58: shale.CameraAssignment.date_created:type_name -> google.protobuf.Timestamp
-	32, // 59: shale.CameraBinding.tenant:type_name -> shale.Tenant
-	33, // 60: shale.CameraBinding.site:type_name -> shale.Site
-	25, // 61: shale.CameraBinding.labels:type_name -> shale.CameraBinding.LabelsEntry
-	18, // 62: shale.CameraBinding.assignment:type_name -> shale.CameraAssignment
-	17, // 63: shale.CameraBinding.device:type_name -> shale.CameraDevice
-	36, // 64: shale.CameraBinding.source:type_name -> shale.Source
-	4,  // 65: shale.CameraBinding.desired:type_name -> shale.CameraCaptureSpec
-	15, // 66: shale.CameraBinding.observed:type_name -> shale.CameraJobObservation
-	7,  // 67: shale.CameraBinding.starting_application:type_name -> shale.CameraApplication
-	7,  // 68: shale.CameraBinding.applied_application:type_name -> shale.CameraApplication
-	7,  // 69: shale.CameraBinding.previous_applications:type_name -> shale.CameraApplication
-	27, // 70: shale.CameraBinding.date_updated:type_name -> google.protobuf.Timestamp
-	27, // 71: shale.CameraBinding.date_erased:type_name -> google.protobuf.Timestamp
-	27, // 72: shale.CameraBinding.date_created:type_name -> google.protobuf.Timestamp
-	32, // 73: shale.CameraJob.tenant:type_name -> shale.Tenant
-	33, // 74: shale.CameraJob.site:type_name -> shale.Site
-	26, // 75: shale.CameraJob.labels:type_name -> shale.CameraJob.LabelsEntry
-	19, // 76: shale.CameraJob.binding:type_name -> shale.CameraBinding
-	18, // 77: shale.CameraJob.assignment:type_name -> shale.CameraAssignment
-	0,  // 78: shale.CameraJob.stage:type_name -> shale.CameraJobStage
-	27, // 79: shale.CameraJob.lease_expires:type_name -> google.protobuf.Timestamp
-	14, // 80: shale.CameraJob.inputs:type_name -> shale.CameraJobInputs
-	15, // 81: shale.CameraJob.observed:type_name -> shale.CameraJobObservation
-	27, // 82: shale.CameraJob.date_published:type_name -> google.protobuf.Timestamp
-	37, // 83: shale.CameraJob.pinned_preset:type_name -> shale.CameraResolvedPreset
-	27, // 84: shale.CameraJob.date_updated:type_name -> google.protobuf.Timestamp
-	27, // 85: shale.CameraJob.date_erased:type_name -> google.protobuf.Timestamp
-	27, // 86: shale.CameraJob.date_created:type_name -> google.protobuf.Timestamp
-	87, // [87:87] is the sub-list for method output_type
-	87, // [87:87] is the sub-list for method input_type
-	87, // [87:87] is the sub-list for extension type_name
-	87, // [87:87] is the sub-list for extension extendee
-	0,  // [0:87] is the sub-list for field type_name
+	31, // 28: shale.CameraJobInputs.device_tls_identity:type_name -> shale.CameraDeviceTLSIdentity
+	3,  // 29: shale.CameraJobObservation.effective:type_name -> shale.CameraCaptureProfile
+	12, // 30: shale.CameraJobObservation.verified:type_name -> shale.CameraMediaEvidence
+	13, // 31: shale.CameraJobObservation.warnings:type_name -> shale.CameraWarning
+	27, // 32: shale.CameraJobObservation.live_first_frame_at:type_name -> google.protobuf.Timestamp
+	27, // 33: shale.CameraJobObservation.live_last_frame_at:type_name -> google.protobuf.Timestamp
+	32, // 34: shale.CameraJobObservation.progress:type_name -> shale.CameraProvisionState
+	33, // 35: shale.CameraNetwork.tenant:type_name -> shale.Tenant
+	34, // 36: shale.CameraNetwork.site:type_name -> shale.Site
+	22, // 37: shale.CameraNetwork.labels:type_name -> shale.CameraNetwork.LabelsEntry
+	27, // 38: shale.CameraNetwork.date_updated:type_name -> google.protobuf.Timestamp
+	27, // 39: shale.CameraNetwork.date_erased:type_name -> google.protobuf.Timestamp
+	27, // 40: shale.CameraNetwork.date_created:type_name -> google.protobuf.Timestamp
+	33, // 41: shale.CameraDevice.tenant:type_name -> shale.Tenant
+	34, // 42: shale.CameraDevice.site:type_name -> shale.Site
+	23, // 43: shale.CameraDevice.labels:type_name -> shale.CameraDevice.LabelsEntry
+	16, // 44: shale.CameraDevice.network:type_name -> shale.CameraNetwork
+	9,  // 45: shale.CameraDevice.identity:type_name -> shale.CameraIdentityEvidence
+	10, // 46: shale.CameraDevice.endpoints:type_name -> shale.CameraObservedEndpoint
+	11, // 47: shale.CameraDevice.enrollment:type_name -> shale.CameraEnrollmentObservation
+	27, // 48: shale.CameraDevice.date_updated:type_name -> google.protobuf.Timestamp
+	27, // 49: shale.CameraDevice.date_erased:type_name -> google.protobuf.Timestamp
+	27, // 50: shale.CameraDevice.date_created:type_name -> google.protobuf.Timestamp
+	33, // 51: shale.CameraAssignment.tenant:type_name -> shale.Tenant
+	34, // 52: shale.CameraAssignment.site:type_name -> shale.Site
+	24, // 53: shale.CameraAssignment.labels:type_name -> shale.CameraAssignment.LabelsEntry
+	16, // 54: shale.CameraAssignment.network:type_name -> shale.CameraNetwork
+	35, // 55: shale.CameraAssignment.set:type_name -> shale.Set
+	36, // 56: shale.CameraAssignment.producer:type_name -> shale.Producer
+	27, // 57: shale.CameraAssignment.date_updated:type_name -> google.protobuf.Timestamp
+	27, // 58: shale.CameraAssignment.date_erased:type_name -> google.protobuf.Timestamp
+	27, // 59: shale.CameraAssignment.date_created:type_name -> google.protobuf.Timestamp
+	33, // 60: shale.CameraBinding.tenant:type_name -> shale.Tenant
+	34, // 61: shale.CameraBinding.site:type_name -> shale.Site
+	25, // 62: shale.CameraBinding.labels:type_name -> shale.CameraBinding.LabelsEntry
+	18, // 63: shale.CameraBinding.assignment:type_name -> shale.CameraAssignment
+	17, // 64: shale.CameraBinding.device:type_name -> shale.CameraDevice
+	37, // 65: shale.CameraBinding.source:type_name -> shale.Source
+	4,  // 66: shale.CameraBinding.desired:type_name -> shale.CameraCaptureSpec
+	15, // 67: shale.CameraBinding.observed:type_name -> shale.CameraJobObservation
+	7,  // 68: shale.CameraBinding.starting_application:type_name -> shale.CameraApplication
+	7,  // 69: shale.CameraBinding.applied_application:type_name -> shale.CameraApplication
+	7,  // 70: shale.CameraBinding.previous_applications:type_name -> shale.CameraApplication
+	27, // 71: shale.CameraBinding.date_updated:type_name -> google.protobuf.Timestamp
+	27, // 72: shale.CameraBinding.date_erased:type_name -> google.protobuf.Timestamp
+	27, // 73: shale.CameraBinding.date_created:type_name -> google.protobuf.Timestamp
+	33, // 74: shale.CameraJob.tenant:type_name -> shale.Tenant
+	34, // 75: shale.CameraJob.site:type_name -> shale.Site
+	26, // 76: shale.CameraJob.labels:type_name -> shale.CameraJob.LabelsEntry
+	19, // 77: shale.CameraJob.binding:type_name -> shale.CameraBinding
+	18, // 78: shale.CameraJob.assignment:type_name -> shale.CameraAssignment
+	0,  // 79: shale.CameraJob.stage:type_name -> shale.CameraJobStage
+	27, // 80: shale.CameraJob.lease_expires:type_name -> google.protobuf.Timestamp
+	14, // 81: shale.CameraJob.inputs:type_name -> shale.CameraJobInputs
+	15, // 82: shale.CameraJob.observed:type_name -> shale.CameraJobObservation
+	27, // 83: shale.CameraJob.date_published:type_name -> google.protobuf.Timestamp
+	38, // 84: shale.CameraJob.pinned_preset:type_name -> shale.CameraResolvedPreset
+	27, // 85: shale.CameraJob.date_updated:type_name -> google.protobuf.Timestamp
+	27, // 86: shale.CameraJob.date_erased:type_name -> google.protobuf.Timestamp
+	27, // 87: shale.CameraJob.date_created:type_name -> google.protobuf.Timestamp
+	88, // [88:88] is the sub-list for method output_type
+	88, // [88:88] is the sub-list for method input_type
+	88, // [88:88] is the sub-list for extension type_name
+	88, // [88:88] is the sub-list for extension extendee
+	0,  // [0:88] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_proto_init() }

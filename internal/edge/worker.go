@@ -3,6 +3,8 @@ package edge
 import (
 	"context"
 	"net/http"
+	"net/url"
+	"slices"
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
@@ -11,6 +13,7 @@ import (
 	"github.com/lesomnus/shale/camera/drivers"
 	"github.com/lesomnus/shale/camera/media"
 	"github.com/lesomnus/shale/internal/camerabootstrap"
+	"github.com/lesomnus/shale/internal/cameratls"
 	"github.com/lesomnus/shale/internal/cameraworker"
 	"github.com/lesomnus/shale/provision"
 	publication "github.com/lesomnus/shale/provision/source"
@@ -43,7 +46,26 @@ func buildWorker(cfg cameraworker.Config, broker *sourceBroker, options CameraOp
 					if err != nil || network.Domain() != 26 {
 						return cameraworker.DeviceAdapters{}, camera.ErrInvalid
 					}
-					driver, err := drivers.New(drivers.Options{NetworkID: network.String(), CIDRs: w.GetNetwork().GetCidrs(), Bootstrap: camerabootstrap.Decode(w.GetJob().GetInputs().GetBootstrap()), Roots: options.Roots})
+					var hosts []string
+					var deviceID string
+					identity := cameratls.Decode(w.GetJob().GetInputs().GetDeviceTlsIdentity())
+					if identity != nil {
+						device, err := pdid.From(w.GetDevice().GetId())
+						if err != nil || device.Domain() != 27 {
+							return cameraworker.DeviceAdapters{}, camera.ErrInvalid
+						}
+						deviceID = device.String()
+						for _, endpoint := range w.GetDevice().GetEndpoints() {
+							u, err := url.Parse(endpoint.GetUri())
+							if err != nil || u.Hostname() == "" {
+								return cameraworker.DeviceAdapters{}, camera.ErrInvalid
+							}
+							if !slices.Contains(hosts, u.Hostname()) {
+								hosts = append(hosts, u.Hostname())
+							}
+						}
+					}
+					driver, err := drivers.New(drivers.Options{NetworkID: network.String(), CIDRs: w.GetNetwork().GetCidrs(), Bootstrap: camerabootstrap.Decode(w.GetJob().GetInputs().GetBootstrap()), Roots: options.Roots, DeviceTLSIdentity: identity, DeviceID: deviceID, DeviceHosts: hosts})
 					if err != nil {
 						return cameraworker.DeviceAdapters{}, err
 					}

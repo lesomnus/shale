@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/camera_bootstrap.proto.
  */
 export const file_shale_camera_bootstrap: GenFile = /*@__PURE__*/
-  fileDesc("ChxzaGFsZS9jYW1lcmFfYm9vdHN0cmFwLnByb3RvEgVzaGFsZSJdChZDYW1lcmFCb290c3RyYXBQcm9maWxlEh0KFWNvbXBhdGliaWxpdHlfcHJvZmlsZRgBIAEoCRISCgp3ZWJfc2NoZW1lGAIgASgJEhAKCHdlYl9wb3J0GAMgASgFQiRaHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpkgMCCAJiCGVkaXRpb25zcOgH");
+  fileDesc("ChxzaGFsZS9jYW1lcmFfYm9vdHN0cmFwLnByb3RvEgVzaGFsZSJdChZDYW1lcmFCb290c3RyYXBQcm9maWxlEh0KFWNvbXBhdGliaWxpdHlfcHJvZmlsZRgBIAEoCRISCgp3ZWJfc2NoZW1lGAIgASgJEhAKCHdlYl9wb3J0GAMgASgFIkEKF0NhbWVyYURldmljZVRMU0lkZW50aXR5EhEKCWRldmljZV9pZBgBIAEoCRITCgtzcGtpX3NoYTI1NhgCIAEoCUIkWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaZIDAggCYghlZGl0aW9uc3DoBw");
 
 /**
  * Explicit compatibility and transport selection, never a device address or
@@ -42,4 +42,30 @@ export type CameraBootstrapProfile = Message<"shale.CameraBootstrapProfile"> & {
  */
 export const CameraBootstrapProfileSchema: GenMessage<CameraBootstrapProfile> = /*@__PURE__*/
   messageDesc(file_shale_camera_bootstrap, 0);
+
+/**
+ * An operator-approved identity for one exact CP camera, never a tenant-wide
+ * trust root. The SPKI digest is sha256: followed by 64 lowercase hex digits.
+ * Absence retains normal PKI verification; it never enables insecure TLS.
+ *
+ * @generated from message shale.CameraDeviceTLSIdentity
+ */
+export type CameraDeviceTLSIdentity = Message<"shale.CameraDeviceTLSIdentity"> & {
+  /**
+   * @generated from field: string device_id = 1;
+   */
+  deviceId: string;
+
+  /**
+   * @generated from field: string spki_sha256 = 2;
+   */
+  spkiSha256: string;
+};
+
+/**
+ * Describes the message shale.CameraDeviceTLSIdentity.
+ * Use `create(CameraDeviceTLSIdentitySchema)` to create a new message.
+ */
+export const CameraDeviceTLSIdentitySchema: GenMessage<CameraDeviceTLSIdentity> = /*@__PURE__*/
+  messageDesc(file_shale_camera_bootstrap, 1);
 
