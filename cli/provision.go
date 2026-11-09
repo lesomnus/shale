@@ -317,6 +317,9 @@ func cameraSettingsSummary(settings camera.PresetSettings) string {
 	if settings.Initialization.PowerLineFrequency != 0 {
 		parts = append(parts, fmt.Sprintf("frequency=%dHz", settings.Initialization.PowerLineFrequency))
 	}
+	if settings.Initialization.SmartCodec != "" {
+		parts = append(parts, fmt.Sprintf("smart_codec=%q", settings.Initialization.SmartCodec))
+	}
 	v := settings.Video
 	if v.ProfileToken != "" {
 		parts = append(parts, fmt.Sprintf("profile=%q", v.ProfileToken))

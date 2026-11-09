@@ -18,37 +18,62 @@ import (
 )
 
 const frequencyPlanRevision = "tplink/c420/image-frequency-v1"
+const smartCodecPlanRevision = "tplink/c420/video-initialization-v1"
 
 var _ camera.DeviceInitializer = (*Driver)(nil)
 
 // PlanInitialization reads the image frequency without using the browser login
-// helper: that helper also writes the camera's clock. A zero frequency preserves
-// the device configuration and does not open a web session.
+// helper: that helper also writes the camera's clock. Empty settings preserve
+// device configuration and do not open a web session. Smart codec additionally
+// records the complete bounded native main-stream state before a possible write.
 func (d *Driver) PlanInitialization(ctx context.Context, hint camera.DeviceHint, lease camera.CredentialLease, desired camera.DeviceSettings) (camera.InitializationPlan, error) {
 	if err := ctx.Err(); err != nil {
 		return camera.InitializationPlan{}, err
 	}
-	if desired.PowerLineFrequency == 0 {
+	if desired == (camera.DeviceSettings{}) {
 		return camera.InitializationPlan{}, nil
 	}
-	if !validFrequency(desired.PowerLineFrequency) {
+	if desired.PowerLineFrequency != 0 && !validFrequency(desired.PowerLineFrequency) || desired.SmartCodec != "" && !validSmartCodec(desired.SmartCodec) {
 		return camera.InitializationPlan{}, camera.ErrInvalid
 	}
 	if err := d.initializationTarget(hint); err != nil {
 		return camera.InitializationPlan{}, err
 	}
+	if desired.SmartCodec != "" && !smartCodecTarget(hint) {
+		return camera.InitializationPlan{}, camera.ErrUnsupported
+	}
 	var before camera.DeviceSettings
+	var video *camera.InitializationVideoMain
 	err := d.withWebSession(ctx, lease, func(session *webSession) error {
 		var err error
-		before, err = session.frequency(ctx)
-		return err
+		if desired.PowerLineFrequency != 0 {
+			before, err = session.frequency(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		if desired.SmartCodec != "" {
+			v, err := session.videoMain(ctx)
+			if err != nil {
+				return err
+			}
+			before.SmartCodec = v.SmartCodec
+			video = &v
+		}
+		return nil
 	})
 	if err != nil {
 		return camera.InitializationPlan{}, err
 	}
-	plan := camera.InitializationPlan{Before: before, After: desired, Revision: frequencyPlanRevision}
-	if before != desired {
-		plan.Changes = []string{"power_line_frequency"}
+	plan := camera.InitializationPlan{Before: before, After: desired, Revision: frequencyPlanRevision, VideoMainBefore: video}
+	if desired.SmartCodec != "" {
+		plan.Revision = smartCodecPlanRevision
+	}
+	if before.PowerLineFrequency != desired.PowerLineFrequency {
+		plan.Changes = append(plan.Changes, "power_line_frequency")
+	}
+	if before.SmartCodec != desired.SmartCodec {
+		plan.Changes = append(plan.Changes, "smart_codec")
 	}
 	return plan, nil
 }
@@ -61,26 +86,69 @@ func (d *Driver) ApplyInitialization(ctx context.Context, hint camera.DeviceHint
 	if err := ctx.Err(); err != nil {
 		return camera.DeviceSettings{}, err
 	}
-	if plan.Before == (camera.DeviceSettings{}) && plan.After == (camera.DeviceSettings{}) {
+	if plan.Before == (camera.DeviceSettings{}) && plan.After == (camera.DeviceSettings{}) && plan.VideoMainBefore == nil {
 		return camera.DeviceSettings{}, nil
 	}
-	if !validFrequency(plan.Before.PowerLineFrequency) || !validFrequency(plan.After.PowerLineFrequency) {
+	if plan.After.PowerLineFrequency != 0 && (!validFrequency(plan.Before.PowerLineFrequency) || !validFrequency(plan.After.PowerLineFrequency)) || plan.After.PowerLineFrequency == 0 && plan.Before.PowerLineFrequency != 0 {
 		return camera.DeviceSettings{}, camera.ErrInvalid
 	}
-	if plan.Revision != frequencyPlanRevision {
+	if plan.After.SmartCodec != "" {
+		if !validSmartCodec(plan.Before.SmartCodec) || !validSmartCodec(plan.After.SmartCodec) || plan.VideoMainBefore == nil || !validNativeVideoMain(*plan.VideoMainBefore) || plan.VideoMainBefore.SmartCodec != plan.Before.SmartCodec {
+			return camera.DeviceSettings{}, camera.ErrInvalid
+		}
+	} else if plan.Before.SmartCodec != "" || plan.VideoMainBefore != nil {
+		return camera.DeviceSettings{}, camera.ErrInvalid
+	}
+	wantRevision := frequencyPlanRevision
+	if plan.After.SmartCodec != "" {
+		wantRevision = smartCodecPlanRevision
+	}
+	if plan.Revision != wantRevision {
 		return camera.DeviceSettings{}, camera.ErrConflict
 	}
 	if err := d.initializationTarget(hint); err != nil {
 		return camera.DeviceSettings{}, err
 	}
+	if plan.After.SmartCodec != "" && !smartCodecTarget(hint) {
+		return camera.DeviceSettings{}, camera.ErrUnsupported
+	}
 	var observed camera.DeviceSettings
 	err := d.withWebSession(ctx, lease, func(session *webSession) error {
 		var err error
-		observed, err = session.frequency(ctx)
-		if err != nil || observed == plan.After {
+		// Check every selected prerequisite before the first setting write.
+		// In particular a frequency conflict must not partially apply smart
+		// codec first. Read again below immediately before a frequency write.
+		if plan.After.PowerLineFrequency != 0 {
+			frequency, err := session.frequency(ctx)
+			if err != nil {
+				return err
+			}
+			if frequency.PowerLineFrequency != plan.Before.PowerLineFrequency && frequency.PowerLineFrequency != plan.After.PowerLineFrequency {
+				return camera.ErrConflict
+			}
+			observed.PowerLineFrequency = frequency.PowerLineFrequency
+		}
+		// Guard the full video write before frequency can legitimately alter the
+		// encoder. A target mode already present needs no full-state write and
+		// therefore never overwrites unrelated drift or post-frequency changes.
+		if plan.After.SmartCodec != "" {
+			if err = session.applySmartCodec(ctx, *plan.VideoMainBefore, plan.After.SmartCodec); err != nil {
+				return err
+			}
+			observed.SmartCodec = plan.After.SmartCodec
+		}
+		if plan.After.PowerLineFrequency == 0 {
+			return nil
+		}
+		frequency, err := session.frequency(ctx)
+		if err != nil {
 			return err
 		}
-		if observed != plan.Before {
+		observed.PowerLineFrequency = frequency.PowerLineFrequency
+		if observed.PowerLineFrequency == plan.After.PowerLineFrequency {
+			return nil
+		}
+		if observed.PowerLineFrequency != plan.Before.PowerLineFrequency {
 			return camera.ErrConflict
 		}
 		reply, err := session.call(ctx, map[string]any{"method": "set", "image": map[string]any{"switch": map[string]string{"flicker": strconv.Itoa(plan.After.PowerLineFrequency) + "hz"}}})
@@ -90,12 +158,22 @@ func (d *Driver) ApplyInitialization(ctx context.Context, hint camera.DeviceHint
 		if err = reply.success(); err != nil {
 			return err
 		}
-		observed, err = session.frequency(ctx)
+		frequency, err = session.frequency(ctx)
 		if err != nil {
 			return err
 		}
-		if observed != plan.After {
+		observed.PowerLineFrequency = frequency.PowerLineFrequency
+		if observed.PowerLineFrequency != plan.After.PowerLineFrequency {
 			return camera.ErrConflict
+		}
+		if plan.After.SmartCodec != "" {
+			video, err := session.videoMain(ctx)
+			if err != nil {
+				return err
+			}
+			if video.SmartCodec != plan.After.SmartCodec {
+				return camera.ErrConflict
+			}
 		}
 		return nil
 	})
@@ -129,10 +207,11 @@ func (d *Driver) initializationTarget(hint camera.DeviceHint) error {
 }
 
 type webReply struct {
-	Status    int             `json:"-"`
-	ErrorCode *int            `json:"error_code"`
-	Data      json.RawMessage `json:"data"`
-	Stok      string          `json:"stok"`
+	Status    int                        `json:"-"`
+	ErrorCode *int                       `json:"error_code"`
+	Data      json.RawMessage            `json:"data"`
+	Stok      string                     `json:"stok"`
+	Video     map[string]json.RawMessage `json:"video"`
 	Image     struct {
 		Switch struct {
 			Flicker string `json:"flicker"`

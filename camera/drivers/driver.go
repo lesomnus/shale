@@ -227,7 +227,7 @@ func (d *Driver) PlanInitialization(ctx context.Context, h camera.DeviceHint, le
 	if _, err := d.endpoint(ctx, h); err != nil {
 		return camera.InitializationPlan{}, err
 	}
-	if settings.PowerLineFrequency == 0 {
+	if settings == (camera.DeviceSettings{}) {
 		return camera.InitializationPlan{}, nil
 	}
 	v, fresh, err := d.qualifiedVendor(ctx, h, lease)

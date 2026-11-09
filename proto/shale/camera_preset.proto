@@ -25,6 +25,8 @@ message CameraPresetSettings {
   int32 power_line_frequency = 1;
   CameraPresetVideo video = 2;
   repeated string preserve = 3;
+  // Empty preserves current state; explicit values are off/on.
+  string smart_codec = 4;
 }
 // Absent inherits alternatives; present with no candidates explicitly clears.
 message CameraPresetAlternatives { repeated CameraPresetSettings candidates = 1; }

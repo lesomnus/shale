@@ -63,7 +63,8 @@ or service changes as initialization side effects.
 
 The C420's factory 50 Hz image setting exposes at most 25 fps; 60 Hz exposes
 30 fps. Frequency is an explicit preset setting, never inferred from a requested
-frame rate. A zero value preserves the device and opens no web session.
+frame rate. A zero frequency preserves that setting. Empty initialization
+settings open no web session.
 
 `PlanInitialization` authenticates, reads `image.switch.flicker`, and returns a
 before/after plan without changing camera configuration. `ApplyInitialization`
@@ -105,7 +106,7 @@ same hardware symptom was observed on 1.2.2. This policy is confined to vendor
 web requests; it neither changes ONVIF/RTSP transports nor automatically retries
 a setting or password write after an uncertain response.
 
-The new staged initializer is covered by a combined web/Media2 fixture: 50 Hz
+The frequency initializer is covered by a combined web/Media2 fixture: 50 Hz
 rejects a 30 fps media plan, initialization changes to 60 Hz, and a fresh Media2
 inspection permits that plan. The 1.2.0 fixture then applies and reads back the
 separate encoder configuration at H.264 1920x1080/30 fps, preserving bitrate/GOP.
@@ -122,6 +123,58 @@ reported HEVC. ONVIF observations remain advertised/read-back facts; independent
 stream qualification must confirm the actual codec and decode validity before
 enrollment is active. No optical, storage, PTZ or speaker capability is inferred
 from a shared family API document.
+
+## Explicit smart-codec initialization (#238)
+
+Only the qualified HW1.0/1.2.2 Build260624 entry supports the explicit
+`initialization.smart_codec: off | on` setting. The authenticated release spelling
+`1.2.2 Build 260624 Rel.39352n` is equivalent. Other releases, including the
+separately qualified 1.2.0 frequency entry, do not inherit this video-web support.
+An absent mode preserves the current value and adds no video-web requests.
+The managed driver must qualify the current authenticated identity before using
+this operation; an anonymous compatibility pin is not that proof.
+
+The device-distributed 1.2.2 main asset has SHA256
+`ea68efe60f06cad0e7df3dd4e6952341c857ec536ad0cb4a35b6de04c5bc2d24`;
+its stream-settings chunk `7114.a3aba35b.js` has SHA256
+`d0978eb2d0e4a8d0ec1952328d7aaa5c65e0fb5a9c7d046cfc142b4b41f4c3a0`.
+That UI reads `video: {name: ["main"]}` and displays H264/H265 plus smart-codec
+`on` as H264+/H265+. It exposes no separate native GOP or I-frame setting.
+
+Planning stores the closed eight-string main-profile snapshot: `encode_type`,
+`resolution`, `frame_rate`, `bitrate_type`, `quality`, `bitrate`, `smart_codec`,
+and `adaptive_mode`. The known wire codec values are exactly H264/H265, and
+frame rate retains its native `65536 + FPS` spelling. Missing, malformed or
+unqualified writable fields and responses with more than 64 keys fail before a
+setting write. Extra response metadata is ignored, as in the UI's writable-field
+projection, and is never persisted or sent in a setting request. No arbitrary JSON,
+credential, endpoint or session token enters the durable plan.
+
+Before a full main-profile write, Apply reads again and requires equality with
+the saved snapshot. It sends the UI's shape, changing only `smart_codec`:
+bitrate is numeric, VBR quality stays a string, and adaptive `off` is omitted
+while adaptive `on` is preserved. It verifies the complete expected read-back.
+This is a checked read/write boundary, not an atomic camera-side CAS; external
+writers must not race it. When the requested smart mode is already present,
+there is no full video write, so unrelated changed encoder fields are preserved.
+That also permits safe recovery after a lost reply without resetting a baseline.
+
+Every selected frequency precondition is read before the first setting write;
+an unrelated frequency change cannot cause a partial smart-codec update before
+being rejected. Frequency is checked again immediately before its own write.
+Smart codec is applied before any frequency edit. Frequency can legitimately
+change later media settings; a retry that already sees the requested smart mode
+does not replay the earlier main-profile snapshot over those changes. The engine
+retains its original plan, independently checks the selected settings and
+re-inspects ONVIF capabilities before a separate video plan.
+
+The initializer neither silently disables smart codec for every GOP request nor
+forces CBR, alters adaptive mode or changes clock/network/accounts. A new explicit
+immutable preset/job intent is required. The actual stream still needs bounded
+independent keyframe and decode evidence: ONVIF GovLength read-back and a successful
+web setting write do not establish real random-access cadence. Fixtures exercise
+the write shape, drift rejection, read-back mismatch, lost replies and combined
+frequency recovery; they do not claim physical acceptance of this new adapter.
 
 Protocol references:
 

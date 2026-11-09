@@ -167,12 +167,26 @@ message CameraProvisionPreset {
   bool requested_preserve_present = 5;
   repeated bool alternative_preserve_present = 6;
 }
-message CameraProvisionDeviceSettings { int32 power_line_frequency = 1; }
+message CameraProvisionDeviceSettings {
+  int32 power_line_frequency = 1;
+  string smart_codec = 2;
+}
+message CameraProvisionInitializationVideoMain {
+  string encode_type = 1;
+  string resolution = 2;
+  string frame_rate = 3;
+  string bitrate_type = 4;
+  string quality = 5;
+  string bitrate = 6;
+  string smart_codec = 7;
+  string adaptive_mode = 8;
+}
 message CameraProvisionInitializationPlan {
   CameraProvisionDeviceSettings before = 1;
   CameraProvisionDeviceSettings after = 2;
   CameraProvisionStrings changes = 3;
   string revision = 4;
+  CameraProvisionInitializationVideoMain video_main_before = 5;
 }
 message CameraProvisionWarning {
   string code = 1;

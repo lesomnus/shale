@@ -191,13 +191,19 @@ func deviceSettings(v *camera.DeviceSettings) *api.CameraProvisionDeviceSettings
 	if v == nil {
 		return nil
 	}
-	return api.CameraProvisionDeviceSettings_builder{PowerLineFrequency: int32(v.PowerLineFrequency)}.Build()
+	return api.CameraProvisionDeviceSettings_builder{PowerLineFrequency: int32(v.PowerLineFrequency), SmartCodec: v.SmartCodec}.Build()
+}
+func initializationVideoMain(v *camera.InitializationVideoMain) *api.CameraProvisionInitializationVideoMain {
+	if v == nil {
+		return nil
+	}
+	return api.CameraProvisionInitializationVideoMain_builder{EncodeType: v.EncodeType, Resolution: v.Resolution, FrameRate: v.FrameRate, BitrateType: v.BitrateType, Quality: v.Quality, Bitrate: v.Bitrate, SmartCodec: v.SmartCodec, AdaptiveMode: v.AdaptiveMode}.Build()
 }
 func initialization(v *camera.InitializationPlan) *api.CameraProvisionInitializationPlan {
 	if v == nil {
 		return nil
 	}
-	return api.CameraProvisionInitializationPlan_builder{Before: deviceSettings(&v.Before), After: deviceSettings(&v.After), Changes: stringsPB(v.Changes), Revision: v.Revision}.Build()
+	return api.CameraProvisionInitializationPlan_builder{Before: deviceSettings(&v.Before), After: deviceSettings(&v.After), Changes: stringsPB(v.Changes), Revision: v.Revision, VideoMainBefore: initializationVideoMain(v.VideoMainBefore)}.Build()
 }
 
 type encoder struct{ err error }
@@ -508,7 +514,17 @@ func (d *decoder) deviceSettings(v *api.CameraProvisionDeviceSettings) *camera.D
 	if v == nil {
 		return nil
 	}
-	return &camera.DeviceSettings{PowerLineFrequency: int(v.GetPowerLineFrequency())}
+	return &camera.DeviceSettings{PowerLineFrequency: int(v.GetPowerLineFrequency()), SmartCodec: v.GetSmartCodec()}
+}
+func (d *decoder) initializationVideoMain(v *api.CameraProvisionInitializationVideoMain) *camera.InitializationVideoMain {
+	if v == nil {
+		return nil
+	}
+	out := &camera.InitializationVideoMain{EncodeType: v.GetEncodeType(), Resolution: v.GetResolution(), FrameRate: v.GetFrameRate(), BitrateType: v.GetBitrateType(), Quality: v.GetQuality(), Bitrate: v.GetBitrate(), SmartCodec: v.GetSmartCodec(), AdaptiveMode: v.GetAdaptiveMode()}
+	if out.Validate() != nil {
+		d.err = ErrInvalid
+	}
+	return out
 }
 func (d *decoder) initialization(v *api.CameraProvisionInitializationPlan) *camera.InitializationPlan {
 	if v == nil {
@@ -519,7 +535,7 @@ func (d *decoder) initialization(v *api.CameraProvisionInitializationPlan) *came
 		d.err = ErrInvalid
 		return nil
 	}
-	return &camera.InitializationPlan{Before: *before, After: *after, Changes: readStrings(v.GetChanges()), Revision: v.GetRevision()}
+	return &camera.InitializationPlan{Before: *before, After: *after, Changes: readStrings(v.GetChanges()), Revision: v.GetRevision(), VideoMainBefore: d.initializationVideoMain(v.GetVideoMainBefore())}
 }
 
 func profilePointer(v *camera.MediaProfile) *api.CameraProvisionMediaProfile {

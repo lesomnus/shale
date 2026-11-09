@@ -29,6 +29,18 @@ func TestCameraCommandHelp(t *testing.T) {
 	}
 }
 
+func TestCameraSettingsSummaryIncludesExplicitSmartCodec(t *testing.T) {
+	settings := camera.PresetSettings{Initialization: camera.DeviceSettings{SmartCodec: "off"}}
+	if got := cameraSettingsSummary(settings); got != `smart_codec="off"` {
+		t.Fatalf("smart-only initialization summary: %s", got)
+	}
+	settings.Initialization.PowerLineFrequency = 60
+	got := cameraSettingsSummary(settings)
+	if !strings.Contains(got, `smart_codec="off"`) || !strings.Contains(got, "frequency=60Hz") {
+		t.Fatalf("combined initialization summary: %s", got)
+	}
+}
+
 func TestCameraCredentialPreparePrintsReferenceOnly(t *testing.T) {
 	isolate(t)
 	dir := t.TempDir()
@@ -145,6 +157,7 @@ func TestCameraStatusSummaryShowsRequestedEffectiveAndWarnings(t *testing.T) {
 
 func TestCameraSummaryEscapesTerminalControlText(t *testing.T) {
 	job := provisionhost.Job{ID: "job\ninjected", State: "done\x1b[31m", Run: &provision.Run{Stage: provision.Active, Warnings: []camera.PresetWarning{{Code: "preset_adjusted", Field: "video.fps", Requested: "30", Applied: "25", Reason: "unsupported\x1b[31m\nforged-status"}}}}
+	job.Run.Effective = &camera.PresetSettings{Initialization: camera.DeviceSettings{SmartCodec: "off\x1b[31m\nforged-status"}}
 	var output bytes.Buffer
 	if err := printCameraSummary(&output, []provisionhost.Job{job}); err != nil {
 		t.Fatal(err)

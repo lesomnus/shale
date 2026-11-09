@@ -40,7 +40,7 @@ func presetPublishFile(t *testing.T, text string) string {
 func presetPublishDocument(tenant string, reverse bool) string {
 	rules := []string{
 		fmt.Sprintf("  - id: tenant\n    scope: {tenant_id: %s}\n    settings:\n      video: {profile_token: profile_1, codec: h264, width: 1920, height: 1080}\n    required: [video.codec]\n", tenant),
-		fmt.Sprintf("  - id: model\n    scope: {tenant_id: %s}\n    match: {manufacturer: TP-Link, model: EasyCam C420}\n    settings:\n      initialization: {power_line_frequency: 60}\n      video: {fps: 30, bitrate: 4096000, gop: 25}\n    fallbacks: []\n", tenant),
+		fmt.Sprintf("  - id: model\n    scope: {tenant_id: %s}\n    match: {manufacturer: TP-Link, model: EasyCam C420}\n    settings:\n      initialization: {power_line_frequency: 60, smart_codec: off}\n      video: {fps: 30, bitrate: 4096000, gop: 25}\n    required: [initialization.smart_codec]\n    fallbacks: []\n", tenant),
 	}
 	if reverse {
 		rules[0], rules[1] = rules[1], rules[0]
@@ -67,6 +67,8 @@ func TestPresetPublishBuildPreservesPortablePresenceAndCanonicalOrdering(t *test
 	require.NotNil(t, byID["model"].GetAlternatives())
 	require.Empty(t, byID["model"].GetAlternatives().GetCandidates())
 	require.Equal(t, int32(60), byID["model"].GetSettings().GetPowerLineFrequency())
+	require.Equal(t, "off", byID["model"].GetSettings().GetSmartCodec())
+	require.Contains(t, byID["model"].GetRequired(), "initialization.smart_codec")
 	require.Equal(t, float64(30), byID["model"].GetSettings().GetVideo().GetFps())
 	reordered, err := buildCameraPresetPublish(cameraPresetPublishOptions{file: presetPublishFile(t, presetPublishDocument(tenant.String(), true))})
 	require.NoError(t, err)
