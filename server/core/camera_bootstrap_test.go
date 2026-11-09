@@ -66,7 +66,7 @@ func TestCameraEnrollmentBootstrapIsClonedAndExactPolicyIntent(t *testing.T) {
 	f := newProgressFixture(t, false)
 	preset := api.CameraPreset_builder{Id: pdid.New(DomCameraPreset).Bytes(), Tenant: f.a.GetTenant(), Revision: "preset-v1"}.Build()
 	policy := api.CameraPolicy_builder{Id: pdid.New(DomCameraPolicy).Bytes(), Tenant: f.a.GetTenant(), Network: f.a.GetNetwork(), Revision: "policy-v1", Preset: preset, Enrollment: api.CameraEnrollmentPolicy_builder{Bootstrap: bootstrapProfile()}.Build()}.Build()
-	inputs := cameraEnrollmentInputs(policy, preset, false, f.d.GetId())
+	inputs := cameraEnrollmentInputs(policy, preset, false, f.d)
 	require.True(t, proto.Equal(policy.GetEnrollment().GetBootstrap(), inputs.GetBootstrap()))
 	require.NotSame(t, policy.GetEnrollment().GetBootstrap(), inputs.GetBootstrap())
 	policy.GetEnrollment().GetBootstrap().SetWebPort(443)
