@@ -26,31 +26,34 @@ import (
 )
 
 type initializationFixture struct {
-	mu              sync.Mutex
-	server          *httptest.Server
-	key             *rsa.PrivateKey
-	frequency       string
-	password        string
-	loginRefused    bool
-	ignoreWrite     bool
-	loseWriteReply  bool
-	unknownAuth     bool
-	malformedReply  bool
-	badKey          bool
-	currentKind     string
-	challengeCode   int
-	challengeStatus int
-	challengeOuter  int
-	passwordType    string
-	emptyNonce      bool
-	firmware        string
-	videoFPS        int
-	videoWrites     int
-	webCalls        int
-	writes          int
-	logins          int
-	logouts         int
-	unexpected      int
+	mu                        sync.Mutex
+	server                    *httptest.Server
+	key                       *rsa.PrivateKey
+	frequency                 string
+	password                  string
+	loginRefused              bool
+	ignoreWrite               bool
+	loseWriteReply            bool
+	unknownAuth               bool
+	malformedReply            bool
+	badKey                    bool
+	currentKind               string
+	challengeCode             int
+	challengeStatus           int
+	challengeOuter            int
+	passwordType              string
+	emptyNonce                bool
+	firmware                  string
+	videoFPS                  int
+	videoWrites               int
+	webCalls                  int
+	retireChallengeConnection bool
+	retiredConnections        map[string]bool
+	reusedRetired             int
+	writes                    int
+	logins                    int
+	logouts                   int
+	unexpected                int
 }
 
 func newInitializationFixture(t *testing.T) *initializationFixture {
@@ -59,7 +62,7 @@ func newInitializationFixture(t *testing.T) *initializationFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &initializationFixture{key: key, frequency: "50hz", password: "frequency fixture secret +:/?", currentKind: "2", challengeCode: -40401, challengeStatus: 401, challengeOuter: -40401, passwordType: "md5", firmware: "1.2.2 Build260624", videoFPS: 25}
+	f := &initializationFixture{key: key, frequency: "50hz", password: "frequency fixture secret +:/?", currentKind: "2", challengeCode: -40401, challengeStatus: 401, challengeOuter: -40401, passwordType: "md5", firmware: "1.2.2 Build260624", videoFPS: 25, retiredConnections: map[string]bool{}}
 	f.server = httptest.NewServer(http.HandlerFunc(f.serve))
 	t.Cleanup(f.server.Close)
 	return f
@@ -81,6 +84,12 @@ func (f *initializationFixture) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f.webCalls++
+	if f.retiredConnections[r.RemoteAddr] {
+		f.reusedRetired++
+		connection, _, _ := w.(http.Hijacker).Hijack()
+		_ = connection.Close()
+		return
+	}
 	var req map[string]json.RawMessage
 	if json.NewDecoder(r.Body).Decode(&req) != nil {
 		w.WriteHeader(400)
@@ -107,6 +116,9 @@ func (f *initializationFixture) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(f.challengeStatus)
 		_ = json.NewEncoder(w).Encode(map[string]any{"error_code": f.challengeOuter, "data": map[string]any{"code": f.challengeCode, "encrypt_type": []string{"1", "2"}, "current_encrypt_type": kind, "passwdType": f.passwordType, "nonce": nonce, "key_2": url.QueryEscape(url.QueryEscape(public))}})
+		if f.retireChallengeConnection {
+			f.retiredConnections[r.RemoteAddr] = true
+		}
 		return
 	}
 	if req["login"] != nil && r.URL.Path == "/" {

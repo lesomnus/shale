@@ -1,6 +1,7 @@
 package tplink
 
 import (
+	"context"
 	"errors"
 	"strconv"
 	"strings"
@@ -203,5 +204,20 @@ func TestObservedNormalChallengeRequiresCompleteProtocol(t *testing.T) {
 				t.Fatalf("incomplete challenge did not fail closed: %v", err)
 			}
 		})
+	}
+}
+
+func TestVendorChallengeDoesNotReuseRetiredConnection(t *testing.T) {
+	// Deterministically model a challenge connection which cannot service a
+	// later request. No socket-close timing or physical-firmware claim is used.
+	f := newInitializationFixture(t)
+	f.retireChallengeConnection = true
+	d, lease := f.driver(), f.lease()
+	defer lease.Close()
+	if _, err := d.PlanInitialization(context.Background(), testHint(), lease, camera.DeviceSettings{PowerLineFrequency: 60}); err != nil {
+		t.Fatalf("challenge connection was reused: %v", err)
+	}
+	if f.reusedRetired != 0 || f.logins != 1 || f.logouts != 1 || f.writes != 0 {
+		t.Fatal("retired connection or unexpected camera operation")
 	}
 }

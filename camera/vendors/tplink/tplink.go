@@ -178,6 +178,10 @@ func (d *Driver) rpcJSON(ctx context.Context, ep string, payload, result any) (i
 	req.Header.Set("Content-Type", "application/json;charset=utf-8")
 	req.Header.Set("X-Requested-With", "XMLHttpRequest")
 	req.Header.Set("SourceType", "vigi_web")
+	// Some camera challenge connections cannot serve the subsequent login.
+	// Use a fresh connection for these bounded vendor RPCs only. Never retry an
+	// ambiguous setting/password write merely because a connection was closed.
+	req.Close = true
 	h := http.Client{}
 	if d.HTTPClient != nil {
 		h = *d.HTTPClient

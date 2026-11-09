@@ -96,6 +96,15 @@ pin alone does not authorize them. Unknown authentication exchanges, login
 failures and ambiguous transport errors do not become setting fallbacks. After a
 lost write response, re-inspection can observe the target without another write.
 
+Vendor web RPCs send `Connection: close` on each bounded request. An operator's
+1.2.0 test observed an EOF when reusing a connection after its HTTP 401 challenge;
+using fresh connections let the same qualified login exchange complete. The
+regression deterministically models a challenge connection that refuses a later
+request, without relying on a socket-close timing race. It does not claim the
+same hardware symptom was observed on 1.2.2. This policy is confined to vendor
+web requests; it neither changes ONVIF/RTSP transports nor automatically retries
+a setting or password write after an uncertain response.
+
 The new staged initializer is covered by a combined web/Media2 fixture: 50 Hz
 rejects a 30 fps media plan, initialization changes to 60 Hz, and a fresh Media2
 inspection permits that plan. The 1.2.0 fixture then applies and reads back the
