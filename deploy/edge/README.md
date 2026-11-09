@@ -43,7 +43,7 @@ The Debian package installs this guide at
 It installs neither a network profile nor an enabled DHCP service. A checkout
 is not needed to render the files on the Pi.
 
-Review the four files:
+Review the seven files:
 
 - The NetworkManager keyfile gives only Ethernet a manual camera address, disables
   IPv6 on that connection and sets `never-default=true`. It uses neither the
@@ -56,6 +56,13 @@ Review the four files:
   own persistent lease directory. It does not depend on a Shale process lifetime.
   DHCP holds only the network capabilities it needs; Worker/Producer do not need
   those capabilities to perform ordinary UDP discovery or connect to RTSP.
+- `shale-camera-dhcp.sysusers.conf` declares a static, non-login DHCP account and
+  the dedicated `shale-camera-discovery` group. DHCP does not join the `shale`
+  group or gain access to machine identity/credential directories.
+- `shale-edge-dhcp.conf` and `shale-camera-worker-dhcp.conf` are supplementary-group
+  drop-in templates for the selected combined or independent Worker instance.
+  Install only the template for the layout you run. They change no service user,
+  capability or other instance's groups.
 - `camera-network.json` records the exact CIDR/interface for central network
   enrollment and discovery configuration. It is descriptive input, not an
   authentication or automatic device-adoption grant.
@@ -72,21 +79,38 @@ installation. The recipe does not guess which unrelated profiles can be removed.
 
 ```sh
 sudo sh -eu <<'INSTALL'
+instance=edge # Use camera-worker for the independent Worker layout instead.
+case "$instance" in
+  edge) dropin=camera-lan/shale-edge-dhcp.conf ;;
+  camera-worker) dropin=camera-lan/shale-camera-worker-dhcp.conf ;;
+  *) exit 1 ;;
+esac
 for target in \
   /etc/NetworkManager/system-connections/shale-camera-lan.nmconnection \
   /etc/shale/camera-dhcp.conf \
-  /etc/systemd/system/shale-camera-dhcp.service
+  /etc/systemd/system/shale-camera-dhcp.service \
+  /etc/sysusers.d/shale-camera-dhcp.conf \
+  "/etc/systemd/system/shale@$instance.service.d/20-camera-dhcp.conf" \
+  /var/lib/shale-camera-dhcp
 do
   if [ -e "$target" ] || [ -L "$target" ]; then
     echo "Refusing to replace existing $target; preserve it before an upgrade." >&2
     exit 1
   fi
 done
+if getent passwd shale-camera-dhcp >/dev/null || getent group shale-camera-dhcp >/dev/null || getent group shale-camera-discovery >/dev/null; then
+  echo 'Review existing service-account/group names before installation.' >&2
+  exit 1
+fi
 install -m 0600 camera-lan/shale-camera-lan.nmconnection \
   /etc/NetworkManager/system-connections/shale-camera-lan.nmconnection
 [ -d /etc/shale ] || install -d -m 0755 /etc/shale
 install -m 0644 camera-lan/camera-dhcp.conf /etc/shale/camera-dhcp.conf
 install -m 0644 camera-lan/shale-camera-dhcp.service /etc/systemd/system/
+install -d -m 0755 /etc/sysusers.d "/etc/systemd/system/shale@$instance.service.d"
+install -m 0644 camera-lan/shale-camera-dhcp.sysusers.conf /etc/sysusers.d/shale-camera-dhcp.conf
+systemd-sysusers /etc/sysusers.d/shale-camera-dhcp.conf
+install -m 0644 "$dropin" "/etc/systemd/system/shale@$instance.service.d/20-camera-dhcp.conf"
 dnsmasq --test --conf-file=/etc/shale/camera-dhcp.conf
 systemd-analyze verify /etc/systemd/system/shale-camera-dhcp.service
 nmcli connection reload
@@ -96,7 +120,14 @@ systemctl enable --now shale-camera-dhcp.service
 INSTALL
 ```
 
-The unit's dynamic systemd user owns `/var/lib/shale-camera-dhcp`. Leases survive
+The static `shale-camera-dhcp` user owns `/var/lib/shale-camera-dhcp`, with group
+`shale-camera-discovery`. Its directory is 0750 and the lease file is 0640;
+`UMask=0027` also covers newly created files. The selected Worker/edge instance
+keeps `User=shale` and gains only supplementary read/traverse access. It cannot
+write the file or directory. An already running role needs an explicit restart
+after installing the drop-in to obtain the group; installing it alone does not
+change a process's groups. Do not add DHCP to `shale`, run Worker as root, or make
+`/var/lib/private` traversable. Leases survive
 daemon and OS restarts. DHCP uses a separate unit, so stopping or restarting the
 Shale edge service leaves DHCP running. The interface and address may disappear
 and reappear: dnsmasq's Linux `bind-dynamic` mode follows the selected interface.
@@ -112,6 +143,79 @@ observation, an approved network assignment and central policy still gate camera
 initialization and credential use. Do not attach a root DHCP hook that passes
 untrusted lease strings to shell commands.
 
+### Migrate the earlier DynamicUser DHCP unit
+
+The earlier recipe stored state behind a systemd-owned symlink to
+`/var/lib/private/shale-camera-dhcp`, whose private ancestor is 0700. A
+non-root Worker could not read those leases. Changing only the file mode or
+adding a supplementary group does not fix that ancestor. Migrate only this DHCP
+unit and state after reviewing its rendered replacement. Keep the Wi-Fi session
+and existing camera address/profile intact; no NetworkManager or networkd
+restart is part of this procedure.
+
+The commands below deliberately require the known legacy symlink and an existing
+regular lease file. They stop DHCP briefly so the snapshot cannot change during
+copying. The original private directory is retained unchanged, and its symlink,
+lease snapshot and old unit/config are retained in a new root-only backup. If a
+guard or later step fails, reconcile that partial state using the backup rather
+than blindly rerunning or deleting a directory. Inspect existing static account
+names separately; the earlier DynamicUser identity must be stopped before
+`systemd-sysusers` creates the persistent account.
+
+```sh
+sudo sh -eu <<'MIGRATE'
+instance=edge # Or camera-worker, matching the one active Worker layout.
+case "$instance" in
+  edge) dropin=camera-lan/shale-edge-dhcp.conf ;;
+  camera-worker) dropin=camera-lan/shale-camera-worker-dhcp.conf ;;
+  *) exit 1 ;;
+esac
+state=/var/lib/shale-camera-dhcp
+test -L "$state"
+test "$(readlink -f "$state")" = /var/lib/private/shale-camera-dhcp
+test -f "$state/leases"
+test ! -L "$state/leases"
+test ! -e /etc/sysusers.d/shale-camera-dhcp.conf
+test ! -L /etc/sysusers.d/shale-camera-dhcp.conf
+test ! -e "/etc/systemd/system/shale@$instance.service.d/20-camera-dhcp.conf"
+test ! -L "/etc/systemd/system/shale@$instance.service.d/20-camera-dhcp.conf"
+systemctl stop shale-camera-dhcp.service
+if getent passwd shale-camera-dhcp >/dev/null || getent group shale-camera-dhcp >/dev/null || getent group shale-camera-discovery >/dev/null; then
+  echo 'Review remaining static service-account/group names before migration.' >&2
+  exit 1
+fi
+backup=$(mktemp -d /var/backups/shale-camera-dhcp.XXXXXXXX)
+chmod 0700 "$backup"
+install -m 0600 "$state/leases" "$backup/leases"
+cp -a /etc/systemd/system/shale-camera-dhcp.service "$backup/service"
+cp -a /etc/shale/camera-dhcp.conf "$backup/config"
+mv -- "$state" "$backup/state-link" # Move the symlink only, not its private target.
+install -d -m 0755 /etc/sysusers.d "/etc/systemd/system/shale@$instance.service.d"
+install -m 0644 camera-lan/shale-camera-dhcp.sysusers.conf /etc/sysusers.d/shale-camera-dhcp.conf
+systemd-sysusers /etc/sysusers.d/shale-camera-dhcp.conf
+getent -s files passwd shale-camera-dhcp >/dev/null
+install -d -m 0750 -o shale-camera-dhcp -g shale-camera-discovery "$state"
+install -m 0640 -o shale-camera-dhcp -g shale-camera-discovery "$backup/leases" "$state/leases"
+cmp -- "$backup/leases" "$state/leases"
+install -m 0644 camera-lan/shale-camera-dhcp.service /etc/systemd/system/
+install -m 0644 "$dropin" "/etc/systemd/system/shale@$instance.service.d/20-camera-dhcp.conf"
+systemd-analyze verify /etc/systemd/system/shale-camera-dhcp.service
+systemctl daemon-reload
+systemctl start shale-camera-dhcp.service
+systemctl restart "shale@$instance.service"
+printf 'Preserved DHCP rollback state: %s\n' "$backup"
+MIGRATE
+```
+
+Verify that the selected role can read the lease file through its new group and
+cannot append to it; check its supplementary groups and the 0750/0640 modes after
+an actual DHCP lease update. Confirm the DHCP account cannot read Shale's 0700
+machine-state directories. Keep all CP keys, camera credentials, bindings and
+recordings outside the migration. To roll back, stop the DHCP unit, preserve the
+new lease file as well, restore the saved old unit/config and original state
+symlink, then reload/start the old unit. Do not remove either state's lease data
+or change the private ancestor's ownership/mode.
+
 ## Run the managed Shale roles
 
 Follow the [managed edge guide](../../docs/managed-edge.md) for machine approval,
@@ -121,6 +225,18 @@ tenant API, normally port **7400**, and deliberately has no USB/manual Sources,
 local presets or password files. Both roles receive their own approved central
 assignments. Use `shale@edge` for the combined process or the separate supported
 role commands; do not run both layouts against the same role state directories.
+
+Enable read-only DHCP hints in that role's configuration:
+
+```yaml
+camera_worker:
+  dhcp_leases:
+    - interface: eth0
+      file: /var/lib/shale-camera-dhcp/leases
+```
+
+The supplementary-group drop-in above makes this path readable to the packaged
+non-root Worker. It remains an unauthenticated hint source, not device trust.
 
 `camera-network.json` is only a description to review for the central network
 assignment. Rendering it, obtaining a DHCP lease or starting `shale@edge` does
@@ -142,6 +258,10 @@ not touch Wi-Fi or another dnsmasq service. Retain the lease directory for a
 reinstall, or remove that directory explicitly once its leases are no longer
 needed. Do not erase Shale identity, central credentials, Source bindings or
 recordings as part of network rollback.
+For a fresh installation, remove only the supplementary-group drop-in you
+installed for the selected role, then reload/restart that role. Retain the static
+account/group while it still owns retained state. An upgrade uses its saved unit
+and symlink instead of the fresh-install removal commands.
 
 ## Capacity and outages
 
@@ -181,6 +301,14 @@ router/DNS/NTP options, lease recovery across daemon restart, camera access
 during a simulated uplink flap and refusal to serve the uplink. NetworkManager's
 Wi-Fi route restoration is simulated; physical reboot/radio qualification is
 not inferred from this test.
+
+Before the DHCP protocol run, `lease_permissions_test.py` uses distinct Unix
+UIDs/groups in that same disposable container. The Worker can read the lease
+file but cannot append or create files in DHCP state; the DHCP account can
+write its own state but cannot read a synthetic Producer machine key; an
+unrelated UID cannot read leases. This checks actual kernel permissions without
+creating host accounts or reading real machine keys. The ordinary Python unit
+suite also checks the emitted sysusers/unit/drop-in contract.
 
 ```sh
 # Run from a source checkout on a dedicated test runner.

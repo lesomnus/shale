@@ -20,6 +20,7 @@ def run(*argv, **kw):
 def main():
     if os.environ.get("SHALE_CAMERA_LAN_NETNS_TEST") != "1" or os.geteuid() != 0:
         raise SystemExit("run explicitly inside the isolated privileged test container")
+    run("python3", str(Path(__file__).with_name("lease_permissions_test.py")))
     namespaces = {role: f"shale-test-{os.getpid()}-{role}" for role in ("server", "camera", "uplink")}
     processes = []
     created = []

@@ -99,6 +99,8 @@ class PackageContentTest(unittest.TestCase):
                     self.assertEqual({p.name for p in output.iterdir()}, {
                         "shale-camera-lan.nmconnection", "camera-dhcp.conf",
                         "shale-camera-dhcp.service", "camera-network.json",
+                        "shale-camera-dhcp.sysusers.conf", "shale-edge-dhcp.conf",
+                        "shale-camera-worker-dhcp.conf",
                     })
                     self.assertEqual(stat.S_IMODE((output / "shale-camera-lan.nmconnection").stat().st_mode),
                                      0o600)

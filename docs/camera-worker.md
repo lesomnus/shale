@@ -207,6 +207,14 @@ leases. The local administrator controls the file path; DHCP hostname and client
 ID fields cannot supply a URL, path, credential, model or inventory identity.
 This option does not run or configure a DHCP server.
 
+The [camera-LAN recipe](../deploy/edge/README.md) supplies a static non-login DHCP
+account and a dedicated `shale-camera-discovery` group: DHCP state 0750, lease
+file 0640, and a supplementary-group drop-in only for the selected non-root
+`shale@edge` or `shale@camera-worker` instance. The older DynamicUser recipe's
+private 0700 ancestor is not readable through a group change alone; use its
+explicit lease-preserving migration. Do not make Worker root or add DHCP to the
+Shale machine-credential group to bypass this boundary.
+
 The assigned CP network must still name its `interface_hint`, current CIDRs and
 at least one HTTP(S) seed management endpoint. DHCP candidates reuse only the
 scheme, port and path of those seed endpoints at active lease hosts within those
