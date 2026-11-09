@@ -22,6 +22,11 @@ type Options struct {
 	NetworkID string
 	CIDRs     []string
 	Bootstrap *camera.BootstrapSettings
+	// DeviceTLSIdentity is a centrally approved pin for this exact inventory
+	// device. DeviceHosts must come from its current authorized endpoints.
+	DeviceTLSIdentity *camera.DeviceTLSIdentity
+	DeviceID          string
+	DeviceHosts       []string
 	// Roots is optional camera certificate trust, never a machine identity.
 	Roots   *x509.CertPool
 	Timeout time.Duration
@@ -30,12 +35,16 @@ type Options struct {
 // Driver is immutable and owns its scoped HTTP transport. Construct one from
 // the current operation's grant and Close it after that operation returns.
 type Driver struct {
-	network   string
-	prefixes  []netip.Prefix
-	bootstrap *camera.BootstrapSettings
-	client    *http.Client
-	transport *http.Transport
-	baseline  *onvif.Client
+	network      string
+	prefixes     []netip.Prefix
+	bootstrap    *camera.BootstrapSettings
+	client       *http.Client
+	transport    *http.Transport
+	baseline     *onvif.Client
+	identity     *camera.DeviceTLSIdentity
+	deviceHosts  map[string]bool
+	webClient    *http.Client
+	webTransport *http.Transport
 }
 
 var (
@@ -69,16 +78,46 @@ func New(o Options) (*Driver, error) {
 		copy := *o.Bootstrap
 		d.bootstrap = &copy
 	}
+	if o.DeviceTLSIdentity != nil {
+		if o.DeviceTLSIdentity.Validate() != nil || o.DeviceTLSIdentity.DeviceID != o.DeviceID || d.bootstrap == nil || d.bootstrap.WebScheme != "https" || len(o.DeviceHosts) == 0 || len(o.DeviceHosts) > 32 {
+			return nil, camera.ErrInvalid
+		}
+		hosts := make(map[string]bool, len(o.DeviceHosts))
+		for _, host := range o.DeviceHosts {
+			ip, err := netip.ParseAddr(host)
+			if err != nil || ip.String() != host || !d.allowedHost(host) || hosts[host] {
+				return nil, camera.ErrInvalid
+			}
+			hosts[host] = true
+		}
+		identity := *o.DeviceTLSIdentity
+		d.identity, d.deviceHosts = &identity, hosts
+	}
 	d.client, d.transport = d.httpClient(o.Roots, o.Timeout)
 	d.baseline = onvif.NewClient(d.client)
+	if d.identity != nil {
+		d.webClient, d.webTransport, err = d.pinnedWebClient(o.Timeout)
+		if err != nil {
+			d.Close()
+			return nil, err
+		}
+	}
 	return d, nil
 }
 
-func (d *Driver) Close() { d.transport.CloseIdleConnections() }
+func (d *Driver) Close() {
+	d.transport.CloseIdleConnections()
+	if d.webTransport != nil {
+		d.webTransport.CloseIdleConnections()
+	}
+}
 
 func (d *Driver) endpoint(ctx context.Context, h camera.DeviceHint) (*url.URL, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if d.identity != nil && string(h.ID) != d.identity.DeviceID {
+		return nil, camera.ErrForbidden
 	}
 	if len(h.Endpoints) == 0 || len(h.Endpoints) > 32 {
 		return nil, camera.ErrInvalid
@@ -115,6 +154,9 @@ func (d *Driver) vendor(ctx context.Context, h camera.DeviceHint) (*tplink.Drive
 	web := &url.URL{Scheme: d.bootstrap.WebScheme, Host: net.JoinHostPort(endpoint.Hostname(), strconv.Itoa(d.bootstrap.WebPort))}
 	v := tplink.NewDriver(d.baseline, web.String())
 	v.CompatibilityProfile = d.bootstrap.CompatibilityProfile
+	if d.webClient != nil {
+		v.HTTPClient = d.webClient
+	}
 	return v, nil
 }
 
