@@ -50,7 +50,7 @@ install -m 0644 README.md "$PKG/usr/share/doc/shale/README.md"
 install -m 0755 deploy/edge/camera_lan.py "$PKG/usr/share/shale/edge/camera_lan.py"
 # Keep the source layout so the two guides' relative links also work installed.
 install -m 0644 deploy/edge/README.md "$PKG/usr/share/doc/shale/deploy/edge/README.md"
-for guide in managed-edge camera-policy camera-credentials camera-worker-drivers; do
+for guide in managed-edge camera-policy camera-credentials camera-worker-drivers camera-tls-identity; do
   install -m 0644 "docs/$guide.md" "$PKG/usr/share/doc/shale/docs/$guide.md"
 done
 
