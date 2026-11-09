@@ -127,10 +127,23 @@ func isolatedOperationsCameras(t *testing.T) {
 	require.Equal(t, initialNetwork.Cameras["camera2"].MAC, moved.Cameras["camera2"].MAC)
 	require.Equal(t, []string{"192.168.250.30"}, moved.Cameras["camera2"].Addresses)
 	require.Equal(t, initialNetwork.Cameras["camera"].Addresses, moved.Cameras["camera"].Addresses)
-	qualificationCall(t, f.Camera["camera2"], "rebind", map[string]any{"ip": "192.168.250.30", "interface": "eth0", "preserve_ports": true}, nil)
+	var movedCamera edgeCameraStatus
+	qualificationCall(t, f.Camera["camera2"], "rebind", map[string]any{"ip": "192.168.250.30", "interface": "eth0", "preserve_ports": true}, &movedCamera)
 	role := f.Topology.Roles["camera2"]
 	role.Address = "192.168.250.30"
 	f.Topology.Roles["camera2"] = role
+	// DHCP and the public EPR do not authorize sending retained credentials to
+	// a new host. The operator explicitly approves the moved transport while
+	// preserving the independently authenticated physical identity.
+	devices := api.NewCameraDeviceServiceClient(f.Admin)
+	require.Eventually(t, func() bool {
+		current, err := devices.Get(f.Ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: b.Binding.GetDevice().GetId()}.Build()}.Build())
+		if err != nil || !current.GetIdentity().GetAuthenticated() {
+			return false
+		}
+		_, err = devices.Observe(f.Ctx, api.CameraDeviceObserveRequest_builder{Ref: api.CameraDeviceRef_builder{Id: current.GetId()}.Build(), ExpectedVersion: current.GetDateUpdated(), Identity: current.GetIdentity(), Endpoints: []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: movedCamera.Endpoints.ONVIF, Provenance: "operator_approved_transport"}.Build()}}.Build())
+		return err == nil
+	}, 5*time.Second, 100*time.Millisecond, "the operator must approve the moved camera transport")
 	bindings := api.NewCameraBindingServiceClient(f.Admin)
 	require.Eventually(t, func() bool {
 		current, err := bindings.Get(f.Ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: b.Binding.GetId()}.Build()}.Build())
@@ -139,7 +152,7 @@ func isolatedOperationsCameras(t *testing.T) {
 		}
 		input, err := url.Parse(current.GetDesired().GetInput())
 		return err == nil && input.Hostname() == "192.168.250.30" && current.GetDesired().GetRevision() > b.Binding.GetDesired().GetRevision()
-	}, 80*time.Second, 100*time.Millisecond, "DHCP observation must durably reconcile the existing Source")
+	}, 80*time.Second, 100*time.Millisecond, "approved DHCP transport must durably reconcile the existing Source")
 	bMoved := f.VerifyMedia("camera2", b.Record)
 	require.Equal(t, b.Binding.GetId(), bMoved.Binding.GetId())
 	require.Equal(t, b.Binding.GetSource().GetId(), bMoved.Binding.GetSource().GetId())
@@ -184,6 +197,12 @@ func isolatedOperationsCameras(t *testing.T) {
 	// Inventory capacity counts retained device bindings, including stopped
 	// cameras. A third identity cannot silently replace either logical Source.
 	qualificationCall(t, f.Camera["camera2"], "stop", nil, nil)
+	// Give this NEW physical device an unowned address. Reusing the retained
+	// camera's address is an ownership conflict, not a capacity admission test.
+	thirdNetwork := network.Call(t, "move_camera", "camera2", "192.168.250.40")
+	require.Equal(t, []string{"192.168.250.40"}, thirdNetwork.Cameras["camera2"].Addresses)
+	role.Address = "192.168.250.40"
+	f.Topology.Roles["camera2"] = role
 	delete(f.Device, "camera2") // The replacement fixture below is a NEW physical device.
 	f.StartCamera("camera2", false, "admin", isolatedOperationsPassword, cameratest.CameraIdentity{
 		Serial: "isolated-operations-third", MAC: "02:00:00:00:03:03", DiscoveryID: "urn:uuid:00000000-0000-4000-8000-000000000303",

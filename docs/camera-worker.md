@@ -149,8 +149,11 @@ transport hosts, that whole key is skipped with a fixed ambiguity warning.
 Duplicate packets for one candidate and host can merge endpoints. These hints
 never authenticate a physical identity: discovery authentication flags are
 cleared, and the CP preserves previously authenticated inventory evidence. After
-a DHCP address change, leased inspection must confirm the authenticated physical
-identity; an address hint never grants inventory ownership or credential access.
+a DHCP address change, an operator must first approve the new endpoints with
+`CameraDevice.Observe`, its current version and its retained authenticated
+identity. Leased inspection then confirms that physical identity before further
+writes or publication. An address hint never grants inventory ownership or
+credential access.
 
 Discovery runs independently of heartbeat, job polling and lease renewal. Errors
 produce fixed messages without device text and retry at the next interval; they

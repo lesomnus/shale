@@ -218,3 +218,46 @@ func TestCameraInitialObservationLegacyMACAndUnresolvedEndpointOwnership(t *test
 	require.Equal(t, 1, count)
 	require.Equal(t, int32(1), preparations.Load(), "neither indexed-candidate ambiguity may prepare another bundle")
 }
+
+func TestCameraInitialObservationNativeEPRTransportRequiresOperatorApproval(t *testing.T) {
+	server, cp, admin, ctx := cameraPolicyControl(t)
+	worker, machine, _ := cameraWorkerMachine(t, ctx, server, cp, admin, "transport-worker", nil)
+	producer, _, _ := cameraWorkerProducer(t, ctx, server, cp, admin, "transport-producer", nil)
+	n := cameraPolicyNetwork(t, ctx, admin, "transport-lan", nil)
+	a, err := api.NewCameraAssignmentServiceClient(admin).Assign(ctx, api.CameraAssignmentAssignRequest_builder{Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), Producer: api.ProducerRef_builder{Id: producer.GetId()}.Build(), WorkerSlot: "edge", WorkerId: worker.GetId()}.Build())
+	require.NoError(t, err)
+	const epr = "urn:uuid:4b6c7081-d49b-4cf0-9ead-c524cfe36e87"
+	digest := sha256.Sum256([]byte(epr))
+	eps := []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: "http://192.0.2.10/onvif/device_service"}.Build()}
+	devices := api.NewCameraDeviceServiceClient(admin)
+	d, err := devices.Claim(ctx, api.CameraDeviceClaimRequest_builder{Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), DeviceKey: "discovery/" + hex.EncodeToString(digest[:]), Endpoints: eps}.Build())
+	require.NoError(t, err)
+	d, err = devices.Observe(ctx, api.CameraDeviceObserveRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), ExpectedVersion: d.GetDateUpdated(), Identity: api.CameraIdentityEvidence_builder{Manufacturer: "fixture", Hardware: "1", Serial: "native-physical-unit", Authenticated: true}.Build(), Endpoints: eps}.Build())
+	require.NoError(t, err)
+	client := api.NewCameraPolicyServiceClient(machine)
+	observe := api.CameraPolicyObserveRequest_builder{Assignment: api.CameraAssignmentRef_builder{Id: a.GetId()}.Build(), AssignmentGeneration: a.GetGeneration(), DiscoveryId: epr, Endpoints: eps}.Build()
+	before, err := client.Observe(ctx, observe)
+	require.NoError(t, err)
+	moved := proto.Clone(observe).(*api.CameraPolicyObserveRequest)
+	moved.GetEndpoints()[0].SetUri("http://192.0.2.20/onvif/device_service")
+	_, err = client.Observe(ctx, moved)
+	require.Equal(t, codes.Aborted, status.Code(err), "a native public EPR is not authority to send credentials to a new host")
+	unchanged, err := devices.Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.True(t, proto.Equal(before.GetDevice(), unchanged), "rejected movement leaves the inventory and version unchanged")
+	approved, err := devices.Observe(ctx, api.CameraDeviceObserveRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), ExpectedVersion: unchanged.GetDateUpdated(), Identity: unchanged.GetIdentity(), Endpoints: moved.GetEndpoints()}.Build())
+	require.NoError(t, err)
+	result, err := client.Observe(ctx, moved)
+	require.NoError(t, err)
+	require.Equal(t, "policy_missing", result.GetCode(), "transport approval does not grant an enrollment policy")
+	require.Equal(t, d.GetId(), result.GetDevice().GetId())
+	require.True(t, proto.Equal(approved.GetIdentity(), result.GetDevice().GetIdentity()))
+	require.Nil(t, result.GetBinding())
+	require.Nil(t, result.GetJob())
+	counts := []func(context.Context) (int, error){server.Ent.CameraDevice.Query().Count, server.Ent.CameraBinding.Query().Count, server.Ent.Source.Query().Count, server.Ent.CameraJob.Query().Count}
+	for i, count := range counts {
+		got, err := count(ctx)
+		require.NoError(t, err)
+		require.Equal(t, []int{1, 0, 0, 0}[i], got)
+	}
+}
