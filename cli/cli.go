@@ -95,6 +95,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 		t.Drop(g)
 	}
 	addCustom(t, c, false)
+	addCameraPresetCommands(t, c)
 	addLaminaCommands(t, c)
 	addStateCommands(t, c, false)
 	addProducerCommands(t, c, l)
@@ -184,6 +185,7 @@ var clusterGroups = map[string]bool{
 var tenantGroups = map[string]bool{
 	"set": true, "source": true, "lamina": true, "attempt": true, "site": true, "site-member": true,
 	"producer": true, "reader": true, "holder": true, "audit": true, "camera-worker": true,
+	"camera-preset": true, "camera-policy": true,
 }
 
 // unserved are the groups of entities neither surface mounts, which a
