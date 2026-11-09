@@ -124,31 +124,37 @@ func TestWithoutBootstrapUsesONVIFOnly(t *testing.T) {
 }
 
 func TestPinnedC420ActivationAndAuthenticatedConfiguration(t *testing.T) {
-	c := fixtureCamera(t)
-	c.SetUnactivated(true)
-	d := scopedDriver(t, bootstrapFor(t, c.WebURL))
-	// A fresh endpoint has no vendor identity until authenticated inspection.
-	hint := camera.DeviceHint{ID: "fresh-c420", Endpoints: c.Hint("").Endpoints}
-	state, err := d.Activation(context.Background(), hint)
-	if err != nil || state != camera.ActivationRequired {
-		t.Fatalf("activation=%s: %v", state, err)
-	}
-	if err := d.Activate(context.Background(), hint, fixtureLease(t, camera.AuthInitialAdmin)); err != nil {
-		t.Fatal(err)
-	}
-	if writes, activations := c.Writes(); writes != 0 || activations != 1 {
-		t.Fatalf("writes=%d activations=%d", writes, activations)
-	}
-	if _, err := d.Inspect(context.Background(), hint, nil); !errors.Is(err, camera.ErrAuthRequired) {
-		t.Fatalf("fixture did not require WS-Security: %v", err)
-	}
-	configureVideo(t, d, c, hint, true)
-	// A replay only reads the ready state, even without another initial lease.
-	if err := d.Activate(context.Background(), hint, nil); err != nil {
-		t.Fatal(err)
-	}
-	if _, activations := c.Writes(); activations != 1 {
-		t.Fatalf("activation replay wrote again: %d", activations)
+	for _, profile := range []string{tplink.ProfileC420V122, tplink.ProfileC420V120, tplink.ProfileC420Known} {
+		t.Run(profile, func(t *testing.T) {
+			c := fixtureCamera(t)
+			c.SetUnactivated(true)
+			bootstrap := bootstrapFor(t, c.WebURL)
+			bootstrap.CompatibilityProfile = profile
+			d := scopedDriver(t, bootstrap)
+			// A fresh endpoint has no vendor identity until authenticated inspection.
+			hint := camera.DeviceHint{ID: "fresh-c420", Endpoints: c.Hint("").Endpoints}
+			state, err := d.Activation(context.Background(), hint)
+			if err != nil || state != camera.ActivationRequired {
+				t.Fatalf("activation=%s: %v", state, err)
+			}
+			if err := d.Activate(context.Background(), hint, fixtureLease(t, camera.AuthInitialAdmin)); err != nil {
+				t.Fatal(err)
+			}
+			if writes, activations := c.Writes(); writes != 0 || activations != 1 {
+				t.Fatalf("writes=%d activations=%d", writes, activations)
+			}
+			if _, err := d.Inspect(context.Background(), hint, nil); !errors.Is(err, camera.ErrAuthRequired) {
+				t.Fatalf("fixture did not require WS-Security: %v", err)
+			}
+			configureVideo(t, d, c, hint, true)
+			// A replay only reads the ready state, even without another initial lease.
+			if err := d.Activate(context.Background(), hint, nil); err != nil {
+				t.Fatal(err)
+			}
+			if _, activations := c.Writes(); activations != 1 {
+				t.Fatalf("activation replay wrote again: %d", activations)
+			}
+		})
 	}
 }
 
