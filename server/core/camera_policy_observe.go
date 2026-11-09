@@ -198,6 +198,12 @@ func (s Core) cameraEnrollObservation(ctx context.Context, a *api.CameraAssignme
 	}
 	var b *api.CameraBinding
 	if len(bindings) == 0 {
+		if p.GetEnrollment().GetTrustNewFactoryTls() && cameraDeviceTLSIdentity(p, d) == nil {
+			if err := s.cameraPlanFactoryTLS(ctx, a, n, d, p); err != nil {
+				return nil, nil, "", err
+			}
+			return nil, nil, "factory_tls_required", nil
+		}
 		if err := s.cameraPolicyDeviceLimit(ctx, a, p.GetEnrollment().GetMaxDevices()); err != nil {
 			return nil, nil, "", err
 		}
@@ -340,6 +346,9 @@ func (s coreCameraPolicy) Observe(ctx context.Context, r *api.CameraPolicyObserv
 		}
 		current, err = nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build()}.Build())
 		out.SetDevice(current)
+		if out.GetCode() == "factory_tls_required" {
+			out.SetFactoryTlsPlan(current.GetFactoryTls().GetPlan())
+		}
 		return err
 	})
 	if err != nil {

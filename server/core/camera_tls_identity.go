@@ -86,6 +86,17 @@ func cameraSelectedTLSIdentity(p *api.CameraPolicy, device []byte) *api.CameraDe
 	}
 	return nil
 }
+
+func cameraDeviceTLSIdentity(p *api.CameraPolicy, d *api.CameraDevice) *api.CameraDeviceTLSIdentity {
+	if pin := cameraSelectedTLSIdentity(p, d.GetId()); pin != nil {
+		return pin
+	}
+	state := d.GetFactoryTls()
+	if state.GetDateTrusted() != nil && state.GetIdentity() != nil && state.GetIdentity().GetDeviceId() == mustId(d.GetId()).String() && bytes.Equal(state.GetPlan().GetDeviceId(), d.GetId()) {
+		return proto.Clone(state.GetIdentity()).(*api.CameraDeviceTLSIdentity)
+	}
+	return nil
+}
 func cameraExactTLSIdentity(p *api.CameraPolicy, a *api.CameraAssignment, d *api.CameraDevice, input *api.CameraJobInputs) error {
 	if p == nil {
 		if input.GetDeviceTlsIdentity() != nil {
@@ -99,7 +110,10 @@ func cameraExactTLSIdentity(p *api.CameraPolicy, a *api.CameraAssignment, d *api
 	if err := cameraSameScope(d.GetTenant().GetId(), d.GetSite().GetId(), a.GetTenant().GetId(), a.GetSite().GetId()); err != nil {
 		return err
 	}
-	want := cameraSelectedTLSIdentity(p, d.GetId())
+	want := cameraDeviceTLSIdentity(p, d)
+	if p.GetEnrollment().GetTrustNewFactoryTls() && want == nil {
+		return denied("device TLS identity", "first factory TLS trust must commit before a job is created")
+	}
 	if !proto.Equal(input.GetDeviceTlsIdentity(), want) {
 		return denied("device TLS identity", "job must retain its device's exact policy-approved TLS identity")
 	}

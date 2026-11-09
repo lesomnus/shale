@@ -101,6 +101,12 @@ func (_c *CameraDeviceCreate) SetEnrollment(v *api.CameraEnrollmentObservation) 
 	return _c
 }
 
+// SetFactoryTls sets the "factory_tls" field.
+func (_c *CameraDeviceCreate) SetFactoryTls(v *api.CameraFactoryTLSState) *CameraDeviceCreate {
+	_c.mutation.SetFactoryTls(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraDeviceCreate) SetDateUpdated(v time.Time) *CameraDeviceCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -370,6 +376,17 @@ func (_c *CameraDeviceCreate) createSpec() (*CameraDevice, *sqlgraph.CreateSpec,
 		}
 		_spec.SetField(cameradevice.FieldEnrollment, field.TypeJson, vv)
 		_node.Enrollment = value
+	}
+	if value, ok := _c.mutation.FactoryTls(); ok {
+		vv, err := cameradevice.ValueScanner.FactoryTls.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(cameradevice.FieldFactoryTls, field.TypeJson, vv)
+		_node.FactoryTls = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

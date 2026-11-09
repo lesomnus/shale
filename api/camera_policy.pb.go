@@ -35,6 +35,7 @@ type CameraEnrollmentPolicy struct {
 	xxx_hidden_InitialUsername     string                      `protobuf:"bytes,6,opt,name=initial_username,json=initialUsername"`
 	xxx_hidden_Bootstrap           *CameraBootstrapProfile     `protobuf:"bytes,7,opt,name=bootstrap"`
 	xxx_hidden_DeviceTlsIdentities *[]*CameraDeviceTLSIdentity `protobuf:"bytes,8,rep,name=device_tls_identities,json=deviceTlsIdentities"`
+	xxx_hidden_TrustNewFactoryTls  bool                        `protobuf:"varint,9,opt,name=trust_new_factory_tls,json=trustNewFactoryTls"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -124,6 +125,13 @@ func (x *CameraEnrollmentPolicy) GetDeviceTlsIdentities() []*CameraDeviceTLSIden
 	return nil
 }
 
+func (x *CameraEnrollmentPolicy) GetTrustNewFactoryTls() bool {
+	if x != nil {
+		return x.xxx_hidden_TrustNewFactoryTls
+	}
+	return false
+}
+
 func (x *CameraEnrollmentPolicy) SetAutomatic(v bool) {
 	x.xxx_hidden_Automatic = v
 }
@@ -156,6 +164,10 @@ func (x *CameraEnrollmentPolicy) SetDeviceTlsIdentities(v []*CameraDeviceTLSIden
 	x.xxx_hidden_DeviceTlsIdentities = &v
 }
 
+func (x *CameraEnrollmentPolicy) SetTrustNewFactoryTls(v bool) {
+	x.xxx_hidden_TrustNewFactoryTls = v
+}
+
 func (x *CameraEnrollmentPolicy) HasBootstrap() bool {
 	if x == nil {
 		return false
@@ -184,6 +196,10 @@ type CameraEnrollmentPolicy_builder struct {
 	// receives only its device's identity, detached from the immutable policy.
 	// Present entries require an explicit HTTPS bootstrap destination.
 	DeviceTlsIdentities []*CameraDeviceTLSIdentity
+	// Explicit first-use trust on this isolated private camera LAN only. A
+	// credential-free known-factory challenge must precede binding or secrets.
+	// Existing identities, credentials, jobs and changed keys never opt in.
+	TrustNewFactoryTls bool
 }
 
 func (b0 CameraEnrollmentPolicy_builder) Build() *CameraEnrollmentPolicy {
@@ -198,6 +214,7 @@ func (b0 CameraEnrollmentPolicy_builder) Build() *CameraEnrollmentPolicy {
 	x.xxx_hidden_InitialUsername = b.InitialUsername
 	x.xxx_hidden_Bootstrap = b.Bootstrap
 	x.xxx_hidden_DeviceTlsIdentities = &b.DeviceTlsIdentities
+	x.xxx_hidden_TrustNewFactoryTls = b.TrustNewFactoryTls
 	return m0
 }
 
@@ -550,7 +567,7 @@ var File_shale_camera_policy_proto protoreflect.FileDescriptor
 
 const file_shale_camera_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/camera_policy.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\x1a\x1cshale/camera_bootstrap.proto\"\x91\x03\n" +
+	"\x19shale/camera_policy.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\x1a\x10shale/site.proto\x1a\x12shale/camera.proto\x1a\x19shale/camera_preset.proto\x1a\x1cshale/camera_bootstrap.proto\"\xc4\x03\n" +
 	"\x16CameraEnrollmentPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12)\n" +
 	"\x10allow_activation\x18\x02 \x01(\bR\x0fallowActivation\x12\x1f\n" +
@@ -560,7 +577,8 @@ const file_shale_camera_policy_proto_rawDesc = "" +
 	"\tallow_any\x18\x05 \x01(\bR\ballowAny\x12)\n" +
 	"\x10initial_username\x18\x06 \x01(\tR\x0finitialUsername\x12;\n" +
 	"\tbootstrap\x18\a \x01(\v2\x1d.shale.CameraBootstrapProfileR\tbootstrap\x12R\n" +
-	"\x15device_tls_identities\x18\b \x03(\v2\x1e.shale.CameraDeviceTLSIdentityR\x13deviceTlsIdentities\"\xce\a\n" +
+	"\x15device_tls_identities\x18\b \x03(\v2\x1e.shale.CameraDeviceTLSIdentityR\x13deviceTlsIdentities\x121\n" +
+	"\x15trust_new_factory_tls\x18\t \x01(\bR\x12trustNewFactoryTls\"\xce\a\n" +
 	"\fCameraPolicy\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +

@@ -29,6 +29,28 @@ message CameraRevisionReference {
   string id = 1;
   string revision = 2;
 }
+// Public, short-lived CP plan. It is not a bearer capability: only the current
+// adopted assignment Worker can submit its exact stored snapshot.
+message CameraFactoryTLSPlan {
+  bytes assignment_id = 1;
+  int64 assignment_generation = 2;
+  bytes device_id = 3;
+  int64 observation_revision = 4;
+  CameraRevisionReference policy = 5;
+  CameraBootstrapProfile bootstrap = 6;
+  string endpoint = 7;
+  google.protobuf.Timestamp date_issued = 8;
+  google.protobuf.Timestamp date_expires = 9;
+  google.protobuf.Timestamp network_version = 10;
+  string operation_key = 11;
+}
+// Only the scoped first-use RPC may accept an identity. Once accepted, later
+// jobs copy it into immutable inputs; discovery never rotates the key.
+message CameraFactoryTLSState {
+  CameraFactoryTLSPlan plan = 1;
+  CameraDeviceTLSIdentity identity = 2;
+  google.protobuf.Timestamp date_trusted = 3;
+}
 message CameraCaptureProfile {
   string codec = 1;
   int32 width = 2;
@@ -228,6 +250,7 @@ message CameraDevice {
   bytes active_job_id = 16 [(orm.field) = {type: TYPE_UUID nullable: true}];
   int64 claim_generation = 17;
   CameraEnrollmentObservation enrollment = 18;
+  CameraFactoryTLSState factory_tls = 19;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

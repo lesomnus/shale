@@ -200,6 +200,7 @@ var cameraWorkerMay = map[string]bool{
 	api.CameraJobService_Publish_FullMethodName:             true,
 	api.CameraPresetService_ResolveForJob_FullMethodName:    true,
 	api.CameraPolicyService_Observe_FullMethodName:          true,
+	api.CameraPolicyService_TrustFactoryTLS_FullMethodName:  true,
 }
 
 var readerMay = map[string]bool{

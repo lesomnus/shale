@@ -190,6 +190,18 @@ func (_u *CameraDeviceUpdate) ClearEnrollment() *CameraDeviceUpdate {
 	return _u
 }
 
+// SetFactoryTls sets the "factory_tls" field.
+func (_u *CameraDeviceUpdate) SetFactoryTls(v *api.CameraFactoryTLSState) *CameraDeviceUpdate {
+	_u.mutation.SetFactoryTls(v)
+	return _u
+}
+
+// ClearFactoryTls clears the value of the "factory_tls" field.
+func (_u *CameraDeviceUpdate) ClearFactoryTls() *CameraDeviceUpdate {
+	_u.mutation.ClearFactoryTls()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraDeviceUpdate) SetDateUpdated(v time.Time) *CameraDeviceUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -392,6 +404,22 @@ func (_u *CameraDeviceUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if _u.mutation.EnrollmentCleared() {
 		_spec.ClearField(cameradevice.FieldEnrollment, field.TypeJson)
 	}
+	if value, ok := _u.mutation.FactoryTls(); ok {
+		vv, err := cameradevice.ValueScanner.FactoryTls.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(cameradevice.FieldFactoryTls, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldFactoryTls); ok {
+		_spec.SetField(cameradevice.FieldFactoryTls, field.TypeJson, e)
+	}
+	if _u.mutation.FactoryTlsCleared() {
+		_spec.ClearField(cameradevice.FieldFactoryTls, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -587,6 +615,18 @@ func (_u *CameraDeviceUpdateOne) SetEnrollment(v *api.CameraEnrollmentObservatio
 // ClearEnrollment clears the value of the "enrollment" field.
 func (_u *CameraDeviceUpdateOne) ClearEnrollment() *CameraDeviceUpdateOne {
 	_u.mutation.ClearEnrollment()
+	return _u
+}
+
+// SetFactoryTls sets the "factory_tls" field.
+func (_u *CameraDeviceUpdateOne) SetFactoryTls(v *api.CameraFactoryTLSState) *CameraDeviceUpdateOne {
+	_u.mutation.SetFactoryTls(v)
+	return _u
+}
+
+// ClearFactoryTls clears the value of the "factory_tls" field.
+func (_u *CameraDeviceUpdateOne) ClearFactoryTls() *CameraDeviceUpdateOne {
+	_u.mutation.ClearFactoryTls()
 	return _u
 }
 
@@ -821,6 +861,22 @@ func (_u *CameraDeviceUpdateOne) sqlSave(ctx context.Context) (_node *CameraDevi
 	}
 	if _u.mutation.EnrollmentCleared() {
 		_spec.ClearField(cameradevice.FieldEnrollment, field.TypeJson)
+	}
+	if value, ok := _u.mutation.FactoryTls(); ok {
+		vv, err := cameradevice.ValueScanner.FactoryTls.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(cameradevice.FieldFactoryTls, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldFactoryTls); ok {
+		_spec.SetField(cameradevice.FieldFactoryTls, field.TypeJson, e)
+	}
+	if _u.mutation.FactoryTlsCleared() {
+		_spec.ClearField(cameradevice.FieldFactoryTls, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

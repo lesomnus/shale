@@ -4,6 +4,7 @@ package shale;
 import "google/protobuf/timestamp.proto";
 import "shale/camera.proto";
 import "shale/camera_policy.proto";
+import "shale/camera_bootstrap.proto";
 import "shale/camera_preset_svc.g.proto";
 import "shale/camera_svc.g.proto";
 
@@ -16,6 +17,8 @@ service CameraPolicyService {
   rpc Enroll(CameraPolicyEnrollRequest) returns (CameraJob);
   // Scoped observations never grant general inventory mutation or credentials.
   rpc Observe(CameraPolicyObserveRequest) returns (CameraPolicyObserveResponse);
+  // First trust is available only before any binding, job, or camera secret.
+  rpc TrustFactoryTLS(CameraPolicyTrustFactoryTLSRequest) returns (CameraPolicyObserveResponse);
 }
 message CameraPolicyCreateRequest {
   CameraNetworkRef network = 1;
@@ -47,4 +50,12 @@ message CameraPolicyObserveResponse {
   CameraBinding binding = 2;
   CameraJob job = 3;
   string code = 4 [features.field_presence = IMPLICIT];
+  CameraFactoryTLSPlan factory_tls_plan = 5;
+}
+message CameraPolicyTrustFactoryTLSRequest {
+  CameraFactoryTLSPlan plan = 1;
+  CameraDeviceTLSIdentity identity = 2;
+  // The assigned Worker's credential-free known factory challenge observed
+  // that the initial administrator password is still unset.
+  bool activation_required = 3 [features.field_presence = IMPLICIT];
 }

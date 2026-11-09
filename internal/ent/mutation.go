@@ -3924,6 +3924,23 @@ func (m *CameraDeviceMutation) OldEnrollment(ctx context.Context) (v *api.Camera
 	return oldValue.Enrollment, nil
 }
 
+// OldFactoryTls returns the old "factory_tls" field's value of the CameraDevice entity.
+// If the CameraDevice object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraDeviceMutation) OldFactoryTls(ctx context.Context) (v *api.CameraFactoryTLSState, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldFactoryTls is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldFactoryTls requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFactoryTls: %w", err)
+	}
+	return oldValue.FactoryTls, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the CameraDevice entity.
 // If the CameraDevice object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -4053,6 +4070,8 @@ func (m *CameraDeviceMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldClaimGeneration(ctx)
 	case cameradevice.FieldEnrollment:
 		return m.OldEnrollment(ctx)
+	case cameradevice.FieldFactoryTls:
+		return m.OldFactoryTls(ctx)
 	case cameradevice.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case cameradevice.FieldDateErased:

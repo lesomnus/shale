@@ -48,6 +48,16 @@ credential access based on discovery hints.
 The [device TLS contract](camera-tls-identity.md) defines operator approval,
 per-device scope, checkpoint recovery, transport verification and key withdrawal.
 
+## Automatic first factory TLS trust
+
+An isolated private camera network can explicitly opt in to
+`CameraEnrollmentPolicy.trust_new_factory_tls`. Inventory remains unbound until
+the assigned Worker completes a credential-free known factory challenge and the
+CP commits the first exact SPKI pin together with the enrollment job. Existing
+accounts, bindings and changed keys cannot use this path. See the
+[first-enrollment trust contract](camera-first-enrollment-trust.md) for the
+required policy, expiry, ownership and recovery boundaries.
+
 ## Preset representation
 
 Reuse `camera/preset.Provider` for rule validation, precedence, conflict checks,

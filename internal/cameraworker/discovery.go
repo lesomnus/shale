@@ -107,10 +107,14 @@ func (w *Worker) discoverAssigned(ctx context.Context, workers api.CameraWorkerS
 			call, cancel := context.WithTimeout(ctx, discoveryRPCTimeout)
 			// Retain the generation used for this scan. Observe rechecks current
 			// CP authority and rejects handover/revocation during the LAN call.
-			_, err := policies.Observe(call, request)
+			observed, err := policies.Observe(call, request)
 			cancel()
 			if err != nil {
 				w.logDiscoveryFailure(ctx, "observe", err)
+				continue
+			}
+			if err := w.completeFactoryTLS(ctx, workers, policies, observed, probeFactoryTLS); err != nil {
+				w.logDiscoveryFailure(ctx, "factory_tls", err)
 			}
 		}
 	}
