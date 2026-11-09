@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lesomnus/shale/camera"
@@ -38,12 +39,23 @@ var (
 	ErrTransport    = errors.New("ONVIF transport failed")
 	ErrResponse     = errors.New("invalid ONVIF response")
 	ErrVerification = errors.New("ONVIF configuration read-back differs from plan")
+	ErrDeviceTime   = errors.New("ONVIF device UTC time unavailable")
 )
 
-// Client has no retained credentials or device state. Its zero value is usable.
+// Client retains no credentials. Its zero value is usable. Configure it before
+// use, and do not copy it after use. When explicitly enabled, public device UTC
+// samples are cached for this client's lifetime; use a fresh client per operation
+// when the camera's clock or authorized endpoints may have changed.
 // HTTPClient's transport can configure certificate trust for a managed camera;
 // certificate validation is never disabled by this package. Redirects are refused.
-type Client struct{ HTTPClient *http.Client }
+type Client struct {
+	HTTPClient *http.Client
+	// UseDeviceTimeForAuthentication changes only WS-Security Created values.
+	// It never sets a clock or changes host-side lease/authorization timestamps.
+	UseDeviceTimeForAuthentication bool
+	clockMu                        sync.Mutex
+	clocks                         map[string]*deviceTimeSample
+}
 
 func NewClient(h *http.Client) *Client { return &Client{HTTPClient: h} }
 
@@ -230,6 +242,10 @@ func sameCamera(base *url.URL, raw string, stream bool) (string, error) {
 }
 
 func security(material camera.CredentialMaterial) (string, error) {
+	return securityAt(material, time.Now().UTC())
+}
+
+func securityAt(material camera.CredentialMaterial, at time.Time) (string, error) {
 	if material.Username == "" {
 		return "", nil
 	}
@@ -237,7 +253,7 @@ func security(material camera.CredentialMaterial) (string, error) {
 	if _, err := rand.Read(nonce); err != nil {
 		return "", ErrTransport
 	}
-	created := time.Now().UTC().Format(time.RFC3339Nano)
+	created := at.UTC().Format(time.RFC3339Nano)
 	digest := sha1.New()
 	_, _ = digest.Write(nonce)
 	_, _ = digest.Write([]byte(created))
@@ -251,7 +267,15 @@ func (c *Client) request(ctx context.Context, endpoint, ns, operation, body stri
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	header, err := security(material)
+	created := time.Now().UTC()
+	if c.UseDeviceTimeForAuthentication && material.Username != "" {
+		var err error
+		created, err = c.authenticationTime(ctx, endpoint)
+		if err != nil {
+			return nil, err
+		}
+	}
+	header, err := securityAt(material, created)
 	if err != nil {
 		return nil, err
 	}
