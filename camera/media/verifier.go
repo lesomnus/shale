@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/url"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -95,6 +96,13 @@ func (v *Verifier) Verify(ctx context.Context, request camera.MediaRequest) (cam
 		if !observed.complete {
 			return ErrIncomplete
 		}
+		// A full packet window with fewer than two observed keyframes cannot
+		// establish an explicit GOP bound. Do not let an unknown cadence pass
+		// locally only to have the same evidence rejected by CP.
+		if request.Desired.GOP > 0 && result.Profile.GOP <= 0 {
+			result.Complete = false
+			return ErrIncomplete
+		}
 		if !matches(result.Profile, request.Desired, request.Profile) {
 			return ErrMismatch
 		}
@@ -177,7 +185,6 @@ type packetStats struct {
 	hasPTS                    bool
 	firstArrival, lastArrival time.Time
 	maxGap                    time.Duration
-	keys                      []float64
 	lastDTS                   float64
 	hasDTS                    bool
 	discontinuous             bool
@@ -295,7 +302,6 @@ func (v *Verifier) observe(ctx context.Context, input string, d time.Duration, s
 			}
 			if strings.Contains(values["flags"], "K") && !p.seenKeys[pts] {
 				p.seenKeys[pts] = true
-				p.keys = append(p.keys, pts)
 			}
 		}
 		dts, e := strconv.ParseFloat(values["dts_time"], 64)
@@ -354,8 +360,30 @@ func (v *Verifier) observe(ctx context.Context, input string, d time.Duration, s
 		out.arrivalFPS = float64(len(p.seenPTS)-1) / arrival
 		out.arrivalBitrate = int64(float64(p.bytes) * 8 / arrival)
 	}
-	if len(p.keys) > 1 {
-		out.gop = int(math.Round((p.keys[len(p.keys)-1] - p.keys[0]) * out.ptsFPS / float64(len(p.keys)-1)))
+	if len(p.seenKeys) > 1 {
+		// GOP is an upper bound: averaging intervals could hide a long gap
+		// behind shorter ones. Packet delivery follows decode order, so use
+		// distinct presentation timestamps in order. Count frame positions:
+		// a whole-window FPS cannot convert variable-rate gaps to frame counts.
+		frames := make([]float64, 0, len(p.seenPTS))
+		for pts := range p.seenPTS {
+			frames = append(frames, pts)
+		}
+		slices.Sort(frames)
+		lastKey := -1
+		for index, pts := range frames {
+			if !p.seenKeys[pts] {
+				continue
+			}
+			if lastKey < 0 {
+				out.gop = index // Leading unfinished interval's frame lower bound.
+			} else {
+				out.gop = max(out.gop, index-lastKey)
+			}
+			lastKey = index
+		}
+		// The trailing unfinished interval can also disprove a maximum.
+		out.gop = max(out.gop, len(frames)-1-lastKey)
 	}
 	out.complete = span >= d.Seconds()*.8 && !p.discontinuous
 	if !isFile {

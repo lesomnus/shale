@@ -67,7 +67,9 @@ func protocolFixture(t *testing.T) *protocolEnrollment {
 	device.RequireCredentials("admin", "prepared +:/?#% password")
 	dir := t.TempDir()
 	scope := camera.EnrollmentScope{TenantID: "tenant", SetID: "existing-set", ProducerID: "adopted-producer", NetworkID: "lan"}
-	q := provision.Request{ID: "protocol-run", BindingID: "front-door", Scope: scope, Device: device.Hint("claimed-device"), Desired: camera.DesiredState{ProfileToken: "main", Codec: "h264", Width: 160, Height: 90, FPS: 10, GOP: 10, Revision: "desired-1"}, Provider: "file", AllowProducerRestart: true, ProbeDuration: 1500 * time.Millisecond}
+	// The observer may begin after the startup IDR. Observe more than two
+	// one-second GOPs so two independent keyframes establish the bound.
+	q := provision.Request{ID: "protocol-run", BindingID: "front-door", Scope: scope, Device: device.Hint("claimed-device"), Desired: camera.DesiredState{ProfileToken: "main", Codec: "h264", Width: 160, Height: 90, FPS: 10, GOP: 10, Revision: "desired-1"}, Provider: "file", AllowProducerRestart: true, ProbeDuration: 2500 * time.Millisecond}
 	provider := credential.FileProvider{Dir: filepath.Join(dir, "secrets"), Name: "file"}
 	management, err := provider.Prepare(context.Background(), scope, camera.AuthManagement, "management", camera.CredentialMaterial{Username: "admin", Password: "prepared +:/?#% password"})
 	require.NoError(t, err)
