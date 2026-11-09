@@ -9,11 +9,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -24,22 +26,31 @@ import (
 )
 
 type initializationFixture struct {
-	mu             sync.Mutex
-	server         *httptest.Server
-	key            *rsa.PrivateKey
-	frequency      string
-	password       string
-	loginRefused   bool
-	ignoreWrite    bool
-	loseWriteReply bool
-	unknownAuth    bool
-	malformedReply bool
-	badKey         bool
-	currentKind    string
-	writes         int
-	logins         int
-	logouts        int
-	unexpected     int
+	mu              sync.Mutex
+	server          *httptest.Server
+	key             *rsa.PrivateKey
+	frequency       string
+	password        string
+	loginRefused    bool
+	ignoreWrite     bool
+	loseWriteReply  bool
+	unknownAuth     bool
+	malformedReply  bool
+	badKey          bool
+	currentKind     string
+	challengeCode   int
+	challengeStatus int
+	challengeOuter  int
+	passwordType    string
+	emptyNonce      bool
+	firmware        string
+	videoFPS        int
+	videoWrites     int
+	webCalls        int
+	writes          int
+	logins          int
+	logouts         int
+	unexpected      int
 }
 
 func newInitializationFixture(t *testing.T) *initializationFixture {
@@ -48,7 +59,7 @@ func newInitializationFixture(t *testing.T) *initializationFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &initializationFixture{key: key, frequency: "50hz", password: "frequency fixture secret +:/?", currentKind: "2"}
+	f := &initializationFixture{key: key, frequency: "50hz", password: "frequency fixture secret +:/?", currentKind: "2", challengeCode: -40401, challengeStatus: 401, challengeOuter: -40401, passwordType: "md5", firmware: "1.2.2 Build260624", videoFPS: 25}
 	f.server = httptest.NewServer(http.HandlerFunc(f.serve))
 	t.Cleanup(f.server.Close)
 	return f
@@ -69,6 +80,7 @@ func (f *initializationFixture) serve(w http.ResponseWriter, r *http.Request) {
 		f.serveONVIF(w, r)
 		return
 	}
+	f.webCalls++
 	var req map[string]json.RawMessage
 	if json.NewDecoder(r.Body).Decode(&req) != nil {
 		w.WriteHeader(400)
@@ -89,8 +101,12 @@ func (f *initializationFixture) serve(w http.ResponseWriter, r *http.Request) {
 		if f.unknownAuth {
 			kind = "9"
 		}
-		w.WriteHeader(401)
-		_ = json.NewEncoder(w).Encode(map[string]any{"error_code": -40401, "data": map[string]any{"code": -40401, "encrypt_type": []string{"1", "2"}, "current_encrypt_type": kind, "passwdType": "md5", "nonce": "fixture-nonce", "key_2": url.QueryEscape(url.QueryEscape(public))}})
+		nonce := "fixture-nonce"
+		if f.emptyNonce {
+			nonce = ""
+		}
+		w.WriteHeader(f.challengeStatus)
+		_ = json.NewEncoder(w).Encode(map[string]any{"error_code": f.challengeOuter, "data": map[string]any{"code": f.challengeCode, "encrypt_type": []string{"1", "2"}, "current_encrypt_type": kind, "passwdType": f.passwordType, "nonce": nonce, "key_2": url.QueryEscape(url.QueryEscape(public))}})
 		return
 	}
 	if req["login"] != nil && r.URL.Path == "/" {
@@ -170,7 +186,7 @@ func (f *initializationFixture) serveONVIF(w http.ResponseWriter, r *http.Reques
 	switch {
 	case strings.Contains(request, "<t:GetDeviceInformation>"):
 		op = "GetDeviceInformation"
-		response = "<Manufacturer>TP-Link</Manufacturer><Model>EasyCam C420</Model><FirmwareVersion>1.2.2 Build260624</FirmwareVersion><HardwareId>1.0</HardwareId>"
+		response = "<Manufacturer>TP-Link</Manufacturer><Model>EasyCam C420</Model><FirmwareVersion>" + f.firmware + "</FirmwareVersion><HardwareId>1.0</HardwareId>"
 	case strings.Contains(request, "<t:GetServices>"):
 		op = "GetServices"
 		response = "<Service><Namespace>http://www.onvif.org/ver20/media/wsdl</Namespace><XAddr>" + f.server.URL + "/onvif/device_service</XAddr></Service>"
@@ -181,7 +197,7 @@ func (f *initializationFixture) serveONVIF(w http.ResponseWriter, r *http.Reques
 		op = "GetProfiles"
 		// The image prerequisite changes capabilities, not the requested
 		// encoder profile. The regular ONVIF planner still has to select 30 fps.
-		response = `<Profiles token="main"><Name>main</Name><Configurations><VideoEncoder token="enc"><Encoding>H264</Encoding><Resolution><Width>1920</Width><Height>1080</Height></Resolution><RateControl><FrameRateLimit>25</FrameRateLimit><BitrateLimit>4096</BitrateLimit></RateControl><GovLength>25</GovLength></VideoEncoder></Configurations></Profiles>`
+		response = `<Profiles token="main"><Name>main</Name><Configurations><VideoEncoder token="enc"><Encoding>H264</Encoding><Resolution><Width>1920</Width><Height>1080</Height></Resolution><RateControl><FrameRateLimit>` + strconv.Itoa(f.videoFPS) + `</FrameRateLimit><BitrateLimit>4096</BitrateLimit></RateControl><GovLength>25</GovLength></VideoEncoder></Configurations></Profiles>`
 	case strings.Contains(request, "<t:GetVideoEncoderConfigurations>"):
 		op = "GetVideoEncoderConfigurations"
 	case strings.Contains(request, "<t:GetStreamUri>"):
@@ -194,6 +210,26 @@ func (f *initializationFixture) serveONVIF(w http.ResponseWriter, r *http.Reques
 			fps += " 30"
 		}
 		response = `<Options><Encoding>H264</Encoding><ResolutionsAvailable><Width>1920</Width><Height>1080</Height></ResolutionsAvailable><FrameRatesSupported>` + fps + `</FrameRatesSupported><BitrateRange><Min>256</Min><Max>4096</Max></BitrateRange><GovLengthRange><Min>1</Min><Max>150</Max></GovLengthRange></Options>`
+	case strings.Contains(request, "<t:SetVideoEncoderConfiguration>"):
+		op = "SetVideoEncoderConfiguration"
+		var message struct {
+			Body struct {
+				Set struct {
+					Configuration struct {
+						Rate struct {
+							FPS int `xml:"FrameRateLimit"`
+						} `xml:"RateControl"`
+					} `xml:"Configuration"`
+				} `xml:"SetVideoEncoderConfiguration"`
+			} `xml:"Body"`
+		}
+		if xml.Unmarshal(body, &message) != nil || message.Body.Set.Configuration.Rate.FPS != 30 || f.frequency != "60hz" {
+			f.unexpected++
+			w.WriteHeader(400)
+			return
+		}
+		f.videoFPS = message.Body.Set.Configuration.Rate.FPS
+		f.videoWrites++
 	default:
 		f.unexpected++
 		w.WriteHeader(400)

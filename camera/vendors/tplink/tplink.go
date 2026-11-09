@@ -28,6 +28,15 @@ import (
 // when an unactivated device cannot yet expose authenticated identity.
 const ProfileC420V122 = "easycam-c420-hw1-1.2.2-260624"
 
+// ProfileC420V120 selects the independently qualified HW1.0/1.2.0 Build251020
+// protocol. ProfileC420Known selects their shared anonymous first-password
+// exchange when firmware cannot yet be authenticated. Frequency initialization
+// still requires a fresh authenticated Match; this is not a TP-Link family pin.
+const (
+	ProfileC420V120  = "easycam-c420-hw1-1.2.0-251020"
+	ProfileC420Known = "easycam-c420-hw1-known-v1"
+)
+
 // This public encryption key is distributed by the camera's public UI, not a
 // camera credential. See PROTOCOL.md for the evidence and restricted scope.
 const activationPublicKey = `-----BEGIN PUBLIC KEY-----
@@ -63,12 +72,30 @@ var _ camera.Bootstrapper = (*Driver)(nil)
 // Match is compatibility selection, not authorization to acquire credentials.
 // Scope and access still come from the caller's enrollment policy/provider.
 func Match(device camera.DeviceHint) bool {
+	return deviceProfile(device) != ""
+}
+
+func deviceProfile(device camera.DeviceHint) string {
 	vendor := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(device.Manufacturer), "-", ""))
+	if vendor != "tplink" || !strings.EqualFold(device.Model, "EasyCam C420") || device.Hardware != "1.0" {
+		return ""
+	}
 	// GetDeviceInformation on the installed C420 includes a space after Build;
 	// the firmware UI spells the same build without it.
 	version := strings.Replace(device.Firmware, "Build 260624", "Build260624", 1)
-	firmware := version == "1.2.2 Build260624" || strings.HasPrefix(version, "1.2.2 Build260624 Rel.")
-	return vendor == "tplink" && strings.EqualFold(device.Model, "EasyCam C420") && device.Hardware == "1.0" && firmware
+	version = strings.Replace(version, "Build 251020", "Build251020", 1)
+	switch {
+	case version == "1.2.0 Build251020" || version == "1.2.0 Build251020 Rel.55235n":
+		return ProfileC420V120
+	case version == "1.2.2 Build260624" || strings.HasPrefix(version, "1.2.2 Build260624 Rel."):
+		return ProfileC420V122
+	default:
+		return ""
+	}
+}
+
+func knownProfile(profile string) bool {
+	return profile == ProfileC420V120 || profile == ProfileC420V122 || profile == ProfileC420Known
 }
 
 func (d *Driver) baseline() *onvif.Client {
@@ -181,7 +208,7 @@ func (d *Driver) rpcJSON(ctx context.Context, ep string, payload, result any) (i
 // Activation reads an anonymous state challenge; it sends no password and never
 // invokes login, clock, codec or service configuration methods.
 func (d *Driver) Activation(ctx context.Context, hint camera.DeviceHint) (camera.ActivationState, error) {
-	if d.CompatibilityProfile != "" && d.CompatibilityProfile != ProfileC420V122 {
+	if d.CompatibilityProfile != "" && !knownProfile(d.CompatibilityProfile) {
 		return camera.ActivationUnsupported, camera.ErrManualActivation
 	}
 	if d.CompatibilityProfile == "" && !Match(hint) {

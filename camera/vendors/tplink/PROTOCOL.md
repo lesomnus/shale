@@ -1,12 +1,27 @@
 # TP-Link compatibility boundary
 
-The default extension targets **EasyCam C420, hardware 1.0, firmware 1.2.2
-Build260624** (reported by ONVIF as `1.2.2 Build 260624 Rel.39352n`). Both
-spellings of this build are recognized. It supports first-password activation
-and explicit 50/60 Hz image-frequency initialization. A manufacturer name is not permission to obtain credentials or to
+The extension qualifies two **EasyCam C420, hardware 1.0** firmware builds:
+
+- `1.2.0 Build251020 Rel.55235n`, also reported with `Build 251020`.
+  Its explicit profile is `easycam-c420-hw1-1.2.0-251020` (`ProfileC420V120`).
+- `1.2.2 Build260624`, including the existing `Build 260624` spelling and
+  reported release suffix. Its existing profile remains
+  `easycam-c420-hw1-1.2.2-260624` (`ProfileC420V122`).
+
+The known build without a release suffix is also recognized. The new 1.2.0
+entry accepts only the observed `Rel.55235n` when a suffix is supplied; it does
+not match neighboring builds, another hardware revision or the TP-Link family.
+Both entries support first-password activation and explicit 50/60 Hz
+image-frequency initialization. A manufacturer name is not permission to obtain credentials or to
 activate every member of that manufacturer's product family. For a fresh device
 whose identity is not yet available, an enrollment administrator may explicitly
-pin `ProfileC420V122` and the managed web endpoint. Unknown protocols return
+pin a version-specific profile or `easycam-c420-hw1-known-v1`
+(`ProfileC420Known`) and the managed web endpoint. The shared profile selects
+only the common anonymous first-password protocol, before firmware is available.
+It still requires a fresh authenticated match to one of the two qualified builds
+for image initialization. Version-specific initialization pins must match their
+own build. No pin turns an unknown authenticated firmware into a qualified one.
+Unknown protocols return
 `camera.ErrManualActivation`.
 
 The protocol fixture is based on the device-distributed public UI assets
@@ -36,6 +51,14 @@ outside the adapter and is never an enrollment retry operation. Another firmware
 needs its own verified compatibility entry; a simulator does not establish
 support for unknown devices.
 
+The 1.2.0 entry additionally uses the device-distributed public
+`index-CdQdQBk9.js` asset (SHA256
+`eab0a9c0d3a9605eac401de934bbd5dbc2597dbaa539ac17417eddd586b9256d`).
+An explicitly authorized operator qualification on two devices on 2026-11-09
+confirmed the same public first-password key/protocol and the frequency
+exchange below. That qualification does not authorize clock, account, network
+or service changes as initialization side effects.
+
 ## Image-frequency initialization
 
 The C420's factory 50 Hz image setting exposes at most 25 fps; 60 Hz exposes
@@ -52,7 +75,11 @@ The authenticated protocol was verified using the camera's management UI assets
 and an explicit manual frequency restoration during that physical lab test:
 
 - Read `get_encrypt_info` without invoking a clock-setting login helper. For
-  this compatibility entry, the challenge selects encryption type `2` and
+  these compatibility entries, HTTP 401 and outer `error_code: -40401` contain
+  the login challenge. The known login states are `data.code: -40401` and
+  the observed 1.2.0 `-40407` (`ESYSCLIENTNORMAL`). Other initialized/locked
+  states recognized by the anonymous activation check do not authorize login.
+  The complete challenge must select encryption type `2` and
   password type `md5`. `key_2` (or `key`) contains URL-encoded base64 DER, decoded
   before parsing the RSA public key.
 - Login encrypts `UPPERCASE_HEX(MD5("TPCQ75NF2Y:" + password)) + ":" + nonce`
@@ -71,7 +98,12 @@ lost write response, re-inspection can observe the target without another write.
 
 The new staged initializer is covered by a combined web/Media2 fixture: 50 Hz
 rejects a 30 fps media plan, initialization changes to 60 Hz, and a fresh Media2
-inspection permits that plan. Fixtures also cover read-back mismatch, lost
+inspection permits that plan. The 1.2.0 fixture then applies and reads back the
+separate encoder configuration at H.264 1920x1080/30 fps, preserving bitrate/GOP.
+This synthetic encoder readback is not independent RTSP decoding evidence.
+The physical 1.2.0 operation read 50 Hz, set only `image.switch.flicker` to 60 Hz,
+read back 60 Hz and observed fresh ONVIF options advertising 30 fps. Fixtures
+also cover read-back mismatch, lost
 responses, login/protocol failures, preserving existing settings and idempotent
 replay. They do not claim a new hardware run of this staged implementation.
 

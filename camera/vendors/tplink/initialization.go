@@ -107,7 +107,8 @@ func validFrequency(hz int) bool { return hz == 50 || hz == 60 }
 func (d *Driver) initializationTarget(hint camera.DeviceHint) error {
 	// A compatibility pin can select an anonymous activation exchange. Image
 	// writes additionally require the authenticated device's exact known identity.
-	if !Match(hint) || (d.CompatibilityProfile != "" && d.CompatibilityProfile != ProfileC420V122) {
+	profile := deviceProfile(hint)
+	if profile == "" || (d.CompatibilityProfile != "" && d.CompatibilityProfile != ProfileC420Known && d.CompatibilityProfile != profile) {
 		return camera.ErrUnsupported
 	}
 	ep, err := d.endpoint()
@@ -215,11 +216,14 @@ func (d *Driver) webLogin(ctx context.Context, material camera.CredentialMateria
 		Key2               string            `json:"key_2"`
 		Nonce              string            `json:"nonce"`
 	}
-	if json.Unmarshal(reply.Data, &challenge) != nil || reply.ErrorCode == nil {
+	if json.Unmarshal(reply.Data, &challenge) != nil || reply.ErrorCode == nil || reply.Status != http.StatusUnauthorized {
 		return nil, errProtocol
 	}
-	if challenge.Code != -40401 {
+	if challenge.Code != -40401 && challenge.Code != -40407 {
 		return nil, camera.ErrAuthRequired
+	}
+	if *reply.ErrorCode != -40401 {
+		return nil, errProtocol
 	}
 	kind := authKind(challenge.CurrentEncryptType)
 	if kind == 0 {
