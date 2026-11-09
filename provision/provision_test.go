@@ -159,6 +159,29 @@ func TestBootstrapPinIsDurableDetachedAndDoesNotGrantActivation(t *testing.T) {
 	require.ErrorIs(t, q.Validate(), camera.ErrInvalid)
 }
 
+func TestDeviceTLSIdentityIsPinnedAcrossRecoveryWithoutGrantingActivation(t *testing.T) {
+	q, d, _, e, _ := fixture(t)
+	q.AllowActivation = false
+	q.Bootstrap = &camera.BootstrapSettings{CompatibilityProfile: "fixture-v1", WebScheme: "https", WebPort: 443}
+	q.DeviceTLSIdentity = &camera.DeviceTLSIdentity{DeviceID: string(q.Device.ID), SPKISHA256: "sha256:" + strings.Repeat("a", 64)}
+	r, err := e.Execute(t.Context(), q, true)
+	require.ErrorIs(t, err, camera.ErrManualActivation)
+	require.Zero(t, d.activations)
+	require.Equal(t, q.DeviceTLSIdentity, r.Request.DeviceTLSIdentity)
+	require.NotSame(t, q.DeviceTLSIdentity, r.Request.DeviceTLSIdentity)
+	q.DeviceTLSIdentity.SPKISHA256 = "sha256:" + strings.Repeat("b", 64)
+	persisted, err := e.Store.Load(t.Context(), q.ID)
+	require.NoError(t, err)
+	require.Equal(t, r.Request.DeviceTLSIdentity, persisted.Request.DeviceTLSIdentity)
+	_, err = e.Execute(t.Context(), q, true)
+	require.ErrorIs(t, err, provision.ErrConflict, "recovery cannot replace approved transport identity")
+	q.DeviceTLSIdentity.DeviceID = "another-device"
+	require.ErrorIs(t, q.Validate(), camera.ErrInvalid)
+	q.DeviceTLSIdentity.DeviceID = string(q.Device.ID)
+	q.Bootstrap.WebScheme = "http"
+	require.ErrorIs(t, q.Validate(), camera.ErrInvalid, "a pin does not authorize cleartext bootstrap")
+}
+
 func TestExternalCallerPlansWithoutWritesThenActivatesAndResumes(t *testing.T) {
 	q, d, p, e, dir := fixture(t)
 	ctx := context.Background()

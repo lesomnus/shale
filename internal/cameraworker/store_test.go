@@ -3,6 +3,7 @@ package cameraworker
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -114,6 +115,30 @@ func TestJobStoreBootstrapCannotChangeOrOverrideActivation(t *testing.T) {
 			require.ErrorIs(t, err, camera.ErrForbidden)
 		})
 	}
+}
+
+func TestJobStoreDeviceTLSIdentityIsImmutableAcrossDeliveryReplacement(t *testing.T) {
+	e, w := checkpointFixture(t)
+	w.GetJob().GetInputs().SetBootstrap(api.CameraBootstrapProfile_builder{CompatibilityProfile: "fixture-v1", WebScheme: "https", WebPort: 443}.Build())
+	w.GetJob().GetInputs().SetDeviceTlsIdentity(api.CameraDeviceTLSIdentity_builder{DeviceId: cameraID(w.GetDevice().GetId()), SpkiSha256: "sha256:" + strings.Repeat("a", 64)}.Build())
+	s := &JobStore{Execution: e}
+	r := checkpointRun(w)
+	require.NoError(t, s.Save(t.Context(), r))
+	w.GetAssignment().SetProducer(api.Producer_builder{Id: pdid.New(22).Bytes()}.Build())
+	w.GetDevice().GetEndpoints()[0].SetUri("http://192.0.2.77:2020/onvif/device_service")
+	got, err := s.Load(t.Context(), r.Request.ID)
+	require.NoError(t, err)
+	require.Equal(t, r.Request.DeviceTLSIdentity, got.Request.DeviceTLSIdentity)
+	require.NotSame(t, r.Request.DeviceTLSIdentity, got.Request.DeviceTLSIdentity)
+	require.Equal(t, "http://192.0.2.77:2020/onvif/device_service", got.Request.Device.Endpoints[0].URL)
+	got.Request.DeviceTLSIdentity.SPKISHA256 = "sha256:" + strings.Repeat("b", 64)
+	require.ErrorIs(t, s.Reserve(t.Context(), got.Request), camera.ErrForbidden)
+	require.ErrorIs(t, s.Save(t.Context(), got), camera.ErrForbidden)
+	got.Request.DeviceTLSIdentity = nil
+	require.ErrorIs(t, s.Save(t.Context(), got), camera.ErrForbidden)
+	w.GetJob().GetObserved().GetProgress().GetRequest().GetDeviceTlsIdentity().SetSpkiSha256("sha256:" + strings.Repeat("b", 64))
+	_, err = s.Load(t.Context(), r.Request.ID)
+	require.ErrorIs(t, err, camera.ErrForbidden, "a historical checkpoint cannot override the job pin")
 }
 
 func TestJobStoreLostCheckpointStopsFollowingDeviceWrites(t *testing.T) {
