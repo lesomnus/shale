@@ -25,7 +25,12 @@ type metrics struct {
 	// the packets viewers asked for again (§39.4).
 	catchUp metric.Float64Histogram
 	nacked  metric.Int64Counter
-	cpu     metric.Float64Gauge
+	// How long the pacer holds a fragment's earliest sample past the
+	// fragment's arrival while somebody watches, and the times its clock
+	// moved (§39.4).
+	paceDelay  metric.Float64Histogram
+	paceResets metric.Int64Counter
+	cpu        metric.Float64Gauge
 }
 
 func newMetrics(ctx context.Context) *metrics {
@@ -43,10 +48,16 @@ func newMetrics(ctx context.Context) *metrics {
 		firstFrame: o.Float64Histogram("shale.relay.first_frame_ms", metric.WithDescription("from a session's offer to the connection over which its first frame goes"), metric.WithUnit("ms")),
 		catchUp:    o.Float64Histogram("shale.relay.catch_up_ms", metric.WithDescription("from a session's keyframe to the end of its group of pictures, sent faster than real time, at the live edge"), metric.WithUnit("ms")),
 		nacked:     o.Int64Counter("shale.relay.nacked_packets", metric.WithDescription("video packets viewers reported lost and asked for again")),
+		paceDelay:  o.Float64Histogram("shale.relay.pace_delay_ms", metric.WithDescription("how long a fragment's earliest sample waits to be sent after the fragment came, while somebody watches: what pacing adds to the delay the fragment came with"), metric.WithUnit("ms")),
+		paceResets: o.Int64Counter("shale.relay.pace_resets", metric.WithDescription("times the pacing clock moved, by why: late, a sample more than 100 ms behind its time, after which every sample waits that much more; ahead, a jump of more than 3 s")),
 		cpu:        o.Float64Gauge("shale.relay.cpu", metric.WithDescription("one-minute load average over the CPU count")),
 	}
 }
 
 func outcomeAttr(outcome string) metric.MeasurementOption {
 	return metric.WithAttributes(attribute.String("outcome", outcome))
+}
+
+func movedAttr(why string) metric.MeasurementOption {
+	return metric.WithAttributes(attribute.String("why", why))
 }

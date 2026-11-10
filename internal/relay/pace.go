@@ -1,17 +1,19 @@
 package relay
 
 import (
+	"context"
 	"sort"
 	"time"
 )
 
-// Pacing (§39.4). A producer sends a fragment at a time, half a second of
-// frames each, and the relay used to hand a fragment's frames to its viewers
-// the moment it came: every half second a burst, then nothing. A browser's
-// jitter buffer starts small, so playback stalled at the fragments' pace
-// until it had grown to a fragment; a viewer saw the picture stop and go,
-// worst right after joining. The relay now sends each sample when its
-// timestamp says, so what a viewer gets is as even as what the camera took.
+// Pacing (§39.4). A producer sends a fragment at a time, up to
+// fragment_duration of frames each, and the relay used to hand a
+// fragment's frames to its viewers the moment it came: every half second a
+// burst, then nothing. A browser's jitter buffer starts small, so playback
+// stalled at the fragments' pace until it had grown to a fragment; a viewer
+// saw the picture stop and go, worst right after joining. The relay now
+// sends each sample when its timestamp says, so what a viewer gets is as
+// even as what the camera took.
 
 // pacedSample is one sample waiting for its time: when it plays on the
 // stream's clock, and what it is.
@@ -43,19 +45,24 @@ const (
 )
 
 // when is a sample's wall time, moving the clock as paceLate and paceAhead
-// say.
-func (c *playout) when(media time.Duration, now time.Time) time.Time {
+// say; moved is which moved it, "late" or "ahead", or empty. A clock moved
+// late stays there: what comes after on time waits as much more.
+func (c *playout) when(media time.Duration, now time.Time) (at time.Time, moved string) {
 	if !c.set {
 		c.set, c.wall, c.media = true, now, media
 	}
-	at := c.wall.Add(media - c.media)
+	at = c.wall.Add(media - c.media)
 	switch {
-	case at.Before(now.Add(-paceLate)), at.After(now.Add(paceAhead)):
-		c.wall, c.media = now, media
-		at = now
+	case at.Before(now.Add(-paceLate)):
+		moved = "late"
+	case at.After(now.Add(paceAhead)):
+		moved = "ahead"
+	default:
+		return at, ""
 	}
+	c.wall, c.media = now, media
 
-	return at
+	return now, moved
 }
 
 // pace takes a fragment's samples; with the lock held. With nobody watching
@@ -73,7 +80,16 @@ func (s *source) pace(out []pacedSample) {
 	sort.SliceStable(out, func(i, j int) bool { return out[i].media < out[j].media })
 	now := time.Now()
 	for i := range out {
-		out[i].at = s.clock.when(out[i].media, now)
+		var moved string
+		out[i].at, moved = s.clock.when(out[i].media, now)
+		if moved != "" && s.r.m != nil {
+			s.r.m.paceResets.Add(context.Background(), 1, movedAttr(moved))
+		}
+	}
+	if len(out) > 0 && s.r.m != nil {
+		// The earliest sample's wait is what pacing adds to the delay
+		// the fragment came with.
+		s.r.m.paceDelay.Record(context.Background(), float64(max(0, out[0].at.Sub(now)).Microseconds())/1000)
 	}
 	s.paced = append(s.paced, out...)
 	if !s.pacing {
