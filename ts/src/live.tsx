@@ -23,6 +23,7 @@ import { SetService } from '../gen/shale/set_svc_pb.js'
 
 import { app } from './client.js'
 import { PickSet, unhex } from './segments.js'
+import { report, supported, transform, type Report } from './timing.js'
 import { On, useSurfaces } from './surface.js'
 import { Badge, Err, Loading, byId, date, hex, type Tone } from './ui.js'
 
@@ -103,6 +104,7 @@ function Player(props: { set: Uint8Array; source: LiveSource }): ReactNode {
 	const src = useRow<Source>(SourceEntity.typeName, v.sourceId)
 	const video = useRef<HTMLVideoElement>(null)
 	const [status, setStatus] = useState<Status>({ tone: 'dim', text: 'connecting' })
+	const [delay, setDelay] = useState<number | undefined>(undefined)
 	// The sandbox's relay is played by the page: there is no byte of video
 	// behind its address, and the wall is what is being looked at.
 	const fake = useSurfaces().mode.kind === 'sandbox'
@@ -113,7 +115,7 @@ function Player(props: { set: Uint8Array; source: LiveSource }): ReactNode {
 
 		return fakeScene(el, src?.alias ?? hex(v.sourceId).slice(0, 8), setStatus)
 	}, [fake])
-	useWhep(video, v.whepUrl, v.viewToken, setStatus, !fake)
+	useWhep(video, v.whepUrl, v.viewToken, setStatus, !fake, setDelay)
 
 	return (
 		<div className="player">
@@ -124,6 +126,11 @@ function Player(props: { set: Uint8Array; source: LiveSource }): ReactNode {
 					<span className="dim"> #{v.ordinal}</span>
 				</b>
 				<Badge tone={status.tone}>{status.text}</Badge>
+				{delay !== undefined && (
+					<span className="dim" title="from the producer having a frame to this page showing it, the median of the last ten seconds (§39.4)">
+						{(delay / 1000).toFixed(2)} s behind
+					</span>
+				)}
 				<a className="dim" href={`#/playback/${hex(props.set)}/${hex(v.sourceId)}`} title="the last minutes, and the recordings">
 					rewind
 				</a>
@@ -139,7 +146,7 @@ function Player(props: { set: Uint8Array; source: LiveSource }): ReactNode {
  * or a relay that does not take renewals -- since the relay ends a session
  * with its token.
  */
-export function useWhep(video: RefObject<HTMLVideoElement | null>, url: string | undefined, token: string | undefined, setStatus: (s: Status) => void, on: boolean): void {
+export function useWhep(video: RefObject<HTMLVideoElement | null>, url: string | undefined, token: string | undefined, setStatus: (s: Status) => void, on: boolean, onDelay?: (ms: number) => void): void {
 	const session = useRef<Whep | null>(null)
 	const latest = useRef(token)
 	latest.current = token
@@ -147,7 +154,7 @@ export function useWhep(video: RefObject<HTMLVideoElement | null>, url: string |
 	useEffect(() => {
 		const el = video.current
 		if (!on || el === null || url === undefined || latest.current === undefined) return
-		const s = whep(el, url, latest.current, setStatus)
+		const s = whep(el, url, latest.current, setStatus, onDelay)
 		session.current = s
 
 		return () => {
@@ -171,15 +178,23 @@ export interface Whep {
 	renew: (token: string) => Promise<boolean>
 }
 
-/** whep plays one source through the relay, as web/live.html does. */
-export function whep(el: HTMLVideoElement, url: string, token: string, setStatus: (s: Status) => void): Whep {
+/**
+ * whep plays one source through the relay, as web/live.html does. Where the
+ * browser can, the session is timed (§39.4): the relay marks each frame, and
+ * the page reports how long frames took to show, telling `onDelay` too.
+ */
+export function whep(el: HTMLVideoElement, url: string, token: string, setStatus: (s: Status) => void, onDelay?: (ms: number) => void): Whep {
 	const pc = new RTCPeerConnection()
 	let session: string | null = null
 	let closed = false
 	let current = token
 	const base = url.slice(0, url.indexOf('/whep/'))
-	pc.addTransceiver('video', { direction: 'recvonly' })
+	const video = pc.addTransceiver('video', { direction: 'recvonly' })
 	pc.addTransceiver('audio', { direction: 'recvonly' })
+	const timed = supported()
+	let measuring: Report | undefined
+	let unlisten: (() => void) | undefined
+	if (timed) unlisten = transform(video.receiver, (t) => measuring?.frame(t))
 	pc.ontrack = (ev) => {
 		const stream = ev.streams[0]
 		if (stream !== undefined) el.srcObject = stream
@@ -207,7 +222,9 @@ export function whep(el: HTMLVideoElement, url: string, token: string, setStatus
 			})
 			if (closed) return
 			setStatus({ tone: 'dim', text: 'asking the relay' })
-			const resp = await fetch(url, {
+			const offerUrl = new URL(url, location.href)
+			if (timed) offerUrl.searchParams.set('timing', '1')
+			const resp = await fetch(offerUrl, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/sdp', Authorization: 'Shale ' + token },
 				body: pc.localDescription?.sdp ?? '',
@@ -219,6 +236,21 @@ export function whep(el: HTMLVideoElement, url: string, token: string, setStatus
 			}
 			session = resp.headers.get('Location')
 			await pc.setRemoteDescription({ type: 'answer', sdp: await resp.text() })
+			// A relay that predates timing says nothing of it, and its frames
+			// carry no SEI to read.
+			if (timed && resp.headers.get('Shale-Timing') === '1' && session !== null && !closed) {
+				const at = base + session + '/timing'
+				measuring = report(
+					el,
+					async (body) => {
+						const r = await fetch(at, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Shale ' + current }, body })
+						if (!r.ok) return undefined
+
+						return (await r.json()) as { received: number; replied: number }
+					},
+					(ms) => onDelay?.(ms),
+				)
+			}
 		} catch (err) {
 			if (!closed) setStatus({ tone: 'bad', text: String(err).slice(0, 80) })
 		}
@@ -227,6 +259,8 @@ export function whep(el: HTMLVideoElement, url: string, token: string, setStatus
 	return {
 		close: () => {
 			closed = true
+			measuring?.stop()
+			unlisten?.()
 			if (session !== null) {
 				void fetch(base + session, { method: 'DELETE' }).catch(() => {})
 			}

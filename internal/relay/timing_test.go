@@ -2,10 +2,12 @@ package relay
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -198,4 +200,21 @@ func TestWhepTimingReport(t *testing.T) {
 	require.InDelta(t, 12.5, got["shale.relay.viewer_network_ms"].Sum, 1e-9, "a little below zero is none")
 	require.Equal(t, uint64(1), got["shale.relay.viewer_playout_ms"].Count)
 	require.Equal(t, uint64(1), got["shale.relay.viewer_total_ms"].Count, "a span past a minute is not live")
+}
+
+// The timing SEI the console reads (ts/src/sei.ts) is the one written here:
+// testdata/timing-au.hex is an H.264 access unit with one, which this keeps
+// current and ts/test/sei.mjs reads.
+func TestTimingSEIGolden(t *testing.T) {
+	t0 := time.Unix(1_800_000_000, 123_456_789)
+	ft := frameTiming{media: 3*time.Second + 33_366_667, read: t0, sent: t0.Add(2 * time.Millisecond), arrived: t0.Add(140 * time.Millisecond), relayed: t0.Add(390 * time.Millisecond)}
+	au := []byte{0, 0, 0, 1, 0x09, 0x10, 0, 0, 0, 1, 0x67, 0x42, 0, 0, 0, 1, 0x68, 0xce, 0, 0, 0, 1, 0x65, 0x88, 0x84}
+	got := hex.EncodeToString(withSEI(au, timingSEI(false, ft), false)) + "\n"
+	want, err := os.ReadFile("testdata/timing-au.hex")
+	if os.IsNotExist(err) || os.Getenv("SHALE_UPDATE_GOLDEN") != "" {
+		require.NoError(t, os.WriteFile("testdata/timing-au.hex", []byte(got), 0o644))
+		return
+	}
+	require.NoError(t, err)
+	require.Equal(t, string(want), got)
 }

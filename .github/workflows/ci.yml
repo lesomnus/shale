@@ -46,7 +46,7 @@ jobs:
       - name: console
         # The page the control plane embeds (§40.4): type-checked and built,
         # so what `go build` embeds below is a real one.
-        run: cd ts && npm ci --no-audit --no-fund && npm run build
+        run: cd ts && npm ci --no-audit --no-fund && npm run build && node test/sei.mjs
       - name: build
         run: go build ./...
       - name: sandbox compiles
