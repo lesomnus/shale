@@ -5,13 +5,15 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file shale/ingest.proto.
  */
 export const file_shale_ingest: GenFile = /*@__PURE__*/
-  fileDesc("ChJzaGFsZS9pbmdlc3QucHJvdG8SBXNoYWxlIsYCCg1BdHRhY2hSZXF1ZXN0EisKBWhlbGxvGAEgASgLMhouc2hhbGUuQXR0YWNoUmVxdWVzdC5IZWxsb0gAEikKBGRhdGEYAiABKAsyGS5zaGFsZS5BdHRhY2hSZXF1ZXN0LkRhdGFIABIrCgVyZXNldBgDIAEoCzIaLnNoYWxlLkF0dGFjaFJlcXVlc3QuUmVzZXRIABoeCgVIZWxsbxIVCg1wdWJsaXNoX3Rva2VuGAEgASgJGkEKBERhdGESEQoJc291cmNlX2lkGAEgASgMEg8KB3BheWxvYWQYAiABKAwSFQoNY2FwdHVyZV9lcG9jaBgDIAEoCRpCCgVSZXNldBIRCglzb3VyY2VfaWQYASABKAwSFQoNY2FwdHVyZV9lcG9jaBgCIAEoCRIPCgdzdG9wcGVkGAMgASgIQgkKB21lc3NhZ2Ui+gEKDkF0dGFjaFJlc3BvbnNlEiwKBXN0YXJ0GAEgASgLMhsuc2hhbGUuQXR0YWNoUmVzcG9uc2UuU3RhcnRIABIqCgRzdG9wGAIgASgLMhouc2hhbGUuQXR0YWNoUmVzcG9uc2UuU3RvcEgAEjAKB3dlbGNvbWUYAyABKAsyHS5zaGFsZS5BdHRhY2hSZXNwb25zZS5XZWxjb21lSAAaGgoFU3RhcnQSEQoJc291cmNlX2lkGAEgASgMGhkKBFN0b3ASEQoJc291cmNlX2lkGAEgASgMGhoKB1dlbGNvbWUSDwoHc291cmNlcxgBIAMoDEIJCgdtZXNzYWdlMkgKC1JlbGF5SW5nZXN0EjkKBkF0dGFjaBIULnNoYWxlLkF0dGFjaFJlcXVlc3QaFS5zaGFsZS5BdHRhY2hSZXNwb25zZSgBMAFCJFodZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGmSAwIIAmIIZWRpdGlvbnNw6Ac");
+  fileDesc("ChJzaGFsZS9pbmdlc3QucHJvdG8SBXNoYWxlIqEDCg1BdHRhY2hSZXF1ZXN0EisKBWhlbGxvGAEgASgLMhouc2hhbGUuQXR0YWNoUmVxdWVzdC5IZWxsb0gAEikKBGRhdGEYAiABKAsyGS5zaGFsZS5BdHRhY2hSZXF1ZXN0LkRhdGFIABIrCgVyZXNldBgDIAEoCzIaLnNoYWxlLkF0dGFjaFJlcXVlc3QuUmVzZXRIABoeCgVIZWxsbxIVCg1wdWJsaXNoX3Rva2VuGAEgASgJGpsBCgREYXRhEhEKCXNvdXJjZV9pZBgBIAEoDBIPCgdwYXlsb2FkGAIgASgMEhUKDWNhcHR1cmVfZXBvY2gYAyABKAkSKwoHcmVhZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASKwoHc2VudF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaQgoFUmVzZXQSEQoJc291cmNlX2lkGAEgASgMEhUKDWNhcHR1cmVfZXBvY2gYAiABKAkSDwoHc3RvcHBlZBgDIAEoCEIJCgdtZXNzYWdlIvoBCg5BdHRhY2hSZXNwb25zZRIsCgVzdGFydBgBIAEoCzIbLnNoYWxlLkF0dGFjaFJlc3BvbnNlLlN0YXJ0SAASKgoEc3RvcBgCIAEoCzIaLnNoYWxlLkF0dGFjaFJlc3BvbnNlLlN0b3BIABIwCgd3ZWxjb21lGAMgASgLMh0uc2hhbGUuQXR0YWNoUmVzcG9uc2UuV2VsY29tZUgAGhoKBVN0YXJ0EhEKCXNvdXJjZV9pZBgBIAEoDBoZCgRTdG9wEhEKCXNvdXJjZV9pZBgBIAEoDBoaCgdXZWxjb21lEg8KB3NvdXJjZXMYASADKAxCCQoHbWVzc2FnZTJICgtSZWxheUluZ2VzdBI5CgZBdHRhY2gSFC5zaGFsZS5BdHRhY2hSZXF1ZXN0GhUuc2hhbGUuQXR0YWNoUmVzcG9uc2UoATABQiRaHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpkgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message shale.AttachRequest
@@ -87,6 +89,21 @@ export type AttachRequest_Data = Message<"shale.AttachRequest.Data"> & {
    * @generated from field: string capture_epoch = 3;
    */
   captureEpoch: string;
+
+  /**
+   * When the producer had the payload from its capture (t1) and when it
+   * handed it to this stream (t2), on the producer's clock (§39.3). The
+   * relay measures the producer's queue and the uplink from them; a
+   * producer that predates them sends neither.
+   *
+   * @generated from field: google.protobuf.Timestamp read_at = 4;
+   */
+  readAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp sent_at = 5;
+   */
+  sentAt?: Timestamp | undefined;
 };
 
 /**

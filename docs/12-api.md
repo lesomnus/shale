@@ -463,9 +463,10 @@ producer:
 service RelayIngest {
   rpc Attach(stream AttachRequest) returns (stream AttachResponse);
 }
-// AttachRequest:  Hello {publish_token} once, then Data {source, bytes},
-//                 one init segment or one whole fragment, for every source
-//                 the relay has started
+// AttachRequest:  Hello {publish_token} once, then Data {source, bytes,
+//                 read_at, sent_at}, one init segment or one whole fragment,
+//                 for every source the relay has started, with when the
+//                 producer had it and sent it (§39.3)
 // AttachResponse: Start {source} | Stop {source}
 ```
 

@@ -9,6 +9,7 @@ package api
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
 )
@@ -513,6 +514,8 @@ type AttachRequest_Data struct {
 	xxx_hidden_SourceId     []byte                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId"`
 	xxx_hidden_Payload      []byte                 `protobuf:"bytes,2,opt,name=payload"`
 	xxx_hidden_CaptureEpoch string                 `protobuf:"bytes,3,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_ReadAt       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=read_at,json=readAt"`
+	xxx_hidden_SentAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=sent_at,json=sentAt"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -563,6 +566,20 @@ func (x *AttachRequest_Data) GetCaptureEpoch() string {
 	return ""
 }
 
+func (x *AttachRequest_Data) GetReadAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_ReadAt
+	}
+	return nil
+}
+
+func (x *AttachRequest_Data) GetSentAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_SentAt
+	}
+	return nil
+}
+
 func (x *AttachRequest_Data) SetSourceId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -581,6 +598,36 @@ func (x *AttachRequest_Data) SetCaptureEpoch(v string) {
 	x.xxx_hidden_CaptureEpoch = v
 }
 
+func (x *AttachRequest_Data) SetReadAt(v *timestamppb.Timestamp) {
+	x.xxx_hidden_ReadAt = v
+}
+
+func (x *AttachRequest_Data) SetSentAt(v *timestamppb.Timestamp) {
+	x.xxx_hidden_SentAt = v
+}
+
+func (x *AttachRequest_Data) HasReadAt() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ReadAt != nil
+}
+
+func (x *AttachRequest_Data) HasSentAt() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_SentAt != nil
+}
+
+func (x *AttachRequest_Data) ClearReadAt() {
+	x.xxx_hidden_ReadAt = nil
+}
+
+func (x *AttachRequest_Data) ClearSentAt() {
+	x.xxx_hidden_SentAt = nil
+}
+
 type AttachRequest_Data_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -588,6 +635,12 @@ type AttachRequest_Data_builder struct {
 	// fMP4 init or complete fragment. Each incarnation starts at a keyframe.
 	Payload      []byte
 	CaptureEpoch string
+	// When the producer had the payload from its capture (t1) and when it
+	// handed it to this stream (t2), on the producer's clock (§39.3). The
+	// relay measures the producer's queue and the uplink from them; a
+	// producer that predates them sends neither.
+	ReadAt *timestamppb.Timestamp
+	SentAt *timestamppb.Timestamp
 }
 
 func (b0 AttachRequest_Data_builder) Build() *AttachRequest_Data {
@@ -597,6 +650,8 @@ func (b0 AttachRequest_Data_builder) Build() *AttachRequest_Data {
 	x.xxx_hidden_SourceId = b.SourceId
 	x.xxx_hidden_Payload = b.Payload
 	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
+	x.xxx_hidden_ReadAt = b.ReadAt
+	x.xxx_hidden_SentAt = b.SentAt
 	return m0
 }
 
@@ -871,17 +926,19 @@ var File_shale_ingest_proto protoreflect.FileDescriptor
 
 const file_shale_ingest_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/ingest.proto\x12\x05shale\"\xaa\x03\n" +
+	"\x12shale/ingest.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\"\x95\x04\n" +
 	"\rAttachRequest\x122\n" +
 	"\x05hello\x18\x01 \x01(\v2\x1a.shale.AttachRequest.HelloH\x00R\x05hello\x12/\n" +
 	"\x04data\x18\x02 \x01(\v2\x19.shale.AttachRequest.DataH\x00R\x04data\x122\n" +
 	"\x05reset\x18\x03 \x01(\v2\x1a.shale.AttachRequest.ResetH\x00R\x05reset\x1a,\n" +
 	"\x05Hello\x12#\n" +
-	"\rpublish_token\x18\x01 \x01(\tR\fpublishToken\x1ab\n" +
+	"\rpublish_token\x18\x01 \x01(\tR\fpublishToken\x1a\xcc\x01\n" +
 	"\x04Data\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12\x18\n" +
 	"\apayload\x18\x02 \x01(\fR\apayload\x12#\n" +
-	"\rcapture_epoch\x18\x03 \x01(\tR\fcaptureEpoch\x1ac\n" +
+	"\rcapture_epoch\x18\x03 \x01(\tR\fcaptureEpoch\x123\n" +
+	"\aread_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x06readAt\x123\n" +
+	"\asent_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\x1ac\n" +
 	"\x05Reset\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12#\n" +
 	"\rcapture_epoch\x18\x02 \x01(\tR\fcaptureEpoch\x12\x18\n" +
@@ -911,6 +968,7 @@ var file_shale_ingest_proto_goTypes = []any{
 	(*AttachResponse_Start)(nil),   // 5: shale.AttachResponse.Start
 	(*AttachResponse_Stop)(nil),    // 6: shale.AttachResponse.Stop
 	(*AttachResponse_Welcome)(nil), // 7: shale.AttachResponse.Welcome
+	(*timestamppb.Timestamp)(nil),  // 8: google.protobuf.Timestamp
 }
 var file_shale_ingest_proto_depIdxs = []int32{
 	2, // 0: shale.AttachRequest.hello:type_name -> shale.AttachRequest.Hello
@@ -919,13 +977,15 @@ var file_shale_ingest_proto_depIdxs = []int32{
 	5, // 3: shale.AttachResponse.start:type_name -> shale.AttachResponse.Start
 	6, // 4: shale.AttachResponse.stop:type_name -> shale.AttachResponse.Stop
 	7, // 5: shale.AttachResponse.welcome:type_name -> shale.AttachResponse.Welcome
-	0, // 6: shale.RelayIngest.Attach:input_type -> shale.AttachRequest
-	1, // 7: shale.RelayIngest.Attach:output_type -> shale.AttachResponse
-	7, // [7:8] is the sub-list for method output_type
-	6, // [6:7] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	8, // 6: shale.AttachRequest.Data.read_at:type_name -> google.protobuf.Timestamp
+	8, // 7: shale.AttachRequest.Data.sent_at:type_name -> google.protobuf.Timestamp
+	0, // 8: shale.RelayIngest.Attach:input_type -> shale.AttachRequest
+	1, // 9: shale.RelayIngest.Attach:output_type -> shale.AttachResponse
+	9, // [9:10] is the sub-list for method output_type
+	8, // [8:9] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_shale_ingest_proto_init() }

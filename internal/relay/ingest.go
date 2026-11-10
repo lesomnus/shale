@@ -250,16 +250,19 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 	}()
 	// Recv is unblocked by gRPC when this handler returns at expiry, including
 	// an idle zero-source publisher. At most one receive is outstanding.
+	// at is t3 (§39.3), taken as the message comes off the stream rather
+	// than when this loop gets to it.
 	type received struct {
 		msg *api.AttachRequest
 		err error
+		at  time.Time
 	}
 	input := make(chan received)
 	go func() {
 		for {
 			msg, err := stream.Recv()
 			select {
-			case input <- received{msg, err}:
+			case input <- received{msg, err, time.Now()}:
 			case <-stream.Context().Done():
 				return
 			}
@@ -334,7 +337,14 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 				if !allowed || grant != nil && (grant.GetCaptureEpoch() == "" || grant.GetCaptureEpoch() != d.GetCaptureEpoch()) {
 					continue
 				}
-				s.feedEpoch(a, d.GetCaptureEpoch(), d.GetPayload())
+				st := stamps{arrived: received.at}
+				if d.HasReadAt() {
+					st.read = d.GetReadAt().AsTime()
+				}
+				if d.HasSentAt() {
+					st.sent = d.GetSentAt().AsTime()
+				}
+				s.feedTimed(a, d.GetCaptureEpoch(), d.GetPayload(), st)
 			}
 		}
 	}

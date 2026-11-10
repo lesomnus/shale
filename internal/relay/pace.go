@@ -89,7 +89,7 @@ func (s *source) pace(out []pacedSample) {
 	if len(out) > 0 && s.r.m != nil {
 		// The earliest sample's wait is what pacing adds to the delay
 		// the fragment came with.
-		s.r.m.paceDelay.Record(context.Background(), float64(max(0, out[0].at.Sub(now)).Microseconds())/1000)
+		s.r.m.paceDelay.Record(context.Background(), ms(max(0, out[0].at.Sub(now))))
 	}
 	s.paced = append(s.paced, out...)
 	if !s.pacing {

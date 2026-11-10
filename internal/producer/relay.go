@@ -11,6 +11,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -271,6 +272,9 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up boo
 				if !l.currentData(q.msg) {
 					continue
 				}
+				// t2 (§39.3): handed to the stream, so the relay tells this
+				// queue from the uplink.
+				q.msg.GetData().SetSentAt(timestamppb.Now())
 				if err := stream.Send(q.msg); err != nil {
 					errs <- err
 					return
@@ -472,12 +476,15 @@ func (l *relayLink) sendData(id pdid.Id, payload []byte) {
 }
 
 func (l *relayLink) sendDataEpoch(id pdid.Id, epoch string, payload []byte) {
-	msg := api.AttachRequest_builder{Data: api.AttachRequest_Data_builder{SourceId: id.Bytes(), CaptureEpoch: epoch, Payload: append([]byte(nil), payload...)}.Build()}.Build()
+	// t1 (§39.3): the producer has the payload, from its capture or, for a
+	// source whose audio is transcoded, from the live helper.
+	now := time.Now()
+	msg := api.AttachRequest_builder{Data: api.AttachRequest_Data_builder{SourceId: id.Bytes(), CaptureEpoch: epoch, Payload: append([]byte(nil), payload...), ReadAt: timestamppb.New(now)}.Build()}.Build()
 	if !l.currentData(msg) {
 		return
 	}
 	select {
-	case l.send <- queued{msg: msg, at: time.Now()}:
+	case l.send <- queued{msg: msg, at: now}:
 	default:
 		l.drop()
 	}

@@ -336,6 +336,7 @@ scrape endpoint. The names, by the process that measures them:
 | the Go runtime, every process: collections and their CPU, assists, heap, goroutines, scheduling | `shale.runtime.gc.cycles`, `gc.cpu`, `gc.assist`, `heap.live`, `heap.goal`, `memory`, `goroutines`, `sched.latency_max` |
 | relay | `shale.relay.attached_producers`, `active_sources`, `viewers`, `egress_bytes`, `sessions{outcome}`, `first_frame_ms`, `catch_up_ms`, `nacked_packets`, `cpu` |
 | what pacing adds to live's delay, and its clock's moves ([§39.4](16-relay.md#394-viewers)) | `shale.relay.pace_delay_ms`, `shale.relay.pace_resets{why=late,ahead}` |
+| live's way from the producer: its queue (t2 − t1), the uplink (t3 − t2), and the payloads whose clocks disagree ([§39.3](16-relay.md#393-from-the-producer)) | `shale.relay.producer_queue_ms`, `shale.relay.uplink_ms`, `shale.relay.uplink_skewed` |
 | hosts pending, certificates due | `shale.cp.hosts_pending{kind}`, `shale.cp.certs_due{kind}` |
 | producers per relay, reassignments | `shale.cp.producers_per_relay{relay}`, `shale.cp.relay_reassignments` |
 | directives pending, reconciliation lag | `shale.cp.laminae_dates_unsynced`, `shale.cp.reconcile_lag_s{sink}`, `shale.cp.directive_errors` |

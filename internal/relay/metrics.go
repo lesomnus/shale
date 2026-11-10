@@ -30,27 +30,36 @@ type metrics struct {
 	// moved (§39.4).
 	paceDelay  metric.Float64Histogram
 	paceResets metric.Int64Counter
-	cpu        metric.Float64Gauge
+	// How long a producer held a payload before handing it to its stream,
+	// how long the uplink took it from there, and the payloads whose two
+	// clocks disagreed by more than the uplink took (§39.3).
+	producerQueue metric.Float64Histogram
+	uplink        metric.Float64Histogram
+	skewed        metric.Int64Counter
+	cpu           metric.Float64Gauge
 }
 
 func newMetrics(ctx context.Context) *metrics {
 	o := otx.From(ctx)
 
 	return &metrics{
-		attached:   o.Int64Gauge("shale.relay.attached_producers", metric.WithDescription("producers with a stream open")),
-		active:     o.Int64Gauge("shale.relay.active_sources", metric.WithDescription("sources being sent")),
-		viewers:    o.Int64Gauge("shale.relay.viewers", metric.WithDescription("WHEP sessions open")),
-		sessions:   o.Int64Counter("shale.relay.sessions", metric.WithDescription("sessions by outcome: started, renewed with a fresh token, or refused with the reason")),
-		ingress:    o.Int64Counter("shale.relay.ingress_bytes", metric.WithDescription("TS bytes taken from producers"), metric.WithUnit("By")),
-		egress:     o.Int64Counter("shale.relay.egress_bytes", metric.WithDescription("media bytes handed to viewers' tracks"), metric.WithUnit("By")),
-		recent:     o.Int64Counter("shale.relay.recent_bytes", metric.WithDescription("bytes of the recent window handed out"), metric.WithUnit("By")),
-		rewind:     o.Int64Gauge("shale.relay.rewind_bytes", metric.WithDescription("bytes the recent windows hold together"), metric.WithUnit("By")),
-		firstFrame: o.Float64Histogram("shale.relay.first_frame_ms", metric.WithDescription("from a session's offer to the connection over which its first frame goes"), metric.WithUnit("ms")),
-		catchUp:    o.Float64Histogram("shale.relay.catch_up_ms", metric.WithDescription("from a session's keyframe to the end of its group of pictures, sent faster than real time, at the live edge"), metric.WithUnit("ms")),
-		nacked:     o.Int64Counter("shale.relay.nacked_packets", metric.WithDescription("video packets viewers reported lost and asked for again")),
-		paceDelay:  o.Float64Histogram("shale.relay.pace_delay_ms", metric.WithDescription("how long a fragment's earliest sample waits to be sent after the fragment came, while somebody watches: what pacing adds to the delay the fragment came with"), metric.WithUnit("ms")),
-		paceResets: o.Int64Counter("shale.relay.pace_resets", metric.WithDescription("times the pacing clock moved, by why: late, a sample more than 100 ms behind its time, after which every sample waits that much more; ahead, a jump of more than 3 s")),
-		cpu:        o.Float64Gauge("shale.relay.cpu", metric.WithDescription("one-minute load average over the CPU count")),
+		attached:      o.Int64Gauge("shale.relay.attached_producers", metric.WithDescription("producers with a stream open")),
+		active:        o.Int64Gauge("shale.relay.active_sources", metric.WithDescription("sources being sent")),
+		viewers:       o.Int64Gauge("shale.relay.viewers", metric.WithDescription("WHEP sessions open")),
+		sessions:      o.Int64Counter("shale.relay.sessions", metric.WithDescription("sessions by outcome: started, renewed with a fresh token, or refused with the reason")),
+		ingress:       o.Int64Counter("shale.relay.ingress_bytes", metric.WithDescription("TS bytes taken from producers"), metric.WithUnit("By")),
+		egress:        o.Int64Counter("shale.relay.egress_bytes", metric.WithDescription("media bytes handed to viewers' tracks"), metric.WithUnit("By")),
+		recent:        o.Int64Counter("shale.relay.recent_bytes", metric.WithDescription("bytes of the recent window handed out"), metric.WithUnit("By")),
+		rewind:        o.Int64Gauge("shale.relay.rewind_bytes", metric.WithDescription("bytes the recent windows hold together"), metric.WithUnit("By")),
+		firstFrame:    o.Float64Histogram("shale.relay.first_frame_ms", metric.WithDescription("from a session's offer to the connection over which its first frame goes"), metric.WithUnit("ms")),
+		catchUp:       o.Float64Histogram("shale.relay.catch_up_ms", metric.WithDescription("from a session's keyframe to the end of its group of pictures, sent faster than real time, at the live edge"), metric.WithUnit("ms")),
+		nacked:        o.Int64Counter("shale.relay.nacked_packets", metric.WithDescription("video packets viewers reported lost and asked for again")),
+		paceDelay:     o.Float64Histogram("shale.relay.pace_delay_ms", metric.WithDescription("how long a fragment's earliest sample waits to be sent after the fragment came, while somebody watches: what pacing adds to the delay the fragment came with"), metric.WithUnit("ms")),
+		paceResets:    o.Int64Counter("shale.relay.pace_resets", metric.WithDescription("times the pacing clock moved, by why: late, a sample more than 100 ms behind its time, after which every sample waits that much more; ahead, a jump of more than 3 s")),
+		producerQueue: o.Float64Histogram("shale.relay.producer_queue_ms", metric.WithDescription("t2 - t1: how long a producer held a live payload, from having it to handing it to the relay stream, on the producer's clock"), metric.WithUnit("ms")),
+		uplink:        o.Float64Histogram("shale.relay.uplink_ms", metric.WithDescription("t3 - t2: from a producer handing a live payload to its stream to the relay receiving it, across the two hosts' clocks: the stream's buffers and the network"), metric.WithUnit("ms")),
+		skewed:        o.Int64Counter("shale.relay.uplink_skewed", metric.WithDescription("live payloads that arrived before the producer said it sent them: its clock is ahead of the relay's by more than the uplink takes")),
+		cpu:           o.Float64Gauge("shale.relay.cpu", metric.WithDescription("one-minute load average over the CPU count")),
 	}
 }
 
