@@ -127,6 +127,12 @@ func (p *Producer) sourceLifecycles(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// reconciled is the snapshot the captures last matched, nil when they
+	// may not: before the first reconciliation, after one failed, and after
+	// they were stopped outside it. The loop wakes every second; reconciling
+	// an unchanged snapshot negotiates with the CP twice and re-authorizes
+	// with the relay, once a second for as long as the producer runs.
+	var reconciled *catalog.Snapshot
 	for {
 		wait, cancel := context.WithTimeout(ctx, time.Second)
 		_, _ = p.catalog.WaitForChange(wait, p.acceptedCatalog().Revision)
@@ -149,6 +155,7 @@ func (p *Producer) sourceLifecycles(ctx context.Context) error {
 				// Explicit authorization rejection fences capture without pretending
 				// the last authorized desired snapshot was successfully empty.
 				p.stopSources(ctx, p.activeSources(), catalog.StopRevoked)
+				reconciled = nil
 			}
 			p.log.Warn("source catalog unavailable; retained accepted state", "code", status.Code(err).String())
 			if !sleep(ctx, time.Second) {
@@ -162,9 +169,15 @@ func (p *Producer) sourceLifecycles(ctx context.Context) error {
 		}
 		next, _ = accepted.Snapshot(ctx)
 		p.acceptCatalog(next)
+		if reconciled != nil && reflect.DeepEqual(*reconciled, next) {
+			continue
+		}
 		if err := p.reconcileSources(ctx, next); err != nil {
 			p.log.Warn("source reconciliation waiting", "code", status.Code(err).String())
+			reconciled = nil
+			continue
 		}
+		reconciled = &next
 	}
 }
 
