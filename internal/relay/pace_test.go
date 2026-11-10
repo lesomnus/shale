@@ -118,7 +118,7 @@ func TestTicks64(t *testing.T) {
 // tape is a viewer that notes the video it is sent.
 type tape struct{ got []string }
 
-func (t *tape) write(data []byte, _ time.Duration)   { t.got = append(t.got, string(data)) }
+func (t *tape) write(sm sample)                      { t.got = append(t.got, string(sm.data)) }
 func (t *tape) writeAudio(_ []byte, _ time.Duration) {}
 
 // A joining viewer gets nothing until its connection is up, then the

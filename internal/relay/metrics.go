@@ -36,6 +36,12 @@ type metrics struct {
 	producerQueue metric.Float64Histogram
 	uplink        metric.Float64Histogram
 	skewed        metric.Int64Counter
+	// How long a video sample waited here before a viewer was sent it,
+	// and what timed viewers report of the rest of its way (§39.4).
+	hold          metric.Float64Histogram
+	viewerNetwork metric.Float64Histogram
+	viewerPlayout metric.Float64Histogram
+	viewerTotal   metric.Float64Histogram
 	cpu           metric.Float64Gauge
 }
 
@@ -59,6 +65,10 @@ func newMetrics(ctx context.Context) *metrics {
 		producerQueue: o.Float64Histogram("shale.relay.producer_queue_ms", metric.WithDescription("t2 - t1: how long a producer held a live payload, from having it to handing it to the relay stream, on the producer's clock"), metric.WithUnit("ms")),
 		uplink:        o.Float64Histogram("shale.relay.uplink_ms", metric.WithDescription("t3 - t2: from a producer handing a live payload to its stream to the relay receiving it, across the two hosts' clocks: the stream's buffers and the network"), metric.WithUnit("ms")),
 		skewed:        o.Int64Counter("shale.relay.uplink_skewed", metric.WithDescription("live payloads that arrived before the producer said it sent them: its clock is ahead of the relay's by more than the uplink takes")),
+		hold:          o.Float64Histogram("shale.relay.hold_ms", metric.WithDescription("t4 - t3: from a video sample's fragment arriving to the sample going to a viewer, per viewer and frame: pacing, and catching up for one who joined"), metric.WithUnit("ms")),
+		viewerNetwork: o.Float64Histogram("shale.relay.viewer_network_ms", metric.WithDescription("t5 - t4, as timed viewers report it: from the relay sending a frame to the viewer having all of it"), metric.WithUnit("ms")),
+		viewerPlayout: o.Float64Histogram("shale.relay.viewer_playout_ms", metric.WithDescription("t6 - t5, as timed viewers report it: from having a frame to showing it, the browser's jitter buffer, decoding and rendering"), metric.WithUnit("ms")),
+		viewerTotal:   o.Float64Histogram("shale.relay.viewer_total_ms", metric.WithDescription("t6 - t1, as timed viewers report it: from the producer having a frame to a viewer showing it"), metric.WithUnit("ms")),
 		cpu:           o.Float64Gauge("shale.relay.cpu", metric.WithDescription("one-minute load average over the CPU count")),
 	}
 }

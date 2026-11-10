@@ -260,6 +260,27 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   starts over. `shale.relay.pace_delay_ms` is how long each fragment's
   earliest sample waits past the fragment's arrival, and
   `shale.relay.pace_resets{why}` counts the moves.
+- **Timed frames.** A viewer that opens its session with `?timing=1` gets,
+  inside every video access unit before its first slice, an SEI message
+  (user data unregistered, UUID `8f0a5b63-4e1c-4d2f-9a6e-5368616c6554`) a
+  decoder skips: a version byte (1) and six big-endian int64s, the frame's
+  decode time on the stream's clock in nanoseconds, which names it, then t1
+  to t4 in Unix nanoseconds, zero where unknown. t1 and t2 are the
+  producer's ([§39.3](#393-from-the-producer)), t3 when the fragment came
+  here, t4 when this viewer was sent the frame. For every viewer, timed or
+  not, t4 − t3 is `shale.relay.hold_ms`: pacing, and catching up for one
+  who joined. The viewer reads the SEI from the encoded frame (an encoded
+  transform), notes when it had the frame (t5) and showed it (t6, both
+  from `requestVideoFrameCallback`), and reports what only it can see,
+  `POST /whep/<session>/timing` with its view token, a list of frames each
+  with `network` (t5 − t4), `playout` (t6 − t5) and `total` (t6 − t1) in
+  milliseconds: `shale.relay.viewer_network_ms`, `viewer_playout_ms` and
+  `viewer_total_ms`. The answer is when the relay received the report and
+  replied, in Unix milliseconds on its clock, which the viewer measures its
+  own against as NTP does, so a browser's clock need not be right; network
+  and total are read with that offset, and one that comes out a little
+  below zero by its error is recorded as zero. A report holds at most 3600
+  frames, and a span past a minute is dropped as not live.
 - **The recent window.** Nothing is read from a Storage Node before it
   commits ([§17](05-read-path.md#17-read-path)), so the one stretch of a
   camera nobody can read is the open lamina's, and that is what the relay

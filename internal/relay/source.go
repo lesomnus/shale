@@ -28,14 +28,19 @@ type feeder interface {
 // Annex B, a keyframe with its parameter sets in front; an audio sample
 // is one Opus packet.
 type sink interface {
-	write(data []byte, d time.Duration)
+	write(sm sample)
 	writeAudio(data []byte, d time.Duration)
 }
 
-// sample is one video access unit kept for a joining viewer.
+// sample is one video access unit, as the pacer releases it and as it is
+// kept for a joining viewer: media is its decode time on the stream's
+// clock, which names the frame (§39.4), and st when its fragment passed
+// the producer and came here.
 type sample struct {
-	data []byte
-	d    time.Duration
+	data  []byte
+	d     time.Duration
+	media time.Duration
+	st    stamps
 }
 
 type source struct {
@@ -238,7 +243,7 @@ func (s *source) feedTimed(from feeder, epoch string, b []byte, st stamps) {
 		}
 		s.ring.trim(now.Add(-s.window))
 	}
-	s.fanOut(frag)
+	s.fanOut(frag, st)
 	window := s.window
 	s.mu.Unlock()
 	if window > 0 {
@@ -280,8 +285,9 @@ func (s *source) recentEpoch(since time.Duration, epoch string, enforce bool) ([
 }
 
 // fanOut takes a fragment's samples, each with when it plays, to be sent
-// to the viewers when that comes (pace.go); with the lock held.
-func (s *source) fanOut(frag *fmp4.Fragment) {
+// to the viewers when that comes (pace.go), each carrying the fragment's
+// stamps; with the lock held.
+func (s *source) fanOut(frag *fmp4.Fragment, st stamps) {
 	var out []pacedSample
 	if opus := s.init.Opus(); opus != nil {
 		if tr := frag.Traf(opus.ID); tr != nil {
@@ -305,7 +311,7 @@ func (s *source) fanOut(frag *fmp4.Fragment) {
 					data = append(append([]byte(nil), s.params...), data...)
 				}
 				d := ticks(sm.Duration, video.Timescale, fallbackDuration)
-				out = append(out, pacedSample{media: t, key: key, data: data, d: d})
+				out = append(out, pacedSample{media: t, key: key, data: data, d: d, st: st})
 				t += d
 			}
 		}
@@ -447,7 +453,7 @@ func (s *source) catchUp(key string) {
 	if len(s.gop) == 0 {
 		return
 	}
-	v.write(s.gop[0].data, s.gop[0].d)
+	v.write(s.gop[0])
 	if len(s.gop) == 1 {
 		return
 	}
@@ -488,7 +494,7 @@ func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration, wa
 		}
 		sm := o.samples[0]
 		o.samples = o.samples[1:]
-		v.write(sm.data, sm.d)
+		v.write(sm)
 		s.mu.Unlock()
 		next = next.Add(sm.d / catchUpSpeed)
 	}
