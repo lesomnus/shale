@@ -215,11 +215,17 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   4 Mbps). A joining viewer receives that keyframe, with the parameter
   sets in front of it, at once, and starts within a fraction of a second
   instead of waiting for the next keyframe. The rest of the group of
-  pictures follows **at three times real time**, each frame a third of
-  its duration after the one before, and what the camera sends meanwhile
-  queues behind it, until the viewer has caught up with the live edge and
-  gets what comes as every viewer does: a viewer two seconds behind, the
-  most a keyframe interval of two seconds leaves, is there a second later.
+  pictures follows **faster than real time**, and what the camera sends
+  meanwhile queues behind it, until the viewer has caught up with the live
+  edge and gets what comes as every viewer does. Each frame follows the one
+  before by its duration over twelve or its bytes at 16 Mbit/s, whichever
+  is longer, and never by more than a third of its duration: a quiet
+  scene's group, small frames mostly, at twelve times real time, a busy
+  one held to 16 Mbit/s on the viewer's link and to three times real time
+  at the least. The group is as old as its keyframe: two seconds behind,
+  the most a keyframe interval of two seconds leaves, is under a second to
+  catch up; the twelve a smart codec measured between a C420's keyframes
+  (#244) took six at three times real time and take about one now.
   It gets nothing before its connection is up, and every frame of the
   group and after it once, in order, never a frame twice or out of order,
   either of which breaks the picture until the next keyframe; the sound
@@ -237,8 +243,8 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   broke 10 to 50 frames.
 - **Lost packets** are sent again. The answer offers `nack` feedback (and
   RTX) for the video, and the relay keeps each viewer's last 512 video
-  packets, about 1.2 s at 4 Mbps and 400 ms of a group sent at three
-  times real time, to send again the ones a viewer's NACK names. A PLI or
+  packets, about 1.2 s at 4 Mbps and 400 ms of a group caught up at
+  16 Mbit/s, to send again the ones a viewer's NACK names. A PLI or
   a FIR, a viewer's ask for a keyframe, is read and not acted on: the
   relay cannot have the camera make one, and sending the group again
   would put frames already sent back into the stream. What NACKs could

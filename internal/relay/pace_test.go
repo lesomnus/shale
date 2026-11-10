@@ -264,6 +264,27 @@ func TestCatchUpLeaves(t *testing.T) {
 	require.Empty(t, s.catching)
 }
 
+// A catching-up viewer gets a quiet group of pictures, small frames, at
+// catchUpSpeed; a busy one at catchUpRate on its link; and never slower
+// than catchUpFloor, however big the frames (§39.4).
+func TestCatchUpGap(t *testing.T) {
+	frame := 40 * time.Millisecond
+	quiet := sample{data: make([]byte, 2_000), d: frame}
+	require.Equal(t, frame/catchUpSpeed, catchUpGap(quiet), "a quiet frame at twelve times real time")
+	busy := sample{data: make([]byte, 20_000), d: frame}
+	require.Equal(t, 10*time.Millisecond, catchUpGap(busy), "20 kB at 16 Mbit/s")
+	key := sample{data: make([]byte, 400_000), d: frame}
+	require.Equal(t, frame/catchUpFloor, catchUpGap(key), "never slower than three times real time")
+
+	// Twelve seconds of a quiet 25 fps group catch up in about a second, as
+	// the C420s' did in six.
+	var took time.Duration
+	for range 12 * 25 {
+		took += catchUpGap(quiet)
+	}
+	require.InDelta(t, time.Second.Seconds(), took.Seconds(), 0.05)
+}
+
 // v is a source's only viewer, a tape; with the lock held.
 func v(s *source) *tape {
 	for _, x := range s.viewers {
