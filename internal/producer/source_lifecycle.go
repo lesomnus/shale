@@ -23,7 +23,9 @@ type sourceRuntime struct {
 
 func (p *Producer) startSource(ctx context.Context, s *source) {
 	capture, stopCapture := context.WithCancel(ctx)
-	upload, stopUpload := context.WithCancel(ctx)
+	// The uploads outlive the producer's context: stopSource ends them once
+	// the source's FIFO drained or its bound won, at shutdown too (#255).
+	upload, stopUpload := context.WithCancel(context.WithoutCancel(ctx))
 	proof, stopProof := context.WithCancel(ctx)
 	r := &sourceRuntime{stopCapture: stopCapture, stopUpload: stopUpload, stopProof: stopProof, captureDone: make(chan struct{}), uploadDone: make(chan struct{}), proofDone: make(chan struct{})}
 	s.runtime = r
@@ -117,7 +119,7 @@ func (p *Producer) sourceLifecycles(ctx context.Context) error {
 	for _, s := range p.activeSources() {
 		p.startSource(ctx, s)
 	}
-	defer func() { p.stopSources(ctx, p.activeSources(), catalog.StopShutdown) }()
+	defer p.shutdownSources(ctx)
 	initial := p.acceptedCatalog()
 	if initial.Revision.AssignmentID == "" {
 		<-ctx.Done()
@@ -321,6 +323,20 @@ func (p *Producer) initializeSources(ctx context.Context) error {
 	}
 	p.loading.Store(false)
 	return nil
+}
+
+// shutdownDrain bounds the drain when the producer stops, under the 30 s its
+// systemd unit allows (deploy/systemd/shale@.service): an open segment that
+// can be finished is, and the process still ends on its own.
+const shutdownDrain = 20 * time.Second
+
+// shutdownSources stops every capture as the producer stops. ctx is the
+// producer's and canceled by then; the drain gets a bound of its own, or
+// every open segment would be dropped without one upload tried (#255).
+func (p *Producer) shutdownSources(ctx context.Context) {
+	stop, cancel := context.WithTimeout(context.WithoutCancel(ctx), min(shutdownDrain, p.cfg.DrainTimeout))
+	defer cancel()
+	p.stopSources(stop, p.activeSources(), catalog.StopShutdown)
 }
 
 // Stop all changed captures promptly; their independent FIFO drains proceed

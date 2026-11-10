@@ -106,9 +106,13 @@ There is one FIFO uploader per Source incarnation. Active and draining queues
 both remain visible to the process-wide RAM budget and statistics.
 
 `producer.drain_timeout` defaults to two minutes and is bounded by five minutes.
-At expiry or process cancellation, the uploader is joined, remaining segments
-are discarded with a fixed reason, and allocated rows are reported lost under a
-bounded report window. Lost segments and bytes remain in lifetime counters even
+When the process stops, its own context is already canceled, so the drain gets
+a bound of its own: `drain_timeout` or 20 s, whichever is shorter, under the
+30 s the systemd unit allows (`TimeoutStopSec`). The uploads run on until the
+drain ends, not until the process context does; before #255 the shutdown drain
+ended at once and every open segment was dropped. At expiry, the uploader is
+joined, remaining segments are discarded with a fixed reason, and allocated
+rows are reported lost under a bounded report window. Lost segments and bytes remain in lifetime counters even
 after the old handle is reclaimed. Removing a source never erases its metadata
 or recordings. `retain: written` keeps its existing incomplete-tail semantics.
 
