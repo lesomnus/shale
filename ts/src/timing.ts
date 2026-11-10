@@ -110,8 +110,12 @@ export function report(el: HTMLVideoElement, post: (body: string) => Promise<{ r
 		const mid = totals[Math.floor(totals.length / 2)]
 		if (mid !== undefined) onDelay(mid)
 	}
-	// The first report is empty: it only reads the clock.
-	void send()
+	// The first reports are empty and only read the clock: three, since the
+	// first request of a session is often slow one way only (its connection
+	// is new), and the reading with the shortest round trip is the one used.
+	void (async () => {
+		for (let i = 0; i < 3 && !stopped; i++) await send()
+	})()
 	const timer = setInterval(() => void send(), every)
 
 	return {
