@@ -43,6 +43,9 @@ type sample struct {
 	d     time.Duration
 	media time.Duration
 	st    stamps
+	// owed says it goes to a joining viewer from the group of pictures
+	// (catchUp), not at its time.
+	owed bool
 }
 
 type source struct {
@@ -458,7 +461,9 @@ func (s *source) catchUp(key string) {
 	if len(s.gop) == 0 {
 		return
 	}
-	v.write(s.gop[0])
+	first := s.gop[0]
+	first.owed = true
+	v.write(first)
 	if len(s.gop) == 1 {
 		return
 	}
@@ -499,6 +504,7 @@ func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration, wa
 		}
 		sm := o.samples[0]
 		o.samples = o.samples[1:]
+		sm.owed = true
 		v.write(sm)
 		s.mu.Unlock()
 		next = next.Add(sm.d / catchUpSpeed)

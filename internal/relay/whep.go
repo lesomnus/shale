@@ -488,7 +488,7 @@ func (v *viewer) write(sm sample) {
 	m := v.source.r.m
 	m.egress.Add(context.Background(), int64(len(data)))
 	if !sm.st.arrived.IsZero() {
-		m.hold.Record(context.Background(), ms(now.Sub(sm.st.arrived)))
+		m.hold.Record(context.Background(), ms(now.Sub(sm.st.arrived)), pathAttr(sm.owed))
 	}
 }
 

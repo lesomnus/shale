@@ -310,3 +310,36 @@ func TestTimedFrameOverRTP(t *testing.T) {
 		t.Fatal("no video")
 	}
 }
+
+// How long a frame waited here is told by how it went: at its time, or to
+// a joining viewer from the group of pictures (§39.4).
+func TestHoldPath(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	ctx := otx.Into(context.Background(), otx.New(otx.WithMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)))))
+	r := &Relay{m: newMetrics(ctx)}
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000}, "video", "shale")
+	require.NoError(t, err)
+	v := &viewer{source: newSource(r, pdid.New(pdid.Domain(8))), track: track}
+	at := time.Now()
+	v.write(sample{data: []byte{0, 0, 0, 1, 0x65}, st: stamps{arrived: at.Add(-50 * time.Millisecond)}})
+	v.write(sample{data: []byte{0, 0, 0, 1, 0x41}, st: stamps{arrived: at.Add(-2 * time.Second)}, owed: true})
+	v.write(sample{data: []byte{0, 0, 0, 1, 0x41}})
+
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(ctx, &rm))
+	got := map[string]uint64{}
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if d, ok := m.Data.(metricdata.Histogram[float64]); ok && m.Name == "shale.relay.hold_ms" {
+				for _, p := range d.DataPoints {
+					path, _ := p.Attributes.Value("path")
+					got[path.AsString()] = p.Count
+					if path.AsString() == "catch_up" {
+						require.GreaterOrEqual(t, p.Sum, 2000.0)
+					}
+				}
+			}
+		}
+	}
+	require.Equal(t, map[string]uint64{"paced": 1, "catch_up": 1}, got, "and none for a frame with no arrival")
+}

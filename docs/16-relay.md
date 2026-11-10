@@ -270,8 +270,9 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   to t4 in Unix nanoseconds, zero where unknown. t1 and t2 are the
   producer's ([§39.3](#393-from-the-producer)), t3 when the fragment came
   here, t4 when this viewer was sent the frame. For every viewer, timed or
-  not, t4 − t3 is `shale.relay.hold_ms`: pacing, and catching up for one
-  who joined. The viewer reads the SEI from the encoded frame (an encoded
+  not, t4 − t3 is `shale.relay.hold_ms`, by `path`: `paced`, a frame sent
+  at its time, and `catch_up`, one of the group of pictures a joining
+  viewer is handed, as old as the keyframe it starts from. The viewer reads the SEI from the encoded frame (an encoded
   transform), notes when it had the frame (t5) and showed it (t6, both
   from `requestVideoFrameCallback`), and reports what only it can see,
   `POST /whep/<session>/timing` with its view token, a list of frames each
