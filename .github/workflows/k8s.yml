@@ -48,7 +48,7 @@ jobs:
         with:
           cluster_name: shale
           version: v0.33.0
-          kubectl_version: v1.35.0
+          kubectl_version: v1.37.2
       - name: image
         run: |
           # Two invocations: package copies what build wrote into ./output.
