@@ -36,9 +36,9 @@ func TestIngestTiming(t *testing.T) {
 	s := newSource(r, pdid.New(pdid.Domain(8)))
 
 	t1 := time.Now()
-	s.feedTimed(nil, "", []byte("x"), stamps{read: t1, sent: t1.Add(40 * time.Millisecond), arrived: t1.Add(140 * time.Millisecond)})
+	s.feedTimed(nil, "", []byte("x"), stamps{read: t1, sent: t1.Add(40 * time.Millisecond), arrived: t1.Add(140 * time.Millisecond), producer: "p"})
 	// The producer's clock 50 ms ahead of the relay's, over a 10 ms uplink.
-	s.feedTimed(nil, "", []byte("x"), stamps{read: t1, sent: t1.Add(60 * time.Millisecond), arrived: t1.Add(20 * time.Millisecond)})
+	s.feedTimed(nil, "", []byte("x"), stamps{read: t1, sent: t1.Add(60 * time.Millisecond), arrived: t1.Add(20 * time.Millisecond), producer: "p"})
 	// A producer that predates the stamps.
 	s.feedEpoch(nil, "", []byte("x"))
 	// A payload of another epoch the source does not take.
@@ -61,6 +61,8 @@ func TestIngestTiming(t *testing.T) {
 	queue := hist["shale.relay.producer_queue_ms"]
 	require.Equal(t, uint64(2), queue.Count)
 	require.InDelta(t, 100, queue.Sum, 1e-9, "40 and 60 ms")
+	by, _ := queue.Attributes.Value("producer")
+	require.Equal(t, "p", by.AsString(), "per producer host")
 	uplink := hist["shale.relay.uplink_ms"]
 	require.Equal(t, uint64(1), uplink.Count, "the skewed one is not a time")
 	require.InDelta(t, 100, uplink.Sum, 1e-9)

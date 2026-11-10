@@ -337,7 +337,7 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 				if !allowed || grant != nil && (grant.GetCaptureEpoch() == "" || grant.GetCaptureEpoch() != d.GetCaptureEpoch()) {
 					continue
 				}
-				st := stamps{arrived: received.at}
+				st := stamps{arrived: received.at, producer: a.actor.String()}
 				if d.HasReadAt() {
 					st.read = d.GetReadAt().AsTime()
 				}

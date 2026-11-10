@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/fmp4"
@@ -159,9 +161,11 @@ func (s *source) feedEpoch(from feeder, epoch string, b []byte) {
 
 // stamps are when a payload passed each point on its way here (§39.3):
 // read and sent on the producer's clock, zero from a producer that predates
-// them, and arrived on the relay's.
+// them, and arrived on the relay's; producer is who sent it, the producer
+// host's actor, so one host's uplink is told from another's.
 type stamps struct {
 	read, sent, arrived time.Time
+	producer            string
 }
 
 // measure records the producer's queue (t2 - t1) and the uplink (t3 - t2)
@@ -172,11 +176,12 @@ func (m *metrics) measure(st stamps) {
 		return
 	}
 	ctx := context.Background()
-	m.producerQueue.Record(ctx, ms(st.sent.Sub(st.read)))
+	by := metric.WithAttributes(attribute.String("producer", st.producer))
+	m.producerQueue.Record(ctx, ms(st.sent.Sub(st.read)), by)
 	if up := st.arrived.Sub(st.sent); up >= 0 {
-		m.uplink.Record(ctx, ms(up))
+		m.uplink.Record(ctx, ms(up), by)
 	} else {
-		m.skewed.Add(ctx, 1)
+		m.skewed.Add(ctx, 1, by)
 	}
 }
 

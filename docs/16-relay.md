@@ -145,7 +145,9 @@ Relay     Stop {source}                  on demand only: nobody has watched for 
   it came off the stream (t3). From them it measures the producer's queue,
   `shale.relay.producer_queue_ms` (t2 − t1), and the uplink,
   `shale.relay.uplink_ms` (t3 − t2): the stream's buffers, the producer's
-  Wi‑Fi and the network, which nothing on the producer can see. The uplink
+  Wi‑Fi and the network, which nothing on the producer can see. Both carry
+  `producer`, the producer host's actor, so a host on Wi‑Fi is told from
+  one on a wire. The uplink
   is read across two clocks, so both hosts keep NTP; a payload that arrives
   before it was sent is counted in `shale.relay.uplink_skewed` instead. A
   producer that predates the stamps sends neither, and is not measured.
