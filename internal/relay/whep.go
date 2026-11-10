@@ -34,7 +34,7 @@ import (
 // nackHistory is how many of a viewer's last video packets the relay keeps
 // to send again when the viewer reports them lost (§39.4). At 4 Mbps,
 // about 420 packets a second, it is about 1.2 s of the live edge, and
-// 400 ms of a group of pictures sent at catchUpSpeed: room for a
+// 400 ms of a group of pictures caught up at catchUpRate: room for a
 // keyframe of a few hundred packets, the likeliest to lose some, and the
 // NACKs a browser sends for it a round trip or two later. Each packet
 // kept takes a buffer of the MTU, about 1.5 kB, so a viewer costs about

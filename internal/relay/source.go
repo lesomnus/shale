@@ -425,12 +425,29 @@ func (s *source) armIdleStopLocked() {
 	})
 }
 
-// catchUpSpeed is how many times real time a joining viewer is sent the
-// group of pictures after its keyframe: at three, a viewer two seconds
-// behind the live edge, the most a keyframe interval of two seconds
-// leaves, is there a second later, and the burst it gets is three times
-// the camera's rate rather than the whole group at once (§39.4).
-const catchUpSpeed = 3
+// Catching up (§39.4). A joining viewer is handed the group of pictures
+// since the last keyframe, as old as that keyframe: up to two seconds of a
+// camera that sends one every two, and up to twelve, measured, of cameras
+// whose smart codec spaces them so (#244). At a fixed three times real time
+// the twelve took six seconds to catch up. Each sample of the group now
+// follows the one before by its duration over catchUpSpeed or its bytes at
+// catchUpRate, whichever is longer, and never by more than its duration
+// over catchUpFloor: a quiet scene's group, small frames mostly, catches
+// up at twelve times real time, a second for twelve; a busy one is held to
+// catchUpRate on the viewer's link, and to the three it had at the least.
+const (
+	catchUpSpeed = 12
+	catchUpFloor = 3
+	// catchUpRate is in bits a second: four times a 4 Mbps camera's.
+	catchUpRate = 16_000_000
+)
+
+// catchUpGap is how long after the sample before it a catching-up viewer is
+// sent sm.
+func catchUpGap(sm sample) time.Duration {
+	byRate := time.Duration(int64(len(sm.data)) * 8 * int64(time.Second) / catchUpRate)
+	return min(sm.d/catchUpFloor, max(sm.d/catchUpSpeed, byRate))
+}
 
 // owed is what a catching-up viewer is still to be sent, in order.
 type owed struct {
@@ -469,16 +486,16 @@ func (s *source) catchUp(key string) {
 	}
 	o := &owed{samples: slices.Clone(s.gop[1:]), since: time.Now()}
 	s.catching[key] = o
-	go s.runCatchUp(key, v, o, s.gop[0].d, s.paceWake)
+	go s.runCatchUp(key, v, o, catchUpGap(s.gop[0]), s.paceWake)
 }
 
-// runCatchUp sends a catching-up viewer what it is owed, each sample its
-// duration over catchUpSpeed after the one before it, the first after the
-// keyframe's (`first`), and ends when the queue is empty or the viewer
-// left. Each sample is written with the lock held, so the pacer sends the
-// viewer nothing until the last owed one is out.
+// runCatchUp sends a catching-up viewer what it is owed, each sample the
+// catchUpGap of the one before it after it, the first `first` after the
+// keyframe, and ends when the queue is empty or the viewer left. Each
+// sample is written with the lock held, so the pacer sends the viewer
+// nothing until the last owed one is out.
 func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration, wake <-chan struct{}) {
-	next := time.Now().Add(first / catchUpSpeed)
+	next := time.Now().Add(first)
 	for {
 		if wait := time.Until(next); wait > 0 {
 			timer := time.NewTimer(wait)
@@ -507,7 +524,7 @@ func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration, wa
 		sm.owed = true
 		v.write(sm)
 		s.mu.Unlock()
-		next = next.Add(sm.d / catchUpSpeed)
+		next = next.Add(catchUpGap(sm))
 	}
 }
 
