@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/otx"
+	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
 	"github.com/stretchr/testify/require"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -36,9 +38,9 @@ func TestIngestTiming(t *testing.T) {
 	s := newSource(r, pdid.New(pdid.Domain(8)))
 
 	t1 := time.Now()
-	s.feedTimed(nil, "", []byte("x"), stamps{read: t1, sent: t1.Add(40 * time.Millisecond), arrived: t1.Add(140 * time.Millisecond)})
+	s.feedTimed(nil, "", []byte("x"), stamps{read: t1, sent: t1.Add(40 * time.Millisecond), arrived: t1.Add(140 * time.Millisecond), producer: "p"})
 	// The producer's clock 50 ms ahead of the relay's, over a 10 ms uplink.
-	s.feedTimed(nil, "", []byte("x"), stamps{read: t1, sent: t1.Add(60 * time.Millisecond), arrived: t1.Add(20 * time.Millisecond)})
+	s.feedTimed(nil, "", []byte("x"), stamps{read: t1, sent: t1.Add(60 * time.Millisecond), arrived: t1.Add(20 * time.Millisecond), producer: "p"})
 	// A producer that predates the stamps.
 	s.feedEpoch(nil, "", []byte("x"))
 	// A payload of another epoch the source does not take.
@@ -61,6 +63,8 @@ func TestIngestTiming(t *testing.T) {
 	queue := hist["shale.relay.producer_queue_ms"]
 	require.Equal(t, uint64(2), queue.Count)
 	require.InDelta(t, 100, queue.Sum, 1e-9, "40 and 60 ms")
+	by, _ := queue.Attributes.Value("producer")
+	require.Equal(t, "p", by.AsString(), "per producer host")
 	uplink := hist["shale.relay.uplink_ms"]
 	require.Equal(t, uint64(1), uplink.Count, "the skewed one is not a time")
 	require.InDelta(t, 100, uplink.Sum, 1e-9)
@@ -217,4 +221,125 @@ func TestTimingSEIGolden(t *testing.T) {
 	}
 	require.NoError(t, err)
 	require.Equal(t, string(want), got)
+}
+
+// A timed frame keeps its SEI through the track's packetizer and a
+// receiver's depacketizer, as a browser gets it (§39.4): the access unit a
+// viewer reassembles reads back the stamps it was written with, and t4.
+func TestTimedFrameOverRTP(t *testing.T) {
+	r := &Relay{m: newMetrics(context.Background())}
+	w, err := newWhepServer(r)
+	require.NoError(t, err)
+	pc, err := w.api.NewPeerConnection(webrtc.Configuration{})
+	require.NoError(t, err)
+	defer pc.Close()
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000}, "video", "shale")
+	require.NoError(t, err)
+	_, err = pc.AddTrack(track)
+	require.NoError(t, err)
+
+	receiver, err := webrtc.NewPeerConnection(webrtc.Configuration{})
+	require.NoError(t, err)
+	defer receiver.Close()
+	_, err = receiver.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly})
+	require.NoError(t, err)
+	units := make(chan []byte, 64)
+	receiver.OnTrack(func(tr *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
+		var au []byte
+		var h codecs.H264Packet
+		for {
+			p, _, err := tr.ReadRTP()
+			if err != nil {
+				return
+			}
+			b, err := h.Unmarshal(p.Payload)
+			if err != nil {
+				continue
+			}
+			au = append(au, b...)
+			if p.Marker {
+				select {
+				case units <- au:
+				default:
+				}
+				au = nil
+			}
+		}
+	})
+	offer, err := receiver.CreateOffer(nil)
+	require.NoError(t, err)
+	gathered := webrtc.GatheringCompletePromise(receiver)
+	require.NoError(t, receiver.SetLocalDescription(offer))
+	<-gathered
+	require.NoError(t, pc.SetRemoteDescription(*receiver.LocalDescription()))
+	answer, err := pc.CreateAnswer(nil)
+	require.NoError(t, err)
+	gathered = webrtc.GatheringCompletePromise(pc)
+	require.NoError(t, pc.SetLocalDescription(answer))
+	<-gathered
+	require.NoError(t, receiver.SetRemoteDescription(*pc.LocalDescription()))
+
+	v := &viewer{source: newSource(r, pdid.New(pdid.Domain(8))), track: track, timed: true}
+	t1 := time.Now().Add(-300 * time.Millisecond).Round(time.Microsecond)
+	// An IDR of a few packets behind its parameter sets, as fanOut makes it.
+	au := append([]byte{0, 0, 0, 1, 0x67, 0x42, 0xc0, 0x1f, 0, 0, 0, 1, 0x68, 0xce, 0x3c, 0x80, 0, 0, 0, 1, 0x65}, bytes.Repeat([]byte{0x88}, 4000)...)
+	st := stamps{read: t1, sent: t1.Add(time.Millisecond), arrived: t1.Add(100 * time.Millisecond)}
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		for n := 0; ; n++ {
+			select {
+			case <-done:
+				return
+			case <-time.After(33 * time.Millisecond):
+				v.write(sample{data: au, d: 33 * time.Millisecond, media: time.Duration(n) * 33 * time.Millisecond, st: st})
+			}
+		}
+	}()
+
+	select {
+	case got := <-units:
+		ft, ok := readTiming(false, got)
+		require.True(t, ok, "the SEI came through")
+		require.True(t, ft.read.Equal(t1))
+		require.True(t, ft.sent.Equal(t1.Add(time.Millisecond)))
+		require.True(t, ft.arrived.Equal(t1.Add(100*time.Millisecond)))
+		require.False(t, ft.relayed.Before(ft.arrived), "t4 after t3")
+		require.WithinDuration(t, time.Now(), ft.relayed, 5*time.Second)
+	case <-time.After(10 * time.Second):
+		t.Fatal("no video")
+	}
+}
+
+// How long a frame waited here is told by how it went: at its time, or to
+// a joining viewer from the group of pictures (§39.4).
+func TestHoldPath(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	ctx := otx.Into(context.Background(), otx.New(otx.WithMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)))))
+	r := &Relay{m: newMetrics(ctx)}
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000}, "video", "shale")
+	require.NoError(t, err)
+	v := &viewer{source: newSource(r, pdid.New(pdid.Domain(8))), track: track}
+	at := time.Now()
+	v.write(sample{data: []byte{0, 0, 0, 1, 0x65}, st: stamps{arrived: at.Add(-50 * time.Millisecond)}})
+	v.write(sample{data: []byte{0, 0, 0, 1, 0x41}, st: stamps{arrived: at.Add(-2 * time.Second)}, owed: true})
+	v.write(sample{data: []byte{0, 0, 0, 1, 0x41}})
+
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(ctx, &rm))
+	got := map[string]uint64{}
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if d, ok := m.Data.(metricdata.Histogram[float64]); ok && m.Name == "shale.relay.hold_ms" {
+				for _, p := range d.DataPoints {
+					path, _ := p.Attributes.Value("path")
+					got[path.AsString()] = p.Count
+					if path.AsString() == "catch_up" {
+						require.GreaterOrEqual(t, p.Sum, 2000.0)
+					}
+				}
+			}
+		}
+	}
+	require.Equal(t, map[string]uint64{"paced": 1, "catch_up": 1}, got, "and none for a frame with no arrival")
 }
