@@ -158,3 +158,58 @@ func TestManagedCatalogReconcilesOnlyOnChange(t *testing.T) {
 	time.Sleep(2500 * time.Millisecond)
 	require.Equal(t, int32(6), sets.calls.Load(), "once")
 }
+
+// When the producer stops, its context is already canceled; the open
+// segments still get a bounded drain rather than none (#255). One whose
+// upload finishes is not dropped; one whose upload never does is, once the
+// bound has passed.
+func TestShutdownDrainsOpenSegments(t *testing.T) {
+	for _, finishes := range []bool{true, false} {
+		t.Run(map[bool]string{true: "upload finishes", false: "upload never finishes"}[finishes], func(t *testing.T) {
+			p, err := New(Config{StateDir: t.TempDir(), SourceProvider: &catalog.Memory{}, Buffer: 2 << 20, DrainTimeout: 400 * time.Millisecond, Log: slog.New(slog.DiscardHandler)})
+			require.NoError(t, err)
+			s := &source{cfg: SourceConfig{Alias: "cam"}, row: api.Source_builder{Id: pdid.New(8).Bytes()}.Build()}
+			require.NoError(t, p.installSource(s))
+			s.pending = []*Segment{NewSegment(time.Now(), make([]byte, 1<<10))}
+
+			// The upload loop, as startSource runs it: it drains the FIFO
+			// unless it is stopped first.
+			closed := make(chan struct{})
+			close(closed)
+			upload, stopUpload := context.WithCancel(context.Background())
+			s.runtime = &sourceRuntime{stopCapture: func() {}, stopProof: func() {}, stopUpload: stopUpload, captureDone: closed, proofDone: closed, uploadDone: make(chan struct{})}
+			go func() {
+				defer close(s.runtime.uploadDone)
+				if finishes {
+					select {
+					case <-time.After(150 * time.Millisecond):
+						s.mu.Lock()
+						s.pending = nil
+						s.mu.Unlock()
+					case <-upload.Done():
+						return
+					}
+				}
+				<-upload.Done()
+			}()
+
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			began := time.Now()
+			p.shutdownSources(ctx)
+			took := time.Since(began)
+
+			s.mu.Lock()
+			lost := s.lost
+			s.mu.Unlock()
+			if finishes {
+				require.Zero(t, lost, "a segment whose upload finishes is kept")
+				require.GreaterOrEqual(t, took, 150*time.Millisecond, "the drain waited for it")
+			} else {
+				require.Equal(t, int64(1), lost, "one that cannot finish is dropped")
+				require.GreaterOrEqual(t, took, 400*time.Millisecond, "after the bound, not at once")
+				require.Less(t, took, 5*time.Second)
+			}
+		})
+	}
+}

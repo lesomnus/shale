@@ -242,6 +242,7 @@ func managedEdgeEnrollsAndDecodes(t *testing.T, combined bool) {
 	oldEpoch := app.GetCaptureEpoch()
 	stop()
 	require.Zero(t, media.Sessions(), "cancellation joins and closes RTSP subprocesses")
+	require.NotContains(t, logs.text(), "source shutdown: bounded upload drain expired", "a restart drops no open segment the storage node can take (#255)")
 	restartedAt := time.Now()
 	stop = launch()
 	current := lifecycleApplied(t, admin, binding, oldEpoch)
