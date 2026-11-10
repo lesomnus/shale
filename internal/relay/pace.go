@@ -16,7 +16,7 @@ import (
 // even as what the camera took.
 
 // pacedSample is one sample waiting for its time: when it plays on the
-// stream's clock, and what it is.
+// stream's clock, and what it is, with its fragment's stamps.
 type pacedSample struct {
 	media time.Duration
 	at    time.Time
@@ -24,6 +24,12 @@ type pacedSample struct {
 	key   bool
 	data  []byte
 	d     time.Duration
+	st    stamps
+}
+
+// sample is the video sample a viewer is sent.
+func (p pacedSample) sample() sample {
+	return sample{data: p.data, d: p.d, media: p.media, st: p.st}
 }
 
 // playout maps the stream's clock onto the wall clock: a sample at media
@@ -154,15 +160,15 @@ func (s *source) release(out []pacedSample) {
 			s.gop = s.gop[:0]
 		}
 		if sm.key || len(s.gop) > 0 {
-			s.gop = append(s.gop, sample{data: sm.data, d: sm.d})
+			s.gop = append(s.gop, sm.sample())
 		}
 		for k, v := range s.viewers {
 			switch o := s.catching[k]; {
 			case s.joining[k]:
 			case o != nil:
-				o.samples = append(o.samples, sample{data: sm.data, d: sm.d})
+				o.samples = append(o.samples, sm.sample())
 			default:
-				v.write(sm.data, sm.d)
+				v.write(sm.sample())
 			}
 		}
 	}

@@ -480,7 +480,14 @@ and go under `on_demand` ([§39.3](16-relay.md#393-from-the-producer)).
 ```text
 POST   /whep/{source_id}       Content-Type: application/sdp, body: offer
                                Authorization: Shale <view token>
+                               ?timing=1 for timed frames (§39.4)
        → 201  Location: /whep/{session}   body: SDP answer
+              Shale-Timing: 1 when the frames are timed
+PATCH  /whep/{session}         Authorization: Shale <fresh view token>, no body
+       → 204  the session now ends with the fresh token
+POST   /whep/{session}/timing  Authorization: Shale <view token>
+                               body: {"frames":[{"network","playout","total"}]} (ms)
+       → 200  {"received","replied"}: the relay's clock, Unix ms
 DELETE /whep/{session}         end the session
 GET    /recent/{source_id}     ?since=<seconds>, Authorization: Shale <view token>
        → 200  video/mp4: the recent window as one fragmented MP4, the init

@@ -66,6 +66,10 @@ type viewer struct {
 	done    chan struct{}
 	// caught says the group of pictures was handed over after connecting.
 	caught bool
+	// timed says the viewer asked for timed frames (§39.4), of a source
+	// whose video is H.265 when h265.
+	timed bool
+	h265  bool
 	// expiry ends the session when its token does; a renewal replaces it.
 	expiry *time.Timer
 	mu     sync.Mutex
@@ -107,6 +111,8 @@ func (w *whepServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	switch {
 	case req.URL.Path == "/healthz":
 		rw.WriteHeader(http.StatusNoContent)
+	case req.Method == http.MethodPost && strings.HasSuffix(path, "/timing"):
+		w.timing(rw, req, strings.TrimSuffix(path, "/timing"))
 	case req.Method == http.MethodPost && path != "" && path == strings.TrimSuffix(path, "/"):
 		w.post(rw, req, path)
 	case req.Method == http.MethodPatch && path != "":
@@ -133,7 +139,7 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	// to end the session, and Link for the ICE servers, only when they
 	// are exposed.
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
-	rw.Header().Set("Access-Control-Expose-Headers", "Location, Link, Shale-Capture-Epoch")
+	rw.Header().Set("Access-Control-Expose-Headers", "Location, Link, Shale-Capture-Epoch, Shale-Timing")
 	rw.Header().Set("Cache-Control", "no-store")
 	tok := token.FromHeader(req.Header.Get("Authorization"))
 	if tok == "" {
@@ -216,7 +222,8 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 	}
 
 	key := newSessionKey(actor)
-	v := &viewer{key: key, actor: actor, source: src, captureEpoch: claims.GetCaptureEpoch(), captureSequence: sequence, pc: pc, track: track, audio: audio, done: make(chan struct{}), started: time.Now()}
+	timed := req.URL.Query().Get("timing") == "1"
+	v := &viewer{key: key, actor: actor, source: src, captureEpoch: claims.GetCaptureEpoch(), captureSequence: sequence, pc: pc, track: track, audio: audio, done: make(chan struct{}), started: time.Now(), timed: timed, h265: h265}
 	pc.OnConnectionStateChange(func(st webrtc.PeerConnectionState) {
 		switch st {
 		case webrtc.PeerConnectionStateConnected:
@@ -285,6 +292,9 @@ func (w *whepServer) post(rw http.ResponseWriter, req *http.Request, sourceRef s
 		return
 	}
 	rw.Header().Set("Shale-Capture-Epoch", v.captureEpoch)
+	if timed {
+		rw.Header().Set("Shale-Timing", "1")
+	}
 	rw.Header().Set("Location", "/whep/"+key)
 	for _, u := range w.r.cfg.Ice {
 		rw.Header().Add("Link", "<"+u+">; rel=\"ice-server\"")
@@ -354,24 +364,8 @@ func (w *whepServer) renew(rw http.ResponseWriter, req *http.Request, session st
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
 	rw.Header().Set("Access-Control-Expose-Headers", "Shale-Capture-Epoch")
 	rw.Header().Set("Cache-Control", "no-store")
-	claims, err := w.r.verify(token.FromHeader(req.Header.Get("Authorization")), api.TokenOp_TOKEN_OP_VIEW)
-	if err != nil {
-		http.Error(rw, "invalid view capability", http.StatusUnauthorized)
-		return
-	}
-	w.mu.Lock()
-	v, ok := w.sessions[session]
-	w.mu.Unlock()
+	v, claims, ok := w.session(rw, req, session)
 	if !ok {
-		http.NotFound(rw, req)
-		return
-	}
-	actor := ""
-	if a, err := pdid.From(claims.GetActor()); err == nil {
-		actor = a.String()
-	}
-	if string(claims.GetSource()) != string(v.source.id.Bytes()) || actor != v.actor {
-		http.Error(rw, "the token is for another source or another actor than the session", http.StatusForbidden)
 		return
 	}
 	if claims.GetCaptureEpoch() != v.captureEpoch {
@@ -387,6 +381,33 @@ func (w *whepServer) renew(rw http.ResponseWriter, req *http.Request, session st
 	w.r.m.sessions.Add(req.Context(), 1, outcomeAttr("renewed"))
 	rw.Header().Set("Shale-Capture-Epoch", v.captureEpoch)
 	rw.WriteHeader(http.StatusNoContent)
+}
+
+// session is the session a request names, when the request's view token
+// is for that session's source and actor; otherwise it has answered.
+func (w *whepServer) session(rw http.ResponseWriter, req *http.Request, key string) (*viewer, *api.TokenClaims, bool) {
+	claims, err := w.r.verify(token.FromHeader(req.Header.Get("Authorization")), api.TokenOp_TOKEN_OP_VIEW)
+	if err != nil {
+		http.Error(rw, "invalid view capability", http.StatusUnauthorized)
+		return nil, nil, false
+	}
+	w.mu.Lock()
+	v, ok := w.sessions[key]
+	w.mu.Unlock()
+	if !ok {
+		http.NotFound(rw, req)
+		return nil, nil, false
+	}
+	actor := ""
+	if a, err := pdid.From(claims.GetActor()); err == nil {
+		actor = a.String()
+	}
+	if string(claims.GetSource()) != string(v.source.id.Bytes()) || actor != v.actor {
+		http.Error(rw, "the token is for another source or another actor than the session", http.StatusForbidden)
+		return nil, nil, false
+	}
+
+	return v, claims, true
 }
 
 // expireAt ends a session at its token's expiry, in place of the end it had.
@@ -453,12 +474,22 @@ func (w *whepServer) closeAll() {
 }
 
 // write is the sink of a viewer: one access unit as one sample, which the
-// track packetizes into RTP.
-func (v *viewer) write(data []byte, d time.Duration) {
-	if err := v.track.WriteSample(media.Sample{Data: data, Duration: d}); err != nil {
+// track packetizes into RTP, with a timing SEI in front of its slices for
+// a viewer that asked (§39.4). Now is t4.
+func (v *viewer) write(sm sample) {
+	now := time.Now()
+	data := sm.data
+	if v.timed {
+		data = withSEI(data, timingSEI(v.h265, frameTiming{media: sm.media, read: sm.st.read, sent: sm.st.sent, arrived: sm.st.arrived, relayed: now}), v.h265)
+	}
+	if err := v.track.WriteSample(media.Sample{Data: data, Duration: sm.d}); err != nil {
 		return
 	}
-	v.source.r.m.egress.Add(context.Background(), int64(len(data)))
+	m := v.source.r.m
+	m.egress.Add(context.Background(), int64(len(data)))
+	if !sm.st.arrived.IsZero() {
+		m.hold.Record(context.Background(), ms(now.Sub(sm.st.arrived)))
+	}
 }
 
 // writeAudio is one Opus packet as one sample.
