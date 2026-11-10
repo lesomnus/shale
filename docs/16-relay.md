@@ -111,7 +111,7 @@ for as long as it runs (`RelayIngest.Attach`,
 ```text
 Producer  Hello {publish token}          aud = relay, the producer's sources, its live policy
 Relay     Start {source}                 at once under `always`; when someone watches, on demand
-Producer  Data {source, bytes} ...       the fragments it stores, Opus among their audio
+Producer  Data {source, bytes, t1, t2} ... the fragments it stores, Opus among their audio
 Relay     Stop {source}                  on demand only: nobody has watched for relay_idle_stop
 ```
 
@@ -139,6 +139,16 @@ Relay     Stop {source}                  on demand only: nobody has watched for 
   recording, every camera under `always` and the watched ones on demand,
   and the uplink budget of [§38.5](15-producer.md#385-choosing-the-ceiling)
   counts it.
+- **Timed.** Each `Data` says, on the producer's clock, when the producer
+  had the payload (`read_at`, t1: from its capture, or from the live helper)
+  and when it handed it to the stream (`sent_at`, t2); the relay notes when
+  it came off the stream (t3). From them it measures the producer's queue,
+  `shale.relay.producer_queue_ms` (t2 − t1), and the uplink,
+  `shale.relay.uplink_ms` (t3 − t2): the stream's buffers, the producer's
+  Wi‑Fi and the network, which nothing on the producer can see. The uplink
+  is read across two clocks, so both hosts keep NTP; a payload that arrives
+  before it was sent is counted in `shale.relay.uplink_skewed` instead. A
+  producer that predates the stamps sends neither, and is not measured.
 - **Codecs for live.** A camera that will be watched live should record
   H.264 Main or High profile, which every browser plays; the relay serves
   H.265 only to a viewer whose offer includes it and refuses the others.

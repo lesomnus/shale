@@ -149,13 +149,44 @@ func (s *source) feed(b []byte) {
 }
 
 func (s *source) feedEpoch(from feeder, epoch string, b []byte) {
+	s.feedTimed(from, epoch, b, stamps{arrived: time.Now()})
+}
+
+// stamps are when a payload passed each point on its way here (§39.3):
+// read and sent on the producer's clock, zero from a producer that predates
+// them, and arrived on the relay's.
+type stamps struct {
+	read, sent, arrived time.Time
+}
+
+// measure records the producer's queue (t2 - t1) and the uplink (t3 - t2)
+// of an accepted payload. The uplink is across two clocks: one that comes
+// out below zero is counted as skewed rather than measured.
+func (m *metrics) measure(st stamps) {
+	if m == nil || st.read.IsZero() || st.sent.IsZero() {
+		return
+	}
+	ctx := context.Background()
+	m.producerQueue.Record(ctx, ms(st.sent.Sub(st.read)))
+	if up := st.arrived.Sub(st.sent); up >= 0 {
+		m.uplink.Record(ctx, ms(up))
+	} else {
+		m.skewed.Add(ctx, 1)
+	}
+}
+
+// ms is a duration as fractional milliseconds, as the histograms take it.
+func ms(d time.Duration) float64 { return float64(d.Microseconds()) / 1000 }
+
+func (s *source) feedTimed(from feeder, epoch string, b []byte, st stamps) {
 	s.r.m.ingress.Add(context.Background(), int64(len(b)))
-	now := time.Now()
+	now := st.arrived
 	s.mu.Lock()
 	if from != nil && s.feeder != from || s.stopped || s.managed && (s.epochDenied || epoch == "" || epoch != s.epoch) || !s.managed && epoch != "" {
 		s.mu.Unlock()
 		return
 	}
+	s.r.m.measure(st)
 	s.bytes += int64(len(b))
 	if _, ok := fmp4.Find(b, "moov"); ok {
 		init, err := fmp4.ParseInit(b)
