@@ -105,3 +105,56 @@ func mustParseID(t *testing.T, raw string) []byte {
 	require.NoError(t, err)
 	return id.Bytes()
 }
+
+// The managed catalog loop wakes every second, and an unchanged snapshot
+// is not reconciled again: reconciling negotiates with the CP (a preview,
+// then a preview and a commit) and re-authorizes with the relay, which a
+// managed edge did once a second for as long as it ran. A new generation
+// is reconciled once.
+func TestManagedCatalogReconcilesOnlyOnChange(t *testing.T) {
+	tenant, setID := pdid.New(1), pdid.New(7)
+	id := pdid.New(22)
+	scope := catalog.Scope{TenantID: tenant.String(), SetID: setID.String(), ProducerID: id.String(), NetworkID: pdid.New(26).String()}
+	assignment := pdid.New(28).String()
+	snapshot := func(generation int64) catalog.Snapshot {
+		return catalog.Snapshot{Scope: scope, Revision: catalog.Revision{AssignmentID: assignment, Generation: generation, Catalog: generation}}
+	}
+	first := snapshot(1)
+	mem, err := catalog.NewMemory(first)
+	require.NoError(t, err)
+	p, err := New(Config{StateDir: t.TempDir(), SourceProvider: mem, Buffer: 2 << 20, Log: slog.New(slog.DiscardHandler)})
+	require.NoError(t, err)
+	p.id = id
+	p.set = api.Set_builder{Id: setID.Bytes(), Tenant: api.Tenant_builder{Id: tenant.Bytes()}.Build()}.Build()
+	p.catalog = mem
+	p.acceptCatalog(first)
+
+	sets := &lifecycleAdmissionSets{commit: func() {}}
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	srv := grpc.NewServer()
+	api.RegisterSetServiceServer(srv, sets)
+	go srv.Serve(lis)
+	t.Cleanup(srv.Stop)
+	conn, err := grpc.NewClient(lis.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+	p.conn.Store(conn)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	go func() {
+		p.sourceLifecycles(ctx)
+		close(done)
+	}()
+	t.Cleanup(func() { cancel(); <-done })
+
+	require.Eventually(t, func() bool { return sets.calls.Load() == 3 }, 5*time.Second, 10*time.Millisecond, "the first snapshot is reconciled")
+	time.Sleep(3500 * time.Millisecond)
+	require.Equal(t, int32(3), sets.calls.Load(), "and not again while it stays the same")
+
+	require.NoError(t, mem.Publish(ctx, snapshot(2)))
+	require.Eventually(t, func() bool { return sets.calls.Load() == 6 }, 5*time.Second, 10*time.Millisecond, "a new generation is")
+	time.Sleep(2500 * time.Millisecond)
+	require.Equal(t, int32(6), sets.calls.Load(), "once")
+}
