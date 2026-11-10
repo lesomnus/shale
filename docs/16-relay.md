@@ -257,11 +257,18 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   pace from there, and a jump of more than 3 s starts it over. With nobody
   watching nothing is paced. Measured by a WHEP viewer, arrival minus
   timestamp spread over 468 ms unpaced and 2 ms paced. A clock moved late
-  does not come back: what follows on time waits as long as the late one
-  was late, and every viewer is that much further behind, until the clock
-  starts over. `shale.relay.pace_delay_ms` is how long each fragment's
-  earliest sample waits past the fragment's arrival, and
-  `shale.relay.pace_resets{why}` counts the moves.
+  would otherwise stay there, what follows on time waiting as long as the
+  late one was late and every viewer that much further behind; measured,
+  one uplink hiccup of about 200 ms left three viewers about 210 ms
+  further behind for the 25 minutes they watched (#244). So when even a
+  fragment's earliest sample would wait, the clock is behind the arrivals
+  and comes back: by a fifth of the fragment's span at most, so the
+  viewers get frames at most a quarter faster than real time until it is
+  back, never in a burst. The same brings back a clock that a camera's
+  running fast pulls ahead. `shale.relay.pace_delay_ms` is how long each
+  fragment's earliest sample waits past the fragment's arrival,
+  `shale.relay.pace_resets{why}` counts the moves, and
+  `shale.relay.pace_recovered_ms` how far the clock was brought back.
 - **Timed frames.** A viewer that opens its session with `?timing=1` gets,
   inside every video access unit before its first slice, an SEI message
   (user data unregistered, UUID `8f0a5b63-4e1c-4d2f-9a6e-5368616c6554`) a
