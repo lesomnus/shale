@@ -1,11 +1,15 @@
 package relay
 
 import (
+	"context"
 	"slices"
 	"testing"
 	"time"
 
+	"github.com/lesomnus/otx"
 	"github.com/stretchr/testify/require"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/lesomnus/payday/pdid"
 )
@@ -17,23 +21,91 @@ func TestPlayout(t *testing.T) {
 	var c playout
 	t0 := time.Date(2026, 10, 3, 21, 0, 0, 0, time.UTC)
 	ms := time.Millisecond
+	when := func(media time.Duration, now time.Time, moved string) time.Time {
+		t.Helper()
+		at, why := c.when(media, now)
+		require.Equal(t, moved, why)
+		return at
+	}
 
-	require.Equal(t, t0, c.when(10*time.Second, t0), "the first sample goes at once")
-	require.Equal(t, t0.Add(33*ms), c.when(10*time.Second+33*ms, t0), "the next at its timestamp")
-	require.Equal(t, t0.Add(500*ms), c.when(10*time.Second+500*ms, t0.Add(10*ms)))
+	require.Equal(t, t0, when(10*time.Second, t0, ""), "the first sample goes at once")
+	require.Equal(t, t0.Add(33*ms), when(10*time.Second+33*ms, t0, ""), "the next at its timestamp")
+	require.Equal(t, t0.Add(500*ms), when(10*time.Second+500*ms, t0.Add(10*ms), ""))
 
 	// A fragment 300 ms late: sent now, and the ones after it at its pace.
 	now := t0.Add(1300 * ms)
-	require.Equal(t, now, c.when(11*time.Second, now))
-	require.Equal(t, now.Add(33*ms), c.when(11*time.Second+33*ms, now))
+	require.Equal(t, now, when(11*time.Second, now, "late"))
+	require.Equal(t, now.Add(33*ms), when(11*time.Second+33*ms, now, ""))
 
 	// 50 ms late is within the tolerance: kept at its time.
-	require.Equal(t, now.Add(100*ms), c.when(11*time.Second+100*ms, now.Add(150*ms)))
+	require.Equal(t, now.Add(100*ms), when(11*time.Second+100*ms, now.Add(150*ms), ""))
+
+	// One that comes on time by the camera's clock waits the 300 ms the
+	// late one moved the clock by: the clock does not come back.
+	require.Equal(t, now.Add(500*ms), when(11*time.Second+500*ms, t0.Add(1500*ms), ""))
 
 	// A jump of a minute ahead: the clock starts over at it.
 	later := now.Add(200 * ms)
-	require.Equal(t, later, c.when(71*time.Second, later))
-	require.Equal(t, later.Add(33*ms), c.when(71*time.Second+33*ms, later))
+	require.Equal(t, later, when(71*time.Second, later, "ahead"))
+	require.Equal(t, later.Add(33*ms), when(71*time.Second+33*ms, later, ""))
+}
+
+// What the pacer adds to the delay is measured on the earliest sample of
+// each fragment, and each move of its clock is counted by why.
+func TestPaceDelay(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	ctx := otx.Into(context.Background(), otx.New(otx.WithMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)))))
+	s := newSource(&Relay{m: newMetrics(ctx)}, pdid.New(pdid.Domain(8)))
+	s.addViewer("a.1", &tape{})
+	defer func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.restartPacing()
+	}()
+	pace := func(media time.Duration) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.pace([]pacedSample{{media: media, data: []byte("p"), d: 33 * time.Millisecond}})
+	}
+
+	// A clock half a second behind: the fragment is late, goes at once,
+	// and the clock moves to it.
+	s.mu.Lock()
+	s.clock = playout{set: true, wall: time.Now().Add(-500 * time.Millisecond)}
+	s.mu.Unlock()
+	pace(0)
+	// One that came 400 ms early by that clock waits its 400 ms.
+	pace(400 * time.Millisecond)
+
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(ctx, &rm))
+	var delays []float64
+	resets := map[string]int64{}
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			switch d := m.Data.(type) {
+			case metricdata.Histogram[float64]:
+				if m.Name == "shale.relay.pace_delay_ms" {
+					require.Len(t, d.DataPoints, 1)
+					require.Equal(t, uint64(2), d.DataPoints[0].Count)
+					low, _ := d.DataPoints[0].Min.Value()
+					high, _ := d.DataPoints[0].Max.Value()
+					delays = append(delays, low, high)
+				}
+			case metricdata.Sum[int64]:
+				if m.Name == "shale.relay.pace_resets" {
+					for _, p := range d.DataPoints {
+						why, _ := p.Attributes.Value("why")
+						resets[why.AsString()] += p.Value
+					}
+				}
+			}
+		}
+	}
+	require.Equal(t, map[string]int64{"late": 1}, resets)
+	require.Len(t, delays, 2)
+	require.Zero(t, delays[0], "the late fragment waits nothing")
+	require.InDelta(t, 400, delays[1], 50, "the early one waits for its time")
 }
 
 // A decode time of days in 90 kHz ticks does not overflow.

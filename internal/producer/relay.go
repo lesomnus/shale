@@ -37,7 +37,7 @@ type relayLink struct {
 	// active is the sources the relay started; key says whether the next
 	// keyframe was seen since.
 	active      map[pdid.Id]*tap
-	send        chan *api.AttachRequest
+	send        chan queued
 	controls    chan struct{}
 	refresh     bool
 	reauthorize bool
@@ -66,13 +66,19 @@ type tap struct {
 // dropped beyond it rather than held.
 const sendQueue = 32
 
+// queued is a Data message waiting for the relay, with when it began to.
+type queued struct {
+	msg *api.AttachRequest
+	at  time.Time
+}
+
 type relayEpoch struct {
 	epoch   string
 	stopped bool
 }
 
 func newRelayLink(p *Producer) *relayLink {
-	return &relayLink{p: p, changed: make(chan struct{}, 1), active: map[pdid.Id]*tap{}, send: make(chan *api.AttachRequest, sendQueue), controls: make(chan struct{}, 1), resets: map[pdid.Id]relayEpoch{}, epochs: map[pdid.Id]relayEpoch{}}
+	return &relayLink{p: p, changed: make(chan struct{}, 1), active: map[pdid.Id]*tap{}, send: make(chan queued, sendQueue), controls: make(chan struct{}, 1), resets: map[pdid.Id]relayEpoch{}, epochs: map[pdid.Id]relayEpoch{}}
 }
 
 // set takes the assignment the CP handed over; a different relay makes
@@ -250,7 +256,7 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up boo
 				return
 			case <-l.controls:
 				continue
-			case msg := <-l.send:
+			case q := <-l.send:
 				// Control may have arrived together with this lossy item.
 				for {
 					control := l.takeControl()
@@ -262,12 +268,18 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up boo
 						return
 					}
 				}
-				if !l.currentData(msg) {
+				if !l.currentData(q.msg) {
 					continue
 				}
-				if err := stream.Send(msg); err != nil {
+				if err := stream.Send(q.msg); err != nil {
 					errs <- err
 					return
+				}
+				// Send returns once flow control lets the message go to
+				// the transport: the wait is the queue's and the uplink's
+				// backpressure, not what the socket holds after.
+				if m := l.p.m; m != nil {
+					m.liveWait.Record(sctx, float64(time.Since(q.at).Microseconds())/1000)
 				}
 			}
 		}
@@ -465,7 +477,7 @@ func (l *relayLink) sendDataEpoch(id pdid.Id, epoch string, payload []byte) {
 		return
 	}
 	select {
-	case l.send <- msg:
+	case l.send <- queued{msg: msg, at: time.Now()}:
 	default:
 		l.drop()
 	}

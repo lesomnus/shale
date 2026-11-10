@@ -23,12 +23,12 @@ func TestRelayEpochControlPriorityAndDelayedHelper(t *testing.T) {
 	require.NotNil(t, control.GetReset(), "control is retained even while the lossy queue is full")
 	require.Equal(t, "new", control.GetReset().GetCaptureEpoch())
 	for len(l.send) > 0 {
-		require.False(t, l.currentData(<-l.send), "queued old frames cannot cross a reset")
+		require.False(t, l.currentData((<-l.send).msg), "queued old frames cannot cross a reset")
 	}
 	lateHelper()
 	require.Empty(t, l.send, "an asynchronous helper retains its old epoch")
 	l.sendDataEpoch(id, "new", []byte("new"))
-	require.True(t, l.currentData(<-l.send))
+	require.True(t, l.currentData((<-l.send).msg))
 	l.resetSource(id, "new", true)
 	l.sendDataEpoch(id, "new", []byte("stopped"))
 	require.Empty(t, l.send)

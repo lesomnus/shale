@@ -61,8 +61,8 @@ func TestLiveHelperTranscodes(t *testing.T) {
 	messages := 0
 	for done := false; !done; {
 		select {
-		case msg := <-l.send:
-			all = append(all, msg.GetData().GetPayload()...)
+		case q := <-l.send:
+			all = append(all, q.msg.GetData().GetPayload()...)
 			messages++
 		default:
 			done = true

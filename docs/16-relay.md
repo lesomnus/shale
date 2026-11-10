@@ -244,7 +244,12 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   sent; a sample more than 100 ms late goes at once and the clock keeps its
   pace from there, and a jump of more than 3 s starts it over. With nobody
   watching nothing is paced. Measured by a WHEP viewer, arrival minus
-  timestamp spread over 468 ms unpaced and 2 ms paced.
+  timestamp spread over 468 ms unpaced and 2 ms paced. A clock moved late
+  does not come back: what follows on time waits as long as the late one
+  was late, and every viewer is that much further behind, until the clock
+  starts over. `shale.relay.pace_delay_ms` is how long each fragment's
+  earliest sample waits past the fragment's arrival, and
+  `shale.relay.pace_resets{why}` counts the moves.
 - **The recent window.** Nothing is read from a Storage Node before it
   commits ([§17](05-read-path.md#17-read-path)), so the one stretch of a
   camera nobody can read is the open lamina's, and that is what the relay
