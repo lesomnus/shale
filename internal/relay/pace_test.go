@@ -40,14 +40,39 @@ func TestPlayout(t *testing.T) {
 	// 50 ms late is within the tolerance: kept at its time.
 	require.Equal(t, now.Add(100*ms), when(11*time.Second+100*ms, now.Add(150*ms), ""))
 
-	// One that comes on time by the camera's clock waits the 300 ms the
-	// late one moved the clock by: the clock does not come back.
+	// One that comes on time by the camera's clock would wait the 300 ms
+	// the late one moved the clock by: when alone does not bring it back,
+	// converge does (TestPlayoutConverges).
 	require.Equal(t, now.Add(500*ms), when(11*time.Second+500*ms, t0.Add(1500*ms), ""))
 
 	// A jump of a minute ahead: the clock starts over at it.
 	later := now.Add(200 * ms)
 	require.Equal(t, later, when(71*time.Second, later, "ahead"))
 	require.Equal(t, later.Add(33*ms), when(71*time.Second+33*ms, later, ""))
+}
+
+// A clock behind the arrivals comes back by a fifth of each fragment's span
+// at most, until a fragment's first sample no longer waits; one that is not
+// behind is left alone (§39.4).
+func TestPlayoutConverges(t *testing.T) {
+	ms := time.Millisecond
+	t0 := time.Date(2026, 11, 10, 17, 0, 0, 0, time.UTC)
+	c := playout{set: true, wall: t0.Add(300 * ms), media: 0}
+	// Fragments of 200 ms arrive on time by the camera's clock; the clock
+	// has them wait 300 ms.
+	var backs []time.Duration
+	for k := range 10 {
+		arrived := t0.Add(time.Duration(k) * 200 * ms)
+		backs = append(backs, c.converge(time.Duration(k)*200*ms, 200*ms, arrived))
+	}
+	require.Equal(t, []time.Duration{40 * ms, 40 * ms, 40 * ms, 40 * ms, 40 * ms, 40 * ms, 40 * ms, 20 * ms, 0, 0}, backs)
+	at, _ := c.when(2*time.Second, t0.Add(2*time.Second))
+	require.Equal(t, t0.Add(2*time.Second), at, "back at the arrivals")
+
+	// Not behind: an early arrival is not a reason to move.
+	require.Zero(t, c.converge(2200*ms, 200*ms, t0.Add(2300*ms)))
+	var unset playout
+	require.Zero(t, unset.converge(0, 200*ms, t0))
 }
 
 // What the pacer adds to the delay is measured on the earliest sample of
@@ -106,6 +131,62 @@ func TestPaceDelay(t *testing.T) {
 	require.Len(t, delays, 2)
 	require.Zero(t, delays[0], "the late fragment waits nothing")
 	require.InDelta(t, 400, delays[1], 50, "the early one waits for its time")
+}
+
+// The pacer brings a clock that fell behind back over the fragments that
+// follow, without sending any of them before the one before it: a lag of
+// 300 ms is gone in a few fragments, and counted (§39.4).
+func TestPaceRecovers(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	ctx := otx.Into(context.Background(), otx.New(otx.WithMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)))))
+	s := newSource(&Relay{m: newMetrics(ctx)}, pdid.New(pdid.Domain(8)))
+	s.addViewer("a.1", &tape{})
+	defer func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.restartPacing()
+	}()
+	frame := 40 * time.Millisecond
+	fragment := func(k int) []pacedSample {
+		var out []pacedSample
+		for i := range 5 {
+			out = append(out, pacedSample{media: time.Duration(5*k+i) * frame, data: []byte("p"), d: frame})
+		}
+		return out
+	}
+	// Each fragment comes on time by the camera's clock. Rather than wait
+	// out its 200 ms, the clock is moved back by them: the same to pace,
+	// and no sleep for a busy test runner to stretch.
+	var waits []time.Duration
+	for k := range 8 {
+		s.mu.Lock()
+		now := time.Now()
+		if k == 0 {
+			// The clock 300 ms behind, as a late fragment leaves it.
+			s.clock = playout{set: true, wall: now.Add(300 * time.Millisecond)}
+		}
+		s.pace(fragment(k))
+		waits = append(waits, s.paced[len(s.paced)-5].at.Sub(now).Round(10*time.Millisecond))
+		s.clock.wall = s.clock.wall.Add(-5 * frame)
+		s.mu.Unlock()
+	}
+	require.Greater(t, waits[0], 200*time.Millisecond, "behind at first")
+	for k := 1; k < len(waits); k++ {
+		require.LessOrEqual(t, waits[k], waits[k-1]+10*time.Millisecond, "never further behind")
+	}
+	require.LessOrEqual(t, waits[len(waits)-1], 20*time.Millisecond, "back at the arrivals")
+
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(ctx, &rm))
+	var recovered float64
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if d, ok := m.Data.(metricdata.Sum[float64]); ok && m.Name == "shale.relay.pace_recovered_ms" {
+				recovered = d.DataPoints[0].Value
+			}
+		}
+	}
+	require.InDelta(t, 300, recovered, 30)
 }
 
 // A decode time of days in 90 kHz ticks does not overflow.

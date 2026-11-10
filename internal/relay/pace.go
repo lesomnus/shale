@@ -48,11 +48,16 @@ const (
 	// paceAhead is how far ahead a sample's time may be before the clock
 	// starts over at it: a jump in the stream's timestamps, not a wait.
 	paceAhead = 3 * time.Second
+	// paceConverge bounds how fast a clock behind the arrivals comes back:
+	// by a fifth of each fragment's span at most, so the viewers get
+	// frames at most a quarter faster than real time, never in a burst.
+	paceConverge = 5
 )
 
 // when is a sample's wall time, moving the clock as paceLate and paceAhead
 // say; moved is which moved it, "late" or "ahead", or empty. A clock moved
-// late stays there: what comes after on time waits as much more.
+// late stays there, and what comes after on time would wait as much more,
+// until converge brings it back.
 func (c *playout) when(media time.Duration, now time.Time) (at time.Time, moved string) {
 	if !c.set {
 		c.set, c.wall, c.media = true, now, media
@@ -71,6 +76,26 @@ func (c *playout) when(media time.Duration, now time.Time) (at time.Time, moved 
 	return now, moved
 }
 
+// converge brings a clock that is behind the arrivals back toward them: a
+// sample at media that came now and would wait is moved earlier by that
+// wait, by span/paceConverge at most. It answers how far. A clock is behind
+// once a fragment that came late moved it and those after came on time, or
+// while the camera's clock runs ahead of this one; left there, every
+// viewer stays that much further from the camera (§39.4).
+func (c *playout) converge(media, span time.Duration, now time.Time) time.Duration {
+	if !c.set {
+		return 0
+	}
+	wait := c.wall.Add(media - c.media).Sub(now)
+	if wait <= 0 {
+		return 0
+	}
+	back := min(wait, span/paceConverge)
+	c.wall = c.wall.Add(-back)
+
+	return back
+}
+
 // pace takes a fragment's samples; with the lock held. With nobody watching
 // they are not paced, only kept for the group of pictures a joining viewer
 // gets; otherwise they wait for their time in order and a pacer sends
@@ -85,6 +110,15 @@ func (s *source) pace(out []pacedSample) {
 	// other's later samples at the head of the queue.
 	sort.SliceStable(out, func(i, j int) bool { return out[i].media < out[j].media })
 	now := time.Now()
+	if len(out) > 0 {
+		var end time.Duration
+		for _, sm := range out {
+			end = max(end, sm.media+sm.d)
+		}
+		if back := s.clock.converge(out[0].media, end-out[0].media, now); back > 0 && s.r.m != nil {
+			s.r.m.paceRecovered.Add(context.Background(), ms(back))
+		}
+	}
 	for i := range out {
 		var moved string
 		out[i].at, moved = s.clock.when(out[i].media, now)

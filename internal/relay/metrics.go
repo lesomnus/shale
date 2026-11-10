@@ -28,8 +28,9 @@ type metrics struct {
 	// How long the pacer holds a fragment's earliest sample past the
 	// fragment's arrival while somebody watches, and the times its clock
 	// moved (§39.4).
-	paceDelay  metric.Float64Histogram
-	paceResets metric.Int64Counter
+	paceDelay     metric.Float64Histogram
+	paceResets    metric.Int64Counter
+	paceRecovered metric.Float64Counter
 	// How long a producer held a payload before handing it to its stream,
 	// how long the uplink took it from there, and the payloads whose two
 	// clocks disagreed by more than the uplink took (§39.3).
@@ -62,6 +63,7 @@ func newMetrics(ctx context.Context) *metrics {
 		nacked:        o.Int64Counter("shale.relay.nacked_packets", metric.WithDescription("video packets viewers reported lost and asked for again")),
 		paceDelay:     o.Float64Histogram("shale.relay.pace_delay_ms", metric.WithDescription("how long a fragment's earliest sample waits to be sent after the fragment came, while somebody watches: what pacing adds to the delay the fragment came with"), metric.WithUnit("ms")),
 		paceResets:    o.Int64Counter("shale.relay.pace_resets", metric.WithDescription("times the pacing clock moved, by why: late, a sample more than 100 ms behind its time, after which every sample waits that much more; ahead, a jump of more than 3 s")),
+		paceRecovered: o.Float64Counter("shale.relay.pace_recovered_ms", metric.WithDescription("how far the pacing clock was brought back toward the arrivals after it fell behind them, at most a fifth of each fragment's span"), metric.WithUnit("ms")),
 		producerQueue: o.Float64Histogram("shale.relay.producer_queue_ms", metric.WithDescription("t2 - t1: how long a producer held a live payload, from having it to handing it to the relay stream, on the producer's clock, per producer host"), metric.WithUnit("ms")),
 		uplink:        o.Float64Histogram("shale.relay.uplink_ms", metric.WithDescription("t3 - t2: from a producer handing a live payload to its stream to the relay receiving it, across the two hosts' clocks: the stream's buffers and the network, per producer host"), metric.WithUnit("ms")),
 		skewed:        o.Int64Counter("shale.relay.uplink_skewed", metric.WithDescription("live payloads that arrived before the producer said it sent them: its clock is ahead of the relay's by more than the uplink takes, per producer host")),
