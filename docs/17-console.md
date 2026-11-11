@@ -213,6 +213,9 @@ transmuxed, and the page holds no player library.
   configuration (another codec, profile or picture size) would need two
   init segments in one track, which is not a portable MP4, so the export
   refuses it and says where the change is: the two sides export apart.
+  The media comes in one Range request per lamina, its whole span, which
+  the node streams in its read chunks; playback instead asks a megabyte at
+  a time ahead of the playhead.
 - An export measures where its time went and says so under the button:
   reading the laminae's index and init segments, then the media requests
   one after another, summed as waiting for each response's first byte,
