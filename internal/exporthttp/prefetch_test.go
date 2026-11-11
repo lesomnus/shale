@@ -24,13 +24,14 @@ type preparationCounts struct {
 // Exercise the real parser, HTTP ranges and writer. The sources deliberately
 // remain remote readers: a counting in-memory ReaderAt would not catch tiny
 // parser reads turning into separate Storage requests.
-func prepareOverHTTP(t *testing.T, b []byte, recordings int, cache *readAhead) (preparationCounts, []byte) {
+// With windows, each recording gets its own, as the handler gives them.
+func prepareOverHTTP(t *testing.T, b []byte, recordings int, windows bool) (preparationCounts, []byte) {
 	t.Helper()
 	var requests, tiny, received atomic.Int64
 	storage := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var from, to int
 		_, err := fmt.Sscanf(r.Header.Get("Range"), "bytes=%d-%d", &from, &to)
-		if err != nil || from < 0 || to < from || to >= len(b) || to-from >= 1<<20 {
+		if err != nil || from < 0 || to < from || to >= len(b) || to-from >= maxRangeBytes {
 			http.Error(w, "invalid range", http.StatusBadRequest)
 			return
 		}
@@ -47,6 +48,10 @@ func prepareOverHTTP(t *testing.T, b []byte, recordings int, cache *readAhead) (
 	start := time.Date(2026, 11, 2, 5, 0, 0, 0, time.UTC)
 	var sources []mp4export.Source
 	for i := range recordings {
+		var cache *readAhead
+		if windows {
+			cache = &readAhead{}
+		}
 		reader, err := newRemoteReader(t.Context(), storage.Client(), Recording{URL: storage.URL, Size: int64(len(b))}, true, cache)
 		require.NoError(t, err)
 		sources = append(sources, mp4export.Source{Reader: reader, Size: int64(len(b)), Start: start.Add(time.Duration(i) * 4 * time.Minute)})
@@ -80,8 +85,8 @@ func TestPrepareReadAheadReducesHTTPRequests(t *testing.T) {
 		t.Run(fmt.Sprintf("%s-%d", tc.name, tc.recordings), func(t *testing.T) {
 			b, err := os.ReadFile("../fmp4/testdata/" + tc.name + ".mp4")
 			require.NoError(t, err)
-			baseline, original := prepareOverHTTP(t, b, tc.recordings, nil)
-			cached, actual := prepareOverHTTP(t, b, tc.recordings, &readAhead{})
+			baseline, original := prepareOverHTTP(t, b, tc.recordings, false)
+			cached, actual := prepareOverHTTP(t, b, tc.recordings, true)
 			require.Equal(t, tc.baseline, baseline.requests, "uncached fixture reproduces the original tiny-request count")
 			require.Less(t, cached.requests, baseline.requests/4, "read-ahead must remove most metadata round trips")
 			require.Zero(t, cached.tiny)

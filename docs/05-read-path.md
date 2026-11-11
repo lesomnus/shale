@@ -70,10 +70,10 @@ The selected Control Plane HTTP process reads Storage ranges and streams a
 normal MP4 with its final sample tables at the tail, without an output-sized
 RAM buffer or staging file. Unlike Timeline, this path carries media through
 the exporting CP process; an external viewer's server still carries metadata
-only. Tiny container reads share one 256 KiB read-ahead window per admitted
-export, across all its recordings. This reduces Storage requests and Device
-Queue jobs; the window may include neighboring media bytes, but its retained
-payload budget does not grow with the number of recordings. See
+only. Planning scans up to four recordings at once, each through a 256 KiB
+read-ahead window it gives back when its scan is done, so the retained payload
+budget does not grow with the number of recordings. Media then streams in 4 MiB
+reads, the next one read while the previous one is written. See
 [Streaming MP4 downloads](mp4-export.md) for the API, authorization,
 configuration, limits and failure behavior.
 

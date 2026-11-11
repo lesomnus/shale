@@ -109,20 +109,24 @@ is clipped at decodable video boundaries. Compatible encoder restarts and gaps
 must preserve the wall-clock placement of audio and video; incompatible track
 settings are refused before any output body is sent.
 
-Container planning asks for many small headers and sample tables. The HTTP
-reader coalesces these requests with one aligned **256 KiB read-ahead window
-per admitted export job**, shared across all its input recordings. The same
-byte array is reused when changing window or recording; 1,000 recording readers
-still retain only one such window. It is keyed by the admitted recording reader
-and byte offset, never shared across jobs, and is published only after the exact
-206 byte range and its complete body have been validated. Cancellation also
-stops cache hits. Large reads bypass the window and keep their existing maximum
-1 MiB HTTP requests.
+Container planning asks for many small headers and sample tables. Planning
+scans up to four recordings at once (`ScanParallel`); each scan waits on its
+recording's headers one after another, so a few at once keep Storage busy. The
+HTTP reader coalesces a scan's requests with an aligned **256 KiB read-ahead
+window** of its own, and gives the window back when its scan is done, so a job
+holds at most four, however many recordings it has. A window is keyed by the
+admitted recording reader and byte offset, never shared across jobs, and is
+published only after the exact 206 byte range and its complete body have been
+validated. Cancellation also stops cache hits. After its scan a recording's
+reads, however short, go straight to Storage.
+
+Media streams in 4 MiB reads (`MediaChunk`), one HTTP request each. The next
+read runs while the previous one is written to the client, with two buffers, so
+an export holds at most 8 MiB of media however large it is.
 
 Read-ahead can fetch adjacent media bytes while the parser asks only for
 metadata. It trades more Storage-to-CP bytes for fewer HTTP round trips and
-Storage read jobs, which otherwise read an entire device chunk for each tiny
-header request. The window remains within an already authorized immutable
+Storage read jobs. The window remains within an already authorized immutable
 lamina; the browser receives only the selected remuxed output. This bounds
 retained payload memory, not the sum of bytes fetched. It creates no whole-file
 RAM buffer or temporary disk file and does not change capability admission,

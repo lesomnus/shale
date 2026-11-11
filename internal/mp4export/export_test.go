@@ -454,7 +454,9 @@ func TestLargeExportUsesBoundedBuffer(t *testing.T) {
 	if err := p.WriteTo(context.Background(), io.Discard); err != nil {
 		t.Fatal(err)
 	}
-	if r.max > 1<<20 {
+	// Two MediaChunk buffers, one read ahead of the write: bounded however
+	// large the export.
+	if r.max > MediaChunk {
 		t.Fatalf("buffer=%d", r.max)
 	}
 }
