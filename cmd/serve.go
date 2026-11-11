@@ -37,7 +37,6 @@ import (
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/watch"
 	"github.com/lesomnus/payday/web"
@@ -679,12 +678,6 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 		registerCluster(g, s.Walled)
 	}
 	healthpb.RegisterHealthServer(g, health.NewServer())
-
-	if b, err := pd.Batch(s.Walled, s.Drv, sc.Guard(policy)); err == nil {
-		pdpb.RegisterBatchServiceServer(g, b)
-	} else {
-		log.From(ctx).WarnContext(ctx, "no batch", slog.String("why", err.Error()))
-	}
 
 	return g, nil
 }

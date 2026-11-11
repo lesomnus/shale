@@ -128,8 +128,7 @@ are limited to noncredential stream selectors.
 The transaction updates binding desired state, job deployment-ready state and
 one aggregate assignment `catalog_revision`. The monotonically increasing
 counter covers every binding/spec/membership publication; it is not the maximum
-of several row timestamps. Nested Source creation joins the same transaction, including when an external
-Payday Batch has rebound the server. A later Binding/job failure rolls back the
+of several row timestamps. Nested Source creation joins the same transaction. A later Binding/job failure rolls back the
 Source and its recorded changes as well; no orphan Source is committed.
 The acknowledgement is returned only after commit.
 Combined execution may then update its memory catalog. It must rebuild from CP
