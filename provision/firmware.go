@@ -50,84 +50,85 @@ func renew(ctx context.Context, lease *camera.CredentialLease, acquire leaseSour
 
 // firmware runs before the preset is resolved and pinned: the upgraded build
 // can match different preset rules. It returns stop when a read-only run only
-// discovered that an upgrade is required.
-func (e *Engine) firmware(ctx context.Context, r *Run, before camera.DeviceHint, inspection camera.Inspection, lease *camera.CredentialLease, acquire leaseSource, apply bool) (camera.Inspection, bool, error) {
+// discovered that an upgrade is required. When no upgrade was needed it
+// returns the preset it resolved for this inspection, for configure to pin.
+func (e *Engine) firmware(ctx context.Context, r *Run, before camera.DeviceHint, inspection camera.Inspection, lease *camera.CredentialLease, acquire leaseSource, apply bool) (camera.Inspection, *camera.DevicePreset, bool, error) {
 	if r.Preset != nil || !r.Request.UsePreset || r.Firmware != nil && r.Firmware.Complete {
-		return inspection, false, nil
+		return inspection, nil, false, nil
 	}
 	if r.Firmware == nil {
 		if e.Presets == nil {
-			return inspection, false, nil
+			return inspection, nil, false, nil
 		}
 		preset, err := e.Presets.Resolve(ctx, r.Request.Scope, inspection.Device)
 		if errors.Is(err, camera.ErrPresetNotFound) {
-			return inspection, false, nil
+			return inspection, nil, false, camera.ErrNeedsUserInput
 		}
 		if err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		upgrade := preset.Firmware
 		if upgrade == nil || !upgrade.Applies(inspection.Device.Firmware) {
-			return inspection, false, nil
+			return inspection, &preset, false, nil
 		}
 		if err := upgrade.Validate(); err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		if e.Firmware == nil || e.Images == nil {
-			return inspection, false, camera.ErrUnsupported
+			return inspection, nil, false, camera.ErrUnsupported
 		}
 		if !apply {
-			return inspection, true, e.save(ctx, r, Planned, "firmware_upgrade_planned")
+			return inspection, nil, true, e.save(ctx, r, Planned, "firmware_upgrade_planned")
 		}
 		file, err := e.Images.Fetch(ctx, upgrade.Image)
 		if err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		if file.SHA256 != upgrade.Image.SHA256 || len(file.Data) == 0 {
-			return inspection, false, camera.ErrConflict
+			return inspection, nil, false, camera.ErrConflict
 		}
 		if err := renew(ctx, lease, acquire, 2*leaseMargin); err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		r.Firmware = &FirmwareState{From: inspection.Device.Firmware, To: upgrade.To, ImageSHA256: upgrade.Image.SHA256}
 		if err := e.save(ctx, r, Initializing, "firmware_upgrade_started"); err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		if err := e.Store.BeginMutation(ctx, r.Request); err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		if err := e.Firmware.UpgradeFirmware(ctx, inspection.Device, *lease, file); err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		before = inspection.Device
 		if inspection, err = e.awaitFirmware(ctx, r.Request, r.Firmware.To, lease, acquire); err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 	}
 	if inspection.Device.Firmware != r.Firmware.To {
-		return inspection, false, ErrFirmwareNotApplied
+		return inspection, nil, false, ErrFirmwareNotApplied
 	}
 	// The new key is accepted only for the device this run upgraded: the same
 	// non-empty MAC and serial, and the job's own credential logs in.
 	if !sameRecordedDevice(before, inspection.Device) {
-		return inspection, false, camera.ErrAmbiguousIdentity
+		return inspection, nil, false, camera.ErrAmbiguousIdentity
 	}
 	if err := e.Store.Identify(ctx, r.Request.Scope, inspection.Device); err != nil {
-		return inspection, false, err
+		return inspection, nil, false, err
 	}
 	if pin := r.Request.DeviceTLSIdentity; pin != nil {
 		if e.Firmware == nil {
-			return inspection, false, camera.ErrUnsupported
+			return inspection, nil, false, camera.ErrUnsupported
 		}
 		if err := renew(ctx, lease, acquire, leaseMargin); err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		identity, err := e.Firmware.ConfirmWebIdentity(ctx, inspection.Device, *lease)
 		if err != nil {
-			return inspection, false, err
+			return inspection, nil, false, err
 		}
 		if identity.DeviceID != pin.DeviceID || identity.Validate() != nil {
-			return inspection, false, camera.ErrConflict
+			return inspection, nil, false, camera.ErrConflict
 		}
 		if identity.SPKISHA256 != pin.SPKISHA256 {
 			r.Firmware.TLSIdentity = &identity
@@ -135,7 +136,7 @@ func (e *Engine) firmware(ctx context.Context, r *Run, before camera.DeviceHint,
 	}
 	r.Firmware.Complete = true
 	r.Inspection = &inspection
-	return inspection, false, e.save(ctx, r, Inspecting, "firmware_upgraded")
+	return inspection, nil, false, e.save(ctx, r, Inspecting, "firmware_upgraded")
 }
 
 // awaitFirmware polls until the device answers with the target build. Errors

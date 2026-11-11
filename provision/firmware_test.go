@@ -151,7 +151,7 @@ func TestFirmwareUpgradeRunsBeforeThePresetIsResolved(t *testing.T) {
 	require.Equal(t, &provision.FirmwareState{From: fwOld, To: fwNew, ImageSHA256: fwDigest, Complete: true, TLSIdentity: &camera.DeviceTLSIdentity{DeviceID: string(q.Device.ID), SPKISHA256: newKey}}, r.Firmware)
 	// The pinned preset is the one resolved for the upgraded build.
 	require.Equal(t, []string{"model", "model-v122"}, r.Preset.MatchedRules)
-	require.Equal(t, fwNew, seen.firmware[len(seen.firmware)-1])
+	require.Equal(t, []string{fwOld, fwNew}, seen.firmware, "resolved once per build")
 	require.Equal(t, fwNew, r.Inspection.Device.Firmware)
 	// The job's approved pin itself is never rewritten.
 	require.Equal(t, oldKey, r.Request.DeviceTLSIdentity.SPKISHA256)
@@ -164,11 +164,12 @@ func TestFirmwareUpgradeRunsBeforeThePresetIsResolved(t *testing.T) {
 func TestFirmwareUpgradeLeavesOtherBuildsAlone(t *testing.T) {
 	for _, build := range []string{fwNew, "1.1.0 Build 240101 Rel.1n", ""} {
 		t.Run(build, func(t *testing.T) {
-			q, c, source, _, _, e := firmwareEngine(t)
+			q, c, source, seen, _, e := firmwareEngine(t)
 			c.firmware = build
 			r, err := e.Execute(t.Context(), q, true)
 			require.NoError(t, err)
 			require.Equal(t, provision.Active, r.Stage)
+			require.Equal(t, []string{build}, seen.firmware, "the firmware check's resolution is the one pinned")
 			require.Zero(t, c.uploads)
 			require.Zero(t, source.fetches)
 			require.Nil(t, r.Firmware)
@@ -248,5 +249,16 @@ func TestFirmwareUpgradeUnsupportedWithoutUpgrader(t *testing.T) {
 	r, err := e.Execute(t.Context(), q, true)
 	require.ErrorIs(t, err, camera.ErrUnsupported)
 	require.Equal(t, provision.Unsupported, r.Stage)
+	require.Zero(t, c.uploads)
+}
+
+func TestFirmwareCheckWithoutAPresetNeedsInput(t *testing.T) {
+	q, c, _, _, _, e := firmwareEngine(t)
+	e.Presets = presetProvider(func(context.Context, camera.EnrollmentScope, camera.DeviceHint) (camera.DevicePreset, error) {
+		return camera.DevicePreset{}, camera.ErrPresetNotFound
+	})
+	r, err := e.Execute(t.Context(), q, true)
+	require.ErrorIs(t, err, camera.ErrNeedsUserInput)
+	require.Equal(t, provision.WaitingInput, r.Stage)
 	require.Zero(t, c.uploads)
 }

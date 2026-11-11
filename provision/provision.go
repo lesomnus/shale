@@ -391,11 +391,11 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		before = out.Inspection.Device
 	}
 	out.Inspection = &inspection
-	inspection, stop, err := e.firmware(ctx, &out, before, inspection, &lease, acquire, apply)
+	inspection, resolved, stop, err := e.firmware(ctx, &out, before, inspection, &lease, acquire, apply)
 	if err != nil || stop {
 		return out, err
 	}
-	readback, desired, configured, err := e.configure(ctx, &out, inspection, lease, apply)
+	readback, desired, configured, err := e.configure(ctx, &out, inspection, resolved, lease, apply)
 	if err != nil || !configured {
 		return out, err
 	}

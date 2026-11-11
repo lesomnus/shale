@@ -50,20 +50,28 @@ func unsupportedSetting(err error) bool {
 // configure shares the normal read-back path between direct requests and
 // presets. A selected alternative is durable before its first device write;
 // retries resume that candidate rather than trying the preferred values again.
-func (e *Engine) configure(ctx context.Context, r *Run, inspection camera.Inspection, lease camera.CredentialLease, apply bool) (camera.Inspection, camera.DesiredState, bool, error) {
+//
+// resolved, when set, is the preset already resolved for this inspection.
+func (e *Engine) configure(ctx context.Context, r *Run, inspection camera.Inspection, resolved *camera.DevicePreset, lease camera.CredentialLease, apply bool) (camera.Inspection, camera.DesiredState, bool, error) {
 	q := r.Request
 	candidates := []camera.PresetSettings{{Video: q.Desired}}
 	if q.UsePreset {
 		if r.Preset == nil {
-			if e.Presets == nil {
-				return inspection, camera.DesiredState{}, false, camera.ErrNeedsUserInput
-			}
-			preset, err := e.Presets.Resolve(ctx, q.Scope, inspection.Device)
-			if errors.Is(err, camera.ErrPresetNotFound) {
-				return inspection, camera.DesiredState{}, false, camera.ErrNeedsUserInput
-			}
-			if err != nil {
-				return inspection, camera.DesiredState{}, false, err
+			var preset camera.DevicePreset
+			if resolved != nil {
+				preset = *resolved
+			} else {
+				if e.Presets == nil {
+					return inspection, camera.DesiredState{}, false, camera.ErrNeedsUserInput
+				}
+				var err error
+				preset, err = e.Presets.Resolve(ctx, q.Scope, inspection.Device)
+				if errors.Is(err, camera.ErrPresetNotFound) {
+					return inspection, camera.DesiredState{}, false, camera.ErrNeedsUserInput
+				}
+				if err != nil {
+					return inspection, camera.DesiredState{}, false, err
+				}
 			}
 			preset = preset.Clone()
 			if err := preset.Validate(); err != nil {
