@@ -27,7 +27,7 @@ TypeScript client are generated from that declaration.
 | `Erase` | answers `erased: bool`; "already gone", "never existed", and "not yours" are one answer |
 | Custom RPCs | operations that mean something are their own RPCs, added to the entity's service in an overlay (`*_svc.ext.proto`), not expressed as a `Patch` |
 | Errors | gRPC status; invalid input carries field paths in `google.rpc.BadRequest` |
-| Batch | `payday.BatchService` runs several writes in one transaction (e.g. a set and its sources) |
+| Several writes at once | an RPC of shale's own that names the act and writes them in one transaction (e.g. `CameraBindingService.Bind`, a binding and its source); payday has no batch |
 
 **Identifiers** are payday's UUIDv8: time-ordered, with one **domain byte**
 naming the entity kind, so a reference of the wrong kind is refused at the

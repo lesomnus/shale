@@ -92,9 +92,11 @@ message Archived {
   // checkpoint from passing for one the deployment wrote. See
   // `trail.Signature`.
   //
-  // Empty on a row written without a key, and on every row from before rows
-  // were signed -- which is also why they have a default: a column nothing
-  // can be left out of cannot be added to a table that has rows.
+  // Every row of a blob is signed as it is written. Empty on the manifest's
+  // counter, the one row that is no blob's, which nothing signs -- its number
+  // is what the checkpoints vouch for -- and which is why they have a default;
+  // and empty on a row of a blob only where somebody took the signature off,
+  // which is a finding.
   bytes signature = 17 [(orm.field) = {default: ""}];
   bytes signed_by = 18 [(orm.field) = {default: ""}];
 

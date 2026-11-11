@@ -252,9 +252,6 @@ func PersonMay(method string) bool { return personMay[method] }
 
 func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 	m := c.Action
-	if strings.HasPrefix(m, "/payday.BatchService/") {
-		return nil
-	}
 	if IsClusterService(m) {
 		return denied(m, "not served on the tenant API")
 	}
@@ -350,9 +347,6 @@ var relayMay = map[string]bool{
 
 func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	m := c.Action
-	if strings.HasPrefix(m, "/payday.BatchService/") {
-		return nil
-	}
 	if closedToEveryone(m) {
 		return denied(m, "written by the system, not by a caller")
 	}

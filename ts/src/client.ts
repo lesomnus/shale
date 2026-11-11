@@ -16,8 +16,6 @@
 
 import { createClient, type Client, type Transport } from '@connectrpc/connect'
 
-import { BatchService } from '@lesomnus/payday/pdpb'
-
 import { NodeService, ProducerService, ReaderService, RelayService } from '../gen/shale/host_svc_pb.js'
 import { LaminaService } from '../gen/shale/lamina_svc_pb.js'
 import { HolderService } from '../gen/shale/payday/holder_svc_pb.js'
@@ -40,8 +38,6 @@ export interface App {
 	readonly device: Client<typeof DeviceService>
 	readonly sink: Client<typeof SinkService>
 
-	/** Several writes as one transaction; see `payday/batch`. */
-	readonly batch: Client<typeof BatchService>
 }
 
 export function app(transport: Transport): App {
@@ -58,6 +54,5 @@ export function app(transport: Transport): App {
 		relay: createClient(RelayService, transport),
 		device: createClient(DeviceService, transport),
 		sink: createClient(SinkService, transport),
-		batch: createClient(BatchService, transport),
 	}
 }

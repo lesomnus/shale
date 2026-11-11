@@ -263,8 +263,8 @@ func (d *Deps) log() *slog.Logger {
 type Core struct {
 	api.Overlay
 	d *Deps
-	// Rebinding an external Payday Batch must also bind handwritten reads and
-	// custom transactions. Keep shared policy caches/mutexes in the original Deps.
+	// Rebinding the server onto a transaction must also bind handwritten reads
+	// and custom transactions. Keep shared policy caches/mutexes in the original Deps.
 	boundDriver dialect.Driver
 	boundDB     *ent.Client
 	boundOwn    api.Server

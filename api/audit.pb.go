@@ -506,11 +506,10 @@ type Audit_builder struct {
 	//
 	// # Zero is a real value, and is defaulted for that reason
 	//
-	// A write with no object -- and any row written before this column existed --
-	// reads as `pdid.Unknown`, which no entity may be registered as. It is not a
-	// gap to be filled in: a policy names domains, an unnamed one falls to the
-	// deployment's default, and a row that says nothing about its kind is
-	// correctly one the default decides.
+	// A write with no object reads as `pdid.Unknown`, which no entity may be
+	// registered as. It is not a gap to be filled in: a policy names domains, an
+	// unnamed one falls to the deployment's default, and a row that says nothing
+	// about its kind is correctly one the default decides.
 	//
 	// So it carries a default, for the reason `counterpart_tenant_id` below gives
 	// about itself: the recorder is not the only writer here. An app that records
@@ -556,12 +555,10 @@ type Audit_builder struct {
 	// microsecond, its `action` and the thing it is about, and of the second,
 	// so that a digest copied onto another line is not that line's. The second
 	// is the row's. The flags say whether the write sealed the row, so a row
-	// whose seal was taken off is told from a row from before seals. An erase
-	// that took its row keeps the first alone, which says the row went; one that
-	// left it, the row as it stamped it. Version 2 is the same with no flags,
-	// and version 1 the row's half alone, bound to no line; both are still
-	// checked. Empty for a deployment with no key, and for a row written before
-	// this.
+	// whose seal was taken off is told from a row written before its kind was
+	// sealed. An erase that took its row keeps the first alone, which says the
+	// row went; one that left it, the row as it stamped it. Empty for a
+	// deployment with no key.
 	//
 	// Defaulted, for the reason `domain` gives: the recorder is not the only
 	// writer of this table, and a column another writer must fill in is one it
@@ -571,8 +568,7 @@ type Audit_builder struct {
 	// that wrote it knew them, less what it cleared. So a column a later
 	// migration adds is outside every digest made before it, and an old row
 	// still matches; a column it covers that a migration rewrote does not,
-	// which is the point. A digest from before payday#115 left a `secret` out,
-	// and says so here.
+	// which is the point.
 	DigestFields []uint32
 }
 

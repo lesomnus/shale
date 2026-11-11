@@ -14,11 +14,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/identity"
@@ -532,21 +530,6 @@ func TestCameraControlNewSourceAtomicityAndPendingStop(t *testing.T) {
 		require.NoError(t, c.running.CP.Db.QueryRowContext(ctx, `SELECT count(*) FROM source WHERE alias = 'rollback-camera'`).Scan(&count))
 		require.Zero(t, count, "rollback leaves no hidden or soft-erased orphan Source")
 	}()
-	first, err := anypb.New(api.CameraBindingBindRequest_builder{Assignment: aref, Device: api.CameraDeviceRef_builder{Id: device.GetId()}.Build(), LogicalKey: "batch-rollback", SourceAlias: "batch-camera"}.Build())
-	require.NoError(t, err)
-	second, err := anypb.New(api.CameraNetworkConfigureRequest_builder{Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "invalid-batch-network", Cidrs: []string{"not-a-cidr"}}.Build())
-	require.NoError(t, err)
-	_, err = pdpb.NewBatchServiceClient(admin).Do(ctx, pdpb.BatchRequest_builder{Ops: []*pdpb.Op{
-		pdpb.Op_builder{Method: api.CameraBindingService_Bind_FullMethodName, Request: first}.Build(),
-		pdpb.Op_builder{Method: api.CameraNetworkService_Configure_FullMethodName, Request: second}.Build(),
-	}}.Build())
-	require.Equal(t, codes.InvalidArgument, status.Code(err), "the second operation rejects its CIDR after Bind succeeds")
-	var batchSources, batchBindings int
-	require.NoError(t, c.running.CP.Db.QueryRowContext(ctx, `SELECT count(*) FROM source WHERE alias = 'batch-camera'`).Scan(&batchSources))
-	require.NoError(t, c.running.CP.Db.QueryRowContext(ctx, `SELECT count(*) FROM camerabinding WHERE logical_key = 'batch-rollback'`).Scan(&batchBindings))
-	require.Zero(t, batchSources, "Source creation joins the external batch transaction")
-	require.Zero(t, batchBindings, "Binding creation joins the external batch transaction")
-
 	// A newly bound camera has not been collected yet. An explicit stop must
 	// still cancel its pending work rather than taking a collect=false shortcut.
 	require.False(t, binding.GetCollect())
