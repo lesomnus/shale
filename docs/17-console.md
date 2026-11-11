@@ -213,6 +213,16 @@ transmuxed, and the page holds no player library.
   configuration (another codec, profile or picture size) would need two
   init segments in one track, which is not a portable MP4, so the export
   refuses it and says where the change is: the two sides export apart.
+- An export measures where its time went and says so under the button:
+  reading the laminae's index and init segments, then the media requests
+  one after another, summed as waiting for each response's first byte,
+  receiving its body, and the page's own time between them, then joining
+  the fragments into the file. It posts the same numbers to the node that
+  served the first lamina (`POST /reports/export`, that lamina's read
+  token), which records them as `shale.node.export_*`, beside its own side
+  of every read: waiting for the device, reading it, and writing to the
+  client ([§31](09-operations.md#31-observability)). A lost report loses
+  only that sample.
 - The Storage Node's data plane answers a browser's `OPTIONS` and marks
   its `GET` for any origin, since the token is in the URL and a Range is
   what a player asks for ([§17](05-read-path.md#17-read-path)).

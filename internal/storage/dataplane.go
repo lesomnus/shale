@@ -151,6 +151,9 @@ func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok\n"))
 		return
 	case strings.HasPrefix(r.URL.Path, "/laminae/"):
+	case r.URL.Path == "/reports/export":
+		d.exportTiming(w, r)
+		return
 	default:
 		http.NotFound(w, r)
 		return
@@ -889,9 +892,14 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return
 	}
 	defer f.Close()
+	var timing readTiming
 	cr := &chunkReader{f: f, size: size, chunk: d.limits.ReadChunk, read: func(off int64, b []byte) (int, error) {
 		var n int
+		var ran time.Duration
+		submitted := time.Now()
 		err := d.node.onDevice(r.Context(), sink, ClassRead, int64(len(b)), func() error {
+			start := time.Now()
+			defer func() { ran = time.Since(start) }()
 			var err error
 			n, err = f.ReadAt(b, off)
 			if err == io.EOF {
@@ -900,6 +908,9 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 
 			return err
 		})
+		timing.wait += time.Since(submitted) - ran
+		timing.device += ran
+		timing.deviceBytes += int64(n)
 		if errors.Is(err, ErrBacklog) {
 			return 0, err
 		}
@@ -911,8 +922,11 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Cache-Control", "private, max-age=0")
 	began := time.Now()
-	http.ServeContent(w, r, "", mod, cr)
-	d.node.m.readLatency.Record(context.Background(), float64(time.Since(began).Microseconds())/1000, sinkAttr(sink))
+	cw := &countingWriter{ResponseWriter: w}
+	http.ServeContent(cw, r, "", mod, cr)
+	elapsed := time.Since(began)
+	d.node.m.readLatency.Record(context.Background(), float64(elapsed.Microseconds())/1000, sinkAttr(sink))
+	timing.record(context.Background(), d.node.m, sink, elapsed, cw.n)
 	if r.Context().Err() != nil {
 		// The client went away before the end: a read it gave up on.
 		d.node.m.readsAborted.Add(context.Background(), 1, sinkAttr(sink))

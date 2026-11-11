@@ -326,6 +326,8 @@ scrape endpoint. The names, by the process that measures them:
 | forecast, time until the cluster runs out | `shale.cp.capacity_runway_s` |
 | stored bytes per tenant | `shale.cp.stored_bytes{tenant}` |
 | read latency, sessions, aborted | `shale.node.read_latency_ms{sink}`, `shale.node.read_sessions`, `shale.node.reads_aborted{sink}` |
+| where one read's time goes: the device's wait and read, the rest writing to the client; bytes read from the device beside bytes sent ([§17.2](05-read-path.md#172-read-chunks)) | `shale.node.read_wait_ms{sink}`, `read_device_ms{sink}`, `read_send_ms{sink}`, `read_device_bytes{sink}`, `read_sent_bytes{sink}` |
+| a browser's MP4 export as the page reports it ([§40](17-console.md#40-console)): all of it, the index, the media requests' first bytes, bodies and the gaps between them, joining, and the media rate | `shale.node.export_total_ms`, `export_index_ms`, `export_first_byte_ms`, `export_body_ms`, `export_gap_ms`, `export_assemble_ms`, `export_rate_mbps`, `export_bytes` |
 | NIC utilization, RAM buffer, index size, scan | `shale.node.nic_rx_bps{interface}`, `shale.node.nic_tx_bps{interface}`, `shale.node.part_buffer_used_bytes`, `shale.node.index_laminae{sink}`, `shale.node.scan_done{sink}` |
 | ingest per node | `shale.node.ingest_bps` |
 | producer per source | `shale.producer.input_up`, `frame_rate`, `rate_bps`, `keyframe_interval_ms`, `capture_restarts`, `early_cuts`, all `{source}` |
