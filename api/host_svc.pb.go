@@ -11718,7 +11718,7 @@ type ProducerAdoptRequest_builder struct {
 
 	Ref *ProducerRef
 	Set *SetRef
-	// The alias to give it; the hostname when empty.
+	// The alias to give it; keep its existing alias when empty.
 	Alias string
 }
 
