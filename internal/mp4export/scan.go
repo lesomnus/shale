@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sync"
 
 	"github.com/lesomnus/shale/internal/fmp4"
 )
@@ -47,19 +48,40 @@ func readHeader(r io.ReaderAt, at, size int64) (extent, error) {
 	return extent{typ: string(b[4:8]), off: at, end: at + n, hdr: hdr}, nil
 }
 
+// metadataBudget is shared by the sources an export scans at once.
 type metadataBudget struct {
+	mu      sync.Mutex
 	bytes   int64
 	samples int
+}
+
+func (b *metadataBudget) takeBytes(n int64) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if n > MaxMetadataBytes-b.bytes {
+		return fmt.Errorf("metadata exceeds %d bytes; select a shorter range", MaxMetadataBytes)
+	}
+	b.bytes += n
+	return nil
+}
+
+func (b *metadataBudget) takeSamples(n uint32) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if uint64(n) > uint64(MaxSamples-b.samples) {
+		return fmt.Errorf("more than %d samples; select a shorter range", MaxSamples)
+	}
+	b.samples += int(n)
+	return nil
 }
 
 func readMetadata(r io.ReaderAt, x extent, budget *metadataBudget) ([]byte, error) {
 	if x.end-x.off > maxMetadataBox {
 		return nil, fmt.Errorf("%s metadata exceeds %d bytes", x.typ, maxMetadataBox)
 	}
-	if x.end-x.off > MaxMetadataBytes-budget.bytes {
-		return nil, fmt.Errorf("metadata exceeds %d bytes; select a shorter range", MaxMetadataBytes)
+	if err := budget.takeBytes(x.end - x.off); err != nil {
+		return nil, err
 	}
-	budget.bytes += x.end - x.off
 	b := make([]byte, x.end-x.off)
 	_, err := r.ReadAt(b, x.off)
 	return b, err
@@ -406,10 +428,9 @@ func parseMoof(b []byte, moofOff int64, init *fmp4.Init, budget *metadataBudget)
 			if uint64(count) > uint64(maxMetadataBox/24) || uint64(count)*uint64(fields)*4 > uint64(len(rp)-r.off) {
 				return f, errors.New("trun sample count exceeds metadata")
 			}
-			if uint64(count) > uint64(MaxSamples-budget.samples) {
-				return f, fmt.Errorf("more than %d samples; select a shorter range", MaxSamples)
+			if err := budget.takeSamples(count); err != nil {
+				return f, err
 			}
-			budget.samples += int(count)
 			for i := uint32(0); i < count; i++ {
 				dur, size, sflags := defDur, defSize, defFlags
 				if tf&0x100 != 0 {

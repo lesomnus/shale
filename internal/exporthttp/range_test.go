@@ -21,7 +21,7 @@ func (f rangeTransport) RoundTrip(r *http.Request) (*http.Response, error) { ret
 
 func rangeResponse(r *http.Request, b []byte) (*http.Response, error) {
 	var from, to int64
-	if n, err := fmt.Sscanf(r.Header.Get("Range"), "bytes=%d-%d", &from, &to); err != nil || n != 2 || from < 0 || to < from || to >= int64(len(b)) || to-from >= 1<<20 {
+	if n, err := fmt.Sscanf(r.Header.Get("Range"), "bytes=%d-%d", &from, &to); err != nil || n != 2 || from < 0 || to < from || to >= int64(len(b)) || to-from >= maxRangeBytes {
 		return nil, fmt.Errorf("invalid test range: %s", r.Header.Get("Range"))
 	}
 	return &http.Response{
@@ -81,8 +81,8 @@ func TestReadAheadAdjacentBoundaryAndEOF(t *testing.T) {
 	require.Len(t, ranges, count)
 }
 
-func TestLargeReadsKeepDirectOneMiBRanges(t *testing.T) {
-	b := bytes.Repeat([]byte{0x5a}, (3<<20)+100)
+func TestLargeReadsUseDirectRangesOfOneMediaChunk(t *testing.T) {
+	b := bytes.Repeat([]byte{0x5a}, 2*maxRangeBytes+100)
 	var ranges []string
 	client := &http.Client{Transport: rangeTransport(func(r *http.Request) (*http.Response, error) {
 		ranges = append(ranges, r.Header.Get("Range"))
@@ -90,15 +90,15 @@ func TestLargeReadsKeepDirectOneMiBRanges(t *testing.T) {
 	})}
 	cache := &readAhead{}
 	r := testRemoteReader(t, t.Context(), client, len(b), "recording", cache)
-	got := make([]byte, (2<<20)+19)
+	got := make([]byte, 2*maxRangeBytes+19)
 	n, err := r.ReadAt(got, 11)
 	require.NoError(t, err)
 	require.Equal(t, len(got), n)
 	require.Equal(t, b[11:11+len(got)], got)
 	require.Equal(t, []string{
-		fmt.Sprintf("bytes=11-%d", 11+(1<<20)-1),
-		fmt.Sprintf("bytes=%d-%d", 11+(1<<20), 11+(2<<20)-1),
-		fmt.Sprintf("bytes=%d-%d", 11+(2<<20), 11+(2<<20)+18),
+		fmt.Sprintf("bytes=11-%d", 11+maxRangeBytes-1),
+		fmt.Sprintf("bytes=%d-%d", 11+maxRangeBytes, 11+2*maxRangeBytes-1),
+		fmt.Sprintf("bytes=%d-%d", 11+2*maxRangeBytes, 11+2*maxRangeBytes+18),
 	}, ranges)
 	require.Nil(t, cache.buf, "a large request's short final part must not trigger read-ahead")
 }
@@ -280,4 +280,26 @@ func TestReadAheadConcurrentRecordingIsolation(t *testing.T) {
 	for err := range errors {
 		require.NoError(t, err)
 	}
+}
+
+func TestScannedGivesBackTheWindow(t *testing.T) {
+	b := bytes.Repeat([]byte{0x11}, 1<<20)
+	var ranges []string
+	client := &http.Client{Transport: rangeTransport(func(r *http.Request) (*http.Response, error) {
+		ranges = append(ranges, r.Header.Get("Range"))
+		return rangeResponse(r, b)
+	})}
+	cache := &readAhead{}
+	r := testRemoteReader(t, t.Context(), client, len(b), "recording", cache)
+	got := make([]byte, 8)
+	_, err := r.ReadAt(got, 0)
+	require.NoError(t, err)
+	require.NotNil(t, cache.buf, "a scan's tiny read fills a window")
+	r.Scanned()
+	require.Nil(t, cache.buf, "the scan's window is given back")
+	before := len(ranges)
+	_, err = r.ReadAt(got, 100)
+	require.NoError(t, err)
+	require.Nil(t, cache.buf, "a short media read after the scan takes no window")
+	require.Equal(t, []string{"bytes=100-107"}, ranges[before:])
 }
