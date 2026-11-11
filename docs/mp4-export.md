@@ -5,11 +5,15 @@ viewer handles the camera/time selection and authorization metadata; recording
 bytes do not pass through that viewer's application server. This implements
 [issue #161](https://github.com/lesomnus/shale/issues/161).
 
-The export reads compatible stored fragmented MP4 recordings, rebases the sample
-timeline without re-encoding, writes media data incrementally, then appends the
-normal MP4's final `moov` sample tables and duration. Playback after the download
-finishes is the contract. Progressive playback during generation and HTTP Range
-resumption are not part of this endpoint.
+The export is the console's ([issue #270](https://github.com/lesomnus/shale/issues/270)):
+one fragmented MP4 of the first recording's init segment, then every selected
+recording's fragments, without re-encoding or remuxing. Each fragment's `tfdt`
+is moved to where its recording sits on the wall clock and its `mfhd`
+renumbered, in place, so no size changes: the response's length is known, and
+its first byte sent, once each recording's index and init segment are read,
+however long the range. The fragments stream through as they are read. Playback
+after the download finishes is the contract. HTTP Range resumption is not part
+of this endpoint.
 
 ## Authorization and download
 
@@ -102,50 +106,43 @@ app uses `/shale.DelegationService/Export` with a `DelegationExportRequest` and
 its exchange credential; its existing `/shale.DelegationService/Timeline`
 recording grant and handle bounds are the permission ceiling.
 
-Media-copy memory is bounded independently of output size. Sample-table metadata
-still grows with sample count and needs its own limit. The HTTP response does not
-require an output-sized RAM buffer, OPFS copy, or complete staging file. Output
-is clipped at decodable video boundaries. Compatible encoder restarts and gaps
-must preserve the wall-clock placement of audio and video; incompatible track
-settings are refused before any output body is sent.
+Memory is bounded independently of output size: a job holds each recording's
+index and init segment, and two 4 MiB media buffers. The HTTP response does not
+require an output-sized RAM buffer, OPFS copy, or complete staging file.
 
-Container planning asks for many small headers and sample tables. Planning
-scans up to four recordings at once (`ScanParallel`); each scan waits on its
-recording's headers one after another, so a few at once keep Storage busy. The
-HTTP reader coalesces a scan's requests with an aligned **1 MiB read-ahead
-window** of its own (a recording fragments every 200 ms, so its headers are some
-tens of KiB apart and a scan reads nearly all of it), and gives the window back when its scan is done, so a job
-holds at most four, however many recordings it has. A window is keyed by the
-admitted recording reader and byte offset, never shared across jobs, and is
-published only after the exact 206 byte range and its complete body have been
-validated. Cancellation also stops cache hits. After its scan a recording's
-reads, however short, go straight to Storage.
+Cuts are the console's: from the last indexed keyframe at or before the range's
+start to the first after its end, each recording's keyframe times placed on the
+wall clock from its `date_started`. A recording that goes on from the one before
+it in the same encoder session (within 2 s of where that session would put it)
+keeps the session's own decode times; any other is placed by the wall clock,
+never before what came before it, so a gap stays a gap. Track settings that
+differ between recordings (the encoder changed) cannot share one init segment
+and are refused before any output body is sent.
 
-Media streams in spans: consecutive runs of one recording, with at most
-256 KiB between them, read at once up to 4 MiB (`MediaChunk`), one HTTP
-request each, and written run by run. A 200 ms fragment's runs are a few bytes
-to a few hundred KiB, so reading run by run took thousands of sequential
-requests for ten minutes; spans take a few dozen. The next read runs while the
-previous one is written to the client, with two buffers, so an export holds at
-most 8 MiB of media however large it is.
+Planning reads, per recording, one 16 KiB range at its end (the `mfro` and an
+index of a few hundred keyframes) and its init segment: two small exact Storage
+requests, for up to eight recordings at once (`ScanParallel`). It also reads
+512 KiB where the first recording's part begins, for its first samples' times,
+which place the output's start. Nothing else is read before the first byte.
 
-Read-ahead can fetch adjacent media bytes while the parser asks only for
-metadata. It trades more Storage-to-CP bytes for fewer HTTP round trips and
-Storage read jobs. The window remains within an already authorized immutable
-lamina; the browser receives only the selected remuxed output. This bounds
-retained payload memory, not the sum of bytes fetched. It creates no whole-file
-RAM buffer or temporary disk file and does not change capability admission,
-credential renewal or the job deadline.
+Media then streams in reads of up to 4 MiB (`MediaChunk`) of each recording's
+selected range, one HTTP request each, the next read while the previous one is
+written to the client. Top-level boxes are followed across reads: each `moof`
+is held only while it is rewritten; `mdat` passes through.
 
-Planning currently limits a job to a seven-day requested window, 1,024 input
-recordings, 2,000,000 samples and 64 MiB of parsed container metadata. The
-capability resolver also examines at most 20,000 returned laminae before
-media planning; skipped/unavailable Timeline rows and gaps are paged without
-becoming source inputs. These are resource bounds, not a 256 MiB output-size limit;
-choose a shorter range when they are exceeded. Cuts can include the preceding
-keyframe and the GOP covering the requested end, just as the existing viewer
-does; delegated recording boundaries have the same whole-lamina read semantics
-as Timeline tokens.
+The init segment is written first, so the durations it says (`mvhd`, `tkhd`,
+`mdhd`, and an `mehd` added to `mvex`) come from the plan: to the keyframe the
+range is cut at, or to the last recording's `date_ended`. Players read them as
+the length; the fragments' own times are exact. `mvhd`'s creation time is the
+first sample's wall clock time.
+
+Planning limits a job to a seven-day requested window and 1,024 input
+recordings. The capability resolver also examines at most 20,000 returned
+laminae before media planning; skipped/unavailable Timeline rows and gaps are
+paged without becoming source inputs. These are resource bounds, not an
+output-size limit; choose a shorter range when they are exceeded. Delegated
+recording boundaries have the same whole-lamina read semantics as Timeline
+tokens.
 
 The URL's expiry controls admission. Like issued Storage read capabilities, a
 previously issued export URL remains redeemable until its expiry after a grant
@@ -157,55 +154,40 @@ well as bandwidth. Disconnecting cancels upstream reads. A failure after respons
 are sent aborts the response, leaving an incomplete download rather than appending
 an error message to the MP4. A failed or expired URL must be requested again.
 
-The `moov` at the tail is intentional. Completed local files can seek to it;
-moving it to the front is an optional faststart optimization, not a prerequisite
-for playing the downloaded file. The exporter creates a normal MP4 sample table,
-not a second `moov` appended to an existing fragmented initialization segment.
+A fragmented MP4 has no sample tables to finish, so a download cut short still
+plays what arrived up to its last whole fragment; the browser reports it failed,
+short of its `Content-Length`. The file has no `sidx` or `mfra`: players seek
+by its fragments' `tfdt`s. Chromium seeks a 45-minute export to its middle and
+end in a few range reads (see Validation).
 
 ## Validation
 
-`go test ./internal/mp4export ./internal/exporthttp` checks sample tables,
-payload preservation, keyframe alignment, encoder restarts, recording gaps,
-resource limits, cancellation and incomplete HTTP responses. With `ffmpeg` and
-`ffprobe` in `PATH`, the writer tests additionally compare every packet's hash,
-PTS and DTS with an independent demuxer, decode every output track, and cover
-B-frame presentation offsets. The normal CI test job installs these tools.
-
-The HTTP tests also check fixed cache memory across 1,000 recording identities,
-cross-recording/job isolation, failed fills, cancellation, direct large reads
-and expired Storage credentials. The parser/writer comparison produces the same
-MP4 bytes with and without read-ahead. Synthetic fixture measurements for its
-preparation phase are:
-
-| Fixture | Recordings | HTTP requests, before → after | Storage bytes, before → after |
-| --- | ---: | ---: | ---: |
-| `sample.mp4` | 1 | 95 → 12 | 7,913 → 2,836,296 |
-| `av.mp4` | 1 | 44 → 6 | 9,124 → 1,354,912 |
-| `aac.mp4` | 1 | 32 → 4 | 4,756 → 830,122 |
-| `av.mp4` | 17 | 748 → 102 | 155,108 → 23,033,504 |
-
-These are request-count regressions, not production latency estimates. A short
-selection still inspects its containing lamina's container metadata, so it also
-benefits from coalescing. Run them with
-`go test ./internal/exporthttp -run TestPrepareReadAheadReducesHTTPRequests -v`.
+`go test ./internal/mp4export ./internal/exporthttp` checks the layout, payload
+preservation, keyframe cuts, encoder restarts and session continuity, recording
+gaps, recordings without an index, what planning reads, bounded streaming over
+4 GiB, cancellation and incomplete HTTP responses. With `ffmpeg` and `ffprobe`
+in `PATH`, the export tests additionally compare every packet's hash, PTS and
+DTS with an independent demuxer, decode every output track, and cover B-frame
+presentation offsets. The normal CI test job installs these tools.
 
 `go test ./internal/e2e -run 'Test(NativeExport|DelegatedNativeExport)'` exercises
 the real API stack, Storage upload and native HTTP downloads, including tenant,
-site, Reader and delegated recording permissions.
+site, Reader and delegated recording permissions, and the placement of an
+encoder restart across two recordings.
 
 For browser seeking and ordinary attachment downloads, generate synthetic
 artifacts and run the portable browser check (Playwright Chromium installed):
 
 ```sh
 MP4EXPORT_ARTIFACTS=/tmp/shale-export MP4EXPORT_LARGE=1 \
-  go test ./internal/mp4export -run 'Test(ValidationArtifacts|LargeValidationArtifact)$' -count=1
+  go test ./internal/mp4export -run 'TestValidationArtifacts$' -count=1
 cd ts
 node test/export-download.mjs /tmp/shale-export
 ```
 
 `CHROMIUM_EXECUTABLE` optionally selects a locally installed browser. The large
-artifact is 302,661,840 bytes, 45 min 44.967 s, and checks front/middle/tail seeks
-and a complete ordinary download without Range. It contains synthetic video,
-AAC and Opus, not camera footage. These browser checks serve completed writer
-artifacts; the end-to-end Go tests separately cover ticket issuance and the live
-export HTTP endpoint.
+artifact is 303,723,820 bytes of 450 recordings, 45 min 45.033 s, and checks
+front/middle/tail seeks and a complete ordinary download without Range. It
+contains synthetic video, AAC and Opus, not camera footage. These browser checks
+serve completed export artifacts; the end-to-end Go tests separately cover
+ticket issuance and the live export HTTP endpoint.

@@ -119,10 +119,11 @@ func exportDownload(t *testing.T, base string, out *api.LaminaExportResponse) ex
 	require.NoError(t, err)
 	boxes, err := fmp4.Children(body)
 	require.NoError(t, err)
-	require.Len(t, boxes, 3)
 	require.Equal(t, "ftyp", boxes[0].Type)
-	require.Equal(t, "mdat", boxes[1].Type)
-	require.Equal(t, "moov", boxes[2].Type, "one normal MP4, its completed sample tables at the tail")
+	require.Equal(t, "moov", boxes[1].Type, "one fragmented MP4: its init segment first")
+	for i, box := range boxes[2:] {
+		require.Equal(t, []string{"moof", "mdat"}[i%2], box.Type, "then the recordings' fragments, without their indexes")
+	}
 
 	result := exportedPlayback{File: file}
 	// A missing local decoder skips only this child, not the API, site wall,

@@ -69,15 +69,15 @@ node's whole read capacity from the others.
 ### 17.5 Native MP4 exports
 
 An opt-in native MP4 export returns a source/range-scoped attachment URL.
-The selected Control Plane HTTP process reads Storage ranges and streams a
-normal MP4 with its final sample tables at the tail, without an output-sized
-RAM buffer or staging file. Unlike Timeline, this path carries media through
-the exporting CP process; an external viewer's server still carries metadata
-only. Planning scans up to four recordings at once, each through a 1 MiB
-read-ahead window it gives back when its scan is done, so the retained payload
-budget does not grow with the number of recordings. Media then streams in
-reads of up to 4 MiB that each cover many adjacent runs of a recording, the
-next one read while the previous one is written. See
+The selected Control Plane HTTP process reads Storage ranges and streams the
+console's fragmented MP4: the first recording's init segment, then the
+recordings' fragments with their decode times moved to the wall clock in
+place, without an output-sized RAM buffer or staging file. Unlike Timeline,
+this path carries media through the exporting CP process; an external
+viewer's server still carries metadata only. Planning reads only each
+recording's index and init segment, up to eight recordings at once, so the
+first byte does not wait on the range's length. Media then streams in reads of
+up to 4 MiB, the next one read while the previous one is written. See
 [Streaming MP4 downloads](mp4-export.md) for the API, authorization,
 configuration, limits and failure behavior.
 
