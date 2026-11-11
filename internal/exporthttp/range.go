@@ -15,7 +15,9 @@ import (
 // readAheadBytes is the window a scan reads container headers through.
 // Container headers are tiny and adjacent, but every remote range otherwise
 // incurs a request and a Storage read job. Windows may include media bytes.
-const readAheadBytes = 256 << 10
+// A recording fragments every 200 ms, so its headers are some tens of KiB
+// apart: a scan reads nearly all of it, and a larger window is fewer requests.
+const readAheadBytes = 1 << 20
 
 // maxRangeBytes bounds one Storage request, as large as one media read.
 const maxRangeBytes = mp4export.MediaChunk

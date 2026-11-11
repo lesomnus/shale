@@ -26,6 +26,7 @@ import (
 
 	"github.com/lesomnus/shale/internal/exporthttp"
 	"github.com/lesomnus/shale/internal/fmp4"
+	"github.com/lesomnus/shale/internal/mp4export"
 )
 
 var epoch = time.Date(2026, 10, 30, 11, 0, 0, 0, time.UTC)
@@ -48,7 +49,7 @@ func requestedRange(t *testing.T, r *http.Request, size int) (int, int) {
 	require.GreaterOrEqual(t, from, 0)
 	require.GreaterOrEqual(t, to, from)
 	require.Less(t, to, size)
-	require.LessOrEqual(t, to-from+1, 1<<20, "storage reads stay bounded")
+	require.LessOrEqual(t, to-from+1, mp4export.MediaChunk, "storage reads stay bounded")
 	return from, to
 }
 
@@ -443,7 +444,19 @@ func TestLateStorageFailureAbortsDownload(t *testing.T) {
 		serveRange(w, b, from, to)
 	}))
 	defer storage.Close()
-	h := &exporthttp.Handler{AllowHTTP: true, Resolve: resolveRecording(b, storage.URL)}
+	// Two recordings: media is read a span at a time, and one recording's
+	// media is one span, so the second recording's read fails after the
+	// first one's media was sent.
+	resolve := func(_ context.Context, token string) (*exporthttp.Request, error) {
+		return &exporthttp.Request{
+			Source: "camera", Actor: token, From: epoch, To: epoch.Add(time.Hour),
+			Recordings: []exporthttp.Recording{
+				{Start: epoch, Size: int64(len(b)), URL: storage.URL},
+				{Start: epoch.Add(4 * time.Minute), Size: int64(len(b)), URL: storage.URL},
+			},
+		}, nil
+	}
+	h := &exporthttp.Handler{AllowHTTP: true, Resolve: resolve}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h.ServeHTTP(downloadPhaseWriter{ResponseWriter: w, streaming: &streaming}, r)
 	}))

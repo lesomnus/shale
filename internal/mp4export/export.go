@@ -331,12 +331,49 @@ func (p *Plan) WriteTo(ctx context.Context, w io.Writer) error {
 	return write(p.moov)
 }
 
+// maxSpanGap is the most a read spans between two chunks of a source to take
+// both at once: the container boxes between a fragment's runs, or a track the
+// export leaves out. Reading it is cheaper than another Storage request.
+const maxSpanGap = 256 << 10
+
+// span is one source read, [off, off+size), that covers chunks [first, last).
+type span struct {
+	source      int
+	off, size   int64
+	first, last int
+}
+
+// spans groups the media chunks into reads of at most MediaChunk. A
+// fragment's runs are small (a 200 ms fragment's audio is a few hundred bytes)
+// and a read per run made an export thousands of sequential requests. A chunk
+// larger than MediaChunk is a span of its own and is read in pieces.
+func (p *Plan) spans() []span {
+	var out []span
+	for i := 0; i < len(p.chunks); {
+		c := p.chunks[i]
+		s := span{source: c.source, off: c.off, size: c.size, first: i, last: i + 1}
+		for j := i + 1; j < len(p.chunks) && s.size <= MediaChunk; j++ {
+			n := p.chunks[j]
+			end := s.off + s.size
+			if n.source != c.source || n.off < end || n.off-end > maxSpanGap || n.off+n.size-s.off > MediaChunk {
+				break
+			}
+			s.size, s.last = n.off+n.size-s.off, j+1
+		}
+		out = append(out, s)
+		i = s.last
+	}
+	return out
+}
+
 // stream writes the media chunks in order. One read runs ahead of the write,
 // so the store and the client are busy at once; two buffers bound it.
 func (p *Plan) stream(ctx context.Context, write func([]byte) error) error {
+	// A piece is one read and the parts of it that are output, in order.
 	type piece struct {
-		b   []byte
-		err error
+		b     []byte
+		parts [][2]int64
+		err   error
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -344,27 +381,59 @@ func (p *Plan) stream(ctx context.Context, write func([]byte) error) error {
 	free <- make([]byte, MediaChunk)
 	free <- make([]byte, MediaChunk)
 	full := make(chan piece, 1)
+	send := func(got piece) bool {
+		select {
+		case <-ctx.Done():
+			return false
+		case full <- got:
+			return true
+		}
+	}
+	take := func() ([]byte, bool) {
+		select {
+		case <-ctx.Done():
+			return nil, false
+		case buf := <-free:
+			return buf, true
+		}
+	}
 	go func() {
 		defer close(full)
-		for _, c := range p.chunks {
-			for off := int64(0); off < c.size; {
-				var buf []byte
-				select {
-				case <-ctx.Done():
-					return
-				case buf = <-free:
+		for _, s := range p.spans() {
+			r := p.sources[s.source].Reader
+			if s.last-s.first == 1 && s.size > MediaChunk {
+				// One run larger than a buffer: read and write it in pieces.
+				for off := int64(0); off < s.size; {
+					buf, ok := take()
+					if !ok {
+						return
+					}
+					n := min(int64(len(buf)), s.size-off)
+					if _, err := r.ReadAt(buf[:n], s.off+off); err != nil {
+						full <- piece{err: err}
+						return
+					}
+					if !send(piece{b: buf, parts: [][2]int64{{0, n}}}) {
+						return
+					}
+					off += n
 				}
-				n := min(int64(len(buf)), c.size-off)
-				if _, err := p.sources[c.source].Reader.ReadAt(buf[:n], c.off+off); err != nil {
-					full <- piece{err: err}
-					return
-				}
-				select {
-				case <-ctx.Done():
-					return
-				case full <- piece{b: buf[:n]}:
-				}
-				off += n
+				continue
+			}
+			buf, ok := take()
+			if !ok {
+				return
+			}
+			if _, err := r.ReadAt(buf[:s.size], s.off); err != nil {
+				full <- piece{err: err}
+				return
+			}
+			parts := make([][2]int64, 0, s.last-s.first)
+			for _, c := range p.chunks[s.first:s.last] {
+				parts = append(parts, [2]int64{c.off - s.off, c.off - s.off + c.size})
+			}
+			if !send(piece{b: buf, parts: parts}) {
+				return
 			}
 		}
 	}()
@@ -372,8 +441,10 @@ func (p *Plan) stream(ctx context.Context, write func([]byte) error) error {
 		if got.err != nil {
 			return got.err
 		}
-		if err := write(got.b); err != nil {
-			return err
+		for _, part := range got.parts {
+			if err := write(got.b[part[0]:part[1]]); err != nil {
+				return err
+			}
 		}
 		free <- got.b[:cap(got.b)]
 	}
