@@ -316,12 +316,42 @@ interface Spent {
 }
 
 /**
+ * A node answers 503 when it is at its read session limit, shared by every
+ * reader of it. A wait and another try is what it asks for; a page cannot
+ * read its Retry-After across origins, so the waits are the page's own.
+ */
+const busyWaits = [1000, 2000, 4000]
+
+async function fetchRange(url: string, from: number, to: number): Promise<Response> {
+	for (let i = 0; ; i++) {
+		const r = await fetch(url, { headers: { Range: `bytes=${from}-${to}` } })
+		if (r.status !== 503 || i >= busyWaits.length) return r
+		await r.body?.cancel()
+		await new Promise((done) => setTimeout(done, busyWaits[i]))
+	}
+}
+
+/** mapLimit is Promise.all over items, with at most limit of them at once. */
+async function mapLimit<T, U>(items: T[], limit: number, f: (item: T) => Promise<U>): Promise<U[]> {
+	const out = new Array<U>(items.length)
+	let next = 0
+	const worker = async (): Promise<void> => {
+		while (next < items.length) {
+			const i = next++
+			out[i] = await f(items[i]!)
+		}
+	}
+	await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+	return out
+}
+
+/**
  * range fetches a byte range, by the token the URL carries. With progress,
  * the body is read as it arrives and progress hears each piece's length.
  */
 async function range(url: string, from: number, to: number, spent?: Spent, progress?: (bytes: number) => void): Promise<Bytes> {
 	const sent = performance.now()
-	const r = await fetch(url, { headers: { Range: `bytes=${from}-${to}` } })
+	const r = await fetchRange(url, from, to)
 	const head = performance.now()
 	if (r.status !== 206 && r.status !== 200) throw new Error(`${r.status} from the node`)
 	let b: Bytes
@@ -811,7 +841,8 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 	const changed = (i: number): Error => new Error(`the camera's encoder changed at ${new Date(rows[i]!.start).toLocaleTimeString()}; export up to there and from there separately`)
 	// Every lamina's init segment first: a change refuses the range before its megabytes come.
 	const began = performance.now()
-	const metas = await Promise.all(rows.map(metaOf))
+	// A few at a time: the node's read sessions are few and shared by all.
+	const metas = await mapLimit(rows, 4, metaOf)
 	const i = metas.findIndex((m) => !joins(metas[0]!.init.bytes, m.init.bytes))
 	if (i >= 0) throw changed(i)
 	const fetching = performance.now()
