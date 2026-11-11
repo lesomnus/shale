@@ -24,7 +24,7 @@ import type { Source } from '../gen/shale/set_pb.js'
 import { SetService, SourceService } from '../gen/shale/set_svc_pb.js'
 
 import { Changed, join, joins, type Piece } from './export.js'
-import { concat, firstFragment, fragmentTime, indexSize, parseIndex, parseInit, type Bytes, type Init, type Key } from './fmp4.js'
+import { firstFragment, fragmentTime, indexSize, parseIndex, parseInit, type Bytes, type Init, type Key } from './fmp4.js'
 import { useLive, useWhep, type Status } from './live.js'
 import { PickSet, gapClass, unhex } from './segments.js'
 import { On, useSurfaces } from './surface.js'
@@ -308,7 +308,6 @@ interface Meta {
 	dataEnd: number
 }
 
-/** A fetch of a byte range, by the token the URL carries. */
 /** Spent sums what requests took: sent to the response's head, then its body. */
 interface Spent {
 	requests: number
@@ -316,12 +315,33 @@ interface Spent {
 	body: number
 }
 
-async function range(url: string, from: number, to: number, spent?: Spent): Promise<Bytes> {
+/**
+ * range fetches a byte range, by the token the URL carries. With progress,
+ * the body is read as it arrives and progress hears each piece's length.
+ */
+async function range(url: string, from: number, to: number, spent?: Spent, progress?: (bytes: number) => void): Promise<Bytes> {
 	const sent = performance.now()
 	const r = await fetch(url, { headers: { Range: `bytes=${from}-${to}` } })
 	const head = performance.now()
 	if (r.status !== 206 && r.status !== 200) throw new Error(`${r.status} from the node`)
-	const b = new Uint8Array(await r.arrayBuffer())
+	let b: Bytes
+	if (progress !== undefined && r.status === 206 && r.body !== null) {
+		b = new Uint8Array(to - from + 1)
+		let n = 0
+		const reader = r.body.getReader()
+		for (;;) {
+			const { done, value } = await reader.read()
+			if (done) break
+			if (n + value.length > b.length) throw new Error('the node sent more than the range')
+			b.set(value, n)
+			n += value.length
+			progress(value.length)
+		}
+		if (n !== b.length) throw new Error('the node sent less than the range')
+	} else {
+		b = new Uint8Array(await r.arrayBuffer())
+		progress?.(Math.min(b.length, to - from + 1))
+	}
 	if (spent !== undefined) {
 		spent.requests++
 		spent.firstByte += head - sent
@@ -369,7 +389,10 @@ function metaOf(l: Lamina): Promise<Meta> {
 
 /** ahead is how far past the playhead the engine keeps bytes, in seconds. */
 const ahead = 20
-/** chunk is one Range fetch of a lamina. */
+/**
+ * chunk is one Range fetch of a lamina while it plays: a megabyte ahead of
+ * the playhead at a time. An export asks for each lamina's range at once.
+ */
 const chunk = 1 << 20
 
 interface Hooks {
@@ -806,15 +829,15 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 				break
 			}
 		}
-		const parts: Uint8Array[] = []
-		for (let off = from; off < to; off += chunk) {
-			const bytes = await range(l.url, off, Math.min(to, off + chunk) - 1, spent)
-			parts.push(bytes)
-			n += bytes.length
+		// One request for the lamina's whole range: the node streams it in its
+		// read chunks, and a request per megabyte only adds a round trip each.
+		const onBytes = (k: number): void => {
+			n += k
 			progress(n)
 		}
+		const fragments = to > from ? await range(l.url, from, to - 1, spent, onBytes) : new Uint8Array(0)
 		// The lamina's first key fragment came at date_started (as in play).
-		pieces.push({ init: meta.init.bytes, fragments: concat(parts), zero: l.start - (first.time / meta.init.timescale) * 1000 })
+		pieces.push({ init: meta.init.bytes, fragments, zero: l.start - (first.time / meta.init.timescale) * 1000 })
 	}
 
 	const fetched = performance.now()
