@@ -111,6 +111,8 @@ type Run struct {
 	InitializationPlan  *camera.InitializationPlan `json:"initialization_plan,omitempty"`
 	Initialized         *camera.DeviceSettings     `json:"initialized,omitempty"`
 	Warnings            []camera.PresetWarning     `json:"warnings,omitempty"`
+	// Firmware is set before a preset-required upgrade writes the device.
+	Firmware *FirmwareState `json:"firmware,omitempty"`
 }
 
 type Impact struct {
@@ -163,6 +165,14 @@ type Engine struct {
 	Publisher    SourcePublisher
 	Presets      camera.DevicePresetProvider
 	Initializer  camera.DeviceInitializer
+	// Firmware and Images perform a preset's firmware requirement. Without
+	// them a device that the preset requires to upgrade is unsupported.
+	Firmware camera.FirmwareUpgrader
+	Images   camera.FirmwareSource
+	// FirmwareReboot bounds the wait for an upgraded device to answer with
+	// the target build (default 6m); FirmwarePoll is its interval (10s).
+	FirmwareReboot time.Duration
+	FirmwarePoll   time.Duration
 }
 
 func (q Request) Validate() error {
@@ -289,7 +299,10 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		return out, err
 	}
 	activation := camera.ActivationUnknown
-	if e.Bootstrapper != nil {
+	// An upgrade started by an earlier process may have rotated the web key
+	// before this run could record it. The device was activated before then.
+	upgrading := out.Firmware != nil && !out.Firmware.Complete
+	if e.Bootstrapper != nil && !upgrading {
 		activation, err = e.Bootstrapper.Activation(ctx, q.Device)
 		if err != nil {
 			return out, err
@@ -335,16 +348,25 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	if apply {
 		access = camera.AccessConfigure
 	}
-	lease, err := camera.Acquire(ctx, e.Auth, camera.AuthRequest{Scope: q.Scope, Device: q.Device, Purpose: purpose, Requirement: camera.AuthRequirement{Access: access}, ExistingRef: ref})
+	acquire := func(ctx context.Context) (camera.CredentialLease, error) {
+		return camera.Acquire(ctx, e.Auth, camera.AuthRequest{Scope: q.Scope, Device: q.Device, Purpose: purpose, Requirement: camera.AuthRequirement{Access: access}, ExistingRef: ref})
+	}
+	lease, err := acquire(ctx)
 	if err != nil {
 		return out, err
 	}
-	defer lease.Close()
+	defer func() { lease.Close() }()
 	cref := lease.Ref()
+	ref = &cref
 	if purpose == camera.AuthManagement {
 		out.ManagementRef = &cref
 	}
-	inspection, err := e.Inspector.Inspect(ctx, q.Device, lease)
+	var inspection camera.Inspection
+	if upgrading {
+		inspection, err = e.awaitFirmware(ctx, q, out.Firmware.To, &lease, acquire)
+	} else {
+		inspection, err = e.Inspector.Inspect(ctx, q.Device, lease)
+	}
 	if err != nil {
 		return out, err
 	}
@@ -364,8 +386,16 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	if out.ActivationAttempted {
 		out.ActivationComplete = true
 	}
+	var before camera.DeviceHint
+	if out.Inspection != nil {
+		before = out.Inspection.Device
+	}
 	out.Inspection = &inspection
-	readback, desired, configured, err := e.configure(ctx, &out, inspection, lease, apply)
+	inspection, resolved, stop, err := e.firmware(ctx, &out, before, inspection, &lease, acquire, apply)
+	if err != nil || stop {
+		return out, err
+	}
+	readback, desired, configured, err := e.configure(ctx, &out, inspection, resolved, lease, apply)
 	if err != nil || !configured {
 		return out, err
 	}
@@ -569,6 +599,10 @@ func failure(err error) (Stage, string) {
 		return Unsupported, "unsupported"
 	case errors.Is(err, ErrNotReady):
 		return Binding, "media_not_ready"
+	case errors.Is(err, ErrFirmwareNotApplied):
+		return Failed, "firmware_not_applied"
+	case errors.Is(err, camera.ErrFirmwareImage):
+		return Failed, "firmware_image_unavailable"
 	default:
 		return Failed, "operation_failed"
 	}
@@ -583,7 +617,7 @@ func (e operationError) Error() string { return fmt.Sprintf("camera provisioning
 func (e operationError) Unwrap() error { return e.kind }
 func safeError(err error) error {
 	_, code := failure(err)
-	for _, kind := range []error{camera.ErrAuthRequired, camera.ErrExpired, camera.ErrNeedsUserInput, camera.ErrManualActivation, camera.ErrAmbiguousIdentity, camera.ErrUnsupported, camera.ErrForbidden, camera.ErrConflict, ErrConflict, ErrNotReady, context.Canceled, context.DeadlineExceeded} {
+	for _, kind := range []error{camera.ErrAuthRequired, camera.ErrExpired, camera.ErrNeedsUserInput, camera.ErrManualActivation, camera.ErrAmbiguousIdentity, camera.ErrUnsupported, camera.ErrForbidden, camera.ErrConflict, ErrConflict, ErrNotReady, ErrFirmwareNotApplied, camera.ErrFirmwareImage, context.Canceled, context.DeadlineExceeded} {
 		if errors.Is(err, kind) {
 			return operationError{kind, code}
 		}

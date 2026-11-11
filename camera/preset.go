@@ -58,6 +58,8 @@ type DevicePreset struct {
 	Requested    PresetSettings   `json:"requested" yaml:"requested"`
 	Fallbacks    []PresetSettings `json:"fallbacks,omitempty" yaml:"fallbacks,omitempty"`
 	Required     []string         `json:"required,omitempty" yaml:"required,omitempty"`
+	// Firmware is applied before any setting, and only to an exact source build.
+	Firmware *FirmwareUpgrade `json:"firmware,omitempty" yaml:"firmware,omitempty"`
 }
 
 // DevicePresetProvider selects policy for an already authorized scope. Device
@@ -195,6 +197,11 @@ func (p DevicePreset) Validate() error {
 	if err := ValidatePresetSettings(p.Requested); err != nil {
 		return err
 	}
+	if p.Firmware != nil {
+		if err := p.Firmware.Validate(); err != nil {
+			return err
+		}
+	}
 	if len(p.Requested.Preserve) != 0 {
 		return fmt.Errorf("%w: requested preset must be materialized", ErrInvalid)
 	}
@@ -262,6 +269,7 @@ func (p DevicePreset) Clone() DevicePreset {
 		p.Fallbacks[i].Preserve = slices.Clone(p.Fallbacks[i].Preserve)
 	}
 	p.Required = slices.Clone(p.Required)
+	p.Firmware = p.Firmware.Clone()
 	return p
 }
 

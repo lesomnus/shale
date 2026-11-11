@@ -90,6 +90,9 @@ func init() {
 	// cameradeviceDescFactoryTls is the schema descriptor for factory_tls field.
 	cameradeviceDescFactoryTls := cameradeviceFields[12].Descriptor()
 	cameradevice.ValueScanner.FactoryTls = cameradeviceDescFactoryTls.ValueScanner.(field.TypeValueScanner[*api.CameraFactoryTLSState])
+	// cameradeviceDescFirmwareTls is the schema descriptor for firmware_tls field.
+	cameradeviceDescFirmwareTls := cameradeviceFields[13].Descriptor()
+	cameradevice.ValueScanner.FirmwareTls = cameradeviceDescFirmwareTls.ValueScanner.(field.TypeValueScanner[*api.CameraFirmwareTLSState])
 	camerajobFields := schema.CameraJob{}.Fields()
 	_ = camerajobFields
 	// camerajobDescInputs is the schema descriptor for inputs field.

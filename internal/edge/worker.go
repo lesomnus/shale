@@ -11,9 +11,9 @@ import (
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/discovery"
 	"github.com/lesomnus/shale/camera/drivers"
+	"github.com/lesomnus/shale/camera/firmwareimage"
 	"github.com/lesomnus/shale/camera/media"
 	"github.com/lesomnus/shale/internal/camerabootstrap"
-	"github.com/lesomnus/shale/internal/cameratls"
 	"github.com/lesomnus/shale/internal/cameraworker"
 	"github.com/lesomnus/shale/provision"
 	publication "github.com/lesomnus/shale/provision/source"
@@ -28,6 +28,8 @@ func buildWorker(cfg cameraworker.Config, broker *sourceBroker, options CameraOp
 		cfg.Discoverer = discovery.Discoverer{}
 	}
 	var worker *cameraworker.Worker
+	// One source per worker keeps the last verified image across jobs.
+	images := &firmwareimage.Source{}
 	if cfg.Executor == nil {
 		cfg.Executor = cameraworker.ExecutorFunc(func(ctx context.Context, e *cameraworker.Execution) error {
 			auth, err := e.Credentials()
@@ -48,7 +50,7 @@ func buildWorker(cfg cameraworker.Config, broker *sourceBroker, options CameraOp
 					}
 					var hosts []string
 					var deviceID string
-					identity := cameratls.Decode(w.GetJob().GetInputs().GetDeviceTlsIdentity())
+					identity := cameraworker.DeviceTLSIdentity(w)
 					if identity != nil {
 						device, err := pdid.From(w.GetDevice().GetId())
 						if err != nil || device.Domain() != 27 {
@@ -69,8 +71,9 @@ func buildWorker(cfg cameraworker.Config, broker *sourceBroker, options CameraOp
 					if err != nil {
 						return cameraworker.DeviceAdapters{}, err
 					}
-					return cameraworker.DeviceAdapters{Inspector: driver, Configurator: driver, Bootstrapper: driver, Initializer: driver, Verifier: &media.Verifier{AuthProvider: auth, Ffmpeg: options.FFmpeg, Ffprobe: options.FFprobe, NetworkScope: network.String()}, Release: driver.Close}, nil
+					return cameraworker.DeviceAdapters{Inspector: driver, Configurator: driver, Bootstrapper: driver, Initializer: driver, Firmware: driver, Verifier: &media.Verifier{AuthProvider: auth, Ffmpeg: options.FFmpeg, Ffprobe: options.FFprobe, NetworkScope: network.String()}, Release: driver.Close}, nil
 				}},
+				Images: images,
 				Publisher: func(e *cameraworker.Execution) provision.SourcePublisher {
 					w := e.Snapshot()
 					a := w.GetAssignment()

@@ -19,6 +19,7 @@ type DeviceAdapters struct {
 	Bootstrapper camera.Bootstrapper
 	Initializer  camera.DeviceInitializer
 	Verifier     camera.MediaVerifier
+	Firmware     camera.FirmwareUpgrader
 	Release      func()
 }
 
@@ -36,7 +37,10 @@ type LeasedDevices struct {
 	Bootstrapper camera.Bootstrapper
 	Initializer  camera.DeviceInitializer
 	Verifier     camera.MediaVerifier
+	Firmware     camera.FirmwareUpgrader
 }
+
+var _ camera.FirmwareUpgrader = LeasedDevices{}
 
 func freshTransport(h camera.DeviceHint, w *api.CameraWorkerWork) (camera.DeviceHint, error) {
 	fresh := deviceHint(w)
@@ -48,12 +52,12 @@ func freshTransport(h camera.DeviceHint, w *api.CameraWorkerWork) (camera.Device
 }
 
 func (d LeasedDevices) mixedAdapters() bool {
-	return d.Factory != nil && (d.Inspector != nil || d.Configurator != nil || d.Bootstrapper != nil || d.Initializer != nil || d.Verifier != nil)
+	return d.Factory != nil && (d.Inspector != nil || d.Configurator != nil || d.Bootstrapper != nil || d.Initializer != nil || d.Verifier != nil || d.Firmware != nil)
 }
 
 func (d LeasedDevices) adapters(ctx context.Context, w *api.CameraWorkerWork, f func(DeviceAdapters) error) error {
 	if d.Factory == nil {
-		return f(DeviceAdapters{Inspector: d.Inspector, Configurator: d.Configurator, Bootstrapper: d.Bootstrapper, Initializer: d.Initializer, Verifier: d.Verifier})
+		return f(DeviceAdapters{Inspector: d.Inspector, Configurator: d.Configurator, Bootstrapper: d.Bootstrapper, Initializer: d.Initializer, Verifier: d.Verifier, Firmware: d.Firmware})
 	}
 	adapters, err := d.Factory(ctx, w)
 	if adapters.Release != nil {
@@ -178,6 +182,34 @@ func (d LeasedDevices) ApplyInitialization(ctx context.Context, h camera.DeviceH
 		}
 		var e error
 		out, e = adapters.Initializer.ApplyInitialization(ctx, h, lease, p)
+		return e
+	})
+	return out, err
+}
+
+// UpgradeFirmware writes within one leased step: the camera answers once it has
+// received the image, and its reboot is awaited by later, separate steps.
+func (d LeasedDevices) UpgradeFirmware(ctx context.Context, h camera.DeviceHint, lease camera.CredentialLease, file camera.FirmwareFile) error {
+	if d.Factory == nil && d.Firmware == nil {
+		return camera.ErrUnsupported
+	}
+	return d.step(ctx, h, func(ctx context.Context, h camera.DeviceHint, adapters DeviceAdapters) error {
+		if adapters.Firmware == nil {
+			return camera.ErrUnsupported
+		}
+		return adapters.Firmware.UpgradeFirmware(ctx, h, lease, file)
+	})
+}
+func (d LeasedDevices) ConfirmWebIdentity(ctx context.Context, h camera.DeviceHint, lease camera.CredentialLease) (out camera.DeviceTLSIdentity, err error) {
+	if d.Factory == nil && d.Firmware == nil {
+		return out, camera.ErrUnsupported
+	}
+	err = d.step(ctx, h, func(ctx context.Context, h camera.DeviceHint, adapters DeviceAdapters) error {
+		if adapters.Firmware == nil {
+			return camera.ErrUnsupported
+		}
+		var e error
+		out, e = adapters.Firmware.ConfirmWebIdentity(ctx, h, lease)
 		return e
 	})
 	return out, err

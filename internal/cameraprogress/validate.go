@@ -154,6 +154,9 @@ func validateRun(r provision.Run) error {
 		if v.Type() == reflect.TypeFor[camera.InitializationVideoMain]() && v.Interface().(camera.InitializationVideoMain).Validate() != nil {
 			return false
 		}
+		if v.Type() == reflect.TypeFor[provision.FirmwareState]() && validFirmware(v.Interface().(provision.FirmwareState)) != nil {
+			return false
+		}
 		switch v.Kind() {
 		case reflect.String:
 			text += len(v.String())
@@ -249,6 +252,16 @@ func validateWire(v proto.Message) error {
 		return valid
 	}
 	if !visit(v.ProtoReflect(), 0) || proto.Size(v) > MaxStateBytes {
+		return ErrInvalid
+	}
+	return nil
+}
+
+// A started upgrade names an exact source and target build and the verified
+// image. A new key is meaningful only on completion.
+func validFirmware(v provision.FirmwareState) error {
+	upgrade := camera.FirmwareUpgrade{From: []string{v.From}, To: v.To, Image: camera.FirmwareImage{URL: "https://image.invalid/", SHA256: v.ImageSHA256}}
+	if upgrade.Validate() != nil || v.TLSIdentity != nil && (!v.Complete || v.TLSIdentity.Validate() != nil) {
 		return ErrInvalid
 	}
 	return nil

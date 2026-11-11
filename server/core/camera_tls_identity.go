@@ -87,7 +87,22 @@ func cameraSelectedTLSIdentity(p *api.CameraPolicy, device []byte) *api.CameraDe
 	return nil
 }
 
+// cameraDeviceTLSIdentity is the key a new job pins: the policy's approval for
+// this device, else its trusted factory key. A key the device presented right
+// after a Shale firmware upgrade stands in for that approval while the
+// approval is unchanged; a later operator approval takes precedence again.
 func cameraDeviceTLSIdentity(p *api.CameraPolicy, d *api.CameraDevice) *api.CameraDeviceTLSIdentity {
+	approved := cameraApprovedTLSIdentity(p, d)
+	if approved == nil {
+		return nil
+	}
+	if r := d.GetFirmwareTls(); r != nil && proto.Equal(r.GetReplaced(), approved) && r.GetIdentity().GetDeviceId() == approved.GetDeviceId() && cameraTLSIdentity(r.GetIdentity()) == nil {
+		return proto.Clone(r.GetIdentity()).(*api.CameraDeviceTLSIdentity)
+	}
+	return approved
+}
+
+func cameraApprovedTLSIdentity(p *api.CameraPolicy, d *api.CameraDevice) *api.CameraDeviceTLSIdentity {
 	if pin := cameraSelectedTLSIdentity(p, d.GetId()); pin != nil {
 		return pin
 	}

@@ -9,8 +9,9 @@ the provisioner is stopped.
 This first version targets an **existing adopted Producer**. Applying a capture
 manifest gracefully restarts that Producer, affecting all its feeds. Plans do
 not change the camera; applying requires an explicit request and the request's
-`allow_producer_restart` policy. Factory reset, firmware updates, cross-Set moves,
-idle Producers, hot reload and a camera-management UI are outside this release.
+`allow_producer_restart` policy. Factory reset, cross-Set moves, idle Producers,
+hot reload and a camera-management UI are outside this release. Firmware is
+upgraded only when a preset requires it (see [Firmware requirement](#firmware-requirement)).
 Preset adjustments are available through durable status responses and the CLI's
 human-readable `camera status --summary` output.
 
@@ -210,6 +211,55 @@ An optional fallback can use `preserve: [initialization.smart_codec]`; this is
 refused when that field is required. A selected fallback records the requested
 and effective mode in the structured warning. Hardware and firmware support is
 adapter-specific; an unsupported explicit mode is not silently ignored.
+
+### Firmware requirement
+
+A rule can require a firmware build before any setting is applied:
+
+```yaml
+  - id: c420-firmware
+    scope:
+      tenant_id: 00000000-0000-0000-0000-000000000001
+    match: {manufacturer: TP-Link, model: EasyCam C420, hardware: "1.0"}
+    firmware:
+      from: ["1.2.0 Build 251020 Rel.55235n"]
+      to: 1.2.2 Build 260624 Rel.39352n
+      image:
+        url: "https://static.tp-link.com/upload/firmware/2026/202607/20260728/Easycam%20C420(UN)%201.0_1.2.2%20Build%20260624.zip"
+        sha256: 9460f6c63c06573dbb302ec4b4ee482991caaff817718b919109821591ea669a
+```
+
+Only a device that reports exactly one of the `from` builds is upgraded. A device
+on `to`, on a newer build or on any build the rule does not list is left as it is;
+build strings are compared exactly because vendor versions are not ordered.
+`image.sha256` is the digest of the file written to the camera. The URL must be
+HTTPS and may name that file or a zip archive that contains it, as TP-Link
+publishes it. The worker downloads it, so it needs outbound HTTPS; the camera
+LAN does not. The most specific matching rule's `firmware` replaces inherited
+ones as a whole. It is not part of fallbacks or `required`.
+
+The enrollment job upgrades before it resolves and pins the preset:
+
+1. It inspects the device and resolves the preset without pinning it. If the
+   rule applies, it downloads the image and checks its digest.
+2. It checkpoints `firmware_upgrade_started`, naming the source build, target
+   build and image digest. The control plane accepts that checkpoint only when
+   the job's own preset, resolved for the inspected device, requires exactly
+   that transition. Nothing has been written to the device yet.
+3. It uploads the image the way the camera's Local Update does, then waits up
+   to six minutes for the device to answer with the target build. The camera
+   reboots on its own; recording from it stops meanwhile.
+4. It inspects the device again, checkpoints `firmware_upgraded`, then resolves
+   and pins the preset for the new build, so rules matching that build apply.
+
+A retried job never uploads twice: after `firmware_upgrade_started` it only
+waits for the target build. If the device answers on another build, the job
+fails with `firmware_not_applied`; an image that cannot be fetched or does not
+match fails with `firmware_image_unavailable`. Firmware upgrades need the managed
+camera worker; the standalone provisioner reports such a device as unsupported.
+
+On the C420 the upgrade replaces the web interface's TLS key. How Shale accepts
+that one key is in [camera TLS identity](camera-tls-identity.md#after-a-firmware-upgrade).
 
 An explicit smart-codec edit journals a closed, eight-field native main-profile
 snapshot before writing. The adapter changes only the requested mode. If a

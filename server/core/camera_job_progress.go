@@ -116,6 +116,9 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 	if err := cameraProgressIdentity(run, previous, d); err != nil {
 		return nil, err
 	}
+	if err := s.cameraProgressFirmware(ctx, run, previous, j, a, d); err != nil {
+		return nil, err
+	}
 	if previous != nil && (run.CandidateIndex < previous.CandidateIndex || previous.Effective != nil && run.Effective == nil) {
 		return nil, failed("a selected camera candidate cannot move backwards or be cleared")
 	}
@@ -318,17 +321,24 @@ func (s Core) cameraProgressIdentityRecord(ctx context.Context, j *api.CameraJob
 	if err != nil {
 		return invalid("progress", "invalid typed checkpoint")
 	}
+	patch := api.CameraDevicePatchRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), DateUpdated: d.GetDateUpdated()}.Build()
 	identity := cameraProgressIdentityValue(r.Inspection.Device)
-	if !identity.GetAuthenticated() {
+	if identity.GetAuthenticated() {
+		if len(identity.GetMacs()) == 0 {
+			identity.SetMacs(d.GetIdentity().GetMacs())
+		}
+		if !proto.Equal(identity, d.GetIdentity()) {
+			patch.SetIdentity(identity)
+		}
+	}
+	// Validated by cameraProgressFirmware in the same transaction.
+	if tls := cameraFirmwareTLSRecord(j, d, r); tls != nil {
+		patch.SetFirmwareTls(tls)
+	}
+	if !patch.HasIdentity() && !patch.HasFirmwareTls() {
 		return nil
 	}
-	if len(identity.GetMacs()) == 0 {
-		identity.SetMacs(d.GetIdentity().GetMacs())
-	}
-	if proto.Equal(identity, d.GetIdentity()) {
-		return nil
-	}
-	_, err = s.Next().CameraDevice().Patch(ctx, api.CameraDevicePatchRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), Identity: identity, DateUpdated: d.GetDateUpdated()}.Build())
+	_, err = s.Next().CameraDevice().Patch(ctx, patch)
 	return err
 }
 

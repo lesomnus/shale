@@ -111,8 +111,11 @@ func (d *Driver) httpClient(roots *x509.CertPool, timeout time.Duration) (*http.
 
 // The explicit key applies only to the approved camera's HTTPS web port.
 // Standard ONVIF operations keep normal PKI validation on their own transport.
-func (d *Driver) pinnedWebClient(timeout time.Duration) (*http.Client, *http.Transport, error) {
-	config, err := tlsidentity.NewTLSConfig(d.identity.SPKISHA256)
+func (d *Driver) pinnedWebClient(pin string, timeout time.Duration) (*http.Client, *http.Transport, error) {
+	if pin == "" {
+		return nil, nil, camera.ErrInvalid
+	}
+	config, err := tlsidentity.NewTLSConfig(pin)
 	if err != nil {
 		return nil, nil, camera.ErrInvalid
 	}

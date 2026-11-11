@@ -202,6 +202,18 @@ func (_u *CameraDeviceUpdate) ClearFactoryTls() *CameraDeviceUpdate {
 	return _u
 }
 
+// SetFirmwareTls sets the "firmware_tls" field.
+func (_u *CameraDeviceUpdate) SetFirmwareTls(v *api.CameraFirmwareTLSState) *CameraDeviceUpdate {
+	_u.mutation.SetFirmwareTls(v)
+	return _u
+}
+
+// ClearFirmwareTls clears the value of the "firmware_tls" field.
+func (_u *CameraDeviceUpdate) ClearFirmwareTls() *CameraDeviceUpdate {
+	_u.mutation.ClearFirmwareTls()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraDeviceUpdate) SetDateUpdated(v time.Time) *CameraDeviceUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -420,6 +432,22 @@ func (_u *CameraDeviceUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if _u.mutation.FactoryTlsCleared() {
 		_spec.ClearField(cameradevice.FieldFactoryTls, field.TypeJson)
 	}
+	if value, ok := _u.mutation.FirmwareTls(); ok {
+		vv, err := cameradevice.ValueScanner.FirmwareTls.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(cameradevice.FieldFirmwareTls, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldFirmwareTls); ok {
+		_spec.SetField(cameradevice.FieldFirmwareTls, field.TypeJson, e)
+	}
+	if _u.mutation.FirmwareTlsCleared() {
+		_spec.ClearField(cameradevice.FieldFirmwareTls, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -627,6 +655,18 @@ func (_u *CameraDeviceUpdateOne) SetFactoryTls(v *api.CameraFactoryTLSState) *Ca
 // ClearFactoryTls clears the value of the "factory_tls" field.
 func (_u *CameraDeviceUpdateOne) ClearFactoryTls() *CameraDeviceUpdateOne {
 	_u.mutation.ClearFactoryTls()
+	return _u
+}
+
+// SetFirmwareTls sets the "firmware_tls" field.
+func (_u *CameraDeviceUpdateOne) SetFirmwareTls(v *api.CameraFirmwareTLSState) *CameraDeviceUpdateOne {
+	_u.mutation.SetFirmwareTls(v)
+	return _u
+}
+
+// ClearFirmwareTls clears the value of the "firmware_tls" field.
+func (_u *CameraDeviceUpdateOne) ClearFirmwareTls() *CameraDeviceUpdateOne {
+	_u.mutation.ClearFirmwareTls()
 	return _u
 }
 
@@ -877,6 +917,22 @@ func (_u *CameraDeviceUpdateOne) sqlSave(ctx context.Context) (_node *CameraDevi
 	}
 	if _u.mutation.FactoryTlsCleared() {
 		_spec.ClearField(cameradevice.FieldFactoryTls, field.TypeJson)
+	}
+	if value, ok := _u.mutation.FirmwareTls(); ok {
+		vv, err := cameradevice.ValueScanner.FirmwareTls.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(cameradevice.FieldFirmwareTls, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldFirmwareTls); ok {
+		_spec.SetField(cameradevice.FieldFirmwareTls, field.TypeJson, e)
+	}
+	if _u.mutation.FirmwareTlsCleared() {
+		_spec.ClearField(cameradevice.FieldFirmwareTls, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

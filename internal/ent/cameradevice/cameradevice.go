@@ -38,6 +38,8 @@ const (
 	FieldEnrollment = "enrollment"
 	// FieldFactoryTls holds the string denoting the factory_tls field in the database.
 	FieldFactoryTls = "factory_tls"
+	// FieldFirmwareTls holds the string denoting the firmware_tls field in the database.
+	FieldFirmwareTls = "firmware_tls"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -96,6 +98,7 @@ var Columns = []string{
 	FieldClaimGeneration,
 	FieldEnrollment,
 	FieldFactoryTls,
+	FieldFirmwareTls,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -117,10 +120,11 @@ func ValidColumn(column string) bool {
 var (
 	// ValueScanner of all CameraDevice fields.
 	ValueScanner struct {
-		Identity   field.TypeValueScanner[*api.CameraIdentityEvidence]
-		Endpoints  field.TypeValueScanner[[]*api.CameraObservedEndpoint]
-		Enrollment field.TypeValueScanner[*api.CameraEnrollmentObservation]
-		FactoryTls field.TypeValueScanner[*api.CameraFactoryTLSState]
+		Identity    field.TypeValueScanner[*api.CameraIdentityEvidence]
+		Endpoints   field.TypeValueScanner[[]*api.CameraObservedEndpoint]
+		Enrollment  field.TypeValueScanner[*api.CameraEnrollmentObservation]
+		FactoryTls  field.TypeValueScanner[*api.CameraFactoryTLSState]
+		FirmwareTls field.TypeValueScanner[*api.CameraFirmwareTLSState]
 	}
 )
 

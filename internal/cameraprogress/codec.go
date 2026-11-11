@@ -30,7 +30,7 @@ func Encode(run provision.Run) (*api.CameraProvisionState, error) {
 		return nil, ErrInvalid
 	}
 	e := encoder{}
-	out := api.CameraProvisionState_builder{SchemaVersion: schemaVersion, Request: e.request(run.Request), Stage: string(run.Stage), Version: run.Version, CreatedAt: stamp(run.CreatedAt), UpdatedAt: stamp(run.UpdatedAt), Inspection: e.inspection(run.Inspection), Plan: e.plan(run.Plan), Verified: e.verified(run.Verified), InitialRef: ref(run.InitialRef), ManagementRef: ref(run.ManagementRef), StreamingRef: ref(run.StreamingRef), ActivationAttempted: run.ActivationAttempted, ActivationComplete: run.ActivationComplete, Binding: binding(run.Binding), Events: events(run.Events), Impacts: impacts(run.Impacts), Preset: e.preset(run.Preset), Effective: e.settings(run.Effective), CandidateIndex: int32(run.CandidateIndex), InitializationPlan: initialization(run.InitializationPlan), Initialized: deviceSettings(run.Initialized), Warnings: warnings(run.Warnings), DeploymentProfile: profilePointer(run.DeploymentProfile)}.Build()
+	out := api.CameraProvisionState_builder{SchemaVersion: schemaVersion, Request: e.request(run.Request), Stage: string(run.Stage), Version: run.Version, CreatedAt: stamp(run.CreatedAt), UpdatedAt: stamp(run.UpdatedAt), Inspection: e.inspection(run.Inspection), Plan: e.plan(run.Plan), Verified: e.verified(run.Verified), InitialRef: ref(run.InitialRef), ManagementRef: ref(run.ManagementRef), StreamingRef: ref(run.StreamingRef), ActivationAttempted: run.ActivationAttempted, ActivationComplete: run.ActivationComplete, Binding: binding(run.Binding), Events: events(run.Events), Impacts: impacts(run.Impacts), Preset: e.preset(run.Preset), Effective: e.settings(run.Effective), CandidateIndex: int32(run.CandidateIndex), InitializationPlan: initialization(run.InitializationPlan), Initialized: deviceSettings(run.Initialized), Warnings: warnings(run.Warnings), DeploymentProfile: profilePointer(run.DeploymentProfile), Firmware: firmware(run.Firmware)}.Build()
 	if e.err != nil || validateWire(out) != nil {
 		return nil, ErrInvalid
 	}
@@ -44,7 +44,7 @@ func Decode(value *api.CameraProvisionState) (provision.Run, error) {
 		return provision.Run{}, ErrInvalid
 	}
 	d := decoder{}
-	r := provision.Run{Request: d.request(value.GetRequest()), Stage: provision.Stage(value.GetStage()), Version: value.GetVersion(), CreatedAt: date(value.GetCreatedAt()), UpdatedAt: date(value.GetUpdatedAt()), Inspection: d.inspection(value.GetInspection()), Plan: d.plan(value.GetPlan()), Verified: d.verified(value.GetVerified()), InitialRef: d.ref(value.GetInitialRef()), ManagementRef: d.ref(value.GetManagementRef()), StreamingRef: d.ref(value.GetStreamingRef()), ActivationAttempted: value.GetActivationAttempted(), ActivationComplete: value.GetActivationComplete(), Binding: d.binding(value.GetBinding()), Events: d.events(value.GetEvents()), Impacts: d.impacts(value.GetImpacts()), Preset: d.preset(value.GetPreset()), Effective: d.settings(value.GetEffective()), CandidateIndex: int(value.GetCandidateIndex()), InitializationPlan: d.initialization(value.GetInitializationPlan()), Initialized: d.deviceSettings(value.GetInitialized()), Warnings: d.warnings(value.GetWarnings()), DeploymentProfile: d.profilePointer(value.GetDeploymentProfile())}
+	r := provision.Run{Request: d.request(value.GetRequest()), Stage: provision.Stage(value.GetStage()), Version: value.GetVersion(), CreatedAt: date(value.GetCreatedAt()), UpdatedAt: date(value.GetUpdatedAt()), Inspection: d.inspection(value.GetInspection()), Plan: d.plan(value.GetPlan()), Verified: d.verified(value.GetVerified()), InitialRef: d.ref(value.GetInitialRef()), ManagementRef: d.ref(value.GetManagementRef()), StreamingRef: d.ref(value.GetStreamingRef()), ActivationAttempted: value.GetActivationAttempted(), ActivationComplete: value.GetActivationComplete(), Binding: d.binding(value.GetBinding()), Events: d.events(value.GetEvents()), Impacts: d.impacts(value.GetImpacts()), Preset: d.preset(value.GetPreset()), Effective: d.settings(value.GetEffective()), CandidateIndex: int(value.GetCandidateIndex()), InitializationPlan: d.initialization(value.GetInitializationPlan()), Initialized: d.deviceSettings(value.GetInitialized()), Warnings: d.warnings(value.GetWarnings()), DeploymentProfile: d.profilePointer(value.GetDeploymentProfile()), Firmware: d.firmware(value.GetFirmware())}
 	if d.err != nil || validateRun(r) != nil {
 		return provision.Run{}, ErrInvalid
 	}
@@ -550,4 +550,17 @@ func (d *decoder) profilePointer(v *api.CameraProvisionMediaProfile) *camera.Med
 	}
 	out := d.profile(v)
 	return &out
+}
+
+func firmware(v *provision.FirmwareState) *api.CameraProvisionFirmware {
+	if v == nil {
+		return nil
+	}
+	return api.CameraProvisionFirmware_builder{From: v.From, To: v.To, ImageSha256: v.ImageSHA256, Complete: v.Complete, TlsIdentity: cameratls.Encode(v.TLSIdentity)}.Build()
+}
+func (d *decoder) firmware(v *api.CameraProvisionFirmware) *provision.FirmwareState {
+	if v == nil {
+		return nil
+	}
+	return &provision.FirmwareState{From: v.GetFrom(), To: v.GetTo(), ImageSHA256: v.GetImageSha256(), Complete: v.GetComplete(), TLSIdentity: cameratls.Decode(v.GetTlsIdentity())}
 }

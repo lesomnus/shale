@@ -45,6 +45,7 @@ type Driver struct {
 	deviceHosts  map[string]bool
 	webClient    *http.Client
 	webTransport *http.Transport
+	timeout      time.Duration
 }
 
 var (
@@ -52,6 +53,7 @@ var (
 	_ camera.VideoConfigurator = (*Driver)(nil)
 	_ camera.Bootstrapper      = (*Driver)(nil)
 	_ camera.DeviceInitializer = (*Driver)(nil)
+	_ camera.FirmwareUpgrader  = (*Driver)(nil)
 )
 
 func New(o Options) (*Driver, error) {
@@ -73,7 +75,7 @@ func New(o Options) (*Driver, error) {
 	if o.Timeout < time.Millisecond || o.Timeout > 30*time.Second {
 		return nil, camera.ErrInvalid
 	}
-	d := &Driver{network: o.NetworkID, prefixes: prefixes}
+	d := &Driver{network: o.NetworkID, prefixes: prefixes, timeout: o.Timeout}
 	if o.Bootstrap != nil {
 		copy := *o.Bootstrap
 		d.bootstrap = &copy
@@ -100,7 +102,7 @@ func New(o Options) (*Driver, error) {
 		// isolated LAN. Only WS-Security uses their public UTC sample; neither
 		// the camera clock nor host-side authorization time is changed.
 		d.baseline.UseDeviceTimeForAuthentication = true
-		d.webClient, d.webTransport, err = d.pinnedWebClient(o.Timeout)
+		d.webClient, d.webTransport, err = d.pinnedWebClient(d.identity.SPKISHA256, o.Timeout)
 		if err != nil {
 			d.Close()
 			return nil, err
