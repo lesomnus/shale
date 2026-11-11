@@ -103,6 +103,7 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 	const [paused, setPaused] = useState(true)
 	const [mark, setMark] = useState<{ a: number | undefined; b: number | undefined }>({ a: undefined, b: undefined })
 	const [exporting, setExporting] = useState<string | undefined>(undefined)
+	const [exported, setExported] = useState<string | undefined>(undefined)
 	const strip = tl.data?.sources[0]
 	const laminae = strip?.laminae ?? []
 
@@ -158,10 +159,17 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 		if (mark.a === undefined || mark.b === undefined) return
 		const [a, b] = mark.a < mark.b ? [mark.a, mark.b] : [mark.b, mark.a]
 		setExporting('fetching')
+		setExported(undefined)
 		try {
-			const bytes = await exportRange(laminae, a, b, (n) => setExporting(`fetching, ${Math.round(n / 1e6)} MB`))
+			const began = performance.now()
+			const { bytes, timing } = await exportRange(laminae, a, b, (n) => setExporting(`fetching, ${Math.round(n / 1e6)} MB`))
 			const name = `${props.source.alias}-${new Date(a).toISOString().replace(/[:.]/g, '-')}-${Math.round((b - a) / 1000)}s.mp4`
+			const joined = performance.now()
 			const url = URL.createObjectURL(new Blob([bytes], { type: 'video/mp4' }))
+			timing.assemble_ms += performance.now() - joined
+			timing.total_ms = performance.now() - began
+			setExported(describe(timing))
+			report(timing)
 			const link = document.createElement('a')
 			link.href = url
 			link.download = name
@@ -228,6 +236,7 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 					{exporting ?? 'download MP4'}
 				</button>
 			</div>
+			{exported !== undefined && <p className="mono dim">{exported}</p>}
 			{tl.state === 'error' && <Err error={tl.error} />}
 			{sandbox && <p className="dim">The sandbox has no bytes to play: the axis is real, the video is not.</p>}
 		</div>
@@ -300,10 +309,24 @@ interface Meta {
 }
 
 /** A fetch of a byte range, by the token the URL carries. */
-async function range(url: string, from: number, to: number): Promise<Bytes> {
+/** Spent sums what requests took: sent to the response's head, then its body. */
+interface Spent {
+	requests: number
+	firstByte: number
+	body: number
+}
+
+async function range(url: string, from: number, to: number, spent?: Spent): Promise<Bytes> {
+	const sent = performance.now()
 	const r = await fetch(url, { headers: { Range: `bytes=${from}-${to}` } })
+	const head = performance.now()
 	if (r.status !== 206 && r.status !== 200) throw new Error(`${r.status} from the node`)
 	const b = new Uint8Array(await r.arrayBuffer())
+	if (spent !== undefined) {
+		spent.requests++
+		spent.firstByte += head - sent
+		spent.body += performance.now() - head
+	}
 
 	return r.status === 200 ? b.slice(from, to + 1) : b
 }
@@ -698,10 +721,56 @@ class Engine {
 }
 
 /**
+ * ExportTiming is where one export's time went, in milliseconds. The node
+ * that served it records it beside its own side of each read.
+ */
+interface ExportTiming {
+	laminae: number
+	requests: number
+	bytes: number
+	/** From the click to the file. */
+	total_ms: number
+	/** Each lamina's index and init segment, read before any media. */
+	index_ms: number
+	/** The media requests, one after another. */
+	fetch_ms: number
+	/** Summed over the media requests: sent to the response's first byte. */
+	first_byte_ms: number
+	/** Summed over the media requests: the first byte to the last. */
+	body_ms: number
+	/** Joining the fragments into one file. */
+	assemble_ms: number
+	/** Where to report it: the node of the first lamina, with its read token. */
+	url: string
+}
+
+const seconds = (ms: number): string => `${(ms / 1000).toFixed(1)} s`
+
+function describe(t: ExportTiming): string {
+	const mb = t.bytes / 1e6
+	const between = Math.max(0, t.fetch_ms - t.first_byte_ms - t.body_ms)
+	return (
+		`${mb.toFixed(1)} MB in ${seconds(t.total_ms)}: ` +
+		`index ${seconds(t.index_ms)}, media ${seconds(t.fetch_ms)} (${t.fetch_ms > 0 ? ((mb * 8000) / t.fetch_ms).toFixed(0) : '–'} Mbit/s over ${t.requests} requests: ` +
+		`waiting for first bytes ${seconds(t.first_byte_ms)}, receiving ${seconds(t.body_ms)}, between ${seconds(between)}), ` +
+		`assembling ${seconds(t.assemble_ms)}`
+	)
+}
+
+/** report sends the timing to the node; a lost report loses only a sample. */
+function report(t: ExportTiming): void {
+	const u = new URL(t.url)
+	u.pathname = '/reports/export'
+	const { url: _, ...body } = t
+	// A text body is a simple request: no preflight before it.
+	void fetch(u.toString(), { method: 'POST', body: JSON.stringify(body) }).catch(() => {})
+}
+
+/**
  * exportRange is the fragments of a range, each lamina's placed where it
  * sits on the wall clock, behind one init segment (export.ts).
  */
-async function exportRange(laminae: TimelineLamina[], a: number, b: number, progress: (bytes: number) => void): Promise<Bytes> {
+async function exportRange(laminae: TimelineLamina[], a: number, b: number, progress: (bytes: number) => void): Promise<{ bytes: Bytes; timing: ExportTiming }> {
 	const pieces: Piece[] = []
 	let n = 0
 	const rows: Lamina[] = laminae
@@ -718,9 +787,12 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 	if (rows.length === 0) throw new Error('nothing stored in that range')
 	const changed = (i: number): Error => new Error(`the camera's encoder changed at ${new Date(rows[i]!.start).toLocaleTimeString()}; export up to there and from there separately`)
 	// Every lamina's init segment first: a change refuses the range before its megabytes come.
+	const began = performance.now()
 	const metas = await Promise.all(rows.map(metaOf))
 	const i = metas.findIndex((m) => !joins(metas[0]!.init.bytes, m.init.bytes))
 	if (i >= 0) throw changed(i)
+	const fetching = performance.now()
+	const spent: Spent = { requests: 0, firstByte: 0, body: 0 }
 	for (const [j, l] of rows.entries()) {
 		const meta = metas[j]!
 		const first = meta.keys[0]!
@@ -736,7 +808,7 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 		}
 		const parts: Uint8Array[] = []
 		for (let off = from; off < to; off += chunk) {
-			const bytes = await range(l.url, off, Math.min(to, off + chunk) - 1)
+			const bytes = await range(l.url, off, Math.min(to, off + chunk) - 1, spent)
 			parts.push(bytes)
 			n += bytes.length
 			progress(n)
@@ -745,9 +817,25 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 		pieces.push({ init: meta.init.bytes, fragments: concat(parts), zero: l.start - (first.time / meta.init.timescale) * 1000 })
 	}
 
+	const fetched = performance.now()
+	let bytes: Bytes
 	try {
-		return join(pieces).bytes
+		bytes = join(pieces).bytes
 	} catch (err) {
 		throw err instanceof Changed ? changed(err.piece) : err
 	}
+	const timing: ExportTiming = {
+		laminae: rows.length,
+		requests: spent.requests,
+		bytes: n,
+		total_ms: 0,
+		index_ms: fetching - began,
+		fetch_ms: fetched - fetching,
+		first_byte_ms: spent.firstByte,
+		body_ms: spent.body,
+		assemble_ms: performance.now() - fetched,
+		url: rows[0]!.url,
+	}
+
+	return { bytes, timing }
 }
