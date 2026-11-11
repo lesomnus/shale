@@ -38,8 +38,11 @@ lamina        32–512 MB   storage efficiency
 read chunk    ~16 MB      latency / fairness in the Device Queue
 ```
 
-A GET is served as a sequence of READ jobs, one per chunk. The file descriptor
-stays open for the whole session (see [§18](#18-delete-during-read)).
+A GET is served as a sequence of READ jobs, one per chunk. A GET of one byte
+range reads only up to the range's end (aligned to the device block), so a short
+range costs its own bytes rather than a whole chunk: with O_DIRECT nothing of a
+chunk read past it is kept for the next request. The file descriptor stays open
+for the whole session (see [§18](#18-delete-during-read)).
 
 ### 17.3 Prefetch
 

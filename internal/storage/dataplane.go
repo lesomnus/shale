@@ -918,6 +918,7 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return n, err
 	}}
 
+	cr.limit = rangeEnd(r.Header.Get("Range"), size)
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Cache-Control", "private, max-age=0")
@@ -991,6 +992,10 @@ type chunkReader struct {
 	size  int64
 	chunk int
 	read  func(off int64, b []byte) (int, error)
+	// limit, when set, is where the one requested range ends. A device read
+	// that starts before it stops there (aligned up) instead of taking a
+	// whole chunk: a short range costs its own bytes, not a chunk's.
+	limit int64
 
 	pos    int64
 	bufOff int64
@@ -1024,6 +1029,9 @@ func (c *chunkReader) Read(p []byte) (int, error) {
 		// The aligned chunk holding pos.
 		start := c.pos &^ (Align - 1)
 		want := c.chunk
+		if c.limit > c.pos && c.limit-start < int64(want) {
+			want = int((c.limit - start + Align - 1) &^ (Align - 1))
+		}
 		if rem := c.size - start; rem < int64(want) {
 			want = int((rem + Align - 1) &^ (Align - 1))
 		}
@@ -1141,4 +1149,33 @@ func (d *DataPlane) uploadAges(now time.Time) map[*Sink]time.Duration {
 	}
 
 	return out
+}
+
+// rangeEnd is where a request for one byte range ends, or 0 when it asks for
+// the whole file, several ranges, or something ServeContent will judge. It
+// only bounds device reads; ServeContent still decides what is served.
+func rangeEnd(h string, size int64) int64 {
+	spec, ok := strings.CutPrefix(strings.TrimSpace(h), "bytes=")
+	if !ok || strings.Contains(spec, ",") {
+		return 0
+	}
+	first, last, ok := strings.Cut(strings.TrimSpace(spec), "-")
+	if !ok {
+		return 0
+	}
+	if first == "" {
+		// A suffix: the tail, which ends where the file does.
+		return size
+	}
+	if _, err := strconv.ParseInt(first, 10, 64); err != nil {
+		return 0
+	}
+	if last == "" {
+		return size
+	}
+	end, err := strconv.ParseInt(last, 10, 64)
+	if err != nil || end < 0 {
+		return 0
+	}
+	return min(end+1, size)
 }

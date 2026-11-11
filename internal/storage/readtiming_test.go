@@ -102,8 +102,7 @@ func (tn timedNode) collect(t *testing.T) (map[string]metricdata.HistogramDataPo
 }
 
 // One read's time splits into the device's wait and read and the rest,
-// and the node counts what it read beside what it sent: a short range
-// costs a whole aligned chunk of the device.
+// and the node counts what it read beside what it sent.
 func TestReadTimingSplitsDeviceFromSending(t *testing.T) {
 	tn := newTimedNode(t)
 	key := fmt.Sprintf("laminae/2026/11/11/12/%s", pdid.New(pdid.Domain(9)).String())
@@ -122,8 +121,8 @@ func TestReadTimingSplitsDeviceFromSending(t *testing.T) {
 	}
 	require.InDelta(t, hist["shale.node.read_latency_ms"].Sum, hist["shale.node.read_wait_ms"].Sum+hist["shale.node.read_device_ms"].Sum+hist["shale.node.read_send_ms"].Sum, 0.01)
 	require.Equal(t, int64(1<<20), sums["shale.node.read_sent_bytes"])
-	// The lamina is shorter than one read chunk: its whole length was read.
-	require.GreaterOrEqual(t, sums["shale.node.read_device_bytes"], int64(len(body)))
+	// Only the range came off the device, not the chunk around it.
+	require.Equal(t, int64(1<<20), sums["shale.node.read_device_bytes"])
 }
 
 func TestExportReport(t *testing.T) {
@@ -166,4 +165,57 @@ func TestExportReport(t *testing.T) {
 	require.Equal(t, http.StatusMethodNotAllowed, tn.do(http.MethodGet, "/reports/export", get, nil, nil).Code)
 	_, sums = tn.collect(t)
 	require.Equal(t, int64(40000000), sums["shale.node.export_bytes"], "refused reports record nothing")
+}
+
+// A range reads its own bytes from the device, aligned, not a whole chunk,
+// and every shape of Range still answers exactly what was asked.
+func TestRangeReadsOnlyItsBytes(t *testing.T) {
+	tn := newTimedNode(t)
+	key := fmt.Sprintf("laminae/2026/11/11/12/%s", pdid.New(pdid.Domain(9)).String())
+	body := make([]byte, 6<<20+123)
+	for i := range body {
+		body[i] = byte(i*7 + i>>12)
+	}
+	put := tn.do(http.MethodPut, "/"+key, tn.sign(key, api.TokenOp_TOKEN_OP_PUT), map[string]string{HdrUploadOffset: "0", HdrUploadComplete: "?1"}, body)
+	require.Less(t, put.Code, 300, put.Body.String())
+	get := tn.sign(key, api.TokenOp_TOKEN_OP_GET)
+	deviceBytes := func() int64 {
+		_, sums := tn.collect(t)
+		return sums["shale.node.read_device_bytes"]
+	}
+	for _, c := range []struct {
+		rng        string
+		from, to   int // the bytes expected, [from, to)
+		maxDevice  int64
+		wholeOrAll bool
+	}{
+		{rng: "bytes=0-1048575", from: 0, to: 1 << 20, maxDevice: 1 << 20},
+		{rng: "bytes=5000-10000", from: 5000, to: 10001, maxDevice: 3 * Align},
+		{rng: "bytes=4194000-4195000", from: 4194000, to: 4195001, maxDevice: 2 * Align},
+		{rng: "bytes=6291000-", from: 6291000, to: len(body), maxDevice: 2*Align + int64(len(body)-6291000)},
+		{rng: "bytes=-100", from: len(body) - 100, to: len(body), maxDevice: 2 * Align},
+		{rng: "bytes=1048576-5242879", from: 1 << 20, to: 5 << 20, maxDevice: 4<<20 + Align},
+	} {
+		before := deviceBytes()
+		got := tn.do(http.MethodGet, "/"+key, get, map[string]string{"Range": c.rng}, nil)
+		require.Equal(t, http.StatusPartialContent, got.Code, c.rng)
+		require.Equal(t, body[c.from:c.to], got.Body.Bytes(), c.rng)
+		require.LessOrEqual(t, deviceBytes()-before, c.maxDevice, c.rng)
+	}
+	// Several ranges and no range keep reading by chunks, and answer whole.
+	got := tn.do(http.MethodGet, "/"+key, get, map[string]string{"Range": "bytes=0-9,100-109"}, nil)
+	require.Equal(t, http.StatusPartialContent, got.Code)
+	require.Contains(t, got.Header().Get("Content-Type"), "multipart/byteranges")
+	got = tn.do(http.MethodGet, "/"+key, get, nil, nil)
+	require.Equal(t, http.StatusOK, got.Code)
+	require.Equal(t, body, got.Body.Bytes())
+}
+
+func TestRangeEnd(t *testing.T) {
+	for h, want := range map[string]int64{
+		"": 0, "bytes=0-99": 100, "bytes=10-": 1000, "bytes=-5": 1000, "bytes=0-5000": 1000,
+		"bytes=0-1,5-6": 0, "items=0-9": 0, "bytes=x-9": 0, "bytes=0-y": 0, "bytes=9": 0,
+	} {
+		require.Equal(t, want, rangeEnd(h, 1000), h)
+	}
 }
