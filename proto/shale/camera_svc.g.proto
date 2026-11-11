@@ -1,0 +1,1362 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "shale/camera.proto";
+import "shale/camera_preset.proto";
+import "shale/host_svc.g.proto";
+import "shale/payday/tenant_svc.g.proto";
+import "shale/set_svc.g.proto";
+import "shale/site_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service CameraNetworkService {
+  // Add creates a new CameraNetwork
+  rpc Add(CameraNetworkAddRequest) returns (CameraNetwork);
+  // Get retrieves a CameraNetwork
+  rpc Get(CameraNetworkGetRequest) returns (CameraNetwork);
+  // Patch updates an existing CameraNetwork
+  rpc Patch(CameraNetworkPatchRequest) returns (CameraNetwork);
+  // Apply applies a patch document to an existing CameraNetwork
+  rpc Apply(CameraNetworkApplyRequest) returns (CameraNetwork);
+  // Erase deletes a CameraNetwork
+  rpc Erase(CameraNetworkRef) returns (CameraNetworkEraseResponse);
+  // List reads CameraNetworks a page at a time.
+  rpc List(CameraNetworkListRequest) returns (CameraNetworkListResponse);
+  // Watch the CameraNetworks this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(CameraNetworkWatchRequest) returns (stream CameraNetworkWatchResponse);
+  rpc Configure(CameraNetworkConfigureRequest) returns (CameraNetwork);
+}
+
+service CameraDeviceService {
+  // Add creates a new CameraDevice
+  rpc Add(CameraDeviceAddRequest) returns (CameraDevice);
+  // Get retrieves a CameraDevice
+  rpc Get(CameraDeviceGetRequest) returns (CameraDevice);
+  // Patch updates an existing CameraDevice
+  rpc Patch(CameraDevicePatchRequest) returns (CameraDevice);
+  // Apply applies a patch document to an existing CameraDevice
+  rpc Apply(CameraDeviceApplyRequest) returns (CameraDevice);
+  // Erase deletes a CameraDevice
+  rpc Erase(CameraDeviceRef) returns (CameraDeviceEraseResponse);
+  // List reads CameraDevices a page at a time.
+  rpc List(CameraDeviceListRequest) returns (CameraDeviceListResponse);
+  // Watch the CameraDevices this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(CameraDeviceWatchRequest) returns (stream CameraDeviceWatchResponse);
+  rpc Claim(CameraDeviceClaimRequest) returns (CameraDevice);
+  rpc Observe(CameraDeviceObserveRequest) returns (CameraDevice);
+}
+
+service CameraAssignmentService {
+  // Add creates a new CameraAssignment
+  rpc Add(CameraAssignmentAddRequest) returns (CameraAssignment);
+  // Get retrieves a CameraAssignment
+  rpc Get(CameraAssignmentGetRequest) returns (CameraAssignment);
+  // Patch updates an existing CameraAssignment
+  rpc Patch(CameraAssignmentPatchRequest) returns (CameraAssignment);
+  // Apply applies a patch document to an existing CameraAssignment
+  rpc Apply(CameraAssignmentApplyRequest) returns (CameraAssignment);
+  // Erase deletes a CameraAssignment
+  rpc Erase(CameraAssignmentRef) returns (CameraAssignmentEraseResponse);
+  // List reads CameraAssignments a page at a time.
+  rpc List(CameraAssignmentListRequest) returns (CameraAssignmentListResponse);
+  // Watch the CameraAssignments this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(CameraAssignmentWatchRequest) returns (stream CameraAssignmentWatchResponse);
+  rpc Assign(CameraAssignmentAssignRequest) returns (CameraAssignment);
+  rpc Snapshot(CameraAssignmentSnapshotRequest) returns (CameraCatalogSnapshot);
+  rpc Handover(CameraAssignmentHandoverRequest) returns (CameraAssignment);
+  // Only the currently assigned adopted Producer may use runtime acknowledgments.
+  rpc Application(CameraApplicationRequest) returns (CameraApplyState);
+  rpc BeginApply(CameraBeginApplyRequest) returns (CameraApplication);
+  rpc Applied(CameraAppliedRequest) returns (CameraApplication);
+}
+
+service CameraBindingService {
+  // Add creates a new CameraBinding
+  rpc Add(CameraBindingAddRequest) returns (CameraBinding);
+  // Get retrieves a CameraBinding
+  rpc Get(CameraBindingGetRequest) returns (CameraBinding);
+  // Patch updates an existing CameraBinding
+  rpc Patch(CameraBindingPatchRequest) returns (CameraBinding);
+  // Apply applies a patch document to an existing CameraBinding
+  rpc Apply(CameraBindingApplyRequest) returns (CameraBinding);
+  // Erase deletes a CameraBinding
+  rpc Erase(CameraBindingRef) returns (CameraBindingEraseResponse);
+  // List reads CameraBindings a page at a time.
+  rpc List(CameraBindingListRequest) returns (CameraBindingListResponse);
+  // Watch the CameraBindings this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(CameraBindingWatchRequest) returns (stream CameraBindingWatchResponse);
+  rpc Bind(CameraBindingBindRequest) returns (CameraBinding);
+  rpc SetCollect(CameraBindingSetCollectRequest) returns (CameraBinding);
+}
+
+service CameraJobService {
+  // Add creates a new CameraJob
+  rpc Add(CameraJobAddRequest) returns (CameraJob);
+  // Get retrieves a CameraJob
+  rpc Get(CameraJobGetRequest) returns (CameraJob);
+  // Patch updates an existing CameraJob
+  rpc Patch(CameraJobPatchRequest) returns (CameraJob);
+  // Apply applies a patch document to an existing CameraJob
+  rpc Apply(CameraJobApplyRequest) returns (CameraJob);
+  // Erase deletes a CameraJob
+  rpc Erase(CameraJobRef) returns (CameraJobEraseResponse);
+  // List reads CameraJobs a page at a time.
+  rpc List(CameraJobListRequest) returns (CameraJobListResponse);
+  // Watch the CameraJobs this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(CameraJobWatchRequest) returns (stream CameraJobWatchResponse);
+  rpc Create(CameraJobCreateRequest) returns (CameraJob);
+  rpc Claim(CameraJobClaimRequest) returns (CameraJob);
+  rpc Report(CameraJobReportRequest) returns (CameraJob);
+  rpc Publish(CameraJobPublishRequest) returns (CameraJobPublishResponse);
+}
+
+message CameraNetworkAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  repeated string cidrs = 8;
+  bool multicast = 9 [features.field_presence = IMPLICIT];
+  repeated string seeds = 10;
+  string interface_hint = 11 [features.field_presence = IMPLICIT];
+  int64 revision = 12 [features.field_presence = IMPLICIT];
+  bytes active_policy_id = 16;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message CameraNetworkGetRequest {
+  CameraNetworkRef ref = 1;
+  CameraNetworkSelect select = 2;
+}
+
+message CameraNetworkRef {
+  oneof key {
+    bytes id = 1;
+  }
+}
+
+message CameraNetworkSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  bool cidrs = 8;
+  bool multicast = 9;
+  bool seeds = 10;
+  bool interface_hint = 11;
+  bool revision = 12;
+  bool active_policy_id = 16;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message CameraNetworkPatchRequest {
+  CameraNetworkRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  repeated string cidrs = 16;
+  bool multicast = 18;
+  repeated string seeds = 20;
+  string interface_hint = 22;
+  int64 revision = 24;
+  bytes active_policy_id = 32;
+  // Clear active_policy_id instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and active_policy_id clears.
+  bool active_policy_id_null = 33;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message CameraNetworkApplyRequest {
+  CameraNetworkRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message CameraNetworkEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message CameraNetworkListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated CameraNetworkFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message CameraNetworkListResponse {
+  repeated CameraNetwork items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraNetworkFilter {
+  CameraNetworkRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+}
+
+message CameraNetworkWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated CameraNetworkFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraNetworkWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated CameraNetworkWatchItem items = 1;
+}
+
+message CameraNetworkWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  CameraNetwork value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraNetworkConfigureRequest {
+  CameraNetworkRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  repeated string cidrs = 8;
+  bool multicast = 9 [features.field_presence = IMPLICIT];
+  repeated string seeds = 10;
+  string interface_hint = 11 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp expected_version = 13;
+}
+
+message CameraDeviceAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  CameraNetworkRef network = 8;
+  string device_key = 9 [features.field_presence = IMPLICIT];
+  CameraIdentityEvidence identity = 10;
+  repeated CameraObservedEndpoint endpoints = 11;
+  int64 observation_revision = 12 [features.field_presence = IMPLICIT];
+  bytes active_job_id = 16;
+  int64 claim_generation = 17 [features.field_presence = IMPLICIT];
+  CameraEnrollmentObservation enrollment = 18;
+  CameraFactoryTLSState factory_tls = 19;
+  CameraFirmwareTLSState firmware_tls = 20;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message CameraDeviceGetRequest {
+  CameraDeviceRef ref = 1;
+  CameraDeviceSelect select = 2;
+}
+
+message CameraDeviceRef {
+  oneof key {
+    bytes id = 1;
+    CameraDeviceRefByIdentity identity = 8;
+  }
+}
+
+message CameraDeviceRefByIdentity {
+  CameraNetworkRef network = 8;
+  string device_key = 9;
+}
+
+message CameraDeviceSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  CameraNetworkSelect network = 8;
+  bool device_key = 9;
+  bool identity = 10;
+  bool endpoints = 11;
+  bool observation_revision = 12;
+  bool active_job_id = 16;
+  bool claim_generation = 17;
+  bool enrollment = 18;
+  bool factory_tls = 19;
+  bool firmware_tls = 20;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message CameraDevicePatchRequest {
+  CameraDeviceRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  CameraIdentityEvidence identity = 20;
+  // Clear identity instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and identity clears.
+  bool identity_null = 21;
+  repeated CameraObservedEndpoint endpoints = 22;
+  int64 observation_revision = 24;
+  bytes active_job_id = 32;
+  // Clear active_job_id instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and active_job_id clears.
+  bool active_job_id_null = 33;
+  int64 claim_generation = 34;
+  CameraEnrollmentObservation enrollment = 36;
+  // Clear enrollment instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and enrollment clears.
+  bool enrollment_null = 37;
+  CameraFactoryTLSState factory_tls = 38;
+  // Clear factory_tls instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and factory_tls clears.
+  bool factory_tls_null = 39;
+  CameraFirmwareTLSState firmware_tls = 40;
+  // Clear firmware_tls instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and firmware_tls clears.
+  bool firmware_tls_null = 41;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message CameraDeviceApplyRequest {
+  CameraDeviceRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message CameraDeviceEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message CameraDeviceListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated CameraDeviceFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message CameraDeviceListResponse {
+  repeated CameraDevice items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraDeviceFilter {
+  CameraDeviceRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  CameraNetworkRef network = 4;
+}
+
+message CameraDeviceWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated CameraDeviceFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraDeviceWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated CameraDeviceWatchItem items = 1;
+}
+
+message CameraDeviceWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  CameraDevice value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraDeviceClaimRequest {
+  CameraNetworkRef network = 1;
+  string device_key = 2 [features.field_presence = IMPLICIT];
+  string name = 3 [features.field_presence = IMPLICIT];
+  repeated CameraObservedEndpoint endpoints = 4;
+}
+
+message CameraDeviceObserveRequest {
+  CameraDeviceRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  CameraIdentityEvidence identity = 3;
+  repeated CameraObservedEndpoint endpoints = 4;
+}
+
+message CameraAssignmentAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  CameraNetworkRef network = 8;
+  SetRef set = 9;
+  ProducerRef producer = 10;
+  string worker_slot = 11 [features.field_presence = IMPLICIT];
+  bytes worker_id = 12;
+  int64 generation = 16 [features.field_presence = IMPLICIT];
+  int64 catalog_revision = 17 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message CameraAssignmentGetRequest {
+  CameraAssignmentRef ref = 1;
+  CameraAssignmentSelect select = 2;
+}
+
+message CameraAssignmentRef {
+  oneof key {
+    bytes id = 1;
+    CameraAssignmentRefBySet set = 9;
+  }
+}
+
+message CameraAssignmentRefBySet {
+  SetRef set = 9;
+}
+
+message CameraAssignmentSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  CameraNetworkSelect network = 8;
+  SetSelect set = 9;
+  ProducerSelect producer = 10;
+  bool worker_slot = 11;
+  bool worker_id = 12;
+  bool generation = 16;
+  bool catalog_revision = 17;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message CameraAssignmentPatchRequest {
+  CameraAssignmentRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  ProducerRef producer = 20;
+  string worker_slot = 22;
+  bytes worker_id = 24;
+  // Clear worker_id instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and worker_id clears.
+  bool worker_id_null = 25;
+  int64 generation = 32;
+  int64 catalog_revision = 34;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message CameraAssignmentApplyRequest {
+  CameraAssignmentRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message CameraAssignmentEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message CameraAssignmentListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated CameraAssignmentFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message CameraAssignmentListResponse {
+  repeated CameraAssignment items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraAssignmentFilter {
+  CameraAssignmentRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  CameraNetworkRef network = 4;
+  ProducerRef producer = 5;
+  SetRef set = 6;
+}
+
+message CameraAssignmentWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated CameraAssignmentFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraAssignmentWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated CameraAssignmentWatchItem items = 1;
+}
+
+message CameraAssignmentWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  CameraAssignment value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraAssignmentAssignRequest {
+  CameraAssignmentRef ref = 1;
+  CameraNetworkRef network = 2;
+  ProducerRef producer = 3;
+  string worker_slot = 4 [features.field_presence = IMPLICIT];
+  bytes worker_id = 5 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp expected_version = 6;
+}
+
+message CameraAssignmentSnapshotRequest {
+  CameraAssignmentRef ref = 1;
+}
+
+message CameraCatalogSnapshot {
+  CameraAssignment assignment = 1;
+  int64 revision = 2 [features.field_presence = IMPLICIT];
+  repeated CameraCaptureSpec sources = 3;
+}
+
+message CameraAssignmentHandoverRequest {
+  CameraAssignmentRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  int64 expected_generation = 3 [features.field_presence = IMPLICIT];
+  ProducerRef replacement = 4;
+}
+
+message CameraApplicationRequest {
+  CameraApplyTarget target = 1;
+}
+
+message CameraBeginApplyRequest {
+  CameraApplyTarget target = 1;
+  int64 expected_sequence = 2 [features.field_presence = IMPLICIT];
+  string intent_key = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraAppliedRequest {
+  CameraApplyTarget target = 1;
+  int64 sequence = 2 [features.field_presence = IMPLICIT];
+  string capture_epoch = 3 [features.field_presence = IMPLICIT];
+  CameraRuntimeMedia media = 4;
+  CameraCredentialReference used_credential = 5;
+}
+
+message CameraBindingAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  CameraAssignmentRef assignment = 8;
+  CameraDeviceRef device = 9;
+  SourceRef source = 10;
+  string logical_key = 11 [features.field_presence = IMPLICIT];
+  string source_alias = 12 [features.field_presence = IMPLICIT];
+  CameraCaptureSpec desired = 16;
+  CameraJobObservation observed = 17;
+  int64 applied_revision = 18 [features.field_presence = IMPLICIT];
+  bool collect = 19 [features.field_presence = IMPLICIT];
+  CameraApplication starting_application = 20;
+  CameraApplication applied_application = 21;
+  repeated CameraApplication previous_applications = 22;
+  int64 admitted_spec_revision = 23 [features.field_presence = IMPLICIT];
+  int64 admitted_assignment_generation = 24 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message CameraBindingGetRequest {
+  CameraBindingRef ref = 1;
+  CameraBindingSelect select = 2;
+}
+
+message CameraBindingRef {
+  oneof key {
+    bytes id = 1;
+    CameraBindingRefByLogical logical = 2;
+    CameraBindingRefBySource source = 10;
+  }
+}
+
+message CameraBindingRefByLogical {
+  TenantRef tenant = 2;
+  string logical_key = 11;
+}
+
+message CameraBindingRefBySource {
+  SourceRef source = 10;
+}
+
+message CameraBindingSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  CameraAssignmentSelect assignment = 8;
+  CameraDeviceSelect device = 9;
+  SourceSelect source = 10;
+  bool logical_key = 11;
+  bool source_alias = 12;
+  bool desired = 16;
+  bool observed = 17;
+  bool applied_revision = 18;
+  bool collect = 19;
+  bool starting_application = 20;
+  bool applied_application = 21;
+  bool previous_applications = 22;
+  bool admitted_spec_revision = 23;
+  bool admitted_assignment_generation = 24;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message CameraBindingPatchRequest {
+  CameraBindingRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  CameraCaptureSpec desired = 32;
+  // Clear desired instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and desired clears.
+  bool desired_null = 33;
+  CameraJobObservation observed = 34;
+  // Clear observed instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and observed clears.
+  bool observed_null = 35;
+  int64 applied_revision = 36;
+  bool collect = 38;
+  CameraApplication starting_application = 40;
+  // Clear starting_application instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and starting_application clears.
+  bool starting_application_null = 41;
+  CameraApplication applied_application = 42;
+  // Clear applied_application instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and applied_application clears.
+  bool applied_application_null = 43;
+  repeated CameraApplication previous_applications = 44;
+  int64 admitted_spec_revision = 46;
+  int64 admitted_assignment_generation = 48;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message CameraBindingApplyRequest {
+  CameraBindingRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message CameraBindingEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message CameraBindingListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated CameraBindingFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message CameraBindingListResponse {
+  repeated CameraBinding items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraBindingFilter {
+  CameraBindingRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  CameraAssignmentRef assignment = 4;
+  CameraDeviceRef device = 5;
+  SourceRef source = 6;
+}
+
+message CameraBindingWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated CameraBindingFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraBindingWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated CameraBindingWatchItem items = 1;
+}
+
+message CameraBindingWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  CameraBinding value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraBindingBindRequest {
+  CameraAssignmentRef assignment = 1;
+  CameraDeviceRef device = 2;
+  string logical_key = 3 [features.field_presence = IMPLICIT];
+  string source_alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  // Explicitly import an existing Source. It must be in this immutable Set.
+  SourceRef source = 6;
+}
+
+message CameraBindingSetCollectRequest {
+  CameraBindingRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  bool collect = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraJobAddRequest {
+  bytes id = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  CameraBindingRef binding = 8;
+  CameraAssignmentRef assignment = 9;
+  string request_key = 10 [features.field_presence = IMPLICIT];
+  bytes request_hash = 11 [features.field_presence = IMPLICIT];
+  CameraJobStage stage = 12 [features.field_presence = IMPLICIT];
+  int64 lease_generation = 16 [features.field_presence = IMPLICIT];
+  int64 assignment_generation = 17 [features.field_presence = IMPLICIT];
+  bytes lease_owner = 18;
+  google.protobuf.Timestamp lease_expires = 19;
+  CameraJobInputs inputs = 20;
+  CameraJobObservation observed = 21;
+  int64 published_revision = 22 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_published = 23;
+  string last_operation_key = 24 [features.field_presence = IMPLICIT];
+  bytes last_operation_hash = 25;
+  CameraResolvedPreset pinned_preset = 26;
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message CameraJobGetRequest {
+  CameraJobRef ref = 1;
+  CameraJobSelect select = 2;
+}
+
+message CameraJobRef {
+  oneof key {
+    bytes id = 1;
+    CameraJobRefByIntent intent = 2;
+  }
+}
+
+message CameraJobRefByIntent {
+  TenantRef tenant = 2;
+  string request_key = 10;
+}
+
+message CameraJobSelect {
+  bool all = 1;
+  TenantSelect tenant = 2;
+  SiteSelect site = 3;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  CameraBindingSelect binding = 8;
+  CameraAssignmentSelect assignment = 9;
+  bool request_key = 10;
+  bool request_hash = 11;
+  bool stage = 12;
+  bool lease_generation = 16;
+  bool assignment_generation = 17;
+  bool lease_owner = 18;
+  bool lease_expires = 19;
+  bool inputs = 20;
+  bool observed = 21;
+  bool published_revision = 22;
+  bool date_published = 23;
+  bool last_operation_key = 24;
+  bool last_operation_hash = 25;
+  bool pinned_preset = 26;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message CameraJobPatchRequest {
+  CameraJobRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  CameraJobStage stage = 24;
+  int64 lease_generation = 32;
+  int64 assignment_generation = 34;
+  bytes lease_owner = 36;
+  // Clear lease_owner instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and lease_owner clears.
+  bool lease_owner_null = 37;
+  google.protobuf.Timestamp lease_expires = 38;
+  // Clear lease_expires instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and lease_expires clears.
+  bool lease_expires_null = 39;
+  CameraJobObservation observed = 42;
+  // Clear observed instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and observed clears.
+  bool observed_null = 43;
+  int64 published_revision = 44;
+  google.protobuf.Timestamp date_published = 46;
+  // Clear date_published instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_published clears.
+  bool date_published_null = 47;
+  string last_operation_key = 48;
+  bytes last_operation_hash = 50;
+  // Clear last_operation_hash instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and last_operation_hash clears.
+  bool last_operation_hash_null = 51;
+  CameraResolvedPreset pinned_preset = 52;
+  // Clear pinned_preset instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and pinned_preset clears.
+  bool pinned_preset_null = 53;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message CameraJobApplyRequest {
+  CameraJobRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message CameraJobEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message CameraJobListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated CameraJobFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message CameraJobListResponse {
+  repeated CameraJob items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraJobFilter {
+  CameraJobRef ref = 1;
+  TenantRef tenant = 2;
+  SiteRef site = 3;
+  CameraAssignmentRef assignment = 4;
+  CameraBindingRef binding = 5;
+}
+
+message CameraJobWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated CameraJobFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraJobWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated CameraJobWatchItem items = 1;
+}
+
+message CameraJobWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  CameraJob value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message CameraJobCreateRequest {
+  CameraBindingRef binding = 1;
+  string request_key = 2 [features.field_presence = IMPLICIT];
+  CameraJobInputs inputs = 3;
+}
+
+message CameraJobClaimRequest {
+  CameraJobRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  string operation_key = 3 [features.field_presence = IMPLICIT];
+  int64 lease_seconds = 4 [features.field_presence = IMPLICIT];
+}
+
+message CameraJobReportRequest {
+  CameraJobRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  string operation_key = 3 [features.field_presence = IMPLICIT];
+  int64 lease_generation = 4 [features.field_presence = IMPLICIT];
+  int64 assignment_generation = 5 [features.field_presence = IMPLICIT];
+  CameraJobStage stage = 6 [features.field_presence = IMPLICIT];
+  CameraJobObservation observed = 7;
+}
+
+message CameraJobPublishRequest {
+  CameraJobRef ref = 1;
+  google.protobuf.Timestamp expected_version = 2;
+  string operation_key = 3 [features.field_presence = IMPLICIT];
+  int64 lease_generation = 4 [features.field_presence = IMPLICIT];
+  int64 assignment_generation = 5 [features.field_presence = IMPLICIT];
+  CameraCaptureSpec spec = 6;
+  CameraJobObservation observed = 7;
+}
+
+message CameraJobPublishResponse {
+  CameraJob job = 1;
+  CameraBinding binding = 2;
+  int64 catalog_revision = 3 [features.field_presence = IMPLICIT];
+}

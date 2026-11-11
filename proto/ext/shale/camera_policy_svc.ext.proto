@@ -1,0 +1,61 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "shale/camera.proto";
+import "shale/camera_policy.proto";
+import "shale/camera_bootstrap.proto";
+import "shale/camera_preset_svc.g.proto";
+import "shale/camera_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service CameraPolicyService {
+  rpc Create(CameraPolicyCreateRequest) returns (CameraPolicy);
+  rpc Activate(CameraPolicyActivateRequest) returns (CameraNetwork);
+  // Explicit reapply creates a new pinned job against the same binding/Source.
+  rpc Enroll(CameraPolicyEnrollRequest) returns (CameraJob);
+  // Scoped observations never grant general inventory mutation or credentials.
+  rpc Observe(CameraPolicyObserveRequest) returns (CameraPolicyObserveResponse);
+  // First trust is available only before any binding, job, or camera secret.
+  rpc TrustFactoryTLS(CameraPolicyTrustFactoryTLSRequest) returns (CameraPolicyObserveResponse);
+}
+message CameraPolicyCreateRequest {
+  CameraNetworkRef network = 1;
+  CameraPresetRef preset = 2;
+  string policy_key = 3 [features.field_presence = IMPLICIT];
+  string revision = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  CameraEnrollmentPolicy enrollment = 6;
+}
+message CameraPolicyActivateRequest {
+  CameraPolicyRef ref = 1;
+  google.protobuf.Timestamp expected_network_version = 2;
+}
+message CameraPolicyEnrollRequest {
+  CameraBindingRef binding = 1;
+  CameraPolicyRef policy = 2;
+  string request_key = 3 [features.field_presence = IMPLICIT];
+}
+message CameraPolicyObserveRequest {
+  CameraAssignmentRef assignment = 1;
+  int64 assignment_generation = 2 [features.field_presence = IMPLICIT];
+  // A discovery deduplication hint, never authenticated inventory ownership.
+  string discovery_id = 3 [features.field_presence = IMPLICIT];
+  CameraIdentityEvidence identity = 4;
+  repeated CameraObservedEndpoint endpoints = 5;
+}
+message CameraPolicyObserveResponse {
+  CameraDevice device = 1;
+  CameraBinding binding = 2;
+  CameraJob job = 3;
+  string code = 4 [features.field_presence = IMPLICIT];
+  CameraFactoryTLSPlan factory_tls_plan = 5;
+}
+message CameraPolicyTrustFactoryTLSRequest {
+  CameraFactoryTLSPlan plan = 1;
+  CameraDeviceTLSIdentity identity = 2;
+  // The assigned Worker's credential-free known factory challenge observed
+  // that the initial administrator password is still unset.
+  bool activation_required = 3 [features.field_presence = IMPLICIT];
+}

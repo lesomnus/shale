@@ -15,7 +15,8 @@ type Track struct {
 	Handler string
 	// Entry is the sample entry's type: `avc1`/`avc3` for H.264, `hvc1`/
 	// `hev1` for H.265, `mp4a` for AAC, `Opus` for Opus.
-	Entry string
+	Entry         string
+	Width, Height int
 	// Config is the codec configuration box's payload: `avcC`, `hvcC`,
 	// `dOps`, or `esds`; nil when the entry has none.
 	Config []byte
@@ -195,6 +196,10 @@ func parseStsd(t *Track, p []byte) {
 	switch {
 	case t.Handler == "vide":
 		fields = 8 + 70
+		if len(body) >= 28 {
+			t.Width = int(uint16(body[24])<<8 | uint16(body[25]))
+			t.Height = int(uint16(body[26])<<8 | uint16(body[27]))
+		}
 	case t.Handler == "soun":
 		fields = 8 + 20
 		if len(body) >= 28 {

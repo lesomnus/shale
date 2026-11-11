@@ -456,12 +456,16 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 		return nil, err
 	}
 
+	reports, err := s.cameraSourceReports(ctx, p, req.GetSources())
+	if err != nil {
+		return nil, err
+	}
 	now := s.d.now()
 	if _, err := s.own(ctx).Producer().Patch(ctx, api.ProducerPatchRequest_builder{
 		Ref:      api.ProducerRef_builder{Id: p.GetId()}.Build(),
 		DateSeen: timestamppb.New(now),
 		Status: api.ProducerStatus_builder{
-			Sources:      req.GetSources(),
+			Sources:      reports,
 			Load:         req.GetLoad(),
 			DateReported: timestamppb.New(now),
 		}.Build(),
@@ -472,7 +476,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 	}
 
 	// Starvation accounting on each source (§38.5).
-	suggestions, err := s.starvation(ctx, p, req.GetSources())
+	suggestions, err := s.starvation(ctx, p, reports)
 	if err != nil {
 		return nil, err
 	}

@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -14,9 +17,28 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: download integrity checks
+        run: python3 .github/scripts/test_fetch_tool.py
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/shale-ci-tools
+          key: shale-ci-buf-linux-amd64-1.72.0-8720830e26a733da
+      - name: pinned generation tool
+        # Same Buf release and SHA as the pinned Payday tool. Retry only HTTP
+        # transport; an actual generation difference must fail on its first run.
+        # Official v1.72.0 buf-Linux-x86_64 release asset; the API download route
+        # avoids the release-page route that repeatedly returned HTTP 504.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sh .github/scripts/fetch-tool.sh \
+            https://api.github.com/repos/bufbuild/buf/releases/assets/480772580 \
+            8720830e26a733da55bb89bcd3cb44849c0965fc0c44fb5d691cccdc64dca5af \
+            "$RUNNER_TEMP/shale-ci-tools/buf"
+          echo "PD_BUF=$RUNNER_TEMP/shale-ci-tools/buf" >> "$GITHUB_ENV"
       - name: generation is in step
         run: go tool pd gen --check .
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: npm
@@ -24,7 +46,7 @@ jobs:
       - name: console
         # The page the control plane embeds (§40.4): type-checked and built,
         # so what `go build` embeds below is a real one.
-        run: cd ts && npm ci --no-audit --no-fund && npm run build
+        run: cd ts && npm ci --no-audit --no-fund && npm run build && node test/sei.mjs
       - name: build
         run: go build ./...
       - name: sandbox compiles
@@ -33,10 +55,19 @@ jobs:
         run: GOOS=js GOARCH=wasm go build -tags grpcnotrace -o /dev/null ./wasm
       - name: vet
         run: go vet ./...
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/shale-ffmpeg
+          key: shale-ci-ffmpeg-btbn-n8.1.3-linux64-41e9c565594c3906
       - name: ffmpeg
         # The producer's live helper and its audio fallback run ffmpeg
-        # (§38.3, §38.7); the tests that need it skip without it.
-        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+        # (§38.3, §38.7); the tests that need it skip without it. A pinned
+        # static build, not apt: when the runner could not resolve the Ubuntu
+        # mirrors, apt spent an hour per job trying every package on each.
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: sh .github/scripts/ffmpeg.sh "$RUNNER_TEMP/shale-ffmpeg"
       - name: test
         # The e2e harness writes directory sinks, whose records are user
         # xattrs (§23.1): an ext4 image on a loop device has them wherever
@@ -45,7 +76,7 @@ jobs:
           fallocate -l 2G /tmp/shale.img && mkfs.ext4 -q -F /tmp/shale.img
           sudo mkdir -p /mnt/shale-tmp && sudo mount -o loop,user_xattr /tmp/shale.img /mnt/shale-tmp
           sudo chmod 1777 /mnt/shale-tmp
-          TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 20m
+          TMPDIR=/mnt/shale-tmp go test ./... -count=1 -timeout 30m
   # The tests whose goroutines meet, under the race detector. The test job
   # cannot see a race, since a test checks what it ends with: the producer's
   # heartbeat, stall watch and negotiations shared a source with its capture
@@ -68,10 +99,17 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/shale-ffmpeg
+          key: shale-ci-ffmpeg-btbn-n8.1.3-linux64-41e9c565594c3906
       - name: ffmpeg
         # The capture tests, which read the process's stderr beside its
-        # stream, and the live helper's.
-        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+        # stream, and the live helper's. The same pinned build as the test job.
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: sh .github/scripts/ffmpeg.sh "$RUNNER_TEMP/shale-ffmpeg"
       - name: test
         # The sinks' user xattrs, as in the test job; the test binaries are
         # built beside it, since race-built they outgrow its two gigabytes.
@@ -85,6 +123,10 @@ jobs:
           e2e+='|Live|LiveAlways|LiveNack|LivePacing|LiveWall'
           e2e+='|RelayRestart|ControlPlaneDownWhileWatching'
           e2e+='|DelegatedViewing|DelegatedViewingEveryPerson'
+          e2e+='|CameraProvisioningRecordsAndResumes|CameraDerivedCeilingsRecord|CameraControl.*'
+          e2e+='|CameraWorker.*|CameraCredential.*|CameraPolicy.*'
+          e2e+='|SourceCatalog.*|ProducerLifecycle.*|ProducerHistorical.*|ProducerApplication.*|ProducerManaged.*|LiveEpoch.*'
+          e2e+='|Edge.*|Qualification.*'
           go test -race -count=1 -timeout 20m -run "^Test($e2e)\$" ./internal/e2e/
   package:
     runs-on: ubuntu-latest
@@ -98,7 +140,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: npm

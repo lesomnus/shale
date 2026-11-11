@@ -2,10 +2,8 @@ package producer
 
 import (
 	"context"
-	"encoding/xml"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +11,10 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/camera/discovery"
+	"github.com/lesomnus/shale/camera/media"
 )
 
 // Discovery (§38.4): what this host can see, as a configuration skeleton
@@ -137,61 +139,25 @@ func alsaDevices() []string {
 // onvifDiscover is WS-Discovery on the local network: one Probe to the
 // multicast group, and the XAddrs of whatever answers.
 func onvifDiscover(ctx context.Context, wait time.Duration) []string {
-	probe := `<?xml version="1.0" encoding="UTF-8"?>
-<e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope" xmlns:w="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:dn="http://www.onvif.org/ver10/network/wsdl">
-<e:Header><w:MessageID>uuid:shale-` + fmt.Sprint(time.Now().UnixNano()) + `</w:MessageID><w:To e:mustUnderstand="true">urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To><w:Action e:mustUnderstand="true">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</w:Action></e:Header>
-<e:Body><d:Probe><d:Types>dn:NetworkVideoTransmitter</d:Types></d:Probe></e:Body></e:Envelope>`
-	conn, err := net.ListenPacket("udp4", ":0")
-	if err != nil {
-		return nil
-	}
-	defer conn.Close()
-	dst := &net.UDPAddr{IP: net.IPv4(239, 255, 255, 250), Port: 3702}
-	if _, err := conn.WriteTo([]byte(probe), dst); err != nil {
-		return nil
-	}
-	deadline := time.Now().Add(wait)
-	conn.SetReadDeadline(deadline)
+	observations, _ := (discovery.Discoverer{}).Discover(ctx, camera.DiscoveryScope{
+		ID: "producer-scan", Timeout: wait, Multicast: true,
+	})
 	seen := map[string]bool{}
 	var out []string
-	buf := make([]byte, 64<<10)
-	for {
-		n, _, err := conn.ReadFrom(buf)
-		if err != nil {
-			break
-		}
-		for _, x := range xaddrs(buf[:n]) {
-			if !seen[x] {
-				seen[x] = true
-				out = append(out, x)
+	for _, observation := range observations {
+		for _, endpoint := range observation.Device.Endpoints {
+			if !seen[endpoint.URL] {
+				seen[endpoint.URL] = true
+				out = append(out, endpoint.URL)
 			}
 		}
 	}
 	sort.Strings(out)
-
 	return out
 }
 
-// xaddrs pulls the XAddrs out of a ProbeMatch without caring about the
-// namespaces.
-func xaddrs(b []byte) []string {
-	dec := xml.NewDecoder(strings.NewReader(string(b)))
-	var out []string
-	for {
-		tok, err := dec.Token()
-		if err != nil {
-			break
-		}
-		if se, ok := tok.(xml.StartElement); ok && se.Name.Local == "XAddrs" {
-			var v string
-			if err := dec.DecodeElement(&v, &se); err == nil {
-				out = append(out, strings.Fields(v)...)
-			}
-		}
-	}
-
-	return out
-}
+// xaddrs preserves the scan parser for callers and tests of the old wrapper.
+func xaddrs(b []byte) []string { return discovery.XAddrs(b) }
 
 // WriteSkeleton prints the scan as a configuration skeleton (§38.4).
 func (s Scan) WriteSkeleton(w io.Writer) {
@@ -312,9 +278,43 @@ func Probe(ctx context.Context, ffmpeg string, sources []SourceConfig, d time.Du
 	Info(string, ...any)
 	Warn(string, ...any)
 }) []ProbeResult {
+	return ProbeWithProvider(ctx, ffmpeg, sources, d, log, nil)
+}
+
+// ProbeWithProvider uses the independent network verifier for RTSP sources and
+// preserves the local capture probe for USB/ALSA/encoder diagnostics.
+func ProbeWithProvider(ctx context.Context, ffmpeg string, sources []SourceConfig, d time.Duration, log interface {
+	Info(string, ...any)
+	Warn(string, ...any)
+}, auth camera.AuthProvider) []ProbeResult {
 	var out []ProbeResult
 	for _, sc := range sources {
 		res := ProbeResult{Alias: sc.Alias}
+		if strings.HasPrefix(strings.ToLower(sc.Input), "rtsp") {
+			scope := sc.Scope
+			if scope.NetworkID == "" {
+				scope.NetworkID = "local"
+			}
+			verifier := media.Verifier{AuthProvider: auth, Ffmpeg: ffmpeg, NetworkScope: scope.NetworkID}
+			profile := camera.MediaProfile{StreamURI: sc.Input, Codec: sc.Format, FPS: float64(sc.Fps)}
+			if sc.Size != "" {
+				fmt.Sscanf(sc.Size, "%dx%d", &profile.Width, &profile.Height)
+			}
+			got, err := verifier.Verify(ctx, camera.MediaRequest{Scope: scope, Profile: profile, CredentialRef: sc.InputCredential, NetworkScope: scope.NetworkID, Duration: d, RequireDecode: true})
+			res.FrameRate = got.ArrivalFPS
+			res.Bitrate = got.ArrivalBitrate
+			if got.Profile.FPS > 0 && got.Profile.GOP > 0 {
+				res.Keyframe = time.Duration(float64(time.Second) * float64(got.Profile.GOP) / got.Profile.FPS)
+			}
+			res.Encoder = got.Profile.Codec
+			res.Cpu = cpuLoad()
+			res.Temp = socTemperature()
+			if err != nil {
+				res.Err = err.Error()
+			}
+			out = append(out, res)
+			continue
+		}
 		if sc.Input == InputPush {
 			// Nothing to run: whatever pushes it is not this process.
 			res.Err = "pushed (" + sc.Kind + "): not probed"

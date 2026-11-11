@@ -22,6 +22,26 @@ type Tx struct {
 	Attempt *AttemptClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// CameraAssignment is the client for interacting with the CameraAssignment builders.
+	CameraAssignment *CameraAssignmentClient
+	// CameraBinding is the client for interacting with the CameraBinding builders.
+	CameraBinding *CameraBindingClient
+	// CameraCredential is the client for interacting with the CameraCredential builders.
+	CameraCredential *CameraCredentialClient
+	// CameraCredentialVersion is the client for interacting with the CameraCredentialVersion builders.
+	CameraCredentialVersion *CameraCredentialVersionClient
+	// CameraDevice is the client for interacting with the CameraDevice builders.
+	CameraDevice *CameraDeviceClient
+	// CameraJob is the client for interacting with the CameraJob builders.
+	CameraJob *CameraJobClient
+	// CameraNetwork is the client for interacting with the CameraNetwork builders.
+	CameraNetwork *CameraNetworkClient
+	// CameraPolicy is the client for interacting with the CameraPolicy builders.
+	CameraPolicy *CameraPolicyClient
+	// CameraPreset is the client for interacting with the CameraPreset builders.
+	CameraPreset *CameraPresetClient
+	// CameraWorker is the client for interacting with the CameraWorker builders.
+	CameraWorker *CameraWorkerClient
 	// Delegation is the client for interacting with the Delegation builders.
 	Delegation *DelegationClient
 	// Device is the client for interacting with the Device builders.
@@ -198,6 +218,16 @@ func (tx *Tx) init() {
 	tx.Archived = NewArchivedClient(tx.config)
 	tx.Attempt = NewAttemptClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
+	tx.CameraAssignment = NewCameraAssignmentClient(tx.config)
+	tx.CameraBinding = NewCameraBindingClient(tx.config)
+	tx.CameraCredential = NewCameraCredentialClient(tx.config)
+	tx.CameraCredentialVersion = NewCameraCredentialVersionClient(tx.config)
+	tx.CameraDevice = NewCameraDeviceClient(tx.config)
+	tx.CameraJob = NewCameraJobClient(tx.config)
+	tx.CameraNetwork = NewCameraNetworkClient(tx.config)
+	tx.CameraPolicy = NewCameraPolicyClient(tx.config)
+	tx.CameraPreset = NewCameraPresetClient(tx.config)
+	tx.CameraWorker = NewCameraWorkerClient(tx.config)
 	tx.Delegation = NewDelegationClient(tx.config)
 	tx.Device = NewDeviceClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)

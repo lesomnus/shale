@@ -56,6 +56,12 @@ type Frame struct {
 	// Longest is the longest video frame in a fragment: a camera's frames
 	// that never arrived show as one frame lasting their time (§38.6).
 	Longest time.Duration
+	// Video facts are parsed from actual samples, not sync flags or desired
+	// metadata. Raw/manual frame callers leave these zero.
+	VideoTicks int64
+	VideoBytes int64
+	IDR        bool
+	VideoValid bool
 }
 
 var (

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/fmp4"
@@ -28,22 +30,37 @@ type feeder interface {
 // Annex B, a keyframe with its parameter sets in front; an audio sample
 // is one Opus packet.
 type sink interface {
-	write(data []byte, d time.Duration)
+	write(sm sample)
 	writeAudio(data []byte, d time.Duration)
 }
 
-// sample is one video access unit kept for a joining viewer.
+// sample is one video access unit, as the pacer releases it and as it is
+// kept for a joining viewer: media is its decode time on the stream's
+// clock, which names the frame (§39.4), and st when its fragment passed
+// the producer and came here.
 type sample struct {
-	data []byte
-	d    time.Duration
+	data  []byte
+	d     time.Duration
+	media time.Duration
+	st    stamps
+	// owed says it goes to a joining viewer from the group of pictures
+	// (catchUp), not at its time.
+	owed bool
 }
 
 type source struct {
 	id pdid.Id
 	r  *Relay
 
-	mu     sync.Mutex
-	feeder feeder
+	mu            sync.Mutex
+	feeder        feeder
+	managed       bool
+	epoch         string
+	epochSequence int64
+	epochDenied   bool
+	stopped       bool
+	initEpoch     string
+	paceWake      chan struct{}
 	// always says the feeder's policy is `always` (§39.3): started at
 	// attach, and never stopped for want of viewers.
 	always  bool
@@ -81,7 +98,7 @@ type source struct {
 }
 
 func newSource(r *Relay, id pdid.Id) *source {
-	return &source{id: id, r: r, viewers: map[string]sink{}, joining: map[string]bool{}, catching: map[string]*owed{}, ring: newRing()}
+	return &source{id: id, r: r, viewers: map[string]sink{}, joining: map[string]bool{}, catching: map[string]*owed{}, ring: newRing(), paceWake: make(chan struct{})}
 }
 
 // attach makes a producer stream the feeder of this source; a stream
@@ -138,9 +155,51 @@ var errNoInit = errors.New("a fragment before any init segment")
 // feed takes one unit from the producer (§39.3): an init segment, or one
 // fragment as it came.
 func (s *source) feed(b []byte) {
+	s.feedEpoch(nil, "", b)
+}
+
+func (s *source) feedEpoch(from feeder, epoch string, b []byte) {
+	s.feedTimed(from, epoch, b, stamps{arrived: time.Now()})
+}
+
+// stamps are when a payload passed each point on its way here (§39.3):
+// read and sent on the producer's clock, zero from a producer that predates
+// them, and arrived on the relay's; producer is who sent it, the producer
+// host's actor, so one host's uplink is told from another's.
+type stamps struct {
+	read, sent, arrived time.Time
+	producer            string
+}
+
+// measure records the producer's queue (t2 - t1) and the uplink (t3 - t2)
+// of an accepted payload. The uplink is across two clocks: one that comes
+// out below zero is counted as skewed rather than measured.
+func (m *metrics) measure(st stamps) {
+	if m == nil || st.read.IsZero() || st.sent.IsZero() {
+		return
+	}
+	ctx := context.Background()
+	by := metric.WithAttributes(attribute.String("producer", st.producer))
+	m.producerQueue.Record(ctx, ms(st.sent.Sub(st.read)), by)
+	if up := st.arrived.Sub(st.sent); up >= 0 {
+		m.uplink.Record(ctx, ms(up), by)
+	} else {
+		m.skewed.Add(ctx, 1, by)
+	}
+}
+
+// ms is a duration as fractional milliseconds, as the histograms take it.
+func ms(d time.Duration) float64 { return float64(d.Microseconds()) / 1000 }
+
+func (s *source) feedTimed(from feeder, epoch string, b []byte, st stamps) {
 	s.r.m.ingress.Add(context.Background(), int64(len(b)))
-	now := time.Now()
+	now := st.arrived
 	s.mu.Lock()
+	if from != nil && s.feeder != from || s.stopped || s.managed && (s.epochDenied || epoch == "" || epoch != s.epoch) || !s.managed && epoch != "" {
+		s.mu.Unlock()
+		return
+	}
+	s.r.m.measure(st)
 	s.bytes += int64(len(b))
 	if _, ok := fmp4.Find(b, "moov"); ok {
 		init, err := fmp4.ParseInit(b)
@@ -150,7 +209,9 @@ func (s *source) feed(b []byte) {
 			return
 		}
 		s.init = init
+		s.initEpoch = epoch
 		s.params = nil
+		s.gop = nil
 		if v := init.Video(); v != nil {
 			s.params = v.ParamSets()
 		}
@@ -158,10 +219,11 @@ func (s *source) feed(b []byte) {
 		s.ring.reset()
 		s.seq = 0
 		s.restartPacing()
+		s.armIdleStopLocked()
 		s.mu.Unlock()
 		return
 	}
-	if s.init == nil {
+	if s.init == nil || s.initEpoch != epoch {
 		s.r.log.Warn("ingest", "source", s.id.String(), "err", errNoInit.Error())
 		s.mu.Unlock()
 		return
@@ -189,9 +251,10 @@ func (s *source) feed(b []byte) {
 		}
 		s.ring.trim(now.Add(-s.window))
 	}
-	s.fanOut(frag)
+	s.fanOut(frag, st)
+	window := s.window
 	s.mu.Unlock()
-	if s.window > 0 {
+	if window > 0 {
 		s.r.sources.enforce()
 	}
 }
@@ -201,8 +264,15 @@ func (s *source) feed(b []byte) {
 // the init segment first, with when that keyframe came and how long the
 // window from it is (§39.4).
 func (s *source) recent(since time.Duration) ([]byte, time.Time, float64, bool) {
+	return s.recentEpoch(since, "", false)
+}
+
+func (s *source) recentEpoch(since time.Duration, epoch string, enforce bool) ([]byte, time.Time, float64, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if enforce && !s.viewEpochLocked(epoch) {
+		return nil, time.Time{}, 0, false
+	}
 	if s.init == nil {
 		return nil, time.Time{}, 0, false
 	}
@@ -223,8 +293,9 @@ func (s *source) recent(since time.Duration) ([]byte, time.Time, float64, bool) 
 }
 
 // fanOut takes a fragment's samples, each with when it plays, to be sent
-// to the viewers when that comes (pace.go); with the lock held.
-func (s *source) fanOut(frag *fmp4.Fragment) {
+// to the viewers when that comes (pace.go), each carrying the fragment's
+// stamps; with the lock held.
+func (s *source) fanOut(frag *fmp4.Fragment, st stamps) {
 	var out []pacedSample
 	if opus := s.init.Opus(); opus != nil {
 		if tr := frag.Traf(opus.ID); tr != nil {
@@ -248,7 +319,7 @@ func (s *source) fanOut(frag *fmp4.Fragment) {
 					data = append(append([]byte(nil), s.params...), data...)
 				}
 				d := ticks(sm.Duration, video.Timescale, fallbackDuration)
-				out = append(out, pacedSample{media: t, key: key, data: data, d: d})
+				out = append(out, pacedSample{media: t, key: key, data: data, d: d, st: st})
 				t += d
 			}
 		}
@@ -286,7 +357,15 @@ func ticks(n uint32, timescale uint32, fallback time.Duration) time.Duration {
 // group of pictures, so it starts at once (§39.4); before then nothing
 // sent to it could arrive.
 func (s *source) addViewer(key string, v sink) {
+	s.addViewerEpoch(key, v, "", 0, false)
+}
+
+func (s *source) addViewerEpoch(key string, v sink, epoch string, sequence int64, enforce bool) bool {
 	s.mu.Lock()
+	if enforce && (!s.viewEpochLocked(epoch) || s.epochSequence != sequence) {
+		s.mu.Unlock()
+		return false
+	}
 	s.viewers[key] = v
 	s.joining[key] = true
 	if s.idle != nil {
@@ -303,6 +382,7 @@ func (s *source) addViewer(key string, v sink) {
 	if first {
 		f.start(s.id)
 	}
+	return true
 }
 
 // removeViewer stops the feed relay_idle_stop after the last viewer left,
@@ -314,15 +394,24 @@ func (s *source) removeViewer(key string) {
 	delete(s.viewers, key)
 	delete(s.joining, key)
 	delete(s.catching, key)
+	s.armIdleStopLocked()
+}
+
+func (s *source) armIdleStopLocked() {
 	if len(s.viewers) > 0 || !s.started || s.always {
 		return
 	}
 	if s.idle != nil {
 		s.idle.Stop()
 	}
-	s.idle = time.AfterFunc(s.r.cfg.IdleStop, func() {
+	wait := s.r.cfg.IdleStop
+	if wait <= 0 {
+		wait = 10 * time.Second
+	}
+	wake := s.paceWake
+	s.idle = time.AfterFunc(wait, func() {
 		s.mu.Lock()
-		if len(s.viewers) > 0 || !s.started || s.always {
+		if s.paceWake != wake || len(s.viewers) > 0 || !s.started || s.always {
 			s.mu.Unlock()
 			return
 		}
@@ -336,12 +425,29 @@ func (s *source) removeViewer(key string) {
 	})
 }
 
-// catchUpSpeed is how many times real time a joining viewer is sent the
-// group of pictures after its keyframe: at three, a viewer two seconds
-// behind the live edge, the most a keyframe interval of two seconds
-// leaves, is there a second later, and the burst it gets is three times
-// the camera's rate rather than the whole group at once (§39.4).
-const catchUpSpeed = 3
+// Catching up (§39.4). A joining viewer is handed the group of pictures
+// since the last keyframe, as old as that keyframe: up to two seconds of a
+// camera that sends one every two, and up to twelve, measured, of cameras
+// whose smart codec spaces them so (#244). At a fixed three times real time
+// the twelve took six seconds to catch up. Each sample of the group now
+// follows the one before by its duration over catchUpSpeed or its bytes at
+// catchUpRate, whichever is longer, and never by more than its duration
+// over catchUpFloor: a quiet scene's group, small frames mostly, catches
+// up at twelve times real time, a second for twelve; a busy one is held to
+// catchUpRate on the viewer's link, and to the three it had at the least.
+const (
+	catchUpSpeed = 12
+	catchUpFloor = 3
+	// catchUpRate is in bits a second: four times a 4 Mbps camera's.
+	catchUpRate = 16_000_000
+)
+
+// catchUpGap is how long after the sample before it a catching-up viewer is
+// sent sm.
+func catchUpGap(sm sample) time.Duration {
+	byRate := time.Duration(int64(len(sm.data)) * 8 * int64(time.Second) / catchUpRate)
+	return min(sm.d/catchUpFloor, max(sm.d/catchUpSpeed, byRate))
+}
 
 // owed is what a catching-up viewer is still to be sent, in order.
 type owed struct {
@@ -372,25 +478,33 @@ func (s *source) catchUp(key string) {
 	if len(s.gop) == 0 {
 		return
 	}
-	v.write(s.gop[0].data, s.gop[0].d)
+	first := s.gop[0]
+	first.owed = true
+	v.write(first)
 	if len(s.gop) == 1 {
 		return
 	}
 	o := &owed{samples: slices.Clone(s.gop[1:]), since: time.Now()}
 	s.catching[key] = o
-	go s.runCatchUp(key, v, o, s.gop[0].d)
+	go s.runCatchUp(key, v, o, catchUpGap(s.gop[0]), s.paceWake)
 }
 
-// runCatchUp sends a catching-up viewer what it is owed, each sample its
-// duration over catchUpSpeed after the one before it, the first after the
-// keyframe's (`first`), and ends when the queue is empty or the viewer
-// left. Each sample is written with the lock held, so the pacer sends the
-// viewer nothing until the last owed one is out.
-func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration) {
-	next := time.Now().Add(first / catchUpSpeed)
+// runCatchUp sends a catching-up viewer what it is owed, each sample the
+// catchUpGap of the one before it after it, the first `first` after the
+// keyframe, and ends when the queue is empty or the viewer left. Each
+// sample is written with the lock held, so the pacer sends the viewer
+// nothing until the last owed one is out.
+func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration, wake <-chan struct{}) {
+	next := time.Now().Add(first)
 	for {
 		if wait := time.Until(next); wait > 0 {
-			time.Sleep(wait)
+			timer := time.NewTimer(wait)
+			select {
+			case <-timer.C:
+			case <-wake:
+				timer.Stop()
+				return
+			}
 		}
 		s.mu.Lock()
 		if s.catching[key] != o {
@@ -407,9 +521,10 @@ func (s *source) runCatchUp(key string, v sink, o *owed, first time.Duration) {
 		}
 		sm := o.samples[0]
 		o.samples = o.samples[1:]
-		v.write(sm.data, sm.d)
+		sm.owed = true
+		v.write(sm)
 		s.mu.Unlock()
-		next = next.Add(sm.d / catchUpSpeed)
+		next = next.Add(catchUpGap(sm))
 	}
 }
 

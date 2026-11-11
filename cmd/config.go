@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/shale/camera"
 )
 
 // Name is what this app is called, and it is the only place it is written.
@@ -48,11 +49,13 @@ type Config struct {
 	// single-organization cluster.
 	Tenant string `yaml:"tenant"`
 
-	Control  ControlConfig  `yaml:"control"`
-	Storage  StorageConfig  `yaml:"storage"`
-	Producer ProducerConfig `yaml:"producer"`
-	Reader   ReaderConfig   `yaml:"reader"`
-	Relay    RelayConfig    `yaml:"relay"`
+	Control      ControlConfig      `yaml:"control"`
+	Storage      StorageConfig      `yaml:"storage"`
+	Producer     ProducerConfig     `yaml:"producer"`
+	CameraWorker CameraWorkerConfig `yaml:"camera_worker"`
+	Edge         EdgeConfig         `yaml:"edge"`
+	Reader       ReaderConfig       `yaml:"reader"`
+	Relay        RelayConfig        `yaml:"relay"`
 	// Export is the opt-in MP4 download endpoint on the tenant HTTP listener.
 	Export ExportConfig `yaml:"export"`
 
@@ -68,6 +71,43 @@ type Config struct {
 	// Dev is development mode (`--dev <dir>`): everything in one directory,
 	// plaintext allowed, one directory sink (§34.7).
 	Dev string `yaml:"dev"`
+}
+
+// CameraWorkerConfig configures the independent outbound machine role. Camera
+// policies and passwords are supplied by CP-authorized execution providers.
+type CameraWorkerConfig struct {
+	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
+	RetryInterval     time.Duration `yaml:"retry_interval"`
+	LeaseSeconds      int64         `yaml:"lease_seconds"`
+	DiscoveryInterval time.Duration `yaml:"discovery_interval"`
+	DiscoveryTimeout  time.Duration `yaml:"discovery_timeout"`
+	InitialNeighbors  bool          `yaml:"initial_neighbors"`
+	// DHCPLeases opt in to read-only address hints from locally administered
+	// dnsmasq files. Current network authority and endpoints still come from CP.
+	DHCPLeases   []CameraDHCPLeaseConfig `yaml:"dhcp_leases"`
+	Ffmpeg       string                  `yaml:"ffmpeg"`
+	Ffprobe      string                  `yaml:"ffprobe"`
+	CameraCAFile string                  `yaml:"camera_ca_file"`
+}
+
+type CameraDHCPLeaseConfig struct {
+	Interface string `yaml:"interface"`
+	File      string `yaml:"file"`
+}
+
+// EdgeConfig selects managed outbound roles. Policies, presets and credential
+// material remain CP-owned. Nil Roles means both; an explicit empty list is invalid.
+type EdgeConfig struct {
+	Roles          []string                  `yaml:"roles"`
+	RetryInterval  time.Duration             `yaml:"retry_interval"`
+	StreamingCache *EdgeStreamingCacheConfig `yaml:"streaming_cache"`
+}
+
+// EdgeStreamingCacheConfig is opt-in and bounds only streaming credentials.
+// MaxEntries defaults to 32; MaxAge must explicitly be between 1s and 300s.
+type EdgeStreamingCacheConfig struct {
+	MaxAge     time.Duration `yaml:"max_age"`
+	MaxEntries int           `yaml:"max_entries"`
 }
 
 // ClientConfig is the CLI's connection (§32).
@@ -204,7 +244,11 @@ type SourceConfig struct {
 	// Input: `v4l2:/dev/video0`, `rtsp://...`, `file:/path.mp4`, or `push`
 	// for a stream a process on this host writes to `producer.push`
 	// (§38.9).
-	Input string `yaml:"input"`
+	Input           string                 `yaml:"input"`
+	InputCredential *camera.CredentialRef  `yaml:"input_credential,omitempty"`
+	Scope           camera.EnrollmentScope `yaml:"scope,omitempty"`
+	Onvif           *OnvifConfig           `yaml:"onvif,omitempty"`
+	Labels          map[string]string      `yaml:"labels,omitempty"`
 	// Kind of a pushed stream: `mp4` (the default), or `raw` for frames
 	// that are not video, cut at frame boundaries (§38.9).
 	Kind string `yaml:"kind"`
@@ -244,6 +288,28 @@ type SourceConfig struct {
 	Command string `yaml:"command"`
 	// Zone label (§7).
 	Zone string `yaml:"zone"`
+}
+
+// OnvifConfig selects a standard media profile for a camera-derived ceiling.
+type OnvifConfig struct {
+	Endpoint      string                `yaml:"endpoint"`
+	ProfileToken  string                `yaml:"profile_token"`
+	CredentialRef *camera.CredentialRef `yaml:"credential_ref,omitempty"`
+}
+
+// CredentialStoreConfig selects CP delivery or an explicit standalone private
+// store. A directory selects the legacy file provider; CP never falls back to it.
+type CredentialStoreConfig struct {
+	Directory string `yaml:"directory"`
+	Provider  string `yaml:"provider"`
+}
+
+// SourceCatalogConfig chooses where a Producer reads initial capture intent.
+// CP access uses the Producer's adopted machine connection, never a person token.
+type SourceCatalogConfig struct {
+	Provider     string        `yaml:"provider"`
+	Assignment   string        `yaml:"assignment"`
+	PollInterval time.Duration `yaml:"poll_interval"`
 }
 
 // IdleConfig is a source's `idle:` (§38.10).
@@ -302,8 +368,9 @@ type AuthConfig struct {
 type ProducerConfig struct {
 	// Set is the alias of the set this producer records; registered from
 	// this configuration when missing and the producer is adopted for it.
-	Set     string         `yaml:"set"`
-	Sources []SourceConfig `yaml:"sources"`
+	Set     string              `yaml:"set"`
+	Sources []SourceConfig      `yaml:"sources"`
+	Catalog SourceCatalogConfig `yaml:"catalog"`
 	// Retain is `committed` (default), the whole segment in RAM until the
 	// node's 201, or `written`, only what is above the offset the node
 	// last reported durable: less RAM, and a segment whose node dies is
@@ -315,9 +382,11 @@ type ProducerConfig struct {
 	IdleTimeout       time.Duration `yaml:"idle_timeout"`
 	AbandonTimeout    time.Duration `yaml:"abandon_timeout"`
 	AllocationHorizon time.Duration `yaml:"allocation_horizon"`
-	ResumeTimeout     time.Duration `yaml:"resume_timeout"`
-	RetryAfterCap     time.Duration `yaml:"retry_after_cap"`
-	PlacementRetries  int           `yaml:"placement_retries"`
+	// DrainTimeout bounds a stopped managed source's upload FIFO, at most 5m.
+	DrainTimeout     time.Duration `yaml:"drain_timeout"`
+	ResumeTimeout    time.Duration `yaml:"resume_timeout"`
+	RetryAfterCap    time.Duration `yaml:"retry_after_cap"`
+	PlacementRetries int           `yaml:"placement_retries"`
 	// Uplink is the link's capacity, e.g. "20Mbps", for the link check.
 	Uplink string `yaml:"uplink"`
 	// Buffer is the RAM budget for segments not yet stored, e.g. "512MiB"
@@ -327,7 +396,9 @@ type ProducerConfig struct {
 	Buffer            string        `yaml:"buffer"`
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
 	// Ffmpeg is the capture binary; `ffmpeg` on PATH by default.
-	Ffmpeg string `yaml:"ffmpeg"`
+	Ffmpeg      string                `yaml:"ffmpeg"`
+	Ffprobe     string                `yaml:"ffprobe"`
+	Credentials CredentialStoreConfig `yaml:"credentials"`
 	// FragmentDuration bounds a fragment of every source's stream, e.g.
 	// "100ms" (200 ms when unset): the live tee sends whole fragments, so
 	// it is about how far behind the camera a live viewer is (§38.2).

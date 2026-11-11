@@ -7,6 +7,13 @@ import (
 	"github.com/lesomnus/shale/internal/ent/access"
 	"github.com/lesomnus/shale/internal/ent/addresspolicy"
 	"github.com/lesomnus/shale/internal/ent/audit"
+	"github.com/lesomnus/shale/internal/ent/camerabinding"
+	"github.com/lesomnus/shale/internal/ent/cameracredentialversion"
+	"github.com/lesomnus/shale/internal/ent/cameradevice"
+	"github.com/lesomnus/shale/internal/ent/camerajob"
+	"github.com/lesomnus/shale/internal/ent/camerapolicy"
+	"github.com/lesomnus/shale/internal/ent/camerapreset"
+	"github.com/lesomnus/shale/internal/ent/cameraworker"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/node"
@@ -44,6 +51,74 @@ func init() {
 	auditDescDomain := auditFields[11].Descriptor()
 	// audit.DefaultDomain holds the default value on creation for the domain field.
 	audit.DefaultDomain = auditDescDomain.Default.(uint32)
+	camerabindingFields := schema.CameraBinding{}.Fields()
+	_ = camerabindingFields
+	// camerabindingDescDesired is the schema descriptor for desired field.
+	camerabindingDescDesired := camerabindingFields[7].Descriptor()
+	camerabinding.ValueScanner.Desired = camerabindingDescDesired.ValueScanner.(field.TypeValueScanner[*api.CameraCaptureSpec])
+	// camerabindingDescObserved is the schema descriptor for observed field.
+	camerabindingDescObserved := camerabindingFields[8].Descriptor()
+	camerabinding.ValueScanner.Observed = camerabindingDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
+	// camerabindingDescStartingApplication is the schema descriptor for starting_application field.
+	camerabindingDescStartingApplication := camerabindingFields[11].Descriptor()
+	camerabinding.ValueScanner.StartingApplication = camerabindingDescStartingApplication.ValueScanner.(field.TypeValueScanner[*api.CameraApplication])
+	// camerabindingDescAppliedApplication is the schema descriptor for applied_application field.
+	camerabindingDescAppliedApplication := camerabindingFields[12].Descriptor()
+	camerabinding.ValueScanner.AppliedApplication = camerabindingDescAppliedApplication.ValueScanner.(field.TypeValueScanner[*api.CameraApplication])
+	// camerabindingDescPreviousApplications is the schema descriptor for previous_applications field.
+	camerabindingDescPreviousApplications := camerabindingFields[13].Descriptor()
+	camerabinding.ValueScanner.PreviousApplications = camerabindingDescPreviousApplications.ValueScanner.(field.TypeValueScanner[[]*api.CameraApplication])
+	cameracredentialversionFields := schema.CameraCredentialVersion{}.Fields()
+	_ = cameracredentialversionFields
+	// cameracredentialversionDescLegacy is the schema descriptor for legacy field.
+	cameracredentialversionDescLegacy := cameracredentialversionFields[12].Descriptor()
+	cameracredentialversion.ValueScanner.Legacy = cameracredentialversionDescLegacy.ValueScanner.(field.TypeValueScanner[*api.CameraLegacyCredentialReference])
+	// cameracredentialversionDescReusedFrom is the schema descriptor for reused_from field.
+	cameracredentialversionDescReusedFrom := cameracredentialversionFields[14].Descriptor()
+	cameracredentialversion.ValueScanner.ReusedFrom = cameracredentialversionDescReusedFrom.ValueScanner.(field.TypeValueScanner[*api.CameraCredentialReference])
+	cameradeviceFields := schema.CameraDevice{}.Fields()
+	_ = cameradeviceFields
+	// cameradeviceDescIdentity is the schema descriptor for identity field.
+	cameradeviceDescIdentity := cameradeviceFields[6].Descriptor()
+	cameradevice.ValueScanner.Identity = cameradeviceDescIdentity.ValueScanner.(field.TypeValueScanner[*api.CameraIdentityEvidence])
+	// cameradeviceDescEndpoints is the schema descriptor for endpoints field.
+	cameradeviceDescEndpoints := cameradeviceFields[7].Descriptor()
+	cameradevice.ValueScanner.Endpoints = cameradeviceDescEndpoints.ValueScanner.(field.TypeValueScanner[[]*api.CameraObservedEndpoint])
+	// cameradeviceDescEnrollment is the schema descriptor for enrollment field.
+	cameradeviceDescEnrollment := cameradeviceFields[11].Descriptor()
+	cameradevice.ValueScanner.Enrollment = cameradeviceDescEnrollment.ValueScanner.(field.TypeValueScanner[*api.CameraEnrollmentObservation])
+	// cameradeviceDescFactoryTls is the schema descriptor for factory_tls field.
+	cameradeviceDescFactoryTls := cameradeviceFields[12].Descriptor()
+	cameradevice.ValueScanner.FactoryTls = cameradeviceDescFactoryTls.ValueScanner.(field.TypeValueScanner[*api.CameraFactoryTLSState])
+	// cameradeviceDescFirmwareTls is the schema descriptor for firmware_tls field.
+	cameradeviceDescFirmwareTls := cameradeviceFields[13].Descriptor()
+	cameradevice.ValueScanner.FirmwareTls = cameradeviceDescFirmwareTls.ValueScanner.(field.TypeValueScanner[*api.CameraFirmwareTLSState])
+	camerajobFields := schema.CameraJob{}.Fields()
+	_ = camerajobFields
+	// camerajobDescInputs is the schema descriptor for inputs field.
+	camerajobDescInputs := camerajobFields[12].Descriptor()
+	camerajob.ValueScanner.Inputs = camerajobDescInputs.ValueScanner.(field.TypeValueScanner[*api.CameraJobInputs])
+	// camerajobDescObserved is the schema descriptor for observed field.
+	camerajobDescObserved := camerajobFields[13].Descriptor()
+	camerajob.ValueScanner.Observed = camerajobDescObserved.ValueScanner.(field.TypeValueScanner[*api.CameraJobObservation])
+	// camerajobDescPinnedPreset is the schema descriptor for pinned_preset field.
+	camerajobDescPinnedPreset := camerajobFields[18].Descriptor()
+	camerajob.ValueScanner.PinnedPreset = camerajobDescPinnedPreset.ValueScanner.(field.TypeValueScanner[*api.CameraResolvedPreset])
+	camerapolicyFields := schema.CameraPolicy{}.Fields()
+	_ = camerapolicyFields
+	// camerapolicyDescEnrollment is the schema descriptor for enrollment field.
+	camerapolicyDescEnrollment := camerapolicyFields[7].Descriptor()
+	camerapolicy.ValueScanner.Enrollment = camerapolicyDescEnrollment.ValueScanner.(field.TypeValueScanner[*api.CameraEnrollmentPolicy])
+	camerapresetFields := schema.CameraPreset{}.Fields()
+	_ = camerapresetFields
+	// camerapresetDescRules is the schema descriptor for rules field.
+	camerapresetDescRules := camerapresetFields[7].Descriptor()
+	camerapreset.ValueScanner.Rules = camerapresetDescRules.ValueScanner.(field.TypeValueScanner[[]*api.CameraPresetRule])
+	cameraworkerFields := schema.CameraWorker{}.Fields()
+	_ = cameraworkerFields
+	// cameraworkerDescJoin is the schema descriptor for join field.
+	cameraworkerDescJoin := cameraworkerFields[9].Descriptor()
+	cameraworker.ValueScanner.Join = cameraworkerDescJoin.ValueScanner.(field.TypeValueScanner[*api.HostJoin])
 	deviceFields := schema.Device{}.Fields()
 	_ = deviceFields
 	// deviceDescQuarantine is the schema descriptor for quarantine field.
@@ -61,6 +136,10 @@ func init() {
 	laminaDescSkipReason := laminaFields[18].Descriptor()
 	// lamina.DefaultSkipReason holds the default value on creation for the skip_reason field.
 	lamina.DefaultSkipReason = laminaDescSkipReason.Default.(int32)
+	// laminaDescCaptureEpoch is the schema descriptor for capture_epoch field.
+	laminaDescCaptureEpoch := laminaFields[19].Descriptor()
+	// lamina.DefaultCaptureEpoch holds the default value on creation for the capture_epoch field.
+	lamina.DefaultCaptureEpoch = laminaDescCaptureEpoch.Default.(string)
 	nodeFields := schema.Node{}.Fields()
 	_ = nodeFields
 	// nodeDescJoin is the schema descriptor for join field.

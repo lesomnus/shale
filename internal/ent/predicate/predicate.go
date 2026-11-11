@@ -32,6 +32,113 @@ type Attempt func(*sql.Selector)
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
 
+// CameraAssignment is the predicate function for cameraassignment builders.
+type CameraAssignment func(*sql.Selector)
+
+// CameraBinding is the predicate function for camerabinding builders.
+type CameraBinding func(*sql.Selector)
+
+// CameraBindingOrErr calls the predicate only if the error is not nit.
+func CameraBindingOrErr(p CameraBinding, err error) CameraBinding {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraCredential is the predicate function for cameracredential builders.
+type CameraCredential func(*sql.Selector)
+
+// CameraCredentialVersion is the predicate function for cameracredentialversion builders.
+type CameraCredentialVersion func(*sql.Selector)
+
+// CameraCredentialVersionOrErr calls the predicate only if the error is not nit.
+func CameraCredentialVersionOrErr(p CameraCredentialVersion, err error) CameraCredentialVersion {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraDevice is the predicate function for cameradevice builders.
+type CameraDevice func(*sql.Selector)
+
+// CameraDeviceOrErr calls the predicate only if the error is not nit.
+func CameraDeviceOrErr(p CameraDevice, err error) CameraDevice {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraJob is the predicate function for camerajob builders.
+type CameraJob func(*sql.Selector)
+
+// CameraJobOrErr calls the predicate only if the error is not nit.
+func CameraJobOrErr(p CameraJob, err error) CameraJob {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraNetwork is the predicate function for cameranetwork builders.
+type CameraNetwork func(*sql.Selector)
+
+// CameraPolicy is the predicate function for camerapolicy builders.
+type CameraPolicy func(*sql.Selector)
+
+// CameraPolicyOrErr calls the predicate only if the error is not nit.
+func CameraPolicyOrErr(p CameraPolicy, err error) CameraPolicy {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraPreset is the predicate function for camerapreset builders.
+type CameraPreset func(*sql.Selector)
+
+// CameraPresetOrErr calls the predicate only if the error is not nit.
+func CameraPresetOrErr(p CameraPreset, err error) CameraPreset {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
+// CameraWorker is the predicate function for cameraworker builders.
+type CameraWorker func(*sql.Selector)
+
+// CameraWorkerOrErr calls the predicate only if the error is not nit.
+func CameraWorkerOrErr(p CameraWorker, err error) CameraWorker {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Delegation is the predicate function for delegation builders.
 type Delegation func(*sql.Selector)
 

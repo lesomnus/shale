@@ -9,6 +9,7 @@ package api
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
 )
@@ -70,6 +71,15 @@ func (x *AttachRequest) GetData() *AttachRequest_Data {
 	return nil
 }
 
+func (x *AttachRequest) GetReset() *AttachRequest_Reset {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Message.(*attachRequest_Reset_); ok {
+			return x.Reset_
+		}
+	}
+	return nil
+}
+
 func (x *AttachRequest) SetHello(v *AttachRequest_Hello) {
 	if v == nil {
 		x.xxx_hidden_Message = nil
@@ -84,6 +94,14 @@ func (x *AttachRequest) SetData(v *AttachRequest_Data) {
 		return
 	}
 	x.xxx_hidden_Message = &attachRequest_Data_{v}
+}
+
+func (x *AttachRequest) SetReset(v *AttachRequest_Reset) {
+	if v == nil {
+		x.xxx_hidden_Message = nil
+		return
+	}
+	x.xxx_hidden_Message = &attachRequest_Reset_{v}
 }
 
 func (x *AttachRequest) HasMessage() bool {
@@ -109,6 +127,14 @@ func (x *AttachRequest) HasData() bool {
 	return ok
 }
 
+func (x *AttachRequest) HasReset() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Message.(*attachRequest_Reset_)
+	return ok
+}
+
 func (x *AttachRequest) ClearMessage() {
 	x.xxx_hidden_Message = nil
 }
@@ -125,9 +151,16 @@ func (x *AttachRequest) ClearData() {
 	}
 }
 
+func (x *AttachRequest) ClearReset() {
+	if _, ok := x.xxx_hidden_Message.(*attachRequest_Reset_); ok {
+		x.xxx_hidden_Message = nil
+	}
+}
+
 const AttachRequest_Message_not_set_case case_AttachRequest_Message = 0
 const AttachRequest_Hello_case case_AttachRequest_Message = 1
 const AttachRequest_Data_case case_AttachRequest_Message = 2
+const AttachRequest_Reset__case case_AttachRequest_Message = 3
 
 func (x *AttachRequest) WhichMessage() case_AttachRequest_Message {
 	if x == nil {
@@ -138,6 +171,8 @@ func (x *AttachRequest) WhichMessage() case_AttachRequest_Message {
 		return AttachRequest_Hello_case
 	case *attachRequest_Data_:
 		return AttachRequest_Data_case
+	case *attachRequest_Reset_:
+		return AttachRequest_Reset__case
 	default:
 		return AttachRequest_Message_not_set_case
 	}
@@ -149,6 +184,7 @@ type AttachRequest_builder struct {
 	// Fields of oneof xxx_hidden_Message:
 	Hello *AttachRequest_Hello
 	Data  *AttachRequest_Data
+	Reset *AttachRequest_Reset
 	// -- end of xxx_hidden_Message
 }
 
@@ -161,6 +197,9 @@ func (b0 AttachRequest_builder) Build() *AttachRequest {
 	}
 	if b.Data != nil {
 		x.xxx_hidden_Message = &attachRequest_Data_{b.Data}
+	}
+	if b.Reset != nil {
+		x.xxx_hidden_Message = &attachRequest_Reset_{b.Reset}
 	}
 	return m0
 }
@@ -187,9 +226,15 @@ type attachRequest_Data_ struct {
 	Data *AttachRequest_Data `protobuf:"bytes,2,opt,name=data,oneof"`
 }
 
+type attachRequest_Reset_ struct {
+	Reset_ *AttachRequest_Reset `protobuf:"bytes,3,opt,name=reset,oneof"`
+}
+
 func (*attachRequest_Hello_) isAttachRequest_Message() {}
 
 func (*attachRequest_Data_) isAttachRequest_Message() {}
+
+func (*attachRequest_Reset_) isAttachRequest_Message() {}
 
 type AttachResponse struct {
 	state              protoimpl.MessageState   `protogen:"opaque.v1"`
@@ -465,11 +510,14 @@ func (b0 AttachRequest_Hello_builder) Build() *AttachRequest_Hello {
 }
 
 type AttachRequest_Data struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_SourceId []byte                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId"`
-	xxx_hidden_Payload  []byte                 `protobuf:"bytes,2,opt,name=payload"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_SourceId     []byte                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId"`
+	xxx_hidden_Payload      []byte                 `protobuf:"bytes,2,opt,name=payload"`
+	xxx_hidden_CaptureEpoch string                 `protobuf:"bytes,3,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_ReadAt       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=read_at,json=readAt"`
+	xxx_hidden_SentAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=sent_at,json=sentAt"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *AttachRequest_Data) Reset() {
@@ -511,6 +559,27 @@ func (x *AttachRequest_Data) GetPayload() []byte {
 	return nil
 }
 
+func (x *AttachRequest_Data) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
+func (x *AttachRequest_Data) GetReadAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_ReadAt
+	}
+	return nil
+}
+
+func (x *AttachRequest_Data) GetSentAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_SentAt
+	}
+	return nil
+}
+
 func (x *AttachRequest_Data) SetSourceId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -525,14 +594,53 @@ func (x *AttachRequest_Data) SetPayload(v []byte) {
 	x.xxx_hidden_Payload = v
 }
 
+func (x *AttachRequest_Data) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
+func (x *AttachRequest_Data) SetReadAt(v *timestamppb.Timestamp) {
+	x.xxx_hidden_ReadAt = v
+}
+
+func (x *AttachRequest_Data) SetSentAt(v *timestamppb.Timestamp) {
+	x.xxx_hidden_SentAt = v
+}
+
+func (x *AttachRequest_Data) HasReadAt() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ReadAt != nil
+}
+
+func (x *AttachRequest_Data) HasSentAt() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_SentAt != nil
+}
+
+func (x *AttachRequest_Data) ClearReadAt() {
+	x.xxx_hidden_ReadAt = nil
+}
+
+func (x *AttachRequest_Data) ClearSentAt() {
+	x.xxx_hidden_SentAt = nil
+}
+
 type AttachRequest_Data_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	SourceId []byte
-	// MPEG-TS packets, a whole number of them, the same bytes the producer
-	// stores; the first bytes after a Start begin at a keyframe with the
-	// tables prepended.
-	Payload []byte
+	// fMP4 init or complete fragment. Each incarnation starts at a keyframe.
+	Payload      []byte
+	CaptureEpoch string
+	// When the producer had the payload from its capture (t1) and when it
+	// handed it to this stream (t2), on the producer's clock (§39.3). The
+	// relay measures the producer's queue and the uplink from them; a
+	// producer that predates them sends neither.
+	ReadAt *timestamppb.Timestamp
+	SentAt *timestamppb.Timestamp
 }
 
 func (b0 AttachRequest_Data_builder) Build() *AttachRequest_Data {
@@ -541,6 +649,98 @@ func (b0 AttachRequest_Data_builder) Build() *AttachRequest_Data {
 	_, _ = b, x
 	x.xxx_hidden_SourceId = b.SourceId
 	x.xxx_hidden_Payload = b.Payload
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
+	x.xxx_hidden_ReadAt = b.ReadAt
+	x.xxx_hidden_SentAt = b.SentAt
+	return m0
+}
+
+// Reliable source control, independent of the bounded lossy media queue.
+type AttachRequest_Reset struct {
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_SourceId     []byte                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId"`
+	xxx_hidden_CaptureEpoch string                 `protobuf:"bytes,2,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_Stopped      bool                   `protobuf:"varint,3,opt,name=stopped"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *AttachRequest_Reset) Reset() {
+	*x = AttachRequest_Reset{}
+	mi := &file_shale_ingest_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AttachRequest_Reset) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AttachRequest_Reset) ProtoMessage() {}
+
+func (x *AttachRequest_Reset) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_ingest_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AttachRequest_Reset) GetSourceId() []byte {
+	if x != nil {
+		return x.xxx_hidden_SourceId
+	}
+	return nil
+}
+
+func (x *AttachRequest_Reset) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
+func (x *AttachRequest_Reset) GetStopped() bool {
+	if x != nil {
+		return x.xxx_hidden_Stopped
+	}
+	return false
+}
+
+func (x *AttachRequest_Reset) SetSourceId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_SourceId = v
+}
+
+func (x *AttachRequest_Reset) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
+}
+
+func (x *AttachRequest_Reset) SetStopped(v bool) {
+	x.xxx_hidden_Stopped = v
+}
+
+type AttachRequest_Reset_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	SourceId     []byte
+	CaptureEpoch string
+	Stopped      bool
+}
+
+func (b0 AttachRequest_Reset_builder) Build() *AttachRequest_Reset {
+	m0 := &AttachRequest_Reset{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_SourceId = b.SourceId
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
+	x.xxx_hidden_Stopped = b.Stopped
 	return m0
 }
 
@@ -553,7 +753,7 @@ type AttachResponse_Start struct {
 
 func (x *AttachResponse_Start) Reset() {
 	*x = AttachResponse_Start{}
-	mi := &file_shale_ingest_proto_msgTypes[4]
+	mi := &file_shale_ingest_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -565,7 +765,7 @@ func (x *AttachResponse_Start) String() string {
 func (*AttachResponse_Start) ProtoMessage() {}
 
 func (x *AttachResponse_Start) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_ingest_proto_msgTypes[4]
+	mi := &file_shale_ingest_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -613,7 +813,7 @@ type AttachResponse_Stop struct {
 
 func (x *AttachResponse_Stop) Reset() {
 	*x = AttachResponse_Stop{}
-	mi := &file_shale_ingest_proto_msgTypes[5]
+	mi := &file_shale_ingest_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -625,7 +825,7 @@ func (x *AttachResponse_Stop) String() string {
 func (*AttachResponse_Stop) ProtoMessage() {}
 
 func (x *AttachResponse_Stop) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_ingest_proto_msgTypes[5]
+	mi := &file_shale_ingest_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -674,7 +874,7 @@ type AttachResponse_Welcome struct {
 
 func (x *AttachResponse_Welcome) Reset() {
 	*x = AttachResponse_Welcome{}
-	mi := &file_shale_ingest_proto_msgTypes[6]
+	mi := &file_shale_ingest_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -686,7 +886,7 @@ func (x *AttachResponse_Welcome) String() string {
 func (*AttachResponse_Welcome) ProtoMessage() {}
 
 func (x *AttachResponse_Welcome) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_ingest_proto_msgTypes[6]
+	mi := &file_shale_ingest_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -726,15 +926,23 @@ var File_shale_ingest_proto protoreflect.FileDescriptor
 
 const file_shale_ingest_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/ingest.proto\x12\x05shale\"\xec\x01\n" +
+	"\x12shale/ingest.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\"\x95\x04\n" +
 	"\rAttachRequest\x122\n" +
 	"\x05hello\x18\x01 \x01(\v2\x1a.shale.AttachRequest.HelloH\x00R\x05hello\x12/\n" +
-	"\x04data\x18\x02 \x01(\v2\x19.shale.AttachRequest.DataH\x00R\x04data\x1a,\n" +
+	"\x04data\x18\x02 \x01(\v2\x19.shale.AttachRequest.DataH\x00R\x04data\x122\n" +
+	"\x05reset\x18\x03 \x01(\v2\x1a.shale.AttachRequest.ResetH\x00R\x05reset\x1a,\n" +
 	"\x05Hello\x12#\n" +
-	"\rpublish_token\x18\x01 \x01(\tR\fpublishToken\x1a=\n" +
+	"\rpublish_token\x18\x01 \x01(\tR\fpublishToken\x1a\xcc\x01\n" +
 	"\x04Data\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12\x18\n" +
-	"\apayload\x18\x02 \x01(\fR\apayloadB\t\n" +
+	"\apayload\x18\x02 \x01(\fR\apayload\x12#\n" +
+	"\rcapture_epoch\x18\x03 \x01(\tR\fcaptureEpoch\x123\n" +
+	"\aread_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x06readAt\x123\n" +
+	"\asent_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\x1ac\n" +
+	"\x05Reset\x12\x1b\n" +
+	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12#\n" +
+	"\rcapture_epoch\x18\x02 \x01(\tR\fcaptureEpoch\x12\x18\n" +
+	"\astopped\x18\x03 \x01(\bR\astoppedB\t\n" +
 	"\amessage\"\xad\x02\n" +
 	"\x0eAttachResponse\x123\n" +
 	"\x05start\x18\x01 \x01(\v2\x1b.shale.AttachResponse.StartH\x00R\x05start\x120\n" +
@@ -750,29 +958,34 @@ const file_shale_ingest_proto_rawDesc = "" +
 	"\vRelayIngest\x129\n" +
 	"\x06Attach\x12\x14.shale.AttachRequest\x1a\x15.shale.AttachResponse(\x010\x01B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_ingest_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_shale_ingest_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_shale_ingest_proto_goTypes = []any{
 	(*AttachRequest)(nil),          // 0: shale.AttachRequest
 	(*AttachResponse)(nil),         // 1: shale.AttachResponse
 	(*AttachRequest_Hello)(nil),    // 2: shale.AttachRequest.Hello
 	(*AttachRequest_Data)(nil),     // 3: shale.AttachRequest.Data
-	(*AttachResponse_Start)(nil),   // 4: shale.AttachResponse.Start
-	(*AttachResponse_Stop)(nil),    // 5: shale.AttachResponse.Stop
-	(*AttachResponse_Welcome)(nil), // 6: shale.AttachResponse.Welcome
+	(*AttachRequest_Reset)(nil),    // 4: shale.AttachRequest.Reset
+	(*AttachResponse_Start)(nil),   // 5: shale.AttachResponse.Start
+	(*AttachResponse_Stop)(nil),    // 6: shale.AttachResponse.Stop
+	(*AttachResponse_Welcome)(nil), // 7: shale.AttachResponse.Welcome
+	(*timestamppb.Timestamp)(nil),  // 8: google.protobuf.Timestamp
 }
 var file_shale_ingest_proto_depIdxs = []int32{
 	2, // 0: shale.AttachRequest.hello:type_name -> shale.AttachRequest.Hello
 	3, // 1: shale.AttachRequest.data:type_name -> shale.AttachRequest.Data
-	4, // 2: shale.AttachResponse.start:type_name -> shale.AttachResponse.Start
-	5, // 3: shale.AttachResponse.stop:type_name -> shale.AttachResponse.Stop
-	6, // 4: shale.AttachResponse.welcome:type_name -> shale.AttachResponse.Welcome
-	0, // 5: shale.RelayIngest.Attach:input_type -> shale.AttachRequest
-	1, // 6: shale.RelayIngest.Attach:output_type -> shale.AttachResponse
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	4, // 2: shale.AttachRequest.reset:type_name -> shale.AttachRequest.Reset
+	5, // 3: shale.AttachResponse.start:type_name -> shale.AttachResponse.Start
+	6, // 4: shale.AttachResponse.stop:type_name -> shale.AttachResponse.Stop
+	7, // 5: shale.AttachResponse.welcome:type_name -> shale.AttachResponse.Welcome
+	8, // 6: shale.AttachRequest.Data.read_at:type_name -> google.protobuf.Timestamp
+	8, // 7: shale.AttachRequest.Data.sent_at:type_name -> google.protobuf.Timestamp
+	0, // 8: shale.RelayIngest.Attach:input_type -> shale.AttachRequest
+	1, // 9: shale.RelayIngest.Attach:output_type -> shale.AttachResponse
+	9, // [9:10] is the sub-list for method output_type
+	8, // [8:9] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_shale_ingest_proto_init() }
@@ -783,6 +996,7 @@ func file_shale_ingest_proto_init() {
 	file_shale_ingest_proto_msgTypes[0].OneofWrappers = []any{
 		(*attachRequest_Hello_)(nil),
 		(*attachRequest_Data_)(nil),
+		(*attachRequest_Reset_)(nil),
 	}
 	file_shale_ingest_proto_msgTypes[1].OneofWrappers = []any{
 		(*attachResponse_Start_)(nil),
@@ -795,7 +1009,7 @@ func file_shale_ingest_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_ingest_proto_rawDesc), len(file_shale_ingest_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

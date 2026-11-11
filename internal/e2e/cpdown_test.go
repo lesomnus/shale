@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"net"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -19,33 +18,37 @@ import (
 	"github.com/lesomnus/shale/internal/storage"
 )
 
-// freeAddr is a loopback address nothing listens on yet. A cluster whose
-// control plane is stopped and started again needs its listeners pinned:
-// the hosts outside the process go on dialing where they joined.
-func freeAddr(t *testing.T) string {
-	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+// Ephemeral listeners must be allocated by ServeAll itself, then the actual
+// API addresses retained for peers that outlive a control-plane restart.
+func TestControlPlaneRestartKeepsAPIAddresses(t *testing.T) {
+	c := start(t)
+	tenantAddr, clusterAddr := c.running.TenantAddr, c.running.ClusterAddr
+	require.NotEqual(t, tenantAddr, clusterAddr)
+	admin := api.NewSetServiceClient(c.dial("@acme/admin"))
+	ops := api.NewSinkServiceClient(c.dialCluster(c.operator()))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := admin.List(ctx, api.SetListRequest_builder{}.Build())
 	require.NoError(t, err)
-	defer l.Close()
+	_, err = ops.List(ctx, api.SinkListRequest_builder{}.Build())
+	require.NoError(t, err)
 
-	return l.Addr().String()
-}
+	c.stopCP()
+	c.startCP()
+	require.Equal(t, tenantAddr, c.cfg.Server.Addr)
+	require.Equal(t, clusterAddr, c.cfg.Cluster.Addr)
+	require.Equal(t, tenantAddr, c.running.TenantAddr)
+	require.Equal(t, clusterAddr, c.running.ClusterAddr)
 
-// pinned pins every listener of `serve all`, so stopCP and startCP put the
-// same cluster back where it was.
-func pinned(t *testing.T) func(*cmd.Config) {
-	t.Helper()
-
-	return func(c *cmd.Config) {
-		c.Server.Addr = freeAddr(t)
-		c.Cluster.Addr = freeAddr(t)
-		c.Server.Http.Addr = freeAddr(t)
-		c.Cluster.Http.Addr = freeAddr(t)
-		c.Storage.Addr = freeAddr(t)
-		c.Storage.ControlAddr = freeAddr(t)
-		c.Relay.IngestAddr = freeAddr(t)
-		c.Relay.WhepAddr = freeAddr(t)
-	}
+	// Reuse the original connections: replacing the clients with connections to
+	// the new addresses would hide the failure that the outage drills exercise.
+	require.Eventually(t, func() bool {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_, tenantErr := admin.List(ctx, api.SetListRequest_builder{}.Build())
+		_, clusterErr := ops.List(ctx, api.SinkListRequest_builder{}.Build())
+		return tenantErr == nil && clusterErr == nil
+	}, 10*time.Second, 100*time.Millisecond, "both original API clients reconnect")
 }
 
 // TestControlPlaneOutage is §12.1's second table, what the allocation
@@ -57,7 +60,7 @@ func pinned(t *testing.T) func(*cmd.Config) {
 // control plane is back the queued commits reach the index with nothing
 // uploaded twice.
 func TestControlPlaneOutage(t *testing.T) {
-	c := start(t, pinned(t), func(c *cmd.Config) {
+	c := start(t, func(c *cmd.Config) {
 		// The built-in node goes down with the control plane, so the drill
 		// writes to a node of its own; this one only has to exist.
 		c.Storage.Sinks[0].Capacity = "64MiB"
@@ -179,7 +182,7 @@ func TestControlPlaneOutage(t *testing.T) {
 // already open carries on. The relay and the producer here run outside the
 // control plane's process, as they do on a real deployment.
 func TestControlPlaneDownWhileWatching(t *testing.T) {
-	c := start(t, pinned(t))
+	c := start(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	admin := c.dial("@acme/admin")

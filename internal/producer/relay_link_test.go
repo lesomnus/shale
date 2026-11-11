@@ -18,13 +18,15 @@ import (
 )
 
 // fakeIngest is a relay's ingest that welcomes every producer and counts
-// the streams it saw, each held open until the producer ends it, and the
-// fragments that came on them.
+// the streams it saw, each held open until the producer ends it, the
+// fragments that came on them, and those that said when they were read
+// and sent, in that order (§39.3).
 type fakeIngest struct {
 	api.UnimplementedRelayIngestServer
 	attaches atomic.Int32
 	open     atomic.Int32
 	data     atomic.Int32
+	stamped  atomic.Int32
 }
 
 func (f *fakeIngest) Attach(stream api.RelayIngest_AttachServer) error {
@@ -42,8 +44,11 @@ func (f *fakeIngest) Attach(stream api.RelayIngest_AttachServer) error {
 		if err != nil {
 			return nil
 		}
-		if msg.GetData() != nil {
+		if d := msg.GetData(); d != nil {
 			f.data.Add(1)
+			if d.HasReadAt() && d.HasSentAt() && !d.GetSentAt().AsTime().Before(d.GetReadAt().AsTime()) {
+				f.stamped.Add(1)
+			}
 		}
 	}
 }
@@ -137,6 +142,7 @@ func TestRelayLinkEndsWhileSending(t *testing.T) {
 		<-fed
 	}()
 	require.Eventually(t, func() bool { return fake.data.Load() > 0 }, 5*time.Second, 20*time.Millisecond, "fragments go")
+	require.Eventually(t, func() bool { return fake.stamped.Load() > 0 }, 5*time.Second, 20*time.Millisecond, "each says when it was read and sent")
 
 	// Another relay: the stream moves while fragments go.
 	l.set(api.RelayAssignment_builder{RelayId: pdid.New(pdid.Domain(31)).Bytes(), PublishToken: "tok", Endpoints: endpoints}.Build())
@@ -152,4 +158,5 @@ func TestRelayLinkEndsWhileSending(t *testing.T) {
 		t.Fatal("the link did not stop with its context")
 	}
 	require.Eventually(t, func() bool { return fake.open.Load() == 0 }, 5*time.Second, 20*time.Millisecond, "every stream ended")
+	require.Equal(t, fake.data.Load(), fake.stamped.Load(), "every fragment said when it was read and sent")
 }

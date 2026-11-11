@@ -1,0 +1,69 @@
+edition = "2023";
+package shale;
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/payday/tenant.proto";
+import "shale/site.proto";
+import "shale/camera.proto";
+import "shale/camera_preset.proto";
+import "shale/camera_bootstrap.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Matching hints do not authenticate identity or authorize existing secrets.
+// Empty eligible does not permit everything: allow_any is a deliberate choice.
+message CameraEnrollmentPolicy {
+  bool automatic = 1;
+  bool allow_activation = 2;
+  int32 max_devices = 3;
+  repeated CameraPresetMatch eligible = 4;
+  bool allow_any = 5;
+  // Used only when generating a first-activation account; empty means admin.
+  // Existing/imported credential material is never rewritten from this value.
+  string initial_username = 6;
+  // Copied into each job; no scheme, port or firmware inference is permitted.
+  CameraBootstrapProfile bootstrap = 7;
+  // Each approval names one device in this exact network/site/tenant. A job
+  // receives only its device's identity, detached from the immutable policy.
+  // Present entries require an explicit HTTPS bootstrap destination.
+  repeated CameraDeviceTLSIdentity device_tls_identities = 8;
+  // Explicit first-use trust on this isolated private camera LAN only. A
+  // credential-free known-factory challenge must precede binding or secrets.
+  // Existing identities, credentials, jobs and changed keys never opt in.
+  bool trust_new_factory_tls = 9;
+}
+// One immutable policy revision. The network selects its active policy by CAS.
+message CameraPolicy {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID key: true default: ""}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  Site site = 3 [(orm.edge) = {nullable: true immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  CameraNetwork network = 8 [(orm.edge) = {immutable: true}];
+  string policy_key = 9 [(orm.field) = {immutable: true}];
+  string revision = 10 [(orm.field) = {immutable: true}];
+  CameraPreset preset = 11 [(orm.edge) = {immutable: true}];
+  CameraEnrollmentPolicy enrollment = 12 [(orm.field) = {immutable: true}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]},
+      {name: "revision" refs: [{name: "tenant", number: 2}, {name: "policy_key", number: 9}, {name: "revision", number: 10}] unique: true includes_erased: true}
+    ]
+  };
+  option (payday.entity) = {
+    domain: 41
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}, {name: "network"}]
+      size: 50 max: 500
+    }
+    watch: {}
+  };
+}

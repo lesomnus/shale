@@ -37,6 +37,10 @@ var tenantServices = []string{
 	"/shale.SetService/", "/shale.SourceService/", "/shale.LaminaService/", "/shale.AttemptService/",
 	"/shale.SiteService/", "/shale.SiteMemberService/", "/shale.ProducerService/", "/shale.ReaderService/",
 	"/shale.HolderService/", "/shale.AuditService/", "/shale.DelegationService/",
+	"/shale.CameraNetworkService/", "/shale.CameraDeviceService/", "/shale.CameraAssignmentService/",
+	"/shale.CameraBindingService/", "/shale.CameraJobService/", "/shale.CameraWorkerService/",
+	"/shale.CameraPresetService/", "/shale.CameraPolicyService/",
+	"/shale.CameraCredentialService/", "/shale.CameraCredentialVersionService/",
 }
 
 // IsClusterService says whether a method belongs to the cluster surface.
@@ -65,7 +69,7 @@ func IsTenantService(method string) bool {
 // and every host's Join (§35.2).
 func Public(method string) bool {
 	switch method {
-	case api.ProducerService_Join_FullMethodName, api.ReaderService_Join_FullMethodName,
+	case api.ProducerService_Join_FullMethodName, api.ReaderService_Join_FullMethodName, api.CameraWorkerService_Join_FullMethodName,
 		api.NodeService_Join_FullMethodName, api.RelayService_Join_FullMethodName:
 		return true
 	}
@@ -82,6 +86,14 @@ func denied(method, why string) error {
 // on the cluster API is no exception: what a general write would set there
 // is a state nothing else agrees with just the same.
 func closedToEveryone(m string) bool {
+	// Camera authority rows change only through validated, fenced operations.
+	if strings.HasPrefix(m, "/shale.Camera") {
+		for _, verb := range []string{"/Add", "/Patch", "/Apply", "/Erase"} {
+			if strings.HasSuffix(m, verb) {
+				return true
+			}
+		}
+	}
 	switch {
 	case strings.HasPrefix(m, "/shale.LaminaService/"):
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Erase")
@@ -154,8 +166,15 @@ type TenantPolicy struct {
 }
 
 var producerMay = map[string]bool{
-	api.SetService_Get_FullMethodName: true, api.SetService_List_FullMethodName: true,
-	api.SetService_Negotiate_FullMethodName: true, api.SetService_Allocate_FullMethodName: true,
+	// The custom Snapshot rechecks current Producer/Set ownership. This does
+	// not grant generated inventory Get/List/Watch or Worker job operations.
+	api.CameraAssignmentService_Snapshot_FullMethodName:    true,
+	api.CameraAssignmentService_Application_FullMethodName: true,
+	api.CameraAssignmentService_BeginApply_FullMethodName:  true,
+	api.CameraAssignmentService_Applied_FullMethodName:     true,
+	api.SetService_Get_FullMethodName:                      true, api.SetService_List_FullMethodName: true,
+	api.CameraCredentialService_Resolve_FullMethodName: true,
+	api.SetService_Negotiate_FullMethodName:            true, api.SetService_Allocate_FullMethodName: true,
 	api.SourceService_Get_FullMethodName: true, api.SourceService_List_FullMethodName: true,
 	api.SourceService_Add_FullMethodName: true,
 	api.LaminaService_Get_FullMethodName: true, api.LaminaService_Allocate_FullMethodName: true,
@@ -165,6 +184,23 @@ var producerMay = map[string]bool{
 	api.AttemptService_Get_FullMethodName:  true,
 	api.ProducerService_Get_FullMethodName: true, api.ProducerService_Heartbeat_FullMethodName: true,
 	api.ProducerService_Relay_FullMethodName: true, api.ProducerService_RenewCertificate_FullMethodName: true,
+}
+
+// A worker uses only bounded assignment/job operations. Generic Source/Lamina
+// reads and tenant-wide camera CRUD never become worker capabilities.
+var cameraWorkerMay = map[string]bool{
+	api.CameraCredentialService_Resolve_FullMethodName:      true,
+	api.CameraWorkerService_Heartbeat_FullMethodName:        true,
+	api.CameraWorkerService_RenewCertificate_FullMethodName: true,
+	api.CameraWorkerService_Poll_FullMethodName:             true,
+	api.CameraWorkerService_CheckJob_FullMethodName:         true,
+	api.CameraWorkerService_ObserveJob_FullMethodName:       true,
+	api.CameraJobService_Claim_FullMethodName:               true,
+	api.CameraJobService_Report_FullMethodName:              true,
+	api.CameraJobService_Publish_FullMethodName:             true,
+	api.CameraPresetService_ResolveForJob_FullMethodName:    true,
+	api.CameraPolicyService_Observe_FullMethodName:          true,
+	api.CameraPolicyService_TrustFactoryTLS_FullMethodName:  true,
 }
 
 var readerMay = map[string]bool{
@@ -216,9 +252,6 @@ func PersonMay(method string) bool { return personMay[method] }
 
 func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 	m := c.Action
-	if strings.HasPrefix(m, "/payday.BatchService/") {
-		return nil
-	}
 	if IsClusterService(m) {
 		return denied(m, "not served on the tenant API")
 	}
@@ -233,6 +266,10 @@ func (p TenantPolicy) May(ctx context.Context, c gate.Call) error {
 	case DomProducer:
 		if !producerMay[m] {
 			return denied(m, "not something a producer does")
+		}
+	case DomCameraWorker:
+		if !cameraWorkerMay[m] {
+			return denied(m, "not something a camera worker does")
 		}
 	case DomReader:
 		if !readerMay[m] {
@@ -310,9 +347,6 @@ var relayMay = map[string]bool{
 
 func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	m := c.Action
-	if strings.HasPrefix(m, "/payday.BatchService/") {
-		return nil
-	}
 	if closedToEveryone(m) {
 		return denied(m, "written by the system, not by a caller")
 	}
@@ -433,6 +467,16 @@ func (s *Sites) Of(ctx context.Context) (vs []uuid.UUID, all bool, err error) {
 		}
 		for _, m := range ms {
 			e.ids = append(e.ids, pdid.Id(m.SiteId))
+		}
+	case DomCameraWorker:
+		// The site approved at adoption is the maximum scope; assignments narrow it
+		// further inside each execution RPC. An unassigned worker has no all-sites flag.
+		w, err := s.d.Own.CameraWorker().Get(ctx, api.CameraWorkerGetRequest_builder{Ref: api.CameraWorkerRef_builder{Id: f.Actor.Bytes()}.Build()}.Build())
+		if err != nil {
+			return nil, false, err
+		}
+		if len(w.GetSite().GetId()) > 0 {
+			e.ids = []pdid.Id{mustId(w.GetSite().GetId())}
 		}
 	case DomReader:
 		r, err := s.d.Ent.Reader.Query().Where(reader.IdEQ(f.Actor.Uuid())).Only(ctx)

@@ -20,6 +20,12 @@ import (
 // request has a `ref` and also names rows without one, so it is mounted by
 // hand with an optional REF (lamina.go).
 var custom = map[string]string{
+	"camera-preset/create":      "shale.CameraPresetService.Create",
+	"camera-policy/create":      "shale.CameraPolicyService.Create",
+	"camera-policy/activate":    "shale.CameraPolicyService.Activate",
+	"camera-policy/enroll":      "shale.CameraPolicyService.Enroll",
+	"camera-worker/adopt":       "shale.CameraWorkerService.Adopt",
+	"camera-worker/revoke":      "shale.CameraWorkerService.Revoke",
 	"node/adopt":                "shale.NodeService.Adopt",
 	"node/resolve":              "shale.NodeService.Resolve",
 	"relay/adopt":               "shale.RelayService.Adopt",

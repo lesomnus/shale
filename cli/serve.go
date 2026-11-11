@@ -19,11 +19,18 @@ import (
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/camera/credential"
+	credentialcp "github.com/lesomnus/shale/camera/credential/cp"
+	cameradiscovery "github.com/lesomnus/shale/camera/discovery"
 	"github.com/lesomnus/shale/cmd"
+	"github.com/lesomnus/shale/internal/cameraworker"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/relay"
 	"github.com/lesomnus/shale/internal/storage"
+	catalog "github.com/lesomnus/shale/source"
+	catalogcp "github.com/lesomnus/shale/source/cp"
 )
 
 // NewCmdServe is `shale serve <role>` (§34.1): one binary, one command per
@@ -47,7 +54,7 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 
 	return &xli.Command{
 		Name:  "serve",
-		Brief: "run one role",
+		Brief: "run service roles",
 
 		Commands: []*xli.Command{
 			{
@@ -89,6 +96,20 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 				}),
 			},
 			{
+				Name: "camera-worker", Brief: "an outbound camera Worker with its own adopted machine identity", Flags: common(),
+				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
+					apply(self)
+					return serveEdge(ctx, c, []string{"worker"})
+				}),
+			},
+			{
+				Name: "edge", Brief: "managed camera Worker and Producer roles in one process", Flags: common(),
+				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
+					apply(self)
+					return serveEdge(ctx, c, nil)
+				}),
+			},
+			{
 				Name: "reader", Brief: "the Reader agent beside a media server", Flags: common(),
 				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 					apply(self)
@@ -113,6 +134,29 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 
 		Handler: xli.RequireSubcommand(),
 	}
+}
+
+// CameraWorkerConfig is exported so combined-role hosts can inject a CP-backed
+// executor without giving the Worker a Producer's identity or local passwords.
+func CameraWorkerConfig(c *cmd.Config) cameraworker.Config {
+	worker := cameraworker.Config{StateDir: c.StateDir("camera-worker"), Cp: c.Cp, CaHash: c.CaHash, Tenant: c.Tenant, Dev: c.IsDev(), HeartbeatInterval: c.CameraWorker.HeartbeatInterval, RetryInterval: c.CameraWorker.RetryInterval, LeaseSeconds: c.CameraWorker.LeaseSeconds, DiscoveryInterval: c.CameraWorker.DiscoveryInterval, DiscoveryTimeout: c.CameraWorker.DiscoveryTimeout, Log: slog.Default()}
+	var initial cameradiscovery.InitialProviders
+	if c.CameraWorker.InitialNeighbors {
+		initial = append(initial, cameradiscovery.NeighborObservations{Source: cameradiscovery.SystemNeighbors{}})
+	}
+	if len(c.CameraWorker.DHCPLeases) > 0 {
+		files := make(cameradiscovery.DNSMasqLeaseFiles, len(c.CameraWorker.DHCPLeases))
+		for i, file := range c.CameraWorker.DHCPLeases {
+			files[i] = cameradiscovery.DNSMasqLeaseFile{Interface: file.Interface, Path: file.File}
+		}
+		initial = append(initial, cameradiscovery.DHCPObservations{Source: files})
+	}
+	if len(initial) == 1 {
+		worker.InitialObservations = initial[0]
+	} else if len(initial) > 1 {
+		worker.InitialObservations = initial
+	}
+	return worker
 }
 
 // serveControlPlane serves the given surfaces; `all` says which defaults
@@ -354,6 +398,13 @@ func serveProducer(ctx context.Context, c *cmd.Config) error {
 // ProducerConfig maps the file onto the producer's settings.
 func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 	pc := c.Producer
+	catalogMode := strings.ToLower(pc.Catalog.Provider)
+	if catalogMode != "" && catalogMode != "static" && catalogMode != "file" && catalogMode != "cp" {
+		return producer.Config{}, errors.New("producer.catalog.provider: static, file or cp")
+	}
+	if pc.Catalog.PollInterval < 0 || (catalogMode != "cp" && (pc.Catalog.Assignment != "" || pc.Catalog.PollInterval != 0)) {
+		return producer.Config{}, errors.New("catalog assignment/poll settings require the CP provider")
+	}
 	cfg := producer.Config{
 		StateDir:          c.StateDir("producer"),
 		Cp:                c.Cp,
@@ -369,10 +420,40 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		IdleTimeout:       pc.IdleTimeout,
 		AbandonTimeout:    pc.AbandonTimeout,
 		AllocationHorizon: pc.AllocationHorizon,
+		DrainTimeout:      pc.DrainTimeout,
 		HeartbeatInterval: pc.HeartbeatInterval,
 		Log:               slog.Default(),
 	}
+	cfg.Ffprobe = pc.Ffprobe
+	centralCredentials := pc.Credentials.Provider == credentialcp.Name || pc.Credentials.Provider == "" && pc.Credentials.Directory == "" && catalogMode == "cp"
+	if centralCredentials && pc.Credentials.Directory != "" {
+		return cfg, errors.New("CP credentials cannot select a local directory")
+	}
+	if centralCredentials {
+		cfg.AuthProviderFactory = func(ctx context.Context, session producer.SourceSession) (camera.AuthProvider, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			return credentialcp.New(session.Conn, credentialcp.Options{Role: credentialcp.Producer, Scope: camera.EnrollmentScope{TenantID: session.TenantID, SiteID: session.SiteID, SetID: session.SetID, ProducerID: session.ProducerID}})
+		}
+	} else if pc.Credentials.Directory != "" {
+		cfg.AuthProvider = credential.FileProvider{Dir: pc.Credentials.Directory, Name: pc.Credentials.Provider}
+	} else if pc.Credentials.Provider != "" {
+		return cfg, errors.New("standalone credential providers require an explicit directory")
+	}
 	cfg.Upload = producer.UploadConfig{ResumeTimeout: pc.ResumeTimeout, RetryAfterCap: pc.RetryAfterCap, PlacementRetries: pc.PlacementRetries}
+	if catalogMode == "cp" {
+		if len(pc.Sources) != 0 || pc.Demo != 0 {
+			return cfg, errors.New("CP catalog and local/demo sources cannot be combined implicitly")
+		}
+		assignment, poll := pc.Catalog.Assignment, pc.Catalog.PollInterval
+		cfg.SourceProviderFactory = func(ctx context.Context, session producer.SourceSession) (catalog.Provider, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			return catalogcp.New(session.Conn, catalogcp.Options{ProducerID: session.ProducerID, TenantID: session.TenantID, SiteID: session.SiteID, SetID: session.SetID, AssignmentID: assignment, PollInterval: poll})
+		}
+	}
 	switch strings.ToLower(pc.Mode) {
 	case "buffered":
 		cfg.Mode = api.UploadMode_UPLOAD_MODE_BUFFERED
@@ -409,12 +490,18 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 			Alias: sc.Alias, Name: sc.Name, Input: sc.Input, Kind: sc.Kind, ContentType: sc.ContentType, Format: sc.Format, Size: sc.Size, Fps: sc.Fps,
 			Capture: sc.Capture, Encoder: sc.Encoder, KeyframeInterval: sc.KeyframeInterval, EncoderOptions: sc.EncoderOptions,
 			ExtraInputArgs: sc.ExtraInputArgs, ExtraOutputArgs: sc.ExtraOutputArgs, Command: sc.Command, Zone: sc.Zone,
-			Controls: sc.Controls,
+			Controls:        sc.Controls,
+			InputCredential: sc.InputCredential, Scope: sc.Scope, Labels: sc.Labels,
+		}
+		if sc.Onvif != nil {
+			src.Onvif = &producer.OnvifConfig{Endpoint: sc.Onvif.Endpoint, ProfileToken: sc.Onvif.ProfileToken, CredentialRef: sc.Onvif.CredentialRef}
 		}
 		if sc.Idle != nil {
 			src.Idle = &producer.IdleConfig{DarkAfter: sc.Idle.DarkAfter, Threshold: sc.Idle.Threshold}
 		}
-		if sc.MaxBitrate == "" || strings.EqualFold(sc.MaxBitrate, "auto") {
+		if strings.EqualFold(sc.MaxBitrate, "onvif") {
+			src.MaxBitrateOnvif = true
+		} else if sc.MaxBitrate == "" || strings.EqualFold(sc.MaxBitrate, "auto") {
 			src.MaxBitrateAuto = true
 		} else {
 			v, err := producer.ParseBitrate(sc.MaxBitrate)

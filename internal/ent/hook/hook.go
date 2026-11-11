@@ -69,6 +69,126 @@ func (f AuditFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AuditMutation", m)
 }
 
+// The CameraAssignmentFunc type is an adapter to allow the use of ordinary
+// function as CameraAssignment mutator.
+type CameraAssignmentFunc func(context.Context, *ent.CameraAssignmentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraAssignmentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraAssignmentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraAssignmentMutation", m)
+}
+
+// The CameraBindingFunc type is an adapter to allow the use of ordinary
+// function as CameraBinding mutator.
+type CameraBindingFunc func(context.Context, *ent.CameraBindingMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraBindingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraBindingMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraBindingMutation", m)
+}
+
+// The CameraCredentialFunc type is an adapter to allow the use of ordinary
+// function as CameraCredential mutator.
+type CameraCredentialFunc func(context.Context, *ent.CameraCredentialMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraCredentialFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraCredentialMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraCredentialMutation", m)
+}
+
+// The CameraCredentialVersionFunc type is an adapter to allow the use of ordinary
+// function as CameraCredentialVersion mutator.
+type CameraCredentialVersionFunc func(context.Context, *ent.CameraCredentialVersionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraCredentialVersionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraCredentialVersionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraCredentialVersionMutation", m)
+}
+
+// The CameraDeviceFunc type is an adapter to allow the use of ordinary
+// function as CameraDevice mutator.
+type CameraDeviceFunc func(context.Context, *ent.CameraDeviceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraDeviceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraDeviceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraDeviceMutation", m)
+}
+
+// The CameraJobFunc type is an adapter to allow the use of ordinary
+// function as CameraJob mutator.
+type CameraJobFunc func(context.Context, *ent.CameraJobMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraJobFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraJobMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraJobMutation", m)
+}
+
+// The CameraNetworkFunc type is an adapter to allow the use of ordinary
+// function as CameraNetwork mutator.
+type CameraNetworkFunc func(context.Context, *ent.CameraNetworkMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraNetworkFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraNetworkMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraNetworkMutation", m)
+}
+
+// The CameraPolicyFunc type is an adapter to allow the use of ordinary
+// function as CameraPolicy mutator.
+type CameraPolicyFunc func(context.Context, *ent.CameraPolicyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraPolicyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraPolicyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraPolicyMutation", m)
+}
+
+// The CameraPresetFunc type is an adapter to allow the use of ordinary
+// function as CameraPreset mutator.
+type CameraPresetFunc func(context.Context, *ent.CameraPresetMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraPresetFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraPresetMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraPresetMutation", m)
+}
+
+// The CameraWorkerFunc type is an adapter to allow the use of ordinary
+// function as CameraWorker mutator.
+type CameraWorkerFunc func(context.Context, *ent.CameraWorkerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CameraWorkerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CameraWorkerMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraWorkerMutation", m)
+}
+
 // The DelegationFunc type is an adapter to allow the use of ordinary
 // function as Delegation mutator.
 type DelegationFunc func(context.Context, *ent.DelegationMutation) (ent.Value, error)

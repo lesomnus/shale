@@ -25,9 +25,11 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
+	catalog "github.com/lesomnus/shale/source"
 )
 
 // DomProducer is the domain byte of a Producer (§35.3).
@@ -42,7 +44,23 @@ type Config struct {
 	Tenant   string
 
 	Sources []SourceConfig
-	Ffmpeg  string
+	// A provider factory is opened only after machine authentication and Set
+	// adoption. Direct providers support embedded/static/in-process callers.
+	SourceProvider        catalog.Provider
+	SourceProviderFactory func(context.Context, SourceSession) (catalog.Provider, error)
+	ApplyController       catalog.ApplyController
+	ApplyObserver         catalog.ApplyObserver
+	// DrainTimeout bounds a stopped incarnation's FIFO upload drain. Its RAM
+	// remains charged until stored or explicitly counted lost; default two minutes.
+	DrainTimeout time.Duration
+	Ffmpeg       string
+	Ffprobe      string
+	AuthProvider camera.AuthProvider
+	// Opened after machine authentication and Set adoption. A failure never
+	// selects another credential provider implicitly.
+	AuthProviderFactory func(context.Context, SourceSession) (camera.AuthProvider, error)
+	OnvifInspector      camera.Inspector
+	MediaVerifier       camera.MediaVerifier
 	// Gst is gst-launch, for the sources captured through GStreamer
 	// (§38.3); `gst-launch-1.0` on PATH by default.
 	Gst string
@@ -78,6 +96,7 @@ type Config struct {
 type Stats struct {
 	Stored      int64
 	Lost        int64
+	LostBytes   int64
 	Cut         int64
 	LiveDropped int64
 	// LiveTranscodes is the live helpers running (§38.7).
@@ -91,11 +110,12 @@ type Stats struct {
 
 // Stats sums the counters over every source.
 func (p *Producer) Stats() Stats {
-	var st Stats
-	for _, s := range p.order {
+	sources, st := p.accountedSources()
+	for _, s := range sources {
 		s.mu.Lock()
 		st.Stored += s.stored
 		st.Lost += s.lost
+		st.LostBytes += s.lostBytes
 		st.Cut += s.cut
 		for _, seg := range s.pending {
 			st.Held += seg.Held()
@@ -134,6 +154,9 @@ func (c *Config) defaults() {
 	if c.HeartbeatInterval == 0 {
 		c.HeartbeatInterval = 30 * time.Second
 	}
+	if c.DrainTimeout == 0 {
+		c.DrainTimeout = 2 * time.Minute
+	}
 	if c.Mode == api.UploadMode_UPLOAD_MODE_UNSPECIFIED {
 		c.Mode = api.UploadMode_UPLOAD_MODE_LIVE
 	}
@@ -165,10 +188,20 @@ type Producer struct {
 	conn atomic.Pointer[grpc.ClientConn]
 	id   pdid.Id
 
-	set     *api.Set
-	members int
-	sources map[string]*source
-	order   []*source
+	set             *api.Set
+	sourcesMu       sync.RWMutex
+	members         int
+	sources         map[string]*source
+	order           []*source
+	draining        map[*source]bool
+	retired         Stats
+	catalog         catalog.Provider
+	factoryProvider catalog.Provider
+	initialCatalog  catalog.Snapshot
+	initialSpecs    map[string]catalog.Spec
+	loading         atomic.Bool
+	renewing        atomic.Bool
+	heartbeatWake   chan struct{}
 
 	uploader *Uploader
 	relay    *relayLink
@@ -186,7 +219,8 @@ type Producer struct {
 	mu    sync.Mutex
 	terms terms
 
-	// Ready is closed once the producer records.
+	// Ready is closed after authenticated control loops start. The Producer may
+	// remain idle with no approved sources; media readiness requires real proof.
 	Ready chan struct{}
 }
 
@@ -233,8 +267,11 @@ type input interface {
 
 // source is one camera's state.
 type source struct {
-	cfg SourceConfig
-	row *api.Source
+	cfg             SourceConfig
+	row             *api.Source
+	spec            *catalog.Spec
+	catalogRevision catalog.Revision
+	runtime         *sourceRuntime
 	// capture runs the source's capture process; push is the source's side
 	// of the listener when a process on the host writes the stream (§38.9),
 	// and capture is nil then. Both are made with the producer and never
@@ -250,14 +287,25 @@ type source struct {
 	dark *darkTracker
 
 	mu sync.Mutex
+	// ticket belongs to the current capture process, never to an old RAM queue.
+	ticket                                    catalog.ApplyTicket
+	applicationMu                             sync.Mutex
+	usedCredential                            *catalog.CredentialRef
+	proof                                     *catalog.AppliedProof
+	proofWake                                 chan struct{}
+	proofNotified, acknowledged, attemptEnded bool
+	stopReason                                catalog.StopReason
+	pendingIntent                             string
+	pendingApplication                        catalog.Application
 	// cutter cuts the stream being read, a new one for every stream. The
 	// capture loop makes it and is the only one to feed it; the heartbeat
 	// and the stall watch read its counters from goroutines of their own
 	// (§38.6), so it is set and read under mu.
-	cutter  *Cutter
-	profile *api.SegmentProfile
-	sched   Schedule
-	ceiling int64
+	cutter          *Cutter
+	profile         *api.SegmentProfile
+	sched           Schedule
+	ceiling         int64
+	inferredCeiling int64
 	// allocs is each slot's allocation fetched ahead, which is the slot's
 	// first segment's (§12.1).
 	allocs map[int64]*api.Allocation
@@ -295,6 +343,7 @@ type source struct {
 	run        int64
 	dropped    int64
 	lost       int64
+	lostBytes  int64
 	stored     int64
 	cut        int64
 	skipped    int64
@@ -305,88 +354,126 @@ type source struct {
 // New prepares a producer; Run does the work.
 func New(cfg Config) (*Producer, error) {
 	cfg.defaults()
-	if len(cfg.Sources) == 0 {
+	if cfg.SourceProvider != nil && cfg.SourceProviderFactory != nil {
+		return nil, catalog.ErrInvalid
+	}
+	if cfg.AuthProvider != nil && cfg.AuthProviderFactory != nil {
+		return nil, camera.ErrInvalid
+	}
+	if (cfg.SourceProvider != nil || cfg.SourceProviderFactory != nil) && len(cfg.Sources) != 0 {
+		return nil, errors.New("source provider and local sources must be selected explicitly")
+	}
+	if len(cfg.Sources) == 0 && cfg.SourceProvider == nil && cfg.SourceProviderFactory == nil {
 		return nil, errors.New("no sources configured")
 	}
 	if cfg.Retain != RetainCommitted && cfg.Retain != RetainWritten {
 		return nil, fmt.Errorf("retain: %q is neither %s nor %s", cfg.Retain, RetainCommitted, RetainWritten)
 	}
-	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, terms: terms{mode: cfg.Mode}, Ready: make(chan struct{})}
+	if cfg.DrainTimeout < 0 || cfg.DrainTimeout > 5*time.Minute {
+		return nil, errors.New("source drain timeout must be between zero and five minutes")
+	}
+	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, terms: terms{mode: cfg.Mode}, Ready: make(chan struct{}), heartbeatWake: make(chan struct{}, 1)}
 	p.relay = newRelayLink(p)
 	p.m = newMetrics(context.Background())
 	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
-	for _, sc := range cfg.Sources {
-		if sc.Alias == "" {
-			return nil, errors.New("a source needs an alias")
-		}
-		if _, dup := p.sources[sc.Alias]; dup {
-			return nil, fmt.Errorf("source %s is listed twice", sc.Alias)
-		}
-		if sc.Kind != "" && sc.Kind != KindMP4 && sc.Kind != KindRaw {
-			return nil, fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindMP4, KindRaw)
-		}
-		if err := sc.checkGst(); err != nil {
-			return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
-		}
-		if f := sc.Fragment; f != 0 && (f < MinFragDuration || f > MaxFragDuration) {
-			return nil, fmt.Errorf("fragment_duration %s is outside %s to %s", f, MinFragDuration, MaxFragDuration)
-		}
-		s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, taken: map[string]handed{}, wake: make(chan struct{}, 1)}
-		if sc.Input == InputPush {
-			if cfg.Push == "" {
-				return nil, fmt.Errorf("source %s is pushed, and producer.push names no listener", sc.Alias)
-			}
-			if p.push == nil {
-				p.push = &Push{Addr: cfg.Push, Idle: cfg.PushIdle, Log: cfg.Log}
-			}
-			s.push = p.push.Add(sc.Alias)
-		}
-		if isDemo(sc.Input) {
-			if _, err := demoOf(sc.Input); err != nil {
-				return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
-			}
-			switch sc.audioCodec() {
-			case "", "aac", "opus", "none":
-			default:
-				return nil, fmt.Errorf("source %s: a demo source's sound is made here, so audio.codec is aac, opus or none, not %q", sc.Alias, sc.audioCodec())
-			}
-		}
-		if sc.Kind == KindRaw {
-			if sc.Input != InputPush {
-				return nil, fmt.Errorf("source %s: a raw source is pushed (input: push)", sc.Alias)
-			}
-			if sc.MaxBitrate <= 0 {
-				return nil, fmt.Errorf("source %s: a raw source declares max_bitrate; there is no camera mode to guess it from", sc.Alias)
-			}
-		}
-		if sc.Idle != nil {
-			// A copied stream is never decoded, so there is nothing to
-			// measure; a `raw:` replay (tests) is fed its measurements.
-			copied := !strings.HasPrefix(sc.Input, "raw:") && (sc.Format == "h264" || sc.Format == "h265" || sc.Encoder == "copy")
-			if sc.Input == InputPush || sc.Command != "" || copied {
-				return nil, fmt.Errorf("source %s: idle needs a source the producer encodes, to measure its frames (§38.10)", sc.Alias)
-			}
-			if sc.gstreamer() {
-				p.log.Warn("idle under capture: gstreamer splits the capture pipeline for the measure, which has cost recordings frames on the Pi; not recommended there (docs/producer-bench.md)", "source", sc.Alias)
-			}
-			s.dark = newDarkTracker(sc.Idle.darkAfter(), p.now)
-			s.dark.onChange = func(suppressed bool) { p.darkChanged(s, suppressed) }
-		}
-		if s.push == nil {
-			s.capture = p.newCapture(s)
-		}
-		p.sources[sc.Alias] = s
-		p.order = append(p.order, s)
+	if err := p.configureSources(cfg.Sources); err != nil {
+		return nil, err
 	}
 
 	return p, nil
+}
+
+// configureSources is initial construction only; dynamic reconciliation belongs
+// to the per-source lifecycle. No capture goroutines have started here.
+func (p *Producer) configureSources(sources []SourceConfig) error {
+	p.sourcesMu.Lock()
+	p.sources, p.order, p.push = map[string]*source{}, nil, nil
+	p.sourcesMu.Unlock()
+	for _, sc := range sources {
+		v, err := p.sourceFor(sc)
+		if err != nil {
+			return err
+		}
+		if err := p.installSource(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// sourceFor constructs an unpublished incarnation. No observer can see a
+// partially validated configuration or a Source whose CP identity is unresolved.
+func (p *Producer) sourceFor(sc SourceConfig) (*source, error) {
+	cfg := p.cfg
+	if err := validateCameraInput(cfg, sc); err != nil {
+		return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+	}
+	if sc.Alias == "" {
+		return nil, errors.New("a source needs an alias")
+	}
+
+	if sc.Kind != "" && sc.Kind != KindMP4 && sc.Kind != KindRaw {
+		return nil, fmt.Errorf("source %s: kind %q is neither %s nor %s", sc.Alias, sc.Kind, KindMP4, KindRaw)
+	}
+	if err := sc.checkGst(); err != nil {
+		return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+	}
+	if f := sc.Fragment; f != 0 && (f < MinFragDuration || f > MaxFragDuration) {
+		return nil, fmt.Errorf("fragment_duration %s is outside %s to %s", f, MinFragDuration, MaxFragDuration)
+	}
+	s := &source{cfg: sc, allocs: map[int64]*api.Allocation{}, taken: map[string]handed{}, wake: make(chan struct{}, 1), proofWake: make(chan struct{}, 1)}
+	if sc.Input == InputPush {
+		if cfg.Push == "" {
+			return nil, fmt.Errorf("source %s is pushed, and producer.push names no listener", sc.Alias)
+		}
+		if p.push == nil {
+			p.push = &Push{Addr: cfg.Push, Idle: cfg.PushIdle, Log: cfg.Log}
+		}
+		s.push = p.push.Add(sc.Alias)
+	}
+	if isDemo(sc.Input) {
+		if _, err := demoOf(sc.Input); err != nil {
+			return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
+		}
+		switch sc.audioCodec() {
+		case "", "aac", "opus", "none":
+		default:
+			return nil, fmt.Errorf("source %s: a demo source's sound is made here, so audio.codec is aac, opus or none, not %q", sc.Alias, sc.audioCodec())
+		}
+	}
+	if sc.Kind == KindRaw {
+		if sc.Input != InputPush {
+			return nil, fmt.Errorf("source %s: a raw source is pushed (input: push)", sc.Alias)
+		}
+		if sc.MaxBitrate <= 0 {
+			return nil, fmt.Errorf("source %s: a raw source declares max_bitrate; there is no camera mode to guess it from", sc.Alias)
+		}
+	}
+	if sc.Idle != nil {
+		// A copied stream is never decoded, so there is nothing to
+		// measure; a `raw:` replay (tests) is fed its measurements.
+		copied := !strings.HasPrefix(sc.Input, "raw:") && (sc.Format == "h264" || sc.Format == "h265" || sc.Encoder == "copy")
+		if sc.Input == InputPush || sc.Command != "" || copied {
+			return nil, fmt.Errorf("source %s: idle needs a source the producer encodes, to measure its frames (§38.10)", sc.Alias)
+		}
+		if sc.gstreamer() {
+			p.log.Warn("idle under capture: gstreamer splits the capture pipeline for the measure, which has cost recordings frames on the Pi; not recommended there (docs/producer-bench.md)", "source", sc.Alias)
+		}
+		s.dark = newDarkTracker(sc.Idle.darkAfter(), p.now)
+		s.dark.onChange = func(suppressed bool) { p.darkChanged(s, suppressed) }
+	}
+	if s.push == nil {
+		s.capture = p.newCapture(s)
+	}
+
+	return s, nil
 }
 
 // Observe takes one line of a source's capture output, as the capture
 // does for the process it runs (§38.10); exported so a test can be the
 // process.
 func (p *Producer) Observe(alias, line string) bool {
-	s := p.sources[alias]
+	s := p.sourceByAlias(alias)
 	if s == nil || s.dark == nil {
 		return false
 	}
@@ -456,11 +543,11 @@ func (p *Producer) Run(ctx context.Context) error {
 	if err := p.waitForSet(ctx); err != nil {
 		return err
 	}
-	if err := p.register(ctx); err != nil {
-		return err
-	}
-	if err := p.negotiate(ctx); err != nil {
-		return err
+	if err := p.initializeSources(ctx); err != nil {
+		if p.cfg.SourceProvider == nil && p.cfg.SourceProviderFactory == nil {
+			return err
+		}
+		p.log.Warn("source catalog awaiting initial authorized state", "code", status.Code(err).String())
 	}
 
 	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(p.cp()), Log: p.log, Mode: p.agreed().mode, Written: p.cfg.Retain == RetainWritten, m: p.m}
@@ -481,11 +568,7 @@ func (p *Producer) Run(ctx context.Context) error {
 		p.log.Info("push: listening", "addr", p.cfg.Push)
 		g.Go(func() error { return p.push.Serve(ctx) })
 	}
-	for _, s := range p.order {
-		s := s
-		g.Go(func() error { return p.capture(ctx, s) })
-		g.Go(func() error { return p.uploads(ctx, s) })
-	}
+	g.Go(func() error { return p.sourceLifecycles(ctx) })
 	g.Go(func() error { return p.allocations(ctx) })
 	g.Go(func() error { return p.heartbeats(ctx) })
 	g.Go(func() error { return p.ticks(ctx) })
@@ -538,6 +621,11 @@ func (p *Producer) waitForSet(ctx context.Context) error {
 
 // register makes sure every configured source exists in the set (§38.4).
 func (p *Producer) register(ctx context.Context) error {
+	for _, s := range p.stagedSources() {
+		if err := p.refreshCeiling(ctx, s); err != nil {
+			return err
+		}
+	}
 	sources := api.NewSourceServiceClient(p.cp())
 	byAlias := map[string]*api.Source{}
 	after := ""
@@ -557,16 +645,44 @@ func (p *Producer) register(ctx context.Context) error {
 		}
 		after = vs.GetNext()
 	}
+	p.sourcesMu.Lock()
 	p.members = len(byAlias)
+	p.sourcesMu.Unlock()
 
-	for _, s := range p.order {
+	for _, s := range p.stagedSources() {
+		if spec, ok := p.initialSpecs[s.cfg.Alias]; ok && spec.SourceID != "" {
+			id, err := identifierSource(spec.SourceID)
+			if err != nil {
+				return err
+			}
+			v, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: id}.Build()}.Build())
+			if err != nil {
+				return err
+			}
+			if err := p.validateCatalogSource(s, v.GetId(), v.GetTenant().GetId(), v.GetSet().GetId(), v.GetAlias()); err != nil {
+				return err
+			}
+			for key, want := range s.cfg.Labels {
+				if v.GetLabels()[key] != want {
+					return catalog.ErrConflict
+				}
+			}
+			s.row = v
+			continue
+		}
 		if v, ok := byAlias[s.cfg.Alias]; ok {
+			for key, want := range s.cfg.Labels {
+				if v.GetLabels()[key] != want {
+					return fmt.Errorf("source %s binding label does not match existing Source", s.cfg.Alias)
+				}
+			}
 			s.row = v
 			continue
 		}
 		v, err := sources.Add(ctx, api.SourceAddRequest_builder{
 			Tenant:  api.TenantRef_builder{Id: p.set.GetTenant().GetId()}.Build(),
 			Alias:   s.cfg.Alias,
+			Labels:  s.cfg.Labels,
 			Name:    s.cfg.Name,
 			Set:     api.SetRef_builder{Id: p.set.GetId()}.Build(),
 			Zone:    s.cfg.Zone,
@@ -577,7 +693,9 @@ func (p *Producer) register(ctx context.Context) error {
 		}
 		p.log.Info("registered source", "alias", v.GetAlias(), "ordinal", v.GetOrdinal())
 		s.row = v
+		p.sourcesMu.Lock()
 		p.members++
+		p.sourcesMu.Unlock()
 	}
 
 	return nil
@@ -589,6 +707,12 @@ func (p *Producer) startingCeiling(s *source) int64 {
 		return s.cfg.MaxBitrate
 	}
 
+	s.mu.Lock()
+	inferred := s.inferredCeiling
+	s.mu.Unlock()
+	if inferred > 0 {
+		return inferred
+	}
 	return StartingCeiling(s.cfg.Size, s.cfg.Fps, s.cfg.Format)
 }
 
@@ -596,17 +720,52 @@ func (p *Producer) startingCeiling(s *source) int64 {
 func (p *Producer) negotiate(ctx context.Context) error {
 	p.negotiating.Lock()
 	defer p.negotiating.Unlock()
+	if p.loading.Load() {
+		return nil
+	}
+	return p.negotiateSourcesLocked(ctx, p.activeSources(), p.acceptedCatalog(), false)
+}
+
+// Profile versions are monotonic CP counters. A heartbeat/allocation response
+// can arrive after a newer negotiation, or become stale while awaiting this
+// lock. Only a hint still newer than the latest agreement can start an RPC.
+func (p *Producer) negotiateNewer(ctx context.Context, version int64) error {
+	// A monotonic agreement cannot make a non-newer hint useful later. Avoid
+	// delaying routine reports and old FIFO allocations behind a slow RPC.
+	if version <= 0 || version <= p.agreed().version {
+		return nil
+	}
+	p.negotiating.Lock()
+	defer p.negotiating.Unlock()
+	if p.loading.Load() || version <= 0 || version <= p.agreed().version {
+		return nil
+	}
+	// Select current capture/catalog state after the fence, not before waiting
+	// behind a lifecycle negotiation that can replace either snapshot.
+	return p.negotiateSourcesLocked(ctx, p.activeSources(), p.acceptedCatalog(), false)
+}
+
+func (p *Producer) negotiateSources(ctx context.Context, sources []*source, snapshot catalog.Snapshot, preview bool) error {
+	p.negotiating.Lock()
+	defer p.negotiating.Unlock()
+	return p.negotiateSourcesLocked(ctx, sources, snapshot, preview)
+}
+
+func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source, snapshot catalog.Snapshot, preview bool) error {
 	var proposals []*api.SourceProposal
 	var total int64
-	for _, s := range p.order {
+	for _, s := range sources {
+		if err := p.refreshCeiling(ctx, s); err != nil {
+			return err
+		}
 		s.mu.Lock()
 		ceiling, raise := s.ceiling, s.raise
 		s.raise = false
 		s.mu.Unlock()
-		if ceiling == 0 {
+		if ceiling == 0 || s.cfg.MaxBitrateOnvif {
 			ceiling = p.startingCeiling(s)
 		}
-		if raise {
+		if raise && snapshot.Revision.AssignmentID == "" {
 			ceiling = ceiling * 5 / 4
 		}
 		total += ceiling
@@ -638,12 +797,47 @@ func (p *Producer) negotiate(ctx context.Context) error {
 		link.AllocationHorizonSeconds = int64(p.cfg.AllocationHorizon.Seconds())
 	}
 
-	resp, err := api.NewSetServiceClient(p.cp()).Negotiate(ctx, api.SetNegotiateRequest_builder{
-		Ref: api.SetRef_builder{Id: p.set.GetId()}.Build(), Link: link.Build(), Sources: proposals,
-	}.Build())
+	request := api.SetNegotiateRequest_builder{Ref: api.SetRef_builder{Id: p.set.GetId()}.Build(), Link: link.Build(), Sources: proposals}
+	managed := snapshot.Revision.AssignmentID != ""
+	if managed {
+		// Reserve peak simultaneous live traffic even with on-demand relay policy.
+		// Preview may fail; neither capture nor an existing Source profile changed.
+		if p.cfg.Uplink > 0 && float64(total)*2.2 > float64(p.cfg.Uplink) {
+			return status.Error(codes.ResourceExhausted, "managed capture exceeds Producer uplink budget")
+		}
+		id, _ := pdid.Parse(snapshot.Revision.AssignmentID)
+		request.Catalog = api.CameraApplyTarget_builder{AssignmentId: id.Bytes(), AssignmentGeneration: snapshot.Revision.Generation, CatalogRevision: snapshot.Revision.Catalog}.Build()
+		request.Preview = true
+	}
+	client := api.NewSetServiceClient(p.cp())
+	resp, err := client.Negotiate(ctx, request.Build())
 	if err != nil {
 		return fmt.Errorf("negotiate: %w", err)
 	}
+	if managed {
+		var reserve int64
+		for _, ag := range resp.GetSources() {
+			for _, s := range sources {
+				if string(s.row.GetId()) == string(ag.GetSourceId()) && p.sourceByAlias(s.cfg.Alias) != s {
+					reserve += ag.GetMaxLength()
+				}
+			}
+		}
+		if reserve > p.cfg.Buffer-p.heldBytes() {
+			return status.Error(codes.ResourceExhausted, "managed capture exceeds retained RAM admission budget")
+		}
+	}
+	if preview {
+		return nil
+	}
+	if managed {
+		request.Preview = false
+		resp, err = client.Negotiate(ctx, request.Build())
+		if err != nil {
+			return fmt.Errorf("negotiate: %w", err)
+		}
+	}
+
 	for _, a := range resp.GetAdjustments() {
 		p.log.Info("adjusted", "source", mustId(a.GetSourceId()).String(), "field", a.GetField(), "proposed", a.GetProposed(), "agreed", a.GetAgreed(), "why", a.GetReason())
 	}
@@ -663,11 +857,8 @@ func (p *Producer) negotiate(ctx context.Context) error {
 			p.log.Warn("the ceilings exceed the uplink: 20% headroom, and once more for live at all times", "ceilings", total, "need", int64(need), "uplink", p.cfg.Uplink)
 		}
 	}
-	if p.uploader != nil {
-		p.uploader.Mode = mode
-	}
 	for _, ag := range resp.GetSources() {
-		for _, s := range p.order {
+		for _, s := range sources {
 			if string(s.row.GetId()) != string(ag.GetSourceId()) {
 				continue
 			}
@@ -675,7 +866,7 @@ func (p *Producer) negotiate(ctx context.Context) error {
 			d := time.Duration(prof.GetDurationSeconds()) * time.Second
 			sched := Schedule{
 				Duration: d,
-				Phase:    core.Phase(p.set.GetId(), int(s.row.GetOrdinal()), p.members, d),
+				Phase:    core.Phase(p.set.GetId(), int(s.row.GetOrdinal()), p.memberCount(), d),
 				Ceiling:  prof.GetMaxBitrate() / 8 * prof.GetDurationSeconds(),
 			}
 			s.mu.Lock()
@@ -715,11 +906,16 @@ func (p *Producer) capture(ctx context.Context, s *source) error {
 // with the producer so that it is there before anything that asks it.
 func (p *Producer) newCapture(s *source) *Capture {
 	return &Capture{
-		Ffmpeg:   p.cfg.Ffmpeg,
-		Gst:      p.cfg.Gst,
-		Source:   s.cfg,
-		Log:      p.log,
-		RawLoops: s.cfg.RawLoops,
+		Ffmpeg:                 p.cfg.Ffmpeg,
+		AuthProvider:           p.cfg.AuthProvider,
+		AuthProviderForAttempt: func() camera.AuthProvider { return p.sourceAuth(s) },
+		Gst:                    p.cfg.Gst,
+		Source:                 s.cfg,
+		Log:                    p.log,
+		RawLoops:               s.cfg.RawLoops,
+		BeforeAttempt:          func(ctx context.Context) error { return p.beginSourceAttempt(ctx, s) },
+		OnCredential:           func(ref *camera.CredentialRef) { p.sourceCredentialUsed(s, ref) },
+		OnAttemptDone:          func(ctx context.Context) { p.endSourceAttempt(ctx, s) },
 		OnLine: func(line string) bool {
 			return (s.dark != nil && s.dark.observe(line)) || p.discontinuity(s, line)
 		},
@@ -756,6 +952,7 @@ func (s *source) currentCutter() *Cutter {
 // newCutter is the source's cutter for one stream, handing segments to
 // the uploads as the mode says.
 func (p *Producer) newCutter(s *source) *Cutter {
+	epoch := s.currentEpoch()
 	return &Cutter{
 		Now: p.now,
 		Schedule: func() Schedule {
@@ -764,6 +961,7 @@ func (p *Producer) newCutter(s *source) *Cutter {
 			return s.sched
 		},
 		Open: func(seg *Segment) {
+			seg.CaptureEpoch = epoch
 			if s.dark != nil && s.dark.Suppressed() {
 				// Opened in the dark: skipped unless the scene is lit
 				// before it closes (§38.10).
@@ -806,6 +1004,10 @@ func (p *Producer) newCutter(s *source) *Cutter {
 // readMP4 cuts one fragmented MP4 stream, a capture's stdout or a pushed
 // stream, until it ends (§38.2).
 func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
+	s.mu.Lock()
+	ticket := s.ticket
+	s.mu.Unlock()
+	progress := captureProgress{ticket: ticket}
 	reader := NewMP4Reader(r)
 	cutter := p.newCutter(s)
 	s.setCutter(cutter)
@@ -829,7 +1031,8 @@ func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 			break
 		}
 		cutter.Feed(&f)
-		p.relay.feed(s, &f, reader.Init())
+		p.relay.feedEpoch(s, &f, reader.Init(), ticket.Epoch)
+		p.observeApplication(s, &progress, &f, reader.Init())
 		s.accountFrame(&f, 0)
 		p.accountGap(s, &f)
 		if stall == nil {
@@ -1134,11 +1337,13 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 // drop gives a segment up: it leaves the queue, its lamina, if it has one,
 // is reported LOST (§13), and the count says so.
 func (p *Producer) drop(ctx context.Context, s *source, seg *Segment, why string) {
+	lostBytes := seg.Len()
 	seg.Discard()
 	s.mu.Lock()
 	al := s.headAlloc
 	s.finish(seg)
 	s.lost++
+	s.lostBytes += lostBytes
 	s.mu.Unlock()
 	key := ""
 	if al != nil {
@@ -1270,9 +1475,10 @@ var errTaken = errors.New("the answer names a lamina an earlier segment has")
 
 // overBudget says whether retained segments exceed the RAM budget: what
 // is held, which under `retain: written` is less than their length (§16).
-func (p *Producer) overBudget() bool {
+func (p *Producer) overBudget() bool { return p.heldBytes() > p.cfg.Buffer }
+func (p *Producer) heldBytes() int64 {
 	var total int64
-	for _, s := range p.order {
+	for _, s := range p.retainedSources() {
 		s.mu.Lock()
 		for _, seg := range s.pending {
 			total += seg.Held()
@@ -1280,7 +1486,7 @@ func (p *Producer) overBudget() bool {
 		s.mu.Unlock()
 	}
 
-	return total > p.cfg.Buffer
+	return total
 }
 
 // allocationFor is the allocation of the slot the head segment belongs
@@ -1294,7 +1500,7 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 	// The prefetch asks for the slot, and the CP answers the slot's lamina
 	// for as long as that is PENDING: it is the slot's first segment's.
 	// The segments after it ask for theirs, each naming the one before.
-	if al != nil && s.first(slot) && !s.another(al) && al.GetDateExpires().AsTime().After(p.now().Add(time.Minute)) && len(al.GetCandidates()) > 0 {
+	if al != nil && al.GetCaptureEpoch() == seg.CaptureEpoch && s.first(slot) && !s.another(al) && al.GetDateExpires().AsTime().After(p.now().Add(time.Minute)) && len(al.GetCandidates()) > 0 {
 		s.hand(al, slot)
 		s.mu.Unlock()
 
@@ -1306,8 +1512,9 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 	actx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	req := api.LaminaAllocateRequest_builder{
-		Source:      api.SourceRef_builder{Id: s.row.GetId()}.Build(),
-		DateStarted: timestamppb.New(seg.Started),
+		CaptureEpoch: seg.CaptureEpoch,
+		Source:       api.SourceRef_builder{Id: s.row.GetId()}.Build(),
+		DateStarted:  timestamppb.New(seg.Started),
 	}
 	if len(last) > 0 {
 		req.After = api.LaminaRef_builder{Id: last}.Build()
@@ -1332,6 +1539,12 @@ func (p *Producer) allocationFor(ctx context.Context, s *source, seg *Segment) (
 // allocations fetches allocations ahead for every member (§12.1).
 func (p *Producer) allocations(ctx context.Context) error {
 	for {
+		if len(p.activeSources()) == 0 {
+			if !sleep(ctx, time.Second) {
+				return nil
+			}
+			continue
+		}
 		horizon := time.Duration(p.agreed().link.GetAllocationHorizonSeconds()) * time.Second
 		if horizon <= 0 {
 			horizon = 10 * time.Minute
@@ -1344,14 +1557,11 @@ func (p *Producer) allocations(ctx context.Context) error {
 		if err != nil {
 			p.log.Warn("allocate", "err", err.Error())
 		} else {
-			if was := p.agreed().version; resp.GetProfileVersion() != was {
-				p.log.Info("profile changed; negotiating again", "was", was, "now", resp.GetProfileVersion())
-				if err := p.negotiate(ctx); err != nil {
-					p.log.Warn("negotiate", "err", err.Error())
-				}
+			if err := p.negotiateNewer(ctx, resp.GetProfileVersion()); err != nil {
+				p.log.Warn("negotiate", "err", err.Error())
 			}
 			for _, al := range resp.GetAllocations() {
-				for _, s := range p.order {
+				for _, s := range p.activeSources() {
 					if string(s.row.GetId()) != string(al.GetSourceId()) {
 						continue
 					}
@@ -1387,7 +1597,7 @@ func (p *Producer) ticks(ctx context.Context) error {
 		}
 		raise := false
 		now := p.now()
-		for _, s := range p.order {
+		for _, s := range p.activeSources() {
 			if s.dark != nil {
 				s.dark.tick(now)
 			}
@@ -1420,13 +1630,14 @@ func (p *Producer) heartbeats(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-t.C:
+		case <-p.heartbeatWake:
 		}
 	}
 }
 
 func (p *Producer) heartbeat(ctx context.Context) error {
 	var reports []*api.SourceReport
-	for _, s := range p.order {
+	for _, s := range p.activeSources() {
 		s.mu.Lock()
 		var st CutStats
 		if s.cutter != nil {
@@ -1438,7 +1649,12 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		} else if s.capture != nil {
 			in = s.capture
 		}
+		if s.catalogRevision.AssignmentID != "" && s.ticket.Epoch == "" {
+			s.mu.Unlock()
+			continue
+		}
 		r := api.SourceReport_builder{
+			CaptureEpoch:       s.ticket.Epoch,
 			SourceId:           s.row.GetId(),
 			InputUp:            in != nil && in.Up() && time.Since(st.LastKey) < 10*time.Second,
 			FrameRate:          s.frameRate(),
@@ -1450,6 +1666,9 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 			Episodes:           s.episodes,
 			SecondsTotal:       s.seconds,
 			Dark:               s.dark != nil && s.dark.Suppressed(),
+		}
+		if s.catalogRevision.AssignmentID != "" {
+			r.InputUp = r.InputUp && !s.attemptEnded && s.proof != nil && s.proof.Epoch == s.ticket.Epoch
 		}
 		if in != nil {
 			r.CaptureRestarts = in.Restarts()
@@ -1482,7 +1701,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 	p.m.cpu.Record(ctx, cpuLoad())
 	p.m.temperature.Record(ctx, socTemperature())
 	var uplink int64
-	for _, s := range p.order {
+	for _, s := range p.activeSources() {
 		s.mu.Lock()
 		uplink += s.rate(60)
 		s.mu.Unlock()
@@ -1501,15 +1720,15 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		return err
 	}
 	p.relay.set(resp.GetRelay())
-	if resp.GetProfileVersion() != 0 && resp.GetProfileVersion() != p.agreed().version {
-		if err := p.negotiate(ctx); err != nil {
-			p.log.Warn("negotiate", "err", err.Error())
-		}
+	if err := p.negotiateNewer(ctx, resp.GetProfileVersion()); err != nil {
+		p.log.Warn("negotiate", "err", err.Error())
 	}
 	for _, sg := range resp.GetSuggestions() {
 		p.log.Info("suggestion", "source", mustId(sg.GetSourceId()).String(), "max_bitrate", sg.GetMaxBitrate(), "suggested", sg.GetSuggested(), "applied", sg.GetApplied(), "why", sg.GetReason())
 	}
 	if resp.GetRenewCertificate() || p.agent.NeedsRenewal(time.Now()) {
+		p.renewing.Store(true)
+		defer p.renewing.Store(false)
 		if err := p.agent.Renew(ctx, p.conn.Load(), func(ctx context.Context, conn *grpc.ClientConn, csr []byte) ([]byte, []byte, error) {
 			r, err := api.NewProducerServiceClient(conn).RenewCertificate(ctx, api.ProducerRenewCertificateRequest_builder{Csr: csr}.Build())
 			if err != nil {

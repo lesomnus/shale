@@ -200,6 +200,20 @@ func (_c *LaminaCreate) SetNillableSkipReason(v *int32) *LaminaCreate {
 	return _c
 }
 
+// SetCaptureEpoch sets the "capture_epoch" field.
+func (_c *LaminaCreate) SetCaptureEpoch(v string) *LaminaCreate {
+	_c.mutation.SetCaptureEpoch(v)
+	return _c
+}
+
+// SetNillableCaptureEpoch sets the "capture_epoch" field if the given value is not nil.
+func (_c *LaminaCreate) SetNillableCaptureEpoch(v *string) *LaminaCreate {
+	if v != nil {
+		_c.SetCaptureEpoch(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *LaminaCreate) SetTenantId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetTenantId(v)
@@ -317,6 +331,10 @@ func (_c *LaminaCreate) defaults() {
 			v := lamina.DefaultSkipReason
 			_c.mutation.SetSkipReason(v)
 		}
+	}
+	if _, ok := _c.mutation.CaptureEpoch(); !ok {
+		v := lamina.DefaultCaptureEpoch
+		_c.mutation.SetCaptureEpoch(v)
 	}
 }
 
@@ -492,6 +510,10 @@ func (_c *LaminaCreate) createSpec() (*Lamina, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SkipReason(); ok {
 		_spec.SetField(lamina.FieldSkipReason, field.TypeInt32, value)
 		_node.SkipReason = value
+	}
+	if value, ok := _c.mutation.CaptureEpoch(); ok {
+		_spec.SetField(lamina.FieldCaptureEpoch, field.TypeString, value)
+		_node.CaptureEpoch = value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

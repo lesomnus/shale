@@ -59,6 +59,8 @@ type Lamina struct {
 	Epoch int64 `json:"epoch,omitempty"`
 	// SkipReason holds the value of the "skip_reason" field.
 	SkipReason int32 `json:"skip_reason,omitempty"`
+	// CaptureEpoch holds the value of the "capture_epoch" field.
+	CaptureEpoch string `json:"capture_epoch,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -158,7 +160,7 @@ func (*Lamina) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case lamina.FieldState, lamina.FieldSize, lamina.FieldPlacementVersion, lamina.FieldEpoch, lamina.FieldSkipReason:
 			values[i] = new(sql.NullInt64)
-		case lamina.FieldLaminaKey:
+		case lamina.FieldLaminaKey, lamina.FieldCaptureEpoch:
 			values[i] = new(sql.NullString)
 		case lamina.FieldDateUpdated, lamina.FieldDateCreated, lamina.FieldDateStarted, lamina.FieldDateEnded, lamina.FieldDateExpired, lamina.FieldDateDeleted, lamina.FieldDateCommitted, lamina.FieldDateFinished:
 			values[i] = new(sql.NullTime)
@@ -298,6 +300,12 @@ func (_m *Lamina) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field skip_reason", values[i])
 			} else if value.Valid {
 				_m.SkipReason = int32(value.Int64)
+			}
+		case lamina.FieldCaptureEpoch:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field capture_epoch", values[i])
+			} else if value.Valid {
+				_m.CaptureEpoch = value.String
 			}
 		case lamina.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -451,6 +459,9 @@ func (_m *Lamina) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("skip_reason=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SkipReason))
+	builder.WriteString(", ")
+	builder.WriteString("capture_epoch=")
+	builder.WriteString(_m.CaptureEpoch)
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

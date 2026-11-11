@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/camera/credential"
 	"github.com/lesomnus/shale/internal/fmp4"
 )
 
@@ -31,6 +33,12 @@ type SourceConfig struct {
 	// or `push` for a stream a process writes to the producer's listener
 	// (§38.1, §38.9).
 	Input string
+	// InputCredential resolves an immutable streaming credential at each start.
+	InputCredential *camera.CredentialRef
+	Scope           camera.EnrollmentScope
+	Labels          map[string]string
+	Onvif           *OnvifConfig
+	MaxBitrateOnvif bool
 	// Kind is what a pushed stream is: `mp4` (the default), cut at
 	// keyframes, or `raw`, frames cut at frame boundaries (§38.9).
 	Kind string
@@ -360,6 +368,9 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		}
 	}
 	bps := strconv.FormatInt(c.audioBitrate(), 10)
+	// Resample only encoded Opus to its 48 kHz clock. With an 8 kHz camera
+	// input FFmpeg otherwise writes a 48 kHz MP4 sample entry but retains 8 kHz
+	// in dOps and the track timescale, which browsers reject during parsing.
 	switch {
 	case silent:
 		args = append(args, "-an")
@@ -368,7 +379,7 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 		if mic || demo {
 			args = append(args, "-map", "0:v:0", "-map", "1:a:0")
 		}
-		args = append(args, "-c:a", "libopus", "-b:a", bps)
+		args = append(args, "-c:a", "libopus", "-b:a", bps, "-ar:a", "48000")
 	default:
 		// Two tracks (§38.7): the archive's, which is the camera's audio
 		// as it sends it or AAC when `codec` or a microphone says so, and
@@ -388,7 +399,7 @@ func Args(c SourceConfig, encoder string, ceiling int64, keyframe time.Duration)
 			// `copy`, or nothing said: the camera's audio as it sends it.
 			args = append(args, "-c:a:0", "copy")
 		}
-		args = append(args, "-c:a:1", "libopus", "-b:a:1", bps)
+		args = append(args, "-c:a:1", "libopus", "-b:a:1", bps, "-ar:a:1", "48000")
 	}
 	for k, v := range c.EncoderOptions {
 		args = append(args, "-"+k, v)
@@ -554,7 +565,11 @@ func encoderOpens(ctx context.Context, ffmpeg, encoder string) bool {
 // Capture runs one source's capture process and hands its output to a
 // reader function until the context ends.
 type Capture struct {
-	Ffmpeg string
+	Ffmpeg       string
+	AuthProvider camera.AuthProvider
+	// AuthProviderForAttempt binds a fully constructed Source incarnation after
+	// BeforeAttempt succeeds, immediately before leasing input credentials.
+	AuthProviderForAttempt func() camera.AuthProvider
 	// Gst is gst-launch, for a source captured through GStreamer.
 	Gst    string
 	Source SourceConfig
@@ -572,11 +587,17 @@ type Capture struct {
 	Remux bool
 	// OnLine sees every line the process writes to stderr first, and
 	// answers true for one it consumed, which is then neither logged nor
-	// kept as the last error (§38.10).
+	// kept as the last error (§38.10). It must return promptly: an attempt
+	// joins both stages' diagnostic callbacks before releasing credentials.
 	OnLine func(line string) bool
 	// OnDark is told every dark second a GStreamer capture measured, for a
 	// source with `idle:` (§38.10); ffmpeg's are lines, for OnLine.
 	OnDark func()
+	// BeforeAttempt obtains a fresh server fence before opening any managed
+	// input. A disconnected capture cannot start a new incarnation offline.
+	BeforeAttempt func(context.Context) error
+	OnCredential  func(*camera.CredentialRef)
+	OnAttemptDone func(context.Context)
 
 	mu       sync.Mutex
 	restarts int64
@@ -727,7 +748,35 @@ func (c *Capture) gst() string {
 const healthyRun = time.Minute
 
 func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
-	if strings.HasPrefix(c.Source.Input, "raw:") {
+	if c.BeforeAttempt != nil {
+		if err := c.BeforeAttempt(ctx); err != nil {
+			return err
+		}
+	}
+	if c.OnAttemptDone != nil {
+		defer c.OnAttemptDone(ctx)
+	}
+	provider := c.AuthProvider
+	if c.AuthProviderForAttempt != nil {
+		provider = c.AuthProviderForAttempt()
+	}
+	return credential.WithInput(ctx, provider, c.Source.Scope, camera.DeviceHint{}, c.Source.InputCredential, c.Source.Input, func(input string, sanitize credential.Sanitizer) error {
+		if c.OnCredential != nil {
+			var used *camera.CredentialRef
+			if c.Source.InputCredential != nil {
+				ref := *c.Source.InputCredential
+				used = &ref
+			}
+			// WithInput invokes this only after an exact reference lease check.
+			c.OnCredential(used)
+		}
+		src := c.Source
+		src.Input = input
+		return c.onceResolved(ctx, read, src, sanitize)
+	})
+}
+func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src SourceConfig, sanitize credential.Sanitizer) error {
+	if strings.HasPrefix(src.Input, "raw:") {
 		return c.raw(ctx, read)
 	}
 	ceiling, keyframe := c.Profile()
@@ -737,7 +786,6 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	c.cancel, c.kicked = cancel, false
 	fallback := c.audioFallback
 	c.mu.Unlock()
-	src := c.Source
 	if src.hasMic() {
 		dev, err := alsaDevice(src.Audio.Device)
 		if err != nil {
@@ -763,17 +811,17 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	// remuxArgs is the second stage's command line, when it differs from
 	// the one RemuxArgs makes for ffmpeg's TS.
 	var remuxArgs []string
-	if c.Source.Command != "" {
-		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", c.Source.Command)
-	} else if c.Source.gstreamer() {
-		encoder := c.Source.Encoder
+	if src.Command != "" {
+		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", src.Command)
+	} else if src.gstreamer() {
+		encoder := src.Encoder
 		if encoder == "" || encoder == "auto" {
-			if c.Source.Format == "h264" {
+			if src.Format == "h264" {
 				encoder = "copy"
 			} else {
 				if c.Encoder == "" {
 					c.Encoder = PickGstEncoder(ctx, c.gst())
-					c.Log.Info("encoder", "source", c.Source.Alias, "chosen", c.Encoder)
+					c.Log.Info("encoder", "source", src.Alias, "chosen", c.Encoder)
 				}
 				encoder = c.Encoder
 			}
@@ -781,14 +829,14 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		aac, opus := src.gstAudio()
 		if aac && c.aacEnc == "" {
 			c.aacEnc = PickGstAAC(ctx, c.gst())
-			c.Log.Info("audio encoder", "source", c.Source.Alias, "chosen", c.aacEnc)
+			c.Log.Info("audio encoder", "source", src.Alias, "chosen", c.aacEnc)
 		}
 		// The pipeline writes TS, which the second stage makes fragmented
 		// MP4, as for h264_v4l2m2m (§38.3).
 		remux = true
 		remuxArgs = GstRemuxArgs(aac, aac || opus, src.fragment())
 		args := GstArgs(src, encoder, ceiling, keyframe, c.aacEnc)
-		c.Log.Info("capture", "source", c.Source.Alias, "cmd", c.gst()+" "+strings.Join(args, " ")+" | "+c.Ffmpeg+" "+strings.Join(remuxArgs, " "))
+		c.Log.Info("capture", "source", src.Alias, "cmd", sanitize.Redact(c.gst()+" "+strings.Join(args, " ")+" | "+c.Ffmpeg+" "+strings.Join(remuxArgs, " ")))
 		cmd = exec.CommandContext(ctx, c.gst(), args...)
 		if src.Idle != nil && encoder != "copy" {
 			// The measured pictures come on fd 3 (§38.10).
@@ -810,14 +858,14 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 			defer w.Close()
 		}
 	} else {
-		encoder := c.Source.Encoder
+		encoder := src.Encoder
 		if encoder == "" || encoder == "auto" {
-			if c.Source.Format == "h264" || c.Source.Format == "h265" {
+			if src.Format == "h264" || src.Format == "h265" || strings.HasPrefix(strings.ToLower(src.Input), "rtsp") {
 				encoder = "copy"
 			} else {
 				if c.Encoder == "" {
 					c.Encoder = PickEncoder(ctx, c.Ffmpeg, c.Log)
-					c.Log.Info("encoder", "source", c.Source.Alias, "chosen", c.Encoder)
+					c.Log.Info("encoder", "source", src.Alias, "chosen", c.Encoder)
 				}
 				encoder = c.Encoder
 			}
@@ -833,7 +881,7 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		if remux {
 			cmdline += " | " + c.Ffmpeg + " " + strings.Join(RemuxArgs(src.aacArchive(), src.fragment()), " ")
 		}
-		c.Log.Info("capture", "source", c.Source.Alias, "cmd", cmdline)
+		c.Log.Info("capture", "source", src.Alias, "cmd", sanitize.Redact(cmdline))
 		cmd = exec.CommandContext(ctx, c.Ffmpeg, args...)
 	}
 	cmd.Env = append(os.Environ(), "AV_LOG_FORCE_NOCOLOR=1")
@@ -844,13 +892,17 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	if err != nil {
 		return err
 	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
+	defer stdout.Close()
+	// Give exec a Writer so Wait joins its own copying goroutine before it
+	// closes the pipe. StderrPipe would let Wait discard unread diagnostics
+	// when the process exits before our scanner gets scheduled.
+	stderr := &captureDiagnostics{capture: c, sanitize: sanitize}
+	cmd.Stderr = stderr
+	defer stderr.finish()
 	// The second stage (§38.3), when the encoder needs one: the first's
 	// TS in, fragmented MP4 out.
 	var second *exec.Cmd
+	var secondStderr *captureDiagnostics
 	if remux {
 		if remuxArgs == nil {
 			remuxArgs = RemuxArgs(src.aacArchive(), src.fragment())
@@ -866,12 +918,11 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 		if err != nil {
 			return err
 		}
-		errs, err := second.StderrPipe()
-		if err != nil {
-			return err
-		}
+		defer out.Close()
+		secondStderr = &captureDiagnostics{capture: c, sanitize: sanitize}
+		second.Stderr = secondStderr
+		defer secondStderr.finish()
 		stdout = out
-		go c.scanStderr(errs)
 	}
 	if err := cmd.Start(); err != nil {
 		return err
@@ -891,15 +942,17 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 	c.up = true
 	c.started = time.Now()
 	c.mu.Unlock()
-	go c.scanStderr(stderr)
-
 	read(stdout)
 	err = cmd.Wait()
+	stderr.finish()
 	if second != nil {
 		if err2 := second.Wait(); err == nil {
 			err = err2
 		}
+		secondStderr.finish()
 	}
+	// Both Wait calls have joined their diagnostic callbacks before clearing
+	// attempt state or releasing the credential lease.
 	c.mu.Lock()
 	c.up = false
 	c.cancel = nil
@@ -918,30 +971,88 @@ func (c *Capture) once(ctx context.Context, read func(r io.Reader)) error {
 // scanStderr reads what a stage says on stderr: the dark detector's lines,
 // the muxer's refusal of the audio, and the rest as the last error.
 func (c *Capture) scanStderr(stderr io.Reader) {
+	c.scanStderrWith(stderr, credential.InputSanitizer(c.Source.Input))
+}
+func (c *Capture) scanStderrWith(stderr io.Reader, sanitize credential.Sanitizer) {
 	sc := bufio.NewScanner(stderr)
 	sc.Buffer(make([]byte, 64<<10), 1<<20)
 	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		if line == "" {
-			continue
-		}
-		if c.OnLine != nil && c.OnLine(line) {
-			continue
-		}
-		if c.audioRefused(line) {
-			continue
-		}
-		if c.Source.Idle != nil && !c.Source.gstreamer() && !strings.HasPrefix(line, "[") {
-			// At info level ffmpeg also describes its inputs and
-			// outputs at the start; what a component says is tagged.
-			// GStreamer measures elsewhere and says only what is wrong.
-			continue
-		}
-		c.mu.Lock()
-		c.lastErr = line
-		c.mu.Unlock()
-		c.Log.Info("ffmpeg", "source", c.Source.Alias, "line", line)
+		c.stderrLine(sc.Text(), sanitize)
 	}
+}
+
+func (c *Capture) stderrLine(raw string, sanitize credential.Sanitizer) {
+	line := sanitize.Redact(strings.TrimSpace(raw))
+	if line == "" {
+		return
+	}
+	if c.OnLine != nil && c.OnLine(line) {
+		return
+	}
+	if c.audioRefused(line) {
+		return
+	}
+	if c.Source.Idle != nil && !c.Source.gstreamer() && !strings.HasPrefix(line, "[") {
+		// At info level ffmpeg also describes its inputs and
+		// outputs at the start; what a component says is tagged.
+		// GStreamer measures elsewhere and says only what is wrong.
+		return
+	}
+	c.mu.Lock()
+	c.lastErr = line
+	c.mu.Unlock()
+	c.Log.Info("ffmpeg", "source", c.Source.Alias, "line", line)
+}
+
+// captureDiagnostics is owned by one command's exec copying goroutine. It
+// frames complete lines before redaction; a split write cannot expose a partial
+// credential to OnLine or logs. finish runs only after Wait joins that goroutine.
+type captureDiagnostics struct {
+	capture  *Capture
+	sanitize credential.Sanitizer
+	pending  []byte
+	discard  bool
+}
+
+func (w *captureDiagnostics) Write(p []byte) (int, error) {
+	n := len(p)
+	for len(p) > 0 {
+		end := bytes.IndexByte(p, '\n')
+		size := len(p)
+		if end >= 0 {
+			size = end
+		}
+		if !w.discard {
+			if len(w.pending)+size > 1<<20 {
+				clear(w.pending)
+				w.pending = nil
+				w.discard = true
+			} else {
+				w.pending = append(w.pending, p[:size]...)
+			}
+		}
+		p = p[size:]
+		if end < 0 {
+			break
+		}
+		if !w.discard {
+			w.capture.stderrLine(string(w.pending), w.sanitize)
+		}
+		clear(w.pending)
+		w.pending = w.pending[:0]
+		w.discard = false
+		p = p[1:]
+	}
+	return n, nil
+}
+
+func (w *captureDiagnostics) finish() {
+	if !w.discard && len(w.pending) > 0 {
+		w.capture.stderrLine(string(w.pending), w.sanitize)
+	}
+	clear(w.pending)
+	w.pending = nil
+	w.discard = false
 }
 
 // aacArchive says the archive's audio track is AAC: what a camera's copied
@@ -967,7 +1078,7 @@ func LiveArgs(bitrate int64, frag time.Duration) []string {
 		"-probesize", "262144", "-analyzeduration", "500000",
 		"-f", "mp4", "-i", "pipe:0",
 		"-map", "0:v:0", "-map", "0:a:0?",
-		"-c:v", "copy", "-c:a", "libopus", "-b:a", strconv.FormatInt(bitrate, 10),
+		"-c:v", "copy", "-c:a", "libopus", "-b:a", strconv.FormatInt(bitrate, 10), "-ar:a", "48000",
 		"-flush_packets", "1",
 	}
 	args = append(args, MuxArgs(frag)...)

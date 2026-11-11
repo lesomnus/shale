@@ -211,6 +211,7 @@ type Lamina struct {
 	xxx_hidden_Checksum         []byte                 `protobuf:"bytes,27,opt,name=checksum"`
 	xxx_hidden_Epoch            int64                  `protobuf:"varint,28,opt,name=epoch"`
 	xxx_hidden_SkipReason       LaminaSkipReason       `protobuf:"varint,29,opt,name=skip_reason,json=skipReason,enum=shale.LaminaSkipReason"`
+	xxx_hidden_CaptureEpoch     string                 `protobuf:"bytes,30,opt,name=capture_epoch,json=captureEpoch"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -408,6 +409,13 @@ func (x *Lamina) GetSkipReason() LaminaSkipReason {
 	return LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED
 }
 
+func (x *Lamina) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *Lamina) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -508,6 +516,10 @@ func (x *Lamina) SetEpoch(v int64) {
 
 func (x *Lamina) SetSkipReason(v LaminaSkipReason) {
 	x.xxx_hidden_SkipReason = v
+}
+
+func (x *Lamina) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
 }
 
 func (x *Lamina) HasTenant() bool {
@@ -690,6 +702,8 @@ type Lamina_builder struct {
 	// Why a SKIPPED lamina holds nothing; unspecified otherwise. The default
 	// is what the rows from before the column get.
 	SkipReason LaminaSkipReason
+	// Capture incarnation, unrelated to the placement epoch bucket above.
+	CaptureEpoch string
 }
 
 func (b0 Lamina_builder) Build() *Lamina {
@@ -720,6 +734,7 @@ func (b0 Lamina_builder) Build() *Lamina {
 	x.xxx_hidden_Checksum = b.Checksum
 	x.xxx_hidden_Epoch = b.Epoch
 	x.xxx_hidden_SkipReason = b.SkipReason
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	return m0
 }
 
@@ -1060,7 +1075,7 @@ var File_shale_lamina_proto protoreflect.FileDescriptor
 
 const file_shale_lamina_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\x85\f\n" +
+	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xb5\f\n" +
 	"\x06Lamina\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -1092,7 +1107,8 @@ const file_shale_lamina_proto_rawDesc = "" +
 	"\bchecksum\x18\x1b \x01(\fB\a\xea\x82\x16\x03\x82\x01\x00R\bchecksum\x12\x14\n" +
 	"\x05epoch\x18\x1c \x01(\x03R\x05epoch\x12A\n" +
 	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonB\a\xea\x82\x16\x03\x82\x01\x00R\n" +
-	"skipReason:\xd1\x02\xca\xfc\x15\xf5\x01\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
+	"skipReason\x12.\n" +
+	"\rcapture_epoch\x18\x1e \x01(\tB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\fcaptureEpoch:\xd1\x02\xca\xfc\x15\xf5\x01\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +

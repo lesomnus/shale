@@ -37,7 +37,6 @@ import (
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/watch"
 	"github.com/lesomnus/payday/web"
@@ -284,6 +283,11 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		SinkAutoAdoptAfter: c.Control.SinkAutoAdoptAfter,
 		AllocationTTL:      c.Control.AllocationTTL,
 	}
+	// The same recoverable CP KEK protects signing keys and camera credentials
+	// through independent domain-separated keys. Resolve it lazily: init may
+	// create the KEK after the server is assembled; a missing key fails closed.
+	deps.Credentials = s.cameraCredentialFactory(ungated)
+	deps.PrepareCameraEnrollment = s.prepareCameraEnrollment
 	if c.Export.Enabled {
 		deps.ExportURL = func() string { return c.Export.endpoint() }
 	}
@@ -675,12 +679,6 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 	}
 	healthpb.RegisterHealthServer(g, health.NewServer())
 
-	if b, err := pd.Batch(s.Walled, s.Drv, sc.Guard(policy)); err == nil {
-		pdpb.RegisterBatchServiceServer(g, b)
-	} else {
-		log.From(ctx).WarnContext(ctx, "no batch", slog.String("why", err.Error()))
-	}
-
 	return g, nil
 }
 
@@ -706,6 +704,16 @@ func registerTenant(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterHolderServiceServer(g, s.Holder())
 	api.RegisterAuditServiceServer(g, s.Audit())
 	api.RegisterDelegationServiceServer(g, s.Delegation())
+	api.RegisterCameraNetworkServiceServer(g, s.CameraNetwork())
+	api.RegisterCameraDeviceServiceServer(g, s.CameraDevice())
+	api.RegisterCameraAssignmentServiceServer(g, s.CameraAssignment())
+	api.RegisterCameraBindingServiceServer(g, s.CameraBinding())
+	api.RegisterCameraJobServiceServer(g, s.CameraJob())
+	api.RegisterCameraWorkerServiceServer(g, s.CameraWorker())
+	api.RegisterCameraPresetServiceServer(g, s.CameraPreset())
+	api.RegisterCameraPolicyServiceServer(g, s.CameraPolicy())
+	api.RegisterCameraCredentialServiceServer(g, s.CameraCredential())
+	api.RegisterCameraCredentialVersionServiceServer(g, s.CameraCredentialVersion())
 }
 
 // registerCluster mounts the cluster API: its own services, and the tenant

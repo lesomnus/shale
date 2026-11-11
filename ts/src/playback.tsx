@@ -24,7 +24,7 @@ import type { Source } from '../gen/shale/set_pb.js'
 import { SetService, SourceService } from '../gen/shale/set_svc_pb.js'
 
 import { Changed, join, joins, type Piece } from './export.js'
-import { concat, firstFragment, fragmentTime, indexSize, parseIndex, parseInit, type Bytes, type Init, type Key } from './fmp4.js'
+import { firstFragment, fragmentTime, indexSize, parseIndex, parseInit, type Bytes, type Init, type Key } from './fmp4.js'
 import { useLive, useWhep, type Status } from './live.js'
 import { PickSet, gapClass, unhex } from './segments.js'
 import { On, useSurfaces } from './surface.js'
@@ -103,6 +103,7 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 	const [paused, setPaused] = useState(true)
 	const [mark, setMark] = useState<{ a: number | undefined; b: number | undefined }>({ a: undefined, b: undefined })
 	const [exporting, setExporting] = useState<string | undefined>(undefined)
+	const [exported, setExported] = useState<string | undefined>(undefined)
 	const strip = tl.data?.sources[0]
 	const laminae = strip?.laminae ?? []
 
@@ -158,10 +159,17 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 		if (mark.a === undefined || mark.b === undefined) return
 		const [a, b] = mark.a < mark.b ? [mark.a, mark.b] : [mark.b, mark.a]
 		setExporting('fetching')
+		setExported(undefined)
 		try {
-			const bytes = await exportRange(laminae, a, b, (n) => setExporting(`fetching, ${Math.round(n / 1e6)} MB`))
+			const began = performance.now()
+			const { bytes, timing } = await exportRange(laminae, a, b, (n) => setExporting(`fetching, ${Math.round(n / 1e6)} MB`))
 			const name = `${props.source.alias}-${new Date(a).toISOString().replace(/[:.]/g, '-')}-${Math.round((b - a) / 1000)}s.mp4`
+			const joined = performance.now()
 			const url = URL.createObjectURL(new Blob([bytes], { type: 'video/mp4' }))
+			timing.assemble_ms += performance.now() - joined
+			timing.total_ms = performance.now() - began
+			setExported(describe(timing))
+			report(timing)
 			const link = document.createElement('a')
 			link.href = url
 			link.download = name
@@ -228,6 +236,7 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 					{exporting ?? 'download MP4'}
 				</button>
 			</div>
+			{exported !== undefined && <p className="mono dim">{exported}</p>}
 			{tl.state === 'error' && <Err error={tl.error} />}
 			{sandbox && <p className="dim">The sandbox has no bytes to play: the axis is real, the video is not.</p>}
 		</div>
@@ -299,11 +308,75 @@ interface Meta {
 	dataEnd: number
 }
 
-/** A fetch of a byte range, by the token the URL carries. */
-async function range(url: string, from: number, to: number): Promise<Bytes> {
-	const r = await fetch(url, { headers: { Range: `bytes=${from}-${to}` } })
+/** Spent sums what requests took: sent to the response's head, then its body. */
+interface Spent {
+	requests: number
+	firstByte: number
+	body: number
+}
+
+/**
+ * A node answers 503 when it is at its read session limit, shared by every
+ * reader of it. A wait and another try is what it asks for; a page cannot
+ * read its Retry-After across origins, so the waits are the page's own.
+ */
+const busyWaits = [1000, 2000, 4000]
+
+async function fetchRange(url: string, from: number, to: number): Promise<Response> {
+	for (let i = 0; ; i++) {
+		const r = await fetch(url, { headers: { Range: `bytes=${from}-${to}` } })
+		if (r.status !== 503 || i >= busyWaits.length) return r
+		await r.body?.cancel()
+		await new Promise((done) => setTimeout(done, busyWaits[i]))
+	}
+}
+
+/** mapLimit is Promise.all over items, with at most limit of them at once. */
+async function mapLimit<T, U>(items: T[], limit: number, f: (item: T) => Promise<U>): Promise<U[]> {
+	const out = new Array<U>(items.length)
+	let next = 0
+	const worker = async (): Promise<void> => {
+		while (next < items.length) {
+			const i = next++
+			out[i] = await f(items[i]!)
+		}
+	}
+	await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+	return out
+}
+
+/**
+ * range fetches a byte range, by the token the URL carries. With progress,
+ * the body is read as it arrives and progress hears each piece's length.
+ */
+async function range(url: string, from: number, to: number, spent?: Spent, progress?: (bytes: number) => void): Promise<Bytes> {
+	const sent = performance.now()
+	const r = await fetchRange(url, from, to)
+	const head = performance.now()
 	if (r.status !== 206 && r.status !== 200) throw new Error(`${r.status} from the node`)
-	const b = new Uint8Array(await r.arrayBuffer())
+	let b: Bytes
+	if (progress !== undefined && r.status === 206 && r.body !== null) {
+		b = new Uint8Array(to - from + 1)
+		let n = 0
+		const reader = r.body.getReader()
+		for (;;) {
+			const { done, value } = await reader.read()
+			if (done) break
+			if (n + value.length > b.length) throw new Error('the node sent more than the range')
+			b.set(value, n)
+			n += value.length
+			progress(value.length)
+		}
+		if (n !== b.length) throw new Error('the node sent less than the range')
+	} else {
+		b = new Uint8Array(await r.arrayBuffer())
+		progress?.(Math.min(b.length, to - from + 1))
+	}
+	if (spent !== undefined) {
+		spent.requests++
+		spent.firstByte += head - sent
+		spent.body += performance.now() - head
+	}
 
 	return r.status === 200 ? b.slice(from, to + 1) : b
 }
@@ -346,7 +419,10 @@ function metaOf(l: Lamina): Promise<Meta> {
 
 /** ahead is how far past the playhead the engine keeps bytes, in seconds. */
 const ahead = 20
-/** chunk is one Range fetch of a lamina. */
+/**
+ * chunk is one Range fetch of a lamina while it plays: a megabyte ahead of
+ * the playhead at a time. An export asks for each lamina's range at once.
+ */
 const chunk = 1 << 20
 
 interface Hooks {
@@ -698,10 +774,56 @@ class Engine {
 }
 
 /**
+ * ExportTiming is where one export's time went, in milliseconds. The node
+ * that served it records it beside its own side of each read.
+ */
+interface ExportTiming {
+	laminae: number
+	requests: number
+	bytes: number
+	/** From the click to the file. */
+	total_ms: number
+	/** Each lamina's index and init segment, read before any media. */
+	index_ms: number
+	/** The media requests, one after another. */
+	fetch_ms: number
+	/** Summed over the media requests: sent to the response's first byte. */
+	first_byte_ms: number
+	/** Summed over the media requests: the first byte to the last. */
+	body_ms: number
+	/** Joining the fragments into one file. */
+	assemble_ms: number
+	/** Where to report it: the node of the first lamina, with its read token. */
+	url: string
+}
+
+const seconds = (ms: number): string => `${(ms / 1000).toFixed(1)} s`
+
+function describe(t: ExportTiming): string {
+	const mb = t.bytes / 1e6
+	const between = Math.max(0, t.fetch_ms - t.first_byte_ms - t.body_ms)
+	return (
+		`${mb.toFixed(1)} MB in ${seconds(t.total_ms)}: ` +
+		`index ${seconds(t.index_ms)}, media ${seconds(t.fetch_ms)} (${t.fetch_ms > 0 ? ((mb * 8000) / t.fetch_ms).toFixed(0) : '–'} Mbit/s over ${t.requests} requests: ` +
+		`waiting for first bytes ${seconds(t.first_byte_ms)}, receiving ${seconds(t.body_ms)}, between ${seconds(between)}), ` +
+		`assembling ${seconds(t.assemble_ms)}`
+	)
+}
+
+/** report sends the timing to the node; a lost report loses only a sample. */
+function report(t: ExportTiming): void {
+	const u = new URL(t.url)
+	u.pathname = '/reports/export'
+	const { url: _, ...body } = t
+	// A text body is a simple request: no preflight before it.
+	void fetch(u.toString(), { method: 'POST', body: JSON.stringify(body) }).catch(() => {})
+}
+
+/**
  * exportRange is the fragments of a range, each lamina's placed where it
  * sits on the wall clock, behind one init segment (export.ts).
  */
-async function exportRange(laminae: TimelineLamina[], a: number, b: number, progress: (bytes: number) => void): Promise<Bytes> {
+async function exportRange(laminae: TimelineLamina[], a: number, b: number, progress: (bytes: number) => void): Promise<{ bytes: Bytes; timing: ExportTiming }> {
 	const pieces: Piece[] = []
 	let n = 0
 	const rows: Lamina[] = laminae
@@ -718,9 +840,13 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 	if (rows.length === 0) throw new Error('nothing stored in that range')
 	const changed = (i: number): Error => new Error(`the camera's encoder changed at ${new Date(rows[i]!.start).toLocaleTimeString()}; export up to there and from there separately`)
 	// Every lamina's init segment first: a change refuses the range before its megabytes come.
-	const metas = await Promise.all(rows.map(metaOf))
+	const began = performance.now()
+	// A few at a time: the node's read sessions are few and shared by all.
+	const metas = await mapLimit(rows, 4, metaOf)
 	const i = metas.findIndex((m) => !joins(metas[0]!.init.bytes, m.init.bytes))
 	if (i >= 0) throw changed(i)
+	const fetching = performance.now()
+	const spent: Spent = { requests: 0, firstByte: 0, body: 0 }
 	for (const [j, l] of rows.entries()) {
 		const meta = metas[j]!
 		const first = meta.keys[0]!
@@ -734,20 +860,36 @@ async function exportRange(laminae: TimelineLamina[], a: number, b: number, prog
 				break
 			}
 		}
-		const parts: Uint8Array[] = []
-		for (let off = from; off < to; off += chunk) {
-			const bytes = await range(l.url, off, Math.min(to, off + chunk) - 1)
-			parts.push(bytes)
-			n += bytes.length
+		// One request for the lamina's whole range: the node streams it in its
+		// read chunks, and a request per megabyte only adds a round trip each.
+		const onBytes = (k: number): void => {
+			n += k
 			progress(n)
 		}
+		const fragments = to > from ? await range(l.url, from, to - 1, spent, onBytes) : new Uint8Array(0)
 		// The lamina's first key fragment came at date_started (as in play).
-		pieces.push({ init: meta.init.bytes, fragments: concat(parts), zero: l.start - (first.time / meta.init.timescale) * 1000 })
+		pieces.push({ init: meta.init.bytes, fragments, zero: l.start - (first.time / meta.init.timescale) * 1000 })
 	}
 
+	const fetched = performance.now()
+	let bytes: Bytes
 	try {
-		return join(pieces).bytes
+		bytes = join(pieces).bytes
 	} catch (err) {
 		throw err instanceof Changed ? changed(err.piece) : err
 	}
+	const timing: ExportTiming = {
+		laminae: rows.length,
+		requests: spent.requests,
+		bytes: n,
+		total_ms: 0,
+		index_ms: fetching - began,
+		fetch_ms: fetched - fetching,
+		first_byte_ms: spent.firstByte,
+		body_ms: spent.body,
+		assemble_ms: performance.now() - fetched,
+		url: rows[0]!.url,
+	}
+
+	return { bytes, timing }
 }

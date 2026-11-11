@@ -20,6 +20,9 @@ type metrics struct {
 	dark       metric.Int64Gauge
 	dropped    metric.Int64Gauge
 	transcodes metric.Int64Gauge
+	// How long a live message waited between the tee and the relay stream
+	// taking it (§39.3).
+	liveWait metric.Float64Histogram
 
 	// The host, and the uplink the sources use together.
 	cpu         metric.Float64Gauge
@@ -54,6 +57,7 @@ func newMetrics(ctx context.Context) *metrics {
 		dark:       o.Int64Gauge("shale.producer.dark", metric.WithDescription("1 while a source's scene has been dark past idle.dark_after and its segments are skipped (§38.10)")),
 		dropped:    o.Int64Gauge("shale.producer.live_dropped", metric.WithDescription("live batches dropped because the relay lagged")),
 		transcodes: o.Int64Gauge("shale.producer.live_transcodes", metric.WithDescription("live helpers running: watched sources whose audio is encoded as Opus")),
+		liveWait:   o.Float64Histogram("shale.producer.live_send_wait_ms", metric.WithDescription("from a live message being queued for the relay to the stream taking it: the queue, and HTTP/2 flow control while the uplink is behind; not what the socket holds after"), metric.WithUnit("ms")),
 
 		cpu:            o.Float64Gauge("shale.producer.cpu", metric.WithDescription("one-minute load average over the CPU count")),
 		temperature:    o.Float64Gauge("shale.producer.temperature", metric.WithDescription("SoC temperature where Linux offers one"), metric.WithUnit("Cel")),

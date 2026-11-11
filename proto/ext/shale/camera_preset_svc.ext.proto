@@ -1,0 +1,31 @@
+edition = "2023";
+package shale;
+
+import "shale/camera.proto";
+import "shale/camera_preset.proto";
+import "shale/camera_svc.g.proto";
+import "shale/payday/tenant_svc.g.proto";
+import "shale/site_svc.g.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service CameraPresetService {
+  rpc Create(CameraPresetCreateRequest) returns (CameraPreset);
+  // Resolve only the immutable ruleset pinned by this currently leased job.
+  // Inspection hints choose settings; the job's authority chooses access.
+  rpc ResolveForJob(CameraPresetResolveForJobRequest) returns (CameraResolvedPreset);
+}
+message CameraPresetCreateRequest {
+  TenantRef tenant = 1;
+  SiteRef site = 2;
+  string preset_key = 3 [features.field_presence = IMPLICIT];
+  string revision = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  repeated CameraPresetRule rules = 6;
+}
+message CameraPresetResolveForJobRequest {
+  CameraJobRef job = 1;
+  int64 lease_generation = 2 [features.field_presence = IMPLICIT];
+  int64 assignment_generation = 3 [features.field_presence = IMPLICIT];
+  CameraIdentityEvidence identity = 4;
+}

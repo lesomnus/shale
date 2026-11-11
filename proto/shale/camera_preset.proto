@@ -1,0 +1,107 @@
+edition = "2023";
+package shale;
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+import "shale/payday/tenant.proto";
+import "shale/site.proto";
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Device configuration intent: GOP is frames, distinct from capture interval.
+message CameraPresetVideo {
+  string profile_token = 1;
+  string codec = 2;
+  int32 width = 3;
+  int32 height = 4;
+  double fps = 5;
+  int64 bitrate_bps = 6;
+  int32 gop_frames = 7;
+  // Workflow metadata is retained, never an independent downgrade grant.
+  string revision = 8;
+  bool allow_fallback = 9;
+}
+message CameraPresetSettings {
+  int32 power_line_frequency = 1;
+  CameraPresetVideo video = 2;
+  repeated string preserve = 3;
+  // Empty preserves current state; explicit values are off/on.
+  string smart_codec = 4;
+}
+// Absent inherits alternatives; present with no candidates explicitly clears.
+message CameraPresetAlternatives { repeated CameraPresetSettings candidates = 1; }
+message CameraPresetScope {
+  string tenant_id = 1;
+  string site_id = 2;
+  string set_id = 3;
+  string producer_id = 4;
+  string network_id = 5;
+}
+message CameraPresetMatch {
+  string device_id = 1;
+  string manufacturer = 2;
+  string model = 3;
+  string hardware = 4;
+  string firmware = 5;
+  string serial = 6;
+  string mac = 7;
+}
+// A device reporting exactly one of `from` is upgraded to `to` before any
+// other configuration. The image digest is of the file written to the device.
+message CameraPresetFirmware {
+  repeated string from = 1;
+  string to = 2;
+  string image_url = 3;
+  string image_sha256 = 4;
+}
+message CameraPresetRule {
+  string id = 1;
+  CameraPresetScope scope = 2;
+  CameraPresetMatch match = 3;
+  CameraPresetSettings settings = 4;
+  CameraPresetAlternatives alternatives = 5;
+  repeated string required = 6;
+  CameraPresetFirmware firmware = 7;
+}
+message CameraResolvedPreset {
+  string id = 1;
+  string revision = 2;
+  repeated string matched_rules = 3;
+  CameraPresetSettings requested = 4;
+  repeated CameraPresetSettings alternatives = 5;
+  repeated string required = 6;
+  CameraPresetFirmware firmware = 7;
+}
+
+// One immutable revision. Custom operations enforce scope and revision rules.
+message CameraPreset {
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID key: true default: ""}];
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+  Site site = 3 [(orm.edge) = {nullable: true immutable: true}];
+  string alias = 4;
+  string name = 5;
+  string desc = 6;
+  map<string, string> labels = 7;
+  string preset_key = 8 [(orm.field) = {immutable: true}];
+  string revision = 9 [(orm.field) = {immutable: true}];
+  repeated CameraPresetRule rules = 10 [(orm.field) = {immutable: true}];
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {name: "page" refs: [{name: "tenant", number: 2}, {name: "date_created", number: 15}, {name: "id", number: 1}]},
+      {name: "revision" refs: [{name: "tenant", number: 2}, {name: "preset_key", number: 8}, {name: "revision", number: 9}] unique: true includes_erased: true}
+    ]
+  };
+  option (payday.entity) = {
+    domain: 40
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}]
+      size: 50 max: 500
+    }
+    watch: {}
+  };
+}

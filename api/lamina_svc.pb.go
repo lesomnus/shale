@@ -157,6 +157,7 @@ type LaminaAddRequest struct {
 	xxx_hidden_Checksum         []byte                 `protobuf:"bytes,27,opt,name=checksum"`
 	xxx_hidden_Epoch            int64                  `protobuf:"varint,28,opt,name=epoch"`
 	xxx_hidden_SkipReason       LaminaSkipReason       `protobuf:"varint,29,opt,name=skip_reason,json=skipReason,enum=shale.LaminaSkipReason"`
+	xxx_hidden_CaptureEpoch     *string                `protobuf:"bytes,30,opt,name=capture_epoch,json=captureEpoch"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -351,12 +352,22 @@ func (x *LaminaAddRequest) GetSkipReason() LaminaSkipReason {
 	return LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED
 }
 
+func (x *LaminaAddRequest) GetCaptureEpoch() string {
+	if x != nil {
+		if x.xxx_hidden_CaptureEpoch != nil {
+			return *x.xxx_hidden_CaptureEpoch
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *LaminaAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 24)
 }
 
 func (x *LaminaAddRequest) SetTenant(v *TenantRef) {
@@ -440,7 +451,7 @@ func (x *LaminaAddRequest) SetChecksum(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Checksum = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 24)
 }
 
 func (x *LaminaAddRequest) SetEpoch(v int64) {
@@ -449,7 +460,12 @@ func (x *LaminaAddRequest) SetEpoch(v int64) {
 
 func (x *LaminaAddRequest) SetSkipReason(v LaminaSkipReason) {
 	x.xxx_hidden_SkipReason = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 24)
+}
+
+func (x *LaminaAddRequest) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 24)
 }
 
 func (x *LaminaAddRequest) HasId() bool {
@@ -557,6 +573,13 @@ func (x *LaminaAddRequest) HasSkipReason() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
 }
 
+func (x *LaminaAddRequest) HasCaptureEpoch() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 23)
+}
+
 func (x *LaminaAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -620,6 +643,11 @@ func (x *LaminaAddRequest) ClearSkipReason() {
 	x.xxx_hidden_SkipReason = LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED
 }
 
+func (x *LaminaAddRequest) ClearCaptureEpoch() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 23)
+	x.xxx_hidden_CaptureEpoch = nil
+}
+
 type LaminaAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -646,6 +674,7 @@ type LaminaAddRequest_builder struct {
 	Checksum         []byte
 	Epoch            int64
 	SkipReason       *LaminaSkipReason
+	CaptureEpoch     *string
 }
 
 func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
@@ -653,7 +682,7 @@ func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 24)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -676,13 +705,17 @@ func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
 	x.xxx_hidden_DateCommitted = b.DateCommitted
 	x.xxx_hidden_DateFinished = b.DateFinished
 	if b.Checksum != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 24)
 		x.xxx_hidden_Checksum = b.Checksum
 	}
 	x.xxx_hidden_Epoch = b.Epoch
 	if b.SkipReason != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 24)
 		x.xxx_hidden_SkipReason = *b.SkipReason
+	}
+	if b.CaptureEpoch != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 24)
+		x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	}
 	return m0
 }
@@ -932,6 +965,7 @@ type LaminaSelect struct {
 	xxx_hidden_Checksum         bool                   `protobuf:"varint,27,opt,name=checksum"`
 	xxx_hidden_Epoch            bool                   `protobuf:"varint,28,opt,name=epoch"`
 	xxx_hidden_SkipReason       bool                   `protobuf:"varint,29,opt,name=skip_reason,json=skipReason"`
+	xxx_hidden_CaptureEpoch     bool                   `protobuf:"varint,30,opt,name=capture_epoch,json=captureEpoch"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -1131,9 +1165,16 @@ func (x *LaminaSelect) GetSkipReason() bool {
 	return false
 }
 
+func (x *LaminaSelect) GetCaptureEpoch() bool {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return false
+}
+
 func (x *LaminaSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 25)
 }
 
 func (x *LaminaSelect) SetTenant(v *TenantSelect) {
@@ -1158,92 +1199,97 @@ func (x *LaminaSelect) SetSink(v *SinkSelect) {
 
 func (x *LaminaSelect) SetLaminaKey(v bool) {
 	x.xxx_hidden_LaminaKey = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 25)
 }
 
 func (x *LaminaSelect) SetState(v bool) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 25)
 }
 
 func (x *LaminaSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 25)
 }
 
 func (x *LaminaSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 25)
 }
 
 func (x *LaminaSelect) SetDateStarted(v bool) {
 	x.xxx_hidden_DateStarted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 25)
 }
 
 func (x *LaminaSelect) SetDateEnded(v bool) {
 	x.xxx_hidden_DateEnded = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 25)
 }
 
 func (x *LaminaSelect) SetEndedEstimated(v bool) {
 	x.xxx_hidden_EndedEstimated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 25)
 }
 
 func (x *LaminaSelect) SetSize(v bool) {
 	x.xxx_hidden_Size = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 25)
 }
 
 func (x *LaminaSelect) SetIncomplete(v bool) {
 	x.xxx_hidden_Incomplete = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 25)
 }
 
 func (x *LaminaSelect) SetDateExpired(v bool) {
 	x.xxx_hidden_DateExpired = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 25)
 }
 
 func (x *LaminaSelect) SetDateDeleted(v bool) {
 	x.xxx_hidden_DateDeleted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 25)
 }
 
 func (x *LaminaSelect) SetDatesSynced(v bool) {
 	x.xxx_hidden_DatesSynced = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 25)
 }
 
 func (x *LaminaSelect) SetPlacementVersion(v bool) {
 	x.xxx_hidden_PlacementVersion = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 25)
 }
 
 func (x *LaminaSelect) SetDateCommitted(v bool) {
 	x.xxx_hidden_DateCommitted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 25)
 }
 
 func (x *LaminaSelect) SetDateFinished(v bool) {
 	x.xxx_hidden_DateFinished = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 25)
 }
 
 func (x *LaminaSelect) SetChecksum(v bool) {
 	x.xxx_hidden_Checksum = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 25)
 }
 
 func (x *LaminaSelect) SetEpoch(v bool) {
 	x.xxx_hidden_Epoch = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 25)
 }
 
 func (x *LaminaSelect) SetSkipReason(v bool) {
 	x.xxx_hidden_SkipReason = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 25)
+}
+
+func (x *LaminaSelect) SetCaptureEpoch(v bool) {
+	x.xxx_hidden_CaptureEpoch = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 25)
 }
 
 func (x *LaminaSelect) HasAll() bool {
@@ -1414,6 +1460,13 @@ func (x *LaminaSelect) HasSkipReason() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 23)
 }
 
+func (x *LaminaSelect) HasCaptureEpoch() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 24)
+}
+
 func (x *LaminaSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -1529,6 +1582,11 @@ func (x *LaminaSelect) ClearSkipReason() {
 	x.xxx_hidden_SkipReason = false
 }
 
+func (x *LaminaSelect) ClearCaptureEpoch() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 24)
+	x.xxx_hidden_CaptureEpoch = false
+}
+
 type LaminaSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1556,6 +1614,7 @@ type LaminaSelect_builder struct {
 	Checksum         *bool
 	Epoch            *bool
 	SkipReason       *bool
+	CaptureEpoch     *bool
 }
 
 func (b0 LaminaSelect_builder) Build() *LaminaSelect {
@@ -1563,7 +1622,7 @@ func (b0 LaminaSelect_builder) Build() *LaminaSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 25)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -1572,76 +1631,80 @@ func (b0 LaminaSelect_builder) Build() *LaminaSelect {
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_Sink = b.Sink
 	if b.LaminaKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 25)
 		x.xxx_hidden_LaminaKey = *b.LaminaKey
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 25)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 25)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 25)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.DateStarted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 25)
 		x.xxx_hidden_DateStarted = *b.DateStarted
 	}
 	if b.DateEnded != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 25)
 		x.xxx_hidden_DateEnded = *b.DateEnded
 	}
 	if b.EndedEstimated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 25)
 		x.xxx_hidden_EndedEstimated = *b.EndedEstimated
 	}
 	if b.Size != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 25)
 		x.xxx_hidden_Size = *b.Size
 	}
 	if b.Incomplete != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 25)
 		x.xxx_hidden_Incomplete = *b.Incomplete
 	}
 	if b.DateExpired != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 25)
 		x.xxx_hidden_DateExpired = *b.DateExpired
 	}
 	if b.DateDeleted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 25)
 		x.xxx_hidden_DateDeleted = *b.DateDeleted
 	}
 	if b.DatesSynced != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 25)
 		x.xxx_hidden_DatesSynced = *b.DatesSynced
 	}
 	if b.PlacementVersion != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 25)
 		x.xxx_hidden_PlacementVersion = *b.PlacementVersion
 	}
 	if b.DateCommitted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 25)
 		x.xxx_hidden_DateCommitted = *b.DateCommitted
 	}
 	if b.DateFinished != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 25)
 		x.xxx_hidden_DateFinished = *b.DateFinished
 	}
 	if b.Checksum != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 25)
 		x.xxx_hidden_Checksum = *b.Checksum
 	}
 	if b.Epoch != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 25)
 		x.xxx_hidden_Epoch = *b.Epoch
 	}
 	if b.SkipReason != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 25)
 		x.xxx_hidden_SkipReason = *b.SkipReason
+	}
+	if b.CaptureEpoch != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 25)
+		x.xxx_hidden_CaptureEpoch = *b.CaptureEpoch
 	}
 	return m0
 }
@@ -3253,12 +3316,13 @@ func (b0 LaminaWatchItem_builder) Build() *LaminaWatchItem {
 }
 
 type LaminaAllocateRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Source      *SourceRef             `protobuf:"bytes,1,opt,name=source"`
-	xxx_hidden_DateStarted *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_started,json=dateStarted"`
-	xxx_hidden_After       *LaminaRef             `protobuf:"bytes,3,opt,name=after"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Source       *SourceRef             `protobuf:"bytes,1,opt,name=source"`
+	xxx_hidden_DateStarted  *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_started,json=dateStarted"`
+	xxx_hidden_After        *LaminaRef             `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_CaptureEpoch string                 `protobuf:"bytes,4,opt,name=capture_epoch,json=captureEpoch"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *LaminaAllocateRequest) Reset() {
@@ -3307,6 +3371,13 @@ func (x *LaminaAllocateRequest) GetAfter() *LaminaRef {
 	return nil
 }
 
+func (x *LaminaAllocateRequest) GetCaptureEpoch() string {
+	if x != nil {
+		return x.xxx_hidden_CaptureEpoch
+	}
+	return ""
+}
+
 func (x *LaminaAllocateRequest) SetSource(v *SourceRef) {
 	x.xxx_hidden_Source = v
 }
@@ -3317,6 +3388,10 @@ func (x *LaminaAllocateRequest) SetDateStarted(v *timestamppb.Timestamp) {
 
 func (x *LaminaAllocateRequest) SetAfter(v *LaminaRef) {
 	x.xxx_hidden_After = v
+}
+
+func (x *LaminaAllocateRequest) SetCaptureEpoch(v string) {
+	x.xxx_hidden_CaptureEpoch = v
 }
 
 func (x *LaminaAllocateRequest) HasSource() bool {
@@ -3361,7 +3436,8 @@ type LaminaAllocateRequest_builder struct {
 	// The lamina of the segment before this one, when the camera ended that
 	// segment and this one begins in the same slot (§15): the answer is
 	// another lamina, whatever state the last one is in.
-	After *LaminaRef
+	After        *LaminaRef
+	CaptureEpoch string
 }
 
 func (b0 LaminaAllocateRequest_builder) Build() *LaminaAllocateRequest {
@@ -3371,6 +3447,7 @@ func (b0 LaminaAllocateRequest_builder) Build() *LaminaAllocateRequest {
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_DateStarted = b.DateStarted
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	return m0
 }
 
@@ -6862,7 +6939,7 @@ var File_shale_lamina_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/lamina_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/lamina.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\x1a\x19shale/storage_svc.g.proto\"\xb4\b\n" +
+	"\x18shale/lamina_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/lamina.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\x1a\x19shale/storage_svc.g.proto\"\xd9\b\n" +
 	"\x10LaminaAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -6892,13 +6969,14 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\bchecksum\x18\x1b \x01(\fR\bchecksum\x12\x1b\n" +
 	"\x05epoch\x18\x1c \x01(\x03B\x05\xaa\x01\x02\b\x02R\x05epoch\x128\n" +
 	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonR\n" +
-	"skipReason\"c\n" +
+	"skipReason\x12#\n" +
+	"\rcapture_epoch\x18\x1e \x01(\tR\fcaptureEpoch\"c\n" +
 	"\x10LaminaGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12+\n" +
 	"\x06select\x18\x02 \x01(\v2\x13.shale.LaminaSelectR\x06select\"$\n" +
 	"\tLaminaRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
-	"\x03key\"\xbb\x06\n" +
+	"\x03key\"\xe0\x06\n" +
 	"\fLaminaSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -6929,7 +7007,8 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\bchecksum\x18\x1b \x01(\bR\bchecksum\x12\x14\n" +
 	"\x05epoch\x18\x1c \x01(\bR\x05epoch\x12\x1f\n" +
 	"\vskip_reason\x18\x1d \x01(\bR\n" +
-	"skipReason\"\xf6\b\n" +
+	"skipReason\x12#\n" +
+	"\rcapture_epoch\x18\x1e \x01(\bR\fcaptureEpoch\"\xf6\b\n" +
 	"\x12LaminaPatchRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12\"\n" +
 	"\x04sink\x18\x14 \x01(\v2\x0e.shale.SinkRefR\x04sink\x12\x1b\n" +
@@ -6988,11 +7067,12 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\x0fLaminaWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
 	"\x05value\x18\x02 \x01(\v2\r.shale.LaminaR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa8\x01\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xd4\x01\n" +
 	"\x15LaminaAllocateRequest\x12(\n" +
 	"\x06source\x18\x01 \x01(\v2\x10.shale.SourceRefR\x06source\x12=\n" +
 	"\fdate_started\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateStarted\x12&\n" +
-	"\x05after\x18\x03 \x01(\v2\x10.shale.LaminaRefR\x05after\"=\n" +
+	"\x05after\x18\x03 \x01(\v2\x10.shale.LaminaRefR\x05after\x12*\n" +
+	"\rcapture_epoch\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\fcaptureEpoch\"=\n" +
 	"\x17LaminaReallocateRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\"e\n" +
 	"\x12LaminaRenewRequest\x12\"\n" +

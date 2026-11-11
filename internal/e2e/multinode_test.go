@@ -54,7 +54,10 @@ func (c *cluster) startNodeAt(name, stateDir, sinkDir string, opts ...func(*stor
 	n, err := storage.New(cfg)
 	require.NoError(c.t, err)
 	done := make(chan error, 1)
-	go func() { done <- n.Run(ctx) }()
+	go func() {
+		done <- n.Run(ctx)
+		close(done) // a manual stop and t.Cleanup share this completion
+	}()
 	select {
 	case <-n.Ready:
 	case err := <-done:

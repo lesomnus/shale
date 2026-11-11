@@ -326,14 +326,20 @@ scrape endpoint. The names, by the process that measures them:
 | forecast, time until the cluster runs out | `shale.cp.capacity_runway_s` |
 | stored bytes per tenant | `shale.cp.stored_bytes{tenant}` |
 | read latency, sessions, aborted | `shale.node.read_latency_ms{sink}`, `shale.node.read_sessions`, `shale.node.reads_aborted{sink}` |
+| where one read's time goes: the device's wait and read, the rest writing to the client; bytes read from the device beside bytes sent ([§17.2](05-read-path.md#172-read-chunks)) | `shale.node.read_wait_ms{sink}`, `read_device_ms{sink}`, `read_send_ms{sink}`, `read_device_bytes{sink}`, `read_sent_bytes{sink}` |
+| a browser's MP4 export as the page reports it ([§40](17-console.md#40-console)): all of it, the index, the media requests' first bytes, bodies and the gaps between them, joining, and the media rate | `shale.node.export_total_ms`, `export_index_ms`, `export_first_byte_ms`, `export_body_ms`, `export_gap_ms`, `export_assemble_ms`, `export_rate_mbps`, `export_bytes` |
 | NIC utilization, RAM buffer, index size, scan | `shale.node.nic_rx_bps{interface}`, `shale.node.nic_tx_bps{interface}`, `shale.node.part_buffer_used_bytes`, `shale.node.index_laminae{sink}`, `shale.node.scan_done{sink}` |
 | ingest per node | `shale.node.ingest_bps` |
 | producer per source | `shale.producer.input_up`, `frame_rate`, `rate_bps`, `keyframe_interval_ms`, `capture_restarts`, `early_cuts`, all `{source}` |
 | producer host, uplink, live helpers | `shale.producer.cpu`, `temperature`, `uplink_bps`, `live_transcodes`, `live_dropped` |
+| how long live waits on the producer: queued until the relay stream takes it ([§39.3](16-relay.md#393-from-the-producer)) | `shale.producer.live_send_wait_ms` |
 | frames the recording lost: gaps over one and three quarters frames, and wall time a capture's rebased timestamps hid ([§38.6](15-producer.md#386-health-and-heartbeats)) | `shale.producer.frame_gaps{source}`, `shale.producer.frames_missed{source}` |
 | captures that delivered nothing for 5 s or more, and the timestamp jumps ffmpeg rebased | `shale.producer.capture_stalls{source}`, `shale.producer.capture_stalled_seconds{source}`, `shale.producer.timestamp_discontinuities{source}` |
 | the Go runtime, every process: collections and their CPU, assists, heap, goroutines, scheduling | `shale.runtime.gc.cycles`, `gc.cpu`, `gc.assist`, `heap.live`, `heap.goal`, `memory`, `goroutines`, `sched.latency_max` |
 | relay | `shale.relay.attached_producers`, `active_sources`, `viewers`, `egress_bytes`, `sessions{outcome}`, `first_frame_ms`, `catch_up_ms`, `nacked_packets`, `cpu` |
+| what pacing adds to live's delay, and its clock's moves ([§39.4](16-relay.md#394-viewers)) | `shale.relay.pace_delay_ms`, `shale.relay.pace_resets{why=late,ahead}`, `shale.relay.pace_recovered_ms` |
+| live's way from the producer: its queue (t2 − t1), the uplink (t3 − t2), and the payloads whose clocks disagree ([§39.3](16-relay.md#393-from-the-producer)) | `shale.relay.producer_queue_ms{producer}`, `shale.relay.uplink_ms{producer}`, `shale.relay.uplink_skewed{producer}` |
+| live's way to the screen: held in the relay (t4 − t3), and what timed viewers report, the network (t5 − t4), the browser (t6 − t5) and all of it (t6 − t1) ([§39.4](16-relay.md#394-viewers)) | `shale.relay.hold_ms{path=paced,catch_up}`, `shale.relay.viewer_network_ms`, `viewer_playout_ms`, `viewer_total_ms` |
 | hosts pending, certificates due | `shale.cp.hosts_pending{kind}`, `shale.cp.certs_due{kind}` |
 | producers per relay, reassignments | `shale.cp.producers_per_relay{relay}`, `shale.cp.relay_reassignments` |
 | directives pending, reconciliation lag | `shale.cp.laminae_dates_unsynced`, `shale.cp.reconcile_lag_s{sink}`, `shale.cp.directive_errors` |

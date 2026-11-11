@@ -2,6 +2,8 @@ edition = "2023";
 
 package shale;
 
+import "google/protobuf/timestamp.proto";
+
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
 
@@ -18,14 +20,26 @@ message AttachRequest {
   }
   message Data {
     bytes source_id = 1;
-    // MPEG-TS packets, a whole number of them, the same bytes the producer
-    // stores; the first bytes after a Start begin at a keyframe with the
-    // tables prepended.
+    // fMP4 init or complete fragment. Each incarnation starts at a keyframe.
     bytes payload = 2;
+    string capture_epoch = 3;
+    // When the producer had the payload from its capture (t1) and when it
+    // handed it to this stream (t2), on the producer's clock (§39.3). The
+    // relay measures the producer's queue and the uplink from them; a
+    // producer that predates them sends neither.
+    google.protobuf.Timestamp read_at = 4;
+    google.protobuf.Timestamp sent_at = 5;
+  }
+  // Reliable source control, independent of the bounded lossy media queue.
+  message Reset {
+    bytes source_id = 1;
+    string capture_epoch = 2;
+    bool stopped = 3;
   }
   oneof message {
     Hello hello = 1;
     Data data = 2;
+    Reset reset = 3;
   }
 }
 

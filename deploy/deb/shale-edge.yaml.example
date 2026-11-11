@@ -1,0 +1,30 @@
+# Managed outbound camera host: /usr/bin/shale --config /etc/shale/shale.yaml serve edge
+# Review /usr/share/doc/shale/docs/managed-edge.md before replacing active config.
+# Both machine identities need separate CP approval and assignments.
+state: /var/lib/shale
+cp: https://shale.example.internal:7400 # tenant API, not the cluster API on 7401
+tenant: company
+ca_hash: sha256:<deployment-ca-fingerprint>
+
+edge:
+  roles: [worker, producer]
+  retry_interval: 1s
+  # Credential caching is off unless explicitly enabled. It cannot authorize
+  # offline cold startup, a new capture attempt or a new BeginApply ticket.
+  # streaming_cache:
+  #   max_age: 60s           # required when enabled; 1-300 seconds
+  #   max_entries: 32        # default 32; maximum 64
+
+camera_worker:
+  discovery_interval: 30s
+  discovery_timeout: 2s
+  # ffmpeg: /usr/bin/ffmpeg
+  # ffprobe: /usr/bin/ffprobe
+  # camera_ca_file: /etc/shale/camera-ca.pem # additional camera CA, not CP trust
+
+producer:
+  buffer: 512MiB
+  uplink: 20Mbps
+  drain_timeout: 2m
+  # No sources, local Set alias or local catalog/credential provider here.
+  # CP supplies camera policy, presets, Sources and credential references.

@@ -19,6 +19,7 @@ npm run test:sandbox      # headless Chromium through every page (needs `npx pla
 npm run build:sandbox     # dist/, the page with the sandbox in it, for a static host
 node test/export.mjs      # the export's joining of laminae, against recordings ffmpeg makes
                           #   (needs ffmpeg, ffprobe and Chromium as above)
+node test/sei.mjs         # the relay's timing SEI read as the live view reads it (§39.4)
 
 BASE=https://cp:7402 TENANT_PW=… CLUSTER_PW=… node test/server.mjs
                           # the same walk against a deployment (§40.4); ADOPT=1 adopts

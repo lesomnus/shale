@@ -1,53 +1,224 @@
 package relay
 
 import (
+	"bytes"
 	"errors"
 	"io"
+	"slices"
 	"sync"
 	"time"
 
+	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/shale/api"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/lesomnus/payday/pdid"
-
-	"github.com/lesomnus/shale/api"
+	"google.golang.org/protobuf/proto"
 )
 
-// ingest is the RelayIngest service: one stream per producer (§39.3). The
-// producer says Hello with its publish token; the relay says which sources
-// it accepted, then Start and Stop as viewers come and go; the producer
-// sends Data for the started ones.
 type ingest struct {
 	api.UnimplementedRelayIngestServer
 	r *Relay
 }
 
-// attachment is one producer's stream, the feeder of its sources.
+// A stream can refresh its authenticated membership in place. All grants are
+// signed by the CP; unsigned Reset/Data fields only select within those grants.
 type attachment struct {
-	r       *Relay
-	stream  api.RelayIngest_AttachServer
-	sendMu  sync.Mutex
-	sources map[pdid.Id]*source
-	actor   pdid.Id
+	r        *Relay
+	stream   api.RelayIngest_AttachServer
+	sendMu   sync.Mutex
+	mu       sync.Mutex
+	updating bool
+	pending  map[pdid.Id]bool
+	sources  map[pdid.Id]*source
+	grants   map[pdid.Id]*api.CaptureEpochGrant
+	actor    pdid.Id
+	tenant   []byte
+	claims   *api.TokenClaims
+	// membershipAt never moves backwards when an equivalent older grant is
+	// replayed; otherwise that replay could reopen the membership shrink gate.
+	membershipAt time.Time
 }
 
 func (a *attachment) send(msg *api.AttachResponse) {
 	a.sendMu.Lock()
 	defer a.sendMu.Unlock()
 	if err := a.stream.Send(msg); err != nil {
-		a.r.log.Debug("ingest send", "err", err.Error())
+		a.r.log.Debug("ingest send", "code", status.Code(err).String())
 	}
 }
 
-func (a *attachment) start(id pdid.Id) {
-	a.r.log.Info("start", "source", id.String(), "producer", a.actor.String())
-	a.send(api.AttachResponse_builder{Start: api.AttachResponse_Start_builder{SourceId: id.Bytes()}.Build()}.Build())
+func (a *attachment) control(id pdid.Id, start bool) {
+	a.mu.Lock()
+	if a.updating {
+		a.pending[id] = start
+		a.mu.Unlock()
+		return
+	}
+	a.mu.Unlock()
+	// Serialize the state check with sending. A timer from the previous
+	// incarnation must not send Stop after a newer Start already went out.
+	a.sendMu.Lock()
+	defer a.sendMu.Unlock()
+	s := a.r.sources.get(id)
+	s.mu.Lock()
+	current := s.feeder == a
+	allowed := !start && (!current || !s.started) || start && current && s.started && !s.stopped
+	s.mu.Unlock()
+	if !allowed {
+		return
+	}
+	var msg *api.AttachResponse
+	if start {
+		msg = api.AttachResponse_builder{Start: api.AttachResponse_Start_builder{SourceId: id.Bytes()}.Build()}.Build()
+	} else {
+		msg = api.AttachResponse_builder{Stop: api.AttachResponse_Stop_builder{SourceId: id.Bytes()}.Build()}.Build()
+	}
+	if err := a.stream.Send(msg); err != nil {
+		a.r.log.Debug("ingest control", "code", status.Code(err).String())
+	}
+}
+func (a *attachment) start(id pdid.Id) { a.control(id, true) }
+func (a *attachment) stop(id pdid.Id)  { a.control(id, false) }
+
+func (a *attachment) welcome() {
+	accepted := make([][]byte, 0, len(a.sources))
+	for id := range a.sources {
+		accepted = append(accepted, id.Bytes())
+	}
+	a.send(api.AttachResponse_builder{Welcome: api.AttachResponse_Welcome_builder{Sources: accepted}.Build()}.Build())
+	a.mu.Lock()
+	pending := a.pending
+	a.pending = map[pdid.Id]bool{}
+	a.updating = false
+	a.mu.Unlock()
+	for id, start := range pending {
+		a.control(id, start)
+	}
 }
 
-func (a *attachment) stop(id pdid.Id) {
-	a.r.log.Info("stop", "source", id.String(), "producer", a.actor.String())
-	a.send(api.AttachResponse_builder{Stop: api.AttachResponse_Stop_builder{SourceId: id.Bytes()}.Build()}.Build())
+func validEpoch(v string) bool {
+	if len(v) > 128 {
+		return false
+	}
+	for _, b := range []byte(v) {
+		if b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '-' || b == '_' || b == '.' || b == ':' || b == '/' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// authorize returns false for a delayed valid Hello, keeping current sources
+// and peers intact. Epoch sequence is the authority for media. Signed Iat is
+// only an anti-replay fence for membership; equal-Iat shrink needs a new token.
+func (a *attachment) authorize(claims *api.TokenClaims) (bool, error) {
+	actor, err := pdid.From(claims.GetActor())
+	if err != nil || actor.Domain() != 22 || claims.GetIat() == nil || claims.GetIat().CheckValid() != nil || claims.GetExp() == nil || claims.GetExp().CheckValid() != nil || !time.Now().Before(claims.GetExp().AsTime()) || len(claims.GetSources()) > 4096 {
+		return false, status.Error(codes.PermissionDenied, "invalid publication identity or membership")
+	}
+	if a.claims != nil && (actor != a.actor || !bytes.Equal(claims.GetActorTenant(), a.tenant)) {
+		return false, status.Error(codes.PermissionDenied, "publication identity cannot change on an open stream")
+	}
+	next := map[pdid.Id]*source{}
+	for _, raw := range claims.GetSources() {
+		id, e := pdid.From(raw)
+		if e != nil || id.Domain() != 8 {
+			return false, status.Error(codes.PermissionDenied, "invalid publication source")
+		}
+		if next[id] != nil {
+			return false, status.Error(codes.PermissionDenied, "duplicate publication source")
+		}
+		next[id] = a.r.sources.get(id)
+	}
+	grants := map[pdid.Id]*api.CaptureEpochGrant{}
+	for _, g := range claims.GetCaptureEpochs() {
+		id, e := pdid.From(g.GetSourceId())
+		if g == nil || e != nil || next[id] == nil || grants[id] != nil || !validEpoch(g.GetCaptureEpoch()) || g.GetSequence() < 0 || g.GetCaptureEpoch() != "" && g.GetSequence() == 0 {
+			return false, status.Error(codes.PermissionDenied, "invalid publication capture grant")
+		}
+		grants[id] = g
+	}
+	always := claims.GetLive() != api.LivePolicy_LIVE_POLICY_ON_DEMAND
+	window := time.Duration(max(0, min(claims.GetRewindSeconds(), int64(24*time.Hour/time.Second)))) * time.Second
+	// Lock the union in a stable order: a concurrent Hello, Reset or removal
+	// cannot invalidate one grant between the preflight and a partial commit.
+	// No source state changes until every grant and membership fence passes.
+	all := make(map[pdid.Id]*source, len(a.sources)+len(next))
+	for id, s := range a.sources {
+		all[id] = s
+	}
+	for id, s := range next {
+		all[id] = s
+	}
+	ids := make([]pdid.Id, 0, len(all))
+	for id := range all {
+		ids = append(ids, id)
+	}
+	slices.SortFunc(ids, func(x, y pdid.Id) int { return bytes.Compare(x.Bytes(), y.Bytes()) })
+	var after []func()
+	accepted := func() bool {
+		for _, id := range ids {
+			all[id].mu.Lock()
+		}
+		defer func() {
+			for i := len(ids) - 1; i >= 0; i-- {
+				all[ids[i]].mu.Unlock()
+			}
+		}()
+		higher := false
+		for id, s := range next {
+			if s.checkGrant(grants[id]) != nil {
+				return false
+			}
+			if g := grants[id]; g != nil && g.GetSequence() > s.epochSequence {
+				higher = true
+			}
+		}
+		if a.claims != nil {
+			changed, shrink := len(a.sources) != len(next), false
+			for id := range a.sources {
+				if next[id] == nil {
+					changed, shrink = true, true
+				}
+			}
+			for id := range next {
+				if a.sources[id] == nil {
+					changed = true
+				}
+			}
+			if changed && !claims.GetIat().AsTime().After(a.membershipAt) && (shrink || !higher) {
+				return false
+			}
+		}
+		a.mu.Lock()
+		a.updating = true
+		a.mu.Unlock()
+		for id, s := range next {
+			after = append(after, s.authorizeLocked(a, grants[id], always, window))
+		}
+		for id, s := range a.sources {
+			if next[id] == nil {
+				if action := s.removePublisherLocked(a); action != nil {
+					after = append(after, action)
+				}
+				after = append(after, func() { a.stop(id) })
+			}
+		}
+		a.sources, a.grants, a.actor, a.tenant, a.claims = next, grants, actor, append([]byte(nil), claims.GetActorTenant()...), proto.Clone(claims).(*api.TokenClaims)
+		if claims.GetIat().AsTime().After(a.membershipAt) {
+			a.membershipAt = claims.GetIat().AsTime()
+		}
+		return true
+	}()
+	if !accepted {
+		return false, nil
+	}
+	for _, action := range after {
+		action()
+	}
+	a.welcome()
+	return true, nil
 }
 
 func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
@@ -55,84 +226,126 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 	if err != nil {
 		return err
 	}
-	hello := first.GetHello()
-	if hello == nil {
+	if first.GetHello() == nil {
 		return status.Error(codes.InvalidArgument, "the first message is Hello")
 	}
-	claims, err := g.r.verify(hello.GetPublishToken(), api.TokenOp_TOKEN_OP_PUBLISH)
+	claims, err := g.r.verify(first.GetHello().GetPublishToken(), api.TokenOp_TOKEN_OP_PUBLISH)
 	if err != nil {
-		return status.Error(codes.Unauthenticated, err.Error())
+		return status.Error(codes.Unauthenticated, "invalid publication capability")
 	}
-	actor, _ := pdid.From(claims.GetActor())
-	// The token is good for as long as it says (§33.7): a stream that
-	// outlives it ends, and the producer attaches again with the token its
-	// next heartbeat brought.
-	exp := claims.GetExp().AsTime()
-
-	a := &attachment{r: g.r, stream: stream, sources: map[pdid.Id]*source{}, actor: actor}
-	var accepted [][]byte
-	for _, b := range claims.GetSources() {
-		id, err := pdid.From(b)
-		if err != nil {
-			continue
-		}
-		s := g.r.sources.get(id)
-		a.sources[id] = s
-		accepted = append(accepted, b)
+	a := &attachment{r: g.r, stream: stream, sources: map[pdid.Id]*source{}, grants: map[pdid.Id]*api.CaptureEpochGrant{}, pending: map[pdid.Id]bool{}, updating: true}
+	accepted, err := a.authorize(claims)
+	if err != nil {
+		return err
 	}
-	if len(accepted) == 0 {
-		return status.Error(codes.PermissionDenied, "the token names no source")
-	}
-	a.send(api.AttachResponse_builder{Welcome: api.AttachResponse_Welcome_builder{Sources: accepted}.Build()}.Build())
-	// The producer's live policy, as the CP put it in the token (§39.3):
-	// `always` starts every source now and stops none; on demand starts
-	// them as viewers come. Unspecified is `always`, as the CP reads it.
-	always := claims.GetLive() != api.LivePolicy_LIVE_POLICY_ON_DEMAND
-	// And how much of each source to keep for the recent window (§39.4):
-	// what the CP sized from the source's segment duration, nothing for a
-	// token that predates it.
-	window := time.Duration(claims.GetRewindSeconds()) * time.Second
-	for _, s := range a.sources {
-		s.attach(a, always, window)
+	if !accepted {
+		return status.Error(codes.PermissionDenied, "stale publication capability")
 	}
 	g.r.sources.attached(1)
-	g.r.log.Info("producer attached", "producer", actor.String(), "sources", len(accepted), "always", always, "window", window.String())
 	defer func() {
 		for _, s := range a.sources {
 			s.detach(a)
 		}
 		g.r.sources.attached(-1)
-		g.r.log.Info("producer detached", "producer", actor.String())
 	}()
-
-	for {
-		msg, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			return nil
+	// Recv is unblocked by gRPC when this handler returns at expiry, including
+	// an idle zero-source publisher. At most one receive is outstanding.
+	// at is t3 (§39.3), taken as the message comes off the stream rather
+	// than when this loop gets to it.
+	type received struct {
+		msg *api.AttachRequest
+		err error
+		at  time.Time
+	}
+	input := make(chan received)
+	go func() {
+		for {
+			msg, err := stream.Recv()
+			select {
+			case input <- received{msg, err, time.Now()}:
+			case <-stream.Context().Done():
+				return
+			}
+			if err != nil {
+				return
+			}
 		}
-		if err != nil {
-			if stream.Context().Err() != nil {
+	}()
+	expiry := time.NewTimer(time.Until(a.claims.GetExp().AsTime()))
+	defer expiry.Stop()
+	for {
+		select {
+		case <-stream.Context().Done():
+			return nil
+		case <-expiry.C:
+			return status.Error(codes.PermissionDenied, "publication capability expired")
+		case received := <-input:
+			if errors.Is(received.err, io.EOF) {
 				return nil
 			}
-
-			return err
+			if received.err != nil {
+				return received.err
+			}
+			msg := received.msg
+			if hello := msg.GetHello(); hello != nil {
+				fresh, err := g.r.verify(hello.GetPublishToken(), api.TokenOp_TOKEN_OP_PUBLISH)
+				if err != nil {
+					return status.Error(codes.Unauthenticated, "invalid publication capability")
+				}
+				ok, err := a.authorize(fresh)
+				if err != nil {
+					return err
+				}
+				if ok {
+					if !expiry.Stop() {
+						select {
+						case <-expiry.C:
+						default:
+						}
+					}
+					expiry.Reset(time.Until(a.claims.GetExp().AsTime()))
+				} else {
+					a.welcome()
+				}
+				continue
+			}
+			if !time.Now().Before(a.claims.GetExp().AsTime()) {
+				return status.Error(codes.PermissionDenied, "publication capability expired")
+			}
+			if reset := msg.GetReset(); reset != nil {
+				id, err := pdid.From(reset.GetSourceId())
+				if err == nil && validEpoch(reset.GetCaptureEpoch()) {
+					if s := a.sources[id]; s != nil {
+						s.resetEpoch(a, a.grants[id], reset.GetCaptureEpoch(), reset.GetStopped())
+					}
+				}
+				continue
+			}
+			if d := msg.GetData(); d != nil {
+				id, err := pdid.From(d.GetSourceId())
+				if err != nil {
+					continue
+				}
+				s := a.sources[id]
+				if s == nil {
+					continue
+				}
+				grant := a.grants[id]
+				s.mu.Lock()
+				allowed := s.checkGrant(grant) == nil
+				s.mu.Unlock()
+				if !allowed || grant != nil && (grant.GetCaptureEpoch() == "" || grant.GetCaptureEpoch() != d.GetCaptureEpoch()) {
+					continue
+				}
+				st := stamps{arrived: received.at, producer: a.actor.String()}
+				if d.HasReadAt() {
+					st.read = d.GetReadAt().AsTime()
+				}
+				if d.HasSentAt() {
+					st.sent = d.GetSentAt().AsTime()
+				}
+				s.feedTimed(a, d.GetCaptureEpoch(), d.GetPayload(), st)
+			}
 		}
-		d := msg.GetData()
-		if d == nil {
-			continue
-		}
-		if time.Now().After(exp) {
-			return status.Error(codes.PermissionDenied, "the publish token expired; attach again with a fresh one")
-		}
-		id, err := pdid.From(d.GetSourceId())
-		if err != nil {
-			continue
-		}
-		s := a.sources[id]
-		if s == nil {
-			// Not among the token's sources: ignored, not fatal.
-			continue
-		}
-		s.feed(d.GetPayload())
 	}
 }

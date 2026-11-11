@@ -100,6 +100,7 @@ message Allocation {
   string lamina_key = 10;
   SegmentProfile profile = 11;
   LinkProfile link = 12;
+  string capture_epoch = 13;
 }
 
 // RelayAssignment is the relay a producer sends live streams to (§39.2).
@@ -183,6 +184,8 @@ message SourceReport {
   // Dark says the source's scene has been dark past `idle.dark_after`
   // and its segments are being skipped (§38.10).
   bool dark = 13;
+  // Empty for legacy static sources; otherwise the exact applied incarnation.
+  string capture_epoch = 14;
 }
 
 // ProducerStatus is the last heartbeat the CP kept on a producer row.
@@ -320,6 +323,7 @@ message LaminaRecord {
   // Crc32c asks the node to compute a CRC32C while receiving and keep it
   // in `checksum` (§30), which the set's `checksum` flag turns on.
   bool crc32c = 20;
+  string capture_epoch = 21;
 
 }
 
@@ -333,6 +337,15 @@ enum TokenOp {
   // A CP HTTP export capability for one source and an exact time range;
   // it is neither a storage GET token nor a relay VIEW token.
   TOKEN_OP_EXPORT = 5;
+}
+
+// Presence in a publish token marks a managed Source. An empty epoch means
+// that it has no starting ticket yet, never an unmanaged compatibility grant.
+message CaptureEpochGrant {
+  bytes source_id = 1;
+  string capture_epoch = 2;
+  // Monotonic Producer Begin ticket. A valid old token never rolls back live.
+  int64 sequence = 3;
 }
 
 // TokenClaims is what the CP signs (§33.2). The wire form is
@@ -375,6 +388,9 @@ message TokenClaims {
   // caller-controlled network address is carried by a capability.
   google.protobuf.Timestamp export_from = 21;
   google.protobuf.Timestamp export_to = 22;
+  // view: never serve a different capture incarnation under this capability.
+  string capture_epoch = 23;
+  repeated CaptureEpochGrant capture_epochs = 24;
 }
 
 // LaminaStored is a node's word that an upload committed (§12.4).

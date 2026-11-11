@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -98,6 +99,16 @@ type upload struct {
 	// one (§30); crcAt of -1 means it has to be recomputed from the file.
 	crc   uint32
 	crcAt int64
+
+	// dataStartedMs is the heartbeat snapshot. An upload holds mu throughout
+	// live I/O, so metrics must neither read record unsafely nor wait for mu.
+	dataStartedMs atomic.Int64
+}
+
+// setRecord is called under mu, or before publishing a newly adopted upload.
+func (u *upload) setRecord(record *api.LaminaRecord) {
+	u.record = record
+	u.dataStartedMs.Store(record.GetDateStartedMs())
 }
 
 // DataPlane serves the lamina paths of every sink on this node.
@@ -140,6 +151,9 @@ func (d *DataPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok\n"))
 		return
 	case strings.HasPrefix(r.URL.Path, "/laminae/"):
+	case r.URL.Path == "/reports/export":
+		d.exportTiming(w, r)
+		return
 	default:
 		http.NotFound(w, r)
 		return
@@ -446,7 +460,7 @@ func (d *DataPlane) put(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return
 	}
 	defer f.Close()
-	u.record = rec
+	u.setRecord(rec)
 
 	if offset != cur {
 		w.Header().Set(HdrUploadOffset, strconv.FormatInt(cur, 10))
@@ -878,9 +892,14 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return
 	}
 	defer f.Close()
+	var timing readTiming
 	cr := &chunkReader{f: f, size: size, chunk: d.limits.ReadChunk, read: func(off int64, b []byte) (int, error) {
 		var n int
+		var ran time.Duration
+		submitted := time.Now()
 		err := d.node.onDevice(r.Context(), sink, ClassRead, int64(len(b)), func() error {
+			start := time.Now()
+			defer func() { ran = time.Since(start) }()
 			var err error
 			n, err = f.ReadAt(b, off)
 			if err == io.EOF {
@@ -889,6 +908,9 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 
 			return err
 		})
+		timing.wait += time.Since(submitted) - ran
+		timing.device += ran
+		timing.deviceBytes += int64(n)
 		if errors.Is(err, ErrBacklog) {
 			return 0, err
 		}
@@ -896,12 +918,16 @@ func (d *DataPlane) get(w http.ResponseWriter, r *http.Request, sink *Sink, key 
 		return n, err
 	}}
 
+	cr.limit = rangeEnd(r.Header.Get("Range"), size)
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Cache-Control", "private, max-age=0")
 	began := time.Now()
-	http.ServeContent(w, r, "", mod, cr)
-	d.node.m.readLatency.Record(context.Background(), float64(time.Since(began).Microseconds())/1000, sinkAttr(sink))
+	cw := &countingWriter{ResponseWriter: w}
+	http.ServeContent(cw, r, "", mod, cr)
+	elapsed := time.Since(began)
+	d.node.m.readLatency.Record(context.Background(), float64(elapsed.Microseconds())/1000, sinkAttr(sink))
+	timing.record(context.Background(), d.node.m, sink, elapsed, cw.n)
 	if r.Context().Err() != nil {
 		// The client went away before the end: a read it gave up on.
 		d.node.m.readsAborted.Add(context.Background(), 1, sinkAttr(sink))
@@ -966,6 +992,10 @@ type chunkReader struct {
 	size  int64
 	chunk int
 	read  func(off int64, b []byte) (int, error)
+	// limit, when set, is where the one requested range ends. A device read
+	// that starts before it stops there (aligned up) instead of taking a
+	// whole chunk: a short range costs its own bytes, not a chunk's.
+	limit int64
 
 	pos    int64
 	bufOff int64
@@ -999,6 +1029,9 @@ func (c *chunkReader) Read(p []byte) (int, error) {
 		// The aligned chunk holding pos.
 		start := c.pos &^ (Align - 1)
 		want := c.chunk
+		if c.limit > c.pos && c.limit-start < int64(want) {
+			want = int((c.limit - start + Align - 1) &^ (Align - 1))
+		}
 		if rem := c.size - start; rem < int64(want) {
 			want = int((rem + Align - 1) &^ (Align - 1))
 		}
@@ -1086,7 +1119,8 @@ func (d *DataPlane) sweepAbandoned(ctx context.Context) {
 // (§12.2): they are left alone until idle for their abandon_timeout.
 func (d *DataPlane) adoptOpen(sink *Sink, open []OpenFile) {
 	for _, o := range open {
-		u := &upload{key: o.Key, sink: sink, record: o.Record, last: o.Modified, hint: o.Record.GetSizeHint()}
+		u := &upload{key: o.Key, sink: sink, last: o.Modified, hint: o.Record.GetSizeHint()}
+		u.setRecord(o.Record)
 		if id, err := pdid.From(o.Record.GetAttemptId()); err == nil {
 			_ = id
 		}
@@ -1104,7 +1138,7 @@ func (d *DataPlane) uploadAges(now time.Time) map[*Sink]time.Duration {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	for _, u := range d.uploads {
-		ms := u.record.GetDateStartedMs()
+		ms := u.dataStartedMs.Load()
 		if ms <= 0 {
 			continue
 		}
@@ -1115,4 +1149,33 @@ func (d *DataPlane) uploadAges(now time.Time) map[*Sink]time.Duration {
 	}
 
 	return out
+}
+
+// rangeEnd is where a request for one byte range ends, or 0 when it asks for
+// the whole file, several ranges, or something ServeContent will judge. It
+// only bounds device reads; ServeContent still decides what is served.
+func rangeEnd(h string, size int64) int64 {
+	spec, ok := strings.CutPrefix(strings.TrimSpace(h), "bytes=")
+	if !ok || strings.Contains(spec, ",") {
+		return 0
+	}
+	first, last, ok := strings.Cut(strings.TrimSpace(spec), "-")
+	if !ok {
+		return 0
+	}
+	if first == "" {
+		// A suffix: the tail, which ends where the file does.
+		return size
+	}
+	if _, err := strconv.ParseInt(first, 10, 64); err != nil {
+		return 0
+	}
+	if last == "" {
+		return size
+	}
+	end, err := strconv.ParseInt(last, 10, 64)
+	if err != nil || end < 0 {
+		return 0
+	}
+	return min(end+1, size)
 }

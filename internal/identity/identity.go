@@ -623,7 +623,7 @@ func (s *Store) Verify(ctx context.Context, tenant, alias, password string) (Per
 		return Person{}, fmt.Errorf("roster: %w", err)
 	}
 	if !res.GetOk() {
-		if t := res.GetLockedUntil(); t != nil {
+		if t := res.GetDateLocked(); t != nil {
 			return Person{}, Locked{Until: t.AsTime()}
 		}
 

@@ -97,8 +97,16 @@ func (s coreLamina) Allocate(ctx context.Context, req *api.LaminaAllocateRequest
 	}
 
 	var out *api.Allocation
-	err = s.tx(ctx, func(ctx context.Context, next api.Server) error {
-		v, err := s.allocateSlot(ctx, next, a, src, t, after, f.Actor, f.Tenant)
+	managed, err := s.cameraHasBinding(ctx, src)
+	if err != nil {
+		return nil, err
+	}
+	transaction := s.tx
+	if managed {
+		transaction = s.ownTx
+	}
+	err = transaction(ctx, func(ctx context.Context, next api.Server) error {
+		v, err := New(next, s.d).allocateSlot(ctx, next, a, src, t, after, f.Actor, f.Tenant, req.GetCaptureEpoch(), false)
 		out = v
 
 		return err
@@ -149,6 +157,11 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 		}
 	}
 
+	frozen, managed, err := s.cameraAllocationPreflight(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), f.Actor, f.Tenant)
+	if err != nil {
+		return nil, err
+	}
+
 	a, err := s.allocCtx(ctx, set)
 	if err != nil {
 		return nil, err
@@ -189,6 +202,9 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	// asked to move on.
 	link := linkOf(set, a.bounds)
 	prof := segmentOf(src, set, a.bounds)
+	if managed {
+		prof = frozen
+	}
 	ttl := s.d.allocationTTL(link, prof)
 
 	var siteRef *api.SiteRef
@@ -196,7 +212,16 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 		siteRef = api.SiteRef_builder{Id: set.GetSite().GetId()}.Build()
 	}
 	at := pdid.New(DomAttempt)
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+	transaction := s.tx
+	if managed {
+		transaction = s.ownTx
+	}
+	err = transaction(ctx, func(ctx context.Context, nx api.Server) error {
+		if managed {
+			if _, _, _, err := New(nx, s.d).cameraAllocationProfile(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), true, f.Actor, f.Tenant); err != nil {
+				return err
+			}
+		}
 		_, err := nx.Attempt().Add(ctx, api.AttemptAddRequest_builder{
 			Id:          at.Bytes(),
 			Tenant:      tenantRef(f.Tenant),
@@ -218,8 +243,8 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	// Answer through the ordinary path, which signs tokens for every open
 	// attempt including the new one.
 	var out *api.Allocation
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
-		v, err := s.allocateSlot(ctx, nx, a, src, started, pdid.Nil, f.Actor, f.Tenant)
+	err = transaction(ctx, func(ctx context.Context, nx api.Server) error {
+		v, err := New(nx, s.d).allocateSlot(ctx, nx, a, src, started, pdid.Nil, f.Actor, f.Tenant, obj.GetCaptureEpoch(), true)
 		out = v
 
 		return err
@@ -276,30 +301,40 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 	if err != nil {
 		return nil, err
 	}
-	link := linkOf(set, a.bounds)
-	prof := segmentOf(src, set, a.bounds)
-	ttl := s.d.allocationTTL(link, prof)
-
-	exp := timestamppb.New(a.now.Add(ttl))
-	if _, err := s.Next().Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
-		Ref:         api.AttemptRef_builder{Id: at.GetId()}.Build(),
-		DateExpires: exp,
-		DateUpdated: at.GetDateUpdated(),
-	}.Build()); err != nil {
+	if kindOf(f.Actor) == DomProducer {
+		if err := s.producerOwns(ctx, f.Actor, set); err != nil {
+			return nil, err
+		}
+	}
+	managed, err := s.cameraHasBinding(ctx, src)
+	if err != nil {
 		return nil, err
 	}
-
+	transaction := s.tx
+	if managed {
+		transaction = s.ownTx
+	}
 	var out *api.Allocation
-	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
-		v, err := s.allocateSlot(ctx, nx, a, src, obj.GetDateStarted().AsTime(), pdid.Nil, f.Actor, f.Tenant)
+	err = transaction(ctx, func(ctx context.Context, nx api.Server) error {
+		prof := segmentOf(src, set, a.bounds)
+		if managed {
+			frozen, _, _, err := New(nx, s.d).cameraAllocationProfile(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), true, f.Actor, f.Tenant)
+			if err != nil {
+				return err
+			}
+			prof = frozen
+		}
+		ttl := s.d.allocationTTL(linkOf(set, a.bounds), prof)
+		if _, err := nx.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{Ref: api.AttemptRef_builder{Id: at.GetId()}.Build(), DateExpires: timestamppb.New(a.now.Add(ttl)), DateUpdated: at.GetDateUpdated()}.Build()); err != nil {
+			return err
+		}
+		v, err := New(nx, s.d).allocateSlot(ctx, nx, a, src, obj.GetDateStarted().AsTime(), pdid.Nil, f.Actor, f.Tenant, obj.GetCaptureEpoch(), true)
 		out = v
-
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-
 	return out, nil
 }
 

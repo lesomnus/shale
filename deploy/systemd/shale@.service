@@ -1,6 +1,8 @@
 # One unit per role (§34.6): `systemctl enable --now shale@storage`,
 # `shale@producer`, `shale@control`, `shale@cluster`, `shale@relay`,
-# `shale@reader`, or `shale@all` for a single machine. Configuration lives
+# `shale@reader`, `shale@edge`, `shale@camera-worker`, or `shale@all`.
+# edge includes worker+producer; do not also run their standalone units
+# against the same role state directories. Configuration lives
 # in /etc/shale/shale.yaml and state in /var/lib/shale.
 [Unit]
 Description=Shale %i

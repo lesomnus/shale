@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -35,8 +37,13 @@ type relayLink struct {
 	changed    chan struct{}
 	// active is the sources the relay started; key says whether the next
 	// keyframe was seen since.
-	active map[pdid.Id]*tap
-	send   chan *api.AttachRequest
+	active      map[pdid.Id]*tap
+	send        chan queued
+	controls    chan struct{}
+	refresh     bool
+	reauthorize bool
+	resets      map[pdid.Id]relayEpoch
+	epochs      map[pdid.Id]relayEpoch
 	// relayId is the relay attached to, for the heartbeat's sake.
 	relayId  pdid.Id
 	dropped  int64
@@ -46,6 +53,7 @@ type relayLink struct {
 // tap is one started source: sent from the first key fragment on.
 type tap struct {
 	keyed bool
+	epoch string
 	// h is the live helper while the source's audio is not Opus (§38.7);
 	// nil when the bytes go as they are.
 	h *helper
@@ -59,8 +67,19 @@ type tap struct {
 // dropped beyond it rather than held.
 const sendQueue = 32
 
+// queued is a Data message waiting for the relay, with when it began to.
+type queued struct {
+	msg *api.AttachRequest
+	at  time.Time
+}
+
+type relayEpoch struct {
+	epoch   string
+	stopped bool
+}
+
 func newRelayLink(p *Producer) *relayLink {
-	return &relayLink{p: p, changed: make(chan struct{}, 1), active: map[pdid.Id]*tap{}, send: make(chan *api.AttachRequest, sendQueue)}
+	return &relayLink{p: p, changed: make(chan struct{}, 1), active: map[pdid.Id]*tap{}, send: make(chan queued, sendQueue), controls: make(chan struct{}, 1), resets: map[pdid.Id]relayEpoch{}, epochs: map[pdid.Id]relayEpoch{}}
 }
 
 // set takes the assignment the CP handed over; a different relay makes
@@ -72,13 +91,18 @@ func (l *relayLink) set(ra *api.RelayAssignment) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	// The same relay with a fresher token is the same assignment: the
-	// token is used at the next dial, the stream stays. The same relay at
+	// token is sent in an authenticated Hello, and the stream stays. The same relay at
 	// other endpoints is a relay that restarted (§39.6): the stream to the
 	// old ones is ended and the new ones dialed. A changed live policy is
-	// applied by the relay at Hello, so it is a new stream too (§39.3).
+	// applied in place by the relay at Hello (§39.3).
 	same := l.assignment != nil && string(l.assignment.GetRelayId()) == string(ra.GetRelayId()) &&
-		sameEndpoints(l.assignment.GetEndpoints(), ra.GetEndpoints()) && l.assignment.GetLive() == ra.GetLive()
+		sameEndpoints(l.assignment.GetEndpoints(), ra.GetEndpoints())
+	fresh := l.assignment == nil || l.assignment.GetPublishToken() != ra.GetPublishToken()
 	l.assignment = ra
+	if same && fresh {
+		l.reauthorize = true
+		l.signalControl()
+	}
 	if !same {
 		select {
 		case l.changed <- struct{}{}:
@@ -147,7 +171,7 @@ func (l *relayLink) run(ctx context.Context) error {
 			wait = relayRetry
 		}
 		if err != nil {
-			l.p.log.Warn("relay", "err", err.Error(), "retry_in", wait.String())
+			l.p.log.Warn("relay", "code", status.Code(err).String(), "retry_in", wait.String())
 			// A token the relay refused may have expired: ask for a fresh one.
 			if fresh, err := api.NewProducerServiceClient(l.p.cp()).Relay(ctx, &api.ProducerRelayRequest{}); err == nil {
 				l.set(fresh.GetRelay())
@@ -200,6 +224,9 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up boo
 	relayId, _ := pdid.From(ra.GetRelayId())
 	l.mu.Lock()
 	l.relayId = relayId
+	for id, state := range l.epochs {
+		l.resets[id] = state
+	}
 	// Drain what an earlier stream left queued.
 	for len(l.send) > 0 {
 		<-l.send
@@ -209,20 +236,60 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up boo
 
 	errs := make(chan error, 2)
 	var welcomed atomic.Bool
+	var running sync.WaitGroup
+	running.Add(2)
+	defer func() { cancel(); conn.Close(); running.Wait() }()
 	go func() {
+		defer running.Done()
 		for {
-			select {
-			case <-sctx.Done():
-				return
-			case msg := <-l.send:
+			if l.takeRefresh() {
+				l.refreshAssignment(sctx)
+			}
+			if msg := l.takeControl(); msg != nil {
 				if err := stream.Send(msg); err != nil {
 					errs <- err
 					return
+				}
+				continue
+			}
+			select {
+			case <-sctx.Done():
+				return
+			case <-l.controls:
+				continue
+			case q := <-l.send:
+				// Control may have arrived together with this lossy item.
+				for {
+					control := l.takeControl()
+					if control == nil {
+						break
+					}
+					if err := stream.Send(control); err != nil {
+						errs <- err
+						return
+					}
+				}
+				if !l.currentData(q.msg) {
+					continue
+				}
+				// t2 (§39.3): handed to the stream, so the relay tells this
+				// queue from the uplink.
+				q.msg.GetData().SetSentAt(timestamppb.Now())
+				if err := stream.Send(q.msg); err != nil {
+					errs <- err
+					return
+				}
+				// Send returns once flow control lets the message go to
+				// the transport: the wait is the queue's and the uplink's
+				// backpressure, not what the socket holds after.
+				if m := l.p.m; m != nil {
+					m.liveWait.Record(sctx, float64(time.Since(q.at).Microseconds())/1000)
 				}
 			}
 		}
 	}()
 	go func() {
+		defer running.Done()
 		for {
 			msg, err := stream.Recv()
 			if err != nil {
@@ -273,7 +340,11 @@ func (l *relayLink) start(id pdid.Id) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if _, ok := l.active[id]; !ok {
-		l.active[id] = &tap{}
+		state := l.epochs[id]
+		if state.stopped {
+			return
+		}
+		l.active[id] = &tap{epoch: state.epoch}
 		l.p.log.Info("live", "source", id.String())
 	}
 }
@@ -321,7 +392,9 @@ func (l *relayLink) transcodes() int64 {
 // feed is the tap in the capture loop: a started source's fragments go to
 // the relay from the first one a lamina may start at on, the init segment
 // first, through the live helper when the audio is not Opus (§38.7).
-func (l *relayLink) feed(s *source, f *Frame, init *fmp4.Init) {
+func (l *relayLink) feed(s *source, f *Frame, init *fmp4.Init) { l.feedEpoch(s, f, init, "") }
+
+func (l *relayLink) feedEpoch(s *source, f *Frame, init *fmp4.Init, epoch string) {
 	if s.row == nil {
 		return
 	}
@@ -330,8 +403,17 @@ func (l *relayLink) feed(s *source, f *Frame, init *fmp4.Init) {
 		return
 	}
 	l.mu.Lock()
+	state, known := l.epochs[id]
+	if known && (state.stopped || state.epoch != epoch) || !known && epoch != "" {
+		l.mu.Unlock()
+		return
+	}
 	t, ok := l.active[id]
 	if !ok {
+		l.mu.Unlock()
+		return
+	}
+	if t.epoch != epoch {
 		l.mu.Unlock()
 		return
 	}
@@ -350,7 +432,7 @@ func (l *relayLink) feed(s *source, f *Frame, init *fmp4.Init) {
 		}
 		t.keyed = true
 		if t.h == nil && !t.raw && needsOpus(init) {
-			h, err := l.startHelper(id, s)
+			h, err := l.startHelperEpoch(id, s, epoch)
 			t.h = h
 			switch {
 			case err == nil:
@@ -383,19 +465,122 @@ func (l *relayLink) feed(s *source, f *Frame, init *fmp4.Init) {
 
 			continue
 		}
-		l.sendData(id, b)
+		l.sendDataEpoch(id, epoch, b)
 	}
 }
 
 // sendData queues one Data message for the relay, dropping it when the
 // relay is behind rather than holding the capture loop.
 func (l *relayLink) sendData(id pdid.Id, payload []byte) {
-	msg := api.AttachRequest_builder{Data: api.AttachRequest_Data_builder{SourceId: id.Bytes(), Payload: append([]byte(nil), payload...)}.Build()}.Build()
+	l.sendDataEpoch(id, "", payload)
+}
+
+func (l *relayLink) sendDataEpoch(id pdid.Id, epoch string, payload []byte) {
+	// t1 (§39.3): the producer has the payload, from its capture or, for a
+	// source whose audio is transcoded, from the live helper.
+	now := time.Now()
+	msg := api.AttachRequest_builder{Data: api.AttachRequest_Data_builder{SourceId: id.Bytes(), CaptureEpoch: epoch, Payload: append([]byte(nil), payload...), ReadAt: timestamppb.New(now)}.Build()}.Build()
+	if !l.currentData(msg) {
+		return
+	}
 	select {
-	case l.send <- msg:
+	case l.send <- queued{msg: msg, at: now}:
 	default:
 		l.drop()
 	}
+}
+
+// resetSource is reliable, coalesced control. A stopped old helper cannot tag
+// its buffered output with the new incarnation: callbacks retain their epoch.
+func (l *relayLink) resetSource(id pdid.Id, epoch string, stopped bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	state := relayEpoch{epoch: epoch, stopped: stopped}
+	if old, ok := l.epochs[id]; ok && old == state {
+		return
+	}
+	l.epochs[id], l.resets[id] = state, state
+	if t := l.active[id]; t != nil {
+		if t.h != nil {
+			t.h.close()
+			t.h.cancel()
+			t.h = nil
+		}
+		t.keyed, t.epoch = false, epoch
+		if stopped {
+			delete(l.active, id)
+		}
+	}
+	l.signalControl()
+}
+
+// sourcesChanged only queues work; admission never performs network I/O here.
+func (l *relayLink) sourcesChanged() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.refresh = true
+	l.signalControl()
+}
+
+// signalControl requires l.mu. Notifications coalesce; the maps retain work.
+func (l *relayLink) signalControl() {
+	select {
+	case l.controls <- struct{}{}:
+	default:
+	}
+}
+
+func (l *relayLink) takeRefresh() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	refresh := l.refresh
+	l.refresh = false
+	return refresh
+}
+
+func (l *relayLink) refreshAssignment(ctx context.Context) {
+	if l.p.conn.Load() == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if reply, err := api.NewProducerServiceClient(l.p.cp()).Relay(ctx, &api.ProducerRelayRequest{}); err == nil {
+		l.set(reply.GetRelay())
+	}
+}
+
+func (l *relayLink) takeControl() *api.AttachRequest {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.reauthorize && l.assignment != nil && string(l.assignment.GetRelayId()) == string(l.relayId.Bytes()) {
+		l.reauthorize = false
+		// Repeat current resets after every authenticated membership update.
+		// Earlier control for a new source may have preceded its grant.
+		for id, state := range l.epochs {
+			l.resets[id] = state
+		}
+		return api.AttachRequest_builder{Hello: api.AttachRequest_Hello_builder{PublishToken: l.assignment.GetPublishToken()}.Build()}.Build()
+	}
+	for id, state := range l.resets {
+		delete(l.resets, id)
+		return api.AttachRequest_builder{Reset: api.AttachRequest_Reset_builder{SourceId: id.Bytes(), CaptureEpoch: state.epoch, Stopped: state.stopped}.Build()}.Build()
+	}
+	return nil
+}
+
+func (l *relayLink) currentData(msg *api.AttachRequest) bool {
+	d := msg.GetData()
+	if d == nil {
+		return false
+	}
+	id, err := pdid.From(d.GetSourceId())
+	if err != nil {
+		return false
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	state, known := l.epochs[id]
+	return known && !state.stopped && state.epoch == d.GetCaptureEpoch() || !known && d.GetCaptureEpoch() == ""
 }
 
 func (l *relayLink) drop() {

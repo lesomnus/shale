@@ -27,7 +27,7 @@ TypeScript client are generated from that declaration.
 | `Erase` | answers `erased: bool`; "already gone", "never existed", and "not yours" are one answer |
 | Custom RPCs | operations that mean something are their own RPCs, added to the entity's service in an overlay (`*_svc.ext.proto`), not expressed as a `Patch` |
 | Errors | gRPC status; invalid input carries field paths in `google.rpc.BadRequest` |
-| Batch | `payday.BatchService` runs several writes in one transaction (e.g. a set and its sources) |
+| Several writes at once | an RPC of shale's own that names the act and writes them in one transaction (e.g. `CameraBindingService.Bind`, a binding and its source); payday has no batch |
 
 **Identifiers** are payday's UUIDv8: time-ordered, with one **domain byte**
 naming the entity kind, so a reference of the wrong kind is refused at the
@@ -463,9 +463,10 @@ producer:
 service RelayIngest {
   rpc Attach(stream AttachRequest) returns (stream AttachResponse);
 }
-// AttachRequest:  Hello {publish_token} once, then Data {source, bytes},
-//                 one init segment or one whole fragment, for every source
-//                 the relay has started
+// AttachRequest:  Hello {publish_token} once, then Data {source, bytes,
+//                 read_at, sent_at}, one init segment or one whole fragment,
+//                 for every source the relay has started, with when the
+//                 producer had it and sent it (§39.3)
 // AttachResponse: Start {source} | Stop {source}
 ```
 
@@ -479,7 +480,14 @@ and go under `on_demand` ([§39.3](16-relay.md#393-from-the-producer)).
 ```text
 POST   /whep/{source_id}       Content-Type: application/sdp, body: offer
                                Authorization: Shale <view token>
+                               ?timing=1 for timed frames (§39.4)
        → 201  Location: /whep/{session}   body: SDP answer
+              Shale-Timing: 1 when the frames are timed
+PATCH  /whep/{session}         Authorization: Shale <fresh view token>, no body
+       → 204  the session now ends with the fresh token
+POST   /whep/{session}/timing  Authorization: Shale <view token>
+                               body: {"frames":[{"network","playout","total"}]} (ms)
+       → 200  {"received","replied"}: the relay's clock, Unix ms
 DELETE /whep/{session}         end the session
 GET    /recent/{source_id}     ?since=<seconds>, Authorization: Shale <view token>
        → 200  video/mp4: the recent window as one fragmented MP4, the init

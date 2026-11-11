@@ -12,6 +12,7 @@ import (
 	"io"
 	"math"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/lesomnus/shale/internal/fmp4"
@@ -22,7 +23,12 @@ const (
 	maxMetadataBox = 16 << 20
 	epoch1904      = 2082844800
 	// Limits bound planning metadata, rather than the downloaded media size.
-	MaxSources       = 1024
+	MaxSources = 1024
+	// ScanParallel is how many sources an export scans at once.
+	ScanParallel = 4
+	// MediaChunk is one read of media while an export streams; the next is
+	// read while this one is written.
+	MediaChunk       = 4 << 20
 	MaxSamples       = 2_000_000
 	MaxMetadataBytes = 64 << 20
 )
@@ -36,6 +42,10 @@ type Source struct {
 	Size   int64
 	Start  time.Time
 }
+
+// Scanned is told when its source's metadata scan is done, so a reader can
+// give back what it held for small container reads before streaming media.
+type Scanned interface{ Scanned() }
 
 // Plan has validated all input metadata and selected the keyframe-aligned range.
 // Its memory is proportional to sample/chunk metadata, never the media payload.
@@ -120,19 +130,58 @@ func Prepare(ctx context.Context, sources []Source, start, end time.Time) (*Plan
 	ordered := append([]Source(nil), sources...)
 	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].Start.Before(ordered[j].Start) })
 	scans := make([]*scanned, len(ordered))
+	errs := make([]error, len(ordered))
 	budget := &metadataBudget{}
-	for i, s := range ordered {
-		if err := ctx.Err(); err != nil {
-			return nil, err
+	// Each scan waits on a source's container reads one after another;
+	// a few at once keep the store busy without one export taking it all.
+	parent := ctx
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	work := make(chan int)
+	var wg sync.WaitGroup
+	for range min(ScanParallel, len(ordered)) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range work {
+				x, err := scan(ctx, ordered[i], budget)
+				if r, ok := ordered[i].Reader.(Scanned); ok {
+					r.Scanned()
+				}
+				scans[i], errs[i] = x, err
+				if err != nil {
+					cancel()
+				}
+			}
+		}()
+	}
+	for i := range ordered {
+		if ctx.Err() != nil {
+			break
 		}
-		x, err := scan(ctx, s, budget)
-		if err != nil {
+		work <- i
+	}
+	close(work)
+	wg.Wait()
+	// In source order, as one scan after another would have answered.
+	stopped := false
+	for i, s := range ordered {
+		if err := errs[i]; err != nil && !errors.Is(err, context.Canceled) {
 			return nil, fmt.Errorf("mp4export: source %d: %w", i, err)
 		}
-		scans[i] = x
-		if i > 0 && !compatible(scans[0], x) {
+		if scans[i] == nil {
+			stopped = true
+			continue
+		}
+		if !stopped && i > 0 && !compatible(scans[0], scans[i]) {
 			return nil, fmt.Errorf("mp4export: encoder configuration changed at %s", s.Start.Format(time.RFC3339Nano))
 		}
+	}
+	if stopped {
+		if err := parent.Err(); err != nil {
+			return nil, err
+		}
+		return nil, context.Canceled
 	}
 	p := &Plan{sources: ordered, ftyp: scans[0].ftyp}
 	ids := make(map[uint32]*track)
@@ -276,23 +325,59 @@ func (p *Plan) WriteTo(ctx context.Context, w io.Writer) error {
 	if err := write(head); err != nil {
 		return err
 	}
-	buf := make([]byte, 1<<20)
-	for _, c := range p.chunks {
-		for off := int64(0); off < c.size; {
-			if err := ctx.Err(); err != nil {
-				return err
-			}
-			n := min(int64(len(buf)), c.size-off)
-			if _, err := p.sources[c.source].Reader.ReadAt(buf[:n], c.off+off); err != nil {
-				return err
-			}
-			if err := write(buf[:n]); err != nil {
-				return err
-			}
-			off += n
-		}
+	if err := p.stream(ctx, write); err != nil {
+		return err
 	}
 	return write(p.moov)
+}
+
+// stream writes the media chunks in order. One read runs ahead of the write,
+// so the store and the client are busy at once; two buffers bound it.
+func (p *Plan) stream(ctx context.Context, write func([]byte) error) error {
+	type piece struct {
+		b   []byte
+		err error
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	free := make(chan []byte, 2)
+	free <- make([]byte, MediaChunk)
+	free <- make([]byte, MediaChunk)
+	full := make(chan piece, 1)
+	go func() {
+		defer close(full)
+		for _, c := range p.chunks {
+			for off := int64(0); off < c.size; {
+				var buf []byte
+				select {
+				case <-ctx.Done():
+					return
+				case buf = <-free:
+				}
+				n := min(int64(len(buf)), c.size-off)
+				if _, err := p.sources[c.source].Reader.ReadAt(buf[:n], c.off+off); err != nil {
+					full <- piece{err: err}
+					return
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case full <- piece{b: buf[:n]}:
+				}
+				off += n
+			}
+		}
+	}()
+	for got := range full {
+		if got.err != nil {
+			return got.err
+		}
+		if err := write(got.b); err != nil {
+			return err
+		}
+		free <- got.b[:cap(got.b)]
+	}
+	return ctx.Err()
 }
 
 func compatible(a, b *scanned) bool {

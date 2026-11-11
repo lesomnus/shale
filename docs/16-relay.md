@@ -111,7 +111,7 @@ for as long as it runs (`RelayIngest.Attach`,
 ```text
 Producer  Hello {publish token}          aud = relay, the producer's sources, its live policy
 Relay     Start {source}                 at once under `always`; when someone watches, on demand
-Producer  Data {source, bytes} ...       the fragments it stores, Opus among their audio
+Producer  Data {source, bytes, t1, t2} ... the fragments it stores, Opus among their audio
 Relay     Stop {source}                  on demand only: nobody has watched for relay_idle_stop
 ```
 
@@ -139,6 +139,18 @@ Relay     Stop {source}                  on demand only: nobody has watched for 
   recording, every camera under `always` and the watched ones on demand,
   and the uplink budget of [§38.5](15-producer.md#385-choosing-the-ceiling)
   counts it.
+- **Timed.** Each `Data` says, on the producer's clock, when the producer
+  had the payload (`read_at`, t1: from its capture, or from the live helper)
+  and when it handed it to the stream (`sent_at`, t2); the relay notes when
+  it came off the stream (t3). From them it measures the producer's queue,
+  `shale.relay.producer_queue_ms` (t2 − t1), and the uplink,
+  `shale.relay.uplink_ms` (t3 − t2): the stream's buffers, the producer's
+  Wi‑Fi and the network, which nothing on the producer can see. Both carry
+  `producer`, the producer host's actor, so a host on Wi‑Fi is told from
+  one on a wire. The uplink
+  is read across two clocks, so both hosts keep NTP; a payload that arrives
+  before it was sent is counted in `shale.relay.uplink_skewed` instead. A
+  producer that predates the stamps sends neither, and is not measured.
 - **Codecs for live.** A camera that will be watched live should record
   H.264 Main or High profile, which every browser plays; the relay serves
   H.265 only to a viewer whose offer includes it and refuses the others.
@@ -203,11 +215,17 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   4 Mbps). A joining viewer receives that keyframe, with the parameter
   sets in front of it, at once, and starts within a fraction of a second
   instead of waiting for the next keyframe. The rest of the group of
-  pictures follows **at three times real time**, each frame a third of
-  its duration after the one before, and what the camera sends meanwhile
-  queues behind it, until the viewer has caught up with the live edge and
-  gets what comes as every viewer does: a viewer two seconds behind, the
-  most a keyframe interval of two seconds leaves, is there a second later.
+  pictures follows **faster than real time**, and what the camera sends
+  meanwhile queues behind it, until the viewer has caught up with the live
+  edge and gets what comes as every viewer does. Each frame follows the one
+  before by its duration over twelve or its bytes at 16 Mbit/s, whichever
+  is longer, and never by more than a third of its duration: a quiet
+  scene's group, small frames mostly, at twelve times real time, a busy
+  one held to 16 Mbit/s on the viewer's link and to three times real time
+  at the least. The group is as old as its keyframe: two seconds behind,
+  the most a keyframe interval of two seconds leaves, is under a second to
+  catch up; the twelve a smart codec measured between a C420's keyframes
+  (#244) took six at three times real time and take about one now.
   It gets nothing before its connection is up, and every frame of the
   group and after it once, in order, never a frame twice or out of order,
   either of which breaks the picture until the next keyframe; the sound
@@ -225,8 +243,8 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   broke 10 to 50 frames.
 - **Lost packets** are sent again. The answer offers `nack` feedback (and
   RTX) for the video, and the relay keeps each viewer's last 512 video
-  packets, about 1.2 s at 4 Mbps and 400 ms of a group sent at three
-  times real time, to send again the ones a viewer's NACK names. A PLI or
+  packets, about 1.2 s at 4 Mbps and 400 ms of a group caught up at
+  16 Mbit/s, to send again the ones a viewer's NACK names. A PLI or
   a FIR, a viewer's ask for a keyframe, is read and not acted on: the
   relay cannot have the camera make one, and sending the group again
   would put frames already sent back into the stream. What NACKs could
@@ -244,7 +262,41 @@ certificate ([§33.1](10-security.md#331-trust-model)).
   sent; a sample more than 100 ms late goes at once and the clock keeps its
   pace from there, and a jump of more than 3 s starts it over. With nobody
   watching nothing is paced. Measured by a WHEP viewer, arrival minus
-  timestamp spread over 468 ms unpaced and 2 ms paced.
+  timestamp spread over 468 ms unpaced and 2 ms paced. A clock moved late
+  would otherwise stay there, what follows on time waiting as long as the
+  late one was late and every viewer that much further behind; measured,
+  one uplink hiccup of about 200 ms left three viewers about 210 ms
+  further behind for the 25 minutes they watched (#244). So when even a
+  fragment's earliest sample would wait, the clock is behind the arrivals
+  and comes back: by a fifth of the fragment's span at most, so the
+  viewers get frames at most a quarter faster than real time until it is
+  back, never in a burst. The same brings back a clock that a camera's
+  running fast pulls ahead. `shale.relay.pace_delay_ms` is how long each
+  fragment's earliest sample waits past the fragment's arrival,
+  `shale.relay.pace_resets{why}` counts the moves, and
+  `shale.relay.pace_recovered_ms` how far the clock was brought back.
+- **Timed frames.** A viewer that opens its session with `?timing=1` gets,
+  inside every video access unit before its first slice, an SEI message
+  (user data unregistered, UUID `8f0a5b63-4e1c-4d2f-9a6e-5368616c6554`) a
+  decoder skips: a version byte (1) and six big-endian int64s, the frame's
+  decode time on the stream's clock in nanoseconds, which names it, then t1
+  to t4 in Unix nanoseconds, zero where unknown. t1 and t2 are the
+  producer's ([§39.3](#393-from-the-producer)), t3 when the fragment came
+  here, t4 when this viewer was sent the frame. For every viewer, timed or
+  not, t4 − t3 is `shale.relay.hold_ms`, by `path`: `paced`, a frame sent
+  at its time, and `catch_up`, one of the group of pictures a joining
+  viewer is handed, as old as the keyframe it starts from. The viewer reads the SEI from the encoded frame (an encoded
+  transform), notes when it had the frame (t5) and showed it (t6, both
+  from `requestVideoFrameCallback`), and reports what only it can see,
+  `POST /whep/<session>/timing` with its view token, a list of frames each
+  with `network` (t5 − t4), `playout` (t6 − t5) and `total` (t6 − t1) in
+  milliseconds: `shale.relay.viewer_network_ms`, `viewer_playout_ms` and
+  `viewer_total_ms`. The answer is when the relay received the report and
+  replied, in Unix milliseconds on its clock, which the viewer measures its
+  own against as NTP does, so a browser's clock need not be right; network
+  and total are read with that offset, and one that comes out a little
+  below zero by its error is recorded as zero. A report holds at most 3600
+  frames, and a span past a minute is dropped as not live.
 - **The recent window.** Nothing is read from a Storage Node before it
   commits ([§17](05-read-path.md#17-read-path)), so the one stretch of a
   camera nobody can read is the open lamina's, and that is what the relay

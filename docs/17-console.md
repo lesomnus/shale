@@ -70,7 +70,7 @@ sign-in when the browser would not let go of it.
 |---|---|---|
 | Cameras | tenant | every set, its producer's last heartbeat (up/down, CPU, temperature, uplink), and per camera: recording / dark / input down, the measured rate against the ceiling, frame rate, keyframe interval, restarts and early cuts, the suggestion a starved source earns ([§38.5](15-producer.md#385-choosing-the-ceiling), [§38.10](15-producer.md#3810-dark-scenes)) |
 | Segments | tenant | one set's laminae as they are allocated, committed, skipped or lost, and the last hour of each camera as a strip: laminae and gaps with their reasons ([§19](05-read-path.md#19-reader-semantics)) |
-| Live | tenant | every camera of a set through the relay: `SetService.Live`, then WHEP against the relay ([§39.4](16-relay.md#394-viewers)), asked again a minute before the tokens lapse, and each camera's session renewed with its fresh token, since the relay ends a session with its token; one the relay will not renew is opened again |
+| Live | tenant | every camera of a set through the relay: `SetService.Live`, then WHEP against the relay ([§39.4](16-relay.md#394-viewers)), asked again a minute before the tokens lapse, and each camera's session renewed with its fresh token, since the relay ends a session with its token; one the relay will not renew is opened again. Where the browser has encoded transforms and `requestVideoFrameCallback` (Chrome 141, Firefox 117, Safari 15.4), each session is timed: the page reads the relay's timing SEI in a worker, reports every ten seconds how long frames took to reach the screen (`POST /whep/<session>/timing`), and shows under the camera how far behind the producer it is, the median of t6 − t1 ([§39.4](16-relay.md#394-viewers)) |
 | Hosts | both | what waits for adoption — nodes and relays for the operator, producers and readers for the tenant — with the identity to check, and `adopt`; a producer is adopted for a set. Then every adopted host with when it was last seen, its status and when its certificate lapses |
 | Devices | cluster | the quarantine queue with why and since when, and the operator's answers (`release`, `retire`, `declare dead`, `locate`, each with a reason for the record); then every disk with its score, errors, latencies, SMART and the sinks on it ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) |
 
@@ -213,6 +213,19 @@ transmuxed, and the page holds no player library.
   configuration (another codec, profile or picture size) would need two
   init segments in one track, which is not a portable MP4, so the export
   refuses it and says where the change is: the two sides export apart.
+  The media comes in one Range request per lamina, its whole span, which
+  the node streams in its read chunks; playback instead asks a megabyte at
+  a time ahead of the playhead.
+- An export measures where its time went and says so under the button:
+  reading the laminae's index and init segments, then the media requests
+  one after another, summed as waiting for each response's first byte,
+  receiving its body, and the page's own time between them, then joining
+  the fragments into the file. It posts the same numbers to the node that
+  served the first lamina (`POST /reports/export`, that lamina's read
+  token), which records them as `shale.node.export_*`, beside its own side
+  of every read: waiting for the device, reading it, and writing to the
+  client ([§31](09-operations.md#31-observability)). A lost report loses
+  only that sample.
 - The Storage Node's data plane answers a browser's `OPTIONS` and marks
   its `GET` for any origin, since the token is in the URL and a Range is
   what a player asks for ([§17](05-read-path.md#17-read-path)).

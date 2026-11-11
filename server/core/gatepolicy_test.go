@@ -232,3 +232,18 @@ func TestClusterPolicyOperators(t *testing.T) {
 	require.Equal(t, codes.PermissionDenied, status.Code(byTenant.May(ctx, gate.Call{Actor: op, Tenant: hday, Action: m})))
 	require.Equal(t, codes.PermissionDenied, status.Code(ClusterPolicy{}.May(ctx, gate.Call{Actor: clusterPerson, Tenant: cluster, Action: m})))
 }
+
+func TestCameraWorkerHasOnlyScopedExecutionVerbs(t *testing.T) {
+	p := TenantPolicy{}
+	tenant, worker, producer := pdid.New(DomTenant), pdid.New(DomCameraWorker), pdid.New(DomProducer)
+	call := func(who pdid.Id, m string) error {
+		return p.May(context.Background(), gate.Call{Actor: who, Tenant: tenant, Action: m})
+	}
+	for _, m := range []string{api.CameraWorkerService_Heartbeat_FullMethodName, api.CameraWorkerService_RenewCertificate_FullMethodName, api.CameraWorkerService_Poll_FullMethodName, api.CameraWorkerService_CheckJob_FullMethodName, api.CameraWorkerService_ObserveJob_FullMethodName, api.CameraJobService_Claim_FullMethodName, api.CameraJobService_Report_FullMethodName, api.CameraJobService_Publish_FullMethodName} {
+		require.NoError(t, call(worker, m), m)
+		require.Equal(t, codes.PermissionDenied, status.Code(call(producer, m)), "Producer permissions must not expand: %s", m)
+	}
+	for _, m := range []string{api.CameraWorkerService_Get_FullMethodName, api.CameraWorkerService_List_FullMethodName, api.CameraWorkerService_Watch_FullMethodName, api.CameraWorkerService_Add_FullMethodName, api.CameraWorkerService_Patch_FullMethodName, api.CameraWorkerService_Erase_FullMethodName, api.CameraWorkerService_Adopt_FullMethodName, api.CameraWorkerService_Revoke_FullMethodName, api.CameraJobService_Create_FullMethodName, api.CameraNetworkService_Configure_FullMethodName, api.CameraAssignmentService_Assign_FullMethodName, api.CameraAssignmentService_Snapshot_FullMethodName, api.CameraBindingService_Bind_FullMethodName, api.SourceService_List_FullMethodName, api.SourceService_Live_FullMethodName, api.LaminaService_List_FullMethodName} {
+		require.Equal(t, codes.PermissionDenied, status.Code(call(worker, m)), m)
+	}
+}

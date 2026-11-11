@@ -73,6 +73,7 @@ func (e *Lamina) Proto() *api.Lamina {
 	x.SetChecksum(e.Checksum)
 	x.SetEpoch(e.Epoch)
 	x.SetSkipReason(api.LaminaSkipReason(e.SkipReason))
+	x.SetCaptureEpoch(e.CaptureEpoch)
 	return x
 }
 func (e *Attempt) Proto() *api.Attempt {

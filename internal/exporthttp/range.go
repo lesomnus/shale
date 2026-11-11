@@ -8,15 +8,22 @@ import (
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/lesomnus/shale/internal/mp4export"
 )
 
-// readAheadBytes is a single job-wide window, not an allocation per file.
+// readAheadBytes is the window a scan reads container headers through.
 // Container headers are tiny and adjacent, but every remote range otherwise
 // incurs a request and a Storage read job. Windows may include media bytes.
 const readAheadBytes = 256 << 10
 
-// readAhead belongs to one admitted export. It serializes fills so one reusable
-// array bounds retained payload memory even when the job has many recordings.
+// maxRangeBytes bounds one Storage request, as large as one media read.
+const maxRangeBytes = mp4export.MediaChunk
+
+// readAhead holds one window. A recording's reader gives its array back when
+// its scan is done (mp4export.Scanned), so an export holds at most one per
+// scan running at once, however many recordings it has. Fills are serialized
+// so readers that share one stay correct.
 type readAhead struct {
 	mu    sync.Mutex
 	buf   []byte
@@ -62,6 +69,9 @@ type remoteReader struct {
 	mu        sync.Mutex
 	url       string
 	cache     *readAhead
+	// scanned is set once the scan is done: media reads, however short,
+	// then go straight to Storage and never take a window again.
+	scanned bool
 }
 
 func endpoint(raw string, allowHTTP bool) error {
@@ -97,7 +107,7 @@ func (r *remoteReader) ReadAt(p []byte, off int64) (int, error) {
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	small := r.cache != nil && len(p) <= readAheadBytes
+	small := r.cache != nil && !r.scanned && len(p) <= readAheadBytes
 	n := 0
 	for n < len(p) && off+int64(n) < r.recording.Size {
 		if err := r.ctx.Err(); err != nil {
@@ -111,7 +121,7 @@ func (r *remoteReader) ReadAt(p []byte, off int64) (int, error) {
 			}
 			continue
 		}
-		length := min(int64(len(p)-n), min(1<<20, r.recording.Size-off-int64(n)))
+		length := min(int64(len(p)-n), min(maxRangeBytes, r.recording.Size-off-int64(n)))
 		if err := r.read(p[n:n+int(length)], off+int64(n)); err != nil {
 			return n, err
 		}
@@ -173,4 +183,20 @@ func (r *remoteReader) read(p []byte, off int64) error {
 		return nil
 	}
 	return &storageError{"cannot renew recording access"}
+}
+
+// Scanned gives back the reader's container window once its scan is done.
+// Media reads are larger than a window and do not use it.
+func (r *remoteReader) Scanned() {
+	r.mu.Lock()
+	r.scanned = true
+	r.mu.Unlock()
+	if r.cache == nil {
+		return
+	}
+	r.cache.mu.Lock()
+	defer r.cache.mu.Unlock()
+	if r.cache.owner == r {
+		r.cache.buf, r.cache.owner, r.cache.n = nil, nil, 0
+	}
 }

@@ -1,0 +1,20 @@
+edition = "2023";
+package shale;
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/shale/api";
+
+// Explicit compatibility and transport selection, never a device address or
+// credential. This pin does not grant permission to activate a camera.
+message CameraBootstrapProfile {
+  string compatibility_profile = 1;
+  string web_scheme = 2;
+  int32 web_port = 3;
+}
+
+// An operator-approved identity for one exact CP camera, never a tenant-wide
+// trust root. The SPKI digest is sha256: followed by 64 lowercase hex digits.
+// Absence retains normal PKI verification; it never enables insecure TLS.
+message CameraDeviceTLSIdentity {
+  string device_id = 1;
+  string spki_sha256 = 2;
+}
