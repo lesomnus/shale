@@ -165,6 +165,7 @@ func remuxExportFixture(t *testing.T, ffprobe, ffmpeg string) ([]byte, exportPro
 	exportMediaCommand(t, ffmpeg, append(args, file)...)
 	b, err := os.ReadFile(file)
 	require.NoError(t, err)
+	b = indexLamina(t, b)
 	moov, found := fmp4.Find(b, "moov")
 	require.True(t, found)
 	tracks, err := fmp4.Children(moov.Payload(b))
@@ -201,6 +202,42 @@ func remuxExportFixture(t *testing.T, ffprobe, ffmpeg string) ([]byte, exportPro
 		require.Contains(t, fragmentStarts, exportPosition(t, video[i]), "video byte cuts must include every track in the selected fragment")
 	}
 	return b, media
+}
+
+// indexLamina ends a recording with the index a producer ends a lamina with,
+// in place of FFmpeg's: where each fragment that begins with a keyframe is,
+// and its decode time.
+func indexLamina(t *testing.T, b []byte) []byte {
+	t.Helper()
+	boxes, err := fmp4.Children(b)
+	require.NoError(t, err)
+	var init *fmp4.Init
+	var keys []fmp4.KeyAt
+	for i, box := range boxes {
+		if box.Type == "mfra" {
+			require.Equal(t, len(b), box.End, "FFmpeg's index ends the file")
+			b = b[:box.Off]
+			break
+		}
+		if box.Type != "moof" {
+			continue
+		}
+		if init == nil {
+			init, err = fmp4.ParseInit(b[:box.Off])
+			require.NoError(t, err)
+		}
+		end := box.End
+		if i+1 < len(boxes) && boxes[i+1].Type == "mdat" {
+			end = boxes[i+1].End
+		}
+		f, err := fmp4.ParseFragment(b[box.Off:end], init)
+		require.NoError(t, err)
+		if f.Key(init) {
+			keys = append(keys, fmp4.KeyAt{Time: f.Video(init).Time, Offset: int64(box.Off)})
+		}
+	}
+	require.NotEmpty(t, keys)
+	return append(b, fmp4.Mfra(init.Video().ID, keys)...)
 }
 
 func exportPosition(t *testing.T, packet exportPacket) int64 {
@@ -314,29 +351,21 @@ func TestNativeExportPlaybackAcrossRemuxRestarts(t *testing.T) {
 	duration := exportTime(t, download.Media.Format.Duration)
 	require.GreaterOrEqual(t, duration, float64(12))
 	require.Less(t, duration, 12.5)
-	t.Run("truncated file is rejected independently", func(t *testing.T) {
+	t.Run("a download cut short still opens", func(t *testing.T) {
 		complete, err := os.ReadFile(download.File)
 		require.NoError(t, err)
 		truncated := filepath.Join(t.TempDir(), "truncated.mp4")
 		require.NoError(t, os.WriteFile(truncated, complete[:len(complete)/2], 0600))
-		// A normal MP4's final moov is missing. Neither this negative
-		// control nor the positive playback checks use Shale's box parser
-		// to decide whether the completed download can actually play.
-		for _, tool := range []struct {
-			executable string
-			args       []string
-		}{
-			{ffprobe, []string{"-v", "error", "-show_streams", truncated}},
-			{ffmpeg, []string{"-nostdin", "-v", "error", "-xerror", "-i", truncated, "-map", "0", "-f", "null", "-"}},
-		} {
-			ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
-			command := exec.CommandContext(ctx, tool.executable, tool.args...)
-			diagnostics, err := command.CombinedOutput()
-			contextErr := ctx.Err()
-			cancel()
-			require.NoError(t, contextErr, "the decoder must reject the file without timing out")
-			require.Error(t, err, "%s must reject an incomplete download", filepath.Base(tool.executable))
-			require.NotEmpty(t, diagnostics)
-		}
+		// The init segment comes first, so what arrived plays up to its last
+		// whole fragment; the browser still reports the download failed,
+		// short of its Content-Length.
+		ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+		defer cancel()
+		out, err := exec.CommandContext(ctx, ffprobe, "-v", "quiet", "-select_streams", "v", "-count_frames",
+			"-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", truncated).Output()
+		require.NoError(t, err)
+		frames, err := strconv.Atoi(strings.TrimSpace(string(out)))
+		require.NoError(t, err)
+		require.Greater(t, frames, 20, "the first half's frames decode")
 	})
 }

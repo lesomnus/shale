@@ -12,54 +12,8 @@ import (
 	"github.com/lesomnus/shale/internal/mp4export"
 )
 
-// readAheadBytes is the window a scan reads container headers through.
-// Container headers are tiny and adjacent, but every remote range otherwise
-// incurs a request and a Storage read job. Windows may include media bytes.
-// A recording fragments every 200 ms, so its headers are some tens of KiB
-// apart: a scan reads nearly all of it, and a larger window is fewer requests.
-const readAheadBytes = 1 << 20
-
 // maxRangeBytes bounds one Storage request, as large as one media read.
 const maxRangeBytes = mp4export.MediaChunk
-
-// readAhead holds one window. A recording's reader gives its array back when
-// its scan is done (mp4export.Scanned), so an export holds at most one per
-// scan running at once, however many recordings it has. Fills are serialized
-// so readers that share one stay correct.
-type readAhead struct {
-	mu    sync.Mutex
-	buf   []byte
-	owner *remoteReader
-	off   int64
-	n     int
-}
-
-func (c *readAhead) copy(r *remoteReader, p []byte, off int64) (int, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if err := r.ctx.Err(); err != nil {
-		return 0, err
-	}
-	if c.owner != r || off < c.off || off >= c.off+int64(c.n) {
-		// A failed fill must not expose partially overwritten bytes under
-		// either the previous recording's identity or this one's.
-		c.owner, c.n = nil, 0
-		if c.buf == nil {
-			c.buf = make([]byte, readAheadBytes)
-		}
-		start := off - off%readAheadBytes
-		n := int(min(int64(len(c.buf)), r.recording.Size-start))
-		if err := r.read(c.buf[:n], start); err != nil {
-			return 0, err
-		}
-		if err := r.ctx.Err(); err != nil {
-			return 0, err
-		}
-		c.owner, c.off, c.n = r, start, n
-	}
-	at := int(off - c.off)
-	return copy(p, c.buf[at:c.n]), nil
-}
 
 // remoteReader fetches only bounded byte ranges. It never retains an entire
 // recording and renews only this admitted lamina after a token has expired.
@@ -70,10 +24,6 @@ type remoteReader struct {
 	allowHTTP bool
 	mu        sync.Mutex
 	url       string
-	cache     *readAhead
-	// scanned is set once the scan is done: media reads, however short,
-	// then go straight to Storage and never take a window again.
-	scanned bool
 }
 
 func endpoint(raw string, allowHTTP bool) error {
@@ -84,14 +34,14 @@ func endpoint(raw string, allowHTTP bool) error {
 	return nil
 }
 
-func newRemoteReader(ctx context.Context, client *http.Client, recording Recording, allowHTTP bool, cache *readAhead) (*remoteReader, error) {
+func newRemoteReader(ctx context.Context, client *http.Client, recording Recording, allowHTTP bool) (*remoteReader, error) {
 	if recording.Size <= 0 {
 		return nil, &storageError{"invalid recording size"}
 	}
 	if err := endpoint(recording.URL, allowHTTP); err != nil {
 		return nil, err
 	}
-	return &remoteReader{ctx: ctx, client: client, recording: recording, allowHTTP: allowHTTP, url: recording.URL, cache: cache}, nil
+	return &remoteReader{ctx: ctx, client: client, recording: recording, allowHTTP: allowHTTP, url: recording.URL}, nil
 }
 
 func (r *remoteReader) ReadAt(p []byte, off int64) (int, error) {
@@ -109,19 +59,10 @@ func (r *remoteReader) ReadAt(p []byte, off int64) (int, error) {
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	small := r.cache != nil && !r.scanned && len(p) <= readAheadBytes
 	n := 0
 	for n < len(p) && off+int64(n) < r.recording.Size {
 		if err := r.ctx.Err(); err != nil {
 			return n, err
-		}
-		if small {
-			got, err := r.cache.copy(r, p[n:], off+int64(n))
-			n += got
-			if err != nil {
-				return n, err
-			}
-			continue
 		}
 		length := min(int64(len(p)-n), min(maxRangeBytes, r.recording.Size-off-int64(n)))
 		if err := r.read(p[n:n+int(length)], off+int64(n)); err != nil {
@@ -185,20 +126,4 @@ func (r *remoteReader) read(p []byte, off int64) error {
 		return nil
 	}
 	return &storageError{"cannot renew recording access"}
-}
-
-// Scanned gives back the reader's container window once its scan is done.
-// Media reads are larger than a window and do not use it.
-func (r *remoteReader) Scanned() {
-	r.mu.Lock()
-	r.scanned = true
-	r.mu.Unlock()
-	if r.cache == nil {
-		return
-	}
-	r.cache.mu.Lock()
-	defer r.cache.mu.Unlock()
-	if r.cache.owner == r {
-		r.cache.buf, r.cache.owner, r.cache.n = nil, nil, 0
-	}
 }

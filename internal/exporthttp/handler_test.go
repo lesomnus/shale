@@ -101,8 +101,9 @@ func checkAdmissionLog(t *testing.T, logs *bytes.Buffer, code codes.Code, httpSt
 	require.Equal(t, float64(httpStatus), entry["http_status"])
 }
 
-// The endpoint emits a conventional attachment with one final moov, while its
-// storage access consists only of bounded, exact range requests.
+// The endpoint emits an attachment of one init segment and the recording's
+// fragments, while its storage access consists only of bounded, exact range
+// requests.
 func TestDownload(t *testing.T) {
 	b := fixture(t)
 	var reads atomic.Int32
@@ -135,11 +136,14 @@ func TestDownload(t *testing.T) {
 	require.True(t, strings.HasSuffix(params["filename"], ".mp4"))
 	boxes, err := fmp4.Children(w.Body.Bytes())
 	require.NoError(t, err)
-	require.Len(t, boxes, 3)
 	require.Equal(t, "ftyp", boxes[0].Type)
-	require.Equal(t, "mdat", boxes[1].Type)
-	require.Equal(t, "moov", boxes[2].Type)
-	require.Greater(t, reads.Load(), int32(3))
+	require.Equal(t, "moov", boxes[1].Type, "one init segment first, which a player reads the tracks from")
+	for i, box := range boxes[2:] {
+		require.Equal(t, []string{"moof", "mdat"}[i%2], box.Type, "then the fragments")
+	}
+	require.Equal(t, "mdat", boxes[len(boxes)-1].Type, "and not the recording's index")
+	// Its tail and init segment, where the range begins, and its fragments in one read.
+	require.Equal(t, int32(4), reads.Load())
 }
 
 func TestRequestValidation(t *testing.T) {

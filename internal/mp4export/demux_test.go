@@ -3,6 +3,7 @@ package mp4export
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"os"
 	"os/exec"
@@ -32,10 +33,12 @@ func demuxTools(t *testing.T) (ffprobe, ffmpeg string) {
 }
 
 type demuxPacket struct {
-	Stream int    `json:"stream_index"`
-	PTS    string `json:"pts_time"`
-	DTS    string `json:"dts_time"`
-	Hash   string `json:"data_hash"`
+	Stream   int    `json:"stream_index"`
+	PTS      string `json:"pts_time"`
+	DTS      string `json:"dts_time"`
+	Duration string `json:"duration_time"`
+	Flags    string `json:"flags"`
+	Hash     string `json:"data_hash"`
 }
 
 type demuxFile struct {
@@ -67,7 +70,7 @@ func mediaCommand(t *testing.T, executable string, args ...string) []byte {
 func demux(t *testing.T, ffprobe, file string) demuxFile {
 	t.Helper()
 	b := mediaCommand(t, ffprobe, "-v", "error", "-show_entries",
-		"packet=stream_index,pts_time,dts_time,data_hash:stream=index,codec_name,codec_type:format=duration:format_tags=creation_time",
+		"packet=stream_index,pts_time,dts_time,duration_time,flags,data_hash:stream=index,codec_name,codec_type:format=duration:format_tags=creation_time",
 		"-show_data_hash", "sha256", "-of", "json", file)
 	var out demuxFile
 	if err := json.Unmarshal(b, &out); err != nil {
@@ -100,41 +103,55 @@ func streamPackets(file demuxFile) map[int][]demuxPacket {
 	return out
 }
 
-// compareDemux requires byte-for-byte sample preservation and the same
-// presentation/decode timestamps, with only the requested wall-clock placement.
-func compareDemux(t *testing.T, input, output demuxFile, clip float64, copies int, restart float64) {
+// compareDemux requires each track's packets to be a run of the input's,
+// byte for byte, copies times over, every copy moved by one shift for all
+// tracks, and decode times that only go on. It is the shift of each copy.
+func compareDemux(t *testing.T, input, output demuxFile, copies int) []float64 {
 	t.Helper()
 	wants := streamPackets(input)
 	gots := streamPackets(output)
 	if len(gots) != len(wants) || len(output.Streams) != len(input.Streams) {
 		t.Fatal("export changed the number of tracks")
 	}
+	var shifts []float64
 	for _, tr := range input.Streams {
-		want := wants[tr.Index]
-		if clip > 0 {
-			first := 0
-			for first < len(want) && packetTime(t, want[first].DTS) < clip-0.000001 {
-				first++
-			}
-			want = want[first:]
+		want, got := wants[tr.Index], gots[tr.Index]
+		n := len(got) / copies
+		if n == 0 || len(got)%copies != 0 {
+			t.Fatalf("track %d (%s): %d packets in %d copies", tr.Index, tr.Codec, len(got), copies)
 		}
-		got := gots[tr.Index]
-		if len(want) == 0 || len(got) != len(want)*copies {
-			t.Fatalf("track %d (%s): %d packets, want %d", tr.Index, tr.Codec, len(got), len(want)*copies)
+		k := -1
+		for at := 0; at+n <= len(want) && k < 0; at++ {
+			k = at
+			for i := range n {
+				if got[i].Hash == "" || got[i].Hash != want[at+i].Hash {
+					k = -1
+					break
+				}
+			}
+		}
+		if k < 0 {
+			t.Fatalf("track %d (%s): its packets are not a run of the input's", tr.Index, tr.Codec)
 		}
 		for i, p := range got {
-			original := want[i%len(want)]
-			if p.Hash == "" || p.Hash != original.Hash {
+			original := want[k+i%n]
+			if p.Hash != original.Hash {
 				t.Fatalf("track %d packet %d payload changed", tr.Index, i)
 			}
-			shift := float64(i/len(want))*restart - clip
-			nearTime(t, "PTS", packetTime(t, p.PTS), packetTime(t, original.PTS)+shift, 0.000002)
-			nearTime(t, "DTS", packetTime(t, p.DTS), packetTime(t, original.DTS)+shift, 0.000002)
+			shift := packetTime(t, p.DTS) - packetTime(t, original.DTS)
+			if c := i / n; c == len(shifts) {
+				shifts = append(shifts, shift)
+			} else {
+				// One tick of the coarsest track's clock.
+				nearTime(t, fmt.Sprintf("track %d copy %d shift", tr.Index, c), shift, shifts[c], 0.0001)
+			}
+			nearTime(t, "PTS", packetTime(t, p.PTS)-packetTime(t, original.PTS), shift, 0.000002)
 			if i > 0 && packetTime(t, p.DTS) <= packetTime(t, got[i-1].DTS) {
 				t.Fatalf("track %d packet %d has non-increasing DTS", tr.Index, i)
 			}
 		}
 	}
+	return shifts
 }
 
 func writeMedia(t *testing.T, dir, name string, b []byte) string {
@@ -146,6 +163,18 @@ func writeMedia(t *testing.T, dir, name string, b []byte) string {
 	return file
 }
 
+// checkPlays has FFmpeg decode every stream, and ffprobe read the length and
+// creation time the file says.
+func checkPlays(t *testing.T, ffmpeg string, out demuxFile, file string, p *Plan, length float64) {
+	t.Helper()
+	nearTime(t, "file duration", packetTime(t, out.Format.Duration), length, 0.1)
+	created, err := time.Parse(time.RFC3339Nano, out.Format.Tags.Created)
+	if err != nil || !created.Equal(p.Start().Truncate(time.Second)) {
+		t.Fatalf("creation time %q, want %s: %v", out.Format.Tags.Created, p.Start(), err)
+	}
+	mediaCommand(t, ffmpeg, "-nostdin", "-v", "error", "-xerror", "-i", file, "-map", "0", "-f", "null", "-")
+}
+
 func TestFFmpegDemuxAndDecode(t *testing.T) {
 	ffprobe, ffmpeg := demuxTools(t)
 	dir := t.TempDir()
@@ -154,39 +183,50 @@ func TestFFmpegDemuxAndDecode(t *testing.T) {
 	if len(original.Streams) != 3 {
 		t.Fatal("the AV fixture must exercise both audio tracks")
 	}
+	end := ended(t, b)
 	for _, tc := range []struct {
-		name               string
-		clip, end, restart float64
-		copies             int
-		wantDuration       float64
+		name     string
+		from, to time.Duration
+		restart  time.Duration
+		copies   int
+		length   float64
 	}{
-		{"full", 0, 3600, 0, 1, 6.066667},
-		{"gap", 0, 3600, 10, 2, 16.066667},
-		{"clip", 2, 4.2, 0, 1, 4.066667},
+		{"full", 0, time.Hour, 0, 1, 0},
+		{"gap", 0, time.Hour, 10 * time.Second, 2, 10},
+		// The fixture indexes every fragment; those at 0, 2 and 4 s begin with a keyframe.
+		{"clip", 2100 * time.Millisecond, 4200 * time.Millisecond, 0, 1, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			sources := []Source{source(b, testStart)}
+			s := source(b, testStart)
+			s.End = end
+			sources := []Source{s}
 			if tc.copies == 2 {
-				sources = append(sources, source(b, testStart.Add(time.Duration(tc.restart*float64(time.Second)))))
+				s.Start, s.End = s.Start.Add(tc.restart), s.End.Add(tc.restart)
+				sources = append(sources, s)
 			}
-			from := testStart
-			if tc.clip > 0 {
-				from = testStart.Add(2500 * time.Millisecond) // preceding keyframe is 2 s.
-			}
-			plan := prepare(t, sources, from, testStart.Add(time.Duration(tc.end*float64(time.Second))))
-			file := writeMedia(t, dir, tc.name, writePlan(t, plan))
+			p := prepare(t, sources, testStart.Add(tc.from), testStart.Add(tc.to))
+			file := writeMedia(t, dir, tc.name, written(t, p))
 			out := demux(t, ffprobe, file)
-			compareDemux(t, original, out, tc.clip, tc.copies, tc.restart)
-			nearTime(t, "file duration", packetTime(t, out.Format.Duration), tc.wantDuration, 0.002)
-			created, err := time.Parse(time.RFC3339Nano, out.Format.Tags.Created)
-			if err != nil || !created.Equal(testStart.Add(time.Duration(tc.clip*float64(time.Second)))) {
-				t.Fatalf("creation time %q: %v", out.Format.Tags.Created, err)
+			shifts := compareDemux(t, original, out, tc.copies)
+			if tc.copies == 2 {
+				nearTime(t, "restart", shifts[1]-shifts[0], tc.restart.Seconds(), 0.0001)
 			}
-			mediaCommand(t, ffmpeg, "-nostdin", "-v", "error", "-xerror", "-i", file, "-map", "0", "-f", "null", "-")
+			video := streamPackets(out)[0]
+			if !strings.HasPrefix(video[0].Flags, "K") {
+				t.Fatal("does not begin at a keyframe")
+			}
+			// To date_ended, or to the keyframe after the range's end.
+			length := tc.length + end.Sub(p.Start()).Seconds()
+			if tc.to < time.Hour {
+				last := video[len(video)-1]
+				length = packetTime(t, last.DTS) + packetTime(t, last.Duration) - packetTime(t, video[0].DTS)
+			}
+			checkPlays(t, ffmpeg, out, file, p, length)
 		})
 	}
 }
 
+// A file of FFmpeg's own fragmenting, with B-frames and without an index.
 func TestFFmpegBFramePresentation(t *testing.T) {
 	ffprobe, ffmpeg := demuxTools(t)
 	if !strings.Contains(string(mediaCommand(t, ffmpeg, "-hide_banner", "-encoders")), "libx264") {
@@ -208,10 +248,13 @@ func TestFFmpegBFramePresentation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := prepare(t, []Source{source(b, testStart)}, testStart, testStart.Add(time.Hour))
-	outFile := writeMedia(t, dir, "export", writePlan(t, p))
+	s := source(b, testStart)
+	s.End = ended(t, b)
+	p := prepare(t, []Source{s}, testStart, testStart.Add(time.Hour))
+	outFile := writeMedia(t, dir, "export", written(t, p))
 	out := demux(t, ffprobe, outFile)
-	compareDemux(t, original, out, 0, 1, 0)
-	nearTime(t, "B-frame duration", packetTime(t, out.Format.Duration), packetTime(t, original.Format.Duration), 0.002)
-	mediaCommand(t, ffmpeg, "-nostdin", "-v", "error", "-xerror", "-i", outFile, "-map", "0", "-f", "null", "-")
+	compareDemux(t, original, out, 1)
+	// The tracks' durations are the export's length, and ffprobe adds the
+	// video's presentation lead to the file's.
+	checkPlays(t, ffmpeg, out, outFile, p, packetTime(t, original.Format.Duration)+packetTime(t, video[0].PTS))
 }

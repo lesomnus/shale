@@ -23,8 +23,10 @@ import (
 
 // Recording is immutable stored media admitted by the capability's resolver.
 // Refresh must only renew credentials for this same recording, not widen scope.
+// End, when known, is its date_ended; the file's length is read from it.
 type Recording struct {
 	Start   time.Time
+	End     time.Time
 	Size    int64
 	URL     string
 	Refresh func(context.Context) (string, error)
@@ -38,8 +40,9 @@ type Request struct {
 	Recordings []Recording
 }
 
-// Handler streams a normal MP4 with its final moov at the tail. Configuration
-// fields must not change after the first request. Limits are per CP process.
+// Handler streams a fragmented MP4, the console's export: an init segment,
+// then the recordings' fragments as they are read. Configuration fields must
+// not change after the first request. Limits are per CP process.
 type Handler struct {
 	Resolve       func(context.Context, string) (*Request, error)
 	Client        *http.Client
@@ -159,13 +162,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	sources := make([]mp4export.Source, 0, len(request.Recordings))
 	for _, recording := range request.Recordings {
-		// Each its own window: recordings are scanned a few at once.
-		reader, err := newRemoteReader(ctx, client, recording, h.AllowHTTP, &readAhead{})
+		reader, err := newRemoteReader(ctx, client, recording, h.AllowHTTP)
 		if err != nil {
 			http.Error(w, "invalid storage endpoint for export", http.StatusBadGateway)
 			return
 		}
-		sources = append(sources, mp4export.Source{Reader: reader, Size: recording.Size, Start: recording.Start})
+		sources = append(sources, mp4export.Source{Reader: reader, Size: recording.Size, Start: recording.Start, End: recording.End})
 	}
 	plan, err := mp4export.Prepare(ctx, sources, request.From, request.To)
 	if err != nil {

@@ -1,8 +1,9 @@
-// Independently play the Go remuxer's files, including tail-moov seeking, and
-// download an attachment through the browser's normal download manager.
+// Independently play the Go exporter's fragmented files, including seeking
+// across a 45-minute one without a segment index, and download an attachment
+// through the browser's normal download manager.
 //
 // MP4EXPORT_ARTIFACTS=/tmp/shale-export MP4EXPORT_LARGE=1 \
-//   go test ./internal/mp4export -run 'Test(ValidationArtifacts|LargeValidationArtifact)$'
+//   go test ./internal/mp4export -run 'TestValidationArtifacts$'
 // cd ts && node test/export-download.mjs /tmp/shale-export
 //
 // Needs Playwright's Chromium (`npx playwright install chromium`). Set
@@ -17,13 +18,14 @@ import { chromium } from 'playwright'
 const dir = process.argv[2] ?? process.env.MP4EXPORT_ARTIFACTS
 assert.ok(dir, 'usage: node test/export-download.mjs <MP4EXPORT_ARTIFACTS directory>')
 const cases = [
-	{ name: 'full-av-export.mp4', duration: 6.066667, seeks: [0.1, 3, 5] },
-	{ name: 'gap-av-export.mp4', duration: 16.066667, seeks: [0.1, 5, 10.5, 15] },
-	{ name: 'clipped-av-export.mp4', duration: 4.066667, seeks: [0.1, 2, 3.5] },
+	// The length an init segment says, from date_ended, and the video's presentation lead.
+	{ name: 'full-av-export.mp4', duration: 6.133334, seeks: [0.1, 3, 5] },
+	{ name: 'gap-av-export.mp4', duration: 16.133334, seeks: [0.1, 5, 10.5, 15] },
+	{ name: 'clipped-av-export.mp4', duration: 2.5665, seeks: [0.1, 1, 2.3] },
 ]
 for (const item of [
-	{ name: 'full-bframes-export.mp4', duration: 6.2, seeks: [0.3, 3, 5.5] },
-	{ name: 'large-av-export.mp4', duration: 2744.966667, seeks: [0.5, 1372.5, 2743.5] },
+	{ name: 'full-bframes-export.mp4', duration: 6.4, seeks: [0.3, 3, 5.5] },
+	{ name: 'large-av-export.mp4', duration: 2745.033334, seeks: [0.5, 1372.5, 2743.5] },
 ]) if (existsSync(resolve(dir, item.name))) cases.push(item)
 for (const item of cases) item.file = resolve(dir, item.name)
 

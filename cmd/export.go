@@ -99,8 +99,12 @@ func (s *Server) exportHandler() (http.Handler, error) {
 				}
 				id := append([]byte(nil), row.GetLaminaId()...)
 				size := row.GetSize()
+				var ended time.Time
+				if row.HasDateEnded() {
+					ended = row.GetDateEnded().AsTime()
+				}
 				out.Recordings = append(out.Recordings, exporthttp.Recording{
-					Start: row.GetDateStarted().AsTime(), Size: size, URL: row.GetUrl(),
+					Start: row.GetDateStarted().AsTime(), End: ended, Size: size, URL: row.GetUrl(),
 					Refresh: func(ctx context.Context) (string, error) {
 						fresh, err := plan.Refresh(ctx, id)
 						if err != nil {
