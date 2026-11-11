@@ -7,15 +7,17 @@
  * the last minutes come from the relay until the playhead reaches now and
  * the player hands over to live. A range of the axis exports as one MP4:
  * one init segment and the fragments between two keyframes, each placed on
- * the wall clock.
+ * the wall clock. The Control Plane streams it as a download where exports
+ * are enabled; elsewhere the page joins it.
  *
  * @module
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
-import { useQuery } from '@lesomnus/payday/react'
+import { useCall, useQuery } from '@lesomnus/payday/react'
 import { key } from '@lesomnus/payday/store'
 
 import { LaminaService, ReadState, type TimelineLamina, type TimelineSource } from '../gen/shale/lamina_svc_pb.js'
@@ -104,6 +106,7 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 	const [mark, setMark] = useState<{ a: number | undefined; b: number | undefined }>({ a: undefined, b: undefined })
 	const [exporting, setExporting] = useState<string | undefined>(undefined)
 	const [exported, setExported] = useState<string | undefined>(undefined)
+	const exportLink = useCall(LaminaService.method.export)
 	const strip = tl.data?.sources[0]
 	const laminae = strip?.laminae ?? []
 
@@ -158,8 +161,27 @@ function Deck(props: { source: Source; live: LiveSource | undefined }): ReactNod
 	const doExport = async (): Promise<void> => {
 		if (mark.a === undefined || mark.b === undefined) return
 		const [a, b] = mark.a < mark.b ? [mark.a, mark.b] : [mark.b, mark.a]
-		setExporting('fetching')
+		setExporting('preparing')
 		setExported(undefined)
+		try {
+			// The Control Plane streams the file as an ordinary download, which
+			// starts at once and holds none of it in the page (mp4-export.md).
+			const out = await exportLink.call({ source: byId(props.source.id), from: timestampFromMs(a), to: timestampFromMs(b) })
+			const link = document.createElement('a')
+			link.href = out.url
+			link.rel = 'noreferrer'
+			link.click()
+			setExported('downloading: see the browser\'s downloads')
+			setExporting(undefined)
+			return
+		} catch (err) {
+			// Where exports are not enabled the page joins the file itself.
+			if (!(err instanceof ConnectError && err.code === Code.FailedPrecondition)) {
+				setExporting(`failed: ${String(err).slice(0, 80)}`)
+				return
+			}
+		}
+		setExporting('fetching')
 		try {
 			const began = performance.now()
 			const { bytes, timing } = await exportRange(laminae, a, b, (n) => setExporting(`fetching, ${Math.round(n / 1e6)} MB`))
