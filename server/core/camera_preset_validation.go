@@ -21,7 +21,11 @@ func (s Core) cameraPresetRules(ctx context.Context, tenant, site []byte, rules 
 		if q.GetTenantId() != mustId(tenant).String() || (len(site) != 0 && q.GetSiteId() != mustId(site).String()) {
 			return denied("preset scope", "rule crosses the preset's tenant or site")
 		}
-		for _, text := range []string{match.GetManufacturer(), match.GetModel(), match.GetHardware(), match.GetFirmware(), match.GetSerial(), match.GetMac(), rule.GetSettings().GetVideo().GetProfileToken()} {
+		texts := []string{match.GetManufacturer(), match.GetModel(), match.GetHardware(), match.GetFirmware(), match.GetSerial(), match.GetMac(), rule.GetSettings().GetVideo().GetProfileToken()}
+		if f := rule.GetFirmware(); f != nil {
+			texts = append(append(texts, f.GetTo()), f.GetFrom()...)
+		}
+		for _, text := range texts {
 			if !cameraPresetText(text) {
 				return invalid("rule", "preset matching or profile value is too long or malformed")
 			}

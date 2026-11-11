@@ -52,6 +52,20 @@ func DecodeSettings(v *api.CameraPresetSettings) (camera.PresetSettings, error) 
 	return out, nil
 }
 
+func firmware(v *api.CameraPresetFirmware) *camera.FirmwareUpgrade {
+	if v == nil {
+		return nil
+	}
+	return &camera.FirmwareUpgrade{From: slices.Clone(v.GetFrom()), To: v.GetTo(), Image: camera.FirmwareImage{URL: v.GetImageUrl(), SHA256: v.GetImageSha256()}}
+}
+
+func encodeFirmware(v *camera.FirmwareUpgrade) *api.CameraPresetFirmware {
+	if v == nil {
+		return nil
+	}
+	return api.CameraPresetFirmware_builder{From: slices.Clone(v.From), To: v.To, ImageUrl: v.Image.URL, ImageSha256: v.Image.SHA256}.Build()
+}
+
 func decodeRule(v *api.CameraPresetRule) preset.Rule {
 	s, m := v.GetScope(), v.GetMatch()
 	out := preset.Rule{
@@ -59,6 +73,7 @@ func decodeRule(v *api.CameraPresetRule) preset.Rule {
 		Scope:    camera.EnrollmentScope{TenantID: s.GetTenantId(), SiteID: s.GetSiteId(), SetID: s.GetSetId(), ProducerID: s.GetProducerId(), NetworkID: s.GetNetworkId()},
 		Match:    preset.Match{DeviceID: camera.DeviceID(m.GetDeviceId()), Manufacturer: m.GetManufacturer(), Model: m.GetModel(), Hardware: m.GetHardware(), Firmware: m.GetFirmware(), Serial: m.GetSerial(), MAC: m.GetMac()},
 		Settings: settings(v.GetSettings()), Required: slices.Clone(v.GetRequired()),
+		Firmware: firmware(v.GetFirmware()),
 	}
 	if alternatives := v.GetAlternatives(); alternatives != nil {
 		out.Fallbacks = make([]camera.PresetSettings, len(alternatives.GetCandidates()))
@@ -119,6 +134,7 @@ func EncodeRules(rules []preset.Rule) ([]*api.CameraPresetRule, error) {
 			Scope:    api.CameraPresetScope_builder{TenantId: s.TenantID, SiteId: s.SiteID, SetId: s.SetID, ProducerId: s.ProducerID, NetworkId: s.NetworkID}.Build(),
 			Match:    api.CameraPresetMatch_builder{DeviceId: string(m.DeviceID), Manufacturer: m.Manufacturer, Model: m.Model, Hardware: m.Hardware, Firmware: m.Firmware, Serial: m.Serial, Mac: m.MAC}.Build(),
 			Settings: encodeSettings(v.Settings), Required: slices.Clone(v.Required),
+			Firmware: encodeFirmware(v.Firmware),
 		}.Build()
 		if v.Fallbacks != nil {
 			candidates := make([]*api.CameraPresetSettings, len(v.Fallbacks))
@@ -154,14 +170,14 @@ func EncodeSnapshot(v camera.DevicePreset) (*api.CameraResolvedPreset, error) {
 		}
 		alternatives[i] = encodeSettings(candidate)
 	}
-	return api.CameraResolvedPreset_builder{Id: v.Ref.ID, Revision: v.Ref.Revision, MatchedRules: slices.Clone(v.MatchedRules), Requested: encodeSettings(v.Requested), Alternatives: alternatives, Required: slices.Clone(v.Required)}.Build(), nil
+	return api.CameraResolvedPreset_builder{Id: v.Ref.ID, Revision: v.Ref.Revision, MatchedRules: slices.Clone(v.MatchedRules), Requested: encodeSettings(v.Requested), Alternatives: alternatives, Required: slices.Clone(v.Required), Firmware: encodeFirmware(v.Firmware)}.Build(), nil
 }
 
 func DecodeSnapshot(v *api.CameraResolvedPreset) (camera.DevicePreset, error) {
 	if v == nil {
 		return camera.DevicePreset{}, camera.ErrInvalid
 	}
-	out := camera.DevicePreset{Ref: camera.PresetRef{ID: v.GetId(), Revision: v.GetRevision()}, MatchedRules: slices.Clone(v.GetMatchedRules()), Requested: settings(v.GetRequested()), Required: slices.Clone(v.GetRequired())}
+	out := camera.DevicePreset{Ref: camera.PresetRef{ID: v.GetId(), Revision: v.GetRevision()}, MatchedRules: slices.Clone(v.GetMatchedRules()), Requested: settings(v.GetRequested()), Required: slices.Clone(v.GetRequired()), Firmware: firmware(v.GetFirmware())}
 	for _, candidate := range v.GetAlternatives() {
 		if candidate == nil {
 			return camera.DevicePreset{}, camera.ErrInvalid

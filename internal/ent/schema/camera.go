@@ -109,6 +109,8 @@ func (CameraDevice) Fields() []ent.Field {
 			Optional(),
 		field.Json("factory_tls", &api.CameraFactoryTLSState{}).ValueScanner(entpb.ValueScanner[*api.CameraFactoryTLSState]{}).
 			Optional(),
+		field.Json("firmware_tls", &api.CameraFirmwareTLSState{}).ValueScanner(entpb.ValueScanner[*api.CameraFirmwareTLSState]{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

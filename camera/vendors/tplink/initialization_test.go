@@ -54,6 +54,12 @@ type initializationFixture struct {
 	logins                    int
 	logouts                   int
 	unexpected                int
+	// Local Update: announcements, received images and the upload reply.
+	upgradeAnnounced int
+	uploads          [][]byte
+	uploadNames      []string
+	uploadReply      string
+	upgradeURL       string
 }
 
 func newInitializationFixture(t *testing.T) *initializationFixture {
@@ -84,6 +90,10 @@ func (f *initializationFixture) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f.webCalls++
+	if r.URL.Path == "/stok=private-session-token/admin/system/firmware_upgrade" {
+		f.serveUpload(w, r)
+		return
+	}
 	if f.retiredConnections[r.RemoteAddr] {
 		f.reusedRetired++
 		connection, _, _ := w.(http.Hijacker).Hijack()
@@ -144,11 +154,20 @@ func (f *initializationFixture) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req["system"] != nil {
-		var system map[string]string
+		var system map[string]json.RawMessage
 		_ = json.Unmarshal(req["system"], &system)
-		if system["logout"] == "null" {
+		if string(system["logout"]) == `"null"` {
 			f.logouts++
 			_ = json.NewEncoder(w).Encode(map[string]int{"error_code": 0})
+			return
+		}
+		if string(system["firmware_upgrade"]) == `{"type":"0"}` {
+			f.upgradeAnnounced++
+			target := f.upgradeURL
+			if target == "" {
+				target = "%2fadmin%2fsystem%2ffirmware_upgrade"
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"url": target, "error_code": 0})
 			return
 		}
 	}
@@ -189,6 +208,29 @@ func (f *initializationFixture) serve(w http.ResponseWriter, r *http.Request) {
 	// factory-reset, sensor and unrelated service-setting writes.
 	f.unexpected++
 	w.WriteHeader(400)
+}
+
+// serveUpload accepts what the camera UI's FormData sends: one file field.
+func (f *initializationFixture) serveUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("SourceType") != "vigi_web" || r.Header.Get("X-Requested-With") != "XMLHttpRequest" || f.upgradeAnnounced == 0 {
+		f.unexpected++
+		w.WriteHeader(400)
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil || len(r.MultipartForm.File) != 1 || len(r.MultipartForm.Value) != 0 {
+		f.unexpected++
+		w.WriteHeader(400)
+		return
+	}
+	data, _ := io.ReadAll(file)
+	f.uploads = append(f.uploads, data)
+	f.uploadNames = append(f.uploadNames, header.Filename)
+	reply := f.uploadReply
+	if reply == "" {
+		reply = `{"error_code":0}`
+	}
+	_, _ = io.WriteString(w, reply)
 }
 
 func (f *initializationFixture) serveONVIF(w http.ResponseWriter, r *http.Request) {

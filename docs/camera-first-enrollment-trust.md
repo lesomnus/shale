@@ -34,7 +34,9 @@ An authenticated identity, any prior binding or any existing credential record
 prevents first-use trust, including erased or revoked history. Initialized
 cameras and unknown factory protocols require operator action. An accepted key
 is retained in later jobs. Discovery cannot rotate it, trust a replacement, or
-approve a changed key. Existing per-device operator SPKI approvals and normal
+approve a changed key. The only replacement Shale accepts by itself is the key
+a device presents right after a preset-required firmware upgrade that the same
+job performed ([camera TLS identity](camera-tls-identity.md#after-a-firmware-upgrade)). Existing per-device operator SPKI approvals and normal
 PKI policies continue to work. The existing operator approval requirement for
 moving an enrolled device to a new address is unchanged.
 
@@ -49,5 +51,5 @@ Normal ONVIF transport verification remains separate.
 To stop a pending plan, disable or replace the policy or revoke/reassign the
 Worker; stale plans are rejected. Policy activation does not rewrite an already
 created immutable job. Cancel affected jobs or revoke their assignment when
-withdrawing an existing job's authority. Rotate a camera key through an explicit
-operator-approved policy revision, never automatic first trust.
+withdrawing an existing job's authority. Otherwise rotate a camera key through
+an explicit operator-approved policy revision, never automatic first trust.

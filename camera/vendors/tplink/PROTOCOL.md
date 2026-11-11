@@ -176,6 +176,47 @@ web setting write do not establish real random-access cadence. Fixtures exercise
 the write shape, drift rejection, read-back mismatch, lost replies and combined
 frequency recovery; they do not claim physical acceptance of this new adapter.
 
+## Local firmware update (#258)
+
+`UpgradeFirmware` repeats the camera UI's **Upgrade Firmware › Local Update**,
+read from the device-distributed public assets `index.1670d28b.js` (module 433:
+`Kr`, `Qi`, `TC`, `vV`; module 244: `upload`; SHA256
+`ea68efe60f06cad0e7df3dd4e6952341c857ec536ad0cb4a35b6de04c5bc2d24`) and
+`2538.85e90910.js` (the Local Update handler; SHA256
+`41d6d99b2139878a4c26102b655a2ecfcf3b9026f9ffb2de670a00f2fc7ab519`), inspected
+without logging in on 2026-11-11:
+
+1. In a logged-in session, `method: do` with `system: {firmware_upgrade: {type: "0"}}`
+   answers `{"url": "%2fadmin%2fsystem%2ffirmware_upgrade", "error_code": 0}`.
+2. The UI URL-decodes `url`, drops anything up to `..`, and posts a
+   `multipart/form-data` body with the image as the single field `file` to
+   `/stok=<token><url>`. It sends its usual `X-Requested-With: XMLHttpRequest`
+   and `SourceType: vigi_web` headers and waits up to ten minutes.
+3. Success is a JSON reply with `error_code` 0. The UI then logs out and shows
+   the upgrade progress while the camera writes the image and reboots.
+4. On a failed upload the UI calls `system.reboot`. The adapter does not: it
+   returns the error and leaves the camera as it is.
+
+The adapter accepts only `/admin/system/firmware_upgrade` as the returned path,
+sends nothing else, and requires a fresh authenticated match to a qualified
+build, as initialization does. The UI's **Check for Update** calls
+`cloud_config.check_fw_version`, which needs the camera to reach the internet;
+it is not used.
+
+Five C420s were upgraded from `1.2.0 Build 251020 Rel.55235n` to
+`1.2.2 Build 260624 Rel.39352n` through that UI on 2026-11-10/11, with the
+TP-Link image `Sx25_Cx20-x_1.0_en_1.2.2_Build_260624_Rel.39352n_up_boot_signed.bin`
+(SHA256 `9460f6c63c06573dbb302ec4b4ee482991caaff817718b919109821591ea669a`).
+The upload of about 14 MB was answered in about 7 s; the web UI answered again
+2 to 2.5 minutes later. IP address, MAC, serial, administrator account and
+streaming configuration were kept; the HTTPS key changed on every camera, and
+1.2.2 delivers about 25 fps against a 30 fps setting. The adapter itself has
+been exercised against fixtures only.
+
+`ConfirmWebIdentity` reads the key the web port presents with a credential-free
+handshake and logs in on a second connection pinned to that key, then logs out.
+It writes nothing.
+
 Protocol references:
 
 - [ONVIF Device WSDL](https://www.onvif.org/ver10/device/wsdl/devicemgmt.wsdl)

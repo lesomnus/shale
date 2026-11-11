@@ -51,6 +51,16 @@ message CameraFactoryTLSState {
   CameraDeviceTLSIdentity identity = 2;
   google.protobuf.Timestamp date_trusted = 3;
 }
+// The key a device presented right after a firmware upgrade a Shale job
+// performed. It stands in for `replaced` only while `replaced` is still the
+// device's approved identity; a new operator approval supersedes it.
+message CameraFirmwareTLSState {
+  CameraDeviceTLSIdentity replaced = 1;
+  CameraDeviceTLSIdentity identity = 2;
+  bytes job_id = 3;
+  string firmware = 4;
+  google.protobuf.Timestamp date_accepted = 5;
+}
 message CameraCaptureProfile {
   string codec = 1;
   int32 width = 2;
@@ -251,6 +261,7 @@ message CameraDevice {
   int64 claim_generation = 17;
   CameraEnrollmentObservation enrollment = 18;
   CameraFactoryTLSState factory_tls = 19;
+  CameraFirmwareTLSState firmware_tls = 20;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

@@ -47,6 +47,8 @@ type CameraDevice struct {
 	Enrollment *api.CameraEnrollmentObservation `json:"enrollment,omitempty"`
 	// FactoryTls holds the value of the "factory_tls" field.
 	FactoryTls *api.CameraFactoryTLSState `json:"factory_tls,omitempty"`
+	// FirmwareTls holds the value of the "firmware_tls" field.
+	FirmwareTls *api.CameraFirmwareTLSState `json:"firmware_tls,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -136,6 +138,8 @@ func (*CameraDevice) scanValues(columns []string) ([]any, error) {
 			values[i] = cameradevice.ValueScanner.Enrollment.ScanValue()
 		case cameradevice.FieldFactoryTls:
 			values[i] = cameradevice.ValueScanner.FactoryTls.ScanValue()
+		case cameradevice.FieldFirmwareTls:
+			values[i] = cameradevice.ValueScanner.FirmwareTls.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -231,6 +235,12 @@ func (_m *CameraDevice) assignValues(columns []string, values []any) error {
 				return err
 			} else {
 				_m.FactoryTls = value
+			}
+		case cameradevice.FieldFirmwareTls:
+			if value, err := cameradevice.ValueScanner.FirmwareTls.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.FirmwareTls = value
 			}
 		case cameradevice.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -357,6 +367,9 @@ func (_m *CameraDevice) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("factory_tls=")
 	builder.WriteString(fmt.Sprintf("%v", _m.FactoryTls))
+	builder.WriteString(", ")
+	builder.WriteString("firmware_tls=")
+	builder.WriteString(fmt.Sprintf("%v", _m.FirmwareTls))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

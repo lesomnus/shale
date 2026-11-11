@@ -296,6 +296,18 @@ func printCameraSummary(w io.Writer, jobs []provisionhost.Job) error {
 				return err
 			}
 		}
+		if f := run.Firmware; f != nil {
+			state := "started"
+			if f.Complete {
+				state = "complete"
+			}
+			if f.TLSIdentity != nil {
+				state += ", new TLS key " + f.TLSIdentity.SPKISHA256
+			}
+			if _, err := fmt.Fprintf(w, "  firmware: %q -> %q (%s)\n", f.From, f.To, state); err != nil {
+				return err
+			}
+		}
 		for _, warning := range run.Warnings {
 			if _, err := fmt.Fprintf(w, "  WARNING %q: %q requested=%q applied=%q reason=%q\n", warning.Code, warning.Field, warning.Requested, warning.Applied, warning.Reason); err != nil {
 				return err

@@ -277,6 +277,11 @@ the managed edge's `shale.yaml`: that older setting belongs only to the
 standalone provisioner. Device initialization settings such as 60Hz still need
 an independently qualified adapter for the camera's actual firmware.
 
+A rule's `firmware` requirement ([provisioner guide](camera-provisioner.md#firmware-requirement))
+is published the same way. It takes effect only in enrollment jobs created from a
+policy naming that preset; publishing it upgrades nothing by itself, and it never
+upgrades a device that is not on one of the listed `from` builds.
+
 The same preset publisher accepts `initialization.smart_codec: "off"` or
 `"on"`. Omission preserves the current mode; this field does not implicitly
 change power-line frequency, bitrate, FPS or GOP. List

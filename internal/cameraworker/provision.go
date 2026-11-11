@@ -16,6 +16,9 @@ type Provisioner struct {
 	Presets   api.CameraPresetServiceClient
 	Auth      func(*Execution) camera.AuthProvider
 	Publisher func(*Execution) provision.SourcePublisher
+	// Images fetches firmware a preset requires. Without it such a device
+	// is unsupported rather than upgraded.
+	Images camera.FirmwareSource
 }
 
 func (p Provisioner) Execute(ctx context.Context, e *Execution) error {
@@ -32,7 +35,7 @@ func (p Provisioner) Execute(ctx context.Context, e *Execution) error {
 	}
 	d := p.Devices
 	d.Execution = e
-	engine := provision.Engine{Store: store, Auth: p.Auth(e), Inspector: d, Configurator: d, Bootstrapper: d, Verifier: d, Initializer: d, Presets: JobPresets{Execution: e, Client: p.Presets}, Publisher: p.Publisher(e)}
+	engine := provision.Engine{Store: store, Auth: p.Auth(e), Inspector: d, Configurator: d, Bootstrapper: d, Verifier: d, Initializer: d, Presets: JobPresets{Execution: e, Client: p.Presets}, Publisher: p.Publisher(e), Firmware: d, Images: p.Images}
 	_, err = engine.Execute(ctx, q, true)
 	return err
 }

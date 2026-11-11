@@ -196,6 +196,16 @@ message CameraProvisionWarning {
   string reason = 5;
 }
 message CameraProvisionWarnings { repeated CameraProvisionWarning items = 1; }
+// A firmware upgrade this job started. tls_identity is the key the device
+// presented right after it, accepted only with its recorded MAC and serial
+// and a successful login with the job's own credential.
+message CameraProvisionFirmware {
+  string from = 1;
+  string to = 2;
+  string image_sha256 = 3;
+  bool complete = 4;
+  CameraDeviceTLSIdentity tls_identity = 5;
+}
 message CameraProvisionState {
   uint32 schema_version = 1;
   CameraProvisionRequest request = 2;
@@ -221,4 +231,5 @@ message CameraProvisionState {
   CameraProvisionDeviceSettings initialized = 22;
   CameraProvisionWarnings warnings = 23;
   CameraProvisionMediaProfile deployment_profile = 24;
+  CameraProvisionFirmware firmware = 25;
 }

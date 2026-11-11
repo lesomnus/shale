@@ -47,6 +47,8 @@ type Rule struct {
 	Settings  camera.PresetSettings   `json:"settings" yaml:"settings"`
 	Fallbacks []camera.PresetSettings `json:"fallbacks,omitempty" yaml:"fallbacks,omitempty"`
 	Required  []string                `json:"required,omitempty" yaml:"required,omitempty"`
+	// Firmware is replaced, not merged, by a more specific matching rule.
+	Firmware *camera.FirmwareUpgrade `json:"firmware,omitempty" yaml:"firmware,omitempty"`
 }
 
 type Match struct {
@@ -119,6 +121,12 @@ func New(config Config) (*Provider, error) {
 		}
 		if err := camera.ValidatePresetSettings(rule.Settings); err != nil {
 			return nil, err
+		}
+		if rule.Firmware != nil {
+			if err := rule.Firmware.Validate(); err != nil {
+				return nil, err
+			}
+			rule.Firmware = rule.Firmware.Clone()
 		}
 		if len(rule.Fallbacks) > 16 {
 			return nil, fmt.Errorf("%w: too many preset fallback candidates", camera.ErrInvalid)
@@ -242,6 +250,9 @@ func (p *Provider) Resolve(ctx context.Context, scope camera.EnrollmentScope, de
 		if rule.Fallbacks != nil {
 			out.Fallbacks = camera.DevicePreset{Fallbacks: rule.Fallbacks}.Clone().Fallbacks
 		}
+		if rule.Firmware != nil {
+			out.Firmware = rule.Firmware.Clone()
+		}
 		for _, field := range rule.Required {
 			if !slices.Contains(out.Required, field) {
 				out.Required = append(out.Required, field)
@@ -339,7 +350,7 @@ func compareRank(a, b [3]int) int {
 }
 
 func samePatch(a, b Rule) bool {
-	return reflect.DeepEqual(a.Settings, b.Settings) && reflect.DeepEqual(a.Fallbacks, b.Fallbacks) && slices.Equal(a.Required, b.Required)
+	return reflect.DeepEqual(a.Settings, b.Settings) && reflect.DeepEqual(a.Fallbacks, b.Fallbacks) && slices.Equal(a.Required, b.Required) && reflect.DeepEqual(a.Firmware, b.Firmware)
 }
 
 func knownField(field string) bool {

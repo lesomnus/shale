@@ -211,6 +211,7 @@ type webReply struct {
 	ErrorCode *int                       `json:"error_code"`
 	Data      json.RawMessage            `json:"data"`
 	Stok      string                     `json:"stok"`
+	URL       string                     `json:"url"`
 	Video     map[string]json.RawMessage `json:"video"`
 	Image     struct {
 		Switch struct {
@@ -236,6 +237,8 @@ func (r webReply) success() error {
 
 type webSession struct {
 	driver *Driver
+	// prefix is "/stok=<token>"; path is the session's JSON RPC endpoint.
+	prefix string
 	path   string
 }
 
@@ -361,7 +364,8 @@ func (d *Driver) webLogin(ctx context.Context, material camera.CredentialMateria
 	if err != nil || token == "" || len(token) > 1024 {
 		return nil, errProtocol
 	}
-	return &webSession{driver: d, path: "/stok=" + url.PathEscape(token) + "/ds"}, nil
+	prefix := "/stok=" + url.PathEscape(token)
+	return &webSession{driver: d, prefix: prefix, path: prefix + "/ds"}, nil
 }
 
 func authKind(raw json.RawMessage) int {

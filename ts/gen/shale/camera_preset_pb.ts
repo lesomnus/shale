@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/camera_preset.proto.
  */
 export const file_shale_camera_preset: GenFile = /*@__PURE__*/
-  fileDesc("ChlzaGFsZS9jYW1lcmFfcHJlc2V0LnByb3RvEgVzaGFsZSK4AQoRQ2FtZXJhUHJlc2V0VmlkZW8SFQoNcHJvZmlsZV90b2tlbhgBIAEoCRINCgVjb2RlYxgCIAEoCRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUSCwoDZnBzGAUgASgBEhMKC2JpdHJhdGVfYnBzGAYgASgDEhIKCmdvcF9mcmFtZXMYByABKAUSEAoIcmV2aXNpb24YCCABKAkSFgoOYWxsb3dfZmFsbGJhY2sYCSABKAgihAEKFENhbWVyYVByZXNldFNldHRpbmdzEhwKFHBvd2VyX2xpbmVfZnJlcXVlbmN5GAEgASgFEicKBXZpZGVvGAIgASgLMhguc2hhbGUuQ2FtZXJhUHJlc2V0VmlkZW8SEAoIcHJlc2VydmUYAyADKAkSEwoLc21hcnRfY29kZWMYBCABKAkiSwoYQ2FtZXJhUHJlc2V0QWx0ZXJuYXRpdmVzEi8KCmNhbmRpZGF0ZXMYASADKAsyGy5zaGFsZS5DYW1lcmFQcmVzZXRTZXR0aW5ncyJwChFDYW1lcmFQcmVzZXRTY29wZRIRCgl0ZW5hbnRfaWQYASABKAkSDwoHc2l0ZV9pZBgCIAEoCRIOCgZzZXRfaWQYAyABKAkSEwoLcHJvZHVjZXJfaWQYBCABKAkSEgoKbmV0d29ya19pZBgFIAEoCSKMAQoRQ2FtZXJhUHJlc2V0TWF0Y2gSEQoJZGV2aWNlX2lkGAEgASgJEhQKDG1hbnVmYWN0dXJlchgCIAEoCRINCgVtb2RlbBgDIAEoCRIQCghoYXJkd2FyZRgEIAEoCRIQCghmaXJtd2FyZRgFIAEoCRIOCgZzZXJpYWwYBiABKAkSCwoDbWFjGAcgASgJIugBChBDYW1lcmFQcmVzZXRSdWxlEgoKAmlkGAEgASgJEicKBXNjb3BlGAIgASgLMhguc2hhbGUuQ2FtZXJhUHJlc2V0U2NvcGUSJwoFbWF0Y2gYAyABKAsyGC5zaGFsZS5DYW1lcmFQcmVzZXRNYXRjaBItCghzZXR0aW5ncxgEIAEoCzIbLnNoYWxlLkNhbWVyYVByZXNldFNldHRpbmdzEjUKDGFsdGVybmF0aXZlcxgFIAEoCzIfLnNoYWxlLkNhbWVyYVByZXNldEFsdGVybmF0aXZlcxIQCghyZXF1aXJlZBgGIAMoCSLAAQoUQ2FtZXJhUmVzb2x2ZWRQcmVzZXQSCgoCaWQYASABKAkSEAoIcmV2aXNpb24YAiABKAkSFQoNbWF0Y2hlZF9ydWxlcxgDIAMoCRIuCglyZXF1ZXN0ZWQYBCABKAsyGy5zaGFsZS5DYW1lcmFQcmVzZXRTZXR0aW5ncxIxCgxhbHRlcm5hdGl2ZXMYBSADKAsyGy5zaGFsZS5DYW1lcmFQcmVzZXRTZXR0aW5ncxIQCghyZXF1aXJlZBgGIAMoCSLLBQoMQ2FtZXJhUHJlc2V0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIlCgZ0ZW5hbnQYAiABKAsyDS5zaGFsZS5UZW5hbnRCBvKCFgJAARIjCgRzaXRlGAMgASgLMgsuc2hhbGUuU2l0ZUII8oIWBDgBQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEi8KBmxhYmVscxgHIAMoCzIfLnNoYWxlLkNhbWVyYVByZXNldC5MYWJlbHNFbnRyeRIaCgpwcmVzZXRfa2V5GAggASgJQgbqghYCQAESGAoIcmV2aXNpb24YCSABKAlCBuqCFgJAARIuCgVydWxlcxgKIAMoCzIXLnNoYWxlLkNhbWVyYVByZXNldFJ1bGVCBuqCFgJAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqyAcr8FWwSAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARo4EghyZXZpc2lvbhoKCgZ0ZW5hbnQQAhoOCgpwcmVzZXRfa2V5EAgaDAoIcmV2aXNpb24QCTABUAGKuxY+CCgyOAoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZSAyKPQDOgBCJFodZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGmSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_payday_tenant, file_shale_site]);
+  fileDesc("ChlzaGFsZS9jYW1lcmFfcHJlc2V0LnByb3RvEgVzaGFsZSK4AQoRQ2FtZXJhUHJlc2V0VmlkZW8SFQoNcHJvZmlsZV90b2tlbhgBIAEoCRINCgVjb2RlYxgCIAEoCRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUSCwoDZnBzGAUgASgBEhMKC2JpdHJhdGVfYnBzGAYgASgDEhIKCmdvcF9mcmFtZXMYByABKAUSEAoIcmV2aXNpb24YCCABKAkSFgoOYWxsb3dfZmFsbGJhY2sYCSABKAgihAEKFENhbWVyYVByZXNldFNldHRpbmdzEhwKFHBvd2VyX2xpbmVfZnJlcXVlbmN5GAEgASgFEicKBXZpZGVvGAIgASgLMhguc2hhbGUuQ2FtZXJhUHJlc2V0VmlkZW8SEAoIcHJlc2VydmUYAyADKAkSEwoLc21hcnRfY29kZWMYBCABKAkiSwoYQ2FtZXJhUHJlc2V0QWx0ZXJuYXRpdmVzEi8KCmNhbmRpZGF0ZXMYASADKAsyGy5zaGFsZS5DYW1lcmFQcmVzZXRTZXR0aW5ncyJwChFDYW1lcmFQcmVzZXRTY29wZRIRCgl0ZW5hbnRfaWQYASABKAkSDwoHc2l0ZV9pZBgCIAEoCRIOCgZzZXRfaWQYAyABKAkSEwoLcHJvZHVjZXJfaWQYBCABKAkSEgoKbmV0d29ya19pZBgFIAEoCSKMAQoRQ2FtZXJhUHJlc2V0TWF0Y2gSEQoJZGV2aWNlX2lkGAEgASgJEhQKDG1hbnVmYWN0dXJlchgCIAEoCRINCgVtb2RlbBgDIAEoCRIQCghoYXJkd2FyZRgEIAEoCRIQCghmaXJtd2FyZRgFIAEoCRIOCgZzZXJpYWwYBiABKAkSCwoDbWFjGAcgASgJIlkKFENhbWVyYVByZXNldEZpcm13YXJlEgwKBGZyb20YASADKAkSCgoCdG8YAiABKAkSEQoJaW1hZ2VfdXJsGAMgASgJEhQKDGltYWdlX3NoYTI1NhgEIAEoCSKXAgoQQ2FtZXJhUHJlc2V0UnVsZRIKCgJpZBgBIAEoCRInCgVzY29wZRgCIAEoCzIYLnNoYWxlLkNhbWVyYVByZXNldFNjb3BlEicKBW1hdGNoGAMgASgLMhguc2hhbGUuQ2FtZXJhUHJlc2V0TWF0Y2gSLQoIc2V0dGluZ3MYBCABKAsyGy5zaGFsZS5DYW1lcmFQcmVzZXRTZXR0aW5ncxI1CgxhbHRlcm5hdGl2ZXMYBSABKAsyHy5zaGFsZS5DYW1lcmFQcmVzZXRBbHRlcm5hdGl2ZXMSEAoIcmVxdWlyZWQYBiADKAkSLQoIZmlybXdhcmUYByABKAsyGy5zaGFsZS5DYW1lcmFQcmVzZXRGaXJtd2FyZSLvAQoUQ2FtZXJhUmVzb2x2ZWRQcmVzZXQSCgoCaWQYASABKAkSEAoIcmV2aXNpb24YAiABKAkSFQoNbWF0Y2hlZF9ydWxlcxgDIAMoCRIuCglyZXF1ZXN0ZWQYBCABKAsyGy5zaGFsZS5DYW1lcmFQcmVzZXRTZXR0aW5ncxIxCgxhbHRlcm5hdGl2ZXMYBSADKAsyGy5zaGFsZS5DYW1lcmFQcmVzZXRTZXR0aW5ncxIQCghyZXF1aXJlZBgGIAMoCRItCghmaXJtd2FyZRgHIAEoCzIbLnNoYWxlLkNhbWVyYVByZXNldEZpcm13YXJlIssFCgxDYW1lcmFQcmVzZXQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiUKBnRlbmFudBgCIAEoCzINLnNoYWxlLlRlbmFudEIG8oIWAkABEiMKBHNpdGUYAyABKAsyCy5zaGFsZS5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSLwoGbGFiZWxzGAcgAygLMh8uc2hhbGUuQ2FtZXJhUHJlc2V0LkxhYmVsc0VudHJ5EhoKCnByZXNldF9rZXkYCCABKAlCBuqCFgJAARIYCghyZXZpc2lvbhgJIAEoCUIG6oIWAkABEi4KBXJ1bGVzGAogAygLMhcuc2hhbGUuQ2FtZXJhUHJlc2V0UnVsZUIG6oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOrIByvwVbBICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGjgSCHJldmlzaW9uGgoKBnRlbmFudBACGg4KCnByZXNldF9rZXkQCBoMCghyZXZpc2lvbhAJMAFQAYq7Fj4IKDI4ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoGCgRzaXRlIDIo9AM6AEIkWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaZIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_payday_tenant, file_shale_site]);
 
 /**
  * Device configuration intent: GOP is frames, distinct from capture interval.
@@ -220,6 +220,41 @@ export const CameraPresetMatchSchema: GenMessage<CameraPresetMatch> = /*@__PURE_
   messageDesc(file_shale_camera_preset, 4);
 
 /**
+ * A device reporting exactly one of `from` is upgraded to `to` before any
+ * other configuration. The image digest is of the file written to the device.
+ *
+ * @generated from message shale.CameraPresetFirmware
+ */
+export type CameraPresetFirmware = Message<"shale.CameraPresetFirmware"> & {
+  /**
+   * @generated from field: repeated string from = 1;
+   */
+  from: string[];
+
+  /**
+   * @generated from field: string to = 2;
+   */
+  to: string;
+
+  /**
+   * @generated from field: string image_url = 3;
+   */
+  imageUrl: string;
+
+  /**
+   * @generated from field: string image_sha256 = 4;
+   */
+  imageSha256: string;
+};
+
+/**
+ * Describes the message shale.CameraPresetFirmware.
+ * Use `create(CameraPresetFirmwareSchema)` to create a new message.
+ */
+export const CameraPresetFirmwareSchema: GenMessage<CameraPresetFirmware> = /*@__PURE__*/
+  messageDesc(file_shale_camera_preset, 5);
+
+/**
  * @generated from message shale.CameraPresetRule
  */
 export type CameraPresetRule = Message<"shale.CameraPresetRule"> & {
@@ -252,6 +287,11 @@ export type CameraPresetRule = Message<"shale.CameraPresetRule"> & {
    * @generated from field: repeated string required = 6;
    */
   required: string[];
+
+  /**
+   * @generated from field: shale.CameraPresetFirmware firmware = 7;
+   */
+  firmware?: CameraPresetFirmware | undefined;
 };
 
 /**
@@ -259,7 +299,7 @@ export type CameraPresetRule = Message<"shale.CameraPresetRule"> & {
  * Use `create(CameraPresetRuleSchema)` to create a new message.
  */
 export const CameraPresetRuleSchema: GenMessage<CameraPresetRule> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset, 5);
+  messageDesc(file_shale_camera_preset, 6);
 
 /**
  * @generated from message shale.CameraResolvedPreset
@@ -294,6 +334,11 @@ export type CameraResolvedPreset = Message<"shale.CameraResolvedPreset"> & {
    * @generated from field: repeated string required = 6;
    */
   required: string[];
+
+  /**
+   * @generated from field: shale.CameraPresetFirmware firmware = 7;
+   */
+  firmware?: CameraPresetFirmware | undefined;
 };
 
 /**
@@ -301,7 +346,7 @@ export type CameraResolvedPreset = Message<"shale.CameraResolvedPreset"> & {
  * Use `create(CameraResolvedPresetSchema)` to create a new message.
  */
 export const CameraResolvedPresetSchema: GenMessage<CameraResolvedPreset> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset, 6);
+  messageDesc(file_shale_camera_preset, 7);
 
 /**
  * One immutable revision. Custom operations enforce scope and revision rules.
@@ -380,5 +425,5 @@ export type CameraPreset = Message<"shale.CameraPreset"> & {
  * Use `create(CameraPresetSchema)` to create a new message.
  */
 export const CameraPresetSchema: GenMessage<CameraPreset> = /*@__PURE__*/
-  messageDesc(file_shale_camera_preset, 7);
+  messageDesc(file_shale_camera_preset, 8);
 

@@ -619,6 +619,107 @@ func (b0 CameraPresetMatch_builder) Build() *CameraPresetMatch {
 	return m0
 }
 
+// A device reporting exactly one of `from` is upgraded to `to` before any
+// other configuration. The image digest is of the file written to the device.
+type CameraPresetFirmware struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_From        []string               `protobuf:"bytes,1,rep,name=from"`
+	xxx_hidden_To          string                 `protobuf:"bytes,2,opt,name=to"`
+	xxx_hidden_ImageUrl    string                 `protobuf:"bytes,3,opt,name=image_url,json=imageUrl"`
+	xxx_hidden_ImageSha256 string                 `protobuf:"bytes,4,opt,name=image_sha256,json=imageSha256"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *CameraPresetFirmware) Reset() {
+	*x = CameraPresetFirmware{}
+	mi := &file_shale_camera_preset_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraPresetFirmware) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraPresetFirmware) ProtoMessage() {}
+
+func (x *CameraPresetFirmware) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_preset_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraPresetFirmware) GetFrom() []string {
+	if x != nil {
+		return x.xxx_hidden_From
+	}
+	return nil
+}
+
+func (x *CameraPresetFirmware) GetTo() string {
+	if x != nil {
+		return x.xxx_hidden_To
+	}
+	return ""
+}
+
+func (x *CameraPresetFirmware) GetImageUrl() string {
+	if x != nil {
+		return x.xxx_hidden_ImageUrl
+	}
+	return ""
+}
+
+func (x *CameraPresetFirmware) GetImageSha256() string {
+	if x != nil {
+		return x.xxx_hidden_ImageSha256
+	}
+	return ""
+}
+
+func (x *CameraPresetFirmware) SetFrom(v []string) {
+	x.xxx_hidden_From = v
+}
+
+func (x *CameraPresetFirmware) SetTo(v string) {
+	x.xxx_hidden_To = v
+}
+
+func (x *CameraPresetFirmware) SetImageUrl(v string) {
+	x.xxx_hidden_ImageUrl = v
+}
+
+func (x *CameraPresetFirmware) SetImageSha256(v string) {
+	x.xxx_hidden_ImageSha256 = v
+}
+
+type CameraPresetFirmware_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	From        []string
+	To          string
+	ImageUrl    string
+	ImageSha256 string
+}
+
+func (b0 CameraPresetFirmware_builder) Build() *CameraPresetFirmware {
+	m0 := &CameraPresetFirmware{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_From = b.From
+	x.xxx_hidden_To = b.To
+	x.xxx_hidden_ImageUrl = b.ImageUrl
+	x.xxx_hidden_ImageSha256 = b.ImageSha256
+	return m0
+}
+
 type CameraPresetRule struct {
 	state                   protoimpl.MessageState    `protogen:"opaque.v1"`
 	xxx_hidden_Id           string                    `protobuf:"bytes,1,opt,name=id"`
@@ -627,13 +728,14 @@ type CameraPresetRule struct {
 	xxx_hidden_Settings     *CameraPresetSettings     `protobuf:"bytes,4,opt,name=settings"`
 	xxx_hidden_Alternatives *CameraPresetAlternatives `protobuf:"bytes,5,opt,name=alternatives"`
 	xxx_hidden_Required     []string                  `protobuf:"bytes,6,rep,name=required"`
+	xxx_hidden_Firmware     *CameraPresetFirmware     `protobuf:"bytes,7,opt,name=firmware"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
 
 func (x *CameraPresetRule) Reset() {
 	*x = CameraPresetRule{}
-	mi := &file_shale_camera_preset_proto_msgTypes[5]
+	mi := &file_shale_camera_preset_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -645,7 +747,7 @@ func (x *CameraPresetRule) String() string {
 func (*CameraPresetRule) ProtoMessage() {}
 
 func (x *CameraPresetRule) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[5]
+	mi := &file_shale_camera_preset_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -698,6 +800,13 @@ func (x *CameraPresetRule) GetRequired() []string {
 	return nil
 }
 
+func (x *CameraPresetRule) GetFirmware() *CameraPresetFirmware {
+	if x != nil {
+		return x.xxx_hidden_Firmware
+	}
+	return nil
+}
+
 func (x *CameraPresetRule) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -720,6 +829,10 @@ func (x *CameraPresetRule) SetAlternatives(v *CameraPresetAlternatives) {
 
 func (x *CameraPresetRule) SetRequired(v []string) {
 	x.xxx_hidden_Required = v
+}
+
+func (x *CameraPresetRule) SetFirmware(v *CameraPresetFirmware) {
+	x.xxx_hidden_Firmware = v
 }
 
 func (x *CameraPresetRule) HasScope() bool {
@@ -750,6 +863,13 @@ func (x *CameraPresetRule) HasAlternatives() bool {
 	return x.xxx_hidden_Alternatives != nil
 }
 
+func (x *CameraPresetRule) HasFirmware() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Firmware != nil
+}
+
 func (x *CameraPresetRule) ClearScope() {
 	x.xxx_hidden_Scope = nil
 }
@@ -766,6 +886,10 @@ func (x *CameraPresetRule) ClearAlternatives() {
 	x.xxx_hidden_Alternatives = nil
 }
 
+func (x *CameraPresetRule) ClearFirmware() {
+	x.xxx_hidden_Firmware = nil
+}
+
 type CameraPresetRule_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -775,6 +899,7 @@ type CameraPresetRule_builder struct {
 	Settings     *CameraPresetSettings
 	Alternatives *CameraPresetAlternatives
 	Required     []string
+	Firmware     *CameraPresetFirmware
 }
 
 func (b0 CameraPresetRule_builder) Build() *CameraPresetRule {
@@ -787,6 +912,7 @@ func (b0 CameraPresetRule_builder) Build() *CameraPresetRule {
 	x.xxx_hidden_Settings = b.Settings
 	x.xxx_hidden_Alternatives = b.Alternatives
 	x.xxx_hidden_Required = b.Required
+	x.xxx_hidden_Firmware = b.Firmware
 	return m0
 }
 
@@ -798,13 +924,14 @@ type CameraResolvedPreset struct {
 	xxx_hidden_Requested    *CameraPresetSettings    `protobuf:"bytes,4,opt,name=requested"`
 	xxx_hidden_Alternatives *[]*CameraPresetSettings `protobuf:"bytes,5,rep,name=alternatives"`
 	xxx_hidden_Required     []string                 `protobuf:"bytes,6,rep,name=required"`
+	xxx_hidden_Firmware     *CameraPresetFirmware    `protobuf:"bytes,7,opt,name=firmware"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
 
 func (x *CameraResolvedPreset) Reset() {
 	*x = CameraResolvedPreset{}
-	mi := &file_shale_camera_preset_proto_msgTypes[6]
+	mi := &file_shale_camera_preset_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -816,7 +943,7 @@ func (x *CameraResolvedPreset) String() string {
 func (*CameraResolvedPreset) ProtoMessage() {}
 
 func (x *CameraResolvedPreset) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[6]
+	mi := &file_shale_camera_preset_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -871,6 +998,13 @@ func (x *CameraResolvedPreset) GetRequired() []string {
 	return nil
 }
 
+func (x *CameraResolvedPreset) GetFirmware() *CameraPresetFirmware {
+	if x != nil {
+		return x.xxx_hidden_Firmware
+	}
+	return nil
+}
+
 func (x *CameraResolvedPreset) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -895,6 +1029,10 @@ func (x *CameraResolvedPreset) SetRequired(v []string) {
 	x.xxx_hidden_Required = v
 }
 
+func (x *CameraResolvedPreset) SetFirmware(v *CameraPresetFirmware) {
+	x.xxx_hidden_Firmware = v
+}
+
 func (x *CameraResolvedPreset) HasRequested() bool {
 	if x == nil {
 		return false
@@ -902,8 +1040,19 @@ func (x *CameraResolvedPreset) HasRequested() bool {
 	return x.xxx_hidden_Requested != nil
 }
 
+func (x *CameraResolvedPreset) HasFirmware() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Firmware != nil
+}
+
 func (x *CameraResolvedPreset) ClearRequested() {
 	x.xxx_hidden_Requested = nil
+}
+
+func (x *CameraResolvedPreset) ClearFirmware() {
+	x.xxx_hidden_Firmware = nil
 }
 
 type CameraResolvedPreset_builder struct {
@@ -915,6 +1064,7 @@ type CameraResolvedPreset_builder struct {
 	Requested    *CameraPresetSettings
 	Alternatives []*CameraPresetSettings
 	Required     []string
+	Firmware     *CameraPresetFirmware
 }
 
 func (b0 CameraResolvedPreset_builder) Build() *CameraResolvedPreset {
@@ -927,6 +1077,7 @@ func (b0 CameraResolvedPreset_builder) Build() *CameraResolvedPreset {
 	x.xxx_hidden_Requested = b.Requested
 	x.xxx_hidden_Alternatives = &b.Alternatives
 	x.xxx_hidden_Required = b.Required
+	x.xxx_hidden_Firmware = b.Firmware
 	return m0
 }
 
@@ -952,7 +1103,7 @@ type CameraPreset struct {
 
 func (x *CameraPreset) Reset() {
 	*x = CameraPreset{}
-	mi := &file_shale_camera_preset_proto_msgTypes[7]
+	mi := &file_shale_camera_preset_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -964,7 +1115,7 @@ func (x *CameraPreset) String() string {
 func (*CameraPreset) ProtoMessage() {}
 
 func (x *CameraPreset) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[7]
+	mi := &file_shale_camera_preset_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1258,21 +1409,28 @@ const file_shale_camera_preset_proto_rawDesc = "" +
 	"\bhardware\x18\x04 \x01(\tR\bhardware\x12\x1a\n" +
 	"\bfirmware\x18\x05 \x01(\tR\bfirmware\x12\x16\n" +
 	"\x06serial\x18\x06 \x01(\tR\x06serial\x12\x10\n" +
-	"\x03mac\x18\a \x01(\tR\x03mac\"\x9c\x02\n" +
+	"\x03mac\x18\a \x01(\tR\x03mac\"z\n" +
+	"\x14CameraPresetFirmware\x12\x12\n" +
+	"\x04from\x18\x01 \x03(\tR\x04from\x12\x0e\n" +
+	"\x02to\x18\x02 \x01(\tR\x02to\x12\x1b\n" +
+	"\timage_url\x18\x03 \x01(\tR\bimageUrl\x12!\n" +
+	"\fimage_sha256\x18\x04 \x01(\tR\vimageSha256\"\xd5\x02\n" +
 	"\x10CameraPresetRule\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12.\n" +
 	"\x05scope\x18\x02 \x01(\v2\x18.shale.CameraPresetScopeR\x05scope\x12.\n" +
 	"\x05match\x18\x03 \x01(\v2\x18.shale.CameraPresetMatchR\x05match\x127\n" +
 	"\bsettings\x18\x04 \x01(\v2\x1b.shale.CameraPresetSettingsR\bsettings\x12C\n" +
 	"\falternatives\x18\x05 \x01(\v2\x1f.shale.CameraPresetAlternativesR\falternatives\x12\x1a\n" +
-	"\brequired\x18\x06 \x03(\tR\brequired\"\xff\x01\n" +
+	"\brequired\x18\x06 \x03(\tR\brequired\x127\n" +
+	"\bfirmware\x18\a \x01(\v2\x1b.shale.CameraPresetFirmwareR\bfirmware\"\xb8\x02\n" +
 	"\x14CameraResolvedPreset\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\brevision\x18\x02 \x01(\tR\brevision\x12#\n" +
 	"\rmatched_rules\x18\x03 \x03(\tR\fmatchedRules\x129\n" +
 	"\trequested\x18\x04 \x01(\v2\x1b.shale.CameraPresetSettingsR\trequested\x12?\n" +
 	"\falternatives\x18\x05 \x03(\v2\x1b.shale.CameraPresetSettingsR\falternatives\x12\x1a\n" +
-	"\brequired\x18\x06 \x03(\tR\brequired\"\xc6\x06\n" +
+	"\brequired\x18\x06 \x03(\tR\brequired\x127\n" +
+	"\bfirmware\x18\a \x01(\v2\x1b.shale.CameraPresetFirmwareR\bfirmware\"\xc6\x06\n" +
 	"\fCameraPreset\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -1312,20 +1470,21 @@ const file_shale_camera_preset_proto_rawDesc = "" +
 	"\x06tenant\x1a\x06\n" +
 	"\x04site 2(\xf4\x03:\x00B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_camera_preset_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_shale_camera_preset_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_shale_camera_preset_proto_goTypes = []any{
 	(*CameraPresetVideo)(nil),        // 0: shale.CameraPresetVideo
 	(*CameraPresetSettings)(nil),     // 1: shale.CameraPresetSettings
 	(*CameraPresetAlternatives)(nil), // 2: shale.CameraPresetAlternatives
 	(*CameraPresetScope)(nil),        // 3: shale.CameraPresetScope
 	(*CameraPresetMatch)(nil),        // 4: shale.CameraPresetMatch
-	(*CameraPresetRule)(nil),         // 5: shale.CameraPresetRule
-	(*CameraResolvedPreset)(nil),     // 6: shale.CameraResolvedPreset
-	(*CameraPreset)(nil),             // 7: shale.CameraPreset
-	nil,                              // 8: shale.CameraPreset.LabelsEntry
-	(*Tenant)(nil),                   // 9: shale.Tenant
-	(*Site)(nil),                     // 10: shale.Site
-	(*timestamppb.Timestamp)(nil),    // 11: google.protobuf.Timestamp
+	(*CameraPresetFirmware)(nil),     // 5: shale.CameraPresetFirmware
+	(*CameraPresetRule)(nil),         // 6: shale.CameraPresetRule
+	(*CameraResolvedPreset)(nil),     // 7: shale.CameraResolvedPreset
+	(*CameraPreset)(nil),             // 8: shale.CameraPreset
+	nil,                              // 9: shale.CameraPreset.LabelsEntry
+	(*Tenant)(nil),                   // 10: shale.Tenant
+	(*Site)(nil),                     // 11: shale.Site
+	(*timestamppb.Timestamp)(nil),    // 12: google.protobuf.Timestamp
 }
 var file_shale_camera_preset_proto_depIdxs = []int32{
 	0,  // 0: shale.CameraPresetSettings.video:type_name -> shale.CameraPresetVideo
@@ -1334,20 +1493,22 @@ var file_shale_camera_preset_proto_depIdxs = []int32{
 	4,  // 3: shale.CameraPresetRule.match:type_name -> shale.CameraPresetMatch
 	1,  // 4: shale.CameraPresetRule.settings:type_name -> shale.CameraPresetSettings
 	2,  // 5: shale.CameraPresetRule.alternatives:type_name -> shale.CameraPresetAlternatives
-	1,  // 6: shale.CameraResolvedPreset.requested:type_name -> shale.CameraPresetSettings
-	1,  // 7: shale.CameraResolvedPreset.alternatives:type_name -> shale.CameraPresetSettings
-	9,  // 8: shale.CameraPreset.tenant:type_name -> shale.Tenant
-	10, // 9: shale.CameraPreset.site:type_name -> shale.Site
-	8,  // 10: shale.CameraPreset.labels:type_name -> shale.CameraPreset.LabelsEntry
-	5,  // 11: shale.CameraPreset.rules:type_name -> shale.CameraPresetRule
-	11, // 12: shale.CameraPreset.date_updated:type_name -> google.protobuf.Timestamp
-	11, // 13: shale.CameraPreset.date_erased:type_name -> google.protobuf.Timestamp
-	11, // 14: shale.CameraPreset.date_created:type_name -> google.protobuf.Timestamp
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	5,  // 6: shale.CameraPresetRule.firmware:type_name -> shale.CameraPresetFirmware
+	1,  // 7: shale.CameraResolvedPreset.requested:type_name -> shale.CameraPresetSettings
+	1,  // 8: shale.CameraResolvedPreset.alternatives:type_name -> shale.CameraPresetSettings
+	5,  // 9: shale.CameraResolvedPreset.firmware:type_name -> shale.CameraPresetFirmware
+	10, // 10: shale.CameraPreset.tenant:type_name -> shale.Tenant
+	11, // 11: shale.CameraPreset.site:type_name -> shale.Site
+	9,  // 12: shale.CameraPreset.labels:type_name -> shale.CameraPreset.LabelsEntry
+	6,  // 13: shale.CameraPreset.rules:type_name -> shale.CameraPresetRule
+	12, // 14: shale.CameraPreset.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 15: shale.CameraPreset.date_erased:type_name -> google.protobuf.Timestamp
+	12, // 16: shale.CameraPreset.date_created:type_name -> google.protobuf.Timestamp
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_preset_proto_init() }
@@ -1363,7 +1524,7 @@ func file_shale_camera_preset_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_preset_proto_rawDesc), len(file_shale_camera_preset_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
