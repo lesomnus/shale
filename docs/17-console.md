@@ -198,8 +198,13 @@ transmuxed, and the page holds no player library.
   ago" is that, for the last ten seconds.
 - **Export.** Two marks on the axis become one MP4: one init segment and
   the fragments from the keyframe at or before the first mark to the
-  keyframe after the second, across laminae, joined in the page and
-  downloaded. What `timestampOffset` does in play is written into the
+  keyframe after the second, across laminae. Where exports are enabled
+  (`export.enabled`), the page asks `LaminaService.Export` for the range
+  and the browser downloads the file the Control Plane streams, which
+  starts at once and holds none of it in the page
+  ([Streaming MP4 downloads](mp4-export.md)); a range the export refuses
+  fails as a download. Elsewhere the page joins the same file itself and
+  downloads it. What `timestampOffset` does in play is written into the
   file: every fragment's `tfdt` is moved to where its lamina sits on the
   wall clock, the first sample at zero, so a lamina of another encoder
   session, whose decode times start again, follows the one before it
@@ -216,7 +221,7 @@ transmuxed, and the page holds no player library.
   The media comes in one Range request per lamina, its whole span, which
   the node streams in its read chunks; playback instead asks a megabyte at
   a time ahead of the playhead.
-- An export measures where its time went and says so under the button:
+- An export the page joins measures where its time went and says so under the button:
   reading the laminae's index and init segments, then the media requests
   one after another, summed as waiting for each response's first byte,
   receiving its body, and the page's own time between them, then joining
