@@ -112,17 +112,22 @@ settings are refused before any output body is sent.
 Container planning asks for many small headers and sample tables. Planning
 scans up to four recordings at once (`ScanParallel`); each scan waits on its
 recording's headers one after another, so a few at once keep Storage busy. The
-HTTP reader coalesces a scan's requests with an aligned **256 KiB read-ahead
-window** of its own, and gives the window back when its scan is done, so a job
+HTTP reader coalesces a scan's requests with an aligned **1 MiB read-ahead
+window** of its own (a recording fragments every 200 ms, so its headers are some
+tens of KiB apart and a scan reads nearly all of it), and gives the window back when its scan is done, so a job
 holds at most four, however many recordings it has. A window is keyed by the
 admitted recording reader and byte offset, never shared across jobs, and is
 published only after the exact 206 byte range and its complete body have been
 validated. Cancellation also stops cache hits. After its scan a recording's
 reads, however short, go straight to Storage.
 
-Media streams in 4 MiB reads (`MediaChunk`), one HTTP request each. The next
-read runs while the previous one is written to the client, with two buffers, so
-an export holds at most 8 MiB of media however large it is.
+Media streams in spans: consecutive runs of one recording, with at most
+256 KiB between them, read at once up to 4 MiB (`MediaChunk`), one HTTP
+request each, and written run by run. A 200 ms fragment's runs are a few bytes
+to a few hundred KiB, so reading run by run took thousands of sequential
+requests for ten minutes; spans take a few dozen. The next read runs while the
+previous one is written to the client, with two buffers, so an export holds at
+most 8 MiB of media however large it is.
 
 Read-ahead can fetch adjacent media bytes while the parser asks only for
 metadata. It trades more Storage-to-CP bytes for fewer HTTP round trips and
