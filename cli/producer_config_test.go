@@ -104,3 +104,26 @@ func TestProducerConfigCameraReferenceAndOnvif(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "local", provider.Name)
 }
+
+// producer.audio reaches the producer, and takes only codec: none.
+func TestProducerConfigAudio(t *testing.T) {
+	var c cmd.Config
+	c.Producer.Sources = []cmd.SourceConfig{{Alias: "yard", Input: "rtsp://cam/1", Format: "h264", MaxBitrate: "2Mbps"}}
+	c.Producer.Audio = &cmd.AudioConfig{Codec: "none"}
+	cfg, err := ProducerConfig(&c)
+	require.NoError(t, err)
+	require.Equal(t, &producer.AudioConfig{Codec: "none"}, cfg.Audio)
+	_, err = producer.New(cfg)
+	require.NoError(t, err)
+
+	for _, a := range []*cmd.AudioConfig{{Codec: "none", Device: "alsa:hw:1"}, {Codec: "none", Bitrate: "64kbps"}} {
+		c.Producer.Audio = a
+		_, err = ProducerConfig(&c)
+		require.Error(t, err)
+	}
+	c.Producer.Audio = &cmd.AudioConfig{Codec: "aac"}
+	cfg, err = ProducerConfig(&c)
+	require.NoError(t, err)
+	_, err = producer.New(cfg)
+	require.Error(t, err, "the producer refuses a codec that keeps sound")
+}

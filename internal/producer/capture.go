@@ -133,7 +133,11 @@ func (c SourceConfig) audioCodec() string {
 // audioShare is what a source's audio takes of its ceiling: its track, and
 // the Opus track beside it unless the archive's is Opus already (§38.7).
 func (c SourceConfig) audioShare() int64 {
-	if c.audioCodec() == "opus" {
+	switch c.audioCodec() {
+	case "none":
+		// No track, so nothing of the ceiling.
+		return 0
+	case "opus":
 		return c.audioBitrate()
 	}
 

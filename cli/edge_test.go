@@ -172,3 +172,15 @@ func TestServeEdgeAndCameraWorkerRejectBeforeNetwork(t *testing.T) {
 		require.Contains(t, out, "--cp")
 	}
 }
+
+// A managed edge's cameras come from the CP catalog, so producer.audio is
+// how its host records no sound from them.
+func TestEdgeProducerCarriesItsAudio(t *testing.T) {
+	c := edgeTestConfig(t)
+	c.Producer.Audio = &cmd.AudioConfig{Codec: "none"}
+	cfg, err := EdgeConfig(c)
+	require.NoError(t, err)
+	require.Equal(t, &producer.AudioConfig{Codec: "none"}, cfg.Producer.Audio)
+	_, err = producer.New(*cfg.Producer)
+	require.NoError(t, err)
+}

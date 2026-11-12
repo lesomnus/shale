@@ -425,6 +425,12 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		Log:               slog.Default(),
 	}
 	cfg.Ffprobe = pc.Ffprobe
+	if a := pc.Audio; a != nil {
+		if a.Device != "" || a.Bitrate != "" {
+			return cfg, errors.New("producer.audio takes only codec: none; a microphone or a bitrate is a source's own audio")
+		}
+		cfg.Audio = &producer.AudioConfig{Codec: a.Codec}
+	}
 	centralCredentials := pc.Credentials.Provider == credentialcp.Name || pc.Credentials.Provider == "" && pc.Credentials.Directory == "" && catalogMode == "cp"
 	if centralCredentials && pc.Credentials.Directory != "" {
 		return cfg, errors.New("CP credentials cannot select a local directory")
