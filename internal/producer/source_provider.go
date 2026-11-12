@@ -124,6 +124,9 @@ func (p *Producer) loadSourceCatalog(ctx context.Context) error {
 func (p *Producer) configForSpec(v catalog.Snapshot, spec catalog.Spec) SourceConfig {
 	session := p.sourceSession()
 	cfg := SourceConfig{Alias: spec.Alias, Name: spec.Name, Input: spec.Input, Format: spec.Profile.Codec, Zone: spec.Zone, Labels: spec.Labels, KeyframeInterval: spec.Profile.KeyframeInterval}
+	// A specification carries no audio: the camera's own, or the producer's
+	// `audio` (§38.3), which the ceiling below counts.
+	cfg = p.withAudio(cfg)
 	if spec.Profile.Width > 0 && spec.Profile.Height > 0 {
 		cfg.Size = fmt.Sprintf("%dx%d", spec.Profile.Width, spec.Profile.Height)
 	}

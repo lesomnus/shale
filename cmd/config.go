@@ -417,6 +417,11 @@ type ProducerConfig struct {
 	// before its open segment closes as stopped (30 s).
 	Push     string        `yaml:"push"`
 	PushIdle time.Duration `yaml:"push_idle"`
+	// Audio is the audio of every source that says nothing of its own
+	// (§38.3): the cameras a catalog hands this producer, and sources here
+	// without an `audio`. Only `{codec: none}`, which records no sound;
+	// absent, each camera's own audio is recorded.
+	Audio *AudioConfig `yaml:"audio"`
 }
 
 // ReaderConfig is the reader agent's own settings (§33.4).

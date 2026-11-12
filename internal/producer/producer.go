@@ -69,6 +69,12 @@ type Config struct {
 	// stream may carry nothing before its segment closes (30 s).
 	Push     string
 	PushIdle time.Duration
+	// Audio is the audio of every source that says nothing of its own
+	// (§38.3): the cameras a catalog hands this producer, whose
+	// specifications carry no audio, and configured sources without an
+	// `audio`. Only `codec: none`, which records no sound; nil records
+	// each camera's own audio, as before.
+	Audio *AudioConfig
 
 	Mode              api.UploadMode
 	Retain            string
@@ -372,6 +378,9 @@ func New(cfg Config) (*Producer, error) {
 	if cfg.DrainTimeout < 0 || cfg.DrainTimeout > 5*time.Minute {
 		return nil, errors.New("source drain timeout must be between zero and five minutes")
 	}
+	if err := checkDefaultAudio(cfg.Audio); err != nil {
+		return nil, err
+	}
 	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, terms: terms{mode: cfg.Mode}, Ready: make(chan struct{}), heartbeatWake: make(chan struct{}, 1)}
 	p.relay = newRelayLink(p)
 	p.m = newMetrics(context.Background())
@@ -401,10 +410,35 @@ func (p *Producer) configureSources(sources []SourceConfig) error {
 	return nil
 }
 
+// checkDefaultAudio refuses a producer-wide audio that is anything but
+// none: a microphone is one source's, and a codec that encodes or copies
+// sound is a choice each source makes for itself (§38.3).
+func checkDefaultAudio(a *AudioConfig) error {
+	if a == nil {
+		return nil
+	}
+	if a.Device != "" || a.Bitrate != 0 || strings.ToLower(strings.TrimSpace(a.Codec)) != "none" {
+		return errors.New("producer.audio takes only codec: none, to record no sound from the sources that say nothing of their audio; a microphone or another codec is a source's own audio")
+	}
+
+	return nil
+}
+
+// withAudio gives a source that says nothing of its audio the producer's.
+func (p *Producer) withAudio(sc SourceConfig) SourceConfig {
+	if sc.Audio == nil && p.cfg.Audio != nil {
+		a := *p.cfg.Audio
+		sc.Audio = &a
+	}
+
+	return sc
+}
+
 // sourceFor constructs an unpublished incarnation. No observer can see a
 // partially validated configuration or a Source whose CP identity is unresolved.
 func (p *Producer) sourceFor(sc SourceConfig) (*source, error) {
 	cfg := p.cfg
+	sc = p.withAudio(sc)
 	if err := validateCameraInput(cfg, sc); err != nil {
 		return nil, fmt.Errorf("source %s: %w", sc.Alias, err)
 	}

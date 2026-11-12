@@ -50,7 +50,10 @@ The contract is the same for all three:
   sends it, a microphone only when configured, since recording sound in
   public places is restricted in many jurisdictions
   ([producer bench](producer-bench.md)); `audio: {codec: none}` drops it
-  ([§38.3](#383-managed-capture)).
+  ([§38.3](#383-managed-capture)). `producer.audio: {codec: none}` drops it
+  from every source that says nothing of its audio, which includes every
+  camera a catalog hands the producer: their specifications carry no
+  audio, so this is how a host records no sound from its managed cameras.
 
 The producer never decodes or encodes. It reads box headers and the tables
 of `moov` and `moof`, nothing inside a sample.
@@ -177,6 +180,7 @@ producer:
   ffmpeg: /usr/bin/ffmpeg   # default: from PATH
   gstreamer: /usr/bin/gst-launch-1.0   # for capture: gstreamer; default: from PATH
   fragment_duration: 100ms  # the longest fragment, 200ms by default: about how far a live viewer is behind (§38.1)
+  audio: {codec: none}      # optional: no sound from any source without its own `audio`, managed cameras included
 
   sources:
     - alias: door             # tier 1: structured, portable
@@ -236,7 +240,7 @@ producer:
 | `encoder: auto` | the first that works on this host: `h264_v4l2m2m`, `h264_vaapi`, `h264_qsv`, `h264_nvenc`, else `libx264 -preset veryfast` with a warning about CPU |
 | `max_bitrate` | encoders with rate control (`libx264`, VAAPI, NVENC, QSV): capped VBR, `-maxrate <video ceiling> -bufsize <2 × ceiling>` around a quality target; encoders that only take a target (`h264_v4l2m2m`): CBR at `-b:v <video ceiling>`. The video ceiling is `max_bitrate` minus the audio bitrate for each audio track (two, unless the archive's is Opus), divided by 1.05 for the container and the muxer's slack, so the muxed stream stays under the ceiling |
 | `keyframe_interval` | `-g <fps × interval> -force_key_frames expr:gte(t,n_forced*<interval>)`, with the agreed interval ([§12.6](04-write-path.md#126-upload-profile-negotiation)), 2 s by default |
-| `audio` | two tracks ([§38.7](#387-live-output)): the archive's, and Opus beside it for live. A camera's own audio: `-map 0:v:0 -map 0:a:0? -map 0:a:0? -c:a:0 copy -c:a:1 libopus -b:a:1 <bitrate>`, with `-c:a:0 aac -b:a:0 <bitrate>` when `codec: aac`; a microphone (`device`): `-f alsa -i <device>` as a second input, mapped twice, `-c:a:0 aac`, where the device is ALSA's name (`alsa:hw:1`) or a path under `/dev/snd` (`alsa:/dev/snd/by-path/…`) resolved to its card (`hw:<card>,0`) at every start, since a card's number follows the order the USB devices came up in and identical webcams share one name; `codec: opus` is one track, `-c:a libopus -b:a <bitrate>`, since Opus is what live plays; `-an` for `none`, and for a USB camera without a microphone. Audio in a codec MP4 has no entry for, G.711 from an IP camera above all, makes the muxer refuse at start (`Could not find tag for codec pcm_mulaw`); that line on stderr restarts the capture once, encoding the audio as AAC, with a log line saying so |
+| `audio` | two tracks ([§38.7](#387-live-output)): the archive's, and Opus beside it for live. A camera's own audio: `-map 0:v:0 -map 0:a:0? -map 0:a:0? -c:a:0 copy -c:a:1 libopus -b:a:1 <bitrate>`, with `-c:a:0 aac -b:a:0 <bitrate>` when `codec: aac`; a microphone (`device`): `-f alsa -i <device>` as a second input, mapped twice, `-c:a:0 aac`, where the device is ALSA's name (`alsa:hw:1`) or a path under `/dev/snd` (`alsa:/dev/snd/by-path/…`) resolved to its card (`hw:<card>,0`) at every start, since a card's number follows the order the USB devices came up in and identical webcams share one name; `codec: opus` is one track, `-c:a libopus -b:a <bitrate>`, since Opus is what live plays; `-an` for `none`, and for a USB camera without a microphone. Audio in a codec MP4 has no entry for, G.711 from an IP camera above all, makes the muxer refuse at start (`Could not find tag for codec pcm_mulaw`); that line on stderr restarts the capture once, encoding the audio as AAC, with a log line saying so. A source without `audio` takes `producer.audio` when it is set; that takes only `codec: none`, since a microphone is one source's and a codec that keeps sound is each source's choice. With `none` the audio's share is not added to the ceiling a source proposes |
 | output (fixed) | `-f mp4 -movflags frag_keyframe+empty_moov+default_base_moof -frag_duration <fragment_duration in µs> -`: fragmented MP4, every keyframe a fragment and none longer than `fragment_duration`, 200 ms by default ([§38.1](#381-inputs)). `h264_v4l2m2m` writes `-f mpegts -` instead, into a second ffmpeg (below) |
 | `controls` | not ffmpeg: V4L2 controls set on the device through the ioctls `v4l2-ctl -c` uses, by v4l2-ctl's names, before every start of the capture, since a re-plugged camera forgets them. A control the device does not have, or a value outside its range, is a warning in the log and the rest are set |
 
