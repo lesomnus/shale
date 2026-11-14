@@ -93,6 +93,41 @@ The caller must provide the resolver that capture can actually use.
 Worker execution still requires the explicitly configured managed edge adapters
 and policy. Default CP credential preparation alone enables no camera writes.
 
+## Never in a command line
+
+A process's arguments are readable by every local user of the host
+(`/proc/<pid>/cmdline`, `ps`, `systemctl status`). So no resolved credential
+is passed to the tools that read a camera ([#249](https://github.com/lesomnus/shale/issues/249)):
+- the producer's capture (ffmpeg);
+- the worker's and the producer's media verification (ffprobe and ffmpeg).
+
+**How the tool reads the stream.** For the duration of one tool run,
+`credential.WithInput` (and `credential.Hidden` for a URL that carries its own
+credential) serves the RTSP or RTSPS stream on `127.0.0.1` through a proxy
+(`internal/rtspproxy`). The tool is given the proxy's URL:
+`rtsp://127.0.0.1:<port>/<random token>/<path>`.
+
+**What the proxy does:**
+- It signs in to the camera, Basic or Digest (MD5 or SHA-256, with or without
+  `qop=auth`), answering the camera's 401.
+- It maps URLs between the camera and the tool: request URLs, `Content-Base`,
+  `RTP-Info` and the SDP's control URLs.
+- It keeps the stream's query, where a legacy camera's token can be, off the
+  command line, and puts it back on the stream's requests to the camera.
+- It passes interleaved media through untouched, both ways.
+
+**What is left visible, and for how long.**
+- The token reaches that one stream through that one proxy while the tool
+  runs, not the camera account, which on many cameras also configures it.
+- A connection must name the token before the proxy forwards anything for it.
+- The proxy ends when the tool does.
+
+**Legacy URLs.** A URL with `user:password@` or a query in a local
+configuration goes through the same proxy.
+
+**What to do after upgrading.** Credentials that were readable in process
+lists before this should be rotated.
+
 ## Optional streaming cache
 
 Caching is **off by default**. Opt-in `cp.StreamingCache` requires a private local

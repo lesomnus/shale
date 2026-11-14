@@ -254,6 +254,12 @@ type InputLease interface {
 // subprocess diagnostics before returning them. Ref scope/purpose are checked
 // even when a caller's provider does not implement its own authorization checks.
 func WithInput(ctx context.Context, provider camera.AuthProvider, scope camera.EnrollmentScope, device camera.DeviceHint, ref *camera.CredentialRef, input string, use func(string, Sanitizer) error) error {
+	// Whatever the input became, its user never sees the credential in it:
+	// it is read through a loopback proxy (Hidden, #249).
+	resolved := use
+	use = func(input string, s Sanitizer) error {
+		return Hidden(ctx, input, func(hidden string) error { return resolved(hidden, s) })
+	}
 	if ref == nil {
 		return SanitizeError(use(input, InputSanitizer(input)), InputSanitizer(input))
 	}

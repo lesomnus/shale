@@ -5,8 +5,11 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/md5"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"math"
@@ -22,14 +25,22 @@ import (
 	"time"
 )
 
-func ServeRTSP(t testing.TB) string { return serveRTSP(t, "", "") }
+func ServeRTSP(t testing.TB) string { return serveRTSP(t, "", "", false) }
 
 // ServeRTSPAuth requires actual RTSP Basic authentication. Passwords may contain
 // URI-reserved characters; clients must resolve and encode them correctly.
 func ServeRTSPAuth(t testing.TB, username, password string) string {
-	return serveRTSP(t, username, password)
+	return serveRTSP(t, username, password, false)
 }
-func serveRTSP(t testing.TB, username, password string) string {
+
+// ServeRTSPDigest requires RTSP Digest authentication (MD5, no qop), as the
+// cameras seen do, and names its tracks by absolute URLs in the SDP, which a
+// client between it and the reader has to map.
+func ServeRTSPDigest(t testing.TB, username, password string) string {
+	return serveRTSP(t, username, password, true)
+}
+
+func serveRTSP(t testing.TB, username, password string, digest bool) string {
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "synthetic.h264")
@@ -81,7 +92,7 @@ func serveRTSP(t testing.TB, username, password string) string {
 				defer workers.Done()
 				defer c.Close()
 				defer func() { mu.Lock(); delete(connections, c); mu.Unlock() }()
-				serveRTSPConnection(c, listener.Addr().String(), units, sps, pps, done, username, password)
+				serveRTSPConnection(c, listener.Addr().String(), units, sps, pps, done, username, password, digest)
 			}()
 		}
 	}()
@@ -114,11 +125,30 @@ func accessUnits(raw []byte) (units [][][]byte, sps, pps []byte) {
 	}
 	return
 }
-func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps []byte, done <-chan struct{}, username, password string) {
-	serveRTSPMedia(conn, host, "/camera", &rtspMedia{units: units, sps: sps, pps: pps, fps: 10}, done, username, password)
+func serveRTSPConnection(conn net.Conn, host string, units [][][]byte, sps, pps []byte, done <-chan struct{}, username, password string, digest bool) {
+	serveRTSPMedia(conn, host, "/camera", &rtspMedia{units: units, sps: sps, pps: pps, fps: 10}, done, username, password, digest)
 }
 
-func serveRTSPMedia(conn net.Conn, host, path string, media *rtspMedia, done <-chan struct{}, username, password string) {
+func serveRTSPMedia(conn net.Conn, host, path string, media *rtspMedia, done <-chan struct{}, username, password string, digest bool) {
+	nonce := make([]byte, 8)
+	_, _ = rand.Read(nonce)
+	realm, challenge := "synthetic-camera", hex.EncodeToString(nonce)
+	authorized := func(method, value string) bool {
+		if username == "" {
+			return true
+		}
+		if !digest {
+			return value == "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password))
+		}
+		scheme, rest, _ := strings.Cut(value, " ")
+		if scheme != "Digest" {
+			return false
+		}
+		p := digestParams(rest)
+		ha1 := md5Hex(username + ":" + realm + ":" + password)
+		ha2 := md5Hex(method + ":" + p["uri"])
+		return p["username"] == username && p["realm"] == realm && p["nonce"] == challenge && p["response"] == md5Hex(ha1+":"+challenge+":"+ha2)
+	}
 	reader := bufio.NewReader(conn)
 	var write sync.Mutex
 	started := false
@@ -156,9 +186,14 @@ func serveRTSPMedia(conn net.Conn, host, path string, media *rtspMedia, done <-c
 			}
 		}
 		cseq := header.Get("Cseq")
-		if username != "" && parts[0] != "OPTIONS" && header.Get("Authorization") != "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)) {
+		if parts[0] != "OPTIONS" && !authorized(parts[0], header.Get("Authorization")) {
+			challenges := "WWW-Authenticate: Basic realm=\"synthetic-camera\"\r\n"
+			if digest {
+				// Both offered, as many cameras do; only Digest is taken.
+				challenges += "WWW-Authenticate: Digest realm=\"" + realm + "\", nonce=\"" + challenge + "\"\r\n"
+			}
 			write.Lock()
-			_, err := fmt.Fprintf(conn, "RTSP/1.0 401 Unauthorized\r\nCSeq: %s\r\nWWW-Authenticate: Basic realm=\"synthetic-camera\"\r\nContent-Length: 0\r\n\r\n", cseq)
+			_, err := fmt.Fprintf(conn, "RTSP/1.0 401 Unauthorized\r\nCSeq: %s\r\n%sContent-Length: 0\r\n\r\n", cseq, challenges)
 			write.Unlock()
 			if err != nil {
 				return
@@ -170,7 +205,11 @@ func serveRTSPMedia(conn net.Conn, host, path string, media *rtspMedia, done <-c
 			e = response(cseq, "Public: OPTIONS, DESCRIBE, SETUP, PLAY, TEARDOWN\r\n", "")
 		case "DESCRIBE":
 			ip, _, _ := net.SplitHostPort(host)
-			body := fmt.Sprintf("v=0\r\no=- 1 1 IN IP4 %s\r\ns=synthetic\r\nc=IN IP4 %s\r\nt=0 0\r\na=control:*\r\nm=video 0 RTP/AVP 96\r\na=rtpmap:96 H264/90000\r\na=fmtp:96 packetization-mode=1;sprop-parameter-sets=%s,%s\r\na=control:trackID=0\r\n", ip, ip, base64.StdEncoding.EncodeToString(media.sps), base64.StdEncoding.EncodeToString(media.pps))
+			control := "trackID=0"
+			if digest {
+				control = "rtsp://" + host + path + "/trackID=0"
+			}
+			body := fmt.Sprintf("v=0\r\no=- 1 1 IN IP4 %s\r\ns=synthetic\r\nc=IN IP4 %s\r\nt=0 0\r\na=control:*\r\nm=video 0 RTP/AVP 96\r\na=rtpmap:96 H264/90000\r\na=fmtp:96 packetization-mode=1;sprop-parameter-sets=%s,%s\r\na=control:%s\r\n", ip, ip, base64.StdEncoding.EncodeToString(media.sps), base64.StdEncoding.EncodeToString(media.pps), control)
 			e = response(cseq, "Content-Type: application/sdp\r\nContent-Base: rtsp://"+host+path+"/\r\n", body)
 		case "SETUP":
 			e = response(cseq, "Session: fixture\r\nTransport: RTP/AVP/TCP;unicast;interleaved=0-1\r\n", "")
@@ -256,6 +295,23 @@ func packetizeNAL(nal []byte) [][]byte {
 		copy(p[2:], nal[offset:end])
 		out = append(out, p)
 		offset = end
+	}
+	return out
+}
+
+func md5Hex(s string) string {
+	sum := md5.Sum([]byte(s))
+	return hex.EncodeToString(sum[:])
+}
+
+// digestParams reads a Digest Authorization's `key="value", key=value`.
+func digestParams(s string) map[string]string {
+	out := map[string]string{}
+	for _, part := range strings.Split(s, ",") {
+		k, v, ok := strings.Cut(strings.TrimSpace(part), "=")
+		if ok {
+			out[strings.ToLower(k)] = strings.Trim(v, `"`)
+		}
 	}
 	return out
 }

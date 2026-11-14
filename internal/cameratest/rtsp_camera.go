@@ -210,7 +210,7 @@ func (c *RTSPCamera) Rebind(address string) (string, error) {
 				defer e.wg.Done()
 				defer conn.Close()
 				defer func() { e.mu.Lock(); delete(e.connections, conn); e.mu.Unlock() }()
-				serveRTSPMedia(conn, lis.Addr().String(), options.Path, media, e.done, options.Username, options.Password)
+				serveRTSPMedia(conn, lis.Addr().String(), options.Path, media, e.done, options.Username, options.Password, false)
 			}()
 		}
 	}()
