@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log/slog"
 	mrand "math/rand/v2"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -234,7 +235,9 @@ func (b *Sandbox) Run(ctx context.Context) error {
 	}
 	host("relay-1", func(ctx context.Context) error { return b.runRelay(ctx, ops, "relay-1") })
 	host("pi", func(ctx context.Context) error {
-		return b.runProducer(ctx, admin, "pi", []string{"door", "desk", "window"}, true)
+		// The porch camera is in the catalog and waits: the producer's
+		// uplink cannot carry a fourth camera's recording and live (§38.5).
+		return b.runProducer(ctx, admin, "pi", []string{"door", "desk", "window", "porch"}, true)
 	})
 	host("pi-2", func(ctx context.Context) error {
 		return b.runProducer(ctx, nil, "pi-2", []string{"gate", "yard"}, false)
@@ -619,6 +622,9 @@ type camera struct {
 	alias   string
 	row     *api.Source
 	ceiling int64
+	// waiting is a camera registered and never taken up: the producer
+	// reports why instead of recording it (§38.5).
+	waiting bool
 	// dark says the scene is dark and the segments are skipped (§38.10):
 	// set by the camera's recording, read by the producer's heartbeat.
 	dark atomic.Bool
@@ -709,7 +715,7 @@ func (b *Sandbox) runProducer(ctx context.Context, admin context.Context, name s
 		return fmt.Errorf("producer %s: sources: %w", name, err)
 	}
 	for _, alias := range cameras {
-		c := &camera{alias: alias, ceiling: 4_000_000}
+		c := &camera{alias: alias, ceiling: 4_000_000, waiting: alias == "porch"}
 		for _, v := range existing.GetItems() {
 			if v.GetAlias() == alias {
 				c.row = v
@@ -757,9 +763,18 @@ func (b *Sandbox) runProducer(ctx context.Context, admin context.Context, name s
 			}
 		}
 	}
+	// A waiting camera was negotiated with the rest, as a static source is,
+	// and is neither recorded nor reported: its producer says why instead.
+	var waiting []*camera
+	for _, c := range cams {
+		if c.waiting {
+			waiting = append(waiting, c)
+		}
+	}
+	cams = slices.DeleteFunc(cams, func(c *camera) bool { return c.waiting })
 
 	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error { return b.producerHeartbeats(ctx, me, name, cams) })
+	g.Go(func() error { return b.producerHeartbeats(ctx, me, name, cams, waiting) })
 	for i, c := range cams {
 		c := c
 		// The last camera of the first producer looks at a room whose
@@ -775,7 +790,27 @@ func (b *Sandbox) runProducer(ctx context.Context, admin context.Context, name s
 	return g.Wait()
 }
 
-func (b *Sandbox) producerHeartbeats(ctx context.Context, me context.Context, name string, cams []*camera) error {
+func (b *Sandbox) producerHeartbeats(ctx context.Context, me context.Context, name string, cams, waiting []*camera) error {
+	// What a producer with a 30 Mbps uplink says of the cameras it cannot
+	// take up: every ceiling × 2.2 is more than that (§38.5).
+	var admission *api.AdmissionWait
+	if len(waiting) > 0 {
+		var total int64
+		var ids [][]byte
+		for _, c := range append(slices.Clone(cams), waiting...) {
+			total += c.ceiling
+		}
+		for _, c := range waiting {
+			ids = append(ids, c.row.GetId())
+		}
+		admission = api.AdmissionWait_builder{
+			Reason:    api.AdmissionWaitReason_ADMISSION_WAIT_REASON_UPLINK,
+			Required:  total * 22 / 10,
+			Available: 30_000_000,
+			SourceIds: ids,
+			DateSince: timestamppb.New(time.Now()),
+		}.Build()
+	}
 	for {
 		var reports []*api.SourceReport
 		for _, c := range cams {
@@ -797,9 +832,10 @@ func (b *Sandbox) producerHeartbeats(ctx context.Context, me context.Context, na
 		}
 		if _, err := retry(ctx, func() (*api.ProducerHeartbeatResponse, error) {
 			return b.S.Walled.Producer().Heartbeat(me, api.ProducerHeartbeatRequest_builder{
-				Sources: reports,
-				Load:    api.HostLoad_builder{Cpu: 0.6 + mrand.Float64()*0.2, Temperature: 58 + mrand.Float64()*6, UplinkBps: 9_000_000 + int64(mrand.IntN(2_000_000))}.Build(),
-				Version: "sandbox",
+				Sources:   reports,
+				Load:      api.HostLoad_builder{Cpu: 0.6 + mrand.Float64()*0.2, Temperature: 58 + mrand.Float64()*6, UplinkBps: 9_000_000 + int64(mrand.IntN(2_000_000))}.Build(),
+				Version:   "sandbox",
+				Admission: admission,
 			}.Build())
 		}); err != nil {
 			b.Log.Warn("sandbox: producer heartbeat", "name", name, "err", err.Error())

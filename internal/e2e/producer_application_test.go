@@ -125,6 +125,41 @@ func TestProducerManagedAdmissionPreservesExistingFeedsAndHistory(t *testing.T) 
 	request.SetSources([]*api.SourceProposal{proposal(pub.GetBinding()), proposal(pub2.GetBinding())})
 	_, err = sets.Negotiate(ctx, request)
 	require.Equal(t, codes.ResourceExhausted, status.Code(err))
+	// The refusal says why, in amounts the producer reports (#242).
+	var wait *api.AdmissionWait
+	for _, d := range status.Convert(err).Details() {
+		if w, ok := d.(*api.AdmissionWait); ok {
+			wait = w
+		}
+	}
+	require.NotNil(t, wait, "the refusal carries its reason")
+	require.Equal(t, api.AdmissionWaitReason_ADMISSION_WAIT_REASON_SET_BITRATE, wait.GetReason())
+	require.Equal(t, int64(2*1_128_000), wait.GetRequired())
+	require.Equal(t, int64(2_000_000), wait.GetAvailable())
+
+	// What the producer then reports in its heartbeat is kept on its row,
+	// for the console and `shale producer get`.
+	producers := api.NewProducerServiceClient(owner)
+	reported := api.AdmissionWait_builder{
+		Reason: wait.GetReason(), Required: wait.GetRequired(), Available: wait.GetAvailable(),
+		SourceIds: [][]byte{pub2.GetBinding().GetSource().GetId()}, CatalogRevision: pub2.GetCatalogRevision(),
+		DateSince: timestamppb.New(time.Now().Add(-time.Minute)),
+	}.Build()
+	_, err = producers.Heartbeat(ctx, api.ProducerHeartbeatRequest_builder{Admission: reported}.Build())
+	require.NoError(t, err)
+	row, err := api.NewProducerServiceClient(admin).Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: host.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	kept := row.GetStatus().GetAdmission()
+	require.Equal(t, api.AdmissionWaitReason_ADMISSION_WAIT_REASON_SET_BITRATE, kept.GetReason())
+	require.Equal(t, [][]byte{pub2.GetBinding().GetSource().GetId()}, kept.GetSourceIds())
+	require.WithinDuration(t, time.Now().Add(-time.Minute), kept.GetDateSince().AsTime(), 10*time.Second)
+	// A wait it cannot make sense of is not kept, and the heartbeat still counts.
+	_, err = producers.Heartbeat(ctx, api.ProducerHeartbeatRequest_builder{Admission: api.AdmissionWait_builder{Reason: api.AdmissionWaitReason(99), Required: -1}.Build()}.Build())
+	require.NoError(t, err)
+	row, err = api.NewProducerServiceClient(admin).Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: host.GetId()}.Build()}.Build())
+	require.NoError(t, err)
+	require.Nil(t, row.GetStatus().GetAdmission())
+
 	unchanged, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: ref}.Build())
 	require.NoError(t, err)
 	require.True(t, proto.Equal(before.GetProfile(), unchanged.GetProfile()), "new capacity cannot scale down an already copying feed")

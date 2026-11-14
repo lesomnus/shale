@@ -409,6 +409,29 @@ live policy is `always` ([§39.2](16-relay.md#392-assignment)), must fit it
 ([§12.2](04-write-path.md#122-resumable-part-uploads)). When a raise would
 break one of these, the loop stops and warns instead.
 
+**Cameras that wait.** A catalog's cameras are taken up together or not at
+all. The producer keeps the cameras it records, and holds back the new or
+changed ones, when any of these refuses them:
+- its `uplink`: the managed ceilings × 2.2, recording and live at once;
+- its `buffer`: their first segments' RAM;
+- the set's `max_bitrate_total`, the upload policy, or the assignment's 500
+  cameras;
+- a catalog that changed while it was admitted.
+
+It says which, and with what amounts, as an `AdmissionWait` in its heartbeat:
+- the reason;
+- what admission needs and what it has;
+- the cameras waiting;
+- the catalog revision;
+- since when.
+
+The CP refuses for its own reasons with an `AdmissionWait` attached as the
+error's detail, so the producer reports those without reading an error
+message. The CP keeps the wait on the producer's status (`shale producer
+get`), and the console's Cameras page shows it on the set and on each waiting
+camera. The wait ends when they start, or when the catalog changes and
+another reason or none applies.
+
 The **segment duration** follows the ceiling, 64 MB ÷ ceiling by default,
 and is re-derived when the ceiling changes. Link parameters (`idle_timeout`,
 `abandon_timeout`, `allocation_horizon`) are not probed: the defaults suit
@@ -423,7 +446,8 @@ The producer sends `ProducerService.Heartbeat` every
 keyframe interval, encoder, restarts, early cuts, the seconds at the
 cap and episodes since the last heartbeat ([§38.5](#385-choosing-the-ceiling)),
 and whether its scene is dark and its segments skipped ([§38.10](#3810-dark-scenes));
-for the host, CPU, temperature, and uplink usage. Consoles show a camera
+for the host, CPU, temperature, and uplink usage; and why cameras its
+catalog names wait to start, when they do ([§38.5](#385-choosing-the-ceiling)). Consoles show a camera
 that went dark, and the Control Plane's `date_seen` on the `Producer` row
 comes from it ([§35.3](12-api.md#353-entities), [§31](09-operations.md#31-observability)).
 A producer whose heartbeats have been missing for `producer_down_after`

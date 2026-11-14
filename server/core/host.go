@@ -468,6 +468,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 			Sources:      reports,
 			Load:         req.GetLoad(),
 			DateReported: timestamppb.New(now),
+			Admission:    admissionOf(req.GetAdmission(), now),
 		}.Build(),
 		Version:          z.Ptr(req.GetVersion()),
 		DateUpdatedForce: z.Ptr(true),
@@ -495,6 +496,46 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 	}
 
 	return resp.Build(), nil
+}
+
+// maxAdmissionSources bounds the cameras one heartbeat says are waiting: an
+// assignment holds at most 500.
+const maxAdmissionSources = 512
+
+// admissionOf is what the CP keeps of a producer's admission wait (§38.5):
+// a reason it knows, amounts that are not negative, Source ids that are
+// ids, at most maxAdmissionSources of them, and a start no later than now.
+// Anything else is not kept, rather than failing the heartbeat that carries
+// the producer's health.
+func admissionOf(v *api.AdmissionWait, now time.Time) *api.AdmissionWait {
+	if v == nil {
+		return nil
+	}
+	reason := v.GetReason()
+	if _, ok := api.AdmissionWaitReason_name[int32(reason)]; !ok || reason == api.AdmissionWaitReason_ADMISSION_WAIT_REASON_UNSPECIFIED {
+		return nil
+	}
+	if v.GetRequired() < 0 || v.GetAvailable() < 0 || v.GetCatalogRevision() < 0 || len(v.GetSourceIds()) > maxAdmissionSources {
+		return nil
+	}
+	for _, id := range v.GetSourceIds() {
+		if _, err := pdid.From(id); err != nil {
+			return nil
+		}
+	}
+	since := now
+	if s := v.GetDateSince(); s != nil && s.IsValid() && s.AsTime().Before(now) {
+		since = s.AsTime()
+	}
+
+	return api.AdmissionWait_builder{
+		Reason:          reason,
+		Required:        v.GetRequired(),
+		Available:       v.GetAvailable(),
+		SourceIds:       v.GetSourceIds(),
+		CatalogRevision: v.GetCatalogRevision(),
+		DateSince:       timestamppb.New(since),
+	}.Build()
 }
 
 // renewAt is two thirds of the way from issue to expiry (§33.5).
