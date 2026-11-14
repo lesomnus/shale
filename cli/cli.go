@@ -184,8 +184,10 @@ var clusterGroups = map[string]bool{
 
 var tenantGroups = map[string]bool{
 	"set": true, "source": true, "lamina": true, "attempt": true, "site": true, "site-member": true,
-	"producer": true, "reader": true, "holder": true, "audit": true, "camera-worker": true,
-	"camera-preset": true, "camera-policy": true,
+	"producer": true, "reader": true, "holder": true, "audit": true, "delegation": true,
+	"camera-network": true, "camera-device": true, "camera-assignment": true, "camera-binding": true,
+	"camera-job": true, "camera-worker": true, "camera-preset": true, "camera-policy": true,
+	"camera-credential": true, "camera-credential-version": true,
 }
 
 // unserved are the groups of entities neither surface mounts, which a
