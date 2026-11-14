@@ -342,7 +342,9 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 	slotStart := slotOf(started, a.set.GetId(), int(src.GetOrdinal()), len(a.members), duration)
 	inSlot, err := s.ent(ctx).Lamina.Query().
 		Where(lamina.SourceIdEQ(srcId.Uuid()), lamina.CaptureEpochEQ(captureEpoch), lamina.DateStartedGTE(slotStart.UTC()), lamina.DateStartedLT(slotStart.UTC().Add(duration))).
-		Order(ent.Asc(lamina.FieldDateStarted)).
+		// The id breaks a tie: a slot's next segment can begin at the same
+		// date_started (`after`), and the last one made is the slot's last.
+		Order(ent.Asc(lamina.FieldDateStarted), ent.Asc(lamina.FieldId)).
 		WithSink().
 		All(ctx)
 	if err != nil {
