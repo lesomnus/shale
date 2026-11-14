@@ -194,14 +194,15 @@ func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment)
 }
 
 // GiveUp reports a lamina the producer will not upload: it becomes LOST
-// (§13).
-func (u *Uploader) GiveUp(ctx context.Context, al *api.Allocation, reason string) {
+// (§13). The CP leaves a lamina that is no longer PENDING as it is, so a
+// segment stored after all is not undone. key is for the log.
+func (u *Uploader) GiveUp(ctx context.Context, lamina []byte, key, reason string) {
 	rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	if _, err := u.Laminae.ReportFailure(rctx, api.LaminaReportFailureRequest_builder{
-		Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build(), Reason: reason,
+		Ref: api.LaminaRef_builder{Id: lamina}.Build(), Reason: reason,
 	}.Build()); err != nil {
-		u.Log.Warn("report failure", "key", al.GetLaminaKey(), "err", err.Error())
+		u.Log.Warn("report failure", "key", key, "err", err.Error())
 	}
 }
 

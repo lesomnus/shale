@@ -1369,20 +1369,25 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 }
 
 // drop gives a segment up: it leaves the queue, its lamina, if it has one,
-// is reported LOST (§13), and the count says so.
+// is reported LOST (§13), and the count says so. The lamina is the one the
+// head was handed (headObj): an upload that failed lets its allocation go
+// for fresh attempts, so headAlloc is nil by the time the RAM budget drops
+// the segment, and the lamina is the segment's all the same.
 func (p *Producer) drop(ctx context.Context, s *source, seg *Segment, why string) {
 	lostBytes := seg.Len()
 	seg.Discard()
 	s.mu.Lock()
-	al := s.headAlloc
+	al, obj := s.headAlloc, s.headObj
 	s.finish(seg)
 	s.lost++
 	s.lostBytes += lostBytes
 	s.mu.Unlock()
 	key := ""
 	if al != nil {
-		key = al.GetLaminaKey()
-		p.uploader.GiveUp(ctx, al, why)
+		key, obj = al.GetLaminaKey(), al.GetLaminaId()
+	}
+	if obj != nil {
+		p.uploader.GiveUp(ctx, obj, key, why)
 	}
 	p.log.Warn("lost", "source", s.cfg.Alias, "started", seg.Started, "key", key, "why", why)
 	p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "lost")))
