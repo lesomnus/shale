@@ -43,7 +43,7 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 			return err
 		}
 		if a.GetGeneration() != target.GetAssignmentGeneration() || a.GetCatalogRevision() != target.GetCatalogRevision() {
-			return status.Error(codes.Aborted, "managed admission catalog changed")
+			return admissionRefused(codes.Aborted, "managed admission catalog changed", api.AdmissionWaitReason_ADMISSION_WAIT_REASON_STALE, 0, 0)
 		}
 		set, err = nx.Set().Get(ctx, api.SetGetRequest_builder{Ref: r.GetRef()}.Build())
 		if err != nil {
@@ -57,7 +57,7 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 			return err
 		}
 		if len(rows) > 500 {
-			return status.Error(codes.ResourceExhausted, "managed catalog exceeds source limit")
+			return admissionRefused(codes.ResourceExhausted, "managed catalog exceeds source limit", api.AdmissionWaitReason_ADMISSION_WAIT_REASON_SOURCE_LIMIT, int64(len(rows)), 500)
 		}
 		proposals := map[string]*api.SourceProposal{}
 		for _, p := range r.GetSources() {
@@ -68,7 +68,7 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 			proposals[id] = p
 		}
 		if len(proposals) != len(rows) {
-			return status.Error(codes.Aborted, "managed admission requires exact current catalog membership")
+			return admissionRefused(codes.Aborted, "managed admission requires exact current catalog membership", api.AdmissionWaitReason_ADMISSION_WAIT_REASON_STALE, 0, 0)
 		}
 		bounds, _, _, _, err := c.policies(ctx)
 		if err != nil {
@@ -86,7 +86,7 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 			}
 			sp := proposals[string(binding.SourceId[:])]
 			if sp == nil {
-				return status.Error(codes.Aborted, "managed admission names foreign or missing Source")
+				return admissionRefused(codes.Aborted, "managed admission names foreign or missing Source", api.AdmissionWaitReason_ADMISSION_WAIT_REASON_STALE, 0, 0)
 			}
 			if sp.GetProfile().GetMaxBitrate() < binding.Desired.GetProfile().GetMaxBitrateBps() {
 				return invalid("profile", "copy ceiling cannot be lower than the desired video ceiling")
@@ -96,7 +96,7 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 				return err
 			}
 			if profile.GetMaxBitrate() != sp.GetProfile().GetMaxBitrate() {
-				return status.Error(codes.ResourceExhausted, "managed copy ceiling exceeds upload policy")
+				return admissionRefused(codes.ResourceExhausted, "managed copy ceiling exceeds upload policy", api.AdmissionWaitReason_ADMISSION_WAIT_REASON_UPLOAD_POLICY, sp.GetProfile().GetMaxBitrate(), profile.GetMaxBitrate())
 			}
 			if total > int64(^uint64(0)>>1)-profile.GetMaxBitrate() {
 				return status.Error(codes.ResourceExhausted, "managed capture budget overflow")
@@ -135,7 +135,7 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 			agreed = append(agreed, api.SourceAgreed_builder{SourceId: src.GetId(), Ordinal: src.GetOrdinal(), Profile: profile, MaxLength: MaxLength(profile)}.Build())
 		}
 		if set.GetMaxBitrateTotal() > 0 && total > set.GetMaxBitrateTotal() {
-			return status.Error(codes.ResourceExhausted, "managed capture exceeds Set bitrate budget; existing feeds were preserved")
+			return admissionRefused(codes.ResourceExhausted, "managed capture exceeds Set bitrate budget; existing feeds were preserved", api.AdmissionWaitReason_ADMISSION_WAIT_REASON_SET_BITRATE, total, set.GetMaxBitrateTotal())
 		}
 		version := set.GetProfileVersion()
 		if changed || version == 0 {
@@ -171,4 +171,17 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 		out.SetRelay(ra)
 	}
 	return out, nil
+}
+
+// admissionRefused is a managed negotiation refused for a reason the
+// producer reports in its heartbeat (§38.5). The status carries the reason
+// and its amounts as an AdmissionWait detail, so the producer never has to
+// read the message.
+func admissionRefused(code codes.Code, msg string, reason api.AdmissionWaitReason, required, available int64) error {
+	st := status.New(code, msg)
+	if d, err := st.WithDetails(api.AdmissionWait_builder{Reason: reason, Required: required, Available: available}.Build()); err == nil {
+		return d.Err()
+	}
+
+	return st.Err()
 }

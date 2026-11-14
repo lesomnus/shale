@@ -175,10 +175,13 @@ func (p *Producer) sourceLifecycles(ctx context.Context) error {
 			continue
 		}
 		if err := p.reconcileSources(ctx, next); err != nil {
-			p.log.Warn("source reconciliation waiting", "code", status.Code(err).String())
+			w := p.awaitAdmission(next, err, p.now())
+			p.log.Warn("source reconciliation waiting", "code", status.Code(err).String(), "reason", w.GetReason().String(),
+				"required", w.GetRequired(), "available", w.GetAvailable(), "cameras", len(w.GetSourceIds()))
 			reconciled = nil
 			continue
 		}
+		p.admission.Store(nil)
 		reconciled = &next
 	}
 }
@@ -292,8 +295,9 @@ func (p *Producer) reconcileSources(ctx context.Context, next catalog.Snapshot) 
 			reserve += core.MaxLength(s.profile)
 		}
 	}
-	if reserve > p.cfg.Buffer-p.heldBytes() {
-		return status.Error(codes.ResourceExhausted, "managed capture awaits retained RAM drain")
+	if free := p.cfg.Buffer - p.heldBytes(); reserve > free {
+		return refused(api.AdmissionWaitReason_ADMISSION_WAIT_REASON_BUFFER, reserve, max(free, 0),
+			status.Error(codes.ResourceExhausted, "managed capture awaits retained RAM drain"))
 	}
 	for _, s := range proposed {
 		if !startable[s] {
