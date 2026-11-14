@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
-	"net"
 	"os"
 	"slices"
 	"strings"
@@ -52,6 +51,10 @@ import (
 
 // Config is `auth.roster` (§36.1).
 type Config struct {
+	// None is no identity store at all, which no file says: the page's
+	// sandbox, which makes its people's rows itself and signs them in with
+	// the plain header of development mode (wasm/main.go, #154).
+	None bool `yaml:"-"`
 	// Addr is an external roster's data plane. Empty runs one in this
 	// process, on Db.
 	Addr string `yaml:"addr"`
@@ -206,9 +209,7 @@ func Open(ctx context.Context, cfg Config, stateDir string, log *slog.Logger) (*
 			return nil, err
 		}
 		s.em = em
-		s.conn, err = grpc.NewClient("passthrough:///roster",
-			grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) { return em.lis.DialContext(ctx) }),
-			grpc.WithTransportCredentials(insecure.NewCredentials()))
+		s.conn, err = em.dial()
 		if err != nil {
 			em.Close()
 			return nil, err
@@ -318,6 +319,9 @@ func (s *Store) Run(ctx context.Context) error {
 
 // Close ends the connection and the embedded roster.
 func (s *Store) Close() error {
+	if s == nil {
+		return nil
+	}
 	var err error
 	if s.conn != nil {
 		err = s.conn.Close()

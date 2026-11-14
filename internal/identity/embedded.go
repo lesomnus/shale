@@ -1,3 +1,5 @@
+//go:build !js
+
 package identity
 
 import (
@@ -5,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"path/filepath"
 	"slices"
@@ -12,6 +15,7 @@ import (
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -94,6 +98,13 @@ func openEmbedded(ctx context.Context, cfg Config, stateDir string, log *slog.Lo
 	}()
 
 	return e, nil
+}
+
+// dial is a connection to the roster in this process.
+func (e *embedded) dial() (*grpc.ClientConn, error) {
+	return grpc.NewClient("passthrough:///roster",
+		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) { return e.lis.DialContext(ctx) }),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 }
 
 func (e *embedded) run(ctx context.Context) error {
@@ -386,15 +397,6 @@ func (s *Store) Ungrant(ctx context.Context, binding pdid.Id) error {
 	_, err := s.em.rs.Ungated.Binding().Erase(ctx, rstr.BindingRef_builder{Id: binding.Bytes()}.Build())
 
 	return err
-}
-
-// Adoptee is a person Adopt writes, as Shale knows them.
-type Adoptee struct {
-	Id    pdid.Id
-	Alias string
-	Name  string
-	// Admin binds them to the role that administers the tenant at roster.
-	Admin bool
 }
 
 // everything binds a person to the role that says everything roster

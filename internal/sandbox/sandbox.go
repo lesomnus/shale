@@ -35,6 +35,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/cmd"
+	"github.com/lesomnus/shale/internal/identity"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
 )
@@ -129,6 +130,10 @@ func (b *Sandbox) asHost(ctx context.Context, id pdid.Id) (context.Context, erro
 // that wraps signing keys are made in memory, the two tenants and the two
 // people are provisioned, the first signing key is created, and a set is
 // there for a producer to record.
+//
+// There is no roster to make the people at (#154): the page signs them in
+// with the plain header, so their rows are all it needs, and their ids are
+// made here as roster would make them.
 func (b *Sandbox) Seed(ctx context.Context) error {
 	s := b.S
 	now := time.Now()
@@ -145,23 +150,16 @@ func (b *Sandbox) Seed(ctx context.Context) error {
 	s.Kek = kek
 	s.Deps.Keys = core.NewKeys(kek, s.Ungated, nil)
 
+	tenants := map[string]pdid.Id{"cluster": pdid.New(core.DomTenant), "acme": pdid.New(core.DomTenant)}
 	for _, who := range [][2]string{{"cluster", "ops"}, {"acme", "admin"}} {
-		p, _, err := s.Identity.Seed(ctx, who[0], who[1])
-		if err != nil {
+		p := identity.Person{Id: pdid.New(core.DomHolder), Tenant: tenants[who[0]], Alias: who[1], TenantAlias: who[0]}
+		if _, err := s.Provision(ctx, p); err != nil {
 			return fmt.Errorf("@%s/%s: %w", who[0], who[1], err)
 		}
-		if _, err := s.Provision(ctx, p); err != nil {
-			return err
-		}
 	}
-	if b.cluster, err = s.ProvisionTenant(ctx, "cluster"); err != nil {
-		return err
-	}
+	b.cluster, b.tenant = tenants["cluster"], tenants["acme"]
 	s.ClusterTenant = b.cluster
 	s.Deps.ClusterTenant = b.cluster
-	if b.tenant, err = s.ProvisionTenant(ctx, "acme"); err != nil {
-		return err
-	}
 	if _, err := s.Deps.Keys.Create(ctx, s.Ungated, true); err != nil {
 		return fmt.Errorf("the signing key: %w", err)
 	}
