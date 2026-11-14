@@ -137,7 +137,15 @@ func applyClientFlags(c *cmd.Config) xli.Handler {
 // row, beside the old one, which it leaves: ent's migration drops no
 // index. Found under its name, an index whose columns changed is made
 // again where it stands.
+//
+// Processes sharing one PostgreSQL database take turns (lockMigration): the
+// one that waited finds the schema done and changes nothing.
 func Migrate(ctx context.Context, s *cmd.Server) error {
+	unlock, err := lockMigration(ctx, s.Db, s.Dialect)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	if err := rename.Indexes(ctx, s.Db, s.Dialect, slices.Concat(pd.IndexRenames, moved)); err != nil {
 		return err
 	}
