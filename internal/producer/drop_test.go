@@ -3,6 +3,7 @@ package producer
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -16,15 +17,20 @@ import (
 	"github.com/lesomnus/shale/server/core"
 )
 
-// failures records the laminae a producer reports LOST.
+// failures records the laminae a producer reports LOST; with hold set, a
+// report waits until it is closed, as one to a slow CP does.
 type failures struct {
 	api.LaminaServiceClient
 	mu   sync.Mutex
 	refs [][]byte
 	why  []string
+	hold chan struct{}
 }
 
 func (f *failures) ReportFailure(_ context.Context, req *api.LaminaReportFailureRequest, _ ...grpc.CallOption) (*api.Lamina, error) {
+	if f.hold != nil {
+		<-f.hold
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.refs = append(f.refs, req.GetRef().GetId())
@@ -79,4 +85,52 @@ func TestDropWithoutALaminaReportsNothing(t *testing.T) {
 	p.drop(context.Background(), s, s.pending[0], "no allocation: refused")
 	require.Empty(t, f.refs)
 	require.Equal(t, int64(1), s.lost)
+}
+
+// The loss is logged as it is counted, before the CP hears of it: a report
+// that takes its time holds back neither (#280's flake: a test that saw the
+// count looked for the line while the report was still on its way).
+func TestDropLogsBeforeTheReport(t *testing.T) {
+	p, s, f := dropRuntime(t)
+	var logs syncBuffer
+	p.log = slog.New(slog.NewTextHandler(&logs, nil))
+	f.hold = make(chan struct{})
+	s.hand(api.Allocation_builder{LaminaId: pdid.New(core.DomLamina).Bytes()}.Build(), 0)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		p.drop(context.Background(), s, s.pending[0], "source removed: bounded upload drain expired")
+	}()
+	require.Eventually(t, func() bool {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		return s.lost == 1
+	}, time.Second, time.Millisecond)
+	require.Contains(t, logs.String(), "bounded upload drain expired", "the line is there once the count is")
+	select {
+	case <-done:
+		t.Fatal("the report was not waited on")
+	default:
+	}
+	close(f.hold)
+	<-done
+	require.Len(t, f.refs, 1)
+}
+
+// syncBuffer is a log another goroutine writes while the test reads it.
+type syncBuffer struct {
+	mu sync.Mutex
+	b  strings.Builder
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.b.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.b.String()
 }

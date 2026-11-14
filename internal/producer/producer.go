@@ -1384,19 +1384,22 @@ func (p *Producer) drop(ctx context.Context, s *source, seg *Segment, why string
 	seg.Discard()
 	s.mu.Lock()
 	al, obj := s.headAlloc, s.headObj
-	s.finish(seg)
-	s.lost++
-	s.lostBytes += lostBytes
-	s.mu.Unlock()
 	key := ""
 	if al != nil {
 		key, obj = al.GetLaminaKey(), al.GetLaminaId()
 	}
+	// Logged as it is counted, and both before the CP is told, which can
+	// take seconds: what this host says of the loss does not wait on the
+	// network, and whoever sees the count sees the line.
+	p.log.Warn("lost", "source", s.cfg.Alias, "started", seg.Started, "key", key, "why", why)
+	s.finish(seg)
+	s.lost++
+	s.lostBytes += lostBytes
+	s.mu.Unlock()
+	p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "lost")))
 	if obj != nil {
 		p.uploader.GiveUp(ctx, obj, key, why)
 	}
-	p.log.Warn("lost", "source", s.cfg.Alias, "started", seg.Started, "key", key, "why", why)
-	p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "lost")))
 }
 
 // skip lets a dark segment go (§38.10): the CP is told its lamina holds
