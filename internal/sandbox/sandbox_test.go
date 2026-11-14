@@ -25,6 +25,8 @@ func TestSandbox(t *testing.T) {
 	defer cancel()
 	c := &cmd.Config{}
 	cli.ApplyDev(c, t.TempDir())
+	// As the page builds it: no roster (wasm/main.go, #154).
+	c.Auth.Roster.None = true
 	// Adoption is the console's to do: nothing is adopted on its own.
 	c.Control.AutoAdopt = false
 	s, err := cmd.Build(ctx, *c)

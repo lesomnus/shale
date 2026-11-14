@@ -79,9 +79,9 @@ func main() {
 		// Here it is right by construction; there is one of this server and
 		// it is inside the page.
 		Watch: config.WatchConfig{Broker: config.BrokerMemory},
-		// Who people are: roster in this process too, on a database of its
-		// own (§33.1).
-		Auth: cmd.AuthConfig{Roster: identity.Config{Db: db("roster")}},
+		// Who people are: the rows Seed makes, signed in with the plain
+		// header. No roster runs in the page (#154).
+		Auth: cmd.AuthConfig{Roster: identity.Config{None: true}},
 		// Nothing is adopted on its own: adopting is what the console is
 		// for.
 		Control: cmd.ControlConfig{Names: []string{"sandbox"}},

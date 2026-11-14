@@ -9,7 +9,7 @@ const OUT = process.env.OUT ?? 'test/shots'
 const BASE = process.env.BASE ?? 'http://127.0.0.1:5173/?sandbox'
 mkdirSync(OUT, { recursive: true })
 
-const browser = await chromium.launch()
+const browser = await chromium.launch(process.env.CHROMIUM_EXECUTABLE ? { executablePath: process.env.CHROMIUM_EXECUTABLE } : {})
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
 const logs = []
 page.on('console', (m) => {

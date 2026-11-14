@@ -232,11 +232,17 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		return nil, err
 	}
 
-	// Who people are: roster, in this process or elsewhere (§33.1).
-	s.Identity, err = identity.Open(ctx, c.Auth.Roster, dir, slog.Default())
-	if err != nil {
+	// Who people are: roster, in this process or elsewhere (§33.1), or
+	// nobody but the rows the sandbox makes itself.
+	if !c.Auth.Roster.None {
+		s.Identity, err = identity.Open(ctx, c.Auth.Roster, dir, slog.Default())
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
+	} else if c.Auth.Operators.On() || c.Auth.Oidc.On() {
 		db.Close()
-		return nil, err
+		return nil, errors.New("auth: operators and single sign-on are roster's, and there is no identity store")
 	}
 	if c.Auth.Operators.On() {
 		s.Operators, err = identity.NewOperators(s.Identity, c.Auth.Operators, slog.Default())
