@@ -166,6 +166,82 @@ func (x HardwareIdKind) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+type AdmissionWaitReason int32
+
+const (
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_UNSPECIFIED AdmissionWaitReason = 0
+	// producer.uplink is less than the cameras' ceilings × 2.2, the headroom
+	// recording and live take at once (§38.5).
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_UPLINK AdmissionWaitReason = 1
+	// producer.buffer, less what it holds, cannot reserve the new cameras'
+	// segments (§16).
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_BUFFER AdmissionWaitReason = 2
+	// The set's max_bitrate_total is less than its cameras' ceilings.
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_SET_BITRATE AdmissionWaitReason = 3
+	// The upload policy will not take a camera's ceiling.
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_UPLOAD_POLICY AdmissionWaitReason = 4
+	// More cameras than one assignment may hold.
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_SOURCE_LIMIT AdmissionWaitReason = 5
+	// The catalog changed while it was being admitted; it is asked again.
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_STALE AdmissionWaitReason = 6
+	// The CP refused the producer's identity or scope.
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_AUTHORIZATION AdmissionWaitReason = 7
+	// A camera's ceiling could not be read from the camera.
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_CEILING AdmissionWaitReason = 8
+	// Anything else; the producer's log has the code.
+	AdmissionWaitReason_ADMISSION_WAIT_REASON_OTHER AdmissionWaitReason = 9
+)
+
+// Enum value maps for AdmissionWaitReason.
+var (
+	AdmissionWaitReason_name = map[int32]string{
+		0: "ADMISSION_WAIT_REASON_UNSPECIFIED",
+		1: "ADMISSION_WAIT_REASON_UPLINK",
+		2: "ADMISSION_WAIT_REASON_BUFFER",
+		3: "ADMISSION_WAIT_REASON_SET_BITRATE",
+		4: "ADMISSION_WAIT_REASON_UPLOAD_POLICY",
+		5: "ADMISSION_WAIT_REASON_SOURCE_LIMIT",
+		6: "ADMISSION_WAIT_REASON_STALE",
+		7: "ADMISSION_WAIT_REASON_AUTHORIZATION",
+		8: "ADMISSION_WAIT_REASON_CEILING",
+		9: "ADMISSION_WAIT_REASON_OTHER",
+	}
+	AdmissionWaitReason_value = map[string]int32{
+		"ADMISSION_WAIT_REASON_UNSPECIFIED":   0,
+		"ADMISSION_WAIT_REASON_UPLINK":        1,
+		"ADMISSION_WAIT_REASON_BUFFER":        2,
+		"ADMISSION_WAIT_REASON_SET_BITRATE":   3,
+		"ADMISSION_WAIT_REASON_UPLOAD_POLICY": 4,
+		"ADMISSION_WAIT_REASON_SOURCE_LIMIT":  5,
+		"ADMISSION_WAIT_REASON_STALE":         6,
+		"ADMISSION_WAIT_REASON_AUTHORIZATION": 7,
+		"ADMISSION_WAIT_REASON_CEILING":       8,
+		"ADMISSION_WAIT_REASON_OTHER":         9,
+	}
+)
+
+func (x AdmissionWaitReason) Enum() *AdmissionWaitReason {
+	p := new(AdmissionWaitReason)
+	*p = x
+	return p
+}
+
+func (x AdmissionWaitReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AdmissionWaitReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_shale_common_proto_enumTypes[3].Descriptor()
+}
+
+func (AdmissionWaitReason) Type() protoreflect.EnumType {
+	return &file_shale_common_proto_enumTypes[3]
+}
+
+func (x AdmissionWaitReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // Pressure is a sink's free-space state (§21.1).
 type Pressure int32
 
@@ -203,11 +279,11 @@ func (x Pressure) String() string {
 }
 
 func (Pressure) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[3].Descriptor()
+	return file_shale_common_proto_enumTypes[4].Descriptor()
 }
 
 func (Pressure) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[3]
+	return &file_shale_common_proto_enumTypes[4]
 }
 
 func (x Pressure) Number() protoreflect.EnumNumber {
@@ -248,11 +324,11 @@ func (x RecordState) String() string {
 }
 
 func (RecordState) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[4].Descriptor()
+	return file_shale_common_proto_enumTypes[5].Descriptor()
 }
 
 func (RecordState) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[4]
+	return &file_shale_common_proto_enumTypes[5]
 }
 
 func (x RecordState) Number() protoreflect.EnumNumber {
@@ -304,11 +380,11 @@ func (x TokenOp) String() string {
 }
 
 func (TokenOp) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[5].Descriptor()
+	return file_shale_common_proto_enumTypes[6].Descriptor()
 }
 
 func (TokenOp) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[5]
+	return &file_shale_common_proto_enumTypes[6]
 }
 
 func (x TokenOp) Number() protoreflect.EnumNumber {
@@ -355,11 +431,11 @@ func (x MissingReason) String() string {
 }
 
 func (MissingReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[6].Descriptor()
+	return file_shale_common_proto_enumTypes[7].Descriptor()
 }
 
 func (MissingReason) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[6]
+	return &file_shale_common_proto_enumTypes[7]
 }
 
 func (x MissingReason) Number() protoreflect.EnumNumber {
@@ -2082,6 +2158,7 @@ type ProducerStatus struct {
 	xxx_hidden_Sources      *[]*SourceReport       `protobuf:"bytes,1,rep,name=sources"`
 	xxx_hidden_Load         *HostLoad              `protobuf:"bytes,2,opt,name=load"`
 	xxx_hidden_DateReported *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_reported,json=dateReported"`
+	xxx_hidden_Admission    *AdmissionWait         `protobuf:"bytes,4,opt,name=admission"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2134,6 +2211,13 @@ func (x *ProducerStatus) GetDateReported() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *ProducerStatus) GetAdmission() *AdmissionWait {
+	if x != nil {
+		return x.xxx_hidden_Admission
+	}
+	return nil
+}
+
 func (x *ProducerStatus) SetSources(v []*SourceReport) {
 	x.xxx_hidden_Sources = &v
 }
@@ -2144,6 +2228,10 @@ func (x *ProducerStatus) SetLoad(v *HostLoad) {
 
 func (x *ProducerStatus) SetDateReported(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateReported = v
+}
+
+func (x *ProducerStatus) SetAdmission(v *AdmissionWait) {
+	x.xxx_hidden_Admission = v
 }
 
 func (x *ProducerStatus) HasLoad() bool {
@@ -2160,6 +2248,13 @@ func (x *ProducerStatus) HasDateReported() bool {
 	return x.xxx_hidden_DateReported != nil
 }
 
+func (x *ProducerStatus) HasAdmission() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Admission != nil
+}
+
 func (x *ProducerStatus) ClearLoad() {
 	x.xxx_hidden_Load = nil
 }
@@ -2168,12 +2263,19 @@ func (x *ProducerStatus) ClearDateReported() {
 	x.xxx_hidden_DateReported = nil
 }
 
+func (x *ProducerStatus) ClearAdmission() {
+	x.xxx_hidden_Admission = nil
+}
+
 type ProducerStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Sources      []*SourceReport
 	Load         *HostLoad
 	DateReported *timestamppb.Timestamp
+	// Why cameras its catalog names are not recording yet, as of
+	// date_reported; absent when none are waiting (§38.5).
+	Admission *AdmissionWait
 }
 
 func (b0 ProducerStatus_builder) Build() *ProducerStatus {
@@ -2183,6 +2285,156 @@ func (b0 ProducerStatus_builder) Build() *ProducerStatus {
 	x.xxx_hidden_Sources = &b.Sources
 	x.xxx_hidden_Load = b.Load
 	x.xxx_hidden_DateReported = b.DateReported
+	x.xxx_hidden_Admission = b.Admission
+	return m0
+}
+
+// AdmissionWait is why a producer has not taken up cameras its catalog
+// names (§38.5). It keeps them waiting, and the feeds it has, until what it
+// reports changes; nothing here is an error string or a camera's answer.
+// The CP attaches one to a refused negotiation as an error detail, and the
+// producer reports the one it waits on in its heartbeat.
+type AdmissionWait struct {
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Reason          AdmissionWaitReason    `protobuf:"varint,1,opt,name=reason,enum=shale.AdmissionWaitReason"`
+	xxx_hidden_Required        int64                  `protobuf:"varint,2,opt,name=required"`
+	xxx_hidden_Available       int64                  `protobuf:"varint,3,opt,name=available"`
+	xxx_hidden_SourceIds       [][]byte               `protobuf:"bytes,4,rep,name=source_ids,json=sourceIds"`
+	xxx_hidden_CatalogRevision int64                  `protobuf:"varint,5,opt,name=catalog_revision,json=catalogRevision"`
+	xxx_hidden_DateSince       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=date_since,json=dateSince"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *AdmissionWait) Reset() {
+	*x = AdmissionWait{}
+	mi := &file_shale_common_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdmissionWait) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdmissionWait) ProtoMessage() {}
+
+func (x *AdmissionWait) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_common_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AdmissionWait) GetReason() AdmissionWaitReason {
+	if x != nil {
+		return x.xxx_hidden_Reason
+	}
+	return AdmissionWaitReason_ADMISSION_WAIT_REASON_UNSPECIFIED
+}
+
+func (x *AdmissionWait) GetRequired() int64 {
+	if x != nil {
+		return x.xxx_hidden_Required
+	}
+	return 0
+}
+
+func (x *AdmissionWait) GetAvailable() int64 {
+	if x != nil {
+		return x.xxx_hidden_Available
+	}
+	return 0
+}
+
+func (x *AdmissionWait) GetSourceIds() [][]byte {
+	if x != nil {
+		return x.xxx_hidden_SourceIds
+	}
+	return nil
+}
+
+func (x *AdmissionWait) GetCatalogRevision() int64 {
+	if x != nil {
+		return x.xxx_hidden_CatalogRevision
+	}
+	return 0
+}
+
+func (x *AdmissionWait) GetDateSince() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateSince
+	}
+	return nil
+}
+
+func (x *AdmissionWait) SetReason(v AdmissionWaitReason) {
+	x.xxx_hidden_Reason = v
+}
+
+func (x *AdmissionWait) SetRequired(v int64) {
+	x.xxx_hidden_Required = v
+}
+
+func (x *AdmissionWait) SetAvailable(v int64) {
+	x.xxx_hidden_Available = v
+}
+
+func (x *AdmissionWait) SetSourceIds(v [][]byte) {
+	x.xxx_hidden_SourceIds = v
+}
+
+func (x *AdmissionWait) SetCatalogRevision(v int64) {
+	x.xxx_hidden_CatalogRevision = v
+}
+
+func (x *AdmissionWait) SetDateSince(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateSince = v
+}
+
+func (x *AdmissionWait) HasDateSince() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateSince != nil
+}
+
+func (x *AdmissionWait) ClearDateSince() {
+	x.xxx_hidden_DateSince = nil
+}
+
+type AdmissionWait_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Reason AdmissionWaitReason
+	// What admission needs and what it has, in the reason's unit: bits a
+	// second for UPLINK, SET_BITRATE and UPLOAD_POLICY, bytes for BUFFER,
+	// cameras for SOURCE_LIMIT, and zero where the reason has no amount.
+	Required  int64
+	Available int64
+	// The cameras waiting, by Source id.
+	SourceIds [][]byte
+	// The catalog revision the wait is about.
+	CatalogRevision int64
+	// When the producer first waited for this reason on this revision.
+	DateSince *timestamppb.Timestamp
+}
+
+func (b0 AdmissionWait_builder) Build() *AdmissionWait {
+	m0 := &AdmissionWait{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Reason = b.Reason
+	x.xxx_hidden_Required = b.Required
+	x.xxx_hidden_Available = b.Available
+	x.xxx_hidden_SourceIds = b.SourceIds
+	x.xxx_hidden_CatalogRevision = b.CatalogRevision
+	x.xxx_hidden_DateSince = b.DateSince
 	return m0
 }
 
@@ -2202,7 +2454,7 @@ type SinkCapabilities struct {
 
 func (x *SinkCapabilities) Reset() {
 	*x = SinkCapabilities{}
-	mi := &file_shale_common_proto_msgTypes[13]
+	mi := &file_shale_common_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2214,7 +2466,7 @@ func (x *SinkCapabilities) String() string {
 func (*SinkCapabilities) ProtoMessage() {}
 
 func (x *SinkCapabilities) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[13]
+	mi := &file_shale_common_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2349,7 +2601,7 @@ type SinkReport struct {
 
 func (x *SinkReport) Reset() {
 	*x = SinkReport{}
-	mi := &file_shale_common_proto_msgTypes[14]
+	mi := &file_shale_common_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2361,7 +2613,7 @@ func (x *SinkReport) String() string {
 func (*SinkReport) ProtoMessage() {}
 
 func (x *SinkReport) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[14]
+	mi := &file_shale_common_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2583,7 +2835,7 @@ type SmartSummary struct {
 
 func (x *SmartSummary) Reset() {
 	*x = SmartSummary{}
-	mi := &file_shale_common_proto_msgTypes[15]
+	mi := &file_shale_common_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2595,7 +2847,7 @@ func (x *SmartSummary) String() string {
 func (*SmartSummary) ProtoMessage() {}
 
 func (x *SmartSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[15]
+	mi := &file_shale_common_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2742,7 +2994,7 @@ type DeviceReport struct {
 
 func (x *DeviceReport) Reset() {
 	*x = DeviceReport{}
-	mi := &file_shale_common_proto_msgTypes[16]
+	mi := &file_shale_common_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2754,7 +3006,7 @@ func (x *DeviceReport) String() string {
 func (*DeviceReport) ProtoMessage() {}
 
 func (x *DeviceReport) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[16]
+	mi := &file_shale_common_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2972,7 +3224,7 @@ type NodeStatus struct {
 
 func (x *NodeStatus) Reset() {
 	*x = NodeStatus{}
-	mi := &file_shale_common_proto_msgTypes[17]
+	mi := &file_shale_common_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2984,7 +3236,7 @@ func (x *NodeStatus) String() string {
 func (*NodeStatus) ProtoMessage() {}
 
 func (x *NodeStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[17]
+	mi := &file_shale_common_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3115,7 +3367,7 @@ type RelayStatus struct {
 
 func (x *RelayStatus) Reset() {
 	*x = RelayStatus{}
-	mi := &file_shale_common_proto_msgTypes[18]
+	mi := &file_shale_common_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3127,7 +3379,7 @@ func (x *RelayStatus) String() string {
 func (*RelayStatus) ProtoMessage() {}
 
 func (x *RelayStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[18]
+	mi := &file_shale_common_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3340,7 +3592,7 @@ type LaminaRecord struct {
 
 func (x *LaminaRecord) Reset() {
 	*x = LaminaRecord{}
-	mi := &file_shale_common_proto_msgTypes[19]
+	mi := &file_shale_common_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3352,7 +3604,7 @@ func (x *LaminaRecord) String() string {
 func (*LaminaRecord) ProtoMessage() {}
 
 func (x *LaminaRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[19]
+	mi := &file_shale_common_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3684,7 +3936,7 @@ type CaptureEpochGrant struct {
 
 func (x *CaptureEpochGrant) Reset() {
 	*x = CaptureEpochGrant{}
-	mi := &file_shale_common_proto_msgTypes[20]
+	mi := &file_shale_common_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3696,7 +3948,7 @@ func (x *CaptureEpochGrant) String() string {
 func (*CaptureEpochGrant) ProtoMessage() {}
 
 func (x *CaptureEpochGrant) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[20]
+	mi := &file_shale_common_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3796,7 +4048,7 @@ type TokenClaims struct {
 
 func (x *TokenClaims) Reset() {
 	*x = TokenClaims{}
-	mi := &file_shale_common_proto_msgTypes[21]
+	mi := &file_shale_common_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3808,7 +4060,7 @@ func (x *TokenClaims) String() string {
 func (*TokenClaims) ProtoMessage() {}
 
 func (x *TokenClaims) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[21]
+	mi := &file_shale_common_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4258,7 +4510,7 @@ type LaminaStored struct {
 
 func (x *LaminaStored) Reset() {
 	*x = LaminaStored{}
-	mi := &file_shale_common_proto_msgTypes[22]
+	mi := &file_shale_common_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4270,7 +4522,7 @@ func (x *LaminaStored) String() string {
 func (*LaminaStored) ProtoMessage() {}
 
 func (x *LaminaStored) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[22]
+	mi := &file_shale_common_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4526,7 +4778,7 @@ type LaminaDeleted struct {
 
 func (x *LaminaDeleted) Reset() {
 	*x = LaminaDeleted{}
-	mi := &file_shale_common_proto_msgTypes[23]
+	mi := &file_shale_common_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4538,7 +4790,7 @@ func (x *LaminaDeleted) String() string {
 func (*LaminaDeleted) ProtoMessage() {}
 
 func (x *LaminaDeleted) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[23]
+	mi := &file_shale_common_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4673,7 +4925,7 @@ type LaminaMissing struct {
 
 func (x *LaminaMissing) Reset() {
 	*x = LaminaMissing{}
-	mi := &file_shale_common_proto_msgTypes[24]
+	mi := &file_shale_common_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4685,7 +4937,7 @@ func (x *LaminaMissing) String() string {
 func (*LaminaMissing) ProtoMessage() {}
 
 func (x *LaminaMissing) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[24]
+	mi := &file_shale_common_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4816,7 +5068,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_shale_common_proto_msgTypes[25]
+	mi := &file_shale_common_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4828,7 +5080,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[25]
+	mi := &file_shale_common_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4993,7 +5245,7 @@ func (b0 Event_builder) Build() *Event {
 type case_Event_Event protoreflect.FieldNumber
 
 func (x case_Event_Event) String() string {
-	md := file_shale_common_proto_msgTypes[25].Descriptor()
+	md := file_shale_common_proto_msgTypes[26].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -5034,7 +5286,7 @@ type KeyEntry struct {
 
 func (x *KeyEntry) Reset() {
 	*x = KeyEntry{}
-	mi := &file_shale_common_proto_msgTypes[26]
+	mi := &file_shale_common_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5046,7 +5298,7 @@ func (x *KeyEntry) String() string {
 func (*KeyEntry) ProtoMessage() {}
 
 func (x *KeyEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[26]
+	mi := &file_shale_common_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5220,11 +5472,21 @@ const file_shale_common_proto_rawDesc = "" +
 	"\rseconds_total\x18\v \x01(\x03R\fsecondsTotal\x12\x14\n" +
 	"\x05error\x18\f \x01(\tR\x05error\x12\x12\n" +
 	"\x04dark\x18\r \x01(\bR\x04dark\x12#\n" +
-	"\rcapture_epoch\x18\x0e \x01(\tR\fcaptureEpoch\"\xa5\x01\n" +
+	"\rcapture_epoch\x18\x0e \x01(\tR\fcaptureEpoch\"\xd9\x01\n" +
 	"\x0eProducerStatus\x12-\n" +
 	"\asources\x18\x01 \x03(\v2\x13.shale.SourceReportR\asources\x12#\n" +
 	"\x04load\x18\x02 \x01(\v2\x0f.shale.HostLoadR\x04load\x12?\n" +
-	"\rdate_reported\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\fdateReported\"\xe0\x01\n" +
+	"\rdate_reported\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\fdateReported\x122\n" +
+	"\tadmission\x18\x04 \x01(\v2\x14.shale.AdmissionWaitR\tadmission\"\x82\x02\n" +
+	"\rAdmissionWait\x122\n" +
+	"\x06reason\x18\x01 \x01(\x0e2\x1a.shale.AdmissionWaitReasonR\x06reason\x12\x1a\n" +
+	"\brequired\x18\x02 \x01(\x03R\brequired\x12\x1c\n" +
+	"\tavailable\x18\x03 \x01(\x03R\tavailable\x12\x1d\n" +
+	"\n" +
+	"source_ids\x18\x04 \x03(\fR\tsourceIds\x12)\n" +
+	"\x10catalog_revision\x18\x05 \x01(\x03R\x0fcatalogRevision\x129\n" +
+	"\n" +
+	"date_since\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tdateSince\"\xe0\x01\n" +
 	"\x10SinkCapabilities\x12\x14\n" +
 	"\x05xattr\x18\x01 \x01(\bR\x05xattr\x12#\n" +
 	"\rinline_record\x18\x02 \x01(\bR\finlineRecord\x12\x18\n" +
@@ -5422,7 +5684,18 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x1cHARDWARE_ID_KIND_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14HARDWARE_ID_KIND_DMI\x10\x01\x12 \n" +
 	"\x1cHARDWARE_ID_KIND_DEVICE_TREE\x10\x02\x12\x1f\n" +
-	"\x1bHARDWARE_ID_KIND_MACHINE_ID\x10\x03*f\n" +
+	"\x1bHARDWARE_ID_KIND_MACHINE_ID\x10\x03*\x86\x03\n" +
+	"\x13AdmissionWaitReason\x12%\n" +
+	"!ADMISSION_WAIT_REASON_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cADMISSION_WAIT_REASON_UPLINK\x10\x01\x12 \n" +
+	"\x1cADMISSION_WAIT_REASON_BUFFER\x10\x02\x12%\n" +
+	"!ADMISSION_WAIT_REASON_SET_BITRATE\x10\x03\x12'\n" +
+	"#ADMISSION_WAIT_REASON_UPLOAD_POLICY\x10\x04\x12&\n" +
+	"\"ADMISSION_WAIT_REASON_SOURCE_LIMIT\x10\x05\x12\x1f\n" +
+	"\x1bADMISSION_WAIT_REASON_STALE\x10\x06\x12'\n" +
+	"#ADMISSION_WAIT_REASON_AUTHORIZATION\x10\a\x12!\n" +
+	"\x1dADMISSION_WAIT_REASON_CEILING\x10\b\x12\x1f\n" +
+	"\x1bADMISSION_WAIT_REASON_OTHER\x10\t*f\n" +
 	"\bPressure\x12\x18\n" +
 	"\x14PRESSURE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fPRESSURE_NORMAL\x10\x01\x12\x14\n" +
@@ -5445,97 +5718,102 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x16MISSING_REASON_DAMAGED\x10\x02\x12\x1c\n" +
 	"\x18MISSING_REASON_ABANDONED\x10\x03B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_shale_common_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_shale_common_proto_goTypes = []any{
 	(UploadMode)(0),               // 0: shale.UploadMode
 	(LivePolicy)(0),               // 1: shale.LivePolicy
 	(HardwareIdKind)(0),           // 2: shale.HardwareIdKind
-	(Pressure)(0),                 // 3: shale.Pressure
-	(RecordState)(0),              // 4: shale.RecordState
-	(TokenOp)(0),                  // 5: shale.TokenOp
-	(MissingReason)(0),            // 6: shale.MissingReason
-	(*LinkProfile)(nil),           // 7: shale.LinkProfile
-	(*SegmentProfile)(nil),        // 8: shale.SegmentProfile
-	(*ObservedRate)(nil),          // 9: shale.ObservedRate
-	(*Starvation)(nil),            // 10: shale.Starvation
-	(*Endpoint)(nil),              // 11: shale.Endpoint
-	(*Candidate)(nil),             // 12: shale.Candidate
-	(*Allocation)(nil),            // 13: shale.Allocation
-	(*RelayAssignment)(nil),       // 14: shale.RelayAssignment
-	(*HostJoin)(nil),              // 15: shale.HostJoin
-	(*HostInterface)(nil),         // 16: shale.HostInterface
-	(*HostLoad)(nil),              // 17: shale.HostLoad
-	(*SourceReport)(nil),          // 18: shale.SourceReport
-	(*ProducerStatus)(nil),        // 19: shale.ProducerStatus
-	(*SinkCapabilities)(nil),      // 20: shale.SinkCapabilities
-	(*SinkReport)(nil),            // 21: shale.SinkReport
-	(*SmartSummary)(nil),          // 22: shale.SmartSummary
-	(*DeviceReport)(nil),          // 23: shale.DeviceReport
-	(*NodeStatus)(nil),            // 24: shale.NodeStatus
-	(*RelayStatus)(nil),           // 25: shale.RelayStatus
-	(*LaminaRecord)(nil),          // 26: shale.LaminaRecord
-	(*CaptureEpochGrant)(nil),     // 27: shale.CaptureEpochGrant
-	(*TokenClaims)(nil),           // 28: shale.TokenClaims
-	(*LaminaStored)(nil),          // 29: shale.LaminaStored
-	(*LaminaDeleted)(nil),         // 30: shale.LaminaDeleted
-	(*LaminaMissing)(nil),         // 31: shale.LaminaMissing
-	(*Event)(nil),                 // 32: shale.Event
-	(*KeyEntry)(nil),              // 33: shale.KeyEntry
-	(*timestamppb.Timestamp)(nil), // 34: google.protobuf.Timestamp
+	(AdmissionWaitReason)(0),      // 3: shale.AdmissionWaitReason
+	(Pressure)(0),                 // 4: shale.Pressure
+	(RecordState)(0),              // 5: shale.RecordState
+	(TokenOp)(0),                  // 6: shale.TokenOp
+	(MissingReason)(0),            // 7: shale.MissingReason
+	(*LinkProfile)(nil),           // 8: shale.LinkProfile
+	(*SegmentProfile)(nil),        // 9: shale.SegmentProfile
+	(*ObservedRate)(nil),          // 10: shale.ObservedRate
+	(*Starvation)(nil),            // 11: shale.Starvation
+	(*Endpoint)(nil),              // 12: shale.Endpoint
+	(*Candidate)(nil),             // 13: shale.Candidate
+	(*Allocation)(nil),            // 14: shale.Allocation
+	(*RelayAssignment)(nil),       // 15: shale.RelayAssignment
+	(*HostJoin)(nil),              // 16: shale.HostJoin
+	(*HostInterface)(nil),         // 17: shale.HostInterface
+	(*HostLoad)(nil),              // 18: shale.HostLoad
+	(*SourceReport)(nil),          // 19: shale.SourceReport
+	(*ProducerStatus)(nil),        // 20: shale.ProducerStatus
+	(*AdmissionWait)(nil),         // 21: shale.AdmissionWait
+	(*SinkCapabilities)(nil),      // 22: shale.SinkCapabilities
+	(*SinkReport)(nil),            // 23: shale.SinkReport
+	(*SmartSummary)(nil),          // 24: shale.SmartSummary
+	(*DeviceReport)(nil),          // 25: shale.DeviceReport
+	(*NodeStatus)(nil),            // 26: shale.NodeStatus
+	(*RelayStatus)(nil),           // 27: shale.RelayStatus
+	(*LaminaRecord)(nil),          // 28: shale.LaminaRecord
+	(*CaptureEpochGrant)(nil),     // 29: shale.CaptureEpochGrant
+	(*TokenClaims)(nil),           // 30: shale.TokenClaims
+	(*LaminaStored)(nil),          // 31: shale.LaminaStored
+	(*LaminaDeleted)(nil),         // 32: shale.LaminaDeleted
+	(*LaminaMissing)(nil),         // 33: shale.LaminaMissing
+	(*Event)(nil),                 // 34: shale.Event
+	(*KeyEntry)(nil),              // 35: shale.KeyEntry
+	(*timestamppb.Timestamp)(nil), // 36: google.protobuf.Timestamp
 }
 var file_shale_common_proto_depIdxs = []int32{
 	0,  // 0: shale.LinkProfile.mode:type_name -> shale.UploadMode
-	34, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
-	34, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
-	11, // 3: shale.Candidate.endpoints:type_name -> shale.Endpoint
-	34, // 4: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
-	12, // 5: shale.Allocation.candidates:type_name -> shale.Candidate
-	34, // 6: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
-	8,  // 7: shale.Allocation.profile:type_name -> shale.SegmentProfile
-	7,  // 8: shale.Allocation.link:type_name -> shale.LinkProfile
-	11, // 9: shale.RelayAssignment.endpoints:type_name -> shale.Endpoint
-	34, // 10: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
+	36, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
+	36, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
+	12, // 3: shale.Candidate.endpoints:type_name -> shale.Endpoint
+	36, // 4: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
+	13, // 5: shale.Allocation.candidates:type_name -> shale.Candidate
+	36, // 6: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
+	9,  // 7: shale.Allocation.profile:type_name -> shale.SegmentProfile
+	8,  // 8: shale.Allocation.link:type_name -> shale.LinkProfile
+	12, // 9: shale.RelayAssignment.endpoints:type_name -> shale.Endpoint
+	36, // 10: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
 	1,  // 11: shale.RelayAssignment.live:type_name -> shale.LivePolicy
 	2,  // 12: shale.HostJoin.hardware_id_kind:type_name -> shale.HardwareIdKind
-	34, // 13: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
-	18, // 14: shale.ProducerStatus.sources:type_name -> shale.SourceReport
-	17, // 15: shale.ProducerStatus.load:type_name -> shale.HostLoad
-	34, // 16: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
-	3,  // 17: shale.SinkReport.pressure:type_name -> shale.Pressure
-	20, // 18: shale.SinkReport.capabilities:type_name -> shale.SinkCapabilities
-	34, // 19: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
-	34, // 20: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
-	22, // 21: shale.DeviceReport.smart:type_name -> shale.SmartSummary
-	34, // 22: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
-	34, // 23: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
-	17, // 24: shale.RelayStatus.load:type_name -> shale.HostLoad
-	4,  // 25: shale.LaminaRecord.state:type_name -> shale.RecordState
-	0,  // 26: shale.LaminaRecord.mode:type_name -> shale.UploadMode
-	34, // 27: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
-	34, // 28: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
-	5,  // 29: shale.TokenClaims.op:type_name -> shale.TokenOp
-	26, // 30: shale.TokenClaims.record:type_name -> shale.LaminaRecord
-	0,  // 31: shale.TokenClaims.mode:type_name -> shale.UploadMode
-	1,  // 32: shale.TokenClaims.live:type_name -> shale.LivePolicy
-	34, // 33: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
-	34, // 34: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
-	27, // 35: shale.TokenClaims.capture_epochs:type_name -> shale.CaptureEpochGrant
-	34, // 36: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
-	34, // 37: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
-	34, // 38: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
-	26, // 39: shale.LaminaStored.record:type_name -> shale.LaminaRecord
-	34, // 40: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
-	6,  // 41: shale.LaminaMissing.reason:type_name -> shale.MissingReason
-	34, // 42: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
-	29, // 43: shale.Event.stored:type_name -> shale.LaminaStored
-	30, // 44: shale.Event.deleted:type_name -> shale.LaminaDeleted
-	31, // 45: shale.Event.missing:type_name -> shale.LaminaMissing
-	46, // [46:46] is the sub-list for method output_type
-	46, // [46:46] is the sub-list for method input_type
-	46, // [46:46] is the sub-list for extension type_name
-	46, // [46:46] is the sub-list for extension extendee
-	0,  // [0:46] is the sub-list for field type_name
+	36, // 13: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
+	19, // 14: shale.ProducerStatus.sources:type_name -> shale.SourceReport
+	18, // 15: shale.ProducerStatus.load:type_name -> shale.HostLoad
+	36, // 16: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
+	21, // 17: shale.ProducerStatus.admission:type_name -> shale.AdmissionWait
+	3,  // 18: shale.AdmissionWait.reason:type_name -> shale.AdmissionWaitReason
+	36, // 19: shale.AdmissionWait.date_since:type_name -> google.protobuf.Timestamp
+	4,  // 20: shale.SinkReport.pressure:type_name -> shale.Pressure
+	22, // 21: shale.SinkReport.capabilities:type_name -> shale.SinkCapabilities
+	36, // 22: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
+	36, // 23: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
+	24, // 24: shale.DeviceReport.smart:type_name -> shale.SmartSummary
+	36, // 25: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
+	36, // 26: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
+	18, // 27: shale.RelayStatus.load:type_name -> shale.HostLoad
+	5,  // 28: shale.LaminaRecord.state:type_name -> shale.RecordState
+	0,  // 29: shale.LaminaRecord.mode:type_name -> shale.UploadMode
+	36, // 30: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
+	36, // 31: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
+	6,  // 32: shale.TokenClaims.op:type_name -> shale.TokenOp
+	28, // 33: shale.TokenClaims.record:type_name -> shale.LaminaRecord
+	0,  // 34: shale.TokenClaims.mode:type_name -> shale.UploadMode
+	1,  // 35: shale.TokenClaims.live:type_name -> shale.LivePolicy
+	36, // 36: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
+	36, // 37: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
+	29, // 38: shale.TokenClaims.capture_epochs:type_name -> shale.CaptureEpochGrant
+	36, // 39: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
+	36, // 40: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
+	36, // 41: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
+	28, // 42: shale.LaminaStored.record:type_name -> shale.LaminaRecord
+	36, // 43: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
+	7,  // 44: shale.LaminaMissing.reason:type_name -> shale.MissingReason
+	36, // 45: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
+	31, // 46: shale.Event.stored:type_name -> shale.LaminaStored
+	32, // 47: shale.Event.deleted:type_name -> shale.LaminaDeleted
+	33, // 48: shale.Event.missing:type_name -> shale.LaminaMissing
+	49, // [49:49] is the sub-list for method output_type
+	49, // [49:49] is the sub-list for method input_type
+	49, // [49:49] is the sub-list for extension type_name
+	49, // [49:49] is the sub-list for extension extendee
+	0,  // [0:49] is the sub-list for field type_name
 }
 
 func init() { file_shale_common_proto_init() }
@@ -5543,7 +5821,7 @@ func file_shale_common_proto_init() {
 	if File_shale_common_proto != nil {
 		return
 	}
-	file_shale_common_proto_msgTypes[25].OneofWrappers = []any{
+	file_shale_common_proto_msgTypes[26].OneofWrappers = []any{
 		(*event_Stored)(nil),
 		(*event_Deleted)(nil),
 		(*event_Missing)(nil),
@@ -5553,8 +5831,8 @@ func file_shale_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_common_proto_rawDesc), len(file_shale_common_proto_rawDesc)),
-			NumEnums:      7,
-			NumMessages:   27,
+			NumEnums:      8,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

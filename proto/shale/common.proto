@@ -193,6 +193,53 @@ message ProducerStatus {
   repeated SourceReport sources = 1;
   HostLoad load = 2;
   google.protobuf.Timestamp date_reported = 3;
+  // Why cameras its catalog names are not recording yet, as of
+  // date_reported; absent when none are waiting (§38.5).
+  AdmissionWait admission = 4;
+}
+
+// AdmissionWait is why a producer has not taken up cameras its catalog
+// names (§38.5). It keeps them waiting, and the feeds it has, until what it
+// reports changes; nothing here is an error string or a camera's answer.
+// The CP attaches one to a refused negotiation as an error detail, and the
+// producer reports the one it waits on in its heartbeat.
+message AdmissionWait {
+  AdmissionWaitReason reason = 1;
+  // What admission needs and what it has, in the reason's unit: bits a
+  // second for UPLINK, SET_BITRATE and UPLOAD_POLICY, bytes for BUFFER,
+  // cameras for SOURCE_LIMIT, and zero where the reason has no amount.
+  int64 required = 2;
+  int64 available = 3;
+  // The cameras waiting, by Source id.
+  repeated bytes source_ids = 4;
+  // The catalog revision the wait is about.
+  int64 catalog_revision = 5;
+  // When the producer first waited for this reason on this revision.
+  google.protobuf.Timestamp date_since = 6;
+}
+
+enum AdmissionWaitReason {
+  ADMISSION_WAIT_REASON_UNSPECIFIED = 0;
+  // producer.uplink is less than the cameras' ceilings × 2.2, the headroom
+  // recording and live take at once (§38.5).
+  ADMISSION_WAIT_REASON_UPLINK = 1;
+  // producer.buffer, less what it holds, cannot reserve the new cameras'
+  // segments (§16).
+  ADMISSION_WAIT_REASON_BUFFER = 2;
+  // The set's max_bitrate_total is less than its cameras' ceilings.
+  ADMISSION_WAIT_REASON_SET_BITRATE = 3;
+  // The upload policy will not take a camera's ceiling.
+  ADMISSION_WAIT_REASON_UPLOAD_POLICY = 4;
+  // More cameras than one assignment may hold.
+  ADMISSION_WAIT_REASON_SOURCE_LIMIT = 5;
+  // The catalog changed while it was being admitted; it is asked again.
+  ADMISSION_WAIT_REASON_STALE = 6;
+  // The CP refused the producer's identity or scope.
+  ADMISSION_WAIT_REASON_AUTHORIZATION = 7;
+  // A camera's ceiling could not be read from the camera.
+  ADMISSION_WAIT_REASON_CEILING = 8;
+  // Anything else; the producer's log has the code.
+  ADMISSION_WAIT_REASON_OTHER = 9;
 }
 
 // SinkCapabilities is the result of the capability probe (§22.2).

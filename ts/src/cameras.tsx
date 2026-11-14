@@ -2,7 +2,8 @@
  * Cameras: every set of the tenant, its sources, and what its producer's
  * heartbeat says about each (§38.6): up or down, the frame rate, the measured
  * rate against the ceiling, a scene gone dark (§38.10), and the suggestion a
- * starved source earns (§38.5).
+ * starved source earns (§38.5), and why cameras the producer's catalog names
+ * are not recording yet.
  *
  * @module
  */
@@ -14,7 +15,7 @@ import { key } from '@lesomnus/payday/store'
 import { HostState, type Producer } from '../gen/shale/host_pb.js'
 import { ProducerService } from '../gen/shale/host_svc_pb.js'
 import type { Set, Source } from '../gen/shale/set_pb.js'
-import { UploadMode } from '../gen/shale/common_pb.js'
+import { AdmissionWaitReason, UploadMode, type AdmissionWait } from '../gen/shale/common_pb.js'
 import { SetService, SourceService } from '../gen/shale/set_svc_pb.js'
 import type { SourceReport } from '../gen/shale/common_pb.js'
 
@@ -66,6 +67,9 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 	const alive = producer !== undefined && seen !== undefined && now - seen.getTime() <= DOWN_AFTER_MS
 	const reports = new Map<string, SourceReport>()
 	for (const r of producer?.status?.sources ?? []) reports.set(hex(r.sourceId), r)
+	// Only what a producer still up says: a wait in an old heartbeat is not news.
+	const wait = alive ? producer?.status?.admission : undefined
+	const waiting = new Set((wait?.sourceIds ?? []).map((id) => hex(id)))
 
 	return (
 		<section>
@@ -99,6 +103,15 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 				<a href={`#/live/${hex(v.id)}`}>watch live</a>
 				<a href={`#/segments/${hex(v.id)}`}>segments</a>
 			</div>
+			{wait !== undefined && (
+				<p className="warn">
+					{waiting.size > 0 ? `${waiting.size} camera${waiting.size === 1 ? '' : 's'} waiting to start` : 'cameras waiting to start'}: {waitText(wait)}
+					<span className="dim">
+						{' '}
+						· since <Ago at={wait.dateSince} />
+					</span>
+				</p>
+			)}
 			{sources.state === 'error' ? (
 				<Err error={sources.error} />
 			) : sources.data === undefined ? (
@@ -110,7 +123,7 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 					{[...sources.data.items]
 						.sort((a, b) => a.ordinal - b.ordinal)
 						.map((src) => (
-							<Camera key={key(src.id)} source={src} report={reports.get(hex(src.id))} producerUp={alive} />
+							<Camera key={key(src.id)} source={src} report={reports.get(hex(src.id))} producerUp={alive} wait={waiting.has(hex(src.id)) ? wait : undefined} />
 						))}
 				</div>
 			)}
@@ -118,13 +131,14 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 	)
 }
 
-function Camera(props: { source: Source; report: SourceReport | undefined; producerUp: boolean }): ReactNode {
+function Camera(props: { source: Source; report: SourceReport | undefined; producerUp: boolean; wait: AdmissionWait | undefined }): ReactNode {
 	const s = props.source
 	const r = props.report
 	const ceiling = Number(r?.maxBitrate ?? s.profile?.maxBitrate ?? 0n)
 	const rate = Number(r?.measuredBitrate ?? 0n)
 	let state: { tone: Tone; text: string }
 	if (!props.producerUp) state = { tone: 'bad', text: 'producer down' }
+	else if (r === undefined && props.wait !== undefined) state = { tone: 'warn', text: `waiting: ${waitShort(props.wait.reason)}` }
 	else if (r === undefined) state = { tone: 'dim', text: 'not reported' }
 	else if (!r.inputUp) state = { tone: 'bad', text: 'input down' }
 	else if (r.dark) state = { tone: 'info', text: 'dark: not stored' }
@@ -193,4 +207,56 @@ function Camera(props: { source: Source; report: SourceReport | undefined; produ
 			</dl>
 		</div>
 	)
+}
+
+/** waitShort is a wait's reason in a word or two, for a camera's badge. */
+function waitShort(reason: AdmissionWaitReason): string {
+	switch (reason) {
+		case AdmissionWaitReason.UPLINK:
+			return 'uplink budget'
+		case AdmissionWaitReason.BUFFER:
+			return 'RAM budget'
+		case AdmissionWaitReason.SET_BITRATE:
+			return 'set budget'
+		case AdmissionWaitReason.UPLOAD_POLICY:
+			return 'upload policy'
+		case AdmissionWaitReason.SOURCE_LIMIT:
+			return 'too many cameras'
+		case AdmissionWaitReason.STALE:
+			return 'catalog changed'
+		case AdmissionWaitReason.AUTHORIZATION:
+			return 'refused'
+		case AdmissionWaitReason.CEILING:
+			return 'ceiling unknown'
+		default:
+			return 'see the producer log'
+	}
+}
+
+/**
+ * waitText says why cameras wait, with the amounts the producer reported
+ * (§38.5): what admission needs against what it has, and which setting to
+ * change. The producer keeps existing feeds and starts these when it fits.
+ */
+function waitText(w: AdmissionWait): string {
+	switch (w.reason) {
+		case AdmissionWaitReason.UPLINK:
+			return `recording and live together need ${bps(w.required)} (the ceilings × 2.2), and producer.uplink is ${bps(w.available)}`
+		case AdmissionWaitReason.BUFFER:
+			return `their first segments need ${bytes(w.required)} of RAM, and ${bytes(w.available)} of producer.buffer is free`
+		case AdmissionWaitReason.SET_BITRATE:
+			return `the cameras need ${bps(w.required)}, and the set allows ${bps(w.available)} in all`
+		case AdmissionWaitReason.UPLOAD_POLICY:
+			return `a camera's ceiling is ${bps(w.required)}, and the upload policy allows ${bps(w.available)}`
+		case AdmissionWaitReason.SOURCE_LIMIT:
+			return `${w.required} cameras, and one assignment holds at most ${w.available}`
+		case AdmissionWaitReason.STALE:
+			return 'the catalog changed while it was admitted; the producer asks again'
+		case AdmissionWaitReason.AUTHORIZATION:
+			return "the control plane refused the producer's identity or scope"
+		case AdmissionWaitReason.CEILING:
+			return "a camera's ceiling could not be read from the camera"
+		default:
+			return "the producer's log says why"
+	}
 }

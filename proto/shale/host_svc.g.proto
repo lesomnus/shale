@@ -1045,6 +1045,8 @@ message ProducerHeartbeatRequest {
   string ca_hash = 3 [features.field_presence = IMPLICIT];
   string version = 4 [features.field_presence = IMPLICIT];
   string relay_state = 5 [features.field_presence = IMPLICIT];
+  // Cameras its catalog names that it has not taken up, and why (§38.5).
+  AdmissionWait admission = 6;
 }
 
 message ProducerHeartbeatResponse {

@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"io"
 	"log/slog"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -193,6 +194,9 @@ type Producer struct {
 	// call through cp, on the connection there is at each call.
 	conn atomic.Pointer[grpc.ClientConn]
 	id   pdid.Id
+	// admission is why cameras the catalog names wait, nil when none do;
+	// the heartbeat reports it (§38.5).
+	admission atomic.Pointer[api.AdmissionWait]
 
 	set             *api.Set
 	sourcesMu       sync.RWMutex
@@ -790,7 +794,7 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 	var total int64
 	for _, s := range sources {
 		if err := p.refreshCeiling(ctx, s); err != nil {
-			return err
+			return refused(api.AdmissionWaitReason_ADMISSION_WAIT_REASON_CEILING, 0, 0, err)
 		}
 		s.mu.Lock()
 		ceiling, raise := s.ceiling, s.raise
@@ -837,7 +841,8 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 		// Reserve peak simultaneous live traffic even with on-demand relay policy.
 		// Preview may fail; neither capture nor an existing Source profile changed.
 		if p.cfg.Uplink > 0 && float64(total)*2.2 > float64(p.cfg.Uplink) {
-			return status.Error(codes.ResourceExhausted, "managed capture exceeds Producer uplink budget")
+			return refused(api.AdmissionWaitReason_ADMISSION_WAIT_REASON_UPLINK, int64(math.Ceil(float64(total)*2.2)), p.cfg.Uplink,
+				status.Error(codes.ResourceExhausted, "managed capture exceeds Producer uplink budget"))
 		}
 		id, _ := pdid.Parse(snapshot.Revision.AssignmentID)
 		request.Catalog = api.CameraApplyTarget_builder{AssignmentId: id.Bytes(), AssignmentGeneration: snapshot.Revision.Generation, CatalogRevision: snapshot.Revision.Catalog}.Build()
@@ -857,8 +862,9 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 				}
 			}
 		}
-		if reserve > p.cfg.Buffer-p.heldBytes() {
-			return status.Error(codes.ResourceExhausted, "managed capture exceeds retained RAM admission budget")
+		if free := p.cfg.Buffer - p.heldBytes(); reserve > free {
+			return refused(api.AdmissionWaitReason_ADMISSION_WAIT_REASON_BUFFER, reserve, max(free, 0),
+				status.Error(codes.ResourceExhausted, "managed capture exceeds retained RAM admission budget"))
 		}
 	}
 	if preview {
@@ -1750,10 +1756,11 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 	hctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	resp, err := api.NewProducerServiceClient(p.cp()).Heartbeat(hctx, api.ProducerHeartbeatRequest_builder{
-		Sources: reports,
-		Load:    api.HostLoad_builder{Cpu: cpuLoad(), Temperature: socTemperature()}.Build(),
-		CaHash:  p.agent.BundleHash(),
-		Version: hostagent.Version,
+		Sources:   reports,
+		Load:      api.HostLoad_builder{Cpu: cpuLoad(), Temperature: socTemperature()}.Build(),
+		CaHash:    p.agent.BundleHash(),
+		Version:   hostagent.Version,
+		Admission: p.admission.Load(),
 	}.Build())
 	if err != nil {
 		return err

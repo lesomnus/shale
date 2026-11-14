@@ -110,7 +110,11 @@ func TestSandbox(t *testing.T) {
 				pi = v
 			}
 		}
+		// Three cameras record, and the fourth waits for the uplink (§38.5).
 		if pi == nil || pending != 1 || len(pi.GetStatus().GetSources()) != 3 {
+			return false
+		}
+		if w := pi.GetStatus().GetAdmission(); w.GetReason() != api.AdmissionWaitReason_ADMISSION_WAIT_REASON_UPLINK || len(w.GetSourceIds()) != 1 || w.GetRequired() <= w.GetAvailable() {
 			return false
 		}
 		set, err := s.Walled.Set().Get(admin, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: pi.GetSet().GetId()}.Build()}.Build())
@@ -166,7 +170,8 @@ func TestSandbox(t *testing.T) {
 			return false
 		}
 
-		return len(r.GetSources()) == 3 && r.GetSources()[0].GetWhepUrl() != ""
+		// Every camera of the set, the one still waiting to start included.
+		return len(r.GetSources()) == 4 && r.GetSources()[0].GetWhepUrl() != ""
 	}, 20*time.Second, 200*time.Millisecond, "live answers every camera")
 
 	// Adopting the waiting node starts it: the console's adopt is this call.
