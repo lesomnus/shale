@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,7 +31,16 @@ func TestLegacyCaptureQueryTokenDiagnostics(t *testing.T) {
 	require.NoError(t, err)
 	src := configs["door"]
 	require.NoError(t, credential.WithInput(ctx, auth, src.Scope, camera.DeviceHint{}, src.InputCredential, src.Input, func(actual string, _ credential.Sanitizer) error {
-		require.True(t, actual == input, "private capture input must not be rewritten")
+		// The capture reads the legacy URI's camera through the loopback
+		// proxy, which keeps both its password and its query token (#249).
+		u, err := url.Parse(actual)
+		require.NoError(t, err)
+		require.Nil(t, u.User)
+		require.Empty(t, u.RawQuery)
+		require.Equal(t, "127.0.0.1", u.Hostname())
+		for _, secret := range []string{raw, decoded, "fixture-password"} {
+			require.NotContains(t, actual, secret)
+		}
 		return nil
 	}))
 	binary := filepath.Join(t.TempDir(), "capture-tool")
@@ -57,7 +67,12 @@ func TestLegacyCredentialOctetsKeepPrivateTransportWithoutDiagnosticPanic(t *tes
 	src := configs["door"]
 	sentinel := errors.New("fixture failure")
 	err = credential.WithInput(ctx, auth, src.Scope, camera.DeviceHint{}, src.InputCredential, src.Input, func(actual string, _ credential.Sanitizer) error {
-		require.True(t, actual == input, "valid URL octets must remain unchanged in the private callback")
+		// The query, octets as they are, stays with the loopback proxy and
+		// goes to the camera from there (#249); the tool's input has none.
+		u, err := url.Parse(actual)
+		require.NoError(t, err)
+		require.Empty(t, u.RawQuery)
+		require.Equal(t, "127.0.0.1", u.Hostname())
 		return fmt.Errorf("failed %%ff %s: %w", string([]byte{0xff}), sentinel)
 	})
 	require.ErrorIs(t, err, sentinel)
@@ -187,7 +202,11 @@ func TestLegacyCatalogPrivateTransportAndSidecar(t *testing.T) {
 	require.False(t, got.InputCredential.Recoverable, "legacy URI credentials cannot authorize activation")
 	for i := 0; i < 2; i++ {
 		err = credential.WithInput(ctx, auth, got.Scope, camera.DeviceHint{}, got.InputCredential, got.Input, func(actual string, sanitize credential.Sanitizer) error {
-			require.True(t, actual == input, "private transport must preserve the exact legacy URI")
+			// The legacy URI reaches the camera through the proxy; the tool's
+			// input carries neither its password nor its token (#249).
+			for _, secret := range []string{password, token, url.QueryEscape(token), url.PathEscape(password)} {
+				require.NotContains(t, actual, secret)
+			}
 			return fmt.Errorf("capture: %s %s %s %s", actual, password, token, url.QueryEscape(token))
 		})
 		require.Error(t, err)
@@ -239,9 +258,13 @@ func TestLegacyCatalogKeepsExactExistingReference(t *testing.T) {
 	require.Equal(t, ref, *got.InputCredential)
 	require.Equal(t, scope, got.Scope)
 	require.NoError(t, credential.WithInput(ctx, auth, got.Scope, camera.DeviceHint{}, got.InputCredential, got.Input, func(input string, _ credential.Sanitizer) error {
+		// The reference resolves, and what the tool is handed is the
+		// loopback proxy that signs in with it, never the credential (#249).
 		u, e := url.Parse(input)
 		require.NoError(t, e)
-		require.Equal(t, "reader", u.User.Username())
+		require.Nil(t, u.User)
+		require.Equal(t, "127.0.0.1", u.Hostname())
+		require.True(t, strings.HasSuffix(u.Path, "/main"))
 		return nil
 	}))
 	v, err := provider.Snapshot(ctx)

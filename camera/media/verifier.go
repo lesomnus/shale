@@ -127,7 +127,9 @@ func (v *Verifier) Verify(ctx context.Context, request camera.MediaRequest) (cam
 				values = append(values, p)
 			}
 		}
-		err = operation(raw, credential.NewSanitizer(values...))
+		sanitize := credential.NewSanitizer(values...)
+		// A legacy URL's own credential stays out of the tools' arguments too.
+		err = credential.SanitizeError(credential.Hidden(ctx, raw, func(input string) error { return operation(input, sanitize) }), sanitize)
 	}
 	return result, err
 }

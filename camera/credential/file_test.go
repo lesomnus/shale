@@ -1,10 +1,14 @@
 package credential_test
 
 import (
+	"bufio"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/textproto"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -97,18 +101,59 @@ func TestStreamScopeReservedURIAndRedaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// A camera that takes exactly this material, by Basic authentication.
+	cam, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cam.Close()
+	want := "Basic " + base64.StdEncoding.EncodeToString([]byte(secret.Username+":"+secret.Password))
+	go func() {
+		c, err := cam.Accept()
+		if err != nil {
+			return
+		}
+		defer c.Close()
+		r := bufio.NewReader(c)
+		for {
+			req, err := textproto.NewReader(r).ReadLine()
+			if err != nil || req == "" {
+				return
+			}
+			h, err := textproto.NewReader(r).ReadMIMEHeader()
+			if err != nil {
+				return
+			}
+			status := "401 Unauthorized\r\nWWW-Authenticate: Basic realm=\"cam\""
+			if h.Get("Authorization") == want {
+				status = "200 OK"
+			}
+			fmt.Fprintf(c, "RTSP/1.0 %s\r\nCSeq: %s\r\n\r\n", status, h.Get("Cseq"))
+		}
+	}()
 	sent := false
-	err = credential.WithInput(ctx, p, scope, camera.DeviceHint{}, &ref, "rtsp://camera/stream", func(input string, sanitize credential.Sanitizer) error {
+	err = credential.WithInput(ctx, p, scope, camera.DeviceHint{}, &ref, "rtsp://"+cam.Addr().String()+"/stream", func(input string, sanitize credential.Sanitizer) error {
 		sent = true
+		// The tool is handed a loopback URL with no credential in it (#249)...
 		u, e := url.Parse(input)
 		if e != nil {
 			t.Fatal(e)
 		}
-		pw, _ := u.User.Password()
-		if pw != secret.Password || u.User.Username() != secret.Username {
-			t.Fatal("reserved URI material corrupted")
+		if u.User != nil || u.Hostname() != "127.0.0.1" {
+			t.Fatal("the tool's input carries a credential")
 		}
-		return fmt.Errorf("tool refused %s password=%s encoded=%s", input, pw, url.QueryEscape(pw))
+		// ...and the proxy behind it signs in with the material as it is.
+		c, e := net.Dial("tcp", u.Host)
+		if e != nil {
+			t.Fatal(e)
+		}
+		defer c.Close()
+		fmt.Fprintf(c, "DESCRIBE %s RTSP/1.0\r\nCSeq: 1\r\n\r\n", input)
+		line, e := bufio.NewReader(c).ReadString('\n')
+		if e != nil || !strings.HasPrefix(line, "RTSP/1.0 200") {
+			t.Fatalf("reserved URI material corrupted: %q", line)
+		}
+		return fmt.Errorf("tool refused %s password=%s encoded=%s", input, secret.Password, url.QueryEscape(secret.Password))
 	})
 	if !sent || err == nil {
 		t.Fatal("stream input not resolved")
