@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"math/rand/v2"
+	"net"
 	"net/url"
 	"strconv"
 	"sync"
@@ -37,6 +39,36 @@ const (
 	transportMAC    = "02:00:00:00:22:23"
 	transportSerial = "transport-physical-unit"
 )
+
+// transportWebPort is a port for a camera's web protocol that every
+// loopback host a transport test moves the camera to, or puts an impostor
+// at, can bind. The bootstrap pins the web port, so a moved camera keeps
+// it on another host, and a port the kernel picked for the first host can
+// meanwhile be another test's wildcard listener. Ports below the kernel's
+// ephemeral range (32768 and up on Linux) are never handed out for ":0", so
+// the port is chosen there, and checked on each host before it is used.
+func transportWebPort(t *testing.T) int {
+	t.Helper()
+	hosts := []string{"127.0.0.2", "127.0.0.3", "127.0.0.4", "127.0.0.5"}
+	for range 64 {
+		port := 20000 + rand.IntN(12000)
+		free := true
+		for _, h := range hosts {
+			l, err := net.Listen("tcp4", net.JoinHostPort(h, strconv.Itoa(port)))
+			if err != nil {
+				free = false
+				break
+			}
+			l.Close()
+		}
+		if free {
+			return port
+		}
+	}
+	t.Fatal("no web port is free on every transport host")
+
+	return 0
+}
 
 type transportOptions struct {
 	pin    bool   // a per-device SPKI approval; otherwise ordinary PKI
@@ -85,7 +117,7 @@ func newTransportFixture(t *testing.T, o transportOptions) *transportFixture {
 
 	f.key = cameratest.NewWebKey(t)
 	f.camera = cameratest.ServeONVIFWithOptions(t, cameramodel.MediaProfile{Codec: "h264", Width: 160, Height: 90, FPS: 10}, cameratest.ONVIFOptions{ListenAddress: "127.0.0.2:0", Identity: cameratest.CameraIdentity{Serial: transportSerial, MAC: transportMAC, DiscoveryID: transportEPR}})
-	web, err := url.Parse(f.camera.ServeWebTLS(t, 0, f.key))
+	web, err := url.Parse(f.camera.ServeWebTLS(t, transportWebPort(t), f.key))
 	require.NoError(t, err)
 	f.port, err = strconv.Atoi(web.Port())
 	require.NoError(t, err)
