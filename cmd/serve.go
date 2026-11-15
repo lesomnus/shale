@@ -147,6 +147,10 @@ type Server struct {
 	cfg       Config
 	httpMu    sync.Mutex
 	httpAddrs map[Surface]string
+
+	// cp is the CP's own certificate (§33.5), loaded on first use.
+	cpMu sync.Mutex
+	cp   *cpCert
 }
 
 // noFile says a file is not there, or could not be there: a platform
@@ -291,6 +295,8 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		RelayDownAfter:     c.Control.RelayDownAfter,
 		SinkAutoAdoptAfter: c.Control.SinkAutoAdoptAfter,
 		AllocationTTL:      c.Control.AllocationTTL,
+		CaRolloverBefore:   c.Control.CaRolloverBefore,
+		CaSettle:           c.Control.CaSettle,
 	}
 	// The same recoverable CP KEK protects signing keys and camera credentials
 	// through independent domain-separated keys. Resolve it lazily: init may
@@ -545,12 +551,7 @@ func (s *Server) tlsConfig() (*tls.Config, error) {
 		// process and the CLI need no certificates.
 		return nil, nil
 	}
-	certFile, keyFile := c.Control.CertFile, c.Control.KeyFile
-	if certFile == "" {
-		dir := c.StateDir("control")
-		certFile, keyFile = filepath.Join(dir, CpCertFile), filepath.Join(dir, CpKeyFile)
-	}
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	cp, err := s.cpCertificate()
 	if err != nil {
 		if c.IsDev() && errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -560,18 +561,34 @@ func (s *Server) tlsConfig() (*tls.Config, error) {
 	}
 
 	cfg := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-		ClientAuth:   tls.VerifyClientCertIfGiven,
-		NextProtos:   []string{"h2", "http/1.1"},
+		MinVersion: tls.VersionTLS12,
+		ClientAuth: tls.VerifyClientCertIfGiven,
+		NextProtos: []string{"h2", "http/1.1"},
+		// From the CA that issues now, through a rollover (§33.5).
+		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) { return cp.Certificate(), nil },
 	}
-	if s.CA != nil {
-		pool := x509.NewCertPool()
-		pool.AddCert(s.CA.Cert)
-		cfg.ClientCAs = pool
-	}
+	// And a host's certificate from any CA of the bundle.
+	s.trustCurrent(cfg)
 
 	return cfg, nil
+}
+
+// cpCertificate is the CP's own certificate, loaded the first time it is
+// asked for.
+func (s *Server) cpCertificate() (*cpCert, error) {
+	s.cpMu.Lock()
+	defer s.cpMu.Unlock()
+	if s.cp != nil {
+		return s.cp, nil
+	}
+	certFile, keyFile := s.cpKeyPair()
+	cp, err := newCpCert(s.Deps.Authorities(), certFile, keyFile, s.cfg.Control.Names, s.Deps.Now, s.Deps.Log)
+	if err != nil {
+		return nil, err
+	}
+	s.cp = cp
+
+	return cp, nil
 }
 
 // actorLimiter is the per-actor limiter of `control.actor_limit`, or
@@ -617,22 +634,21 @@ func (s *Server) nodeDialer() func(ctx context.Context, addr string, id pdid.Id)
 		if s.cfg.IsDev() && s.cfg.Control.CertFile == "" {
 			return grpc.NewClient(addr, hostagent.Keepalive(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 		}
-		certFile, keyFile := s.cpKeyPair()
-		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		cp, err := s.cpCertificate()
 		if err != nil {
 			return nil, fmt.Errorf("control plane certificate: %w", err)
 		}
-		var pool *x509.CertPool
-		if s.CA != nil {
-			pool = x509.NewCertPool()
-			pool.AddCert(s.CA.Cert)
-		}
 		cfg := &tls.Config{
-			Certificates:          []tls.Certificate{cert},
-			MinVersion:            tls.VersionTLS12,
-			NextProtos:            []string{"h2"},
-			InsecureSkipVerify:    true, // verified by name below, not by address
-			VerifyPeerCertificate: pki.VerifyPeer(pool, id),
+			GetClientCertificate: cp.ClientCertificate,
+			MinVersion:           tls.VersionTLS12,
+			NextProtos:           []string{"h2"},
+			InsecureSkipVerify:   true, // verified by name below, not by address
+			// Against the CA set as it is at each handshake: a node
+			// renewed from the next CA during a rollover still verifies
+			// (§33.5).
+			VerifyPeerCertificate: func(raw [][]byte, chains [][]*x509.Certificate) error {
+				return pki.VerifyPeer(s.trustPool(), id)(raw, chains)
+			},
 		}
 
 		return grpc.NewClient(addr, hostagent.Keepalive(), grpc.WithTransportCredentials(credentials.NewTLS(cfg)))
@@ -745,6 +761,7 @@ func registerCluster(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterSinkServiceServer(g, s.Sink())
 	api.RegisterOutboxServiceServer(g, s.Outbox())
 	api.RegisterSigningKeyServiceServer(g, s.SigningKey())
+	api.RegisterCertificateAuthorityServiceServer(g, s.CertificateAuthority())
 	api.RegisterPlacementPolicyServiceServer(g, s.PlacementPolicy())
 	api.RegisterUploadPolicyServiceServer(g, s.UploadPolicy())
 	api.RegisterAddressPolicyServiceServer(g, s.AddressPolicy())

@@ -184,6 +184,13 @@ type ControlConfig struct {
 	// defaults; a shorter one keeps put tokens short-lived, at the cost of
 	// more renewals.
 	AllocationTTL time.Duration `yaml:"allocation_ttl"`
+	// CaRolloverBefore is how long before the active CA expires the leader
+	// begins rolling it over (§33.5); default a year.
+	CaRolloverBefore time.Duration `yaml:"ca_rollover_before"`
+	// CaSettle is the least time each step of a CA rollover lasts (§33.5);
+	// default 1 min. Every CP process reads the CA set again at half of it,
+	// so each has read a step before the leader takes the next.
+	CaSettle time.Duration `yaml:"ca_settle"`
 }
 
 // SinkConfig is one sink a node serves (§22.2).

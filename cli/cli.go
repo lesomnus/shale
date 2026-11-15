@@ -187,7 +187,7 @@ var moved = []rename.Index{
 var clusterGroups = map[string]bool{
 	"node": true, "relay": true, "device": true, "sink": true, "signing-key": true,
 	"placement-policy": true, "upload-policy": true, "address-policy": true, "tenant": true, "outbox": true,
-	"gc": true, "index": true,
+	"gc": true, "index": true, "ca": true,
 }
 
 var tenantGroups = map[string]bool{
