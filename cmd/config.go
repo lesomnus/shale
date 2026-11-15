@@ -397,9 +397,12 @@ type ProducerConfig struct {
 	Sources []SourceConfig      `yaml:"sources"`
 	Catalog SourceCatalogConfig `yaml:"catalog"`
 	// Retain is `committed` (default), the whole segment in RAM until the
-	// node's 201, or `written`, only what is above the offset the node
-	// last reported durable: less RAM, and a segment whose node dies is
-	// cut short there rather than sent elsewhere (§12.2).
+	// node's 201; `written`, only what is above the offset the node last
+	// reported durable: less RAM, and a segment whose node dies is cut
+	// short there rather than sent elsewhere (§12.2); or `accepted`, only
+	// what the satellite has not said it holds: the satellite delivers the
+	// segment, and what it holds is lost if it dies (§41.9). Without a
+	// satellite, `accepted` is `committed`.
 	Retain string `yaml:"retain"`
 	// Upload mode proposal: `live` or `buffered`.
 	Mode              string        `yaml:"mode"`
@@ -521,11 +524,23 @@ type SatelliteConfig struct {
 	// out as it is (§34.10).
 	Advertise string `yaml:"advertise"`
 	// MemoryBudget is the one budget of what the satellite holds of
-	// producers' bytes, e.g. "256MiB", the default (§41.4). Today all of
-	// it is the in-flight pool: request_buffer for each request passing
-	// through. Over it, a request is refused 503 with Retry-After, as a
-	// busy node refuses one.
+	// producers' bytes, e.g. "256MiB", the default (§41.4): the retained
+	// pool takes retained_budget of it, and the in-flight pool the rest,
+	// request_buffer for each request passing through. Over it, a request
+	// is refused 503 with Retry-After, as a busy node refuses one.
 	MemoryBudget string `yaml:"memory_budget"`
+	// Accept is whether the satellite takes `retain: accepted` (§41.9);
+	// true by default. False passes those requests through as under
+	// `committed`, and the in-flight pool has the whole memory_budget.
+	Accept *bool `yaml:"accept"`
+	// RetainedBudget is the retained pool's part of memory_budget, e.g.
+	// "128MiB": the bytes of segments taken under `retain: accepted` and
+	// not yet delivered. Half of memory_budget by default.
+	RetainedBudget string `yaml:"retained_budget"`
+	// RetainedPerProducer caps one producer's share of the retained pool,
+	// e.g. "64MiB"; by default a producer's share is the pool over the
+	// producers using it, and nothing more bounds it.
+	RetainedPerProducer string `yaml:"retained_per_producer"`
 	// RequestBuffer is the buffer one request's body is copied through on
 	// its way to the node, e.g. "256KiB", the default: what a request
 	// costs the in-flight pool.

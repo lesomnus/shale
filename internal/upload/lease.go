@@ -1,4 +1,4 @@
-package producer
+package upload
 
 import (
 	"context"
@@ -26,14 +26,14 @@ import (
 // as a host renews its certificate (§33.5).
 const renewFraction = 2.0 / 3
 
-// errExpired is an attempt whose TTL passed before it could be renewed:
+// ErrExpired is an attempt whose TTL passed before it could be renewed:
 // the CP refuses to renew it, and the candidates issued with it share its
 // TTL, so the segment needs a new attempt rather than the next candidate
 // (§12.2).
-var errExpired = errors.New("the attempt expired before it could be renewed")
+var ErrExpired = errors.New("the attempt expired before it could be renewed")
 
-// lease is one attempt's put token, kept fresh while the attempt runs.
-type lease struct {
+// Lease is one attempt's put token, kept fresh while the attempt runs.
+type Lease struct {
 	laminae api.LaminaServiceClient
 	log     *slog.Logger
 	lamina  []byte
@@ -48,8 +48,8 @@ type lease struct {
 	err     error // the CP refused for good
 }
 
-func newLease(laminae api.LaminaServiceClient, log *slog.Logger, al *api.Allocation, cand *api.Candidate) *lease {
-	l := &lease{laminae: laminae, log: log, lamina: al.GetLaminaId(), attempt: cand.GetAttemptId(), key: cand.GetLaminaKey(), now: time.Now}
+func NewLease(laminae api.LaminaServiceClient, log *slog.Logger, al *api.Allocation, cand *api.Candidate) *Lease {
+	l := &Lease{laminae: laminae, log: log, lamina: al.GetLaminaId(), attempt: cand.GetAttemptId(), key: cand.GetLaminaKey(), now: time.Now}
 	l.set(cand.GetToken())
 
 	return l
@@ -57,7 +57,7 @@ func newLease(laminae api.LaminaServiceClient, log *slog.Logger, al *api.Allocat
 
 // set takes a token and works out when it is due for renewal, from its own
 // claims: when it was issued and when it expires.
-func (l *lease) set(tok string) {
+func (l *Lease) set(tok string) {
 	l.tok = tok
 	l.renewAt, l.exp = time.Time{}, time.Time{}
 	c, err := token.Parse(tok)
@@ -72,9 +72,9 @@ func (l *lease) set(tok string) {
 	l.renewAt = iat.Add(time.Duration(float64(l.exp.Sub(iat)) * renewFraction))
 }
 
-// token is the token for the next request: renewed first when it is due.
-// It answers errExpired once the CP has said the attempt is over.
-func (l *lease) token(ctx context.Context) (string, error) {
+// Token is the token for the next request: renewed first when it is due.
+// It answers ErrExpired once the CP has said the attempt is over.
+func (l *Lease) Token(ctx context.Context) (string, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.err == nil && l.laminae != nil && !l.renewAt.IsZero() && !l.now().Before(l.renewAt) {
@@ -87,7 +87,7 @@ func (l *lease) token(ctx context.Context) (string, error) {
 // renew asks the CP once; the lock is held. A refusal that will not change
 // ends the lease; anything else leaves the token as it is, to be asked for
 // again before the next request or by the keeper.
-func (l *lease) renew(ctx context.Context) {
+func (l *Lease) renew(ctx context.Context) {
 	rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	al, err := l.laminae.Renew(rctx, api.LaminaRenewRequest_builder{
@@ -97,7 +97,7 @@ func (l *lease) renew(ctx context.Context) {
 	if err != nil {
 		switch status.Code(err) {
 		case codes.FailedPrecondition, codes.NotFound, codes.InvalidArgument:
-			l.err = errExpired
+			l.err = ErrExpired
 			l.log.Warn("attempt not renewed; it needs a new one", "key", l.key, "err", err.Error())
 		default:
 			// The CP is unreachable or busy: the token is good until it
@@ -116,14 +116,14 @@ func (l *lease) renew(ctx context.Context) {
 		}
 	}
 	// The answer does not carry this attempt: it was superseded meanwhile.
-	l.err = errExpired
+	l.err = ErrExpired
 	l.log.Warn("attempt not renewed; the CP no longer offers it", "key", l.key)
 }
 
-// keep renews the token in the background while ctx lasts, so an attempt
+// Keep renews the token in the background while ctx lasts, so an attempt
 // whose one request outlives the TTL (a live upload, a slow link) is still
 // ALLOCATED, with a token in hand, when it has to resume.
-func (l *lease) keep(ctx context.Context) {
+func (l *Lease) Keep(ctx context.Context) {
 	for {
 		l.mu.Lock()
 		at, done := l.renewAt, l.err != nil || l.laminae == nil

@@ -1,4 +1,4 @@
-package producer
+package upload
 
 import (
 	"context"
@@ -65,11 +65,11 @@ func newRenewer(t *testing.T, ttl time.Duration) *renewer {
 	return &renewer{t: t, key: k, ttl: ttl}
 }
 
-func leaseOf(r *renewer, tok string) *lease {
+func leaseOf(r *renewer, tok string) *Lease {
 	al := api.Allocation_builder{LaminaId: []byte("lamina")}.Build()
 	cand := api.Candidate_builder{AttemptId: []byte("attempt"), Token: tok, LaminaKey: "laminae/x"}.Build()
 
-	return newLease(r, slog.Default(), al, cand)
+	return NewLease(r, slog.Default(), al, cand)
 }
 
 // A token is renewed two thirds of the way through its life, and not
@@ -80,14 +80,14 @@ func TestLeaseRenewsAtTwoThirds(t *testing.T) {
 
 	fresh := r.sign(now.Add(-time.Minute), 3*time.Minute)
 	l := leaseOf(r, fresh)
-	tok, err := l.token(context.Background())
+	tok, err := l.Token(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, fresh, tok, "a third of the way through: kept")
 	require.Zero(t, r.n())
 
 	due := r.sign(now.Add(-2*time.Minute-time.Second), 3*time.Minute)
 	l = leaseOf(r, due)
-	tok, err = l.token(context.Background())
+	tok, err = l.Token(context.Background())
 	require.NoError(t, err)
 	require.NotEqual(t, due, tok, "past two thirds: renewed")
 	require.Equal(t, 1, r.n())
@@ -96,7 +96,7 @@ func TestLeaseRenewsAtTwoThirds(t *testing.T) {
 	require.WithinDuration(t, now.Add(time.Hour), c.GetExp().AsTime(), 5*time.Second, "the attempt's own token, not another candidate's")
 
 	// Renewed once is good for another two thirds of an hour.
-	_, err = l.token(context.Background())
+	_, err = l.Token(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 1, r.n())
 }
@@ -110,16 +110,16 @@ func TestLeaseRefusedOrUnreachable(t *testing.T) {
 
 	r.err = status.Error(codes.Unavailable, "no CP")
 	l := leaseOf(r, stale)
-	tok, err := l.token(context.Background())
+	tok, err := l.Token(context.Background())
 	require.NoError(t, err, "unreachable is not refused")
 	require.Equal(t, stale, tok)
 
 	r.err = status.Error(codes.FailedPrecondition, "attempt expired")
-	_, err = l.token(context.Background())
-	require.ErrorIs(t, err, errExpired)
+	_, err = l.Token(context.Background())
+	require.ErrorIs(t, err, ErrExpired)
 	n := r.n()
-	_, err = l.token(context.Background())
-	require.ErrorIs(t, err, errExpired)
+	_, err = l.Token(context.Background())
+	require.ErrorIs(t, err, ErrExpired)
 	require.Equal(t, n, r.n(), "refused once is refused: not asked again")
 }
 
@@ -130,7 +130,7 @@ func TestLeaseKeeps(t *testing.T) {
 	l := leaseOf(r, r.sign(time.Now(), 600*time.Millisecond))
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
-	go func() { l.keep(ctx); close(done) }()
+	go func() { l.Keep(ctx); close(done) }()
 
 	time.Sleep(2 * time.Second)
 	require.GreaterOrEqual(t, r.n(), 3, "renewed every 400 ms for two seconds")

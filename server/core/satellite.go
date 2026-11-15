@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/z"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -15,6 +17,8 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent"
+	"github.com/lesomnus/shale/internal/ent/attempt"
+	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/pki"
@@ -326,6 +330,9 @@ func (s coreSatellite) Heartbeat(ctx context.Context, req *api.SatelliteHeartbea
 	if _, err := s.own(ctx).Satellite().Patch(ctx, patch.Build()); err != nil {
 		return nil, err
 	}
+	// A new incarnation is a satellite that restarted: what the last one
+	// accepted and did not deliver is gone (§41.9).
+	s.satelliteRestarted(ctx, f.Actor, v.GetStatus(), st)
 
 	producers, err := s.satelliteProducers(ctx, f.Actor)
 	if err != nil {
@@ -508,6 +515,9 @@ func (s Core) satelliteAssignment(ctx context.Context, producerId pdid.Id, set *
 		SatelliteId: chosen.Id[:],
 		Endpoints:   eps,
 		DateExpires: timestamppb.New(now.Add(SatelliteAssignmentTTL)),
+		// What its last heartbeat said: a satellite of an earlier release
+		// says nothing, and is handed no segment under `accepted` (§41.9).
+		Accept: chosen.Status.GetAccept(),
 	}.Build(), nil
 }
 
@@ -586,4 +596,187 @@ func (s Core) satelliteEndpoints(v *ent.Satellite, caller string, p *api.Address
 	}
 
 	return s.nodeEndpoints(NodeAddresses{Id: pdid.Id(v.Id), Alias: v.Alias, Interfaces: v.Interfaces, DataAddress: v.UploadAddress, Dev: s.d.Dev}, caller, p)
+}
+
+// ---- retain: accepted ---------------------------------------------------
+
+// Accept records the satellite as the holder of a lamina's bytes under
+// `retain: accepted` (§41.9), which it asks before it tells the producer it
+// holds any: from then on a loss of them is the satellite's. Only for a
+// PENDING lamina of a producer assigned to it.
+func (s coreSatellite) Accept(ctx context.Context, req *api.SatelliteAcceptRequest) (*api.SatelliteAcceptResponse, error) {
+	f, err := actor(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if kindOf(f.Actor) != DomSatellite {
+		return nil, status.Error(codes.PermissionDenied, "only a satellite takes a lamina's bytes")
+	}
+	id, err := pdid.From(req.GetLaminaId())
+	if err != nil || id.Domain() != DomLamina {
+		return nil, invalid("lamina_id", "a lamina's id")
+	}
+	o, err := s.ent(ctx).Lamina.Get(ctx, id.Uuid())
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "no such lamina")
+		}
+		return nil, err
+	}
+	if o.State != int32(api.LaminaState_LAMINA_STATE_PENDING) {
+		return nil, failed("lamina is %s, not pending", api.LaminaState(o.State))
+	}
+	who, err := s.satelliteActsFor(ctx, f.Actor, o.SetId[:])
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.own(ctx).Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
+		Ref:              api.LaminaRef_builder{Id: id.Bytes()}.Build(),
+		Satellite:        api.SatelliteRef_builder{Id: f.Actor.Bytes()}.Build(),
+		DateUpdatedForce: z.Ptr(true),
+	}.Build()); err != nil {
+		return nil, err
+	}
+
+	return api.SatelliteAcceptResponse_builder{ProducerId: who.Bytes()}.Build(), nil
+}
+
+// satelliteActsFor is the producer a satellite acts for on a lamina of a
+// set (§41.9): the adopted producer that records the set, which must be
+// assigned to the satellite now. A satellite makes the producer's lamina
+// calls for the producers it serves and for nobody else.
+func (s Core) satelliteActsFor(ctx context.Context, sat pdid.Id, setId []byte) (pdid.Id, error) {
+	set, err := pdid.From(setId)
+	if err != nil {
+		return pdid.Nil, status.Error(codes.PermissionDenied, "the lamina has no set")
+	}
+	ps, err := s.ent(ctx).Producer.Query().
+		Where(producer.SetIdEQ(set.Uuid()), producer.SatelliteIdEQ(sat.Uuid()), producer.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), producer.DateErasedIsNil()).
+		All(ctx)
+	if err != nil {
+		return pdid.Nil, err
+	}
+	if len(ps) == 0 {
+		return pdid.Nil, status.Error(codes.PermissionDenied, "the producer of this lamina's set is not assigned to this satellite")
+	}
+
+	return pdid.Id(ps[0].Id), nil
+}
+
+// satelliteName is how history names a satellite: its alias, or its id.
+func (s Core) satelliteName(ctx context.Context, id pdid.Id) string {
+	if v, err := s.ent(ctx).Satellite.Get(ctx, id.Uuid()); err == nil && v.Alias != "" {
+		return v.Alias
+	}
+
+	return id.String()
+}
+
+// satelliteLost makes LOST the PENDING laminae a satellite held whose
+// bytes it no longer has (§41.9): it restarted, or it is down and nothing
+// can deliver them any more. The open attempts fail with the reason, the
+// lamina's row keeps the satellite it was lost by, and the loss is counted
+// as the satellite's. lost says which of its laminae are; a late
+// LaminaStored still brings one back (§14).
+func (s Core) satelliteLost(ctx context.Context, sat pdid.Id, why string, lost func(*ent.Lamina) bool) (int, error) {
+	os, err := s.ent(ctx).Lamina.Query().
+		Where(lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_PENDING)), lamina.SatelliteIdEQ(sat.Uuid())).
+		All(ctx)
+	if err != nil || len(os) == 0 {
+		return 0, err
+	}
+	name := s.satelliteName(ctx, sat)
+	reason := "satellite " + name + " lost what it accepted: " + why
+	now := s.d.now()
+	n := 0
+	for _, o := range os {
+		if lost != nil && !lost(o) {
+			continue
+		}
+		err := s.ownTx(ctx, func(ctx context.Context, own api.Server) error {
+			open, err := s.ent(ctx).Attempt.Query().
+				Where(attempt.LaminaIdEQ(o.Id), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED))).
+				All(ctx)
+			if err != nil {
+				return err
+			}
+			for _, a := range open {
+				st := api.AttemptState_ATTEMPT_STATE_FAILED
+				if _, err := own.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
+					Ref:              api.AttemptRef_builder{Id: a.Id[:]}.Build(),
+					State:            &st,
+					FailureReason:    z.Ptr(reason),
+					DateFinished:     timestamppb.New(now),
+					DateUpdatedForce: z.Ptr(true),
+				}.Build()); err != nil {
+					return err
+				}
+			}
+			st := api.LaminaState_LAMINA_STATE_LOST
+			_, err = own.Lamina().Patch(ctx, api.LaminaPatchRequest_builder{
+				Ref:              api.LaminaRef_builder{Id: o.Id[:]}.Build(),
+				State:            &st,
+				DateFinished:     timestamppb.New(now),
+				DateUpdatedForce: z.Ptr(true),
+			}.Build())
+
+			return err
+		})
+		if err != nil {
+			s.d.log().Warn("lose a satellite's lamina", "satellite", name, "err", err.Error())
+			continue
+		}
+		n++
+		s.d.metrics().Lost.Add(ctx, 1, metric.WithAttributes(attribute.String("by", "satellite")))
+		s.d.log().Warn("lamina lost with the satellite that held it", "satellite", name, "lamina", pdid.Id(o.Id).String(), "key", o.LaminaKey, "why", why)
+	}
+
+	return n, nil
+}
+
+// satelliteRestarted makes LOST what a satellite held before it restarted
+// (§41.9): a heartbeat with another incarnation than the last one's is a
+// new process, which holds nothing of what the last one accepted but what
+// it says it holds now.
+func (s Core) satelliteRestarted(ctx context.Context, sat pdid.Id, last, now *api.SatelliteStatus) {
+	if last.GetIncarnation() == "" || now.GetIncarnation() == "" || last.GetIncarnation() == now.GetIncarnation() {
+		return
+	}
+	holds := map[[16]byte]bool{}
+	for _, b := range now.GetHeld() {
+		if id, err := pdid.From(b); err == nil {
+			holds[id.Uuid()] = true
+		}
+	}
+	if _, err := s.satelliteLost(ctx, sat, "it restarted", func(o *ent.Lamina) bool { return !holds[o.Id] }); err != nil {
+		s.d.log().Warn("satellite restarted", "satellite", sat.String(), "err", err.Error())
+	}
+}
+
+// satellitesDown makes LOST what satellites that are down held, once
+// nothing can deliver it (§41.9): unheard for satellite_down_after, erased
+// or no longer adopted, and the lamina has no attempt left whose token is
+// good. A satellite only cut off from the CP still delivers with the
+// tokens it has, until they expire; after that what it held is lost
+// wherever it is. The leader's jobs ask, every minute.
+func (s Core) satellitesDown(ctx context.Context, now time.Time) error {
+	vs, err := s.ent(ctx).Satellite.Query().All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, v := range vs {
+		if satelliteAlive(v, now, s.d.satelliteDownAfter()) {
+			continue
+		}
+		if _, err := s.satelliteLost(ctx, pdid.Id(v.Id), "it is down, and the attempts it held expired", func(o *ent.Lamina) bool {
+			open, err := s.ent(ctx).Attempt.Query().
+				Where(attempt.LaminaIdEQ(o.Id), attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(now)).
+				Count(ctx)
+			return err == nil && open == 0
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

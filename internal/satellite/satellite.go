@@ -4,12 +4,16 @@
 // address the CP gives for that node. It holds no lamina and is no
 // placement target; under `retain: committed` and `written` it moves
 // bytes and nothing else, so a satellite that dies loses nothing a
-// producer does not still hold.
+// producer does not still hold. Under `retain: accepted` it takes a
+// segment's bytes into its RAM and delivers them itself (§41.9): what it
+// accepted and did not deliver is lost with it.
 package satellite
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"log"
 	"log/slog"
@@ -22,6 +26,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -49,11 +55,21 @@ type Config struct {
 	// address reported for it.
 	Addr      string
 	Advertise string
-	// MemoryBudget is the one memory budget (§41.4); today all of it is
-	// the in-flight pool. RequestBuffer is the buffer one request's body
-	// is copied through; a request reserves twice it.
+	// MemoryBudget is the one memory budget (§41.4): the retained pool of
+	// `retain: accepted` takes RetainedBudget of it, and the in-flight
+	// pool the rest. RequestBuffer is the buffer one request's body is
+	// copied through; a request reserves twice it.
 	MemoryBudget  int64
 	RequestBuffer int
+	// RefuseAccepted passes every request under `retain: accepted`
+	// through, as under `committed` (`satellite.accept: false`, §41.9);
+	// the in-flight pool then has the whole budget.
+	RefuseAccepted bool
+	// RetainedBudget is the retained pool's part of MemoryBudget, half of
+	// it by default; RetainedPerProducer caps one producer's share of it,
+	// none but the equal share by default (§41.9).
+	RetainedBudget      int64
+	RetainedPerProducer int64
 
 	HeartbeatInterval time.Duration
 	TokenSkew         time.Duration
@@ -86,6 +102,11 @@ func (c *Config) defaults() {
 	if c.MemoryBudget <= 0 {
 		c.MemoryBudget = DefaultMemoryBudget
 	}
+	if c.RefuseAccepted {
+		c.RetainedBudget = 0
+	} else if c.RetainedBudget <= 0 {
+		c.RetainedBudget = c.MemoryBudget / 2
+	}
 	if c.HeartbeatInterval <= 0 {
 		c.HeartbeatInterval = DefaultHeartbeatInterval
 	}
@@ -106,6 +127,9 @@ type Satellite struct {
 	id    pdid.Id
 	m     *metrics
 	proxy *Proxy
+	// incarnation is drawn when the process starts: the CP tells a
+	// satellite that restarted, and lost what it held, by it (§41.9).
+	incarnation string
 
 	connMu sync.Mutex
 	conn   *grpc.ClientConn
@@ -122,10 +146,15 @@ type Satellite struct {
 // New prepares a satellite; Run does the work.
 func New(cfg Config) (*Satellite, error) {
 	cfg.defaults()
-	if cfg.MemoryBudget < 2*int64(cfg.RequestBuffer) {
-		return nil, errors.New("satellite.memory_budget is less than one request's share, twice satellite.request_buffer")
+	if cfg.MemoryBudget-cfg.RetainedBudget < 2*int64(cfg.RequestBuffer) {
+		return nil, errors.New("satellite.memory_budget, less satellite.retained_budget, is less than one request's share, twice satellite.request_buffer")
 	}
-	s := &Satellite{cfg: cfg, log: cfg.Log, keys: hostagent.NewKeyRing(cfg.StateDir), Ready: make(chan struct{})}
+	if cfg.RetainedPerProducer < 0 {
+		return nil, errors.New("satellite.retained_per_producer is negative")
+	}
+	var inc [8]byte
+	rand.Read(inc[:])
+	s := &Satellite{cfg: cfg, log: cfg.Log, keys: hostagent.NewKeyRing(cfg.StateDir), Ready: make(chan struct{}), incarnation: hex.EncodeToString(inc[:])}
 	s.keys.Verifier.Skew = cfg.TokenSkew
 	s.m = newMetrics(context.Background())
 	s.agent = &hostagent.Agent{Kind: DomSatellite, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, HardwareId: cfg.HardwareId, Log: cfg.Log}
@@ -134,8 +163,14 @@ func New(cfg Config) (*Satellite, error) {
 		Dev:      cfg.Dev,
 		Log:      cfg.Log,
 		assigned: &assigned{dir: cfg.StateDir},
-		pool:     newPool(cfg.MemoryBudget, cfg.RequestBuffer),
+		pool:     newPool(cfg.MemoryBudget-cfg.RetainedBudget, cfg.RequestBuffer),
+		Refuse:   cfg.RefuseAccepted,
+		Laminae:  api.NewLaminaServiceClient(cpConn{s}),
 	}
+	if !cfg.RefuseAccepted {
+		s.proxy.retained = newRetained(cfg.RetainedBudget, cfg.RetainedPerProducer)
+	}
+	s.proxy.record = s.recordHolder
 	s.proxy.assigned.refresh = s.heartbeat
 	s.proxy.routes = newRoutes(s.route, cfg.Dev)
 
@@ -156,12 +191,32 @@ func (s *Satellite) InFlight() (used, peak, budget int64) {
 // Forwarded is the bytes forwarded to nodes since the satellite started.
 func (s *Satellite) Forwarded() int64 { return s.proxy.forwarded.Load() }
 
+// Retained is what the retained pool holds now, the most it held at once,
+// and its bound (§41.9).
+func (s *Satellite) Retained() (used, peak, budget int64) { return s.proxy.retained.usage() }
+
+// RetainedBy is what producer p holds of the retained pool.
+func (s *Satellite) RetainedBy(p pdid.Id) int64 { return s.proxy.retained.holding(p) }
+
+// Accepted is what the satellite did under `retain: accepted` since it
+// started: bytes taken, segments delivered and given up, and requests
+// passed through instead.
+func (s *Satellite) Accepted() (bytes, delivered, givenUp, passed int64) {
+	p := s.proxy
+
+	return p.acceptedBytes.Load(), p.delivered.Load(), p.givenUp.Load(), p.passed.Load()
+}
+
+// Held is the laminae whose bytes the satellite holds now, undelivered.
+func (s *Satellite) Held() [][]byte { return s.proxy.holding() }
+
 // Run joins, then serves uploads until the context is done.
 func (s *Satellite) Run(ctx context.Context) error {
 	if err := os.MkdirAll(s.cfg.StateDir, 0o700); err != nil {
 		return err
 	}
 	s.m = newMetrics(ctx)
+	s.proxy.ctx = ctx
 	if err := s.agent.Init(); err != nil {
 		return err
 	}
@@ -232,11 +287,28 @@ func (s *Satellite) Run(ctx context.Context) error {
 		if err := srv.Shutdown(shut); err != nil {
 			srv.Close()
 		}
+		// What it accepted and did not deliver goes with the process: said
+		// to the CP while it can be, within a few seconds (§41.9).
+		stop, cancel2 := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel2()
+		s.proxy.stop(stop)
 
 		return nil
 	})
+	g.Go(func() error {
+		t := time.NewTicker(time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-t.C:
+				s.proxy.sweep(ctx)
+			}
+		}
+	})
 
-	s.log.Info("serving", "upload", s.Addr, "tls", tlsCfg != nil, "memory_budget", s.cfg.MemoryBudget, "request_buffer", s.cfg.RequestBuffer)
+	s.log.Info("serving", "upload", s.Addr, "tls", tlsCfg != nil, "memory_budget", s.cfg.MemoryBudget, "request_buffer", s.cfg.RequestBuffer, "accept", !s.cfg.RefuseAccepted, "retained_budget", s.cfg.RetainedBudget)
 	close(s.Ready)
 
 	g.Go(func() error { return s.heartbeats(ctx) })
@@ -407,6 +479,8 @@ func (s *Satellite) heartbeat(ctx context.Context) error {
 	}
 	p := s.proxy
 	used, _, budget := s.InFlight()
+	retainedUsed, _, retainedBudget := s.Retained()
+	acceptedBytes, delivered, givenUp, passed := s.Accepted()
 	load := hostagent.Load()
 	st := api.SatelliteStatus_builder{
 		InFlightBytes:  used,
@@ -416,6 +490,16 @@ func (s *Satellite) heartbeat(ctx context.Context) error {
 		ForwardedBytes: p.forwarded.Load(),
 		Refused:        p.refused.Load(),
 		Load:           api.HostLoad_builder{Cpu: load, Temperature: hostagent.Temperature()}.Build(),
+		RetainedBytes:  retainedUsed,
+		RetainedBudget: retainedBudget,
+		Retained:       p.retained.shares(),
+		Held:           p.holding(),
+		Incarnation:    s.incarnation,
+		AcceptedBytes:  acceptedBytes,
+		Delivered:      delivered,
+		GivenUp:        givenUp,
+		Passed:         passed,
+		Accept:         !s.cfg.RefuseAccepted,
 	}.Build()
 	s.m.inFlight.Record(ctx, used)
 	s.m.budget.Record(ctx, budget)
@@ -424,6 +508,13 @@ func (s *Satellite) heartbeat(ctx context.Context) error {
 	s.m.forwarded.Record(ctx, st.GetForwardedBytes())
 	s.m.refused.Record(ctx, st.GetRefused())
 	s.m.cpu.Record(ctx, load)
+	s.m.retained.Record(ctx, retainedUsed)
+	s.m.retainedBudget.Record(ctx, retainedBudget)
+	s.m.held.Record(ctx, int64(len(st.GetHeld())))
+	s.m.acceptedBytes.Record(ctx, acceptedBytes)
+	s.m.delivered.Record(ctx, delivered)
+	s.m.givenUp.Record(ctx, givenUp)
+	s.m.passed.Record(ctx, passed)
 
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -457,6 +548,45 @@ func (s *Satellite) heartbeat(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// recordHolder has the CP record the satellite as a lamina's holder
+// before it takes the lamina's bytes (§41.9).
+func (s *Satellite) recordHolder(ctx context.Context, lamina pdid.Id) error {
+	_, err := api.NewSatelliteServiceClient(cpConn{s}).Accept(ctx, api.SatelliteAcceptRequest_builder{LaminaId: lamina.Bytes()}.Build())
+
+	return err
+}
+
+// cpConn calls the CP on the connection the satellite holds at each
+// call, which a failed heartbeat or a renewal replaces. A call the
+// replacement cut short is made once more on the new one.
+type cpConn struct{ s *Satellite }
+
+func (c cpConn) Invoke(ctx context.Context, method string, args, reply any, opts ...grpc.CallOption) error {
+	var err error
+	for range 2 {
+		var conn *grpc.ClientConn
+		conn, err = c.s.client(ctx)
+		if err != nil {
+			return err
+		}
+		err = conn.Invoke(ctx, method, args, reply, opts...)
+		if err == nil || ctx.Err() != nil || status.Code(err) != codes.Canceled {
+			return err
+		}
+	}
+
+	return err
+}
+
+func (c cpConn) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	conn, err := c.s.client(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn.NewStream(ctx, desc, method, opts...)
 }
 
 // route asks the CP where a node's data plane is for this satellite.

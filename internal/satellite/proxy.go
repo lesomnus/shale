@@ -2,6 +2,7 @@ package satellite
 
 import (
 	"bufio"
+	"context"
 	"crypto/x509"
 	"errors"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/internal/token"
+	"github.com/lesomnus/shale/internal/upload"
 )
 
 // The upload proxy (§41.3): a Storage Node's upload paths and semantics
@@ -24,35 +26,21 @@ import (
 // satellite moves bytes and nothing else under `retain: committed` and
 // `written`: the node's answer, its status, its headers and its trailers,
 // is the producer's answer, so the producer's resume and failover across
-// candidates are what they are without a satellite (§12.2, §13).
+// candidates are what they are without a satellite (§12.2, §13). Under
+// `retain: accepted` it takes the bytes and delivers them itself (§41.9,
+// accept.go).
 
+// The headers and reasons of the satellite's protocol are internal/upload's,
+// which producers read them with (§41.3, §41.9).
 const (
-	// HdrSatellite is on every answer the satellite makes itself, rather
-	// than passes on from a node, and says why (§41.3). A node never sends
-	// it, so a producer tells the satellite's refusals from a node's by it.
-	HdrSatellite = "Shale-Satellite"
-	// HdrProducer names the calling producer in development mode, which is
-	// plaintext and has no client certificate to read it from (§34.7), as
-	// the plain header names the caller to the CP. Never read otherwise.
-	HdrProducer = "Shale-Producer"
-)
+	HdrSatellite = upload.HdrSatellite
+	HdrProducer  = upload.HdrProducer
 
-// The reasons HdrSatellite gives.
-const (
-	// ReasonUnassigned: the caller is not a producer this satellite
-	// serves. The producer's failure is the satellite's, not the node's.
-	ReasonUnassigned = "unassigned"
-	// ReasonBusy: the in-flight pool has no room; 503 with Retry-After,
-	// as a busy node answers.
-	ReasonBusy = "busy"
-	// ReasonToken: the token is not one the node it names would take; the
-	// status is the one that node would answer.
-	ReasonToken = "token"
-	// ReasonUnreachable: the node the token names could not be reached
-	// from here, or the CP gave no way to it.
-	ReasonUnreachable = "unreachable"
-	// ReasonRequest: a method or a path the upload paths do not have.
-	ReasonRequest = "request"
+	ReasonUnassigned  = upload.ReasonUnassigned
+	ReasonBusy        = upload.ReasonBusy
+	ReasonToken       = upload.ReasonToken
+	ReasonUnreachable = upload.ReasonUnreachable
+	ReasonRequest     = upload.ReasonRequest
 )
 
 // busyRetryAfter is the Retry-After of a request refused for want of room,
@@ -70,12 +58,34 @@ type Proxy struct {
 	Dev bool
 	Log *slog.Logger
 
+	// Refuse passes every request under `retain: accepted` through, as
+	// under `committed` (`satellite.accept: false`, §41.9).
+	Refuse bool
+	// Laminae is the CP's LaminaService, which the satellite calls in the
+	// name of the producers it delivers for (§41.9).
+	Laminae api.LaminaServiceClient
+
 	assigned *assigned
 	routes   *routes
 	pool     *pool
+	// retained is the pool of `retain: accepted`; nil takes none.
+	retained *retained
+	// record has the CP record the satellite as a lamina's holder.
+	record func(ctx context.Context, lamina pdid.Id) error
+	// ctx is the satellite's lifetime, which deliveries run in.
+	ctx context.Context
+
+	heldMu sync.Mutex
+	held   map[pdid.Id]*held
 
 	forwarded atomic.Int64
 	refused   atomic.Int64
+	// Under `retain: accepted`: bytes taken, segments delivered and given
+	// up, requests passed through.
+	acceptedBytes atomic.Int64
+	delivered     atomic.Int64
+	givenUp       atomic.Int64
+	passed        atomic.Int64
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -164,6 +174,12 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		body = r.Body
 	}
 
+	// Store and forward, where the producer asks for it and the satellite
+	// takes it (§41.9); passed through as under `committed` otherwise.
+	if r.Header.Get(upload.HdrRetain) == upload.RetainAccepted && p.accepted(w, r, caller, c, key) {
+		return
+	}
+
 	p.forward(w, r, base, tok, body, int(p.pool.each/2))
 }
 
@@ -250,7 +266,7 @@ func (p *Proxy) forward(w http.ResponseWriter, r *http.Request, base, tok string
 
 	h := w.Header()
 	for k, vs := range resp.Header {
-		if hopByHop(k) || strings.EqualFold(k, "Alt-Svc") || strings.EqualFold(k, HdrSatellite) {
+		if hopByHop(k) || strings.EqualFold(k, "Alt-Svc") || strings.EqualFold(k, HdrSatellite) || ownHeader(k) {
 			continue
 		}
 		h[k] = append([]string(nil), vs...)
@@ -267,10 +283,22 @@ func (p *Proxy) forward(w http.ResponseWriter, r *http.Request, base, tok string
 	}
 }
 
+// ownHeader is a header of the satellite's own protocol (§41.9), which a
+// node neither sends nor is sent: the handoff carries every candidate's
+// token, and a node is given only its own.
+func ownHeader(k string) bool {
+	switch http.CanonicalHeaderKey(k) {
+	case upload.HdrRetain, upload.HdrHandoff, upload.HdrAccepted, upload.HdrPass:
+		return true
+	}
+
+	return false
+}
+
 // requestHeader is what of a producer's request headers goes on to the
 // node: everything end to end, which is every header of the upload
-// protocol, and not the hop's own, the identity of development mode, or
-// the token, which forward sets.
+// protocol, and not the hop's own, the identity of development mode, the
+// satellite's own, or the token, which forward sets.
 func requestHeader(in http.Header) http.Header {
 	out := make(http.Header, len(in))
 	conn := connectionTokens(in)
@@ -278,7 +306,7 @@ func requestHeader(in http.Header) http.Header {
 		switch {
 		case hopByHop(k), conn[http.CanonicalHeaderKey(k)]:
 			continue
-		case strings.EqualFold(k, "Authorization"), strings.EqualFold(k, HdrProducer), strings.EqualFold(k, HdrSatellite), strings.EqualFold(k, "Host"):
+		case strings.EqualFold(k, "Authorization"), strings.EqualFold(k, HdrProducer), strings.EqualFold(k, HdrSatellite), strings.EqualFold(k, "Host"), ownHeader(k):
 			continue
 		}
 		out[k] = append([]string(nil), vs...)

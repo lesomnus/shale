@@ -107,6 +107,8 @@ func (p *Producer) forgetDrainedSource(s *source) {
 	p.retired.Lost += s.lost
 	p.retired.LostBytes += s.lostBytes
 	p.retired.Cut += s.cut
+	p.retired.HandedOff += s.handedOff
+	p.retired.HandedOffBytes += s.handedOffBytes
 	s.mu.Unlock()
 	delete(p.draining, s)
 }

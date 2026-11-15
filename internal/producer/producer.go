@@ -43,6 +43,9 @@ type Config struct {
 	CaHash   string
 	Dev      bool
 	Tenant   string
+	// HardwareId overrides the machine's identity (§33.4): for a test that
+	// runs several producers on one machine.
+	HardwareId string
 
 	Sources []SourceConfig
 	// A provider factory is opened only after machine authentication and Set
@@ -99,13 +102,21 @@ type Config struct {
 
 // Stats is what the producer counted since it started, for tests and
 // diagnostics: segments stored, lost, and cut short at a node's offset
-// under `retain: written`; live batches dropped (§16, §12.2, §39.6).
+// under `retain: written`, or handed off to the satellite under `retain:
+// accepted`; live batches dropped (§16, §12.2, §39.6, §41.9).
 type Stats struct {
-	Stored      int64
-	Lost        int64
-	LostBytes   int64
-	Cut         int64
-	LiveDropped int64
+	Stored    int64
+	Lost      int64
+	LostBytes int64
+	Cut       int64
+	// HandedOff is the segments the satellite took whole under `retain:
+	// accepted`, and HandedOffBytes their bytes, which the producer let go
+	// before any node had them; Passed the requests the satellite passed
+	// through rather than took (§41.9).
+	HandedOff      int64
+	HandedOffBytes int64
+	Passed         int64
+	LiveDropped    int64
 	// LiveTranscodes is the live helpers running (§38.7).
 	LiveTranscodes int64
 	// Held is the bytes of unstored segments in RAM, what the budget
@@ -124,11 +135,16 @@ func (p *Producer) Stats() Stats {
 		st.Lost += s.lost
 		st.LostBytes += s.lostBytes
 		st.Cut += s.cut
+		st.HandedOff += s.handedOff
+		st.HandedOffBytes += s.handedOffBytes
 		for _, seg := range s.pending {
 			st.Held += seg.Held()
 			st.Released += seg.Released()
 		}
 		s.mu.Unlock()
+	}
+	if p.satellite != nil {
+		st.Passed = p.satellite.passedTotal.Load()
 	}
 	p.relay.mu.Lock()
 	st.LiveDropped = p.relay.dropped
@@ -182,6 +198,10 @@ const (
 	// RetainWritten keeps what is above the offset the node last reported
 	// durable; the segment can then end early, but never move (§12.2).
 	RetainWritten = "written"
+	// RetainAccepted keeps what the satellite has not said it holds: the
+	// satellite delivers the segment itself (§41.9). Without a satellite it
+	// is RetainCommitted.
+	RetainAccepted = "accepted"
 )
 
 // Producer is one producer process.
@@ -346,22 +366,26 @@ type source struct {
 	head      int64
 
 	// Per-second accounting for the heartbeat (§38.5, §38.6).
-	secBytes   [60]int64
-	secFrames  [60]int64
-	secIdx     int
-	lastTick   time.Time
-	atCap      int64
-	episodes   int64
-	seconds    int64
-	run        int64
-	dropped    int64
-	lost       int64
-	lostBytes  int64
-	stored     int64
-	cut        int64
-	skipped    int64
-	lastReport time.Time
-	raise      bool
+	secBytes  [60]int64
+	secFrames [60]int64
+	secIdx    int
+	lastTick  time.Time
+	atCap     int64
+	episodes  int64
+	seconds   int64
+	run       int64
+	dropped   int64
+	lost      int64
+	lostBytes int64
+	stored    int64
+	cut       int64
+	skipped   int64
+	// handedOff and handedOffBytes count the segments the satellite took
+	// whole under `retain: accepted` (§41.9).
+	handedOff      int64
+	handedOffBytes int64
+	lastReport     time.Time
+	raise          bool
 	// retune says the CP agreed a ceiling other than the one proposed:
 	// auto_raise raised it, or the set's total or the policy held it down.
 	// The encoder takes it at the next segment boundary (§38.5). A raise
@@ -386,8 +410,8 @@ func New(cfg Config) (*Producer, error) {
 	if len(cfg.Sources) == 0 && cfg.SourceProvider == nil && cfg.SourceProviderFactory == nil {
 		return nil, errors.New("no sources configured")
 	}
-	if cfg.Retain != RetainCommitted && cfg.Retain != RetainWritten {
-		return nil, fmt.Errorf("retain: %q is neither %s nor %s", cfg.Retain, RetainCommitted, RetainWritten)
+	if cfg.Retain != RetainCommitted && cfg.Retain != RetainWritten && cfg.Retain != RetainAccepted {
+		return nil, fmt.Errorf("retain: %q is not %s, %s or %s", cfg.Retain, RetainCommitted, RetainWritten, RetainAccepted)
 	}
 	if cfg.DrainTimeout < 0 || cfg.DrainTimeout > 5*time.Minute {
 		return nil, errors.New("source drain timeout must be between zero and five minutes")
@@ -398,6 +422,11 @@ func New(cfg Config) (*Producer, error) {
 	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, terms: terms{mode: cfg.Mode}, Ready: make(chan struct{}), heartbeatWake: make(chan struct{}, 1)}
 	p.relay = newRelayLink(p)
 	p.satellite = NewSatelliteLink(cfg.Upload.Via, cfg.Dev, cfg.Log)
+	p.satellite.retain = cfg.Retain
+	if cfg.Retain == RetainAccepted && !p.satellite.wanted() {
+		// Said once: the bytes are the producer's until the node's 201.
+		cfg.Log.Info("retain: accepted takes a satellite, and upload_via is direct: segments go as under committed")
+	}
 	p.satellite.wake = func() {
 		// The CP's answer names the satellite to use now, or none.
 		select {
@@ -406,7 +435,7 @@ func New(cfg Config) (*Producer, error) {
 		}
 	}
 	p.m = newMetrics(context.Background())
-	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
+	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, HardwareId: cfg.HardwareId, Log: cfg.Log}
 	if err := p.configureSources(cfg.Sources); err != nil {
 		return nil, err
 	}
@@ -610,7 +639,7 @@ func (p *Producer) Run(ctx context.Context) error {
 		p.log.Warn("source catalog awaiting initial authorized state", "code", status.Code(err).String())
 	}
 
-	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(p.cp()), Log: p.log, Mode: p.agreed().mode, Written: p.cfg.Retain == RetainWritten, Satellite: p.satellite, m: p.m}
+	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(p.cp()), Log: p.log, Mode: p.agreed().mode, Written: p.cfg.Retain == RetainWritten, Accepted: p.cfg.Retain == RetainAccepted, Satellite: p.satellite, m: p.m}
 	if p.uploader.Cfg.Client == nil {
 		// The data planes speak TLS from the same CA the producer pinned.
 		hc, err := p.agent.HTTPClient()
@@ -1409,6 +1438,25 @@ func (p *Producer) uploads(ctx context.Context, s *source) error {
 			backoff = 0
 			p.log.Warn("cut short", "source", s.cfg.Alias, "key", al.GetLaminaKey(), "offset", seg.Released(), "err", res.Err)
 			p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "cut")))
+			continue
+		}
+		if res.HandedOff {
+			// The satellite holds the whole segment and delivers it (§41.9):
+			// the producer let its bytes go, and the lamina is the
+			// satellite's to store, or to report.
+			s.mu.Lock()
+			s.finish(seg)
+			s.handedOff++
+			s.handedOffBytes += seg.Len()
+			s.mu.Unlock()
+			backoff = 0
+			if p.satellite != nil {
+				p.satellite.handedOff.Add(1)
+				p.satellite.handedOffBytes.Add(seg.Len())
+			}
+			p.log.Info("handed off", "source", s.cfg.Alias, "key", al.GetLaminaKey(), "bytes", seg.Len())
+			p.m.segments.Add(ctx, 1, metric.WithAttributes(attribute.String("source", s.cfg.Alias), attribute.String("outcome", "handed_off")))
+			p.m.handedOffBytes.Add(ctx, seg.Len(), sourceAttr(s.cfg.Alias))
 			continue
 		}
 		if !res.Stored {
