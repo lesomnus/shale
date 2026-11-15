@@ -129,6 +129,7 @@ jobs:
           e2e+='|Edge.*|Qualification.*|ReaderAgent.*'
           e2e+='|CaRollover.*|HTTP3.*'
           e2e+='|SatelliteUpload|SatelliteUploadOverTLS|SatelliteDiesMidUpload|SatelliteAutoFallsBack'
+          e2e+='|SatelliteAccepted|SatelliteAcceptedPassedThrough|SatelliteAcceptedLost|SatelliteDelegatedCalls'
           go test -race -count=1 -timeout 20m -run "^Test($e2e)\$" ./internal/e2e/
   package:
     runs-on: ubuntu-latest
