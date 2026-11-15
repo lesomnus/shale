@@ -127,9 +127,16 @@ is accurate to the pipe's latency, tens of milliseconds, which is enough.
 
 In **live** mode ([§12.2](04-write-path.md#122-resumable-part-uploads)) the
 bytes stream to the node as they arrive, and the producer keeps what its
-`retain` policy says: the whole segment until it is committed, or, under
+`retain` policy says: the whole segment until it is committed; under
 `written`, only what the node has not yet reported durable, at the price
-that such a segment ends where its node has it if that node dies. In
+that such a segment ends where its node has it if that node dies; or, under
+`accepted`, only what its satellite has not yet said it holds, the
+satellite delivering the segment, at the price that what the satellite
+held is lost if it dies ([§41.9](18-satellite.md#419-retain-accepted)). A
+segment the satellite holds whole is **handed off**: it leaves the queue,
+counted beside stored, lost and cut. A satellite that will not take a
+segment passes it through, and the producer keeps that one as under
+`committed`; with no satellite at all, `accepted` is `committed`. In
 buffered mode the segment is complete at the next cut and uploaded then.
 
 ### 38.3 Managed capture

@@ -15,6 +15,8 @@
 | **Satellite** | Host producers upload through: it speaks a Storage Node's upload protocol to the producers assigned to it and forwards each request to the node its put token names; holds no lamina, is no placement target ([§41](18-satellite.md#41-satellite)) |
 | **Satellite Assignment** | The satellite a producer uploads through when its `upload_via` asks for one, chosen by the CP by site labels, room and load, sticky until the satellite is down |
 | **In-flight Pool** | What a satellite's requests passing through hold of its `memory_budget`; a request that finds no room is refused `503` with `Retry-After` |
+| **Retained Pool** | What a satellite holds of its `memory_budget` for segments it took under `retain: accepted` and has not delivered, shared out by producer; a new segment that does not fit passes through ([§41.9](18-satellite.md#419-retain-accepted)) |
+| **Handed off** | A segment a satellite took whole under `retain: accepted`: the producer let its bytes go, and the satellite delivers it or reports it lost; a producer counts it beside stored, lost and cut |
 | **Publish Token** | Access token with `op = publish`: lets a producer attach to one relay and feed its sources |
 | **View Token** | Access token with `op = view`: lets a viewer watch one source on one relay for an hour |
 | **WHEP** | WebRTC HTTP egress protocol: the viewer posts an SDP offer to the relay and gets the answer |

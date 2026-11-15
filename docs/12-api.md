@@ -386,7 +386,15 @@ service SatelliteService {
   rpc Route(SatelliteRouteRequest) returns (SatelliteRouteResponse);
   // An operator moves a producer to a satellite; the assignment stays sticky.
   rpc Assign(SatelliteAssignRequest) returns (Satellite);
+  // The satellite is about to take a lamina's bytes under retain: accepted:
+  // the lamina records it as their holder. Only for a PENDING lamina of a
+  // producer assigned to it (§41.9).
+  rpc Accept(SatelliteAcceptRequest) returns (SatelliteAcceptResponse);
 }
+
+// A satellite also calls LaminaService.Renew, ReportAttempt, Reallocate and
+// ReportFailure on the cluster API, in the name of a producer assigned to
+// it, for that producer's laminae alone (§41.9).
 
 service DeviceService {
   rpc Quarantine(DeviceQuarantineRequest) returns (Device);               // §27
@@ -642,6 +650,20 @@ GET    /healthz
 |---|---|---|
 | `403` | `unassigned` | not a producer this satellite serves: the satellite's refusal, not the node's |
 | `401`, `403` | `token` | the token is not one the node would take, or not the caller's |
-| `503 Retry-After` | `busy` | the in-flight pool has no room ([§41.4](18-satellite.md#414-memory)); as a busy node |
+| `503 Retry-After` | `busy` | the in-flight pool has no room ([§41.4](18-satellite.md#414-memory)), or the retained pool none for more of a segment it holds; as a busy node |
 | `502` | `unreachable` | no route to the node, or the node did not answer |
 | `404`, `405` | `request` | not an upload path or method |
+
+Under `retain: accepted` ([§41.9](18-satellite.md#419-retain-accepted)) a
+producer asks the satellite to take the bytes itself, and the satellite
+answers what it holds:
+
+| Header | On | Meaning |
+|---|---|---|
+| `Shale-Retain: accepted` | request | take the bytes; on a `HEAD`, say what is held |
+| `Shale-Handoff: <base64url>` | request, while the satellite holds nothing of the segment | the `Handoff`: the allocation with every candidate's token, and the producer's timeouts |
+| `Shale-Accepted: <n>` | answer | the satellite holds the bytes below `n`: with `204`, more is to come; with `202`, it holds the whole segment, which is handed off; with `409`, it stands at `n` |
+| `Shale-Pass: <why>` | answer | the node's own answer: the satellite passed the request through rather than took it (`refused`, `full`, `share`, `unrecorded`); the producer keeps its bytes, as under `committed` |
+
+None of them reaches a node, and a node's answer that carried one would
+lose it.

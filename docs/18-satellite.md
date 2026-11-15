@@ -23,13 +23,15 @@ It answers three limits of a producer that uploads by itself:
    reaches the nodes.
 3. **Its RAM is the outage budget.** Under `retain: committed` a producer
    holds whole segments until they are committed
-   ([§12.2](04-write-path.md#122-resumable-part-uploads)). A satellite that
-   holds bytes for it would free the edge's RAM sooner. Not yet:
-   [§41.8](#418-not-yet).
+   ([§12.2](04-write-path.md#122-resumable-part-uploads)). Under `retain:
+   accepted` the satellite holds them instead, and delivers them itself
+   ([§41.9](#419-retain-accepted)): the edge's RAM is freed as soon as the
+   satellite has the bytes, at the price that a satellite that dies loses
+   what it held.
 
-This first version solves (2) and lays the ground for (1) and (3): the
-satellite moves bytes and nothing else, so it costs the write path nothing it
-has today.
+Under `retain: committed` and `written` the satellite moves bytes and nothing
+else, so it costs the write path nothing it has today; that solves (2).
+`retain: accepted` is opt-in per producer and solves (3).
 
 ```text
                        ┌──────────── Control Plane ─────────────┐
@@ -88,6 +90,7 @@ is down, erased, or no longer adopted, when an operator moves the producer
   `ProducerService.Heartbeat` answer carry a `SatelliteAssignment`: the
   satellite's id, its upload listener resolved for the producer's network
   by the address resolver ([§34.10](11-deployment.md#3410-node-addresses)),
+  whether it takes `retain: accepted` ([§41.9](#419-retain-accepted)),
   and an expiry 30 minutes on. Every answer renews it; one that carries none
   means none, and the producer uploads directly. The expiry outlasts an
   allocation's TTL, so a producer that cannot reach the CP goes on through
@@ -156,7 +159,15 @@ passed.
    header but the hop's own and `Alt-Svc` (which describes the node's
    origin, not the satellite's), the body, and the trailers. `Upload-Offset`,
    `Upload-Complete`, `Shale-Incomplete`, `Retry-After`, `409`, `413` and
-   `503` are the node's own.
+   `503` are the node's own. The headers of `retain: accepted`
+   (`Shale-Retain`, `Shale-Handoff`, `Shale-Accepted`, `Shale-Pass`,
+   [§41.9](#419-retain-accepted)) go to no node and are taken from none:
+   the handoff carries every candidate's token, and a node is sent its own.
+
+A request under `retain: accepted` that the satellite takes is answered by
+the satellite after step 4, and stored rather than forwarded
+([§41.9](#419-retain-accepted)); one it does not take goes on through step 5
+as any other.
 
 **The satellite's own answers** carry `Shale-Satellite`, which a node never
 sends, with the reason: `unassigned` (the caller is not a producer it
@@ -184,24 +195,33 @@ satellite believes it there and nowhere else. The header goes no further.
 ### 41.4 Memory
 
 A satellite's memory is **one budget**, `satellite.memory_budget` (256 MiB),
-split into pools. Today there is one, the **in-flight pool**: the bytes of
-requests passing through under `retain: committed` and `written`.
+split into two pools:
 
-- A `PUT` reserves twice `satellite.request_buffer` (256 KiB): the buffer its
-  body is copied through, and what HTTP/2 lets the producer send ahead of
-  it, which the listener bounds to the same size per stream. So a 256 MiB
-  budget is 512 uploads passing through at once, about one per source.
-- A request that finds no room is refused `503` with `Retry-After: 5` and
-  `Shale-Satellite: busy`. Nothing is queued or evicted: the producer keeps
-  its bytes and asks again, as for a busy node.
-- Every heartbeat reports the pool, what it holds and its bound, the
-  requests passing through, the producers assigned, the bytes forwarded and
-  the requests refused (`SatelliteStatus`), and the CP prefers satellites
-  with room when it assigns ([§41.2](#412-assignment)). The same are the
-  metrics `shale.satellite.*` ([§31](09-operations.md#31-observability)).
+| Pool | What it holds | Size |
+|---|---|---|
+| **in flight** | the buffers of requests passing through: every `PUT`, and the whole of one under `retain: committed` and `written` | `memory_budget` − `retained_budget` |
+| **retained** | the bytes of segments taken under `retain: accepted` and not yet delivered ([§41.9](#419-retain-accepted)) | `satellite.retained_budget`, half the budget by default; none under `satellite.accept: false`, which gives the in-flight pool the whole budget |
 
-The retained pool of `retain: accepted` is to sit beside this one, in the
-same budget ([§41.8](#418-not-yet)).
+One number sizes the machine, as a node's `part_buffer_pool` does, and the
+retained pool, the only memory whose loss loses data, has a bound of its
+own that pass-through traffic cannot take from it, nor it from that.
+
+- A `PUT` reserves twice `satellite.request_buffer` (256 KiB) of the
+  in-flight pool: the buffer its body is copied through, and what HTTP/2
+  lets the producer send ahead of it, which the listener bounds to the same
+  size per stream. So 128 MiB of it is 256 requests passing through at once.
+- A request that finds no room in it is refused `503` with `Retry-After: 5`
+  and `Shale-Satellite: busy`. Nothing is queued or evicted: the producer
+  keeps its bytes and asks again, as for a busy node.
+- Every heartbeat reports both pools, what each holds and its bound, the
+  retained pool by producer, the requests passing through, the producers
+  assigned, the bytes forwarded and the requests refused (`SatelliteStatus`),
+  and the CP prefers satellites whose in-flight pool has room when it
+  assigns ([§41.2](#412-assignment)). The same are the metrics
+  `shale.satellite.*` ([§31](09-operations.md#31-observability)).
+
+The retained pool's own rules, its shares and what a full one does, are
+in [§41.9](#419-retain-accepted).
 
 ### 41.5 From the producer
 
@@ -252,6 +272,8 @@ same budget ([§41.8](#418-not-yet)).
 
 Under `retain: committed` and `written` the satellite moves bytes and holds
 none a producer does not hold too: a satellite that dies loses nothing.
+Under `retain: accepted` it holds what the producer let go, and its own
+failures are in [§41.9](#419-retain-accepted).
 
 | Failure | Effect | Recovery |
 |---|---|---|
@@ -270,9 +292,19 @@ none a producer does not hold too: a satellite that dies loses nothing.
   certificate, `Route`, and reading the key set; nothing of any tenant's
   rows (`server/core/gatepolicy.go`). The producers it serves come in its
   heartbeat's answer.
+- Under `retain: accepted` it also records itself as a lamina's holder
+  (`SatelliteService.Accept`) and makes four of the producer's calls on the
+  lamina: `Renew`, `ReportAttempt`, `Reallocate` and `ReportFailure`
+  ([§41.9](#419-retain-accepted)). The CP takes them only for a lamina whose
+  set's producer is assigned to that satellite at the time of the call, and
+  makes them in that producer's name: the tokens they sign are issued to
+  the producer, for its tenant, and what they write says it was the
+  satellite's call. It reads no tenant's rows and allocates nothing.
 - A put token is a bearer secret for one key on one node for a few minutes
   ([§33.2](10-security.md#332-access-tokens)). A satellite never stores one,
-  never logs one, and only sends one on to the node it names.
+  never logs one, and only sends one on to the node it names. The handoff
+  of `retain: accepted` carries every candidate's token, and each is
+  checked as the request's own is.
 - The proxy is closed three ways: who calls (an adopted producer assigned to
   it, by mTLS), what for (a CP-signed put token for a key, issued to that
   producer), and where to (the token's node, at the CP's address for it). A
@@ -294,14 +326,189 @@ none a producer does not hold too: a satellite that dies loses nothing.
   once. Its seam: the producers in the heartbeat's answer are where each
   producer's relay assignment is to come, and the relay's ingest does not
   change.
-- **`retain: accepted`.** Store-and-forward: the satellite holding the bytes
-  in a **retained pool** beside the in-flight one, in the same
-  `memory_budget`, with a share per producer, so an edge host frees its RAM
-  as soon as the satellite has the bytes. Opt-in per producer, refusable per
-  satellite; what it accepted and has not delivered is lost if it dies, and
-  is counted as lost. It needs a delegation scoped to the allocation, so the
-  satellite completes the lamina at the CP for a producer that moved on.
-  `SatelliteStatus` keeps fields 9 and 10 for that pool.
+- **A durable spill** for `retain: accepted`: the satellite writing what it
+  accepted to disk under a backlog. Lamina data stays off any spool
+  ([§22.3](07-storage-node.md#223-no-ssd-in-the-data-path)); that would be a
+  decision of its own.
 - A satellite in the process of `shale serve all`, where both its hops are
   loopback; HTTP/3 to the satellite; reads through a satellite for viewers
   who reach it but not the nodes.
+
+### 41.9 `retain: accepted`
+
+Store and forward. Under `retain: accepted` a producer hands each segment
+to its satellite, which takes the bytes into its RAM and delivers them to
+the allocated node itself; the producer frees them as soon as the
+satellite says it holds them. `retain` says whose acknowledgement releases
+a producer's bytes:
+
+| `retain` | Released on | Producer RAM | If the satellite dies |
+|---|---|---|---|
+| `committed` (default) | the real node's `201`, passed back through the satellite | as without a satellite | nothing is lost; the producer sends again, through another satellite or directly |
+| `written` | the real node's reported offsets, passed back | as without a satellite | as without a satellite under `written` |
+| `accepted` | the satellite holding the bytes in its RAM | about a request's part (1 MiB) of a live segment | what it accepted and had not delivered is lost, **for every producer it serves**, and counted as the satellite's |
+
+`accepted` is opt-in per producer (`producer.retain`), and a satellite may
+refuse it (`satellite.accept: false`). The `SatelliteAssignment` says
+whether the assigned satellite takes it, as its last heartbeat did
+(`accept`). A producer under it with no satellite assigned, on
+`upload_via: direct`, or assigned one that does not take it uploads as
+under `committed`, and its log says so once. A satellite of an earlier
+release says nothing, so it is sent no handoff, which it would pass on to a
+node with every candidate's token. The satellite never writes what it
+accepted to disk ([§41.8](#418-not-yet)).
+
+**The handoff.** The protocol is a node's ([§12.2](04-write-path.md#122-resumable-part-uploads)),
+with four headers a node never sends nor is sent:
+
+```text
+PUT  /laminae/<first candidate's key>   (its token, as always)
+     Shale-Retain: accepted
+     Shale-Handoff: <Handoff, base64url>          (while the satellite holds nothing)
+     Upload-Offset: o   Upload-Complete: ?0 | ?1   body: from o
+  → 204  Shale-Accepted: n   the satellite holds bytes below n; more to come
+  → 202  Shale-Accepted: n   it holds the whole segment: handed off
+  → 409  Shale-Accepted: n   it stands at n: from there
+  → 503  Retry-After          no room for more now ([below](#memory-limits))
+  → the node's own answer, Shale-Pass: <why>   it did not take the segment
+HEAD /laminae/<key>   Shale-Retain: accepted
+  → 200  Shale-Accepted: n, Upload-Complete: ?1 when it holds all of it
+```
+
+- A live segment goes as under `written`: requests of about 1 MiB with
+  `Upload-Complete: ?0`, each answered with what the satellite holds, which
+  the producer frees; then the completing request once the segment
+  closed. The satellite holds the bytes exactly, so there
+  is no 4 KiB rounding.
+- The **Handoff** is the whole allocation, every candidate with its token,
+  the lamina, key, `max_length`, `date_started` and capture incarnation, and
+  the producer's `resume_timeout`, the link's `abandon_timeout`, its
+  `retry_after_cap` and `placement_retries`. The satellite checks every
+  candidate's token as it checks a request's (§41.3): a put token its node
+  would take, issued to the calling producer, for this lamina, attempt and
+  capture; and the request's own key is one of them. One that fails is
+  refused `403 Shale-Satellite: token` before anything is held.
+- Before it answers that it holds anything, the satellite has the CP record
+  it as the lamina's holder (`SatelliteService.Accept`, which the CP takes
+  for a PENDING lamina of a producer assigned to it). The lamina's row keeps
+  the satellite. A CP that cannot be asked means the segment passes through.
+- **`202` is a new outcome** beside stored, lost and cut: the segment is
+  **handed off**. It leaves the producer's queue and its RAM, it is not the
+  producer's to store or to report any more, and the producer counts it
+  (`handed_off`, `shale.producer.segments{outcome}`).
+- A request that breaks is resumed as any other: `HEAD` at the satellite
+  says what it holds, and the producer goes on from there. A satellite that
+  holds less than the producer already freed, that cannot be reached for
+  `resume_timeout`, or that refuses once it holds the start, ends the
+  segment there: **cut short** at what the satellite holds, as `written`
+  cuts at a node's offset. While it holds nothing, the producer goes on as
+  under `committed`, wherever `upload_via` sends it.
+
+**Delivery.** The satellite delivers with the producer's own upload client
+(`internal/upload`), so it fails over as the producer would have
+([§13](04-write-path.md#13-retry-and-reallocation)):
+
+- the candidates in order, from the first byte as they arrive, a live
+  segment as one live request; `HEAD` and resume on a broken request,
+  `Retry-After` on `503`, the next candidate after `resume_timeout` without
+  progress, or at once on a refusal or `413`;
+- `ReportAttempt` before it moves on, and `Reallocate` when the candidates
+  run out; `Renew` while a delivery outlives two thirds of a token;
+- rounds that fail are tried again after a backoff (1 s, doubling to
+  30 s), until `abandon_timeout` passes without a byte reaching any node.
+  Then the segment is **given up** and reported LOST (`ReportFailure`), as
+  a producer reports one it gives up ([§13](04-write-path.md#13-retry-and-reallocation)).
+- The satellite holds the whole segment until a node's `201`, never a part
+  of it: a node that fails mid-delivery is followed by the next candidate
+  from the start, as under `committed`.
+- A producer that stops sending before its segment ended (it died, or lost
+  the satellite) is waited for `resume_timeout`, after which the producer
+  gives the segment up itself. Then the satellite ends its request to the
+  node, whose abandon rule makes an incomplete lamina of what it has
+  ([§15](04-write-path.md#15-partial-laminae)); what no node took is
+  reported LOST. What the producer was never told was held stays the
+  producer's, and goes with nothing said.
+
+**Delegated calls.** `Renew`, `ReportAttempt`, `Reallocate` and
+`ReportFailure` are the producer's ([§35.4](12-api.md#354-tenant-api-custom-rpcs)). A
+satellite makes them on the cluster API, and the CP takes them only for a
+lamina whose set's producer is **assigned to that satellite now**; for any
+other it answers `PERMISSION_DENIED`. They are made in that producer's name:
+the tokens are issued to the producer for its tenant, a node's failure
+score counts against the producer's daily cap ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)),
+and the attempt's reason says whose call it was: `satellite <alias>, for
+its producer: <reason>`.
+
+#### Memory limits
+
+The **retained pool** is `satellite.retained_budget` of the one memory
+budget ([§41.4](#414-memory)).
+
+- **A segment reserves** what it is expected to hold when it is taken: its
+  `Upload-Length`, else its size hint, at least a part (1 MiB), at most
+  `max_length`. It grows past that as its bytes come.
+- **A producer's share** is the pool over the producers using it, those
+  that hold bytes or asked for acceptance in the last two minutes, capped
+  by `satellite.retained_per_producer`. A new segment is taken only within
+  its producer's share and the pool, so a producer stuck behind a failing
+  node fills its share and no more, and the others still get theirs. A
+  segment already taken grows within the pool alone: shares move as
+  producers come and go, and a segment half taken is not refused for that.
+- **Full, it never evicts.** Bytes leave the pool when their segment is
+  delivered or given up, and in no other way.
+  - A new segment that does not fit the pool or the producer's share is
+    **passed through**: the request goes on to the node as under
+    `committed`, the node's answer comes back with `Shale-Pass: full` (or
+    `share`), and the producer keeps its bytes and goes on with the node.
+    Nothing waits, and the segment is no worse off than without
+    `accepted`.
+  - A segment the satellite holds the start of, and has no room to grow, is
+    answered with what it holds (`204`) and `Retry-After`, and its next
+    requests `503 Retry-After` (`Shale-Satellite: busy`) until there is
+    room: only the satellite can deliver its start, so its rest cannot pass
+    through. The producer keeps the rest meanwhile, as under `committed`,
+    and cuts the segment at what the satellite holds if no room comes
+    within `resume_timeout`. The reservation makes this rare.
+  - A satellite on `satellite.accept: false` is handed nothing, its
+    assignment saying so; a request that asks it all the same, sent before
+    the producer heard, passes through (`Shale-Pass: refused`), and so does
+    one the CP would not record it the holder of (`unrecorded`).
+- **What it reports.** Every heartbeat carries the retained pool's use and
+  bound, each producer's part of it and its share, the laminae it holds,
+  the bytes it accepted, and the segments it delivered, gave up and passed
+  through (`SatelliteStatus`); the same are `shale.satellite.retained_*`,
+  `held`, `accepted_bytes`, `delivered`, `given_up` and `passed`. A
+  producer reports its handoffs, their bytes and the requests passed
+  through (`UploadReport`: `handed_off`, `handed_off_bytes`, `passed`), and
+  as `shale.producer.handed_off_bytes` and `accept_passed`.
+
+Sizing: under `accepted` the satellite holds what the producers would
+have, each source's segment in progress until its node commits it, about
+`sources × max_bitrate × segment_duration × 1.2`, and an outage's backlog
+on top. Under a long node outage a full pool passes segments through, and
+the producers' own `buffer` takes over.
+
+#### Loss
+
+What a satellite accepted and had not delivered is in its RAM alone. If it
+dies, it is lost, for every producer it serves, and the loss is the
+satellite's:
+
+| How | Those laminae |
+|---|---|
+| The satellite stops | it reports each one LOST before it exits (`ReportFailure`, in its producers' names), for a few seconds; what it could not report, the CP finds as below |
+| It dies, and comes back | every heartbeat carries an **incarnation**, drawn when the process starts. One with another incarnation than the last is a satellite that restarted: every PENDING lamina recorded as held by it that the new process does not say it holds is made LOST at once |
+| It dies, and does not come back | once it is down (unheard for `satellite_down_after`, erased, or no longer adopted) and a lamina it held has no attempt left whose token is good, the leader's jobs make it LOST, within `allocation_ttl` and a minute. A satellite only cut off from the CP delivers with the tokens it has until then |
+| It gives up a delivery | `ReportFailure`, as above |
+
+Either way the lamina's open attempts fail with a reason that names the
+satellite (`satellite <alias> lost what it accepted: it restarted`, or
+`satellite <alias>, for its producer: …` when it reports one itself), the
+row keeps the satellite as the lamina's holder, and
+`shale.cp.laminae_lost` counts it `by="satellite"`; a producer's own
+give-up is counted `by="producer"`. None is left PENDING: these run before
+the rule that removes a lamina nobody stored ([§12.1](04-write-path.md#121-flow)).
+A LOST lamina a node turns out to have after all, the start of a live
+delivery that the node's abandon rule finalized, is brought back by its
+`LaminaStored`, as any late event ([§14](04-write-path.md#14-duplicates-and-orphans)).
+The producer counts none of these as its own losses: it handed them off.
