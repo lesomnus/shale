@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"strings"
@@ -356,11 +357,121 @@ func (s Core) satelliteProducers(ctx context.Context, id pdid.Id) ([]*api.Satell
 		return nil, err
 	}
 	out := make([]*api.SatelliteProducer, 0, len(ps))
+	now := s.d.now()
 	for _, p := range ps {
-		out = append(out, api.SatelliteProducer_builder{ProducerId: pdid.Id(p.Id).Bytes(), CertSerial: p.CertSerial}.Build())
+		v := api.SatelliteProducer_builder{ProducerId: pdid.Id(p.Id).Bytes(), CertSerial: p.CertSerial}
+		ra, err := s.satelliteFeed(ctx, id, p, now)
+		if err != nil {
+			s.d.log().Warn("satellite feed", "producer", p.Alias, "err", err.Error())
+		}
+		v.Relay = ra
+		out = append(out, v.Build())
 	}
 
 	return out, nil
+}
+
+// SatelliteFeedTokenTTL is how long a satellite's feed token lives, at most
+// (§41.8): every heartbeat brings a fresh one, so it need not outlive a
+// satellite that stops being told.
+const SatelliteFeedTokenTTL = 10 * time.Minute
+
+// satelliteFeed is the relay a satellite feeds a producer's live to, with a
+// feed token for the sources the producer hands it (§41.8): those of its
+// last heartbeat's report that its publish token names, when the report
+// names this satellite. Nil when it hands none, or its relay is down or
+// predates satellites, which then never see one: the producer's own stream
+// feeds every source, as before.
+func (s Core) satelliteFeed(ctx context.Context, sat pdid.Id, p *ent.Producer, now time.Time) (*api.RelayAssignment, error) {
+	up := p.Status.GetUpload()
+	if len(up.GetLiveSources()) == 0 || !bytes.Equal(up.GetSatelliteId(), sat.Bytes()) || isZero(p.RelayId) || isZero(p.SetId) {
+		return nil, nil
+	}
+	r, err := s.ent(ctx).Relay.Get(ctx, p.RelayId)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if !relayAlive(r, now, s.d.relayDownAfter()) || !r.Status.GetSatelliteFeeders() || r.IngestAddress == "" {
+		return nil, nil
+	}
+	members, err := s.ownMembers(ctx, p.SetId[:])
+	if err != nil {
+		return nil, err
+	}
+	producerId := pdid.Id(p.Id)
+	shown, grants, err := s.publishable(ctx, producerId, members)
+	if err != nil {
+		return nil, err
+	}
+	handed := map[string]bool{}
+	for _, v := range up.GetLiveSources() {
+		handed[string(v)] = true
+	}
+	var sources [][]byte
+	var epochs []*api.CaptureEpochGrant
+	for _, m := range shown {
+		if handed[string(m.GetId())] {
+			sources = append(sources, m.GetId())
+		}
+	}
+	if len(sources) == 0 {
+		return nil, nil
+	}
+	for _, g := range grants {
+		if handed[string(g.GetSourceId())] {
+			epochs = append(epochs, g)
+		}
+	}
+	b, _, _, address, err := s.policies(ctx)
+	if err != nil {
+		return nil, err
+	}
+	live := livePolicy(api.LivePolicy(p.Live))
+	exp := now.Add(min(b.PublishTokenTTL, SatelliteFeedTokenTTL))
+	// The producer's own token in all but its operation, the sources it
+	// hands over and the satellite it names: the same actor, policy and
+	// recent window, so the relay keeps the source as it was whoever feeds.
+	tok, err := s.d.Keys.Sign(ctx, api.TokenClaims_builder{
+		Exp: timestamppb.New(exp), Iat: timestamppb.New(now),
+		Aud: r.Id[:], Op: api.TokenOp_TOKEN_OP_FEED, Sources: sources, Actor: producerId.Bytes(), ActorTenant: p.TenantId[:], CaptureEpochs: epochs,
+		Live: live, RewindSeconds: rewindSeconds(shown, b), Feeder: sat.Bytes(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return api.RelayAssignment_builder{
+		RelayId:      r.Id[:],
+		Endpoints:    s.relayEndpoints(r, r.IngestAddress, callerOf(ctx), address),
+		PublishToken: tok,
+		DateExpires:  timestamppb.New(exp),
+		Live:         live,
+	}.Build(), nil
+}
+
+// ownMembers are a set's sources, read past the wall: a satellite asks for
+// its producers' feeds, and holds no tenant's rows itself (§41.7).
+func (s Core) ownMembers(ctx context.Context, setId []byte) ([]*api.Source, error) {
+	var out []*api.Source
+	after := ""
+	for {
+		vs, err := s.own(ctx).Source().List(ctx, api.SourceListRequest_builder{
+			Filters: []*api.SourceFilter{api.SourceFilter_builder{Set: api.SetRef_builder{Id: setId}.Build()}.Build()},
+			Size:    500,
+			After:   after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, vs.GetItems()...)
+		if vs.GetNext() == "" {
+			return out, nil
+		}
+		after = vs.GetNext()
+	}
 }
 
 // Route is a node's data plane for the satellite that asks: the endpoints

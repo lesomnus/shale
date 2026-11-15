@@ -48,6 +48,10 @@ type UploadConfig struct {
 	// directly to the nodes by default, so a producer updated without a
 	// word in its configuration uploads as it did.
 	Via Via
+	// LiveFeed is who feeds the relay a source whose live uploads go
+	// through the satellite (§41.8, `producer.live_feed`): the satellite
+	// where it can by default; nothing changes while uploads go directly.
+	LiveFeed LiveFeed
 }
 
 func (c *UploadConfig) defaults() {
@@ -85,7 +89,9 @@ type Uploader struct {
 	// target that fails after that ends the segment where it has it.
 	Written bool
 	// Satellite routes requests through the satellite the CP assigned,
-	// where Cfg.Via says to (§41.5); nil is directly to the nodes.
+	// where Cfg.Via says to (§41.5), and hands it the live of the segments
+	// that may be fed from it where Cfg.LiveFeed says to (§41.8); nil is
+	// directly to the nodes.
 	Satellite *SatelliteLink
 
 	// defaulted fills in what Cfg leaves out, once: every source's upload
@@ -468,6 +474,11 @@ func (u *Uploader) put(ctx context.Context, url string, viaSatellite bool, tok s
 	}
 	req.Header.Set("Authorization", token.Scheme+" "+tok)
 	u.Satellite.prepare(req, viaSatellite)
+	if live {
+		// Where the live of this source is fed from (§41.8): the satellite,
+		// from this body, or the producer's own tee.
+		u.Satellite.liveRequest(req, al.GetSourceId(), viaSatellite, seg, offset)
+	}
 	req.Header.Set(storage.HdrUploadOffset, strconv.FormatInt(offset, 10))
 	req.Header.Set(storage.HdrUploadComplete, "?1")
 	req.Header.Set(storage.HdrDateStarted, seg.Started.UTC().Format(time.RFC3339Nano))

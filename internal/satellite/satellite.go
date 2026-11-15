@@ -112,6 +112,11 @@ type Satellite struct {
 	// beat holds heartbeats to one at a time: the ticker's, and those a
 	// caller it does not know asks for (§41.3).
 	beat sync.Mutex
+	// wake has the next heartbeat go now: a live feed wants a fresher
+	// token (§41.8).
+	wake chan struct{}
+	// live is every producer's stream to its relay (§41.8).
+	live *liveFeeds
 
 	// Addr is the upload listener's address, once Run listens.
 	Addr string
@@ -138,6 +143,13 @@ func New(cfg Config) (*Satellite, error) {
 	}
 	s.proxy.assigned.refresh = s.heartbeat
 	s.proxy.routes = newRoutes(s.route, cfg.Dev)
+	s.wake = make(chan struct{}, 1)
+	s.live = newLiveFeeds(cfg.Log)
+	s.live.dial = func(ctx context.Context, addr string, plain bool) (*grpc.ClientConn, error) {
+		return s.agent.DialAddr(ctx, addr, plain)
+	}
+	s.live.refresh = func() { signal(s.wake) }
+	s.proxy.live = s.live
 
 	return s, nil
 }
@@ -155,6 +167,12 @@ func (s *Satellite) InFlight() (used, peak, budget int64) {
 
 // Forwarded is the bytes forwarded to nodes since the satellite started.
 func (s *Satellite) Forwarded() int64 { return s.proxy.forwarded.Load() }
+
+// Live is the live fan-out (§41.8): the sources it feeds relays now, and
+// the bytes it sent them and the fragments it dropped since it started.
+func (s *Satellite) Live() (sources int, sent, dropped int64) {
+	return s.live.feeding(), s.live.bytes.Load(), s.live.dropped.Load()
+}
 
 // Run joins, then serves uploads until the context is done.
 func (s *Satellite) Run(ctx context.Context) error {
@@ -239,6 +257,7 @@ func (s *Satellite) Run(ctx context.Context) error {
 	s.log.Info("serving", "upload", s.Addr, "tls", tlsCfg != nil, "memory_budget", s.cfg.MemoryBudget, "request_buffer", s.cfg.RequestBuffer)
 	close(s.Ready)
 
+	s.live.start(ctx)
 	g.Go(func() error { return s.heartbeats(ctx) })
 	g.Go(func() error {
 		return s.keys.Poll(ctx, s.client, func(err error) { s.log.Warn("keys", "err", err.Error()) })
@@ -387,6 +406,7 @@ func (s *Satellite) heartbeats(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-t.C:
+		case <-s.wake:
 		}
 	}
 }
@@ -415,6 +435,9 @@ func (s *Satellite) heartbeat(ctx context.Context) error {
 		Producers:      int32(p.assigned.len()),
 		ForwardedBytes: p.forwarded.Load(),
 		Refused:        p.refused.Load(),
+		LiveSources:    int32(s.live.feeding()),
+		LiveBytes:      s.live.bytes.Load(),
+		LiveDropped:    s.live.dropped.Load(),
 		Load:           api.HostLoad_builder{Cpu: load, Temperature: hostagent.Temperature()}.Build(),
 	}.Build()
 	s.m.inFlight.Record(ctx, used)
@@ -424,6 +447,9 @@ func (s *Satellite) heartbeat(ctx context.Context) error {
 	s.m.forwarded.Record(ctx, st.GetForwardedBytes())
 	s.m.refused.Record(ctx, st.GetRefused())
 	s.m.cpu.Record(ctx, load)
+	s.m.liveSources.Record(ctx, int64(st.GetLiveSources()))
+	s.m.liveBytes.Record(ctx, st.GetLiveBytes())
+	s.m.liveDropped.Record(ctx, st.GetLiveDropped())
 
 	cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -440,6 +466,7 @@ func (s *Satellite) heartbeat(ctx context.Context) error {
 		return err
 	}
 	p.assigned.set(resp.GetProducers())
+	s.live.set(resp.GetProducers())
 	if resp.GetRenewCertificate() || s.agent.NeedsRenewal(time.Now()) {
 		if err := s.agent.Renew(ctx, conn, func(ctx context.Context, conn *grpc.ClientConn, csr []byte) ([]byte, []byte, error) {
 			v, err := api.NewSatelliteServiceClient(conn).RenewCertificate(ctx, api.SatelliteRenewCertificateRequest_builder{Csr: csr}.Build())

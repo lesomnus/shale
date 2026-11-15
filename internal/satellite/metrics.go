@@ -17,6 +17,10 @@ type metrics struct {
 	forwarded metric.Int64Gauge
 	refused   metric.Int64Gauge
 	cpu       metric.Float64Gauge
+	// Live fan-out (§41.8).
+	liveSources metric.Int64Gauge
+	liveBytes   metric.Int64Gauge
+	liveDropped metric.Int64Gauge
 }
 
 func newMetrics(ctx context.Context) *metrics {
@@ -30,5 +34,9 @@ func newMetrics(ctx context.Context) *metrics {
 		forwarded: o.Int64Gauge("shale.satellite.forwarded_bytes", metric.WithDescription("bytes forwarded to nodes since the satellite started"), metric.WithUnit("By")),
 		refused:   o.Int64Gauge("shale.satellite.refused", metric.WithDescription("requests refused since the satellite started: for want of room, or from a caller it does not serve")),
 		cpu:       o.Float64Gauge("shale.satellite.cpu", metric.WithDescription("one-minute load average over the CPU count")),
+
+		liveSources: o.Int64Gauge("shale.satellite.live_sources", metric.WithDescription("sources whose live the satellite feeds relays from their uploads now")),
+		liveBytes:   o.Int64Gauge("shale.satellite.live_bytes", metric.WithDescription("bytes of live sent to relays since the satellite started"), metric.WithUnit("By")),
+		liveDropped: o.Int64Gauge("shale.satellite.live_dropped", metric.WithDescription("live fragments dropped since the satellite started because a relay was behind")),
 	}
 }

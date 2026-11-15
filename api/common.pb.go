@@ -457,6 +457,10 @@ const (
 	// A CP HTTP export capability for one source and an exact time range;
 	// it is neither a storage GET token nor a relay VIEW token.
 	TokenOp_TOKEN_OP_EXPORT TokenOp = 5
+	// A satellite's capability to feed a relay a producer's sources from the
+	// uploads that pass through it (§39.3, §41.8): a publish token in all but
+	// its operation, which a relay that predates satellites refuses.
+	TokenOp_TOKEN_OP_FEED TokenOp = 6
 )
 
 // Enum value maps for TokenOp.
@@ -468,6 +472,7 @@ var (
 		3: "TOKEN_OP_PUBLISH",
 		4: "TOKEN_OP_VIEW",
 		5: "TOKEN_OP_EXPORT",
+		6: "TOKEN_OP_FEED",
 	}
 	TokenOp_value = map[string]int32{
 		"TOKEN_OP_UNSPECIFIED": 0,
@@ -476,6 +481,7 @@ var (
 		"TOKEN_OP_PUBLISH":     3,
 		"TOKEN_OP_VIEW":        4,
 		"TOKEN_OP_EXPORT":      5,
+		"TOKEN_OP_FEED":        6,
 	}
 )
 
@@ -1961,6 +1967,8 @@ type UploadReport struct {
 	xxx_hidden_ThroughSatellite int64                  `protobuf:"varint,3,opt,name=through_satellite,json=throughSatellite"`
 	xxx_hidden_Direct           int64                  `protobuf:"varint,4,opt,name=direct"`
 	xxx_hidden_Fallbacks        int64                  `protobuf:"varint,5,opt,name=fallbacks"`
+	xxx_hidden_LiveSources      [][]byte               `protobuf:"bytes,6,rep,name=live_sources,json=liveSources"`
+	xxx_hidden_LiveFeed         string                 `protobuf:"bytes,7,opt,name=live_feed,json=liveFeed"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -2025,6 +2033,20 @@ func (x *UploadReport) GetFallbacks() int64 {
 	return 0
 }
 
+func (x *UploadReport) GetLiveSources() [][]byte {
+	if x != nil {
+		return x.xxx_hidden_LiveSources
+	}
+	return nil
+}
+
+func (x *UploadReport) GetLiveFeed() string {
+	if x != nil {
+		return x.xxx_hidden_LiveFeed
+	}
+	return ""
+}
+
 func (x *UploadReport) SetVia(v string) {
 	x.xxx_hidden_Via = v
 }
@@ -2048,6 +2070,14 @@ func (x *UploadReport) SetFallbacks(v int64) {
 	x.xxx_hidden_Fallbacks = v
 }
 
+func (x *UploadReport) SetLiveSources(v [][]byte) {
+	x.xxx_hidden_LiveSources = v
+}
+
+func (x *UploadReport) SetLiveFeed(v string) {
+	x.xxx_hidden_LiveFeed = v
+}
+
 type UploadReport_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2061,6 +2091,14 @@ type UploadReport_builder struct {
 	// Times the satellite failed and the producer went to the node directly
 	// for a while (`auto`).
 	Fallbacks int64
+	// The sources whose live the producer hands to the satellite now, to
+	// feed the relay with from their uploads (§41.8): those whose live
+	// uploads go through it, and need no live helper. The CP gives that
+	// satellite a feed token for these and no others.
+	LiveSources [][]byte
+	// `producer.live_feed`, as configured: `auto` or `producer`; empty from a
+	// producer that predates it.
+	LiveFeed string
 }
 
 func (b0 UploadReport_builder) Build() *UploadReport {
@@ -2072,6 +2110,8 @@ func (b0 UploadReport_builder) Build() *UploadReport {
 	x.xxx_hidden_ThroughSatellite = b.ThroughSatellite
 	x.xxx_hidden_Direct = b.Direct
 	x.xxx_hidden_Fallbacks = b.Fallbacks
+	x.xxx_hidden_LiveSources = b.LiveSources
+	x.xxx_hidden_LiveFeed = b.LiveFeed
 	return m0
 }
 
@@ -3950,6 +3990,7 @@ type RelayStatus struct {
 	xxx_hidden_IngressBytes      int64                  `protobuf:"varint,8,opt,name=ingress_bytes,json=ingressBytes"`
 	xxx_hidden_RewindBytes       int64                  `protobuf:"varint,9,opt,name=rewind_bytes,json=rewindBytes"`
 	xxx_hidden_RewindBudget      int64                  `protobuf:"varint,10,opt,name=rewind_budget,json=rewindBudget"`
+	xxx_hidden_SatelliteFeeders  bool                   `protobuf:"varint,11,opt,name=satellite_feeders,json=satelliteFeeders"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -4049,6 +4090,13 @@ func (x *RelayStatus) GetRewindBudget() int64 {
 	return 0
 }
 
+func (x *RelayStatus) GetSatelliteFeeders() bool {
+	if x != nil {
+		return x.xxx_hidden_SatelliteFeeders
+	}
+	return false
+}
+
 func (x *RelayStatus) SetDateReported(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateReported = v
 }
@@ -4087,6 +4135,10 @@ func (x *RelayStatus) SetRewindBytes(v int64) {
 
 func (x *RelayStatus) SetRewindBudget(v int64) {
 	x.xxx_hidden_RewindBudget = v
+}
+
+func (x *RelayStatus) SetSatelliteFeeders(v bool) {
+	x.xxx_hidden_SatelliteFeeders = v
 }
 
 func (x *RelayStatus) HasDateReported() bool {
@@ -4128,6 +4180,10 @@ type RelayStatus_builder struct {
 	// them (§39.5).
 	RewindBytes  int64
 	RewindBudget int64
+	// It takes a satellite as a producer's feeder (§39.3). A relay that
+	// predates satellites says nothing, and the CP gives no satellite a feed
+	// token for it.
+	SatelliteFeeders bool
 }
 
 func (b0 RelayStatus_builder) Build() *RelayStatus {
@@ -4144,6 +4200,7 @@ func (b0 RelayStatus_builder) Build() *RelayStatus {
 	x.xxx_hidden_IngressBytes = b.IngressBytes
 	x.xxx_hidden_RewindBytes = b.RewindBytes
 	x.xxx_hidden_RewindBudget = b.RewindBudget
+	x.xxx_hidden_SatelliteFeeders = b.SatelliteFeeders
 	return m0
 }
 
@@ -4160,6 +4217,9 @@ type SatelliteStatus struct {
 	xxx_hidden_ForwardedBytes int64                  `protobuf:"varint,6,opt,name=forwarded_bytes,json=forwardedBytes"`
 	xxx_hidden_Refused        int64                  `protobuf:"varint,7,opt,name=refused"`
 	xxx_hidden_Load           *HostLoad              `protobuf:"bytes,8,opt,name=load"`
+	xxx_hidden_LiveSources    int32                  `protobuf:"varint,11,opt,name=live_sources,json=liveSources"`
+	xxx_hidden_LiveBytes      int64                  `protobuf:"varint,12,opt,name=live_bytes,json=liveBytes"`
+	xxx_hidden_LiveDropped    int64                  `protobuf:"varint,13,opt,name=live_dropped,json=liveDropped"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -4245,6 +4305,27 @@ func (x *SatelliteStatus) GetLoad() *HostLoad {
 	return nil
 }
 
+func (x *SatelliteStatus) GetLiveSources() int32 {
+	if x != nil {
+		return x.xxx_hidden_LiveSources
+	}
+	return 0
+}
+
+func (x *SatelliteStatus) GetLiveBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_LiveBytes
+	}
+	return 0
+}
+
+func (x *SatelliteStatus) GetLiveDropped() int64 {
+	if x != nil {
+		return x.xxx_hidden_LiveDropped
+	}
+	return 0
+}
+
 func (x *SatelliteStatus) SetDateReported(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateReported = v
 }
@@ -4275,6 +4356,18 @@ func (x *SatelliteStatus) SetRefused(v int64) {
 
 func (x *SatelliteStatus) SetLoad(v *HostLoad) {
 	x.xxx_hidden_Load = v
+}
+
+func (x *SatelliteStatus) SetLiveSources(v int32) {
+	x.xxx_hidden_LiveSources = v
+}
+
+func (x *SatelliteStatus) SetLiveBytes(v int64) {
+	x.xxx_hidden_LiveBytes = v
+}
+
+func (x *SatelliteStatus) SetLiveDropped(v int64) {
+	x.xxx_hidden_LiveDropped = v
 }
 
 func (x *SatelliteStatus) HasDateReported() bool {
@@ -4316,6 +4409,15 @@ type SatelliteStatus_builder struct {
 	ForwardedBytes int64
 	Refused        int64
 	Load           *HostLoad
+	// 9 and 10 are kept for the retained pool of `retain: accepted`
+	// (§41.9), which is not built yet.
+	//
+	// Live fan-out (§41.8): the sources it feeds relays now, the bytes it
+	// sent them, and the fragments it dropped because a relay was behind,
+	// since it started.
+	LiveSources int32
+	LiveBytes   int64
+	LiveDropped int64
 }
 
 func (b0 SatelliteStatus_builder) Build() *SatelliteStatus {
@@ -4330,6 +4432,9 @@ func (b0 SatelliteStatus_builder) Build() *SatelliteStatus {
 	x.xxx_hidden_ForwardedBytes = b.ForwardedBytes
 	x.xxx_hidden_Refused = b.Refused
 	x.xxx_hidden_Load = b.Load
+	x.xxx_hidden_LiveSources = b.LiveSources
+	x.xxx_hidden_LiveBytes = b.LiveBytes
+	x.xxx_hidden_LiveDropped = b.LiveDropped
 	return m0
 }
 
@@ -4817,6 +4922,7 @@ type TokenClaims struct {
 	xxx_hidden_ExportTo              *timestamppb.Timestamp `protobuf:"bytes,22,opt,name=export_to,json=exportTo"`
 	xxx_hidden_CaptureEpoch          string                 `protobuf:"bytes,23,opt,name=capture_epoch,json=captureEpoch"`
 	xxx_hidden_CaptureEpochs         *[]*CaptureEpochGrant  `protobuf:"bytes,24,rep,name=capture_epochs,json=captureEpochs"`
+	xxx_hidden_Feeder                []byte                 `protobuf:"bytes,25,opt,name=feeder"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -5016,6 +5122,13 @@ func (x *TokenClaims) GetCaptureEpochs() []*CaptureEpochGrant {
 	return nil
 }
 
+func (x *TokenClaims) GetFeeder() []byte {
+	if x != nil {
+		return x.xxx_hidden_Feeder
+	}
+	return nil
+}
+
 func (x *TokenClaims) SetKid(v string) {
 	x.xxx_hidden_Kid = v
 }
@@ -5133,6 +5246,13 @@ func (x *TokenClaims) SetCaptureEpochs(v []*CaptureEpochGrant) {
 	x.xxx_hidden_CaptureEpochs = &v
 }
 
+func (x *TokenClaims) SetFeeder(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Feeder = v
+}
+
 func (x *TokenClaims) HasExp() bool {
 	if x == nil {
 		return false
@@ -5231,6 +5351,9 @@ type TokenClaims_builder struct {
 	// view: never serve a different capture incarnation under this capability.
 	CaptureEpoch  string
 	CaptureEpochs []*CaptureEpochGrant
+	// feed: the satellite the token is for. The relay takes the stream only
+	// from the host whose certificate names it (§39.7).
+	Feeder []byte
 }
 
 func (b0 TokenClaims_builder) Build() *TokenClaims {
@@ -5261,6 +5384,7 @@ func (b0 TokenClaims_builder) Build() *TokenClaims {
 	x.xxx_hidden_ExportTo = b.ExportTo
 	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	x.xxx_hidden_CaptureEpochs = &b.CaptureEpochs
+	x.xxx_hidden_Feeder = b.Feeder
 	return m0
 }
 
@@ -6222,13 +6346,15 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x13SatelliteAssignment\x12!\n" +
 	"\fsatellite_id\x18\x01 \x01(\fR\vsatelliteId\x12-\n" +
 	"\tendpoints\x18\x02 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12=\n" +
-	"\fdate_expires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"\xa6\x01\n" +
+	"\fdate_expires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"\xe6\x01\n" +
 	"\fUploadReport\x12\x10\n" +
 	"\x03via\x18\x01 \x01(\tR\x03via\x12!\n" +
 	"\fsatellite_id\x18\x02 \x01(\fR\vsatelliteId\x12+\n" +
 	"\x11through_satellite\x18\x03 \x01(\x03R\x10throughSatellite\x12\x16\n" +
 	"\x06direct\x18\x04 \x01(\x03R\x06direct\x12\x1c\n" +
-	"\tfallbacks\x18\x05 \x01(\x03R\tfallbacks\"\xfb\x02\n" +
+	"\tfallbacks\x18\x05 \x01(\x03R\tfallbacks\x12!\n" +
+	"\flive_sources\x18\x06 \x03(\fR\vliveSources\x12\x1b\n" +
+	"\tlive_feed\x18\a \x01(\tR\bliveFeed\"\xfb\x02\n" +
 	"\bHostJoin\x12\x1f\n" +
 	"\vhardware_id\x18\x01 \x01(\tR\n" +
 	"hardwareId\x12?\n" +
@@ -6349,7 +6475,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\adevices\x18\x03 \x01(\x05R\adevices\x12*\n" +
 	"\x11uploads_in_flight\x18\x04 \x01(\x03R\x0fuploadsInFlight\x12#\n" +
 	"\rindex_laminae\x18\x05 \x01(\x03R\findexLaminae\x12\x1a\n" +
-	"\bwarnings\x18\x06 \x03(\tR\bwarnings\"\x9a\x03\n" +
+	"\bwarnings\x18\x06 \x03(\tR\bwarnings\"\xc7\x03\n" +
 	"\vRelayStatus\x12?\n" +
 	"\rdate_reported\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\fdateReported\x12-\n" +
 	"\x12attached_producers\x18\x02 \x01(\x05R\x11attachedProducers\x12%\n" +
@@ -6362,7 +6488,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\ringress_bytes\x18\b \x01(\x03R\fingressBytes\x12!\n" +
 	"\frewind_bytes\x18\t \x01(\x03R\vrewindBytes\x12#\n" +
 	"\rrewind_budget\x18\n" +
-	" \x01(\x03R\frewindBudget\"\xc4\x02\n" +
+	" \x01(\x03R\frewindBudget\x12+\n" +
+	"\x11satellite_feeders\x18\v \x01(\bR\x10satelliteFeeders\"\xa9\x03\n" +
 	"\x0fSatelliteStatus\x12?\n" +
 	"\rdate_reported\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\fdateReported\x12&\n" +
 	"\x0fin_flight_bytes\x18\x02 \x01(\x03R\rinFlightBytes\x12(\n" +
@@ -6371,7 +6498,11 @@ const file_shale_common_proto_rawDesc = "" +
 	"\tproducers\x18\x05 \x01(\x05R\tproducers\x12'\n" +
 	"\x0fforwarded_bytes\x18\x06 \x01(\x03R\x0eforwardedBytes\x12\x18\n" +
 	"\arefused\x18\a \x01(\x03R\arefused\x12#\n" +
-	"\x04load\x18\b \x01(\v2\x0f.shale.HostLoadR\x04load\"\xd7\x05\n" +
+	"\x04load\x18\b \x01(\v2\x0f.shale.HostLoadR\x04load\x12!\n" +
+	"\flive_sources\x18\v \x01(\x05R\vliveSources\x12\x1d\n" +
+	"\n" +
+	"live_bytes\x18\f \x01(\x03R\tliveBytes\x12!\n" +
+	"\flive_dropped\x18\r \x01(\x03R\vliveDropped\"\xd7\x05\n" +
 	"\fLaminaRecord\x12%\n" +
 	"\x0eformat_version\x18\x01 \x01(\x05R\rformatVersion\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\fR\btenantId\x12\x17\n" +
@@ -6401,7 +6532,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x11CaptureEpochGrant\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12#\n" +
 	"\rcapture_epoch\x18\x02 \x01(\tR\fcaptureEpoch\x12\x1a\n" +
-	"\bsequence\x18\x03 \x01(\x03R\bsequence\"\x94\a\n" +
+	"\bsequence\x18\x03 \x01(\x03R\bsequence\"\xac\a\n" +
 	"\vTokenClaims\x12\x10\n" +
 	"\x03kid\x18\x01 \x01(\tR\x03kid\x12,\n" +
 	"\x03exp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x03exp\x12,\n" +
@@ -6431,7 +6562,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"exportFrom\x127\n" +
 	"\texport_to\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\bexportTo\x12#\n" +
 	"\rcapture_epoch\x18\x17 \x01(\tR\fcaptureEpoch\x12?\n" +
-	"\x0ecapture_epochs\x18\x18 \x03(\v2\x18.shale.CaptureEpochGrantR\rcaptureEpochs\"\xd9\x03\n" +
+	"\x0ecapture_epochs\x18\x18 \x03(\v2\x18.shale.CaptureEpochGrantR\rcaptureEpochs\x12\x16\n" +
+	"\x06feeder\x18\x19 \x01(\fR\x06feeder\"\xd9\x03\n" +
 	"\fLaminaStored\x12\x1b\n" +
 	"\tlamina_id\x18\x01 \x01(\fR\blaminaId\x12\x1d\n" +
 	"\n" +
@@ -6524,14 +6656,15 @@ const file_shale_common_proto_rawDesc = "" +
 	"\vRecordState\x12\x1c\n" +
 	"\x18RECORD_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11RECORD_STATE_OPEN\x10\x01\x12\x19\n" +
-	"\x15RECORD_STATE_COMPLETE\x10\x02*\x85\x01\n" +
+	"\x15RECORD_STATE_COMPLETE\x10\x02*\x98\x01\n" +
 	"\aTokenOp\x12\x18\n" +
 	"\x14TOKEN_OP_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fTOKEN_OP_PUT\x10\x01\x12\x10\n" +
 	"\fTOKEN_OP_GET\x10\x02\x12\x14\n" +
 	"\x10TOKEN_OP_PUBLISH\x10\x03\x12\x11\n" +
 	"\rTOKEN_OP_VIEW\x10\x04\x12\x13\n" +
-	"\x0fTOKEN_OP_EXPORT\x10\x05*\x87\x01\n" +
+	"\x0fTOKEN_OP_EXPORT\x10\x05\x12\x11\n" +
+	"\rTOKEN_OP_FEED\x10\x06*\x87\x01\n" +
 	"\rMissingReason\x12\x1e\n" +
 	"\x1aMISSING_REASON_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18MISSING_REASON_NOT_FOUND\x10\x01\x12\x1a\n" +

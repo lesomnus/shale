@@ -43,7 +43,11 @@ type metrics struct {
 	viewerNetwork metric.Float64Histogram
 	viewerPlayout metric.Float64Histogram
 	viewerTotal   metric.Float64Histogram
-	cpu           metric.Float64Gauge
+	// Times a source's feeder changed from one live stream to another: a
+	// satellite taking a producer's source over, or handing it back
+	// (§39.3, §41.8).
+	handoffs metric.Int64Counter
+	cpu      metric.Float64Gauge
 }
 
 func newMetrics(ctx context.Context) *metrics {
@@ -71,6 +75,7 @@ func newMetrics(ctx context.Context) *metrics {
 		viewerNetwork: o.Float64Histogram("shale.relay.viewer_network_ms", metric.WithDescription("t5 - t4, as timed viewers report it: from the relay sending a frame to the viewer having all of it"), metric.WithUnit("ms")),
 		viewerPlayout: o.Float64Histogram("shale.relay.viewer_playout_ms", metric.WithDescription("t6 - t5, as timed viewers report it: from having a frame to showing it, the browser's jitter buffer, decoding and rendering"), metric.WithUnit("ms")),
 		viewerTotal:   o.Float64Histogram("shale.relay.viewer_total_ms", metric.WithDescription("t6 - t1, as timed viewers report it: from the producer having a frame to a viewer showing it"), metric.WithUnit("ms")),
+		handoffs:      o.Int64Counter("shale.relay.feeder_handoffs", metric.WithDescription("times a source's feeder changed from one live stream to another: a satellite taking a producer's source over from the producer's own stream, or the producer's stream taking it back")),
 		cpu:           o.Float64Gauge("shale.relay.cpu", metric.WithDescription("one-minute load average over the CPU count")),
 	}
 }

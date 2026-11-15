@@ -73,6 +73,9 @@ type Proxy struct {
 	assigned *assigned
 	routes   *routes
 	pool     *pool
+	// live reads the live of the uploads that pass for the relays (§41.8);
+	// nil reads none.
+	live *liveFeeds
 
 	forwarded atomic.Int64
 	refused   atomic.Int64
@@ -152,6 +155,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Room: a body is copied through a buffer of its own, and only so many
 	// fit the budget (§41.4). A HEAD has no body.
 	var body io.Reader
+	var live *tap
 	if r.Method == http.MethodPut {
 		if !p.pool.take() {
 			p.refused.Add(1)
@@ -162,9 +166,17 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		defer p.pool.give()
 		body = r.Body
+		if p.live != nil {
+			// The live the producer hands over is read as the body passes
+			// (§41.8); nothing of it holds the upload.
+			live = p.live.tap(caller, c, key, r)
+		}
 	}
 
-	p.forward(w, r, base, tok, body, int(p.pool.each/2))
+	complete := p.forward(w, r, base, tok, body, int(p.pool.each/2), live)
+	if live != nil {
+		live.end(complete)
+	}
 }
 
 // caller is who calls: the producer the verified client certificate
@@ -207,20 +219,22 @@ func clientAuth(c *x509.Certificate) bool {
 // unchanged: the path, the upload headers and the trailers one way, the
 // status, the headers and the trailers the other. The token goes in the
 // Authorization header whichever way it came, so it is in no URL. body
-// is nil for a HEAD.
-func (p *Proxy) forward(w http.ResponseWriter, r *http.Request, base, tok string, body io.Reader, size int) {
+// is nil for a HEAD. live, when not nil, is handed the body's bytes as
+// they pass. It answers whether the body was read to its end.
+func (p *Proxy) forward(w http.ResponseWriter, r *http.Request, base, tok string, body io.Reader, size int, live *tap) bool {
 	out, err := http.NewRequestWithContext(r.Context(), r.Method, base, nil)
 	if err != nil {
 		own(w, ReasonUnreachable, http.StatusBadGateway, "no route to the node")
-		return
+		return false
 	}
 	out.URL.Path = r.URL.Path
 	out.URL.RawPath = r.URL.RawPath
 	out.Header = requestHeader(r.Header)
 	out.Header.Set("Authorization", token.Scheme+" "+tok)
+	var in *inbound
 	if body != nil {
 		out.ContentLength = r.ContentLength
-		in := &inbound{r: bufio.NewReaderSize(body, size), req: r, out: out, n: &p.forwarded}
+		in = &inbound{r: bufio.NewReaderSize(body, size), req: r, out: out, n: &p.forwarded, live: live}
 		if len(r.Trailer) > 0 {
 			// Trailers go after a chunked body.
 			out.ContentLength = -1
@@ -240,11 +254,11 @@ func (p *Proxy) forward(w http.ResponseWriter, r *http.Request, base, tok string
 		if r.Context().Err() != nil {
 			// The producer went away; the node finds out from the request
 			// this one ends, and keeps what reached it (§12.2).
-			return
+			return false
 		}
 		p.Log.Info("the node did not answer", "url", token.RedactURL(base+r.URL.Path), "err", errText(err))
 		own(w, ReasonUnreachable, http.StatusBadGateway, "the node did not answer")
-		return
+		return false
 	}
 	defer resp.Body.Close()
 
@@ -265,12 +279,15 @@ func (p *Proxy) forward(w http.ResponseWriter, r *http.Request, base, tok string
 			h.Add(http.TrailerPrefix+k, v)
 		}
 	}
+
+	return in != nil && in.eof.Load()
 }
 
 // requestHeader is what of a producer's request headers goes on to the
 // node: everything end to end, which is every header of the upload
-// protocol, and not the hop's own, the identity of development mode, or
-// the token, which forward sets.
+// protocol, and not the hop's own, the identity of development mode, what
+// the producer tells the satellite of live (HdrLive), or the token, which
+// forward sets.
 func requestHeader(in http.Header) http.Header {
 	out := make(http.Header, len(in))
 	conn := connectionTokens(in)
@@ -278,7 +295,7 @@ func requestHeader(in http.Header) http.Header {
 		switch {
 		case hopByHop(k), conn[http.CanonicalHeaderKey(k)]:
 			continue
-		case strings.EqualFold(k, "Authorization"), strings.EqualFold(k, HdrProducer), strings.EqualFold(k, HdrSatellite), strings.EqualFold(k, "Host"):
+		case strings.EqualFold(k, "Authorization"), strings.EqualFold(k, HdrProducer), strings.EqualFold(k, HdrSatellite), strings.EqualFold(k, HdrLive), strings.EqualFold(k, "Host"):
 			continue
 		}
 		out[k] = append([]string(nil), vs...)
@@ -328,6 +345,10 @@ type inbound struct {
 	req *http.Request
 	out *http.Request
 	n   *atomic.Int64
+	// live is handed every byte as it passes (§41.8), nil when nothing
+	// reads it; eof says the body was read to its end.
+	live *tap
+	eof  atomic.Bool
 
 	once sync.Once
 }
@@ -335,12 +356,18 @@ type inbound struct {
 func (b *inbound) Read(p []byte) (int, error) {
 	n, err := b.r.Read(p)
 	b.n.Add(int64(n))
-	if errors.Is(err, io.EOF) && b.out.Trailer != nil {
-		b.once.Do(func() {
-			for k, vs := range b.req.Trailer {
-				b.out.Trailer[k] = append([]string(nil), vs...)
-			}
-		})
+	if n > 0 && b.live != nil {
+		b.live.write(p[:n])
+	}
+	if errors.Is(err, io.EOF) {
+		b.eof.Store(true)
+		if b.out.Trailer != nil {
+			b.once.Do(func() {
+				for k, vs := range b.req.Trailer {
+					b.out.Trailer[k] = append([]string(nil), vs...)
+				}
+			})
+		}
 	}
 
 	return n, err

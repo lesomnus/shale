@@ -1,10 +1,12 @@
 package producer
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -40,6 +42,40 @@ const (
 	// once the satellite cannot be reached.
 	ViaAuto Via = "auto"
 )
+
+// LiveFeed is who feeds the relay a source whose live uploads go through
+// the satellite (§41.8): `producer.live_feed`.
+type LiveFeed string
+
+const (
+	// LiveFeedAuto hands the satellite the live of every source whose live
+	// uploads go through it and that needs no live helper, so the uplink
+	// carries each byte once: the default. It changes nothing while uploads
+	// go directly.
+	LiveFeedAuto LiveFeed = "auto"
+	// LiveFeedProducer keeps the producer's own tee for every source, as
+	// before satellites.
+	LiveFeedProducer LiveFeed = "producer"
+)
+
+// ParseLiveFeed reads `auto` or `producer`; empty is LiveFeedAuto.
+func ParseLiveFeed(s string) (LiveFeed, error) {
+	switch LiveFeed(strings.ToLower(strings.TrimSpace(s))) {
+	case "", LiveFeedAuto:
+		return LiveFeedAuto, nil
+	case LiveFeedProducer:
+		return LiveFeedProducer, nil
+	}
+
+	return "", fmt.Errorf("%q: auto or producer", s)
+}
+
+// liveBehind is how old the bytes at the start of a live request may be and
+// still go to the relay through the satellite (§41.8): a lamina's first
+// request waits for the one before to commit, which takes less; a request
+// that resumes after an outage begins with a backlog that does not, and its
+// live begins past it.
+const liveBehind = 2 * time.Second
 
 // ParseVia reads `direct`, `satellite` or `auto`; empty is ViaDirect.
 func ParseVia(s string) (Via, error) {
@@ -90,6 +126,11 @@ type SatelliteLink struct {
 	woke       time.Time
 	// said is what the log last said about the path, so it says it once.
 	said string
+	// liveFeed is `producer.live_feed`; live the sources whose live it
+	// hands the satellite now: their last live request went through it
+	// marked so (§41.8).
+	liveFeed LiveFeed
+	live     map[string]bool
 
 	through   atomic.Int64
 	direct    atomic.Int64
@@ -107,7 +148,75 @@ func NewSatelliteLink(via Via, dev bool, log *slog.Logger) *SatelliteLink {
 		log = slog.Default()
 	}
 
-	return &SatelliteLink{via: via, dev: dev, log: log, now: time.Now}
+	return &SatelliteLink{via: via, dev: dev, log: log, now: time.Now, liveFeed: LiveFeedAuto, live: map[string]bool{}}
+}
+
+// SetLiveFeed is `producer.live_feed` (§41.8); empty is LiveFeedAuto.
+func (l *SatelliteLink) SetLiveFeed(v LiveFeed) {
+	if v == "" {
+		v = LiveFeedAuto
+	}
+	l.mu.Lock()
+	l.liveFeed = v
+	l.mu.Unlock()
+}
+
+// liveRequest marks a live request through the satellite whose source's
+// live it hands over (§41.8) with where its live begins, and notes whether
+// the source's live is handed over now: its live requests go through the
+// satellite, marked. A change has the heartbeat tell the CP at once, which
+// gives the satellite a feed token for exactly those sources.
+func (l *SatelliteLink) liveRequest(req *http.Request, source []byte, viaSatellite bool, seg *Segment, offset int64) {
+	if l == nil || l.via == ViaDirect || len(source) == 0 {
+		return
+	}
+	l.mu.Lock()
+	hand := viaSatellite && seg.Live && l.liveFeed != LiveFeedProducer
+	changed := l.live[string(source)] != hand
+	if hand {
+		l.live[string(source)] = true
+	} else {
+		delete(l.live, string(source))
+	}
+	l.mu.Unlock()
+	if hand {
+		req.Header.Set(satellite.HdrLive, strconv.FormatInt(seg.LiveFrom(offset, time.Now(), liveBehind), 10))
+	}
+	if changed && l.wake != nil {
+		l.wake()
+	}
+}
+
+// keepLive forgets the sources that are not among those given: a source
+// the producer no longer has hands nothing over.
+func (l *SatelliteLink) keepLive(sources map[string]bool) {
+	if l == nil {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for id := range l.live {
+		if !sources[id] {
+			delete(l.live, id)
+		}
+	}
+}
+
+// Handed are the sources whose live the producer hands the satellite now
+// (§41.8).
+func (l *SatelliteLink) Handed() [][]byte {
+	if l == nil {
+		return nil
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	out := make([][]byte, 0, len(l.live))
+	for id := range l.live {
+		out = append(out, []byte(id))
+	}
+	slices.SortFunc(out, bytes.Compare)
+
+	return out
 }
 
 // Set takes the assignment the CP answered; nil is none.
@@ -287,11 +396,13 @@ func (l *SatelliteLink) report() *api.UploadReport {
 		ThroughSatellite: l.through.Swap(0),
 		Direct:           l.direct.Swap(0),
 		Fallbacks:        l.fallbacks.Swap(0),
+		LiveSources:      l.Handed(),
 	}
 	l.mu.Lock()
 	if l.assignment != nil {
 		b.SatelliteId = l.assignment.GetSatelliteId()
 	}
+	b.LiveFeed = string(l.liveFeed)
 	l.mu.Unlock()
 
 	return b.Build()
