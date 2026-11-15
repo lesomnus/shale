@@ -59,6 +59,10 @@ automatically create a synthetic source.
 Claiming the same `(network, device_key)` returns the same inventory row. The
 key is an explicit inventory claim, not the current IP; DHCP updates use Observe.
 Claim is not proof that advertised serial/MAC values are globally unique.
+A Worker's discovery never moves a recording camera's endpoints: it stages a
+bounded, expiring transport candidate in `CameraDevice.transport`
+([camera Worker](camera-worker.md#transport-candidates)). An operator's Observe
+that changes the endpoint set clears those candidates.
 
 Bind reserves the logical key and Source centrally. It generates a stable alias
 when none is provided, reuses a matching existing provisioning binding, or imports

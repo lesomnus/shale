@@ -40,6 +40,8 @@ type RTSPCamera struct {
 	media    *rtspMedia
 	endpoint *rtspEndpoint
 	closed   bool
+	// Every connection accepted at any address, for "nothing reached it".
+	accepted int
 }
 
 type rtspEndpoint struct {
@@ -206,6 +208,9 @@ func (c *RTSPCamera) Rebind(address string) (string, error) {
 			e.connections[conn] = true
 			e.wg.Add(1)
 			e.mu.Unlock()
+			c.mu.Lock()
+			c.accepted++
+			c.mu.Unlock()
 			go func() {
 				defer e.wg.Done()
 				defer conn.Close()
@@ -237,6 +242,14 @@ func (c *RTSPCamera) Disconnect() {
 	if e != nil {
 		e.disconnect()
 	}
+}
+
+// Connections counts every RTSP connection the camera accepted, at any
+// address, including ones already closed.
+func (c *RTSPCamera) Connections() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.accepted
 }
 
 func (c *RTSPCamera) Sessions() int {

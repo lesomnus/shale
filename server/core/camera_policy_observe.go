@@ -51,23 +51,26 @@ func cameraObservationIntent(d *api.CameraDevice) string {
 	return "observe/" + mustId(d.GetId()).String() + "/" + hex.EncodeToString(digest[:])
 }
 
-func (s Core) cameraObserveDevice(ctx context.Context, n *api.CameraNetwork, r *api.CameraPolicyObserveRequest) (*api.CameraDevice, error) {
+// cameraObserveDevice records one scoped observation. When it places a camera
+// whose endpoints only verification or an operator may change at other
+// endpoints, it stages a transport candidate instead and returns it.
+func (s Core) cameraObserveDevice(ctx context.Context, a *api.CameraAssignment, n *api.CameraNetwork, r *api.CameraPolicyObserveRequest) (*api.CameraDevice, *api.CameraTransportCandidate, error) {
 	if len(r.GetEndpoints()) == 0 {
-		return nil, invalid("endpoints", "a discovered camera needs an explicit endpoint")
+		return nil, nil, invalid("endpoints", "a discovered camera needs an explicit endpoint")
 	}
 	if err := s.cameraLockNetwork(ctx, n.GetId()); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var err error
 	n, err = s.Next().CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: n.GetId()}.Build()}.Build())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := cameraEndpoints(r.GetEndpoints(), n.GetCidrs()); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := cameraPresetIdentity(r.GetIdentity()); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	endpoints := make([]*api.CameraObservedEndpoint, len(r.GetEndpoints()))
 	for i, ep := range r.GetEndpoints() {
@@ -84,29 +87,54 @@ func (s Core) cameraObserveDevice(ctx context.Context, n *api.CameraNetwork, r *
 	observation := api.CameraEnrollmentObservation_builder{Code: "observed", ObservedAt: timestamppb.New(s.d.now()), DiscoveryId: r.GetDiscoveryId()}.Build()
 	key, keys, mac, err := cameraObservationKeys(r)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	rows, err := s.cameraObservationInventory(ctx, n, r, keys, mac)
+	rows, owners, err := s.cameraObservationRows(ctx, n, r, keys, mac)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if len(rows) > 1 {
-		return nil, status.Error(codes.Aborted, "camera observations identify conflicting inventory rows")
+	if len(rows) == 1 {
+		// The hints select one device. If it is somewhere its endpoints may
+		// not simply follow, the observation becomes a candidate: a host
+		// owned by another device or contradicting EPR/MAC evidence is then
+		// a fixed outcome on that candidate rather than a bare refusal.
+		row := rows[0]
+		if err := s.cameraLockDevice(ctx, row.Id[:]); err != nil {
+			return nil, nil, err
+		}
+		current, err := s.Next().CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: row.Id[:]}.Build()}.Build())
+		if err != nil {
+			return nil, nil, err
+		}
+		if !slices.Equal(cameraObservationEndpointSet(current.GetEndpoints()), cameraObservationEndpointSet(endpoints)) {
+			guarded, err := s.cameraTransportGuarded(ctx, current)
+			if err != nil {
+				return nil, nil, err
+			}
+			if guarded {
+				owned := false
+				for id := range owners {
+					owned = owned || id != row.Id.String()
+				}
+				return s.cameraTransportObserve(ctx, a, n, current, r, endpoints, cameraObservationEvidence(current, r) != nil, owned)
+			}
+		}
+	}
+	rows, err = cameraObservationOwned(rows, owners)
+	if err != nil {
+		return nil, nil, err
 	}
 	var out *api.CameraDevice
 	if len(rows) == 0 {
 		out, err = s.Next().CameraDevice().Add(ctx, api.CameraDeviceAddRequest_builder{Tenant: api.TenantRef_builder{Id: n.GetTenant().GetId()}.Build(), Site: cameraSite(n.GetSite()), Network: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), DeviceKey: key, Identity: identity, Endpoints: endpoints, ObservationRevision: 1, Enrollment: observation}.Build())
 	} else {
 		row := rows[0]
-		if err := s.cameraLockDevice(ctx, row.Id[:]); err != nil {
-			return nil, err
-		}
 		current, readErr := s.Next().CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: row.Id[:]}.Build()}.Build())
 		if readErr != nil {
-			return nil, readErr
+			return nil, nil, readErr
 		}
 		if err := cameraObservationReconcile(current, r); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		observation.SetDiscoveryId(cameraObservationDiscoveryID(current, r.GetDiscoveryId()))
 		if current.GetIdentity().GetAuthenticated() {
@@ -117,9 +145,10 @@ func (s Core) cameraObserveDevice(ctx context.Context, n *api.CameraNetwork, r *
 		out, err = s.Next().CameraDevice().Patch(ctx, api.CameraDevicePatchRequest_builder{Ref: api.CameraDeviceRef_builder{Id: current.GetId()}.Build(), Identity: identity, Endpoints: endpoints, ObservationRevision: z.Ptr(current.GetObservationRevision() + 1), Enrollment: observation, DateUpdated: current.GetDateUpdated()}.Build())
 	}
 	if err != nil {
-		return nil, cameraConflict(err)
+		return nil, nil, cameraConflict(err)
 	}
-	return s.Next().CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: out.GetId()}.Build()}.Build())
+	out, err = s.Next().CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: out.GetId()}.Build()}.Build())
+	return out, nil, err
 }
 
 func cameraPolicyEligible(ctx context.Context, p *api.CameraPolicy, a *api.CameraAssignment, d *api.CameraDevice) (bool, error) {
@@ -270,33 +299,10 @@ func (s Core) cameraEnrollObservation(ctx context.Context, a *api.CameraAssignme
 	return b, job, code, err
 }
 
-func (s coreCameraPolicy) Observe(ctx context.Context, r *api.CameraPolicyObserveRequest) (*api.CameraPolicyObserveResponse, error) {
-	if err := cameraMessage(r); err != nil {
-		return nil, err
-	}
-	if err := cameraToken("discovery_id", r.GetDiscoveryId()); err != nil {
-		return nil, err
-	}
-	if _, err := s.cameraWorkerActor(ctx); err != nil {
-		return nil, err
-	}
-	var d *api.CameraDevice
-	// Observations remain visible if the separate atomic enrollment transaction
-	// must wait for credentials. No partial binding/Source/secret/job is committed.
+// cameraObserveEnroll is Observe's enrollment step for an observation that
+// changed nothing it may not, in its own recorded transaction.
+func (s coreCameraPolicy) cameraObserveEnroll(ctx context.Context, r *api.CameraPolicyObserveRequest, d *api.CameraDevice, out *api.CameraPolicyObserveResponse) error {
 	err := s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) error {
-		c := New(nx, s.d)
-		_, n, err := c.cameraObservationAssignment(ctx, r.GetAssignment(), r.GetAssignmentGeneration())
-		if err != nil {
-			return err
-		}
-		d, err = c.cameraObserveDevice(ctx, n, r)
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-	out := api.CameraPolicyObserveResponse_builder{Device: d}.Build()
-	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) error {
 		c := New(nx, s.d)
 		a, n, err := c.cameraObservationAssignment(ctx, r.GetAssignment(), r.GetAssignmentGeneration())
 		if err != nil {
@@ -325,6 +331,42 @@ func (s coreCameraPolicy) Observe(ctx context.Context, r *api.CameraPolicyObserv
 	case status.Code(err) == codes.ResourceExhausted:
 		out.SetCode("capacity_exceeded")
 	case err != nil:
+		return err
+	}
+	return nil
+}
+
+func (s coreCameraPolicy) Observe(ctx context.Context, r *api.CameraPolicyObserveRequest) (*api.CameraPolicyObserveResponse, error) {
+	if err := cameraMessage(r); err != nil {
+		return nil, err
+	}
+	if err := cameraToken("discovery_id", r.GetDiscoveryId()); err != nil {
+		return nil, err
+	}
+	if _, err := s.cameraWorkerActor(ctx); err != nil {
+		return nil, err
+	}
+	var d *api.CameraDevice
+	var candidate *api.CameraTransportCandidate
+	// Observations remain visible if the separate atomic enrollment transaction
+	// must wait for credentials. No partial binding/Source/secret/job is committed.
+	err := s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) error {
+		c := New(nx, s.d)
+		a, n, err := c.cameraObservationAssignment(ctx, r.GetAssignment(), r.GetAssignmentGeneration())
+		if err != nil {
+			return err
+		}
+		d, candidate, err = c.cameraObserveDevice(ctx, a, n, r)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := api.CameraPolicyObserveResponse_builder{Device: d}.Build()
+	if candidate != nil {
+		// A staged move enrolls nothing: the device's endpoints are unchanged.
+		out.SetCode(cameraTransportCode(candidate))
+	} else if err := s.cameraObserveEnroll(ctx, r, d, out); err != nil {
 		return nil, err
 	}
 	err = s.cameraExecutionTx(ctx, func(ctx context.Context, nx api.Server) error {
@@ -340,7 +382,12 @@ func (s coreCameraPolicy) Observe(ctx context.Context, r *api.CameraPolicyObserv
 		if !bytes.Equal(current.GetNetwork().GetId(), a.GetNetwork().GetId()) {
 			return denied("observation", "device belongs to another camera network")
 		}
-		_, err = nx.CameraDevice().Patch(ctx, api.CameraDevicePatchRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), Enrollment: api.CameraEnrollmentObservation_builder{Code: out.GetCode(), ObservedAt: timestamppb.New(s.d.now()), DiscoveryId: cameraObservationDiscoveryID(current, r.GetDiscoveryId())}.Build(), DateUpdated: current.GetDateUpdated()}.Build())
+		discovery := cameraObservationDiscoveryID(current, r.GetDiscoveryId())
+		if candidate != nil {
+			// A candidate's hints are not the device's evidence.
+			discovery = current.GetEnrollment().GetDiscoveryId()
+		}
+		_, err = nx.CameraDevice().Patch(ctx, api.CameraDevicePatchRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), Enrollment: api.CameraEnrollmentObservation_builder{Code: out.GetCode(), ObservedAt: timestamppb.New(s.d.now()), DiscoveryId: discovery}.Build(), DateUpdated: current.GetDateUpdated()}.Build())
 		if err != nil {
 			return err
 		}
@@ -348,6 +395,12 @@ func (s coreCameraPolicy) Observe(ctx context.Context, r *api.CameraPolicyObserv
 		out.SetDevice(current)
 		if out.GetCode() == "factory_tls_required" {
 			out.SetFactoryTlsPlan(current.GetFactoryTls().GetPlan())
+		}
+		// Only a candidate still pending in today's row hands out its grant.
+		if candidate != nil {
+			if c := cameraTransportCandidate(current, candidate.GetId()); c.GetState() == cameraTransportPending && c.GetGrant() != nil {
+				out.SetTransportGrant(c.GetGrant())
+			}
 		}
 		return err
 	})

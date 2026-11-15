@@ -39,8 +39,10 @@ is retained in later jobs. Discovery cannot rotate it, trust a replacement, or
 approve a changed key. The only replacement Shale accepts by itself is the key
 a device presents right after a preset-required firmware upgrade that the same
 job performed ([camera TLS identity](camera-tls-identity.md#after-a-firmware-upgrade)). Existing per-device operator SPKI approvals and normal
-PKI policies continue to work. The existing operator approval requirement for
-moving an enrolled device to a new address is unchanged.
+PKI policies continue to work. An enrolled device seen at a new address is a
+[transport candidate](camera-worker.md#transport-candidates): its accepted key is
+checked there with a credential-free handshake, and an operator still decides
+anything that check cannot.
 
 The anonymous factory response and LAN key observation do not authenticate a
 manufacturer. Enabling this policy delegates first-use physical-device trust to

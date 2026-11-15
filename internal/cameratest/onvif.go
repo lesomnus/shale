@@ -41,6 +41,11 @@ type ONVIFCamera struct {
 	media              *RTSPCamera
 	modes              []camera.MediaProfile
 	customIdentity     bool
+	// The HTTPS web port, when served, and what reached the camera.
+	web        *webServer
+	webKey     WebKey
+	handshakes int
+	attempts   []AuthAttempt
 }
 
 type ONVIFOptions struct {
@@ -186,7 +191,7 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
-		c.json(w, data)
+		c.json(w, r, data)
 		return
 	}
 	var request soapRequest
@@ -196,6 +201,9 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	name, ns := request.Body.Operation.XMLName.Local, request.Body.Operation.XMLName.Space
 	c.calls = append(c.calls, name)
+	if request.Header.Security.Token.Username != "" || request.Header.Security.Token.Password != "" {
+		c.attempt(r, "onvif")
+	}
 	if !c.active {
 		w.WriteHeader(401)
 		return
@@ -313,14 +321,19 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 	_, _ = fmt.Fprintf(w, `<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><t:%sResponse xmlns:t="%s">%s</t:%sResponse></s:Body></s:Envelope>`, name, ns, response, name)
 }
 
-func (c *ONVIFCamera) json(w http.ResponseWriter, data []byte) {
+func (c *ONVIFCamera) json(w http.ResponseWriter, r *http.Request, data []byte) {
 	var request struct {
 		UserManagement map[string]json.RawMessage `json:"user_management"`
 		SetPassword    map[string]string          `json:"set_password"`
 	}
 	if json.Unmarshal(data, &request) != nil {
+		c.attempt(r, "web")
 		w.WriteHeader(400)
 		return
+	}
+	if _, ok := request.UserManagement["get_encrypt_info"]; !ok {
+		// Anything but the anonymous challenge is a login or a password.
+		c.attempt(r, "web")
 	}
 	if _, ok := request.UserManagement["get_encrypt_info"]; ok {
 		c.calls = append(c.calls, "get_encrypt_info")

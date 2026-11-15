@@ -879,6 +879,9 @@ func (st CameraDeviceServiceServer) create(ctx context.Context, req *api.CameraD
 	if req.HasFirmwareTls() {
 		q.SetFirmwareTls(req.GetFirmwareTls())
 	}
+	if req.HasTransport() {
+		q.SetTransport(req.GetTransport())
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -1051,6 +1054,9 @@ func CameraDeviceSelectedFields(m *api.CameraDeviceSelect) []string {
 	if m.GetFirmwareTls() {
 		vs = append(vs, cameradevice.FieldFirmwareTls)
 	}
+	if m.GetTransport() {
+		vs = append(vs, cameradevice.FieldTransport)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, cameradevice.FieldDateUpdated)
 	}
@@ -1141,7 +1147,7 @@ func CameraDeviceGetKey(ctx context.Context, db *ent.Client, ref *api.CameraDevi
 var cameraDeviceOrmEntity = ormpatch.MustEntityOf(api.File_shale_camera_proto, "CameraDevice")
 
 var cameraDevicePatchColumns = entpatch.Columns{
-	1: cameradevice.FieldId, 2: cameradevice.TenantColumn, 3: cameradevice.SiteColumn, 4: cameradevice.FieldAlias, 5: cameradevice.FieldName, 6: cameradevice.FieldDesc, 7: cameradevice.FieldLabels, 8: cameradevice.NetworkColumn, 9: cameradevice.FieldDeviceKey, 10: cameradevice.FieldIdentity, 11: cameradevice.FieldEndpoints, 12: cameradevice.FieldObservationRevision, 16: cameradevice.FieldActiveJobId, 17: cameradevice.FieldClaimGeneration, 18: cameradevice.FieldEnrollment, 19: cameradevice.FieldFactoryTls, 20: cameradevice.FieldFirmwareTls, 13: cameradevice.FieldDateUpdated, 14: cameradevice.FieldDateErased, 15: cameradevice.FieldDateCreated}
+	1: cameradevice.FieldId, 2: cameradevice.TenantColumn, 3: cameradevice.SiteColumn, 4: cameradevice.FieldAlias, 5: cameradevice.FieldName, 6: cameradevice.FieldDesc, 7: cameradevice.FieldLabels, 8: cameradevice.NetworkColumn, 9: cameradevice.FieldDeviceKey, 10: cameradevice.FieldIdentity, 11: cameradevice.FieldEndpoints, 12: cameradevice.FieldObservationRevision, 16: cameradevice.FieldActiveJobId, 17: cameradevice.FieldClaimGeneration, 18: cameradevice.FieldEnrollment, 19: cameradevice.FieldFactoryTls, 20: cameradevice.FieldFirmwareTls, 21: cameradevice.FieldTransport, 13: cameradevice.FieldDateUpdated, 14: cameradevice.FieldDateErased, 15: cameradevice.FieldDateCreated}
 
 func (s CameraDeviceServiceServer) Apply(ctx context.Context, req *api.CameraDeviceApplyRequest) (*api.CameraDevice, error) {
 	if !req.HasPatch() {

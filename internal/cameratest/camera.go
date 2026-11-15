@@ -37,6 +37,10 @@ type CameraOptions struct {
 	Modes        []camera.MediaProfile
 	Identity     CameraIdentity
 	SetupTimeout time.Duration
+	// Web, when set, serves the vendor web protocol over HTTPS with this key
+	// on WebPort (0 picks one). A move keeps the port and the key.
+	Web     *WebKey
+	WebPort int
 }
 type CameraEndpoints struct{ ONVIF, RTSP string }
 type Camera struct {
@@ -53,6 +57,9 @@ func ServeCamera(t testing.TB, o CameraOptions) *Camera {
 	}
 	media := ServeRTSPCamera(t, RTSPOptions{ListenAddress: net.JoinHostPort(o.IP, strconv.Itoa(o.RTSPPort)), Path: o.RTSPPath, Profile: o.Profile, SetupTimeout: o.SetupTimeout})
 	onvif := ServeONVIFWithOptions(t, media.Profile(), ONVIFOptions{ListenAddress: net.JoinHostPort(o.IP, strconv.Itoa(o.HTTPPort)), Identity: o.Identity, Media: media, Modes: o.Modes})
+	if o.Web != nil {
+		onvif.ServeWebTLS(t, o.WebPort, *o.Web)
+	}
 	return &Camera{ONVIF: onvif, Media: media}
 }
 func (c *Camera) Endpoints() CameraEndpoints {
@@ -101,6 +108,15 @@ func (c *Camera) rebind(ip, httpPort, rtspPort string) (CameraEndpoints, error) 
 	}
 	if err := c.ONVIF.rebind(net.JoinHostPort(ip, httpPort)); err != nil {
 		return CameraEndpoints{}, err
+	}
+	if web := c.ONVIF.WebTLSURL(); web != "" {
+		u, err := url.Parse(web)
+		if err != nil {
+			return CameraEndpoints{}, err
+		}
+		if err := c.ONVIF.rebindWeb(net.JoinHostPort(ip, u.Port())); err != nil {
+			return CameraEndpoints{}, err
+		}
 	}
 	c.ONVIF.SetVideo(c.Media.Profile())
 	return c.Endpoints(), nil

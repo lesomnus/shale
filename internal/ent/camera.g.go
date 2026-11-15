@@ -92,6 +92,9 @@ func (e *CameraDevice) Proto() *api.CameraDevice {
 	if e.FirmwareTls != nil {
 		x.SetFirmwareTls(e.FirmwareTls)
 	}
+	if e.Transport != nil {
+		x.SetTransport(e.Transport)
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

@@ -571,6 +571,16 @@ func FirmwareTlsNotNil() predicate.CameraDevice {
 	return predicate.CameraDevice(sql.FieldNotNull(FieldFirmwareTls))
 }
 
+// TransportIsNil applies the IsNil predicate on the "transport" field.
+func TransportIsNil() predicate.CameraDevice {
+	return predicate.CameraDevice(sql.FieldIsNull(FieldTransport))
+}
+
+// TransportNotNil applies the NotNil predicate on the "transport" field.
+func TransportNotNil() predicate.CameraDevice {
+	return predicate.CameraDevice(sql.FieldNotNull(FieldTransport))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.CameraDevice {
 	return predicate.CameraDevice(sql.FieldEQ(FieldDateUpdated, v))

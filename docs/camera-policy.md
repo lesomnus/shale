@@ -141,7 +141,10 @@ binding and Source; it does not erase prior recordings.
 Endpoint changes are transport observations, not new physical identities. The
 central adapter must reconcile a DHCP address change against the same authorized
 device and pinned job without discarding the previous authenticated identity or
-creating a second writer. Arbitrary replacement is a separate operator action.
+creating a second writer. A recording camera's move is staged as a
+[transport candidate](camera-worker.md#transport-candidates) and verified by its
+approved key before anything else. Arbitrary replacement is a separate operator
+action.
 
 ## Provider selection and qualification
 
@@ -170,7 +173,11 @@ and creates the binding/Source/job in one recorded transaction. A preparation
 failure rolls back that transaction and records a fixed enrollment outcome on
 the visible device. Outcomes include `policy_missing`, `policy_manual`,
 `policy_not_matched`, `credential_preparer_unavailable`, `credentials_unavailable`,
-`capacity_exceeded`, `reconciliation_pending`, and `enrolled`.
+`capacity_exceeded`, `reconciliation_pending`, and `enrolled`. A recording camera
+seen at other endpoints enrolls nothing: the outcome is `transport_<code>` of its
+[transport candidate](camera-worker.md#transport-candidates), and
+`CameraPolicy.VerifyTransport` takes the assigned Worker's credential-free check
+of it.
 
 An optional `Deps.PrepareCameraEnrollment` callback receives the current recorded
 server and transaction driver. Its return value contains purpose-bound durable

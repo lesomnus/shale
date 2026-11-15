@@ -61,6 +61,58 @@ message CameraFirmwareTLSState {
   string firmware = 4;
   google.protobuf.Timestamp date_accepted = 5;
 }
+// The assigned Worker's scoped grant to verify one transport candidate with a
+// credential-free TLS handshake (docs/camera-worker.md, "Transport
+// candidates"). Like a factory TLS plan it is not a bearer capability: only
+// the current adopted assignment Worker can submit its exact stored snapshot.
+message CameraTransportGrant {
+  string candidate_id = 1;
+  bytes assignment_id = 2;
+  int64 assignment_generation = 3;
+  bytes device_id = 4;
+  bytes network_id = 5;
+  google.protobuf.Timestamp network_version = 6;
+  // The device's authorized endpoints the candidate departs from.
+  int64 observation_revision = 7;
+  // The job whose policy, preset, credentials and pin a recovery reuses.
+  bytes job_id = 8;
+  CameraRevisionReference policy = 9;
+  // The device's centrally approved key; the candidate must present it.
+  CameraDeviceTLSIdentity trust = 10;
+  // https://<the candidate's host>:<the pinned bootstrap web port>
+  string endpoint = 11;
+  google.protobuf.Timestamp date_issued = 12;
+  google.protobuf.Timestamp date_expires = 13;
+}
+// An unauthenticated observation of a camera at other endpoints than its
+// authorized ones. Recording it never changes those endpoints; only a
+// verified grant or an operator's CameraDevice.Observe does.
+message CameraTransportCandidate {
+  string id = 1;
+  repeated CameraObservedEndpoint endpoints = 2;
+  // The hints that associated the observation with this device.
+  string discovery_id = 3;
+  repeated string macs = 4;
+  int64 assignment_generation = 5;
+  int64 observation_revision = 6;
+  // "pending", "verified", "accepted" or "operator_required".
+  string state = 7;
+  // A fixed outcome code; see docs/camera-worker.md.
+  string code = 8;
+  // Present while the assigned Worker may verify the candidate.
+  CameraTransportGrant grant = 9;
+  // The key the candidate presented in the credential-free handshake.
+  string presented_spki_sha256 = 10;
+  // The recovery job an accepted candidate created.
+  bytes job_id = 11;
+  google.protobuf.Timestamp date_observed = 12;
+  google.protobuf.Timestamp date_expires = 13;
+  google.protobuf.Timestamp date_decided = 14;
+}
+// Bounded, expiring transport candidates, kept apart from the endpoints.
+message CameraTransportState {
+  repeated CameraTransportCandidate candidates = 1;
+}
 message CameraCaptureProfile {
   string codec = 1;
   int32 width = 2;
@@ -265,6 +317,9 @@ message CameraDevice {
   CameraEnrollmentObservation enrollment = 18;
   CameraFactoryTLSState factory_tls = 19;
   CameraFirmwareTLSState firmware_tls = 20;
+  // Moved-camera observations awaiting verification or an operator. Never
+  // the authorized endpoints, and never a pin.
+  CameraTransportState transport = 21;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

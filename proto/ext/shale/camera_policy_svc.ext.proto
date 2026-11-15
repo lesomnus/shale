@@ -22,6 +22,9 @@ service CameraPolicyService {
   // Approves the key a job stopped on: a new policy revision with that
   // device's key, activated by network CAS, and a job that continues with it.
   rpc ApproveTLS(CameraPolicyApproveTLSRequest) returns (CameraPolicyApproveTLSResponse);
+  // The assigned Worker's credential-free verification of a moved camera's
+  // transport candidate, rechecked against today's fences in one transaction.
+  rpc VerifyTransport(CameraPolicyVerifyTransportRequest) returns (CameraPolicyObserveResponse);
 }
 message CameraPolicyCreateRequest {
   CameraNetworkRef network = 1;
@@ -54,6 +57,15 @@ message CameraPolicyObserveResponse {
   CameraJob job = 3;
   string code = 4 [features.field_presence = IMPLICIT];
   CameraFactoryTLSPlan factory_tls_plan = 5;
+  // A moved camera the assigned Worker may verify; old Workers ignore it and
+  // the candidate stays on the operator path.
+  CameraTransportGrant transport_grant = 6;
+}
+message CameraPolicyVerifyTransportRequest {
+  // Exactly the grant the CP stored for the candidate.
+  CameraTransportGrant grant = 1;
+  // The key the candidate presented in a credential-free TLS handshake.
+  string spki_sha256 = 2 [features.field_presence = IMPLICIT];
 }
 message CameraPolicyTrustFactoryTLSRequest {
   CameraFactoryTLSPlan plan = 1;
