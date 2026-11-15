@@ -49,7 +49,7 @@ func TestCameraTransportRecoveryKeepsRecording(t *testing.T) {
 	onvif := cameratest.ServeONVIFWithOptions(t, media.Profile(), cameratest.ONVIFOptions{ListenAddress: "127.0.0.2:0", Media: media, Modes: []cameramodel.MediaProfile{before, after}, Identity: cameratest.CameraIdentity{Serial: serial, MAC: mac, DiscoveryID: epr}})
 	onvif.RequireCredentials(username, password)
 	key := cameratest.NewWebKey(t)
-	web, err := url.Parse(onvif.ServeWebTLS(t, 0, key))
+	web, err := url.Parse(onvif.ServeWebTLS(t, transportWebPort(t), key))
 	require.NoError(t, err)
 	port, err := strconv.Atoi(web.Port())
 	require.NoError(t, err)
