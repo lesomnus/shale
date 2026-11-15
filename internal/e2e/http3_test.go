@@ -245,7 +245,7 @@ func (p *protos) reset() {
 // TCP, and HTTP/3 as the mode says, trusting the cluster's CA.
 func (c *tlsCluster) client(mode h3.Mode) (*h3.Transport, *protos, *http.Client) {
 	tcp := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: c.pool}, ForceAttemptHTTP2: true}
-	tr := h3.NewTransport(tcp, &tls.Config{RootCAs: c.pool}, mode, slog.Default())
+	tr := h3.NewTransport(tcp, h3.StaticTLS(&tls.Config{RootCAs: c.pool}), mode, slog.Default())
 	c.t.Cleanup(func() { tr.Close() })
 	p := &protos{next: tr}
 

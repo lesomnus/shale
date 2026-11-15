@@ -30,6 +30,7 @@ var clusterServices = []string{
 	"/shale.NodeService/", "/shale.RelayService/", "/shale.DeviceService/", "/shale.SinkService/",
 	"/shale.SigningKeyService/", "/shale.PlacementPolicyService/", "/shale.UploadPolicyService/",
 	"/shale.AddressPolicyService/", "/shale.TenantService/", "/shale.OutboxService/",
+	"/shale.CertificateAuthorityService/",
 }
 
 // tenantServices are the tenant API.
@@ -107,6 +108,10 @@ func closedToEveryone(m string) bool {
 		// a general write could set a state nothing else agrees with. Keys
 		// are made by Rotate.
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Patch")
+	case strings.HasPrefix(m, "/shale.CertificateAuthorityService/"):
+		// The CA set changes by Rotate and the leader's steps alone (§33.5):
+		// a CA written, patched or erased by hand is a bundle no host holds.
+		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply") || strings.HasSuffix(m, "/Patch") || strings.HasSuffix(m, "/Erase")
 	case strings.HasPrefix(m, "/shale.ProducerService/"):
 		// `producer patch` is the admin's, for the name, the labels and the
 		// live policy (§39.3); the core layer refuses the rest of the row.

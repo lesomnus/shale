@@ -96,7 +96,7 @@ data, so the "no SSD in the data path" rule
 
 | Role | Path | Contents |
 |---|---|---|
-| CP | `/var/lib/shale/control` | KEK, CA key and certificate (or mounted Secrets), SQLite DB for `shale serve all` |
+| CP | `/var/lib/shale/control` | KEK, CA key and certificate (or mounted Secrets), SQLite DB for `shale serve all`. The CA files are the first CA: once a rollover began, the CA set is in the database ([§33.5](10-security.md#335-tls)) |
 | Storage Node | `/var/lib/shale/storage` | host key and certificate, CA bundle, cached key set |
 | Storage Node | each sink path | lamina data, sink label |
 | Producer | `/var/lib/shale/producer` | host key and certificate, CA bundle. Segments are held in RAM only ([§16](04-write-path.md#16-producer-backpressure)) |
@@ -393,7 +393,8 @@ Commits whose events were lost become known this way instead of staying
 orphans, and laminae stuck in `DELETING` because a node died between the
 unlink and its event are confirmed gone.
 
-**One leader.** Rotation waits, policy activation, directive delivery,
+**One leader.** Rotation waits, the steps of a CA rollover
+([§33.5](10-security.md#335-tls)), policy activation, directive delivery,
 reconciliation, DNS maintenance, the row-retention sweeps, and the trail's
 retention ([§26.5](08-sizing.md#265-the-control-planes-database)) are
 multi-step jobs. Exactly one CP replica runs them, elected by a PostgreSQL advisory

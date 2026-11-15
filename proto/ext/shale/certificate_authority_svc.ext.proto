@@ -1,0 +1,77 @@
+edition = "2023";
+
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "shale/certificate_authority.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+// What Shale adds to the generated contract of the CAs (§33.5, §35.5): the
+// rollover, which the leader otherwise begins by itself a year before the
+// active CA expires.
+
+service CertificateAuthorityService {
+  // Begins a CA rollover now: makes the next CA, which every bundle carries
+  // from then on, and answers it. The rest runs on the CP leader. Refused
+  // while a rollover is under way. Not for a compromised CA, which is
+  // replaced by initializing it again and adopting every host (§33.7).
+  rpc Rotate(CertificateAuthorityRotateRequest) returns (CertificateAuthority);
+  // Where the rollover is, and the live hosts its next step waits for.
+  rpc Status(CertificateAuthorityStatusRequest) returns (CertificateAuthorityStatusResponse);
+}
+
+message CertificateAuthorityRotateRequest {}
+
+message CertificateAuthorityStatusRequest {}
+
+// CertificateAuthorityPhase is where a rollover is (§33.5).
+enum CertificateAuthorityPhase {
+  CERTIFICATE_AUTHORITY_PHASE_UNSPECIFIED = 0;
+  // One CA, and no rollover under way.
+  CERTIFICATE_AUTHORITY_PHASE_IDLE = 1;
+  // The next CA is in the bundle, the old one still issues, and live hosts
+  // are taking the bundle with both.
+  CERTIFICATE_AUTHORITY_PHASE_DISTRIBUTING = 2;
+  // The new CA issues, and live hosts holding a certificate from the old
+  // one are renewing it.
+  CERTIFICATE_AUTHORITY_PHASE_REPLACING = 3;
+}
+
+// CertificateAuthorityWaiting is a live host the next step of a rollover
+// waits for: one that does not report the current bundle, or that holds a
+// certificate from the CA being replaced.
+message CertificateAuthorityWaiting {
+  // The host's row: a Node, Relay, Producer, Reader, or CameraWorker.
+  bytes id = 1 [features.field_presence = IMPLICIT];
+  // node, relay, producer, reader, or camera-worker.
+  string kind = 2 [features.field_presence = IMPLICIT];
+  string alias = 3 [features.field_presence = IMPLICIT];
+  // The bundle hash its last heartbeat reported; empty when none did.
+  string ca_hash = 4 [features.field_presence = IMPLICIT];
+  // It holds a certificate from the CA being replaced.
+  bool old_certificate = 5 [features.field_presence = IMPLICIT];
+  string version = 6 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_seen = 7;
+  // It is waited for until then, when its certificate expires and it has
+  // to be adopted again anyway.
+  google.protobuf.Timestamp date_cert_expires = 8;
+}
+
+message CertificateAuthorityStatusResponse {
+  CertificateAuthorityPhase phase = 1 [features.field_presence = IMPLICIT];
+  // The CAs, oldest first: the stored ones, or the one `shale init` made
+  // when there has been no rollover.
+  repeated CertificateAuthority authorities = 2;
+  // The bundle hosts receive now, as PEM, and its hash, which every live host
+  // is to report. A client that verifies the CP against the CA (the CLI's
+  // `client.ca_file`, a browser) takes this bundle once a rollover begins:
+  // the CP's own certificate moves to the new CA at its second step.
+  string bundle = 3 [features.field_presence = IMPLICIT];
+  string bundle_hash = 4 [features.field_presence = IMPLICIT];
+  // When the next rollover begins by itself.
+  google.protobuf.Timestamp date_rollover = 5;
+  // How many hosts are live, and the ones the next step waits for.
+  int32 live = 6 [features.field_presence = IMPLICIT];
+  repeated CertificateAuthorityWaiting waiting = 7;
+}

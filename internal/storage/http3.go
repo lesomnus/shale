@@ -28,7 +28,10 @@ func (n *Node) serveData(ctx context.Context, g *errgroup.Group, dl net.Listener
 	var quicLn *quic.Listener
 	var closeQuic func()
 	if tlsCfg != nil && n.cfg.HTTP3 {
-		quicLn, closeQuic = n.listenQuic(dl.Addr(), tlsCfg)
+		// The same configuration per handshake as TCP's: the certificate
+		// chosen by the name asked for, and a client certificate verified
+		// against the bundle as it is then (trustCurrent).
+		quicLn, closeQuic = n.listenQuic(dl.Addr(), n.trustCurrent(tlsCfg.Clone()))
 	}
 	handler := n.dataHandler(quicLn != nil)
 
@@ -36,7 +39,7 @@ func (n *Node) serveData(ctx context.Context, g *errgroup.Group, dl net.Listener
 	g.Go(func() error {
 		var err error
 		if tlsCfg != nil {
-			httpSrv.TLSConfig = tlsCfg
+			httpSrv.TLSConfig = n.trustCurrent(tlsCfg.Clone())
 			err = httpSrv.ServeTLS(dl, "", "")
 		} else {
 			err = httpSrv.Serve(dl)
@@ -111,6 +114,9 @@ func (n *Node) listenQuic(addr net.Addr, tlsCfg *tls.Config) (*quic.Listener, fu
 		tr.Close()
 		udp.Close()
 	}
+	// ConfigureTLSConfig offers h3 alone, on the configuration a
+	// GetConfigForClient answers as well; crypto/tls asks it per
+	// handshake for QUIC as for TCP.
 	ln, err := tr.Listen(http3.ConfigureTLSConfig(tlsCfg), h3.ServerConfig())
 	if err != nil {
 		closeAll()

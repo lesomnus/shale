@@ -603,14 +603,11 @@ func (p *Producer) Run(ctx context.Context) error {
 			return err
 		}
 		// And HTTP/3 where `producer.http3` says (§35.6), with the same
-		// roots and the same client certificate. Off, the client is TCP's
-		// alone and no UDP socket is opened.
+		// roots and the same client certificate, both following the
+		// bundle and the certificate held as TCP's do. Off, the client is
+		// TCP's alone and no UDP socket is opened.
 		if mode := p.cfg.Upload.HTTP3; mode != "" && mode != h3.Off {
-			tlsCfg, err := p.agent.PeerTLS()
-			if err != nil {
-				return err
-			}
-			tr := h3.NewTransport(hc.Transport, tlsCfg, mode, p.log)
+			tr := h3.NewTransport(hc.Transport, p.agent.PeerTLSHeld(), mode, p.log)
 			defer tr.Close()
 			hc.Transport = tr
 			p.log.Info("uploads: http3", "mode", string(mode))

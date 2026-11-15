@@ -4,6 +4,7 @@
 package hostagent
 
 import (
+	"bytes"
 	"context"
 	"crypto"
 	"crypto/tls"
@@ -16,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -66,6 +68,11 @@ type Agent struct {
 	id       pdid.Id
 	hostname string
 	hw       hostid.Identity
+
+	// trust is the bundle trustOf as a pool (TrustPool).
+	trustMu sync.Mutex
+	trust   *x509.CertPool
+	trustOf []byte
 }
 
 // Init reads the key and the hardware identity.
@@ -314,8 +321,10 @@ func (a *Agent) DialAddr(ctx context.Context, addr string, plain bool) (*grpc.Cl
 // plane or a relay: it trusts the pinned CA and the system's roots, so a
 // node or relay serving a certificate from a public CA verifies as well as
 // one serving its host certificate (§33.5), and it presents the host
-// certificate. Nil before a CA is pinned. The CP connection is not this:
-// it trusts the pinned bundle alone, or pins on first contact (tlsConfig).
+// certificate held at each handshake, so a renewed one is presented
+// without a restart. Nil before a CA is pinned. The CP connection is not
+// this: it trusts the pinned bundle alone, or pins on first contact
+// (tlsConfig).
 func (a *Agent) PeerTLS() (*tls.Config, error) {
 	bundle, err := a.Store.Bundle()
 	if err != nil {
@@ -328,12 +337,79 @@ func (a *Agent) PeerTLS() (*tls.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg := &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}
-	if cert, err := a.Certificate(); err == nil && cert != nil {
-		cfg.Certificates = []tls.Certificate{*cert}
+
+	return &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12, GetClientCertificate: a.clientCertificate}, nil
+}
+
+// PeerTLSHeld is PeerTLS for the bundle held at each call, made again only
+// when the bundle changes: what a client that dials other hosts by itself
+// starts every handshake from, the producer's HTTP/3 (internal/h3), as
+// HTTPClient's transport is for TCP. Through a CA rollover (§33.5) it
+// verifies a node renewed from the next CA without a restart.
+func (a *Agent) PeerTLSHeld() func() (*tls.Config, error) {
+	var (
+		mu   sync.Mutex
+		held []byte
+		cfg  *tls.Config
+	)
+
+	return func() (*tls.Config, error) {
+		bundle, err := a.Store.Bundle()
+		if err != nil {
+			return nil, err
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		if cfg != nil && bytes.Equal(bundle, held) {
+			return cfg, nil
+		}
+		c, err := a.PeerTLS()
+		if err != nil {
+			return nil, err
+		}
+		cfg, held = c, bundle
+
+		return c, nil
+	}
+}
+
+// clientCertificate is the host certificate for a server that asks for
+// one, when it is from a CA the server names; none otherwise, as Go does
+// with a fixed certificate. A node of an earlier release trusts the bundle
+// it started with, and is sent no certificate from a CA it has not heard
+// of: the data planes authenticate by token, and a certificate is checked
+// only when one is given (§33.5).
+func (a *Agent) clientCertificate(cri *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+	cert, err := a.Certificate()
+	if err != nil || cert == nil || cri.SupportsCertificate(cert) != nil {
+		return &tls.Certificate{}, nil
 	}
 
-	return cfg, nil
+	return cert, nil
+}
+
+// TrustPool is the bundle held as a pool, read again when the bundle
+// changes: what a server of this host verifies a client certificate
+// against at each handshake, so a bundle a renewal brought -- the next CA
+// of a rollover (§33.5) -- is trusted without a restart. Nil before a
+// bundle is pinned.
+func (a *Agent) TrustPool() (*x509.CertPool, error) {
+	bundle, err := a.Store.Bundle()
+	if err != nil || len(bundle) == 0 {
+		return nil, err
+	}
+	a.trustMu.Lock()
+	defer a.trustMu.Unlock()
+	if a.trust != nil && bytes.Equal(a.trustOf, bundle) {
+		return a.trust, nil
+	}
+	pool, err := pki.Pool(bundle)
+	if err != nil {
+		return nil, err
+	}
+	a.trust, a.trustOf = pool, bundle
+
+	return pool, nil
 }
 
 // The keepalive between hosts and the CP, and producers and relays
@@ -363,22 +439,75 @@ func KeepaliveServer() []grpc.ServerOption {
 
 // HTTPClient is a client for the data planes: it trusts the pinned CA and
 // the system's roots, and presents the host certificate, since a node
-// verifies a client certificate when one is given (§33.5).
+// verifies a client certificate when one is given (§33.5). Its transport
+// is made again when the bundle held changes, so a host that runs through
+// a CA rollover verifies the nodes' certificates from the new CA.
 func (a *Agent) HTTPClient() (*http.Client, error) {
+	t := &peerTransport{a: a}
+	if _, err := t.current(); err != nil {
+		return nil, err
+	}
+
+	return &http.Client{Transport: t}, nil
+}
+
+// peerTransport is HTTPClient's transport: one http.Transport for the
+// bundle held, replaced when it changes.
+type peerTransport struct {
+	a *Agent
+
+	mu     sync.Mutex
+	bundle []byte
+	rt     *http.Transport
+}
+
+func (t *peerTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	rt, err := t.current()
+	if err != nil {
+		return nil, err
+	}
+
+	return rt.RoundTrip(r)
+}
+
+// CloseIdleConnections is what http.Client asks of a transport that has it.
+func (t *peerTransport) CloseIdleConnections() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.rt != nil {
+		t.rt.CloseIdleConnections()
+	}
+}
+
+func (t *peerTransport) current() (*http.Transport, error) {
+	bundle, err := t.a.Store.Bundle()
+	if err != nil {
+		return nil, err
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.rt != nil && bytes.Equal(bundle, t.bundle) {
+		return t.rt, nil
+	}
 	tr := &http.Transport{
 		MaxIdleConnsPerHost: 8,
 		IdleConnTimeout:     90 * time.Second,
 		ForceAttemptHTTP2:   true,
 	}
-	cfg, err := a.PeerTLS()
+	cfg, err := t.a.PeerTLS()
 	if err != nil {
 		return nil, err
 	}
 	if cfg != nil {
 		tr.TLSClientConfig = cfg
 	}
+	if t.rt != nil {
+		// What is under way finishes on the old one.
+		t.rt.CloseIdleConnections()
+	}
+	t.rt, t.bundle = tr, bundle
 
-	return &http.Client{Transport: tr}, nil
+	return tr, nil
 }
 
 // Answer is what a kind's Join RPC hands back to the loop.

@@ -212,6 +212,12 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 	}
 
+	// The CA rollover (§33.5): begun a year before the active CA expires,
+	// and each step taken once the live hosts caught up with the last.
+	if err := (Core{d: j.d}).caRollover(ctx, now); err != nil {
+		j.log().Warn("ca rollover", "err", err.Error())
+	}
+
 	// The gauges of §31: hosts pending adoption, laminae waiting to be
 	// unlinked, bytes per tenant.
 	m := j.d.metrics()

@@ -60,6 +60,8 @@ type CameraWorker struct {
 	DateCertIssued *time.Time `json:"date_cert_issued,omitempty"`
 	// Certificate holds the value of the "certificate" field.
 	Certificate *[]byte `json:"certificate,omitempty"`
+	// CaHash holds the value of the "ca_hash" field.
+	CaHash string `json:"ca_hash,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
@@ -112,7 +114,7 @@ func (*CameraWorker) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case cameraworker.FieldState:
 			values[i] = new(sql.NullInt64)
-		case cameraworker.FieldAlias, cameraworker.FieldName, cameraworker.FieldDesc, cameraworker.FieldHardwareId, cameraworker.FieldHostname, cameraworker.FieldCertSerial, cameraworker.FieldVersion, cameraworker.FieldApprovedKeyFingerprint:
+		case cameraworker.FieldAlias, cameraworker.FieldName, cameraworker.FieldDesc, cameraworker.FieldHardwareId, cameraworker.FieldHostname, cameraworker.FieldCertSerial, cameraworker.FieldVersion, cameraworker.FieldApprovedKeyFingerprint, cameraworker.FieldCaHash:
 			values[i] = new(sql.NullString)
 		case cameraworker.FieldDateUpdated, cameraworker.FieldDateErased, cameraworker.FieldDateCreated, cameraworker.FieldDateAdopted, cameraworker.FieldDateSeen, cameraworker.FieldDateCertExpires, cameraworker.FieldDateCertIssued:
 			values[i] = new(sql.NullTime)
@@ -264,6 +266,12 @@ func (_m *CameraWorker) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.Certificate = value
 			}
+		case cameraworker.FieldCaHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field ca_hash", values[i])
+			} else if value.Valid {
+				_m.CaHash = value.String
+			}
 		case cameraworker.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -390,6 +398,9 @@ func (_m *CameraWorker) String() string {
 		builder.WriteString("certificate=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("ca_hash=")
+	builder.WriteString(_m.CaHash)
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

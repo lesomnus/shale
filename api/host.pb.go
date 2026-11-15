@@ -1064,6 +1064,7 @@ type Producer struct {
 	xxx_hidden_Status          *ProducerStatus        `protobuf:"bytes,21,opt,name=status"`
 	xxx_hidden_Version         string                 `protobuf:"bytes,22,opt,name=version"`
 	xxx_hidden_Live            LivePolicy             `protobuf:"varint,23,opt,name=live,enum=shale.LivePolicy"`
+	xxx_hidden_CaHash          string                 `protobuf:"bytes,24,opt,name=ca_hash,json=caHash"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -1254,6 +1255,13 @@ func (x *Producer) GetLive() LivePolicy {
 	return LivePolicy_LIVE_POLICY_UNSPECIFIED
 }
 
+func (x *Producer) GetCaHash() string {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return ""
+}
+
 func (x *Producer) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1347,6 +1355,10 @@ func (x *Producer) SetVersion(v string) {
 
 func (x *Producer) SetLive(v LivePolicy) {
 	x.xxx_hidden_Live = v
+}
+
+func (x *Producer) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = v
 }
 
 func (x *Producer) HasTenant() bool {
@@ -1518,6 +1530,9 @@ type Producer_builder struct {
 	// watched (§39.3); unspecified is `always`. A default, so the column is
 	// added to a database that predates it.
 	Live LivePolicy
+	// The hash of the CA bundle it holds, from its heartbeat (§33.5). A
+	// default, so the column is added to a database that predates it.
+	CaHash string
 }
 
 func (b0 Producer_builder) Build() *Producer {
@@ -1547,6 +1562,7 @@ func (b0 Producer_builder) Build() *Producer {
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_Live = b.Live
+	x.xxx_hidden_CaHash = b.CaHash
 	return m0
 }
 
@@ -1573,6 +1589,7 @@ type Reader struct {
 	xxx_hidden_DateCertExpires *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=date_cert_expires,json=dateCertExpires"`
 	xxx_hidden_Version         string                 `protobuf:"bytes,19,opt,name=version"`
 	xxx_hidden_AllSites        bool                   `protobuf:"varint,20,opt,name=all_sites,json=allSites"`
+	xxx_hidden_CaHash          string                 `protobuf:"bytes,21,opt,name=ca_hash,json=caHash"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -1735,6 +1752,13 @@ func (x *Reader) GetAllSites() bool {
 	return false
 }
 
+func (x *Reader) GetCaHash() string {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return ""
+}
+
 func (x *Reader) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1812,6 +1836,10 @@ func (x *Reader) SetVersion(v string) {
 
 func (x *Reader) SetAllSites(v bool) {
 	x.xxx_hidden_AllSites = v
+}
+
+func (x *Reader) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = v
 }
 
 func (x *Reader) HasTenant() bool {
@@ -1925,6 +1953,9 @@ type Reader_builder struct {
 	Version         string
 	// Adopted for the whole tenant rather than for SiteMember rows (§33.4).
 	AllSites bool
+	// The hash of the CA bundle it holds, from its heartbeat (§33.5). A
+	// default, so the column is added to a database that predates it.
+	CaHash string
 }
 
 func (b0 Reader_builder) Build() *Reader {
@@ -1950,6 +1981,7 @@ func (b0 Reader_builder) Build() *Reader {
 	x.xxx_hidden_DateCertExpires = b.DateCertExpires
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_AllSites = b.AllSites
+	x.xxx_hidden_CaHash = b.CaHash
 	return m0
 }
 
@@ -2049,7 +2081,7 @@ const file_shale_host_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06labels 2(\xf4\x03:\x00*\x00\"\xa8\n" +
+	"\x06labels 2(\xf4\x03:\x00*\x00\"\xca\n" +
 	"\n" +
 	"\bProducer\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
@@ -2079,7 +2111,8 @@ const file_shale_host_proto_rawDesc = "" +
 	"\x05relay\x18\x14 \x01(\v2\f.shale.RelayB\x06\xf2\x82\x16\x028\x01R\x05relay\x12-\n" +
 	"\x06status\x18\x15 \x01(\v2\x15.shale.ProducerStatusR\x06status\x12\x18\n" +
 	"\aversion\x18\x16 \x01(\tR\aversion\x12.\n" +
-	"\x04live\x18\x17 \x01(\x0e2\x11.shale.LivePolicyB\a\xea\x82\x16\x03\x82\x01\x00R\x04live\x1a9\n" +
+	"\x04live\x18\x17 \x01(\x0e2\x11.shale.LivePolicyB\a\xea\x82\x16\x03\x82\x01\x00R\x04live\x12 \n" +
+	"\aca_hash\x18\x18 \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xd2\x01\xca\xfc\x15|\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
@@ -2103,7 +2136,7 @@ const file_shale_host_proto_rawDesc = "" +
 	"\x06tenant\x1a\x05\n" +
 	"\x03set\x1a\x06\n" +
 	"\x04site\x1a\b\n" +
-	"\x06labels \x14(d:\x00\"\xd8\b\n" +
+	"\x06labels \x14(d:\x00\"\xfa\b\n" +
 	"\x06Reader\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -2127,7 +2160,8 @@ const file_shale_host_proto_rawDesc = "" +
 	"\tdate_seen\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateSeen\x12N\n" +
 	"\x11date_cert_expires\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateCertExpires\x12\x18\n" +
 	"\aversion\x18\x13 \x01(\tR\aversion\x12\x1b\n" +
-	"\tall_sites\x18\x14 \x01(\bR\ballSites\x1a9\n" +
+	"\tall_sites\x18\x14 \x01(\bR\ballSites\x12 \n" +
+	"\aca_hash\x18\x15 \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xc3\x01\xca\xfc\x15|\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +

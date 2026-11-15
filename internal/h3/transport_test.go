@@ -129,7 +129,7 @@ func startNode(t *testing.T, serveUDP bool) *testNode {
 func (n *testNode) client(t *testing.T, mode Mode) (*Transport, *http.Client) {
 	t.Helper()
 	tcp := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: n.pool}, ForceAttemptHTTP2: true}
-	tr := NewTransport(tcp, &tls.Config{RootCAs: n.pool}, mode, slog.New(slog.DiscardHandler))
+	tr := NewTransport(tcp, StaticTLS(&tls.Config{RootCAs: n.pool}), mode, slog.New(slog.DiscardHandler))
 	t.Cleanup(func() { tr.Close() })
 
 	return tr, &http.Client{Transport: tr}
@@ -270,6 +270,32 @@ func TestNodeAwayIsNotPaused(t *testing.T) {
 	_, err := n.put(t, c, "/laminae/a", strings.NewReader("x"))
 	require.Error(t, err)
 	require.True(t, tr.Speaks(n.addr))
+}
+
+// The TLS a handshake starts from is asked for at every handshake: a
+// producer's roots follow the bundle it holds (§33.5), and a node it could
+// not verify before is verified once the bundle carries its CA.
+func TestTLSAskedAtEveryHandshake(t *testing.T) {
+	n := startNode(t, true)
+	var mu sync.Mutex
+	roots := x509.NewCertPool()
+	tlsFor := func() (*tls.Config, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		return &tls.Config{RootCAs: roots}, nil
+	}
+	tr := NewTransport(&http.Transport{TLSClientConfig: &tls.Config{RootCAs: x509.NewCertPool()}}, tlsFor, On, slog.New(slog.DiscardHandler))
+	t.Cleanup(func() { tr.Close() })
+	c := &http.Client{Transport: tr}
+
+	_, err := n.put(t, c, "/laminae/a", strings.NewReader("x"))
+	require.Error(t, err, "a node of a CA not held")
+	mu.Lock()
+	roots = n.pool
+	mu.Unlock()
+	s, err := n.put(t, c, "/laminae/a", strings.NewReader("y"))
+	require.NoError(t, err)
+	require.Equal(t, "HTTP/3.0", s.proto)
 }
 
 // A request that fails after the handshake is the request's, as over TCP:

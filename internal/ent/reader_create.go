@@ -167,6 +167,20 @@ func (_c *ReaderCreate) SetAllSites(v bool) *ReaderCreate {
 	return _c
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_c *ReaderCreate) SetCaHash(v string) *ReaderCreate {
+	_c.mutation.SetCaHash(v)
+	return _c
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_c *ReaderCreate) SetNillableCaHash(v *string) *ReaderCreate {
+	if v != nil {
+		_c.SetCaHash(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *ReaderCreate) SetTenantId(v uuid.UUID) *ReaderCreate {
 	_c.mutation.SetTenantId(v)
@@ -191,6 +205,7 @@ func (_c *ReaderCreate) Mutation() *ReaderMutation {
 
 // Save creates the Reader in the database.
 func (_c *ReaderCreate) Save(ctx context.Context) (*Reader, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -213,6 +228,16 @@ func (_c *ReaderCreate) Exec(ctx context.Context) error {
 func (_c *ReaderCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_c *ReaderCreate) defaults() {
+	if _, ok := _c.mutation.CaHash(); !ok {
+		if _, ok := _c.mutation.FieldExpr(reader.FieldCaHash); !ok {
+			v := reader.DefaultCaHash
+			_c.mutation.SetCaHash(v)
+		}
 	}
 }
 
@@ -386,6 +411,10 @@ func (_c *ReaderCreate) createSpec() (*Reader, *sqlgraph.CreateSpec, error) {
 		_spec.SetField(reader.FieldAllSites, field.TypeBool, value)
 		_node.AllSites = value
 	}
+	if value, ok := _c.mutation.CaHash(); ok {
+		_spec.SetField(reader.FieldCaHash, field.TypeString, value)
+		_node.CaHash = value
+	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -450,6 +479,7 @@ func (_c *ReaderCreateBulk) Save(ctx context.Context) ([]*Reader, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ReaderMutation)
 				if !ok {

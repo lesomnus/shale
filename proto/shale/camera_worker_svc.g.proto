@@ -76,6 +76,7 @@ message CameraWorkerAddRequest {
   string approved_key_fingerprint = 20 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_cert_issued = 21;
   bytes certificate = 22;
+  string ca_hash = 23;
 }
 
 message CameraWorkerGetRequest {
@@ -118,6 +119,7 @@ message CameraWorkerSelect {
   bool approved_key_fingerprint = 20;
   bool date_cert_issued = 21;
   bool certificate = 22;
+  bool ca_hash = 23;
 }
 
 message CameraWorkerPatchRequest {
@@ -188,6 +190,7 @@ message CameraWorkerPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and certificate clears.
   bool certificate_null = 45;
+  string ca_hash = 46;
 }
 
 message CameraWorkerApplyRequest {

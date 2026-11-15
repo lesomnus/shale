@@ -78,7 +78,8 @@ code rather than configuration, with one switch
 What the system writes is the same on both surfaces: laminae and attempts,
 the generated `Add` and `Apply` of every host, device, sink and key, and
 `Patch` of nodes, readers, devices, sinks and keys, which change by the
-custom verbs of §32 alone (a key by `Rotate`). `DelegationService` is
+custom verbs of §32 alone (a key by `Rotate`), and every write of a CA,
+which `Rotate` and the leader make alone ([§33.5](10-security.md#335-tls)). `DelegationService` is
 mounted on the tenant API only ([§33.8](10-security.md#338-viewing-on-a-persons-behalf)).
 
 A grant roster cannot be asked about is refused with `UNAVAILABLE`, never
@@ -116,6 +117,7 @@ each surface that is made without a credential.
 | `PlacementPolicy` | **global** | 16 | Add, Get, List | cluster |
 | `UploadPolicy` | **global** | 18 | Add, Get, List | cluster |
 | `AddressPolicy` | **global** | 21 | Add, Get, List | cluster |
+| `CertificateAuthority` (`ca`) | **global** | 42 | Get, List, Watch | cluster |
 
 Domains 11 and 17 were enrollment tokens and join tokens. They are retired:
 hosts are adopted instead ([§33.4](10-security.md#334-joining-and-adoption),
@@ -123,7 +125,7 @@ hosts are adopted instead ([§33.4](10-security.md#334-joining-and-adoption),
 never reused.
 
 - **Tenant-owned** is payday's default. Every entity outside the wall says
-  `global: {}` explicitly, and a search for it lists exactly the eight above.
+  `global: {}` explicitly, and a search for it lists exactly the nine above.
   Storage is physically shared, so the infrastructure that holds it belongs to
   the cluster, not to any tenant.
 - **Holders are people**: tenant admins, cluster operators, and console users.
@@ -369,6 +371,14 @@ service SigningKeyService {
   rpc Rotate(SigningKeyRotateRequest) returns (SigningKey);               // §33.3
 }
 
+service CertificateAuthorityService {
+  // Begin a CA rollover now; the leader takes it from there (§33.5).
+  rpc Rotate(CertificateAuthorityRotateRequest) returns (CertificateAuthority);
+  // The phase, the CAs, the bundle and its hash, and the live hosts the
+  // rollover's next step waits for.
+  rpc Status(CertificateAuthorityStatusRequest) returns (CertificateAuthorityStatusResponse);
+}
+
 service PlacementPolicyService {
   rpc Activate(PlacementPolicyActivateRequest) returns (PlacementPolicy); // §11
 }
@@ -385,6 +395,10 @@ service AddressPolicyService {
 - Nodes **poll** `SigningKey` every 30 s; a rotation waits for every live
   node to report the new key before it signs
   ([§33.3](10-security.md#333-signing-keys-and-rotation)).
+- Every host's heartbeat carries the hash of the CA bundle it holds, and
+  its answer's `renew_certificate` is set during a CA rollover for a host
+  whose bundle, or whose certificate's CA, is not the current one; the
+  renewal answer carries the bundle ([§33.5](10-security.md#335-tls)).
 - Consoles watch `Node`, `Device`, `Sink`, `Producer`, and `Reader` rows for
   live state, and read the lists again for what arrives, hosts waiting to
   be adopted above all ([§40](17-console.md#40-console)).
@@ -431,9 +445,12 @@ A `HEAD` on a complete lamina also answers `Shale-Checksum: crc32c=<hex>`
 when the set asked for checksums ([§30](09-operations.md#30-integrity)).
 
 **HTTP/3.** A node serves it on UDP at its data port, the number its TCP
-listener has, with the same handler and the same certificates, chosen by
-the name a client asks for as over TCP
-([§33.5](10-security.md#335-tls)). `storage.http3: off` turns it off.
+listener has, with the same handler and the same TLS at each handshake as
+over TCP: the certificate chosen by the name a client asks for, and a
+client certificate verified against the bundle the node holds then, the
+next CA of a rollover included ([§33.5](10-security.md#335-tls)). A
+producer's HTTP/3 verifies a node against the bundle it holds at each
+handshake, as its TCP does. `storage.http3: off` turns it off.
 
 - Every answer, over TCP and HTTP/3 alike, offers it:
   `Alt-Svc: h3=":<port>"; ma=3600`, on the port the request came to. A

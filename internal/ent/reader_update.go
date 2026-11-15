@@ -281,6 +281,26 @@ func (_u *ReaderUpdate) SetNillableAllSites(v *bool) *ReaderUpdate {
 	return _u
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_u *ReaderUpdate) SetCaHash(v string) *ReaderUpdate {
+	_u.mutation.SetCaHash(v)
+	return _u
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_u *ReaderUpdate) SetNillableCaHash(v *string) *ReaderUpdate {
+	if v != nil {
+		_u.SetCaHash(*v)
+	}
+	return _u
+}
+
+// ClearCaHash clears the value of the "ca_hash" field.
+func (_u *ReaderUpdate) ClearCaHash() *ReaderUpdate {
+	_u.mutation.ClearCaHash()
+	return _u
+}
+
 // Mutation returns the ReaderMutation object of the builder.
 func (_u *ReaderUpdate) Mutation() *ReaderMutation {
 	return _u.mutation
@@ -465,6 +485,15 @@ func (_u *ReaderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if e, ok := _u.mutation.FieldExpr(reader.FieldAllSites); ok {
 		_spec.SetField(reader.FieldAllSites, field.TypeBool, e)
+	}
+	if value, ok := _u.mutation.CaHash(); ok {
+		_spec.SetField(reader.FieldCaHash, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldCaHash); ok {
+		_spec.SetField(reader.FieldCaHash, field.TypeString, e)
+	}
+	if _u.mutation.CaHashCleared() {
+		_spec.ClearField(reader.FieldCaHash, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -739,6 +768,26 @@ func (_u *ReaderUpdateOne) SetNillableAllSites(v *bool) *ReaderUpdateOne {
 	return _u
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_u *ReaderUpdateOne) SetCaHash(v string) *ReaderUpdateOne {
+	_u.mutation.SetCaHash(v)
+	return _u
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_u *ReaderUpdateOne) SetNillableCaHash(v *string) *ReaderUpdateOne {
+	if v != nil {
+		_u.SetCaHash(*v)
+	}
+	return _u
+}
+
+// ClearCaHash clears the value of the "ca_hash" field.
+func (_u *ReaderUpdateOne) ClearCaHash() *ReaderUpdateOne {
+	_u.mutation.ClearCaHash()
+	return _u
+}
+
 // Mutation returns the ReaderMutation object of the builder.
 func (_u *ReaderUpdateOne) Mutation() *ReaderMutation {
 	return _u.mutation
@@ -953,6 +1002,15 @@ func (_u *ReaderUpdateOne) sqlSave(ctx context.Context) (_node *Reader, err erro
 	}
 	if e, ok := _u.mutation.FieldExpr(reader.FieldAllSites); ok {
 		_spec.SetField(reader.FieldAllSites, field.TypeBool, e)
+	}
+	if value, ok := _u.mutation.CaHash(); ok {
+		_spec.SetField(reader.FieldCaHash, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(reader.FieldCaHash); ok {
+		_spec.SetField(reader.FieldCaHash, field.TypeString, e)
+	}
+	if _u.mutation.CaHashCleared() {
+		_spec.ClearField(reader.FieldCaHash, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Reader{config: _u.config}

@@ -18,6 +18,8 @@ import (
 
 	"github.com/lesomnus/otx"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/http3"
 	"github.com/stretchr/testify/require"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -26,6 +28,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/h3"
+	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/internal/token"
 )
 
@@ -35,6 +38,7 @@ type h3Node struct {
 	n      *Node
 	addr   string
 	served bool
+	ca     *pki.CA
 	pool   *x509.CertPool
 	reader *sdkmetric.ManualReader
 	ctx    context.Context
@@ -91,7 +95,7 @@ func serveH3(t *testing.T, cfg Config, dl net.Listener) h3Node {
 		return tok
 	}
 
-	return h3Node{n: n, addr: dl.Addr().String(), served: served, pool: pool, reader: reader, ctx: mctx, sign: sign}
+	return h3Node{n: n, addr: dl.Addr().String(), served: served, ca: ca, pool: pool, reader: reader, ctx: mctx, sign: sign}
 }
 
 // client is a data-plane client of the node's CA: HTTP/3 to it from the
@@ -99,7 +103,7 @@ func serveH3(t *testing.T, cfg Config, dl net.Listener) h3Node {
 func (hn h3Node) client(t *testing.T, mode h3.Mode) (*h3.Transport, *http.Client) {
 	t.Helper()
 	tcp := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: hn.pool}, ForceAttemptHTTP2: true}
-	tr := h3.NewTransport(tcp, &tls.Config{RootCAs: hn.pool}, mode, slog.New(slog.DiscardHandler))
+	tr := h3.NewTransport(tcp, h3.StaticTLS(&tls.Config{RootCAs: hn.pool}), mode, slog.New(slog.DiscardHandler))
 	t.Cleanup(func() { tr.Close() })
 
 	return tr, &http.Client{Transport: tr}
@@ -347,4 +351,56 @@ func TestHTTP3NotServed(t *testing.T) {
 			require.Empty(t, resp.Header.Get("Alt-Svc"))
 		})
 	}
+}
+
+// HTTP/3 takes the TCP listener's configuration per handshake (§33.5): the
+// external certificate to a client that asks for its name and the host
+// certificate to one that dials the IP, both with h3 negotiated; and a
+// client certificate verified against the bundle as it is then, so one
+// from the next CA of a rollover is taken once a renewal brings it.
+func TestHTTP3HandshakeAsOverTCP(t *testing.T) {
+	public, err := pki.NewCA("public", time.Now())
+	require.NoError(t, err)
+	certFile, keyFile := writeServerPair(t, public, t.TempDir(), "storage.example.com")
+	hn := serveH3(t, Config{HTTP3: true, CertFile: certFile, KeyFile: keyFile}, nil)
+	require.True(t, hn.served)
+	publicPool := x509.NewCertPool()
+	publicPool.AddCert(public.Cert)
+
+	served := func(name string, roots *x509.CertPool) *x509.Certificate {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		conn, err := quic.DialAddr(ctx, hn.addr, &tls.Config{RootCAs: roots, ServerName: name, NextProtos: []string{http3.NextProtoH3}}, nil)
+		require.NoError(t, err, name)
+		defer conn.CloseWithError(0, "")
+		st := conn.ConnectionState().TLS
+		require.Equal(t, http3.NextProtoH3, st.NegotiatedProtocol, name)
+
+		return st.PeerCertificates[0]
+	}
+	require.Equal(t, []string{"storage.example.com"}, served("storage.example.com", publicPool).DNSNames)
+	_, isHost := pki.IdOf(served("127.0.0.1", hn.pool))
+	require.True(t, isHost, "an IP gets the host certificate")
+
+	// A producer renewed from the next CA, before the node holds it and
+	// after.
+	next, err := pki.NewCA("shale-next", time.Now())
+	require.NoError(t, err)
+	renewed := hostClient(t, next)
+	tr := h3.NewTransport(http.DefaultTransport, h3.StaticTLS(&tls.Config{
+		RootCAs:              hn.pool,
+		GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) { return &renewed, nil },
+	}), h3.On, slog.New(slog.DiscardHandler))
+	t.Cleanup(func() { tr.Close() })
+	c := &http.Client{Transport: tr, Timeout: 5 * time.Second}
+	_, err = c.Get("https://" + hn.addr + "/healthz")
+	require.Error(t, err, "a certificate from a CA the node does not hold")
+
+	require.NoError(t, hn.n.agent.Store.SetBundle(append(hn.ca.Bundle(), next.Bundle()...)))
+	resp, err := c.Get("https://" + hn.addr + "/healthz")
+	require.NoError(t, err)
+	resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "HTTP/3.0", resp.Proto)
 }

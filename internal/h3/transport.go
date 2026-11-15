@@ -35,10 +35,11 @@ const (
 // the request's, as on TCP: the uploader asks the node where it stands and
 // resumes (§13), on whichever protocol is to be used by then.
 type Transport struct {
-	tcp  http.RoundTripper
-	mode Mode
-	log  *slog.Logger
-	h3   *http3.Transport
+	tcp    http.RoundTripper
+	tlsFor func() (*tls.Config, error)
+	mode   Mode
+	log    *slog.Logger
+	h3     *http3.Transport
 	// now is the clock pauses are kept by; tests move it.
 	now func() time.Time
 
@@ -59,23 +60,35 @@ type origin struct {
 	spoken bool
 }
 
-// NewTransport speaks HTTP/3 beside tcp, with tlsCfg's roots and client
-// certificate. With Off it is tcp's.
-func NewTransport(tcp http.RoundTripper, tlsCfg *tls.Config, mode Mode, log *slog.Logger) *Transport {
-	if tlsCfg == nil {
-		tlsCfg = &tls.Config{}
+// NewTransport speaks HTTP/3 beside tcp. tlsFor is the TLS a handshake
+// starts from, its roots and client certificate, asked at every
+// handshake: a producer's follows the bundle it holds, as its TCP
+// transport does, so a node renewed from the next CA of a rollover
+// (§33.5) is verified without a restart. A connection made before goes
+// on as it was verified. With Off it is tcp's.
+func NewTransport(tcp http.RoundTripper, tlsFor func() (*tls.Config, error), mode Mode, log *slog.Logger) *Transport {
+	if tlsFor == nil {
+		tlsFor = StaticTLS(nil)
 	}
 	if log == nil {
 		log = slog.Default()
 	}
-	t := &Transport{tcp: tcp, mode: mode, log: log, now: time.Now, origins: map[string]*origin{}}
+	t := &Transport{tcp: tcp, tlsFor: tlsFor, mode: mode, log: log, now: time.Now, origins: map[string]*origin{}}
 	t.h3 = &http3.Transport{
-		TLSClientConfig: tlsCfg.Clone(),
+		// What http3 adds to it, the server name and h3, is taken over
+		// into tlsFor's at each handshake (dial).
+		TLSClientConfig: &tls.Config{},
 		QUICConfig:      clientConfig(),
 		Dial:            t.dial,
 	}
 
 	return t
+}
+
+// StaticTLS is a tlsFor of one configuration; nil is the system's roots
+// and no client certificate.
+func StaticTLS(cfg *tls.Config) func() (*tls.Config, error) {
+	return func() (*tls.Config, error) { return cfg, nil }
 }
 
 // RoundTrip sends a request on the protocol the node is spoken to on.
@@ -247,7 +260,16 @@ func (t *Transport) dial(ctx context.Context, addr string, tlsCfg *tls.Config, c
 	return conn, nil
 }
 
-func (t *Transport) handshake(ctx context.Context, addr string, tlsCfg *tls.Config, cfg *quic.Config) (*quic.Conn, error) {
+func (t *Transport) handshake(ctx context.Context, addr string, h3Cfg *tls.Config, cfg *quic.Config) (*quic.Conn, error) {
+	base, err := t.tlsFor()
+	if err != nil {
+		return nil, err
+	}
+	tlsCfg := &tls.Config{}
+	if base != nil {
+		tlsCfg = base.Clone()
+	}
+	tlsCfg.ServerName, tlsCfg.NextProtos = h3Cfg.ServerName, h3Cfg.NextProtos
 	tr, err := t.socket()
 	if err != nil {
 		return nil, err

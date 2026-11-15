@@ -40,6 +40,9 @@ message CameraWorker {
   google.protobuf.Timestamp date_cert_issued = 21 [(orm.field) = {nullable: true}];
   // Approved public certificate, independent of a pending new-key Join request.
   bytes certificate = 22 [(orm.field) = {nullable: true}];
+  // The hash of the CA bundle it holds, from its heartbeat (§33.5). A
+  // default, so the column is added to a database that predates it.
+  string ca_hash = 23 [(orm.field) = {default: ""}];
   option (orm.message) = {
     rpc: {crud: true}
     indexes: [

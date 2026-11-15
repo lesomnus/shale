@@ -24,6 +24,7 @@ import (
 	camerapolicy "github.com/lesomnus/shale/internal/ent/camerapolicy"
 	camerapreset "github.com/lesomnus/shale/internal/ent/camerapreset"
 	cameraworker "github.com/lesomnus/shale/internal/ent/cameraworker"
+	certificateauthority "github.com/lesomnus/shale/internal/ent/certificateauthority"
 	delegation "github.com/lesomnus/shale/internal/ent/delegation"
 	device "github.com/lesomnus/shale/internal/ent/device"
 	holder "github.com/lesomnus/shale/internal/ent/holder"
@@ -414,6 +415,7 @@ type Scope interface {
 	SinkScope(ctx context.Context) (predicate.Sink, error)
 	CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, error)
 	CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy, error)
+	CertificateAuthorityScope(ctx context.Context) (predicate.CertificateAuthority, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	LaminaScope(ctx context.Context) (predicate.Lamina, error)
@@ -501,6 +503,9 @@ func (Unscoped) CameraWorkerScope(_ context.Context) (predicate.CameraWorker, er
 	return nil, nil
 }
 func (Unscoped) CameraPolicyScope(_ context.Context) (predicate.CameraPolicy, error) {
+	return nil, nil
+}
+func (Unscoped) CertificateAuthorityScope(_ context.Context) (predicate.CertificateAuthority, error) {
 	return nil, nil
 }
 func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
@@ -968,6 +973,26 @@ func (ss Scopes) CameraPolicyScope(ctx context.Context) (predicate.CameraPolicy,
 	return camerapolicy.And(ps...), nil
 }
 
+func (ss Scopes) CertificateAuthorityScope(ctx context.Context) (predicate.CertificateAuthority, error) {
+	ps := make([]predicate.CertificateAuthority, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.CertificateAuthorityScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return certificateauthority.And(ps...), nil
+}
+
 func (ss Scopes) HolderScope(ctx context.Context) (predicate.Holder, error) {
 	ps := make([]predicate.Holder, 0, len(ss))
 	for _, s := range ss {
@@ -1403,7 +1428,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. AddressPolicy, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
+// check. AddressPolicy, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, CertificateAuthority, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1478,6 +1503,9 @@ func (s Server) CameraWorker() api.CameraWorkerServiceServer {
 }
 func (s Server) CameraPolicy() api.CameraPolicyServiceServer {
 	return CameraPolicyServiceServer{Store: s.Store}
+}
+func (s Server) CertificateAuthority() api.CertificateAuthorityServiceServer {
+	return CertificateAuthorityServiceServer{Store: s.Store}
 }
 func (s Server) Holder() api.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
 func (s Server) Delegation() api.DelegationServiceServer {
