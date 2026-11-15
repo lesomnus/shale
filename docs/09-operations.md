@@ -384,7 +384,7 @@ shale producer adopt <producer> '{"set":{"id":"<set>"}}'
 shale producer scan|probe                                    # what this host can see (§38.4)
 shale producer push [--to ADDR] [--open] <alias> [FILE]      # write a stream to a pushed source (§38.9)
 shale reader ls|pending|get|erase|watch                      # tenant API
-shale reader adopt <reader> '{"sites":[{"id":"<site>"}]}'
+shale reader adopt <reader> '{"sites":[{"id":"<site>"}]}'    # none: the whole tenant; again, new key: its sites (§36.4)
 
 # cluster setup (cluster API)
 shale tenant ls|erase|patch              # patch: capacity_share; tenants come from roster (§33.1)

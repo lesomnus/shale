@@ -208,3 +208,190 @@ func mustCA(t *testing.T) *pki.CA {
 
 	return ca
 }
+
+// A CA the operator names for the CP (§33.5) is trusted beside the pinned
+// bundle, and instead of the first-contact pin: a CP serving a certificate
+// from a public CA verifies by its name, a stranger does not, and nothing
+// is pinned on the way.
+func TestCpRootsTrustedExplicitly(t *testing.T) {
+	x := require.New(t)
+	shale, public, stranger := mustCA(t), mustCA(t), mustCA(t)
+	explicit := x509.NewCertPool()
+	explicit.AddCert(public.Cert)
+	a := &Agent{Store: pki.Store{Dir: t.TempDir()}, CpRoots: explicit}
+	x.NoError(a.Init())
+
+	cfg, err := a.tlsConfig()
+	x.NoError(err)
+	x.False(cfg.InsecureSkipVerify, "trusted explicitly, so not trust on first use")
+	c := &http.Client{Transport: &http.Transport{TLSClientConfig: cfg}}
+	x.NoError(get(t, c, server(t, public).URL))
+	x.Error(get(t, c, server(t, stranger).URL))
+	x.Error(get(t, c, server(t, shale).URL), "the shale CA is not known before a join hands it over")
+	bundle, err := a.Store.Bundle()
+	x.NoError(err)
+	x.Empty(bundle, "nothing pinned")
+
+	// After a join, the bundle it handed over is trusted as well.
+	x.NoError(a.Store.SetBundle(shale.Bundle()))
+	cfg, err = a.tlsConfig()
+	x.NoError(err)
+	c = &http.Client{Transport: &http.Transport{TLSClientConfig: cfg}}
+	x.NoError(get(t, c, server(t, public).URL))
+	x.NoError(get(t, c, server(t, shale).URL))
+	x.Error(get(t, c, server(t, stranger).URL))
+}
+
+// issue signs a client certificate for key `k` naming `id`, issued at `at`.
+func issue(t *testing.T, ca *pki.CA, k *pki.HostKey, id pdid.Id, at time.Time) []byte {
+	t.Helper()
+	csr, err := k.CSR("host")
+	require.NoError(t, err)
+	c, err := ca.IssueClientHost(csr, id, at)
+	require.NoError(t, err)
+
+	return pki.EncodeCerts(c)
+}
+
+// What the CP hands over is checked before it replaces what a host holds:
+// for its key, naming its row, from the bundle (§33.4). Whether it is
+// current is not this check's: a host whose clock is behind still takes a
+// certificate just issued.
+func TestVerifyIssued(t *testing.T) {
+	x := require.New(t)
+	now := time.Now()
+	ca, err := pki.NewCA("shale", now.Add(-200*24*time.Hour))
+	x.NoError(err)
+	a := pinned(t, ca)
+	id := pdid.New(23)
+
+	_, err = a.verifyIssued(issue(t, ca, a.key, id, now), ca.Bundle(), id)
+	x.NoError(err)
+	_, err = a.verifyIssued(issue(t, ca, a.key, id, now), nil, id)
+	x.NoError(err, "with no bundle in the answer, the pinned one")
+	_, err = a.verifyIssued(issue(t, ca, a.key, id, now.Add(time.Hour)), ca.Bundle(), id)
+	x.NoError(err, "this host's clock is behind the CP's")
+	_, err = a.verifyIssued(issue(t, ca, a.key, id, now.Add(-100*24*time.Hour)), ca.Bundle(), id)
+	x.NoError(err, "expired is Ready's question")
+
+	_, err = a.verifyIssued(issue(t, ca, a.key, pdid.New(23), now), ca.Bundle(), id)
+	x.ErrorContains(err, "names")
+	other, err := pki.NewHostKey()
+	x.NoError(err)
+	_, err = a.verifyIssued(issue(t, ca, other, id, now), ca.Bundle(), id)
+	x.ErrorContains(err, "key")
+	_, err = a.verifyIssued(issue(t, mustCA(t), a.key, id, now), ca.Bundle(), id)
+	x.Error(err, "not from the bundle")
+	_, err = a.verifyIssued([]byte("not a certificate"), ca.Bundle(), id)
+	x.Error(err)
+}
+
+// A renewal that does not verify leaves the certificate held as it was.
+func TestRenewKeepsCertificateThatDoesNotVerify(t *testing.T) {
+	x := require.New(t)
+	now := time.Now()
+	ca := mustCA(t)
+	a := pinned(t, ca)
+	id := pdid.New(23)
+	held := issue(t, ca, a.key, id, now)
+	x.NoError(a.Store.SetCert(held, ca.Bundle()))
+	x.NoError(a.Init())
+	x.Equal(id, a.Id())
+
+	err := a.Renew(context.Background(), nil, func(context.Context, *grpc.ClientConn, []byte) ([]byte, []byte, error) {
+		return issue(t, ca, a.key, pdid.New(23), now), ca.Bundle(), nil
+	})
+	x.ErrorContains(err, "does not verify")
+	got, err := a.Store.CertPEM()
+	x.NoError(err)
+	x.Equal(held, got)
+
+	var renewed []byte
+	x.NoError(a.Renew(context.Background(), nil, func(_ context.Context, _ *grpc.ClientConn, csr []byte) ([]byte, []byte, error) {
+		c, err := ca.IssueClientHost(csr, id, now)
+		if err != nil {
+			return nil, nil, err
+		}
+		renewed = pki.EncodeCerts(c)
+		return renewed, ca.Bundle(), nil
+	}))
+	got, err = a.Store.CertPEM()
+	x.NoError(err)
+	x.Equal(renewed, got)
+}
+
+// An expired certificate for the current key is Expired; Rekey retires the
+// key once, and the host still knows its row (§33.4).
+func TestExpiredAndRekey(t *testing.T) {
+	x := require.New(t)
+	now := time.Now()
+	ca, err := pki.NewCA("shale", now.Add(-200*24*time.Hour))
+	x.NoError(err)
+	a := pinned(t, ca)
+	id := pdid.New(23)
+	x.NoError(a.Store.SetCert(issue(t, ca, a.key, id, now.Add(-100*24*time.Hour)), ca.Bundle()))
+	x.NoError(a.Init())
+	x.True(a.Expired(now))
+	x.False(a.Ready(now))
+	x.False(a.Expired(now.Add(-50*24*time.Hour)), "not yet, by an earlier clock")
+
+	before := a.Fingerprint()
+	x.NoError(a.Rekey())
+	x.NotEqual(before, a.Fingerprint())
+	x.False(a.Expired(now), "the certificate held is for the old key")
+	x.Equal(id, a.Id())
+	again := &Agent{Store: a.Store}
+	x.NoError(again.Init())
+	x.Equal(a.Fingerprint(), again.Fingerprint(), "the new key is what the store holds")
+	x.False(again.Expired(now))
+}
+
+// readerJoin answers each Join with the next of `answers`.
+type readerJoin struct {
+	api.UnimplementedReaderServiceServer
+	answers chan *api.JoinAnswer
+}
+
+func (s readerJoin) Join(ctx context.Context, _ *api.ReaderJoinRequest) (*api.ReaderJoinResponse, error) {
+	return api.ReaderJoinResponse_builder{Answer: <-s.answers}.Build(), nil
+}
+
+// Join does not store a certificate that is not this host's, and asks
+// again.
+func TestJoinRefusesCertificateThatDoesNotVerify(t *testing.T) {
+	x := require.New(t)
+	now := time.Now()
+	ca := mustCA(t)
+	a := &Agent{Store: pki.Store{Dir: t.TempDir()}, Dev: true, JoinEvery: 10 * time.Millisecond}
+	x.NoError(a.Init())
+	id := pdid.New(23)
+	other, err := pki.NewHostKey()
+	x.NoError(err)
+	good := issue(t, ca, a.key, id, now)
+	srv := readerJoin{answers: make(chan *api.JoinAnswer, 2)}
+	srv.answers <- api.JoinAnswer_builder{Id: id.Bytes(), State: api.HostState_HOST_STATE_ADOPTED, Certificate: issue(t, ca, other, id, now), CaBundle: ca.Bundle()}.Build()
+	srv.answers <- api.JoinAnswer_builder{Id: id.Bytes(), State: api.HostState_HOST_STATE_ADOPTED, Certificate: good, CaBundle: ca.Bundle()}.Build()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	x.NoError(err)
+	g := grpc.NewServer()
+	api.RegisterReaderServiceServer(g, srv)
+	go g.Serve(l)
+	t.Cleanup(g.Stop)
+	a.Cp = "http://" + l.Addr().String()
+
+	ctx, done := context.WithTimeout(context.Background(), 5*time.Second)
+	defer done()
+	_, err = a.Join(ctx, func(ctx context.Context, conn *grpc.ClientConn, hj *api.HostJoin) (Answer, error) {
+		v, err := api.NewReaderServiceClient(conn).Join(ctx, api.ReaderJoinRequest_builder{Host: hj}.Build())
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{JoinAnswer: v.GetAnswer()}, nil
+	})
+	x.NoError(err)
+	got, err := a.Store.CertPEM()
+	x.NoError(err)
+	x.Equal(good, got, "the second answer, the one for this key")
+	x.Equal(id, a.Id())
+	x.Empty(srv.answers)
+}

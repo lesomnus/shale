@@ -320,8 +320,16 @@ type Cutter struct {
 	// it across streams.
 	Prefix   func() []byte
 	OnPrefix func([]byte)
+	// Boundary is asked at every cut on schedule, the end of a segment's
+	// slot. True ends the stream's segments there: the segment closes as
+	// at any other cut, and the cutter takes nothing more of this stream,
+	// whose process is being started again to encode with the agreed
+	// profile (§38.5). Nil never ends it.
+	Boundary func() bool
 
 	cur *Segment
+	// ended says Boundary ended the stream's segments.
+	ended bool
 	// mu guards stats, which the heartbeat and the stall watch read from
 	// goroutines of their own while the capture loop feeds (§38.6). The
 	// rest of the cutter is the loop's alone, and mu is never held across
@@ -369,6 +377,9 @@ func (c *Cutter) now() time.Time {
 // a data frame a lamina may start at may start one, and its timestamp is
 // the data time when the writer gave one.
 func (c *Cutter) Feed(f *Frame) {
+	if c.ended {
+		return
+	}
 	t := f.Time
 	if t.IsZero() {
 		t = c.now()
@@ -402,6 +413,12 @@ func (c *Cutter) Feed(f *Frame) {
 	c.mu.Unlock()
 	if key {
 		if due, early := c.Schedule().Due(c.cur, t); due {
+			if c.cur != nil && !early && c.Boundary != nil && c.Boundary() {
+				c.finish(c.cur, t)
+				c.cur, c.ended = nil, true
+
+				return
+			}
 			c.cut(f, t, early)
 		}
 	}
@@ -492,3 +509,7 @@ func (c *Cutter) Stop() {
 
 // Current is the open segment, or nil.
 func (c *Cutter) Current() *Segment { return c.cur }
+
+// Ended says Boundary ended the stream's segments: what the stream carries
+// from there on is not kept.
+func (c *Cutter) Ended() bool { return c.ended }

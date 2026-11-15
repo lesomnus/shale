@@ -115,10 +115,15 @@ message ProducerHeartbeatRequest {
   string relay_state = 5 [features.field_presence = IMPLICIT];
   // Cameras its catalog names that it has not taken up, and why (§38.5).
   AdmissionWait admission = 6;
+  // The producer's declared `uplink` in bits a second, zero when it
+  // declares none: the CP keeps the raises auto_raise applies inside it
+  // (§38.5).
+  int64 uplink = 7 [features.field_presence = IMPLICIT];
 }
 
-// Suggestion is a ceiling the CP suggests raising (§38.5); with auto_raise
-// the CP has already raised it.
+// Suggestion is a ceiling the CP suggests raising (§38.5). `applied` says
+// auto_raise raised it, and the producer's next negotiation agrees it;
+// otherwise `reason` says what holds it back, when anything does.
 message Suggestion {
   bytes source_id = 1 [features.field_presence = IMPLICIT];
   int64 max_bitrate = 2 [features.field_presence = IMPLICIT];

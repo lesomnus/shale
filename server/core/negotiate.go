@@ -157,6 +157,20 @@ func MaxLength(p *api.SegmentProfile) int64 {
 	return int64(math.Ceil(float64(p.GetMaxBitrate()) / 8 * secs))
 }
 
+// UplinkNeed is what a producer's uplink must carry for a set whose
+// ceilings sum to `total` (§38.5): the ceilings with 20% headroom, and the
+// ceilings once more when `live` says the relay carries every camera at
+// all times (§39.3). The producer's admission and the CP's automatic
+// raises both hold the declared `uplink` to it.
+func UplinkNeed(total int64, live bool) int64 {
+	factor := 1.2
+	if live {
+		factor = 2.2
+	}
+
+	return int64(math.Ceil(float64(total) * factor))
+}
+
 // linkOf is a set's agreed link profile, or the defaults.
 func linkOf(set *api.Set, b Bounds) *api.LinkProfile {
 	l := set.GetLink()
@@ -277,7 +291,15 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 			// Never declared: nothing to agree on yet.
 			continue
 		}
-		out, err := clampSegment(segmentDefaults(p, b), b, epoch, adjustFor(m.GetId()))
+		p = segmentDefaults(p, b)
+		if floor := raisedFloor(set, m); floor > p.GetMaxBitrate() {
+			// What auto_raise raised stays raised (§38.5), whatever the
+			// producer remembers: it may have started again from its
+			// starting ceiling.
+			adjustFor(m.GetId())("max_bitrate", fmt.Sprint(p.GetMaxBitrate()), fmt.Sprint(floor), "auto_raise raised this starved source's ceiling")
+			p.SetMaxBitrate(floor)
+		}
+		out, err := clampSegment(p, b, epoch, adjustFor(m.GetId()))
 		if err != nil {
 			return nil, err
 		}

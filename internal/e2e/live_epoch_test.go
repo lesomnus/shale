@@ -194,25 +194,45 @@ func TestLiveEpochManagedStarvationKeepsPinnedCeilingAndLegacyAutoRaise(t *testi
 	require.NoError(t, err)
 	legacy, err := sources.Add(ctx, api.SourceAddRequest_builder{Tenant: api.TenantRef_builder{Id: set.GetTenant().GetId()}.Build(), Set: api.SetRef_builder{Id: set.GetId()}.Build(), Alias: "epoch-legacy", Profile: api.SegmentProfile_builder{MaxBitrate: 1_000_000, DurationSeconds: 30}.Build(), ContentType: "video/mp4", LiveCapable: z.Ptr(true)}.Build())
 	require.NoError(t, err)
-	response, err := api.NewProducerServiceClient(owner).Heartbeat(ctx, api.ProducerHeartbeatRequest_builder{Sources: []*api.SourceReport{api.SourceReport_builder{SourceId: managed.GetId(), CaptureEpoch: app.GetCaptureEpoch(), Episodes: 50, SecondsTotal: 1000}.Build(), api.SourceReport_builder{SourceId: legacy.GetId(), Episodes: 50, SecondsTotal: 1000}.Build()}}.Build())
+	setBefore, err := api.NewSetServiceClient(admin).Get(ctx, api.SetGetRequest_builder{Ref: api.SetRef_builder{Id: set.GetId()}.Build()}.Build())
 	require.NoError(t, err)
+	// Both encode with VBR, which is what auto_raise raises (§38.5): what
+	// keeps the managed one where it is is its Binding.
+	heartbeat := func() *api.ProducerHeartbeatResponse {
+		t.Helper()
+		response, err := api.NewProducerServiceClient(owner).Heartbeat(ctx, api.ProducerHeartbeatRequest_builder{Sources: []*api.SourceReport{
+			api.SourceReport_builder{SourceId: managed.GetId(), CaptureEpoch: app.GetCaptureEpoch(), Episodes: 50, SecondsTotal: 1000, RateControl: api.RateControl_RATE_CONTROL_VBR}.Build(),
+			api.SourceReport_builder{SourceId: legacy.GetId(), Episodes: 50, SecondsTotal: 1000, RateControl: api.RateControl_RATE_CONTROL_VBR}.Build(),
+		}}.Build())
+		require.NoError(t, err)
+		return response
+	}
+	applied := func(response *api.ProducerHeartbeatResponse) map[string]bool {
+		out := map[string]bool{}
+		for _, s := range response.GetSuggestions() {
+			out[string(s.GetSourceId())] = s.GetApplied()
+		}
+		return out
+	}
+	response := heartbeat()
 	got, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: managed.GetId()}.Build()}.Build())
 	require.NoError(t, err)
 	require.Equal(t, managed.GetProfile().GetMaxBitrate(), got.GetProfile().GetMaxBitrate(), "a managed application cannot be silently rescaled by starvation")
+	require.True(t, got.GetStarvation().GetStarved())
+	require.Nil(t, got.GetStarvation().GetDateRaised())
 	gotLegacy, err := sources.Get(ctx, api.SourceGetRequest_builder{Ref: api.SourceRef_builder{Id: legacy.GetId()}.Build()}.Build())
 	require.NoError(t, err)
-	require.Greater(t, gotLegacy.GetProfile().GetMaxBitrate(), legacy.GetProfile().GetMaxBitrate())
-	managedSuggestion, legacySuggestion := false, false
-	for _, s := range response.GetSuggestions() {
-		if bytes.Equal(s.GetSourceId(), managed.GetId()) {
-			managedSuggestion = true
-			require.False(t, s.GetApplied())
-		}
-		if bytes.Equal(s.GetSourceId(), legacy.GetId()) {
-			legacySuggestion = true
-			require.True(t, s.GetApplied())
-		}
-	}
-	require.True(t, managedSuggestion)
-	require.True(t, legacySuggestion)
+	require.NotNil(t, gotLegacy.GetStarvation().GetDateRaised())
+	require.Equal(t, legacy.GetProfile().GetMaxBitrate(), gotLegacy.GetStarvation().GetRaisedFrom())
+	require.Equal(t, legacy.GetProfile().GetMaxBitrate()*5/4, gotLegacy.GetStarvation().GetRaisedMaxBitrate(), "agreed at the producer's next negotiation")
+	byId := applied(response)
+	require.Contains(t, byId, string(managed.GetId()))
+	require.False(t, byId[string(managed.GetId())])
+	require.True(t, byId[string(legacy.GetId())])
+	require.Greater(t, response.GetProfileVersion(), setBefore.GetProfileVersion(), "the heartbeat asks the producer to negotiate the raise")
+
+	// Starved again at once: at most one raise a day.
+	byId = applied(heartbeat())
+	require.Contains(t, byId, string(legacy.GetId()))
+	require.False(t, byId[string(legacy.GetId())])
 }

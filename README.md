@@ -117,7 +117,7 @@ you know the overview and data model.
 | 10 | [Security](docs/10-security.md) | §33 | People and hosts, the tenant wall, CP-signed access tokens, key storage and rotation, joining and adoption of hosts, the built-in CA and its rollover, and what each compromise costs. |
 | 11 | [Deployment](docs/11-deployment.md) | §34 | One binary, one command per role; Kubernetes, Ubuntu with systemd, a single machine, and containers; events from nodes and directives to nodes without a queue; node addressing. |
 | 12 | [API](docs/12-api.md) | §35 | payday conventions, the two gRPC surfaces, entities and their custom RPCs, the HTTP/QUIC data plane, and the node control API. |
-| 13 | [Configuration](docs/13-configuration.md) | §36 | Every tunable with its default, bounds, and who sets it; open decisions; rejected alternatives. |
+| 13 | [Configuration](docs/13-configuration.md) | §36 | Every tunable with its default, bounds, and who sets it; open decisions; rejected alternatives; running a Reader. |
 | 14 | [Glossary](docs/14-glossary.md) | §37 | Definitions of all terms. |
 | 15 | [Producer](docs/15-producer.md) | §38 | The producer program: inputs and the fragmented MP4 contract, cutting at keyframes, managed capture with ffmpeg and its three tiers of tuning, camera discovery and registration, choosing the bitrate ceiling as a feedback loop, heartbeats, live output. The client side Shale ships; the storage design does not depend on it. |
 | 16 | [Relay](docs/16-relay.md) | §39 | Live viewing: a stateless host that takes a producer's streams on demand and serves viewers over WebRTC (WHEP); assignment of producers to relays, tokens, instant start, capacity, failures. Never touches storage. |
@@ -134,7 +134,7 @@ you know the overview and data model.
 | Implementing the Control Plane | Overview → Data Model → Placement (+ decision report) → Write Path → Retention and GC → Security → Deployment → API |
 | Implementing the Storage Node | Overview → Data Model → Write Path → Read Path → Storage Node → Retention and GC → Operations → Security → API (§35.6, §35.7) |
 | Building or running a producer | Overview → Data Model → Write Path → Security (§33.2, §33.4) → API → Producer |
-| Building a media server (reader) | Overview → Data Model → Read Path → Security (§33.2, §33.4) → API |
+| Building a media server or a viewer (reader) | Overview → Data Model → Read Path → Security (§33.2, §33.4) → Running a Reader (§36.4) → API |
 | Building a live viewer or a monitoring wall | Overview → Security (§33.1, §33.2) → Relay → API (§35.4, §35.8) |
 | Operating a cluster | Overview → Sizing → Deployment → Security (§33.4) → Storage Node (sinks, §22.2) → Operations → Retention and GC |
 
