@@ -140,6 +140,14 @@ type liveRig struct {
 }
 
 func newLiveRig(t *testing.T, stall bool) *liveRig {
+	lr := newUnfedRig(t, stall)
+	lr.assignFeed(lr.src)
+
+	return lr
+}
+
+// newUnfedRig is a liveRig the CP has not given a feed yet.
+func newUnfedRig(t *testing.T, stall bool) *liveRig {
 	n := newNode(t)
 	r := newRig(t, 256<<20, 64<<10, n)
 	lr := &liveRig{rig: r, node: n, relay: newFakeRelay(t, stall), p: r.producer(true), src: pdid.New(8)}
@@ -150,9 +158,44 @@ func newLiveRig(t *testing.T, stall bool) *liveRig {
 	lr.live.start(t.Context())
 	t.Cleanup(func() { lr.live.set(nil) })
 	r.proxy.live = lr.live
-	lr.assignFeed(lr.src)
 
 	return lr
+}
+
+// A live upload that began before the CP's feed came is read from its
+// start, and fed from the next key fragment once the feed is there; a feed
+// the CP takes back hands the source back at once.
+func TestLiveFeedComesMidUpload(t *testing.T) {
+	lr := newUnfedRig(t, false)
+	init, frags := longRecording(t, 1)
+	u := lr.upload("laminae/j", 0, 0)
+	u.w.Write(init.Bytes)
+	for _, f := range frags[:2] {
+		u.w.Write(f)
+	}
+	time.Sleep(50 * time.Millisecond)
+	lr.assignFeed(lr.src)
+	for _, f := range frags[2:4] {
+		u.w.Write(f)
+	}
+	require.Eventually(t, func() bool { return len(lr.relay.lastFeed()) == 1 }, 5*time.Second, 5*time.Millisecond, "fed once the feed came")
+	time.Sleep(50 * time.Millisecond)
+	for _, f := range frags[4:8] {
+		u.w.Write(f)
+	}
+	vs := lr.waitData(5)
+	require.Equal(t, init.Bytes, vs[0].payload)
+	require.Equal(t, frags[4], vs[1].payload)
+
+	// The CP's next answer carries no feed for the producer.
+	lr.live.set([]*api.SatelliteProducer{api.SatelliteProducer_builder{ProducerId: lr.p.id.Bytes()}.Build()})
+	require.Zero(t, lr.live.feeding())
+	for _, f := range frags[8:] {
+		u.w.Write(f)
+	}
+	require.Equal(t, http.StatusCreated, u.end(t).StatusCode)
+	time.Sleep(50 * time.Millisecond)
+	require.Len(t, lr.relay.received(), 5, "nothing more")
 }
 
 // assignFeed is the CP's heartbeat answer: the producer's relay, with a feed

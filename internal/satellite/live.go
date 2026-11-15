@@ -90,31 +90,36 @@ func (lf *liveFeeds) start(ctx context.Context) {
 }
 
 // set takes the producers the CP answered: a stream for each that has a
-// relay assignment, none for the others.
+// relay assignment, and none for the others, whose sources are fed from
+// here no more. A producer the list no longer names is forgotten.
 func (lf *liveFeeds) set(vs []*api.SatelliteProducer) {
 	lf.mu.Lock()
 	defer lf.mu.Unlock()
 	seen := map[pdid.Id]bool{}
 	for _, v := range vs {
 		id, err := pdid.From(v.GetProducerId())
-		ra := v.GetRelay()
-		if err != nil || id.Domain() != DomProducer || ra == nil || len(ra.GetRelayId()) == 0 || ra.GetPublishToken() == "" || len(ra.GetEndpoints()) == 0 {
-			continue
-		}
-		claims, err := token.Parse(ra.GetPublishToken())
-		if err != nil || claims.GetOp() != api.TokenOp_TOKEN_OP_FEED {
+		if err != nil || id.Domain() != DomProducer {
 			continue
 		}
 		seen[id] = true
+		var claims *api.TokenClaims
+		ra := v.GetRelay()
+		if ra != nil && len(ra.GetRelayId()) > 0 && len(ra.GetEndpoints()) > 0 {
+			if c, err := token.Parse(ra.GetPublishToken()); err == nil && c.GetOp() == api.TokenOp_TOKEN_OP_FEED {
+				claims = c
+			}
+		}
 		l := lf.links[id]
+		if claims == nil {
+			if l != nil {
+				l.set(nil, nil)
+			}
+			continue
+		}
 		if l == nil {
-			if lf.ctx == nil {
+			if l = lf.newLinkLocked(id); l == nil {
 				continue
 			}
-			ctx, cancel := context.WithCancel(lf.ctx)
-			l = newFeedLink(lf, id, cancel)
-			lf.links[id] = l
-			go l.run(ctx)
 		}
 		l.set(ra, claims)
 	}
@@ -126,12 +131,31 @@ func (lf *liveFeeds) set(vs []*api.SatelliteProducer) {
 	}
 }
 
-// link is the producer's stream, nil when it has none.
+// newLinkLocked makes a producer's stream, which runs while the satellite
+// does; nil before it runs.
+func (lf *liveFeeds) newLinkLocked(producer pdid.Id) *feedLink {
+	if lf.ctx == nil {
+		return nil
+	}
+	ctx, cancel := context.WithCancel(lf.ctx)
+	l := newFeedLink(lf, producer, cancel)
+	lf.links[producer] = l
+	go l.run(ctx)
+
+	return l
+}
+
+// link is the producer's stream, made now if it has none: a live upload
+// may begin before the CP's feed for it comes, and is read from its start
+// so the feed can begin as soon as it does.
 func (lf *liveFeeds) link(producer pdid.Id) *feedLink {
 	lf.mu.Lock()
 	defer lf.mu.Unlock()
+	if l := lf.links[producer]; l != nil {
+		return l
+	}
 
-	return lf.links[producer]
+	return lf.newLinkLocked(producer)
 }
 
 // askSoon has the CP asked for fresh assignments, at most every
@@ -283,10 +307,20 @@ func (l *feedLink) source(id pdid.Id) *feedSource {
 
 // set takes the CP's assignment: another relay, or the same at other
 // endpoints, is a new stream; a token that says something new, or one the
-// open stream's is half through, is sent on it.
+// open stream's is half through, is sent on it. None ends the stream.
 func (l *feedLink) set(ra *api.RelayAssignment, claims *api.TokenClaims) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	if ra == nil {
+		if l.assignment != nil {
+			l.assignment, l.claims = nil, nil
+			signal(l.changed)
+		}
+		for _, fs := range l.sources {
+			l.unclaimLocked(fs)
+		}
+		return
+	}
 	same := l.assignment != nil && bytes.Equal(l.assignment.GetRelayId(), ra.GetRelayId()) && sameEndpoints(l.assignment.GetEndpoints(), ra.GetEndpoints())
 	l.assignment, l.claims = ra, claims
 	if !same {
@@ -469,6 +503,10 @@ func (l *feedLink) attach(ctx context.Context, ra *api.RelayAssignment) (up bool
 	claims := l.claims
 	tok := l.assignment.GetPublishToken()
 	l.mu.Unlock()
+	if claims == nil {
+		// Let go of since it was asked for.
+		return false, nil
+	}
 	if err := stream.Send(api.AttachRequest_builder{Hello: api.AttachRequest_Hello_builder{PublishToken: tok}.Build()}.Build()); err != nil {
 		return false, err
 	}
