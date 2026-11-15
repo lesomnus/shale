@@ -35,9 +35,9 @@ state: /var/lib/shale
 
 # --- a storage node (shale@storage) ----------------------------------------
 # storage:
-#   addr: ":7410"                         # TCP, and UDP for HTTP/3: open both
+#   addr: ":7410"                         # TCP; and UDP with http3: on
 #   control_addr: ":7411"
-#   # http3: off                          # on by default (§35.6)
+#   # http3: on                           # HTTP/3 too, browsers included; off by default (§35.6)
 #   sinks:
 #     - path: /mnt/hdd01                  # a whole HDD: identity and capacity detected
 #     - path: /mnt/hdd02

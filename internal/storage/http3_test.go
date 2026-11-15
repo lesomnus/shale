@@ -327,14 +327,15 @@ func TestHTTP3ResumesAfterDroppedConnection(t *testing.T) {
 	require.Equal(t, body, got)
 }
 
-// `storage.http3: off`, or a UDP port the node cannot have: TCP alone, and
-// no answer offers HTTP/3.
+// A node as configured by default, `storage.http3: off`, or one whose UDP
+// port it cannot have: TCP alone, and no answer offers HTTP/3, so no
+// browser takes the console's reads there (§35.6).
 func TestHTTP3NotServed(t *testing.T) {
 	for _, c := range []struct {
 		name string
 		on   bool
 		busy bool
-	}{{"off", false, false}, {"port taken", true, true}} {
+	}{{"default", false, false}, {"port taken", true, true}} {
 		t.Run(c.name, func(t *testing.T) {
 			dl, err := net.Listen("tcp", "127.0.0.1:0")
 			require.NoError(t, err)
@@ -343,8 +344,18 @@ func TestHTTP3NotServed(t *testing.T) {
 				require.NoError(t, err)
 				t.Cleanup(func() { udp.Close() })
 			}
-			hn := serveH3(t, Config{HTTP3: c.on}, dl)
+			cfg := Config{}
+			if c.on {
+				cfg.HTTP3 = true
+			}
+			hn := serveH3(t, cfg, dl)
 			require.False(t, hn.served)
+			if !c.busy {
+				// Nor does it hold the UDP port.
+				udp, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: dl.Addr().(*net.TCPAddr).Port})
+				require.NoError(t, err)
+				udp.Close()
+			}
 			_, tcp := hn.client(t, h3.Off)
 			resp := hn.do(t, tcp, http.MethodGet, "healthz", "", nil, nil)
 			require.Equal(t, http.StatusOK, resp.StatusCode)

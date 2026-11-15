@@ -57,8 +57,9 @@ type Config struct {
 	CertFile string
 	KeyFile  string
 	// HTTP3 serves the data plane over HTTP/3 as well, on UDP at the data
-	// port, with the same certificates (§35.6): `storage.http3`, on unless
-	// turned off. Development mode is plaintext, and QUIC never is.
+	// port, with the same certificates, and says so in Alt-Svc (§35.6):
+	// `storage.http3`, off unless turned on. Development mode is
+	// plaintext, and QUIC never is.
 	HTTP3 bool
 
 	Sinks  []SinkConfig

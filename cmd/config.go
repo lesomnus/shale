@@ -219,9 +219,10 @@ type StorageConfig struct {
 	// control API keeps the host certificate.
 	CertFile string `yaml:"cert_file"`
 	KeyFile  string `yaml:"key_file"`
-	// Http3 is `on` (the default) or `off`: the data plane over HTTP/3 as
-	// well, on UDP at the same port, advertised with Alt-Svc (§35.6). A
-	// UDP port the node cannot have leaves it serving TCP alone.
+	// Http3 is `off` (the default) or `on`: the data plane over HTTP/3 as
+	// well, on UDP at the same port, advertised with Alt-Svc (§35.6), which
+	// browsers follow for the console's Playback and Export by themselves.
+	// A UDP port the node cannot have leaves it serving TCP alone.
 	Http3 string       `yaml:"http3"`
 	Sinks []SinkConfig `yaml:"sinks"`
 

@@ -20,7 +20,7 @@ import (
 
 // serveData serves the data plane on dl over TCP, and with TLS over HTTP/3
 // as well, on UDP at the same port, with the same handler and the same
-// certificates, unless `storage.http3` is off (§35.6). A UDP port the node
+// certificates, when `storage.http3` is on (§35.6). A UDP port the node
 // cannot have leaves it serving TCP alone, with a warning: HTTP/3 is what
 // some clients add, and TCP is what every client speaks. It answers
 // whether HTTP/3 is served.

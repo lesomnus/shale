@@ -393,12 +393,14 @@ func storageConfig(c *cmd.Config) (storage.Config, error) {
 	return cfg, nil
 }
 
-// http3On reads `storage.http3`: on unless it says off (§35.6).
+// http3On reads `storage.http3`: off unless it says on (§35.6). On, the
+// node answers with Alt-Svc, and browsers take the console's reads to
+// HTTP/3 by themselves, which is the operator's to choose.
 func http3On(v string) (bool, error) {
 	switch strings.ToLower(strings.TrimSpace(v)) {
-	case "", "on", "true":
+	case "on", "true":
 		return true, nil
-	case "off", "false":
+	case "", "off", "false":
 		return false, nil
 	}
 

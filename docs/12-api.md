@@ -444,14 +444,24 @@ HEAD   /laminae/{lamina_key}   upload offset and completeness, or lamina metadat
 A `HEAD` on a complete lamina also answers `Shale-Checksum: crc32c=<hex>`
 when the set asked for checksums ([§30](09-operations.md#30-integrity)).
 
-**HTTP/3.** A node serves it on UDP at its data port, the number its TCP
-listener has, with the same handler and the same TLS at each handshake as
-over TCP: the certificate chosen by the name a client asks for, and a
-client certificate verified against the bundle the node holds then, the
-next CA of a rollover included ([§33.5](10-security.md#335-tls)). A
-producer's HTTP/3 verifies a node against the bundle it holds at each
-handshake, as its TCP does. `storage.http3: off` turns it off.
+**HTTP/3.** A node serves it when the operator turns it on,
+`storage.http3: on`; it is off by default. Then the node serves it on UDP
+at its data port, the number its TCP listener has, with the same handler
+and the same TLS at each handshake as over TCP: the certificate chosen by
+the name a client asks for, and a client certificate verified against the
+bundle the node holds then, the next CA of a rollover included
+([§33.5](10-security.md#335-tls)). A producer's HTTP/3 verifies a node
+against the bundle it holds at each handshake, as its TCP does.
 
+- **Turning it on moves browsers too.** A browser that reads laminae from
+  the node, the console's Playback and Export
+  ([§40.5](17-console.md#405-playback)) under an external certificate it
+  trusts, follows the `Alt-Svc` by itself and takes those reads to HTTP/3,
+  their throughput with them, on QUIC in the node rather than the kernel's
+  TCP. The data port needs UDP open from wherever those browsers and
+  producers sit; where it is not, a browser falls back to TCP after its
+  own attempt. Both are why it is an operator's choice and not what an
+  upgrade does.
 - Every answer, over TCP and HTTP/3 alike, offers it:
   `Alt-Svc: h3=":<port>"; ma=3600`, on the port the request came to. A
   port mapping in front of the node therefore maps UDP as it maps TCP
@@ -459,9 +469,8 @@ handshake, as its TCP does. `storage.http3: off` turns it off.
   UDP port serves TCP alone, says so in its log, and offers nothing.
   Development mode is plaintext ([§34.7](11-deployment.md#347-single-machine)),
   and QUIC never is, so there is no HTTP/3 there.
-- A client takes it as it chooses. A browser follows the `Alt-Svc` by
-  itself and falls back to TCP when UDP does not get through. A producer
-  takes it only when `producer.http3` says so
+- A client takes it as it chooses. A browser follows the `Alt-Svc` as
+  above. A producer takes it only when `producer.http3` says so
   ([§36.1](13-configuration.md#361-configuration-reference)): `off`, the
   default, is TCP as before; `auto` speaks HTTP/3 to a node once one of its
   answers offered it on that port; `on` speaks it to every node from the

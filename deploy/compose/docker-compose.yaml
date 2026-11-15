@@ -62,7 +62,7 @@ services:
       - "7402:7402"   # sign-in and the console (§40)
       - "7403:7403"   # the operator's sign-in, for the console's cluster half
       - "7410:7410"   # Storage Node data plane
-      - "7410:7410/udp" # and its HTTP/3, on the same port (§35.6)
+      - "7410:7410/udp" # its HTTP/3 with storage.http3: on (§35.6)
     depends_on:
       init:
         condition: service_completed_successfully

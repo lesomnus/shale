@@ -151,12 +151,13 @@ next start and is recognized by its hardware identity
   storage HDDs.
   - **hostNetwork.** Producers connect to the one node that placement chose,
     so every Storage Node needs a stable, directly reachable address. The data
-    path should also avoid the overlay network and kube-proxy. HTTP/3 needs
-    UDP on the same port ([§35.6](12-api.md#356-storage-node-http-data-plane)):
-    the DaemonSet lists it beside TCP, and a firewall on the host lets both
-    in. A node that cannot have the UDP port serves TCP alone and says so
-    in its log. The CP reaches the node's control API on the same host
-    address ([§35.7](12-api.md#357-storage-node-control-api)).
+    path should also avoid the overlay network and kube-proxy. HTTP/3, when
+    an operator turns it on (`storage.http3: on`,
+    [§35.6](12-api.md#356-storage-node-http-data-plane)), needs UDP on the
+    same port: the DaemonSet lists it beside TCP, and a firewall on the
+    host lets both in. A node that cannot have the UDP port serves TCP
+    alone and says so in its log. The CP reaches the node's control API on
+    the same host address ([§35.7](12-api.md#357-storage-node-control-api)).
   - How clients reach the node, by host IP or by a DNS name, is set by the
     address resolver ([§34.10](#3410-node-addresses)). The DaemonSet hands
     the node its host address (the downward API's `status.hostIP`) for the
@@ -314,8 +315,8 @@ The image contains the static binary only (distroless). Requirements:
   `fallocate` reliably ([§22.2](07-storage-node.md#222-sinks-and-devices)).
 - `--network host` (or hostNetwork), for the reasons in
   [§34.5](#345-kubernetes). A data port published instead is published for
-  UDP as well, on the same number (`-p 7410:7410 -p 7410:7410/udp`), for
-  HTTP/3 ([§35.6](12-api.md#356-storage-node-http-data-plane)).
+  UDP as well, on the same number (`-p 7410:7410 -p 7410:7410/udp`), where
+  `storage.http3` is on ([§35.6](12-api.md#356-storage-node-http-data-plane)).
 - **Device access.** Device identity comes from `st_dev` →
   `/sys/dev/block/MAJ:MIN` → WWN/serial, which the default read-only `/sys`
   provides. SMART ([§27](09-operations.md#27-node--device--sink-health-and-quarantine))
