@@ -363,23 +363,15 @@ func (s Store) Key() (*HostKey, error) {
 		return nil, err
 	}
 
-	k, err := NewHostKey()
-	if err != nil {
-		return nil, err
-	}
-	kb, err := EncodeKey(k.Key)
-	if err != nil {
-		return nil, err
-	}
-	if err := os.WriteFile(s.keyPath(), kb, 0o600); err != nil {
-		return nil, err
-	}
-
-	return k, nil
+	return s.Rotate()
 }
 
-// Rotate replaces the key, for a renewal that sends a new one.
+// Rotate replaces the key, for a renewal that sends a new one or a host
+// whose certificate expired (§33.4).
 func (s Store) Rotate() (*HostKey, error) {
+	if err := os.MkdirAll(s.Dir, 0o700); err != nil {
+		return nil, err
+	}
 	k, err := NewHostKey()
 	if err != nil {
 		return nil, err
@@ -388,7 +380,7 @@ func (s Store) Rotate() (*HostKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.WriteFile(s.keyPath(), kb, 0o600); err != nil {
+	if err := writeAtomic(s.keyPath(), kb, 0o600); err != nil {
 		return nil, err
 	}
 
@@ -418,19 +410,23 @@ func (s Store) CertPEM() ([]byte, error) {
 	return b, err
 }
 
-// SetCert stores a chain and the bundle it was issued under.
+// SetCert stores a chain and the bundle it was issued under. Each file is
+// replaced whole (writeAtomic), so a program beside the host that reads
+// them -- a viewer using a reader's certificate (§33.4) -- finds the old
+// certificate or the new one and never a part of either. The bundle goes
+// first: a renewal under a new CA is trusted by the time its certificate
+// is in place.
 func (s Store) SetCert(chain, bundle []byte) error {
 	if err := os.MkdirAll(s.Dir, 0o700); err != nil {
 		return err
 	}
-	if err := os.WriteFile(s.certPath(), chain, 0o644); err != nil {
-		return err
-	}
 	if len(bundle) > 0 {
-		return os.WriteFile(s.bundlePath(), bundle, 0o644)
+		if err := writeAtomic(s.bundlePath(), bundle, 0o644); err != nil {
+			return err
+		}
 	}
 
-	return nil
+	return writeAtomic(s.certPath(), chain, 0o644)
 }
 
 // Bundle is the CA bundle the host trusts, or nil before the first join.
@@ -449,11 +445,58 @@ func (s Store) SetBundle(bundle []byte) error {
 		return err
 	}
 
-	return os.WriteFile(s.bundlePath(), bundle, 0o644)
+	return writeAtomic(s.bundlePath(), bundle, 0o644)
 }
 
 // BundlePath is where the media server beside a reader finds the CAs (§33.4).
 func (s Store) BundlePath() string { return s.bundlePath() }
+
+// KeyPath and CertPath are where a program beside a reader finds the
+// reader's key and certificate (§33.4).
+func (s Store) KeyPath() string  { return s.keyPath() }
+func (s Store) CertPath() string { return s.certPath() }
+
+// writeAtomic replaces the file at path with data in one step: written to a
+// temporary file beside it, synced, and renamed over it, then the directory
+// synced. A reader of the path sees the old content or the new, never a
+// truncated or half-written file, and a crash leaves one of the two.
+func writeAtomic(path string, data []byte, perm os.FileMode) (err error) {
+	dir := filepath.Dir(path)
+	f, err := os.CreateTemp(dir, "."+filepath.Base(path)+".*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer func() {
+		if err != nil {
+			f.Close()
+			os.Remove(tmp)
+		}
+	}()
+	if err = f.Chmod(perm); err != nil {
+		return err
+	}
+	if _, err = f.Write(data); err != nil {
+		return err
+	}
+	if err = f.Sync(); err != nil {
+		return err
+	}
+	if err = f.Close(); err != nil {
+		return err
+	}
+	if err = os.Rename(tmp, path); err != nil {
+		return err
+	}
+	if d, err := os.Open(dir); err == nil {
+		// Best effort: the rename is what makes it atomic, this is what
+		// makes it durable, and not every filesystem syncs a directory.
+		d.Sync()
+		d.Close()
+	}
+
+	return nil
+}
 
 // Pool is the bundle as a cert pool.
 func Pool(bundle []byte) (*x509.CertPool, error) {
