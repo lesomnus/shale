@@ -315,6 +315,26 @@ func (_u *CameraWorkerUpdate) ClearCertificate() *CameraWorkerUpdate {
 	return _u
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_u *CameraWorkerUpdate) SetCaHash(v string) *CameraWorkerUpdate {
+	_u.mutation.SetCaHash(v)
+	return _u
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_u *CameraWorkerUpdate) SetNillableCaHash(v *string) *CameraWorkerUpdate {
+	if v != nil {
+		_u.SetCaHash(*v)
+	}
+	return _u
+}
+
+// ClearCaHash clears the value of the "ca_hash" field.
+func (_u *CameraWorkerUpdate) ClearCaHash() *CameraWorkerUpdate {
+	_u.mutation.ClearCaHash()
+	return _u
+}
+
 // SetSiteId sets the "site_id" field.
 func (_u *CameraWorkerUpdate) SetSiteId(v uuid.UUID) *CameraWorkerUpdate {
 	_u.mutation.SetSiteId(v)
@@ -548,6 +568,15 @@ func (_u *CameraWorkerUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if _u.mutation.CertificateCleared() {
 		_spec.ClearField(cameraworker.FieldCertificate, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.CaHash(); ok {
+		_spec.SetField(cameraworker.FieldCaHash, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameraworker.FieldCaHash); ok {
+		_spec.SetField(cameraworker.FieldCaHash, field.TypeString, e)
+	}
+	if _u.mutation.CaHashCleared() {
+		_spec.ClearField(cameraworker.FieldCaHash, field.TypeString)
 	}
 	if _u.mutation.SiteCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -883,6 +912,26 @@ func (_u *CameraWorkerUpdateOne) ClearCertificate() *CameraWorkerUpdateOne {
 	return _u
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_u *CameraWorkerUpdateOne) SetCaHash(v string) *CameraWorkerUpdateOne {
+	_u.mutation.SetCaHash(v)
+	return _u
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_u *CameraWorkerUpdateOne) SetNillableCaHash(v *string) *CameraWorkerUpdateOne {
+	if v != nil {
+		_u.SetCaHash(*v)
+	}
+	return _u
+}
+
+// ClearCaHash clears the value of the "ca_hash" field.
+func (_u *CameraWorkerUpdateOne) ClearCaHash() *CameraWorkerUpdateOne {
+	_u.mutation.ClearCaHash()
+	return _u
+}
+
 // SetSiteId sets the "site_id" field.
 func (_u *CameraWorkerUpdateOne) SetSiteId(v uuid.UUID) *CameraWorkerUpdateOne {
 	_u.mutation.SetSiteId(v)
@@ -1146,6 +1195,15 @@ func (_u *CameraWorkerUpdateOne) sqlSave(ctx context.Context) (_node *CameraWork
 	}
 	if _u.mutation.CertificateCleared() {
 		_spec.ClearField(cameraworker.FieldCertificate, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.CaHash(); ok {
+		_spec.SetField(cameraworker.FieldCaHash, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameraworker.FieldCaHash); ok {
+		_spec.SetField(cameraworker.FieldCaHash, field.TypeString, e)
+	}
+	if _u.mutation.CaHashCleared() {
+		_spec.ClearField(cameraworker.FieldCaHash, field.TypeString)
 	}
 	if _u.mutation.SiteCleared() {
 		edge := &sqlgraph.EdgeSpec{

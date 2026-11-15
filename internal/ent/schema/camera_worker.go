@@ -58,6 +58,9 @@ func (CameraWorker) Fields() []ent.Field {
 		field.Bytes("certificate").
 			Nillable().
 			Optional(),
+		field.String("ca_hash").
+			Optional().
+			Default(""),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").

@@ -42,6 +42,8 @@ type Tx struct {
 	CameraPreset *CameraPresetClient
 	// CameraWorker is the client for interacting with the CameraWorker builders.
 	CameraWorker *CameraWorkerClient
+	// CertificateAuthority is the client for interacting with the CertificateAuthority builders.
+	CertificateAuthority *CertificateAuthorityClient
 	// Delegation is the client for interacting with the Delegation builders.
 	Delegation *DelegationClient
 	// Device is the client for interacting with the Device builders.
@@ -228,6 +230,7 @@ func (tx *Tx) init() {
 	tx.CameraPolicy = NewCameraPolicyClient(tx.config)
 	tx.CameraPreset = NewCameraPresetClient(tx.config)
 	tx.CameraWorker = NewCameraWorkerClient(tx.config)
+	tx.CertificateAuthority = NewCertificateAuthorityClient(tx.config)
 	tx.Delegation = NewDelegationClient(tx.config)
 	tx.Device = NewDeviceClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)

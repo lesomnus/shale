@@ -393,7 +393,9 @@ shale signing-key ls|watch|rotate
 shale placement-policy add|ls|activate
 shale address-policy add|ls|get|patch|activate  # how nodes are named to clients (§34.10)
 shale upload-policy add|ls|activate      # bounds for negotiated upload profiles
-# `ca rotate`, a CA rollover started early (§33.5), comes with the rollover itself (#60)
+shale ca ls|get|watch                    # the CAs, once a rollover stored them (§33.5)
+shale ca status                          # the phase, the bundle and its hash, the live hosts a rollover waits for
+shale ca rotate                          # begin a CA rollover now rather than a year before the CA expires
 
 # cluster state and operations (cluster API)
 shale device ls|quarantined|get|watch

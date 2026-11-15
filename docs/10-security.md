@@ -421,7 +421,10 @@ shale serve reader   --cp https://cp.example.com:7400   # likewise
 
 **Renewal is automatic.** A host renews at two thirds of its certificate's
 lifetime (`RenewCertificate`, over mTLS with the current certificate), and may
-send a new key. If a certificate has already expired, for instance a chassis
+send a new key. It also renews when a heartbeat's answer asks, which the CP
+does during a CA rollover ([§33.5](#335-tls)); the answer is the certificate
+and the bundle, and the host verifies one against the other before it keeps
+either. If a certificate has already expired, for instance a chassis
 that sat in storage for a year, the host goes back to step 3 with the same
 hardware identity, appears as "known host, new key", and one `adopt` puts it
 back under its old name, `node_id`, and sinks; a reader keeps its sites
@@ -489,15 +492,74 @@ Running one is [§36.4](13-configuration.md#364-running-a-reader).
   installing them (`NodeControl.InstallCertificate`), and activating only
   after every live node has one is the design that would.
 - Lifetimes: host certificates 90 days, renewed at 60; the CP certificate one
-  year, renewed by the CP itself; the CA 10 years.
-- **CA rollover is automatic.** One year before the CA expires, the CP creates
-  the next CA and starts handing out a bundle with both. Every renewal from
-  then on is issued by the new CA. When every live host reports the new bundle
-  (heartbeats and renewals carry its hash) and no certificate from the old CA
-  is still valid, the old CA is dropped. `shale ca rotate` starts the same
-  procedure early. A **compromised** CA cannot be rolled over this way, since
-  nothing it signs can be trusted: the operator re-initializes the CA and
-  every host is adopted again ([§33.7](#337-what-a-compromise-costs)).
+  year, renewed by the CP itself; the CA 10 years. The CP renews its own
+  certificate in memory: at two thirds of its life, or when the CA that
+  issues changes, each CP process issues itself one for the same key and
+  names (those of `cp.crt`, and `control.names`) from the CA that issues
+  now, and presents it from then on. A certificate from `control.cert_file`
+  that no shale CA issued is presented as it is.
+- **CA rollover is automatic.** One year before the CA expires
+  (`control.ca_rollover_before`), the CP leader
+  ([§34.9](11-deployment.md#349-events-and-directives)) begins a rollover;
+  `shale ca rotate` begins the same one early. It is three steps, and the
+  leader takes each once every live host has caught up with the one before
+  and the step has stood for `control.ca_settle` (1 min), so that every CP
+  process has read it:
+  1. **Distributing.** The CP makes the next CA, and from then on every join
+     and renewal hands out a bundle with both CAs. The old CA still issues.
+     A host whose heartbeat reports another bundle is asked to renew, which
+     hands it this one.
+  2. **Replacing.** Once every live host reports that bundle, the new CA
+     issues: host certificates, and the CP's own, which every CP process
+     moves to. A host whose certificate the old CA issued is asked to renew.
+  3. **Dropped.** Once every live host still reports the bundle and none
+     holds a certificate from the old CA, the old CA is dropped: the bundle
+     is the new CA alone, the CP trusts nothing the old one signed, and
+     every host is asked to renew once more for the bundle without it.
+
+  Every heartbeat carries the hash of the bundle the host holds (`ca_hash`,
+  `sha256:` of the PEM), every kind of host's alike, and its row keeps it.
+  A **live host** is an adopted, unerased host whose certificate has not
+  expired: one that can still call the CP without being adopted again. A host
+  that never comes back stops being waited for when its certificate expires
+  -- at most 90 days after its last renewal, at once when it is erased -- and
+  is adopted again when it does come back, as any host whose certificate
+  expired ([§33.4](#334-joining-and-adoption)). `shale ca status` says where a
+  rollover is, the bundle and its hash, and the live hosts it waits for, with
+  the date each stops being live.
+
+  The new CA is trusted everywhere before anything is issued from it, and the
+  old one is dropped only when nothing live holds what it issued, so **no
+  cross-signed certificate** bridges the two. None could: every CA `shale
+  init` made has a path length of zero, so a chain from a leaf of the new CA
+  through the new CA signed by the old one is refused by every verifier that
+  follows RFC 5280, Go's included; a client holding only the old root would
+  gain nothing from it. What holds only the old root is out of the
+  rollover's reach, and takes the bundle `shale ca status` prints as soon
+  as the rollover begins, since the CP's own certificate moves to the new
+  CA at the second step, minutes later when every host is up: the CLI's
+  `client.ca_file` (or the state directory's `ca.crt` it falls back to), a
+  browser that was told to trust the shale CA, and a new host's `ca_hash`,
+  which names the CA the CP's certificate comes from. A host that slept through a whole rollover has a
+  pin the CP no longer satisfies: it is adopted again after its `ca.crt` is
+  removed, so that it pins again on first contact, or checks a `ca_hash`
+  naming the new CA.
+
+  Until the first rollover the CA is the one `shale init` wrote into the
+  state directory (`ca.crt`, `ca.key`), and nothing is asked of hosts about
+  their bundles. A rollover records that CA in the database as a
+  `CertificateAuthority` row beside the next one, its key wrapped under a
+  key derived from the KEK for CA keys alone
+  ([§33.3](#333-signing-keys-and-rotation)), and from then on the rows are
+  the CA set every CP process reads; the files are the
+  first CA and nothing more. A node or a producer of an earlier release
+  takes the new bundle on renewal, but its listeners and its upload client
+  read it only when they start: update hosts before `shale ca rotate`, or
+  restart them once they renewed.
+
+  A **compromised** CA cannot be rolled over this way, since nothing it signs
+  can be trusted: the operator re-initializes the CA and every host is
+  adopted again ([§33.7](#337-what-a-compromise-costs)).
 - **External certificates** (cert-manager, ACME, a corporate CA) can replace
   the built-in CA's output for the CP (`control.cert_file`,
   `control.key_file`) and for a node's data plane (`storage.cert_file`,

@@ -51,6 +51,7 @@ import (
 	entCameraPolicy "github.com/lesomnus/shale/internal/ent/camerapolicy"
 	entCameraPreset "github.com/lesomnus/shale/internal/ent/camerapreset"
 	entCameraWorker "github.com/lesomnus/shale/internal/ent/cameraworker"
+	entCertificateAuthority "github.com/lesomnus/shale/internal/ent/certificateauthority"
 	entDelegation "github.com/lesomnus/shale/internal/ent/delegation"
 	entDevice "github.com/lesomnus/shale/internal/ent/device"
 	entHolder "github.com/lesomnus/shale/internal/ent/holder"
@@ -135,6 +136,7 @@ const (
 	CameraPolicyDomain            pdid.Domain = 41  // "camera-policy"
 	CameraPresetDomain            pdid.Domain = 40  // "camera-preset"
 	CameraWorkerDomain            pdid.Domain = 31  // "camera-worker"
+	CertificateAuthorityDomain    pdid.Domain = 42  // "ca"
 	DelegationDomain              pdid.Domain = 25  // "delegation"
 	DeviceDomain                  pdid.Domain = 13  // "device"
 	HolderDomain                  pdid.Domain = 2   // "holder"
@@ -173,6 +175,7 @@ func init() {
 	pdid.Register("shale.CameraPolicy", CameraPolicyDomain, "camera-policy")
 	pdid.Register("shale.CameraPreset", CameraPresetDomain, "camera-preset")
 	pdid.Register("shale.CameraWorker", CameraWorkerDomain, "camera-worker")
+	pdid.Register("shale.CertificateAuthority", CertificateAuthorityDomain, "ca")
 	pdid.Register("shale.Delegation", DelegationDomain, "delegation")
 	pdid.Register("shale.Device", DeviceDomain, "device")
 	pdid.Register("shale.Holder", HolderDomain, "holder")
@@ -215,6 +218,7 @@ var Domains = map[string]pdid.Domain{
 	"shale.CameraPolicy":            CameraPolicyDomain,
 	"shale.CameraPreset":            CameraPresetDomain,
 	"shale.CameraWorker":            CameraWorkerDomain,
+	"shale.CertificateAuthority":    CertificateAuthorityDomain,
 	"shale.Delegation":              DelegationDomain,
 	"shale.Device":                  DeviceDomain,
 	"shale.Holder":                  HolderDomain,
@@ -505,6 +509,15 @@ func (wall) CameraWorkerScope(ctx context.Context) (predicate.CameraWorker, erro
 	}
 
 	return entCameraWorker.TenantIdIn(vs...), nil
+}
+
+// CertificateAuthorityScope: declared `global`, so it is not behind the wall at all.
+func (wall) CertificateAuthorityScope(ctx context.Context) (predicate.CertificateAuthority, error) {
+	if _, ok := frame.AccountOf(ctx); ok {
+		return nothing[predicate.CertificateAuthority](), nil
+	}
+
+	return nil, nil
 }
 
 // DelegationScope: a row belongs to the tenant its "tenant" reaches.
@@ -950,6 +963,11 @@ func (x grouped) CameraWorkerScope(ctx context.Context) (predicate.CameraWorker,
 	}
 
 	return entCameraWorker.SiteIdIn(vs...), nil
+}
+
+// CertificateAuthorityScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) CertificateAuthorityScope(ctx context.Context) (predicate.CertificateAuthority, error) {
+	return nil, nil
 }
 
 // DelegationScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -7466,6 +7484,468 @@ func (s sinkCameraWorker) watchCameraWorkerKeys(
 		}
 
 		v, err := s.Get(ctx, api.CameraWorkerGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
+type sinkCertificateAuthority struct {
+	api.CertificateAuthorityServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) CertificateAuthority() api.CertificateAuthorityServiceServer {
+	v := sinkCertificateAuthority{s.Server.CertificateAuthority(), s.Server.Store, s.w, s.namer, s.joined}
+	v.CertificateAuthorityServiceServer = bare.CertificateAuthorityWithAddRule(v.CertificateAuthorityServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of CertificateAuthority writes,
+// refusing one that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.CertificateAuthority].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkCertificateAuthority) admit(ctx context.Context, req *api.CertificateAuthorityAddRequest) (*api.CertificateAuthorityAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "shale.CertificateAuthority", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkCertificateAuthority.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkCertificateAuthority) Add(ctx context.Context, req *api.CertificateAuthorityAddRequest) (*api.CertificateAuthority, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.CertificateAuthorityServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkCertificateAuthority.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkCertificateAuthority.Apply].
+func (s sinkCertificateAuthority) Patch(ctx context.Context, req *api.CertificateAuthorityPatchRequest) (*api.CertificateAuthority, error) {
+	seen.Forget(s.store.Db.Driver(), "CertificateAuthority", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.CertificateAuthorityServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.CertificateAuthorityServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkCertificateAuthority) Erase(ctx context.Context, req *api.CertificateAuthorityRef) (*api.CertificateAuthorityEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "CertificateAuthority", req)
+
+	return s.CertificateAuthorityServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkCertificateAuthority) Apply(ctx context.Context, req *api.CertificateAuthorityApplyRequest) (*api.CertificateAuthority, error) {
+	seen.Forget(s.store.Db.Driver(), "CertificateAuthority", req.GetRef())
+
+	return s.CertificateAuthorityServiceServer.Apply(ctx, req)
+}
+
+// orderCertificateAuthority is how CertificateAuthoritys come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderCertificateAuthority = []sqlpage.Order{
+	{Column: entCertificateAuthority.FieldDateCreated, Desc: false},
+	{Column: entCertificateAuthority.FieldId, Desc: false},
+}
+
+func afterCertificateAuthority(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextCertificateAuthority(last *ent.CertificateAuthority, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByCertificateAuthority is an order as ent orders a query by it.
+func orderByCertificateAuthority(by []sqlpage.Order) []entCertificateAuthority.OrderOption {
+	out := make([]entCertificateAuthority.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// CertificateAuthorityPageSize is what a request that did not say gets, and
+	// CertificateAuthorityPageLimit is the most it gets however loudly it asks.
+	CertificateAuthorityPageSize  = 20
+	CertificateAuthorityPageLimit = 100
+
+	// CertificateAuthorityFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	CertificateAuthorityFilterLimit = 32
+)
+
+// List answers with the CertificateAuthoritys that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkCertificateAuthority) List(ctx context.Context, req *api.CertificateAuthorityListRequest) (*api.CertificateAuthorityListResponse, error) {
+	q := s.store.Db.CertificateAuthority.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.CertificateAuthorityNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > CertificateAuthorityFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), CertificateAuthorityFilterLimit)
+		}
+
+		ps := make([]predicate.CertificateAuthority, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterCertificateAuthority(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entCertificateAuthority.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderCertificateAuthority, afterCertificateAuthority, nextCertificateAuthority, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), CertificateAuthorityPageSize, CertificateAuthorityPageLimit)
+	us, err := q.Order(orderByCertificateAuthority(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.CertificateAuthority, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.CertificateAuthorityListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterCertificateAuthority turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterCertificateAuthority(f *api.CertificateAuthorityFilter) (predicate.CertificateAuthority, error) {
+	ps := make([]predicate.CertificateAuthority, 0, 1)
+	if f.HasRef() {
+		p, err := bare.CertificateAuthorityPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entCertificateAuthority.And(ps...), nil
+}
+
+// CertificateAuthorityService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a CertificateAuthority. A service is named for the entity it
+// is about, so the name carries it.
+var CertificateAuthorityService = watch.ServiceOf(api.CertificateAuthorityService_Get_FullMethodName)
+
+// Watch answers with the CertificateAuthoritys this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkCertificateAuthority) Watch(req *api.CertificateAuthorityWatchRequest, out grpc.ServerStreamingServer[api.CertificateAuthorityWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > CertificateAuthorityFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), CertificateAuthorityFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchCertificateAuthorityKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, CertificateAuthorityService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.CertificateAuthorityWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.CertificateAuthorityWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.CertificateAuthorityWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkCertificateAuthority) watchNow(
+	ctx context.Context, req *api.CertificateAuthorityWatchRequest, out grpc.ServerStreamingServer[api.CertificateAuthorityWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.CertificateAuthorityListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.CertificateAuthorityWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.CertificateAuthorityWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.CertificateAuthorityWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkCertificateAuthority) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.CertificateAuthority, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.CertificateAuthorityGetRequest_builder{
+		Ref: api.CertificateAuthorityRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchCertificateAuthorityKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkCertificateAuthority) watchCertificateAuthorityKeys(
+	ctx context.Context, fs []*api.CertificateAuthorityFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.CertificateAuthorityGetRequest_builder{Ref: f.GetRef()}.Build())
 		if err != nil {
 			return nil, err
 		}
@@ -16811,6 +17291,8 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedCameraPreset.md, describedCameraPreset.secret, describedCameraPreset.personal
 	case CameraWorkerDomain:
 		return describedCameraWorker.md, describedCameraWorker.secret, describedCameraWorker.personal
+	case CertificateAuthorityDomain:
+		return describedCertificateAuthority.md, describedCertificateAuthority.secret, describedCertificateAuthority.personal
 	case DelegationDomain:
 		return describedDelegation.md, describedDelegation.secret, describedDelegation.personal
 	case DeviceDomain:
@@ -16921,6 +17403,9 @@ var (
 	describedCameraWorker = describe((*api.CameraWorker)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
+	describedCertificateAuthority = describe((*api.CertificateAuthority)(nil),
+		[]protoreflect.FieldNumber{9},
+		[]protoreflect.FieldNumber{})
 	describedDelegation = describe((*api.Delegation)(nil),
 		[]protoreflect.FieldNumber{11},
 		[]protoreflect.FieldNumber{})
@@ -17014,6 +17499,7 @@ func added(by string) bool {
 		api.CameraPolicyService_Add_FullMethodName,
 		api.CameraPresetService_Add_FullMethodName,
 		api.CameraWorkerService_Add_FullMethodName,
+		api.CertificateAuthorityService_Add_FullMethodName,
 		api.DelegationService_Add_FullMethodName,
 		api.DeviceService_Add_FullMethodName,
 		api.HolderService_Add_FullMethodName,
@@ -17717,6 +18203,8 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 		vs, err = rowsCameraPreset(ctx, s.Db, entCameraPreset.IdEQ(uuid.UUID(key)))
 	case CameraWorkerDomain:
 		vs, err = rowsCameraWorker(ctx, s.Db, entCameraWorker.IdEQ(uuid.UUID(key)))
+	case CertificateAuthorityDomain:
+		vs, err = rowsCertificateAuthority(ctx, s.Db, entCertificateAuthority.IdEQ(uuid.UUID(key)))
 	case DelegationDomain:
 		vs, err = rowsDelegation(ctx, s.Db, entDelegation.IdEQ(uuid.UUID(key)))
 	case DeviceDomain:
@@ -18148,6 +18636,9 @@ func Digests(ctx context.Context, db *ent.Client, d *audit.Digest, p trail.Polic
 	}
 	if err := audit.CheckKind(ctx, d, checkedCameraWorker(db), archived, &out); err != nil {
 		return out, fmt.Errorf("camera-worker: %w", err)
+	}
+	if err := audit.CheckKind(ctx, d, checkedCertificateAuthority(db), archived, &out); err != nil {
+		return out, fmt.Errorf("ca: %w", err)
 	}
 	if err := audit.CheckKind(ctx, d, checkedDelegation(db), archived, &out); err != nil {
 		return out, fmt.Errorf("delegation: %w", err)
@@ -18743,6 +19234,52 @@ func checkedCameraWorker(db *ent.Client) audit.Kind {
 			var out map[pdid.Id]*audit.Recorded
 			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
 				rows, err := rowsCameraWorker(ctx, db, entCameraWorker.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedCertificateAuthority is what a check of the rows reads of the ca kind.
+func checkedCertificateAuthority(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.CertificateAuthority) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsCertificateAuthority(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: CertificateAuthorityDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entCertificateAuthority.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entCertificateAuthority.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, CertificateAuthorityDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsCertificateAuthority(ctx, db, entCertificateAuthority.IdIn(uuids(ids)...))
 				if err != nil {
 					return err
 				}
@@ -19784,6 +20321,26 @@ func rowsCameraWorker(ctx context.Context, db *ent.Client, ps ...predicate.Camer
 	return out, nil
 }
 
+// rowsCertificateAuthority is the rows `ps` says of the ca kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsCertificateAuthority(ctx context.Context, db *ent.Client, ps ...predicate.CertificateAuthority) ([]audit.Live, error) {
+	q := db.CertificateAuthority.Query().Where(ps...)
+	bare.CertificateAuthoritySelectInit(q, nil)
+
+	vs, err := q.Order(entCertificateAuthority.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsDelegation is the rows `ps` says of the delegation kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -20371,6 +20928,8 @@ func record(ctx context.Context, db *ent.Client, content audit.Contents, action 
 				rows, err = rowsCameraPreset(ctx, db, entCameraPreset.IdIn(uuids(page)...))
 			case CameraWorkerDomain:
 				rows, err = rowsCameraWorker(ctx, db, entCameraWorker.IdIn(uuids(page)...))
+			case CertificateAuthorityDomain:
+				rows, err = rowsCertificateAuthority(ctx, db, entCertificateAuthority.IdIn(uuids(page)...))
 			case DelegationDomain:
 				rows, err = rowsDelegation(ctx, db, entDelegation.IdIn(uuids(page)...))
 			case DeviceDomain:
@@ -20543,6 +21102,8 @@ func (s trailStore) Carry(ctx context.Context, digest *audit.Digest, d pdid.Doma
 			rows, err = rowsCameraPreset(ctx, s.db, entCameraPreset.IdIn(uuids(ids)...))
 		case CameraWorkerDomain:
 			rows, err = rowsCameraWorker(ctx, s.db, entCameraWorker.IdIn(uuids(ids)...))
+		case CertificateAuthorityDomain:
+			rows, err = rowsCertificateAuthority(ctx, s.db, entCertificateAuthority.IdIn(uuids(ids)...))
 		case DelegationDomain:
 			rows, err = rowsDelegation(ctx, s.db, entDelegation.IdIn(uuids(ids)...))
 		case DeviceDomain:
@@ -20794,6 +21355,105 @@ func hideCameraCredentialVersion(v *api.CameraCredentialVersion) *api.CameraCred
 	m := v.ProtoReflect()
 	fs := m.Descriptor().Fields()
 	for _, n := range []protoreflect.FieldNumber{16, 17, 23, 24} {
+		m.Clear(fs.ByNumber(n))
+	}
+
+	return v
+}
+
+func (s Secret) CertificateAuthority() api.CertificateAuthorityServiceServer {
+	return secretCertificateAuthority{s, s.Next().CertificateAuthority()}
+}
+
+type secretCertificateAuthority struct {
+	Secret
+	api.CertificateAuthorityServiceServer
+}
+
+func (s secretCertificateAuthority) Add(ctx context.Context, req *api.CertificateAuthorityAddRequest) (*api.CertificateAuthority, error) {
+	v, err := s.CertificateAuthorityServiceServer.Add(ctx, req)
+
+	return hideCertificateAuthority(v), err
+}
+
+func (s secretCertificateAuthority) Get(ctx context.Context, req *api.CertificateAuthorityGetRequest) (*api.CertificateAuthority, error) {
+	v, err := s.CertificateAuthorityServiceServer.Get(ctx, req)
+
+	return hideCertificateAuthority(v), err
+}
+
+func (s secretCertificateAuthority) Patch(ctx context.Context, req *api.CertificateAuthorityPatchRequest) (*api.CertificateAuthority, error) {
+	v, err := s.CertificateAuthorityServiceServer.Patch(ctx, req)
+
+	return hideCertificateAuthority(v), err
+}
+
+func (s secretCertificateAuthority) Apply(ctx context.Context, req *api.CertificateAuthorityApplyRequest) (*api.CertificateAuthority, error) {
+	v, err := s.CertificateAuthorityServiceServer.Apply(ctx, req)
+
+	return hideCertificateAuthority(v), err
+}
+
+func (s secretCertificateAuthority) List(ctx context.Context, req *api.CertificateAuthorityListRequest) (*api.CertificateAuthorityListResponse, error) {
+	v, err := s.CertificateAuthorityServiceServer.List(ctx, req)
+	if v == nil {
+		return v, err
+	}
+
+	for _, w := range v.GetItems() {
+		hideCertificateAuthority(w)
+	}
+
+	return v, err
+}
+
+func (s secretCertificateAuthority) Watch(req *api.CertificateAuthorityWatchRequest, out grpc.ServerStreamingServer[api.CertificateAuthorityWatchResponse]) error {
+	return s.CertificateAuthorityServiceServer.Watch(req, secretCertificateAuthorityStream{out})
+}
+
+// secretCertificateAuthorityStream clears the secret on its way out.
+//
+// It wraps the stream rather than the response because the server below
+// sends whenever it has something, and there is no single place a
+// message passes through on the way back -- which is the difference
+// between a stream and a call.
+type secretCertificateAuthorityStream struct {
+	grpc.ServerStreamingServer[api.CertificateAuthorityWatchResponse]
+}
+
+func (s secretCertificateAuthorityStream) Send(v *api.CertificateAuthorityWatchResponse) error {
+	for _, w := range v.GetItems() {
+		hideCertificateAuthority(w.GetValue())
+	}
+
+	return s.ServerStreamingServer.Send(v)
+}
+
+// hideCertificateAuthority clears what this entity declared it never answers with.
+//
+// A nil row passes through, because an error is answered with one and the
+// caller of this is handing both on.
+//
+// By field number and through the descriptor, rather than a setter per
+// field, because a setter's argument has a type and this has to hold for
+// every field a row can carry. A `Set<F>(nil)` per secret is what this
+// was, and it compiled only while every secret anybody had declared was
+// `bytes`: a `string` one ended the build in a generated file, and an
+// enum would have needed its own type spelled out here to say zero.
+//
+// Clear is also the truer word. A field with presence is **absent**
+// afterwards rather than present and empty, which is what "never answered
+// with" says; one without presence reads as its zero value either way.
+// And the numbers are the ones `hidden` filters the trail's patch by, so
+// the two cannot come to disagree about which fields they are.
+func hideCertificateAuthority(v *api.CertificateAuthority) *api.CertificateAuthority {
+	if v == nil {
+		return nil
+	}
+
+	m := v.ProtoReflect()
+	fs := m.Descriptor().Fields()
+	for _, n := range []protoreflect.FieldNumber{9} {
 		m.Clear(fs.ByNumber(n))
 	}
 
@@ -22201,6 +22861,60 @@ func (s interceptCameraPolicy) ApproveTLS(ctx context.Context, req *api.CameraPo
 func (s interceptCameraPolicy) VerifyTransport(ctx context.Context, req *api.CameraPolicyVerifyTransportRequest) (*api.CameraPolicyObserveResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
 		api.CameraPolicyService_VerifyTransport_FullMethodName, req, s.CameraPolicyServiceServer.VerifyTransport)
+}
+
+func (s Intercept) CertificateAuthority() api.CertificateAuthorityServiceServer {
+	return interceptCertificateAuthority{s, s.Next().CertificateAuthority()}
+}
+
+type interceptCertificateAuthority struct {
+	Intercept
+	api.CertificateAuthorityServiceServer
+}
+
+func (s interceptCertificateAuthority) Add(ctx context.Context, req *api.CertificateAuthorityAddRequest) (*api.CertificateAuthority, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_Add_FullMethodName, req, s.CertificateAuthorityServiceServer.Add)
+}
+
+func (s interceptCertificateAuthority) Get(ctx context.Context, req *api.CertificateAuthorityGetRequest) (*api.CertificateAuthority, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_Get_FullMethodName, req, s.CertificateAuthorityServiceServer.Get)
+}
+
+func (s interceptCertificateAuthority) Patch(ctx context.Context, req *api.CertificateAuthorityPatchRequest) (*api.CertificateAuthority, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_Patch_FullMethodName, req, s.CertificateAuthorityServiceServer.Patch)
+}
+
+func (s interceptCertificateAuthority) Apply(ctx context.Context, req *api.CertificateAuthorityApplyRequest) (*api.CertificateAuthority, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_Apply_FullMethodName, req, s.CertificateAuthorityServiceServer.Apply)
+}
+
+func (s interceptCertificateAuthority) Erase(ctx context.Context, req *api.CertificateAuthorityRef) (*api.CertificateAuthorityEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_Erase_FullMethodName, req, s.CertificateAuthorityServiceServer.Erase)
+}
+
+func (s interceptCertificateAuthority) List(ctx context.Context, req *api.CertificateAuthorityListRequest) (*api.CertificateAuthorityListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_List_FullMethodName, req, s.CertificateAuthorityServiceServer.List)
+}
+
+func (s interceptCertificateAuthority) Watch(req *api.CertificateAuthorityWatchRequest, out grpc.ServerStreamingServer[api.CertificateAuthorityWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_Watch_FullMethodName, req, out, s.CertificateAuthorityServiceServer.Watch)
+}
+
+func (s interceptCertificateAuthority) Rotate(ctx context.Context, req *api.CertificateAuthorityRotateRequest) (*api.CertificateAuthority, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_Rotate_FullMethodName, req, s.CertificateAuthorityServiceServer.Rotate)
+}
+
+func (s interceptCertificateAuthority) Status(ctx context.Context, req *api.CertificateAuthorityStatusRequest) (*api.CertificateAuthorityStatusResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CertificateAuthorityServiceServer,
+		api.CertificateAuthorityService_Status_FullMethodName, req, s.CertificateAuthorityServiceServer.Status)
 }
 
 func (s Intercept) Device() api.DeviceServiceServer {
@@ -24401,6 +25115,7 @@ func Resources(w *watch.Watch, project resource.Project) (*resource.Server, erro
 		&api.CameraPolicy{},
 		&api.CameraPreset{},
 		&api.CameraWorker{},
+		&api.CertificateAuthority{},
 		&api.Delegation{},
 		&api.Device{},
 		&api.Holder{},
@@ -24433,6 +25148,9 @@ var resourceSecrets = map[protoreflect.FullName][]protoreflect.FieldNumber{
 		17,
 		23,
 		24,
+	},
+	"shale.CertificateAuthority": {
+		9,
 	},
 	"shale.Delegation": {
 		11,
@@ -25011,11 +25729,52 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 19, Name: entCameraWorker.FieldVersion, Type: 9, Nullable: false, Key: 0},
 				{Number: 20, Name: entCameraWorker.FieldApprovedKeyFingerprint, Type: 9, Nullable: false, Key: 0},
 				{Number: 21, Name: entCameraWorker.FieldDateCertIssued, Type: 65, Nullable: true, Key: 0},
+				{Number: 23, Name: entCameraWorker.FieldCaHash, Type: 9, Nullable: false, Key: 0},
 			}, v)
 			if err != nil {
 				return nil, err
 			}
 			query := db.CameraWorker.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *api.CertificateAuthority:
+			ctx, err := guard.Allow(ctx, api.CertificateAuthorityService_Get_FullMethodName)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.CertificateAuthorityNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entCertificateAuthority.Table, []resourcesql.Column{
+				{Number: 1, Name: entCertificateAuthority.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 4, Name: entCertificateAuthority.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entCertificateAuthority.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entCertificateAuthority.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entCertificateAuthority.FieldCertificate, Type: 12, Nullable: false, Key: 0},
+				{Number: 10, Name: entCertificateAuthority.FieldState, Type: 14, Nullable: false, Key: 0},
+				{Number: 11, Name: entCertificateAuthority.FieldFingerprint, Type: 9, Nullable: false, Key: 0},
+				{Number: 12, Name: entCertificateAuthority.FieldDateExpires, Type: 65, Nullable: true, Key: 0},
+				{Number: 13, Name: entCertificateAuthority.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entCertificateAuthority.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entCertificateAuthority.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+				{Number: 16, Name: entCertificateAuthority.FieldDateActive, Type: 65, Nullable: true, Key: 0},
+				{Number: 17, Name: entCertificateAuthority.FieldDateRetired, Type: 65, Nullable: true, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.CertificateAuthority.Query()
 			if pred != nil {
 				query.Where(pred)
 			}
@@ -25315,6 +26074,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 20, Name: entProducer.RelayColumn, Type: 64, Nullable: true, Key: 1},
 				{Number: 22, Name: entProducer.FieldVersion, Type: 9, Nullable: false, Key: 0},
 				{Number: 23, Name: entProducer.FieldLive, Type: 14, Nullable: false, Key: 0},
+				{Number: 24, Name: entProducer.FieldCaHash, Type: 9, Nullable: false, Key: 0},
 			}, v)
 			if err != nil {
 				return nil, err
@@ -25359,6 +26119,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 18, Name: entReader.FieldDateCertExpires, Type: 65, Nullable: true, Key: 0},
 				{Number: 19, Name: entReader.FieldVersion, Type: 9, Nullable: false, Key: 0},
 				{Number: 20, Name: entReader.FieldAllSites, Type: 8, Nullable: false, Key: 0},
+				{Number: 21, Name: entReader.FieldCaHash, Type: 9, Nullable: false, Key: 0},
 			}, v)
 			if err != nil {
 				return nil, err
@@ -25863,6 +26624,14 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case api.CameraWorkerService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.CertificateAuthorityService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.CertificateAuthorityService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CertificateAuthorityService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.CertificateAuthorityService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case api.DelegationService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case api.DelegationService_Patch_FullMethodName:
@@ -26017,7 +26786,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraCredential", "shale.CameraCredentialVersion", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.CameraPolicy", "shale.CameraPreset", "shale.CameraWorker", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
+	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraCredential", "shale.CameraCredentialVersion", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.CameraPolicy", "shale.CameraPreset", "shale.CameraWorker", "shale.CertificateAuthority", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
 	default:
 		return nil
 	}

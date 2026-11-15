@@ -125,6 +125,10 @@ func init() {
 	// cameraworkerDescJoin is the schema descriptor for join field.
 	cameraworkerDescJoin := cameraworkerFields[9].Descriptor()
 	cameraworker.ValueScanner.Join = cameraworkerDescJoin.ValueScanner.(field.TypeValueScanner[*api.HostJoin])
+	// cameraworkerDescCaHash is the schema descriptor for ca_hash field.
+	cameraworkerDescCaHash := cameraworkerFields[20].Descriptor()
+	// cameraworker.DefaultCaHash holds the default value on creation for the ca_hash field.
+	cameraworker.DefaultCaHash = cameraworkerDescCaHash.Default.(string)
 	deviceFields := schema.Device{}.Fields()
 	_ = deviceFields
 	// deviceDescQuarantine is the schema descriptor for quarantine field.
@@ -174,11 +178,19 @@ func init() {
 	producerDescLive := producerFields[18].Descriptor()
 	// producer.DefaultLive holds the default value on creation for the live field.
 	producer.DefaultLive = producerDescLive.Default.(int32)
+	// producerDescCaHash is the schema descriptor for ca_hash field.
+	producerDescCaHash := producerFields[19].Descriptor()
+	// producer.DefaultCaHash holds the default value on creation for the ca_hash field.
+	producer.DefaultCaHash = producerDescCaHash.Default.(string)
 	readerFields := schema.Reader{}.Fields()
 	_ = readerFields
 	// readerDescJoin is the schema descriptor for join field.
 	readerDescJoin := readerFields[9].Descriptor()
 	reader.ValueScanner.Join = readerDescJoin.ValueScanner.(field.TypeValueScanner[*api.HostJoin])
+	// readerDescCaHash is the schema descriptor for ca_hash field.
+	readerDescCaHash := readerFields[18].Descriptor()
+	// reader.DefaultCaHash holds the default value on creation for the ca_hash field.
+	reader.DefaultCaHash = readerDescCaHash.Default.(string)
 	relayFields := schema.Relay{}.Fields()
 	_ = relayFields
 	// relayDescJoin is the schema descriptor for join field.

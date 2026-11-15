@@ -152,6 +152,7 @@ func (e *Producer) Proto() *api.Producer {
 	}
 	x.SetVersion(e.Version)
 	x.SetLive(api.LivePolicy(e.Live))
+	x.SetCaHash(e.CaHash)
 	return x
 }
 func (e *Reader) Proto() *api.Reader {
@@ -191,5 +192,6 @@ func (e *Reader) Proto() *api.Reader {
 	}
 	x.SetVersion(e.Version)
 	x.SetAllSites(e.AllSites)
+	x.SetCaHash(e.CaHash)
 	return x
 }

@@ -188,6 +188,20 @@ func (_c *CameraWorkerCreate) SetCertificate(v []byte) *CameraWorkerCreate {
 	return _c
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_c *CameraWorkerCreate) SetCaHash(v string) *CameraWorkerCreate {
+	_c.mutation.SetCaHash(v)
+	return _c
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_c *CameraWorkerCreate) SetNillableCaHash(v *string) *CameraWorkerCreate {
+	if v != nil {
+		_c.SetCaHash(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *CameraWorkerCreate) SetTenantId(v uuid.UUID) *CameraWorkerCreate {
 	_c.mutation.SetTenantId(v)
@@ -231,6 +245,7 @@ func (_c *CameraWorkerCreate) Mutation() *CameraWorkerMutation {
 
 // Save creates the CameraWorker in the database.
 func (_c *CameraWorkerCreate) Save(ctx context.Context) (*CameraWorker, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -253,6 +268,16 @@ func (_c *CameraWorkerCreate) Exec(ctx context.Context) error {
 func (_c *CameraWorkerCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_c *CameraWorkerCreate) defaults() {
+	if _, ok := _c.mutation.CaHash(); !ok {
+		if _, ok := _c.mutation.FieldExpr(cameraworker.FieldCaHash); !ok {
+			v := cameraworker.DefaultCaHash
+			_c.mutation.SetCaHash(v)
+		}
 	}
 }
 
@@ -434,6 +459,10 @@ func (_c *CameraWorkerCreate) createSpec() (*CameraWorker, *sqlgraph.CreateSpec,
 		_spec.SetField(cameraworker.FieldCertificate, field.TypeBytes, value)
 		_node.Certificate = &value
 	}
+	if value, ok := _c.mutation.CaHash(); ok {
+		_spec.SetField(cameraworker.FieldCaHash, field.TypeString, value)
+		_node.CaHash = value
+	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -515,6 +544,7 @@ func (_c *CameraWorkerCreateBulk) Save(ctx context.Context) ([]*CameraWorker, er
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*CameraWorkerMutation)
 				if !ok {

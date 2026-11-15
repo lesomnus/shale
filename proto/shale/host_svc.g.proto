@@ -797,6 +797,7 @@ message ProducerAddRequest {
   ProducerStatus status = 21;
   string version = 22 [features.field_presence = IMPLICIT];
   LivePolicy live = 23;
+  string ca_hash = 24;
 }
 
 message ProducerGetRequest {
@@ -828,6 +829,7 @@ message ProducerSelect {
   bool status = 21;
   bool version = 22;
   bool live = 23;
+  bool ca_hash = 24;
 }
 
 message ProducerPatchRequest {
@@ -904,6 +906,7 @@ message ProducerPatchRequest {
   bool status_null = 43;
   string version = 44;
   LivePolicy live = 46;
+  string ca_hash = 48;
 }
 
 message ProducerApplyRequest {
@@ -1096,6 +1099,7 @@ message ReaderAddRequest {
   google.protobuf.Timestamp date_cert_expires = 18;
   string version = 19 [features.field_presence = IMPLICIT];
   bool all_sites = 20 [features.field_presence = IMPLICIT];
+  string ca_hash = 21;
 }
 
 message ReaderGetRequest {
@@ -1135,6 +1139,7 @@ message ReaderSelect {
   bool date_cert_expires = 18;
   bool version = 19;
   bool all_sites = 20;
+  bool ca_hash = 21;
 }
 
 message ReaderPatchRequest {
@@ -1187,6 +1192,7 @@ message ReaderPatchRequest {
   bool date_cert_expires_null = 37;
   string version = 38;
   bool all_sites = 40;
+  string ca_hash = 42;
 }
 
 message ReaderApplyRequest {

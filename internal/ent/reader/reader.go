@@ -48,6 +48,8 @@ const (
 	FieldVersion = "version"
 	// FieldAllSites holds the string denoting the all_sites field in the database.
 	FieldAllSites = "all_sites"
+	// FieldCaHash holds the string denoting the ca_hash field in the database.
+	FieldCaHash = "ca_hash"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
@@ -83,6 +85,7 @@ var Columns = []string{
 	FieldDateCertExpires,
 	FieldVersion,
 	FieldAllSites,
+	FieldCaHash,
 	FieldTenantId,
 }
 
@@ -97,6 +100,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultCaHash holds the default value on creation for the "ca_hash" field.
+	DefaultCaHash string
 	// ValueScanner of all Reader fields.
 	ValueScanner struct {
 		Join field.TypeValueScanner[*api.HostJoin]
@@ -184,6 +189,11 @@ func ByVersion(opts ...sql.OrderTermOption) OrderOption {
 // ByAllSites orders the results by the all_sites field.
 func ByAllSites(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAllSites, opts...).ToFunc()
+}
+
+// ByCaHash orders the results by the ca_hash field.
+func ByCaHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCaHash, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

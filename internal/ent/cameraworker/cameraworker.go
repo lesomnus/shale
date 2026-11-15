@@ -52,6 +52,8 @@ const (
 	FieldDateCertIssued = "date_cert_issued"
 	// FieldCertificate holds the string denoting the certificate field in the database.
 	FieldCertificate = "certificate"
+	// FieldCaHash holds the string denoting the ca_hash field in the database.
+	FieldCaHash = "ca_hash"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
@@ -100,6 +102,7 @@ var Columns = []string{
 	FieldApprovedKeyFingerprint,
 	FieldDateCertIssued,
 	FieldCertificate,
+	FieldCaHash,
 	FieldTenantId,
 	FieldSiteId,
 }
@@ -115,6 +118,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultCaHash holds the default value on creation for the "ca_hash" field.
+	DefaultCaHash string
 	// ValueScanner of all CameraWorker fields.
 	ValueScanner struct {
 		Join field.TypeValueScanner[*api.HostJoin]
@@ -207,6 +212,11 @@ func ByApprovedKeyFingerprint(opts ...sql.OrderTermOption) OrderOption {
 // ByDateCertIssued orders the results by the date_cert_issued field.
 func ByDateCertIssued(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCertIssued, opts...).ToFunc()
+}
+
+// ByCaHash orders the results by the ca_hash field.
+func ByCaHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCaHash, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

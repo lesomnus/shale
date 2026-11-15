@@ -1,0 +1,289 @@
+edition = "2023";
+package shale;
+
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "shale/certificate_authority.proto";
+
+option go_package = "github.com/lesomnus/shale/api";
+
+service CertificateAuthorityService {
+  // Add creates a new CertificateAuthority
+  rpc Add(CertificateAuthorityAddRequest) returns (CertificateAuthority);
+  // Get retrieves a CertificateAuthority
+  rpc Get(CertificateAuthorityGetRequest) returns (CertificateAuthority);
+  // Patch updates an existing CertificateAuthority
+  rpc Patch(CertificateAuthorityPatchRequest) returns (CertificateAuthority);
+  // Apply applies a patch document to an existing CertificateAuthority
+  rpc Apply(CertificateAuthorityApplyRequest) returns (CertificateAuthority);
+  // Erase deletes a CertificateAuthority
+  rpc Erase(CertificateAuthorityRef) returns (CertificateAuthorityEraseResponse);
+  // List reads CertificateAuthoritys a page at a time.
+  rpc List(CertificateAuthorityListRequest) returns (CertificateAuthorityListResponse);
+  // Watch the CertificateAuthoritys this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(CertificateAuthorityWatchRequest) returns (stream CertificateAuthorityWatchResponse);
+  // Begins a CA rollover now: makes the next CA, which every bundle carries
+  // from then on, and answers it. The rest runs on the CP leader. Refused
+  // while a rollover is under way. Not for a compromised CA, which is
+  // replaced by initializing it again and adopting every host (§33.7).
+  rpc Rotate(CertificateAuthorityRotateRequest) returns (CertificateAuthority);
+  // Where the rollover is, and the live hosts its next step waits for.
+  rpc Status(CertificateAuthorityStatusRequest) returns (CertificateAuthorityStatusResponse);
+}
+
+message CertificateAuthorityAddRequest {
+  bytes id = 1;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  bytes certificate = 8;
+  bytes private_key = 9;
+  CertificateAuthorityState state = 10 [features.field_presence = IMPLICIT];
+  string fingerprint = 11 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_expires = 12;
+  google.protobuf.Timestamp date_created = 15;
+  google.protobuf.Timestamp date_active = 16;
+  google.protobuf.Timestamp date_retired = 17;
+}
+
+message CertificateAuthorityGetRequest {
+  CertificateAuthorityRef ref = 1;
+  CertificateAuthoritySelect select = 2;
+}
+
+message CertificateAuthorityRef {
+  oneof key {
+    bytes id = 1;
+    string alias = 4;
+  }
+}
+
+message CertificateAuthoritySelect {
+  bool all = 1;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  bool certificate = 8;
+  bool private_key = 9;
+  bool state = 10;
+  bool fingerprint = 11;
+  bool date_expires = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool date_active = 16;
+  bool date_retired = 17;
+}
+
+message CertificateAuthorityPatchRequest {
+  CertificateAuthorityRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  bytes certificate = 16;
+  bytes private_key = 18;
+  CertificateAuthorityState state = 20;
+  string fingerprint = 22;
+  google.protobuf.Timestamp date_expires = 24;
+  // Clear date_expires instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_expires clears.
+  bool date_expires_null = 25;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  google.protobuf.Timestamp date_active = 32;
+  // Clear date_active instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_active clears.
+  bool date_active_null = 33;
+  google.protobuf.Timestamp date_retired = 34;
+  // Clear date_retired instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_retired clears.
+  bool date_retired_null = 35;
+}
+
+message CertificateAuthorityApplyRequest {
+  CertificateAuthorityRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message CertificateAuthorityEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message CertificateAuthorityListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated CertificateAuthorityFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message CertificateAuthorityListResponse {
+  repeated CertificateAuthority items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message CertificateAuthorityFilter {
+  CertificateAuthorityRef ref = 1;
+}
+
+message CertificateAuthorityWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated CertificateAuthorityFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message CertificateAuthorityWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated CertificateAuthorityWatchItem items = 1;
+}
+
+message CertificateAuthorityWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  CertificateAuthority value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message CertificateAuthorityRotateRequest {}
+
+message CertificateAuthorityStatusRequest {}
+
+message CertificateAuthorityStatusResponse {
+  CertificateAuthorityPhase phase = 1 [features.field_presence = IMPLICIT];
+  // The CAs, oldest first: the stored ones, or the one `shale init` made
+  // when there has been no rollover.
+  repeated CertificateAuthority authorities = 2;
+  // The bundle hosts receive now, as PEM, and its hash, which every live host
+  // is to report. A client that verifies the CP against the CA (the CLI's
+  // `client.ca_file`, a browser) takes this bundle once a rollover begins:
+  // the CP's own certificate moves to the new CA at its second step.
+  string bundle = 3 [features.field_presence = IMPLICIT];
+  string bundle_hash = 4 [features.field_presence = IMPLICIT];
+  // When the next rollover begins by itself.
+  google.protobuf.Timestamp date_rollover = 5;
+  // How many hosts are live, and the ones the next step waits for.
+  int32 live = 6 [features.field_presence = IMPLICIT];
+  repeated CertificateAuthorityWaiting waiting = 7;
+}
+
+// CertificateAuthorityPhase is where a rollover is (§33.5).
+enum CertificateAuthorityPhase {
+  CERTIFICATE_AUTHORITY_PHASE_UNSPECIFIED = 0;
+  // One CA, and no rollover under way.
+  CERTIFICATE_AUTHORITY_PHASE_IDLE = 1;
+  // The next CA is in the bundle, the old one still issues, and live hosts
+  // are taking the bundle with both.
+  CERTIFICATE_AUTHORITY_PHASE_DISTRIBUTING = 2;
+  // The new CA issues, and live hosts holding a certificate from the old
+  // one are renewing it.
+  CERTIFICATE_AUTHORITY_PHASE_REPLACING = 3;
+}
+
+// CertificateAuthorityWaiting is a live host the next step of a rollover
+// waits for: one that does not report the current bundle, or that holds a
+// certificate from the CA being replaced.
+message CertificateAuthorityWaiting {
+  // The host's row: a Node, Relay, Producer, Reader, or CameraWorker.
+  bytes id = 1 [features.field_presence = IMPLICIT];
+  // node, relay, producer, reader, or camera-worker.
+  string kind = 2 [features.field_presence = IMPLICIT];
+  string alias = 3 [features.field_presence = IMPLICIT];
+  // The bundle hash its last heartbeat reported; empty when none did.
+  string ca_hash = 4 [features.field_presence = IMPLICIT];
+  // It holds a certificate from the CA being replaced.
+  bool old_certificate = 5 [features.field_presence = IMPLICIT];
+  string version = 6 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_seen = 7;
+  // It is waited for until then, when its certificate expires and it has
+  // to be adopted again anyway.
+  google.protobuf.Timestamp date_cert_expires = 8;
+}
