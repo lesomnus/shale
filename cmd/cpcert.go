@@ -136,17 +136,23 @@ func (c *cpCert) ClientCertificate(cri *tls.CertificateRequestInfo) (*tls.Certif
 }
 
 // trustPool is what the CP verifies a host's certificate against: every CA
-// in the bundle, the next and the retiring one during a rollover. Nil
+// in the bundle, the next and the retiring one during a rollover. Init's CA
+// alone when the set cannot be read yet, as before there was a set; nil
 // where there is no CA.
 func (s *Server) trustPool() *x509.CertPool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	set, err := s.Deps.Authorities().Current(ctx)
-	if err != nil || set == nil {
+	if err == nil && set != nil {
+		return set.Pool
+	}
+	if s.CA == nil {
 		return nil
 	}
+	pool := x509.NewCertPool()
+	pool.AddCert(s.CA.Cert)
 
-	return set.Pool
+	return pool
 }
 
 // trustCurrent has cfg verify client certificates against the CA set as it
