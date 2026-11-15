@@ -376,6 +376,10 @@ message SatelliteHeartbeatRequest {
 message SatelliteProducer {
   bytes producer_id = 1 [features.field_presence = IMPLICIT];
   string cert_serial = 2 [features.field_presence = IMPLICIT];
+  // The producer's relay, and a feed token for the sources whose live it
+  // hands this satellite (§41.8); absent when it hands none, or its relay
+  // does not take satellites.
+  RelayAssignment relay = 3;
 }
 
 message SatelliteHeartbeatResponse {

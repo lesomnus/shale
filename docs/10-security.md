@@ -250,6 +250,7 @@ exp          expiry
 aud          node_id or relay_id  (a token for host A is useless on host B)
 op           put | get            (either also allows HEAD on the key)
              publish | view       (relay: §39)
+             feed                 (relay: a satellite's publish, §41.8)
 sink_id
 lamina_key
 attempt_id   (put)
@@ -266,6 +267,8 @@ rewind_seconds
               recent window, sized by the CP from the segment duration,
               §39.4)
 source       (view: the one source this viewer may watch)
+feeder       (feed: the satellite it is for; the relay takes it only from
+              that satellite's certificate, §39.7)
 actor        the Producer, Reader, or person the token was issued to, and
              its tenant
 ```
@@ -285,7 +288,10 @@ actor        the Producer, Reader, or person the token was issued to, and
   `Negotiate`, the producer heartbeat, and `ProducerService.Relay` issue
   publish tokens, all only for the caller's own tenant's sources and
   laminae. The wall therefore extends to the data plane without a node or a
-  relay knowing tenants exist.
+  relay knowing tenants exist. The one token the cluster API issues is a
+  satellite's **feed** token, in its heartbeat's answer: a publish token
+  for the sources a producer it serves hands it, in that producer's name
+  ([§41.8](18-satellite.md#418-live-fan-out)).
 - **Lifetime**: put tokens live as long as their allocation
   (`allocation_ttl`, [§12.1](04-write-path.md#121-flow)), and
   `LaminaService.Renew` issues a fresh one for an attempt still in progress.
@@ -295,7 +301,9 @@ actor        the Producer, Reader, or person the token was issued to, and
   session with it, which takes a token for the same source and actor
   ([§39.4](16-relay.md#394-viewers)). A
   publish token lives `publish_token_ttl` (24 hours) and is checked when the
-  producer attaches ([§39.3](16-relay.md#393-from-the-producer)).
+  producer attaches ([§39.3](16-relay.md#393-from-the-producer)); a feed
+  token ten minutes at most, and every satellite heartbeat brings a fresh
+  one.
 - **Replay** gains nothing. A put token names one key and one attempt, uploads
   are idempotent ([§12.5](04-write-path.md#125-idempotent-uploads)), and a
   complete lamina cannot be overwritten.

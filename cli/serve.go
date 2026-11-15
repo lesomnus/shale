@@ -497,6 +497,11 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		return cfg, fmt.Errorf("producer.upload_via: %w", err)
 	}
 	cfg.Upload.Via = via
+	feed, err := producer.ParseLiveFeed(pc.LiveFeed)
+	if err != nil {
+		return cfg, fmt.Errorf("producer.live_feed: %w", err)
+	}
+	cfg.Upload.LiveFeed = feed
 	if catalogMode == "cp" {
 		if len(pc.Sources) != 0 || pc.Demo != 0 {
 			return cfg, errors.New("CP catalog and local/demo sources cannot be combined implicitly")

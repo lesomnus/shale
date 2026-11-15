@@ -14,8 +14,8 @@ It answers three limits of a producer that uploads by itself:
 1. **Its uplink carries live twice.** With live on, the same stream goes once
    to the node that takes the lamina and once to the relay
    ([§39.3](16-relay.md#393-from-the-producer)). A satellite on the far side
-   of that uplink could take the stream once and fan it out over the LAN.
-   Not yet: [§41.8](#418-not-yet).
+   of that uplink takes the stream once and feeds the relay from the upload
+   ([§41.8](#418-live-fan-out)).
 2. **It must reach every node.** Placement may choose any node
    ([§11](03-placement.md#11-placement)), so every node's data plane must be
    routable from every edge network ([§34.10](11-deployment.md#3410-node-addresses)).
@@ -29,20 +29,25 @@ It answers three limits of a producer that uploads by itself:
    satellite has the bytes, at the price that a satellite that dies loses
    what it held.
 
-Under `retain: committed` and `written` the satellite moves bytes and nothing
-else, so it costs the write path nothing it has today; that solves (2).
-`retain: accepted` is opt-in per producer and solves (3).
+Under `retain: committed` and `written` the satellite moves bytes, and reads
+the live out of them as they pass, so it costs the write path nothing it has
+today; that solves (1) and (2). `retain: accepted` is opt-in per producer
+and solves (3).
 
 ```text
                        ┌──────────── Control Plane ─────────────┐
                        │  assigns a satellite to each producer   │
                        │  that asks; tells each satellite whom   │
-                       │  it serves; resolves nodes for it       │
+                       │  it serves, with a feed token for the   │
+                       │  live they hand it; resolves nodes      │
                        └───────┬─────────────────────┬───────────┘
-                               │ allocations, tokens │ producers, routes
+                               │ allocations, tokens │ producers, routes, feed tokens
                                ▼                     ▼
 Producer ── PUT/HEAD, mTLS ──► Satellite ── PUT/HEAD ──► the node the token names
          ◄── the node's answer, unchanged ──────────────
+                                   │
+                                   └── RelayIngest, mTLS ──► the producer's relay
+                                       the live it was handed, from the upload
 ```
 
 ### 41.1 What it is
@@ -223,6 +228,13 @@ own that pass-through traffic cannot take from it, nor it from that.
 The retained pool's own rules, its shares and what a full one does, are
 in [§41.9](#419-retain-accepted).
 
+The live fan-out ([§41.8](#418-live-fan-out)) holds no pool. What it holds
+is bounded otherwise: per source it feeds, the fragment being read out of
+the upload (32 MiB at most, as the relay takes one); per producer stream to
+a relay, 32 fragments waiting to be sent, beyond which they are dropped, as
+the producer's tee does. It never reserves room in the in-flight pool and
+never refuses a request.
+
 ### 41.5 From the producer
 
 `producer.upload_via` says where a producer's upload requests go:
@@ -258,7 +270,11 @@ in [§41.9](#419-retain-accepted).
   heartbeat (`UploadReport`, kept on the row's status). The metrics are
   `shale.producer.upload_requests` by `path` and
   `shale.producer.satellite_fallbacks`. A producer on `direct` reports
-  nothing new.
+  nothing new. It reports too the sources whose live it hands the
+  satellite, and `live_feed` ([§41.8](#418-live-fan-out)).
+- **Live.** A live request through the satellite may hand it the source's
+  live, so the producer's uplink carries it once
+  ([§41.8](#418-live-fan-out)).
 - **Certificates.** A producer that renews its certificate closes its idle
   upload connections, so the next request presents the certificate the CP
   now records, which is the one the satellite lets in.
@@ -284,6 +300,9 @@ failures are in [§41.9](#419-retain-accepted).
 | CP down | no new assignments or routes; the satellite serves the producers it last heard of, at the routes it holds, an hour past their expiry | tokens bound it, as everywhere ([§12.1](04-write-path.md#121-flow)) |
 | A producer not yet in the satellite's list | the satellite asks the CP at once, then serves or refuses `403 unassigned` | the producer's failure is the satellite's: `auto` goes directly, `satellite` asks again |
 | Satellite erased | the CP stops assigning it and its certificate is refused at the cluster API | its producers are assigned another, or none, at their next heartbeat |
+| Satellite dies while it feeds the relay | its relay streams end; the relay hands each source back to the producer's own stream at once ([§41.8](#418-live-fan-out)) | the producer's tee feeds from its next keyframe: a viewer waits a keyframe interval at most; the producer's uploads go as the rows above say |
+| A live upload through it breaks | it stops feeding the source at once, and the relay hands it back to the producer's stream | it feeds again from the request that resumes, past any backlog older than 2 s |
+| Relay behind | the satellite drops live fragments beyond 32 queued, counted (`live_dropped`); the uploads are not held | the relay sees the gaps as a torn fragment sequence, as from a producer's tee ([§39.3](16-relay.md#393-from-the-producer)) |
 
 ### 41.7 Security
 
@@ -314,25 +333,134 @@ failures are in [§41.9](#419-retain-accepted).
   report the new key before the CP signs with it
   ([§33.3](10-security.md#333-signing-keys-and-rotation)), and a CA rollover
   waits for satellites as for every host ([§33.5](10-security.md#335-tls)).
+- A satellite's **feed token** is a publish token in the name of a producer
+  it serves, for the sources that producer hands it and no others, for the
+  producer's relay, and only from the satellite's own certificate
+  ([§39.7](16-relay.md#397-security)); it lives ten minutes at most. The
+  CP issues one only when the producer's last heartbeat names this
+  satellite and those sources, and its relay says it takes satellites.
 - A compromised satellite can read and alter what passes through it, and
   write with the tokens it sees, which name keys the CP allocated: no more
-  than a compromised node holding the same uploads. Erase it and adopt the
-  machine again.
+  than a compromised node holding the same uploads. Through its feed tokens
+  it can show viewers what it likes of the cameras its producers hand it,
+  as a compromised producer can of its own. Erase it and adopt the machine
+  again.
 
-### 41.8 Not yet
+### 41.8 Live fan-out
 
-- **Live fan-out.** The satellite as the one continuous feeder of a source's
-  relay, from the upload stream, so the producer's uplink carries each byte
-  once. Its seam: the producers in the heartbeat's answer are where each
-  producer's relay assignment is to come, and the relay's ingest does not
-  change.
-- **A durable spill** for `retain: accepted`: the satellite writing what it
-  accepted to disk under a backlog. Lamina data stays off any spool
-  ([§22.3](07-storage-node.md#223-no-ssd-in-the-data-path)); that would be a
-  decision of its own.
-- A satellite in the process of `shale serve all`, where both its hops are
-  loopback; HTTP/3 to the satellite; reads through a satellite for viewers
-  who reach it but not the nodes.
+With live on, a producer that uploads by itself sends each camera twice
+over its uplink: once as the lamina, once over its tee to the relay
+([§38.7](15-producer.md#387-live-output)). Through a satellite, under the
+`live` upload mode, the satellite sees every byte of the lamina as it is
+made. So it feeds the relay from the upload, and the producer's tee stays
+off for that camera: the uplink carries each byte once.
+
+```text
+Producer ── PUT, Shale-Live: <offset> ──► Satellite ──► node
+                                           │ reads fragments out as they pass
+                                           ▼
+Producer's tee (stopped) ···► Relay ◄── Feed {sources}, Data ── Satellite
+```
+
+**Which sources.** The producer decides, per source and per request. A
+source's live is handed to the satellite while all of these hold:
+
+- its live uploads go through the satellite (`upload_via: satellite` or
+  `auto`, a satellite assigned and not paused), in the `live` upload mode;
+- its stream needs no live helper: video with Opus audio, or none
+  ([§38.7](15-producer.md#387-live-output)). A satellite runs no ffmpeg; a
+  camera whose audio the helper transcodes stays on the producer's tee, and
+  so does a raw input;
+- `producer.live_feed` is `auto`, the default; `producer` keeps the tee for
+  every source.
+
+A live request through the satellite of such a source carries
+`Shale-Live: <offset>`: where in the lamina its live begins. That is where
+the request begins, unless the bytes there were written more than 2 s ago:
+a request that resumes after an outage, or a lamina whose upload began
+late, starts with a backlog, which goes to the node and not to viewers, and
+its live begins at the first byte written since. The satellite takes the
+header off before the request goes on to the node. The producer's heartbeat
+names the sources it hands over (`UploadReport.live_sources`, and
+`live_feed`), and says so at once when they change.
+
+**Authority.** For each producer it serves whose last heartbeat hands it
+sources, the satellite's heartbeat answer carries the producer's relay and
+a **feed token** (`SatelliteProducer.relay`): the producer's publish token
+([§39.2](16-relay.md#392-assignment)) in all but three things: the
+operation is `feed`, it names only the sources the producer hands over
+that its own token names, and `feeder` names the satellite. The relay
+takes it only from the satellite's client certificate
+([§39.7](16-relay.md#397-security)); it lives ten minutes and every
+heartbeat brings a fresh one, which the satellite sends on its stream when
+it says something new, or half its life is gone. None is given for a
+relay that predates satellites (it says, in its heartbeat, that it takes
+them); such a relay would refuse the operation anyway.
+
+**The stream.** The satellite keeps one stream per such producer to its
+relay, the producer's tee's protocol ([§39.3](16-relay.md#393-from-the-producer)):
+`Hello` with the feed token, `Start` and `Stop` from the relay, `Data` one
+init segment or one whole fragment at a time. And `Feed`: the sources it
+feeds now. It feeds a source while the live of a request that hands it
+over passes through it, from that request's `Shale-Live` offset on:
+
+- the relay takes it as the source's feeder over the producer's own
+  stream, tells the tee `Stop` and the satellite `Start`, if the source is
+  started ([§39.3](16-relay.md#393-from-the-producer));
+- after `Start` it sends from the next key fragment, the init segment in
+  front, as the tee does;
+- the bytes are read as they pass: a fragment goes to the relay the moment
+  its last byte is read, never batched with the next (about a millisecond
+  on a host, measured), and a fragment it was not asked for passes kept
+  nowhere;
+- **lamina boundaries are seamless.** A source's next lamina is the next
+  request, and its feed continues: an init segment that is the one sent
+  last is not sent again, and the fragments go on in their sequence. A new
+  init segment, or a break in the fragments' sequence, is a stream that
+  began again: from the next key fragment, with the init segment in front;
+- a request that resumes where one broke is read on from where the
+  satellite was; what it read already is passed over, and the feed goes on
+  from the next key fragment once the relay starts it again;
+- **capture epochs** are the upload's: each `Data` carries the capture
+  epoch its put token's record names, which the relay checks against the
+  feed token's grant; a token that grants another capture is not used to
+  feed, and the satellite asks the CP for a fresh one at once. `Reset`
+  stays the producer's, on its own stream, which the relay takes while the
+  satellite feeds ([§39.3](16-relay.md#393-from-the-producer)).
+
+**Handoff.** One feeder at a time, decided by the relay and nothing else:
+a satellite that says it feeds a source, the last to say so, else the
+producer's own stream ([§39.3](16-relay.md#393-from-the-producer)). The
+producer's tee stays attached throughout and sends only what the relay
+starts, so no source is ever sent twice.
+
+| Event | The relay's feeder | A viewer |
+|---|---|---|
+| The producer's live upload of a source reaches the satellite with `Shale-Live` | the satellite, at its `Feed`; the tee is told `Stop` | the next keyframe, from the satellite |
+| A lamina ends and the next begins within 3 s | the satellite, unchanged | nothing: the feed goes on |
+| No next lamina within 3 s (a node's slow commit, a dark segment held back, §38.10) | the producer's stream, started | the next keyframe, from the tee |
+| A live upload through the satellite breaks | the producer's stream, at once | the next keyframe, from the tee |
+| The producer goes directly (`auto` after a failure, no satellite assigned) | the producer's stream: the satellite's upload ended, and the next one does not reach it | the next keyframe, from the tee |
+| The satellite stops or dies | the producer's stream, the moment the satellite's relay stream ends | the next keyframe, from the tee |
+| The producer is assigned another satellite | the one its live uploads pass through, the newer to say so | the next keyframe |
+| A new capture epoch | the producer's stream until the satellite's token grants the new one, then the satellite | the next keyframe |
+
+**Bounded and never in the way.** The upload is what matters. The tap reads
+the bytes the proxy copies anyway, under a lock held for the parsing of
+what was just read and nothing else; a fragment is queued without waiting.
+Each producer's stream queues 32 fragments at most, as the producer's tee
+does; beyond that, a relay that is behind loses fragments, which are
+counted, and the upload goes on at its own pace. The heartbeat reports the
+sources fed, the bytes sent and the fragments dropped (`SatelliteStatus`
+`live_sources`, `live_bytes`, `live_dropped`), as do
+`shale.satellite.live_*`; the relay counts handoffs
+(`shale.relay.feeder_handoffs`).
+
+**Compatibility.** With no satellite, or `upload_via: direct`, nothing of
+this happens. A producer that predates it sends no `Shale-Live` and hands
+nothing over; a satellite that predates it ignores the header and the feed
+token, and the producer's tee feeds as before; a relay that predates it is
+given no feed token, and would refuse one.
 
 ### 41.9 `retain: accepted`
 
@@ -356,7 +484,7 @@ whether the assigned satellite takes it, as its last heartbeat did
 under `committed`, and its log says so once. A satellite of an earlier
 release says nothing, so it is sent no handoff, which it would pass on to a
 node with every candidate's token. The satellite never writes what it
-accepted to disk ([§41.8](#418-not-yet)).
+accepted to disk ([§41.10](#4110-not-yet)).
 
 **The handoff.** The protocol is a node's ([§12.2](04-write-path.md#122-resumable-part-uploads)),
 with four headers a node never sends nor is sent:
@@ -428,6 +556,13 @@ HEAD /laminae/<key>   Shale-Retain: accepted
   ([§15](04-write-path.md#15-partial-laminae)); what no node took is
   reported LOST. What the producer was never told was held stays the
   producer's, and goes with nothing said.
+
+**Live.** A segment handed off still feeds the relay as it is recorded
+([§41.8](#418-live-fan-out)): its requests carry `Shale-Live` as any live
+upload through the satellite does, and the satellite reads the fragments
+out of the bytes it takes, as they come. Its delivery to the node, which
+reads the same bytes again later, possibly from the start for another
+candidate, feeds nothing.
 
 **Delegated calls.** `Renew`, `ReportAttempt`, `Reallocate` and
 `ReportFailure` are the producer's ([§35.4](12-api.md#354-tenant-api-custom-rpcs)). A
@@ -512,3 +647,13 @@ A LOST lamina a node turns out to have after all, the start of a live
 delivery that the node's abandon rule finalized, is brought back by its
 `LaminaStored`, as any late event ([§14](04-write-path.md#14-duplicates-and-orphans)).
 The producer counts none of these as its own losses: it handed them off.
+
+### 41.10 Not yet
+
+- **A durable spill** for `retain: accepted`: the satellite writing what it
+  accepted to disk under a backlog. Lamina data stays off any spool
+  ([§22.3](07-storage-node.md#223-no-ssd-in-the-data-path)); that would be a
+  decision of its own.
+- A satellite in the process of `shale serve all`, where both its hops are
+  loopback; HTTP/3 to the satellite; reads through a satellite for viewers
+  who reach it but not the nodes.

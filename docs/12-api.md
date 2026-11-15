@@ -588,14 +588,23 @@ service RelayIngest {
 // AttachRequest:  Hello {publish_token} once, then Data {source, bytes,
 //                 read_at, sent_at}, one init segment or one whole fragment,
 //                 for every source the relay has started, with when the
-//                 producer had it and sent it (§39.3)
-// AttachResponse: Start {source} | Stop {source}
+//                 producer had it and sent it (§39.3); Reset {source,
+//                 capture_epoch, stopped}; and from a satellite, Feed
+//                 {sources}: those of its token it feeds now (§41.8)
+// AttachResponse: Start {source} | Stop {source} | Welcome {sources}
 ```
 
 The publish token names the relay, the producer's sources, and its live
 policy ([§33.2](10-security.md#332-access-tokens)); the relay starts every
 source at once under `always`, and starts and stops them as viewers come
-and go under `on_demand` ([§39.3](16-relay.md#393-from-the-producer)).
+and go under `on_demand` ([§39.3](16-relay.md#393-from-the-producer)). A
+satellite attaches the same way, one stream for each producer whose live
+it feeds, with a **feed** token in the producer's name that the relay
+takes only from the satellite's client certificate; its sources are its
+from its `Feed` on, over the producer's own stream
+([§39.3](16-relay.md#393-from-the-producer)). Ingest is TLS with the host
+certificate; it asks for a client certificate and requires none of a
+producer.
 
 **WHEP**, over HTTPS, for viewers:
 
@@ -644,6 +653,10 @@ GET    /healthz
 - Every answer from the node comes back as the node gave it: status,
   headers (but the hop's own and `Alt-Svc`), body, trailers. The table of
   [§35.6](#356-storage-node-http-data-plane) holds through a satellite.
+- `Shale-Live: <offset>` on a live `PUT` hands the satellite the live of
+  the request's source from that offset of the lamina on, which the
+  satellite feeds the relay with ([§41.8](18-satellite.md#418-live-fan-out)).
+  It goes no further than the satellite.
 - What the satellite answers itself carries `Shale-Satellite: <reason>`:
 
 | Response | `Shale-Satellite` | Meaning |

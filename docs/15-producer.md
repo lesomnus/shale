@@ -578,7 +578,23 @@ the CP assigned it ([§39.2](16-relay.md#392-assignment)), and:
 - counts live into its uplink budget ([§38.5](#385-choosing-the-ceiling)):
   every camera once more under the `always` policy, the cameras usually
   watched under `on_demand` ([§39.2](16-relay.md#392-assignment)), since a
-  camera on the relay costs its bitrate once more.
+  camera on the relay costs its bitrate once more;
+- **hands the live to its satellite** where it can
+  ([§41.8](18-satellite.md#418-live-fan-out)): a source whose live
+  uploads go through the satellite (`upload_via: satellite` or `auto`, the
+  upload mode `live`), whose stream needs no live helper (video with Opus
+  audio, or none), under `producer.live_feed: auto`, the default. Each live
+  request through the satellite says where its live begins
+  (`Shale-Live`), past a backlog older than 2 s; the satellite feeds the
+  relay from the upload, and the relay stops the producer's tee for that
+  source. The tee stays attached and starts again the moment the relay
+  hands the source back: a request that goes directly, a satellite that
+  fails or stops. The heartbeat says which sources it hands over
+  (`UploadReport.live_sources`), which is what the CP gives the satellite
+  a feed token for. A camera that needs the helper, a raw input, and every
+  source under `live_feed: producer` or `upload_via: direct` stay on the
+  tee, as before satellites. Such a source costs its bitrate once on the
+  uplink, not twice.
 
 A camera meant to be watched live records H.264 Main or High profile, which
 browsers play without transcoding. Its audio is recorded as the camera

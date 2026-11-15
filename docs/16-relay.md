@@ -172,6 +172,53 @@ Relay     Stop {source}                  on demand only: nobody has watched for 
 - The publish token lives `publish_token_ttl` (24 h) and is checked at
   `Hello`. A producer re-attaching after that asks the CP for a fresh one.
 
+**A second kind of feeder: the satellite.** A producer whose live uploads
+go through a satellite may hand it the live of its sources
+([§41.8](18-satellite.md#418-live-fan-out)); the satellite then feeds the
+relay from the upload, and the producer's uplink carries the stream once.
+It keeps one stream per such producer, the producer's own protocol, with
+two differences:
+
+```text
+Satellite Hello {feed token}             op feed, aud = relay, the producer as actor, the sources it handed over, the satellite as feeder
+Satellite Feed {sources}                 those it feeds now: whose live upload passes through it
+Relay     Start {source} / Stop {source} as to a producer
+Satellite Data {source, bytes, t1, t2}   the fragments it reads out of the upload
+```
+
+- **Who.** A feed token is the CP's, in the satellite's heartbeat answer:
+  the producer's publish token in all but its operation (`feed`), the
+  sources (only those the producer handed over that its own token names)
+  and `feeder`, the satellite. The relay takes it only from the host whose
+  client certificate names that satellite and verifies against the CA
+  ([§39.7](#397-security)), and only for the sources it names. A relay that
+  predates satellites refuses the operation, and the CP gives no satellite
+  a feed token for a relay that does not say, in its heartbeat, that it
+  takes satellites: such a relay never sees one.
+- **One feeder.** A source has one feeder at a time. Every stream whose
+  token names a source is one of its publishers; the feeder is a satellite
+  that feeds it, the last to say so in a `Feed`, else the producer's own
+  stream, the last one authorized. A fresh `Hello` of the producer's, which
+  every heartbeat brings, takes nothing from a satellite. A publisher whose
+  capture grant is older than the source's is not elected, so a satellite
+  whose token lags a new capture leaves the source to the producer's stream
+  until its token catches up. When the feeder changes, the one that fed is
+  told `Stop` and the new one `Start`, if the source is started; it begins
+  at its next key fragment with the init segment in front, as at any
+  `Start`, and what a publisher that is not the feeder sends is dropped.
+- **Handoffs.** The satellite says it feeds a source when its live upload
+  passes through it, and stops saying so when the upload breaks, at once,
+  or when no lamina follows for 3 s: the source goes back to the
+  producer's stream, started. A satellite's stream that ends hands its
+  sources back the same moment. A viewer waits at most for the next
+  keyframe either way.
+- **Capture control stays the producer's.** A satellite sends no `Reset`;
+  the producer's own stream still does, and the relay takes it while a
+  satellite feeds the source.
+- **Timed** as the producer's: `read_at` is when the satellite had the
+  whole fragment, and `producer_queue_ms` and `uplink_ms` carry the
+  satellite's actor, its own queue and its own link.
+
 ### 39.4 Viewers
 
 A viewer is a person in a browser or a system such as a monitoring wall.
@@ -420,6 +467,7 @@ they cannot, the open lamina's.
 | Relay held down while up | the CP did not hear it for `relay_down_after`, though it serves on: the producers that ask in that time (at their heartbeat, since their stream is intact) are moved to another relay, and `Live` names that one | the relay is up again from its next heartbeat that arrives; moved producers stay where they are, its viewers of their cameras ask `Live` again; raise `relay_down_after` with `relay.heartbeat_interval` where this recurs |
 | Producer's uplink saturated by live | live bytes and recording compete; the tee drops live bytes rather than hold the recording, the producer's heartbeat counts them, and each drop tears the recent window, which is handed out from the next keyframe after it | the uplink budget counts every camera once more under `always` ([§38.5](15-producer.md#385-choosing-the-ceiling)); the operator sizes the uplink, or sets the producer `on_demand` ([§39.2](#392-assignment)) |
 | Producer down | its cameras are off for viewers and for recording alike | as in [§15](04-write-path.md#15-partial-laminae) |
+| Satellite that feeds a source down, or its upload breaks | the relay hands the source back to the producer's own stream the moment the satellite's stream ends, or the satellite stops saying it feeds it ([§41.8](18-satellite.md#418-live-fan-out)) | the producer's tee feeds it from its next keyframe; the satellite takes it again once the producer's live uploads pass through it |
 | CP down | no new `Live` and no new publish tokens; open sessions and attachments continue | as for reads ([§12.1](04-write-path.md#121-flow)): run the CP highly available |
 
 ### 39.7 Security
@@ -432,6 +480,15 @@ they cannot, the open lamina's.
   ingest always serves the host certificate.
 - Producers and viewers are authorized by CP-signed tokens only. The relay
   never asks the CP anything about them.
+- A satellite is authorized by a CP-signed feed token **and** its host
+  certificate: ingest asks every caller for a client certificate and
+  verifies none at the handshake, so a producer that presents one or none
+  attaches as before, and a feed token is taken only from a caller whose
+  certificate verifies against the CA bundle the relay holds, is good for
+  a client, and names the satellite the token names. A stolen feed token
+  alone buys nothing; a satellite's certificate buys no more than the
+  sources the token names, for ten minutes. WHEP never asks a browser for
+  a certificate.
 - What a leaked view token buys is one camera for one hour. What a leaked
   publish token buys is the ability to feed false video for that producer's
   cameras to viewers for up to a day, which is why it names the relay and

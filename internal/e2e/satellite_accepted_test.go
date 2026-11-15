@@ -402,6 +402,49 @@ func TestSatelliteAcceptedLost(t *testing.T) {
 	}
 }
 
+// TestSatelliteAcceptedFeedsLive is `retain: accepted` with the live
+// fan-out (§41.8, §41.9): a segment handed off still feeds the relay as it
+// is recorded, from the bytes the satellite takes, across laminae; the
+// delivery to the node, which reads them again, feeds nothing more. The
+// producer's own tee sends nothing.
+func TestSatelliteAcceptedFeedsLive(t *testing.T) {
+	c := start(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	c.smallLaminae(ctx)
+	sat, _ := c.startSatelliteWith("sat", filepath.Join(t.TempDir(), "sat"), nil)
+	p, set := c.satelliteLive(ctx, "porch", "av.mp4", producer.ViaSatellite, func(cfg *producer.Config) {
+		cfg.Retain = producer.RetainAccepted
+		cfg.HardwareId = "test-producer-porch"
+	})
+	fedBy(t, sat, p, "porch")
+	live := c.liveOf(ctx, set)
+
+	v := watch(t, live)
+	defer v.close()
+	v.video(t, 50, 20*time.Second)
+	a := timeVideo(v)
+	began := time.Now()
+	handed := p.Stats().HandedOff
+	require.Eventually(t, func() bool { return p.Stats().HandedOff >= handed+3 }, 90*time.Second, 200*time.Millisecond,
+		"three segments handed off while the viewer watches")
+	time.Sleep(time.Second)
+	ended := time.Now()
+	gap := a.gap(began, ended)
+	t.Logf("%d video packets over %s, the longest wait %s", a.count(), ended.Sub(began).Round(time.Millisecond), gap)
+	require.Less(t, gap, keyInterval, "no handoff costs the viewer a keyframe")
+	require.Zero(t, p.LiveSent("porch"), "the satellite fed it all along")
+
+	// Fed once: what went to the relay is no more than what the satellite
+	// took, though it delivered all of it to the node as well.
+	_, sent, _ := sat.Live()
+	accepted, delivered, _, _ := sat.Accepted()
+	require.Positive(t, delivered)
+	require.Positive(t, sent)
+	require.LessOrEqual(t, sent, accepted, "the delivery did not feed the relay again")
+	require.Zero(t, p.Stats().Lost)
+}
+
 // A satellite makes lamina calls only for the producers assigned to it
 // (§41.9): for a lamina of a set no producer of its records, the CP
 // refuses every one of them, and recording it as the lamina's holder.

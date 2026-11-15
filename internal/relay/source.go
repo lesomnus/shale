@@ -5,6 +5,7 @@ import (
 	"errors"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
@@ -48,12 +49,34 @@ type sample struct {
 	owed bool
 }
 
+// publisher is a stream whose token names a source (§39.3): the producer's
+// own, or a satellite's that feeds the producer's sources from its uploads
+// (§41.8). One of them is the source's feeder at a time: a satellite that
+// feeds the source, the last to say so, else the producer's own stream, the
+// last authorized. The others wait, and send nothing: the relay never
+// started them, or told them Stop.
+type publisher struct {
+	satellite bool
+	// feeds says it would feed the source now: a producer's stream always,
+	// a satellite's while its last Feed named the source.
+	feeds bool
+	// order is when it was authorized (a producer's stream) or began to
+	// feed (a satellite's), on the registry's counter: the larger is newer.
+	order uint64
+	grant *api.CaptureEpochGrant
+	// always and window are its token's live policy and recent window, the
+	// source's while it is the feeder.
+	always bool
+	window time.Duration
+}
+
 type source struct {
 	id pdid.Id
 	r  *Relay
 
 	mu            sync.Mutex
 	feeder        feeder
+	publishers    map[feeder]*publisher
 	managed       bool
 	epoch         string
 	epochSequence int64
@@ -98,7 +121,7 @@ type source struct {
 }
 
 func newSource(r *Relay, id pdid.Id) *source {
-	return &source{id: id, r: r, viewers: map[string]sink{}, joining: map[string]bool{}, catching: map[string]*owed{}, ring: newRing(), paceWake: make(chan struct{})}
+	return &source{id: id, r: r, publishers: map[feeder]*publisher{}, viewers: map[string]sink{}, joining: map[string]bool{}, catching: map[string]*owed{}, ring: newRing(), paceWake: make(chan struct{})}
 }
 
 // attach makes a producer stream the feeder of this source; a stream
@@ -134,20 +157,107 @@ func (s *source) attach(f feeder, always bool, window time.Duration) {
 	}
 }
 
-// detach forgets a feeder that went away; viewers stay and get bytes again
-// when the producer is back. The init segment stays: a producer that
+// detach forgets a stream that went away; viewers stay and get bytes again
+// from the next feeder: another stream that publishes the source, at once,
+// or the producer when it is back. The init segment stays: a producer that
 // attaches again sends the same camera.
 func (s *source) detach(f feeder) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.feeder == f {
-		s.feeder = nil
+	delete(s.publishers, f)
+	if s.feeder != f {
+		s.mu.Unlock()
+		return
+	}
+	s.gop = nil
+	s.ring.reset()
+	s.seq = 0
+	s.restartPacing()
+	s.feeder, s.started = nil, false
+	action := s.electLocked()
+	s.mu.Unlock()
+	if action != nil {
+		action()
+	}
+}
+
+// best is the publisher that feeds the source (§39.3): among those that
+// would and whose grant still holds, a satellite before the producer's own
+// stream, and the newer of two of a kind. Nil when none would; with the
+// lock held.
+func (s *source) best() feeder {
+	var bf feeder
+	var bp *publisher
+	for f, p := range s.publishers {
+		if !p.feeds || s.checkGrant(p.grant) != nil {
+			continue
+		}
+		if bp == nil || p.satellite && !bp.satellite || p.satellite == bp.satellite && p.order > bp.order {
+			bf, bp = f, p
+		}
+	}
+
+	return bf
+}
+
+// electLocked makes the best publisher the feeder, with its policy, when it
+// is not already, and answers what to tell the streams once the lock is
+// let go: the one that fed it Stop, the new one Start when the source is
+// started. A source nobody would feed is left without a feeder, not
+// started, until one would.
+func (s *source) electLocked() func() {
+	old, next := s.feeder, s.best()
+	if next == old {
+		return nil
+	}
+	wasStarted := s.started
+	s.feeder = next
+	if next == nil {
 		s.started = false
 		s.gop = nil
 		s.ring.reset()
 		s.seq = 0
 		s.restartPacing()
+	} else {
+		p := s.publishers[next]
+		s.always, s.window = p.always, p.window
+		prime := s.managed && !s.stopped && s.init == nil
+		s.started = !s.stopped && (s.always || len(s.viewers) > 0 || prime)
 	}
+	start := next != nil && s.started
+	if s.r != nil && s.r.m != nil && old != nil && next != nil {
+		s.r.m.handoffs.Add(context.Background(), 1)
+	}
+	if s.r != nil && s.r.log != nil && old != nil && next != nil {
+		s.r.log.Info("feeder changed", "source", s.id.String(), "satellite", s.publishers[next].satellite)
+	}
+
+	return func() {
+		if old != nil && wasStarted {
+			old.stop(s.id)
+		}
+		if start {
+			next.start(s.id)
+		}
+	}
+}
+
+// feeds says whether a satellite's stream would feed the source now (Feed,
+// §41.8), and answers what to tell the streams once the lock is let go.
+func (s *source) feeds(f feeder, on bool) func() {
+	s.mu.Lock()
+	p := s.publishers[f]
+	if p == nil || !p.satellite || p.feeds == on {
+		s.mu.Unlock()
+		return nil
+	}
+	p.feeds = on
+	if on {
+		p.order = s.r.sources.next()
+	}
+	action := s.electLocked()
+	s.mu.Unlock()
+
+	return action
 }
 
 var errNoInit = errors.New("a fragment before any init segment")
@@ -548,7 +658,12 @@ type sources struct {
 	byId map[pdid.Id]*source
 	// producers counts attached producer streams.
 	producers int
+	// order is the counter publishers are ordered by (publisher.order).
+	order atomic.Uint64
 }
+
+// next is the next publisher order: larger than every one before it.
+func (ss *sources) next() uint64 { return ss.order.Add(1) }
 
 func newSources(r *Relay) *sources { return &sources{r: r, byId: map[pdid.Id]*source{}} }
 
@@ -591,6 +706,9 @@ func (ss *sources) status() *api.RelayStatus {
 	st.IngressBytes = ingress
 	st.RewindBytes = ss.held()
 	st.RewindBudget = ss.r.cfg.RewindBudget
+	// A satellite may feed a producer's sources here (§39.3): the CP gives
+	// satellites feed tokens for this relay.
+	st.SatelliteFeeders = true
 
 	return st.Build()
 }

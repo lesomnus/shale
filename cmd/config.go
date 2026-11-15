@@ -426,6 +426,12 @@ type ProducerConfig struct {
 	// `auto`, as `satellite`, and directly for a while after the satellite
 	// cannot be reached.
 	UploadVia string `yaml:"upload_via"`
+	// LiveFeed is who feeds the relay a source whose live uploads go
+	// through the satellite (§41.8): `auto` (the default), the satellite,
+	// from the upload, wherever it can, so the uplink carries the stream
+	// once; `producer`, the producer's own tee, as before satellites. Only
+	// `upload_via: satellite` or `auto` makes it matter.
+	LiveFeed string `yaml:"live_feed"`
 	// Uplink is the link's capacity, e.g. "20Mbps", for the link check.
 	Uplink string `yaml:"uplink"`
 	// Buffer is the RAM budget for segments not yet stored, e.g. "512MiB"

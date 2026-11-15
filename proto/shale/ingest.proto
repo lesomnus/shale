@@ -7,8 +7,9 @@ import "google/protobuf/timestamp.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
 
-// RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3).
-// The producer dials; the relay says which sources to send and when to stop.
+// RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3),
+// and a satellite one for each producer whose live it feeds (§41.8). The
+// feeder dials; the relay says which sources to send and when to stop.
 service RelayIngest {
   rpc Attach(stream AttachRequest) returns (stream AttachResponse);
 }
@@ -36,10 +37,19 @@ message AttachRequest {
     string capture_epoch = 2;
     bool stopped = 3;
   }
+  // A satellite's stream only (§39.3, §41.8): the sources of its token it
+  // feeds now, the whole set each time, none until the first. The relay
+  // takes a satellite that feeds a source as its feeder over the producer's
+  // own stream. A producer's stream feeds every source of its token and
+  // never sends it.
+  message Feed {
+    repeated bytes sources = 1;
+  }
   oneof message {
     Hello hello = 1;
     Data data = 2;
     Reset reset = 3;
+    Feed feed = 4;
   }
 }
 

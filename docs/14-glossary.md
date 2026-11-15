@@ -18,6 +18,8 @@
 | **Retained Pool** | What a satellite holds of its `memory_budget` for segments it took under `retain: accepted` and has not delivered, shared out by producer; a new segment that does not fit passes through ([§41.9](18-satellite.md#419-retain-accepted)) |
 | **Handed off** | A segment a satellite took whole under `retain: accepted`: the producer let its bytes go, and the satellite delivers it or reports it lost; a producer counts it beside stored, lost and cut |
 | **Publish Token** | Access token with `op = publish`: lets a producer attach to one relay and feed its sources |
+| **Feed Token** | Access token with `op = feed`: a satellite's publish token in a producer's name, for the sources that producer hands it, taken by the relay only from that satellite's certificate ([§41.8](18-satellite.md#418-live-fan-out)) |
+| **Feeder** | The one stream that feeds a relay a source at a time: a satellite that feeds it from the producer's uploads, else the producer's own tee ([§39.3](16-relay.md#393-from-the-producer)) |
 | **View Token** | Access token with `op = view`: lets a viewer watch one source on one relay for an hour |
 | **WHEP** | WebRTC HTTP egress protocol: the viewer posts an SDP offer to the relay and gets the answer |
 | **GOP Cache** | The relay's copy of the current group of pictures per source, so a joining viewer starts at once |

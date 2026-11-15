@@ -120,9 +120,9 @@ func accepting(t *testing.T, k *keeper, part int64) *Uploader {
 	return u
 }
 
-// liveSegment is a segment the test writes into while it is uploaded:
+// growingSegment is a segment the test writes into while it is uploaded:
 // n writes of size bytes, then it closes.
-func liveSegment(n, size int) (*Segment, []byte) {
+func growingSegment(n, size int) (*Segment, []byte) {
 	seg := NewSegment(time.Now(), nil)
 	var all []byte
 	for i := 0; i < n; i++ {
@@ -150,7 +150,7 @@ func TestAcceptedHandsOff(t *testing.T) {
 	k := newKeeper(t)
 	u := accepting(t, k, 4000)
 	al := allocationAt(t, node.srv.Listener.Addr().String(), "laminae/handed")
-	seg, want := liveSegment(20, 1000)
+	seg, want := growingSegment(20, 1000)
 
 	res := u.Upload(context.Background(), al, seg)
 	require.NoError(t, res.Err)
@@ -189,7 +189,7 @@ func TestAcceptedPassedGoesAsCommitted(t *testing.T) {
 	// A live one: the rest goes as under committed, from where the node
 	// stands, the producer holding all of it until the node commits.
 	k.got, k.puts, k.retains = nil, 0, 0
-	seg, want := liveSegment(10, 1000)
+	seg, want := growingSegment(10, 1000)
 	res = u.Upload(context.Background(), al, seg)
 	require.NoError(t, res.Err)
 	require.True(t, res.Stored)
@@ -244,7 +244,7 @@ func TestAcceptedCutWhenTheSatelliteDies(t *testing.T) {
 	k.dieAfter = 2
 	u := accepting(t, k, 2000)
 	al := allocationAt(t, node.srv.Listener.Addr().String(), "laminae/cut")
-	seg, _ := liveSegment(20, 1000)
+	seg, _ := growingSegment(20, 1000)
 
 	res := u.Upload(context.Background(), al, seg)
 	require.True(t, res.Cut, "%+v", res)

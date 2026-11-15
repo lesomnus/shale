@@ -59,30 +59,13 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 	if err != nil {
 		return nil, err
 	}
-	var sources [][]byte
-	var shown []*api.Source
-	var epochs []*api.CaptureEpochGrant
-	for _, m := range members {
-		// A raw source (§38.9) has nothing a relay could show, and a
-		// policy of `always` would start it for nothing.
-		if !showable(m) {
-			continue
-		}
-		grant, managed, err := s.currentSourcePublishGrant(ctx, m, producerId)
-		if err != nil {
-			if managed && status.Code(err) == codes.PermissionDenied {
-				continue
-			}
-			return nil, err
-		}
-		if managed {
-			if grant == nil {
-				continue
-			}
-			epochs = append(epochs, grant)
-		}
+	shown, epochs, err := s.publishable(ctx, producerId, members)
+	if err != nil {
+		return nil, err
+	}
+	sources := make([][]byte, 0, len(shown))
+	for _, m := range shown {
 		sources = append(sources, m.GetId())
-		shown = append(shown, m)
 	}
 	b, _, _, address, err := s.policies(ctx)
 	if err != nil {
@@ -106,6 +89,36 @@ func (s Core) relayAssignment(ctx context.Context, producerId pdid.Id, set *api.
 		DateExpires:  timestamppb.New(exp),
 		Live:         live,
 	}.Build(), nil
+}
+
+// publishable are the members of a producer's set a publish token names
+// (§39.3), with the capture grants of the managed ones among them.
+func (s Core) publishable(ctx context.Context, producerId pdid.Id, members []*api.Source) ([]*api.Source, []*api.CaptureEpochGrant, error) {
+	var shown []*api.Source
+	var epochs []*api.CaptureEpochGrant
+	for _, m := range members {
+		// A raw source (§38.9) has nothing a relay could show, and a
+		// policy of `always` would start it for nothing.
+		if !showable(m) {
+			continue
+		}
+		grant, managed, err := s.currentSourcePublishGrant(ctx, m, producerId)
+		if err != nil {
+			if managed && status.Code(err) == codes.PermissionDenied {
+				continue
+			}
+			return nil, nil, err
+		}
+		if managed {
+			if grant == nil {
+				continue
+			}
+			epochs = append(epochs, grant)
+		}
+		shown = append(shown, m)
+	}
+
+	return shown, epochs, nil
 }
 
 // rewindMargin is what the recent window reaches back past the segment

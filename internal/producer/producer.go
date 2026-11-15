@@ -26,6 +26,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/internal/fmp4"
 	"github.com/lesomnus/shale/internal/h3"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
@@ -119,6 +120,9 @@ type Stats struct {
 	LiveDropped    int64
 	// LiveTranscodes is the live helpers running (§38.7).
 	LiveTranscodes int64
+	// LiveSent is the bytes the producer's own tee handed the relay, every
+	// source together; a source a satellite feeds adds none (§41.8).
+	LiveSent int64
 	// Held is the bytes of unstored segments in RAM, what the budget
 	// counts (§16); Released the bytes of those segments a node reported
 	// durable and `retain: written` let go (§12.2).
@@ -153,9 +157,44 @@ func (p *Producer) Stats() Stats {
 			st.LiveTranscodes++
 		}
 	}
+	for _, n := range p.relay.sent {
+		st.LiveSent += n
+	}
 	p.relay.mu.Unlock()
 
 	return st
+}
+
+// LiveSent is the bytes of a source the producer's own tee handed the
+// relay since it started: none while a satellite feeds it (§41.8).
+func (p *Producer) LiveSent(alias string) int64 {
+	s := p.sourceByAlias(alias)
+	if s == nil || s.row == nil {
+		return 0
+	}
+	id, err := pdid.From(s.row.GetId())
+	if err != nil {
+		return 0
+	}
+	p.relay.mu.Lock()
+	defer p.relay.mu.Unlock()
+
+	return p.relay.sent[id]
+}
+
+// LiveHanded are the sources whose live the producer hands its satellite
+// now, by alias (§41.8).
+func (p *Producer) LiveHanded() []string {
+	var out []string
+	for _, id := range p.satellite.Handed() {
+		for _, s := range p.activeSources() {
+			if s.row != nil && string(s.row.GetId()) == string(id) {
+				out = append(out, s.cfg.Alias)
+			}
+		}
+	}
+
+	return out
 }
 
 // now is the producer's clock.
@@ -427,6 +466,7 @@ func New(cfg Config) (*Producer, error) {
 		// Said once: the bytes are the producer's until the node's 201.
 		cfg.Log.Info("retain: accepted takes a satellite, and upload_via is direct: segments go as under committed")
 	}
+	p.satellite.SetLiveFeed(cfg.Upload.LiveFeed)
 	p.satellite.wake = func() {
 		// The CP's answer names the satellite to use now, or none.
 		select {
@@ -1056,6 +1096,27 @@ func (s *source) currentCutter() *Cutter {
 	return s.cutter
 }
 
+// liveFeedable says whether the live of a source's segment may be handed to
+// the satellite its uploads go through, which feeds the relay from the
+// upload (§41.8): the producer asks for a satellite, `live_feed` is `auto`,
+// and the stream is fragmented MP4 with video that needs no live helper
+// (§38.7), which a satellite does not run. Whether its uploads do go
+// through the satellite, live, is the uploader's to say at each request.
+func (p *Producer) liveFeedable(s *source) bool {
+	if !p.satellite.wanted() || p.cfg.Upload.LiveFeed == LiveFeedProducer {
+		return false
+	}
+	s.mu.Lock()
+	prefix := s.prefix
+	s.mu.Unlock()
+	if len(prefix) == 0 {
+		return false
+	}
+	init, err := fmp4.ParseInit(prefix)
+
+	return err == nil && init.Video() != nil && !needsOpus(init)
+}
+
 // newCutter is the source's cutter for one stream, handing segments to
 // the uploads as the mode says.
 func (p *Producer) newCutter(s *source) *Cutter {
@@ -1069,6 +1130,7 @@ func (p *Producer) newCutter(s *source) *Cutter {
 		},
 		Open: func(seg *Segment) {
 			seg.CaptureEpoch = epoch
+			seg.Live = p.liveFeedable(s)
 			if s.dark != nil && s.dark.Suppressed() {
 				// Opened in the dark: skipped unless the scene is lit
 				// before it closes (§38.10).
@@ -1861,12 +1923,18 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 	p.m.cpu.Record(ctx, cpuLoad())
 	p.m.temperature.Record(ctx, socTemperature())
 	var uplink int64
+	have := map[string]bool{}
 	for _, s := range p.activeSources() {
 		s.mu.Lock()
 		uplink += s.rate(60)
 		s.mu.Unlock()
+		if s.row != nil {
+			have[string(s.row.GetId())] = true
+		}
 	}
 	p.m.uplink.Record(ctx, uplink)
+	// A source the producer no longer has hands the satellite nothing.
+	p.satellite.keepLive(have)
 
 	hctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()

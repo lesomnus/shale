@@ -89,8 +89,9 @@ type Router interface {
 	// Route is the base URL a request for the candidate goes to, and
 	// whether it goes through a satellite.
 	Route(cand *api.Candidate) (base string, viaSatellite bool, err error)
-	// Prepare marks a request before it goes.
-	Prepare(req *http.Request, viaSatellite bool)
+	// Prepare marks a request before it goes; put says what a PUT is of,
+	// nil for a HEAD.
+	Prepare(req *http.Request, viaSatellite bool, put *Request)
 	// Sent counts a request on its path.
 	Sent(viaSatellite bool)
 	// Failed is the satellite failing a request: not the node's failure.
@@ -99,6 +100,16 @@ type Router interface {
 	Succeeded()
 	// DirectFailed is a request sent directly that reached no node.
 	DirectFailed()
+}
+
+// Request is what a PUT is of, for a Router to mark it.
+type Request struct {
+	Allocation *api.Allocation
+	Segment    Segment
+	// Offset is where its body begins.
+	Offset int64
+	// Live says the segment was still growing when the request began.
+	Live bool
 }
 
 // Hooks are told what the upload finds out, for metrics; each may be nil.
@@ -322,9 +333,9 @@ func EndpointURL(ep *api.Endpoint) string {
 	return ep.GetScheme() + "://" + net.JoinHostPort(ep.GetHost(), strconv.Itoa(int(ep.GetPort())))
 }
 
-func (u *Uploader) prepare(req *http.Request, via bool) {
+func (u *Uploader) prepare(req *http.Request, via bool, put *Request) {
 	if u.Router != nil {
-		u.Router.Prepare(req, via)
+		u.Router.Prepare(req, via, put)
 	}
 }
 
@@ -556,7 +567,7 @@ func (u *Uploader) Put(ctx context.Context, url string, viaSatellite bool, tok s
 	}
 	started, ended := seg.Span()
 	req.Header.Set("Authorization", token.Scheme+" "+tok)
-	u.prepare(req, viaSatellite)
+	u.prepare(req, viaSatellite, &Request{Allocation: al, Segment: seg, Offset: offset, Live: live})
 	req.Header.Set(storage.HdrUploadOffset, strconv.FormatInt(offset, 10))
 	req.Header.Set(storage.HdrUploadComplete, "?1")
 	req.Header.Set(storage.HdrDateStarted, started.UTC().Format(time.RFC3339Nano))
@@ -679,7 +690,7 @@ func (u *Uploader) head(ctx context.Context, cand *api.Candidate, key, tok strin
 		return 0, err
 	}
 	req.Header.Set("Authorization", token.Scheme+" "+tok)
-	u.prepare(req, viaSatellite)
+	u.prepare(req, viaSatellite, nil)
 	resp, err := u.Cfg.Client.Do(req)
 	if ctx.Err() == nil && SatelliteFailure(viaSatellite, resp, err) {
 		f := Reply{Err: err, Resp: resp}

@@ -12006,6 +12006,7 @@ type SatelliteProducer struct {
 	state                 protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_ProducerId []byte                 `protobuf:"bytes,1,opt,name=producer_id,json=producerId"`
 	xxx_hidden_CertSerial string                 `protobuf:"bytes,2,opt,name=cert_serial,json=certSerial"`
+	xxx_hidden_Relay      *RelayAssignment       `protobuf:"bytes,3,opt,name=relay"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -12049,6 +12050,13 @@ func (x *SatelliteProducer) GetCertSerial() string {
 	return ""
 }
 
+func (x *SatelliteProducer) GetRelay() *RelayAssignment {
+	if x != nil {
+		return x.xxx_hidden_Relay
+	}
+	return nil
+}
+
 func (x *SatelliteProducer) SetProducerId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -12060,11 +12068,30 @@ func (x *SatelliteProducer) SetCertSerial(v string) {
 	x.xxx_hidden_CertSerial = v
 }
 
+func (x *SatelliteProducer) SetRelay(v *RelayAssignment) {
+	x.xxx_hidden_Relay = v
+}
+
+func (x *SatelliteProducer) HasRelay() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Relay != nil
+}
+
+func (x *SatelliteProducer) ClearRelay() {
+	x.xxx_hidden_Relay = nil
+}
+
 type SatelliteProducer_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	ProducerId []byte
 	CertSerial string
+	// The producer's relay, and a feed token for the sources whose live it
+	// hands this satellite (§41.8); absent when it hands none, or its relay
+	// does not take satellites.
+	Relay *RelayAssignment
 }
 
 func (b0 SatelliteProducer_builder) Build() *SatelliteProducer {
@@ -12073,6 +12100,7 @@ func (b0 SatelliteProducer_builder) Build() *SatelliteProducer {
 	_, _ = b, x
 	x.xxx_hidden_ProducerId = b.ProducerId
 	x.xxx_hidden_CertSerial = b.CertSerial
+	x.xxx_hidden_Relay = b.Relay
 	return m0
 }
 
@@ -20556,12 +20584,13 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\aversion\x18\a \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\"\x88\x01\n" +
 	"\x1aSatelliteHeartbeatResponse\x122\n" +
 	"\x11renew_certificate\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x02R\x10renewCertificate\x126\n" +
-	"\tproducers\x18\x02 \x03(\v2\x18.shale.SatelliteProducerR\tproducers\"c\n" +
+	"\tproducers\x18\x02 \x03(\v2\x18.shale.SatelliteProducerR\tproducers\"\x91\x01\n" +
 	"\x11SatelliteProducer\x12&\n" +
 	"\vproducer_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\n" +
 	"producerId\x12&\n" +
 	"\vcert_serial\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\n" +
-	"certSerial\"7\n" +
+	"certSerial\x12,\n" +
+	"\x05relay\x18\x03 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\"7\n" +
 	"\x15SatelliteRouteRequest\x12\x1e\n" +
 	"\anode_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x06nodeId\"\x86\x01\n" +
 	"\x16SatelliteRouteResponse\x12-\n" +
@@ -21111,19 +21140,19 @@ var file_shale_host_svc_g_proto_goTypes = []any{
 	(*TenantRef)(nil),                         // 148: shale.TenantRef
 	(*SatelliteStatus)(nil),                   // 149: shale.SatelliteStatus
 	(*Satellite)(nil),                         // 150: shale.Satellite
-	(*SiteRef)(nil),                           // 151: shale.SiteRef
-	(*SetRef)(nil),                            // 152: shale.SetRef
-	(*ProducerStatus)(nil),                    // 153: shale.ProducerStatus
-	(LivePolicy)(0),                           // 154: shale.LivePolicy
-	(*TenantSelect)(nil),                      // 155: shale.TenantSelect
-	(*SiteSelect)(nil),                        // 156: shale.SiteSelect
-	(*SetSelect)(nil),                         // 157: shale.SetSelect
-	(*Producer)(nil),                          // 158: shale.Producer
-	(*SourceReport)(nil),                      // 159: shale.SourceReport
-	(*HostLoad)(nil),                          // 160: shale.HostLoad
-	(*AdmissionWait)(nil),                     // 161: shale.AdmissionWait
-	(*UploadReport)(nil),                      // 162: shale.UploadReport
-	(*RelayAssignment)(nil),                   // 163: shale.RelayAssignment
+	(*RelayAssignment)(nil),                   // 151: shale.RelayAssignment
+	(*SiteRef)(nil),                           // 152: shale.SiteRef
+	(*SetRef)(nil),                            // 153: shale.SetRef
+	(*ProducerStatus)(nil),                    // 154: shale.ProducerStatus
+	(LivePolicy)(0),                           // 155: shale.LivePolicy
+	(*TenantSelect)(nil),                      // 156: shale.TenantSelect
+	(*SiteSelect)(nil),                        // 157: shale.SiteSelect
+	(*SetSelect)(nil),                         // 158: shale.SetSelect
+	(*Producer)(nil),                          // 159: shale.Producer
+	(*SourceReport)(nil),                      // 160: shale.SourceReport
+	(*HostLoad)(nil),                          // 161: shale.HostLoad
+	(*AdmissionWait)(nil),                     // 162: shale.AdmissionWait
+	(*UploadReport)(nil),                      // 163: shale.UploadReport
 	(*SatelliteAssignment)(nil),               // 164: shale.SatelliteAssignment
 	(*Reader)(nil),                            // 165: shale.Reader
 }
@@ -21255,233 +21284,234 @@ var file_shale_host_svc_g_proto_depIdxs = []int32{
 	149, // 124: shale.SatelliteHeartbeatRequest.status:type_name -> shale.SatelliteStatus
 	136, // 125: shale.SatelliteHeartbeatRequest.interfaces:type_name -> shale.HostInterface
 	69,  // 126: shale.SatelliteHeartbeatResponse.producers:type_name -> shale.SatelliteProducer
-	145, // 127: shale.SatelliteRouteResponse.endpoints:type_name -> shale.Endpoint
-	135, // 128: shale.SatelliteRouteResponse.date_expires:type_name -> google.protobuf.Timestamp
-	51,  // 129: shale.SatelliteAssignRequest.ref:type_name -> shale.SatelliteRef
-	47,  // 130: shale.SatelliteAssignRequest.producer:type_name -> shale.ProducerRef
-	148, // 131: shale.ProducerAddRequest.tenant:type_name -> shale.TenantRef
-	151, // 132: shale.ProducerAddRequest.site:type_name -> shale.SiteRef
-	127, // 133: shale.ProducerAddRequest.labels:type_name -> shale.ProducerAddRequest.LabelsEntry
-	152, // 134: shale.ProducerAddRequest.set:type_name -> shale.SetRef
-	133, // 135: shale.ProducerAddRequest.state:type_name -> shale.HostState
-	135, // 136: shale.ProducerAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	134, // 137: shale.ProducerAddRequest.join:type_name -> shale.HostJoin
-	135, // 138: shale.ProducerAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	135, // 139: shale.ProducerAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	135, // 140: shale.ProducerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	28,  // 141: shale.ProducerAddRequest.relay:type_name -> shale.RelayRef
-	153, // 142: shale.ProducerAddRequest.status:type_name -> shale.ProducerStatus
-	154, // 143: shale.ProducerAddRequest.live:type_name -> shale.LivePolicy
-	51,  // 144: shale.ProducerAddRequest.satellite:type_name -> shale.SatelliteRef
-	47,  // 145: shale.ProducerGetRequest.ref:type_name -> shale.ProducerRef
-	77,  // 146: shale.ProducerGetRequest.select:type_name -> shale.ProducerSelect
-	155, // 147: shale.ProducerSelect.tenant:type_name -> shale.TenantSelect
-	156, // 148: shale.ProducerSelect.site:type_name -> shale.SiteSelect
-	157, // 149: shale.ProducerSelect.set:type_name -> shale.SetSelect
-	29,  // 150: shale.ProducerSelect.relay:type_name -> shale.RelaySelect
-	52,  // 151: shale.ProducerSelect.satellite:type_name -> shale.SatelliteSelect
-	47,  // 152: shale.ProducerPatchRequest.ref:type_name -> shale.ProducerRef
-	151, // 153: shale.ProducerPatchRequest.site:type_name -> shale.SiteRef
-	128, // 154: shale.ProducerPatchRequest.labels:type_name -> shale.ProducerPatchRequest.LabelsEntry
-	152, // 155: shale.ProducerPatchRequest.set:type_name -> shale.SetRef
-	133, // 156: shale.ProducerPatchRequest.state:type_name -> shale.HostState
-	135, // 157: shale.ProducerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	134, // 158: shale.ProducerPatchRequest.join:type_name -> shale.HostJoin
-	135, // 159: shale.ProducerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	135, // 160: shale.ProducerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	135, // 161: shale.ProducerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	28,  // 162: shale.ProducerPatchRequest.relay:type_name -> shale.RelayRef
-	153, // 163: shale.ProducerPatchRequest.status:type_name -> shale.ProducerStatus
-	154, // 164: shale.ProducerPatchRequest.live:type_name -> shale.LivePolicy
-	51,  // 165: shale.ProducerPatchRequest.satellite:type_name -> shale.SatelliteRef
-	47,  // 166: shale.ProducerApplyRequest.ref:type_name -> shale.ProducerRef
-	138, // 167: shale.ProducerApplyRequest.patch:type_name -> patch.Patch
-	83,  // 168: shale.ProducerListRequest.filters:type_name -> shale.ProducerFilter
-	158, // 169: shale.ProducerListResponse.items:type_name -> shale.Producer
-	47,  // 170: shale.ProducerFilter.ref:type_name -> shale.ProducerRef
-	148, // 171: shale.ProducerFilter.tenant:type_name -> shale.TenantRef
-	152, // 172: shale.ProducerFilter.set:type_name -> shale.SetRef
-	151, // 173: shale.ProducerFilter.site:type_name -> shale.SiteRef
-	129, // 174: shale.ProducerFilter.labels:type_name -> shale.ProducerFilter.LabelsEntry
-	83,  // 175: shale.ProducerWatchRequest.filters:type_name -> shale.ProducerFilter
-	86,  // 176: shale.ProducerWatchResponse.items:type_name -> shale.ProducerWatchItem
-	158, // 177: shale.ProducerWatchItem.value:type_name -> shale.Producer
-	134, // 178: shale.ProducerJoinRequest.host:type_name -> shale.HostJoin
-	15,  // 179: shale.ProducerJoinResponse.answer:type_name -> shale.JoinAnswer
-	47,  // 180: shale.ProducerAdoptRequest.ref:type_name -> shale.ProducerRef
-	152, // 181: shale.ProducerAdoptRequest.set:type_name -> shale.SetRef
-	159, // 182: shale.ProducerHeartbeatRequest.sources:type_name -> shale.SourceReport
-	160, // 183: shale.ProducerHeartbeatRequest.load:type_name -> shale.HostLoad
-	161, // 184: shale.ProducerHeartbeatRequest.admission:type_name -> shale.AdmissionWait
-	162, // 185: shale.ProducerHeartbeatRequest.upload:type_name -> shale.UploadReport
-	163, // 186: shale.ProducerHeartbeatResponse.relay:type_name -> shale.RelayAssignment
-	94,  // 187: shale.ProducerHeartbeatResponse.suggestions:type_name -> shale.Suggestion
-	164, // 188: shale.ProducerHeartbeatResponse.satellite:type_name -> shale.SatelliteAssignment
-	163, // 189: shale.ProducerRelayResponse.relay:type_name -> shale.RelayAssignment
-	148, // 190: shale.ReaderAddRequest.tenant:type_name -> shale.TenantRef
-	130, // 191: shale.ReaderAddRequest.labels:type_name -> shale.ReaderAddRequest.LabelsEntry
-	133, // 192: shale.ReaderAddRequest.state:type_name -> shale.HostState
-	134, // 193: shale.ReaderAddRequest.join:type_name -> shale.HostJoin
-	135, // 194: shale.ReaderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	135, // 195: shale.ReaderAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	135, // 196: shale.ReaderAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	135, // 197: shale.ReaderAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	99,  // 198: shale.ReaderGetRequest.ref:type_name -> shale.ReaderRef
-	101, // 199: shale.ReaderGetRequest.select:type_name -> shale.ReaderSelect
-	100, // 200: shale.ReaderRef.slug:type_name -> shale.ReaderRefBySlug
-	148, // 201: shale.ReaderRefBySlug.tenant:type_name -> shale.TenantRef
-	155, // 202: shale.ReaderSelect.tenant:type_name -> shale.TenantSelect
-	99,  // 203: shale.ReaderPatchRequest.ref:type_name -> shale.ReaderRef
-	131, // 204: shale.ReaderPatchRequest.labels:type_name -> shale.ReaderPatchRequest.LabelsEntry
-	133, // 205: shale.ReaderPatchRequest.state:type_name -> shale.HostState
-	134, // 206: shale.ReaderPatchRequest.join:type_name -> shale.HostJoin
-	135, // 207: shale.ReaderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	135, // 208: shale.ReaderPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	135, // 209: shale.ReaderPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	135, // 210: shale.ReaderPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	99,  // 211: shale.ReaderApplyRequest.ref:type_name -> shale.ReaderRef
-	138, // 212: shale.ReaderApplyRequest.patch:type_name -> patch.Patch
-	107, // 213: shale.ReaderListRequest.filters:type_name -> shale.ReaderFilter
-	165, // 214: shale.ReaderListResponse.items:type_name -> shale.Reader
-	99,  // 215: shale.ReaderFilter.ref:type_name -> shale.ReaderRef
-	148, // 216: shale.ReaderFilter.tenant:type_name -> shale.TenantRef
-	132, // 217: shale.ReaderFilter.labels:type_name -> shale.ReaderFilter.LabelsEntry
-	107, // 218: shale.ReaderWatchRequest.filters:type_name -> shale.ReaderFilter
-	110, // 219: shale.ReaderWatchResponse.items:type_name -> shale.ReaderWatchItem
-	165, // 220: shale.ReaderWatchItem.value:type_name -> shale.Reader
-	134, // 221: shale.ReaderJoinRequest.host:type_name -> shale.HostJoin
-	15,  // 222: shale.ReaderJoinResponse.answer:type_name -> shale.JoinAnswer
-	99,  // 223: shale.ReaderAdoptRequest.ref:type_name -> shale.ReaderRef
-	151, // 224: shale.ReaderAdoptRequest.sites:type_name -> shale.SiteRef
-	0,   // 225: shale.NodeService.Add:input_type -> shale.NodeAddRequest
-	1,   // 226: shale.NodeService.Get:input_type -> shale.NodeGetRequest
-	4,   // 227: shale.NodeService.Patch:input_type -> shale.NodePatchRequest
-	5,   // 228: shale.NodeService.Apply:input_type -> shale.NodeApplyRequest
-	2,   // 229: shale.NodeService.Erase:input_type -> shale.NodeRef
-	7,   // 230: shale.NodeService.List:input_type -> shale.NodeListRequest
-	10,  // 231: shale.NodeService.Watch:input_type -> shale.NodeWatchRequest
-	13,  // 232: shale.NodeService.Join:input_type -> shale.NodeJoinRequest
-	16,  // 233: shale.NodeService.Adopt:input_type -> shale.NodeAdoptRequest
-	17,  // 234: shale.NodeService.RenewCertificate:input_type -> shale.NodeRenewCertificateRequest
-	19,  // 235: shale.NodeService.Heartbeat:input_type -> shale.NodeHeartbeatRequest
-	22,  // 236: shale.NodeService.PushEvents:input_type -> shale.NodePushEventsRequest
-	24,  // 237: shale.NodeService.Resolve:input_type -> shale.NodeResolveRequest
-	26,  // 238: shale.RelayService.Add:input_type -> shale.RelayAddRequest
-	27,  // 239: shale.RelayService.Get:input_type -> shale.RelayGetRequest
-	30,  // 240: shale.RelayService.Patch:input_type -> shale.RelayPatchRequest
-	31,  // 241: shale.RelayService.Apply:input_type -> shale.RelayApplyRequest
-	28,  // 242: shale.RelayService.Erase:input_type -> shale.RelayRef
-	33,  // 243: shale.RelayService.List:input_type -> shale.RelayListRequest
-	36,  // 244: shale.RelayService.Watch:input_type -> shale.RelayWatchRequest
-	39,  // 245: shale.RelayService.Join:input_type -> shale.RelayJoinRequest
-	41,  // 246: shale.RelayService.Adopt:input_type -> shale.RelayAdoptRequest
-	42,  // 247: shale.RelayService.RenewCertificate:input_type -> shale.RelayRenewCertificateRequest
-	44,  // 248: shale.RelayService.Heartbeat:input_type -> shale.RelayHeartbeatRequest
-	46,  // 249: shale.RelayService.Assign:input_type -> shale.RelayAssignRequest
-	49,  // 250: shale.SatelliteService.Add:input_type -> shale.SatelliteAddRequest
-	50,  // 251: shale.SatelliteService.Get:input_type -> shale.SatelliteGetRequest
-	53,  // 252: shale.SatelliteService.Patch:input_type -> shale.SatellitePatchRequest
-	54,  // 253: shale.SatelliteService.Apply:input_type -> shale.SatelliteApplyRequest
-	51,  // 254: shale.SatelliteService.Erase:input_type -> shale.SatelliteRef
-	56,  // 255: shale.SatelliteService.List:input_type -> shale.SatelliteListRequest
-	59,  // 256: shale.SatelliteService.Watch:input_type -> shale.SatelliteWatchRequest
-	62,  // 257: shale.SatelliteService.Join:input_type -> shale.SatelliteJoinRequest
-	64,  // 258: shale.SatelliteService.Adopt:input_type -> shale.SatelliteAdoptRequest
-	65,  // 259: shale.SatelliteService.RenewCertificate:input_type -> shale.SatelliteRenewCertificateRequest
-	67,  // 260: shale.SatelliteService.Heartbeat:input_type -> shale.SatelliteHeartbeatRequest
-	70,  // 261: shale.SatelliteService.Route:input_type -> shale.SatelliteRouteRequest
-	72,  // 262: shale.SatelliteService.Assign:input_type -> shale.SatelliteAssignRequest
-	73,  // 263: shale.SatelliteService.Accept:input_type -> shale.SatelliteAcceptRequest
-	75,  // 264: shale.ProducerService.Add:input_type -> shale.ProducerAddRequest
-	76,  // 265: shale.ProducerService.Get:input_type -> shale.ProducerGetRequest
-	78,  // 266: shale.ProducerService.Patch:input_type -> shale.ProducerPatchRequest
-	79,  // 267: shale.ProducerService.Apply:input_type -> shale.ProducerApplyRequest
-	47,  // 268: shale.ProducerService.Erase:input_type -> shale.ProducerRef
-	81,  // 269: shale.ProducerService.List:input_type -> shale.ProducerListRequest
-	84,  // 270: shale.ProducerService.Watch:input_type -> shale.ProducerWatchRequest
-	87,  // 271: shale.ProducerService.Join:input_type -> shale.ProducerJoinRequest
-	89,  // 272: shale.ProducerService.Adopt:input_type -> shale.ProducerAdoptRequest
-	90,  // 273: shale.ProducerService.RenewCertificate:input_type -> shale.ProducerRenewCertificateRequest
-	92,  // 274: shale.ProducerService.Heartbeat:input_type -> shale.ProducerHeartbeatRequest
-	95,  // 275: shale.ProducerService.Relay:input_type -> shale.ProducerRelayRequest
-	97,  // 276: shale.ReaderService.Add:input_type -> shale.ReaderAddRequest
-	98,  // 277: shale.ReaderService.Get:input_type -> shale.ReaderGetRequest
-	102, // 278: shale.ReaderService.Patch:input_type -> shale.ReaderPatchRequest
-	103, // 279: shale.ReaderService.Apply:input_type -> shale.ReaderApplyRequest
-	99,  // 280: shale.ReaderService.Erase:input_type -> shale.ReaderRef
-	105, // 281: shale.ReaderService.List:input_type -> shale.ReaderListRequest
-	108, // 282: shale.ReaderService.Watch:input_type -> shale.ReaderWatchRequest
-	111, // 283: shale.ReaderService.Join:input_type -> shale.ReaderJoinRequest
-	113, // 284: shale.ReaderService.Adopt:input_type -> shale.ReaderAdoptRequest
-	114, // 285: shale.ReaderService.RenewCertificate:input_type -> shale.ReaderRenewCertificateRequest
-	116, // 286: shale.ReaderService.Heartbeat:input_type -> shale.ReaderHeartbeatRequest
-	139, // 287: shale.NodeService.Add:output_type -> shale.Node
-	139, // 288: shale.NodeService.Get:output_type -> shale.Node
-	139, // 289: shale.NodeService.Patch:output_type -> shale.Node
-	139, // 290: shale.NodeService.Apply:output_type -> shale.Node
-	6,   // 291: shale.NodeService.Erase:output_type -> shale.NodeEraseResponse
-	8,   // 292: shale.NodeService.List:output_type -> shale.NodeListResponse
-	11,  // 293: shale.NodeService.Watch:output_type -> shale.NodeWatchResponse
-	14,  // 294: shale.NodeService.Join:output_type -> shale.NodeJoinResponse
-	139, // 295: shale.NodeService.Adopt:output_type -> shale.Node
-	18,  // 296: shale.NodeService.RenewCertificate:output_type -> shale.NodeRenewCertificateResponse
-	20,  // 297: shale.NodeService.Heartbeat:output_type -> shale.NodeHeartbeatResponse
-	23,  // 298: shale.NodeService.PushEvents:output_type -> shale.NodePushEventsResponse
-	25,  // 299: shale.NodeService.Resolve:output_type -> shale.NodeResolveResponse
-	147, // 300: shale.RelayService.Add:output_type -> shale.Relay
-	147, // 301: shale.RelayService.Get:output_type -> shale.Relay
-	147, // 302: shale.RelayService.Patch:output_type -> shale.Relay
-	147, // 303: shale.RelayService.Apply:output_type -> shale.Relay
-	32,  // 304: shale.RelayService.Erase:output_type -> shale.RelayEraseResponse
-	34,  // 305: shale.RelayService.List:output_type -> shale.RelayListResponse
-	37,  // 306: shale.RelayService.Watch:output_type -> shale.RelayWatchResponse
-	40,  // 307: shale.RelayService.Join:output_type -> shale.RelayJoinResponse
-	147, // 308: shale.RelayService.Adopt:output_type -> shale.Relay
-	43,  // 309: shale.RelayService.RenewCertificate:output_type -> shale.RelayRenewCertificateResponse
-	45,  // 310: shale.RelayService.Heartbeat:output_type -> shale.RelayHeartbeatResponse
-	147, // 311: shale.RelayService.Assign:output_type -> shale.Relay
-	150, // 312: shale.SatelliteService.Add:output_type -> shale.Satellite
-	150, // 313: shale.SatelliteService.Get:output_type -> shale.Satellite
-	150, // 314: shale.SatelliteService.Patch:output_type -> shale.Satellite
-	150, // 315: shale.SatelliteService.Apply:output_type -> shale.Satellite
-	55,  // 316: shale.SatelliteService.Erase:output_type -> shale.SatelliteEraseResponse
-	57,  // 317: shale.SatelliteService.List:output_type -> shale.SatelliteListResponse
-	60,  // 318: shale.SatelliteService.Watch:output_type -> shale.SatelliteWatchResponse
-	63,  // 319: shale.SatelliteService.Join:output_type -> shale.SatelliteJoinResponse
-	150, // 320: shale.SatelliteService.Adopt:output_type -> shale.Satellite
-	66,  // 321: shale.SatelliteService.RenewCertificate:output_type -> shale.SatelliteRenewCertificateResponse
-	68,  // 322: shale.SatelliteService.Heartbeat:output_type -> shale.SatelliteHeartbeatResponse
-	71,  // 323: shale.SatelliteService.Route:output_type -> shale.SatelliteRouteResponse
-	150, // 324: shale.SatelliteService.Assign:output_type -> shale.Satellite
-	74,  // 325: shale.SatelliteService.Accept:output_type -> shale.SatelliteAcceptResponse
-	158, // 326: shale.ProducerService.Add:output_type -> shale.Producer
-	158, // 327: shale.ProducerService.Get:output_type -> shale.Producer
-	158, // 328: shale.ProducerService.Patch:output_type -> shale.Producer
-	158, // 329: shale.ProducerService.Apply:output_type -> shale.Producer
-	80,  // 330: shale.ProducerService.Erase:output_type -> shale.ProducerEraseResponse
-	82,  // 331: shale.ProducerService.List:output_type -> shale.ProducerListResponse
-	85,  // 332: shale.ProducerService.Watch:output_type -> shale.ProducerWatchResponse
-	88,  // 333: shale.ProducerService.Join:output_type -> shale.ProducerJoinResponse
-	158, // 334: shale.ProducerService.Adopt:output_type -> shale.Producer
-	91,  // 335: shale.ProducerService.RenewCertificate:output_type -> shale.ProducerRenewCertificateResponse
-	93,  // 336: shale.ProducerService.Heartbeat:output_type -> shale.ProducerHeartbeatResponse
-	96,  // 337: shale.ProducerService.Relay:output_type -> shale.ProducerRelayResponse
-	165, // 338: shale.ReaderService.Add:output_type -> shale.Reader
-	165, // 339: shale.ReaderService.Get:output_type -> shale.Reader
-	165, // 340: shale.ReaderService.Patch:output_type -> shale.Reader
-	165, // 341: shale.ReaderService.Apply:output_type -> shale.Reader
-	104, // 342: shale.ReaderService.Erase:output_type -> shale.ReaderEraseResponse
-	106, // 343: shale.ReaderService.List:output_type -> shale.ReaderListResponse
-	109, // 344: shale.ReaderService.Watch:output_type -> shale.ReaderWatchResponse
-	112, // 345: shale.ReaderService.Join:output_type -> shale.ReaderJoinResponse
-	165, // 346: shale.ReaderService.Adopt:output_type -> shale.Reader
-	115, // 347: shale.ReaderService.RenewCertificate:output_type -> shale.ReaderRenewCertificateResponse
-	117, // 348: shale.ReaderService.Heartbeat:output_type -> shale.ReaderHeartbeatResponse
-	287, // [287:349] is the sub-list for method output_type
-	225, // [225:287] is the sub-list for method input_type
-	225, // [225:225] is the sub-list for extension type_name
-	225, // [225:225] is the sub-list for extension extendee
-	0,   // [0:225] is the sub-list for field type_name
+	151, // 127: shale.SatelliteProducer.relay:type_name -> shale.RelayAssignment
+	145, // 128: shale.SatelliteRouteResponse.endpoints:type_name -> shale.Endpoint
+	135, // 129: shale.SatelliteRouteResponse.date_expires:type_name -> google.protobuf.Timestamp
+	51,  // 130: shale.SatelliteAssignRequest.ref:type_name -> shale.SatelliteRef
+	47,  // 131: shale.SatelliteAssignRequest.producer:type_name -> shale.ProducerRef
+	148, // 132: shale.ProducerAddRequest.tenant:type_name -> shale.TenantRef
+	152, // 133: shale.ProducerAddRequest.site:type_name -> shale.SiteRef
+	127, // 134: shale.ProducerAddRequest.labels:type_name -> shale.ProducerAddRequest.LabelsEntry
+	153, // 135: shale.ProducerAddRequest.set:type_name -> shale.SetRef
+	133, // 136: shale.ProducerAddRequest.state:type_name -> shale.HostState
+	135, // 137: shale.ProducerAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	134, // 138: shale.ProducerAddRequest.join:type_name -> shale.HostJoin
+	135, // 139: shale.ProducerAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 140: shale.ProducerAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 141: shale.ProducerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	28,  // 142: shale.ProducerAddRequest.relay:type_name -> shale.RelayRef
+	154, // 143: shale.ProducerAddRequest.status:type_name -> shale.ProducerStatus
+	155, // 144: shale.ProducerAddRequest.live:type_name -> shale.LivePolicy
+	51,  // 145: shale.ProducerAddRequest.satellite:type_name -> shale.SatelliteRef
+	47,  // 146: shale.ProducerGetRequest.ref:type_name -> shale.ProducerRef
+	77,  // 147: shale.ProducerGetRequest.select:type_name -> shale.ProducerSelect
+	156, // 148: shale.ProducerSelect.tenant:type_name -> shale.TenantSelect
+	157, // 149: shale.ProducerSelect.site:type_name -> shale.SiteSelect
+	158, // 150: shale.ProducerSelect.set:type_name -> shale.SetSelect
+	29,  // 151: shale.ProducerSelect.relay:type_name -> shale.RelaySelect
+	52,  // 152: shale.ProducerSelect.satellite:type_name -> shale.SatelliteSelect
+	47,  // 153: shale.ProducerPatchRequest.ref:type_name -> shale.ProducerRef
+	152, // 154: shale.ProducerPatchRequest.site:type_name -> shale.SiteRef
+	128, // 155: shale.ProducerPatchRequest.labels:type_name -> shale.ProducerPatchRequest.LabelsEntry
+	153, // 156: shale.ProducerPatchRequest.set:type_name -> shale.SetRef
+	133, // 157: shale.ProducerPatchRequest.state:type_name -> shale.HostState
+	135, // 158: shale.ProducerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	134, // 159: shale.ProducerPatchRequest.join:type_name -> shale.HostJoin
+	135, // 160: shale.ProducerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 161: shale.ProducerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 162: shale.ProducerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	28,  // 163: shale.ProducerPatchRequest.relay:type_name -> shale.RelayRef
+	154, // 164: shale.ProducerPatchRequest.status:type_name -> shale.ProducerStatus
+	155, // 165: shale.ProducerPatchRequest.live:type_name -> shale.LivePolicy
+	51,  // 166: shale.ProducerPatchRequest.satellite:type_name -> shale.SatelliteRef
+	47,  // 167: shale.ProducerApplyRequest.ref:type_name -> shale.ProducerRef
+	138, // 168: shale.ProducerApplyRequest.patch:type_name -> patch.Patch
+	83,  // 169: shale.ProducerListRequest.filters:type_name -> shale.ProducerFilter
+	159, // 170: shale.ProducerListResponse.items:type_name -> shale.Producer
+	47,  // 171: shale.ProducerFilter.ref:type_name -> shale.ProducerRef
+	148, // 172: shale.ProducerFilter.tenant:type_name -> shale.TenantRef
+	153, // 173: shale.ProducerFilter.set:type_name -> shale.SetRef
+	152, // 174: shale.ProducerFilter.site:type_name -> shale.SiteRef
+	129, // 175: shale.ProducerFilter.labels:type_name -> shale.ProducerFilter.LabelsEntry
+	83,  // 176: shale.ProducerWatchRequest.filters:type_name -> shale.ProducerFilter
+	86,  // 177: shale.ProducerWatchResponse.items:type_name -> shale.ProducerWatchItem
+	159, // 178: shale.ProducerWatchItem.value:type_name -> shale.Producer
+	134, // 179: shale.ProducerJoinRequest.host:type_name -> shale.HostJoin
+	15,  // 180: shale.ProducerJoinResponse.answer:type_name -> shale.JoinAnswer
+	47,  // 181: shale.ProducerAdoptRequest.ref:type_name -> shale.ProducerRef
+	153, // 182: shale.ProducerAdoptRequest.set:type_name -> shale.SetRef
+	160, // 183: shale.ProducerHeartbeatRequest.sources:type_name -> shale.SourceReport
+	161, // 184: shale.ProducerHeartbeatRequest.load:type_name -> shale.HostLoad
+	162, // 185: shale.ProducerHeartbeatRequest.admission:type_name -> shale.AdmissionWait
+	163, // 186: shale.ProducerHeartbeatRequest.upload:type_name -> shale.UploadReport
+	151, // 187: shale.ProducerHeartbeatResponse.relay:type_name -> shale.RelayAssignment
+	94,  // 188: shale.ProducerHeartbeatResponse.suggestions:type_name -> shale.Suggestion
+	164, // 189: shale.ProducerHeartbeatResponse.satellite:type_name -> shale.SatelliteAssignment
+	151, // 190: shale.ProducerRelayResponse.relay:type_name -> shale.RelayAssignment
+	148, // 191: shale.ReaderAddRequest.tenant:type_name -> shale.TenantRef
+	130, // 192: shale.ReaderAddRequest.labels:type_name -> shale.ReaderAddRequest.LabelsEntry
+	133, // 193: shale.ReaderAddRequest.state:type_name -> shale.HostState
+	134, // 194: shale.ReaderAddRequest.join:type_name -> shale.HostJoin
+	135, // 195: shale.ReaderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	135, // 196: shale.ReaderAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 197: shale.ReaderAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 198: shale.ReaderAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	99,  // 199: shale.ReaderGetRequest.ref:type_name -> shale.ReaderRef
+	101, // 200: shale.ReaderGetRequest.select:type_name -> shale.ReaderSelect
+	100, // 201: shale.ReaderRef.slug:type_name -> shale.ReaderRefBySlug
+	148, // 202: shale.ReaderRefBySlug.tenant:type_name -> shale.TenantRef
+	156, // 203: shale.ReaderSelect.tenant:type_name -> shale.TenantSelect
+	99,  // 204: shale.ReaderPatchRequest.ref:type_name -> shale.ReaderRef
+	131, // 205: shale.ReaderPatchRequest.labels:type_name -> shale.ReaderPatchRequest.LabelsEntry
+	133, // 206: shale.ReaderPatchRequest.state:type_name -> shale.HostState
+	134, // 207: shale.ReaderPatchRequest.join:type_name -> shale.HostJoin
+	135, // 208: shale.ReaderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	135, // 209: shale.ReaderPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 210: shale.ReaderPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 211: shale.ReaderPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	99,  // 212: shale.ReaderApplyRequest.ref:type_name -> shale.ReaderRef
+	138, // 213: shale.ReaderApplyRequest.patch:type_name -> patch.Patch
+	107, // 214: shale.ReaderListRequest.filters:type_name -> shale.ReaderFilter
+	165, // 215: shale.ReaderListResponse.items:type_name -> shale.Reader
+	99,  // 216: shale.ReaderFilter.ref:type_name -> shale.ReaderRef
+	148, // 217: shale.ReaderFilter.tenant:type_name -> shale.TenantRef
+	132, // 218: shale.ReaderFilter.labels:type_name -> shale.ReaderFilter.LabelsEntry
+	107, // 219: shale.ReaderWatchRequest.filters:type_name -> shale.ReaderFilter
+	110, // 220: shale.ReaderWatchResponse.items:type_name -> shale.ReaderWatchItem
+	165, // 221: shale.ReaderWatchItem.value:type_name -> shale.Reader
+	134, // 222: shale.ReaderJoinRequest.host:type_name -> shale.HostJoin
+	15,  // 223: shale.ReaderJoinResponse.answer:type_name -> shale.JoinAnswer
+	99,  // 224: shale.ReaderAdoptRequest.ref:type_name -> shale.ReaderRef
+	152, // 225: shale.ReaderAdoptRequest.sites:type_name -> shale.SiteRef
+	0,   // 226: shale.NodeService.Add:input_type -> shale.NodeAddRequest
+	1,   // 227: shale.NodeService.Get:input_type -> shale.NodeGetRequest
+	4,   // 228: shale.NodeService.Patch:input_type -> shale.NodePatchRequest
+	5,   // 229: shale.NodeService.Apply:input_type -> shale.NodeApplyRequest
+	2,   // 230: shale.NodeService.Erase:input_type -> shale.NodeRef
+	7,   // 231: shale.NodeService.List:input_type -> shale.NodeListRequest
+	10,  // 232: shale.NodeService.Watch:input_type -> shale.NodeWatchRequest
+	13,  // 233: shale.NodeService.Join:input_type -> shale.NodeJoinRequest
+	16,  // 234: shale.NodeService.Adopt:input_type -> shale.NodeAdoptRequest
+	17,  // 235: shale.NodeService.RenewCertificate:input_type -> shale.NodeRenewCertificateRequest
+	19,  // 236: shale.NodeService.Heartbeat:input_type -> shale.NodeHeartbeatRequest
+	22,  // 237: shale.NodeService.PushEvents:input_type -> shale.NodePushEventsRequest
+	24,  // 238: shale.NodeService.Resolve:input_type -> shale.NodeResolveRequest
+	26,  // 239: shale.RelayService.Add:input_type -> shale.RelayAddRequest
+	27,  // 240: shale.RelayService.Get:input_type -> shale.RelayGetRequest
+	30,  // 241: shale.RelayService.Patch:input_type -> shale.RelayPatchRequest
+	31,  // 242: shale.RelayService.Apply:input_type -> shale.RelayApplyRequest
+	28,  // 243: shale.RelayService.Erase:input_type -> shale.RelayRef
+	33,  // 244: shale.RelayService.List:input_type -> shale.RelayListRequest
+	36,  // 245: shale.RelayService.Watch:input_type -> shale.RelayWatchRequest
+	39,  // 246: shale.RelayService.Join:input_type -> shale.RelayJoinRequest
+	41,  // 247: shale.RelayService.Adopt:input_type -> shale.RelayAdoptRequest
+	42,  // 248: shale.RelayService.RenewCertificate:input_type -> shale.RelayRenewCertificateRequest
+	44,  // 249: shale.RelayService.Heartbeat:input_type -> shale.RelayHeartbeatRequest
+	46,  // 250: shale.RelayService.Assign:input_type -> shale.RelayAssignRequest
+	49,  // 251: shale.SatelliteService.Add:input_type -> shale.SatelliteAddRequest
+	50,  // 252: shale.SatelliteService.Get:input_type -> shale.SatelliteGetRequest
+	53,  // 253: shale.SatelliteService.Patch:input_type -> shale.SatellitePatchRequest
+	54,  // 254: shale.SatelliteService.Apply:input_type -> shale.SatelliteApplyRequest
+	51,  // 255: shale.SatelliteService.Erase:input_type -> shale.SatelliteRef
+	56,  // 256: shale.SatelliteService.List:input_type -> shale.SatelliteListRequest
+	59,  // 257: shale.SatelliteService.Watch:input_type -> shale.SatelliteWatchRequest
+	62,  // 258: shale.SatelliteService.Join:input_type -> shale.SatelliteJoinRequest
+	64,  // 259: shale.SatelliteService.Adopt:input_type -> shale.SatelliteAdoptRequest
+	65,  // 260: shale.SatelliteService.RenewCertificate:input_type -> shale.SatelliteRenewCertificateRequest
+	67,  // 261: shale.SatelliteService.Heartbeat:input_type -> shale.SatelliteHeartbeatRequest
+	70,  // 262: shale.SatelliteService.Route:input_type -> shale.SatelliteRouteRequest
+	72,  // 263: shale.SatelliteService.Assign:input_type -> shale.SatelliteAssignRequest
+	73,  // 264: shale.SatelliteService.Accept:input_type -> shale.SatelliteAcceptRequest
+	75,  // 265: shale.ProducerService.Add:input_type -> shale.ProducerAddRequest
+	76,  // 266: shale.ProducerService.Get:input_type -> shale.ProducerGetRequest
+	78,  // 267: shale.ProducerService.Patch:input_type -> shale.ProducerPatchRequest
+	79,  // 268: shale.ProducerService.Apply:input_type -> shale.ProducerApplyRequest
+	47,  // 269: shale.ProducerService.Erase:input_type -> shale.ProducerRef
+	81,  // 270: shale.ProducerService.List:input_type -> shale.ProducerListRequest
+	84,  // 271: shale.ProducerService.Watch:input_type -> shale.ProducerWatchRequest
+	87,  // 272: shale.ProducerService.Join:input_type -> shale.ProducerJoinRequest
+	89,  // 273: shale.ProducerService.Adopt:input_type -> shale.ProducerAdoptRequest
+	90,  // 274: shale.ProducerService.RenewCertificate:input_type -> shale.ProducerRenewCertificateRequest
+	92,  // 275: shale.ProducerService.Heartbeat:input_type -> shale.ProducerHeartbeatRequest
+	95,  // 276: shale.ProducerService.Relay:input_type -> shale.ProducerRelayRequest
+	97,  // 277: shale.ReaderService.Add:input_type -> shale.ReaderAddRequest
+	98,  // 278: shale.ReaderService.Get:input_type -> shale.ReaderGetRequest
+	102, // 279: shale.ReaderService.Patch:input_type -> shale.ReaderPatchRequest
+	103, // 280: shale.ReaderService.Apply:input_type -> shale.ReaderApplyRequest
+	99,  // 281: shale.ReaderService.Erase:input_type -> shale.ReaderRef
+	105, // 282: shale.ReaderService.List:input_type -> shale.ReaderListRequest
+	108, // 283: shale.ReaderService.Watch:input_type -> shale.ReaderWatchRequest
+	111, // 284: shale.ReaderService.Join:input_type -> shale.ReaderJoinRequest
+	113, // 285: shale.ReaderService.Adopt:input_type -> shale.ReaderAdoptRequest
+	114, // 286: shale.ReaderService.RenewCertificate:input_type -> shale.ReaderRenewCertificateRequest
+	116, // 287: shale.ReaderService.Heartbeat:input_type -> shale.ReaderHeartbeatRequest
+	139, // 288: shale.NodeService.Add:output_type -> shale.Node
+	139, // 289: shale.NodeService.Get:output_type -> shale.Node
+	139, // 290: shale.NodeService.Patch:output_type -> shale.Node
+	139, // 291: shale.NodeService.Apply:output_type -> shale.Node
+	6,   // 292: shale.NodeService.Erase:output_type -> shale.NodeEraseResponse
+	8,   // 293: shale.NodeService.List:output_type -> shale.NodeListResponse
+	11,  // 294: shale.NodeService.Watch:output_type -> shale.NodeWatchResponse
+	14,  // 295: shale.NodeService.Join:output_type -> shale.NodeJoinResponse
+	139, // 296: shale.NodeService.Adopt:output_type -> shale.Node
+	18,  // 297: shale.NodeService.RenewCertificate:output_type -> shale.NodeRenewCertificateResponse
+	20,  // 298: shale.NodeService.Heartbeat:output_type -> shale.NodeHeartbeatResponse
+	23,  // 299: shale.NodeService.PushEvents:output_type -> shale.NodePushEventsResponse
+	25,  // 300: shale.NodeService.Resolve:output_type -> shale.NodeResolveResponse
+	147, // 301: shale.RelayService.Add:output_type -> shale.Relay
+	147, // 302: shale.RelayService.Get:output_type -> shale.Relay
+	147, // 303: shale.RelayService.Patch:output_type -> shale.Relay
+	147, // 304: shale.RelayService.Apply:output_type -> shale.Relay
+	32,  // 305: shale.RelayService.Erase:output_type -> shale.RelayEraseResponse
+	34,  // 306: shale.RelayService.List:output_type -> shale.RelayListResponse
+	37,  // 307: shale.RelayService.Watch:output_type -> shale.RelayWatchResponse
+	40,  // 308: shale.RelayService.Join:output_type -> shale.RelayJoinResponse
+	147, // 309: shale.RelayService.Adopt:output_type -> shale.Relay
+	43,  // 310: shale.RelayService.RenewCertificate:output_type -> shale.RelayRenewCertificateResponse
+	45,  // 311: shale.RelayService.Heartbeat:output_type -> shale.RelayHeartbeatResponse
+	147, // 312: shale.RelayService.Assign:output_type -> shale.Relay
+	150, // 313: shale.SatelliteService.Add:output_type -> shale.Satellite
+	150, // 314: shale.SatelliteService.Get:output_type -> shale.Satellite
+	150, // 315: shale.SatelliteService.Patch:output_type -> shale.Satellite
+	150, // 316: shale.SatelliteService.Apply:output_type -> shale.Satellite
+	55,  // 317: shale.SatelliteService.Erase:output_type -> shale.SatelliteEraseResponse
+	57,  // 318: shale.SatelliteService.List:output_type -> shale.SatelliteListResponse
+	60,  // 319: shale.SatelliteService.Watch:output_type -> shale.SatelliteWatchResponse
+	63,  // 320: shale.SatelliteService.Join:output_type -> shale.SatelliteJoinResponse
+	150, // 321: shale.SatelliteService.Adopt:output_type -> shale.Satellite
+	66,  // 322: shale.SatelliteService.RenewCertificate:output_type -> shale.SatelliteRenewCertificateResponse
+	68,  // 323: shale.SatelliteService.Heartbeat:output_type -> shale.SatelliteHeartbeatResponse
+	71,  // 324: shale.SatelliteService.Route:output_type -> shale.SatelliteRouteResponse
+	150, // 325: shale.SatelliteService.Assign:output_type -> shale.Satellite
+	74,  // 326: shale.SatelliteService.Accept:output_type -> shale.SatelliteAcceptResponse
+	159, // 327: shale.ProducerService.Add:output_type -> shale.Producer
+	159, // 328: shale.ProducerService.Get:output_type -> shale.Producer
+	159, // 329: shale.ProducerService.Patch:output_type -> shale.Producer
+	159, // 330: shale.ProducerService.Apply:output_type -> shale.Producer
+	80,  // 331: shale.ProducerService.Erase:output_type -> shale.ProducerEraseResponse
+	82,  // 332: shale.ProducerService.List:output_type -> shale.ProducerListResponse
+	85,  // 333: shale.ProducerService.Watch:output_type -> shale.ProducerWatchResponse
+	88,  // 334: shale.ProducerService.Join:output_type -> shale.ProducerJoinResponse
+	159, // 335: shale.ProducerService.Adopt:output_type -> shale.Producer
+	91,  // 336: shale.ProducerService.RenewCertificate:output_type -> shale.ProducerRenewCertificateResponse
+	93,  // 337: shale.ProducerService.Heartbeat:output_type -> shale.ProducerHeartbeatResponse
+	96,  // 338: shale.ProducerService.Relay:output_type -> shale.ProducerRelayResponse
+	165, // 339: shale.ReaderService.Add:output_type -> shale.Reader
+	165, // 340: shale.ReaderService.Get:output_type -> shale.Reader
+	165, // 341: shale.ReaderService.Patch:output_type -> shale.Reader
+	165, // 342: shale.ReaderService.Apply:output_type -> shale.Reader
+	104, // 343: shale.ReaderService.Erase:output_type -> shale.ReaderEraseResponse
+	106, // 344: shale.ReaderService.List:output_type -> shale.ReaderListResponse
+	109, // 345: shale.ReaderService.Watch:output_type -> shale.ReaderWatchResponse
+	112, // 346: shale.ReaderService.Join:output_type -> shale.ReaderJoinResponse
+	165, // 347: shale.ReaderService.Adopt:output_type -> shale.Reader
+	115, // 348: shale.ReaderService.RenewCertificate:output_type -> shale.ReaderRenewCertificateResponse
+	117, // 349: shale.ReaderService.Heartbeat:output_type -> shale.ReaderHeartbeatResponse
+	288, // [288:350] is the sub-list for method output_type
+	226, // [226:288] is the sub-list for method input_type
+	226, // [226:226] is the sub-list for extension type_name
+	226, // [226:226] is the sub-list for extension extendee
+	0,   // [0:226] is the sub-list for field type_name
 }
 
 func init() { file_shale_host_svc_g_proto_init() }

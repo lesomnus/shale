@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -60,9 +61,12 @@ func (s *source) closeEpochPeers(keys []string) {
 }
 
 // authorizeLocked commits a grant after the entire attachment was validated
-// with every affected source locked. The returned action performs slow peer
-// shutdown and stream control only after all source locks have been released.
-func (s *source) authorizeLocked(f feeder, grant *api.CaptureEpochGrant, always bool, window time.Duration) func() {
+// with every affected source locked, and registers the stream as one of the
+// source's publishers: a producer's own stream as the newest of its kind, a
+// satellite's as it was (§39.3). The source's feeder is then the best of
+// them. The returned action performs slow peer shutdown and stream control
+// only after all source locks have been released.
+func (s *source) authorizeLocked(f feeder, satellite bool, grant *api.CaptureEpochGrant, always bool, window time.Duration) func() {
 	wasStarted := s.started
 	var close []string
 	if grant != nil {
@@ -74,28 +78,56 @@ func (s *source) authorizeLocked(f feeder, grant *api.CaptureEpochGrant, always 
 		s.epochDenied = grant.GetCaptureEpoch() == ""
 		s.stopped = s.epochDenied
 	}
+	p := s.publishers[f]
+	if p == nil {
+		p = &publisher{satellite: satellite}
+		s.publishers[f] = p
+	}
+	p.grant, p.always, p.window = grant, always, window
+	if !satellite {
+		// A producer's stream feeds every source of its token, and the
+		// one authorized last is the newest of its streams.
+		p.feeds, p.order = true, s.r.sources.next()
+	}
 	old := s.feeder
-	s.feeder, s.always, s.window = f, always, window
+	next := s.best()
+	s.feeder = next
+	if next != nil {
+		np := s.publishers[next]
+		s.always, s.window = np.always, np.window
+	}
 	// A managed viewer capability requires an init from this incarnation.
 	// Prime on-demand sources too, otherwise the first viewer cannot open.
 	prime := s.managed && !s.stopped && s.init == nil
-	start := !s.stopped && (always || len(s.viewers) > 0 || prime) && (!s.started || old != f || len(close) > 0)
-	s.started = !s.stopped && (always || len(s.viewers) > 0 || prime)
-	stop := wasStarted && !s.started
+	s.started = next != nil && !s.stopped && (s.always || len(s.viewers) > 0 || prime)
+	start := s.started && (!wasStarted || old != next || len(close) > 0)
+	stop := wasStarted && old != nil && (old != next || !s.started)
+	if next == nil && old != nil {
+		s.gop = nil
+		s.ring.reset()
+		s.seq = 0
+		s.restartPacing()
+	}
+	if old != nil && next != nil && old != next && s.r.m != nil {
+		s.r.m.handoffs.Add(context.Background(), 1)
+	}
 	return func() {
 		s.closeEpochPeers(close)
-		if start {
-			f.start(s.id)
-		}
 		if stop {
-			f.stop(s.id)
+			old.stop(s.id)
+		}
+		if start {
+			next.start(s.id)
 		}
 	}
 }
 
+// resetEpoch takes a Reset from the source's feeder, and from the producer's
+// own stream while a satellite feeds the source: the capture's incarnation
+// is the producer's to say, whoever carries its bytes (§41.8).
 func (s *source) resetEpoch(f feeder, grant *api.CaptureEpochGrant, epoch string, stopped bool) bool {
 	s.mu.Lock()
-	if s.feeder != f || s.checkGrant(grant) != nil || s.managed && (grant == nil || epoch != grant.GetCaptureEpoch() || !stopped && epoch == "") || !s.managed && epoch != "" {
+	if !s.controlledBy(f) || s.checkGrant(grant) != nil || s.managed && (grant == nil || epoch != grant.GetCaptureEpoch() || !stopped && epoch == "") || !s.managed && epoch != "" {
 		s.mu.Unlock()
 		return false
 	}
@@ -109,9 +141,10 @@ func (s *source) resetEpoch(f feeder, grant *api.CaptureEpochGrant, epoch string
 		// This retained current Reset acknowledges local readiness: repeat the
 		// prime until init arrives, without disturbing established sources.
 		prime := s.managed && !stopped && s.started && s.init == nil
+		feeder := s.feeder
 		s.mu.Unlock()
-		if prime {
-			f.start(s.id)
+		if prime && feeder != nil {
+			feeder.start(s.id)
 		}
 		return true
 	}
@@ -130,11 +163,31 @@ func (s *source) resetEpoch(f feeder, grant *api.CaptureEpochGrant, epoch string
 	return true
 }
 
+// controlledBy says whether a stream's Reset is taken: the feeder's, and the
+// producer's own stream's while a satellite feeds the source; with the lock
+// held.
+func (s *source) controlledBy(f feeder) bool {
+	if s.feeder == f {
+		return true
+	}
+	p, cur := s.publishers[f], s.publishers[s.feeder]
+
+	return p != nil && !p.satellite && cur != nil && cur.satellite
+}
+
 // removePublisherLocked participates in the same multi-source commit as
-// authorizeLocked, including the old membership's removed sources.
+// authorizeLocked, including the old membership's removed sources. A
+// satellite's stream whose token no longer names a source hands it to the
+// next feeder; the producer's own stream that no longer names it takes the
+// source off the relay.
 func (s *source) removePublisherLocked(f feeder) func() {
+	p := s.publishers[f]
+	delete(s.publishers, f)
 	if s.feeder != f {
 		return nil
+	}
+	if p != nil && p.satellite {
+		return s.electLocked()
 	}
 	keys := s.invalidateLocked()
 	s.feeder, s.started = nil, false

@@ -26,8 +26,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3).
-// The producer dials; the relay says which sources to send and when to stop.
+// RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3),
+// and a satellite one for each producer whose live it feeds (§41.8). The
+// feeder dials; the relay says which sources to send and when to stop.
 type RelayIngestClient interface {
 	Attach(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AttachRequest, AttachResponse], error)
 }
@@ -57,8 +58,9 @@ type RelayIngest_AttachClient = grpc.BidiStreamingClient[AttachRequest, AttachRe
 // All implementations must embed UnimplementedRelayIngestServer
 // for forward compatibility.
 //
-// RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3).
-// The producer dials; the relay says which sources to send and when to stop.
+// RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3),
+// and a satellite one for each producer whose live it feeds (§41.8). The
+// feeder dials; the relay says which sources to send and when to stop.
 type RelayIngestServer interface {
 	Attach(grpc.BidiStreamingServer[AttachRequest, AttachResponse]) error
 	mustEmbedUnimplementedRelayIngestServer()

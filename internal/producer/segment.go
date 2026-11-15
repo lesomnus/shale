@@ -27,9 +27,16 @@ type Segment struct {
 	Early bool
 	// Stopped says the camera stopped rather than the schedule cutting it.
 	Stopped bool
+	// Live says its live may be handed to the satellite its uploads go
+	// through, which feeds the relay from them (§41.8): `live_feed: auto`,
+	// and a stream that needs no live helper.
+	Live bool
 
 	mu   sync.Mutex
 	cond *sync.Cond
+	// marks are where each write began and when, for how old the bytes at
+	// an offset are (LiveFrom).
+	marks []segMark
 	// dark says the segment opened while the scene was dark past the
 	// source's threshold, and is skipped unless the scene is lit before
 	// it closes (§38.10).
@@ -107,8 +114,41 @@ func (s *Segment) Write(b []byte) {
 	s.cond.Broadcast()
 }
 
+// segMark is where a write began, and when.
+type segMark struct {
+	off int64
+	at  time.Time
+}
+
+// LiveFrom is where the live of a request that reads from `off` begins
+// (§41.8): `off` when the bytes there were written within `behind` of now,
+// else the first written since, else the end, where the next bytes will
+// be. Bytes older than that are a backlog, sent to the node but not to
+// anyone watching.
+func (s *Segment) LiveFrom(off int64, now time.Time, behind time.Duration) int64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	end := s.base + s.held
+	for i, m := range s.marks {
+		next := end
+		if i+1 < len(s.marks) {
+			next = s.marks[i+1].off
+		}
+		if next <= off || now.Sub(m.at) > behind {
+			continue
+		}
+
+		return max(off, m.off)
+	}
+
+	return max(off, end)
+}
+
 // write copies bytes into the last chunk and new ones as it fills.
 func (s *Segment) write(b []byte) {
+	if len(b) > 0 {
+		s.marks = append(s.marks, segMark{off: s.base + s.held, at: time.Now()})
+	}
 	s.held += int64(len(b))
 	for len(b) > 0 {
 		n := len(s.chunks)
@@ -145,7 +185,7 @@ func (s *Segment) Discard() {
 	s.mu.Lock()
 	s.discarded = true
 	s.base += s.held
-	s.chunks, s.held = nil, 0
+	s.chunks, s.held, s.marks = nil, 0, nil
 	s.mu.Unlock()
 	s.cond.Broadcast()
 }
@@ -232,6 +272,11 @@ func (s *Segment) Release(upTo int64) {
 	}
 	s.held -= upTo - s.base
 	s.base = upTo
+	n := 0
+	for n+1 < len(s.marks) && s.marks[n+1].off <= upTo {
+		n++
+	}
+	s.marks = s.marks[n:]
 }
 
 // Closed says whether the segment is complete.

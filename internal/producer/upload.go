@@ -47,6 +47,10 @@ type UploadConfig struct {
 	// directly to the nodes by default, so a producer updated without a
 	// word in its configuration uploads as it did.
 	Via Via
+	// LiveFeed is who feeds the relay a source whose live uploads go
+	// through the satellite (§41.8, `producer.live_feed`): the satellite
+	// where it can by default; nothing changes while uploads go directly.
+	LiveFeed LiveFeed
 }
 
 func (c *UploadConfig) defaults() {
@@ -80,7 +84,9 @@ type Uploader struct {
 	// `committed`.
 	Accepted bool
 	// Satellite routes requests through the satellite the CP assigned,
-	// where Cfg.Via says to (§41.5); nil is directly to the nodes.
+	// where Cfg.Via says to (§41.5), and hands it the live of the segments
+	// that may be fed from it where Cfg.LiveFeed says to (§41.8); nil is
+	// directly to the nodes.
 	Satellite *SatelliteLink
 
 	// defaulted fills in what Cfg leaves out, once: every source's upload
@@ -179,8 +185,21 @@ func (r linkRouter) Route(cand *api.Candidate) (string, bool, error) {
 	return base, via, nil
 }
 
-func (r linkRouter) Prepare(req *http.Request, via bool) { r.u.Satellite.prepare(req, via) }
-func (r linkRouter) Sent(via bool)                       { r.u.Satellite.sent(via) }
-func (r linkRouter) Failed(err error)                    { r.u.satelliteFailed(err) }
-func (r linkRouter) Succeeded()                          { r.u.Satellite.succeeded() }
-func (r linkRouter) DirectFailed()                       { r.u.Satellite.directFailed() }
+// Prepare marks a request for the satellite: in development mode which
+// producer it is, and for a live segment whether its live is handed to the
+// satellite, and from where (§41.8). Under `retain: accepted` too: the
+// satellite feeds the relay from what it takes.
+func (r linkRouter) Prepare(req *http.Request, via bool, put *upload.Request) {
+	r.u.Satellite.prepare(req, via)
+	if put == nil || !put.Live {
+		return
+	}
+	if seg, ok := put.Segment.(*Segment); ok {
+		r.u.Satellite.liveRequest(req, put.Allocation.GetSourceId(), via, seg, put.Offset)
+	}
+}
+
+func (r linkRouter) Sent(via bool)    { r.u.Satellite.sent(via) }
+func (r linkRouter) Failed(err error) { r.u.satelliteFailed(err) }
+func (r linkRouter) Succeeded()       { r.u.Satellite.succeeded() }
+func (r linkRouter) DirectFailed()    { r.u.Satellite.directFailed() }

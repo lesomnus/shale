@@ -52,15 +52,18 @@ func (p *Proxy) heldOf(lamina pdid.Id) *held {
 
 // accepted serves a request under `retain: accepted`. It answers false to
 // pass the request through to the node as under `committed`, with the
-// reason set in Shale-Pass.
-func (p *Proxy) accepted(w http.ResponseWriter, r *http.Request, caller pdid.Id, c *api.TokenClaims, key string) bool {
+// reason set in Shale-Pass; and, when it served the request, whether it
+// read the body to its end. live, when not nil, is handed the bytes the
+// satellite takes, as they come (§41.8): the relay is fed from what the
+// producer sends, not from what the satellite later delivers.
+func (p *Proxy) accepted(w http.ResponseWriter, r *http.Request, caller pdid.Id, c *api.TokenClaims, key string, live *tap) (bool, bool) {
 	lamina, err := pdid.From(c.GetRecord().GetLaminaId())
 	if err != nil {
 		w.Header().Set(upload.HdrPass, upload.PassUnrecorded)
-		return false
+		return false, false
 	}
 	if r.Method == http.MethodHead {
-		return p.headHeld(w, caller, lamina)
+		return p.headHeld(w, caller, lamina), false
 	}
 
 	var h *held
@@ -79,25 +82,24 @@ func (p *Proxy) accepted(w http.ResponseWriter, r *http.Request, caller pdid.Id,
 	}
 	if h.producer != caller {
 		own(w, ReasonToken, http.StatusForbidden, "another producer's lamina")
-		return true
+		return true, false
 	}
 	if fresh {
 		if why, ok := p.admit(w, r, h, caller, c, key, lamina); !ok {
 			p.unclaim(h, errors.New(why))
 			if why == "" {
 				// Refused outright: the answer is written.
-				return true
+				return true, false
 			}
 			p.passed.Add(1)
 			w.Header().Set(upload.HdrPass, why)
 			p.Log.Info("passed through rather than accepted", "producer", caller.String(), "key", key, "why", why)
 
-			return false
+			return false, false
 		}
 	}
-	p.take(w, r, h)
 
-	return true
+	return true, p.take(w, r, h, live)
 }
 
 // claim is the entry of a lamina, made when there is none: fresh says the
@@ -265,8 +267,11 @@ func (p *Proxy) checkHandoff(hd *api.Handoff, caller, lamina pdid.Id, key string
 
 // take reads a request's bytes into a segment the satellite holds, and
 // answers what it holds: 204 with more to come, 202 once the producer
-// sent the whole segment.
-func (p *Proxy) take(w http.ResponseWriter, r *http.Request, h *held) {
+// sent the whole segment. live, when not nil, is handed what it takes, as
+// it takes it (§41.8). It answers whether what it read goes on from where
+// the next request will: the body read to its end, or a prefix of it the
+// pool had room for.
+func (p *Proxy) take(w http.ResponseWriter, r *http.Request, h *held, live *tap) bool {
 	h.touch()
 	n, closed, _ := h.state()
 	answer := func(status int, n int64) {
@@ -282,20 +287,20 @@ func (p *Proxy) take(w http.ResponseWriter, r *http.Request, h *held) {
 	}
 	if closed {
 		answer(http.StatusAccepted, n)
-		return
+		return false
 	}
 	off, err := strconv.ParseInt(strings.TrimSpace(r.Header.Get(storage.HdrUploadOffset)), 10, 64)
 	if err != nil || off != n {
 		// Not where the satellite stands: from there, as a node answers.
 		answer(http.StatusConflict, n)
-		return
+		return false
 	}
 	h.mu.Lock()
 	gone, full := h.aborted != nil, h.n >= h.charged
 	h.mu.Unlock()
 	if gone {
 		own(w, ReasonRequest, http.StatusGone, "the satellite let this segment go")
-		return
+		return false
 	}
 	if full && !p.retained.hasRoom() {
 		// Past its reservation, and the pool has no room at all: the rest
@@ -303,9 +308,16 @@ func (p *Proxy) take(w http.ResponseWriter, r *http.Request, h *held) {
 		w.Header().Set(upload.HdrAccepted, strconv.FormatInt(n, 10))
 		w.Header().Set("Retry-After", acceptedRetryAfter)
 		own(w, ReasonBusy, http.StatusServiceUnavailable, "the retained pool is full")
-		return
+		return false
 	}
 
+	keep := func(b []byte) {
+		h.write(b)
+		p.acceptedBytes.Add(int64(len(b)))
+		if live != nil {
+			live.write(b)
+		}
+	}
 	buf := make([]byte, 32<<10)
 	for {
 		k, rerr := r.Body.Read(buf)
@@ -313,20 +325,18 @@ func (p *Proxy) take(w http.ResponseWriter, r *http.Request, h *held) {
 			if h.maxLen > 0 && h.Len()+int64(k) > h.maxLen {
 				w.Header().Set(upload.HdrAccepted, strconv.FormatInt(h.Len(), 10))
 				own(w, ReasonRequest, http.StatusRequestEntityTooLarge, "the segment exceeds max_length")
-				return
+				return false
 			}
 			if m := p.room(h, int64(k)); m < int64(k) {
 				// No room for more than m: what it holds stays, and the rest
 				// waits at the producer until there is (§41.9).
-				h.write(buf[:m])
-				p.acceptedBytes.Add(m)
+				keep(buf[:m])
 				p.Log.Info("the retained pool is full; the producer keeps the rest for now", "key", h.key, "held", h.Len())
 				w.Header().Set("Retry-After", acceptedRetryAfter)
 				answer(http.StatusNoContent, h.Len())
-				return
+				return true
 			}
-			h.write(buf[:k])
-			p.acceptedBytes.Add(int64(k))
+			keep(buf[:k])
 		}
 		if rerr == io.EOF {
 			break
@@ -334,19 +344,19 @@ func (p *Proxy) take(w http.ResponseWriter, r *http.Request, h *held) {
 		if rerr != nil {
 			// The producer went away: what came stays, and it asks where
 			// the segment stands when it is back.
-			return
+			return false
 		}
 	}
 
 	n = h.Len()
 	if strings.TrimSpace(r.Header.Get(storage.HdrUploadComplete)) != "?1" {
 		answer(http.StatusNoContent, n)
-		return
+		return true
 	}
 	if v := r.Header.Get(storage.HdrUploadLength); v != "" {
 		if l, err := strconv.ParseInt(v, 10, 64); err != nil || l != n {
 			answer(http.StatusConflict, n)
-			return
+			return false
 		}
 	}
 	ended := r.Trailer.Get(storage.HdrDateEnded)
@@ -356,6 +366,8 @@ func (p *Proxy) take(w http.ResponseWriter, r *http.Request, h *held) {
 	t, _ := time.Parse(time.RFC3339Nano, ended)
 	h.close(t)
 	answer(http.StatusAccepted, n)
+
+	return true
 }
 
 // room charges the pool for k more bytes of a segment, past what it
@@ -428,11 +440,11 @@ func (r nodeRouter) Route(cand *api.Candidate) (string, bool, error) {
 	return base, false, err
 }
 
-func (nodeRouter) Prepare(*http.Request, bool) {}
-func (nodeRouter) Sent(bool)                   {}
-func (nodeRouter) Failed(error)                {}
-func (nodeRouter) Succeeded()                  {}
-func (nodeRouter) DirectFailed()               {}
+func (nodeRouter) Prepare(*http.Request, bool, *upload.Request) {}
+func (nodeRouter) Sent(bool)                                    {}
+func (nodeRouter) Failed(error)                                 {}
+func (nodeRouter) Succeeded()                                   {}
+func (nodeRouter) DirectFailed()                                {}
 
 // limits are a handoff's timeouts, within reason.
 func limits(hd *api.Handoff) (resume, abandon, retryCap time.Duration, retries int) {

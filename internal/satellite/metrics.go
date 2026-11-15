@@ -25,6 +25,10 @@ type metrics struct {
 	delivered      metric.Int64Gauge
 	givenUp        metric.Int64Gauge
 	passed         metric.Int64Gauge
+	// Live fan-out (§41.8).
+	liveSources metric.Int64Gauge
+	liveBytes   metric.Int64Gauge
+	liveDropped metric.Int64Gauge
 }
 
 func newMetrics(ctx context.Context) *metrics {
@@ -46,5 +50,8 @@ func newMetrics(ctx context.Context) *metrics {
 		delivered:      o.Int64Gauge("shale.satellite.delivered", metric.WithDescription("segments taken under retain: accepted and delivered to a node since the satellite started")),
 		givenUp:        o.Int64Gauge("shale.satellite.given_up", metric.WithDescription("segments taken under retain: accepted and given up since the satellite started: reported LOST, or left to the node's abandon rule")),
 		passed:         o.Int64Gauge("shale.satellite.passed", metric.WithDescription("requests under retain: accepted passed through to the node instead, for want of room or because the satellite refuses it, since it started")),
+		liveSources:    o.Int64Gauge("shale.satellite.live_sources", metric.WithDescription("sources whose live the satellite feeds relays from their uploads now")),
+		liveBytes:      o.Int64Gauge("shale.satellite.live_bytes", metric.WithDescription("bytes of live sent to relays since the satellite started"), metric.WithUnit("By")),
+		liveDropped:    o.Int64Gauge("shale.satellite.live_dropped", metric.WithDescription("live fragments dropped since the satellite started because a relay was behind")),
 	}
 }

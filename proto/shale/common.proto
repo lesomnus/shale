@@ -201,15 +201,23 @@ message UploadReport {
   // Times the satellite failed and the producer went to the node directly
   // for a while (`auto`).
   int64 fallbacks = 5;
+  // The sources whose live the producer hands to the satellite now, to
+  // feed the relay with from their uploads (§41.8): those whose live
+  // uploads go through it, and need no live helper. The CP gives that
+  // satellite a feed token for these and no others.
+  repeated bytes live_sources = 6;
+  // `producer.live_feed`, as configured: `auto` or `producer`; empty from a
+  // producer that predates it.
+  string live_feed = 7;
   // The producer's `retain`; empty from a producer that does not say.
-  string retain = 6;
+  string retain = 8;
   // Under `retain: accepted` (§41.9): segments the satellite took whole,
   // and their bytes, which the producer let go before any node had them;
   // and requests the satellite passed through to the node rather than
   // accepted, the producer keeping the bytes as under `committed`.
-  int64 handed_off = 7;
-  int64 handed_off_bytes = 8;
-  int64 passed = 9;
+  int64 handed_off = 9;
+  int64 handed_off_bytes = 10;
+  int64 passed = 11;
 }
 
 // LivePolicy is whether a producer's cameras are on the relay at all times
@@ -438,6 +446,10 @@ message RelayStatus {
   // them (§39.5).
   int64 rewind_bytes = 9;
   int64 rewind_budget = 10;
+  // It takes a satellite as a producer's feeder (§39.3). A relay that
+  // predates satellites says nothing, and the CP gives no satellite a feed
+  // token for it.
+  bool satellite_feeders = 11;
 }
 
 // SatelliteStatus is the last heartbeat the CP kept on a satellite row
@@ -463,24 +475,30 @@ message SatelliteStatus {
   // satellite that refuses `accepted` reports a budget of zero.
   int64 retained_bytes = 9;
   int64 retained_budget = 10;
-  // What each producer holds of it, and its share; only producers that
-  // hold bytes or asked for acceptance lately.
-  repeated RetainedShare retained = 11;
+  // Live fan-out (§41.8): the sources it feeds relays now, the bytes it
+  // sent them, and the fragments it dropped because a relay was behind,
+  // since it started.
+  int32 live_sources = 11;
+  int64 live_bytes = 12;
+  int64 live_dropped = 13;
+  // What each producer holds of the retained pool, and its share; only
+  // producers that hold bytes or asked for acceptance lately.
+  repeated RetainedShare retained = 14;
   // The laminae whose bytes it holds now, undelivered.
-  repeated bytes held = 12;
+  repeated bytes held = 15;
   // A value the process draws when it starts. A heartbeat with another one
   // than the last is a satellite that restarted, and what it held before
   // is gone (§41.9).
-  string incarnation = 13;
+  string incarnation = 16;
   // Since it started: bytes taken under `accepted`, segments delivered,
   // segments given up, and requests passed through to the node rather
   // than accepted, for want of room or because it refuses `accepted`.
-  int64 accepted_bytes = 14;
-  int64 delivered = 15;
-  int64 given_up = 16;
-  int64 passed = 17;
+  int64 accepted_bytes = 17;
+  int64 delivered = 18;
+  int64 given_up = 19;
+  int64 passed = 20;
   // Whether it takes `retain: accepted` at all (`satellite.accept`).
-  bool accept = 18;
+  bool accept = 21;
 }
 
 // RetainedShare is one producer's part of a satellite's retained pool
@@ -558,6 +576,10 @@ enum TokenOp {
   // A CP HTTP export capability for one source and an exact time range;
   // it is neither a storage GET token nor a relay VIEW token.
   TOKEN_OP_EXPORT = 5;
+  // A satellite's capability to feed a relay a producer's sources from the
+  // uploads that pass through it (§39.3, §41.8): a publish token in all but
+  // its operation, which a relay that predates satellites refuses.
+  TOKEN_OP_FEED = 6;
 }
 
 // Presence in a publish token marks a managed Source. An empty epoch means
@@ -612,6 +634,9 @@ message TokenClaims {
   // view: never serve a different capture incarnation under this capability.
   string capture_epoch = 23;
   repeated CaptureEpochGrant capture_epochs = 24;
+  // feed: the satellite the token is for. The relay takes the stream only
+  // from the host whose certificate names it (§39.7).
+  bytes feeder = 25;
 }
 
 // LaminaStored is a node's word that an upload committed (§12.4).

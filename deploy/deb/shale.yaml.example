@@ -48,6 +48,7 @@ state: /var/lib/shale
 # producer:
 #   # http3: auto                         # uploads over HTTP/3 where a node offers it; off by default (§35.6)
 #   # upload_via: auto                    # through the satellite the CP assigns; direct by default (§41.5)
+#   # live_feed: producer                 # keep live on this host's own tee; auto lets the satellite feed it (§41.8)
 #   sources:
 #     - alias: door
 #       input: v4l2:/dev/video0
