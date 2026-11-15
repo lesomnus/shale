@@ -94,13 +94,37 @@ func named(addr string, dev bool) *api.Endpoint {
 	return endpoint(host, port, dev)
 }
 
+// endpoint is a data plane over TCP: HTTP/2 over TLS, which a client that
+// does not speak it takes as HTTP/1.1, and HTTP/1.1 in the plaintext of
+// development mode. A node that serves HTTP/3 does so on the same host and
+// port, over UDP, and says so in its answers' Alt-Svc (§35.6), so no
+// resolver here names it apart.
 func endpoint(host string, port int, dev bool) *api.Endpoint {
-	scheme := "https"
+	scheme, proto := "https", "h2"
 	if dev {
-		scheme = "http"
+		scheme, proto = "http", "h1"
 	}
 
-	return api.Endpoint_builder{Scheme: scheme, Host: host, Port: int32(port), Protocol: "h1"}.Build()
+	return api.Endpoint_builder{Scheme: scheme, Host: host, Port: int32(port), Protocol: proto}.Build()
+}
+
+// forProtocol is the endpoints as a caller asked for them by protocol
+// (§34.10): every protocol a node speaks is on the one host and port, so
+// only what they say changes. Plaintext is HTTP/1.1 whatever is asked, and
+// a protocol that is none of the three is not asked.
+func forProtocol(eps []*api.Endpoint, proto string) []*api.Endpoint {
+	switch proto {
+	case "h1", "h2", "h3":
+	default:
+		return eps
+	}
+	for _, ep := range eps {
+		if ep.GetScheme() == "https" {
+			ep.SetProtocol(proto)
+		}
+	}
+
+	return eps
 }
 
 func splitAddr(addr string) (string, int) {

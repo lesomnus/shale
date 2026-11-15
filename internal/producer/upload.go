@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/h3"
 	"github.com/lesomnus/shale/internal/storage"
 	"github.com/lesomnus/shale/internal/token"
 	"github.com/lesomnus/shale/server/core"
@@ -33,6 +34,11 @@ type UploadConfig struct {
 	RetryAfterCap    time.Duration
 	PlacementRetries int
 	Client           *http.Client
+	// HTTP3 is when a node's HTTP/3 is taken (§35.6, `producer.http3`):
+	// off by default, so a producer updated without a word in its
+	// configuration uploads over TCP as it did. Read where the producer
+	// makes Client; a Client given is used as it is.
+	HTTP3 h3.Mode
 	// Part is how many bytes one request carries under `retain: written`
 	// before it ends and the node reports what is durable (§12.2); about
 	// the node's part size keeps the device's writes large.
@@ -266,6 +272,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		if err != nil {
 			return err
 		}
+		sentBefore := sentMax
 		status, newOffset, sent, complete, err := u.put(ctx, url, tok, al, seg, offset, part)
 		if offset+sent > sentMax {
 			sentMax = offset + sent
@@ -297,9 +304,12 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 			return errTooLong
 		case status == http.StatusConflict:
 			// The node's offset differs: carry on from there (§12.5), unless
-			// it is past what we told it, which is a file we did not write:
-			// our own bytes only ever leave the node behind what we said.
-			if newOffset > offset {
+			// it is past both what we told it and what our earlier requests
+			// sent, which is a file we did not write. A request the node
+			// answers 409 it refuses whole, so only an earlier one can have
+			// put our bytes there: one cut short after the node had them,
+			// whose offset a HEAD that failed, or a 503, did not bring back.
+			if newOffset > max(offset, sentBefore) {
 				return errForeign
 			}
 			if newOffset >= 0 {

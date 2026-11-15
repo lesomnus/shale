@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/cameraworker"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
+	"github.com/lesomnus/shale/internal/h3"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/reader"
@@ -84,7 +85,11 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 						return err
 					}
 					defer done()
-					n, err := storage.New(storageConfig(c))
+					nc, err := storageConfig(c)
+					if err != nil {
+						return err
+					}
+					n, err := storage.New(nc)
 					if err != nil {
 						return err
 					}
@@ -267,7 +272,10 @@ func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 
 	// The node in the same process dials the cluster listener, on loopback
 	// when it listens on every interface.
-	nc := storageConfig(c)
+	nc, err := storageConfig(c)
+	if err != nil {
+		return err
+	}
 	if nc.Cp == "" || c.Cp == "" {
 		scheme := "https://"
 		if c.IsDev() {
@@ -307,8 +315,12 @@ func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 }
 
 // storageConfig maps the file onto the node's settings.
-func storageConfig(c *cmd.Config) storage.Config {
+func storageConfig(c *cmd.Config) (storage.Config, error) {
 	sc := c.Storage
+	http3, err := http3On(sc.Http3)
+	if err != nil {
+		return storage.Config{}, err
+	}
 	cfg := storage.Config{
 		StateDir:          c.StateDir("storage"),
 		Cp:                c.Cp,
@@ -319,6 +331,7 @@ func storageConfig(c *cmd.Config) storage.Config {
 		Advertise:         sc.Advertise,
 		CertFile:          sc.CertFile,
 		KeyFile:           sc.KeyFile,
+		HTTP3:             http3,
 		HeartbeatInterval: sc.HeartbeatInterval,
 		EventReplayWindow: sc.EventReplayWindow,
 		SweepInterval:     sc.SweepInterval,
@@ -377,7 +390,21 @@ func storageConfig(c *cmd.Config) storage.Config {
 		cfg.Sinks = append(cfg.Sinks, storage.SinkConfig{Path: s.Path, Capacity: capacity, Device: s.Device})
 	}
 
-	return cfg
+	return cfg, nil
+}
+
+// http3On reads `storage.http3`: off unless it says on (§35.6). On, the
+// node answers with Alt-Svc, and browsers take the console's reads to
+// HTTP/3 by themselves, which is the operator's to choose.
+func http3On(v string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "on", "true":
+		return true, nil
+	case "", "off", "false":
+		return false, nil
+	}
+
+	return false, fmt.Errorf("storage.http3: %q: on or off", v)
 }
 
 // serveProducer is `shale serve producer` (§38).
@@ -452,6 +479,11 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		return cfg, errors.New("standalone credential providers require an explicit directory")
 	}
 	cfg.Upload = producer.UploadConfig{ResumeTimeout: pc.ResumeTimeout, RetryAfterCap: pc.RetryAfterCap, PlacementRetries: pc.PlacementRetries}
+	mode, err := h3.ParseMode(pc.Http3)
+	if err != nil {
+		return cfg, fmt.Errorf("producer.http3: %w", err)
+	}
+	cfg.Upload.HTTP3 = mode
 	if catalogMode == "cp" {
 		if len(pc.Sources) != 0 || pc.Demo != 0 {
 			return cfg, errors.New("CP catalog and local/demo sources cannot be combined implicitly")

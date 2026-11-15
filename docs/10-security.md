@@ -572,7 +572,11 @@ Running one is [§36.4](13-configuration.md#364-running-a-reader).
   Export ([§40.5](17-console.md#405-playback)), and producers and readers,
   once the node is advertised by that name
   ([§34.10](11-deployment.md#3410-node-addresses)). A client that dials an
-  IP asks for no name and gets the host certificate. The control API keeps
+  IP asks for no name and gets the host certificate. HTTP/3 on the data
+  port takes the same configuration at each handshake: it chooses alike,
+  verifies a client certificate against the bundle held then, as TCP
+  does, and a producer's HTTP/3 verifies a node against its bundle held
+  then ([§35.6](12-api.md#356-storage-node-http-data-plane)). The control API keeps
   the host certificate: the CP dials it on an IP and verifies it against
   the shale CA by the node's identity ([§35.7](12-api.md#357-storage-node-control-api)).
 - The relay's **WHEP listener** takes one too (`relay.whep_cert_file`,
