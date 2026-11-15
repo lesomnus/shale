@@ -7,6 +7,7 @@ package relay
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -20,6 +21,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -29,8 +31,12 @@ import (
 	"github.com/lesomnus/shale/internal/token"
 )
 
-// DomRelay is the domain byte of a Relay (§35.3).
-const DomRelay pdid.Domain = 24
+// DomRelay is the domain byte of a Relay (§35.3), DomSatellite a
+// Satellite's.
+const (
+	DomRelay     pdid.Domain = 24
+	DomSatellite pdid.Domain = 43
+)
 
 // MaxFragment bounds one ingest message, a fragment as the producer sends
 // it (§39.3).
@@ -290,7 +296,7 @@ func (r *Relay) tlsConfigs() (ingest, whep *tls.Config, err error) {
 		return nil, nil, errors.New("no host certificate")
 	}
 
-	ingest = &tls.Config{
+	host := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		NextProtos: []string{"h2", "http/1.1"},
 		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -302,8 +308,15 @@ func (r *Relay) tlsConfigs() (ingest, whep *tls.Config, err error) {
 			return c, nil
 		},
 	}
+	// Ingest asks for a client certificate and verifies none at the
+	// handshake: a producer is authorized by its publish token alone, as
+	// before, and a satellite's feed token is good only from the satellite
+	// it names, which the stream checks (peerIs, §39.7). WHEP never asks:
+	// a browser asked for one may ask its user to pick one.
+	ingest = host.Clone()
+	ingest.ClientAuth = tls.RequestClientCert
 	if r.whepCert == nil {
-		return ingest, ingest, nil
+		return ingest, host, nil
 	}
 	whep = &tls.Config{
 		MinVersion:     tls.VersionTLS12,
@@ -461,17 +474,52 @@ func (r *Relay) heartbeat(ctx context.Context) error {
 	return nil
 }
 
-// verify checks a token for this relay and one operation.
-func (r *Relay) verify(tok string, op api.TokenOp) (*api.TokenClaims, error) {
+// verify checks a token for this relay and one of the operations.
+func (r *Relay) verify(tok string, ops ...api.TokenOp) (*api.TokenClaims, error) {
 	c, err := r.keys.Verifier.Verify(tok)
 	if err != nil {
 		return nil, err
 	}
-	if err := token.Check(c, r.id.Bytes(), op); err != nil {
+	if err := token.Check(c, r.id.Bytes(), ops...); err != nil {
 		return nil, err
 	}
 
 	return c, nil
+}
+
+// peerIs says the ingest stream's caller is the host `id`: its client
+// certificate verifies against the CA bundle the relay holds, is good for a
+// client, and names that host (§39.7). Development mode is plaintext and has
+// no certificate to read, as everywhere (§34.7).
+func (r *Relay) peerIs(ctx context.Context, id pdid.Id) error {
+	if r.cfg.Dev {
+		return nil
+	}
+	p, ok := peer.FromContext(ctx)
+	if !ok {
+		return errors.New("no peer")
+	}
+	info, ok := p.AuthInfo.(credentials.TLSInfo)
+	if !ok || len(info.State.PeerCertificates) == 0 {
+		return errors.New("no client certificate")
+	}
+	pool, err := r.agent.TrustPool()
+	if err != nil || pool == nil {
+		return errors.New("no CA bundle to verify the caller against")
+	}
+	chain := info.State.PeerCertificates
+	opts := x509.VerifyOptions{Roots: pool, Intermediates: x509.NewCertPool(), KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}}
+	for _, c := range chain[1:] {
+		opts.Intermediates.AddCert(c)
+	}
+	if _, err := chain[0].Verify(opts); err != nil {
+		return err
+	}
+	if got, ok := pki.IdOf(chain[0]); !ok || got != id {
+		return fmt.Errorf("the certificate names %s", got)
+	}
+
+	return nil
 }
 
 func errorf(format string, args ...any) error { return fmt.Errorf(format, args...) }

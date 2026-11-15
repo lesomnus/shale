@@ -34,6 +34,11 @@ type attachment struct {
 	actor    pdid.Id
 	tenant   []byte
 	claims   *api.TokenClaims
+	// satellite is the satellite this stream is, from its feed token's
+	// `feeder`; Nil for a producer's own stream (§39.3, §41.8). feeds are
+	// the sources it feeds now, as its last Feed said.
+	satellite pdid.Id
+	feeds     map[pdid.Id]bool
 	// membershipAt never moves backwards when an equivalent older grant is
 	// replayed; otherwise that replay could reopen the membership shrink gate.
 	membershipAt time.Time
@@ -117,7 +122,11 @@ func (a *attachment) authorize(claims *api.TokenClaims) (bool, error) {
 	if err != nil || actor.Domain() != 22 || claims.GetIat() == nil || claims.GetIat().CheckValid() != nil || claims.GetExp() == nil || claims.GetExp().CheckValid() != nil || !time.Now().Before(claims.GetExp().AsTime()) || len(claims.GetSources()) > 4096 {
 		return false, status.Error(codes.PermissionDenied, "invalid publication identity or membership")
 	}
-	if a.claims != nil && (actor != a.actor || !bytes.Equal(claims.GetActorTenant(), a.tenant)) {
+	satellite, err := feederOf(claims)
+	if err != nil {
+		return false, err
+	}
+	if a.claims != nil && (actor != a.actor || !bytes.Equal(claims.GetActorTenant(), a.tenant) || satellite != a.satellite) {
 		return false, status.Error(codes.PermissionDenied, "publication identity cannot change on an open stream")
 	}
 	next := map[pdid.Id]*source{}
@@ -195,7 +204,7 @@ func (a *attachment) authorize(claims *api.TokenClaims) (bool, error) {
 		a.updating = true
 		a.mu.Unlock()
 		for id, s := range next {
-			after = append(after, s.authorizeLocked(a, grants[id], always, window))
+			after = append(after, s.authorizeLocked(a, !satellite.IsZero(), grants[id], always, window))
 		}
 		for id, s := range a.sources {
 			if next[id] == nil {
@@ -206,6 +215,7 @@ func (a *attachment) authorize(claims *api.TokenClaims) (bool, error) {
 			}
 		}
 		a.sources, a.grants, a.actor, a.tenant, a.claims = next, grants, actor, append([]byte(nil), claims.GetActorTenant()...), proto.Clone(claims).(*api.TokenClaims)
+		a.satellite = satellite
 		if claims.GetIat().AsTime().After(a.membershipAt) {
 			a.membershipAt = claims.GetIat().AsTime()
 		}
@@ -217,8 +227,60 @@ func (a *attachment) authorize(claims *api.TokenClaims) (bool, error) {
 	for _, action := range after {
 		action()
 	}
+	// A satellite's stream feeds what its last Feed named, of what its
+	// token names now.
+	if !a.satellite.IsZero() {
+		a.feed(a.wanted())
+	}
 	a.welcome()
 	return true, nil
+}
+
+// feederOf is the satellite a token is for: a feed token names one, a
+// publish token none (§39.3, §41.8).
+func feederOf(claims *api.TokenClaims) (pdid.Id, error) {
+	switch claims.GetOp() {
+	case api.TokenOp_TOKEN_OP_FEED:
+		id, err := pdid.From(claims.GetFeeder())
+		if err != nil || id.Domain() != DomSatellite {
+			return pdid.Nil, status.Error(codes.PermissionDenied, "a feed capability names no satellite")
+		}
+		return id, nil
+	case api.TokenOp_TOKEN_OP_PUBLISH:
+		if len(claims.GetFeeder()) > 0 {
+			return pdid.Nil, status.Error(codes.PermissionDenied, "a publish capability names no satellite")
+		}
+		return pdid.Nil, nil
+	}
+
+	return pdid.Nil, status.Error(codes.PermissionDenied, "not a publication capability")
+}
+
+// wanted is what a satellite's stream asked to feed, as a set.
+func (a *attachment) wanted() map[pdid.Id]bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	out := make(map[pdid.Id]bool, len(a.feeds))
+	for id := range a.feeds {
+		out[id] = true
+	}
+
+	return out
+}
+
+// feed takes a satellite's Feed (§41.8): it feeds these of its token's
+// sources now and no others. A source it begins to feed is its from now
+// on, over the producer's own stream; one it stops feeding goes back to
+// the next publisher, the producer's stream when it is attached.
+func (a *attachment) feed(ids map[pdid.Id]bool) {
+	a.mu.Lock()
+	a.feeds = ids
+	a.mu.Unlock()
+	for id, s := range a.sources {
+		if action := s.feeds(a, ids[id]); action != nil {
+			action()
+		}
+	}
 }
 
 func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
@@ -229,11 +291,21 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 	if first.GetHello() == nil {
 		return status.Error(codes.InvalidArgument, "the first message is Hello")
 	}
-	claims, err := g.r.verify(first.GetHello().GetPublishToken(), api.TokenOp_TOKEN_OP_PUBLISH)
+	claims, err := g.r.verify(first.GetHello().GetPublishToken(), api.TokenOp_TOKEN_OP_PUBLISH, api.TokenOp_TOKEN_OP_FEED)
 	if err != nil {
 		return status.Error(codes.Unauthenticated, "invalid publication capability")
 	}
-	a := &attachment{r: g.r, stream: stream, sources: map[pdid.Id]*source{}, grants: map[pdid.Id]*api.CaptureEpochGrant{}, pending: map[pdid.Id]bool{}, updating: true}
+	// A feed token is good only from the satellite it names, as its
+	// certificate says (§39.7).
+	if sat, err := feederOf(claims); err != nil {
+		return err
+	} else if !sat.IsZero() {
+		if err := g.r.peerIs(stream.Context(), sat); err != nil {
+			g.r.log.Info("ingest refused: a feed capability from another host", "satellite", sat.String(), "err", err.Error())
+			return status.Error(codes.PermissionDenied, "a feed capability from another host than the satellite it names")
+		}
+	}
+	a := &attachment{r: g.r, stream: stream, sources: map[pdid.Id]*source{}, grants: map[pdid.Id]*api.CaptureEpochGrant{}, pending: map[pdid.Id]bool{}, updating: true, feeds: map[pdid.Id]bool{}}
 	accepted, err := a.authorize(claims)
 	if err != nil {
 		return err
@@ -241,12 +313,19 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 	if !accepted {
 		return status.Error(codes.PermissionDenied, "stale publication capability")
 	}
-	g.r.sources.attached(1)
+	// A producer's own stream is an attached producer; a satellite's for
+	// it is not another (its own stream stays attached, §39.3).
+	counted := a.satellite.IsZero()
+	if counted {
+		g.r.sources.attached(1)
+	}
 	defer func() {
 		for _, s := range a.sources {
 			s.detach(a)
 		}
-		g.r.sources.attached(-1)
+		if counted {
+			g.r.sources.attached(-1)
+		}
 	}()
 	// Recv is unblocked by gRPC when this handler returns at expiry, including
 	// an idle zero-source publisher. At most one receive is outstanding.
@@ -288,7 +367,7 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 			}
 			msg := received.msg
 			if hello := msg.GetHello(); hello != nil {
-				fresh, err := g.r.verify(hello.GetPublishToken(), api.TokenOp_TOKEN_OP_PUBLISH)
+				fresh, err := g.r.verify(hello.GetPublishToken(), api.TokenOp_TOKEN_OP_PUBLISH, api.TokenOp_TOKEN_OP_FEED)
 				if err != nil {
 					return status.Error(codes.Unauthenticated, "invalid publication capability")
 				}
@@ -311,6 +390,21 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 			}
 			if !time.Now().Before(a.claims.GetExp().AsTime()) {
 				return status.Error(codes.PermissionDenied, "publication capability expired")
+			}
+			if feed := msg.GetFeed(); feed != nil {
+				// A satellite's alone; a producer's stream feeds what its
+				// token names.
+				if a.satellite.IsZero() {
+					continue
+				}
+				ids := map[pdid.Id]bool{}
+				for _, raw := range feed.GetSources() {
+					if id, err := pdid.From(raw); err == nil && a.sources[id] != nil {
+						ids[id] = true
+					}
+				}
+				a.feed(ids)
+				continue
 			}
 			if reset := msg.GetReset(); reset != nil {
 				id, err := pdid.From(reset.GetSourceId())
@@ -337,7 +431,13 @@ func (g *ingest) Attach(stream api.RelayIngest_AttachServer) error {
 				if !allowed || grant != nil && (grant.GetCaptureEpoch() == "" || grant.GetCaptureEpoch() != d.GetCaptureEpoch()) {
 					continue
 				}
-				st := stamps{arrived: received.at, producer: a.actor.String()}
+				// The host whose link it came over: the producer, or the
+				// satellite that feeds its sources.
+				host := a.actor
+				if !a.satellite.IsZero() {
+					host = a.satellite
+				}
+				st := stamps{arrived: received.at, producer: host.String()}
 				if d.HasReadAt() {
 					st.read = d.GetReadAt().AsTime()
 				}
