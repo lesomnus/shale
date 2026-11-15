@@ -22,6 +22,8 @@ const (
 	FieldLabels = "labels"
 	// FieldRelaySelector holds the string denoting the relay_selector field in the database.
 	FieldRelaySelector = "relay_selector"
+	// FieldSatelliteSelector holds the string denoting the satellite_selector field in the database.
+	FieldSatelliteSelector = "satellite_selector"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -51,6 +53,7 @@ var Columns = []string{
 	FieldDesc,
 	FieldLabels,
 	FieldRelaySelector,
+	FieldSatelliteSelector,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,

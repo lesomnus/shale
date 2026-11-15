@@ -345,6 +345,18 @@ func (f RowSealFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RowSealMutation", m)
 }
 
+// The SatelliteFunc type is an adapter to allow the use of ordinary
+// function as Satellite mutator.
+type SatelliteFunc func(context.Context, *ent.SatelliteMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SatelliteFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SatelliteMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SatelliteMutation", m)
+}
+
 // The SetFunc type is an adapter to allow the use of ordinary
 // function as Set mutator.
 type SetFunc func(context.Context, *ent.SetMutation) (ent.Value, error)

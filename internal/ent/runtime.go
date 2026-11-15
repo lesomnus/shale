@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/schema"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/sink"
@@ -202,6 +203,17 @@ func init() {
 	// relayDescStatus is the schema descriptor for status field.
 	relayDescStatus := relayFields[22].Descriptor()
 	relay.ValueScanner.Status = relayDescStatus.ValueScanner.(field.TypeValueScanner[*api.RelayStatus])
+	satelliteFields := schema.Satellite{}.Fields()
+	_ = satelliteFields
+	// satelliteDescJoin is the schema descriptor for join field.
+	satelliteDescJoin := satelliteFields[9].Descriptor()
+	satellite.ValueScanner.Join = satelliteDescJoin.ValueScanner.(field.TypeValueScanner[*api.HostJoin])
+	// satelliteDescInterfaces is the schema descriptor for interfaces field.
+	satelliteDescInterfaces := satelliteFields[16].Descriptor()
+	satellite.ValueScanner.Interfaces = satelliteDescInterfaces.ValueScanner.(field.TypeValueScanner[[]*api.HostInterface])
+	// satelliteDescStatus is the schema descriptor for status field.
+	satelliteDescStatus := satelliteFields[21].Descriptor()
+	satellite.ValueScanner.Status = satelliteDescStatus.ValueScanner.(field.TypeValueScanner[*api.SatelliteStatus])
 	setFields := schema.Set{}.Fields()
 	_ = setFields
 	// setDescPlacement is the schema descriptor for placement field.

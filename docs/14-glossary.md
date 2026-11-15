@@ -12,6 +12,9 @@
 | **Relay** | Host that takes a producer's live streams on demand and fans them out to viewers over WebRTC; stateless, never touches storage |
 | **Viewer** | Whoever watches live through a relay: a person in a browser, or a Reader host such as a monitoring wall |
 | **Relay Assignment** | The relay a producer sends live streams to, chosen by the CP by site labels and load, sticky until the relay is down |
+| **Satellite** | Host producers upload through: it speaks a Storage Node's upload protocol to the producers assigned to it and forwards each request to the node its put token names; holds no lamina, is no placement target ([§41](18-satellite.md#41-satellite)) |
+| **Satellite Assignment** | The satellite a producer uploads through when its `upload_via` asks for one, chosen by the CP by site labels, room and load, sticky until the satellite is down |
+| **In-flight Pool** | What a satellite's requests passing through hold of its `memory_budget`; a request that finds no room is refused `503` with `Retry-After` |
 | **Publish Token** | Access token with `op = publish`: lets a producer attach to one relay and feed its sources |
 | **View Token** | Access token with `op = view`: lets a viewer watch one source on one relay for an hour |
 | **WHEP** | WebRTC HTTP egress protocol: the viewer posts an SDP offer to the relay and gets the answer |
@@ -22,7 +25,7 @@
 | **Early Cut** | Closing a segment at the next keyframe once it has produced `max_bitrate` × duration bytes ahead of its phase; the sign of a ceiling set too low |
 | **Episode** | 3 to 60 consecutive seconds with a source at its ceiling; counted by the producer to tell starvation from noise |
 | **Reader** | Host that reads laminae, typically a media server; `shale serve reader` is the agent that holds its certificate |
-| **Host** | A machine running Shale as a Storage Node, a Relay, a Producer, or a Reader; adopted by an operator, authenticated by a certificate |
+| **Host** | A machine running Shale as a Storage Node, a Relay, a Satellite, a Producer, or a Reader; adopted by an operator, authenticated by a certificate |
 | **Hardware Identity** | DMI product UUID or device-tree serial number; how a host finds its row again after a reinstall |
 | **Adoption** | An operator accepting a pending host (or a moved sink), after which the CP issues its certificate |
 | **Pending Host** | A host that has joined and is waiting to be adopted |

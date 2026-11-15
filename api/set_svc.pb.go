@@ -2599,14 +2599,15 @@ func (b0 SetWatchItem_builder) Build() *SetWatchItem {
 }
 
 type SetNegotiateRequest struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref     *SetRef                `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Link    *LinkProfile           `protobuf:"bytes,2,opt,name=link"`
-	xxx_hidden_Sources *[]*SourceProposal     `protobuf:"bytes,3,rep,name=sources"`
-	xxx_hidden_Catalog *CameraApplyTarget     `protobuf:"bytes,4,opt,name=catalog"`
-	xxx_hidden_Preview bool                   `protobuf:"varint,5,opt,name=preview"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref       *SetRef                `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Link      *LinkProfile           `protobuf:"bytes,2,opt,name=link"`
+	xxx_hidden_Sources   *[]*SourceProposal     `protobuf:"bytes,3,rep,name=sources"`
+	xxx_hidden_Catalog   *CameraApplyTarget     `protobuf:"bytes,4,opt,name=catalog"`
+	xxx_hidden_Preview   bool                   `protobuf:"varint,5,opt,name=preview"`
+	xxx_hidden_Satellite bool                   `protobuf:"varint,6,opt,name=satellite"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *SetNegotiateRequest) Reset() {
@@ -2671,6 +2672,13 @@ func (x *SetNegotiateRequest) GetPreview() bool {
 	return false
 }
 
+func (x *SetNegotiateRequest) GetSatellite() bool {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return false
+}
+
 func (x *SetNegotiateRequest) SetRef(v *SetRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -2689,6 +2697,10 @@ func (x *SetNegotiateRequest) SetCatalog(v *CameraApplyTarget) {
 
 func (x *SetNegotiateRequest) SetPreview(v bool) {
 	x.xxx_hidden_Preview = v
+}
+
+func (x *SetNegotiateRequest) SetSatellite(v bool) {
+	x.xxx_hidden_Satellite = v
 }
 
 func (x *SetNegotiateRequest) HasRef() bool {
@@ -2733,6 +2745,10 @@ type SetNegotiateRequest_builder struct {
 	// Managed full membership: no historical member budgets or scaled copy feeds.
 	Catalog *CameraApplyTarget
 	Preview bool
+	// The producer uploads through a satellite where one is assigned
+	// (`upload_via`, §41.5): the answer carries its assignment. A producer
+	// that does not say is not assigned one.
+	Satellite bool
 }
 
 func (b0 SetNegotiateRequest_builder) Build() *SetNegotiateRequest {
@@ -2744,6 +2760,7 @@ func (b0 SetNegotiateRequest_builder) Build() *SetNegotiateRequest {
 	x.xxx_hidden_Sources = &b.Sources
 	x.xxx_hidden_Catalog = b.Catalog
 	x.xxx_hidden_Preview = b.Preview
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -2754,6 +2771,7 @@ type SetNegotiateResponse struct {
 	xxx_hidden_Sources        *[]*SourceAgreed       `protobuf:"bytes,3,rep,name=sources"`
 	xxx_hidden_Adjustments    *[]*Adjustment         `protobuf:"bytes,4,rep,name=adjustments"`
 	xxx_hidden_Relay          *RelayAssignment       `protobuf:"bytes,5,opt,name=relay"`
+	xxx_hidden_Satellite      *SatelliteAssignment   `protobuf:"bytes,6,opt,name=satellite"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -2822,6 +2840,13 @@ func (x *SetNegotiateResponse) GetRelay() *RelayAssignment {
 	return nil
 }
 
+func (x *SetNegotiateResponse) GetSatellite() *SatelliteAssignment {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
 func (x *SetNegotiateResponse) SetProfileVersion(v int64) {
 	x.xxx_hidden_ProfileVersion = v
 }
@@ -2842,6 +2867,10 @@ func (x *SetNegotiateResponse) SetRelay(v *RelayAssignment) {
 	x.xxx_hidden_Relay = v
 }
 
+func (x *SetNegotiateResponse) SetSatellite(v *SatelliteAssignment) {
+	x.xxx_hidden_Satellite = v
+}
+
 func (x *SetNegotiateResponse) HasLink() bool {
 	if x == nil {
 		return false
@@ -2856,12 +2885,23 @@ func (x *SetNegotiateResponse) HasRelay() bool {
 	return x.xxx_hidden_Relay != nil
 }
 
+func (x *SetNegotiateResponse) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
 func (x *SetNegotiateResponse) ClearLink() {
 	x.xxx_hidden_Link = nil
 }
 
 func (x *SetNegotiateResponse) ClearRelay() {
 	x.xxx_hidden_Relay = nil
+}
+
+func (x *SetNegotiateResponse) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
 }
 
 type SetNegotiateResponse_builder struct {
@@ -2872,6 +2912,9 @@ type SetNegotiateResponse_builder struct {
 	Sources        []*SourceAgreed
 	Adjustments    []*Adjustment
 	Relay          *RelayAssignment
+	// The satellite the producer uploads through when its `upload_via` says
+	// so (§41.2), as its heartbeat answers it.
+	Satellite *SatelliteAssignment
 }
 
 func (b0 SetNegotiateResponse_builder) Build() *SetNegotiateResponse {
@@ -2883,6 +2926,7 @@ func (b0 SetNegotiateResponse_builder) Build() *SetNegotiateResponse {
 	x.xxx_hidden_Sources = &b.Sources
 	x.xxx_hidden_Adjustments = &b.Adjustments
 	x.xxx_hidden_Relay = b.Relay
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -6778,19 +6822,21 @@ const file_shale_set_svc_g_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12 \n" +
 	"\x05value\x18\x02 \x01(\v2\n" +
 	".shale.SetR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xe4\x01\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\x89\x02\n" +
 	"\x13SetNegotiateRequest\x12\x1f\n" +
 	"\x03ref\x18\x01 \x01(\v2\r.shale.SetRefR\x03ref\x12&\n" +
 	"\x04link\x18\x02 \x01(\v2\x12.shale.LinkProfileR\x04link\x12/\n" +
 	"\asources\x18\x03 \x03(\v2\x15.shale.SourceProposalR\asources\x122\n" +
 	"\acatalog\x18\x04 \x01(\v2\x18.shale.CameraApplyTargetR\acatalog\x12\x1f\n" +
-	"\apreview\x18\x05 \x01(\bB\x05\xaa\x01\x02\b\x02R\apreview\"\x80\x02\n" +
+	"\apreview\x18\x05 \x01(\bB\x05\xaa\x01\x02\b\x02R\apreview\x12#\n" +
+	"\tsatellite\x18\x06 \x01(\bB\x05\xaa\x01\x02\b\x02R\tsatellite\"\xba\x02\n" +
 	"\x14SetNegotiateResponse\x12.\n" +
 	"\x0fprofile_version\x18\x01 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0eprofileVersion\x12&\n" +
 	"\x04link\x18\x02 \x01(\v2\x12.shale.LinkProfileR\x04link\x12-\n" +
 	"\asources\x18\x03 \x03(\v2\x13.shale.SourceAgreedR\asources\x123\n" +
 	"\vadjustments\x18\x04 \x03(\v2\x11.shale.AdjustmentR\vadjustments\x12,\n" +
-	"\x05relay\x18\x05 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\"\xbf\x01\n" +
+	"\x05relay\x18\x05 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\x128\n" +
+	"\tsatellite\x18\x06 \x01(\v2\x1a.shale.SatelliteAssignmentR\tsatellite\"\xbf\x01\n" +
 	"\x0eSourceProposal\x12(\n" +
 	"\x06source\x18\x01 \x01(\v2\x10.shale.SourceRefR\x06source\x12/\n" +
 	"\aprofile\x18\x02 \x01(\v2\x15.shale.SegmentProfileR\aprofile\x12(\n" +
@@ -7038,12 +7084,13 @@ var file_shale_set_svc_g_proto_goTypes = []any{
 	(*Set)(nil),                   // 56: shale.Set
 	(*CameraApplyTarget)(nil),     // 57: shale.CameraApplyTarget
 	(*RelayAssignment)(nil),       // 58: shale.RelayAssignment
-	(*SegmentProfile)(nil),        // 59: shale.SegmentProfile
-	(*Allocation)(nil),            // 60: shale.Allocation
-	(*Endpoint)(nil),              // 61: shale.Endpoint
-	(*ObservedRate)(nil),          // 62: shale.ObservedRate
-	(*Starvation)(nil),            // 63: shale.Starvation
-	(*Source)(nil),                // 64: shale.Source
+	(*SatelliteAssignment)(nil),   // 59: shale.SatelliteAssignment
+	(*SegmentProfile)(nil),        // 60: shale.SegmentProfile
+	(*Allocation)(nil),            // 61: shale.Allocation
+	(*Endpoint)(nil),              // 62: shale.Endpoint
+	(*ObservedRate)(nil),          // 63: shale.ObservedRate
+	(*Starvation)(nil),            // 64: shale.Starvation
+	(*Source)(nil),                // 65: shale.Source
 }
 var file_shale_set_svc_g_proto_depIdxs = []int32{
 	47,  // 0: shale.SetAddRequest.tenant:type_name -> shale.TenantRef
@@ -7084,94 +7131,95 @@ var file_shale_set_svc_g_proto_depIdxs = []int32{
 	20,  // 35: shale.SetNegotiateResponse.sources:type_name -> shale.SourceAgreed
 	21,  // 36: shale.SetNegotiateResponse.adjustments:type_name -> shale.Adjustment
 	58,  // 37: shale.SetNegotiateResponse.relay:type_name -> shale.RelayAssignment
-	17,  // 38: shale.SourceProposal.source:type_name -> shale.SourceRef
-	59,  // 39: shale.SourceProposal.profile:type_name -> shale.SegmentProfile
-	18,  // 40: shale.SourceRef.slug:type_name -> shale.SourceRefBySlug
-	19,  // 41: shale.SourceRef.member:type_name -> shale.SourceRefByMember
-	47,  // 42: shale.SourceRefBySlug.tenant:type_name -> shale.TenantRef
-	2,   // 43: shale.SourceRefByMember.set:type_name -> shale.SetRef
-	59,  // 44: shale.SourceAgreed.profile:type_name -> shale.SegmentProfile
-	2,   // 45: shale.SetAllocateRequest.ref:type_name -> shale.SetRef
-	52,  // 46: shale.SetAllocateRequest.now:type_name -> google.protobuf.Timestamp
-	60,  // 47: shale.SetAllocateResponse.allocations:type_name -> shale.Allocation
-	2,   // 48: shale.SetLiveRequest.ref:type_name -> shale.SetRef
-	26,  // 49: shale.SetLiveResponse.sources:type_name -> shale.LiveSource
-	61,  // 50: shale.LiveSource.endpoints:type_name -> shale.Endpoint
-	52,  // 51: shale.LiveSource.date_expires:type_name -> google.protobuf.Timestamp
-	47,  // 52: shale.SourceAddRequest.tenant:type_name -> shale.TenantRef
-	48,  // 53: shale.SourceAddRequest.site:type_name -> shale.SiteRef
-	44,  // 54: shale.SourceAddRequest.labels:type_name -> shale.SourceAddRequest.LabelsEntry
-	2,   // 55: shale.SourceAddRequest.set:type_name -> shale.SetRef
-	59,  // 56: shale.SourceAddRequest.profile:type_name -> shale.SegmentProfile
-	62,  // 57: shale.SourceAddRequest.observed:type_name -> shale.ObservedRate
-	52,  // 58: shale.SourceAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	63,  // 59: shale.SourceAddRequest.starvation:type_name -> shale.Starvation
-	17,  // 60: shale.SourceGetRequest.ref:type_name -> shale.SourceRef
-	29,  // 61: shale.SourceGetRequest.select:type_name -> shale.SourceSelect
-	53,  // 62: shale.SourceSelect.tenant:type_name -> shale.TenantSelect
-	54,  // 63: shale.SourceSelect.site:type_name -> shale.SiteSelect
-	4,   // 64: shale.SourceSelect.set:type_name -> shale.SetSelect
-	17,  // 65: shale.SourcePatchRequest.ref:type_name -> shale.SourceRef
-	45,  // 66: shale.SourcePatchRequest.labels:type_name -> shale.SourcePatchRequest.LabelsEntry
-	59,  // 67: shale.SourcePatchRequest.profile:type_name -> shale.SegmentProfile
-	62,  // 68: shale.SourcePatchRequest.observed:type_name -> shale.ObservedRate
-	52,  // 69: shale.SourcePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	63,  // 70: shale.SourcePatchRequest.starvation:type_name -> shale.Starvation
-	17,  // 71: shale.SourceApplyRequest.ref:type_name -> shale.SourceRef
-	55,  // 72: shale.SourceApplyRequest.patch:type_name -> patch.Patch
-	35,  // 73: shale.SourceListRequest.filters:type_name -> shale.SourceFilter
-	64,  // 74: shale.SourceListResponse.items:type_name -> shale.Source
-	17,  // 75: shale.SourceFilter.ref:type_name -> shale.SourceRef
-	47,  // 76: shale.SourceFilter.tenant:type_name -> shale.TenantRef
-	2,   // 77: shale.SourceFilter.set:type_name -> shale.SetRef
-	48,  // 78: shale.SourceFilter.site:type_name -> shale.SiteRef
-	46,  // 79: shale.SourceFilter.labels:type_name -> shale.SourceFilter.LabelsEntry
-	35,  // 80: shale.SourceWatchRequest.filters:type_name -> shale.SourceFilter
-	38,  // 81: shale.SourceWatchResponse.items:type_name -> shale.SourceWatchItem
-	64,  // 82: shale.SourceWatchItem.value:type_name -> shale.Source
-	17,  // 83: shale.SourceLiveRequest.ref:type_name -> shale.SourceRef
-	26,  // 84: shale.SourceLiveResponse.source:type_name -> shale.LiveSource
-	0,   // 85: shale.SetService.Add:input_type -> shale.SetAddRequest
-	1,   // 86: shale.SetService.Get:input_type -> shale.SetGetRequest
-	5,   // 87: shale.SetService.Patch:input_type -> shale.SetPatchRequest
-	6,   // 88: shale.SetService.Apply:input_type -> shale.SetApplyRequest
-	2,   // 89: shale.SetService.Erase:input_type -> shale.SetRef
-	8,   // 90: shale.SetService.List:input_type -> shale.SetListRequest
-	11,  // 91: shale.SetService.Watch:input_type -> shale.SetWatchRequest
-	14,  // 92: shale.SetService.Negotiate:input_type -> shale.SetNegotiateRequest
-	22,  // 93: shale.SetService.Allocate:input_type -> shale.SetAllocateRequest
-	24,  // 94: shale.SetService.Live:input_type -> shale.SetLiveRequest
-	27,  // 95: shale.SourceService.Add:input_type -> shale.SourceAddRequest
-	28,  // 96: shale.SourceService.Get:input_type -> shale.SourceGetRequest
-	30,  // 97: shale.SourceService.Patch:input_type -> shale.SourcePatchRequest
-	31,  // 98: shale.SourceService.Apply:input_type -> shale.SourceApplyRequest
-	17,  // 99: shale.SourceService.Erase:input_type -> shale.SourceRef
-	33,  // 100: shale.SourceService.List:input_type -> shale.SourceListRequest
-	36,  // 101: shale.SourceService.Watch:input_type -> shale.SourceWatchRequest
-	39,  // 102: shale.SourceService.Live:input_type -> shale.SourceLiveRequest
-	56,  // 103: shale.SetService.Add:output_type -> shale.Set
-	56,  // 104: shale.SetService.Get:output_type -> shale.Set
-	56,  // 105: shale.SetService.Patch:output_type -> shale.Set
-	56,  // 106: shale.SetService.Apply:output_type -> shale.Set
-	7,   // 107: shale.SetService.Erase:output_type -> shale.SetEraseResponse
-	9,   // 108: shale.SetService.List:output_type -> shale.SetListResponse
-	12,  // 109: shale.SetService.Watch:output_type -> shale.SetWatchResponse
-	15,  // 110: shale.SetService.Negotiate:output_type -> shale.SetNegotiateResponse
-	23,  // 111: shale.SetService.Allocate:output_type -> shale.SetAllocateResponse
-	25,  // 112: shale.SetService.Live:output_type -> shale.SetLiveResponse
-	64,  // 113: shale.SourceService.Add:output_type -> shale.Source
-	64,  // 114: shale.SourceService.Get:output_type -> shale.Source
-	64,  // 115: shale.SourceService.Patch:output_type -> shale.Source
-	64,  // 116: shale.SourceService.Apply:output_type -> shale.Source
-	32,  // 117: shale.SourceService.Erase:output_type -> shale.SourceEraseResponse
-	34,  // 118: shale.SourceService.List:output_type -> shale.SourceListResponse
-	37,  // 119: shale.SourceService.Watch:output_type -> shale.SourceWatchResponse
-	40,  // 120: shale.SourceService.Live:output_type -> shale.SourceLiveResponse
-	103, // [103:121] is the sub-list for method output_type
-	85,  // [85:103] is the sub-list for method input_type
-	85,  // [85:85] is the sub-list for extension type_name
-	85,  // [85:85] is the sub-list for extension extendee
-	0,   // [0:85] is the sub-list for field type_name
+	59,  // 38: shale.SetNegotiateResponse.satellite:type_name -> shale.SatelliteAssignment
+	17,  // 39: shale.SourceProposal.source:type_name -> shale.SourceRef
+	60,  // 40: shale.SourceProposal.profile:type_name -> shale.SegmentProfile
+	18,  // 41: shale.SourceRef.slug:type_name -> shale.SourceRefBySlug
+	19,  // 42: shale.SourceRef.member:type_name -> shale.SourceRefByMember
+	47,  // 43: shale.SourceRefBySlug.tenant:type_name -> shale.TenantRef
+	2,   // 44: shale.SourceRefByMember.set:type_name -> shale.SetRef
+	60,  // 45: shale.SourceAgreed.profile:type_name -> shale.SegmentProfile
+	2,   // 46: shale.SetAllocateRequest.ref:type_name -> shale.SetRef
+	52,  // 47: shale.SetAllocateRequest.now:type_name -> google.protobuf.Timestamp
+	61,  // 48: shale.SetAllocateResponse.allocations:type_name -> shale.Allocation
+	2,   // 49: shale.SetLiveRequest.ref:type_name -> shale.SetRef
+	26,  // 50: shale.SetLiveResponse.sources:type_name -> shale.LiveSource
+	62,  // 51: shale.LiveSource.endpoints:type_name -> shale.Endpoint
+	52,  // 52: shale.LiveSource.date_expires:type_name -> google.protobuf.Timestamp
+	47,  // 53: shale.SourceAddRequest.tenant:type_name -> shale.TenantRef
+	48,  // 54: shale.SourceAddRequest.site:type_name -> shale.SiteRef
+	44,  // 55: shale.SourceAddRequest.labels:type_name -> shale.SourceAddRequest.LabelsEntry
+	2,   // 56: shale.SourceAddRequest.set:type_name -> shale.SetRef
+	60,  // 57: shale.SourceAddRequest.profile:type_name -> shale.SegmentProfile
+	63,  // 58: shale.SourceAddRequest.observed:type_name -> shale.ObservedRate
+	52,  // 59: shale.SourceAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	64,  // 60: shale.SourceAddRequest.starvation:type_name -> shale.Starvation
+	17,  // 61: shale.SourceGetRequest.ref:type_name -> shale.SourceRef
+	29,  // 62: shale.SourceGetRequest.select:type_name -> shale.SourceSelect
+	53,  // 63: shale.SourceSelect.tenant:type_name -> shale.TenantSelect
+	54,  // 64: shale.SourceSelect.site:type_name -> shale.SiteSelect
+	4,   // 65: shale.SourceSelect.set:type_name -> shale.SetSelect
+	17,  // 66: shale.SourcePatchRequest.ref:type_name -> shale.SourceRef
+	45,  // 67: shale.SourcePatchRequest.labels:type_name -> shale.SourcePatchRequest.LabelsEntry
+	60,  // 68: shale.SourcePatchRequest.profile:type_name -> shale.SegmentProfile
+	63,  // 69: shale.SourcePatchRequest.observed:type_name -> shale.ObservedRate
+	52,  // 70: shale.SourcePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	64,  // 71: shale.SourcePatchRequest.starvation:type_name -> shale.Starvation
+	17,  // 72: shale.SourceApplyRequest.ref:type_name -> shale.SourceRef
+	55,  // 73: shale.SourceApplyRequest.patch:type_name -> patch.Patch
+	35,  // 74: shale.SourceListRequest.filters:type_name -> shale.SourceFilter
+	65,  // 75: shale.SourceListResponse.items:type_name -> shale.Source
+	17,  // 76: shale.SourceFilter.ref:type_name -> shale.SourceRef
+	47,  // 77: shale.SourceFilter.tenant:type_name -> shale.TenantRef
+	2,   // 78: shale.SourceFilter.set:type_name -> shale.SetRef
+	48,  // 79: shale.SourceFilter.site:type_name -> shale.SiteRef
+	46,  // 80: shale.SourceFilter.labels:type_name -> shale.SourceFilter.LabelsEntry
+	35,  // 81: shale.SourceWatchRequest.filters:type_name -> shale.SourceFilter
+	38,  // 82: shale.SourceWatchResponse.items:type_name -> shale.SourceWatchItem
+	65,  // 83: shale.SourceWatchItem.value:type_name -> shale.Source
+	17,  // 84: shale.SourceLiveRequest.ref:type_name -> shale.SourceRef
+	26,  // 85: shale.SourceLiveResponse.source:type_name -> shale.LiveSource
+	0,   // 86: shale.SetService.Add:input_type -> shale.SetAddRequest
+	1,   // 87: shale.SetService.Get:input_type -> shale.SetGetRequest
+	5,   // 88: shale.SetService.Patch:input_type -> shale.SetPatchRequest
+	6,   // 89: shale.SetService.Apply:input_type -> shale.SetApplyRequest
+	2,   // 90: shale.SetService.Erase:input_type -> shale.SetRef
+	8,   // 91: shale.SetService.List:input_type -> shale.SetListRequest
+	11,  // 92: shale.SetService.Watch:input_type -> shale.SetWatchRequest
+	14,  // 93: shale.SetService.Negotiate:input_type -> shale.SetNegotiateRequest
+	22,  // 94: shale.SetService.Allocate:input_type -> shale.SetAllocateRequest
+	24,  // 95: shale.SetService.Live:input_type -> shale.SetLiveRequest
+	27,  // 96: shale.SourceService.Add:input_type -> shale.SourceAddRequest
+	28,  // 97: shale.SourceService.Get:input_type -> shale.SourceGetRequest
+	30,  // 98: shale.SourceService.Patch:input_type -> shale.SourcePatchRequest
+	31,  // 99: shale.SourceService.Apply:input_type -> shale.SourceApplyRequest
+	17,  // 100: shale.SourceService.Erase:input_type -> shale.SourceRef
+	33,  // 101: shale.SourceService.List:input_type -> shale.SourceListRequest
+	36,  // 102: shale.SourceService.Watch:input_type -> shale.SourceWatchRequest
+	39,  // 103: shale.SourceService.Live:input_type -> shale.SourceLiveRequest
+	56,  // 104: shale.SetService.Add:output_type -> shale.Set
+	56,  // 105: shale.SetService.Get:output_type -> shale.Set
+	56,  // 106: shale.SetService.Patch:output_type -> shale.Set
+	56,  // 107: shale.SetService.Apply:output_type -> shale.Set
+	7,   // 108: shale.SetService.Erase:output_type -> shale.SetEraseResponse
+	9,   // 109: shale.SetService.List:output_type -> shale.SetListResponse
+	12,  // 110: shale.SetService.Watch:output_type -> shale.SetWatchResponse
+	15,  // 111: shale.SetService.Negotiate:output_type -> shale.SetNegotiateResponse
+	23,  // 112: shale.SetService.Allocate:output_type -> shale.SetAllocateResponse
+	25,  // 113: shale.SetService.Live:output_type -> shale.SetLiveResponse
+	65,  // 114: shale.SourceService.Add:output_type -> shale.Source
+	65,  // 115: shale.SourceService.Get:output_type -> shale.Source
+	65,  // 116: shale.SourceService.Patch:output_type -> shale.Source
+	65,  // 117: shale.SourceService.Apply:output_type -> shale.Source
+	32,  // 118: shale.SourceService.Erase:output_type -> shale.SourceEraseResponse
+	34,  // 119: shale.SourceService.List:output_type -> shale.SourceListResponse
+	37,  // 120: shale.SourceService.Watch:output_type -> shale.SourceWatchResponse
+	40,  // 121: shale.SourceService.Live:output_type -> shale.SourceLiveResponse
+	104, // [104:122] is the sub-list for method output_type
+	86,  // [86:104] is the sub-list for method input_type
+	86,  // [86:86] is the sub-list for extension type_name
+	86,  // [86:86] is the sub-list for extension extendee
+	0,   // [0:86] is the sub-list for field type_name
 }
 
 func init() { file_shale_set_svc_g_proto_init() }

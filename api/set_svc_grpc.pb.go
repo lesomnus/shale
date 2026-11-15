@@ -60,7 +60,8 @@ type SetServiceClient interface {
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *SetWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SetWatchResponse], error)
 	// Proposed upload profile in, agreed profile and adjustments out (§12.6).
-	// The answer also carries the producer's relay assignment (§39.2).
+	// The answer also carries the producer's relay assignment (§39.2) and
+	// its satellite assignment (§41.2).
 	Negotiate(ctx context.Context, in *SetNegotiateRequest, opts ...grpc.CallOption) (*SetNegotiateResponse, error)
 	// Allocations for every member of the set, up to a horizon (§12.1).
 	Allocate(ctx context.Context, in *SetAllocateRequest, opts ...grpc.CallOption) (*SetAllocateResponse, error)
@@ -215,7 +216,8 @@ type SetServiceServer interface {
 	// being read -- and that is harmless for the same reason.
 	Watch(*SetWatchRequest, grpc.ServerStreamingServer[SetWatchResponse]) error
 	// Proposed upload profile in, agreed profile and adjustments out (§12.6).
-	// The answer also carries the producer's relay assignment (§39.2).
+	// The answer also carries the producer's relay assignment (§39.2) and
+	// its satellite assignment (§41.2).
 	Negotiate(context.Context, *SetNegotiateRequest) (*SetNegotiateResponse, error)
 	// Allocations for every member of the set, up to a horizon (§12.1).
 	Allocate(context.Context, *SetAllocateRequest) (*SetAllocateResponse, error)

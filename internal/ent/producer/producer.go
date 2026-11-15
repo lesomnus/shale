@@ -60,6 +60,8 @@ const (
 	FieldSetId = "set_id"
 	// FieldRelayId holds the string denoting the relay_id field in the database.
 	FieldRelayId = "relay_id"
+	// FieldSatelliteId holds the string denoting the satellite_id field in the database.
+	FieldSatelliteId = "satellite_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
 	EdgeTenant = "tenant"
 	// EdgeSite holds the string denoting the site edge name in mutations.
@@ -68,6 +70,8 @@ const (
 	EdgeSet = "set"
 	// EdgeRelay holds the string denoting the relay edge name in mutations.
 	EdgeRelay = "relay"
+	// EdgeSatellite holds the string denoting the satellite edge name in mutations.
+	EdgeSatellite = "satellite"
 	// Table holds the table name of the producer in the database.
 	Table = "producer"
 	// TenantTable is the table that holds the tenant relation/edge.
@@ -98,6 +102,13 @@ const (
 	RelayInverseTable = "relay"
 	// RelayColumn is the table column denoting the relay relation/edge.
 	RelayColumn = "relay_id"
+	// SatelliteTable is the table that holds the satellite relation/edge.
+	SatelliteTable = "producer"
+	// SatelliteInverseTable is the table name for the Satellite entity.
+	// It exists in this package in order to avoid circular dependency with the "satellite" package.
+	SatelliteInverseTable = "satellite"
+	// SatelliteColumn is the table column denoting the satellite relation/edge.
+	SatelliteColumn = "satellite_id"
 )
 
 // Columns holds all SQL columns for producer fields.
@@ -126,6 +137,7 @@ var Columns = []string{
 	FieldSiteId,
 	FieldSetId,
 	FieldRelayId,
+	FieldSatelliteId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -258,6 +270,11 @@ func ByRelayId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRelayId, opts...).ToFunc()
 }
 
+// BySatelliteId orders the results by the satellite_id field.
+func BySatelliteId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSatelliteId, opts...).ToFunc()
+}
+
 // ByTenantField orders the results by tenant field.
 func ByTenantField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -283,6 +300,13 @@ func BySetField(field string, opts ...sql.OrderTermOption) OrderOption {
 func ByRelayField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newRelayStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// BySatelliteField orders the results by satellite field.
+func BySatelliteField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSatelliteStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newTenantStep() *sqlgraph.Step {
@@ -311,5 +335,12 @@ func newRelayStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(RelayInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, RelayTable, RelayColumn),
+	)
+}
+func newSatelliteStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(SatelliteInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, SatelliteTable, SatelliteColumn),
 	)
 }

@@ -215,7 +215,10 @@ type Producer struct {
 
 	uploader *Uploader
 	relay    *relayLink
-	m        *metrics
+	// satellite is the satellite uploads go through, where
+	// `upload_via` says (§41.5).
+	satellite *SatelliteLink
+	m         *metrics
 	// push is the listener pushed sources are written to; nil when no
 	// source is pushed (§38.9).
 	push *Push
@@ -394,6 +397,14 @@ func New(cfg Config) (*Producer, error) {
 	}
 	p := &Producer{cfg: cfg, log: cfg.Log, sources: map[string]*source{}, terms: terms{mode: cfg.Mode}, Ready: make(chan struct{}), heartbeatWake: make(chan struct{}, 1)}
 	p.relay = newRelayLink(p)
+	p.satellite = NewSatelliteLink(cfg.Upload.Via, cfg.Dev, cfg.Log)
+	p.satellite.wake = func() {
+		// The CP's answer names the satellite to use now, or none.
+		select {
+		case p.heartbeatWake <- struct{}{}:
+		default:
+		}
+	}
 	p.m = newMetrics(context.Background())
 	p.agent = &hostagent.Agent{Kind: DomProducer, Store: pki.Store{Dir: cfg.StateDir}, Cp: cfg.Cp, CaHash: cfg.CaHash, Dev: cfg.Dev, Log: cfg.Log}
 	if err := p.configureSources(cfg.Sources); err != nil {
@@ -575,7 +586,11 @@ func (p *Producer) Run(ctx context.Context) error {
 		}
 	}
 	p.id = p.agent.Id()
+	p.satellite.producer = p.id
 	p.log.Info("producer", "id", p.id.String())
+	if via := p.cfg.Upload.Via; via != "" && via != ViaDirect {
+		p.log.Info("uploads: through a satellite where one is assigned", "via", string(via))
+	}
 
 	conn, err := p.agent.Dial(ctx)
 	if err != nil {
@@ -595,7 +610,7 @@ func (p *Producer) Run(ctx context.Context) error {
 		p.log.Warn("source catalog awaiting initial authorized state", "code", status.Code(err).String())
 	}
 
-	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(p.cp()), Log: p.log, Mode: p.agreed().mode, Written: p.cfg.Retain == RetainWritten, m: p.m}
+	p.uploader = &Uploader{Cfg: p.cfg.Upload, Laminae: api.NewLaminaServiceClient(p.cp()), Log: p.log, Mode: p.agreed().mode, Written: p.cfg.Retain == RetainWritten, Satellite: p.satellite, m: p.m}
 	if p.uploader.Cfg.Client == nil {
 		// The data planes speak TLS from the same CA the producer pinned.
 		hc, err := p.agent.HTTPClient()
@@ -855,7 +870,8 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 		link.AllocationHorizonSeconds = int64(p.cfg.AllocationHorizon.Seconds())
 	}
 
-	request := api.SetNegotiateRequest_builder{Ref: api.SetRef_builder{Id: p.set.GetId()}.Build(), Link: link.Build(), Sources: proposals}
+	request := api.SetNegotiateRequest_builder{Ref: api.SetRef_builder{Id: p.set.GetId()}.Build(), Link: link.Build(), Sources: proposals,
+		Satellite: p.satellite.wanted()}
 	managed := snapshot.Revision.AssignmentID != ""
 	if managed {
 		// Reserve peak simultaneous live traffic even with on-demand relay policy.
@@ -906,6 +922,7 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 	p.terms = terms{version: resp.GetProfileVersion(), mode: mode, link: resp.GetLink()}
 	p.mu.Unlock()
 	p.relay.set(resp.GetRelay())
+	p.satellite.Set(resp.GetSatellite())
 	var agreed int64
 	for _, ag := range resp.GetSources() {
 		for _, s := range sources {
@@ -1812,11 +1829,13 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		Version:   hostagent.Version,
 		Admission: p.admission.Load(),
 		Uplink:    p.cfg.Uplink,
+		Upload:    p.satellite.report(),
 	}.Build())
 	if err != nil {
 		return err
 	}
 	p.relay.set(resp.GetRelay())
+	p.satellite.Set(resp.GetSatellite())
 	if err := p.negotiateNewer(ctx, resp.GetProfileVersion()); err != nil {
 		p.log.Warn("negotiate", "err", err.Error())
 	}
@@ -1841,6 +1860,12 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 				// Every call from here on is on the new one; one still on
 				// the old ends with it, and is asked again.
 				p.conn.Swap(conn).Close()
+			}
+			if p.uploader != nil && p.uploader.Cfg.Client != nil {
+				// And the uploads' next connections present it: a satellite
+				// knows a producer by the certificate the CP records (§41.3),
+				// and a request under way goes on as it was let in.
+				p.uploader.Cfg.Client.CloseIdleConnections()
 			}
 		}
 	}

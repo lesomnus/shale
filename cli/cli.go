@@ -185,7 +185,7 @@ var moved = []rename.Index{
 // clusterGroups are the command groups that talk to the cluster API, and
 // tenantGroups the ones that talk to the tenant API.
 var clusterGroups = map[string]bool{
-	"node": true, "relay": true, "device": true, "sink": true, "signing-key": true,
+	"node": true, "relay": true, "satellite": true, "device": true, "sink": true, "signing-key": true,
 	"placement-policy": true, "upload-policy": true, "address-policy": true, "tenant": true, "outbox": true,
 	"gc": true, "index": true, "ca": true,
 }

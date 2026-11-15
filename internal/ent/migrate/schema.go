@@ -1389,6 +1389,7 @@ var (
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "relay_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "satellite_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// ProducerTable holds the schema information for the "producer" table.
 	ProducerTable = &schema.Table{
@@ -1418,6 +1419,12 @@ var (
 				Symbol:     "producer_relay_relay",
 				Columns:    []*schema.Column{ProducerColumns[23]},
 				RefColumns: []*schema.Column{RelayColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "producer_satellite_satellite",
+				Columns:    []*schema.Column{ProducerColumns[24]},
+				RefColumns: []*schema.Column{SatelliteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -1563,6 +1570,57 @@ var (
 		Name:       "rowseal",
 		Columns:    RowsealColumns,
 		PrimaryKey: []*schema.Column{RowsealColumns[0]},
+	}
+	// SatelliteColumns holds the columns for the "satellite" table.
+	SatelliteColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "hardware_id", Type: field.TypeString},
+		{Name: "hostname", Type: field.TypeString},
+		{Name: "state", Type: field.TypeInt32},
+		{Name: "cert_serial", Type: field.TypeString},
+		{Name: "join", Type: field.TypeJson, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "date_adopted", Type: field.TypeTime, Nullable: true},
+		{Name: "date_seen", Type: field.TypeTime, Nullable: true},
+		{Name: "date_cert_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "interfaces", Type: field.TypeJson, Nullable: true},
+		{Name: "key_ids", Type: field.TypeJson, Nullable: true},
+		{Name: "ca_hash", Type: field.TypeString},
+		{Name: "version", Type: field.TypeString},
+		{Name: "upload_address", Type: field.TypeString},
+		{Name: "status", Type: field.TypeJson, Nullable: true},
+	}
+	// SatelliteTable holds the schema information for the "satellite" table.
+	SatelliteTable = &schema.Table{
+		Name:       "satellite",
+		Columns:    SatelliteColumns,
+		PrimaryKey: []*schema.Column{SatelliteColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "satellite_page",
+				Unique:  false,
+				Columns: []*schema.Column{SatelliteColumns[12], SatelliteColumns[0]},
+			},
+			{
+				Name:    "satellite_hardware",
+				Unique:  false,
+				Columns: []*schema.Column{SatelliteColumns[5]},
+			},
+			{
+				Name:    "satellite_alias",
+				Unique:  true,
+				Columns: []*schema.Column{SatelliteColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
 	}
 	// SetColumns holds the columns for the "set" table.
 	SetColumns = []*schema.Column{
@@ -1731,6 +1789,7 @@ var (
 		{Name: "desc", Type: field.TypeString},
 		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "relay_selector", Type: field.TypeJson, Nullable: true},
+		{Name: "satellite_selector", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -1744,7 +1803,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "site_tenant_tenant",
-				Columns:    []*schema.Column{SiteColumns[9]},
+				Columns:    []*schema.Column{SiteColumns[10]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1753,12 +1812,12 @@ var (
 			{
 				Name:    "site_page",
 				Unique:  false,
-				Columns: []*schema.Column{SiteColumns[9], SiteColumns[8], SiteColumns[0]},
+				Columns: []*schema.Column{SiteColumns[10], SiteColumns[9], SiteColumns[0]},
 			},
 			{
 				Name:    "site_slug",
 				Unique:  true,
-				Columns: []*schema.Column{SiteColumns[1], SiteColumns[9]},
+				Columns: []*schema.Column{SiteColumns[1], SiteColumns[10]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -1990,6 +2049,7 @@ var (
 		ReaderTable,
 		RelayTable,
 		RowsealTable,
+		SatelliteTable,
 		SetTable,
 		SigningkeyTable,
 		SinkTable,
@@ -2126,6 +2186,7 @@ func init() {
 	ProducerTable.ForeignKeys[1].RefTable = SiteTable
 	ProducerTable.ForeignKeys[2].RefTable = SetTable
 	ProducerTable.ForeignKeys[3].RefTable = RelayTable
+	ProducerTable.ForeignKeys[4].RefTable = SatelliteTable
 	ProducerTable.Annotation = &entsql.Annotation{
 		Table: "producer",
 	}
@@ -2138,6 +2199,9 @@ func init() {
 	}
 	RowsealTable.Annotation = &entsql.Annotation{
 		Table: "rowseal",
+	}
+	SatelliteTable.Annotation = &entsql.Annotation{
+		Table: "satellite",
 	}
 	SetTable.ForeignKeys[0].RefTable = TenantTable
 	SetTable.ForeignKeys[1].RefTable = SiteTable

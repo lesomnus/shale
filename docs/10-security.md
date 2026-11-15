@@ -19,6 +19,7 @@ holds a credential.
 | **Tenant admin** | person (Holder) | tenant API | a session, after roster vouched for them | manage its tenant's sites, sets, sources, producers, readers, and retention dates: every person of the tenant where operators are a tenant; where roster says, a person it grants all of Shale (`/shale.*/*`) |
 | **Storage Node** | host, global entity | cluster API | host certificate (mTLS) | report its own devices and sinks; push events; propose GC |
 | **Relay** | host, global entity | cluster API | host certificate (mTLS) | report its load; serve producers and viewers that carry tokens ([§39](16-relay.md#39-relay)) |
+| **Satellite** | host, global entity | cluster API | host certificate (mTLS) | report its memory; learn the producers assigned to it and the routes to nodes; forward those producers' uploads to the node each put token names ([§41](18-satellite.md#41-satellite)) |
 | **Cluster operator** | person (Holder) | cluster API | a session, after roster vouched for them | adopt nodes; manage tenants, sinks, keys, policies: the people of `control.cluster_tenant`, or the people of the tenant `auth.operators` names, as far as roster grants them there |
 | **Control Plane** | — | everyone | CP certificate, signing key | placement, authorization, metadata; calls nodes ([§35.7](12-api.md#357-storage-node-control-api)) |
 
@@ -321,14 +322,15 @@ traced. It grants nothing.
 - Nodes receive the key set when they are adopted, then **poll**
   `SigningKey` on the cluster API every 30 s, so a new key reaches them
   well before it signs anything: rotation waits until every live node
-  reports holding it.
+  reports holding it, and every live satellite, which verifies put tokens
+  as a node does ([§41.3](18-satellite.md#413-the-upload-proxy)).
   They **cache the key set in their state directory**, so a node that
   restarts while the CP is down still verifies tokens.
 - Each heartbeat reports the key IDs the node holds.
 - Rotation (`SigningKeyService.Rotate`, run by the CP leader,
   [§34.9](11-deployment.md#349-events-and-directives)):
   1. add the new key,
-  2. wait until every live node reports holding it,
+  2. wait until every live node and satellite reports holding it,
   3. start signing with the new key,
   4. remove the old key after the longest token lifetime has passed
      (`allocation_ttl` at its bound, or `read_token_ttl`, whichever is longer).
@@ -621,6 +623,9 @@ Running one is [§36.4](13-configuration.md#364-running-a-reader).
 | Producer / Reader → tenant API | gRPC over mTLS | host certificate |
 | Person / CLI → tenant or cluster API | gRPC over TLS | payday session or API token |
 | Producer / Reader → Storage Node | HTTP/1.1, HTTP/2, or HTTP/3 over TLS | CP-signed access token |
+| Producer → Satellite | HTTP/1.1 or HTTP/2 over mTLS ([§35.9](12-api.md#359-satellite-upload-proxy)) | producer certificate, and the CP-signed put token issued to it |
+| Satellite → Storage Node | HTTP/1.1 or HTTP/2 over TLS | the producer's CP-signed put token, forwarded |
+| Satellite → cluster API | gRPC over mTLS | satellite certificate |
 | Storage Node → cluster API | gRPC over mTLS | node certificate |
 | Control Plane → Storage Node | gRPC over mTLS (control API, [§35.7](12-api.md#357-storage-node-control-api)) | CP certificate |
 | Producer → Relay | gRPC over TLS (ingest, [§35.8](12-api.md#358-relay-ingest-and-whep)) | CP-signed publish token |
@@ -637,6 +642,7 @@ Running one is [§36.4](13-configuration.md#364-running-a-reader).
 | An app's key at roster | mint exchange tokens and, with a handle the app holds, view what the app's delegations name, within what roster grants the app; a new delegation also needs a person's fresh access token for Shale, and that person's own grant unless `auth.delegation.persons: tenant` | end the app's nomination at roster, or unbind its role; effective at the next renewal |
 | A publish token | feed false video for that producer's cameras to viewers, for up to a day: the relay ends a stream when its token expires, and learns nothing else about a producer | erase the producer; the token expires within `publish_token_ttl`, or rotate the signing key at once ([§33.3](#333-signing-keys-and-rotation)) |
 | A relay's key | serve any stream it carries to anyone, and feed viewers anything; it holds no token for any Storage Node, so recordings are out of reach | erase the relay and adopt the machine again; its producers are reassigned |
+| A satellite's key | take its producers' uploads and read or alter them on their way, and write with the put tokens they carry, which name keys the CP allocated: what a node holding those uploads could do; nothing of anyone's reads | erase the satellite and adopt the machine again; its producers are assigned another, or upload directly ([§41.7](18-satellite.md#417-security)) |
 | A producer's key | negotiate and allocate for that producer's set, and write laminae into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
 | A reader's key | read the laminae of its sites | erase the reader; effective at once for new tokens, within `read_token_ttl` for issued ones |
 | A person's session | anything that person may do, inside **their tenant only**; the wall holds; for up to 24 h, unless its person stops being in good standing at roster | sign the person out everywhere at roster, or suspend them: every session minted before it is refused within `auth.operators.ttl` (30 s) ([§33.1](#331-trust-model)); reset the password |

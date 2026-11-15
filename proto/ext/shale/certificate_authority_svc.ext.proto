@@ -42,9 +42,10 @@ enum CertificateAuthorityPhase {
 // waits for: one that does not report the current bundle, or that holds a
 // certificate from the CA being replaced.
 message CertificateAuthorityWaiting {
-  // The host's row: a Node, Relay, Producer, Reader, or CameraWorker.
+  // The host's row: a Node, Relay, Satellite, Producer, Reader, or
+  // CameraWorker.
   bytes id = 1 [features.field_presence = IMPLICIT];
-  // node, relay, producer, reader, or camera-worker.
+  // node, relay, satellite, producer, reader, or camera-worker.
   string kind = 2 [features.field_presence = IMPLICIT];
   string alias = 3 [features.field_presence = IMPLICIT];
   // The bundle hash its last heartbeat reported; empty when none did.

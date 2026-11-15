@@ -40,7 +40,8 @@ type Config struct {
 	State string `yaml:"state"`
 
 	// Cp is the Control Plane address a host dials (§33.4): the tenant API
-	// for producers and readers, the cluster API for nodes and relays.
+	// for producers and readers, the cluster API for nodes, relays and
+	// satellites.
 	Cp string `yaml:"cp"`
 	// CaHash turns the first-contact pin into a check: sha256:<hex> of the
 	// CA certificate.
@@ -56,6 +57,7 @@ type Config struct {
 	Edge         EdgeConfig         `yaml:"edge"`
 	Reader       ReaderConfig       `yaml:"reader"`
 	Relay        RelayConfig        `yaml:"relay"`
+	Satellite    SatelliteConfig    `yaml:"satellite"`
 	// Export is the opt-in MP4 download endpoint on the tenant HTTP listener.
 	Export ExportConfig `yaml:"export"`
 
@@ -146,9 +148,9 @@ type ControlConfig struct {
 	// CA's (§33.5).
 	CertFile string `yaml:"cert_file"`
 	KeyFile  string `yaml:"key_file"`
-	// AutoAdopt adopts every joining node and relay at once. `shale serve
-	// all` sets it for the hosts in its own process; a lab may set it for
-	// everything.
+	// AutoAdopt adopts every joining node, relay and satellite at once.
+	// `shale serve all` sets it for the hosts in its own process; a lab may
+	// set it for everything.
 	AutoAdopt bool `yaml:"auto_adopt"`
 	// ActorLimit is a rate limit per actor on both APIs, beside the
 	// per-tenant one of `server.limit` (§35.1): a misbehaving host is
@@ -175,6 +177,12 @@ type ControlConfig struct {
 	// `relay.heartbeat_interval`: raise both, keeping it at three
 	// heartbeats or more, rather than flap.
 	RelayDownAfter time.Duration `yaml:"relay_down_after"`
+	// SatelliteDownAfter is how long a satellite may go unheard before it
+	// is down (§41.2); default 6 s, three of its heartbeats. Its producers
+	// are assigned another, or none, and upload to the nodes directly. It
+	// goes with `satellite.heartbeat_interval`, as relay_down_after with
+	// the relay's.
+	SatelliteDownAfter time.Duration `yaml:"satellite_down_after"`
 	// SinkAutoAdoptAfter is how long a sink whose node is down waits before
 	// the node that reports it takes it over (§28.3); default 10 min.
 	SinkAutoAdoptAfter time.Duration `yaml:"sink_auto_adopt_after"`
@@ -409,6 +417,12 @@ type ProducerConfig struct {
 	// serves it, with TCP for a while after a handshake that fails; `on`,
 	// HTTP/3 to every node from the first request, with the same fallback.
 	Http3 string `yaml:"http3"`
+	// UploadVia is the path uploads take (§41.5): `direct` (the default),
+	// to the node an allocation names, as before; `satellite`, through the
+	// satellite the CP assigns, and directly while none is assigned;
+	// `auto`, as `satellite`, and directly for a while after the satellite
+	// cannot be reached.
+	UploadVia string `yaml:"upload_via"`
 	// Uplink is the link's capacity, e.g. "20Mbps", for the link check.
 	Uplink string `yaml:"uplink"`
 	// Buffer is the RAM budget for segments not yet stored, e.g. "512MiB"
@@ -494,6 +508,35 @@ type RelayConfig struct {
 	// HeartbeatInterval is how often the relay reports to the CP (§39.2);
 	// default 2 s, a third of `control.relay_down_after`.
 	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
+}
+
+// SatelliteConfig is a satellite's own settings (§41).
+type SatelliteConfig struct {
+	// Addr is the upload listener producers dial (§41.3), ":7460" by
+	// default: HTTPS with the host certificate, HTTP/1.1 and HTTP/2, a
+	// producer's client certificate required.
+	Addr string `yaml:"addr"`
+	// Advertise overrides the address the satellite reports for it, for a
+	// container whose interfaces are not the host's; a name here is handed
+	// out as it is (§34.10).
+	Advertise string `yaml:"advertise"`
+	// MemoryBudget is the one budget of what the satellite holds of
+	// producers' bytes, e.g. "256MiB", the default (§41.4). Today all of
+	// it is the in-flight pool: request_buffer for each request passing
+	// through. Over it, a request is refused 503 with Retry-After, as a
+	// busy node refuses one.
+	MemoryBudget string `yaml:"memory_budget"`
+	// RequestBuffer is the buffer one request's body is copied through on
+	// its way to the node, e.g. "256KiB", the default: what a request
+	// costs the in-flight pool.
+	RequestBuffer string `yaml:"request_buffer"`
+	// HeartbeatInterval is how often the satellite reports to the CP and
+	// learns the producers it serves (§41.2); default 2 s, a third of
+	// `control.satellite_down_after`.
+	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
+	// TokenSkew is the clock skew a put token's expiry is allowed (§33.2);
+	// 1 min, as a node's.
+	TokenSkew time.Duration `yaml:"token_skew"`
 }
 
 // StateDir is the directory a role keeps its state in (§34.3).

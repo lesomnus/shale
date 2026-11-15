@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/source"
 )
@@ -36,6 +37,9 @@ func (j *Jobs) gauges(ctx context.Context, now time.Time) {
 	}
 	if n, err := j.d.Ent.Relay.Query().Where(relay.DateErasedIsNil(), relay.DateCertExpiresLT(due)).Count(ctx); err == nil {
 		m.CertsDue.Record(ctx, int64(n), kindAttr("relay"))
+	}
+	if n, err := j.d.Ent.Satellite.Query().Where(satellite.DateErasedIsNil(), satellite.DateCertExpiresLT(due)).Count(ctx); err == nil {
+		m.CertsDue.Record(ctx, int64(n), kindAttr("satellite"))
 	}
 
 	if ps, err := j.d.Ent.Producer.Query().Where(producer.DateErasedIsNil(), producer.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED))).All(ctx); err == nil {

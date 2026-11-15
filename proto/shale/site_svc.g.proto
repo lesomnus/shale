@@ -43,6 +43,7 @@ message SiteAddRequest {
   string desc = 6 [features.field_presence = IMPLICIT];
   map<string, string> labels = 7;
   map<string, string> relay_selector = 8;
+  map<string, string> satellite_selector = 9;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -71,6 +72,7 @@ message SiteSelect {
   bool desc = 6;
   bool labels = 7;
   bool relay_selector = 8;
+  bool satellite_selector = 9;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -83,6 +85,7 @@ message SitePatchRequest {
   string desc = 12;
   map<string, string> labels = 14;
   map<string, string> relay_selector = 16;
+  map<string, string> satellite_selector = 18;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

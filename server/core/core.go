@@ -64,6 +64,7 @@ const (
 	DomCameraPolicy            pdid.Domain = 41
 	DomCameraCredential        pdid.Domain = 32
 	DomCameraCredentialVersion pdid.Domain = 33
+	DomSatellite               pdid.Domain = 43
 )
 
 // Deps is what the layer needs besides the servers below it.
@@ -104,7 +105,8 @@ type Deps struct {
 	// Resolve turns a node into the endpoints a caller dials (§34.10).
 	Resolve Resolver
 	// AutoAdopt says whether a join is adopted at once, which `shale serve
-	// all` does for the node and the relay in its own process (§34.7).
+	// all` does for the node and the relay in its own process (§34.7), and
+	// `control.auto_adopt` for every node, relay and satellite.
 	AutoAdopt func(kind pdid.Domain, join *api.HostJoin, from string) bool
 	// ClusterTenant holds the cluster operators (§33.1).
 	ClusterTenant pdid.Id
@@ -138,6 +140,10 @@ type Deps struct {
 	// since a relay holds nothing and a viewer waits on it. Zero is §36.1's
 	// default.
 	RelayDownAfter time.Duration
+	// SatelliteDownAfter is how long a satellite may go unheard before it
+	// is down and its producers are assigned another, or none (§41.2).
+	// Zero is §36.1's default.
+	SatelliteDownAfter time.Duration
 	// AllocationTTL is `allocation_ttl` (§12.1) when set; zero derives it
 	// from the set's link and the source's profile.
 	AllocationTTL time.Duration
@@ -242,6 +248,17 @@ func (d *Deps) relayDownAfter() time.Duration {
 	}
 
 	return DefaultRelayDownAfter
+}
+
+// satelliteDownAfter is §41.2's `satellite_down_after`, which says when a
+// satellite stops counting as alive: it is not assigned, and its producers
+// are assigned another or none.
+func (d *Deps) satelliteDownAfter() time.Duration {
+	if d.SatelliteDownAfter > 0 {
+		return d.SatelliteDownAfter
+	}
+
+	return DefaultSatelliteDownAfter
 }
 
 // allocationTTL is §12.1's `allocation_ttl`: the horizon, the segment,

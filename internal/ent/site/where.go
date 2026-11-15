@@ -306,6 +306,16 @@ func RelaySelectorNotNil() predicate.Site {
 	return predicate.Site(sql.FieldNotNull(FieldRelaySelector))
 }
 
+// SatelliteSelectorIsNil applies the IsNil predicate on the "satellite_selector" field.
+func SatelliteSelectorIsNil() predicate.Site {
+	return predicate.Site(sql.FieldIsNull(FieldSatelliteSelector))
+}
+
+// SatelliteSelectorNotNil applies the NotNil predicate on the "satellite_selector" field.
+func SatelliteSelectorNotNil() predicate.Site {
+	return predicate.Site(sql.FieldNotNull(FieldSatelliteSelector))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.Site {
 	return predicate.Site(sql.FieldEQ(FieldDateUpdated, v))

@@ -27,7 +27,7 @@ import (
 // clusterServices are served on the cluster API only. No flag mounts them
 // into `shale serve control`.
 var clusterServices = []string{
-	"/shale.NodeService/", "/shale.RelayService/", "/shale.DeviceService/", "/shale.SinkService/",
+	"/shale.NodeService/", "/shale.RelayService/", "/shale.SatelliteService/", "/shale.DeviceService/", "/shale.SinkService/",
 	"/shale.SigningKeyService/", "/shale.PlacementPolicyService/", "/shale.UploadPolicyService/",
 	"/shale.AddressPolicyService/", "/shale.TenantService/", "/shale.OutboxService/",
 	"/shale.CertificateAuthorityService/",
@@ -71,7 +71,7 @@ func IsTenantService(method string) bool {
 func Public(method string) bool {
 	switch method {
 	case api.ProducerService_Join_FullMethodName, api.ReaderService_Join_FullMethodName, api.CameraWorkerService_Join_FullMethodName,
-		api.NodeService_Join_FullMethodName, api.RelayService_Join_FullMethodName:
+		api.NodeService_Join_FullMethodName, api.RelayService_Join_FullMethodName, api.SatelliteService_Join_FullMethodName:
 		return true
 	}
 
@@ -118,6 +118,11 @@ func closedToEveryone(m string) bool {
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply")
 	case strings.HasPrefix(m, "/shale.RelayService/"):
 		// `relay patch` is the operator's, for labels (§39.2).
+		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply")
+	case strings.HasPrefix(m, "/shale.SatelliteService/"):
+		// `satellite patch` is the operator's, for labels (§41.2); the core
+		// layer refuses the rest of the row. A satellite row is made by its
+		// own Join.
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply")
 	case m == api.AddressPolicyService_Apply_FullMethodName:
 		// A dns policy's TSIG secret is sealed on its way in through Add
@@ -323,8 +328,8 @@ func (TenantPolicy) Where(_ context.Context, c gate.Call) (frame.Tenants, error)
 	return frame.Only(c.Tenant), nil
 }
 
-// ClusterPolicy is the cluster API: operators see everything; nodes and
-// relays do their own work and nothing more.
+// ClusterPolicy is the cluster API: operators see everything; nodes,
+// relays and satellites do their own work and nothing more.
 //
 // Operators are the people of the operators' tenant whom roster grants all
 // of Shale there, when Operators is set; the people of ClusterTenant when it
@@ -355,6 +360,16 @@ var relayMay = map[string]bool{
 	api.SigningKeyService_Get_FullMethodName:         true, api.SigningKeyService_List_FullMethodName: true, api.SigningKeyService_Watch_FullMethodName: true,
 }
 
+// satelliteMay is what a satellite does on the cluster API (§41): its own
+// heartbeat and certificate, the routes to the nodes its producers' tokens
+// name, and the key set it verifies those tokens with. Nothing that reads
+// a tenant's rows: the producers it serves are in its heartbeat's answer.
+var satelliteMay = map[string]bool{
+	api.SatelliteService_Get_FullMethodName: true, api.SatelliteService_Heartbeat_FullMethodName: true,
+	api.SatelliteService_RenewCertificate_FullMethodName: true, api.SatelliteService_Route_FullMethodName: true,
+	api.SigningKeyService_Get_FullMethodName: true, api.SigningKeyService_List_FullMethodName: true, api.SigningKeyService_Watch_FullMethodName: true,
+}
+
 func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	m := c.Action
 	if closedToEveryone(m) {
@@ -371,6 +386,10 @@ func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {
 	case DomRelay:
 		if !relayMay[m] {
 			return denied(m, "not something a relay does")
+		}
+	case DomSatellite:
+		if !satelliteMay[m] {
+			return denied(m, "not something a satellite does")
 		}
 	case DomHolder:
 		switch {

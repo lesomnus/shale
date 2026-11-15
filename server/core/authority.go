@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/pki"
 )
 
@@ -356,6 +357,13 @@ func (s Core) liveHosts(ctx context.Context, now time.Time) ([]caHost, error) {
 	}
 	for _, v := range rs {
 		out = append(out, caHost{pdid.Id(v.Id), "relay", v.Alias, v.CaHash, v.Join.GetCertificate(), v.Version, v.DateSeen, v.DateCertExpires})
+	}
+	ss, err := s.ent(ctx).Satellite.Query().Where(satellite.StateEQ(adopted), satellite.DateErasedIsNil(), satellite.DateCertExpiresGT(now)).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range ss {
+		out = append(out, caHost{pdid.Id(v.Id), "satellite", v.Alias, v.CaHash, v.Join.GetCertificate(), v.Version, v.DateSeen, v.DateCertExpires})
 	}
 	ps, err := s.ent(ctx).Producer.Query().Where(producer.StateEQ(adopted), producer.DateErasedIsNil(), producer.DateCertExpiresGT(now)).All(ctx)
 	if err != nil {

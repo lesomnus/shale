@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/site"
 	"github.com/lesomnus/shale/internal/ent/tenant"
@@ -70,6 +71,8 @@ type Producer struct {
 	SetId uuid.UUID `json:"set_id,omitempty"`
 	// RelayId holds the value of the "relay_id" field.
 	RelayId uuid.UUID `json:"relay_id,omitempty"`
+	// SatelliteId holds the value of the "satellite_id" field.
+	SatelliteId uuid.UUID `json:"satellite_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProducerQuery when eager-loading is set.
 	Edges        ProducerEdges `json:"edges"`
@@ -86,9 +89,11 @@ type ProducerEdges struct {
 	Set *Set `json:"set,omitempty"`
 	// Relay holds the value of the relay edge.
 	Relay *Relay `json:"relay,omitempty"`
+	// Satellite holds the value of the satellite edge.
+	Satellite *Satellite `json:"satellite,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // TenantOrErr returns the Tenant value or an error if the edge
@@ -135,6 +140,17 @@ func (e ProducerEdges) RelayOrErr() (*Relay, error) {
 	return nil, &NotLoadedError{edge: "relay"}
 }
 
+// SatelliteOrErr returns the Satellite value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProducerEdges) SatelliteOrErr() (*Satellite, error) {
+	if e.Satellite != nil {
+		return e.Satellite, nil
+	} else if e.loadedTypes[4] {
+		return nil, &NotFoundError{label: satellite.Label}
+	}
+	return nil, &NotLoadedError{edge: "satellite"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Producer) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -148,7 +164,7 @@ func (*Producer) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case producer.FieldDateUpdated, producer.FieldDateErased, producer.FieldDateCreated, producer.FieldDateAdopted, producer.FieldDateSeen, producer.FieldDateCertExpires:
 			values[i] = new(sql.NullTime)
-		case producer.FieldSiteId, producer.FieldSetId, producer.FieldRelayId:
+		case producer.FieldSiteId, producer.FieldSetId, producer.FieldRelayId, producer.FieldSatelliteId:
 			values[i] = new(sql.Null[uuid.UUID])
 		case producer.FieldId, producer.FieldTenantId:
 			values[i] = new(uuid.UUID)
@@ -321,6 +337,12 @@ func (_m *Producer) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.RelayId = value.V
 			}
+		case producer.FieldSatelliteId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field satellite_id", values[i])
+			} else if value.Valid {
+				_m.SatelliteId = value.V
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -352,6 +374,11 @@ func (_m *Producer) QuerySet() *SetQuery {
 // QueryRelay queries the "relay" edge of the Producer entity.
 func (_m *Producer) QueryRelay() *RelayQuery {
 	return NewProducerClient(_m.config).QueryRelay(_m)
+}
+
+// QuerySatellite queries the "satellite" edge of the Producer entity.
+func (_m *Producer) QuerySatellite() *SatelliteQuery {
+	return NewProducerClient(_m.config).QuerySatellite(_m)
 }
 
 // Update returns a builder for updating this Producer.
@@ -453,6 +480,9 @@ func (_m *Producer) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("relay_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RelayId))
+	builder.WriteString(", ")
+	builder.WriteString("satellite_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SatelliteId))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -8460,6 +8460,3860 @@ func (b0 ProducerRefBySlug_builder) Build() *ProducerRefBySlug {
 	return m0
 }
 
+type SatelliteAddRequest struct {
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id              []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias           string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name            string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc            string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels          map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_HardwareId      string                 `protobuf:"bytes,8,opt,name=hardware_id,json=hardwareId"`
+	xxx_hidden_Hostname        string                 `protobuf:"bytes,9,opt,name=hostname"`
+	xxx_hidden_State           HostState              `protobuf:"varint,10,opt,name=state,enum=shale.HostState"`
+	xxx_hidden_CertSerial      string                 `protobuf:"bytes,11,opt,name=cert_serial,json=certSerial"`
+	xxx_hidden_Join            *HostJoin              `protobuf:"bytes,12,opt,name=join"`
+	xxx_hidden_DateCreated     *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_DateAdopted     *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=date_adopted,json=dateAdopted"`
+	xxx_hidden_DateSeen        *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=date_seen,json=dateSeen"`
+	xxx_hidden_DateCertExpires *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=date_cert_expires,json=dateCertExpires"`
+	xxx_hidden_Interfaces      *[]*HostInterface      `protobuf:"bytes,19,rep,name=interfaces"`
+	xxx_hidden_KeyIds          []string               `protobuf:"bytes,20,rep,name=key_ids,json=keyIds"`
+	xxx_hidden_CaHash          string                 `protobuf:"bytes,21,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_Version         string                 `protobuf:"bytes,22,opt,name=version"`
+	xxx_hidden_UploadAddress   string                 `protobuf:"bytes,23,opt,name=upload_address,json=uploadAddress"`
+	xxx_hidden_Status          *SatelliteStatus       `protobuf:"bytes,24,opt,name=status"`
+	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
+	XXX_presence               [1]uint32
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *SatelliteAddRequest) Reset() {
+	*x = SatelliteAddRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteAddRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteAddRequest) ProtoMessage() {}
+
+func (x *SatelliteAddRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteAddRequest) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetDesc() string {
+	if x != nil {
+		return x.xxx_hidden_Desc
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetHardwareId() string {
+	if x != nil {
+		return x.xxx_hidden_HardwareId
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetHostname() string {
+	if x != nil {
+		return x.xxx_hidden_Hostname
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetState() HostState {
+	if x != nil {
+		return x.xxx_hidden_State
+	}
+	return HostState_HOST_STATE_UNSPECIFIED
+}
+
+func (x *SatelliteAddRequest) GetCertSerial() string {
+	if x != nil {
+		return x.xxx_hidden_CertSerial
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetJoin() *HostJoin {
+	if x != nil {
+		return x.xxx_hidden_Join
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetDateAdopted() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateAdopted
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetDateSeen() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateSeen
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetDateCertExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCertExpires
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetInterfaces() []*HostInterface {
+	if x != nil {
+		if x.xxx_hidden_Interfaces != nil {
+			return *x.xxx_hidden_Interfaces
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetKeyIds() []string {
+	if x != nil {
+		return x.xxx_hidden_KeyIds
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) GetCaHash() string {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetVersion() string {
+	if x != nil {
+		return x.xxx_hidden_Version
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetUploadAddress() string {
+	if x != nil {
+		return x.xxx_hidden_UploadAddress
+	}
+	return ""
+}
+
+func (x *SatelliteAddRequest) GetStatus() *SatelliteStatus {
+	if x != nil {
+		return x.xxx_hidden_Status
+	}
+	return nil
+}
+
+func (x *SatelliteAddRequest) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 20)
+}
+
+func (x *SatelliteAddRequest) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
+}
+
+func (x *SatelliteAddRequest) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *SatelliteAddRequest) SetDesc(v string) {
+	x.xxx_hidden_Desc = v
+}
+
+func (x *SatelliteAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
+func (x *SatelliteAddRequest) SetHardwareId(v string) {
+	x.xxx_hidden_HardwareId = v
+}
+
+func (x *SatelliteAddRequest) SetHostname(v string) {
+	x.xxx_hidden_Hostname = v
+}
+
+func (x *SatelliteAddRequest) SetState(v HostState) {
+	x.xxx_hidden_State = v
+}
+
+func (x *SatelliteAddRequest) SetCertSerial(v string) {
+	x.xxx_hidden_CertSerial = v
+}
+
+func (x *SatelliteAddRequest) SetJoin(v *HostJoin) {
+	x.xxx_hidden_Join = v
+}
+
+func (x *SatelliteAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *SatelliteAddRequest) SetDateAdopted(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateAdopted = v
+}
+
+func (x *SatelliteAddRequest) SetDateSeen(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateSeen = v
+}
+
+func (x *SatelliteAddRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCertExpires = v
+}
+
+func (x *SatelliteAddRequest) SetInterfaces(v []*HostInterface) {
+	x.xxx_hidden_Interfaces = &v
+}
+
+func (x *SatelliteAddRequest) SetKeyIds(v []string) {
+	x.xxx_hidden_KeyIds = v
+}
+
+func (x *SatelliteAddRequest) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = v
+}
+
+func (x *SatelliteAddRequest) SetVersion(v string) {
+	x.xxx_hidden_Version = v
+}
+
+func (x *SatelliteAddRequest) SetUploadAddress(v string) {
+	x.xxx_hidden_UploadAddress = v
+}
+
+func (x *SatelliteAddRequest) SetStatus(v *SatelliteStatus) {
+	x.xxx_hidden_Status = v
+}
+
+func (x *SatelliteAddRequest) HasId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SatelliteAddRequest) HasJoin() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Join != nil
+}
+
+func (x *SatelliteAddRequest) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *SatelliteAddRequest) HasDateAdopted() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateAdopted != nil
+}
+
+func (x *SatelliteAddRequest) HasDateSeen() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateSeen != nil
+}
+
+func (x *SatelliteAddRequest) HasDateCertExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCertExpires != nil
+}
+
+func (x *SatelliteAddRequest) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Status != nil
+}
+
+func (x *SatelliteAddRequest) ClearId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Id = nil
+}
+
+func (x *SatelliteAddRequest) ClearJoin() {
+	x.xxx_hidden_Join = nil
+}
+
+func (x *SatelliteAddRequest) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+func (x *SatelliteAddRequest) ClearDateAdopted() {
+	x.xxx_hidden_DateAdopted = nil
+}
+
+func (x *SatelliteAddRequest) ClearDateSeen() {
+	x.xxx_hidden_DateSeen = nil
+}
+
+func (x *SatelliteAddRequest) ClearDateCertExpires() {
+	x.xxx_hidden_DateCertExpires = nil
+}
+
+func (x *SatelliteAddRequest) ClearStatus() {
+	x.xxx_hidden_Status = nil
+}
+
+type SatelliteAddRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id              []byte
+	Alias           string
+	Name            string
+	Desc            string
+	Labels          map[string]string
+	HardwareId      string
+	Hostname        string
+	State           HostState
+	CertSerial      string
+	Join            *HostJoin
+	DateCreated     *timestamppb.Timestamp
+	DateAdopted     *timestamppb.Timestamp
+	DateSeen        *timestamppb.Timestamp
+	DateCertExpires *timestamppb.Timestamp
+	Interfaces      []*HostInterface
+	KeyIds          []string
+	CaHash          string
+	Version         string
+	UploadAddress   string
+	Status          *SatelliteStatus
+}
+
+func (b0 SatelliteAddRequest_builder) Build() *SatelliteAddRequest {
+	m0 := &SatelliteAddRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Id != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 20)
+		x.xxx_hidden_Id = b.Id
+	}
+	x.xxx_hidden_Alias = b.Alias
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_HardwareId = b.HardwareId
+	x.xxx_hidden_Hostname = b.Hostname
+	x.xxx_hidden_State = b.State
+	x.xxx_hidden_CertSerial = b.CertSerial
+	x.xxx_hidden_Join = b.Join
+	x.xxx_hidden_DateCreated = b.DateCreated
+	x.xxx_hidden_DateAdopted = b.DateAdopted
+	x.xxx_hidden_DateSeen = b.DateSeen
+	x.xxx_hidden_DateCertExpires = b.DateCertExpires
+	x.xxx_hidden_Interfaces = &b.Interfaces
+	x.xxx_hidden_KeyIds = b.KeyIds
+	x.xxx_hidden_CaHash = b.CaHash
+	x.xxx_hidden_Version = b.Version
+	x.xxx_hidden_UploadAddress = b.UploadAddress
+	x.xxx_hidden_Status = b.Status
+	return m0
+}
+
+type SatelliteGetRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *SatelliteRef          `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Select *SatelliteSelect       `protobuf:"bytes,2,opt,name=select"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SatelliteGetRequest) Reset() {
+	*x = SatelliteGetRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteGetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteGetRequest) ProtoMessage() {}
+
+func (x *SatelliteGetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteGetRequest) GetRef() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SatelliteGetRequest) GetSelect() *SatelliteSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
+func (x *SatelliteGetRequest) SetRef(v *SatelliteRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SatelliteGetRequest) SetSelect(v *SatelliteSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *SatelliteGetRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SatelliteGetRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *SatelliteGetRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *SatelliteGetRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
+}
+
+type SatelliteGetRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref    *SatelliteRef
+	Select *SatelliteSelect
+}
+
+func (b0 SatelliteGetRequest_builder) Build() *SatelliteGetRequest {
+	m0 := &SatelliteGetRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Select = b.Select
+	return m0
+}
+
+type SatelliteRef struct {
+	state          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Key isSatelliteRef_Key     `protobuf_oneof:"key"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SatelliteRef) Reset() {
+	*x = SatelliteRef{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteRef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteRef) ProtoMessage() {}
+
+func (x *SatelliteRef) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteRef) GetId() []byte {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Key.(*satelliteRef_Id); ok {
+			return x.Id
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteRef) GetAlias() string {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Key.(*satelliteRef_Alias); ok {
+			return x.Alias
+		}
+	}
+	return ""
+}
+
+func (x *SatelliteRef) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Key = &satelliteRef_Id{v}
+}
+
+func (x *SatelliteRef) SetAlias(v string) {
+	x.xxx_hidden_Key = &satelliteRef_Alias{v}
+}
+
+func (x *SatelliteRef) HasKey() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Key != nil
+}
+
+func (x *SatelliteRef) HasId() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Key.(*satelliteRef_Id)
+	return ok
+}
+
+func (x *SatelliteRef) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Key.(*satelliteRef_Alias)
+	return ok
+}
+
+func (x *SatelliteRef) ClearKey() {
+	x.xxx_hidden_Key = nil
+}
+
+func (x *SatelliteRef) ClearId() {
+	if _, ok := x.xxx_hidden_Key.(*satelliteRef_Id); ok {
+		x.xxx_hidden_Key = nil
+	}
+}
+
+func (x *SatelliteRef) ClearAlias() {
+	if _, ok := x.xxx_hidden_Key.(*satelliteRef_Alias); ok {
+		x.xxx_hidden_Key = nil
+	}
+}
+
+const SatelliteRef_Key_not_set_case case_SatelliteRef_Key = 0
+const SatelliteRef_Id_case case_SatelliteRef_Key = 1
+const SatelliteRef_Alias_case case_SatelliteRef_Key = 4
+
+func (x *SatelliteRef) WhichKey() case_SatelliteRef_Key {
+	if x == nil {
+		return SatelliteRef_Key_not_set_case
+	}
+	switch x.xxx_hidden_Key.(type) {
+	case *satelliteRef_Id:
+		return SatelliteRef_Id_case
+	case *satelliteRef_Alias:
+		return SatelliteRef_Alias_case
+	default:
+		return SatelliteRef_Key_not_set_case
+	}
+}
+
+type SatelliteRef_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Fields of oneof xxx_hidden_Key:
+	Id    []byte
+	Alias *string
+	// -- end of xxx_hidden_Key
+}
+
+func (b0 SatelliteRef_builder) Build() *SatelliteRef {
+	m0 := &SatelliteRef{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Id != nil {
+		x.xxx_hidden_Key = &satelliteRef_Id{b.Id}
+	}
+	if b.Alias != nil {
+		x.xxx_hidden_Key = &satelliteRef_Alias{*b.Alias}
+	}
+	return m0
+}
+
+type case_SatelliteRef_Key protoreflect.FieldNumber
+
+func (x case_SatelliteRef_Key) String() string {
+	md := file_shale_host_svc_g_proto_msgTypes[51].Descriptor()
+	if x == 0 {
+		return "not set"
+	}
+	return protoimpl.X.MessageFieldStringOf(md, protoreflect.FieldNumber(x))
+}
+
+type isSatelliteRef_Key interface {
+	isSatelliteRef_Key()
+}
+
+type satelliteRef_Id struct {
+	Id []byte `protobuf:"bytes,1,opt,name=id,oneof"`
+}
+
+type satelliteRef_Alias struct {
+	Alias string `protobuf:"bytes,4,opt,name=alias,oneof"`
+}
+
+func (*satelliteRef_Id) isSatelliteRef_Key() {}
+
+func (*satelliteRef_Alias) isSatelliteRef_Key() {}
+
+type SatelliteSelect struct {
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_All             bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Alias           bool                   `protobuf:"varint,4,opt,name=alias"`
+	xxx_hidden_Name            bool                   `protobuf:"varint,5,opt,name=name"`
+	xxx_hidden_Desc            bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels          bool                   `protobuf:"varint,7,opt,name=labels"`
+	xxx_hidden_HardwareId      bool                   `protobuf:"varint,8,opt,name=hardware_id,json=hardwareId"`
+	xxx_hidden_Hostname        bool                   `protobuf:"varint,9,opt,name=hostname"`
+	xxx_hidden_State           bool                   `protobuf:"varint,10,opt,name=state"`
+	xxx_hidden_CertSerial      bool                   `protobuf:"varint,11,opt,name=cert_serial,json=certSerial"`
+	xxx_hidden_Join            bool                   `protobuf:"varint,12,opt,name=join"`
+	xxx_hidden_DateUpdated     bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased      bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated     bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_DateAdopted     bool                   `protobuf:"varint,16,opt,name=date_adopted,json=dateAdopted"`
+	xxx_hidden_DateSeen        bool                   `protobuf:"varint,17,opt,name=date_seen,json=dateSeen"`
+	xxx_hidden_DateCertExpires bool                   `protobuf:"varint,18,opt,name=date_cert_expires,json=dateCertExpires"`
+	xxx_hidden_Interfaces      bool                   `protobuf:"varint,19,opt,name=interfaces"`
+	xxx_hidden_KeyIds          bool                   `protobuf:"varint,20,opt,name=key_ids,json=keyIds"`
+	xxx_hidden_CaHash          bool                   `protobuf:"varint,21,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_Version         bool                   `protobuf:"varint,22,opt,name=version"`
+	xxx_hidden_UploadAddress   bool                   `protobuf:"varint,23,opt,name=upload_address,json=uploadAddress"`
+	xxx_hidden_Status          bool                   `protobuf:"varint,24,opt,name=status"`
+	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
+	XXX_presence               [1]uint32
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *SatelliteSelect) Reset() {
+	*x = SatelliteSelect{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteSelect) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteSelect) ProtoMessage() {}
+
+func (x *SatelliteSelect) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteSelect) GetAll() bool {
+	if x != nil {
+		return x.xxx_hidden_All
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetAlias() bool {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetName() bool {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetDesc() bool {
+	if x != nil {
+		return x.xxx_hidden_Desc
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetHardwareId() bool {
+	if x != nil {
+		return x.xxx_hidden_HardwareId
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetHostname() bool {
+	if x != nil {
+		return x.xxx_hidden_Hostname
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetState() bool {
+	if x != nil {
+		return x.xxx_hidden_State
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetCertSerial() bool {
+	if x != nil {
+		return x.xxx_hidden_CertSerial
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetJoin() bool {
+	if x != nil {
+		return x.xxx_hidden_Join
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetDateUpdated() bool {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetDateErased() bool {
+	if x != nil {
+		return x.xxx_hidden_DateErased
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetDateCreated() bool {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetDateAdopted() bool {
+	if x != nil {
+		return x.xxx_hidden_DateAdopted
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetDateSeen() bool {
+	if x != nil {
+		return x.xxx_hidden_DateSeen
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetDateCertExpires() bool {
+	if x != nil {
+		return x.xxx_hidden_DateCertExpires
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetInterfaces() bool {
+	if x != nil {
+		return x.xxx_hidden_Interfaces
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetKeyIds() bool {
+	if x != nil {
+		return x.xxx_hidden_KeyIds
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetCaHash() bool {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetVersion() bool {
+	if x != nil {
+		return x.xxx_hidden_Version
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetUploadAddress() bool {
+	if x != nil {
+		return x.xxx_hidden_UploadAddress
+	}
+	return false
+}
+
+func (x *SatelliteSelect) GetStatus() bool {
+	if x != nil {
+		return x.xxx_hidden_Status
+	}
+	return false
+}
+
+func (x *SatelliteSelect) SetAll(v bool) {
+	x.xxx_hidden_All = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 22)
+}
+
+func (x *SatelliteSelect) SetAlias(v bool) {
+	x.xxx_hidden_Alias = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 22)
+}
+
+func (x *SatelliteSelect) SetName(v bool) {
+	x.xxx_hidden_Name = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 22)
+}
+
+func (x *SatelliteSelect) SetDesc(v bool) {
+	x.xxx_hidden_Desc = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 22)
+}
+
+func (x *SatelliteSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 22)
+}
+
+func (x *SatelliteSelect) SetHardwareId(v bool) {
+	x.xxx_hidden_HardwareId = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 22)
+}
+
+func (x *SatelliteSelect) SetHostname(v bool) {
+	x.xxx_hidden_Hostname = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 22)
+}
+
+func (x *SatelliteSelect) SetState(v bool) {
+	x.xxx_hidden_State = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 22)
+}
+
+func (x *SatelliteSelect) SetCertSerial(v bool) {
+	x.xxx_hidden_CertSerial = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 22)
+}
+
+func (x *SatelliteSelect) SetJoin(v bool) {
+	x.xxx_hidden_Join = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 22)
+}
+
+func (x *SatelliteSelect) SetDateUpdated(v bool) {
+	x.xxx_hidden_DateUpdated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 22)
+}
+
+func (x *SatelliteSelect) SetDateErased(v bool) {
+	x.xxx_hidden_DateErased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 22)
+}
+
+func (x *SatelliteSelect) SetDateCreated(v bool) {
+	x.xxx_hidden_DateCreated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 22)
+}
+
+func (x *SatelliteSelect) SetDateAdopted(v bool) {
+	x.xxx_hidden_DateAdopted = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 22)
+}
+
+func (x *SatelliteSelect) SetDateSeen(v bool) {
+	x.xxx_hidden_DateSeen = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 22)
+}
+
+func (x *SatelliteSelect) SetDateCertExpires(v bool) {
+	x.xxx_hidden_DateCertExpires = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 22)
+}
+
+func (x *SatelliteSelect) SetInterfaces(v bool) {
+	x.xxx_hidden_Interfaces = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 22)
+}
+
+func (x *SatelliteSelect) SetKeyIds(v bool) {
+	x.xxx_hidden_KeyIds = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 22)
+}
+
+func (x *SatelliteSelect) SetCaHash(v bool) {
+	x.xxx_hidden_CaHash = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 22)
+}
+
+func (x *SatelliteSelect) SetVersion(v bool) {
+	x.xxx_hidden_Version = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 22)
+}
+
+func (x *SatelliteSelect) SetUploadAddress(v bool) {
+	x.xxx_hidden_UploadAddress = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 22)
+}
+
+func (x *SatelliteSelect) SetStatus(v bool) {
+	x.xxx_hidden_Status = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 22)
+}
+
+func (x *SatelliteSelect) HasAll() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SatelliteSelect) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SatelliteSelect) HasName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SatelliteSelect) HasDesc() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SatelliteSelect) HasLabels() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *SatelliteSelect) HasHardwareId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *SatelliteSelect) HasHostname() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *SatelliteSelect) HasState() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *SatelliteSelect) HasCertSerial() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *SatelliteSelect) HasJoin() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *SatelliteSelect) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *SatelliteSelect) HasDateErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
+func (x *SatelliteSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
+func (x *SatelliteSelect) HasDateAdopted() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 13)
+}
+
+func (x *SatelliteSelect) HasDateSeen() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
+}
+
+func (x *SatelliteSelect) HasDateCertExpires() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 15)
+}
+
+func (x *SatelliteSelect) HasInterfaces() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 16)
+}
+
+func (x *SatelliteSelect) HasKeyIds() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
+}
+
+func (x *SatelliteSelect) HasCaHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 18)
+}
+
+func (x *SatelliteSelect) HasVersion() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
+}
+
+func (x *SatelliteSelect) HasUploadAddress() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
+}
+
+func (x *SatelliteSelect) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
+}
+
+func (x *SatelliteSelect) ClearAll() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_All = false
+}
+
+func (x *SatelliteSelect) ClearAlias() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Alias = false
+}
+
+func (x *SatelliteSelect) ClearName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Name = false
+}
+
+func (x *SatelliteSelect) ClearDesc() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Desc = false
+}
+
+func (x *SatelliteSelect) ClearLabels() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *SatelliteSelect) ClearHardwareId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_HardwareId = false
+}
+
+func (x *SatelliteSelect) ClearHostname() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Hostname = false
+}
+
+func (x *SatelliteSelect) ClearState() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_State = false
+}
+
+func (x *SatelliteSelect) ClearCertSerial() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_CertSerial = false
+}
+
+func (x *SatelliteSelect) ClearJoin() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_Join = false
+}
+
+func (x *SatelliteSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	x.xxx_hidden_DateUpdated = false
+}
+
+func (x *SatelliteSelect) ClearDateErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	x.xxx_hidden_DateErased = false
+}
+
+func (x *SatelliteSelect) ClearDateCreated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_DateCreated = false
+}
+
+func (x *SatelliteSelect) ClearDateAdopted() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
+	x.xxx_hidden_DateAdopted = false
+}
+
+func (x *SatelliteSelect) ClearDateSeen() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 14)
+	x.xxx_hidden_DateSeen = false
+}
+
+func (x *SatelliteSelect) ClearDateCertExpires() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
+	x.xxx_hidden_DateCertExpires = false
+}
+
+func (x *SatelliteSelect) ClearInterfaces() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 16)
+	x.xxx_hidden_Interfaces = false
+}
+
+func (x *SatelliteSelect) ClearKeyIds() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 17)
+	x.xxx_hidden_KeyIds = false
+}
+
+func (x *SatelliteSelect) ClearCaHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 18)
+	x.xxx_hidden_CaHash = false
+}
+
+func (x *SatelliteSelect) ClearVersion() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
+	x.xxx_hidden_Version = false
+}
+
+func (x *SatelliteSelect) ClearUploadAddress() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 20)
+	x.xxx_hidden_UploadAddress = false
+}
+
+func (x *SatelliteSelect) ClearStatus() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
+	x.xxx_hidden_Status = false
+}
+
+type SatelliteSelect_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	All             *bool
+	Alias           *bool
+	Name            *bool
+	Desc            *bool
+	Labels          *bool
+	HardwareId      *bool
+	Hostname        *bool
+	State           *bool
+	CertSerial      *bool
+	Join            *bool
+	DateUpdated     *bool
+	DateErased      *bool
+	DateCreated     *bool
+	DateAdopted     *bool
+	DateSeen        *bool
+	DateCertExpires *bool
+	Interfaces      *bool
+	KeyIds          *bool
+	CaHash          *bool
+	Version         *bool
+	UploadAddress   *bool
+	Status          *bool
+}
+
+func (b0 SatelliteSelect_builder) Build() *SatelliteSelect {
+	m0 := &SatelliteSelect{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.All != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 22)
+		x.xxx_hidden_All = *b.All
+	}
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 22)
+		x.xxx_hidden_Alias = *b.Alias
+	}
+	if b.Name != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 22)
+		x.xxx_hidden_Name = *b.Name
+	}
+	if b.Desc != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 22)
+		x.xxx_hidden_Desc = *b.Desc
+	}
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 22)
+		x.xxx_hidden_Labels = *b.Labels
+	}
+	if b.HardwareId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 22)
+		x.xxx_hidden_HardwareId = *b.HardwareId
+	}
+	if b.Hostname != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 22)
+		x.xxx_hidden_Hostname = *b.Hostname
+	}
+	if b.State != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 22)
+		x.xxx_hidden_State = *b.State
+	}
+	if b.CertSerial != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 22)
+		x.xxx_hidden_CertSerial = *b.CertSerial
+	}
+	if b.Join != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 22)
+		x.xxx_hidden_Join = *b.Join
+	}
+	if b.DateUpdated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 22)
+		x.xxx_hidden_DateUpdated = *b.DateUpdated
+	}
+	if b.DateErased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 22)
+		x.xxx_hidden_DateErased = *b.DateErased
+	}
+	if b.DateCreated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 22)
+		x.xxx_hidden_DateCreated = *b.DateCreated
+	}
+	if b.DateAdopted != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 22)
+		x.xxx_hidden_DateAdopted = *b.DateAdopted
+	}
+	if b.DateSeen != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 22)
+		x.xxx_hidden_DateSeen = *b.DateSeen
+	}
+	if b.DateCertExpires != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 22)
+		x.xxx_hidden_DateCertExpires = *b.DateCertExpires
+	}
+	if b.Interfaces != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 22)
+		x.xxx_hidden_Interfaces = *b.Interfaces
+	}
+	if b.KeyIds != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 22)
+		x.xxx_hidden_KeyIds = *b.KeyIds
+	}
+	if b.CaHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 22)
+		x.xxx_hidden_CaHash = *b.CaHash
+	}
+	if b.Version != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 22)
+		x.xxx_hidden_Version = *b.Version
+	}
+	if b.UploadAddress != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 22)
+		x.xxx_hidden_UploadAddress = *b.UploadAddress
+	}
+	if b.Status != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 22)
+		x.xxx_hidden_Status = *b.Status
+	}
+	return m0
+}
+
+type SatellitePatchRequest struct {
+	state                          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref                 *SatelliteRef          `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Alias               *string                `protobuf:"bytes,8,opt,name=alias"`
+	xxx_hidden_Name                *string                `protobuf:"bytes,10,opt,name=name"`
+	xxx_hidden_Desc                *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels              map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_HardwareId          *string                `protobuf:"bytes,16,opt,name=hardware_id,json=hardwareId"`
+	xxx_hidden_Hostname            *string                `protobuf:"bytes,18,opt,name=hostname"`
+	xxx_hidden_State               HostState              `protobuf:"varint,20,opt,name=state,enum=shale.HostState"`
+	xxx_hidden_CertSerial          *string                `protobuf:"bytes,22,opt,name=cert_serial,json=certSerial"`
+	xxx_hidden_Join                *HostJoin              `protobuf:"bytes,24,opt,name=join"`
+	xxx_hidden_JoinNull            bool                   `protobuf:"varint,25,opt,name=join_null,json=joinNull"`
+	xxx_hidden_DateUpdated         *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateUpdatedForce    bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
+	xxx_hidden_DateAdopted         *timestamppb.Timestamp `protobuf:"bytes,32,opt,name=date_adopted,json=dateAdopted"`
+	xxx_hidden_DateAdoptedNull     bool                   `protobuf:"varint,33,opt,name=date_adopted_null,json=dateAdoptedNull"`
+	xxx_hidden_DateSeen            *timestamppb.Timestamp `protobuf:"bytes,34,opt,name=date_seen,json=dateSeen"`
+	xxx_hidden_DateSeenNull        bool                   `protobuf:"varint,35,opt,name=date_seen_null,json=dateSeenNull"`
+	xxx_hidden_DateCertExpires     *timestamppb.Timestamp `protobuf:"bytes,36,opt,name=date_cert_expires,json=dateCertExpires"`
+	xxx_hidden_DateCertExpiresNull bool                   `protobuf:"varint,37,opt,name=date_cert_expires_null,json=dateCertExpiresNull"`
+	xxx_hidden_Interfaces          *[]*HostInterface      `protobuf:"bytes,38,rep,name=interfaces"`
+	xxx_hidden_KeyIds              []string               `protobuf:"bytes,40,rep,name=key_ids,json=keyIds"`
+	xxx_hidden_CaHash              *string                `protobuf:"bytes,42,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_Version             *string                `protobuf:"bytes,44,opt,name=version"`
+	xxx_hidden_UploadAddress       *string                `protobuf:"bytes,46,opt,name=upload_address,json=uploadAddress"`
+	xxx_hidden_Status              *SatelliteStatus       `protobuf:"bytes,48,opt,name=status"`
+	xxx_hidden_StatusNull          bool                   `protobuf:"varint,49,opt,name=status_null,json=statusNull"`
+	XXX_raceDetectHookData         protoimpl.RaceDetectHookData
+	XXX_presence                   [1]uint32
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
+}
+
+func (x *SatellitePatchRequest) Reset() {
+	*x = SatellitePatchRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatellitePatchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatellitePatchRequest) ProtoMessage() {}
+
+func (x *SatellitePatchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatellitePatchRequest) GetRef() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetAlias() string {
+	if x != nil {
+		if x.xxx_hidden_Alias != nil {
+			return *x.xxx_hidden_Alias
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetName() string {
+	if x != nil {
+		if x.xxx_hidden_Name != nil {
+			return *x.xxx_hidden_Name
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetDesc() string {
+	if x != nil {
+		if x.xxx_hidden_Desc != nil {
+			return *x.xxx_hidden_Desc
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetHardwareId() string {
+	if x != nil {
+		if x.xxx_hidden_HardwareId != nil {
+			return *x.xxx_hidden_HardwareId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetHostname() string {
+	if x != nil {
+		if x.xxx_hidden_Hostname != nil {
+			return *x.xxx_hidden_Hostname
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetState() HostState {
+	if x != nil {
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 7) {
+			return x.xxx_hidden_State
+		}
+	}
+	return HostState_HOST_STATE_UNSPECIFIED
+}
+
+func (x *SatellitePatchRequest) GetCertSerial() string {
+	if x != nil {
+		if x.xxx_hidden_CertSerial != nil {
+			return *x.xxx_hidden_CertSerial
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetJoin() *HostJoin {
+	if x != nil {
+		return x.xxx_hidden_Join
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetJoinNull() bool {
+	if x != nil {
+		return x.xxx_hidden_JoinNull
+	}
+	return false
+}
+
+func (x *SatellitePatchRequest) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetDateUpdatedForce() bool {
+	if x != nil {
+		return x.xxx_hidden_DateUpdatedForce
+	}
+	return false
+}
+
+func (x *SatellitePatchRequest) GetDateAdopted() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateAdopted
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetDateAdoptedNull() bool {
+	if x != nil {
+		return x.xxx_hidden_DateAdoptedNull
+	}
+	return false
+}
+
+func (x *SatellitePatchRequest) GetDateSeen() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateSeen
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetDateSeenNull() bool {
+	if x != nil {
+		return x.xxx_hidden_DateSeenNull
+	}
+	return false
+}
+
+func (x *SatellitePatchRequest) GetDateCertExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCertExpires
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetDateCertExpiresNull() bool {
+	if x != nil {
+		return x.xxx_hidden_DateCertExpiresNull
+	}
+	return false
+}
+
+func (x *SatellitePatchRequest) GetInterfaces() []*HostInterface {
+	if x != nil {
+		if x.xxx_hidden_Interfaces != nil {
+			return *x.xxx_hidden_Interfaces
+		}
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetKeyIds() []string {
+	if x != nil {
+		return x.xxx_hidden_KeyIds
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetCaHash() string {
+	if x != nil {
+		if x.xxx_hidden_CaHash != nil {
+			return *x.xxx_hidden_CaHash
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetVersion() string {
+	if x != nil {
+		if x.xxx_hidden_Version != nil {
+			return *x.xxx_hidden_Version
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetUploadAddress() string {
+	if x != nil {
+		if x.xxx_hidden_UploadAddress != nil {
+			return *x.xxx_hidden_UploadAddress
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *SatellitePatchRequest) GetStatus() *SatelliteStatus {
+	if x != nil {
+		return x.xxx_hidden_Status
+	}
+	return nil
+}
+
+func (x *SatellitePatchRequest) GetStatusNull() bool {
+	if x != nil {
+		return x.xxx_hidden_StatusNull
+	}
+	return false
+}
+
+func (x *SatellitePatchRequest) SetRef(v *SatelliteRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SatellitePatchRequest) SetAlias(v string) {
+	x.xxx_hidden_Alias = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 26)
+}
+
+func (x *SatellitePatchRequest) SetName(v string) {
+	x.xxx_hidden_Name = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 26)
+}
+
+func (x *SatellitePatchRequest) SetDesc(v string) {
+	x.xxx_hidden_Desc = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 26)
+}
+
+func (x *SatellitePatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
+func (x *SatellitePatchRequest) SetHardwareId(v string) {
+	x.xxx_hidden_HardwareId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 26)
+}
+
+func (x *SatellitePatchRequest) SetHostname(v string) {
+	x.xxx_hidden_Hostname = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 26)
+}
+
+func (x *SatellitePatchRequest) SetState(v HostState) {
+	x.xxx_hidden_State = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 26)
+}
+
+func (x *SatellitePatchRequest) SetCertSerial(v string) {
+	x.xxx_hidden_CertSerial = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 26)
+}
+
+func (x *SatellitePatchRequest) SetJoin(v *HostJoin) {
+	x.xxx_hidden_Join = v
+}
+
+func (x *SatellitePatchRequest) SetJoinNull(v bool) {
+	x.xxx_hidden_JoinNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 26)
+}
+
+func (x *SatellitePatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *SatellitePatchRequest) SetDateUpdatedForce(v bool) {
+	x.xxx_hidden_DateUpdatedForce = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 26)
+}
+
+func (x *SatellitePatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateAdopted = v
+}
+
+func (x *SatellitePatchRequest) SetDateAdoptedNull(v bool) {
+	x.xxx_hidden_DateAdoptedNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 26)
+}
+
+func (x *SatellitePatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateSeen = v
+}
+
+func (x *SatellitePatchRequest) SetDateSeenNull(v bool) {
+	x.xxx_hidden_DateSeenNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 26)
+}
+
+func (x *SatellitePatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCertExpires = v
+}
+
+func (x *SatellitePatchRequest) SetDateCertExpiresNull(v bool) {
+	x.xxx_hidden_DateCertExpiresNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 26)
+}
+
+func (x *SatellitePatchRequest) SetInterfaces(v []*HostInterface) {
+	x.xxx_hidden_Interfaces = &v
+}
+
+func (x *SatellitePatchRequest) SetKeyIds(v []string) {
+	x.xxx_hidden_KeyIds = v
+}
+
+func (x *SatellitePatchRequest) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 26)
+}
+
+func (x *SatellitePatchRequest) SetVersion(v string) {
+	x.xxx_hidden_Version = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 26)
+}
+
+func (x *SatellitePatchRequest) SetUploadAddress(v string) {
+	x.xxx_hidden_UploadAddress = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 26)
+}
+
+func (x *SatellitePatchRequest) SetStatus(v *SatelliteStatus) {
+	x.xxx_hidden_Status = v
+}
+
+func (x *SatellitePatchRequest) SetStatusNull(v bool) {
+	x.xxx_hidden_StatusNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 25, 26)
+}
+
+func (x *SatellitePatchRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SatellitePatchRequest) HasAlias() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SatellitePatchRequest) HasName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SatellitePatchRequest) HasDesc() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SatellitePatchRequest) HasHardwareId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *SatellitePatchRequest) HasHostname() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *SatellitePatchRequest) HasState() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *SatellitePatchRequest) HasCertSerial() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *SatellitePatchRequest) HasJoin() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Join != nil
+}
+
+func (x *SatellitePatchRequest) HasJoinNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *SatellitePatchRequest) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUpdated != nil
+}
+
+func (x *SatellitePatchRequest) HasDateUpdatedForce() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
+func (x *SatellitePatchRequest) HasDateAdopted() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateAdopted != nil
+}
+
+func (x *SatellitePatchRequest) HasDateAdoptedNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
+}
+
+func (x *SatellitePatchRequest) HasDateSeen() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateSeen != nil
+}
+
+func (x *SatellitePatchRequest) HasDateSeenNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 16)
+}
+
+func (x *SatellitePatchRequest) HasDateCertExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCertExpires != nil
+}
+
+func (x *SatellitePatchRequest) HasDateCertExpiresNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 18)
+}
+
+func (x *SatellitePatchRequest) HasCaHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
+}
+
+func (x *SatellitePatchRequest) HasVersion() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
+}
+
+func (x *SatellitePatchRequest) HasUploadAddress() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 23)
+}
+
+func (x *SatellitePatchRequest) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Status != nil
+}
+
+func (x *SatellitePatchRequest) HasStatusNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 25)
+}
+
+func (x *SatellitePatchRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *SatellitePatchRequest) ClearAlias() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Alias = nil
+}
+
+func (x *SatellitePatchRequest) ClearName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Name = nil
+}
+
+func (x *SatellitePatchRequest) ClearDesc() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Desc = nil
+}
+
+func (x *SatellitePatchRequest) ClearHardwareId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_HardwareId = nil
+}
+
+func (x *SatellitePatchRequest) ClearHostname() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Hostname = nil
+}
+
+func (x *SatellitePatchRequest) ClearState() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	x.xxx_hidden_State = HostState_HOST_STATE_UNSPECIFIED
+}
+
+func (x *SatellitePatchRequest) ClearCertSerial() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_CertSerial = nil
+}
+
+func (x *SatellitePatchRequest) ClearJoin() {
+	x.xxx_hidden_Join = nil
+}
+
+func (x *SatellitePatchRequest) ClearJoinNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	x.xxx_hidden_JoinNull = false
+}
+
+func (x *SatellitePatchRequest) ClearDateUpdated() {
+	x.xxx_hidden_DateUpdated = nil
+}
+
+func (x *SatellitePatchRequest) ClearDateUpdatedForce() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
+	x.xxx_hidden_DateUpdatedForce = false
+}
+
+func (x *SatellitePatchRequest) ClearDateAdopted() {
+	x.xxx_hidden_DateAdopted = nil
+}
+
+func (x *SatellitePatchRequest) ClearDateAdoptedNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 14)
+	x.xxx_hidden_DateAdoptedNull = false
+}
+
+func (x *SatellitePatchRequest) ClearDateSeen() {
+	x.xxx_hidden_DateSeen = nil
+}
+
+func (x *SatellitePatchRequest) ClearDateSeenNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 16)
+	x.xxx_hidden_DateSeenNull = false
+}
+
+func (x *SatellitePatchRequest) ClearDateCertExpires() {
+	x.xxx_hidden_DateCertExpires = nil
+}
+
+func (x *SatellitePatchRequest) ClearDateCertExpiresNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 18)
+	x.xxx_hidden_DateCertExpiresNull = false
+}
+
+func (x *SatellitePatchRequest) ClearCaHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
+	x.xxx_hidden_CaHash = nil
+}
+
+func (x *SatellitePatchRequest) ClearVersion() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 22)
+	x.xxx_hidden_Version = nil
+}
+
+func (x *SatellitePatchRequest) ClearUploadAddress() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 23)
+	x.xxx_hidden_UploadAddress = nil
+}
+
+func (x *SatellitePatchRequest) ClearStatus() {
+	x.xxx_hidden_Status = nil
+}
+
+func (x *SatellitePatchRequest) ClearStatusNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 25)
+	x.xxx_hidden_StatusNull = false
+}
+
+type SatellitePatchRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref        *SatelliteRef
+	Alias      *string
+	Name       *string
+	Desc       *string
+	Labels     map[string]string
+	HardwareId *string
+	Hostname   *string
+	State      *HostState
+	CertSerial *string
+	Join       *HostJoin
+	// Clear join instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and join clears.
+	JoinNull *bool
+	// The version this update requires the stored date_updated to be.
+	// It is a precondition, not a write: the update applies only if the row
+	// still holds this value, and the server stamps the new version itself.
+	// Setting it together with date_updated_force is an error --
+	// the version is the token every client's compare-and-swap is measured
+	// against, so it is not the caller's to choose.
+	DateUpdated *timestamppb.Timestamp
+	// Update whatever the stored date_updated is, with no precondition.
+	// The server still stamps a new version, so other clients' tokens are
+	// invalidated as usual; this declines the check for THIS update only.
+	// One of date_updated or this must be set. An omitted version is
+	// refused rather than assumed, because an unset field cannot be told
+	// apart from a caller who never considered locking at all.
+	DateUpdatedForce *bool
+	DateAdopted      *timestamppb.Timestamp
+	// Clear date_adopted instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and date_adopted clears.
+	DateAdoptedNull *bool
+	DateSeen        *timestamppb.Timestamp
+	// Clear date_seen instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and date_seen clears.
+	DateSeenNull    *bool
+	DateCertExpires *timestamppb.Timestamp
+	// Clear date_cert_expires instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and date_cert_expires clears.
+	DateCertExpiresNull *bool
+	Interfaces          []*HostInterface
+	KeyIds              []string
+	CaHash              *string
+	Version             *string
+	UploadAddress       *string
+	Status              *SatelliteStatus
+	// Clear status instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and status clears.
+	StatusNull *bool
+}
+
+func (b0 SatellitePatchRequest_builder) Build() *SatellitePatchRequest {
+	m0 := &SatellitePatchRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	if b.Alias != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 26)
+		x.xxx_hidden_Alias = b.Alias
+	}
+	if b.Name != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 26)
+		x.xxx_hidden_Name = b.Name
+	}
+	if b.Desc != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 26)
+		x.xxx_hidden_Desc = b.Desc
+	}
+	x.xxx_hidden_Labels = b.Labels
+	if b.HardwareId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 26)
+		x.xxx_hidden_HardwareId = b.HardwareId
+	}
+	if b.Hostname != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 26)
+		x.xxx_hidden_Hostname = b.Hostname
+	}
+	if b.State != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 26)
+		x.xxx_hidden_State = *b.State
+	}
+	if b.CertSerial != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 26)
+		x.xxx_hidden_CertSerial = b.CertSerial
+	}
+	x.xxx_hidden_Join = b.Join
+	if b.JoinNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 26)
+		x.xxx_hidden_JoinNull = *b.JoinNull
+	}
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	if b.DateUpdatedForce != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 26)
+		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
+	}
+	x.xxx_hidden_DateAdopted = b.DateAdopted
+	if b.DateAdoptedNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 26)
+		x.xxx_hidden_DateAdoptedNull = *b.DateAdoptedNull
+	}
+	x.xxx_hidden_DateSeen = b.DateSeen
+	if b.DateSeenNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 26)
+		x.xxx_hidden_DateSeenNull = *b.DateSeenNull
+	}
+	x.xxx_hidden_DateCertExpires = b.DateCertExpires
+	if b.DateCertExpiresNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 26)
+		x.xxx_hidden_DateCertExpiresNull = *b.DateCertExpiresNull
+	}
+	x.xxx_hidden_Interfaces = &b.Interfaces
+	x.xxx_hidden_KeyIds = b.KeyIds
+	if b.CaHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 26)
+		x.xxx_hidden_CaHash = b.CaHash
+	}
+	if b.Version != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 26)
+		x.xxx_hidden_Version = b.Version
+	}
+	if b.UploadAddress != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 26)
+		x.xxx_hidden_UploadAddress = b.UploadAddress
+	}
+	x.xxx_hidden_Status = b.Status
+	if b.StatusNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 25, 26)
+		x.xxx_hidden_StatusNull = *b.StatusNull
+	}
+	return m0
+}
+
+type SatelliteApplyRequest struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref   *SatelliteRef          `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SatelliteApplyRequest) Reset() {
+	*x = SatelliteApplyRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteApplyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteApplyRequest) ProtoMessage() {}
+
+func (x *SatelliteApplyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteApplyRequest) GetRef() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SatelliteApplyRequest) GetPatch() *patchpb.Patch {
+	if x != nil {
+		return x.xxx_hidden_Patch
+	}
+	return nil
+}
+
+func (x *SatelliteApplyRequest) SetRef(v *SatelliteRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SatelliteApplyRequest) SetPatch(v *patchpb.Patch) {
+	x.xxx_hidden_Patch = v
+}
+
+func (x *SatelliteApplyRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SatelliteApplyRequest) HasPatch() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Patch != nil
+}
+
+func (x *SatelliteApplyRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *SatelliteApplyRequest) ClearPatch() {
+	x.xxx_hidden_Patch = nil
+}
+
+type SatelliteApplyRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref   *SatelliteRef
+	Patch *patchpb.Patch
+}
+
+func (b0 SatelliteApplyRequest_builder) Build() *SatelliteApplyRequest {
+	m0 := &SatelliteApplyRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Patch = b.Patch
+	return m0
+}
+
+type SatelliteEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SatelliteEraseResponse) Reset() {
+	*x = SatelliteEraseResponse{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteEraseResponse) ProtoMessage() {}
+
+func (x *SatelliteEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *SatelliteEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *SatelliteEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SatelliteEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type SatelliteEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 SatelliteEraseResponse_builder) Build() *SatelliteEraseResponse {
+	m0 := &SatelliteEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
+type SatelliteListRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Filters *[]*SatelliteFilter    `protobuf:"bytes,1,rep,name=filters"`
+	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
+	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SatelliteListRequest) Reset() {
+	*x = SatelliteListRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteListRequest) ProtoMessage() {}
+
+func (x *SatelliteListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteListRequest) GetFilters() []*SatelliteFilter {
+	if x != nil {
+		if x.xxx_hidden_Filters != nil {
+			return *x.xxx_hidden_Filters
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteListRequest) GetSize() int32 {
+	if x != nil {
+		return x.xxx_hidden_Size
+	}
+	return 0
+}
+
+func (x *SatelliteListRequest) GetAfter() string {
+	if x != nil {
+		return x.xxx_hidden_After
+	}
+	return ""
+}
+
+func (x *SatelliteListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
+func (x *SatelliteListRequest) SetFilters(v []*SatelliteFilter) {
+	x.xxx_hidden_Filters = &v
+}
+
+func (x *SatelliteListRequest) SetSize(v int32) {
+	x.xxx_hidden_Size = v
+}
+
+func (x *SatelliteListRequest) SetAfter(v string) {
+	x.xxx_hidden_After = v
+}
+
+func (x *SatelliteListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
+}
+
+type SatelliteListRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Bounded because the work is: each filter is a predicate in the same query,
+	// so this is what says how much of the database one request may read.
+	Filters []*SatelliteFilter
+	// How many to answer with. Nothing said is what the schema declared, and more
+	// than the cap is the cap -- a caller asking for more than there is meant no
+	// harm, so it is not an error and it is not the whole table either.
+	Size int32
+	// Where to carry on from: the "next" of the answer before. It names the last
+	// row of that page rather than counting rows from the start, so a row added
+	// ahead of the page does not shift it and a caller reading through never sees
+	// one twice or misses one.
+	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
+}
+
+func (b0 SatelliteListRequest_builder) Build() *SatelliteListRequest {
+	m0 := &SatelliteListRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Filters = &b.Filters
+	x.xxx_hidden_Size = b.Size
+	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
+	return m0
+}
+
+type SatelliteListResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Items *[]*Satellite          `protobuf:"bytes,1,rep,name=items"`
+	xxx_hidden_Next  string                 `protobuf:"bytes,2,opt,name=next"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SatelliteListResponse) Reset() {
+	*x = SatelliteListResponse{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteListResponse) ProtoMessage() {}
+
+func (x *SatelliteListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteListResponse) GetItems() []*Satellite {
+	if x != nil {
+		if x.xxx_hidden_Items != nil {
+			return *x.xxx_hidden_Items
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteListResponse) GetNext() string {
+	if x != nil {
+		return x.xxx_hidden_Next
+	}
+	return ""
+}
+
+func (x *SatelliteListResponse) SetItems(v []*Satellite) {
+	x.xxx_hidden_Items = &v
+}
+
+func (x *SatelliteListResponse) SetNext(v string) {
+	x.xxx_hidden_Next = v
+}
+
+type SatelliteListResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Items []*Satellite
+	// What to ask for next, and empty when this was the last of them.
+	//
+	// Empty means there is no more *for now*: a list is read as it is, and one
+	// that has grown since answers a fresh call. It is not empty merely because
+	// the page came back short -- a page is short when the last row of it was the
+	// last row there was, which is a thing the server can only know by having
+	// looked.
+	Next string
+}
+
+func (b0 SatelliteListResponse_builder) Build() *SatelliteListResponse {
+	m0 := &SatelliteListResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Items = &b.Items
+	x.xxx_hidden_Next = b.Next
+	return m0
+}
+
+type SatelliteFilter struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *SatelliteRef          `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Labels map[string]string      `protobuf:"bytes,2,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SatelliteFilter) Reset() {
+	*x = SatelliteFilter{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteFilter) ProtoMessage() {}
+
+func (x *SatelliteFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteFilter) GetRef() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SatelliteFilter) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *SatelliteFilter) SetRef(v *SatelliteRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SatelliteFilter) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
+func (x *SatelliteFilter) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SatelliteFilter) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+type SatelliteFilter_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref    *SatelliteRef
+	Labels map[string]string
+}
+
+func (b0 SatelliteFilter_builder) Build() *SatelliteFilter {
+	m0 := &SatelliteFilter{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Labels = b.Labels
+	return m0
+}
+
+type SatelliteWatchRequest struct {
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Filters      *[]*SatelliteFilter    `protobuf:"bytes,1,rep,name=filters"`
+	xxx_hidden_SkipSnapshot bool                   `protobuf:"varint,2,opt,name=skip_snapshot,json=skipSnapshot"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *SatelliteWatchRequest) Reset() {
+	*x = SatelliteWatchRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteWatchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteWatchRequest) ProtoMessage() {}
+
+func (x *SatelliteWatchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteWatchRequest) GetFilters() []*SatelliteFilter {
+	if x != nil {
+		if x.xxx_hidden_Filters != nil {
+			return *x.xxx_hidden_Filters
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteWatchRequest) GetSkipSnapshot() bool {
+	if x != nil {
+		return x.xxx_hidden_SkipSnapshot
+	}
+	return false
+}
+
+func (x *SatelliteWatchRequest) SetFilters(v []*SatelliteFilter) {
+	x.xxx_hidden_Filters = &v
+}
+
+func (x *SatelliteWatchRequest) SetSkipSnapshot(v bool) {
+	x.xxx_hidden_SkipSnapshot = v
+}
+
+type SatelliteWatchRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Which rows to watch, in the same words List takes them: what is watched is
+	// what that list would answer with, now and afterwards.
+	//
+	// Required, and bounded the way a List is -- for a heavier reason. A list
+	// runs its filters once; a watch runs them again for every write that touches
+	// the entity, for as long as the stream is open. A watch with no filters is
+	// the whole table, forever, which is the one shape that has no cap at all.
+	Filters []*SatelliteFilter
+	// Skip what is there now and send only what changes from here.
+	//
+	// Off by default, and the default is the safe one: a client that does not
+	// know the current state and did not ask for it holds something wrong until
+	// the next write happens to correct it.
+	SkipSnapshot bool
+}
+
+func (b0 SatelliteWatchRequest_builder) Build() *SatelliteWatchRequest {
+	m0 := &SatelliteWatchRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Filters = &b.Filters
+	x.xxx_hidden_SkipSnapshot = b.SkipSnapshot
+	return m0
+}
+
+type SatelliteWatchResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Items *[]*SatelliteWatchItem `protobuf:"bytes,1,rep,name=items"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SatelliteWatchResponse) Reset() {
+	*x = SatelliteWatchResponse{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteWatchResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteWatchResponse) ProtoMessage() {}
+
+func (x *SatelliteWatchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteWatchResponse) GetItems() []*SatelliteWatchItem {
+	if x != nil {
+		if x.xxx_hidden_Items != nil {
+			return *x.xxx_hidden_Items
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteWatchResponse) SetItems(v []*SatelliteWatchItem) {
+	x.xxx_hidden_Items = &v
+}
+
+type SatelliteWatchResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What changed, or -- in the first message -- everything that matches.
+	Items []*SatelliteWatchItem
+}
+
+func (b0 SatelliteWatchResponse_builder) Build() *SatelliteWatchResponse {
+	m0 := &SatelliteWatchResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Items = &b.Items
+	return m0
+}
+
+type SatelliteWatchItem struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Value       *Satellite             `protobuf:"bytes,2,opt,name=value"`
+	xxx_hidden_Action      string                 `protobuf:"bytes,3,opt,name=action"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SatelliteWatchItem) Reset() {
+	*x = SatelliteWatchItem{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteWatchItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteWatchItem) ProtoMessage() {}
+
+func (x *SatelliteWatchItem) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteWatchItem) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *SatelliteWatchItem) GetValue() *Satellite {
+	if x != nil {
+		return x.xxx_hidden_Value
+	}
+	return nil
+}
+
+func (x *SatelliteWatchItem) GetAction() string {
+	if x != nil {
+		return x.xxx_hidden_Action
+	}
+	return ""
+}
+
+func (x *SatelliteWatchItem) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+}
+
+func (x *SatelliteWatchItem) SetValue(v *Satellite) {
+	x.xxx_hidden_Value = v
+}
+
+func (x *SatelliteWatchItem) SetAction(v string) {
+	x.xxx_hidden_Action = v
+}
+
+func (x *SatelliteWatchItem) HasId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SatelliteWatchItem) HasValue() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Value != nil
+}
+
+func (x *SatelliteWatchItem) ClearId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Id = nil
+}
+
+func (x *SatelliteWatchItem) ClearValue() {
+	x.xxx_hidden_Value = nil
+}
+
+type SatelliteWatchItem_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Which row. Always said, since one that is gone still has to be named.
+	Id []byte
+	// The row as it is now, and **absent when it is no longer one this caller may
+	// see**: erased, or moved out of the filters this stream named.
+	//
+	// Absence is the whole of how a removal is said. There is no flag for it, and
+	// there is deliberately no way to tell those two apart -- a stream that
+	// distinguished "erased" from "no longer yours" would be telling a caller
+	// about rows that stopped being theirs, which is the thing the wall is for.
+	//
+	// It is only ever said about a row this stream has already carried. One that
+	// never matched is not news.
+	Value *Satellite
+	// The RPC that changed it, by the name gRPC knows it by. It is what the
+	// caller of *that* RPC asked for and not the write it became, so an RPC
+	// written by hand is here under its own name.
+	//
+	// Empty in the first message, which is not something anybody asked for -- it
+	// is what is already there.
+	Action string
+}
+
+func (b0 SatelliteWatchItem_builder) Build() *SatelliteWatchItem {
+	m0 := &SatelliteWatchItem{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Id != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		x.xxx_hidden_Id = b.Id
+	}
+	x.xxx_hidden_Value = b.Value
+	x.xxx_hidden_Action = b.Action
+	return m0
+}
+
+type SatelliteJoinRequest struct {
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Host          *HostJoin              `protobuf:"bytes,1,opt,name=host"`
+	xxx_hidden_Interfaces    *[]*HostInterface      `protobuf:"bytes,2,rep,name=interfaces"`
+	xxx_hidden_UploadAddress string                 `protobuf:"bytes,3,opt,name=upload_address,json=uploadAddress"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *SatelliteJoinRequest) Reset() {
+	*x = SatelliteJoinRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteJoinRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteJoinRequest) ProtoMessage() {}
+
+func (x *SatelliteJoinRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteJoinRequest) GetHost() *HostJoin {
+	if x != nil {
+		return x.xxx_hidden_Host
+	}
+	return nil
+}
+
+func (x *SatelliteJoinRequest) GetInterfaces() []*HostInterface {
+	if x != nil {
+		if x.xxx_hidden_Interfaces != nil {
+			return *x.xxx_hidden_Interfaces
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteJoinRequest) GetUploadAddress() string {
+	if x != nil {
+		return x.xxx_hidden_UploadAddress
+	}
+	return ""
+}
+
+func (x *SatelliteJoinRequest) SetHost(v *HostJoin) {
+	x.xxx_hidden_Host = v
+}
+
+func (x *SatelliteJoinRequest) SetInterfaces(v []*HostInterface) {
+	x.xxx_hidden_Interfaces = &v
+}
+
+func (x *SatelliteJoinRequest) SetUploadAddress(v string) {
+	x.xxx_hidden_UploadAddress = v
+}
+
+func (x *SatelliteJoinRequest) HasHost() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Host != nil
+}
+
+func (x *SatelliteJoinRequest) ClearHost() {
+	x.xxx_hidden_Host = nil
+}
+
+type SatelliteJoinRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Host          *HostJoin
+	Interfaces    []*HostInterface
+	UploadAddress string
+}
+
+func (b0 SatelliteJoinRequest_builder) Build() *SatelliteJoinRequest {
+	m0 := &SatelliteJoinRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Host = b.Host
+	x.xxx_hidden_Interfaces = &b.Interfaces
+	x.xxx_hidden_UploadAddress = b.UploadAddress
+	return m0
+}
+
+type SatelliteJoinResponse struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Answer *JoinAnswer            `protobuf:"bytes,1,opt,name=answer"`
+	xxx_hidden_Keys   *[]*KeyEntry           `protobuf:"bytes,2,rep,name=keys"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SatelliteJoinResponse) Reset() {
+	*x = SatelliteJoinResponse{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteJoinResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteJoinResponse) ProtoMessage() {}
+
+func (x *SatelliteJoinResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteJoinResponse) GetAnswer() *JoinAnswer {
+	if x != nil {
+		return x.xxx_hidden_Answer
+	}
+	return nil
+}
+
+func (x *SatelliteJoinResponse) GetKeys() []*KeyEntry {
+	if x != nil {
+		if x.xxx_hidden_Keys != nil {
+			return *x.xxx_hidden_Keys
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteJoinResponse) SetAnswer(v *JoinAnswer) {
+	x.xxx_hidden_Answer = v
+}
+
+func (x *SatelliteJoinResponse) SetKeys(v []*KeyEntry) {
+	x.xxx_hidden_Keys = &v
+}
+
+func (x *SatelliteJoinResponse) HasAnswer() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Answer != nil
+}
+
+func (x *SatelliteJoinResponse) ClearAnswer() {
+	x.xxx_hidden_Answer = nil
+}
+
+type SatelliteJoinResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Answer *JoinAnswer
+	Keys   []*KeyEntry
+}
+
+func (b0 SatelliteJoinResponse_builder) Build() *SatelliteJoinResponse {
+	m0 := &SatelliteJoinResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Answer = b.Answer
+	x.xxx_hidden_Keys = &b.Keys
+	return m0
+}
+
+type SatelliteAdoptRequest struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref   *SatelliteRef          `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Alias string                 `protobuf:"bytes,2,opt,name=alias"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SatelliteAdoptRequest) Reset() {
+	*x = SatelliteAdoptRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteAdoptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteAdoptRequest) ProtoMessage() {}
+
+func (x *SatelliteAdoptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteAdoptRequest) GetRef() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SatelliteAdoptRequest) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
+}
+
+func (x *SatelliteAdoptRequest) SetRef(v *SatelliteRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SatelliteAdoptRequest) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
+}
+
+func (x *SatelliteAdoptRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SatelliteAdoptRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+type SatelliteAdoptRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref   *SatelliteRef
+	Alias string
+}
+
+func (b0 SatelliteAdoptRequest_builder) Build() *SatelliteAdoptRequest {
+	m0 := &SatelliteAdoptRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Alias = b.Alias
+	return m0
+}
+
+type SatelliteRenewCertificateRequest struct {
+	state          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Csr []byte                 `protobuf:"bytes,1,opt,name=csr"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SatelliteRenewCertificateRequest) Reset() {
+	*x = SatelliteRenewCertificateRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteRenewCertificateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteRenewCertificateRequest) ProtoMessage() {}
+
+func (x *SatelliteRenewCertificateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteRenewCertificateRequest) GetCsr() []byte {
+	if x != nil {
+		return x.xxx_hidden_Csr
+	}
+	return nil
+}
+
+func (x *SatelliteRenewCertificateRequest) SetCsr(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Csr = v
+}
+
+type SatelliteRenewCertificateRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Csr []byte
+}
+
+func (b0 SatelliteRenewCertificateRequest_builder) Build() *SatelliteRenewCertificateRequest {
+	m0 := &SatelliteRenewCertificateRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Csr = b.Csr
+	return m0
+}
+
+type SatelliteRenewCertificateResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Certificate []byte                 `protobuf:"bytes,1,opt,name=certificate"`
+	xxx_hidden_CaBundle    []byte                 `protobuf:"bytes,2,opt,name=ca_bundle,json=caBundle"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SatelliteRenewCertificateResponse) Reset() {
+	*x = SatelliteRenewCertificateResponse{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteRenewCertificateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteRenewCertificateResponse) ProtoMessage() {}
+
+func (x *SatelliteRenewCertificateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteRenewCertificateResponse) GetCertificate() []byte {
+	if x != nil {
+		return x.xxx_hidden_Certificate
+	}
+	return nil
+}
+
+func (x *SatelliteRenewCertificateResponse) GetCaBundle() []byte {
+	if x != nil {
+		return x.xxx_hidden_CaBundle
+	}
+	return nil
+}
+
+func (x *SatelliteRenewCertificateResponse) SetCertificate(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Certificate = v
+}
+
+func (x *SatelliteRenewCertificateResponse) SetCaBundle(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_CaBundle = v
+}
+
+type SatelliteRenewCertificateResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Certificate []byte
+	CaBundle    []byte
+}
+
+func (b0 SatelliteRenewCertificateResponse_builder) Build() *SatelliteRenewCertificateResponse {
+	m0 := &SatelliteRenewCertificateResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Certificate = b.Certificate
+	x.xxx_hidden_CaBundle = b.CaBundle
+	return m0
+}
+
+type SatelliteHeartbeatRequest struct {
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_CertSerial    string                 `protobuf:"bytes,1,opt,name=cert_serial,json=certSerial"`
+	xxx_hidden_CaHash        string                 `protobuf:"bytes,2,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_KeyIds        []string               `protobuf:"bytes,3,rep,name=key_ids,json=keyIds"`
+	xxx_hidden_Status        *SatelliteStatus       `protobuf:"bytes,4,opt,name=status"`
+	xxx_hidden_Interfaces    *[]*HostInterface      `protobuf:"bytes,5,rep,name=interfaces"`
+	xxx_hidden_UploadAddress string                 `protobuf:"bytes,6,opt,name=upload_address,json=uploadAddress"`
+	xxx_hidden_Version       string                 `protobuf:"bytes,7,opt,name=version"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *SatelliteHeartbeatRequest) Reset() {
+	*x = SatelliteHeartbeatRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteHeartbeatRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteHeartbeatRequest) ProtoMessage() {}
+
+func (x *SatelliteHeartbeatRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteHeartbeatRequest) GetCertSerial() string {
+	if x != nil {
+		return x.xxx_hidden_CertSerial
+	}
+	return ""
+}
+
+func (x *SatelliteHeartbeatRequest) GetCaHash() string {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return ""
+}
+
+func (x *SatelliteHeartbeatRequest) GetKeyIds() []string {
+	if x != nil {
+		return x.xxx_hidden_KeyIds
+	}
+	return nil
+}
+
+func (x *SatelliteHeartbeatRequest) GetStatus() *SatelliteStatus {
+	if x != nil {
+		return x.xxx_hidden_Status
+	}
+	return nil
+}
+
+func (x *SatelliteHeartbeatRequest) GetInterfaces() []*HostInterface {
+	if x != nil {
+		if x.xxx_hidden_Interfaces != nil {
+			return *x.xxx_hidden_Interfaces
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteHeartbeatRequest) GetUploadAddress() string {
+	if x != nil {
+		return x.xxx_hidden_UploadAddress
+	}
+	return ""
+}
+
+func (x *SatelliteHeartbeatRequest) GetVersion() string {
+	if x != nil {
+		return x.xxx_hidden_Version
+	}
+	return ""
+}
+
+func (x *SatelliteHeartbeatRequest) SetCertSerial(v string) {
+	x.xxx_hidden_CertSerial = v
+}
+
+func (x *SatelliteHeartbeatRequest) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = v
+}
+
+func (x *SatelliteHeartbeatRequest) SetKeyIds(v []string) {
+	x.xxx_hidden_KeyIds = v
+}
+
+func (x *SatelliteHeartbeatRequest) SetStatus(v *SatelliteStatus) {
+	x.xxx_hidden_Status = v
+}
+
+func (x *SatelliteHeartbeatRequest) SetInterfaces(v []*HostInterface) {
+	x.xxx_hidden_Interfaces = &v
+}
+
+func (x *SatelliteHeartbeatRequest) SetUploadAddress(v string) {
+	x.xxx_hidden_UploadAddress = v
+}
+
+func (x *SatelliteHeartbeatRequest) SetVersion(v string) {
+	x.xxx_hidden_Version = v
+}
+
+func (x *SatelliteHeartbeatRequest) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Status != nil
+}
+
+func (x *SatelliteHeartbeatRequest) ClearStatus() {
+	x.xxx_hidden_Status = nil
+}
+
+type SatelliteHeartbeatRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	CertSerial    string
+	CaHash        string
+	KeyIds        []string
+	Status        *SatelliteStatus
+	Interfaces    []*HostInterface
+	UploadAddress string
+	Version       string
+}
+
+func (b0 SatelliteHeartbeatRequest_builder) Build() *SatelliteHeartbeatRequest {
+	m0 := &SatelliteHeartbeatRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_CertSerial = b.CertSerial
+	x.xxx_hidden_CaHash = b.CaHash
+	x.xxx_hidden_KeyIds = b.KeyIds
+	x.xxx_hidden_Status = b.Status
+	x.xxx_hidden_Interfaces = &b.Interfaces
+	x.xxx_hidden_UploadAddress = b.UploadAddress
+	x.xxx_hidden_Version = b.Version
+	return m0
+}
+
+type SatelliteHeartbeatResponse struct {
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_RenewCertificate bool                   `protobuf:"varint,1,opt,name=renew_certificate,json=renewCertificate"`
+	xxx_hidden_Producers        *[]*SatelliteProducer  `protobuf:"bytes,2,rep,name=producers"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *SatelliteHeartbeatResponse) Reset() {
+	*x = SatelliteHeartbeatResponse{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteHeartbeatResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteHeartbeatResponse) ProtoMessage() {}
+
+func (x *SatelliteHeartbeatResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteHeartbeatResponse) GetRenewCertificate() bool {
+	if x != nil {
+		return x.xxx_hidden_RenewCertificate
+	}
+	return false
+}
+
+func (x *SatelliteHeartbeatResponse) GetProducers() []*SatelliteProducer {
+	if x != nil {
+		if x.xxx_hidden_Producers != nil {
+			return *x.xxx_hidden_Producers
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteHeartbeatResponse) SetRenewCertificate(v bool) {
+	x.xxx_hidden_RenewCertificate = v
+}
+
+func (x *SatelliteHeartbeatResponse) SetProducers(v []*SatelliteProducer) {
+	x.xxx_hidden_Producers = &v
+}
+
+type SatelliteHeartbeatResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	RenewCertificate bool
+	// Every adopted producer assigned to this satellite; the whole list each
+	// time, which replaces the last.
+	Producers []*SatelliteProducer
+}
+
+func (b0 SatelliteHeartbeatResponse_builder) Build() *SatelliteHeartbeatResponse {
+	m0 := &SatelliteHeartbeatResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_RenewCertificate = b.RenewCertificate
+	x.xxx_hidden_Producers = &b.Producers
+	return m0
+}
+
+// SatelliteProducer is one producer a satellite serves (§41.3): an mTLS
+// caller is that producer when its certificate names it and carries this
+// serial, as the CP checks its own callers (§33.4).
+type SatelliteProducer struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ProducerId []byte                 `protobuf:"bytes,1,opt,name=producer_id,json=producerId"`
+	xxx_hidden_CertSerial string                 `protobuf:"bytes,2,opt,name=cert_serial,json=certSerial"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *SatelliteProducer) Reset() {
+	*x = SatelliteProducer{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteProducer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteProducer) ProtoMessage() {}
+
+func (x *SatelliteProducer) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteProducer) GetProducerId() []byte {
+	if x != nil {
+		return x.xxx_hidden_ProducerId
+	}
+	return nil
+}
+
+func (x *SatelliteProducer) GetCertSerial() string {
+	if x != nil {
+		return x.xxx_hidden_CertSerial
+	}
+	return ""
+}
+
+func (x *SatelliteProducer) SetProducerId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_ProducerId = v
+}
+
+func (x *SatelliteProducer) SetCertSerial(v string) {
+	x.xxx_hidden_CertSerial = v
+}
+
+type SatelliteProducer_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	ProducerId []byte
+	CertSerial string
+}
+
+func (b0 SatelliteProducer_builder) Build() *SatelliteProducer {
+	m0 := &SatelliteProducer{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ProducerId = b.ProducerId
+	x.xxx_hidden_CertSerial = b.CertSerial
+	return m0
+}
+
+type SatelliteRouteRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_NodeId []byte                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SatelliteRouteRequest) Reset() {
+	*x = SatelliteRouteRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteRouteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteRouteRequest) ProtoMessage() {}
+
+func (x *SatelliteRouteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteRouteRequest) GetNodeId() []byte {
+	if x != nil {
+		return x.xxx_hidden_NodeId
+	}
+	return nil
+}
+
+func (x *SatelliteRouteRequest) SetNodeId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_NodeId = v
+}
+
+type SatelliteRouteRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	NodeId []byte
+}
+
+func (b0 SatelliteRouteRequest_builder) Build() *SatelliteRouteRequest {
+	m0 := &SatelliteRouteRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_NodeId = b.NodeId
+	return m0
+}
+
+type SatelliteRouteResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Endpoints   *[]*Endpoint           `protobuf:"bytes,1,rep,name=endpoints"`
+	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expires,json=dateExpires"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *SatelliteRouteResponse) Reset() {
+	*x = SatelliteRouteResponse{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteRouteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteRouteResponse) ProtoMessage() {}
+
+func (x *SatelliteRouteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteRouteResponse) GetEndpoints() []*Endpoint {
+	if x != nil {
+		if x.xxx_hidden_Endpoints != nil {
+			return *x.xxx_hidden_Endpoints
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteRouteResponse) GetDateExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateExpires
+	}
+	return nil
+}
+
+func (x *SatelliteRouteResponse) SetEndpoints(v []*Endpoint) {
+	x.xxx_hidden_Endpoints = &v
+}
+
+func (x *SatelliteRouteResponse) SetDateExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpires = v
+}
+
+func (x *SatelliteRouteResponse) HasDateExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateExpires != nil
+}
+
+func (x *SatelliteRouteResponse) ClearDateExpires() {
+	x.xxx_hidden_DateExpires = nil
+}
+
+type SatelliteRouteResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Endpoints []*Endpoint
+	// Until when the satellite may use these without asking again.
+	DateExpires *timestamppb.Timestamp
+}
+
+func (b0 SatelliteRouteResponse_builder) Build() *SatelliteRouteResponse {
+	m0 := &SatelliteRouteResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Endpoints = &b.Endpoints
+	x.xxx_hidden_DateExpires = b.DateExpires
+	return m0
+}
+
+type SatelliteAssignRequest struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref      *SatelliteRef          `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Producer *ProducerRef           `protobuf:"bytes,2,opt,name=producer"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SatelliteAssignRequest) Reset() {
+	*x = SatelliteAssignRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteAssignRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteAssignRequest) ProtoMessage() {}
+
+func (x *SatelliteAssignRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteAssignRequest) GetRef() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *SatelliteAssignRequest) GetProducer() *ProducerRef {
+	if x != nil {
+		return x.xxx_hidden_Producer
+	}
+	return nil
+}
+
+func (x *SatelliteAssignRequest) SetRef(v *SatelliteRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *SatelliteAssignRequest) SetProducer(v *ProducerRef) {
+	x.xxx_hidden_Producer = v
+}
+
+func (x *SatelliteAssignRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *SatelliteAssignRequest) HasProducer() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Producer != nil
+}
+
+func (x *SatelliteAssignRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *SatelliteAssignRequest) ClearProducer() {
+	x.xxx_hidden_Producer = nil
+}
+
+type SatelliteAssignRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref      *SatelliteRef
+	Producer *ProducerRef
+}
+
+func (b0 SatelliteAssignRequest_builder) Build() *SatelliteAssignRequest {
+	m0 := &SatelliteAssignRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Producer = b.Producer
+	return m0
+}
+
 type ProducerAddRequest struct {
 	state                      protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id              []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -8484,6 +12338,7 @@ type ProducerAddRequest struct {
 	xxx_hidden_Version         string                 `protobuf:"bytes,22,opt,name=version"`
 	xxx_hidden_Live            LivePolicy             `protobuf:"varint,23,opt,name=live,enum=shale.LivePolicy"`
 	xxx_hidden_CaHash          *string                `protobuf:"bytes,24,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_Satellite       *SatelliteRef          `protobuf:"bytes,25,opt,name=satellite"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -8492,7 +12347,7 @@ type ProducerAddRequest struct {
 
 func (x *ProducerAddRequest) Reset() {
 	*x = ProducerAddRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[49]
+	mi := &file_shale_host_svc_g_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8504,7 +12359,7 @@ func (x *ProducerAddRequest) String() string {
 func (*ProducerAddRequest) ProtoMessage() {}
 
 func (x *ProducerAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[49]
+	mi := &file_shale_host_svc_g_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8674,12 +12529,19 @@ func (x *ProducerAddRequest) GetCaHash() string {
 	return ""
 }
 
+func (x *ProducerAddRequest) GetSatellite() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
 func (x *ProducerAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 23)
 }
 
 func (x *ProducerAddRequest) SetTenant(v *TenantRef) {
@@ -8760,12 +12622,16 @@ func (x *ProducerAddRequest) SetVersion(v string) {
 
 func (x *ProducerAddRequest) SetLive(v LivePolicy) {
 	x.xxx_hidden_Live = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 23)
 }
 
 func (x *ProducerAddRequest) SetCaHash(v string) {
 	x.xxx_hidden_CaHash = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 22)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 23)
+}
+
+func (x *ProducerAddRequest) SetSatellite(v *SatelliteRef) {
+	x.xxx_hidden_Satellite = v
 }
 
 func (x *ProducerAddRequest) HasId() bool {
@@ -8859,6 +12725,13 @@ func (x *ProducerAddRequest) HasCaHash() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
 }
 
+func (x *ProducerAddRequest) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
 func (x *ProducerAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -8914,6 +12787,10 @@ func (x *ProducerAddRequest) ClearCaHash() {
 	x.xxx_hidden_CaHash = nil
 }
 
+func (x *ProducerAddRequest) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
+}
+
 type ProducerAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -8939,6 +12816,7 @@ type ProducerAddRequest_builder struct {
 	Version         string
 	Live            *LivePolicy
 	CaHash          *string
+	Satellite       *SatelliteRef
 }
 
 func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
@@ -8946,7 +12824,7 @@ func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 23)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -8969,13 +12847,14 @@ func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Version = b.Version
 	if b.Live != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 23)
 		x.xxx_hidden_Live = *b.Live
 	}
 	if b.CaHash != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 22)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 23)
 		x.xxx_hidden_CaHash = b.CaHash
 	}
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -8989,7 +12868,7 @@ type ProducerGetRequest struct {
 
 func (x *ProducerGetRequest) Reset() {
 	*x = ProducerGetRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[50]
+	mi := &file_shale_host_svc_g_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9001,7 +12880,7 @@ func (x *ProducerGetRequest) String() string {
 func (*ProducerGetRequest) ProtoMessage() {}
 
 func (x *ProducerGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[50]
+	mi := &file_shale_host_svc_g_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9098,6 +12977,7 @@ type ProducerSelect struct {
 	xxx_hidden_Version         bool                   `protobuf:"varint,22,opt,name=version"`
 	xxx_hidden_Live            bool                   `protobuf:"varint,23,opt,name=live"`
 	xxx_hidden_CaHash          bool                   `protobuf:"varint,24,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_Satellite       *SatelliteSelect       `protobuf:"bytes,25,opt,name=satellite"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -9106,7 +12986,7 @@ type ProducerSelect struct {
 
 func (x *ProducerSelect) Reset() {
 	*x = ProducerSelect{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[51]
+	mi := &file_shale_host_svc_g_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9118,7 +12998,7 @@ func (x *ProducerSelect) String() string {
 func (*ProducerSelect) ProtoMessage() {}
 
 func (x *ProducerSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[51]
+	mi := &file_shale_host_svc_g_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9297,9 +13177,16 @@ func (x *ProducerSelect) GetCaHash() bool {
 	return false
 }
 
+func (x *ProducerSelect) GetSatellite() *SatelliteSelect {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
 func (x *ProducerSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 25)
 }
 
 func (x *ProducerSelect) SetTenant(v *TenantSelect) {
@@ -9312,22 +13199,22 @@ func (x *ProducerSelect) SetSite(v *SiteSelect) {
 
 func (x *ProducerSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 25)
 }
 
 func (x *ProducerSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 25)
 }
 
 func (x *ProducerSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 25)
 }
 
 func (x *ProducerSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 25)
 }
 
 func (x *ProducerSelect) SetSet(v *SetSelect) {
@@ -9336,57 +13223,57 @@ func (x *ProducerSelect) SetSet(v *SetSelect) {
 
 func (x *ProducerSelect) SetHardwareId(v bool) {
 	x.xxx_hidden_HardwareId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 25)
 }
 
 func (x *ProducerSelect) SetHostname(v bool) {
 	x.xxx_hidden_Hostname = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 25)
 }
 
 func (x *ProducerSelect) SetState(v bool) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 25)
 }
 
 func (x *ProducerSelect) SetCertSerial(v bool) {
 	x.xxx_hidden_CertSerial = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 25)
 }
 
 func (x *ProducerSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 25)
 }
 
 func (x *ProducerSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 25)
 }
 
 func (x *ProducerSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 25)
 }
 
 func (x *ProducerSelect) SetJoin(v bool) {
 	x.xxx_hidden_Join = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 25)
 }
 
 func (x *ProducerSelect) SetDateAdopted(v bool) {
 	x.xxx_hidden_DateAdopted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 25)
 }
 
 func (x *ProducerSelect) SetDateSeen(v bool) {
 	x.xxx_hidden_DateSeen = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 25)
 }
 
 func (x *ProducerSelect) SetDateCertExpires(v bool) {
 	x.xxx_hidden_DateCertExpires = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 25)
 }
 
 func (x *ProducerSelect) SetRelay(v *RelaySelect) {
@@ -9395,22 +13282,26 @@ func (x *ProducerSelect) SetRelay(v *RelaySelect) {
 
 func (x *ProducerSelect) SetStatus(v bool) {
 	x.xxx_hidden_Status = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 25)
 }
 
 func (x *ProducerSelect) SetVersion(v bool) {
 	x.xxx_hidden_Version = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 25)
 }
 
 func (x *ProducerSelect) SetLive(v bool) {
 	x.xxx_hidden_Live = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 25)
 }
 
 func (x *ProducerSelect) SetCaHash(v bool) {
 	x.xxx_hidden_CaHash = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 25)
+}
+
+func (x *ProducerSelect) SetSatellite(v *SatelliteSelect) {
+	x.xxx_hidden_Satellite = v
 }
 
 func (x *ProducerSelect) HasAll() bool {
@@ -9581,6 +13472,13 @@ func (x *ProducerSelect) HasCaHash() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 23)
 }
 
+func (x *ProducerSelect) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
 func (x *ProducerSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -9697,6 +13595,10 @@ func (x *ProducerSelect) ClearCaHash() {
 	x.xxx_hidden_CaHash = false
 }
 
+func (x *ProducerSelect) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
+}
+
 type ProducerSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -9724,6 +13626,7 @@ type ProducerSelect_builder struct {
 	Version         *bool
 	Live            *bool
 	CaHash          *bool
+	Satellite       *SatelliteSelect
 }
 
 func (b0 ProducerSelect_builder) Build() *ProducerSelect {
@@ -9731,89 +13634,90 @@ func (b0 ProducerSelect_builder) Build() *ProducerSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 25)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 25)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 25)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 25)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 25)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	x.xxx_hidden_Set = b.Set
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 25)
 		x.xxx_hidden_HardwareId = *b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 25)
 		x.xxx_hidden_Hostname = *b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 25)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 25)
 		x.xxx_hidden_CertSerial = *b.CertSerial
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 25)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 25)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 25)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.Join != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 25)
 		x.xxx_hidden_Join = *b.Join
 	}
 	if b.DateAdopted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 25)
 		x.xxx_hidden_DateAdopted = *b.DateAdopted
 	}
 	if b.DateSeen != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 25)
 		x.xxx_hidden_DateSeen = *b.DateSeen
 	}
 	if b.DateCertExpires != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 25)
 		x.xxx_hidden_DateCertExpires = *b.DateCertExpires
 	}
 	x.xxx_hidden_Relay = b.Relay
 	if b.Status != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 25)
 		x.xxx_hidden_Status = *b.Status
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 25)
 		x.xxx_hidden_Version = *b.Version
 	}
 	if b.Live != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 25)
 		x.xxx_hidden_Live = *b.Live
 	}
 	if b.CaHash != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 25)
 		x.xxx_hidden_CaHash = *b.CaHash
 	}
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -9849,6 +13753,8 @@ type ProducerPatchRequest struct {
 	xxx_hidden_Version             *string                `protobuf:"bytes,44,opt,name=version"`
 	xxx_hidden_Live                LivePolicy             `protobuf:"varint,46,opt,name=live,enum=shale.LivePolicy"`
 	xxx_hidden_CaHash              *string                `protobuf:"bytes,48,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_Satellite           *SatelliteRef          `protobuf:"bytes,50,opt,name=satellite"`
+	xxx_hidden_SatelliteNull       bool                   `protobuf:"varint,51,opt,name=satellite_null,json=satelliteNull"`
 	XXX_raceDetectHookData         protoimpl.RaceDetectHookData
 	XXX_presence                   [1]uint32
 	unknownFields                  protoimpl.UnknownFields
@@ -9857,7 +13763,7 @@ type ProducerPatchRequest struct {
 
 func (x *ProducerPatchRequest) Reset() {
 	*x = ProducerPatchRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[52]
+	mi := &file_shale_host_svc_g_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9869,7 +13775,7 @@ func (x *ProducerPatchRequest) String() string {
 func (*ProducerPatchRequest) ProtoMessage() {}
 
 func (x *ProducerPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[52]
+	mi := &file_shale_host_svc_g_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10118,6 +14024,20 @@ func (x *ProducerPatchRequest) GetCaHash() string {
 	return ""
 }
 
+func (x *ProducerPatchRequest) GetSatellite() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
+func (x *ProducerPatchRequest) GetSatelliteNull() bool {
+	if x != nil {
+		return x.xxx_hidden_SatelliteNull
+	}
+	return false
+}
+
 func (x *ProducerPatchRequest) SetRef(v *ProducerRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -10128,22 +14048,22 @@ func (x *ProducerPatchRequest) SetSite(v *SiteRef) {
 
 func (x *ProducerPatchRequest) SetSiteNull(v bool) {
 	x.xxx_hidden_SiteNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 32)
 }
 
 func (x *ProducerPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 32)
 }
 
 func (x *ProducerPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 32)
 }
 
 func (x *ProducerPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 32)
 }
 
 func (x *ProducerPatchRequest) SetLabels(v map[string]string) {
@@ -10156,27 +14076,27 @@ func (x *ProducerPatchRequest) SetSet(v *SetRef) {
 
 func (x *ProducerPatchRequest) SetSetNull(v bool) {
 	x.xxx_hidden_SetNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 32)
 }
 
 func (x *ProducerPatchRequest) SetHardwareId(v string) {
 	x.xxx_hidden_HardwareId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 32)
 }
 
 func (x *ProducerPatchRequest) SetHostname(v string) {
 	x.xxx_hidden_Hostname = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 32)
 }
 
 func (x *ProducerPatchRequest) SetState(v HostState) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 32)
 }
 
 func (x *ProducerPatchRequest) SetCertSerial(v string) {
 	x.xxx_hidden_CertSerial = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 32)
 }
 
 func (x *ProducerPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -10185,7 +14105,7 @@ func (x *ProducerPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 32)
 }
 
 func (x *ProducerPatchRequest) SetJoin(v *HostJoin) {
@@ -10194,7 +14114,7 @@ func (x *ProducerPatchRequest) SetJoin(v *HostJoin) {
 
 func (x *ProducerPatchRequest) SetJoinNull(v bool) {
 	x.xxx_hidden_JoinNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 32)
 }
 
 func (x *ProducerPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
@@ -10203,7 +14123,7 @@ func (x *ProducerPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateAdoptedNull(v bool) {
 	x.xxx_hidden_DateAdoptedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 32)
 }
 
 func (x *ProducerPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
@@ -10212,7 +14132,7 @@ func (x *ProducerPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateSeenNull(v bool) {
 	x.xxx_hidden_DateSeenNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 32)
 }
 
 func (x *ProducerPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
@@ -10221,7 +14141,7 @@ func (x *ProducerPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateCertExpiresNull(v bool) {
 	x.xxx_hidden_DateCertExpiresNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 32)
 }
 
 func (x *ProducerPatchRequest) SetRelay(v *RelayRef) {
@@ -10230,7 +14150,7 @@ func (x *ProducerPatchRequest) SetRelay(v *RelayRef) {
 
 func (x *ProducerPatchRequest) SetRelayNull(v bool) {
 	x.xxx_hidden_RelayNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 32)
 }
 
 func (x *ProducerPatchRequest) SetStatus(v *ProducerStatus) {
@@ -10239,22 +14159,31 @@ func (x *ProducerPatchRequest) SetStatus(v *ProducerStatus) {
 
 func (x *ProducerPatchRequest) SetStatusNull(v bool) {
 	x.xxx_hidden_StatusNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 32)
 }
 
 func (x *ProducerPatchRequest) SetVersion(v string) {
 	x.xxx_hidden_Version = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 27, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 27, 32)
 }
 
 func (x *ProducerPatchRequest) SetLive(v LivePolicy) {
 	x.xxx_hidden_Live = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 28, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 28, 32)
 }
 
 func (x *ProducerPatchRequest) SetCaHash(v string) {
 	x.xxx_hidden_CaHash = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 29, 30)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 29, 32)
+}
+
+func (x *ProducerPatchRequest) SetSatellite(v *SatelliteRef) {
+	x.xxx_hidden_Satellite = v
+}
+
+func (x *ProducerPatchRequest) SetSatelliteNull(v bool) {
+	x.xxx_hidden_SatelliteNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 31, 32)
 }
 
 func (x *ProducerPatchRequest) HasRef() bool {
@@ -10460,6 +14389,20 @@ func (x *ProducerPatchRequest) HasCaHash() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 29)
 }
 
+func (x *ProducerPatchRequest) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
+func (x *ProducerPatchRequest) HasSatelliteNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 31)
+}
+
 func (x *ProducerPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -10595,6 +14538,15 @@ func (x *ProducerPatchRequest) ClearCaHash() {
 	x.xxx_hidden_CaHash = nil
 }
 
+func (x *ProducerPatchRequest) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
+}
+
+func (x *ProducerPatchRequest) ClearSatelliteNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 31)
+	x.xxx_hidden_SatelliteNull = false
+}
+
 type ProducerPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -10672,6 +14624,12 @@ type ProducerPatchRequest_builder struct {
 	Version    *string
 	Live       *LivePolicy
 	CaHash     *string
+	Satellite  *SatelliteRef
+	// Clear satellite instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and satellite clears.
+	SatelliteNull *bool
 }
 
 func (b0 ProducerPatchRequest_builder) Build() *ProducerPatchRequest {
@@ -10681,89 +14639,94 @@ func (b0 ProducerPatchRequest_builder) Build() *ProducerPatchRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Site = b.Site
 	if b.SiteNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 32)
 		x.xxx_hidden_SiteNull = *b.SiteNull
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 32)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 32)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 32)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Set = b.Set
 	if b.SetNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 32)
 		x.xxx_hidden_SetNull = *b.SetNull
 	}
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 32)
 		x.xxx_hidden_HardwareId = b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 32)
 		x.xxx_hidden_Hostname = b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 32)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 32)
 		x.xxx_hidden_CertSerial = b.CertSerial
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 32)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_Join = b.Join
 	if b.JoinNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 32)
 		x.xxx_hidden_JoinNull = *b.JoinNull
 	}
 	x.xxx_hidden_DateAdopted = b.DateAdopted
 	if b.DateAdoptedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 32)
 		x.xxx_hidden_DateAdoptedNull = *b.DateAdoptedNull
 	}
 	x.xxx_hidden_DateSeen = b.DateSeen
 	if b.DateSeenNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 32)
 		x.xxx_hidden_DateSeenNull = *b.DateSeenNull
 	}
 	x.xxx_hidden_DateCertExpires = b.DateCertExpires
 	if b.DateCertExpiresNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 32)
 		x.xxx_hidden_DateCertExpiresNull = *b.DateCertExpiresNull
 	}
 	x.xxx_hidden_Relay = b.Relay
 	if b.RelayNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 32)
 		x.xxx_hidden_RelayNull = *b.RelayNull
 	}
 	x.xxx_hidden_Status = b.Status
 	if b.StatusNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 32)
 		x.xxx_hidden_StatusNull = *b.StatusNull
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 27, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 27, 32)
 		x.xxx_hidden_Version = b.Version
 	}
 	if b.Live != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 28, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 28, 32)
 		x.xxx_hidden_Live = *b.Live
 	}
 	if b.CaHash != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 29, 30)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 29, 32)
 		x.xxx_hidden_CaHash = b.CaHash
+	}
+	x.xxx_hidden_Satellite = b.Satellite
+	if b.SatelliteNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 31, 32)
+		x.xxx_hidden_SatelliteNull = *b.SatelliteNull
 	}
 	return m0
 }
@@ -10778,7 +14741,7 @@ type ProducerApplyRequest struct {
 
 func (x *ProducerApplyRequest) Reset() {
 	*x = ProducerApplyRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[53]
+	mi := &file_shale_host_svc_g_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10790,7 +14753,7 @@ func (x *ProducerApplyRequest) String() string {
 func (*ProducerApplyRequest) ProtoMessage() {}
 
 func (x *ProducerApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[53]
+	mi := &file_shale_host_svc_g_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10872,7 +14835,7 @@ type ProducerEraseResponse struct {
 
 func (x *ProducerEraseResponse) Reset() {
 	*x = ProducerEraseResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[54]
+	mi := &file_shale_host_svc_g_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10884,7 +14847,7 @@ func (x *ProducerEraseResponse) String() string {
 func (*ProducerEraseResponse) ProtoMessage() {}
 
 func (x *ProducerEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[54]
+	mi := &file_shale_host_svc_g_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10953,7 +14916,7 @@ type ProducerListRequest struct {
 
 func (x *ProducerListRequest) Reset() {
 	*x = ProducerListRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[55]
+	mi := &file_shale_host_svc_g_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10965,7 +14928,7 @@ func (x *ProducerListRequest) String() string {
 func (*ProducerListRequest) ProtoMessage() {}
 
 func (x *ProducerListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[55]
+	mi := &file_shale_host_svc_g_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11065,7 +15028,7 @@ type ProducerListResponse struct {
 
 func (x *ProducerListResponse) Reset() {
 	*x = ProducerListResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[56]
+	mi := &file_shale_host_svc_g_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11077,7 +15040,7 @@ func (x *ProducerListResponse) String() string {
 func (*ProducerListResponse) ProtoMessage() {}
 
 func (x *ProducerListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[56]
+	mi := &file_shale_host_svc_g_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11148,7 +15111,7 @@ type ProducerFilter struct {
 
 func (x *ProducerFilter) Reset() {
 	*x = ProducerFilter{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[57]
+	mi := &file_shale_host_svc_g_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11160,7 +15123,7 @@ func (x *ProducerFilter) String() string {
 func (*ProducerFilter) ProtoMessage() {}
 
 func (x *ProducerFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[57]
+	mi := &file_shale_host_svc_g_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11302,7 +15265,7 @@ type ProducerWatchRequest struct {
 
 func (x *ProducerWatchRequest) Reset() {
 	*x = ProducerWatchRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[58]
+	mi := &file_shale_host_svc_g_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11314,7 +15277,7 @@ func (x *ProducerWatchRequest) String() string {
 func (*ProducerWatchRequest) ProtoMessage() {}
 
 func (x *ProducerWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[58]
+	mi := &file_shale_host_svc_g_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11386,7 +15349,7 @@ type ProducerWatchResponse struct {
 
 func (x *ProducerWatchResponse) Reset() {
 	*x = ProducerWatchResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[59]
+	mi := &file_shale_host_svc_g_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11398,7 +15361,7 @@ func (x *ProducerWatchResponse) String() string {
 func (*ProducerWatchResponse) ProtoMessage() {}
 
 func (x *ProducerWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[59]
+	mi := &file_shale_host_svc_g_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11450,7 +15413,7 @@ type ProducerWatchItem struct {
 
 func (x *ProducerWatchItem) Reset() {
 	*x = ProducerWatchItem{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[60]
+	mi := &file_shale_host_svc_g_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11462,7 +15425,7 @@ func (x *ProducerWatchItem) String() string {
 func (*ProducerWatchItem) ProtoMessage() {}
 
 func (x *ProducerWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[60]
+	mi := &file_shale_host_svc_g_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11581,7 +15544,7 @@ type ProducerJoinRequest struct {
 
 func (x *ProducerJoinRequest) Reset() {
 	*x = ProducerJoinRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[61]
+	mi := &file_shale_host_svc_g_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11593,7 +15556,7 @@ func (x *ProducerJoinRequest) String() string {
 func (*ProducerJoinRequest) ProtoMessage() {}
 
 func (x *ProducerJoinRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[61]
+	mi := &file_shale_host_svc_g_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11664,7 +15627,7 @@ type ProducerJoinResponse struct {
 
 func (x *ProducerJoinResponse) Reset() {
 	*x = ProducerJoinResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[62]
+	mi := &file_shale_host_svc_g_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11676,7 +15639,7 @@ func (x *ProducerJoinResponse) String() string {
 func (*ProducerJoinResponse) ProtoMessage() {}
 
 func (x *ProducerJoinResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[62]
+	mi := &file_shale_host_svc_g_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11734,7 +15697,7 @@ type ProducerAdoptRequest struct {
 
 func (x *ProducerAdoptRequest) Reset() {
 	*x = ProducerAdoptRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[63]
+	mi := &file_shale_host_svc_g_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11746,7 +15709,7 @@ func (x *ProducerAdoptRequest) String() string {
 func (*ProducerAdoptRequest) ProtoMessage() {}
 
 func (x *ProducerAdoptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[63]
+	mi := &file_shale_host_svc_g_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11840,7 +15803,7 @@ type ProducerRenewCertificateRequest struct {
 
 func (x *ProducerRenewCertificateRequest) Reset() {
 	*x = ProducerRenewCertificateRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[64]
+	mi := &file_shale_host_svc_g_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11852,7 +15815,7 @@ func (x *ProducerRenewCertificateRequest) String() string {
 func (*ProducerRenewCertificateRequest) ProtoMessage() {}
 
 func (x *ProducerRenewCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[64]
+	mi := &file_shale_host_svc_g_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11901,7 +15864,7 @@ type ProducerRenewCertificateResponse struct {
 
 func (x *ProducerRenewCertificateResponse) Reset() {
 	*x = ProducerRenewCertificateResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[65]
+	mi := &file_shale_host_svc_g_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11913,7 +15876,7 @@ func (x *ProducerRenewCertificateResponse) String() string {
 func (*ProducerRenewCertificateResponse) ProtoMessage() {}
 
 func (x *ProducerRenewCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[65]
+	mi := &file_shale_host_svc_g_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11977,13 +15940,14 @@ type ProducerHeartbeatRequest struct {
 	xxx_hidden_RelayState string                 `protobuf:"bytes,5,opt,name=relay_state,json=relayState"`
 	xxx_hidden_Admission  *AdmissionWait         `protobuf:"bytes,6,opt,name=admission"`
 	xxx_hidden_Uplink     int64                  `protobuf:"varint,7,opt,name=uplink"`
+	xxx_hidden_Upload     *UploadReport          `protobuf:"bytes,8,opt,name=upload"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
 
 func (x *ProducerHeartbeatRequest) Reset() {
 	*x = ProducerHeartbeatRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[66]
+	mi := &file_shale_host_svc_g_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11995,7 +15959,7 @@ func (x *ProducerHeartbeatRequest) String() string {
 func (*ProducerHeartbeatRequest) ProtoMessage() {}
 
 func (x *ProducerHeartbeatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[66]
+	mi := &file_shale_host_svc_g_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12057,6 +16021,13 @@ func (x *ProducerHeartbeatRequest) GetUplink() int64 {
 	return 0
 }
 
+func (x *ProducerHeartbeatRequest) GetUpload() *UploadReport {
+	if x != nil {
+		return x.xxx_hidden_Upload
+	}
+	return nil
+}
+
 func (x *ProducerHeartbeatRequest) SetSources(v []*SourceReport) {
 	x.xxx_hidden_Sources = &v
 }
@@ -12085,6 +16056,10 @@ func (x *ProducerHeartbeatRequest) SetUplink(v int64) {
 	x.xxx_hidden_Uplink = v
 }
 
+func (x *ProducerHeartbeatRequest) SetUpload(v *UploadReport) {
+	x.xxx_hidden_Upload = v
+}
+
 func (x *ProducerHeartbeatRequest) HasLoad() bool {
 	if x == nil {
 		return false
@@ -12099,12 +16074,23 @@ func (x *ProducerHeartbeatRequest) HasAdmission() bool {
 	return x.xxx_hidden_Admission != nil
 }
 
+func (x *ProducerHeartbeatRequest) HasUpload() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Upload != nil
+}
+
 func (x *ProducerHeartbeatRequest) ClearLoad() {
 	x.xxx_hidden_Load = nil
 }
 
 func (x *ProducerHeartbeatRequest) ClearAdmission() {
 	x.xxx_hidden_Admission = nil
+}
+
+func (x *ProducerHeartbeatRequest) ClearUpload() {
+	x.xxx_hidden_Upload = nil
 }
 
 type ProducerHeartbeatRequest_builder struct {
@@ -12121,6 +16107,10 @@ type ProducerHeartbeatRequest_builder struct {
 	// declares none: the CP keeps the raises auto_raise applies inside it
 	// (§38.5).
 	Uplink int64
+	// The path its uploads take (§41.5): a producer whose `via` is
+	// `satellite` or `auto` is assigned a satellite, and one that says
+	// nothing, or `direct`, is not.
+	Upload *UploadReport
 }
 
 func (b0 ProducerHeartbeatRequest_builder) Build() *ProducerHeartbeatRequest {
@@ -12134,6 +16124,7 @@ func (b0 ProducerHeartbeatRequest_builder) Build() *ProducerHeartbeatRequest {
 	x.xxx_hidden_RelayState = b.RelayState
 	x.xxx_hidden_Admission = b.Admission
 	x.xxx_hidden_Uplink = b.Uplink
+	x.xxx_hidden_Upload = b.Upload
 	return m0
 }
 
@@ -12143,13 +16134,14 @@ type ProducerHeartbeatResponse struct {
 	xxx_hidden_ProfileVersion   int64                  `protobuf:"varint,2,opt,name=profile_version,json=profileVersion"`
 	xxx_hidden_Suggestions      *[]*Suggestion         `protobuf:"bytes,3,rep,name=suggestions"`
 	xxx_hidden_RenewCertificate bool                   `protobuf:"varint,4,opt,name=renew_certificate,json=renewCertificate"`
+	xxx_hidden_Satellite        *SatelliteAssignment   `protobuf:"bytes,5,opt,name=satellite"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *ProducerHeartbeatResponse) Reset() {
 	*x = ProducerHeartbeatResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[67]
+	mi := &file_shale_host_svc_g_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12161,7 +16153,7 @@ func (x *ProducerHeartbeatResponse) String() string {
 func (*ProducerHeartbeatResponse) ProtoMessage() {}
 
 func (x *ProducerHeartbeatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[67]
+	mi := &file_shale_host_svc_g_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12202,6 +16194,13 @@ func (x *ProducerHeartbeatResponse) GetRenewCertificate() bool {
 	return false
 }
 
+func (x *ProducerHeartbeatResponse) GetSatellite() *SatelliteAssignment {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
 func (x *ProducerHeartbeatResponse) SetRelay(v *RelayAssignment) {
 	x.xxx_hidden_Relay = v
 }
@@ -12218,6 +16217,10 @@ func (x *ProducerHeartbeatResponse) SetRenewCertificate(v bool) {
 	x.xxx_hidden_RenewCertificate = v
 }
 
+func (x *ProducerHeartbeatResponse) SetSatellite(v *SatelliteAssignment) {
+	x.xxx_hidden_Satellite = v
+}
+
 func (x *ProducerHeartbeatResponse) HasRelay() bool {
 	if x == nil {
 		return false
@@ -12225,8 +16228,19 @@ func (x *ProducerHeartbeatResponse) HasRelay() bool {
 	return x.xxx_hidden_Relay != nil
 }
 
+func (x *ProducerHeartbeatResponse) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
 func (x *ProducerHeartbeatResponse) ClearRelay() {
 	x.xxx_hidden_Relay = nil
+}
+
+func (x *ProducerHeartbeatResponse) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
 }
 
 type ProducerHeartbeatResponse_builder struct {
@@ -12237,6 +16251,9 @@ type ProducerHeartbeatResponse_builder struct {
 	Suggestions    []*Suggestion
 	// Renew the certificate now.
 	RenewCertificate bool
+	// The satellite it uploads through when its `upload_via` says so
+	// (§41.2); absent when none is available.
+	Satellite *SatelliteAssignment
 }
 
 func (b0 ProducerHeartbeatResponse_builder) Build() *ProducerHeartbeatResponse {
@@ -12247,6 +16264,7 @@ func (b0 ProducerHeartbeatResponse_builder) Build() *ProducerHeartbeatResponse {
 	x.xxx_hidden_ProfileVersion = b.ProfileVersion
 	x.xxx_hidden_Suggestions = &b.Suggestions
 	x.xxx_hidden_RenewCertificate = b.RenewCertificate
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -12266,7 +16284,7 @@ type Suggestion struct {
 
 func (x *Suggestion) Reset() {
 	*x = Suggestion{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[68]
+	mi := &file_shale_host_svc_g_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12278,7 +16296,7 @@ func (x *Suggestion) String() string {
 func (*Suggestion) ProtoMessage() {}
 
 func (x *Suggestion) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[68]
+	mi := &file_shale_host_svc_g_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12377,7 +16395,7 @@ type ProducerRelayRequest struct {
 
 func (x *ProducerRelayRequest) Reset() {
 	*x = ProducerRelayRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[69]
+	mi := &file_shale_host_svc_g_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12389,7 +16407,7 @@ func (x *ProducerRelayRequest) String() string {
 func (*ProducerRelayRequest) ProtoMessage() {}
 
 func (x *ProducerRelayRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[69]
+	mi := &file_shale_host_svc_g_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12421,7 +16439,7 @@ type ProducerRelayResponse struct {
 
 func (x *ProducerRelayResponse) Reset() {
 	*x = ProducerRelayResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[70]
+	mi := &file_shale_host_svc_g_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12433,7 +16451,7 @@ func (x *ProducerRelayResponse) String() string {
 func (*ProducerRelayResponse) ProtoMessage() {}
 
 func (x *ProducerRelayResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[70]
+	mi := &file_shale_host_svc_g_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12508,7 +16526,7 @@ type ReaderAddRequest struct {
 
 func (x *ReaderAddRequest) Reset() {
 	*x = ReaderAddRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[71]
+	mi := &file_shale_host_svc_g_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12520,7 +16538,7 @@ func (x *ReaderAddRequest) String() string {
 func (*ReaderAddRequest) ProtoMessage() {}
 
 func (x *ReaderAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[71]
+	mi := &file_shale_host_svc_g_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12891,7 +16909,7 @@ type ReaderGetRequest struct {
 
 func (x *ReaderGetRequest) Reset() {
 	*x = ReaderGetRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[72]
+	mi := &file_shale_host_svc_g_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12903,7 +16921,7 @@ func (x *ReaderGetRequest) String() string {
 func (*ReaderGetRequest) ProtoMessage() {}
 
 func (x *ReaderGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[72]
+	mi := &file_shale_host_svc_g_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12983,7 +17001,7 @@ type ReaderRef struct {
 
 func (x *ReaderRef) Reset() {
 	*x = ReaderRef{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[73]
+	mi := &file_shale_host_svc_g_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12995,7 +17013,7 @@ func (x *ReaderRef) String() string {
 func (*ReaderRef) ProtoMessage() {}
 
 func (x *ReaderRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[73]
+	mi := &file_shale_host_svc_g_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13121,7 +17139,7 @@ func (b0 ReaderRef_builder) Build() *ReaderRef {
 type case_ReaderRef_Key protoreflect.FieldNumber
 
 func (x case_ReaderRef_Key) String() string {
-	md := file_shale_host_svc_g_proto_msgTypes[73].Descriptor()
+	md := file_shale_host_svc_g_proto_msgTypes[97].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -13156,7 +17174,7 @@ type ReaderRefBySlug struct {
 
 func (x *ReaderRefBySlug) Reset() {
 	*x = ReaderRefBySlug{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[74]
+	mi := &file_shale_host_svc_g_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13168,7 +17186,7 @@ func (x *ReaderRefBySlug) String() string {
 func (*ReaderRefBySlug) ProtoMessage() {}
 
 func (x *ReaderRefBySlug) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[74]
+	mi := &file_shale_host_svc_g_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13277,7 +17295,7 @@ type ReaderSelect struct {
 
 func (x *ReaderSelect) Reset() {
 	*x = ReaderSelect{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[75]
+	mi := &file_shale_host_svc_g_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13289,7 +17307,7 @@ func (x *ReaderSelect) String() string {
 func (*ReaderSelect) ProtoMessage() {}
 
 func (x *ReaderSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[75]
+	mi := &file_shale_host_svc_g_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13919,7 +17937,7 @@ type ReaderPatchRequest struct {
 
 func (x *ReaderPatchRequest) Reset() {
 	*x = ReaderPatchRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[76]
+	mi := &file_shale_host_svc_g_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13931,7 +17949,7 @@ func (x *ReaderPatchRequest) String() string {
 func (*ReaderPatchRequest) ProtoMessage() {}
 
 func (x *ReaderPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[76]
+	mi := &file_shale_host_svc_g_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14610,7 +18628,7 @@ type ReaderApplyRequest struct {
 
 func (x *ReaderApplyRequest) Reset() {
 	*x = ReaderApplyRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[77]
+	mi := &file_shale_host_svc_g_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14622,7 +18640,7 @@ func (x *ReaderApplyRequest) String() string {
 func (*ReaderApplyRequest) ProtoMessage() {}
 
 func (x *ReaderApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[77]
+	mi := &file_shale_host_svc_g_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14704,7 +18722,7 @@ type ReaderEraseResponse struct {
 
 func (x *ReaderEraseResponse) Reset() {
 	*x = ReaderEraseResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[78]
+	mi := &file_shale_host_svc_g_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14716,7 +18734,7 @@ func (x *ReaderEraseResponse) String() string {
 func (*ReaderEraseResponse) ProtoMessage() {}
 
 func (x *ReaderEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[78]
+	mi := &file_shale_host_svc_g_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14785,7 +18803,7 @@ type ReaderListRequest struct {
 
 func (x *ReaderListRequest) Reset() {
 	*x = ReaderListRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[79]
+	mi := &file_shale_host_svc_g_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14797,7 +18815,7 @@ func (x *ReaderListRequest) String() string {
 func (*ReaderListRequest) ProtoMessage() {}
 
 func (x *ReaderListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[79]
+	mi := &file_shale_host_svc_g_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14897,7 +18915,7 @@ type ReaderListResponse struct {
 
 func (x *ReaderListResponse) Reset() {
 	*x = ReaderListResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[80]
+	mi := &file_shale_host_svc_g_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14909,7 +18927,7 @@ func (x *ReaderListResponse) String() string {
 func (*ReaderListResponse) ProtoMessage() {}
 
 func (x *ReaderListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[80]
+	mi := &file_shale_host_svc_g_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14978,7 +18996,7 @@ type ReaderFilter struct {
 
 func (x *ReaderFilter) Reset() {
 	*x = ReaderFilter{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[81]
+	mi := &file_shale_host_svc_g_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14990,7 +19008,7 @@ func (x *ReaderFilter) String() string {
 func (*ReaderFilter) ProtoMessage() {}
 
 func (x *ReaderFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[81]
+	mi := &file_shale_host_svc_g_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15084,7 +19102,7 @@ type ReaderWatchRequest struct {
 
 func (x *ReaderWatchRequest) Reset() {
 	*x = ReaderWatchRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[82]
+	mi := &file_shale_host_svc_g_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15096,7 +19114,7 @@ func (x *ReaderWatchRequest) String() string {
 func (*ReaderWatchRequest) ProtoMessage() {}
 
 func (x *ReaderWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[82]
+	mi := &file_shale_host_svc_g_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15168,7 +19186,7 @@ type ReaderWatchResponse struct {
 
 func (x *ReaderWatchResponse) Reset() {
 	*x = ReaderWatchResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[83]
+	mi := &file_shale_host_svc_g_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15180,7 +19198,7 @@ func (x *ReaderWatchResponse) String() string {
 func (*ReaderWatchResponse) ProtoMessage() {}
 
 func (x *ReaderWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[83]
+	mi := &file_shale_host_svc_g_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15232,7 +19250,7 @@ type ReaderWatchItem struct {
 
 func (x *ReaderWatchItem) Reset() {
 	*x = ReaderWatchItem{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[84]
+	mi := &file_shale_host_svc_g_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15244,7 +19262,7 @@ func (x *ReaderWatchItem) String() string {
 func (*ReaderWatchItem) ProtoMessage() {}
 
 func (x *ReaderWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[84]
+	mi := &file_shale_host_svc_g_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15363,7 +19381,7 @@ type ReaderJoinRequest struct {
 
 func (x *ReaderJoinRequest) Reset() {
 	*x = ReaderJoinRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[85]
+	mi := &file_shale_host_svc_g_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15375,7 +19393,7 @@ func (x *ReaderJoinRequest) String() string {
 func (*ReaderJoinRequest) ProtoMessage() {}
 
 func (x *ReaderJoinRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[85]
+	mi := &file_shale_host_svc_g_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15444,7 +19462,7 @@ type ReaderJoinResponse struct {
 
 func (x *ReaderJoinResponse) Reset() {
 	*x = ReaderJoinResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[86]
+	mi := &file_shale_host_svc_g_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15456,7 +19474,7 @@ func (x *ReaderJoinResponse) String() string {
 func (*ReaderJoinResponse) ProtoMessage() {}
 
 func (x *ReaderJoinResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[86]
+	mi := &file_shale_host_svc_g_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15514,7 +19532,7 @@ type ReaderAdoptRequest struct {
 
 func (x *ReaderAdoptRequest) Reset() {
 	*x = ReaderAdoptRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[87]
+	mi := &file_shale_host_svc_g_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15526,7 +19544,7 @@ func (x *ReaderAdoptRequest) String() string {
 func (*ReaderAdoptRequest) ProtoMessage() {}
 
 func (x *ReaderAdoptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[87]
+	mi := &file_shale_host_svc_g_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15611,7 +19629,7 @@ type ReaderRenewCertificateRequest struct {
 
 func (x *ReaderRenewCertificateRequest) Reset() {
 	*x = ReaderRenewCertificateRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[88]
+	mi := &file_shale_host_svc_g_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15623,7 +19641,7 @@ func (x *ReaderRenewCertificateRequest) String() string {
 func (*ReaderRenewCertificateRequest) ProtoMessage() {}
 
 func (x *ReaderRenewCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[88]
+	mi := &file_shale_host_svc_g_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15672,7 +19690,7 @@ type ReaderRenewCertificateResponse struct {
 
 func (x *ReaderRenewCertificateResponse) Reset() {
 	*x = ReaderRenewCertificateResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[89]
+	mi := &file_shale_host_svc_g_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15684,7 +19702,7 @@ func (x *ReaderRenewCertificateResponse) String() string {
 func (*ReaderRenewCertificateResponse) ProtoMessage() {}
 
 func (x *ReaderRenewCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[89]
+	mi := &file_shale_host_svc_g_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15749,7 +19767,7 @@ type ReaderHeartbeatRequest struct {
 
 func (x *ReaderHeartbeatRequest) Reset() {
 	*x = ReaderHeartbeatRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[90]
+	mi := &file_shale_host_svc_g_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15761,7 +19779,7 @@ func (x *ReaderHeartbeatRequest) String() string {
 func (*ReaderHeartbeatRequest) ProtoMessage() {}
 
 func (x *ReaderHeartbeatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[90]
+	mi := &file_shale_host_svc_g_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15819,7 +19837,7 @@ type ReaderHeartbeatResponse struct {
 
 func (x *ReaderHeartbeatResponse) Reset() {
 	*x = ReaderHeartbeatResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[91]
+	mi := &file_shale_host_svc_g_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15831,7 +19849,7 @@ func (x *ReaderHeartbeatResponse) String() string {
 func (*ReaderHeartbeatResponse) ProtoMessage() {}
 
 func (x *ReaderHeartbeatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[91]
+	mi := &file_shale_host_svc_g_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16257,7 +20275,180 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x03key\"S\n" +
 	"\x11ProducerRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12(\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xdd\a\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xa7\a\n" +
+	"\x13SatelliteAddRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
+	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12>\n" +
+	"\x06labels\x18\a \x03(\v2&.shale.SatelliteAddRequest.LabelsEntryR\x06labels\x12&\n" +
+	"\vhardware_id\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\n" +
+	"hardwareId\x12!\n" +
+	"\bhostname\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\bhostname\x12-\n" +
+	"\x05state\x18\n" +
+	" \x01(\x0e2\x10.shale.HostStateB\x05\xaa\x01\x02\b\x02R\x05state\x12&\n" +
+	"\vcert_serial\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\n" +
+	"certSerial\x12#\n" +
+	"\x04join\x18\f \x01(\v2\x0f.shale.HostJoinR\x04join\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12=\n" +
+	"\fdate_adopted\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\vdateAdopted\x127\n" +
+	"\tdate_seen\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampR\bdateSeen\x12F\n" +
+	"\x11date_cert_expires\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateCertExpires\x124\n" +
+	"\n" +
+	"interfaces\x18\x13 \x03(\v2\x14.shale.HostInterfaceR\n" +
+	"interfaces\x12\x17\n" +
+	"\akey_ids\x18\x14 \x03(\tR\x06keyIds\x12\x1e\n" +
+	"\aca_hash\x18\x15 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06caHash\x12\x1f\n" +
+	"\aversion\x18\x16 \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x12,\n" +
+	"\x0eupload_address\x18\x17 \x01(\tB\x05\xaa\x01\x02\b\x02R\ruploadAddress\x12.\n" +
+	"\x06status\x18\x18 \x01(\v2\x16.shale.SatelliteStatusR\x06status\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"l\n" +
+	"\x13SatelliteGetRequest\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.shale.SatelliteRefR\x03ref\x12.\n" +
+	"\x06select\x18\x02 \x01(\v2\x16.shale.SatelliteSelectR\x06select\"?\n" +
+	"\fSatelliteRef\x12\x10\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
+	"\x05alias\x18\x04 \x01(\tH\x00R\x05aliasB\x05\n" +
+	"\x03key\"\xff\x04\n" +
+	"\x0fSatelliteSelect\x12\x10\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
+	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12\x1f\n" +
+	"\vhardware_id\x18\b \x01(\bR\n" +
+	"hardwareId\x12\x1a\n" +
+	"\bhostname\x18\t \x01(\bR\bhostname\x12\x14\n" +
+	"\x05state\x18\n" +
+	" \x01(\bR\x05state\x12\x1f\n" +
+	"\vcert_serial\x18\v \x01(\bR\n" +
+	"certSerial\x12\x12\n" +
+	"\x04join\x18\f \x01(\bR\x04join\x12!\n" +
+	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
+	"\vdate_erased\x18\x0e \x01(\bR\n" +
+	"dateErased\x12!\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12!\n" +
+	"\fdate_adopted\x18\x10 \x01(\bR\vdateAdopted\x12\x1b\n" +
+	"\tdate_seen\x18\x11 \x01(\bR\bdateSeen\x12*\n" +
+	"\x11date_cert_expires\x18\x12 \x01(\bR\x0fdateCertExpires\x12\x1e\n" +
+	"\n" +
+	"interfaces\x18\x13 \x01(\bR\n" +
+	"interfaces\x12\x17\n" +
+	"\akey_ids\x18\x14 \x01(\bR\x06keyIds\x12\x17\n" +
+	"\aca_hash\x18\x15 \x01(\bR\x06caHash\x12\x18\n" +
+	"\aversion\x18\x16 \x01(\bR\aversion\x12%\n" +
+	"\x0eupload_address\x18\x17 \x01(\bR\ruploadAddress\x12\x16\n" +
+	"\x06status\x18\x18 \x01(\bR\x06status\"\xef\b\n" +
+	"\x15SatellitePatchRequest\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.shale.SatelliteRefR\x03ref\x12\x14\n" +
+	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
+	"\x04name\x18\n" +
+	" \x01(\tR\x04name\x12\x12\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12@\n" +
+	"\x06labels\x18\x0e \x03(\v2(.shale.SatellitePatchRequest.LabelsEntryR\x06labels\x12\x1f\n" +
+	"\vhardware_id\x18\x10 \x01(\tR\n" +
+	"hardwareId\x12\x1a\n" +
+	"\bhostname\x18\x12 \x01(\tR\bhostname\x12&\n" +
+	"\x05state\x18\x14 \x01(\x0e2\x10.shale.HostStateR\x05state\x12\x1f\n" +
+	"\vcert_serial\x18\x16 \x01(\tR\n" +
+	"certSerial\x12#\n" +
+	"\x04join\x18\x18 \x01(\v2\x0f.shale.HostJoinR\x04join\x12\x1b\n" +
+	"\tjoin_null\x18\x19 \x01(\bR\bjoinNull\x12=\n" +
+	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12=\n" +
+	"\fdate_adopted\x18  \x01(\v2\x1a.google.protobuf.TimestampR\vdateAdopted\x12*\n" +
+	"\x11date_adopted_null\x18! \x01(\bR\x0fdateAdoptedNull\x127\n" +
+	"\tdate_seen\x18\" \x01(\v2\x1a.google.protobuf.TimestampR\bdateSeen\x12$\n" +
+	"\x0edate_seen_null\x18# \x01(\bR\fdateSeenNull\x12F\n" +
+	"\x11date_cert_expires\x18$ \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateCertExpires\x123\n" +
+	"\x16date_cert_expires_null\x18% \x01(\bR\x13dateCertExpiresNull\x124\n" +
+	"\n" +
+	"interfaces\x18& \x03(\v2\x14.shale.HostInterfaceR\n" +
+	"interfaces\x12\x17\n" +
+	"\akey_ids\x18( \x03(\tR\x06keyIds\x12\x17\n" +
+	"\aca_hash\x18* \x01(\tR\x06caHash\x12\x18\n" +
+	"\aversion\x18, \x01(\tR\aversion\x12%\n" +
+	"\x0eupload_address\x18. \x01(\tR\ruploadAddress\x12.\n" +
+	"\x06status\x180 \x01(\v2\x16.shale.SatelliteStatusR\x06status\x12\x1f\n" +
+	"\vstatus_null\x181 \x01(\bR\n" +
+	"statusNull\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"b\n" +
+	"\x15SatelliteApplyRequest\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.shale.SatelliteRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"0\n" +
+	"\x16SatelliteEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa1\x01\n" +
+	"\x14SatelliteListRequest\x120\n" +
+	"\afilters\x18\x01 \x03(\v2\x16.shale.SatelliteFilterR\afilters\x12\x19\n" +
+	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Z\n" +
+	"\x15SatelliteListResponse\x12&\n" +
+	"\x05items\x18\x01 \x03(\v2\x10.shale.SatelliteR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xaf\x01\n" +
+	"\x0fSatelliteFilter\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.shale.SatelliteRefR\x03ref\x12:\n" +
+	"\x06labels\x18\x02 \x03(\v2\".shale.SatelliteFilter.LabelsEntryR\x06labels\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"u\n" +
+	"\x15SatelliteWatchRequest\x120\n" +
+	"\afilters\x18\x01 \x03(\v2\x16.shale.SatelliteFilterR\afilters\x12*\n" +
+	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"I\n" +
+	"\x16SatelliteWatchResponse\x12/\n" +
+	"\x05items\x18\x01 \x03(\v2\x19.shale.SatelliteWatchItemR\x05items\"k\n" +
+	"\x12SatelliteWatchItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
+	"\x05value\x18\x02 \x01(\v2\x10.shale.SatelliteR\x05value\x12\x1d\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\x9f\x01\n" +
+	"\x14SatelliteJoinRequest\x12#\n" +
+	"\x04host\x18\x01 \x01(\v2\x0f.shale.HostJoinR\x04host\x124\n" +
+	"\n" +
+	"interfaces\x18\x02 \x03(\v2\x14.shale.HostInterfaceR\n" +
+	"interfaces\x12,\n" +
+	"\x0eupload_address\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\ruploadAddress\"g\n" +
+	"\x15SatelliteJoinResponse\x12)\n" +
+	"\x06answer\x18\x01 \x01(\v2\x11.shale.JoinAnswerR\x06answer\x12#\n" +
+	"\x04keys\x18\x02 \x03(\v2\x0f.shale.KeyEntryR\x04keys\"[\n" +
+	"\x15SatelliteAdoptRequest\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.shale.SatelliteRefR\x03ref\x12\x1b\n" +
+	"\x05alias\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\";\n" +
+	" SatelliteRenewCertificateRequest\x12\x17\n" +
+	"\x03csr\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x03csr\"p\n" +
+	"!SatelliteRenewCertificateResponse\x12'\n" +
+	"\vcertificate\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\vcertificate\x12\"\n" +
+	"\tca_bundle\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\bcaBundle\"\xb1\x02\n" +
+	"\x19SatelliteHeartbeatRequest\x12&\n" +
+	"\vcert_serial\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\n" +
+	"certSerial\x12\x1e\n" +
+	"\aca_hash\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06caHash\x12\x17\n" +
+	"\akey_ids\x18\x03 \x03(\tR\x06keyIds\x12.\n" +
+	"\x06status\x18\x04 \x01(\v2\x16.shale.SatelliteStatusR\x06status\x124\n" +
+	"\n" +
+	"interfaces\x18\x05 \x03(\v2\x14.shale.HostInterfaceR\n" +
+	"interfaces\x12,\n" +
+	"\x0eupload_address\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\ruploadAddress\x12\x1f\n" +
+	"\aversion\x18\a \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\"\x88\x01\n" +
+	"\x1aSatelliteHeartbeatResponse\x122\n" +
+	"\x11renew_certificate\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x02R\x10renewCertificate\x126\n" +
+	"\tproducers\x18\x02 \x03(\v2\x18.shale.SatelliteProducerR\tproducers\"c\n" +
+	"\x11SatelliteProducer\x12&\n" +
+	"\vproducer_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\n" +
+	"producerId\x12&\n" +
+	"\vcert_serial\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\n" +
+	"certSerial\"7\n" +
+	"\x15SatelliteRouteRequest\x12\x1e\n" +
+	"\anode_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x06nodeId\"\x86\x01\n" +
+	"\x16SatelliteRouteResponse\x12-\n" +
+	"\tendpoints\x18\x01 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12=\n" +
+	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"o\n" +
+	"\x16SatelliteAssignRequest\x12%\n" +
+	"\x03ref\x18\x01 \x01(\v2\x13.shale.SatelliteRefR\x03ref\x12.\n" +
+	"\bproducer\x18\x02 \x01(\v2\x12.shale.ProducerRefR\bproducer\"\x90\b\n" +
 	"\x12ProducerAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -16283,13 +20474,14 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x06status\x18\x15 \x01(\v2\x15.shale.ProducerStatusR\x06status\x12\x1f\n" +
 	"\aversion\x18\x16 \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x12%\n" +
 	"\x04live\x18\x17 \x01(\x0e2\x11.shale.LivePolicyR\x04live\x12\x17\n" +
-	"\aca_hash\x18\x18 \x01(\tR\x06caHash\x1a9\n" +
+	"\aca_hash\x18\x18 \x01(\tR\x06caHash\x121\n" +
+	"\tsatellite\x18\x19 \x01(\v2\x13.shale.SatelliteRefR\tsatellite\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"i\n" +
 	"\x12ProducerGetRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.shale.ProducerRefR\x03ref\x12-\n" +
-	"\x06select\x18\x02 \x01(\v2\x15.shale.ProducerSelectR\x06select\"\xd4\x05\n" +
+	"\x06select\x18\x02 \x01(\v2\x15.shale.ProducerSelectR\x06select\"\x8a\x06\n" +
 	"\x0eProducerSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -16318,7 +20510,9 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x06status\x18\x15 \x01(\bR\x06status\x12\x18\n" +
 	"\aversion\x18\x16 \x01(\bR\aversion\x12\x12\n" +
 	"\x04live\x18\x17 \x01(\bR\x04live\x12\x17\n" +
-	"\aca_hash\x18\x18 \x01(\bR\x06caHash\"\xdf\t\n" +
+	"\aca_hash\x18\x18 \x01(\bR\x06caHash\x124\n" +
+	"\tsatellite\x18\x19 \x01(\v2\x16.shale.SatelliteSelectR\tsatellite\"\xb9\n" +
+	"\n" +
 	"\x14ProducerPatchRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.shale.ProducerRefR\x03ref\x12\"\n" +
 	"\x04site\x18\x06 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
@@ -16354,7 +20548,9 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"statusNull\x12\x18\n" +
 	"\aversion\x18, \x01(\tR\aversion\x12%\n" +
 	"\x04live\x18. \x01(\x0e2\x11.shale.LivePolicyR\x04live\x12\x17\n" +
-	"\aca_hash\x180 \x01(\tR\x06caHash\x1a9\n" +
+	"\aca_hash\x180 \x01(\tR\x06caHash\x121\n" +
+	"\tsatellite\x182 \x01(\v2\x13.shale.SatelliteRefR\tsatellite\x12%\n" +
+	"\x0esatellite_null\x183 \x01(\bR\rsatelliteNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"`\n" +
@@ -16402,7 +20598,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x03csr\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x03csr\"o\n" +
 	" ProducerRenewCertificateResponse\x12'\n" +
 	"\vcertificate\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\vcertificate\x12\"\n" +
-	"\tca_bundle\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\bcaBundle\"\xaa\x02\n" +
+	"\tca_bundle\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\bcaBundle\"\xd7\x02\n" +
 	"\x18ProducerHeartbeatRequest\x12-\n" +
 	"\asources\x18\x01 \x03(\v2\x13.shale.SourceReportR\asources\x12#\n" +
 	"\x04load\x18\x02 \x01(\v2\x0f.shale.HostLoadR\x04load\x12\x1e\n" +
@@ -16411,12 +20607,14 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\vrelay_state\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\n" +
 	"relayState\x122\n" +
 	"\tadmission\x18\x06 \x01(\v2\x14.shale.AdmissionWaitR\tadmission\x12\x1d\n" +
-	"\x06uplink\x18\a \x01(\x03B\x05\xaa\x01\x02\b\x02R\x06uplink\"\xe2\x01\n" +
+	"\x06uplink\x18\a \x01(\x03B\x05\xaa\x01\x02\b\x02R\x06uplink\x12+\n" +
+	"\x06upload\x18\b \x01(\v2\x13.shale.UploadReportR\x06upload\"\x9c\x02\n" +
 	"\x19ProducerHeartbeatResponse\x12,\n" +
 	"\x05relay\x18\x01 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\x12.\n" +
 	"\x0fprofile_version\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0eprofileVersion\x123\n" +
 	"\vsuggestions\x18\x03 \x03(\v2\x11.shale.SuggestionR\vsuggestions\x122\n" +
-	"\x11renew_certificate\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\x10renewCertificate\"\xbd\x01\n" +
+	"\x11renew_certificate\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\x10renewCertificate\x128\n" +
+	"\tsatellite\x18\x05 \x01(\v2\x1a.shale.SatelliteAssignmentR\tsatellite\"\xbd\x01\n" +
 	"\n" +
 	"Suggestion\x12\"\n" +
 	"\tsource_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\bsourceId\x12&\n" +
@@ -16592,7 +20790,21 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x05Adopt\x12\x18.shale.RelayAdoptRequest\x1a\f.shale.Relay\x12]\n" +
 	"\x10RenewCertificate\x12#.shale.RelayRenewCertificateRequest\x1a$.shale.RelayRenewCertificateResponse\x12H\n" +
 	"\tHeartbeat\x12\x1c.shale.RelayHeartbeatRequest\x1a\x1d.shale.RelayHeartbeatResponse\x121\n" +
-	"\x06Assign\x12\x19.shale.RelayAssignRequest\x1a\f.shale.Relay2\x98\x06\n" +
+	"\x06Assign\x12\x19.shale.RelayAssignRequest\x1a\f.shale.Relay2\xec\x06\n" +
+	"\x10SatelliteService\x123\n" +
+	"\x03Add\x12\x1a.shale.SatelliteAddRequest\x1a\x10.shale.Satellite\x123\n" +
+	"\x03Get\x12\x1a.shale.SatelliteGetRequest\x1a\x10.shale.Satellite\x127\n" +
+	"\x05Patch\x12\x1c.shale.SatellitePatchRequest\x1a\x10.shale.Satellite\x127\n" +
+	"\x05Apply\x12\x1c.shale.SatelliteApplyRequest\x1a\x10.shale.Satellite\x12;\n" +
+	"\x05Erase\x12\x13.shale.SatelliteRef\x1a\x1d.shale.SatelliteEraseResponse\x12A\n" +
+	"\x04List\x12\x1b.shale.SatelliteListRequest\x1a\x1c.shale.SatelliteListResponse\x12F\n" +
+	"\x05Watch\x12\x1c.shale.SatelliteWatchRequest\x1a\x1d.shale.SatelliteWatchResponse0\x01\x12A\n" +
+	"\x04Join\x12\x1b.shale.SatelliteJoinRequest\x1a\x1c.shale.SatelliteJoinResponse\x127\n" +
+	"\x05Adopt\x12\x1c.shale.SatelliteAdoptRequest\x1a\x10.shale.Satellite\x12e\n" +
+	"\x10RenewCertificate\x12'.shale.SatelliteRenewCertificateRequest\x1a(.shale.SatelliteRenewCertificateResponse\x12P\n" +
+	"\tHeartbeat\x12 .shale.SatelliteHeartbeatRequest\x1a!.shale.SatelliteHeartbeatResponse\x12D\n" +
+	"\x05Route\x12\x1c.shale.SatelliteRouteRequest\x1a\x1d.shale.SatelliteRouteResponse\x129\n" +
+	"\x06Assign\x12\x1d.shale.SatelliteAssignRequest\x1a\x10.shale.Satellite2\x98\x06\n" +
 	"\x0fProducerService\x121\n" +
 	"\x03Add\x12\x19.shale.ProducerAddRequest\x1a\x0f.shale.Producer\x121\n" +
 	"\x03Get\x12\x19.shale.ProducerGetRequest\x1a\x0f.shale.Producer\x125\n" +
@@ -16619,422 +20831,526 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x10RenewCertificate\x12$.shale.ReaderRenewCertificateRequest\x1a%.shale.ReaderRenewCertificateResponse\x12J\n" +
 	"\tHeartbeat\x12\x1d.shale.ReaderHeartbeatRequest\x1a\x1e.shale.ReaderHeartbeatResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_host_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 104)
+var file_shale_host_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 131)
 var file_shale_host_svc_g_proto_goTypes = []any{
-	(*NodeAddRequest)(nil),                   // 0: shale.NodeAddRequest
-	(*NodeGetRequest)(nil),                   // 1: shale.NodeGetRequest
-	(*NodeRef)(nil),                          // 2: shale.NodeRef
-	(*NodeSelect)(nil),                       // 3: shale.NodeSelect
-	(*NodePatchRequest)(nil),                 // 4: shale.NodePatchRequest
-	(*NodeApplyRequest)(nil),                 // 5: shale.NodeApplyRequest
-	(*NodeEraseResponse)(nil),                // 6: shale.NodeEraseResponse
-	(*NodeListRequest)(nil),                  // 7: shale.NodeListRequest
-	(*NodeListResponse)(nil),                 // 8: shale.NodeListResponse
-	(*NodeFilter)(nil),                       // 9: shale.NodeFilter
-	(*NodeWatchRequest)(nil),                 // 10: shale.NodeWatchRequest
-	(*NodeWatchResponse)(nil),                // 11: shale.NodeWatchResponse
-	(*NodeWatchItem)(nil),                    // 12: shale.NodeWatchItem
-	(*NodeJoinRequest)(nil),                  // 13: shale.NodeJoinRequest
-	(*NodeJoinResponse)(nil),                 // 14: shale.NodeJoinResponse
-	(*JoinAnswer)(nil),                       // 15: shale.JoinAnswer
-	(*NodeAdoptRequest)(nil),                 // 16: shale.NodeAdoptRequest
-	(*NodeRenewCertificateRequest)(nil),      // 17: shale.NodeRenewCertificateRequest
-	(*NodeRenewCertificateResponse)(nil),     // 18: shale.NodeRenewCertificateResponse
-	(*NodeHeartbeatRequest)(nil),             // 19: shale.NodeHeartbeatRequest
-	(*NodeHeartbeatResponse)(nil),            // 20: shale.NodeHeartbeatResponse
-	(*SinkAnswer)(nil),                       // 21: shale.SinkAnswer
-	(*NodePushEventsRequest)(nil),            // 22: shale.NodePushEventsRequest
-	(*NodePushEventsResponse)(nil),           // 23: shale.NodePushEventsResponse
-	(*NodeResolveRequest)(nil),               // 24: shale.NodeResolveRequest
-	(*NodeResolveResponse)(nil),              // 25: shale.NodeResolveResponse
-	(*RelayAddRequest)(nil),                  // 26: shale.RelayAddRequest
-	(*RelayGetRequest)(nil),                  // 27: shale.RelayGetRequest
-	(*RelayRef)(nil),                         // 28: shale.RelayRef
-	(*RelaySelect)(nil),                      // 29: shale.RelaySelect
-	(*RelayPatchRequest)(nil),                // 30: shale.RelayPatchRequest
-	(*RelayApplyRequest)(nil),                // 31: shale.RelayApplyRequest
-	(*RelayEraseResponse)(nil),               // 32: shale.RelayEraseResponse
-	(*RelayListRequest)(nil),                 // 33: shale.RelayListRequest
-	(*RelayListResponse)(nil),                // 34: shale.RelayListResponse
-	(*RelayFilter)(nil),                      // 35: shale.RelayFilter
-	(*RelayWatchRequest)(nil),                // 36: shale.RelayWatchRequest
-	(*RelayWatchResponse)(nil),               // 37: shale.RelayWatchResponse
-	(*RelayWatchItem)(nil),                   // 38: shale.RelayWatchItem
-	(*RelayJoinRequest)(nil),                 // 39: shale.RelayJoinRequest
-	(*RelayJoinResponse)(nil),                // 40: shale.RelayJoinResponse
-	(*RelayAdoptRequest)(nil),                // 41: shale.RelayAdoptRequest
-	(*RelayRenewCertificateRequest)(nil),     // 42: shale.RelayRenewCertificateRequest
-	(*RelayRenewCertificateResponse)(nil),    // 43: shale.RelayRenewCertificateResponse
-	(*RelayHeartbeatRequest)(nil),            // 44: shale.RelayHeartbeatRequest
-	(*RelayHeartbeatResponse)(nil),           // 45: shale.RelayHeartbeatResponse
-	(*RelayAssignRequest)(nil),               // 46: shale.RelayAssignRequest
-	(*ProducerRef)(nil),                      // 47: shale.ProducerRef
-	(*ProducerRefBySlug)(nil),                // 48: shale.ProducerRefBySlug
-	(*ProducerAddRequest)(nil),               // 49: shale.ProducerAddRequest
-	(*ProducerGetRequest)(nil),               // 50: shale.ProducerGetRequest
-	(*ProducerSelect)(nil),                   // 51: shale.ProducerSelect
-	(*ProducerPatchRequest)(nil),             // 52: shale.ProducerPatchRequest
-	(*ProducerApplyRequest)(nil),             // 53: shale.ProducerApplyRequest
-	(*ProducerEraseResponse)(nil),            // 54: shale.ProducerEraseResponse
-	(*ProducerListRequest)(nil),              // 55: shale.ProducerListRequest
-	(*ProducerListResponse)(nil),             // 56: shale.ProducerListResponse
-	(*ProducerFilter)(nil),                   // 57: shale.ProducerFilter
-	(*ProducerWatchRequest)(nil),             // 58: shale.ProducerWatchRequest
-	(*ProducerWatchResponse)(nil),            // 59: shale.ProducerWatchResponse
-	(*ProducerWatchItem)(nil),                // 60: shale.ProducerWatchItem
-	(*ProducerJoinRequest)(nil),              // 61: shale.ProducerJoinRequest
-	(*ProducerJoinResponse)(nil),             // 62: shale.ProducerJoinResponse
-	(*ProducerAdoptRequest)(nil),             // 63: shale.ProducerAdoptRequest
-	(*ProducerRenewCertificateRequest)(nil),  // 64: shale.ProducerRenewCertificateRequest
-	(*ProducerRenewCertificateResponse)(nil), // 65: shale.ProducerRenewCertificateResponse
-	(*ProducerHeartbeatRequest)(nil),         // 66: shale.ProducerHeartbeatRequest
-	(*ProducerHeartbeatResponse)(nil),        // 67: shale.ProducerHeartbeatResponse
-	(*Suggestion)(nil),                       // 68: shale.Suggestion
-	(*ProducerRelayRequest)(nil),             // 69: shale.ProducerRelayRequest
-	(*ProducerRelayResponse)(nil),            // 70: shale.ProducerRelayResponse
-	(*ReaderAddRequest)(nil),                 // 71: shale.ReaderAddRequest
-	(*ReaderGetRequest)(nil),                 // 72: shale.ReaderGetRequest
-	(*ReaderRef)(nil),                        // 73: shale.ReaderRef
-	(*ReaderRefBySlug)(nil),                  // 74: shale.ReaderRefBySlug
-	(*ReaderSelect)(nil),                     // 75: shale.ReaderSelect
-	(*ReaderPatchRequest)(nil),               // 76: shale.ReaderPatchRequest
-	(*ReaderApplyRequest)(nil),               // 77: shale.ReaderApplyRequest
-	(*ReaderEraseResponse)(nil),              // 78: shale.ReaderEraseResponse
-	(*ReaderListRequest)(nil),                // 79: shale.ReaderListRequest
-	(*ReaderListResponse)(nil),               // 80: shale.ReaderListResponse
-	(*ReaderFilter)(nil),                     // 81: shale.ReaderFilter
-	(*ReaderWatchRequest)(nil),               // 82: shale.ReaderWatchRequest
-	(*ReaderWatchResponse)(nil),              // 83: shale.ReaderWatchResponse
-	(*ReaderWatchItem)(nil),                  // 84: shale.ReaderWatchItem
-	(*ReaderJoinRequest)(nil),                // 85: shale.ReaderJoinRequest
-	(*ReaderJoinResponse)(nil),               // 86: shale.ReaderJoinResponse
-	(*ReaderAdoptRequest)(nil),               // 87: shale.ReaderAdoptRequest
-	(*ReaderRenewCertificateRequest)(nil),    // 88: shale.ReaderRenewCertificateRequest
-	(*ReaderRenewCertificateResponse)(nil),   // 89: shale.ReaderRenewCertificateResponse
-	(*ReaderHeartbeatRequest)(nil),           // 90: shale.ReaderHeartbeatRequest
-	(*ReaderHeartbeatResponse)(nil),          // 91: shale.ReaderHeartbeatResponse
-	nil,                                      // 92: shale.NodeAddRequest.LabelsEntry
-	nil,                                      // 93: shale.NodePatchRequest.LabelsEntry
-	nil,                                      // 94: shale.NodeFilter.LabelsEntry
-	nil,                                      // 95: shale.RelayAddRequest.LabelsEntry
-	nil,                                      // 96: shale.RelayPatchRequest.LabelsEntry
-	nil,                                      // 97: shale.RelayFilter.LabelsEntry
-	nil,                                      // 98: shale.ProducerAddRequest.LabelsEntry
-	nil,                                      // 99: shale.ProducerPatchRequest.LabelsEntry
-	nil,                                      // 100: shale.ProducerFilter.LabelsEntry
-	nil,                                      // 101: shale.ReaderAddRequest.LabelsEntry
-	nil,                                      // 102: shale.ReaderPatchRequest.LabelsEntry
-	nil,                                      // 103: shale.ReaderFilter.LabelsEntry
-	(HostState)(0),                           // 104: shale.HostState
-	(*HostJoin)(nil),                         // 105: shale.HostJoin
-	(*timestamppb.Timestamp)(nil),            // 106: google.protobuf.Timestamp
-	(*HostInterface)(nil),                    // 107: shale.HostInterface
-	(*NodeStatus)(nil),                       // 108: shale.NodeStatus
-	(*patchpb.Patch)(nil),                    // 109: patch.Patch
-	(*Node)(nil),                             // 110: shale.Node
-	(*SinkReport)(nil),                       // 111: shale.SinkReport
-	(*DeviceReport)(nil),                     // 112: shale.DeviceReport
-	(*KeyEntry)(nil),                         // 113: shale.KeyEntry
-	(SinkAttachment)(0),                      // 114: shale.SinkAttachment
-	(*Event)(nil),                            // 115: shale.Event
-	(*Endpoint)(nil),                         // 116: shale.Endpoint
-	(*RelayStatus)(nil),                      // 117: shale.RelayStatus
-	(*Relay)(nil),                            // 118: shale.Relay
-	(*TenantRef)(nil),                        // 119: shale.TenantRef
-	(*SiteRef)(nil),                          // 120: shale.SiteRef
-	(*SetRef)(nil),                           // 121: shale.SetRef
-	(*ProducerStatus)(nil),                   // 122: shale.ProducerStatus
-	(LivePolicy)(0),                          // 123: shale.LivePolicy
-	(*TenantSelect)(nil),                     // 124: shale.TenantSelect
-	(*SiteSelect)(nil),                       // 125: shale.SiteSelect
-	(*SetSelect)(nil),                        // 126: shale.SetSelect
-	(*Producer)(nil),                         // 127: shale.Producer
-	(*SourceReport)(nil),                     // 128: shale.SourceReport
-	(*HostLoad)(nil),                         // 129: shale.HostLoad
-	(*AdmissionWait)(nil),                    // 130: shale.AdmissionWait
-	(*RelayAssignment)(nil),                  // 131: shale.RelayAssignment
-	(*Reader)(nil),                           // 132: shale.Reader
+	(*NodeAddRequest)(nil),                    // 0: shale.NodeAddRequest
+	(*NodeGetRequest)(nil),                    // 1: shale.NodeGetRequest
+	(*NodeRef)(nil),                           // 2: shale.NodeRef
+	(*NodeSelect)(nil),                        // 3: shale.NodeSelect
+	(*NodePatchRequest)(nil),                  // 4: shale.NodePatchRequest
+	(*NodeApplyRequest)(nil),                  // 5: shale.NodeApplyRequest
+	(*NodeEraseResponse)(nil),                 // 6: shale.NodeEraseResponse
+	(*NodeListRequest)(nil),                   // 7: shale.NodeListRequest
+	(*NodeListResponse)(nil),                  // 8: shale.NodeListResponse
+	(*NodeFilter)(nil),                        // 9: shale.NodeFilter
+	(*NodeWatchRequest)(nil),                  // 10: shale.NodeWatchRequest
+	(*NodeWatchResponse)(nil),                 // 11: shale.NodeWatchResponse
+	(*NodeWatchItem)(nil),                     // 12: shale.NodeWatchItem
+	(*NodeJoinRequest)(nil),                   // 13: shale.NodeJoinRequest
+	(*NodeJoinResponse)(nil),                  // 14: shale.NodeJoinResponse
+	(*JoinAnswer)(nil),                        // 15: shale.JoinAnswer
+	(*NodeAdoptRequest)(nil),                  // 16: shale.NodeAdoptRequest
+	(*NodeRenewCertificateRequest)(nil),       // 17: shale.NodeRenewCertificateRequest
+	(*NodeRenewCertificateResponse)(nil),      // 18: shale.NodeRenewCertificateResponse
+	(*NodeHeartbeatRequest)(nil),              // 19: shale.NodeHeartbeatRequest
+	(*NodeHeartbeatResponse)(nil),             // 20: shale.NodeHeartbeatResponse
+	(*SinkAnswer)(nil),                        // 21: shale.SinkAnswer
+	(*NodePushEventsRequest)(nil),             // 22: shale.NodePushEventsRequest
+	(*NodePushEventsResponse)(nil),            // 23: shale.NodePushEventsResponse
+	(*NodeResolveRequest)(nil),                // 24: shale.NodeResolveRequest
+	(*NodeResolveResponse)(nil),               // 25: shale.NodeResolveResponse
+	(*RelayAddRequest)(nil),                   // 26: shale.RelayAddRequest
+	(*RelayGetRequest)(nil),                   // 27: shale.RelayGetRequest
+	(*RelayRef)(nil),                          // 28: shale.RelayRef
+	(*RelaySelect)(nil),                       // 29: shale.RelaySelect
+	(*RelayPatchRequest)(nil),                 // 30: shale.RelayPatchRequest
+	(*RelayApplyRequest)(nil),                 // 31: shale.RelayApplyRequest
+	(*RelayEraseResponse)(nil),                // 32: shale.RelayEraseResponse
+	(*RelayListRequest)(nil),                  // 33: shale.RelayListRequest
+	(*RelayListResponse)(nil),                 // 34: shale.RelayListResponse
+	(*RelayFilter)(nil),                       // 35: shale.RelayFilter
+	(*RelayWatchRequest)(nil),                 // 36: shale.RelayWatchRequest
+	(*RelayWatchResponse)(nil),                // 37: shale.RelayWatchResponse
+	(*RelayWatchItem)(nil),                    // 38: shale.RelayWatchItem
+	(*RelayJoinRequest)(nil),                  // 39: shale.RelayJoinRequest
+	(*RelayJoinResponse)(nil),                 // 40: shale.RelayJoinResponse
+	(*RelayAdoptRequest)(nil),                 // 41: shale.RelayAdoptRequest
+	(*RelayRenewCertificateRequest)(nil),      // 42: shale.RelayRenewCertificateRequest
+	(*RelayRenewCertificateResponse)(nil),     // 43: shale.RelayRenewCertificateResponse
+	(*RelayHeartbeatRequest)(nil),             // 44: shale.RelayHeartbeatRequest
+	(*RelayHeartbeatResponse)(nil),            // 45: shale.RelayHeartbeatResponse
+	(*RelayAssignRequest)(nil),                // 46: shale.RelayAssignRequest
+	(*ProducerRef)(nil),                       // 47: shale.ProducerRef
+	(*ProducerRefBySlug)(nil),                 // 48: shale.ProducerRefBySlug
+	(*SatelliteAddRequest)(nil),               // 49: shale.SatelliteAddRequest
+	(*SatelliteGetRequest)(nil),               // 50: shale.SatelliteGetRequest
+	(*SatelliteRef)(nil),                      // 51: shale.SatelliteRef
+	(*SatelliteSelect)(nil),                   // 52: shale.SatelliteSelect
+	(*SatellitePatchRequest)(nil),             // 53: shale.SatellitePatchRequest
+	(*SatelliteApplyRequest)(nil),             // 54: shale.SatelliteApplyRequest
+	(*SatelliteEraseResponse)(nil),            // 55: shale.SatelliteEraseResponse
+	(*SatelliteListRequest)(nil),              // 56: shale.SatelliteListRequest
+	(*SatelliteListResponse)(nil),             // 57: shale.SatelliteListResponse
+	(*SatelliteFilter)(nil),                   // 58: shale.SatelliteFilter
+	(*SatelliteWatchRequest)(nil),             // 59: shale.SatelliteWatchRequest
+	(*SatelliteWatchResponse)(nil),            // 60: shale.SatelliteWatchResponse
+	(*SatelliteWatchItem)(nil),                // 61: shale.SatelliteWatchItem
+	(*SatelliteJoinRequest)(nil),              // 62: shale.SatelliteJoinRequest
+	(*SatelliteJoinResponse)(nil),             // 63: shale.SatelliteJoinResponse
+	(*SatelliteAdoptRequest)(nil),             // 64: shale.SatelliteAdoptRequest
+	(*SatelliteRenewCertificateRequest)(nil),  // 65: shale.SatelliteRenewCertificateRequest
+	(*SatelliteRenewCertificateResponse)(nil), // 66: shale.SatelliteRenewCertificateResponse
+	(*SatelliteHeartbeatRequest)(nil),         // 67: shale.SatelliteHeartbeatRequest
+	(*SatelliteHeartbeatResponse)(nil),        // 68: shale.SatelliteHeartbeatResponse
+	(*SatelliteProducer)(nil),                 // 69: shale.SatelliteProducer
+	(*SatelliteRouteRequest)(nil),             // 70: shale.SatelliteRouteRequest
+	(*SatelliteRouteResponse)(nil),            // 71: shale.SatelliteRouteResponse
+	(*SatelliteAssignRequest)(nil),            // 72: shale.SatelliteAssignRequest
+	(*ProducerAddRequest)(nil),                // 73: shale.ProducerAddRequest
+	(*ProducerGetRequest)(nil),                // 74: shale.ProducerGetRequest
+	(*ProducerSelect)(nil),                    // 75: shale.ProducerSelect
+	(*ProducerPatchRequest)(nil),              // 76: shale.ProducerPatchRequest
+	(*ProducerApplyRequest)(nil),              // 77: shale.ProducerApplyRequest
+	(*ProducerEraseResponse)(nil),             // 78: shale.ProducerEraseResponse
+	(*ProducerListRequest)(nil),               // 79: shale.ProducerListRequest
+	(*ProducerListResponse)(nil),              // 80: shale.ProducerListResponse
+	(*ProducerFilter)(nil),                    // 81: shale.ProducerFilter
+	(*ProducerWatchRequest)(nil),              // 82: shale.ProducerWatchRequest
+	(*ProducerWatchResponse)(nil),             // 83: shale.ProducerWatchResponse
+	(*ProducerWatchItem)(nil),                 // 84: shale.ProducerWatchItem
+	(*ProducerJoinRequest)(nil),               // 85: shale.ProducerJoinRequest
+	(*ProducerJoinResponse)(nil),              // 86: shale.ProducerJoinResponse
+	(*ProducerAdoptRequest)(nil),              // 87: shale.ProducerAdoptRequest
+	(*ProducerRenewCertificateRequest)(nil),   // 88: shale.ProducerRenewCertificateRequest
+	(*ProducerRenewCertificateResponse)(nil),  // 89: shale.ProducerRenewCertificateResponse
+	(*ProducerHeartbeatRequest)(nil),          // 90: shale.ProducerHeartbeatRequest
+	(*ProducerHeartbeatResponse)(nil),         // 91: shale.ProducerHeartbeatResponse
+	(*Suggestion)(nil),                        // 92: shale.Suggestion
+	(*ProducerRelayRequest)(nil),              // 93: shale.ProducerRelayRequest
+	(*ProducerRelayResponse)(nil),             // 94: shale.ProducerRelayResponse
+	(*ReaderAddRequest)(nil),                  // 95: shale.ReaderAddRequest
+	(*ReaderGetRequest)(nil),                  // 96: shale.ReaderGetRequest
+	(*ReaderRef)(nil),                         // 97: shale.ReaderRef
+	(*ReaderRefBySlug)(nil),                   // 98: shale.ReaderRefBySlug
+	(*ReaderSelect)(nil),                      // 99: shale.ReaderSelect
+	(*ReaderPatchRequest)(nil),                // 100: shale.ReaderPatchRequest
+	(*ReaderApplyRequest)(nil),                // 101: shale.ReaderApplyRequest
+	(*ReaderEraseResponse)(nil),               // 102: shale.ReaderEraseResponse
+	(*ReaderListRequest)(nil),                 // 103: shale.ReaderListRequest
+	(*ReaderListResponse)(nil),                // 104: shale.ReaderListResponse
+	(*ReaderFilter)(nil),                      // 105: shale.ReaderFilter
+	(*ReaderWatchRequest)(nil),                // 106: shale.ReaderWatchRequest
+	(*ReaderWatchResponse)(nil),               // 107: shale.ReaderWatchResponse
+	(*ReaderWatchItem)(nil),                   // 108: shale.ReaderWatchItem
+	(*ReaderJoinRequest)(nil),                 // 109: shale.ReaderJoinRequest
+	(*ReaderJoinResponse)(nil),                // 110: shale.ReaderJoinResponse
+	(*ReaderAdoptRequest)(nil),                // 111: shale.ReaderAdoptRequest
+	(*ReaderRenewCertificateRequest)(nil),     // 112: shale.ReaderRenewCertificateRequest
+	(*ReaderRenewCertificateResponse)(nil),    // 113: shale.ReaderRenewCertificateResponse
+	(*ReaderHeartbeatRequest)(nil),            // 114: shale.ReaderHeartbeatRequest
+	(*ReaderHeartbeatResponse)(nil),           // 115: shale.ReaderHeartbeatResponse
+	nil,                                       // 116: shale.NodeAddRequest.LabelsEntry
+	nil,                                       // 117: shale.NodePatchRequest.LabelsEntry
+	nil,                                       // 118: shale.NodeFilter.LabelsEntry
+	nil,                                       // 119: shale.RelayAddRequest.LabelsEntry
+	nil,                                       // 120: shale.RelayPatchRequest.LabelsEntry
+	nil,                                       // 121: shale.RelayFilter.LabelsEntry
+	nil,                                       // 122: shale.SatelliteAddRequest.LabelsEntry
+	nil,                                       // 123: shale.SatellitePatchRequest.LabelsEntry
+	nil,                                       // 124: shale.SatelliteFilter.LabelsEntry
+	nil,                                       // 125: shale.ProducerAddRequest.LabelsEntry
+	nil,                                       // 126: shale.ProducerPatchRequest.LabelsEntry
+	nil,                                       // 127: shale.ProducerFilter.LabelsEntry
+	nil,                                       // 128: shale.ReaderAddRequest.LabelsEntry
+	nil,                                       // 129: shale.ReaderPatchRequest.LabelsEntry
+	nil,                                       // 130: shale.ReaderFilter.LabelsEntry
+	(HostState)(0),                            // 131: shale.HostState
+	(*HostJoin)(nil),                          // 132: shale.HostJoin
+	(*timestamppb.Timestamp)(nil),             // 133: google.protobuf.Timestamp
+	(*HostInterface)(nil),                     // 134: shale.HostInterface
+	(*NodeStatus)(nil),                        // 135: shale.NodeStatus
+	(*patchpb.Patch)(nil),                     // 136: patch.Patch
+	(*Node)(nil),                              // 137: shale.Node
+	(*SinkReport)(nil),                        // 138: shale.SinkReport
+	(*DeviceReport)(nil),                      // 139: shale.DeviceReport
+	(*KeyEntry)(nil),                          // 140: shale.KeyEntry
+	(SinkAttachment)(0),                       // 141: shale.SinkAttachment
+	(*Event)(nil),                             // 142: shale.Event
+	(*Endpoint)(nil),                          // 143: shale.Endpoint
+	(*RelayStatus)(nil),                       // 144: shale.RelayStatus
+	(*Relay)(nil),                             // 145: shale.Relay
+	(*TenantRef)(nil),                         // 146: shale.TenantRef
+	(*SatelliteStatus)(nil),                   // 147: shale.SatelliteStatus
+	(*Satellite)(nil),                         // 148: shale.Satellite
+	(*SiteRef)(nil),                           // 149: shale.SiteRef
+	(*SetRef)(nil),                            // 150: shale.SetRef
+	(*ProducerStatus)(nil),                    // 151: shale.ProducerStatus
+	(LivePolicy)(0),                           // 152: shale.LivePolicy
+	(*TenantSelect)(nil),                      // 153: shale.TenantSelect
+	(*SiteSelect)(nil),                        // 154: shale.SiteSelect
+	(*SetSelect)(nil),                         // 155: shale.SetSelect
+	(*Producer)(nil),                          // 156: shale.Producer
+	(*SourceReport)(nil),                      // 157: shale.SourceReport
+	(*HostLoad)(nil),                          // 158: shale.HostLoad
+	(*AdmissionWait)(nil),                     // 159: shale.AdmissionWait
+	(*UploadReport)(nil),                      // 160: shale.UploadReport
+	(*RelayAssignment)(nil),                   // 161: shale.RelayAssignment
+	(*SatelliteAssignment)(nil),               // 162: shale.SatelliteAssignment
+	(*Reader)(nil),                            // 163: shale.Reader
 }
 var file_shale_host_svc_g_proto_depIdxs = []int32{
-	92,  // 0: shale.NodeAddRequest.labels:type_name -> shale.NodeAddRequest.LabelsEntry
-	104, // 1: shale.NodeAddRequest.state:type_name -> shale.HostState
-	105, // 2: shale.NodeAddRequest.join:type_name -> shale.HostJoin
-	106, // 3: shale.NodeAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	106, // 4: shale.NodeAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 5: shale.NodeAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 6: shale.NodeAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	107, // 7: shale.NodeAddRequest.interfaces:type_name -> shale.HostInterface
-	108, // 8: shale.NodeAddRequest.status:type_name -> shale.NodeStatus
-	106, // 9: shale.NodeAddRequest.date_scored:type_name -> google.protobuf.Timestamp
+	116, // 0: shale.NodeAddRequest.labels:type_name -> shale.NodeAddRequest.LabelsEntry
+	131, // 1: shale.NodeAddRequest.state:type_name -> shale.HostState
+	132, // 2: shale.NodeAddRequest.join:type_name -> shale.HostJoin
+	133, // 3: shale.NodeAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	133, // 4: shale.NodeAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 5: shale.NodeAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 6: shale.NodeAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	134, // 7: shale.NodeAddRequest.interfaces:type_name -> shale.HostInterface
+	135, // 8: shale.NodeAddRequest.status:type_name -> shale.NodeStatus
+	133, // 9: shale.NodeAddRequest.date_scored:type_name -> google.protobuf.Timestamp
 	2,   // 10: shale.NodeGetRequest.ref:type_name -> shale.NodeRef
 	3,   // 11: shale.NodeGetRequest.select:type_name -> shale.NodeSelect
 	2,   // 12: shale.NodePatchRequest.ref:type_name -> shale.NodeRef
-	93,  // 13: shale.NodePatchRequest.labels:type_name -> shale.NodePatchRequest.LabelsEntry
-	104, // 14: shale.NodePatchRequest.state:type_name -> shale.HostState
-	105, // 15: shale.NodePatchRequest.join:type_name -> shale.HostJoin
-	106, // 16: shale.NodePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	106, // 17: shale.NodePatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 18: shale.NodePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 19: shale.NodePatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	107, // 20: shale.NodePatchRequest.interfaces:type_name -> shale.HostInterface
-	108, // 21: shale.NodePatchRequest.status:type_name -> shale.NodeStatus
-	106, // 22: shale.NodePatchRequest.date_scored:type_name -> google.protobuf.Timestamp
+	117, // 13: shale.NodePatchRequest.labels:type_name -> shale.NodePatchRequest.LabelsEntry
+	131, // 14: shale.NodePatchRequest.state:type_name -> shale.HostState
+	132, // 15: shale.NodePatchRequest.join:type_name -> shale.HostJoin
+	133, // 16: shale.NodePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	133, // 17: shale.NodePatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 18: shale.NodePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 19: shale.NodePatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	134, // 20: shale.NodePatchRequest.interfaces:type_name -> shale.HostInterface
+	135, // 21: shale.NodePatchRequest.status:type_name -> shale.NodeStatus
+	133, // 22: shale.NodePatchRequest.date_scored:type_name -> google.protobuf.Timestamp
 	2,   // 23: shale.NodeApplyRequest.ref:type_name -> shale.NodeRef
-	109, // 24: shale.NodeApplyRequest.patch:type_name -> patch.Patch
+	136, // 24: shale.NodeApplyRequest.patch:type_name -> patch.Patch
 	9,   // 25: shale.NodeListRequest.filters:type_name -> shale.NodeFilter
-	110, // 26: shale.NodeListResponse.items:type_name -> shale.Node
+	137, // 26: shale.NodeListResponse.items:type_name -> shale.Node
 	2,   // 27: shale.NodeFilter.ref:type_name -> shale.NodeRef
-	94,  // 28: shale.NodeFilter.labels:type_name -> shale.NodeFilter.LabelsEntry
+	118, // 28: shale.NodeFilter.labels:type_name -> shale.NodeFilter.LabelsEntry
 	9,   // 29: shale.NodeWatchRequest.filters:type_name -> shale.NodeFilter
 	12,  // 30: shale.NodeWatchResponse.items:type_name -> shale.NodeWatchItem
-	110, // 31: shale.NodeWatchItem.value:type_name -> shale.Node
-	105, // 32: shale.NodeJoinRequest.host:type_name -> shale.HostJoin
-	107, // 33: shale.NodeJoinRequest.interfaces:type_name -> shale.HostInterface
-	111, // 34: shale.NodeJoinRequest.sinks:type_name -> shale.SinkReport
-	112, // 35: shale.NodeJoinRequest.devices:type_name -> shale.DeviceReport
+	137, // 31: shale.NodeWatchItem.value:type_name -> shale.Node
+	132, // 32: shale.NodeJoinRequest.host:type_name -> shale.HostJoin
+	134, // 33: shale.NodeJoinRequest.interfaces:type_name -> shale.HostInterface
+	138, // 34: shale.NodeJoinRequest.sinks:type_name -> shale.SinkReport
+	139, // 35: shale.NodeJoinRequest.devices:type_name -> shale.DeviceReport
 	15,  // 36: shale.NodeJoinResponse.answer:type_name -> shale.JoinAnswer
-	113, // 37: shale.NodeJoinResponse.keys:type_name -> shale.KeyEntry
-	104, // 38: shale.JoinAnswer.state:type_name -> shale.HostState
+	140, // 37: shale.NodeJoinResponse.keys:type_name -> shale.KeyEntry
+	131, // 38: shale.JoinAnswer.state:type_name -> shale.HostState
 	2,   // 39: shale.NodeAdoptRequest.ref:type_name -> shale.NodeRef
-	112, // 40: shale.NodeHeartbeatRequest.devices:type_name -> shale.DeviceReport
-	111, // 41: shale.NodeHeartbeatRequest.sinks:type_name -> shale.SinkReport
-	107, // 42: shale.NodeHeartbeatRequest.interfaces:type_name -> shale.HostInterface
+	139, // 40: shale.NodeHeartbeatRequest.devices:type_name -> shale.DeviceReport
+	138, // 41: shale.NodeHeartbeatRequest.sinks:type_name -> shale.SinkReport
+	134, // 42: shale.NodeHeartbeatRequest.interfaces:type_name -> shale.HostInterface
 	21,  // 43: shale.NodeHeartbeatResponse.sinks:type_name -> shale.SinkAnswer
-	114, // 44: shale.SinkAnswer.attachment:type_name -> shale.SinkAttachment
-	115, // 45: shale.NodePushEventsRequest.events:type_name -> shale.Event
+	141, // 44: shale.SinkAnswer.attachment:type_name -> shale.SinkAttachment
+	142, // 45: shale.NodePushEventsRequest.events:type_name -> shale.Event
 	2,   // 46: shale.NodeResolveRequest.ref:type_name -> shale.NodeRef
-	116, // 47: shale.NodeResolveResponse.endpoints:type_name -> shale.Endpoint
-	95,  // 48: shale.RelayAddRequest.labels:type_name -> shale.RelayAddRequest.LabelsEntry
-	104, // 49: shale.RelayAddRequest.state:type_name -> shale.HostState
-	105, // 50: shale.RelayAddRequest.join:type_name -> shale.HostJoin
-	106, // 51: shale.RelayAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	106, // 52: shale.RelayAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 53: shale.RelayAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 54: shale.RelayAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	107, // 55: shale.RelayAddRequest.interfaces:type_name -> shale.HostInterface
-	117, // 56: shale.RelayAddRequest.status:type_name -> shale.RelayStatus
+	143, // 47: shale.NodeResolveResponse.endpoints:type_name -> shale.Endpoint
+	119, // 48: shale.RelayAddRequest.labels:type_name -> shale.RelayAddRequest.LabelsEntry
+	131, // 49: shale.RelayAddRequest.state:type_name -> shale.HostState
+	132, // 50: shale.RelayAddRequest.join:type_name -> shale.HostJoin
+	133, // 51: shale.RelayAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	133, // 52: shale.RelayAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 53: shale.RelayAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 54: shale.RelayAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	134, // 55: shale.RelayAddRequest.interfaces:type_name -> shale.HostInterface
+	144, // 56: shale.RelayAddRequest.status:type_name -> shale.RelayStatus
 	28,  // 57: shale.RelayGetRequest.ref:type_name -> shale.RelayRef
 	29,  // 58: shale.RelayGetRequest.select:type_name -> shale.RelaySelect
 	28,  // 59: shale.RelayPatchRequest.ref:type_name -> shale.RelayRef
-	96,  // 60: shale.RelayPatchRequest.labels:type_name -> shale.RelayPatchRequest.LabelsEntry
-	104, // 61: shale.RelayPatchRequest.state:type_name -> shale.HostState
-	105, // 62: shale.RelayPatchRequest.join:type_name -> shale.HostJoin
-	106, // 63: shale.RelayPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	106, // 64: shale.RelayPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 65: shale.RelayPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 66: shale.RelayPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	107, // 67: shale.RelayPatchRequest.interfaces:type_name -> shale.HostInterface
-	117, // 68: shale.RelayPatchRequest.status:type_name -> shale.RelayStatus
+	120, // 60: shale.RelayPatchRequest.labels:type_name -> shale.RelayPatchRequest.LabelsEntry
+	131, // 61: shale.RelayPatchRequest.state:type_name -> shale.HostState
+	132, // 62: shale.RelayPatchRequest.join:type_name -> shale.HostJoin
+	133, // 63: shale.RelayPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	133, // 64: shale.RelayPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 65: shale.RelayPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 66: shale.RelayPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	134, // 67: shale.RelayPatchRequest.interfaces:type_name -> shale.HostInterface
+	144, // 68: shale.RelayPatchRequest.status:type_name -> shale.RelayStatus
 	28,  // 69: shale.RelayApplyRequest.ref:type_name -> shale.RelayRef
-	109, // 70: shale.RelayApplyRequest.patch:type_name -> patch.Patch
+	136, // 70: shale.RelayApplyRequest.patch:type_name -> patch.Patch
 	35,  // 71: shale.RelayListRequest.filters:type_name -> shale.RelayFilter
-	118, // 72: shale.RelayListResponse.items:type_name -> shale.Relay
+	145, // 72: shale.RelayListResponse.items:type_name -> shale.Relay
 	28,  // 73: shale.RelayFilter.ref:type_name -> shale.RelayRef
-	97,  // 74: shale.RelayFilter.labels:type_name -> shale.RelayFilter.LabelsEntry
+	121, // 74: shale.RelayFilter.labels:type_name -> shale.RelayFilter.LabelsEntry
 	35,  // 75: shale.RelayWatchRequest.filters:type_name -> shale.RelayFilter
 	38,  // 76: shale.RelayWatchResponse.items:type_name -> shale.RelayWatchItem
-	118, // 77: shale.RelayWatchItem.value:type_name -> shale.Relay
-	105, // 78: shale.RelayJoinRequest.host:type_name -> shale.HostJoin
-	107, // 79: shale.RelayJoinRequest.interfaces:type_name -> shale.HostInterface
+	145, // 77: shale.RelayWatchItem.value:type_name -> shale.Relay
+	132, // 78: shale.RelayJoinRequest.host:type_name -> shale.HostJoin
+	134, // 79: shale.RelayJoinRequest.interfaces:type_name -> shale.HostInterface
 	15,  // 80: shale.RelayJoinResponse.answer:type_name -> shale.JoinAnswer
-	113, // 81: shale.RelayJoinResponse.keys:type_name -> shale.KeyEntry
+	140, // 81: shale.RelayJoinResponse.keys:type_name -> shale.KeyEntry
 	28,  // 82: shale.RelayAdoptRequest.ref:type_name -> shale.RelayRef
-	117, // 83: shale.RelayHeartbeatRequest.status:type_name -> shale.RelayStatus
-	107, // 84: shale.RelayHeartbeatRequest.interfaces:type_name -> shale.HostInterface
+	144, // 83: shale.RelayHeartbeatRequest.status:type_name -> shale.RelayStatus
+	134, // 84: shale.RelayHeartbeatRequest.interfaces:type_name -> shale.HostInterface
 	28,  // 85: shale.RelayAssignRequest.ref:type_name -> shale.RelayRef
 	47,  // 86: shale.RelayAssignRequest.producer:type_name -> shale.ProducerRef
 	48,  // 87: shale.ProducerRef.slug:type_name -> shale.ProducerRefBySlug
-	119, // 88: shale.ProducerRefBySlug.tenant:type_name -> shale.TenantRef
-	119, // 89: shale.ProducerAddRequest.tenant:type_name -> shale.TenantRef
-	120, // 90: shale.ProducerAddRequest.site:type_name -> shale.SiteRef
-	98,  // 91: shale.ProducerAddRequest.labels:type_name -> shale.ProducerAddRequest.LabelsEntry
-	121, // 92: shale.ProducerAddRequest.set:type_name -> shale.SetRef
-	104, // 93: shale.ProducerAddRequest.state:type_name -> shale.HostState
-	106, // 94: shale.ProducerAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	105, // 95: shale.ProducerAddRequest.join:type_name -> shale.HostJoin
-	106, // 96: shale.ProducerAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 97: shale.ProducerAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 98: shale.ProducerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	28,  // 99: shale.ProducerAddRequest.relay:type_name -> shale.RelayRef
-	122, // 100: shale.ProducerAddRequest.status:type_name -> shale.ProducerStatus
-	123, // 101: shale.ProducerAddRequest.live:type_name -> shale.LivePolicy
-	47,  // 102: shale.ProducerGetRequest.ref:type_name -> shale.ProducerRef
-	51,  // 103: shale.ProducerGetRequest.select:type_name -> shale.ProducerSelect
-	124, // 104: shale.ProducerSelect.tenant:type_name -> shale.TenantSelect
-	125, // 105: shale.ProducerSelect.site:type_name -> shale.SiteSelect
-	126, // 106: shale.ProducerSelect.set:type_name -> shale.SetSelect
-	29,  // 107: shale.ProducerSelect.relay:type_name -> shale.RelaySelect
-	47,  // 108: shale.ProducerPatchRequest.ref:type_name -> shale.ProducerRef
-	120, // 109: shale.ProducerPatchRequest.site:type_name -> shale.SiteRef
-	99,  // 110: shale.ProducerPatchRequest.labels:type_name -> shale.ProducerPatchRequest.LabelsEntry
-	121, // 111: shale.ProducerPatchRequest.set:type_name -> shale.SetRef
-	104, // 112: shale.ProducerPatchRequest.state:type_name -> shale.HostState
-	106, // 113: shale.ProducerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	105, // 114: shale.ProducerPatchRequest.join:type_name -> shale.HostJoin
-	106, // 115: shale.ProducerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 116: shale.ProducerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 117: shale.ProducerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	28,  // 118: shale.ProducerPatchRequest.relay:type_name -> shale.RelayRef
-	122, // 119: shale.ProducerPatchRequest.status:type_name -> shale.ProducerStatus
-	123, // 120: shale.ProducerPatchRequest.live:type_name -> shale.LivePolicy
-	47,  // 121: shale.ProducerApplyRequest.ref:type_name -> shale.ProducerRef
-	109, // 122: shale.ProducerApplyRequest.patch:type_name -> patch.Patch
-	57,  // 123: shale.ProducerListRequest.filters:type_name -> shale.ProducerFilter
-	127, // 124: shale.ProducerListResponse.items:type_name -> shale.Producer
-	47,  // 125: shale.ProducerFilter.ref:type_name -> shale.ProducerRef
-	119, // 126: shale.ProducerFilter.tenant:type_name -> shale.TenantRef
-	121, // 127: shale.ProducerFilter.set:type_name -> shale.SetRef
-	120, // 128: shale.ProducerFilter.site:type_name -> shale.SiteRef
-	100, // 129: shale.ProducerFilter.labels:type_name -> shale.ProducerFilter.LabelsEntry
-	57,  // 130: shale.ProducerWatchRequest.filters:type_name -> shale.ProducerFilter
-	60,  // 131: shale.ProducerWatchResponse.items:type_name -> shale.ProducerWatchItem
-	127, // 132: shale.ProducerWatchItem.value:type_name -> shale.Producer
-	105, // 133: shale.ProducerJoinRequest.host:type_name -> shale.HostJoin
-	15,  // 134: shale.ProducerJoinResponse.answer:type_name -> shale.JoinAnswer
-	47,  // 135: shale.ProducerAdoptRequest.ref:type_name -> shale.ProducerRef
-	121, // 136: shale.ProducerAdoptRequest.set:type_name -> shale.SetRef
-	128, // 137: shale.ProducerHeartbeatRequest.sources:type_name -> shale.SourceReport
-	129, // 138: shale.ProducerHeartbeatRequest.load:type_name -> shale.HostLoad
-	130, // 139: shale.ProducerHeartbeatRequest.admission:type_name -> shale.AdmissionWait
-	131, // 140: shale.ProducerHeartbeatResponse.relay:type_name -> shale.RelayAssignment
-	68,  // 141: shale.ProducerHeartbeatResponse.suggestions:type_name -> shale.Suggestion
-	131, // 142: shale.ProducerRelayResponse.relay:type_name -> shale.RelayAssignment
-	119, // 143: shale.ReaderAddRequest.tenant:type_name -> shale.TenantRef
-	101, // 144: shale.ReaderAddRequest.labels:type_name -> shale.ReaderAddRequest.LabelsEntry
-	104, // 145: shale.ReaderAddRequest.state:type_name -> shale.HostState
-	105, // 146: shale.ReaderAddRequest.join:type_name -> shale.HostJoin
-	106, // 147: shale.ReaderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	106, // 148: shale.ReaderAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 149: shale.ReaderAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 150: shale.ReaderAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	73,  // 151: shale.ReaderGetRequest.ref:type_name -> shale.ReaderRef
-	75,  // 152: shale.ReaderGetRequest.select:type_name -> shale.ReaderSelect
-	74,  // 153: shale.ReaderRef.slug:type_name -> shale.ReaderRefBySlug
-	119, // 154: shale.ReaderRefBySlug.tenant:type_name -> shale.TenantRef
-	124, // 155: shale.ReaderSelect.tenant:type_name -> shale.TenantSelect
-	73,  // 156: shale.ReaderPatchRequest.ref:type_name -> shale.ReaderRef
-	102, // 157: shale.ReaderPatchRequest.labels:type_name -> shale.ReaderPatchRequest.LabelsEntry
-	104, // 158: shale.ReaderPatchRequest.state:type_name -> shale.HostState
-	105, // 159: shale.ReaderPatchRequest.join:type_name -> shale.HostJoin
-	106, // 160: shale.ReaderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	106, // 161: shale.ReaderPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	106, // 162: shale.ReaderPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	106, // 163: shale.ReaderPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	73,  // 164: shale.ReaderApplyRequest.ref:type_name -> shale.ReaderRef
-	109, // 165: shale.ReaderApplyRequest.patch:type_name -> patch.Patch
-	81,  // 166: shale.ReaderListRequest.filters:type_name -> shale.ReaderFilter
-	132, // 167: shale.ReaderListResponse.items:type_name -> shale.Reader
-	73,  // 168: shale.ReaderFilter.ref:type_name -> shale.ReaderRef
-	119, // 169: shale.ReaderFilter.tenant:type_name -> shale.TenantRef
-	103, // 170: shale.ReaderFilter.labels:type_name -> shale.ReaderFilter.LabelsEntry
-	81,  // 171: shale.ReaderWatchRequest.filters:type_name -> shale.ReaderFilter
-	84,  // 172: shale.ReaderWatchResponse.items:type_name -> shale.ReaderWatchItem
-	132, // 173: shale.ReaderWatchItem.value:type_name -> shale.Reader
-	105, // 174: shale.ReaderJoinRequest.host:type_name -> shale.HostJoin
-	15,  // 175: shale.ReaderJoinResponse.answer:type_name -> shale.JoinAnswer
-	73,  // 176: shale.ReaderAdoptRequest.ref:type_name -> shale.ReaderRef
-	120, // 177: shale.ReaderAdoptRequest.sites:type_name -> shale.SiteRef
-	0,   // 178: shale.NodeService.Add:input_type -> shale.NodeAddRequest
-	1,   // 179: shale.NodeService.Get:input_type -> shale.NodeGetRequest
-	4,   // 180: shale.NodeService.Patch:input_type -> shale.NodePatchRequest
-	5,   // 181: shale.NodeService.Apply:input_type -> shale.NodeApplyRequest
-	2,   // 182: shale.NodeService.Erase:input_type -> shale.NodeRef
-	7,   // 183: shale.NodeService.List:input_type -> shale.NodeListRequest
-	10,  // 184: shale.NodeService.Watch:input_type -> shale.NodeWatchRequest
-	13,  // 185: shale.NodeService.Join:input_type -> shale.NodeJoinRequest
-	16,  // 186: shale.NodeService.Adopt:input_type -> shale.NodeAdoptRequest
-	17,  // 187: shale.NodeService.RenewCertificate:input_type -> shale.NodeRenewCertificateRequest
-	19,  // 188: shale.NodeService.Heartbeat:input_type -> shale.NodeHeartbeatRequest
-	22,  // 189: shale.NodeService.PushEvents:input_type -> shale.NodePushEventsRequest
-	24,  // 190: shale.NodeService.Resolve:input_type -> shale.NodeResolveRequest
-	26,  // 191: shale.RelayService.Add:input_type -> shale.RelayAddRequest
-	27,  // 192: shale.RelayService.Get:input_type -> shale.RelayGetRequest
-	30,  // 193: shale.RelayService.Patch:input_type -> shale.RelayPatchRequest
-	31,  // 194: shale.RelayService.Apply:input_type -> shale.RelayApplyRequest
-	28,  // 195: shale.RelayService.Erase:input_type -> shale.RelayRef
-	33,  // 196: shale.RelayService.List:input_type -> shale.RelayListRequest
-	36,  // 197: shale.RelayService.Watch:input_type -> shale.RelayWatchRequest
-	39,  // 198: shale.RelayService.Join:input_type -> shale.RelayJoinRequest
-	41,  // 199: shale.RelayService.Adopt:input_type -> shale.RelayAdoptRequest
-	42,  // 200: shale.RelayService.RenewCertificate:input_type -> shale.RelayRenewCertificateRequest
-	44,  // 201: shale.RelayService.Heartbeat:input_type -> shale.RelayHeartbeatRequest
-	46,  // 202: shale.RelayService.Assign:input_type -> shale.RelayAssignRequest
-	49,  // 203: shale.ProducerService.Add:input_type -> shale.ProducerAddRequest
-	50,  // 204: shale.ProducerService.Get:input_type -> shale.ProducerGetRequest
-	52,  // 205: shale.ProducerService.Patch:input_type -> shale.ProducerPatchRequest
-	53,  // 206: shale.ProducerService.Apply:input_type -> shale.ProducerApplyRequest
-	47,  // 207: shale.ProducerService.Erase:input_type -> shale.ProducerRef
-	55,  // 208: shale.ProducerService.List:input_type -> shale.ProducerListRequest
-	58,  // 209: shale.ProducerService.Watch:input_type -> shale.ProducerWatchRequest
-	61,  // 210: shale.ProducerService.Join:input_type -> shale.ProducerJoinRequest
-	63,  // 211: shale.ProducerService.Adopt:input_type -> shale.ProducerAdoptRequest
-	64,  // 212: shale.ProducerService.RenewCertificate:input_type -> shale.ProducerRenewCertificateRequest
-	66,  // 213: shale.ProducerService.Heartbeat:input_type -> shale.ProducerHeartbeatRequest
-	69,  // 214: shale.ProducerService.Relay:input_type -> shale.ProducerRelayRequest
-	71,  // 215: shale.ReaderService.Add:input_type -> shale.ReaderAddRequest
-	72,  // 216: shale.ReaderService.Get:input_type -> shale.ReaderGetRequest
-	76,  // 217: shale.ReaderService.Patch:input_type -> shale.ReaderPatchRequest
-	77,  // 218: shale.ReaderService.Apply:input_type -> shale.ReaderApplyRequest
-	73,  // 219: shale.ReaderService.Erase:input_type -> shale.ReaderRef
-	79,  // 220: shale.ReaderService.List:input_type -> shale.ReaderListRequest
-	82,  // 221: shale.ReaderService.Watch:input_type -> shale.ReaderWatchRequest
-	85,  // 222: shale.ReaderService.Join:input_type -> shale.ReaderJoinRequest
-	87,  // 223: shale.ReaderService.Adopt:input_type -> shale.ReaderAdoptRequest
-	88,  // 224: shale.ReaderService.RenewCertificate:input_type -> shale.ReaderRenewCertificateRequest
-	90,  // 225: shale.ReaderService.Heartbeat:input_type -> shale.ReaderHeartbeatRequest
-	110, // 226: shale.NodeService.Add:output_type -> shale.Node
-	110, // 227: shale.NodeService.Get:output_type -> shale.Node
-	110, // 228: shale.NodeService.Patch:output_type -> shale.Node
-	110, // 229: shale.NodeService.Apply:output_type -> shale.Node
-	6,   // 230: shale.NodeService.Erase:output_type -> shale.NodeEraseResponse
-	8,   // 231: shale.NodeService.List:output_type -> shale.NodeListResponse
-	11,  // 232: shale.NodeService.Watch:output_type -> shale.NodeWatchResponse
-	14,  // 233: shale.NodeService.Join:output_type -> shale.NodeJoinResponse
-	110, // 234: shale.NodeService.Adopt:output_type -> shale.Node
-	18,  // 235: shale.NodeService.RenewCertificate:output_type -> shale.NodeRenewCertificateResponse
-	20,  // 236: shale.NodeService.Heartbeat:output_type -> shale.NodeHeartbeatResponse
-	23,  // 237: shale.NodeService.PushEvents:output_type -> shale.NodePushEventsResponse
-	25,  // 238: shale.NodeService.Resolve:output_type -> shale.NodeResolveResponse
-	118, // 239: shale.RelayService.Add:output_type -> shale.Relay
-	118, // 240: shale.RelayService.Get:output_type -> shale.Relay
-	118, // 241: shale.RelayService.Patch:output_type -> shale.Relay
-	118, // 242: shale.RelayService.Apply:output_type -> shale.Relay
-	32,  // 243: shale.RelayService.Erase:output_type -> shale.RelayEraseResponse
-	34,  // 244: shale.RelayService.List:output_type -> shale.RelayListResponse
-	37,  // 245: shale.RelayService.Watch:output_type -> shale.RelayWatchResponse
-	40,  // 246: shale.RelayService.Join:output_type -> shale.RelayJoinResponse
-	118, // 247: shale.RelayService.Adopt:output_type -> shale.Relay
-	43,  // 248: shale.RelayService.RenewCertificate:output_type -> shale.RelayRenewCertificateResponse
-	45,  // 249: shale.RelayService.Heartbeat:output_type -> shale.RelayHeartbeatResponse
-	118, // 250: shale.RelayService.Assign:output_type -> shale.Relay
-	127, // 251: shale.ProducerService.Add:output_type -> shale.Producer
-	127, // 252: shale.ProducerService.Get:output_type -> shale.Producer
-	127, // 253: shale.ProducerService.Patch:output_type -> shale.Producer
-	127, // 254: shale.ProducerService.Apply:output_type -> shale.Producer
-	54,  // 255: shale.ProducerService.Erase:output_type -> shale.ProducerEraseResponse
-	56,  // 256: shale.ProducerService.List:output_type -> shale.ProducerListResponse
-	59,  // 257: shale.ProducerService.Watch:output_type -> shale.ProducerWatchResponse
-	62,  // 258: shale.ProducerService.Join:output_type -> shale.ProducerJoinResponse
-	127, // 259: shale.ProducerService.Adopt:output_type -> shale.Producer
-	65,  // 260: shale.ProducerService.RenewCertificate:output_type -> shale.ProducerRenewCertificateResponse
-	67,  // 261: shale.ProducerService.Heartbeat:output_type -> shale.ProducerHeartbeatResponse
-	70,  // 262: shale.ProducerService.Relay:output_type -> shale.ProducerRelayResponse
-	132, // 263: shale.ReaderService.Add:output_type -> shale.Reader
-	132, // 264: shale.ReaderService.Get:output_type -> shale.Reader
-	132, // 265: shale.ReaderService.Patch:output_type -> shale.Reader
-	132, // 266: shale.ReaderService.Apply:output_type -> shale.Reader
-	78,  // 267: shale.ReaderService.Erase:output_type -> shale.ReaderEraseResponse
-	80,  // 268: shale.ReaderService.List:output_type -> shale.ReaderListResponse
-	83,  // 269: shale.ReaderService.Watch:output_type -> shale.ReaderWatchResponse
-	86,  // 270: shale.ReaderService.Join:output_type -> shale.ReaderJoinResponse
-	132, // 271: shale.ReaderService.Adopt:output_type -> shale.Reader
-	89,  // 272: shale.ReaderService.RenewCertificate:output_type -> shale.ReaderRenewCertificateResponse
-	91,  // 273: shale.ReaderService.Heartbeat:output_type -> shale.ReaderHeartbeatResponse
-	226, // [226:274] is the sub-list for method output_type
-	178, // [178:226] is the sub-list for method input_type
-	178, // [178:178] is the sub-list for extension type_name
-	178, // [178:178] is the sub-list for extension extendee
-	0,   // [0:178] is the sub-list for field type_name
+	146, // 88: shale.ProducerRefBySlug.tenant:type_name -> shale.TenantRef
+	122, // 89: shale.SatelliteAddRequest.labels:type_name -> shale.SatelliteAddRequest.LabelsEntry
+	131, // 90: shale.SatelliteAddRequest.state:type_name -> shale.HostState
+	132, // 91: shale.SatelliteAddRequest.join:type_name -> shale.HostJoin
+	133, // 92: shale.SatelliteAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	133, // 93: shale.SatelliteAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 94: shale.SatelliteAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 95: shale.SatelliteAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	134, // 96: shale.SatelliteAddRequest.interfaces:type_name -> shale.HostInterface
+	147, // 97: shale.SatelliteAddRequest.status:type_name -> shale.SatelliteStatus
+	51,  // 98: shale.SatelliteGetRequest.ref:type_name -> shale.SatelliteRef
+	52,  // 99: shale.SatelliteGetRequest.select:type_name -> shale.SatelliteSelect
+	51,  // 100: shale.SatellitePatchRequest.ref:type_name -> shale.SatelliteRef
+	123, // 101: shale.SatellitePatchRequest.labels:type_name -> shale.SatellitePatchRequest.LabelsEntry
+	131, // 102: shale.SatellitePatchRequest.state:type_name -> shale.HostState
+	132, // 103: shale.SatellitePatchRequest.join:type_name -> shale.HostJoin
+	133, // 104: shale.SatellitePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	133, // 105: shale.SatellitePatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 106: shale.SatellitePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 107: shale.SatellitePatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	134, // 108: shale.SatellitePatchRequest.interfaces:type_name -> shale.HostInterface
+	147, // 109: shale.SatellitePatchRequest.status:type_name -> shale.SatelliteStatus
+	51,  // 110: shale.SatelliteApplyRequest.ref:type_name -> shale.SatelliteRef
+	136, // 111: shale.SatelliteApplyRequest.patch:type_name -> patch.Patch
+	58,  // 112: shale.SatelliteListRequest.filters:type_name -> shale.SatelliteFilter
+	148, // 113: shale.SatelliteListResponse.items:type_name -> shale.Satellite
+	51,  // 114: shale.SatelliteFilter.ref:type_name -> shale.SatelliteRef
+	124, // 115: shale.SatelliteFilter.labels:type_name -> shale.SatelliteFilter.LabelsEntry
+	58,  // 116: shale.SatelliteWatchRequest.filters:type_name -> shale.SatelliteFilter
+	61,  // 117: shale.SatelliteWatchResponse.items:type_name -> shale.SatelliteWatchItem
+	148, // 118: shale.SatelliteWatchItem.value:type_name -> shale.Satellite
+	132, // 119: shale.SatelliteJoinRequest.host:type_name -> shale.HostJoin
+	134, // 120: shale.SatelliteJoinRequest.interfaces:type_name -> shale.HostInterface
+	15,  // 121: shale.SatelliteJoinResponse.answer:type_name -> shale.JoinAnswer
+	140, // 122: shale.SatelliteJoinResponse.keys:type_name -> shale.KeyEntry
+	51,  // 123: shale.SatelliteAdoptRequest.ref:type_name -> shale.SatelliteRef
+	147, // 124: shale.SatelliteHeartbeatRequest.status:type_name -> shale.SatelliteStatus
+	134, // 125: shale.SatelliteHeartbeatRequest.interfaces:type_name -> shale.HostInterface
+	69,  // 126: shale.SatelliteHeartbeatResponse.producers:type_name -> shale.SatelliteProducer
+	143, // 127: shale.SatelliteRouteResponse.endpoints:type_name -> shale.Endpoint
+	133, // 128: shale.SatelliteRouteResponse.date_expires:type_name -> google.protobuf.Timestamp
+	51,  // 129: shale.SatelliteAssignRequest.ref:type_name -> shale.SatelliteRef
+	47,  // 130: shale.SatelliteAssignRequest.producer:type_name -> shale.ProducerRef
+	146, // 131: shale.ProducerAddRequest.tenant:type_name -> shale.TenantRef
+	149, // 132: shale.ProducerAddRequest.site:type_name -> shale.SiteRef
+	125, // 133: shale.ProducerAddRequest.labels:type_name -> shale.ProducerAddRequest.LabelsEntry
+	150, // 134: shale.ProducerAddRequest.set:type_name -> shale.SetRef
+	131, // 135: shale.ProducerAddRequest.state:type_name -> shale.HostState
+	133, // 136: shale.ProducerAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	132, // 137: shale.ProducerAddRequest.join:type_name -> shale.HostJoin
+	133, // 138: shale.ProducerAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 139: shale.ProducerAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 140: shale.ProducerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	28,  // 141: shale.ProducerAddRequest.relay:type_name -> shale.RelayRef
+	151, // 142: shale.ProducerAddRequest.status:type_name -> shale.ProducerStatus
+	152, // 143: shale.ProducerAddRequest.live:type_name -> shale.LivePolicy
+	51,  // 144: shale.ProducerAddRequest.satellite:type_name -> shale.SatelliteRef
+	47,  // 145: shale.ProducerGetRequest.ref:type_name -> shale.ProducerRef
+	75,  // 146: shale.ProducerGetRequest.select:type_name -> shale.ProducerSelect
+	153, // 147: shale.ProducerSelect.tenant:type_name -> shale.TenantSelect
+	154, // 148: shale.ProducerSelect.site:type_name -> shale.SiteSelect
+	155, // 149: shale.ProducerSelect.set:type_name -> shale.SetSelect
+	29,  // 150: shale.ProducerSelect.relay:type_name -> shale.RelaySelect
+	52,  // 151: shale.ProducerSelect.satellite:type_name -> shale.SatelliteSelect
+	47,  // 152: shale.ProducerPatchRequest.ref:type_name -> shale.ProducerRef
+	149, // 153: shale.ProducerPatchRequest.site:type_name -> shale.SiteRef
+	126, // 154: shale.ProducerPatchRequest.labels:type_name -> shale.ProducerPatchRequest.LabelsEntry
+	150, // 155: shale.ProducerPatchRequest.set:type_name -> shale.SetRef
+	131, // 156: shale.ProducerPatchRequest.state:type_name -> shale.HostState
+	133, // 157: shale.ProducerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	132, // 158: shale.ProducerPatchRequest.join:type_name -> shale.HostJoin
+	133, // 159: shale.ProducerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 160: shale.ProducerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 161: shale.ProducerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	28,  // 162: shale.ProducerPatchRequest.relay:type_name -> shale.RelayRef
+	151, // 163: shale.ProducerPatchRequest.status:type_name -> shale.ProducerStatus
+	152, // 164: shale.ProducerPatchRequest.live:type_name -> shale.LivePolicy
+	51,  // 165: shale.ProducerPatchRequest.satellite:type_name -> shale.SatelliteRef
+	47,  // 166: shale.ProducerApplyRequest.ref:type_name -> shale.ProducerRef
+	136, // 167: shale.ProducerApplyRequest.patch:type_name -> patch.Patch
+	81,  // 168: shale.ProducerListRequest.filters:type_name -> shale.ProducerFilter
+	156, // 169: shale.ProducerListResponse.items:type_name -> shale.Producer
+	47,  // 170: shale.ProducerFilter.ref:type_name -> shale.ProducerRef
+	146, // 171: shale.ProducerFilter.tenant:type_name -> shale.TenantRef
+	150, // 172: shale.ProducerFilter.set:type_name -> shale.SetRef
+	149, // 173: shale.ProducerFilter.site:type_name -> shale.SiteRef
+	127, // 174: shale.ProducerFilter.labels:type_name -> shale.ProducerFilter.LabelsEntry
+	81,  // 175: shale.ProducerWatchRequest.filters:type_name -> shale.ProducerFilter
+	84,  // 176: shale.ProducerWatchResponse.items:type_name -> shale.ProducerWatchItem
+	156, // 177: shale.ProducerWatchItem.value:type_name -> shale.Producer
+	132, // 178: shale.ProducerJoinRequest.host:type_name -> shale.HostJoin
+	15,  // 179: shale.ProducerJoinResponse.answer:type_name -> shale.JoinAnswer
+	47,  // 180: shale.ProducerAdoptRequest.ref:type_name -> shale.ProducerRef
+	150, // 181: shale.ProducerAdoptRequest.set:type_name -> shale.SetRef
+	157, // 182: shale.ProducerHeartbeatRequest.sources:type_name -> shale.SourceReport
+	158, // 183: shale.ProducerHeartbeatRequest.load:type_name -> shale.HostLoad
+	159, // 184: shale.ProducerHeartbeatRequest.admission:type_name -> shale.AdmissionWait
+	160, // 185: shale.ProducerHeartbeatRequest.upload:type_name -> shale.UploadReport
+	161, // 186: shale.ProducerHeartbeatResponse.relay:type_name -> shale.RelayAssignment
+	92,  // 187: shale.ProducerHeartbeatResponse.suggestions:type_name -> shale.Suggestion
+	162, // 188: shale.ProducerHeartbeatResponse.satellite:type_name -> shale.SatelliteAssignment
+	161, // 189: shale.ProducerRelayResponse.relay:type_name -> shale.RelayAssignment
+	146, // 190: shale.ReaderAddRequest.tenant:type_name -> shale.TenantRef
+	128, // 191: shale.ReaderAddRequest.labels:type_name -> shale.ReaderAddRequest.LabelsEntry
+	131, // 192: shale.ReaderAddRequest.state:type_name -> shale.HostState
+	132, // 193: shale.ReaderAddRequest.join:type_name -> shale.HostJoin
+	133, // 194: shale.ReaderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	133, // 195: shale.ReaderAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 196: shale.ReaderAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 197: shale.ReaderAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	97,  // 198: shale.ReaderGetRequest.ref:type_name -> shale.ReaderRef
+	99,  // 199: shale.ReaderGetRequest.select:type_name -> shale.ReaderSelect
+	98,  // 200: shale.ReaderRef.slug:type_name -> shale.ReaderRefBySlug
+	146, // 201: shale.ReaderRefBySlug.tenant:type_name -> shale.TenantRef
+	153, // 202: shale.ReaderSelect.tenant:type_name -> shale.TenantSelect
+	97,  // 203: shale.ReaderPatchRequest.ref:type_name -> shale.ReaderRef
+	129, // 204: shale.ReaderPatchRequest.labels:type_name -> shale.ReaderPatchRequest.LabelsEntry
+	131, // 205: shale.ReaderPatchRequest.state:type_name -> shale.HostState
+	132, // 206: shale.ReaderPatchRequest.join:type_name -> shale.HostJoin
+	133, // 207: shale.ReaderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	133, // 208: shale.ReaderPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	133, // 209: shale.ReaderPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	133, // 210: shale.ReaderPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	97,  // 211: shale.ReaderApplyRequest.ref:type_name -> shale.ReaderRef
+	136, // 212: shale.ReaderApplyRequest.patch:type_name -> patch.Patch
+	105, // 213: shale.ReaderListRequest.filters:type_name -> shale.ReaderFilter
+	163, // 214: shale.ReaderListResponse.items:type_name -> shale.Reader
+	97,  // 215: shale.ReaderFilter.ref:type_name -> shale.ReaderRef
+	146, // 216: shale.ReaderFilter.tenant:type_name -> shale.TenantRef
+	130, // 217: shale.ReaderFilter.labels:type_name -> shale.ReaderFilter.LabelsEntry
+	105, // 218: shale.ReaderWatchRequest.filters:type_name -> shale.ReaderFilter
+	108, // 219: shale.ReaderWatchResponse.items:type_name -> shale.ReaderWatchItem
+	163, // 220: shale.ReaderWatchItem.value:type_name -> shale.Reader
+	132, // 221: shale.ReaderJoinRequest.host:type_name -> shale.HostJoin
+	15,  // 222: shale.ReaderJoinResponse.answer:type_name -> shale.JoinAnswer
+	97,  // 223: shale.ReaderAdoptRequest.ref:type_name -> shale.ReaderRef
+	149, // 224: shale.ReaderAdoptRequest.sites:type_name -> shale.SiteRef
+	0,   // 225: shale.NodeService.Add:input_type -> shale.NodeAddRequest
+	1,   // 226: shale.NodeService.Get:input_type -> shale.NodeGetRequest
+	4,   // 227: shale.NodeService.Patch:input_type -> shale.NodePatchRequest
+	5,   // 228: shale.NodeService.Apply:input_type -> shale.NodeApplyRequest
+	2,   // 229: shale.NodeService.Erase:input_type -> shale.NodeRef
+	7,   // 230: shale.NodeService.List:input_type -> shale.NodeListRequest
+	10,  // 231: shale.NodeService.Watch:input_type -> shale.NodeWatchRequest
+	13,  // 232: shale.NodeService.Join:input_type -> shale.NodeJoinRequest
+	16,  // 233: shale.NodeService.Adopt:input_type -> shale.NodeAdoptRequest
+	17,  // 234: shale.NodeService.RenewCertificate:input_type -> shale.NodeRenewCertificateRequest
+	19,  // 235: shale.NodeService.Heartbeat:input_type -> shale.NodeHeartbeatRequest
+	22,  // 236: shale.NodeService.PushEvents:input_type -> shale.NodePushEventsRequest
+	24,  // 237: shale.NodeService.Resolve:input_type -> shale.NodeResolveRequest
+	26,  // 238: shale.RelayService.Add:input_type -> shale.RelayAddRequest
+	27,  // 239: shale.RelayService.Get:input_type -> shale.RelayGetRequest
+	30,  // 240: shale.RelayService.Patch:input_type -> shale.RelayPatchRequest
+	31,  // 241: shale.RelayService.Apply:input_type -> shale.RelayApplyRequest
+	28,  // 242: shale.RelayService.Erase:input_type -> shale.RelayRef
+	33,  // 243: shale.RelayService.List:input_type -> shale.RelayListRequest
+	36,  // 244: shale.RelayService.Watch:input_type -> shale.RelayWatchRequest
+	39,  // 245: shale.RelayService.Join:input_type -> shale.RelayJoinRequest
+	41,  // 246: shale.RelayService.Adopt:input_type -> shale.RelayAdoptRequest
+	42,  // 247: shale.RelayService.RenewCertificate:input_type -> shale.RelayRenewCertificateRequest
+	44,  // 248: shale.RelayService.Heartbeat:input_type -> shale.RelayHeartbeatRequest
+	46,  // 249: shale.RelayService.Assign:input_type -> shale.RelayAssignRequest
+	49,  // 250: shale.SatelliteService.Add:input_type -> shale.SatelliteAddRequest
+	50,  // 251: shale.SatelliteService.Get:input_type -> shale.SatelliteGetRequest
+	53,  // 252: shale.SatelliteService.Patch:input_type -> shale.SatellitePatchRequest
+	54,  // 253: shale.SatelliteService.Apply:input_type -> shale.SatelliteApplyRequest
+	51,  // 254: shale.SatelliteService.Erase:input_type -> shale.SatelliteRef
+	56,  // 255: shale.SatelliteService.List:input_type -> shale.SatelliteListRequest
+	59,  // 256: shale.SatelliteService.Watch:input_type -> shale.SatelliteWatchRequest
+	62,  // 257: shale.SatelliteService.Join:input_type -> shale.SatelliteJoinRequest
+	64,  // 258: shale.SatelliteService.Adopt:input_type -> shale.SatelliteAdoptRequest
+	65,  // 259: shale.SatelliteService.RenewCertificate:input_type -> shale.SatelliteRenewCertificateRequest
+	67,  // 260: shale.SatelliteService.Heartbeat:input_type -> shale.SatelliteHeartbeatRequest
+	70,  // 261: shale.SatelliteService.Route:input_type -> shale.SatelliteRouteRequest
+	72,  // 262: shale.SatelliteService.Assign:input_type -> shale.SatelliteAssignRequest
+	73,  // 263: shale.ProducerService.Add:input_type -> shale.ProducerAddRequest
+	74,  // 264: shale.ProducerService.Get:input_type -> shale.ProducerGetRequest
+	76,  // 265: shale.ProducerService.Patch:input_type -> shale.ProducerPatchRequest
+	77,  // 266: shale.ProducerService.Apply:input_type -> shale.ProducerApplyRequest
+	47,  // 267: shale.ProducerService.Erase:input_type -> shale.ProducerRef
+	79,  // 268: shale.ProducerService.List:input_type -> shale.ProducerListRequest
+	82,  // 269: shale.ProducerService.Watch:input_type -> shale.ProducerWatchRequest
+	85,  // 270: shale.ProducerService.Join:input_type -> shale.ProducerJoinRequest
+	87,  // 271: shale.ProducerService.Adopt:input_type -> shale.ProducerAdoptRequest
+	88,  // 272: shale.ProducerService.RenewCertificate:input_type -> shale.ProducerRenewCertificateRequest
+	90,  // 273: shale.ProducerService.Heartbeat:input_type -> shale.ProducerHeartbeatRequest
+	93,  // 274: shale.ProducerService.Relay:input_type -> shale.ProducerRelayRequest
+	95,  // 275: shale.ReaderService.Add:input_type -> shale.ReaderAddRequest
+	96,  // 276: shale.ReaderService.Get:input_type -> shale.ReaderGetRequest
+	100, // 277: shale.ReaderService.Patch:input_type -> shale.ReaderPatchRequest
+	101, // 278: shale.ReaderService.Apply:input_type -> shale.ReaderApplyRequest
+	97,  // 279: shale.ReaderService.Erase:input_type -> shale.ReaderRef
+	103, // 280: shale.ReaderService.List:input_type -> shale.ReaderListRequest
+	106, // 281: shale.ReaderService.Watch:input_type -> shale.ReaderWatchRequest
+	109, // 282: shale.ReaderService.Join:input_type -> shale.ReaderJoinRequest
+	111, // 283: shale.ReaderService.Adopt:input_type -> shale.ReaderAdoptRequest
+	112, // 284: shale.ReaderService.RenewCertificate:input_type -> shale.ReaderRenewCertificateRequest
+	114, // 285: shale.ReaderService.Heartbeat:input_type -> shale.ReaderHeartbeatRequest
+	137, // 286: shale.NodeService.Add:output_type -> shale.Node
+	137, // 287: shale.NodeService.Get:output_type -> shale.Node
+	137, // 288: shale.NodeService.Patch:output_type -> shale.Node
+	137, // 289: shale.NodeService.Apply:output_type -> shale.Node
+	6,   // 290: shale.NodeService.Erase:output_type -> shale.NodeEraseResponse
+	8,   // 291: shale.NodeService.List:output_type -> shale.NodeListResponse
+	11,  // 292: shale.NodeService.Watch:output_type -> shale.NodeWatchResponse
+	14,  // 293: shale.NodeService.Join:output_type -> shale.NodeJoinResponse
+	137, // 294: shale.NodeService.Adopt:output_type -> shale.Node
+	18,  // 295: shale.NodeService.RenewCertificate:output_type -> shale.NodeRenewCertificateResponse
+	20,  // 296: shale.NodeService.Heartbeat:output_type -> shale.NodeHeartbeatResponse
+	23,  // 297: shale.NodeService.PushEvents:output_type -> shale.NodePushEventsResponse
+	25,  // 298: shale.NodeService.Resolve:output_type -> shale.NodeResolveResponse
+	145, // 299: shale.RelayService.Add:output_type -> shale.Relay
+	145, // 300: shale.RelayService.Get:output_type -> shale.Relay
+	145, // 301: shale.RelayService.Patch:output_type -> shale.Relay
+	145, // 302: shale.RelayService.Apply:output_type -> shale.Relay
+	32,  // 303: shale.RelayService.Erase:output_type -> shale.RelayEraseResponse
+	34,  // 304: shale.RelayService.List:output_type -> shale.RelayListResponse
+	37,  // 305: shale.RelayService.Watch:output_type -> shale.RelayWatchResponse
+	40,  // 306: shale.RelayService.Join:output_type -> shale.RelayJoinResponse
+	145, // 307: shale.RelayService.Adopt:output_type -> shale.Relay
+	43,  // 308: shale.RelayService.RenewCertificate:output_type -> shale.RelayRenewCertificateResponse
+	45,  // 309: shale.RelayService.Heartbeat:output_type -> shale.RelayHeartbeatResponse
+	145, // 310: shale.RelayService.Assign:output_type -> shale.Relay
+	148, // 311: shale.SatelliteService.Add:output_type -> shale.Satellite
+	148, // 312: shale.SatelliteService.Get:output_type -> shale.Satellite
+	148, // 313: shale.SatelliteService.Patch:output_type -> shale.Satellite
+	148, // 314: shale.SatelliteService.Apply:output_type -> shale.Satellite
+	55,  // 315: shale.SatelliteService.Erase:output_type -> shale.SatelliteEraseResponse
+	57,  // 316: shale.SatelliteService.List:output_type -> shale.SatelliteListResponse
+	60,  // 317: shale.SatelliteService.Watch:output_type -> shale.SatelliteWatchResponse
+	63,  // 318: shale.SatelliteService.Join:output_type -> shale.SatelliteJoinResponse
+	148, // 319: shale.SatelliteService.Adopt:output_type -> shale.Satellite
+	66,  // 320: shale.SatelliteService.RenewCertificate:output_type -> shale.SatelliteRenewCertificateResponse
+	68,  // 321: shale.SatelliteService.Heartbeat:output_type -> shale.SatelliteHeartbeatResponse
+	71,  // 322: shale.SatelliteService.Route:output_type -> shale.SatelliteRouteResponse
+	148, // 323: shale.SatelliteService.Assign:output_type -> shale.Satellite
+	156, // 324: shale.ProducerService.Add:output_type -> shale.Producer
+	156, // 325: shale.ProducerService.Get:output_type -> shale.Producer
+	156, // 326: shale.ProducerService.Patch:output_type -> shale.Producer
+	156, // 327: shale.ProducerService.Apply:output_type -> shale.Producer
+	78,  // 328: shale.ProducerService.Erase:output_type -> shale.ProducerEraseResponse
+	80,  // 329: shale.ProducerService.List:output_type -> shale.ProducerListResponse
+	83,  // 330: shale.ProducerService.Watch:output_type -> shale.ProducerWatchResponse
+	86,  // 331: shale.ProducerService.Join:output_type -> shale.ProducerJoinResponse
+	156, // 332: shale.ProducerService.Adopt:output_type -> shale.Producer
+	89,  // 333: shale.ProducerService.RenewCertificate:output_type -> shale.ProducerRenewCertificateResponse
+	91,  // 334: shale.ProducerService.Heartbeat:output_type -> shale.ProducerHeartbeatResponse
+	94,  // 335: shale.ProducerService.Relay:output_type -> shale.ProducerRelayResponse
+	163, // 336: shale.ReaderService.Add:output_type -> shale.Reader
+	163, // 337: shale.ReaderService.Get:output_type -> shale.Reader
+	163, // 338: shale.ReaderService.Patch:output_type -> shale.Reader
+	163, // 339: shale.ReaderService.Apply:output_type -> shale.Reader
+	102, // 340: shale.ReaderService.Erase:output_type -> shale.ReaderEraseResponse
+	104, // 341: shale.ReaderService.List:output_type -> shale.ReaderListResponse
+	107, // 342: shale.ReaderService.Watch:output_type -> shale.ReaderWatchResponse
+	110, // 343: shale.ReaderService.Join:output_type -> shale.ReaderJoinResponse
+	163, // 344: shale.ReaderService.Adopt:output_type -> shale.Reader
+	113, // 345: shale.ReaderService.RenewCertificate:output_type -> shale.ReaderRenewCertificateResponse
+	115, // 346: shale.ReaderService.Heartbeat:output_type -> shale.ReaderHeartbeatResponse
+	286, // [286:347] is the sub-list for method output_type
+	225, // [225:286] is the sub-list for method input_type
+	225, // [225:225] is the sub-list for extension type_name
+	225, // [225:225] is the sub-list for extension extendee
+	0,   // [0:225] is the sub-list for field type_name
 }
 
 func init() { file_shale_host_svc_g_proto_init() }
@@ -17060,7 +21376,11 @@ func file_shale_host_svc_g_proto_init() {
 		(*producerRef_Id)(nil),
 		(*producerRef_Slug)(nil),
 	}
-	file_shale_host_svc_g_proto_msgTypes[73].OneofWrappers = []any{
+	file_shale_host_svc_g_proto_msgTypes[51].OneofWrappers = []any{
+		(*satelliteRef_Id)(nil),
+		(*satelliteRef_Alias)(nil),
+	}
+	file_shale_host_svc_g_proto_msgTypes[97].OneofWrappers = []any{
 		(*readerRef_Id)(nil),
 		(*readerRef_Slug)(nil),
 	}
@@ -17070,9 +21390,9 @@ func file_shale_host_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_host_svc_g_proto_rawDesc), len(file_shale_host_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   104,
+			NumMessages:   131,
 			NumExtensions: 0,
-			NumServices:   4,
+			NumServices:   5,
 		},
 		GoTypes:           file_shale_host_svc_g_proto_goTypes,
 		DependencyIndexes: file_shale_host_svc_g_proto_depIdxs,

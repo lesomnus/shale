@@ -696,14 +696,15 @@ export const CertificateAuthorityStatusResponseSchema: GenMessage<CertificateAut
  */
 export type CertificateAuthorityWaiting = Message<"shale.CertificateAuthorityWaiting"> & {
   /**
-   * The host's row: a Node, Relay, Producer, Reader, or CameraWorker.
+   * The host's row: a Node, Relay, Satellite, Producer, Reader, or
+   * CameraWorker.
    *
    * @generated from field: bytes id = 1 [features.field_presence = IMPLICIT];
    */
   id: Uint8Array;
 
   /**
-   * node, relay, producer, reader, or camera-worker.
+   * node, relay, satellite, producer, reader, or camera-worker.
    *
    * @generated from field: string kind = 2 [features.field_presence = IMPLICIT];
    */

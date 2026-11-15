@@ -88,6 +88,46 @@ service RelayService {
   rpc Assign(RelayAssignRequest) returns (Relay);
 }
 
+service SatelliteService {
+  // Add creates a new Satellite
+  rpc Add(SatelliteAddRequest) returns (Satellite);
+  // Get retrieves a Satellite
+  rpc Get(SatelliteGetRequest) returns (Satellite);
+  // Patch updates an existing Satellite
+  rpc Patch(SatellitePatchRequest) returns (Satellite);
+  // Apply applies a patch document to an existing Satellite
+  rpc Apply(SatelliteApplyRequest) returns (Satellite);
+  // Erase deletes a Satellite
+  rpc Erase(SatelliteRef) returns (SatelliteEraseResponse);
+  // List reads Satellites a page at a time.
+  rpc List(SatelliteListRequest) returns (SatelliteListResponse);
+  // Watch the Satellites this caller may see, as they are now and as they change.
+  //
+  // What arrives is **state and never a delta**, so a client converges rather
+  // than replays: it keeps what it was last told about a row and replaces it.
+  // An event it did not receive is one it does not need, since the next one
+  // about that row carries the whole of it.
+  //
+  // The first message is everything that matches right now, so a client does
+  // not have to List first and race the subscription. A row may arrive twice --
+  // once in that first message and once as a change that happened while it was
+  // being read -- and that is harmless for the same reason.
+  rpc Watch(SatelliteWatchRequest) returns (stream SatelliteWatchResponse);
+  rpc Join(SatelliteJoinRequest) returns (SatelliteJoinResponse);
+  rpc Adopt(SatelliteAdoptRequest) returns (Satellite);
+  rpc RenewCertificate(SatelliteRenewCertificateRequest) returns (SatelliteRenewCertificateResponse);
+  // Memory, uploads and load in; the producers assigned to it out, which
+  // are the only callers it serves (§41.3).
+  rpc Heartbeat(SatelliteHeartbeatRequest) returns (SatelliteHeartbeatResponse);
+  // A node's data plane as the address resolver gives it for the
+  // satellite's own network (§34.10): where it forwards what a token names
+  // for that node, and nowhere else (§41.3).
+  rpc Route(SatelliteRouteRequest) returns (SatelliteRouteResponse);
+  // An operator moves a producer to a satellite; the assignment stays
+  // sticky while the satellite is alive (§41.2).
+  rpc Assign(SatelliteAssignRequest) returns (Satellite);
+}
+
 service ProducerService {
   // Add creates a new Producer
   rpc Add(ProducerAddRequest) returns (Producer);
@@ -778,6 +818,295 @@ message ProducerRefBySlug {
   TenantRef tenant = 2;
 }
 
+message SatelliteAddRequest {
+  bytes id = 1;
+  string alias = 4 [features.field_presence = IMPLICIT];
+  string name = 5 [features.field_presence = IMPLICIT];
+  string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
+  string hardware_id = 8 [features.field_presence = IMPLICIT];
+  string hostname = 9 [features.field_presence = IMPLICIT];
+  HostState state = 10 [features.field_presence = IMPLICIT];
+  string cert_serial = 11 [features.field_presence = IMPLICIT];
+  HostJoin join = 12;
+  google.protobuf.Timestamp date_created = 15;
+  google.protobuf.Timestamp date_adopted = 16;
+  google.protobuf.Timestamp date_seen = 17;
+  google.protobuf.Timestamp date_cert_expires = 18;
+  repeated HostInterface interfaces = 19;
+  repeated string key_ids = 20;
+  string ca_hash = 21 [features.field_presence = IMPLICIT];
+  string version = 22 [features.field_presence = IMPLICIT];
+  string upload_address = 23 [features.field_presence = IMPLICIT];
+  SatelliteStatus status = 24;
+}
+
+message SatelliteGetRequest {
+  SatelliteRef ref = 1;
+  SatelliteSelect select = 2;
+}
+
+message SatelliteRef {
+  oneof key {
+    bytes id = 1;
+    string alias = 4;
+  }
+}
+
+message SatelliteSelect {
+  bool all = 1;
+  bool alias = 4;
+  bool name = 5;
+  bool desc = 6;
+  bool labels = 7;
+  bool hardware_id = 8;
+  bool hostname = 9;
+  bool state = 10;
+  bool cert_serial = 11;
+  bool join = 12;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+  bool date_adopted = 16;
+  bool date_seen = 17;
+  bool date_cert_expires = 18;
+  bool interfaces = 19;
+  bool key_ids = 20;
+  bool ca_hash = 21;
+  bool version = 22;
+  bool upload_address = 23;
+  bool status = 24;
+}
+
+message SatellitePatchRequest {
+  SatelliteRef ref = 1;
+  string alias = 8;
+  string name = 10;
+  string desc = 12;
+  map<string, string> labels = 14;
+  string hardware_id = 16;
+  string hostname = 18;
+  HostState state = 20;
+  string cert_serial = 22;
+  HostJoin join = 24;
+  // Clear join instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and join clears.
+  bool join_null = 25;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+  google.protobuf.Timestamp date_adopted = 32;
+  // Clear date_adopted instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_adopted clears.
+  bool date_adopted_null = 33;
+  google.protobuf.Timestamp date_seen = 34;
+  // Clear date_seen instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_seen clears.
+  bool date_seen_null = 35;
+  google.protobuf.Timestamp date_cert_expires = 36;
+  // Clear date_cert_expires instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_cert_expires clears.
+  bool date_cert_expires_null = 37;
+  repeated HostInterface interfaces = 38;
+  repeated string key_ids = 40;
+  string ca_hash = 42;
+  string version = 44;
+  string upload_address = 46;
+  SatelliteStatus status = 48;
+  // Clear status instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and status clears.
+  bool status_null = 49;
+}
+
+message SatelliteApplyRequest {
+  SatelliteRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message SatelliteEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message SatelliteListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated SatelliteFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteListResponse {
+  repeated Satellite items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteFilter {
+  SatelliteRef ref = 1;
+  map<string, string> labels = 2;
+}
+
+message SatelliteWatchRequest {
+  // Which rows to watch, in the same words List takes them: what is watched is
+  // what that list would answer with, now and afterwards.
+  //
+  // Required, and bounded the way a List is -- for a heavier reason. A list
+  // runs its filters once; a watch runs them again for every write that touches
+  // the entity, for as long as the stream is open. A watch with no filters is
+  // the whole table, forever, which is the one shape that has no cap at all.
+  repeated SatelliteFilter filters = 1;
+
+  // Skip what is there now and send only what changes from here.
+  //
+  // Off by default, and the default is the safe one: a client that does not
+  // know the current state and did not ask for it holds something wrong until
+  // the next write happens to correct it.
+  bool skip_snapshot = 2 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteWatchResponse {
+  // What changed, or -- in the first message -- everything that matches.
+  repeated SatelliteWatchItem items = 1;
+}
+
+message SatelliteWatchItem {
+  // Which row. Always said, since one that is gone still has to be named.
+  bytes id = 1;
+
+  // The row as it is now, and **absent when it is no longer one this caller may
+  // see**: erased, or moved out of the filters this stream named.
+  //
+  // Absence is the whole of how a removal is said. There is no flag for it, and
+  // there is deliberately no way to tell those two apart -- a stream that
+  // distinguished "erased" from "no longer yours" would be telling a caller
+  // about rows that stopped being theirs, which is the thing the wall is for.
+  //
+  // It is only ever said about a row this stream has already carried. One that
+  // never matched is not news.
+  Satellite value = 2;
+
+  // The RPC that changed it, by the name gRPC knows it by. It is what the
+  // caller of *that* RPC asked for and not the write it became, so an RPC
+  // written by hand is here under its own name.
+  //
+  // Empty in the first message, which is not something anybody asked for -- it
+  // is what is already there.
+  string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteJoinRequest {
+  HostJoin host = 1;
+  repeated HostInterface interfaces = 2;
+  string upload_address = 3 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteJoinResponse {
+  JoinAnswer answer = 1;
+  repeated KeyEntry keys = 2;
+}
+
+message SatelliteAdoptRequest {
+  SatelliteRef ref = 1;
+  string alias = 2 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteRenewCertificateRequest {
+  bytes csr = 1 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteRenewCertificateResponse {
+  bytes certificate = 1 [features.field_presence = IMPLICIT];
+  bytes ca_bundle = 2 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteHeartbeatRequest {
+  string cert_serial = 1 [features.field_presence = IMPLICIT];
+  string ca_hash = 2 [features.field_presence = IMPLICIT];
+  repeated string key_ids = 3;
+  SatelliteStatus status = 4;
+  repeated HostInterface interfaces = 5;
+  string upload_address = 6 [features.field_presence = IMPLICIT];
+  string version = 7 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteHeartbeatResponse {
+  bool renew_certificate = 1 [features.field_presence = IMPLICIT];
+  // Every adopted producer assigned to this satellite; the whole list each
+  // time, which replaces the last.
+  repeated SatelliteProducer producers = 2;
+}
+
+// SatelliteProducer is one producer a satellite serves (§41.3): an mTLS
+// caller is that producer when its certificate names it and carries this
+// serial, as the CP checks its own callers (§33.4).
+message SatelliteProducer {
+  bytes producer_id = 1 [features.field_presence = IMPLICIT];
+  string cert_serial = 2 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteRouteRequest {
+  bytes node_id = 1 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteRouteResponse {
+  repeated Endpoint endpoints = 1;
+  // Until when the satellite may use these without asking again.
+  google.protobuf.Timestamp date_expires = 2;
+}
+
+message SatelliteAssignRequest {
+  SatelliteRef ref = 1;
+  ProducerRef producer = 2;
+}
+
 message ProducerAddRequest {
   bytes id = 1;
   TenantRef tenant = 2;
@@ -801,6 +1130,7 @@ message ProducerAddRequest {
   string version = 22 [features.field_presence = IMPLICIT];
   LivePolicy live = 23;
   string ca_hash = 24;
+  SatelliteRef satellite = 25;
 }
 
 message ProducerGetRequest {
@@ -833,6 +1163,7 @@ message ProducerSelect {
   bool version = 22;
   bool live = 23;
   bool ca_hash = 24;
+  SatelliteSelect satellite = 25;
 }
 
 message ProducerPatchRequest {
@@ -910,6 +1241,12 @@ message ProducerPatchRequest {
   string version = 44;
   LivePolicy live = 46;
   string ca_hash = 48;
+  SatelliteRef satellite = 50;
+  // Clear satellite instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and satellite clears.
+  bool satellite_null = 51;
 }
 
 message ProducerApplyRequest {
@@ -1057,6 +1394,10 @@ message ProducerHeartbeatRequest {
   // declares none: the CP keeps the raises auto_raise applies inside it
   // (§38.5).
   int64 uplink = 7 [features.field_presence = IMPLICIT];
+  // The path its uploads take (§41.5): a producer whose `via` is
+  // `satellite` or `auto` is assigned a satellite, and one that says
+  // nothing, or `direct`, is not.
+  UploadReport upload = 8;
 }
 
 message ProducerHeartbeatResponse {
@@ -1065,6 +1406,9 @@ message ProducerHeartbeatResponse {
   repeated Suggestion suggestions = 3;
   // Renew the certificate now.
   bool renew_certificate = 4 [features.field_presence = IMPLICIT];
+  // The satellite it uploads through when its `upload_via` says so
+  // (§41.2); absent when none is available.
+  SatelliteAssignment satellite = 5;
 }
 
 // Suggestion is a ceiling the CP suggests raising (§38.5). `applied` says

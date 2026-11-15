@@ -174,6 +174,31 @@ message RelayAssignment {
   LivePolicy live = 5;
 }
 
+// SatelliteAssignment is the satellite a producer uploads through (§41.2):
+// its upload listener resolved for the producer's network, and until when
+// the assignment holds without being answered again.
+message SatelliteAssignment {
+  bytes satellite_id = 1;
+  repeated Endpoint endpoints = 2;
+  google.protobuf.Timestamp date_expires = 3;
+}
+
+// UploadReport is how a producer's uploads went since its last heartbeat
+// (§41.5): the path its configuration asks for, and the requests that took
+// each path.
+message UploadReport {
+  // `direct`, `satellite` or `auto`, as configured.
+  string via = 1;
+  // The satellite the producer holds an assignment to; empty when none.
+  bytes satellite_id = 2;
+  // Requests sent through the satellite, and directly to a node.
+  int64 through_satellite = 3;
+  int64 direct = 4;
+  // Times the satellite failed and the producer went to the node directly
+  // for a while (`auto`).
+  int64 fallbacks = 5;
+}
+
 // LivePolicy is whether a producer's cameras are on the relay at all times
 // or only while someone watches (§39.3). Unspecified reads as `always`.
 enum LivePolicy {
@@ -260,6 +285,9 @@ message ProducerStatus {
   // Why cameras its catalog names are not recording yet, as of
   // date_reported; absent when none are waiting (§38.5).
   AdmissionWait admission = 4;
+  // The path its uploads take (§41.5); absent from a producer that does
+  // not say.
+  UploadReport upload = 5;
 }
 
 // AdmissionWait is why a producer has not taken up cameras its catalog
@@ -397,6 +425,28 @@ message RelayStatus {
   // them (§39.5).
   int64 rewind_bytes = 9;
   int64 rewind_budget = 10;
+}
+
+// SatelliteStatus is the last heartbeat the CP kept on a satellite row
+// (§41.4). Its memory is one budget in pools; the CP prefers a satellite
+// whose in-flight pool has room when it assigns producers (§41.2).
+message SatelliteStatus {
+  google.protobuf.Timestamp date_reported = 1;
+  // The in-flight pool: the buffers of the requests passing through under
+  // `retain: committed` and `written`, and what bounds them.
+  int64 in_flight_bytes = 2;
+  int64 in_flight_budget = 3;
+  // Requests passing through now.
+  int32 uploads = 4;
+  // Producers assigned to it, as it was last told.
+  int32 producers = 5;
+  // Bytes forwarded to nodes since it started, and requests refused for
+  // want of room.
+  int64 forwarded_bytes = 6;
+  int64 refused = 7;
+  HostLoad load = 8;
+  // 9 and 10 are kept for the retained pool of `retain: accepted`
+  // (§41.8), which is not built yet.
 }
 
 // RecordState is the upload state a lamina file's xattr records (§23.1).

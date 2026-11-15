@@ -37,6 +37,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
 	"github.com/lesomnus/shale/internal/ent/rowseal"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/signingkey"
 	"github.com/lesomnus/shale/internal/ent/sink"
@@ -136,6 +137,7 @@ func checkColumn(t, c string) error {
 			reader.Table:                  reader.ValidColumn,
 			relay.Table:                   relay.ValidColumn,
 			rowseal.Table:                 rowseal.ValidColumn,
+			satellite.Table:               satellite.ValidColumn,
 			set.Table:                     set.ValidColumn,
 			signingkey.Table:              signingkey.ValidColumn,
 			sink.Table:                    sink.ValidColumn,

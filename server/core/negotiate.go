@@ -396,6 +396,13 @@ func (s coreSet) Negotiate(ctx context.Context, req *api.SetNegotiateRequest) (*
 		if ra, err := s.relayAssignment(ctx, f.Actor, set); err == nil && ra != nil {
 			resp.SetRelay(ra)
 		}
+		// Only a producer that asks; one that stopped asking is let go by
+		// its next heartbeat (§41.2).
+		if req.GetSatellite() {
+			if sa, err := s.satelliteAssignment(ctx, f.Actor, set, true); err == nil && sa != nil {
+				resp.SetSatellite(sa)
+			}
+		}
 	}
 
 	return resp, nil

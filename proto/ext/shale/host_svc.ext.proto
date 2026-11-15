@@ -2,6 +2,7 @@ edition = "2023";
 
 package shale;
 
+import "google/protobuf/timestamp.proto";
 import "shale/common.proto";
 import "shale/host.proto";
 import "shale/set_svc.g.proto";
@@ -10,8 +11,8 @@ import "shale/storage.proto";
 
 option go_package = "github.com/lesomnus/shale/api";
 
-// What Shale adds to the generated contracts of the four hosts (§35.4,
-// §35.5): joining and adoption, certificates, heartbeats, events.
+// What Shale adds to the generated contracts of the hosts (§35.4, §35.5):
+// joining and adoption, certificates, heartbeats, events.
 
 service ProducerService {
   // Called without a credential by a host on its first run, and polled until
@@ -63,6 +64,22 @@ service RelayService {
   rpc Heartbeat(RelayHeartbeatRequest) returns (RelayHeartbeatResponse);
   // An operator moves a producer to a relay; the assignment stays sticky.
   rpc Assign(RelayAssignRequest) returns (Relay);
+}
+
+service SatelliteService {
+  rpc Join(SatelliteJoinRequest) returns (SatelliteJoinResponse);
+  rpc Adopt(SatelliteAdoptRequest) returns (Satellite);
+  rpc RenewCertificate(SatelliteRenewCertificateRequest) returns (SatelliteRenewCertificateResponse);
+  // Memory, uploads and load in; the producers assigned to it out, which
+  // are the only callers it serves (§41.3).
+  rpc Heartbeat(SatelliteHeartbeatRequest) returns (SatelliteHeartbeatResponse);
+  // A node's data plane as the address resolver gives it for the
+  // satellite's own network (§34.10): where it forwards what a token names
+  // for that node, and nowhere else (§41.3).
+  rpc Route(SatelliteRouteRequest) returns (SatelliteRouteResponse);
+  // An operator moves a producer to a satellite; the assignment stays
+  // sticky while the satellite is alive (§41.2).
+  rpc Assign(SatelliteAssignRequest) returns (Satellite);
 }
 
 // JoinAnswer is what every host's Join answers: pending, or adopted with the
@@ -119,6 +136,10 @@ message ProducerHeartbeatRequest {
   // declares none: the CP keeps the raises auto_raise applies inside it
   // (§38.5).
   int64 uplink = 7 [features.field_presence = IMPLICIT];
+  // The path its uploads take (§41.5): a producer whose `via` is
+  // `satellite` or `auto` is assigned a satellite, and one that says
+  // nothing, or `direct`, is not.
+  UploadReport upload = 8;
 }
 
 // Suggestion is a ceiling the CP suggests raising (§38.5). `applied` says
@@ -138,6 +159,9 @@ message ProducerHeartbeatResponse {
   repeated Suggestion suggestions = 3;
   // Renew the certificate now.
   bool renew_certificate = 4 [features.field_presence = IMPLICIT];
+  // The satellite it uploads through when its `upload_via` says so
+  // (§41.2); absent when none is available.
+  SatelliteAssignment satellite = 5;
 }
 
 message ProducerRelayRequest {}
@@ -303,5 +327,70 @@ message RelayHeartbeatResponse {
 
 message RelayAssignRequest {
   RelayRef ref = 1;
+  ProducerRef producer = 2;
+}
+
+message SatelliteJoinRequest {
+  HostJoin host = 1;
+  repeated HostInterface interfaces = 2;
+  string upload_address = 3 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteJoinResponse {
+  JoinAnswer answer = 1;
+  repeated KeyEntry keys = 2;
+}
+
+message SatelliteAdoptRequest {
+  SatelliteRef ref = 1;
+  string alias = 2 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteRenewCertificateRequest {
+  bytes csr = 1 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteRenewCertificateResponse {
+  bytes certificate = 1 [features.field_presence = IMPLICIT];
+  bytes ca_bundle = 2 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteHeartbeatRequest {
+  string cert_serial = 1 [features.field_presence = IMPLICIT];
+  string ca_hash = 2 [features.field_presence = IMPLICIT];
+  repeated string key_ids = 3;
+  SatelliteStatus status = 4;
+  repeated HostInterface interfaces = 5;
+  string upload_address = 6 [features.field_presence = IMPLICIT];
+  string version = 7 [features.field_presence = IMPLICIT];
+}
+
+// SatelliteProducer is one producer a satellite serves (§41.3): an mTLS
+// caller is that producer when its certificate names it and carries this
+// serial, as the CP checks its own callers (§33.4).
+message SatelliteProducer {
+  bytes producer_id = 1 [features.field_presence = IMPLICIT];
+  string cert_serial = 2 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteHeartbeatResponse {
+  bool renew_certificate = 1 [features.field_presence = IMPLICIT];
+  // Every adopted producer assigned to this satellite; the whole list each
+  // time, which replaces the last.
+  repeated SatelliteProducer producers = 2;
+}
+
+message SatelliteRouteRequest {
+  bytes node_id = 1 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteRouteResponse {
+  repeated Endpoint endpoints = 1;
+  // Until when the satellite may use these without asking again.
+  google.protobuf.Timestamp date_expires = 2;
+}
+
+message SatelliteAssignRequest {
+  SatelliteRef ref = 1;
   ProducerRef producer = 2;
 }

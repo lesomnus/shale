@@ -1037,6 +1037,464 @@ func (b0 Relay_builder) Build() *Relay {
 	return m0
 }
 
+// Satellite is the host producers upload through (§41): it speaks a
+// Storage Node's upload protocol to them and forwards each request to the
+// node its put token names. Cluster infrastructure, outside the wall, and
+// trusted like a node: it sees the bytes and carries the tokens. It is not
+// a placement target; allocations and the index name the real node.
+type Satellite struct {
+	state                      protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id              []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias           string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name            string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc            string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels          map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_HardwareId      string                 `protobuf:"bytes,8,opt,name=hardware_id,json=hardwareId"`
+	xxx_hidden_Hostname        string                 `protobuf:"bytes,9,opt,name=hostname"`
+	xxx_hidden_State           HostState              `protobuf:"varint,10,opt,name=state,enum=shale.HostState"`
+	xxx_hidden_CertSerial      string                 `protobuf:"bytes,11,opt,name=cert_serial,json=certSerial"`
+	xxx_hidden_Join            *HostJoin              `protobuf:"bytes,12,opt,name=join"`
+	xxx_hidden_DateUpdated     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased      *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated     *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_DateAdopted     *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=date_adopted,json=dateAdopted"`
+	xxx_hidden_DateSeen        *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=date_seen,json=dateSeen"`
+	xxx_hidden_DateCertExpires *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=date_cert_expires,json=dateCertExpires"`
+	xxx_hidden_Interfaces      *[]*HostInterface      `protobuf:"bytes,19,rep,name=interfaces"`
+	xxx_hidden_KeyIds          []string               `protobuf:"bytes,20,rep,name=key_ids,json=keyIds"`
+	xxx_hidden_CaHash          string                 `protobuf:"bytes,21,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_Version         string                 `protobuf:"bytes,22,opt,name=version"`
+	xxx_hidden_UploadAddress   string                 `protobuf:"bytes,23,opt,name=upload_address,json=uploadAddress"`
+	xxx_hidden_Status          *SatelliteStatus       `protobuf:"bytes,24,opt,name=status"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *Satellite) Reset() {
+	*x = Satellite{}
+	mi := &file_shale_host_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Satellite) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Satellite) ProtoMessage() {}
+
+func (x *Satellite) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Satellite) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *Satellite) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
+}
+
+func (x *Satellite) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *Satellite) GetDesc() string {
+	if x != nil {
+		return x.xxx_hidden_Desc
+	}
+	return ""
+}
+
+func (x *Satellite) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
+func (x *Satellite) GetHardwareId() string {
+	if x != nil {
+		return x.xxx_hidden_HardwareId
+	}
+	return ""
+}
+
+func (x *Satellite) GetHostname() string {
+	if x != nil {
+		return x.xxx_hidden_Hostname
+	}
+	return ""
+}
+
+func (x *Satellite) GetState() HostState {
+	if x != nil {
+		return x.xxx_hidden_State
+	}
+	return HostState_HOST_STATE_UNSPECIFIED
+}
+
+func (x *Satellite) GetCertSerial() string {
+	if x != nil {
+		return x.xxx_hidden_CertSerial
+	}
+	return ""
+}
+
+func (x *Satellite) GetJoin() *HostJoin {
+	if x != nil {
+		return x.xxx_hidden_Join
+	}
+	return nil
+}
+
+func (x *Satellite) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *Satellite) GetDateErased() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateErased
+	}
+	return nil
+}
+
+func (x *Satellite) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *Satellite) GetDateAdopted() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateAdopted
+	}
+	return nil
+}
+
+func (x *Satellite) GetDateSeen() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateSeen
+	}
+	return nil
+}
+
+func (x *Satellite) GetDateCertExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCertExpires
+	}
+	return nil
+}
+
+func (x *Satellite) GetInterfaces() []*HostInterface {
+	if x != nil {
+		if x.xxx_hidden_Interfaces != nil {
+			return *x.xxx_hidden_Interfaces
+		}
+	}
+	return nil
+}
+
+func (x *Satellite) GetKeyIds() []string {
+	if x != nil {
+		return x.xxx_hidden_KeyIds
+	}
+	return nil
+}
+
+func (x *Satellite) GetCaHash() string {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return ""
+}
+
+func (x *Satellite) GetVersion() string {
+	if x != nil {
+		return x.xxx_hidden_Version
+	}
+	return ""
+}
+
+func (x *Satellite) GetUploadAddress() string {
+	if x != nil {
+		return x.xxx_hidden_UploadAddress
+	}
+	return ""
+}
+
+func (x *Satellite) GetStatus() *SatelliteStatus {
+	if x != nil {
+		return x.xxx_hidden_Status
+	}
+	return nil
+}
+
+func (x *Satellite) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *Satellite) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
+}
+
+func (x *Satellite) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *Satellite) SetDesc(v string) {
+	x.xxx_hidden_Desc = v
+}
+
+func (x *Satellite) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
+func (x *Satellite) SetHardwareId(v string) {
+	x.xxx_hidden_HardwareId = v
+}
+
+func (x *Satellite) SetHostname(v string) {
+	x.xxx_hidden_Hostname = v
+}
+
+func (x *Satellite) SetState(v HostState) {
+	x.xxx_hidden_State = v
+}
+
+func (x *Satellite) SetCertSerial(v string) {
+	x.xxx_hidden_CertSerial = v
+}
+
+func (x *Satellite) SetJoin(v *HostJoin) {
+	x.xxx_hidden_Join = v
+}
+
+func (x *Satellite) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *Satellite) SetDateErased(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateErased = v
+}
+
+func (x *Satellite) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *Satellite) SetDateAdopted(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateAdopted = v
+}
+
+func (x *Satellite) SetDateSeen(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateSeen = v
+}
+
+func (x *Satellite) SetDateCertExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCertExpires = v
+}
+
+func (x *Satellite) SetInterfaces(v []*HostInterface) {
+	x.xxx_hidden_Interfaces = &v
+}
+
+func (x *Satellite) SetKeyIds(v []string) {
+	x.xxx_hidden_KeyIds = v
+}
+
+func (x *Satellite) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = v
+}
+
+func (x *Satellite) SetVersion(v string) {
+	x.xxx_hidden_Version = v
+}
+
+func (x *Satellite) SetUploadAddress(v string) {
+	x.xxx_hidden_UploadAddress = v
+}
+
+func (x *Satellite) SetStatus(v *SatelliteStatus) {
+	x.xxx_hidden_Status = v
+}
+
+func (x *Satellite) HasJoin() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Join != nil
+}
+
+func (x *Satellite) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUpdated != nil
+}
+
+func (x *Satellite) HasDateErased() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateErased != nil
+}
+
+func (x *Satellite) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *Satellite) HasDateAdopted() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateAdopted != nil
+}
+
+func (x *Satellite) HasDateSeen() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateSeen != nil
+}
+
+func (x *Satellite) HasDateCertExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCertExpires != nil
+}
+
+func (x *Satellite) HasStatus() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Status != nil
+}
+
+func (x *Satellite) ClearJoin() {
+	x.xxx_hidden_Join = nil
+}
+
+func (x *Satellite) ClearDateUpdated() {
+	x.xxx_hidden_DateUpdated = nil
+}
+
+func (x *Satellite) ClearDateErased() {
+	x.xxx_hidden_DateErased = nil
+}
+
+func (x *Satellite) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+func (x *Satellite) ClearDateAdopted() {
+	x.xxx_hidden_DateAdopted = nil
+}
+
+func (x *Satellite) ClearDateSeen() {
+	x.xxx_hidden_DateSeen = nil
+}
+
+func (x *Satellite) ClearDateCertExpires() {
+	x.xxx_hidden_DateCertExpires = nil
+}
+
+func (x *Satellite) ClearStatus() {
+	x.xxx_hidden_Status = nil
+}
+
+type Satellite_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id    []byte
+	Alias string
+	Name  string
+	Desc  string
+	// Matched against a site's satellite_selector (§41.2).
+	Labels      map[string]string
+	HardwareId  string
+	Hostname    string
+	State       HostState
+	CertSerial  string
+	Join        *HostJoin
+	DateUpdated *timestamppb.Timestamp
+	DateErased  *timestamppb.Timestamp
+	DateCreated *timestamppb.Timestamp
+	DateAdopted *timestamppb.Timestamp
+	// The last heartbeat; one unheard for satellite_down_after is not
+	// assigned (§41.2).
+	DateSeen        *timestamppb.Timestamp
+	DateCertExpires *timestamppb.Timestamp
+	// Interfaces and IPs it listens on, as it reports them; what the address
+	// resolver chooses from (§34.10).
+	Interfaces []*HostInterface
+	// The signing key IDs it holds, from its heartbeat (§33.3).
+	KeyIds  []string
+	CaHash  string
+	Version string
+	// host:port of the upload listener producers dial (§41.3), as it
+	// listens; the resolver builds endpoints from the interfaces and this
+	// port.
+	UploadAddress string
+	Status        *SatelliteStatus
+}
+
+func (b0 Satellite_builder) Build() *Satellite {
+	m0 := &Satellite{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Alias = b.Alias
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_HardwareId = b.HardwareId
+	x.xxx_hidden_Hostname = b.Hostname
+	x.xxx_hidden_State = b.State
+	x.xxx_hidden_CertSerial = b.CertSerial
+	x.xxx_hidden_Join = b.Join
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	x.xxx_hidden_DateErased = b.DateErased
+	x.xxx_hidden_DateCreated = b.DateCreated
+	x.xxx_hidden_DateAdopted = b.DateAdopted
+	x.xxx_hidden_DateSeen = b.DateSeen
+	x.xxx_hidden_DateCertExpires = b.DateCertExpires
+	x.xxx_hidden_Interfaces = &b.Interfaces
+	x.xxx_hidden_KeyIds = b.KeyIds
+	x.xxx_hidden_CaHash = b.CaHash
+	x.xxx_hidden_Version = b.Version
+	x.xxx_hidden_UploadAddress = b.UploadAddress
+	x.xxx_hidden_Status = b.Status
+	return m0
+}
+
 // Producer is the host that receives a set's streams, cuts them into
 // segments, and uploads them (§38).
 type Producer struct {
@@ -1065,13 +1523,14 @@ type Producer struct {
 	xxx_hidden_Version         string                 `protobuf:"bytes,22,opt,name=version"`
 	xxx_hidden_Live            LivePolicy             `protobuf:"varint,23,opt,name=live,enum=shale.LivePolicy"`
 	xxx_hidden_CaHash          string                 `protobuf:"bytes,24,opt,name=ca_hash,json=caHash"`
+	xxx_hidden_Satellite       *Satellite             `protobuf:"bytes,25,opt,name=satellite"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *Producer) Reset() {
 	*x = Producer{}
-	mi := &file_shale_host_proto_msgTypes[2]
+	mi := &file_shale_host_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1083,7 +1542,7 @@ func (x *Producer) String() string {
 func (*Producer) ProtoMessage() {}
 
 func (x *Producer) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_proto_msgTypes[2]
+	mi := &file_shale_host_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1262,6 +1721,13 @@ func (x *Producer) GetCaHash() string {
 	return ""
 }
 
+func (x *Producer) GetSatellite() *Satellite {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
 func (x *Producer) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1361,6 +1827,10 @@ func (x *Producer) SetCaHash(v string) {
 	x.xxx_hidden_CaHash = v
 }
 
+func (x *Producer) SetSatellite(v *Satellite) {
+	x.xxx_hidden_Satellite = v
+}
+
 func (x *Producer) HasTenant() bool {
 	if x == nil {
 		return false
@@ -1445,6 +1915,13 @@ func (x *Producer) HasStatus() bool {
 	return x.xxx_hidden_Status != nil
 }
 
+func (x *Producer) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
 func (x *Producer) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
@@ -1493,6 +1970,10 @@ func (x *Producer) ClearStatus() {
 	x.xxx_hidden_Status = nil
 }
 
+func (x *Producer) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
+}
+
 type Producer_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1533,6 +2014,10 @@ type Producer_builder struct {
 	// The hash of the CA bundle it holds, from its heartbeat (§33.5). A
 	// default, so the column is added to a database that predates it.
 	CaHash string
+	// The satellite this producer uploads through when its `upload_via`
+	// says so (§41.2): assigned like its relay, kept while that satellite is
+	// alive.
+	Satellite *Satellite
 }
 
 func (b0 Producer_builder) Build() *Producer {
@@ -1563,6 +2048,7 @@ func (b0 Producer_builder) Build() *Producer {
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_Live = b.Live
 	x.xxx_hidden_CaHash = b.CaHash
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -1596,7 +2082,7 @@ type Reader struct {
 
 func (x *Reader) Reset() {
 	*x = Reader{}
-	mi := &file_shale_host_proto_msgTypes[3]
+	mi := &file_shale_host_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1608,7 +2094,7 @@ func (x *Reader) String() string {
 func (*Reader) ProtoMessage() {}
 
 func (x *Reader) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_proto_msgTypes[3]
+	mi := &file_shale_host_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2081,8 +2567,50 @@ const file_shale_host_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06labels 2(\xf4\x03:\x00*\x00\"\xca\n" +
+	"\x06labels 2(\xf4\x03:\x00*\x00\"\xa1\t\n" +
+	"\tSatellite\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
+	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x124\n" +
+	"\x06labels\x18\a \x03(\v2\x1c.shale.Satellite.LabelsEntryR\x06labels\x12\x1f\n" +
+	"\vhardware_id\x18\b \x01(\tR\n" +
+	"hardwareId\x12\x1a\n" +
+	"\bhostname\x18\t \x01(\tR\bhostname\x12&\n" +
+	"\x05state\x18\n" +
+	" \x01(\x0e2\x10.shale.HostStateR\x05state\x12\x1f\n" +
+	"\vcert_serial\x18\v \x01(\tR\n" +
+	"certSerial\x12#\n" +
+	"\x04join\x18\f \x01(\v2\x0f.shale.HostJoinR\x04join\x12F\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
+	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
+	"dateErased\x12H\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12E\n" +
+	"\fdate_adopted\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateAdopted\x12?\n" +
+	"\tdate_seen\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateSeen\x12N\n" +
+	"\x11date_cert_expires\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateCertExpires\x124\n" +
 	"\n" +
+	"interfaces\x18\x13 \x03(\v2\x14.shale.HostInterfaceR\n" +
+	"interfaces\x12\x17\n" +
+	"\akey_ids\x18\x14 \x03(\tR\x06keyIds\x12\x17\n" +
+	"\aca_hash\x18\x15 \x01(\tR\x06caHash\x12\x18\n" +
+	"\aversion\x18\x16 \x01(\tR\aversion\x12-\n" +
+	"\x0eupload_address\x18\x17 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\ruploadAddress\x12.\n" +
+	"\x06status\x18\x18 \x01(\v2\x16.shale.SatelliteStatusR\x06status\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\x83\x01\xca\xfc\x15C\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x10\x0f\x1a\x06\n" +
+	"\x02id\x10\x01\x1a\x1b\x12\bhardware\x1a\x0f\n" +
+	"\vhardware_id\x10\b\x8a\xbb\x168\b+20\n" +
+	"\x10\n" +
+	"\x0e\n" +
+	"\fdate_created\n" +
+	"\x06\n" +
+	"\x04\n" +
+	"\x02id\x1a\x05\n" +
+	"\x03ref\x1a\b\n" +
+	"\x06labels 2(\xf4\x03:\x00*\x00\"\x82\v\n" +
 	"\bProducer\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12'\n" +
@@ -2112,7 +2640,8 @@ const file_shale_host_proto_rawDesc = "" +
 	"\x06status\x18\x15 \x01(\v2\x15.shale.ProducerStatusR\x06status\x12\x18\n" +
 	"\aversion\x18\x16 \x01(\tR\aversion\x12.\n" +
 	"\x04live\x18\x17 \x01(\x0e2\x11.shale.LivePolicyB\a\xea\x82\x16\x03\x82\x01\x00R\x04live\x12 \n" +
-	"\aca_hash\x18\x18 \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\x06caHash\x1a9\n" +
+	"\aca_hash\x18\x18 \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\x06caHash\x126\n" +
+	"\tsatellite\x18\x19 \x01(\v2\x10.shale.SatelliteB\x06\xf2\x82\x16\x028\x01R\tsatellite\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xd2\x01\xca\xfc\x15|\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
@@ -2190,82 +2719,97 @@ const file_shale_host_proto_rawDesc = "" +
 	"\x12HOST_STATE_ADOPTED\x10\x02B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_shale_host_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_shale_host_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_shale_host_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_shale_host_proto_goTypes = []any{
 	(HostState)(0),                // 0: shale.HostState
 	(*Node)(nil),                  // 1: shale.Node
 	(*Relay)(nil),                 // 2: shale.Relay
-	(*Producer)(nil),              // 3: shale.Producer
-	(*Reader)(nil),                // 4: shale.Reader
-	nil,                           // 5: shale.Node.LabelsEntry
-	nil,                           // 6: shale.Relay.LabelsEntry
-	nil,                           // 7: shale.Producer.LabelsEntry
-	nil,                           // 8: shale.Reader.LabelsEntry
-	(*HostJoin)(nil),              // 9: shale.HostJoin
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
-	(*HostInterface)(nil),         // 11: shale.HostInterface
-	(*NodeStatus)(nil),            // 12: shale.NodeStatus
-	(*RelayStatus)(nil),           // 13: shale.RelayStatus
-	(*Tenant)(nil),                // 14: shale.Tenant
-	(*Site)(nil),                  // 15: shale.Site
-	(*Set)(nil),                   // 16: shale.Set
-	(*ProducerStatus)(nil),        // 17: shale.ProducerStatus
-	(LivePolicy)(0),               // 18: shale.LivePolicy
+	(*Satellite)(nil),             // 3: shale.Satellite
+	(*Producer)(nil),              // 4: shale.Producer
+	(*Reader)(nil),                // 5: shale.Reader
+	nil,                           // 6: shale.Node.LabelsEntry
+	nil,                           // 7: shale.Relay.LabelsEntry
+	nil,                           // 8: shale.Satellite.LabelsEntry
+	nil,                           // 9: shale.Producer.LabelsEntry
+	nil,                           // 10: shale.Reader.LabelsEntry
+	(*HostJoin)(nil),              // 11: shale.HostJoin
+	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
+	(*HostInterface)(nil),         // 13: shale.HostInterface
+	(*NodeStatus)(nil),            // 14: shale.NodeStatus
+	(*RelayStatus)(nil),           // 15: shale.RelayStatus
+	(*SatelliteStatus)(nil),       // 16: shale.SatelliteStatus
+	(*Tenant)(nil),                // 17: shale.Tenant
+	(*Site)(nil),                  // 18: shale.Site
+	(*Set)(nil),                   // 19: shale.Set
+	(*ProducerStatus)(nil),        // 20: shale.ProducerStatus
+	(LivePolicy)(0),               // 21: shale.LivePolicy
 }
 var file_shale_host_proto_depIdxs = []int32{
-	5,  // 0: shale.Node.labels:type_name -> shale.Node.LabelsEntry
+	6,  // 0: shale.Node.labels:type_name -> shale.Node.LabelsEntry
 	0,  // 1: shale.Node.state:type_name -> shale.HostState
-	9,  // 2: shale.Node.join:type_name -> shale.HostJoin
-	10, // 3: shale.Node.date_updated:type_name -> google.protobuf.Timestamp
-	10, // 4: shale.Node.date_erased:type_name -> google.protobuf.Timestamp
-	10, // 5: shale.Node.date_created:type_name -> google.protobuf.Timestamp
-	10, // 6: shale.Node.date_adopted:type_name -> google.protobuf.Timestamp
-	10, // 7: shale.Node.date_seen:type_name -> google.protobuf.Timestamp
-	10, // 8: shale.Node.date_cert_expires:type_name -> google.protobuf.Timestamp
-	11, // 9: shale.Node.interfaces:type_name -> shale.HostInterface
-	12, // 10: shale.Node.status:type_name -> shale.NodeStatus
-	10, // 11: shale.Node.date_scored:type_name -> google.protobuf.Timestamp
-	6,  // 12: shale.Relay.labels:type_name -> shale.Relay.LabelsEntry
+	11, // 2: shale.Node.join:type_name -> shale.HostJoin
+	12, // 3: shale.Node.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 4: shale.Node.date_erased:type_name -> google.protobuf.Timestamp
+	12, // 5: shale.Node.date_created:type_name -> google.protobuf.Timestamp
+	12, // 6: shale.Node.date_adopted:type_name -> google.protobuf.Timestamp
+	12, // 7: shale.Node.date_seen:type_name -> google.protobuf.Timestamp
+	12, // 8: shale.Node.date_cert_expires:type_name -> google.protobuf.Timestamp
+	13, // 9: shale.Node.interfaces:type_name -> shale.HostInterface
+	14, // 10: shale.Node.status:type_name -> shale.NodeStatus
+	12, // 11: shale.Node.date_scored:type_name -> google.protobuf.Timestamp
+	7,  // 12: shale.Relay.labels:type_name -> shale.Relay.LabelsEntry
 	0,  // 13: shale.Relay.state:type_name -> shale.HostState
-	9,  // 14: shale.Relay.join:type_name -> shale.HostJoin
-	10, // 15: shale.Relay.date_updated:type_name -> google.protobuf.Timestamp
-	10, // 16: shale.Relay.date_erased:type_name -> google.protobuf.Timestamp
-	10, // 17: shale.Relay.date_created:type_name -> google.protobuf.Timestamp
-	10, // 18: shale.Relay.date_adopted:type_name -> google.protobuf.Timestamp
-	10, // 19: shale.Relay.date_seen:type_name -> google.protobuf.Timestamp
-	10, // 20: shale.Relay.date_cert_expires:type_name -> google.protobuf.Timestamp
-	11, // 21: shale.Relay.interfaces:type_name -> shale.HostInterface
-	13, // 22: shale.Relay.status:type_name -> shale.RelayStatus
-	14, // 23: shale.Producer.tenant:type_name -> shale.Tenant
-	15, // 24: shale.Producer.site:type_name -> shale.Site
-	7,  // 25: shale.Producer.labels:type_name -> shale.Producer.LabelsEntry
-	16, // 26: shale.Producer.set:type_name -> shale.Set
-	0,  // 27: shale.Producer.state:type_name -> shale.HostState
-	10, // 28: shale.Producer.date_updated:type_name -> google.protobuf.Timestamp
-	10, // 29: shale.Producer.date_erased:type_name -> google.protobuf.Timestamp
-	10, // 30: shale.Producer.date_created:type_name -> google.protobuf.Timestamp
-	9,  // 31: shale.Producer.join:type_name -> shale.HostJoin
-	10, // 32: shale.Producer.date_adopted:type_name -> google.protobuf.Timestamp
-	10, // 33: shale.Producer.date_seen:type_name -> google.protobuf.Timestamp
-	10, // 34: shale.Producer.date_cert_expires:type_name -> google.protobuf.Timestamp
-	2,  // 35: shale.Producer.relay:type_name -> shale.Relay
-	17, // 36: shale.Producer.status:type_name -> shale.ProducerStatus
-	18, // 37: shale.Producer.live:type_name -> shale.LivePolicy
-	14, // 38: shale.Reader.tenant:type_name -> shale.Tenant
-	8,  // 39: shale.Reader.labels:type_name -> shale.Reader.LabelsEntry
-	0,  // 40: shale.Reader.state:type_name -> shale.HostState
-	9,  // 41: shale.Reader.join:type_name -> shale.HostJoin
-	10, // 42: shale.Reader.date_updated:type_name -> google.protobuf.Timestamp
-	10, // 43: shale.Reader.date_erased:type_name -> google.protobuf.Timestamp
-	10, // 44: shale.Reader.date_created:type_name -> google.protobuf.Timestamp
-	10, // 45: shale.Reader.date_adopted:type_name -> google.protobuf.Timestamp
-	10, // 46: shale.Reader.date_seen:type_name -> google.protobuf.Timestamp
-	10, // 47: shale.Reader.date_cert_expires:type_name -> google.protobuf.Timestamp
-	48, // [48:48] is the sub-list for method output_type
-	48, // [48:48] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	11, // 14: shale.Relay.join:type_name -> shale.HostJoin
+	12, // 15: shale.Relay.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 16: shale.Relay.date_erased:type_name -> google.protobuf.Timestamp
+	12, // 17: shale.Relay.date_created:type_name -> google.protobuf.Timestamp
+	12, // 18: shale.Relay.date_adopted:type_name -> google.protobuf.Timestamp
+	12, // 19: shale.Relay.date_seen:type_name -> google.protobuf.Timestamp
+	12, // 20: shale.Relay.date_cert_expires:type_name -> google.protobuf.Timestamp
+	13, // 21: shale.Relay.interfaces:type_name -> shale.HostInterface
+	15, // 22: shale.Relay.status:type_name -> shale.RelayStatus
+	8,  // 23: shale.Satellite.labels:type_name -> shale.Satellite.LabelsEntry
+	0,  // 24: shale.Satellite.state:type_name -> shale.HostState
+	11, // 25: shale.Satellite.join:type_name -> shale.HostJoin
+	12, // 26: shale.Satellite.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 27: shale.Satellite.date_erased:type_name -> google.protobuf.Timestamp
+	12, // 28: shale.Satellite.date_created:type_name -> google.protobuf.Timestamp
+	12, // 29: shale.Satellite.date_adopted:type_name -> google.protobuf.Timestamp
+	12, // 30: shale.Satellite.date_seen:type_name -> google.protobuf.Timestamp
+	12, // 31: shale.Satellite.date_cert_expires:type_name -> google.protobuf.Timestamp
+	13, // 32: shale.Satellite.interfaces:type_name -> shale.HostInterface
+	16, // 33: shale.Satellite.status:type_name -> shale.SatelliteStatus
+	17, // 34: shale.Producer.tenant:type_name -> shale.Tenant
+	18, // 35: shale.Producer.site:type_name -> shale.Site
+	9,  // 36: shale.Producer.labels:type_name -> shale.Producer.LabelsEntry
+	19, // 37: shale.Producer.set:type_name -> shale.Set
+	0,  // 38: shale.Producer.state:type_name -> shale.HostState
+	12, // 39: shale.Producer.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 40: shale.Producer.date_erased:type_name -> google.protobuf.Timestamp
+	12, // 41: shale.Producer.date_created:type_name -> google.protobuf.Timestamp
+	11, // 42: shale.Producer.join:type_name -> shale.HostJoin
+	12, // 43: shale.Producer.date_adopted:type_name -> google.protobuf.Timestamp
+	12, // 44: shale.Producer.date_seen:type_name -> google.protobuf.Timestamp
+	12, // 45: shale.Producer.date_cert_expires:type_name -> google.protobuf.Timestamp
+	2,  // 46: shale.Producer.relay:type_name -> shale.Relay
+	20, // 47: shale.Producer.status:type_name -> shale.ProducerStatus
+	21, // 48: shale.Producer.live:type_name -> shale.LivePolicy
+	3,  // 49: shale.Producer.satellite:type_name -> shale.Satellite
+	17, // 50: shale.Reader.tenant:type_name -> shale.Tenant
+	10, // 51: shale.Reader.labels:type_name -> shale.Reader.LabelsEntry
+	0,  // 52: shale.Reader.state:type_name -> shale.HostState
+	11, // 53: shale.Reader.join:type_name -> shale.HostJoin
+	12, // 54: shale.Reader.date_updated:type_name -> google.protobuf.Timestamp
+	12, // 55: shale.Reader.date_erased:type_name -> google.protobuf.Timestamp
+	12, // 56: shale.Reader.date_created:type_name -> google.protobuf.Timestamp
+	12, // 57: shale.Reader.date_adopted:type_name -> google.protobuf.Timestamp
+	12, // 58: shale.Reader.date_seen:type_name -> google.protobuf.Timestamp
+	12, // 59: shale.Reader.date_cert_expires:type_name -> google.protobuf.Timestamp
+	60, // [60:60] is the sub-list for method output_type
+	60, // [60:60] is the sub-list for method input_type
+	60, // [60:60] is the sub-list for extension type_name
+	60, // [60:60] is the sub-list for extension extendee
+	0,  // [0:60] is the sub-list for field type_name
 }
 
 func init() { file_shale_host_proto_init() }
@@ -2283,7 +2827,7 @@ func file_shale_host_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_host_proto_rawDesc), len(file_shale_host_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

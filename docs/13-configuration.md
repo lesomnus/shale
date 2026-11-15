@@ -17,6 +17,9 @@ deployment runs well on them, and changes them only for a reason.
   cluster bounds ([§12.6](04-write-path.md#126-upload-profile-negotiation)).
 - **producer**: the producer's own configuration; nobody else sees it.
 - **reader**: the reader agent's own configuration, likewise.
+- **relay**, **satellite**: the relay's or the satellite's own
+  configuration ([§39](16-relay.md#39-relay), [§41](18-satellite.md#41-satellite)).
+- **control**: the Control Plane's own configuration file.
 
 | Area | Parameter | Default | Bounds | Scope | Described in |
 |---|---|---|---|---|---|
@@ -65,6 +68,7 @@ deployment runs well on them, and changes them only for a reason.
 | Uploads | `retry_after_cap` | 2 min | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | placement retries | 3 | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | `http3` | `off`: TCP, as before HTTP/3 | `auto`: HTTP/3 to a node whose answers offer it; `on`: to every node from the first request. Either falls back to TCP when the handshake does not complete in 5 s, and keeps that node on TCP for 5 min, doubling to 1 h | producer | [§35.6](12-api.md#356-storage-node-http-data-plane) |
+| Uploads | `upload_via` | `direct`: to the node an allocation names, as before satellites | `satellite`: through the satellite the CP assigns, directly while none is; `auto`: as `satellite`, and directly for 1 min, doubling to 15 min, once the satellite cannot be reached | producer | [§41.5](18-satellite.md#415-from-the-producer) |
 | Uploads | checksum | off (CRC32C when on) | — | set | [§30](09-operations.md#30-integrity) |
 | Node | `part_size` | 16 MB | — | node | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Node | `max_uploads` per sink | 64 | — | node | [§12.2](04-write-path.md#122-resumable-part-uploads) |
@@ -170,6 +174,16 @@ deployment runs well on them, and changes them only for a reason.
 | Live | `relay_selector` | none (any relay) | labels | site | [§39.2](16-relay.md#392-assignment) |
 | Live | `relay.heartbeat_interval` | 2 s | a third of `control.relay_down_after` or less | relay | [§39.2](16-relay.md#392-assignment) |
 | Live | `control.relay_down_after` | 6 s (three relay heartbeats) | how long a relay may go unheard before it is down: its producers are reassigned and `Live` stops naming it; at least three `relay.heartbeat_interval`s | control | [§39.2](16-relay.md#392-assignment), [§39.6](16-relay.md#396-failures) |
+| Satellite | `satellite.addr` | `:7460` | the upload listener: HTTPS, HTTP/1.1 and HTTP/2, a producer's client certificate required | satellite | [§41.3](18-satellite.md#413-the-upload-proxy) |
+| Satellite | `satellite.advertise` | the bound address | a host, or host:port, reported for the upload listener; a name is handed out as it is | satellite | [§34.10](11-deployment.md#3410-node-addresses) |
+| Satellite | `satellite.memory_budget` | 256 MiB | the one budget of what it holds of producers' bytes; today all of it the in-flight pool; over it a request is refused `503` with `Retry-After` | satellite | [§41.4](18-satellite.md#414-memory) |
+| Satellite | `satellite.request_buffer` | 256 KiB | at least 64 KiB, at most 64 MiB: the buffer a request's body is copied through; a request reserves twice it | satellite | [§41.4](18-satellite.md#414-memory) |
+| Satellite | `satellite.heartbeat_interval` | 2 s | a third of `control.satellite_down_after` or less | satellite | [§41.2](18-satellite.md#412-assignment) |
+| Satellite | `satellite.token_skew` | 1 min | the clock skew a put token's expiry is allowed, as a node's | satellite | [§41.3](18-satellite.md#413-the-upload-proxy) |
+| Satellite | `control.satellite_down_after` | 6 s (three satellite heartbeats) | how long a satellite may go unheard before it is down: it is assigned no producer, and its producers are assigned another or none | control | [§41.2](18-satellite.md#412-assignment), [§41.6](18-satellite.md#416-failures) |
+| Satellite | `satellite_selector` | none (any satellite) | labels | site | [§41.2](18-satellite.md#412-assignment) |
+| Satellite | assignment expiry | 30 min after the answer that carried it | — | — | [§41.2](18-satellite.md#412-assignment) |
+| Satellite | route expiry | 1 min; used for 1 h more while the CP cannot be asked | — | — | [§41.3](18-satellite.md#413-the-upload-proxy) |
 | Security | `rpc_rate` | 20 calls/s per actor, burst 100; 2,000/s per tenant | — | cluster | [§35.1](12-api.md#351-conventions) |
 | Security | `timeline_page` | 1,000 laminae | — | cluster | [§17.1](05-read-path.md#171-flow) |
 
@@ -255,14 +269,15 @@ shale address-policy get @dns -o protojson   # dns_sync: what the leader last di
 
 Every name Shale writes carries a TXT record
 `heritage=shale,shale/owner=<cluster tenant ID>`, and Shale changes no name
-without it. Nodes and relays renew their certificates for the template's
+without it. Nodes, relays and satellites renew their certificates for the template's
 names in their next heartbeats. To rotate the key, add it on the server,
 `shale address-policy patch @dns` with the new `dns_tsig_secret`, then
 remove the old one.
 
 **Metrics.** Every process measures the instruments of
 [§31](09-operations.md#31-observability) it owns (`shale.node.*`,
-`shale.cp.*`, `shale.producer.*`, `shale.relay.*`) through OpenTelemetry,
+`shale.cp.*`, `shale.producer.*`, `shale.relay.*`, `shale.satellite.*`)
+through OpenTelemetry,
 and exports them wherever `otel:` says; nothing is exported until it does.
 An OTLP collector:
 
@@ -309,6 +324,12 @@ out:
   ffmpeg writes, or its live helper's output for a stream it did not
   encode ([§38.7](15-producer.md#387-live-output)); either transcodes audio
   and nothing else.
+
+- **Holding bytes on a satellite.** A satellite moves bytes and holds
+  none a producer does not ([§41](18-satellite.md#41-satellite)). Feeding
+  the relay from the upload stream, and `retain: accepted`, which lets an
+  edge host free its RAM once the satellite has the bytes, are its next
+  steps ([§41.8](18-satellite.md#418-not-yet)).
 
 Ideas recorded, not planned:
 

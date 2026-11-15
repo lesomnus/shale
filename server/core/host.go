@@ -27,7 +27,8 @@ import (
 	"github.com/lesomnus/shale/internal/pki"
 )
 
-// Joining and adoption (§33.4), for the four kinds of host. A host calls
+// Joining and adoption (§33.4), for the kinds of host; a satellite's are
+// in satellite.go. A host calls
 // Join without a credential until an operator adopts it; adoption issues
 // its certificate; the next Join hands the certificate back.
 
@@ -348,7 +349,8 @@ func (s coreProducer) Patch(ctx context.Context, req *api.ProducerPatchRequest) 
 	if req.HasSite() || req.HasSiteNull() || req.HasSet() || req.HasSetNull() || req.HasHardwareId() || req.HasHostname() ||
 		req.HasState() || req.HasCertSerial() || req.HasJoin() || req.HasJoinNull() || req.HasDateAdopted() || req.HasDateAdoptedNull() ||
 		req.HasDateSeen() || req.HasDateSeenNull() || req.HasDateCertExpires() || req.HasDateCertExpiresNull() ||
-		req.HasRelay() || req.HasRelayNull() || req.HasStatus() || req.HasStatusNull() || req.HasVersion() || req.HasCaHash() {
+		req.HasRelay() || req.HasRelayNull() || req.HasSatellite() || req.HasSatelliteNull() || req.HasStatus() || req.HasStatusNull() ||
+		req.HasVersion() || req.HasCaHash() {
 		return nil, status.Error(codes.PermissionDenied, "a producer's alias, name, desc, labels and live are a person's to patch; the rest of the row is the system's")
 	}
 
@@ -489,6 +491,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 			Load:         req.GetLoad(),
 			DateReported: timestamppb.New(now),
 			Admission:    admissionOf(req.GetAdmission(), now),
+			Upload:       uploadReportOf(req.GetUpload()),
 		}.Build(),
 		Version:          z.Ptr(req.GetVersion()),
 		CaHash:           z.Ptr(req.GetCaHash()),
@@ -510,6 +513,16 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 			if ra, err := s.relayAssignment(ctx, f.Actor, set); err == nil && ra != nil {
 				resp.Relay = ra
 			}
+			// A producer that does not ask for a satellite, and has none to
+			// let go, costs nothing here: every producer before satellites,
+			// and every one on `direct` (§41.2).
+			if wants := wantsSatellite(req.GetUpload()); wants || len(p.GetSatellite().GetId()) > 0 {
+				if sa, err := s.satelliteAssignment(ctx, f.Actor, set, wants); err != nil {
+					s.d.log().Warn("satellite assignment", "producer", p.GetAlias(), "err", err.Error())
+				} else if sa != nil {
+					resp.Satellite = sa
+				}
+			}
 		}
 	}
 	if exp := p.GetDateCertExpires(); exp != nil && now.After(renewAt(p.GetDateAdopted(), exp)) {
@@ -520,6 +533,43 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 	}
 
 	return resp.Build(), nil
+}
+
+// wantsSatellite says whether a producer's upload report asks for a
+// satellite (§41.5).
+func wantsSatellite(v *api.UploadReport) bool {
+	return v.GetVia() == "satellite" || v.GetVia() == "auto"
+}
+
+// uploadReportOf is what the CP keeps of a producer's upload report
+// (§41.5): a path it knows, counts that are not negative, and a satellite
+// id that is one. Anything else is not kept, rather than failing the
+// heartbeat.
+func uploadReportOf(v *api.UploadReport) *api.UploadReport {
+	if v == nil {
+		return nil
+	}
+	switch v.GetVia() {
+	case "direct", "satellite", "auto":
+	default:
+		return nil
+	}
+	if v.GetThroughSatellite() < 0 || v.GetDirect() < 0 || v.GetFallbacks() < 0 {
+		return nil
+	}
+	if id := v.GetSatelliteId(); len(id) > 0 {
+		if v, err := pdid.From(id); err != nil || v.Domain() != DomSatellite {
+			return nil
+		}
+	}
+
+	return api.UploadReport_builder{
+		Via:              v.GetVia(),
+		SatelliteId:      v.GetSatelliteId(),
+		ThroughSatellite: v.GetThroughSatellite(),
+		Direct:           v.GetDirect(),
+		Fallbacks:        v.GetFallbacks(),
+	}.Build()
 }
 
 // maxAdmissionSources bounds the cameras one heartbeat says are waiting: an

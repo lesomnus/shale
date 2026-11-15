@@ -96,6 +96,9 @@ export const RelayDomain = 24
 /** The domain identifiers of shale.RowSeal carry. */
 export const RowSealDomain = 255
 
+/** The domain identifiers of shale.Satellite carry. */
+export const SatelliteDomain = 43
+
 /** The domain identifiers of shale.Set carry. */
 export const SetDomain = 7
 
@@ -150,6 +153,7 @@ pdid.register("shale.Producer", ProducerDomain, "producer")
 pdid.register("shale.Reader", ReaderDomain, "reader")
 pdid.register("shale.Relay", RelayDomain, "relay")
 pdid.register("shale.RowSeal", RowSealDomain, "row-seal")
+pdid.register("shale.Satellite", SatelliteDomain, "satellite")
 pdid.register("shale.Set", SetDomain, "set")
 pdid.register("shale.SigningKey", SigningKeyDomain, "signing-key")
 pdid.register("shale.Sink", SinkDomain, "sink")

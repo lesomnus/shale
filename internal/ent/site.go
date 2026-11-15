@@ -30,6 +30,8 @@ type Site struct {
 	Labels map[string]string `json:"labels,omitempty"`
 	// RelaySelector holds the value of the "relay_selector" field.
 	RelaySelector map[string]string `json:"relay_selector,omitempty"`
+	// SatelliteSelector holds the value of the "satellite_selector" field.
+	SatelliteSelector map[string]string `json:"satellite_selector,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -69,7 +71,7 @@ func (*Site) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case site.FieldLabels, site.FieldRelaySelector:
+		case site.FieldLabels, site.FieldRelaySelector, site.FieldSatelliteSelector:
 			values[i] = new([]byte)
 		case site.FieldAlias, site.FieldName, site.FieldDesc:
 			values[i] = new(sql.NullString)
@@ -130,6 +132,14 @@ func (_m *Site) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &_m.RelaySelector); err != nil {
 					return fmt.Errorf("unmarshal field relay_selector: %w", err)
+				}
+			}
+		case site.FieldSatelliteSelector:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field satellite_selector", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.SatelliteSelector); err != nil {
+					return fmt.Errorf("unmarshal field satellite_selector: %w", err)
 				}
 			}
 		case site.FieldDateUpdated:
@@ -212,6 +222,9 @@ func (_m *Site) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("relay_selector=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RelaySelector))
+	builder.WriteString(", ")
+	builder.WriteString("satellite_selector=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SatelliteSelector))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

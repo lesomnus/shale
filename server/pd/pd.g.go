@@ -65,6 +65,7 @@ import (
 	entReader "github.com/lesomnus/shale/internal/ent/reader"
 	entRelay "github.com/lesomnus/shale/internal/ent/relay"
 	entRowSeal "github.com/lesomnus/shale/internal/ent/rowseal"
+	entSatellite "github.com/lesomnus/shale/internal/ent/satellite"
 	entSet "github.com/lesomnus/shale/internal/ent/set"
 	entSigningKey "github.com/lesomnus/shale/internal/ent/signingkey"
 	entSink "github.com/lesomnus/shale/internal/ent/sink"
@@ -149,6 +150,7 @@ const (
 	ReaderDomain                  pdid.Domain = 23  // "reader"
 	RelayDomain                   pdid.Domain = 24  // "relay"
 	RowSealDomain                 pdid.Domain = 255 // "row-seal"
+	SatelliteDomain               pdid.Domain = 43  // "satellite"
 	SetDomain                     pdid.Domain = 7   // "set"
 	SigningKeyDomain              pdid.Domain = 15  // "signing-key"
 	SinkDomain                    pdid.Domain = 14  // "sink"
@@ -188,6 +190,7 @@ func init() {
 	pdid.Register("shale.Reader", ReaderDomain, "reader")
 	pdid.Register("shale.Relay", RelayDomain, "relay")
 	pdid.Register("shale.RowSeal", RowSealDomain, "row-seal")
+	pdid.Register("shale.Satellite", SatelliteDomain, "satellite")
 	pdid.Register("shale.Set", SetDomain, "set")
 	pdid.Register("shale.SigningKey", SigningKeyDomain, "signing-key")
 	pdid.Register("shale.Sink", SinkDomain, "sink")
@@ -231,6 +234,7 @@ var Domains = map[string]pdid.Domain{
 	"shale.Reader":                  ReaderDomain,
 	"shale.Relay":                   RelayDomain,
 	"shale.RowSeal":                 RowSealDomain,
+	"shale.Satellite":               SatelliteDomain,
 	"shale.Set":                     SetDomain,
 	"shale.SigningKey":              SigningKeyDomain,
 	"shale.Sink":                    SinkDomain,
@@ -658,6 +662,15 @@ func (wall) RowSealScope(ctx context.Context) (predicate.RowSeal, error) {
 	return entRowSeal.TenantIdIn(vs...), nil
 }
 
+// SatelliteScope: declared `global`, so it is not behind the wall at all.
+func (wall) SatelliteScope(ctx context.Context) (predicate.Satellite, error) {
+	if _, ok := frame.AccountOf(ctx); ok {
+		return nothing[predicate.Satellite](), nil
+	}
+
+	return nil, nil
+}
+
 // SetScope: a row belongs to the tenant its "tenant" reaches.
 func (wall) SetScope(ctx context.Context) (predicate.Set, error) {
 	if _, ok := frame.AccountOf(ctx); ok {
@@ -1045,6 +1058,11 @@ func (x grouped) RelayScope(ctx context.Context) (predicate.Relay, error) {
 
 // RowSealScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) RowSealScope(ctx context.Context) (predicate.RowSeal, error) {
+	return nil, nil
+}
+
+// SatelliteScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) SatelliteScope(ctx context.Context) (predicate.Satellite, error) {
 	return nil, nil
 }
 
@@ -11767,6 +11785,484 @@ func (s sinkRelay) watchRelayKeys(
 	return ks, nil
 }
 
+type sinkSatellite struct {
+	api.SatelliteServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Satellite() api.SatelliteServiceServer {
+	v := sinkSatellite{s.Server.Satellite(), s.Server.Store, s.w, s.namer, s.joined}
+	v.SatelliteServiceServer = bare.SatelliteWithAddRule(v.SatelliteServiceServer, v.admit)
+	return v
+}
+
+// admit decides the name of a row an Add of Satellite writes, refusing one
+// that was given and cannot be one.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.Satellite].
+//
+// The name goes through [Sink.WithNamer], which is unset in most
+// deployments and then means: fold what was given, and make a name up
+// when nothing was -- for the reason `bare.Minter` makes a key up. An app
+// whose rows have to be named says so with `slug.Required`; see
+// `slug.Names` for why that is the way round it is.
+func (s sinkSatellite) admit(ctx context.Context, req *api.SatelliteAddRequest) (*api.SatelliteAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	v, err := slug.NameWith(ctx, s.namer, "shale.Satellite", req.GetAlias(), req)
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+	r.SetAlias(v)
+
+	return r, nil
+}
+
+// Add tries again when the name it made up was taken.
+//
+// The name is [sinkSatellite.admit]'s, and every try goes through it, so a
+// name made up is made up again and a name given is the same each time.
+func (s sinkSatellite) Add(ctx context.Context, req *api.SatelliteAddRequest) (*api.Satellite, error) {
+	// How many names to try. More than one only when the caller named
+	// nothing -- then the name is this server's and a collision is this
+	// server's to resolve. A name the caller gave is theirs, and quietly
+	// choosing a different one would write a row they did not ask for.
+	//
+	// And only when this Add opens its own transaction; see [Sink.joined].
+	tries := 1
+	if req.GetAlias() == "" && !s.joined {
+		tries = slug.Tries
+	}
+
+	for try := 0; ; try++ {
+		res, err := s.SatelliteServiceServer.Add(ctx, req)
+		if err == nil || try+1 >= tries || status.Code(err) != codes.AlreadyExists {
+			// Whatever it was, said in the words it was said in. Rewriting
+			// it into "no free name" would assert the one thing this cannot
+			// know -- a duplicate key is the same code -- and would say it
+			// loudest exactly when it is wrong.
+			return res, err
+		}
+	}
+}
+
+// Patch folds a name it was given, and says nothing about one it was not.
+//
+// The presence is the whole of the difference from [sinkSatellite.Add]: a patch
+// that does not mention the alias is not a patch setting it to the empty
+// string, and refusing one would make every patch of any other field carry
+// the name along.
+//
+// The namer is **not** asked here, and that is the second difference. It
+// decides the name of a row being made; a patch that cleared the alias is
+// a caller asking for something invalid, and answering that with an
+// invented name would hand them a row they did not ask for.
+//
+// And it forgets what the transaction was told about the row; see
+// [sinkSatellite.Apply].
+func (s sinkSatellite) Patch(ctx context.Context, req *api.SatellitePatchRequest) (*api.Satellite, error) {
+	seen.Forget(s.store.Db.Driver(), "Satellite", req.GetRef())
+
+	if !req.HasAlias() {
+		return s.SatelliteServiceServer.Patch(ctx, req)
+	}
+
+	v, err := slug.ParseAlias(req.GetAlias())
+	if err != nil {
+		return nil, pderr.At("alias", err)
+	}
+
+	req = proto.CloneOf(req)
+	req.SetAlias(v)
+
+	return s.SatelliteServiceServer.Patch(ctx, req)
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkSatellite) Erase(ctx context.Context, req *api.SatelliteRef) (*api.SatelliteEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "Satellite", req)
+
+	return s.SatelliteServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkSatellite) Apply(ctx context.Context, req *api.SatelliteApplyRequest) (*api.Satellite, error) {
+	seen.Forget(s.store.Db.Driver(), "Satellite", req.GetRef())
+
+	return s.SatelliteServiceServer.Apply(ctx, req)
+}
+
+// orderSatellite is how Satellites come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderSatellite = []sqlpage.Order{
+	{Column: entSatellite.FieldDateCreated, Desc: false},
+	{Column: entSatellite.FieldId, Desc: false},
+}
+
+func afterSatellite(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextSatellite(last *ent.Satellite, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderBySatellite is an order as ent orders a query by it.
+func orderBySatellite(by []sqlpage.Order) []entSatellite.OrderOption {
+	out := make([]entSatellite.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// SatellitePageSize is what a request that did not say gets, and
+	// SatellitePageLimit is the most it gets however loudly it asks.
+	SatellitePageSize  = 50
+	SatellitePageLimit = 500
+
+	// SatelliteFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	SatelliteFilterLimit = 32
+)
+
+// List answers with the Satellites that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkSatellite) List(ctx context.Context, req *api.SatelliteListRequest) (*api.SatelliteListResponse, error) {
+	q := s.store.Db.Satellite.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.SatelliteNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > SatelliteFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), SatelliteFilterLimit)
+		}
+
+		ps := make([]predicate.Satellite, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterSatellite(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entSatellite.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderSatellite, afterSatellite, nextSatellite, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), SatellitePageSize, SatellitePageLimit)
+	us, err := q.Order(orderBySatellite(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*api.Satellite, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := api.SatelliteListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterSatellite turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterSatellite(f *api.SatelliteFilter) (predicate.Satellite, error) {
+	ps := make([]predicate.Satellite, 0, 1)
+	if f.HasRef() {
+		p, err := bare.SatellitePick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if m := f.GetLabels(); len(m) > 0 {
+		ks := make([]string, 0, len(m))
+		for k := range m {
+			ks = append(ks, k)
+		}
+		sort.Strings(ks)
+
+		for _, k := range ks {
+			ps = append(ps, predicate.Satellite(func(s *sql.Selector) {
+				s.Where(sql.And(
+					sqljson.HasKey(entSatellite.FieldLabels, sqljson.Path(k)),
+					sqljson.ValueEQ(entSatellite.FieldLabels, m[k], sqljson.Path(k)),
+				))
+			}))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entSatellite.And(ps...), nil
+}
+
+// SatelliteService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a Satellite. A service is named for the entity it
+// is about, so the name carries it.
+var SatelliteService = watch.ServiceOf(api.SatelliteService_Get_FullMethodName)
+
+// Watch answers with the Satellites this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkSatellite) Watch(req *api.SatelliteWatchRequest, out grpc.ServerStreamingServer[api.SatelliteWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > SatelliteFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), SatelliteFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchSatelliteKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, SatelliteService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*api.SatelliteWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, api.SatelliteWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(api.SatelliteWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkSatellite) watchNow(
+	ctx context.Context, req *api.SatelliteWatchRequest, out grpc.ServerStreamingServer[api.SatelliteWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, api.SatelliteListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*api.SatelliteWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, api.SatelliteWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(api.SatelliteWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkSatellite) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*api.Satellite, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, api.SatelliteGetRequest_builder{
+		Ref: api.SatelliteRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchSatelliteKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkSatellite) watchSatelliteKeys(
+	ctx context.Context, fs []*api.SatelliteFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, api.SatelliteGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
 type sinkSet struct {
 	api.SetServiceServer
 	store  bare.Store
@@ -17317,6 +17813,8 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedRelay.md, describedRelay.secret, describedRelay.personal
 	case RowSealDomain:
 		return describedRowSeal.md, describedRowSeal.secret, describedRowSeal.personal
+	case SatelliteDomain:
+		return describedSatellite.md, describedSatellite.secret, describedSatellite.personal
 	case SetDomain:
 		return describedSet.md, describedSet.secret, describedSet.personal
 	case SigningKeyDomain:
@@ -17442,6 +17940,9 @@ var (
 	describedRowSeal = describe((*api.RowSeal)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
+	describedSatellite = describe((*api.Satellite)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
 	describedSet = describe((*api.Set)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -17509,6 +18010,7 @@ func added(by string) bool {
 		api.ProducerService_Add_FullMethodName,
 		api.ReaderService_Add_FullMethodName,
 		api.RelayService_Add_FullMethodName,
+		api.SatelliteService_Add_FullMethodName,
 		api.SetService_Add_FullMethodName,
 		api.SigningKeyService_Add_FullMethodName,
 		api.SinkService_Add_FullMethodName,
@@ -18223,6 +18725,8 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 		vs, err = rowsReader(ctx, s.Db, entReader.IdEQ(uuid.UUID(key)))
 	case RelayDomain:
 		vs, err = rowsRelay(ctx, s.Db, entRelay.IdEQ(uuid.UUID(key)))
+	case SatelliteDomain:
+		vs, err = rowsSatellite(ctx, s.Db, entSatellite.IdEQ(uuid.UUID(key)))
 	case SetDomain:
 		vs, err = rowsSet(ctx, s.Db, entSet.IdEQ(uuid.UUID(key)))
 	case SigningKeyDomain:
@@ -18666,6 +19170,9 @@ func Digests(ctx context.Context, db *ent.Client, d *audit.Digest, p trail.Polic
 	}
 	if err := audit.CheckKind(ctx, d, checkedRelay(db), archived, &out); err != nil {
 		return out, fmt.Errorf("relay: %w", err)
+	}
+	if err := audit.CheckKind(ctx, d, checkedSatellite(db), archived, &out); err != nil {
+		return out, fmt.Errorf("satellite: %w", err)
 	}
 	if err := audit.CheckKind(ctx, d, checkedSet(db), archived, &out); err != nil {
 		return out, fmt.Errorf("set: %w", err)
@@ -19713,6 +20220,52 @@ func checkedRelay(db *ent.Client) audit.Kind {
 	}
 }
 
+// checkedSatellite is what a check of the rows reads of the satellite kind.
+func checkedSatellite(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.Satellite) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsSatellite(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: SatelliteDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entSatellite.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entSatellite.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, SatelliteDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsSatellite(ctx, db, entSatellite.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
 // checkedSet is what a check of the rows reads of the set kind.
 func checkedSet(db *ent.Client) audit.Kind {
 	read := func(ctx context.Context, ps ...predicate.Set) (audit.Page, error) {
@@ -20521,6 +21074,26 @@ func rowsRelay(ctx context.Context, db *ent.Client, ps ...predicate.Relay) ([]au
 	return out, nil
 }
 
+// rowsSatellite is the rows `ps` says of the satellite kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsSatellite(ctx context.Context, db *ent.Client, ps ...predicate.Satellite) ([]audit.Live, error) {
+	q := db.Satellite.Query().Where(ps...)
+	bare.SatelliteSelectInit(q, nil)
+
+	vs, err := q.Order(entSatellite.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsSet is the rows `ps` says of the set kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -20948,6 +21521,8 @@ func record(ctx context.Context, db *ent.Client, content audit.Contents, action 
 				rows, err = rowsReader(ctx, db, entReader.IdIn(uuids(page)...))
 			case RelayDomain:
 				rows, err = rowsRelay(ctx, db, entRelay.IdIn(uuids(page)...))
+			case SatelliteDomain:
+				rows, err = rowsSatellite(ctx, db, entSatellite.IdIn(uuids(page)...))
 			case SetDomain:
 				rows, err = rowsSet(ctx, db, entSet.IdIn(uuids(page)...))
 			case SigningKeyDomain:
@@ -21122,6 +21697,8 @@ func (s trailStore) Carry(ctx context.Context, digest *audit.Digest, d pdid.Doma
 			rows, err = rowsReader(ctx, s.db, entReader.IdIn(uuids(ids)...))
 		case RelayDomain:
 			rows, err = rowsRelay(ctx, s.db, entRelay.IdIn(uuids(ids)...))
+		case SatelliteDomain:
+			rows, err = rowsSatellite(ctx, s.db, entSatellite.IdIn(uuids(ids)...))
 		case SetDomain:
 			rows, err = rowsSet(ctx, s.db, entSet.IdIn(uuids(ids)...))
 		case SigningKeyDomain:
@@ -22108,6 +22685,80 @@ func (s interceptRelay) Heartbeat(ctx context.Context, req *api.RelayHeartbeatRe
 func (s interceptRelay) Assign(ctx context.Context, req *api.RelayAssignRequest) (*api.Relay, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.RelayServiceServer,
 		api.RelayService_Assign_FullMethodName, req, s.RelayServiceServer.Assign)
+}
+
+func (s Intercept) Satellite() api.SatelliteServiceServer {
+	return interceptSatellite{s, s.Next().Satellite()}
+}
+
+type interceptSatellite struct {
+	Intercept
+	api.SatelliteServiceServer
+}
+
+func (s interceptSatellite) Add(ctx context.Context, req *api.SatelliteAddRequest) (*api.Satellite, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Add_FullMethodName, req, s.SatelliteServiceServer.Add)
+}
+
+func (s interceptSatellite) Get(ctx context.Context, req *api.SatelliteGetRequest) (*api.Satellite, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Get_FullMethodName, req, s.SatelliteServiceServer.Get)
+}
+
+func (s interceptSatellite) Patch(ctx context.Context, req *api.SatellitePatchRequest) (*api.Satellite, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Patch_FullMethodName, req, s.SatelliteServiceServer.Patch)
+}
+
+func (s interceptSatellite) Apply(ctx context.Context, req *api.SatelliteApplyRequest) (*api.Satellite, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Apply_FullMethodName, req, s.SatelliteServiceServer.Apply)
+}
+
+func (s interceptSatellite) Erase(ctx context.Context, req *api.SatelliteRef) (*api.SatelliteEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Erase_FullMethodName, req, s.SatelliteServiceServer.Erase)
+}
+
+func (s interceptSatellite) List(ctx context.Context, req *api.SatelliteListRequest) (*api.SatelliteListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_List_FullMethodName, req, s.SatelliteServiceServer.List)
+}
+
+func (s interceptSatellite) Watch(req *api.SatelliteWatchRequest, out grpc.ServerStreamingServer[api.SatelliteWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.SatelliteServiceServer,
+		api.SatelliteService_Watch_FullMethodName, req, out, s.SatelliteServiceServer.Watch)
+}
+
+func (s interceptSatellite) Join(ctx context.Context, req *api.SatelliteJoinRequest) (*api.SatelliteJoinResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Join_FullMethodName, req, s.SatelliteServiceServer.Join)
+}
+
+func (s interceptSatellite) Adopt(ctx context.Context, req *api.SatelliteAdoptRequest) (*api.Satellite, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Adopt_FullMethodName, req, s.SatelliteServiceServer.Adopt)
+}
+
+func (s interceptSatellite) RenewCertificate(ctx context.Context, req *api.SatelliteRenewCertificateRequest) (*api.SatelliteRenewCertificateResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_RenewCertificate_FullMethodName, req, s.SatelliteServiceServer.RenewCertificate)
+}
+
+func (s interceptSatellite) Heartbeat(ctx context.Context, req *api.SatelliteHeartbeatRequest) (*api.SatelliteHeartbeatResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Heartbeat_FullMethodName, req, s.SatelliteServiceServer.Heartbeat)
+}
+
+func (s interceptSatellite) Route(ctx context.Context, req *api.SatelliteRouteRequest) (*api.SatelliteRouteResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Route_FullMethodName, req, s.SatelliteServiceServer.Route)
+}
+
+func (s interceptSatellite) Assign(ctx context.Context, req *api.SatelliteAssignRequest) (*api.Satellite, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Assign_FullMethodName, req, s.SatelliteServiceServer.Assign)
 }
 
 func (s Intercept) Producer() api.ProducerServiceServer {
@@ -25128,6 +25779,7 @@ func Resources(w *watch.Watch, project resource.Project) (*resource.Server, erro
 		&api.Reader{},
 		&api.Relay{},
 		&api.RowSeal{},
+		&api.Satellite{},
 		&api.Set{},
 		&api.SigningKey{},
 		&api.Sink{},
@@ -26075,6 +26727,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 22, Name: entProducer.FieldVersion, Type: 9, Nullable: false, Key: 0},
 				{Number: 23, Name: entProducer.FieldLive, Type: 14, Nullable: false, Key: 0},
 				{Number: 24, Name: entProducer.FieldCaHash, Type: 9, Nullable: false, Key: 0},
+				{Number: 25, Name: entProducer.SatelliteColumn, Type: 64, Nullable: true, Key: 1},
 			}, v)
 			if err != nil {
 				return nil, err
@@ -26170,6 +26823,50 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				return nil, err
 			}
 			query := db.Relay.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *api.Satellite:
+			ctx, err := guard.Allow(ctx, api.SatelliteService_Get_FullMethodName)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.SatelliteNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entSatellite.Table, []resourcesql.Column{
+				{Number: 1, Name: entSatellite.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 4, Name: entSatellite.FieldAlias, Type: 9, Nullable: false, Key: 0},
+				{Number: 5, Name: entSatellite.FieldName, Type: 9, Nullable: false, Key: 0},
+				{Number: 6, Name: entSatellite.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 8, Name: entSatellite.FieldHardwareId, Type: 9, Nullable: false, Key: 0},
+				{Number: 9, Name: entSatellite.FieldHostname, Type: 9, Nullable: false, Key: 0},
+				{Number: 10, Name: entSatellite.FieldState, Type: 14, Nullable: false, Key: 0},
+				{Number: 11, Name: entSatellite.FieldCertSerial, Type: 9, Nullable: false, Key: 0},
+				{Number: 13, Name: entSatellite.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entSatellite.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entSatellite.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+				{Number: 16, Name: entSatellite.FieldDateAdopted, Type: 65, Nullable: true, Key: 0},
+				{Number: 17, Name: entSatellite.FieldDateSeen, Type: 65, Nullable: true, Key: 0},
+				{Number: 18, Name: entSatellite.FieldDateCertExpires, Type: 65, Nullable: true, Key: 0},
+				{Number: 21, Name: entSatellite.FieldCaHash, Type: 9, Nullable: false, Key: 0},
+				{Number: 22, Name: entSatellite.FieldVersion, Type: 9, Nullable: false, Key: 0},
+				{Number: 23, Name: entSatellite.FieldUploadAddress, Type: 9, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.Satellite.Query()
 			if pred != nil {
 				query.Where(pred)
 			}
@@ -26704,6 +27401,14 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case api.RelayService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case api.SatelliteService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case api.SatelliteService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.SatelliteService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case api.SatelliteService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case api.SetService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case api.SetService_Patch_FullMethodName:
@@ -26786,7 +27491,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraCredential", "shale.CameraCredentialVersion", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.CameraPolicy", "shale.CameraPreset", "shale.CameraWorker", "shale.CertificateAuthority", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
+	case "shale.Access", "shale.AddressPolicy", "shale.Attempt", "shale.Audit", "shale.CameraAssignment", "shale.CameraBinding", "shale.CameraCredential", "shale.CameraCredentialVersion", "shale.CameraDevice", "shale.CameraJob", "shale.CameraNetwork", "shale.CameraPolicy", "shale.CameraPreset", "shale.CameraWorker", "shale.CertificateAuthority", "shale.Delegation", "shale.Device", "shale.Holder", "shale.Lamina", "shale.Node", "shale.PlacementPolicy", "shale.Producer", "shale.Reader", "shale.Relay", "shale.Satellite", "shale.Set", "shale.SigningKey", "shale.Sink", "shale.Site", "shale.SiteMember", "shale.Source", "shale.Tenant", "shale.UploadPolicy":
 	default:
 		return nil
 	}

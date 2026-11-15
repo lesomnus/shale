@@ -28,7 +28,7 @@ import { CertificateAuthoritySchema } from './shale/certificate_authority_pb.js'
 import { DelegationSchema } from './shale/delegation_pb.js'
 import { DeviceSchema, SinkSchema } from './shale/storage_pb.js'
 import { HolderSchema } from './shale/payday/holder_pb.js'
-import { NodeSchema, ProducerSchema, ReaderSchema, RelaySchema } from './shale/host_pb.js'
+import { NodeSchema, ProducerSchema, ReaderSchema, RelaySchema, SatelliteSchema } from './shale/host_pb.js'
 import { OutboxSchema } from './shale/payday/outbox_pb.js'
 import { OwedSchema } from './shale/payday/owed_pb.js'
 import { RowSealSchema } from './shale/payday/rowseal_pb.js'
@@ -51,7 +51,7 @@ import { CertificateAuthorityService } from './shale/certificate_authority_svc_p
 import { DelegationService } from './shale/delegation_svc_pb.js'
 import { DeviceService, SinkService } from './shale/storage_svc_pb.js'
 import { HolderService } from './shale/payday/holder_svc_pb.js'
-import { NodeService, ProducerService, ReaderService, RelayService } from './shale/host_svc_pb.js'
+import { NodeService, ProducerService, ReaderService, RelayService, SatelliteService } from './shale/host_svc_pb.js'
 import { OutboxService } from './shale/payday/outbox_svc_pb.js'
 import { OwedService } from './shale/payday/owed_svc_pb.js'
 import { RowSealService } from './shale/payday/rowseal_svc_pb.js'
@@ -359,7 +359,7 @@ export const Producer = {
 	schema: ProducerSchema,
 	domain: 22,
 	version: "dateUpdated",
-	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }, { field: "set", to: "shale.Set" }, { field: "relay", to: "shale.Relay" }],
+	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }, { field: "set", to: "shale.Set" }, { field: "relay", to: "shale.Relay" }, { field: "satellite", to: "shale.Satellite" }],
 	alias: "alias",
 	key: "id",
 	ids: ["id"],
@@ -399,6 +399,18 @@ export const RowSeal = {
 	key: "id",
 	ids: ["id", "tenantId"],
 	service: RowSealService,
+} as const satisfies EntityDesc
+
+/** shale.Satellite, as the store holds it. */
+export const Satellite = {
+	typeName: "shale.Satellite",
+	schema: SatelliteSchema,
+	domain: 43,
+	version: "dateUpdated",
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
+	service: SatelliteService,
 } as const satisfies EntityDesc
 
 /** shale.Set, as the store holds it. */
@@ -503,5 +515,5 @@ export const UploadPolicy = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
+export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Satellite, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
 

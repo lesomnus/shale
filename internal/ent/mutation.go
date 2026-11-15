@@ -39,6 +39,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
 	"github.com/lesomnus/shale/internal/ent/rowseal"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/signingkey"
 	"github.com/lesomnus/shale/internal/ent/sink"
@@ -87,6 +88,7 @@ const (
 	TypeReader                  = "Reader"
 	TypeRelay                   = "Relay"
 	TypeRowSeal                 = "RowSeal"
+	TypeSatellite               = "Satellite"
 	TypeSet                     = "Set"
 	TypeSigningKey              = "SigningKey"
 	TypeSink                    = "Sink"
@@ -10471,6 +10473,23 @@ func (m *ProducerMutation) OldRelayId(ctx context.Context) (v uuid.UUID, err err
 	return oldValue.RelayId, nil
 }
 
+// OldSatelliteId returns the old "satellite_id" field's value of the Producer entity.
+// If the Producer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProducerMutation) OldSatelliteId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSatelliteId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSatelliteId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSatelliteId: %w", err)
+	}
+	return oldValue.SatelliteId, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -10522,6 +10541,8 @@ func (m *ProducerMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldSetId(ctx)
 	case producer.FieldRelayId:
 		return m.OldRelayId(ctx)
+	case producer.FieldSatelliteId:
+		return m.OldSatelliteId(ctx)
 	}
 	return nil, fmt.Errorf("unknown Producer field %s", name)
 }
@@ -11720,6 +11741,525 @@ func (m *RowSealMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldFields(ctx)
 	}
 	return nil, fmt.Errorf("unknown RowSeal field %s", name)
+}
+
+// SatelliteMutation represents an operation that mutates the Satellite nodes in the graph.
+type SatelliteMutation struct {
+	satellite.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*Satellite, error)
+}
+
+var _ ent.Mutation = (*SatelliteMutation)(nil)
+
+// satelliteOption allows management of the mutation configuration using functional options.
+type satelliteOption func(*SatelliteMutation)
+
+// newSatelliteMutation creates new mutation for the Satellite entity.
+func newSatelliteMutation(c config, op Op, opts ...satelliteOption) *SatelliteMutation {
+	m := &SatelliteMutation{
+		Mutation: *satellite.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of Satellite entities.
+func (m *SatelliteMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SatelliteMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withSatelliteId sets the Id field of the mutation.
+func withSatelliteId(id uuid.UUID) satelliteOption {
+	return func(m *SatelliteMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Satellite
+		)
+		m.oldValue = func(ctx context.Context) (*Satellite, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Satellite.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSatellite sets the old Satellite of the mutation.
+func withSatellite(node *Satellite) satelliteOption {
+	return func(m *SatelliteMutation) {
+		m.oldValue = func(context.Context) (*Satellite, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SatelliteMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SatelliteMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SatelliteMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().Satellite.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldAlias returns the old "alias" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldAlias(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAlias is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAlias requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAlias: %w", err)
+	}
+	return oldValue.Alias, nil
+}
+
+// OldName returns the old "name" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldName requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// OldDesc returns the old "desc" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldDesc(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDesc is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDesc requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDesc: %w", err)
+	}
+	return oldValue.Desc, nil
+}
+
+// OldLabels returns the old "labels" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// OldHardwareId returns the old "hardware_id" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldHardwareId(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldHardwareId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldHardwareId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHardwareId: %w", err)
+	}
+	return oldValue.HardwareId, nil
+}
+
+// OldHostname returns the old "hostname" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldHostname(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldHostname is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldHostname requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHostname: %w", err)
+	}
+	return oldValue.Hostname, nil
+}
+
+// OldState returns the old "state" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldState(ctx context.Context) (v int32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldState requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// OldCertSerial returns the old "cert_serial" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldCertSerial(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCertSerial is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCertSerial requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCertSerial: %w", err)
+	}
+	return oldValue.CertSerial, nil
+}
+
+// OldJoin returns the old "join" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldJoin(ctx context.Context) (v *api.HostJoin, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldJoin is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldJoin requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldJoin: %w", err)
+	}
+	return oldValue.Join, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateErased returns the old "date_erased" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldDateAdopted returns the old "date_adopted" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldDateAdopted(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateAdopted is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateAdopted requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateAdopted: %w", err)
+	}
+	return oldValue.DateAdopted, nil
+}
+
+// OldDateSeen returns the old "date_seen" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldDateSeen(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateSeen is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateSeen requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateSeen: %w", err)
+	}
+	return oldValue.DateSeen, nil
+}
+
+// OldDateCertExpires returns the old "date_cert_expires" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldDateCertExpires(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCertExpires is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCertExpires requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCertExpires: %w", err)
+	}
+	return oldValue.DateCertExpires, nil
+}
+
+// OldInterfaces returns the old "interfaces" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldInterfaces(ctx context.Context) (v []*api.HostInterface, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldInterfaces is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldInterfaces requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInterfaces: %w", err)
+	}
+	return oldValue.Interfaces, nil
+}
+
+// OldKeyIds returns the old "key_ids" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldKeyIds(ctx context.Context) (v []string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldKeyIds is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldKeyIds requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeyIds: %w", err)
+	}
+	return oldValue.KeyIds, nil
+}
+
+// OldCaHash returns the old "ca_hash" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldCaHash(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCaHash is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCaHash requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCaHash: %w", err)
+	}
+	return oldValue.CaHash, nil
+}
+
+// OldVersion returns the old "version" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldVersion(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// OldUploadAddress returns the old "upload_address" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldUploadAddress(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldUploadAddress is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldUploadAddress requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUploadAddress: %w", err)
+	}
+	return oldValue.UploadAddress, nil
+}
+
+// OldStatus returns the old "status" field's value of the Satellite entity.
+// If the Satellite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SatelliteMutation) OldStatus(ctx context.Context) (v *api.SatelliteStatus, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SatelliteMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case satellite.FieldAlias:
+		return m.OldAlias(ctx)
+	case satellite.FieldName:
+		return m.OldName(ctx)
+	case satellite.FieldDesc:
+		return m.OldDesc(ctx)
+	case satellite.FieldLabels:
+		return m.OldLabels(ctx)
+	case satellite.FieldHardwareId:
+		return m.OldHardwareId(ctx)
+	case satellite.FieldHostname:
+		return m.OldHostname(ctx)
+	case satellite.FieldState:
+		return m.OldState(ctx)
+	case satellite.FieldCertSerial:
+		return m.OldCertSerial(ctx)
+	case satellite.FieldJoin:
+		return m.OldJoin(ctx)
+	case satellite.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case satellite.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case satellite.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case satellite.FieldDateAdopted:
+		return m.OldDateAdopted(ctx)
+	case satellite.FieldDateSeen:
+		return m.OldDateSeen(ctx)
+	case satellite.FieldDateCertExpires:
+		return m.OldDateCertExpires(ctx)
+	case satellite.FieldInterfaces:
+		return m.OldInterfaces(ctx)
+	case satellite.FieldKeyIds:
+		return m.OldKeyIds(ctx)
+	case satellite.FieldCaHash:
+		return m.OldCaHash(ctx)
+	case satellite.FieldVersion:
+		return m.OldVersion(ctx)
+	case satellite.FieldUploadAddress:
+		return m.OldUploadAddress(ctx)
+	case satellite.FieldStatus:
+		return m.OldStatus(ctx)
+	}
+	return nil, fmt.Errorf("unknown Satellite field %s", name)
 }
 
 // SetMutation represents an operation that mutates the Set nodes in the graph.
@@ -13247,6 +13787,23 @@ func (m *SiteMutation) OldRelaySelector(ctx context.Context) (v map[string]strin
 	return oldValue.RelaySelector, nil
 }
 
+// OldSatelliteSelector returns the old "satellite_selector" field's value of the Site entity.
+// If the Site object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SiteMutation) OldSatelliteSelector(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSatelliteSelector is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSatelliteSelector requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSatelliteSelector: %w", err)
+	}
+	return oldValue.SatelliteSelector, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Site entity.
 // If the Site object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -13330,6 +13887,8 @@ func (m *SiteMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldLabels(ctx)
 	case site.FieldRelaySelector:
 		return m.OldRelaySelector(ctx)
+	case site.FieldSatelliteSelector:
+		return m.OldSatelliteSelector(ctx)
 	case site.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case site.FieldDateErased:

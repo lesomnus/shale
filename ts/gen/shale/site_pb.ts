@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/site.proto.
  */
 export const file_shale_site: GenFile = /*@__PURE__*/
-  fileDesc("ChBzaGFsZS9zaXRlLnByb3RvEgVzaGFsZSL8BAoEU2l0ZRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEicKBmxhYmVscxgHIAMoCzIXLnNoYWxlLlNpdGUuTGFiZWxzRW50cnkSNgoOcmVsYXlfc2VsZWN0b3IYCCADKAsyHi5zaGFsZS5TaXRlLlJlbGF5U2VsZWN0b3JFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ARo0ChJSZWxheVNlbGVjdG9yRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqQAcr8FVMSAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7FjUIEzIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGQ6AEIkWh1naXRodWIuY29tL2xlc29tbnVzL3NoYWxlL2FwaZIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_payday_tenant]);
+  fileDesc("ChBzaGFsZS9zaXRlLnByb3RvEgVzaGFsZSL2BQoEU2l0ZRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEicKBmxhYmVscxgHIAMoCzIXLnNoYWxlLlNpdGUuTGFiZWxzRW50cnkSNgoOcmVsYXlfc2VsZWN0b3IYCCADKAsyHi5zaGFsZS5TaXRlLlJlbGF5U2VsZWN0b3JFbnRyeRI+ChJzYXRlbGxpdGVfc2VsZWN0b3IYCSADKAsyIi5zaGFsZS5TaXRlLlNhdGVsbGl0ZVNlbGVjdG9yRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEaNAoSUmVsYXlTZWxlY3RvckVudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEaOAoWU2F0ZWxsaXRlU2VsZWN0b3JFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOpAByvwVUxICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZ0ZW5hbnQQAjABirsWNQgTMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZDoAQiRaHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpkgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_payday_tenant]);
 
 /**
  * Site groups sets within a tenant, e.g. a building or a branch (§7). It is
@@ -65,6 +65,14 @@ export type Site = Message<"shale.Site"> & {
    * @generated from field: map<string, string> relay_selector = 8;
    */
   relaySelector: { [key: string]: string };
+
+  /**
+   * Labels a satellite must carry to take this site's producers' uploads
+   * (§41.2). Empty means any satellite.
+   *
+   * @generated from field: map<string, string> satellite_selector = 9;
+   */
+  satelliteSelector: { [key: string]: string };
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

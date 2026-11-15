@@ -14,6 +14,7 @@ import (
 	producer "github.com/lesomnus/shale/internal/ent/producer"
 	reader "github.com/lesomnus/shale/internal/ent/reader"
 	relay "github.com/lesomnus/shale/internal/ent/relay"
+	satellite "github.com/lesomnus/shale/internal/ent/satellite"
 	set "github.com/lesomnus/shale/internal/ent/set"
 	site "github.com/lesomnus/shale/internal/ent/site"
 	ent1 "github.com/protobuf-orm/ent"
@@ -1309,6 +1310,636 @@ func pickRelay(req *api.RelayRef) (predicate.Relay, error) {
 	}
 }
 
+type SatelliteServiceServer struct {
+	Store
+
+	api.UnimplementedSatelliteServiceServer
+}
+
+// NewSatelliteServiceServer answers with a server that runs its queries with `db`.
+//
+// It takes the options of [Server] so that what is built here can be told
+// where to report its writes and what it may see. Built without them, it
+// reports nowhere and sees everything.
+func NewSatelliteServiceServer(db *ent.Client, opts ...Option) api.SatelliteServiceServer {
+	s := Server{Store: Store{Db: db}}
+	for _, opt := range opts {
+		opt(&s)
+	}
+	return SatelliteServiceServer{Store: s.Store}
+}
+
+// SatelliteNarrow answers with `p` and everything else that narrows a
+// read of a Satellite: the rows that have not been erased, and whatever
+// `scope` says of those.
+//
+// Every read this package makes goes through it, and a read written by
+// hand should too -- a List is the one read nothing generates, and so the
+// one that would otherwise answer with rows nobody should be given.
+func SatelliteNarrow(ctx context.Context, scope Scope, p predicate.Satellite) (predicate.Satellite, error) {
+	ps := make([]predicate.Satellite, 0, 3)
+
+	// A row that was erased is not a row a read answers with.
+	ps = append(ps, satellite.DateErasedIsNil())
+	if p != nil {
+		ps = append(ps, p)
+	}
+	if scope != nil {
+		q, err := scope.SatelliteScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if q != nil {
+			ps = append(ps, q)
+		}
+	}
+
+	switch len(ps) {
+	case 0:
+		return nil, nil
+	case 1:
+		return ps[0], nil
+	default:
+		return satellite.And(ps...), nil
+	}
+}
+
+// narrow is [SatelliteNarrow] with this server's own scope.
+func (s SatelliteServiceServer) narrow(ctx context.Context, p predicate.Satellite) (predicate.Satellite, error) {
+	return SatelliteNarrow(ctx, s.Scope, p)
+}
+
+func (s SatelliteServiceServer) snapshot(ctx context.Context, p predicate.Satellite, lock bool) (*ent.Satellite, error) {
+	q := s.Db.Satellite.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s SatelliteServiceServer) image(v *api.Satellite) *api.Satellite {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*api.Satellite)
+	return out
+}
+
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st SatelliteServiceServer) create(ctx context.Context, req *api.SatelliteAddRequest) (*ent.SatelliteCreate, []func(v *api.Satellite), error) {
+	var ds []func(v *api.Satellite)
+	q := st.Db.Satellite.Create()
+	var k uuid.UUID
+	if req.HasId() {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			k = v
+		}
+	}
+	if v, err := mint(ctx, st.Mint, "shale.Satellite", k, req.HasId()); err != nil {
+		return nil, nil, err
+	} else {
+		q.SetId(v)
+	}
+	q.SetAlias(req.GetAlias())
+	q.SetName(req.GetName())
+	q.SetDesc(req.GetDesc())
+	if u := req.GetLabels(); len(u) > 0 {
+		q.SetLabels(u)
+	}
+	q.SetHardwareId(req.GetHardwareId())
+	q.SetHostname(req.GetHostname())
+	q.SetState(int32(req.GetState()))
+	q.SetCertSerial(req.GetCertSerial())
+	if req.HasJoin() {
+		q.SetJoin(req.GetJoin())
+	}
+	q.SetDateUpdated(st.now())
+	if req.HasDateCreated() {
+		q.SetDateCreated(req.GetDateCreated().AsTime())
+	} else {
+		q.SetDateCreated(st.now())
+	}
+	if req.HasDateAdopted() {
+		q.SetDateAdopted(req.GetDateAdopted().AsTime())
+	}
+	if req.HasDateSeen() {
+		q.SetDateSeen(req.GetDateSeen().AsTime())
+	}
+	if req.HasDateCertExpires() {
+		q.SetDateCertExpires(req.GetDateCertExpires().AsTime())
+	}
+	if u := req.GetInterfaces(); len(u) > 0 {
+		q.SetInterfaces(u)
+	}
+	if u := req.GetKeyIds(); len(u) > 0 {
+		q.SetKeyIds(u)
+	}
+	q.SetCaHash(req.GetCaHash())
+	q.SetVersion(req.GetVersion())
+	q.SetUploadAddress(req.GetUploadAddress())
+	if req.HasStatus() {
+		q.SetStatus(req.GetStatus())
+	}
+	return q, ds, nil
+}
+
+func (s SatelliteServiceServer) Add(ctx context.Context, req *api.SatelliteAddRequest) (*api.Satellite, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var stored *ent.Satellite
+	if snapshotOptions(s.Rec, api.SatelliteService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
+	tx.Writing()
+	u, err := q.Save(ctx)
+	if err != nil {
+		if err, ok := err.(*ent.ConstraintError); ok {
+			if sqlgraph.IsUniqueConstraintError(err) {
+				return nil, status.Error(codes.AlreadyExists, "Satellite already exists")
+			}
+			if sqlgraph.IsForeignKeyConstraintError(err) {
+				return nil, status.Error(codes.NotFound, "Satellite: referenced entity not found")
+			}
+		}
+		return nil, err
+	}
+
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *api.Satellite
+	if stored != nil {
+		value = s.image(stored.Proto())
+	}
+	if err := record(ctx, s.Rec, st.Db, Change{
+		By:    api.SatelliteService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
+	}); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// SatelliteAddRule is what a layer in front says about one row an Add of Satellite
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type SatelliteAddRule func(ctx context.Context, req *api.SatelliteAddRequest) (*api.SatelliteAddRequest, error)
+
+// SatelliteWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func SatelliteWithAddRule(next api.SatelliteServiceServer, rule SatelliteAddRule) api.SatelliteServiceServer {
+	return satelliteAddRuled{next, rule}
+}
+
+type satelliteAddRuled struct {
+	api.SatelliteServiceServer
+	rule SatelliteAddRule
+}
+
+func (s satelliteAddRuled) Add(ctx context.Context, req *api.SatelliteAddRequest) (*api.Satellite, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.SatelliteServiceServer.Add(ctx, r)
+}
+
+func (s SatelliteServiceServer) Get(ctx context.Context, req *api.SatelliteGetRequest) (*api.Satellite, error) {
+	p, err := SatellitePick(req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	p, err = s.narrow(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	q := s.Db.Satellite.Query().Where(p)
+	SatelliteSelectInit(q, req.GetSelect())
+
+	v, err := q.Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "Satellite not found")
+		}
+		return nil, err
+	}
+	return v.Proto(), nil
+}
+
+func selectSatelliteKey(q *ent.SatelliteQuery) {
+	q.Select(satellite.FieldId)
+}
+
+func SatelliteSelectedFields(m *api.SatelliteSelect) []string {
+	if m.GetAll() {
+		return satellite.Columns
+	}
+
+	vs := make([]string, 0, len(satellite.Columns))
+	{
+		vs = append(vs, satellite.FieldId)
+	}
+	if m.GetAlias() {
+		vs = append(vs, satellite.FieldAlias)
+	}
+	if m.GetName() {
+		vs = append(vs, satellite.FieldName)
+	}
+	if m.GetDesc() {
+		vs = append(vs, satellite.FieldDesc)
+	}
+	if m.GetLabels() {
+		vs = append(vs, satellite.FieldLabels)
+	}
+	if m.GetHardwareId() {
+		vs = append(vs, satellite.FieldHardwareId)
+	}
+	if m.GetHostname() {
+		vs = append(vs, satellite.FieldHostname)
+	}
+	if m.GetState() {
+		vs = append(vs, satellite.FieldState)
+	}
+	if m.GetCertSerial() {
+		vs = append(vs, satellite.FieldCertSerial)
+	}
+	if m.GetJoin() {
+		vs = append(vs, satellite.FieldJoin)
+	}
+	if m.GetDateUpdated() {
+		vs = append(vs, satellite.FieldDateUpdated)
+	}
+	if m.GetDateErased() {
+		vs = append(vs, satellite.FieldDateErased)
+	}
+	if m.GetDateCreated() {
+		vs = append(vs, satellite.FieldDateCreated)
+	}
+	if m.GetDateAdopted() {
+		vs = append(vs, satellite.FieldDateAdopted)
+	}
+	if m.GetDateSeen() {
+		vs = append(vs, satellite.FieldDateSeen)
+	}
+	if m.GetDateCertExpires() {
+		vs = append(vs, satellite.FieldDateCertExpires)
+	}
+	if m.GetInterfaces() {
+		vs = append(vs, satellite.FieldInterfaces)
+	}
+	if m.GetKeyIds() {
+		vs = append(vs, satellite.FieldKeyIds)
+	}
+	if m.GetCaHash() {
+		vs = append(vs, satellite.FieldCaHash)
+	}
+	if m.GetVersion() {
+		vs = append(vs, satellite.FieldVersion)
+	}
+	if m.GetUploadAddress() {
+		vs = append(vs, satellite.FieldUploadAddress)
+	}
+	if m.GetStatus() {
+		vs = append(vs, satellite.FieldStatus)
+	}
+
+	return vs
+}
+
+func SatelliteSelect(q *ent.SatelliteQuery, m *api.SatelliteSelect) {
+	if !m.GetAll() {
+		fields := SatelliteSelectedFields(m)
+		q.Select(fields...)
+	}
+}
+
+func SatelliteSelectInit(q *ent.SatelliteQuery, m *api.SatelliteSelect) {
+	if m != nil {
+		SatelliteSelect(q, m)
+	}
+}
+
+func (s SatelliteServiceServer) Patch(ctx context.Context, req *api.SatellitePatchRequest) (*api.Satellite, error) {
+	doc, err := ormpatch.FromPatchRequest(satelliteOrmEntity, req.ProtoReflect(), nil)
+	if err != nil {
+		if _, ok := status.FromError(err); ok {
+			return nil, err
+		}
+		if errors.Is(err, ormpatch.ErrRequestLayout) {
+			return nil, status.Errorf(codes.Internal, "%s", err)
+		}
+		if errors.Is(err, ormpatch.ErrUnsupported) {
+			return nil, status.Errorf(codes.Unimplemented, "%s", err)
+		}
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+	}
+
+	return s.apply(ctx, req.GetRef(), doc, api.SatelliteService_Patch_FullMethodName)
+}
+
+func SatelliteGetKey(ctx context.Context, db *ent.Client, ref *api.SatelliteRef) (uuid.UUID, error) {
+	var z uuid.UUID
+	if ref.HasId() {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
+			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			return v, nil
+		}
+	}
+
+	p, err := SatellitePick(ref)
+	if err != nil {
+		return z, err
+	}
+
+	v, err := db.Satellite.Query().Where(p).OnlyId(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return z, status.Error(codes.NotFound, "Satellite not found")
+		}
+		return z, err
+	}
+
+	return v, nil
+}
+
+var satelliteOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Satellite")
+
+var satellitePatchColumns = entpatch.Columns{
+	1: satellite.FieldId, 4: satellite.FieldAlias, 5: satellite.FieldName, 6: satellite.FieldDesc, 7: satellite.FieldLabels, 8: satellite.FieldHardwareId, 9: satellite.FieldHostname, 10: satellite.FieldState, 11: satellite.FieldCertSerial, 12: satellite.FieldJoin, 13: satellite.FieldDateUpdated, 14: satellite.FieldDateErased, 15: satellite.FieldDateCreated, 16: satellite.FieldDateAdopted, 17: satellite.FieldDateSeen, 18: satellite.FieldDateCertExpires, 19: satellite.FieldInterfaces, 20: satellite.FieldKeyIds, 21: satellite.FieldCaHash, 22: satellite.FieldVersion, 23: satellite.FieldUploadAddress, 24: satellite.FieldStatus}
+
+func (s SatelliteServiceServer) Apply(ctx context.Context, req *api.SatelliteApplyRequest) (*api.Satellite, error) {
+	if !req.HasPatch() {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
+	}
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), api.SatelliteService_Apply_FullMethodName)
+}
+
+func (s SatelliteServiceServer) apply(ctx context.Context, ref *api.SatelliteRef, doc *patchpb.Patch, by string) (*api.Satellite, error) {
+	plan := &ormpatch.Plan{Entity: satelliteOrmEntity}
+	if doc != nil {
+		v, err := ormpatch.Compile(satelliteOrmEntity, doc)
+		if err != nil {
+			if errors.Is(err, ormpatch.ErrUnsupported) {
+				return nil, status.Errorf(codes.Unimplemented, "%s", err)
+			}
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+		}
+		plan = v
+	}
+
+	pred, mod, err := entpatch.Build(plan, satellitePatchColumns, s.Db.Dialect())
+	if err != nil {
+		if errors.Is(err, entpatch.ErrValue) {
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+		}
+		return nil, status.Errorf(codes.Internal, "%s", err)
+	}
+
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	k, err := SatelliteGetKey(ctx, st.Db, ref)
+	if err != nil {
+		return nil, err
+	}
+	at := &api.SatelliteRef{}
+	at.SetId(k[:])
+	p, err := s.narrow(ctx, satellite.IdEQ(k))
+	if err != nil {
+		return nil, err
+	}
+
+	var previous *api.Satellite
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
+	if mod == nil {
+		q := st.Db.Satellite.Query().Where(p)
+		if pred != nil {
+			q.Where(predicate.Satellite(pred))
+		}
+		if ok, err := q.Exist(ctx); err != nil {
+			return nil, err
+		} else if !ok {
+			return nil, func() error {
+				if ok, err := st.Db.Satellite.Query().Where(p).Exist(ctx); err != nil {
+					return err
+				} else if !ok {
+					return status.Error(codes.NotFound, "Satellite not found")
+				}
+				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
+			}()
+		}
+	} else {
+		q := st.Db.Satellite.Update().Where(p)
+		if pred != nil {
+			q.Where(predicate.Satellite(pred))
+		}
+		q.Modify(mod)
+		if !plan.WritesTo(13) {
+			q.SetDateUpdated(st.now())
+		}
+		tx.Writing()
+		if n, err := q.Save(ctx); err != nil {
+			if err, ok := err.(*ent.ConstraintError); ok {
+				if sqlgraph.IsUniqueConstraintError(err) {
+					return nil, status.Error(codes.AlreadyExists, "Satellite already exists")
+				}
+				if sqlgraph.IsForeignKeyConstraintError(err) {
+					return nil, status.Error(codes.NotFound, "Satellite: referenced entity not found")
+				}
+			}
+			return nil, err
+		} else if n == 0 {
+			return nil, func() error {
+				if ok, err := st.Db.Satellite.Query().Where(p).Exist(ctx); err != nil {
+					return err
+				} else if !ok {
+					return status.Error(codes.NotFound, "Satellite not found")
+				}
+				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
+			}()
+		}
+	}
+
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
+	if mod != nil {
+		var value *api.Satellite
+		if images.Value {
+			value = s.image(out)
+		}
+		if err := record(ctx, s.Rec, st.Db, Change{
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s SatelliteServiceServer) Erase(ctx context.Context, req *api.SatelliteRef) (*api.SatelliteEraseResponse, error) {
+	p, err := SatellitePick(req)
+	if err != nil {
+		return nil, err
+	}
+	p, err = s.narrow(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	var k any
+	var previous *api.Satellite
+	if s.Rec != nil {
+		images := snapshotOptions(s.Rec, api.SatelliteService_Erase_FullMethodName)
+		var v *ent.Satellite
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Satellite.Query().Where(p).Select(satellite.FieldId).Only(ctx)
+		}
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return &api.SatelliteEraseResponse{}, nil
+			}
+			return nil, err
+		}
+
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = satellite.And(p, satellite.IdEQ(v.Id))
+	}
+
+	tx.Writing()
+	u := st.Db.Satellite.Update().Where(p)
+	u.SetDateErased(st.now())
+	u.SetDateUpdated(st.now())
+	n, err := u.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if n > 0 {
+		if err := record(ctx, s.Rec, st.Db, Change{
+			By:       api.SatelliteService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	res := &api.SatelliteEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
+}
+
+// SatellitePick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a Satellite is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasSatelliteWith`, where no narrowing of a Satellite
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
+func SatellitePick(req *api.SatelliteRef) (predicate.Satellite, error) {
+	p, err := pickSatellite(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return satellite.And(satellite.DateErasedIsNil(), p), nil
+}
+
+func pickSatellite(req *api.SatelliteRef) (predicate.Satellite, error) {
+	switch req.WhichKey() {
+	case api.SatelliteRef_Id_case:
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			return satellite.IdEQ(v), nil
+		}
+	case api.SatelliteRef_Alias_case:
+		return satellite.AliasEQ(req.GetAlias()), nil
+	case api.SatelliteRef_Key_not_set_case:
+		return nil, status.Errorf(codes.InvalidArgument, "key not set: Satellite")
+	default:
+		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())
+	}
+}
+
 type ProducerServiceServer struct {
 	Store
 
@@ -1439,6 +2070,20 @@ func (s ProducerServiceServer) image(v *api.Producer) *api.Producer {
 			trim(m.Get(f).Message())
 		}
 	}
+	{
+		f := m.Descriptor().Fields().ByNumber(25)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
 	return out
 }
 
@@ -1446,7 +2091,7 @@ func (s ProducerServiceServer) image(v *api.Producer) *api.Producer {
 // and what the answer says about its edges. Add and AddMany both write
 // with it, so that an item of an AddMany is the row an Add of it would be.
 func (st ProducerServiceServer) create(ctx context.Context, req *api.ProducerAddRequest) (*ent.ProducerCreate, []func(v *api.Producer), error) {
-	ds := make([]func(v *api.Producer), 0, 4)
+	ds := make([]func(v *api.Producer), 0, 5)
 	q := st.Db.Producer.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -1540,6 +2185,16 @@ func (st ProducerServiceServer) create(ctx context.Context, req *api.ProducerAdd
 		q.SetCaHash(req.GetCaHash())
 	} else {
 		q.SetCaHash("")
+	}
+	if req.HasSatellite() {
+		if k, err := SatelliteGetKey(ctx, st.Db, req.GetSatellite()); err != nil {
+			return nil, nil, err
+		} else {
+			q.SetSatelliteId(k)
+			ds = append(ds, func(v *api.Producer) {
+				v.SetSatellite(api.Satellite_builder{Id: k[:]}.Build())
+			})
+		}
 	}
 	return q, ds, nil
 }
@@ -1757,6 +2412,12 @@ func ProducerSelect(q *ent.ProducerQuery, m *api.ProducerSelect) {
 			RelaySelect(q, m.GetRelay())
 		})
 	}
+	if m.HasSatellite() {
+		q.WithSatellite(func(q *ent.SatelliteQuery) {
+			q.Where(satellite.DateErasedIsNil())
+			SatelliteSelect(q, m.GetSatellite())
+		})
+	}
 }
 
 func ProducerSelectInit(q *ent.ProducerQuery, m *api.ProducerSelect) {
@@ -1782,6 +2443,12 @@ func (s ProducerServiceServer) Patch(ctx context.Context, req *api.ProducerPatch
 			return protoreflect.ValueOfBytes(k[:]), nil
 		case 20:
 			k, err := RelayGetKey(ctx, s.Db, ref.Interface().(*api.RelayRef))
+			if err != nil {
+				return protoreflect.Value{}, err
+			}
+			return protoreflect.ValueOfBytes(k[:]), nil
+		case 25:
+			k, err := SatelliteGetKey(ctx, s.Db, ref.Interface().(*api.SatelliteRef))
 			if err != nil {
 				return protoreflect.Value{}, err
 			}
@@ -1834,7 +2501,7 @@ func ProducerGetKey(ctx context.Context, db *ent.Client, ref *api.ProducerRef) (
 var producerOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Producer")
 
 var producerPatchColumns = entpatch.Columns{
-	1: producer.FieldId, 2: producer.TenantColumn, 3: producer.SiteColumn, 4: producer.FieldAlias, 5: producer.FieldName, 6: producer.FieldDesc, 7: producer.FieldLabels, 8: producer.SetColumn, 9: producer.FieldHardwareId, 10: producer.FieldHostname, 11: producer.FieldState, 12: producer.FieldCertSerial, 13: producer.FieldDateUpdated, 14: producer.FieldDateErased, 15: producer.FieldDateCreated, 16: producer.FieldJoin, 17: producer.FieldDateAdopted, 18: producer.FieldDateSeen, 19: producer.FieldDateCertExpires, 20: producer.RelayColumn, 21: producer.FieldStatus, 22: producer.FieldVersion, 23: producer.FieldLive, 24: producer.FieldCaHash}
+	1: producer.FieldId, 2: producer.TenantColumn, 3: producer.SiteColumn, 4: producer.FieldAlias, 5: producer.FieldName, 6: producer.FieldDesc, 7: producer.FieldLabels, 8: producer.SetColumn, 9: producer.FieldHardwareId, 10: producer.FieldHostname, 11: producer.FieldState, 12: producer.FieldCertSerial, 13: producer.FieldDateUpdated, 14: producer.FieldDateErased, 15: producer.FieldDateCreated, 16: producer.FieldJoin, 17: producer.FieldDateAdopted, 18: producer.FieldDateSeen, 19: producer.FieldDateCertExpires, 20: producer.RelayColumn, 21: producer.FieldStatus, 22: producer.FieldVersion, 23: producer.FieldLive, 24: producer.FieldCaHash, 25: producer.SatelliteColumn}
 
 func (s ProducerServiceServer) Apply(ctx context.Context, req *api.ProducerApplyRequest) (*api.Producer, error) {
 	if !req.HasPatch() {

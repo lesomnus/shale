@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/shale/internal/dnsupdate"
 	"github.com/lesomnus/shale/internal/ent/node"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 )
 
 // The `dns` address resolver's records (§34.10). The resolver hands out
@@ -434,7 +435,8 @@ func dnsPolicyKey(pol *api.AddressPolicy) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// desired is what the zone should hold: a name per adopted node and relay,
+// desired is what the zone should hold: a name per adopted node, relay and
+// satellite,
 // with the addresses each reports; hosts the template gives one name
 // share it.
 func (r *DnsRecords) desired(ctx context.Context, p *api.AddressParams, zone string) (map[string]*dnsupdate.Want, error) {
@@ -480,6 +482,15 @@ func (r *DnsRecords) desired(ctx context.Context, p *api.AddressParams, zone str
 	}
 	for _, v := range relays {
 		add(NodeAddresses{Id: pdid.Id(v.Id), Alias: v.Alias, Interfaces: v.Interfaces, DataAddress: v.IngestAddress})
+	}
+	sats, err := r.d.Ent.Satellite.Query().
+		Where(satellite.StateEQ(int32(api.HostState_HOST_STATE_ADOPTED)), satellite.DateErasedIsNil()).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range sats {
+		add(NodeAddresses{Id: pdid.Id(v.Id), Alias: v.Alias, Interfaces: v.Interfaces, DataAddress: v.UploadAddress})
 	}
 
 	return out, nil

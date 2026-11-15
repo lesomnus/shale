@@ -13,6 +13,7 @@ shale serve storage  --cp <url>   Storage Node
 shale serve producer --cp <url>   Producer: records the cameras of one set and uploads them
 shale serve reader   --cp <url>   Reader agent beside a media server (§33.4)
 shale serve relay    --cp <url>   Relay: live streams to viewers over WebRTC (§39)
+shale serve satellite --cp <url>  Satellite: producers upload through it (§41)
 shale serve all [--dev <dir>]     control, cluster, one Storage Node, and one Relay in one process
 ```
 
@@ -102,6 +103,7 @@ data, so the "no SSD in the data path" rule
 | Producer | `/var/lib/shale/producer` | host key and certificate, CA bundle. Segments are held in RAM only ([§16](04-write-path.md#16-producer-backpressure)) |
 | Reader | `/var/lib/shale/reader` | host key and certificate, CA bundle (`host.key`, `host.crt`, `ca.crt`), which the software beside it reads with ([§36.4](13-configuration.md#364-running-a-reader)) |
 | Relay | `/var/lib/shale/relay` | host key and certificate, CA bundle, cached key set. No stream state: everything it carries is in RAM ([§39](16-relay.md#39-relay)) |
+| Satellite | `/var/lib/shale/satellite` | host key and certificate, CA bundle, cached key set, the producers it serves (`producers.json`). No lamina data: what passes through is in RAM ([§41](18-satellite.md#41-satellite)) |
 
 A host that loses its state directory has lost its key. It joins again on its
 next start and is recognized by its hardware identity
@@ -117,6 +119,7 @@ next start and is recognized by its hardware identity
 | Producer | — (an edge host) | `shale-producer.service` on the gateway | `shale-producer.service` | container on the gateway |
 | Reader | `shale-reader` sidecar or host service beside the media server | `shale-reader.service` | same host | sidecar container |
 | Relay | Deployment with hostNetwork or a LoadBalancer with UDP, one per site | `shale-relay.service` | same process | container, `--network host` |
+| Satellite | — (beside the producers it serves) | `shale@satellite` | not in `serve all` | container |
 | DB | PostgreSQL | PostgreSQL | SQLite | PostgreSQL or SQLite |
 | Sinks | hostPath | mount points | mount points or directories | bind mounts |
 | Node network | **hostNetwork** | host | host | `--network host` |
@@ -585,3 +588,43 @@ If a node's address changed in the meantime:
 
 Changing a node's addresses never touches laminae. Their location is
 `(sink_id, lamina_key)` ([§23.3](07-storage-node.md#233-index-metadata-control-plane)).
+
+### 34.11 Running a satellite
+
+A satellite ([§41](18-satellite.md#41-satellite)) stands where producers can
+reach it and it can reach the nodes: on the site's LAN, or at the edge of
+the network the nodes are on. It joins the cluster API like a relay:
+
+```yaml
+# /etc/shale/shale.yaml, shale@satellite
+state: /var/lib/shale
+cp: https://cp.example.com:7401          # the cluster API
+ca_hash: sha256:...                      # printed by `shale init`
+satellite:
+  addr: ":7460"                          # producers dial this
+  # advertise: 192.0.2.10                # the address producers are handed
+  # memory_budget: 256MiB                # what passes through, at most (§41.4)
+```
+
+```sh
+systemctl enable --now shale@satellite
+shale satellite pending                  # waiting for adoption
+shale satellite adopt <alias>            # or control.auto_adopt
+shale satellite patch <alias> '{"labels":{"site":"lobby"},"date_updated":"..."}'
+shale site patch @acme/lobby '{"satellite_selector":{"site":"lobby"},"date_updated":"..."}'
+```
+
+Then the producers that are to go through it say so, and restart:
+
+```yaml
+producer:
+  upload_via: auto      # or satellite; direct, the default, as before (§41.5)
+```
+
+A producer of an earlier release, or one that says nothing, uploads as it
+always has, and the satellite refuses it. Nothing needs to change on a node:
+it sees each producer's token as it always did. Producers dial the
+satellite's upload listener on TCP; the satellite dials the nodes' data
+planes, so a site whose producers could not reach the nodes needs only the
+satellite to. `shale satellite ls` shows each one's last heartbeat: its
+in-flight pool, the requests passing through, and the producers it serves.

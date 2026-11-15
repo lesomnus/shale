@@ -293,6 +293,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 
 		NodeDownAfter:      c.Control.NodeDownAfter,
 		RelayDownAfter:     c.Control.RelayDownAfter,
+		SatelliteDownAfter: c.Control.SatelliteDownAfter,
 		SinkAutoAdoptAfter: c.Control.SinkAutoAdoptAfter,
 		AllocationTTL:      c.Control.AllocationTTL,
 		CaRolloverBefore:   c.Control.CaRolloverBefore,
@@ -311,7 +312,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 	if c.Control.AutoAdopt {
 		deps.AutoAdopt = func(kind pdid.Domain, _ *api.HostJoin, _ string) bool {
-			return kind == core.DomNode || kind == core.DomRelay
+			return kind == core.DomNode || kind == core.DomRelay || kind == core.DomSatellite
 		}
 	}
 	deps.Operators, deps.Reads = s.operators(), c.Auth.Operators.GrantedReads()
@@ -674,6 +675,7 @@ func (s *Server) Grpc(ctx context.Context, surface Surface, opts ...grpc.ServerO
 		grpcx.WithPolled(
 			api.NodeService_Heartbeat_FullMethodName,
 			api.RelayService_Heartbeat_FullMethodName,
+			api.SatelliteService_Heartbeat_FullMethodName,
 		),
 	).
 		WithUnary(auth.InterceptorUnary(s.Auth[surface], Resolver(s), public(surface))).
@@ -757,6 +759,7 @@ func registerCluster(g grpc.ServiceRegistrar, s api.Server) {
 	api.RegisterTenantServiceServer(g, s.Tenant())
 	api.RegisterNodeServiceServer(g, s.Node())
 	api.RegisterRelayServiceServer(g, s.Relay())
+	api.RegisterSatelliteServiceServer(g, s.Satellite())
 	api.RegisterDeviceServiceServer(g, s.Device())
 	api.RegisterSinkServiceServer(g, s.Sink())
 	api.RegisterOutboxServiceServer(g, s.Outbox())
