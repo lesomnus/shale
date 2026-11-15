@@ -2837,9 +2837,10 @@ func (x *CertificateAuthorityWaiting) ClearDateCertExpires() {
 type CertificateAuthorityWaiting_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The host's row: a Node, Relay, Producer, Reader, or CameraWorker.
+	// The host's row: a Node, Relay, Satellite, Producer, Reader, or
+	// CameraWorker.
 	Id []byte
-	// node, relay, producer, reader, or camera-worker.
+	// node, relay, satellite, producer, reader, or camera-worker.
 	Kind  string
 	Alias string
 	// The bundle hash its last heartbeat reported; empty when none did.

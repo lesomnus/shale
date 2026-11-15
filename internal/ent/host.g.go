@@ -91,6 +91,44 @@ func (e *Relay) Proto() *api.Relay {
 	}
 	return x
 }
+func (e *Satellite) Proto() *api.Satellite {
+	x := &api.Satellite{}
+	x.SetId(e.Id[:])
+	x.SetAlias(e.Alias)
+	x.SetName(e.Name)
+	x.SetDesc(e.Desc)
+	x.SetLabels(e.Labels)
+	x.SetHardwareId(e.HardwareId)
+	x.SetHostname(e.Hostname)
+	x.SetState(api.HostState(e.State))
+	x.SetCertSerial(e.CertSerial)
+	if e.Join != nil {
+		x.SetJoin(e.Join)
+	}
+	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
+	if e.DateErased != nil {
+		x.SetDateErased(timestamppb.New(*e.DateErased))
+	}
+	x.SetDateCreated(timestamppb.New(e.DateCreated))
+	if e.DateAdopted != nil {
+		x.SetDateAdopted(timestamppb.New(*e.DateAdopted))
+	}
+	if e.DateSeen != nil {
+		x.SetDateSeen(timestamppb.New(*e.DateSeen))
+	}
+	if e.DateCertExpires != nil {
+		x.SetDateCertExpires(timestamppb.New(*e.DateCertExpires))
+	}
+	x.SetInterfaces(e.Interfaces)
+	x.SetKeyIds(e.KeyIds)
+	x.SetCaHash(e.CaHash)
+	x.SetVersion(e.Version)
+	x.SetUploadAddress(e.UploadAddress)
+	if e.Status != nil {
+		x.SetStatus(e.Status)
+	}
+	return x
+}
 func (e *Producer) Proto() *api.Producer {
 	x := &api.Producer{}
 	x.SetId(e.Id[:])
@@ -153,6 +191,13 @@ func (e *Producer) Proto() *api.Producer {
 	x.SetVersion(e.Version)
 	x.SetLive(api.LivePolicy(e.Live))
 	x.SetCaHash(e.CaHash)
+	if v := e.Edges.Satellite; v != nil {
+		x.SetSatellite(v.Proto())
+	} else if v := e.SatelliteId; v != *new(uuid.UUID) {
+		r := &api.Satellite{}
+		r.SetId(v[:])
+		x.SetSatellite(r)
+	}
 	return x
 }
 func (e *Reader) Proto() *api.Reader {

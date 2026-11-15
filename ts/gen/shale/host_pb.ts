@@ -9,7 +9,7 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
 import { file_payday } from "../payday_pb.js";
-import type { HostInterface, HostJoin, LivePolicy, NodeStatus, ProducerStatus, RelayStatus } from "./common_pb.js";
+import type { HostInterface, HostJoin, LivePolicy, NodeStatus, ProducerStatus, RelayStatus, SatelliteStatus } from "./common_pb.js";
 import { file_shale_common } from "./common_pb.js";
 import type { Tenant } from "./payday/tenant_pb.js";
 import { file_shale_payday_tenant } from "./payday/tenant_pb.js";
@@ -23,7 +23,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/host.proto.
  */
 export const file_shale_host: GenFile = /*@__PURE__*/
-  fileDesc("ChBzaGFsZS9ob3N0LnByb3RvEgVzaGFsZSKdCAoETm9kZRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASFQoFYWxpYXMYBCABKAlCBuqCFgIwARIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSJwoGbGFiZWxzGAcgAygLMhcuc2hhbGUuTm9kZS5MYWJlbHNFbnRyeRITCgtoYXJkd2FyZV9pZBgIIAEoCRIQCghob3N0bmFtZRgJIAEoCRIfCgVzdGF0ZRgKIAEoDjIQLnNoYWxlLkhvc3RTdGF0ZRITCgtjZXJ0X3NlcmlhbBgLIAEoCRIdCgRqb2luGAwgASgLMg8uc2hhbGUuSG9zdEpvaW4SOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjgKDGRhdGVfYWRvcHRlZBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX3NlZW4YESABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESPQoRZGF0ZV9jZXJ0X2V4cGlyZXMYEiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESKAoKaW50ZXJmYWNlcxgTIAMoCzIULnNoYWxlLkhvc3RJbnRlcmZhY2USDwoHa2V5X2lkcxgUIAMoCRIPCgdjYV9oYXNoGBUgASgJEg8KB3ZlcnNpb24YFiABKAkSHwoPY29udHJvbF9hZGRyZXNzGBcgASgJQgaqwRYCGAASHAoMZGF0YV9hZGRyZXNzGBggASgJQgaqwRYCGAASIQoGc3RhdHVzGBkgASgLMhEuc2hhbGUuTm9kZVN0YXR1cxIVCg1mYWlsdXJlX3Njb3JlGBogASgBEjcKC2RhdGVfc2NvcmVkGBsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6gwHK/BVDEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaGxIIaGFyZHdhcmUaDwoLaGFyZHdhcmVfaWQQCIq7FjgIDDIwChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmxhYmVscyAyKPQDOgAqACLPBwoFUmVsYXkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEigKBmxhYmVscxgHIAMoCzIYLnNoYWxlLlJlbGF5LkxhYmVsc0VudHJ5EhMKC2hhcmR3YXJlX2lkGAggASgJEhAKCGhvc3RuYW1lGAkgASgJEh8KBXN0YXRlGAogASgOMhAuc2hhbGUuSG9zdFN0YXRlEhMKC2NlcnRfc2VyaWFsGAsgASgJEh0KBGpvaW4YDCABKAsyDy5zaGFsZS5Ib3N0Sm9pbhI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASOAoMZGF0ZV9hZG9wdGVkGBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjUKCWRhdGVfc2VlbhgRIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI9ChFkYXRlX2NlcnRfZXhwaXJlcxgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIoCgppbnRlcmZhY2VzGBMgAygLMhQuc2hhbGUuSG9zdEludGVyZmFjZRIPCgdrZXlfaWRzGBQgAygJEg8KB2NhX2hhc2gYFSABKAkSDwoHdmVyc2lvbhgWIAEoCRIeCg5pbmdlc3RfYWRkcmVzcxgXIAEoCUIGqsEWAhgAEhwKDHdoZXBfYWRkcmVzcxgYIAEoCUIGqsEWAhgAEiIKBnN0YXR1cxgZIAEoCzISLnNoYWxlLlJlbGF5U3RhdHVzGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6gwHK/BVDEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaGxIIaGFyZHdhcmUaDwoLaGFyZHdhcmVfaWQQCIq7FjgIGDIwChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmxhYmVscyAyKPQDOgAqACLpCAoIUHJvZHVjZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiUKBnRlbmFudBgCIAEoCzINLnNoYWxlLlRlbmFudEIG8oIWAkABEiEKBHNpdGUYAyABKAsyCy5zaGFsZS5TaXRlQgbyghYCOAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEisKBmxhYmVscxgHIAMoCzIbLnNoYWxlLlByb2R1Y2VyLkxhYmVsc0VudHJ5Eh8KA3NldBgIIAEoCzIKLnNoYWxlLlNldEIG8oIWAjgBEhMKC2hhcmR3YXJlX2lkGAkgASgJEhAKCGhvc3RuYW1lGAogASgJEh8KBXN0YXRlGAsgASgOMhAuc2hhbGUuSG9zdFN0YXRlEhMKC2NlcnRfc2VyaWFsGAwgASgJEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIdCgRqb2luGBAgASgLMg8uc2hhbGUuSG9zdEpvaW4SOAoMZGF0ZV9hZG9wdGVkGBEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjUKCWRhdGVfc2VlbhgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI9ChFkYXRlX2NlcnRfZXhwaXJlcxgTIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIjCgVyZWxheRgUIAEoCzIMLnNoYWxlLlJlbGF5QgbyghYCOAESJQoGc3RhdHVzGBUgASgLMhUuc2hhbGUuUHJvZHVjZXJTdGF0dXMSDwoHdmVyc2lvbhgWIAEoCRIoCgRsaXZlGBcgASgOMhEuc2hhbGUuTGl2ZVBvbGljeUIH6oIWA4IBABIYCgdjYV9oYXNoGBggASgJQgfqghYDggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE60gHK/BV8EgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAEaJxIIaGFyZHdhcmUaDwoLaGFyZHdhcmVfaWQQCRoKCgZ0ZW5hbnQQAoq7Fk4IFjJIChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoFCgNzZXQaBgoEc2l0ZRoICgZsYWJlbHMgFChkOgAirwcKBlJlYWRlchIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEikKBmxhYmVscxgHIAMoCzIZLnNoYWxlLlJlYWRlci5MYWJlbHNFbnRyeRITCgtoYXJkd2FyZV9pZBgIIAEoCRIQCghob3N0bmFtZRgJIAEoCRIfCgVzdGF0ZRgKIAEoDjIQLnNoYWxlLkhvc3RTdGF0ZRITCgtjZXJ0X3NlcmlhbBgLIAEoCRIdCgRqb2luGAwgASgLMg8uc2hhbGUuSG9zdEpvaW4SOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjgKDGRhdGVfYWRvcHRlZBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX3NlZW4YESABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESPQoRZGF0ZV9jZXJ0X2V4cGlyZXMYEiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESDwoHdmVyc2lvbhgTIAEoCRIRCglhbGxfc2l0ZXMYFCABKAgSGAoHY2FfaGFzaBgVIAEoCUIH6oIWA4IBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOsMByvwVfBICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZ0ZW5hbnQQAjABGicSCGhhcmR3YXJlGg8KC2hhcmR3YXJlX2lkEAgaCgoGdGVuYW50EAKKuxY/CBcyOQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaCAoGbGFiZWxzIBQoZDoAKlcKCUhvc3RTdGF0ZRIaChZIT1NUX1NUQVRFX1VOU1BFQ0lGSUVEEAASFgoSSE9TVF9TVEFURV9QRU5ESU5HEAESFgoSSE9TVF9TVEFURV9BRE9QVEVEEAJCJFodZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGmSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_common, file_shale_payday_tenant, file_shale_set, file_shale_site]);
+  fileDesc("ChBzaGFsZS9ob3N0LnByb3RvEgVzaGFsZSKdCAoETm9kZRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASFQoFYWxpYXMYBCABKAlCBuqCFgIwARIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSJwoGbGFiZWxzGAcgAygLMhcuc2hhbGUuTm9kZS5MYWJlbHNFbnRyeRITCgtoYXJkd2FyZV9pZBgIIAEoCRIQCghob3N0bmFtZRgJIAEoCRIfCgVzdGF0ZRgKIAEoDjIQLnNoYWxlLkhvc3RTdGF0ZRITCgtjZXJ0X3NlcmlhbBgLIAEoCRIdCgRqb2luGAwgASgLMg8uc2hhbGUuSG9zdEpvaW4SOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjgKDGRhdGVfYWRvcHRlZBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX3NlZW4YESABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESPQoRZGF0ZV9jZXJ0X2V4cGlyZXMYEiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESKAoKaW50ZXJmYWNlcxgTIAMoCzIULnNoYWxlLkhvc3RJbnRlcmZhY2USDwoHa2V5X2lkcxgUIAMoCRIPCgdjYV9oYXNoGBUgASgJEg8KB3ZlcnNpb24YFiABKAkSHwoPY29udHJvbF9hZGRyZXNzGBcgASgJQgaqwRYCGAASHAoMZGF0YV9hZGRyZXNzGBggASgJQgaqwRYCGAASIQoGc3RhdHVzGBkgASgLMhEuc2hhbGUuTm9kZVN0YXR1cxIVCg1mYWlsdXJlX3Njb3JlGBogASgBEjcKC2RhdGVfc2NvcmVkGBsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6gwHK/BVDEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaGxIIaGFyZHdhcmUaDwoLaGFyZHdhcmVfaWQQCIq7FjgIDDIwChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmxhYmVscyAyKPQDOgAqACLPBwoFUmVsYXkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEigKBmxhYmVscxgHIAMoCzIYLnNoYWxlLlJlbGF5LkxhYmVsc0VudHJ5EhMKC2hhcmR3YXJlX2lkGAggASgJEhAKCGhvc3RuYW1lGAkgASgJEh8KBXN0YXRlGAogASgOMhAuc2hhbGUuSG9zdFN0YXRlEhMKC2NlcnRfc2VyaWFsGAsgASgJEh0KBGpvaW4YDCABKAsyDy5zaGFsZS5Ib3N0Sm9pbhI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASOAoMZGF0ZV9hZG9wdGVkGBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjUKCWRhdGVfc2VlbhgRIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI9ChFkYXRlX2NlcnRfZXhwaXJlcxgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIoCgppbnRlcmZhY2VzGBMgAygLMhQuc2hhbGUuSG9zdEludGVyZmFjZRIPCgdrZXlfaWRzGBQgAygJEg8KB2NhX2hhc2gYFSABKAkSDwoHdmVyc2lvbhgWIAEoCRIeCg5pbmdlc3RfYWRkcmVzcxgXIAEoCUIGqsEWAhgAEhwKDHdoZXBfYWRkcmVzcxgYIAEoCUIGqsEWAhgAEiIKBnN0YXR1cxgZIAEoCzISLnNoYWxlLlJlbGF5U3RhdHVzGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6gwHK/BVDEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaGxIIaGFyZHdhcmUaDwoLaGFyZHdhcmVfaWQQCIq7FjgIGDIwChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmxhYmVscyAyKPQDOgAqACK9BwoJU2F0ZWxsaXRlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIsCgZsYWJlbHMYByADKAsyHC5zaGFsZS5TYXRlbGxpdGUuTGFiZWxzRW50cnkSEwoLaGFyZHdhcmVfaWQYCCABKAkSEAoIaG9zdG5hbWUYCSABKAkSHwoFc3RhdGUYCiABKA4yEC5zaGFsZS5Ib3N0U3RhdGUSEwoLY2VydF9zZXJpYWwYCyABKAkSHQoEam9pbhgMIAEoCzIPLnNoYWxlLkhvc3RKb2luEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABI4CgxkYXRlX2Fkb3B0ZWQYECABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESNQoJZGF0ZV9zZWVuGBEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEj0KEWRhdGVfY2VydF9leHBpcmVzGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEigKCmludGVyZmFjZXMYEyADKAsyFC5zaGFsZS5Ib3N0SW50ZXJmYWNlEg8KB2tleV9pZHMYFCADKAkSDwoHY2FfaGFzaBgVIAEoCRIPCgd2ZXJzaW9uGBYgASgJEh4KDnVwbG9hZF9hZGRyZXNzGBcgASgJQgaqwRYCGAASJgoGc3RhdHVzGBggASgLMhYuc2hhbGUuU2F0ZWxsaXRlU3RhdHVzGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6gwHK/BVDEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaGxIIaGFyZHdhcmUaDwoLaGFyZHdhcmVfaWQQCIq7FjgIKzIwChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmxhYmVscyAyKPQDOgAqACKWCQoIUHJvZHVjZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiUKBnRlbmFudBgCIAEoCzINLnNoYWxlLlRlbmFudEIG8oIWAkABEiEKBHNpdGUYAyABKAsyCy5zaGFsZS5TaXRlQgbyghYCOAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEisKBmxhYmVscxgHIAMoCzIbLnNoYWxlLlByb2R1Y2VyLkxhYmVsc0VudHJ5Eh8KA3NldBgIIAEoCzIKLnNoYWxlLlNldEIG8oIWAjgBEhMKC2hhcmR3YXJlX2lkGAkgASgJEhAKCGhvc3RuYW1lGAogASgJEh8KBXN0YXRlGAsgASgOMhAuc2hhbGUuSG9zdFN0YXRlEhMKC2NlcnRfc2VyaWFsGAwgASgJEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIdCgRqb2luGBAgASgLMg8uc2hhbGUuSG9zdEpvaW4SOAoMZGF0ZV9hZG9wdGVkGBEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjUKCWRhdGVfc2VlbhgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI9ChFkYXRlX2NlcnRfZXhwaXJlcxgTIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIjCgVyZWxheRgUIAEoCzIMLnNoYWxlLlJlbGF5QgbyghYCOAESJQoGc3RhdHVzGBUgASgLMhUuc2hhbGUuUHJvZHVjZXJTdGF0dXMSDwoHdmVyc2lvbhgWIAEoCRIoCgRsaXZlGBcgASgOMhEuc2hhbGUuTGl2ZVBvbGljeUIH6oIWA4IBABIYCgdjYV9oYXNoGBggASgJQgfqghYDggEAEisKCXNhdGVsbGl0ZRgZIAEoCzIQLnNoYWxlLlNhdGVsbGl0ZUIG8oIWAjgBGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE60gHK/BV8EgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAEaJxIIaGFyZHdhcmUaDwoLaGFyZHdhcmVfaWQQCRoKCgZ0ZW5hbnQQAoq7Fk4IFjJIChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoFCgNzZXQaBgoEc2l0ZRoICgZsYWJlbHMgFChkOgAirwcKBlJlYWRlchIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJQoGdGVuYW50GAIgASgLMg0uc2hhbGUuVGVuYW50QgbyghYCQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEikKBmxhYmVscxgHIAMoCzIZLnNoYWxlLlJlYWRlci5MYWJlbHNFbnRyeRITCgtoYXJkd2FyZV9pZBgIIAEoCRIQCghob3N0bmFtZRgJIAEoCRIfCgVzdGF0ZRgKIAEoDjIQLnNoYWxlLkhvc3RTdGF0ZRITCgtjZXJ0X3NlcmlhbBgLIAEoCRIdCgRqb2luGAwgASgLMg8uc2hhbGUuSG9zdEpvaW4SOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjgKDGRhdGVfYWRvcHRlZBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX3NlZW4YESABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESPQoRZGF0ZV9jZXJ0X2V4cGlyZXMYEiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESDwoHdmVyc2lvbhgTIAEoCRIRCglhbGxfc2l0ZXMYFCABKAgSGAoHY2FfaGFzaBgVIAEoCUIH6oIWA4IBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOsMByvwVfBICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZ0ZW5hbnQQAjABGicSCGhhcmR3YXJlGg8KC2hhcmR3YXJlX2lkEAgaCgoGdGVuYW50EAKKuxY/CBcyOQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaCAoGbGFiZWxzIBQoZDoAKlcKCUhvc3RTdGF0ZRIaChZIT1NUX1NUQVRFX1VOU1BFQ0lGSUVEEAASFgoSSE9TVF9TVEFURV9QRU5ESU5HEAESFgoSSE9TVF9TVEFURV9BRE9QVEVEEAJCJFodZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGmSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_common, file_shale_payday_tenant, file_shale_set, file_shale_site]);
 
 /**
  * Node is a Storage Node: cluster infrastructure, outside the wall (§22).
@@ -315,6 +315,148 @@ export const RelaySchema: GenMessage<Relay> = /*@__PURE__*/
   messageDesc(file_shale_host, 1);
 
 /**
+ * Satellite is the host producers upload through (§41): it speaks a
+ * Storage Node's upload protocol to them and forwards each request to the
+ * node its put token names. Cluster infrastructure, outside the wall, and
+ * trusted like a node: it sees the bytes and carries the tokens. It is not
+ * a placement target; allocations and the index name the real node.
+ *
+ * @generated from message shale.Satellite
+ */
+export type Satellite = Message<"shale.Satellite"> & {
+  /**
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: string alias = 4;
+   */
+  alias: string;
+
+  /**
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string desc = 6;
+   */
+  desc: string;
+
+  /**
+   * Matched against a site's satellite_selector (§41.2).
+   *
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
+
+  /**
+   * @generated from field: string hardware_id = 8;
+   */
+  hardwareId: string;
+
+  /**
+   * @generated from field: string hostname = 9;
+   */
+  hostname: string;
+
+  /**
+   * @generated from field: shale.HostState state = 10;
+   */
+  state: HostState;
+
+  /**
+   * @generated from field: string cert_serial = 11;
+   */
+  certSerial: string;
+
+  /**
+   * @generated from field: shale.HostJoin join = 12;
+   */
+  join?: HostJoin | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_erased = 14;
+   */
+  dateErased?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   */
+  dateCreated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_adopted = 16;
+   */
+  dateAdopted?: Timestamp | undefined;
+
+  /**
+   * The last heartbeat; one unheard for satellite_down_after is not
+   * assigned (§41.2).
+   *
+   * @generated from field: google.protobuf.Timestamp date_seen = 17;
+   */
+  dateSeen?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_cert_expires = 18;
+   */
+  dateCertExpires?: Timestamp | undefined;
+
+  /**
+   * Interfaces and IPs it listens on, as it reports them; what the address
+   * resolver chooses from (§34.10).
+   *
+   * @generated from field: repeated shale.HostInterface interfaces = 19;
+   */
+  interfaces: HostInterface[];
+
+  /**
+   * The signing key IDs it holds, from its heartbeat (§33.3).
+   *
+   * @generated from field: repeated string key_ids = 20;
+   */
+  keyIds: string[];
+
+  /**
+   * @generated from field: string ca_hash = 21;
+   */
+  caHash: string;
+
+  /**
+   * @generated from field: string version = 22;
+   */
+  version: string;
+
+  /**
+   * host:port of the upload listener producers dial (§41.3), as it
+   * listens; the resolver builds endpoints from the interfaces and this
+   * port.
+   *
+   * @generated from field: string upload_address = 23;
+   */
+  uploadAddress: string;
+
+  /**
+   * @generated from field: shale.SatelliteStatus status = 24;
+   */
+  status?: SatelliteStatus | undefined;
+};
+
+/**
+ * Describes the message shale.Satellite.
+ * Use `create(SatelliteSchema)` to create a new message.
+ */
+export const SatelliteSchema: GenMessage<Satellite> = /*@__PURE__*/
+  messageDesc(file_shale_host, 2);
+
+/**
  * Producer is the host that receives a set's streams, cuts them into
  * segments, and uploads them (§38).
  *
@@ -460,6 +602,15 @@ export type Producer = Message<"shale.Producer"> & {
    * @generated from field: string ca_hash = 24;
    */
   caHash: string;
+
+  /**
+   * The satellite this producer uploads through when its `upload_via`
+   * says so (§41.2): assigned like its relay, kept while that satellite is
+   * alive.
+   *
+   * @generated from field: shale.Satellite satellite = 25;
+   */
+  satellite?: Satellite | undefined;
 };
 
 /**
@@ -467,7 +618,7 @@ export type Producer = Message<"shale.Producer"> & {
  * Use `create(ProducerSchema)` to create a new message.
  */
 export const ProducerSchema: GenMessage<Producer> = /*@__PURE__*/
-  messageDesc(file_shale_host, 2);
+  messageDesc(file_shale_host, 3);
 
 /**
  * Reader is a host that queries and reads laminae, typically a media server
@@ -587,7 +738,7 @@ export type Reader = Message<"shale.Reader"> & {
  * Use `create(ReaderSchema)` to create a new message.
  */
 export const ReaderSchema: GenMessage<Reader> = /*@__PURE__*/
-  messageDesc(file_shale_host, 3);
+  messageDesc(file_shale_host, 4);
 
 /**
  * HostState is where a host is in its life (§33.4).

@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/site"
 	"github.com/protobuf-orm/ent/dialect/sql"
@@ -390,6 +391,26 @@ func (_u *ProducerUpdate) ClearRelayId() *ProducerUpdate {
 	return _u
 }
 
+// SetSatelliteId sets the "satellite_id" field.
+func (_u *ProducerUpdate) SetSatelliteId(v uuid.UUID) *ProducerUpdate {
+	_u.mutation.SetSatelliteId(v)
+	return _u
+}
+
+// SetNillableSatelliteId sets the "satellite_id" field if the given value is not nil.
+func (_u *ProducerUpdate) SetNillableSatelliteId(v *uuid.UUID) *ProducerUpdate {
+	if v != nil {
+		_u.SetSatelliteId(*v)
+	}
+	return _u
+}
+
+// ClearSatelliteId clears the value of the "satellite_id" field.
+func (_u *ProducerUpdate) ClearSatelliteId() *ProducerUpdate {
+	_u.mutation.ClearSatelliteId()
+	return _u
+}
+
 // SetSite sets the "site" edge to the Site entity.
 func (_u *ProducerUpdate) SetSite(v *Site) *ProducerUpdate {
 	return _u.SetSiteId(v.Id)
@@ -403,6 +424,11 @@ func (_u *ProducerUpdate) SetSet(v *Set) *ProducerUpdate {
 // SetRelay sets the "relay" edge to the Relay entity.
 func (_u *ProducerUpdate) SetRelay(v *Relay) *ProducerUpdate {
 	return _u.SetRelayId(v.Id)
+}
+
+// SetSatellite sets the "satellite" edge to the Satellite entity.
+func (_u *ProducerUpdate) SetSatellite(v *Satellite) *ProducerUpdate {
+	return _u.SetSatelliteId(v.Id)
 }
 
 // Mutation returns the ProducerMutation object of the builder.
@@ -425,6 +451,12 @@ func (_u *ProducerUpdate) ClearSet() *ProducerUpdate {
 // ClearRelay clears the "relay" edge to the Relay entity.
 func (_u *ProducerUpdate) ClearRelay() *ProducerUpdate {
 	_u.mutation.ClearRelay()
+	return _u
+}
+
+// ClearSatellite clears the "satellite" edge to the Satellite entity.
+func (_u *ProducerUpdate) ClearSatellite() *ProducerUpdate {
+	_u.mutation.ClearSatellite()
 	return _u
 }
 
@@ -719,6 +751,35 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(relay.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SatelliteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   producer.SatelliteTable,
+			Columns: []string{producer.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SatelliteIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   producer.SatelliteTable,
+			Columns: []string{producer.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
@@ -1104,6 +1165,26 @@ func (_u *ProducerUpdateOne) ClearRelayId() *ProducerUpdateOne {
 	return _u
 }
 
+// SetSatelliteId sets the "satellite_id" field.
+func (_u *ProducerUpdateOne) SetSatelliteId(v uuid.UUID) *ProducerUpdateOne {
+	_u.mutation.SetSatelliteId(v)
+	return _u
+}
+
+// SetNillableSatelliteId sets the "satellite_id" field if the given value is not nil.
+func (_u *ProducerUpdateOne) SetNillableSatelliteId(v *uuid.UUID) *ProducerUpdateOne {
+	if v != nil {
+		_u.SetSatelliteId(*v)
+	}
+	return _u
+}
+
+// ClearSatelliteId clears the value of the "satellite_id" field.
+func (_u *ProducerUpdateOne) ClearSatelliteId() *ProducerUpdateOne {
+	_u.mutation.ClearSatelliteId()
+	return _u
+}
+
 // SetSite sets the "site" edge to the Site entity.
 func (_u *ProducerUpdateOne) SetSite(v *Site) *ProducerUpdateOne {
 	return _u.SetSiteId(v.Id)
@@ -1117,6 +1198,11 @@ func (_u *ProducerUpdateOne) SetSet(v *Set) *ProducerUpdateOne {
 // SetRelay sets the "relay" edge to the Relay entity.
 func (_u *ProducerUpdateOne) SetRelay(v *Relay) *ProducerUpdateOne {
 	return _u.SetRelayId(v.Id)
+}
+
+// SetSatellite sets the "satellite" edge to the Satellite entity.
+func (_u *ProducerUpdateOne) SetSatellite(v *Satellite) *ProducerUpdateOne {
+	return _u.SetSatelliteId(v.Id)
 }
 
 // Mutation returns the ProducerMutation object of the builder.
@@ -1139,6 +1225,12 @@ func (_u *ProducerUpdateOne) ClearSet() *ProducerUpdateOne {
 // ClearRelay clears the "relay" edge to the Relay entity.
 func (_u *ProducerUpdateOne) ClearRelay() *ProducerUpdateOne {
 	_u.mutation.ClearRelay()
+	return _u
+}
+
+// ClearSatellite clears the "satellite" edge to the Satellite entity.
+func (_u *ProducerUpdateOne) ClearSatellite() *ProducerUpdateOne {
+	_u.mutation.ClearSatellite()
 	return _u
 }
 
@@ -1463,6 +1555,35 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(relay.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SatelliteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   producer.SatelliteTable,
+			Columns: []string{producer.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SatelliteIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   producer.SatelliteTable,
+			Columns: []string{producer.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {

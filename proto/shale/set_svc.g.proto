@@ -37,7 +37,8 @@ service SetService {
   // being read -- and that is harmless for the same reason.
   rpc Watch(SetWatchRequest) returns (stream SetWatchResponse);
   // Proposed upload profile in, agreed profile and adjustments out (§12.6).
-  // The answer also carries the producer's relay assignment (§39.2).
+  // The answer also carries the producer's relay assignment (§39.2) and
+  // its satellite assignment (§41.2).
   rpc Negotiate(SetNegotiateRequest) returns (SetNegotiateResponse);
   // Allocations for every member of the set, up to a horizon (§12.1).
   rpc Allocate(SetAllocateRequest) returns (SetAllocateResponse);
@@ -286,6 +287,10 @@ message SetNegotiateRequest {
   // Managed full membership: no historical member budgets or scaled copy feeds.
   CameraApplyTarget catalog = 4;
   bool preview = 5 [features.field_presence = IMPLICIT];
+  // The producer uploads through a satellite where one is assigned
+  // (`upload_via`, §41.5): the answer carries its assignment. A producer
+  // that does not say is not assigned one.
+  bool satellite = 6 [features.field_presence = IMPLICIT];
 }
 
 message SetNegotiateResponse {
@@ -294,6 +299,9 @@ message SetNegotiateResponse {
   repeated SourceAgreed sources = 3;
   repeated Adjustment adjustments = 4;
   RelayAssignment relay = 5;
+  // The satellite the producer uploads through when its `upload_via` says
+  // so (§41.2), as its heartbeat answers it.
+  SatelliteAssignment satellite = 6;
 }
 
 message SourceProposal {

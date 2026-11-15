@@ -28,6 +28,8 @@ func (Site) Fields() []ent.Field {
 			Optional(),
 		field.Json("relay_selector", map[string]string{}).
 			Optional(),
+		field.Json("satellite_selector", map[string]string{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

@@ -38,6 +38,7 @@ import (
 	reader "github.com/lesomnus/shale/internal/ent/reader"
 	relay "github.com/lesomnus/shale/internal/ent/relay"
 	rowseal "github.com/lesomnus/shale/internal/ent/rowseal"
+	satellite "github.com/lesomnus/shale/internal/ent/satellite"
 	set "github.com/lesomnus/shale/internal/ent/set"
 	signingkey "github.com/lesomnus/shale/internal/ent/signingkey"
 	sink "github.com/lesomnus/shale/internal/ent/sink"
@@ -401,6 +402,7 @@ type Scope interface {
 	SourceScope(ctx context.Context) (predicate.Source, error)
 	NodeScope(ctx context.Context) (predicate.Node, error)
 	RelayScope(ctx context.Context) (predicate.Relay, error)
+	SatelliteScope(ctx context.Context) (predicate.Satellite, error)
 	ProducerScope(ctx context.Context) (predicate.Producer, error)
 	ReaderScope(ctx context.Context) (predicate.Reader, error)
 	CameraPresetScope(ctx context.Context) (predicate.CameraPreset, error)
@@ -461,6 +463,9 @@ func (Unscoped) NodeScope(_ context.Context) (predicate.Node, error) {
 	return nil, nil
 }
 func (Unscoped) RelayScope(_ context.Context) (predicate.Relay, error) {
+	return nil, nil
+}
+func (Unscoped) SatelliteScope(_ context.Context) (predicate.Satellite, error) {
 	return nil, nil
 }
 func (Unscoped) ProducerScope(_ context.Context) (predicate.Producer, error) {
@@ -691,6 +696,26 @@ func (ss Scopes) RelayScope(ctx context.Context) (predicate.Relay, error) {
 	}
 
 	return relay.And(ps...), nil
+}
+
+func (ss Scopes) SatelliteScope(ctx context.Context) (predicate.Satellite, error) {
+	ps := make([]predicate.Satellite, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.SatelliteScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return satellite.And(ps...), nil
 }
 
 func (ss Scopes) ProducerScope(ctx context.Context) (predicate.Producer, error) {
@@ -1428,7 +1453,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. AddressPolicy, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, CertificateAuthority, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
+// check. AddressPolicy, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, CertificateAuthority, Delegation, Device, Holder, Node, PlacementPolicy, Producer, Reader, Relay, Satellite, Set, SigningKey, Sink, Site, Source and UploadPolicy free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1466,14 +1491,15 @@ func (s Server) WithDriver(drv dialect.Driver) (api.Server, error) {
 	return s, nil
 }
 
-func (s Server) Tenant() api.TenantServiceServer     { return TenantServiceServer{Store: s.Store} }
-func (s Server) Site() api.SiteServiceServer         { return SiteServiceServer{Store: s.Store} }
-func (s Server) Set() api.SetServiceServer           { return SetServiceServer{Store: s.Store} }
-func (s Server) Source() api.SourceServiceServer     { return SourceServiceServer{Store: s.Store} }
-func (s Server) Node() api.NodeServiceServer         { return NodeServiceServer{Store: s.Store} }
-func (s Server) Relay() api.RelayServiceServer       { return RelayServiceServer{Store: s.Store} }
-func (s Server) Producer() api.ProducerServiceServer { return ProducerServiceServer{Store: s.Store} }
-func (s Server) Reader() api.ReaderServiceServer     { return ReaderServiceServer{Store: s.Store} }
+func (s Server) Tenant() api.TenantServiceServer       { return TenantServiceServer{Store: s.Store} }
+func (s Server) Site() api.SiteServiceServer           { return SiteServiceServer{Store: s.Store} }
+func (s Server) Set() api.SetServiceServer             { return SetServiceServer{Store: s.Store} }
+func (s Server) Source() api.SourceServiceServer       { return SourceServiceServer{Store: s.Store} }
+func (s Server) Node() api.NodeServiceServer           { return NodeServiceServer{Store: s.Store} }
+func (s Server) Relay() api.RelayServiceServer         { return RelayServiceServer{Store: s.Store} }
+func (s Server) Satellite() api.SatelliteServiceServer { return SatelliteServiceServer{Store: s.Store} }
+func (s Server) Producer() api.ProducerServiceServer   { return ProducerServiceServer{Store: s.Store} }
+func (s Server) Reader() api.ReaderServiceServer       { return ReaderServiceServer{Store: s.Store} }
 func (s Server) CameraPreset() api.CameraPresetServiceServer {
 	return CameraPresetServiceServer{Store: s.Store}
 }

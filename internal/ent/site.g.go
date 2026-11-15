@@ -24,6 +24,7 @@ func (e *Site) Proto() *api.Site {
 	x.SetDesc(e.Desc)
 	x.SetLabels(e.Labels)
 	x.SetRelaySelector(e.RelaySelector)
+	x.SetSatelliteSelector(e.SatelliteSelector)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

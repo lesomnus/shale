@@ -95,6 +95,18 @@ func (_u *SiteUpdate) ClearRelaySelector() *SiteUpdate {
 	return _u
 }
 
+// SetSatelliteSelector sets the "satellite_selector" field.
+func (_u *SiteUpdate) SetSatelliteSelector(v map[string]string) *SiteUpdate {
+	_u.mutation.SetSatelliteSelector(v)
+	return _u
+}
+
+// ClearSatelliteSelector clears the value of the "satellite_selector" field.
+func (_u *SiteUpdate) ClearSatelliteSelector() *SiteUpdate {
+	_u.mutation.ClearSatelliteSelector()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *SiteUpdate) SetDateUpdated(v time.Time) *SiteUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -223,6 +235,15 @@ func (_u *SiteUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.RelaySelectorCleared() {
 		_spec.ClearField(site.FieldRelaySelector, field.TypeJson)
 	}
+	if value, ok := _u.mutation.SatelliteSelector(); ok {
+		_spec.SetField(site.FieldSatelliteSelector, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldSatelliteSelector); ok {
+		_spec.SetField(site.FieldSatelliteSelector, field.TypeJson, e)
+	}
+	if _u.mutation.SatelliteSelectorCleared() {
+		_spec.ClearField(site.FieldSatelliteSelector, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -326,6 +347,18 @@ func (_u *SiteUpdateOne) SetRelaySelector(v map[string]string) *SiteUpdateOne {
 // ClearRelaySelector clears the value of the "relay_selector" field.
 func (_u *SiteUpdateOne) ClearRelaySelector() *SiteUpdateOne {
 	_u.mutation.ClearRelaySelector()
+	return _u
+}
+
+// SetSatelliteSelector sets the "satellite_selector" field.
+func (_u *SiteUpdateOne) SetSatelliteSelector(v map[string]string) *SiteUpdateOne {
+	_u.mutation.SetSatelliteSelector(v)
+	return _u
+}
+
+// ClearSatelliteSelector clears the value of the "satellite_selector" field.
+func (_u *SiteUpdateOne) ClearSatelliteSelector() *SiteUpdateOne {
+	_u.mutation.ClearSatelliteSelector()
 	return _u
 }
 
@@ -486,6 +519,15 @@ func (_u *SiteUpdateOne) sqlSave(ctx context.Context) (_node *Site, err error) {
 	}
 	if _u.mutation.RelaySelectorCleared() {
 		_spec.ClearField(site.FieldRelaySelector, field.TypeJson)
+	}
+	if value, ok := _u.mutation.SatelliteSelector(); ok {
+		_spec.SetField(site.FieldSatelliteSelector, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(site.FieldSatelliteSelector); ok {
+		_spec.SetField(site.FieldSatelliteSelector, field.TypeJson, e)
+	}
+	if _u.mutation.SatelliteSelectorCleared() {
+		_spec.ClearField(site.FieldSatelliteSelector, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)

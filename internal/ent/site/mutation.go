@@ -15,21 +15,22 @@ import (
 
 // Mutation represents an operation that mutates the Site nodes in the graph.
 type Mutation struct {
-	op             ent.Op
-	typ            string
-	alias          *string
-	name           *string
-	desc           *string
-	labels         *map[string]string
-	relay_selector *map[string]string
-	date_updated   *time.Time
-	date_erased    *time.Time
-	date_created   *time.Time
-	clearedFields  map[string]struct{}
-	exprs          map[string]sql.Querier
-	tenant         *uuid.UUID
-	clearedtenant  bool
-	predicates     []predicate.Site
+	op                 ent.Op
+	typ                string
+	alias              *string
+	name               *string
+	desc               *string
+	labels             *map[string]string
+	relay_selector     *map[string]string
+	satellite_selector *map[string]string
+	date_updated       *time.Time
+	date_erased        *time.Time
+	date_created       *time.Time
+	clearedFields      map[string]struct{}
+	exprs              map[string]sql.Querier
+	tenant             *uuid.UUID
+	clearedtenant      bool
+	predicates         []predicate.Site
 }
 
 // NewMutation creates a new Mutation for the Site entity.
@@ -179,6 +180,42 @@ func (m *Mutation) ResetRelaySelector() {
 	m.relay_selector = nil
 	delete(m.clearedFields, FieldRelaySelector)
 	delete(m.exprs, FieldRelaySelector)
+}
+
+// SetSatelliteSelector sets the "satellite_selector" field.
+func (m *Mutation) SetSatelliteSelector(value map[string]string) {
+	m.satellite_selector = &value
+	delete(m.clearedFields, FieldSatelliteSelector)
+	delete(m.exprs, FieldSatelliteSelector)
+}
+
+// SatelliteSelector returns the value of the "satellite_selector" field in the mutation.
+func (m *Mutation) SatelliteSelector() (r map[string]string, exists bool) {
+	v := m.satellite_selector
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearSatelliteSelector clears the value of the "satellite_selector" field.
+func (m *Mutation) ClearSatelliteSelector() {
+	m.satellite_selector = nil
+	delete(m.exprs, FieldSatelliteSelector)
+	m.clearedFields[FieldSatelliteSelector] = struct{}{}
+}
+
+// SatelliteSelectorCleared returns if the "satellite_selector" field was cleared in this mutation.
+func (m *Mutation) SatelliteSelectorCleared() bool {
+	_, ok := m.clearedFields[FieldSatelliteSelector]
+	return ok
+}
+
+// ResetSatelliteSelector resets all changes to the "satellite_selector" field.
+func (m *Mutation) ResetSatelliteSelector() {
+	m.satellite_selector = nil
+	delete(m.clearedFields, FieldSatelliteSelector)
+	delete(m.exprs, FieldSatelliteSelector)
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -351,7 +388,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -366,6 +403,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.relay_selector != nil || m.exprs[FieldRelaySelector] != nil {
 		fields = append(fields, FieldRelaySelector)
+	}
+	if m.satellite_selector != nil || m.exprs[FieldSatelliteSelector] != nil {
+		fields = append(fields, FieldSatelliteSelector)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -403,6 +443,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Labels()
 	case FieldRelaySelector:
 		return m.RelaySelector()
+	case FieldSatelliteSelector:
+		return m.SatelliteSelector()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -480,6 +522,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRelaySelector(v)
 		return nil
+	case FieldSatelliteSelector:
+		v, ok := value.(map[string]string)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSatelliteSelector(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -552,6 +604,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetLabels()
 	case FieldRelaySelector:
 		m.ResetRelaySelector()
+	case FieldSatelliteSelector:
+		m.ResetSatelliteSelector()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -596,6 +650,9 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldRelaySelector]; ok {
 		fields = append(fields, FieldRelaySelector)
 	}
+	if _, ok := m.exprs[FieldSatelliteSelector]; ok {
+		fields = append(fields, FieldSatelliteSelector)
+	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
 	}
@@ -637,6 +694,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldRelaySelector) {
 		fields = append(fields, FieldRelaySelector)
 	}
+	if m.FieldCleared(FieldSatelliteSelector) {
+		fields = append(fields, FieldSatelliteSelector)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -662,6 +722,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldRelaySelector:
 		m.ClearRelaySelector()
+		return nil
+	case FieldSatelliteSelector:
+		m.ClearSatelliteSelector()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -691,6 +754,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldRelaySelector:
 		m.ResetRelaySelector()
+		return nil
+	case FieldSatelliteSelector:
+		m.ResetSatelliteSelector()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

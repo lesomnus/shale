@@ -54,6 +54,12 @@ func (_c *SiteCreate) SetRelaySelector(v map[string]string) *SiteCreate {
 	return _c
 }
 
+// SetSatelliteSelector sets the "satellite_selector" field.
+func (_c *SiteCreate) SetSatelliteSelector(v map[string]string) *SiteCreate {
+	_c.mutation.SetSatelliteSelector(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *SiteCreate) SetDateUpdated(v time.Time) *SiteCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -230,6 +236,10 @@ func (_c *SiteCreate) createSpec() (*Site, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RelaySelector(); ok {
 		_spec.SetField(site.FieldRelaySelector, field.TypeJson, value)
 		_node.RelaySelector = value
+	}
+	if value, ok := _c.mutation.SatelliteSelector(); ok {
+		_spec.SetField(site.FieldSatelliteSelector, field.TypeJson, value)
+		_node.SatelliteSelector = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(site.FieldDateUpdated, field.TypeTime, value)

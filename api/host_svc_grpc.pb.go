@@ -1195,6 +1195,616 @@ var RelayService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	SatelliteService_Add_FullMethodName              = "/shale.SatelliteService/Add"
+	SatelliteService_Get_FullMethodName              = "/shale.SatelliteService/Get"
+	SatelliteService_Patch_FullMethodName            = "/shale.SatelliteService/Patch"
+	SatelliteService_Apply_FullMethodName            = "/shale.SatelliteService/Apply"
+	SatelliteService_Erase_FullMethodName            = "/shale.SatelliteService/Erase"
+	SatelliteService_List_FullMethodName             = "/shale.SatelliteService/List"
+	SatelliteService_Watch_FullMethodName            = "/shale.SatelliteService/Watch"
+	SatelliteService_Join_FullMethodName             = "/shale.SatelliteService/Join"
+	SatelliteService_Adopt_FullMethodName            = "/shale.SatelliteService/Adopt"
+	SatelliteService_RenewCertificate_FullMethodName = "/shale.SatelliteService/RenewCertificate"
+	SatelliteService_Heartbeat_FullMethodName        = "/shale.SatelliteService/Heartbeat"
+	SatelliteService_Route_FullMethodName            = "/shale.SatelliteService/Route"
+	SatelliteService_Assign_FullMethodName           = "/shale.SatelliteService/Assign"
+)
+
+// SatelliteServiceClient is the client API for SatelliteService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type SatelliteServiceClient interface {
+	// Add creates a new Satellite
+	Add(ctx context.Context, in *SatelliteAddRequest, opts ...grpc.CallOption) (*Satellite, error)
+	// Get retrieves a Satellite
+	Get(ctx context.Context, in *SatelliteGetRequest, opts ...grpc.CallOption) (*Satellite, error)
+	// Patch updates an existing Satellite
+	Patch(ctx context.Context, in *SatellitePatchRequest, opts ...grpc.CallOption) (*Satellite, error)
+	// Apply applies a patch document to an existing Satellite
+	Apply(ctx context.Context, in *SatelliteApplyRequest, opts ...grpc.CallOption) (*Satellite, error)
+	// Erase deletes a Satellite
+	Erase(ctx context.Context, in *SatelliteRef, opts ...grpc.CallOption) (*SatelliteEraseResponse, error)
+	// List reads Satellites a page at a time.
+	List(ctx context.Context, in *SatelliteListRequest, opts ...grpc.CallOption) (*SatelliteListResponse, error)
+	// Watch the Satellites this caller may see, as they are now and as they change.
+	//
+	// What arrives is **state and never a delta**, so a client converges rather
+	// than replays: it keeps what it was last told about a row and replaces it.
+	// An event it did not receive is one it does not need, since the next one
+	// about that row carries the whole of it.
+	//
+	// The first message is everything that matches right now, so a client does
+	// not have to List first and race the subscription. A row may arrive twice --
+	// once in that first message and once as a change that happened while it was
+	// being read -- and that is harmless for the same reason.
+	Watch(ctx context.Context, in *SatelliteWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SatelliteWatchResponse], error)
+	Join(ctx context.Context, in *SatelliteJoinRequest, opts ...grpc.CallOption) (*SatelliteJoinResponse, error)
+	Adopt(ctx context.Context, in *SatelliteAdoptRequest, opts ...grpc.CallOption) (*Satellite, error)
+	RenewCertificate(ctx context.Context, in *SatelliteRenewCertificateRequest, opts ...grpc.CallOption) (*SatelliteRenewCertificateResponse, error)
+	// Memory, uploads and load in; the producers assigned to it out, which
+	// are the only callers it serves (§41.3).
+	Heartbeat(ctx context.Context, in *SatelliteHeartbeatRequest, opts ...grpc.CallOption) (*SatelliteHeartbeatResponse, error)
+	// A node's data plane as the address resolver gives it for the
+	// satellite's own network (§34.10): where it forwards what a token names
+	// for that node, and nowhere else (§41.3).
+	Route(ctx context.Context, in *SatelliteRouteRequest, opts ...grpc.CallOption) (*SatelliteRouteResponse, error)
+	// An operator moves a producer to a satellite; the assignment stays
+	// sticky while the satellite is alive (§41.2).
+	Assign(ctx context.Context, in *SatelliteAssignRequest, opts ...grpc.CallOption) (*Satellite, error)
+}
+
+type satelliteServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSatelliteServiceClient(cc grpc.ClientConnInterface) SatelliteServiceClient {
+	return &satelliteServiceClient{cc}
+}
+
+func (c *satelliteServiceClient) Add(ctx context.Context, in *SatelliteAddRequest, opts ...grpc.CallOption) (*Satellite, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Satellite)
+	err := c.cc.Invoke(ctx, SatelliteService_Add_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Get(ctx context.Context, in *SatelliteGetRequest, opts ...grpc.CallOption) (*Satellite, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Satellite)
+	err := c.cc.Invoke(ctx, SatelliteService_Get_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Patch(ctx context.Context, in *SatellitePatchRequest, opts ...grpc.CallOption) (*Satellite, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Satellite)
+	err := c.cc.Invoke(ctx, SatelliteService_Patch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Apply(ctx context.Context, in *SatelliteApplyRequest, opts ...grpc.CallOption) (*Satellite, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Satellite)
+	err := c.cc.Invoke(ctx, SatelliteService_Apply_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Erase(ctx context.Context, in *SatelliteRef, opts ...grpc.CallOption) (*SatelliteEraseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SatelliteEraseResponse)
+	err := c.cc.Invoke(ctx, SatelliteService_Erase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) List(ctx context.Context, in *SatelliteListRequest, opts ...grpc.CallOption) (*SatelliteListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SatelliteListResponse)
+	err := c.cc.Invoke(ctx, SatelliteService_List_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Watch(ctx context.Context, in *SatelliteWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SatelliteWatchResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &SatelliteService_ServiceDesc.Streams[0], SatelliteService_Watch_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SatelliteWatchRequest, SatelliteWatchResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SatelliteService_WatchClient = grpc.ServerStreamingClient[SatelliteWatchResponse]
+
+func (c *satelliteServiceClient) Join(ctx context.Context, in *SatelliteJoinRequest, opts ...grpc.CallOption) (*SatelliteJoinResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SatelliteJoinResponse)
+	err := c.cc.Invoke(ctx, SatelliteService_Join_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Adopt(ctx context.Context, in *SatelliteAdoptRequest, opts ...grpc.CallOption) (*Satellite, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Satellite)
+	err := c.cc.Invoke(ctx, SatelliteService_Adopt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) RenewCertificate(ctx context.Context, in *SatelliteRenewCertificateRequest, opts ...grpc.CallOption) (*SatelliteRenewCertificateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SatelliteRenewCertificateResponse)
+	err := c.cc.Invoke(ctx, SatelliteService_RenewCertificate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Heartbeat(ctx context.Context, in *SatelliteHeartbeatRequest, opts ...grpc.CallOption) (*SatelliteHeartbeatResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SatelliteHeartbeatResponse)
+	err := c.cc.Invoke(ctx, SatelliteService_Heartbeat_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Route(ctx context.Context, in *SatelliteRouteRequest, opts ...grpc.CallOption) (*SatelliteRouteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SatelliteRouteResponse)
+	err := c.cc.Invoke(ctx, SatelliteService_Route_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *satelliteServiceClient) Assign(ctx context.Context, in *SatelliteAssignRequest, opts ...grpc.CallOption) (*Satellite, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Satellite)
+	err := c.cc.Invoke(ctx, SatelliteService_Assign_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SatelliteServiceServer is the server API for SatelliteService service.
+// All implementations must embed UnimplementedSatelliteServiceServer
+// for forward compatibility.
+type SatelliteServiceServer interface {
+	// Add creates a new Satellite
+	Add(context.Context, *SatelliteAddRequest) (*Satellite, error)
+	// Get retrieves a Satellite
+	Get(context.Context, *SatelliteGetRequest) (*Satellite, error)
+	// Patch updates an existing Satellite
+	Patch(context.Context, *SatellitePatchRequest) (*Satellite, error)
+	// Apply applies a patch document to an existing Satellite
+	Apply(context.Context, *SatelliteApplyRequest) (*Satellite, error)
+	// Erase deletes a Satellite
+	Erase(context.Context, *SatelliteRef) (*SatelliteEraseResponse, error)
+	// List reads Satellites a page at a time.
+	List(context.Context, *SatelliteListRequest) (*SatelliteListResponse, error)
+	// Watch the Satellites this caller may see, as they are now and as they change.
+	//
+	// What arrives is **state and never a delta**, so a client converges rather
+	// than replays: it keeps what it was last told about a row and replaces it.
+	// An event it did not receive is one it does not need, since the next one
+	// about that row carries the whole of it.
+	//
+	// The first message is everything that matches right now, so a client does
+	// not have to List first and race the subscription. A row may arrive twice --
+	// once in that first message and once as a change that happened while it was
+	// being read -- and that is harmless for the same reason.
+	Watch(*SatelliteWatchRequest, grpc.ServerStreamingServer[SatelliteWatchResponse]) error
+	Join(context.Context, *SatelliteJoinRequest) (*SatelliteJoinResponse, error)
+	Adopt(context.Context, *SatelliteAdoptRequest) (*Satellite, error)
+	RenewCertificate(context.Context, *SatelliteRenewCertificateRequest) (*SatelliteRenewCertificateResponse, error)
+	// Memory, uploads and load in; the producers assigned to it out, which
+	// are the only callers it serves (§41.3).
+	Heartbeat(context.Context, *SatelliteHeartbeatRequest) (*SatelliteHeartbeatResponse, error)
+	// A node's data plane as the address resolver gives it for the
+	// satellite's own network (§34.10): where it forwards what a token names
+	// for that node, and nowhere else (§41.3).
+	Route(context.Context, *SatelliteRouteRequest) (*SatelliteRouteResponse, error)
+	// An operator moves a producer to a satellite; the assignment stays
+	// sticky while the satellite is alive (§41.2).
+	Assign(context.Context, *SatelliteAssignRequest) (*Satellite, error)
+	mustEmbedUnimplementedSatelliteServiceServer()
+}
+
+// UnimplementedSatelliteServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedSatelliteServiceServer struct{}
+
+func (UnimplementedSatelliteServiceServer) Add(context.Context, *SatelliteAddRequest) (*Satellite, error) {
+	return nil, status.Error(codes.Unimplemented, "method Add not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Get(context.Context, *SatelliteGetRequest) (*Satellite, error) {
+	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Patch(context.Context, *SatellitePatchRequest) (*Satellite, error) {
+	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Apply(context.Context, *SatelliteApplyRequest) (*Satellite, error) {
+	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Erase(context.Context, *SatelliteRef) (*SatelliteEraseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
+}
+func (UnimplementedSatelliteServiceServer) List(context.Context, *SatelliteListRequest) (*SatelliteListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Watch(*SatelliteWatchRequest, grpc.ServerStreamingServer[SatelliteWatchResponse]) error {
+	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Join(context.Context, *SatelliteJoinRequest) (*SatelliteJoinResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Join not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Adopt(context.Context, *SatelliteAdoptRequest) (*Satellite, error) {
+	return nil, status.Error(codes.Unimplemented, "method Adopt not implemented")
+}
+func (UnimplementedSatelliteServiceServer) RenewCertificate(context.Context, *SatelliteRenewCertificateRequest) (*SatelliteRenewCertificateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenewCertificate not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Heartbeat(context.Context, *SatelliteHeartbeatRequest) (*SatelliteHeartbeatResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Heartbeat not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Route(context.Context, *SatelliteRouteRequest) (*SatelliteRouteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Route not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Assign(context.Context, *SatelliteAssignRequest) (*Satellite, error) {
+	return nil, status.Error(codes.Unimplemented, "method Assign not implemented")
+}
+func (UnimplementedSatelliteServiceServer) mustEmbedUnimplementedSatelliteServiceServer() {}
+func (UnimplementedSatelliteServiceServer) testEmbeddedByValue()                          {}
+
+// UnsafeSatelliteServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SatelliteServiceServer will
+// result in compilation errors.
+type UnsafeSatelliteServiceServer interface {
+	mustEmbedUnimplementedSatelliteServiceServer()
+}
+
+func RegisterSatelliteServiceServer(s grpc.ServiceRegistrar, srv SatelliteServiceServer) {
+	// If the following call panics, it indicates UnimplementedSatelliteServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&SatelliteService_ServiceDesc, srv)
+}
+
+func _SatelliteService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteAddRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Add(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Add_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Add(ctx, req.(*SatelliteAddRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteGetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Get(ctx, req.(*SatelliteGetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatellitePatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Patch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Patch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Patch(ctx, req.(*SatellitePatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteApplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Apply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Apply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Apply(ctx, req.(*SatelliteApplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Erase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Erase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Erase(ctx, req.(*SatelliteRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_List_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).List(ctx, req.(*SatelliteListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SatelliteWatchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SatelliteServiceServer).Watch(m, &grpc.GenericServerStream[SatelliteWatchRequest, SatelliteWatchResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type SatelliteService_WatchServer = grpc.ServerStreamingServer[SatelliteWatchResponse]
+
+func _SatelliteService_Join_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteJoinRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Join(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Join_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Join(ctx, req.(*SatelliteJoinRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Adopt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteAdoptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Adopt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Adopt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Adopt(ctx, req.(*SatelliteAdoptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_RenewCertificate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteRenewCertificateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).RenewCertificate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_RenewCertificate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).RenewCertificate(ctx, req.(*SatelliteRenewCertificateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteHeartbeatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Heartbeat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Heartbeat_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Heartbeat(ctx, req.(*SatelliteHeartbeatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Route_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteRouteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Route(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Route_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Route(ctx, req.(*SatelliteRouteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SatelliteService_Assign_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteAssignRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Assign(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Assign_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Assign(ctx, req.(*SatelliteAssignRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// SatelliteService_ServiceDesc is the grpc.ServiceDesc for SatelliteService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var SatelliteService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "shale.SatelliteService",
+	HandlerType: (*SatelliteServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Add",
+			Handler:    _SatelliteService_Add_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _SatelliteService_Get_Handler,
+		},
+		{
+			MethodName: "Patch",
+			Handler:    _SatelliteService_Patch_Handler,
+		},
+		{
+			MethodName: "Apply",
+			Handler:    _SatelliteService_Apply_Handler,
+		},
+		{
+			MethodName: "Erase",
+			Handler:    _SatelliteService_Erase_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _SatelliteService_List_Handler,
+		},
+		{
+			MethodName: "Join",
+			Handler:    _SatelliteService_Join_Handler,
+		},
+		{
+			MethodName: "Adopt",
+			Handler:    _SatelliteService_Adopt_Handler,
+		},
+		{
+			MethodName: "RenewCertificate",
+			Handler:    _SatelliteService_RenewCertificate_Handler,
+		},
+		{
+			MethodName: "Heartbeat",
+			Handler:    _SatelliteService_Heartbeat_Handler,
+		},
+		{
+			MethodName: "Route",
+			Handler:    _SatelliteService_Route_Handler,
+		},
+		{
+			MethodName: "Assign",
+			Handler:    _SatelliteService_Assign_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Watch",
+			Handler:       _SatelliteService_Watch_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "shale/host_svc.g.proto",
+}
+
+const (
 	ProducerService_Add_FullMethodName              = "/shale.ProducerService/Add"
 	ProducerService_Get_FullMethodName              = "/shale.ProducerService/Get"
 	ProducerService_Patch_FullMethodName            = "/shale.ProducerService/Patch"

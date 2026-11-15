@@ -244,6 +244,20 @@ func RelayOrErr(p Relay, err error) Relay {
 // RowSeal is the predicate function for rowseal builders.
 type RowSeal func(*sql.Selector)
 
+// Satellite is the predicate function for satellite builders.
+type Satellite func(*sql.Selector)
+
+// SatelliteOrErr calls the predicate only if the error is not nit.
+func SatelliteOrErr(p Satellite, err error) Satellite {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Set is the predicate function for set builders.
 type Set func(*sql.Selector)
 

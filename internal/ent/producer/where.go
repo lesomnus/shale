@@ -156,6 +156,11 @@ func RelayId(v uuid.UUID) predicate.Producer {
 	return predicate.Producer(sql.FieldEQ(FieldRelayId, v))
 }
 
+// SatelliteId applies equality check predicate on the "satellite_id" field. It's identical to SatelliteIdEQ.
+func SatelliteId(v uuid.UUID) predicate.Producer {
+	return predicate.Producer(sql.FieldEQ(FieldSatelliteId, v))
+}
+
 // AliasEQ applies the EQ predicate on the "alias" field.
 func AliasEQ(v string) predicate.Producer {
 	return predicate.Producer(sql.FieldEQ(FieldAlias, v))
@@ -1206,6 +1211,36 @@ func RelayIdNotNil() predicate.Producer {
 	return predicate.Producer(sql.FieldNotNull(FieldRelayId))
 }
 
+// SatelliteIdEQ applies the EQ predicate on the "satellite_id" field.
+func SatelliteIdEQ(v uuid.UUID) predicate.Producer {
+	return predicate.Producer(sql.FieldEQ(FieldSatelliteId, v))
+}
+
+// SatelliteIdNEQ applies the NEQ predicate on the "satellite_id" field.
+func SatelliteIdNEQ(v uuid.UUID) predicate.Producer {
+	return predicate.Producer(sql.FieldNEQ(FieldSatelliteId, v))
+}
+
+// SatelliteIdIn applies the In predicate on the "satellite_id" field.
+func SatelliteIdIn(vs ...uuid.UUID) predicate.Producer {
+	return predicate.Producer(sql.FieldIn(FieldSatelliteId, vs...))
+}
+
+// SatelliteIdNotIn applies the NotIn predicate on the "satellite_id" field.
+func SatelliteIdNotIn(vs ...uuid.UUID) predicate.Producer {
+	return predicate.Producer(sql.FieldNotIn(FieldSatelliteId, vs...))
+}
+
+// SatelliteIdIsNil applies the IsNil predicate on the "satellite_id" field.
+func SatelliteIdIsNil() predicate.Producer {
+	return predicate.Producer(sql.FieldIsNull(FieldSatelliteId))
+}
+
+// SatelliteIdNotNil applies the NotNil predicate on the "satellite_id" field.
+func SatelliteIdNotNil() predicate.Producer {
+	return predicate.Producer(sql.FieldNotNull(FieldSatelliteId))
+}
+
 // HasTenant applies the HasEdge predicate on the "tenant" edge.
 func HasTenant() predicate.Producer {
 	return predicate.Producer(func(s *sql.Selector) {
@@ -1290,6 +1325,29 @@ func HasRelay() predicate.Producer {
 func HasRelayWith(preds ...predicate.Relay) predicate.Producer {
 	return predicate.Producer(func(s *sql.Selector) {
 		step := newRelayStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSatellite applies the HasEdge predicate on the "satellite" edge.
+func HasSatellite() predicate.Producer {
+	return predicate.Producer(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, SatelliteTable, SatelliteColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSatelliteWith applies the HasEdge predicate on the "satellite" edge with a given conditions (other predicates).
+func HasSatelliteWith(preds ...predicate.Satellite) predicate.Producer {
+	return predicate.Producer(func(s *sql.Selector) {
+		step := newSatelliteStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

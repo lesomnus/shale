@@ -32,6 +32,7 @@ type Server interface {
 	Source() SourceServiceServer
 	Node() NodeServiceServer
 	Relay() RelayServiceServer
+	Satellite() SatelliteServiceServer
 	Producer() ProducerServiceServer
 	Reader() ReaderServiceServer
 	CameraPreset() CameraPresetServiceServer
@@ -75,6 +76,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterSourceServiceServer(g, s.Source())
 	RegisterNodeServiceServer(g, s.Node())
 	RegisterRelayServiceServer(g, s.Relay())
+	RegisterSatelliteServiceServer(g, s.Satellite())
 	RegisterProducerServiceServer(g, s.Producer())
 	RegisterReaderServiceServer(g, s.Reader())
 	RegisterCameraPresetServiceServer(g, s.CameraPreset())
@@ -114,6 +116,7 @@ type UnimplementedServer struct {
 	SourceServer                  SourceServiceServer
 	NodeServer                    NodeServiceServer
 	RelayServer                   RelayServiceServer
+	SatelliteServer               SatelliteServiceServer
 	ProducerServer                ProducerServiceServer
 	ReaderServer                  ReaderServiceServer
 	CameraPresetServer            CameraPresetServiceServer
@@ -152,6 +155,9 @@ func (UnimplementedServer) Set() SetServiceServer       { return UnimplementedSe
 func (UnimplementedServer) Source() SourceServiceServer { return UnimplementedSourceServiceServer{} }
 func (UnimplementedServer) Node() NodeServiceServer     { return UnimplementedNodeServiceServer{} }
 func (UnimplementedServer) Relay() RelayServiceServer   { return UnimplementedRelayServiceServer{} }
+func (UnimplementedServer) Satellite() SatelliteServiceServer {
+	return UnimplementedSatelliteServiceServer{}
+}
 func (UnimplementedServer) Producer() ProducerServiceServer {
 	return UnimplementedProducerServiceServer{}
 }
@@ -228,6 +234,7 @@ type StaticServer struct {
 	SourceServer                  SourceServiceServer
 	NodeServer                    NodeServiceServer
 	RelayServer                   RelayServiceServer
+	SatelliteServer               SatelliteServiceServer
 	ProducerServer                ProducerServiceServer
 	ReaderServer                  ReaderServiceServer
 	CameraPresetServer            CameraPresetServiceServer
@@ -266,6 +273,7 @@ func (s StaticServer) Set() SetServiceServer                     { return s.SetS
 func (s StaticServer) Source() SourceServiceServer               { return s.SourceServer }
 func (s StaticServer) Node() NodeServiceServer                   { return s.NodeServer }
 func (s StaticServer) Relay() RelayServiceServer                 { return s.RelayServer }
+func (s StaticServer) Satellite() SatelliteServiceServer         { return s.SatelliteServer }
 func (s StaticServer) Producer() ProducerServiceServer           { return s.ProducerServer }
 func (s StaticServer) Reader() ReaderServiceServer               { return s.ReaderServer }
 func (s StaticServer) CameraPreset() CameraPresetServiceServer   { return s.CameraPresetServer }
@@ -312,6 +320,7 @@ type Client interface {
 	Source() SourceServiceClient
 	Node() NodeServiceClient
 	Relay() RelayServiceClient
+	Satellite() SatelliteServiceClient
 	Producer() ProducerServiceClient
 	Reader() ReaderServiceClient
 	CameraPreset() CameraPresetServiceClient
@@ -352,6 +361,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Source:                  NewSourceServiceClient(c),
 		_Node:                    NewNodeServiceClient(c),
 		_Relay:                   NewRelayServiceClient(c),
+		_Satellite:               NewSatelliteServiceClient(c),
 		_Producer:                NewProducerServiceClient(c),
 		_Reader:                  NewReaderServiceClient(c),
 		_CameraPreset:            NewCameraPresetServiceClient(c),
@@ -392,6 +402,7 @@ type client struct {
 	_Source                  SourceServiceClient
 	_Node                    NodeServiceClient
 	_Relay                   RelayServiceClient
+	_Satellite               SatelliteServiceClient
 	_Producer                ProducerServiceClient
 	_Reader                  ReaderServiceClient
 	_CameraPreset            CameraPresetServiceClient
@@ -430,6 +441,7 @@ func (c *client) Set() SetServiceClient                           { return c._Se
 func (c *client) Source() SourceServiceClient                     { return c._Source }
 func (c *client) Node() NodeServiceClient                         { return c._Node }
 func (c *client) Relay() RelayServiceClient                       { return c._Relay }
+func (c *client) Satellite() SatelliteServiceClient               { return c._Satellite }
 func (c *client) Producer() ProducerServiceClient                 { return c._Producer }
 func (c *client) Reader() ReaderServiceClient                     { return c._Reader }
 func (c *client) CameraPreset() CameraPresetServiceClient         { return c._CameraPreset }

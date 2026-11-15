@@ -152,6 +152,9 @@ func (st SiteServiceServer) create(ctx context.Context, req *api.SiteAddRequest)
 	if u := req.GetRelaySelector(); len(u) > 0 {
 		q.SetRelaySelector(u)
 	}
+	if u := req.GetSatelliteSelector(); len(u) > 0 {
+		q.SetSatelliteSelector(u)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -300,6 +303,9 @@ func SiteSelectedFields(m *api.SiteSelect) []string {
 	if m.GetRelaySelector() {
 		vs = append(vs, site.FieldRelaySelector)
 	}
+	if m.GetSatelliteSelector() {
+		vs = append(vs, site.FieldSatelliteSelector)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, site.FieldDateUpdated)
 	}
@@ -378,7 +384,7 @@ func SiteGetKey(ctx context.Context, db *ent.Client, ref *api.SiteRef) (uuid.UUI
 var siteOrmEntity = ormpatch.MustEntityOf(api.File_shale_site_proto, "Site")
 
 var sitePatchColumns = entpatch.Columns{
-	1: site.FieldId, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 8: site.FieldRelaySelector, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
+	1: site.FieldId, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 8: site.FieldRelaySelector, 9: site.FieldSatelliteSelector, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
 
 func (s SiteServiceServer) Apply(ctx context.Context, req *api.SiteApplyRequest) (*api.Site, error) {
 	if !req.HasPatch() {

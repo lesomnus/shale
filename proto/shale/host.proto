@@ -13,9 +13,10 @@ import "shale/site.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/shale/api";
 
-// The four kinds of host (§33.1). A host row is created by the host's own
+// The kinds of host (§33.1). A host row is created by the host's own
 // Join and made usable by an operator's Adopt; the generated Add is closed to callers by the gate policy.
-// Producer and Reader belong to a tenant; Node and Relay are global.
+// Producer and Reader belong to a tenant; Node, Relay and Satellite are
+// global.
 //
 // `site` on Producer is not immutable: a producer joins with none and is put
 // into its set's site by Adopt. Set and Source are declared in set.proto and
@@ -185,6 +186,89 @@ message Relay {
   };
 }
 
+// Satellite is the host producers upload through (§41): it speaks a
+// Storage Node's upload protocol to them and forwards each request to the
+// node its put token names. Cluster infrastructure, outside the wall, and
+// trusted like a node: it sees the bytes and carries the tokens. It is not
+// a placement target; allocations and the index name the real node.
+message Satellite {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+  string alias = 4 [(orm.field) = {unique: true}];
+  string name = 5;
+  string desc = 6;
+  // Matched against a site's satellite_selector (§41.2).
+  map<string, string> labels = 7;
+
+  string hardware_id = 8;
+  string hostname = 9;
+  HostState state = 10;
+  string cert_serial = 11;
+  HostJoin join = 12;
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  google.protobuf.Timestamp date_adopted = 16 [(orm.field) = {nullable: true}];
+  // The last heartbeat; one unheard for satellite_down_after is not
+  // assigned (§41.2).
+  google.protobuf.Timestamp date_seen = 17 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_cert_expires = 18 [(orm.field) = {nullable: true}];
+  // Interfaces and IPs it listens on, as it reports them; what the address
+  // resolver chooses from (§34.10).
+  repeated HostInterface interfaces = 19;
+  // The signing key IDs it holds, from its heartbeat (§33.3).
+  repeated string key_ids = 20;
+  string ca_hash = 21;
+  string version = 22;
+  // host:port of the upload listener producers dial (§41.3), as it
+  // listens; the resolver builds endpoints from the interfaces and this
+  // port.
+  string upload_address = 23 [(payday.field) = {personal: false}];
+  SatelliteStatus status = 24;
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "hardware"
+        refs: [{name: "hardware_id", number: 8}]
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 43
+    global: {}
+    list: {
+      order: [
+        {field: {name: "date_created"}},
+        {field: {name: "id"}}
+      ]
+      by: [
+        {name: "ref"},
+        {name: "labels"}
+      ]
+      size: 50
+      max: 500
+    }
+    watch: {}
+  };
+}
+
 // Producer is the host that receives a set's streams, cuts them into
 // segments, and uploads them (§38).
 message Producer {
@@ -235,6 +319,10 @@ message Producer {
   // The hash of the CA bundle it holds, from its heartbeat (§33.5). A
   // default, so the column is added to a database that predates it.
   string ca_hash = 24 [(orm.field) = {default: ""}];
+  // The satellite this producer uploads through when its `upload_via`
+  // says so (§41.2): assigned like its relay, kept while that satellite is
+  // alive.
+  Satellite satellite = 25 [(orm.edge) = {nullable: true}];
 
   option (orm.message) = {
     rpc: {crud: true}

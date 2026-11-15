@@ -152,6 +152,72 @@ func (Relay) Annotations() []schema.Annotation {
 	}
 }
 
+type Satellite struct {
+	ent.Schema
+}
+
+func (Satellite) Fields() []ent.Field {
+	return []ent.Field{
+		field.Uuid("id").
+			Unique().
+			Immutable(),
+		field.String("alias"),
+		field.String("name"),
+		field.String("desc"),
+		field.Json("labels", map[string]string{}).
+			Optional(),
+		field.String("hardware_id"),
+		field.String("hostname"),
+		field.Int32("state"),
+		field.String("cert_serial"),
+		field.Json("join", &api.HostJoin{}).ValueScanner(entpb.ValueScanner[*api.HostJoin]{}).
+			Optional(),
+		field.Time("date_updated"),
+		field.Time("date_erased").
+			Nillable().
+			Optional(),
+		field.Time("date_created").
+			Immutable().
+			Optional(),
+		field.Time("date_adopted").
+			Nillable().
+			Optional(),
+		field.Time("date_seen").
+			Nillable().
+			Optional(),
+		field.Time("date_cert_expires").
+			Nillable().
+			Optional(),
+		field.Json("interfaces", []*api.HostInterface{}).ValueScanner(entpb.ListValueScanner[*api.HostInterface]{}).
+			Optional(),
+		field.Json("key_ids", []string{}).
+			Optional(),
+		field.String("ca_hash"),
+		field.String("version"),
+		field.String("upload_address"),
+		field.Json("status", &api.SatelliteStatus{}).ValueScanner(entpb.ValueScanner[*api.SatelliteStatus]{}).
+			Optional(),
+	}
+}
+
+func (Satellite) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("date_created", "id").
+			StorageKey("satellite_page"),
+		index.Fields("hardware_id").
+			StorageKey("satellite_hardware"),
+		index.Fields("alias").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+	}
+}
+
+func (Satellite) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entsql.Annotation{Table: "satellite"},
+	}
+}
+
 type Producer struct {
 	ent.Schema
 }
@@ -205,6 +271,8 @@ func (Producer) Fields() []ent.Field {
 			Optional(),
 		field.Uuid("relay_id").
 			Optional(),
+		field.Uuid("satellite_id").
+			Optional(),
 	}
 }
 
@@ -224,6 +292,9 @@ func (Producer) Edges() []ent.Edge {
 		edge.To("relay", Relay.Type).
 			Unique().
 			Field("relay_id"),
+		edge.To("satellite", Satellite.Type).
+			Unique().
+			Field("satellite_id"),
 	}
 }
 

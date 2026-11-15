@@ -29,6 +29,9 @@ message Site {
   // Labels a relay must carry to serve this site's producers (§39.2). Empty
   // means any relay.
   map<string, string> relay_selector = 8;
+  // Labels a satellite must carry to take this site's producers' uploads
+  // (§41.2). Empty means any satellite.
+  map<string, string> satellite_selector = 9;
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

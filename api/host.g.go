@@ -122,6 +122,64 @@ func RelayGetByAlias(v string) *RelayGetRequest {
 	return RelayGetRequest_builder{Ref: RelayByAlias(v)}.Build()
 }
 
+func (x *SatelliteRef) Pick() *SatelliteGetRequest {
+	return SatelliteGetRequest_builder{Ref: x}.Build()
+}
+
+func (x *Satellite) Ref() *SatelliteRef {
+	if v := x.GetId(); len(v) > 0 {
+		return SatelliteById(v)
+	}
+	if v := x.GetAlias(); len(v) > 0 {
+		return SatelliteByAlias(v)
+	}
+
+	return nil
+}
+
+func (x *Satellite) Pick() *SatelliteGetRequest {
+	return x.Ref().Pick()
+}
+
+func (x *SatelliteRef) Picks(v *Satellite) bool {
+	switch x.WhichKey() {
+	case SatelliteRef_Id_case:
+		return bytes.Equal(x.GetId(), v.GetId())
+	case SatelliteRef_Alias_case:
+		return x.GetAlias() == v.GetAlias()
+	default:
+		return false
+	}
+}
+
+func (x *SatelliteGetRequest) WithSelect(f func(s *SatelliteSelect)) *SatelliteGetRequest {
+	if !x.HasSelect() {
+		x.SetSelect(&SatelliteSelect{})
+	}
+	f(x.GetSelect())
+	return x
+}
+
+func SatelliteById(v []byte) *SatelliteRef {
+	x := &SatelliteRef{}
+	x.SetId(v)
+	return x
+}
+
+func SatelliteByAlias(v string) *SatelliteRef {
+	x := &SatelliteRef{}
+	x.SetAlias(v)
+	return x
+}
+
+func SatelliteGetById(v []byte) *SatelliteGetRequest {
+	return SatelliteGetRequest_builder{Ref: SatelliteById(v)}.Build()
+}
+
+func SatelliteGetByAlias(v string) *SatelliteGetRequest {
+	return SatelliteGetRequest_builder{Ref: SatelliteByAlias(v)}.Build()
+}
+
 func (x *ProducerRef) Pick() *ProducerGetRequest {
 	return ProducerGetRequest_builder{Ref: x}.Build()
 }

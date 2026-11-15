@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/site"
 	"github.com/lesomnus/shale/internal/ent/tenant"
@@ -246,6 +247,20 @@ func (_c *ProducerCreate) SetNillableRelayId(v *uuid.UUID) *ProducerCreate {
 	return _c
 }
 
+// SetSatelliteId sets the "satellite_id" field.
+func (_c *ProducerCreate) SetSatelliteId(v uuid.UUID) *ProducerCreate {
+	_c.mutation.SetSatelliteId(v)
+	return _c
+}
+
+// SetNillableSatelliteId sets the "satellite_id" field if the given value is not nil.
+func (_c *ProducerCreate) SetNillableSatelliteId(v *uuid.UUID) *ProducerCreate {
+	if v != nil {
+		_c.SetSatelliteId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *ProducerCreate) SetId(v uuid.UUID) *ProducerCreate {
 	_c.mutation.SetId(v)
@@ -270,6 +285,11 @@ func (_c *ProducerCreate) SetSet(v *Set) *ProducerCreate {
 // SetRelay sets the "relay" edge to the Relay entity.
 func (_c *ProducerCreate) SetRelay(v *Relay) *ProducerCreate {
 	return _c.SetRelayId(v.Id)
+}
+
+// SetSatellite sets the "satellite" edge to the Satellite entity.
+func (_c *ProducerCreate) SetSatellite(v *Satellite) *ProducerCreate {
+	return _c.SetSatelliteId(v.Id)
 }
 
 // Mutation returns the ProducerMutation object of the builder.
@@ -569,6 +589,23 @@ func (_c *ProducerCreate) createSpec() (*Producer, *sqlgraph.CreateSpec, error) 
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.RelayId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SatelliteIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   producer.SatelliteTable,
+			Columns: []string{producer.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.SatelliteId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec, nil

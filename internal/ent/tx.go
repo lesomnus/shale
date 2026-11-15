@@ -68,6 +68,8 @@ type Tx struct {
 	Relay *RelayClient
 	// RowSeal is the client for interacting with the RowSeal builders.
 	RowSeal *RowSealClient
+	// Satellite is the client for interacting with the Satellite builders.
+	Satellite *SatelliteClient
 	// Set is the client for interacting with the Set builders.
 	Set *SetClient
 	// SigningKey is the client for interacting with the SigningKey builders.
@@ -243,6 +245,7 @@ func (tx *Tx) init() {
 	tx.Reader = NewReaderClient(tx.config)
 	tx.Relay = NewRelayClient(tx.config)
 	tx.RowSeal = NewRowSealClient(tx.config)
+	tx.Satellite = NewSatelliteClient(tx.config)
 	tx.Set = NewSetClient(tx.config)
 	tx.SigningKey = NewSigningKeyClient(tx.config)
 	tx.Sink = NewSinkClient(tx.config)

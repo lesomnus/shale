@@ -28,19 +28,20 @@ const (
 // Producer, and SiteMember names one, so a person or a reader limited to the
 // sites it is a member of cannot read another site's cameras.
 type Site struct {
-	state                    protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant        *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias         string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name          string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc          string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels        map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_RelaySelector map[string]string      `protobuf:"bytes,8,rep,name=relay_selector,json=relaySelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_DateUpdated   *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased    *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant            *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias             string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name              string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc              string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels            map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_RelaySelector     map[string]string      `protobuf:"bytes,8,rep,name=relay_selector,json=relaySelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_SatelliteSelector map[string]string      `protobuf:"bytes,9,rep,name=satellite_selector,json=satelliteSelector" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *Site) Reset() {
@@ -117,6 +118,13 @@ func (x *Site) GetRelaySelector() map[string]string {
 	return nil
 }
 
+func (x *Site) GetSatelliteSelector() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_SatelliteSelector
+	}
+	return nil
+}
+
 func (x *Site) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -167,6 +175,10 @@ func (x *Site) SetLabels(v map[string]string) {
 
 func (x *Site) SetRelaySelector(v map[string]string) {
 	x.xxx_hidden_RelaySelector = v
+}
+
+func (x *Site) SetSatelliteSelector(v map[string]string) {
+	x.xxx_hidden_SatelliteSelector = v
 }
 
 func (x *Site) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -237,9 +249,12 @@ type Site_builder struct {
 	// Labels a relay must carry to serve this site's producers (§39.2). Empty
 	// means any relay.
 	RelaySelector map[string]string
-	DateUpdated   *timestamppb.Timestamp
-	DateErased    *timestamppb.Timestamp
-	DateCreated   *timestamppb.Timestamp
+	// Labels a satellite must carry to take this site's producers' uploads
+	// (§41.2). Empty means any satellite.
+	SatelliteSelector map[string]string
+	DateUpdated       *timestamppb.Timestamp
+	DateErased        *timestamppb.Timestamp
+	DateCreated       *timestamppb.Timestamp
 }
 
 func (b0 Site_builder) Build() *Site {
@@ -253,6 +268,7 @@ func (b0 Site_builder) Build() *Site {
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_RelaySelector = b.RelaySelector
+	x.xxx_hidden_SatelliteSelector = b.SatelliteSelector
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -263,7 +279,7 @@ var File_shale_site_proto protoreflect.FileDescriptor
 
 const file_shale_site_proto_rawDesc = "" +
 	"\n" +
-	"\x10shale/site.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\"\xf0\x05\n" +
+	"\x10shale/site.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x19shale/payday/tenant.proto\"\x89\a\n" +
 	"\x04Site\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -271,7 +287,8 @@ const file_shale_site_proto_rawDesc = "" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12/\n" +
 	"\x06labels\x18\a \x03(\v2\x17.shale.Site.LabelsEntryR\x06labels\x12E\n" +
-	"\x0erelay_selector\x18\b \x03(\v2\x1e.shale.Site.RelaySelectorEntryR\rrelaySelector\x12F\n" +
+	"\x0erelay_selector\x18\b \x03(\v2\x1e.shale.Site.RelaySelectorEntryR\rrelaySelector\x12Q\n" +
+	"\x12satellite_selector\x18\t \x03(\v2\".shale.Site.SatelliteSelectorEntryR\x11satelliteSelector\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -280,6 +297,9 @@ const file_shale_site_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a@\n" +
 	"\x12RelaySelectorEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aD\n" +
+	"\x16SatelliteSelectorEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\x90\x01\xca\xfc\x15S\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
 	"\n" +
@@ -298,26 +318,28 @@ const file_shale_site_proto_rawDesc = "" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant \x14(d:\x00B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_site_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_shale_site_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_shale_site_proto_goTypes = []any{
 	(*Site)(nil),                  // 0: shale.Site
 	nil,                           // 1: shale.Site.LabelsEntry
 	nil,                           // 2: shale.Site.RelaySelectorEntry
-	(*Tenant)(nil),                // 3: shale.Tenant
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	nil,                           // 3: shale.Site.SatelliteSelectorEntry
+	(*Tenant)(nil),                // 4: shale.Tenant
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_shale_site_proto_depIdxs = []int32{
-	3, // 0: shale.Site.tenant:type_name -> shale.Tenant
+	4, // 0: shale.Site.tenant:type_name -> shale.Tenant
 	1, // 1: shale.Site.labels:type_name -> shale.Site.LabelsEntry
 	2, // 2: shale.Site.relay_selector:type_name -> shale.Site.RelaySelectorEntry
-	4, // 3: shale.Site.date_updated:type_name -> google.protobuf.Timestamp
-	4, // 4: shale.Site.date_erased:type_name -> google.protobuf.Timestamp
-	4, // 5: shale.Site.date_created:type_name -> google.protobuf.Timestamp
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	3, // 3: shale.Site.satellite_selector:type_name -> shale.Site.SatelliteSelectorEntry
+	5, // 4: shale.Site.date_updated:type_name -> google.protobuf.Timestamp
+	5, // 5: shale.Site.date_erased:type_name -> google.protobuf.Timestamp
+	5, // 6: shale.Site.date_created:type_name -> google.protobuf.Timestamp
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_shale_site_proto_init() }
@@ -332,7 +354,7 @@ func file_shale_site_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_site_proto_rawDesc), len(file_shale_site_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
