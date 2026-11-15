@@ -228,6 +228,14 @@ func (s *Satellite) Live() (sources int, sent, dropped int64) {
 	return s.live.feeding(), s.live.bytes.Load(), s.live.dropped.Load()
 }
 
+// Routes is where the satellite sends each node's uploads, scheme://host:port
+// as the CP resolved the node's data plane for it (§41.3).
+func (s *Satellite) Routes() map[pdid.Id]string { return s.proxy.routes.all() }
+
+// Relays is the relay ingest, host:port, that each producer's live stream
+// last dialed (§41.8).
+func (s *Satellite) Relays() map[pdid.Id]string { return s.live.relays() }
+
 // Run joins, then serves uploads until the context is done.
 func (s *Satellite) Run(ctx context.Context) error {
 	if err := os.MkdirAll(s.cfg.StateDir, 0o700); err != nil {

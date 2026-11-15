@@ -92,6 +92,18 @@ func (r *routes) base(ctx context.Context, node pdid.Id) (string, error) {
 	return v.(string), nil
 }
 
+// all is every node's route held now, expired or not.
+func (r *routes) all() map[pdid.Id]string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make(map[pdid.Id]string, len(r.byNode))
+	for id, v := range r.byNode {
+		out[id] = v.base
+	}
+
+	return out
+}
+
 // baseOf is the first endpoint the CP gave that the satellite may use:
 // https, or http in development mode.
 func (r *routes) baseOf(eps []*api.Endpoint) (string, error) {

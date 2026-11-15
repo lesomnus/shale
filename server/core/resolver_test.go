@@ -39,6 +39,39 @@ func TestPickAddressLoopbackCaller(t *testing.T) {
 	}
 }
 
+// `serve all` outside development mode (§34.7, §41.10): the node, the relay
+// and the satellite share the CP's host and listen on every interface. The
+// satellite calls the CP over loopback, so its routes to the node and the
+// relay are loopback; a producer anywhere else is handed the satellite's
+// routable address, and `satellite.advertise` wins over both (§34.10).
+func TestServeAllEndpoints(t *testing.T) {
+	saved := hostIPs
+	hostIPs = func() []net.IP { return []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("10.1.2.73")} }
+	defer func() { hostIPs = saved }()
+
+	ifs := []*api.HostInterface{
+		api.HostInterface_builder{Name: "lo", Addresses: []string{"127.0.0.1", "::1"}}.Build(),
+		api.HostInterface_builder{Name: "eth0", Addresses: []string{"10.1.2.73"}}.Build(),
+	}
+	s := Core{d: &Deps{}}
+	n := &ent.Node{Alias: "n1", Interfaces: ifs, DataAddress: "[::]:7410"}
+	r := &ent.Relay{Alias: "r1", Interfaces: ifs, IngestAddress: "[::]:7430", WhepAddress: "[::]:7431"}
+	sat := &ent.Satellite{Alias: "s1", Interfaces: ifs, UploadAddress: "[::]:7460"}
+
+	// The satellite's own calls.
+	require.Equal(t, "127.0.0.1", s.endpoints(n, "127.0.0.1", nil)[0].GetHost(), "its route to the node")
+	require.Equal(t, "127.0.0.1", s.relayEndpoints(r, r.IngestAddress, "127.0.0.1", nil)[0].GetHost(), "its feed to the relay")
+	// The producers'.
+	for caller, want := range map[string]string{"127.0.0.1": "127.0.0.1", "10.1.2.63": "10.1.2.73", "203.0.113.9": "10.1.2.73"} {
+		eps := s.satelliteEndpoints(sat, caller, nil)
+		require.Len(t, eps, 1)
+		require.Equal(t, want, eps[0].GetHost(), "a producer at %s", caller)
+		require.Equal(t, int32(7460), eps[0].GetPort())
+	}
+	sat.UploadAddress = "192.0.2.10:7460"
+	require.Equal(t, "192.0.2.10", s.satelliteEndpoints(sat, "203.0.113.9", nil)[0].GetHost())
+}
+
 // The forecast never leaves a set with nowhere to write: when it is the
 // only reason every sink is out, those sinks come back (§11.1).
 func TestReadmitForecast(t *testing.T) {

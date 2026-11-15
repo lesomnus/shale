@@ -104,9 +104,9 @@ type Deps struct {
 	CaSettle         time.Duration
 	// Resolve turns a node into the endpoints a caller dials (§34.10).
 	Resolve Resolver
-	// AutoAdopt says whether a join is adopted at once, which `shale serve
-	// all` does for the node and the relay in its own process (§34.7), and
-	// `control.auto_adopt` for every node, relay and satellite.
+	// AutoAdopt says whether a join is adopted at once: `control.auto_adopt`
+	// for every node, relay and satellite, which `shale serve all --dev`
+	// turns on for the hosts in its own process (§34.7).
 	AutoAdopt func(kind pdid.Domain, join *api.HostJoin, from string) bool
 	// ClusterTenant holds the cluster operators (§33.1).
 	ClusterTenant pdid.Id

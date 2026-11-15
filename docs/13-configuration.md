@@ -175,7 +175,8 @@ deployment runs well on them, and changes them only for a reason.
 | Live | `relay_selector` | none (any relay) | labels | site | [§39.2](16-relay.md#392-assignment) |
 | Live | `relay.heartbeat_interval` | 2 s | a third of `control.relay_down_after` or less | relay | [§39.2](16-relay.md#392-assignment) |
 | Live | `control.relay_down_after` | 6 s (three relay heartbeats) | how long a relay may go unheard before it is down: its producers are reassigned and `Live` stops naming it; at least three `relay.heartbeat_interval`s | control | [§39.2](16-relay.md#392-assignment), [§39.6](16-relay.md#396-failures) |
-| Satellite | `satellite.addr` | `:7460` | the upload listener: HTTPS, HTTP/1.1 and HTTP/2, a producer's client certificate required | satellite | [§41.3](18-satellite.md#413-the-upload-proxy) |
+| Satellite | `satellite.in_process` | `true`: `shale serve all` runs a satellite beside its node and relay | `false`: it runs none. `serve satellite` does not read it | satellite | [§41.10](18-satellite.md#4110-in-serve-all) |
+| Satellite | `satellite.addr` | `:7460`; under `serve all --dev`, a port of loopback the system picks | the upload listener: HTTPS, HTTP/1.1 and HTTP/2, a producer's client certificate required | satellite | [§41.3](18-satellite.md#413-the-upload-proxy), [§41.10](18-satellite.md#4110-in-serve-all) |
 | Satellite | `satellite.advertise` | the bound address | a host, or host:port, reported for the upload listener; a name is handed out as it is | satellite | [§34.10](11-deployment.md#3410-node-addresses) |
 | Satellite | `satellite.memory_budget` | 256 MiB | the one budget of what it holds of producers' bytes: the retained pool and, the rest, the in-flight pool; over the in-flight pool a request is refused `503` with `Retry-After` | satellite | [§41.4](18-satellite.md#414-memory) |
 | Satellite | `satellite.accept` | `true` | `false`: requests under `retain: accepted` pass through as under `committed`, and the in-flight pool has the whole budget | satellite | [§41.9](18-satellite.md#419-retain-accepted) |
@@ -333,7 +334,7 @@ out:
   upload stream as it passes ([§41.8](18-satellite.md#418-live-fan-out)),
   and under `retain: accepted` holds what a producer let go, in RAM only
   ([§41.9](18-satellite.md#419-retain-accepted)); a durable spill to its
-  disk is not planned ([§41.10](18-satellite.md#4110-not-yet)).
+  disk is not planned ([§41.11](18-satellite.md#4111-not-yet)).
 
 Ideas recorded, not planned:
 

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -194,6 +194,26 @@ func (lf *liveFeeds) feeding() int {
 	return n
 }
 
+// relays is the relay ingest each producer's stream last dialed.
+func (lf *liveFeeds) relays() map[pdid.Id]string {
+	lf.mu.Lock()
+	links := make([]*feedLink, 0, len(lf.links))
+	for _, l := range lf.links {
+		links = append(links, l)
+	}
+	lf.mu.Unlock()
+	out := map[pdid.Id]string{}
+	for _, l := range links {
+		l.mu.Lock()
+		if l.dialed != "" {
+			out[l.producer] = l.dialed
+		}
+		l.mu.Unlock()
+	}
+
+	return out
+}
+
 // drop counts a fragment the relay was too far behind to be queued.
 func (lf *liveFeeds) drop() {
 	n := lf.dropped.Add(1)
@@ -250,10 +270,12 @@ type feedLink struct {
 	// feeds that it is to be told what the satellite feeds now.
 	reauthorize bool
 	feeds       bool
-	changed     chan struct{}
-	controls    chan struct{}
-	send        chan queued
-	closed      bool
+	// dialed is the relay ingest the last stream dialed, host:port.
+	dialed   string
+	changed  chan struct{}
+	controls chan struct{}
+	send     chan queued
+	closed   bool
 }
 
 // queued is a Data message waiting for the relay, with when it began to.
@@ -488,11 +510,15 @@ func mustId(b []byte) pdid.Id {
 // welcomed it.
 func (l *feedLink) attach(ctx context.Context, ra *api.RelayAssignment) (up bool, err error) {
 	ep := ra.GetEndpoints()[0]
-	conn, err := l.lf.dial(ctx, fmt.Sprintf("%s:%d", ep.GetHost(), ep.GetPort()), ep.GetScheme() == "http")
+	addr := net.JoinHostPort(ep.GetHost(), strconv.Itoa(int(ep.GetPort())))
+	conn, err := l.lf.dial(ctx, addr, ep.GetScheme() == "http")
 	if err != nil {
 		return false, err
 	}
 	defer conn.Close()
+	l.mu.Lock()
+	l.dialed = addr
+	l.mu.Unlock()
 	sctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	stream, err := api.NewRelayIngestClient(conn).Attach(sctx)

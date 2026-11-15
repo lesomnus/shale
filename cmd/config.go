@@ -521,9 +521,14 @@ type RelayConfig struct {
 
 // SatelliteConfig is a satellite's own settings (§41).
 type SatelliteConfig struct {
+	// InProcess is whether `shale serve all` runs a satellite beside its
+	// node and relay (§41.10); true by default. `serve satellite` does not
+	// read it.
+	InProcess *bool `yaml:"in_process"`
 	// Addr is the upload listener producers dial (§41.3), ":7460" by
 	// default: HTTPS with the host certificate, HTTP/1.1 and HTTP/2, a
-	// producer's client certificate required.
+	// producer's client certificate required. Under `serve all --dev` it
+	// is a port of loopback the system picks, unless it is set here.
 	Addr string `yaml:"addr"`
 	// Advertise overrides the address the satellite reports for it, for a
 	// container whose interfaces are not the host's; a name here is handed
