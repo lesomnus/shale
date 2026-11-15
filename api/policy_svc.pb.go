@@ -6001,8 +6001,10 @@ type AddressPolicyAddRequest struct {
 	xxx_hidden_Version       int64                  `protobuf:"varint,8,opt,name=version"`
 	xxx_hidden_Params        *AddressParams         `protobuf:"bytes,9,opt,name=params"`
 	xxx_hidden_Active        bool                   `protobuf:"varint,10,opt,name=active"`
+	xxx_hidden_DnsTsigSecret []byte                 `protobuf:"bytes,11,opt,name=dns_tsig_secret,json=dnsTsigSecret"`
 	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_DateActivated *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=date_activated,json=dateActivated"`
+	xxx_hidden_DnsSync       *DnsSync               `protobuf:"bytes,17,opt,name=dns_sync,json=dnsSync"`
 	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
 	XXX_presence             [1]uint32
 	unknownFields            protoimpl.UnknownFields
@@ -6090,6 +6092,13 @@ func (x *AddressPolicyAddRequest) GetActive() bool {
 	return false
 }
 
+func (x *AddressPolicyAddRequest) GetDnsTsigSecret() []byte {
+	if x != nil {
+		return x.xxx_hidden_DnsTsigSecret
+	}
+	return nil
+}
+
 func (x *AddressPolicyAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -6104,12 +6113,19 @@ func (x *AddressPolicyAddRequest) GetDateActivated() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *AddressPolicyAddRequest) GetDnsSync() *DnsSync {
+	if x != nil {
+		return x.xxx_hidden_DnsSync
+	}
+	return nil
+}
+
 func (x *AddressPolicyAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
 }
 
 func (x *AddressPolicyAddRequest) SetAlias(v string) {
@@ -6140,12 +6156,24 @@ func (x *AddressPolicyAddRequest) SetActive(v bool) {
 	x.xxx_hidden_Active = v
 }
 
+func (x *AddressPolicyAddRequest) SetDnsTsigSecret(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_DnsTsigSecret = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+}
+
 func (x *AddressPolicyAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateCreated = v
 }
 
 func (x *AddressPolicyAddRequest) SetDateActivated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateActivated = v
+}
+
+func (x *AddressPolicyAddRequest) SetDnsSync(v *DnsSync) {
+	x.xxx_hidden_DnsSync = v
 }
 
 func (x *AddressPolicyAddRequest) HasId() bool {
@@ -6162,6 +6190,13 @@ func (x *AddressPolicyAddRequest) HasParams() bool {
 	return x.xxx_hidden_Params != nil
 }
 
+func (x *AddressPolicyAddRequest) HasDnsTsigSecret() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
 func (x *AddressPolicyAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -6176,6 +6211,13 @@ func (x *AddressPolicyAddRequest) HasDateActivated() bool {
 	return x.xxx_hidden_DateActivated != nil
 }
 
+func (x *AddressPolicyAddRequest) HasDnsSync() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DnsSync != nil
+}
+
 func (x *AddressPolicyAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -6185,12 +6227,21 @@ func (x *AddressPolicyAddRequest) ClearParams() {
 	x.xxx_hidden_Params = nil
 }
 
+func (x *AddressPolicyAddRequest) ClearDnsTsigSecret() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_DnsTsigSecret = nil
+}
+
 func (x *AddressPolicyAddRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
 
 func (x *AddressPolicyAddRequest) ClearDateActivated() {
 	x.xxx_hidden_DateActivated = nil
+}
+
+func (x *AddressPolicyAddRequest) ClearDnsSync() {
+	x.xxx_hidden_DnsSync = nil
 }
 
 type AddressPolicyAddRequest_builder struct {
@@ -6204,8 +6255,10 @@ type AddressPolicyAddRequest_builder struct {
 	Version       int64
 	Params        *AddressParams
 	Active        bool
+	DnsTsigSecret []byte
 	DateCreated   *timestamppb.Timestamp
 	DateActivated *timestamppb.Timestamp
+	DnsSync       *DnsSync
 }
 
 func (b0 AddressPolicyAddRequest_builder) Build() *AddressPolicyAddRequest {
@@ -6213,7 +6266,7 @@ func (b0 AddressPolicyAddRequest_builder) Build() *AddressPolicyAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Alias = b.Alias
@@ -6223,8 +6276,13 @@ func (b0 AddressPolicyAddRequest_builder) Build() *AddressPolicyAddRequest {
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_Params = b.Params
 	x.xxx_hidden_Active = b.Active
+	if b.DnsTsigSecret != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		x.xxx_hidden_DnsTsigSecret = b.DnsTsigSecret
+	}
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_DateActivated = b.DateActivated
+	x.xxx_hidden_DnsSync = b.DnsSync
 	return m0
 }
 
@@ -6537,10 +6595,12 @@ type AddressPolicySelect struct {
 	xxx_hidden_Version       bool                   `protobuf:"varint,8,opt,name=version"`
 	xxx_hidden_Params        bool                   `protobuf:"varint,9,opt,name=params"`
 	xxx_hidden_Active        bool                   `protobuf:"varint,10,opt,name=active"`
+	xxx_hidden_DnsTsigSecret bool                   `protobuf:"varint,11,opt,name=dns_tsig_secret,json=dnsTsigSecret"`
 	xxx_hidden_DateUpdated   bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased    bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated   bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_DateActivated bool                   `protobuf:"varint,16,opt,name=date_activated,json=dateActivated"`
+	xxx_hidden_DnsSync       bool                   `protobuf:"varint,17,opt,name=dns_sync,json=dnsSync"`
 	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
 	XXX_presence             [1]uint32
 	unknownFields            protoimpl.UnknownFields
@@ -6628,6 +6688,13 @@ func (x *AddressPolicySelect) GetActive() bool {
 	return false
 }
 
+func (x *AddressPolicySelect) GetDnsTsigSecret() bool {
+	if x != nil {
+		return x.xxx_hidden_DnsTsigSecret
+	}
+	return false
+}
+
 func (x *AddressPolicySelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -6656,64 +6723,81 @@ func (x *AddressPolicySelect) GetDateActivated() bool {
 	return false
 }
 
+func (x *AddressPolicySelect) GetDnsSync() bool {
+	if x != nil {
+		return x.xxx_hidden_DnsSync
+	}
+	return false
+}
+
 func (x *AddressPolicySelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 14)
 }
 
 func (x *AddressPolicySelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 14)
 }
 
 func (x *AddressPolicySelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 14)
 }
 
 func (x *AddressPolicySelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 14)
 }
 
 func (x *AddressPolicySelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 14)
 }
 
 func (x *AddressPolicySelect) SetVersion(v bool) {
 	x.xxx_hidden_Version = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 14)
 }
 
 func (x *AddressPolicySelect) SetParams(v bool) {
 	x.xxx_hidden_Params = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 14)
 }
 
 func (x *AddressPolicySelect) SetActive(v bool) {
 	x.xxx_hidden_Active = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 14)
+}
+
+func (x *AddressPolicySelect) SetDnsTsigSecret(v bool) {
+	x.xxx_hidden_DnsTsigSecret = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 14)
 }
 
 func (x *AddressPolicySelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 14)
 }
 
 func (x *AddressPolicySelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 14)
 }
 
 func (x *AddressPolicySelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 14)
 }
 
 func (x *AddressPolicySelect) SetDateActivated(v bool) {
 	x.xxx_hidden_DateActivated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 14)
+}
+
+func (x *AddressPolicySelect) SetDnsSync(v bool) {
+	x.xxx_hidden_DnsSync = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 14)
 }
 
 func (x *AddressPolicySelect) HasAll() bool {
@@ -6772,32 +6856,46 @@ func (x *AddressPolicySelect) HasActive() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *AddressPolicySelect) HasDateUpdated() bool {
+func (x *AddressPolicySelect) HasDnsTsigSecret() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *AddressPolicySelect) HasDateErased() bool {
+func (x *AddressPolicySelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *AddressPolicySelect) HasDateCreated() bool {
+func (x *AddressPolicySelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
-func (x *AddressPolicySelect) HasDateActivated() bool {
+func (x *AddressPolicySelect) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
+func (x *AddressPolicySelect) HasDateActivated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
+func (x *AddressPolicySelect) HasDnsSync() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 13)
 }
 
 func (x *AddressPolicySelect) ClearAll() {
@@ -6840,24 +6938,34 @@ func (x *AddressPolicySelect) ClearActive() {
 	x.xxx_hidden_Active = false
 }
 
-func (x *AddressPolicySelect) ClearDateUpdated() {
+func (x *AddressPolicySelect) ClearDnsTsigSecret() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_DnsTsigSecret = false
+}
+
+func (x *AddressPolicySelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *AddressPolicySelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *AddressPolicySelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_DateCreated = false
 }
 
 func (x *AddressPolicySelect) ClearDateActivated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_DateActivated = false
+}
+
+func (x *AddressPolicySelect) ClearDnsSync() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
+	x.xxx_hidden_DnsSync = false
 }
 
 type AddressPolicySelect_builder struct {
@@ -6871,10 +6979,12 @@ type AddressPolicySelect_builder struct {
 	Version       *bool
 	Params        *bool
 	Active        *bool
+	DnsTsigSecret *bool
 	DateUpdated   *bool
 	DateErased    *bool
 	DateCreated   *bool
 	DateActivated *bool
+	DnsSync       *bool
 }
 
 func (b0 AddressPolicySelect_builder) Build() *AddressPolicySelect {
@@ -6882,52 +6992,60 @@ func (b0 AddressPolicySelect_builder) Build() *AddressPolicySelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 14)
 		x.xxx_hidden_All = *b.All
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 14)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 14)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 14)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 14)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 14)
 		x.xxx_hidden_Version = *b.Version
 	}
 	if b.Params != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 14)
 		x.xxx_hidden_Params = *b.Params
 	}
 	if b.Active != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 14)
 		x.xxx_hidden_Active = *b.Active
 	}
+	if b.DnsTsigSecret != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 14)
+		x.xxx_hidden_DnsTsigSecret = *b.DnsTsigSecret
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 14)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 14)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 14)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.DateActivated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 14)
 		x.xxx_hidden_DateActivated = *b.DateActivated
+	}
+	if b.DnsSync != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 14)
+		x.xxx_hidden_DnsSync = *b.DnsSync
 	}
 	return m0
 }
@@ -6942,10 +7060,13 @@ type AddressPolicyPatchRequest struct {
 	xxx_hidden_Params            *AddressParams         `protobuf:"bytes,18,opt,name=params"`
 	xxx_hidden_ParamsNull        bool                   `protobuf:"varint,19,opt,name=params_null,json=paramsNull"`
 	xxx_hidden_Active            bool                   `protobuf:"varint,20,opt,name=active"`
+	xxx_hidden_DnsTsigSecret     []byte                 `protobuf:"bytes,22,opt,name=dns_tsig_secret,json=dnsTsigSecret"`
 	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce  bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	xxx_hidden_DateActivated     *timestamppb.Timestamp `protobuf:"bytes,32,opt,name=date_activated,json=dateActivated"`
 	xxx_hidden_DateActivatedNull bool                   `protobuf:"varint,33,opt,name=date_activated_null,json=dateActivatedNull"`
+	xxx_hidden_DnsSync           *DnsSync               `protobuf:"bytes,34,opt,name=dns_sync,json=dnsSync"`
+	xxx_hidden_DnsSyncNull       bool                   `protobuf:"varint,35,opt,name=dns_sync_null,json=dnsSyncNull"`
 	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
 	XXX_presence                 [1]uint32
 	unknownFields                protoimpl.UnknownFields
@@ -7042,6 +7163,13 @@ func (x *AddressPolicyPatchRequest) GetActive() bool {
 	return false
 }
 
+func (x *AddressPolicyPatchRequest) GetDnsTsigSecret() []byte {
+	if x != nil {
+		return x.xxx_hidden_DnsTsigSecret
+	}
+	return nil
+}
+
 func (x *AddressPolicyPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -7070,23 +7198,37 @@ func (x *AddressPolicyPatchRequest) GetDateActivatedNull() bool {
 	return false
 }
 
+func (x *AddressPolicyPatchRequest) GetDnsSync() *DnsSync {
+	if x != nil {
+		return x.xxx_hidden_DnsSync
+	}
+	return nil
+}
+
+func (x *AddressPolicyPatchRequest) GetDnsSyncNull() bool {
+	if x != nil {
+		return x.xxx_hidden_DnsSyncNull
+	}
+	return false
+}
+
 func (x *AddressPolicyPatchRequest) SetRef(v *AddressPolicyRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *AddressPolicyPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 15)
 }
 
 func (x *AddressPolicyPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 15)
 }
 
 func (x *AddressPolicyPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 15)
 }
 
 func (x *AddressPolicyPatchRequest) SetLabels(v map[string]string) {
@@ -7099,12 +7241,20 @@ func (x *AddressPolicyPatchRequest) SetParams(v *AddressParams) {
 
 func (x *AddressPolicyPatchRequest) SetParamsNull(v bool) {
 	x.xxx_hidden_ParamsNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 15)
 }
 
 func (x *AddressPolicyPatchRequest) SetActive(v bool) {
 	x.xxx_hidden_Active = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 15)
+}
+
+func (x *AddressPolicyPatchRequest) SetDnsTsigSecret(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_DnsTsigSecret = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 15)
 }
 
 func (x *AddressPolicyPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -7113,7 +7263,7 @@ func (x *AddressPolicyPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *AddressPolicyPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 15)
 }
 
 func (x *AddressPolicyPatchRequest) SetDateActivated(v *timestamppb.Timestamp) {
@@ -7122,7 +7272,16 @@ func (x *AddressPolicyPatchRequest) SetDateActivated(v *timestamppb.Timestamp) {
 
 func (x *AddressPolicyPatchRequest) SetDateActivatedNull(v bool) {
 	x.xxx_hidden_DateActivatedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 15)
+}
+
+func (x *AddressPolicyPatchRequest) SetDnsSync(v *DnsSync) {
+	x.xxx_hidden_DnsSync = v
+}
+
+func (x *AddressPolicyPatchRequest) SetDnsSyncNull(v bool) {
+	x.xxx_hidden_DnsSyncNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 15)
 }
 
 func (x *AddressPolicyPatchRequest) HasRef() bool {
@@ -7174,6 +7333,13 @@ func (x *AddressPolicyPatchRequest) HasActive() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
+func (x *AddressPolicyPatchRequest) HasDnsTsigSecret() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
 func (x *AddressPolicyPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -7185,7 +7351,7 @@ func (x *AddressPolicyPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *AddressPolicyPatchRequest) HasDateActivated() bool {
@@ -7199,7 +7365,21 @@ func (x *AddressPolicyPatchRequest) HasDateActivatedNull() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
+}
+
+func (x *AddressPolicyPatchRequest) HasDnsSync() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DnsSync != nil
+}
+
+func (x *AddressPolicyPatchRequest) HasDnsSyncNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
 }
 
 func (x *AddressPolicyPatchRequest) ClearRef() {
@@ -7235,12 +7415,17 @@ func (x *AddressPolicyPatchRequest) ClearActive() {
 	x.xxx_hidden_Active = false
 }
 
+func (x *AddressPolicyPatchRequest) ClearDnsTsigSecret() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_DnsTsigSecret = nil
+}
+
 func (x *AddressPolicyPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *AddressPolicyPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -7249,8 +7434,17 @@ func (x *AddressPolicyPatchRequest) ClearDateActivated() {
 }
 
 func (x *AddressPolicyPatchRequest) ClearDateActivatedNull() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_DateActivatedNull = false
+}
+
+func (x *AddressPolicyPatchRequest) ClearDnsSync() {
+	x.xxx_hidden_DnsSync = nil
+}
+
+func (x *AddressPolicyPatchRequest) ClearDnsSyncNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 14)
+	x.xxx_hidden_DnsSyncNull = false
 }
 
 type AddressPolicyPatchRequest_builder struct {
@@ -7266,8 +7460,9 @@ type AddressPolicyPatchRequest_builder struct {
 	// It takes a field of its own because an unset value already means
 	// "leave it alone", so no value could have meant NULL. It wins
 	// outright: setting both this and params clears.
-	ParamsNull *bool
-	Active     *bool
+	ParamsNull    *bool
+	Active        *bool
+	DnsTsigSecret []byte
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -7288,6 +7483,12 @@ type AddressPolicyPatchRequest_builder struct {
 	// "leave it alone", so no value could have meant NULL. It wins
 	// outright: setting both this and date_activated clears.
 	DateActivatedNull *bool
+	DnsSync           *DnsSync
+	// Clear dns_sync instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and dns_sync clears.
+	DnsSyncNull *bool
 }
 
 func (b0 AddressPolicyPatchRequest_builder) Build() *AddressPolicyPatchRequest {
@@ -7296,36 +7497,45 @@ func (b0 AddressPolicyPatchRequest_builder) Build() *AddressPolicyPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 15)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 15)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 15)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Params = b.Params
 	if b.ParamsNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 15)
 		x.xxx_hidden_ParamsNull = *b.ParamsNull
 	}
 	if b.Active != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 15)
 		x.xxx_hidden_Active = *b.Active
+	}
+	if b.DnsTsigSecret != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 15)
+		x.xxx_hidden_DnsTsigSecret = b.DnsTsigSecret
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 15)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_DateActivated = b.DateActivated
 	if b.DateActivatedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 15)
 		x.xxx_hidden_DateActivatedNull = *b.DateActivatedNull
+	}
+	x.xxx_hidden_DnsSync = b.DnsSync
+	if b.DnsSyncNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 15)
+		x.xxx_hidden_DnsSyncNull = *b.DnsSyncNull
 	}
 	return m0
 }
@@ -8107,7 +8317,7 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\x12\x16\n" +
 	"\x06active\x18\x02 \x01(\bR\x06active\"G\n" +
 	"\x1bUploadPolicyActivateRequest\x12(\n" +
-	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\"\xeb\x03\n" +
+	"\x03ref\x18\x01 \x01(\v2\x16.shale.UploadPolicyRefR\x03ref\"\xbe\x04\n" +
 	"\x17AddressPolicyAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -8117,9 +8327,11 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\aversion\x18\b \x01(\x03B\x05\xaa\x01\x02\b\x02R\aversion\x12,\n" +
 	"\x06params\x18\t \x01(\v2\x14.shale.AddressParamsR\x06params\x12\x1d\n" +
 	"\x06active\x18\n" +
-	" \x01(\bB\x05\xaa\x01\x02\b\x02R\x06active\x12=\n" +
+	" \x01(\bB\x05\xaa\x01\x02\b\x02R\x06active\x12&\n" +
+	"\x0fdns_tsig_secret\x18\v \x01(\fR\rdnsTsigSecret\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x12A\n" +
-	"\x0edate_activated\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\rdateActivated\x1a9\n" +
+	"\x0edate_activated\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\rdateActivated\x12)\n" +
+	"\bdns_sync\x18\x11 \x01(\v2\x0e.shale.DnsSyncR\adnsSync\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"x\n" +
@@ -8130,7 +8342,7 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05alias\x12\x1a\n" +
 	"\aversion\x18\b \x01(\x03H\x00R\aversionB\x05\n" +
-	"\x03key\"\xd5\x02\n" +
+	"\x03key\"\x98\x03\n" +
 	"\x13AddressPolicySelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
@@ -8140,12 +8352,14 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\aversion\x18\b \x01(\bR\aversion\x12\x16\n" +
 	"\x06params\x18\t \x01(\bR\x06params\x12\x16\n" +
 	"\x06active\x18\n" +
-	" \x01(\bR\x06active\x12!\n" +
+	" \x01(\bR\x06active\x12&\n" +
+	"\x0fdns_tsig_secret\x18\v \x01(\bR\rdnsTsigSecret\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\x12%\n" +
-	"\x0edate_activated\x18\x10 \x01(\bR\rdateActivated\"\xcc\x04\n" +
+	"\x0edate_activated\x18\x10 \x01(\bR\rdateActivated\x12\x19\n" +
+	"\bdns_sync\x18\x11 \x01(\bR\adnsSync\"\xc3\x05\n" +
 	"\x19AddressPolicyPatchRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.shale.AddressPolicyRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -8156,11 +8370,14 @@ const file_shale_policy_svc_g_proto_rawDesc = "" +
 	"\x06params\x18\x12 \x01(\v2\x14.shale.AddressParamsR\x06params\x12\x1f\n" +
 	"\vparams_null\x18\x13 \x01(\bR\n" +
 	"paramsNull\x12\x16\n" +
-	"\x06active\x18\x14 \x01(\bR\x06active\x12=\n" +
+	"\x06active\x18\x14 \x01(\bR\x06active\x12&\n" +
+	"\x0fdns_tsig_secret\x18\x16 \x01(\fR\rdnsTsigSecret\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x12A\n" +
 	"\x0edate_activated\x18  \x01(\v2\x1a.google.protobuf.TimestampR\rdateActivated\x12.\n" +
-	"\x13date_activated_null\x18! \x01(\bR\x11dateActivatedNull\x1a9\n" +
+	"\x13date_activated_null\x18! \x01(\bR\x11dateActivatedNull\x12)\n" +
+	"\bdns_sync\x18\" \x01(\v2\x0e.shale.DnsSyncR\adnsSync\x12\"\n" +
+	"\rdns_sync_null\x18# \x01(\bR\vdnsSyncNull\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
@@ -8282,7 +8499,8 @@ var file_shale_policy_svc_g_proto_goTypes = []any{
 	(*UploadBounds)(nil),                   // 61: shale.UploadBounds
 	(*UploadPolicy)(nil),                   // 62: shale.UploadPolicy
 	(*AddressParams)(nil),                  // 63: shale.AddressParams
-	(*AddressPolicy)(nil),                  // 64: shale.AddressPolicy
+	(*DnsSync)(nil),                        // 64: shale.DnsSync
+	(*AddressPolicy)(nil),                  // 65: shale.AddressPolicy
 }
 var file_shale_policy_svc_g_proto_depIdxs = []int32{
 	47,  // 0: shale.SigningKeyAddRequest.labels:type_name -> shale.SigningKeyAddRequest.LabelsEntry
@@ -8344,82 +8562,84 @@ var file_shale_policy_svc_g_proto_depIdxs = []int32{
 	63,  // 56: shale.AddressPolicyAddRequest.params:type_name -> shale.AddressParams
 	56,  // 57: shale.AddressPolicyAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	56,  // 58: shale.AddressPolicyAddRequest.date_activated:type_name -> google.protobuf.Timestamp
-	38,  // 59: shale.AddressPolicyGetRequest.ref:type_name -> shale.AddressPolicyRef
-	39,  // 60: shale.AddressPolicyGetRequest.select:type_name -> shale.AddressPolicySelect
-	38,  // 61: shale.AddressPolicyPatchRequest.ref:type_name -> shale.AddressPolicyRef
-	54,  // 62: shale.AddressPolicyPatchRequest.labels:type_name -> shale.AddressPolicyPatchRequest.LabelsEntry
-	63,  // 63: shale.AddressPolicyPatchRequest.params:type_name -> shale.AddressParams
-	56,  // 64: shale.AddressPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	56,  // 65: shale.AddressPolicyPatchRequest.date_activated:type_name -> google.protobuf.Timestamp
-	38,  // 66: shale.AddressPolicyApplyRequest.ref:type_name -> shale.AddressPolicyRef
-	57,  // 67: shale.AddressPolicyApplyRequest.patch:type_name -> patch.Patch
-	45,  // 68: shale.AddressPolicyListRequest.filters:type_name -> shale.AddressPolicyFilter
-	64,  // 69: shale.AddressPolicyListResponse.items:type_name -> shale.AddressPolicy
-	38,  // 70: shale.AddressPolicyFilter.ref:type_name -> shale.AddressPolicyRef
-	38,  // 71: shale.AddressPolicyActivateRequest.ref:type_name -> shale.AddressPolicyRef
-	0,   // 72: shale.SigningKeyService.Add:input_type -> shale.SigningKeyAddRequest
-	1,   // 73: shale.SigningKeyService.Get:input_type -> shale.SigningKeyGetRequest
-	4,   // 74: shale.SigningKeyService.Patch:input_type -> shale.SigningKeyPatchRequest
-	5,   // 75: shale.SigningKeyService.Apply:input_type -> shale.SigningKeyApplyRequest
-	2,   // 76: shale.SigningKeyService.Erase:input_type -> shale.SigningKeyRef
-	7,   // 77: shale.SigningKeyService.List:input_type -> shale.SigningKeyListRequest
-	10,  // 78: shale.SigningKeyService.Watch:input_type -> shale.SigningKeyWatchRequest
-	13,  // 79: shale.SigningKeyService.Rotate:input_type -> shale.SigningKeyRotateRequest
-	14,  // 80: shale.PlacementPolicyService.Add:input_type -> shale.PlacementPolicyAddRequest
-	15,  // 81: shale.PlacementPolicyService.Get:input_type -> shale.PlacementPolicyGetRequest
-	18,  // 82: shale.PlacementPolicyService.Patch:input_type -> shale.PlacementPolicyPatchRequest
-	19,  // 83: shale.PlacementPolicyService.Apply:input_type -> shale.PlacementPolicyApplyRequest
-	16,  // 84: shale.PlacementPolicyService.Erase:input_type -> shale.PlacementPolicyRef
-	21,  // 85: shale.PlacementPolicyService.List:input_type -> shale.PlacementPolicyListRequest
-	24,  // 86: shale.PlacementPolicyService.Activate:input_type -> shale.PlacementPolicyActivateRequest
-	25,  // 87: shale.UploadPolicyService.Add:input_type -> shale.UploadPolicyAddRequest
-	26,  // 88: shale.UploadPolicyService.Get:input_type -> shale.UploadPolicyGetRequest
-	29,  // 89: shale.UploadPolicyService.Patch:input_type -> shale.UploadPolicyPatchRequest
-	30,  // 90: shale.UploadPolicyService.Apply:input_type -> shale.UploadPolicyApplyRequest
-	27,  // 91: shale.UploadPolicyService.Erase:input_type -> shale.UploadPolicyRef
-	32,  // 92: shale.UploadPolicyService.List:input_type -> shale.UploadPolicyListRequest
-	35,  // 93: shale.UploadPolicyService.Activate:input_type -> shale.UploadPolicyActivateRequest
-	36,  // 94: shale.AddressPolicyService.Add:input_type -> shale.AddressPolicyAddRequest
-	37,  // 95: shale.AddressPolicyService.Get:input_type -> shale.AddressPolicyGetRequest
-	40,  // 96: shale.AddressPolicyService.Patch:input_type -> shale.AddressPolicyPatchRequest
-	41,  // 97: shale.AddressPolicyService.Apply:input_type -> shale.AddressPolicyApplyRequest
-	38,  // 98: shale.AddressPolicyService.Erase:input_type -> shale.AddressPolicyRef
-	43,  // 99: shale.AddressPolicyService.List:input_type -> shale.AddressPolicyListRequest
-	46,  // 100: shale.AddressPolicyService.Activate:input_type -> shale.AddressPolicyActivateRequest
-	58,  // 101: shale.SigningKeyService.Add:output_type -> shale.SigningKey
-	58,  // 102: shale.SigningKeyService.Get:output_type -> shale.SigningKey
-	58,  // 103: shale.SigningKeyService.Patch:output_type -> shale.SigningKey
-	58,  // 104: shale.SigningKeyService.Apply:output_type -> shale.SigningKey
-	6,   // 105: shale.SigningKeyService.Erase:output_type -> shale.SigningKeyEraseResponse
-	8,   // 106: shale.SigningKeyService.List:output_type -> shale.SigningKeyListResponse
-	11,  // 107: shale.SigningKeyService.Watch:output_type -> shale.SigningKeyWatchResponse
-	58,  // 108: shale.SigningKeyService.Rotate:output_type -> shale.SigningKey
-	60,  // 109: shale.PlacementPolicyService.Add:output_type -> shale.PlacementPolicy
-	60,  // 110: shale.PlacementPolicyService.Get:output_type -> shale.PlacementPolicy
-	60,  // 111: shale.PlacementPolicyService.Patch:output_type -> shale.PlacementPolicy
-	60,  // 112: shale.PlacementPolicyService.Apply:output_type -> shale.PlacementPolicy
-	20,  // 113: shale.PlacementPolicyService.Erase:output_type -> shale.PlacementPolicyEraseResponse
-	22,  // 114: shale.PlacementPolicyService.List:output_type -> shale.PlacementPolicyListResponse
-	60,  // 115: shale.PlacementPolicyService.Activate:output_type -> shale.PlacementPolicy
-	62,  // 116: shale.UploadPolicyService.Add:output_type -> shale.UploadPolicy
-	62,  // 117: shale.UploadPolicyService.Get:output_type -> shale.UploadPolicy
-	62,  // 118: shale.UploadPolicyService.Patch:output_type -> shale.UploadPolicy
-	62,  // 119: shale.UploadPolicyService.Apply:output_type -> shale.UploadPolicy
-	31,  // 120: shale.UploadPolicyService.Erase:output_type -> shale.UploadPolicyEraseResponse
-	33,  // 121: shale.UploadPolicyService.List:output_type -> shale.UploadPolicyListResponse
-	62,  // 122: shale.UploadPolicyService.Activate:output_type -> shale.UploadPolicy
-	64,  // 123: shale.AddressPolicyService.Add:output_type -> shale.AddressPolicy
-	64,  // 124: shale.AddressPolicyService.Get:output_type -> shale.AddressPolicy
-	64,  // 125: shale.AddressPolicyService.Patch:output_type -> shale.AddressPolicy
-	64,  // 126: shale.AddressPolicyService.Apply:output_type -> shale.AddressPolicy
-	42,  // 127: shale.AddressPolicyService.Erase:output_type -> shale.AddressPolicyEraseResponse
-	44,  // 128: shale.AddressPolicyService.List:output_type -> shale.AddressPolicyListResponse
-	64,  // 129: shale.AddressPolicyService.Activate:output_type -> shale.AddressPolicy
-	101, // [101:130] is the sub-list for method output_type
-	72,  // [72:101] is the sub-list for method input_type
-	72,  // [72:72] is the sub-list for extension type_name
-	72,  // [72:72] is the sub-list for extension extendee
-	0,   // [0:72] is the sub-list for field type_name
+	64,  // 59: shale.AddressPolicyAddRequest.dns_sync:type_name -> shale.DnsSync
+	38,  // 60: shale.AddressPolicyGetRequest.ref:type_name -> shale.AddressPolicyRef
+	39,  // 61: shale.AddressPolicyGetRequest.select:type_name -> shale.AddressPolicySelect
+	38,  // 62: shale.AddressPolicyPatchRequest.ref:type_name -> shale.AddressPolicyRef
+	54,  // 63: shale.AddressPolicyPatchRequest.labels:type_name -> shale.AddressPolicyPatchRequest.LabelsEntry
+	63,  // 64: shale.AddressPolicyPatchRequest.params:type_name -> shale.AddressParams
+	56,  // 65: shale.AddressPolicyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	56,  // 66: shale.AddressPolicyPatchRequest.date_activated:type_name -> google.protobuf.Timestamp
+	64,  // 67: shale.AddressPolicyPatchRequest.dns_sync:type_name -> shale.DnsSync
+	38,  // 68: shale.AddressPolicyApplyRequest.ref:type_name -> shale.AddressPolicyRef
+	57,  // 69: shale.AddressPolicyApplyRequest.patch:type_name -> patch.Patch
+	45,  // 70: shale.AddressPolicyListRequest.filters:type_name -> shale.AddressPolicyFilter
+	65,  // 71: shale.AddressPolicyListResponse.items:type_name -> shale.AddressPolicy
+	38,  // 72: shale.AddressPolicyFilter.ref:type_name -> shale.AddressPolicyRef
+	38,  // 73: shale.AddressPolicyActivateRequest.ref:type_name -> shale.AddressPolicyRef
+	0,   // 74: shale.SigningKeyService.Add:input_type -> shale.SigningKeyAddRequest
+	1,   // 75: shale.SigningKeyService.Get:input_type -> shale.SigningKeyGetRequest
+	4,   // 76: shale.SigningKeyService.Patch:input_type -> shale.SigningKeyPatchRequest
+	5,   // 77: shale.SigningKeyService.Apply:input_type -> shale.SigningKeyApplyRequest
+	2,   // 78: shale.SigningKeyService.Erase:input_type -> shale.SigningKeyRef
+	7,   // 79: shale.SigningKeyService.List:input_type -> shale.SigningKeyListRequest
+	10,  // 80: shale.SigningKeyService.Watch:input_type -> shale.SigningKeyWatchRequest
+	13,  // 81: shale.SigningKeyService.Rotate:input_type -> shale.SigningKeyRotateRequest
+	14,  // 82: shale.PlacementPolicyService.Add:input_type -> shale.PlacementPolicyAddRequest
+	15,  // 83: shale.PlacementPolicyService.Get:input_type -> shale.PlacementPolicyGetRequest
+	18,  // 84: shale.PlacementPolicyService.Patch:input_type -> shale.PlacementPolicyPatchRequest
+	19,  // 85: shale.PlacementPolicyService.Apply:input_type -> shale.PlacementPolicyApplyRequest
+	16,  // 86: shale.PlacementPolicyService.Erase:input_type -> shale.PlacementPolicyRef
+	21,  // 87: shale.PlacementPolicyService.List:input_type -> shale.PlacementPolicyListRequest
+	24,  // 88: shale.PlacementPolicyService.Activate:input_type -> shale.PlacementPolicyActivateRequest
+	25,  // 89: shale.UploadPolicyService.Add:input_type -> shale.UploadPolicyAddRequest
+	26,  // 90: shale.UploadPolicyService.Get:input_type -> shale.UploadPolicyGetRequest
+	29,  // 91: shale.UploadPolicyService.Patch:input_type -> shale.UploadPolicyPatchRequest
+	30,  // 92: shale.UploadPolicyService.Apply:input_type -> shale.UploadPolicyApplyRequest
+	27,  // 93: shale.UploadPolicyService.Erase:input_type -> shale.UploadPolicyRef
+	32,  // 94: shale.UploadPolicyService.List:input_type -> shale.UploadPolicyListRequest
+	35,  // 95: shale.UploadPolicyService.Activate:input_type -> shale.UploadPolicyActivateRequest
+	36,  // 96: shale.AddressPolicyService.Add:input_type -> shale.AddressPolicyAddRequest
+	37,  // 97: shale.AddressPolicyService.Get:input_type -> shale.AddressPolicyGetRequest
+	40,  // 98: shale.AddressPolicyService.Patch:input_type -> shale.AddressPolicyPatchRequest
+	41,  // 99: shale.AddressPolicyService.Apply:input_type -> shale.AddressPolicyApplyRequest
+	38,  // 100: shale.AddressPolicyService.Erase:input_type -> shale.AddressPolicyRef
+	43,  // 101: shale.AddressPolicyService.List:input_type -> shale.AddressPolicyListRequest
+	46,  // 102: shale.AddressPolicyService.Activate:input_type -> shale.AddressPolicyActivateRequest
+	58,  // 103: shale.SigningKeyService.Add:output_type -> shale.SigningKey
+	58,  // 104: shale.SigningKeyService.Get:output_type -> shale.SigningKey
+	58,  // 105: shale.SigningKeyService.Patch:output_type -> shale.SigningKey
+	58,  // 106: shale.SigningKeyService.Apply:output_type -> shale.SigningKey
+	6,   // 107: shale.SigningKeyService.Erase:output_type -> shale.SigningKeyEraseResponse
+	8,   // 108: shale.SigningKeyService.List:output_type -> shale.SigningKeyListResponse
+	11,  // 109: shale.SigningKeyService.Watch:output_type -> shale.SigningKeyWatchResponse
+	58,  // 110: shale.SigningKeyService.Rotate:output_type -> shale.SigningKey
+	60,  // 111: shale.PlacementPolicyService.Add:output_type -> shale.PlacementPolicy
+	60,  // 112: shale.PlacementPolicyService.Get:output_type -> shale.PlacementPolicy
+	60,  // 113: shale.PlacementPolicyService.Patch:output_type -> shale.PlacementPolicy
+	60,  // 114: shale.PlacementPolicyService.Apply:output_type -> shale.PlacementPolicy
+	20,  // 115: shale.PlacementPolicyService.Erase:output_type -> shale.PlacementPolicyEraseResponse
+	22,  // 116: shale.PlacementPolicyService.List:output_type -> shale.PlacementPolicyListResponse
+	60,  // 117: shale.PlacementPolicyService.Activate:output_type -> shale.PlacementPolicy
+	62,  // 118: shale.UploadPolicyService.Add:output_type -> shale.UploadPolicy
+	62,  // 119: shale.UploadPolicyService.Get:output_type -> shale.UploadPolicy
+	62,  // 120: shale.UploadPolicyService.Patch:output_type -> shale.UploadPolicy
+	62,  // 121: shale.UploadPolicyService.Apply:output_type -> shale.UploadPolicy
+	31,  // 122: shale.UploadPolicyService.Erase:output_type -> shale.UploadPolicyEraseResponse
+	33,  // 123: shale.UploadPolicyService.List:output_type -> shale.UploadPolicyListResponse
+	62,  // 124: shale.UploadPolicyService.Activate:output_type -> shale.UploadPolicy
+	65,  // 125: shale.AddressPolicyService.Add:output_type -> shale.AddressPolicy
+	65,  // 126: shale.AddressPolicyService.Get:output_type -> shale.AddressPolicy
+	65,  // 127: shale.AddressPolicyService.Patch:output_type -> shale.AddressPolicy
+	65,  // 128: shale.AddressPolicyService.Apply:output_type -> shale.AddressPolicy
+	42,  // 129: shale.AddressPolicyService.Erase:output_type -> shale.AddressPolicyEraseResponse
+	44,  // 130: shale.AddressPolicyService.List:output_type -> shale.AddressPolicyListResponse
+	65,  // 131: shale.AddressPolicyService.Activate:output_type -> shale.AddressPolicy
+	103, // [103:132] is the sub-list for method output_type
+	74,  // [74:103] is the sub-list for method input_type
+	74,  // [74:74] is the sub-list for extension type_name
+	74,  // [74:74] is the sub-list for extension extendee
+	0,   // [0:74] is the sub-list for field type_name
 }
 
 func init() { file_shale_policy_svc_g_proto_init() }

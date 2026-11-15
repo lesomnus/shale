@@ -195,7 +195,9 @@ Sink             node, device, path, capacity, free, pressure, capabilities,
                  attachment (attached | pending adoption, §28.3)
 PlacementPolicy  version, parameters, active
 AddressPolicy    version, resolver, resolver parameters, network rules,
-                 trusted proxies, active
+                 trusted proxies, active; for `dns`, the server, zone and
+                 TSIG key (its secret sealed, never answered with) and the
+                 leader's upkeep of the records (dns_sync)
 UploadPolicy     version, bounds and defaults of every negotiated value, active
 ```
 

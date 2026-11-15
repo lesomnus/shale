@@ -87,6 +87,7 @@ func (e *AddressPolicy) Proto() *api.AddressPolicy {
 		x.SetParams(e.Params)
 	}
 	x.SetActive(e.Active)
+	x.SetDnsTsigSecret(e.DnsTsigSecret)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))
@@ -94,6 +95,9 @@ func (e *AddressPolicy) Proto() *api.AddressPolicy {
 	x.SetDateCreated(timestamppb.New(e.DateCreated))
 	if e.DateActivated != nil {
 		x.SetDateActivated(timestamppb.New(*e.DateActivated))
+	}
+	if e.DnsSync != nil {
+		x.SetDnsSync(e.DnsSync)
 	}
 	return x
 }

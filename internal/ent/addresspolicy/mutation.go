@@ -15,23 +15,25 @@ import (
 
 // Mutation represents an operation that mutates the AddressPolicy nodes in the graph.
 type Mutation struct {
-	op             ent.Op
-	typ            string
-	alias          *string
-	name           *string
-	desc           *string
-	labels         *map[string]string
-	version        *int64
-	addversion     *int64
-	params         **api.AddressParams
-	active         *bool
-	date_updated   *time.Time
-	date_erased    *time.Time
-	date_created   *time.Time
-	date_activated *time.Time
-	clearedFields  map[string]struct{}
-	exprs          map[string]sql.Querier
-	predicates     []predicate.AddressPolicy
+	op              ent.Op
+	typ             string
+	alias           *string
+	name            *string
+	desc            *string
+	labels          *map[string]string
+	version         *int64
+	addversion      *int64
+	params          **api.AddressParams
+	active          *bool
+	dns_tsig_secret *[]byte
+	date_updated    *time.Time
+	date_erased     *time.Time
+	date_created    *time.Time
+	date_activated  *time.Time
+	dns_sync        **api.DnsSync
+	clearedFields   map[string]struct{}
+	exprs           map[string]sql.Querier
+	predicates      []predicate.AddressPolicy
 }
 
 // NewMutation creates a new Mutation for the AddressPolicy entity.
@@ -243,6 +245,42 @@ func (m *Mutation) ResetActive() {
 	delete(m.exprs, FieldActive)
 }
 
+// SetDnsTsigSecret sets the "dns_tsig_secret" field.
+func (m *Mutation) SetDnsTsigSecret(b []byte) {
+	m.dns_tsig_secret = &b
+	delete(m.clearedFields, FieldDnsTsigSecret)
+	delete(m.exprs, FieldDnsTsigSecret)
+}
+
+// DnsTsigSecret returns the value of the "dns_tsig_secret" field in the mutation.
+func (m *Mutation) DnsTsigSecret() (r []byte, exists bool) {
+	v := m.dns_tsig_secret
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDnsTsigSecret clears the value of the "dns_tsig_secret" field.
+func (m *Mutation) ClearDnsTsigSecret() {
+	m.dns_tsig_secret = nil
+	delete(m.exprs, FieldDnsTsigSecret)
+	m.clearedFields[FieldDnsTsigSecret] = struct{}{}
+}
+
+// DnsTsigSecretCleared returns if the "dns_tsig_secret" field was cleared in this mutation.
+func (m *Mutation) DnsTsigSecretCleared() bool {
+	_, ok := m.clearedFields[FieldDnsTsigSecret]
+	return ok
+}
+
+// ResetDnsTsigSecret resets all changes to the "dns_tsig_secret" field.
+func (m *Mutation) ResetDnsTsigSecret() {
+	m.dns_tsig_secret = nil
+	delete(m.clearedFields, FieldDnsTsigSecret)
+	delete(m.exprs, FieldDnsTsigSecret)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -369,6 +407,42 @@ func (m *Mutation) ResetDateActivated() {
 	delete(m.exprs, FieldDateActivated)
 }
 
+// SetDnsSync sets the "dns_sync" field.
+func (m *Mutation) SetDnsSync(as *api.DnsSync) {
+	m.dns_sync = &as
+	delete(m.clearedFields, FieldDnsSync)
+	delete(m.exprs, FieldDnsSync)
+}
+
+// DnsSync returns the value of the "dns_sync" field in the mutation.
+func (m *Mutation) DnsSync() (r *api.DnsSync, exists bool) {
+	v := m.dns_sync
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDnsSync clears the value of the "dns_sync" field.
+func (m *Mutation) ClearDnsSync() {
+	m.dns_sync = nil
+	delete(m.exprs, FieldDnsSync)
+	m.clearedFields[FieldDnsSync] = struct{}{}
+}
+
+// DnsSyncCleared returns if the "dns_sync" field was cleared in this mutation.
+func (m *Mutation) DnsSyncCleared() bool {
+	_, ok := m.clearedFields[FieldDnsSync]
+	return ok
+}
+
+// ResetDnsSync resets all changes to the "dns_sync" field.
+func (m *Mutation) ResetDnsSync() {
+	m.dns_sync = nil
+	delete(m.clearedFields, FieldDnsSync)
+	delete(m.exprs, FieldDnsSync)
+}
+
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.AddressPolicy) {
 	m.predicates = append(m.predicates, ps...)
@@ -403,7 +477,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 13)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -425,6 +499,9 @@ func (m *Mutation) Fields() []string {
 	if m.active != nil || m.exprs[FieldActive] != nil {
 		fields = append(fields, FieldActive)
 	}
+	if m.dns_tsig_secret != nil || m.exprs[FieldDnsTsigSecret] != nil {
+		fields = append(fields, FieldDnsTsigSecret)
+	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
 	}
@@ -436,6 +513,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_activated != nil || m.exprs[FieldDateActivated] != nil {
 		fields = append(fields, FieldDateActivated)
+	}
+	if m.dns_sync != nil || m.exprs[FieldDnsSync] != nil {
+		fields = append(fields, FieldDnsSync)
 	}
 	return fields
 }
@@ -465,6 +545,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Params()
 	case FieldActive:
 		return m.Active()
+	case FieldDnsTsigSecret:
+		return m.DnsTsigSecret()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -473,6 +555,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldDateActivated:
 		return m.DateActivated()
+	case FieldDnsSync:
+		return m.DnsSync()
 	}
 	return nil, false
 }
@@ -562,6 +646,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetActive(v)
 		return nil
+	case FieldDnsTsigSecret:
+		v, ok := value.([]byte)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDnsTsigSecret(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -602,6 +696,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateActivated(v)
 		return nil
+	case FieldDnsSync:
+		v, ok := value.(*api.DnsSync)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDnsSync(v)
+		return nil
 	}
 	return fmt.Errorf("unknown AddressPolicy field %s", name)
 }
@@ -638,6 +742,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetParams()
 	case FieldActive:
 		m.ResetActive()
+	case FieldDnsTsigSecret:
+		m.ResetDnsTsigSecret()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -646,6 +752,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldDateActivated:
 		m.ResetDateActivated()
+	case FieldDnsSync:
+		m.ResetDnsSync()
 	default:
 		return fmt.Errorf("unknown AddressPolicy field %s", name)
 	}
@@ -685,6 +793,9 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldActive]; ok {
 		fields = append(fields, FieldActive)
 	}
+	if _, ok := m.exprs[FieldDnsTsigSecret]; ok {
+		fields = append(fields, FieldDnsTsigSecret)
+	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
 	}
@@ -693,6 +804,9 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldDateActivated]; ok {
 		fields = append(fields, FieldDateActivated)
+	}
+	if _, ok := m.exprs[FieldDnsSync]; ok {
+		fields = append(fields, FieldDnsSync)
 	}
 	return fields
 }
@@ -744,6 +858,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldParams) {
 		fields = append(fields, FieldParams)
 	}
+	if m.FieldCleared(FieldDnsTsigSecret) {
+		fields = append(fields, FieldDnsTsigSecret)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -752,6 +869,9 @@ func (m *Mutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(FieldDateActivated) {
 		fields = append(fields, FieldDateActivated)
+	}
+	if m.FieldCleared(FieldDnsSync) {
+		fields = append(fields, FieldDnsSync)
 	}
 	return fields
 }
@@ -773,6 +893,9 @@ func (m *Mutation) ClearField(name string) error {
 	case FieldParams:
 		m.ClearParams()
 		return nil
+	case FieldDnsTsigSecret:
+		m.ClearDnsTsigSecret()
+		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
 		return nil
@@ -781,6 +904,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateActivated:
 		m.ClearDateActivated()
+		return nil
+	case FieldDnsSync:
+		m.ClearDnsSync()
 		return nil
 	}
 	return fmt.Errorf("unknown AddressPolicy nullable field %s", name)
@@ -811,6 +937,9 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldActive:
 		m.ResetActive()
 		return nil
+	case FieldDnsTsigSecret:
+		m.ResetDnsTsigSecret()
+		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 		return nil
@@ -822,6 +951,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateActivated:
 		m.ResetDateActivated()
+		return nil
+	case FieldDnsSync:
+		m.ResetDnsSync()
 		return nil
 	}
 	return fmt.Errorf("unknown AddressPolicy field %s", name)

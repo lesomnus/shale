@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/z"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/shale/api"
@@ -182,6 +183,108 @@ func (s Core) AddressPolicy() api.AddressPolicyServiceServer {
 	return coreAddressPolicy{s, s.Next().AddressPolicy()}
 }
 
+// The TSIG secret of a dns policy (§34.10) is written on the policy, not
+// in its parameters: sealed by the KEK on its way in, and cleared on every
+// way out, here and by the generated Secret layer, and withheld from the
+// trail, which keeps no value of a field declared secret. What a version
+// before wrote into params.dns_tsig_secret is refused, and cleared from
+// what a read answers.
+
+func (s coreAddressPolicy) Add(ctx context.Context, req *api.AddressPolicyAddRequest) (*api.AddressPolicy, error) {
+	if req.GetParams().GetDnsTsigSecret() != "" {
+		return nil, legacyTsig()
+	}
+	if len(req.GetDnsTsigSecret()) > 0 {
+		sealed, err := s.d.sealTsig(req.GetDnsTsigSecret())
+		if err != nil {
+			return nil, err
+		}
+		req = proto.CloneOf(req)
+		req.SetDnsTsigSecret(sealed)
+	}
+	if req.GetActive() && req.GetParams().GetResolver() == "dns" {
+		if err := checkDnsPolicy(req.GetParams(), req.GetDnsTsigSecret()); err != nil {
+			return nil, err
+		}
+	}
+	v, err := s.AddressPolicyServiceServer.Add(ctx, req)
+
+	return withoutTsig(v), err
+}
+
+func (s coreAddressPolicy) Patch(ctx context.Context, req *api.AddressPolicyPatchRequest) (*api.AddressPolicy, error) {
+	if req.GetParams().GetDnsTsigSecret() != "" {
+		return nil, legacyTsig()
+	}
+	if len(req.GetDnsTsigSecret()) > 0 {
+		sealed, err := s.d.sealTsig(req.GetDnsTsigSecret())
+		if err != nil {
+			return nil, err
+		}
+		req = proto.CloneOf(req)
+		req.SetDnsTsigSecret(sealed)
+	}
+	// An active policy changes what is handed out the moment it is
+	// written, so it is held to what Activate holds a policy to, bar
+	// asking the server.
+	var out *api.AddressPolicy
+	err := s.tx(ctx, func(ctx context.Context, nx api.Server) error {
+		v, err := nx.AddressPolicy().Patch(ctx, req)
+		if err != nil {
+			return err
+		}
+		if v.GetActive() && v.GetParams().GetResolver() == "dns" {
+			if err := checkDnsPolicy(v.GetParams(), v.GetDnsTsigSecret()); err != nil {
+				return err
+			}
+		}
+		out = v
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	s.invalidatePolicies()
+
+	return withoutTsig(out), nil
+}
+
+func (s coreAddressPolicy) Get(ctx context.Context, req *api.AddressPolicyGetRequest) (*api.AddressPolicy, error) {
+	v, err := s.AddressPolicyServiceServer.Get(ctx, req)
+
+	return withoutTsig(v), err
+}
+
+func (s coreAddressPolicy) List(ctx context.Context, req *api.AddressPolicyListRequest) (*api.AddressPolicyListResponse, error) {
+	v, err := s.AddressPolicyServiceServer.List(ctx, req)
+	for _, w := range v.GetItems() {
+		withoutTsig(w)
+	}
+
+	return v, err
+}
+
+func legacyTsig() error {
+	return invalid("params.dns_tsig_secret", "write the secret as dns_tsig_secret on the policy, where it is sealed and never answered with")
+}
+
+// withoutTsig is a policy as it is answered with: the generated Secret
+// layer clears dns_tsig_secret from what the generated verbs answer, but
+// not from Activate's answer, which is this layer's own, nor from the
+// parameters, where a version before kept it.
+func withoutTsig(v *api.AddressPolicy) *api.AddressPolicy {
+	if v == nil {
+		return nil
+	}
+	v.SetDnsTsigSecret(nil)
+	if p := v.GetParams(); p.GetDnsTsigSecret() != "" {
+		p.SetDnsTsigSecret("")
+	}
+
+	return v
+}
+
 func (s coreAddressPolicy) Activate(ctx context.Context, req *api.AddressPolicyActivateRequest) (*api.AddressPolicy, error) {
 	if _, err := actor(ctx); err != nil {
 		return nil, err
@@ -189,6 +292,17 @@ func (s coreAddressPolicy) Activate(ctx context.Context, req *api.AddressPolicyA
 	target, err := s.AddressPolicyServiceServer.Get(ctx, api.AddressPolicyGetRequest_builder{Ref: req.GetRef()}.Build())
 	if err != nil {
 		return nil, err
+	}
+	if target.GetParams().GetResolver() == "dns" {
+		// What the policy must be, and then whether the server takes the
+		// key for the zone: a policy the leader could not use is refused
+		// here rather than found out in its log.
+		if err := checkDnsPolicy(target.GetParams(), target.GetDnsTsigSecret()); err != nil {
+			return nil, err
+		}
+		if err := s.d.probeDns(ctx, target); err != nil {
+			return nil, err
+		}
 	}
 	var out *api.AddressPolicy
 	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
@@ -218,7 +332,7 @@ func (s coreAddressPolicy) Activate(ctx context.Context, req *api.AddressPolicyA
 	}
 	s.invalidatePolicies()
 
-	return out, nil
+	return withoutTsig(out), nil
 }
 
 // tokenLifetimeMax is the longest a token can live, which is how long a

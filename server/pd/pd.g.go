@@ -16880,7 +16880,7 @@ var (
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
 	describedAddressPolicy = describe((*api.AddressPolicy)(nil),
-		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{11},
 		[]protoreflect.FieldNumber{})
 	describedArchived = describe((*api.Archived)(nil),
 		[]protoreflect.FieldNumber{},
@@ -20963,6 +20963,83 @@ func hideSigningKey(v *api.SigningKey) *api.SigningKey {
 	return v
 }
 
+func (s Secret) AddressPolicy() api.AddressPolicyServiceServer {
+	return secretAddressPolicy{s, s.Next().AddressPolicy()}
+}
+
+type secretAddressPolicy struct {
+	Secret
+	api.AddressPolicyServiceServer
+}
+
+func (s secretAddressPolicy) Add(ctx context.Context, req *api.AddressPolicyAddRequest) (*api.AddressPolicy, error) {
+	v, err := s.AddressPolicyServiceServer.Add(ctx, req)
+
+	return hideAddressPolicy(v), err
+}
+
+func (s secretAddressPolicy) Get(ctx context.Context, req *api.AddressPolicyGetRequest) (*api.AddressPolicy, error) {
+	v, err := s.AddressPolicyServiceServer.Get(ctx, req)
+
+	return hideAddressPolicy(v), err
+}
+
+func (s secretAddressPolicy) Patch(ctx context.Context, req *api.AddressPolicyPatchRequest) (*api.AddressPolicy, error) {
+	v, err := s.AddressPolicyServiceServer.Patch(ctx, req)
+
+	return hideAddressPolicy(v), err
+}
+
+func (s secretAddressPolicy) Apply(ctx context.Context, req *api.AddressPolicyApplyRequest) (*api.AddressPolicy, error) {
+	v, err := s.AddressPolicyServiceServer.Apply(ctx, req)
+
+	return hideAddressPolicy(v), err
+}
+
+func (s secretAddressPolicy) List(ctx context.Context, req *api.AddressPolicyListRequest) (*api.AddressPolicyListResponse, error) {
+	v, err := s.AddressPolicyServiceServer.List(ctx, req)
+	if v == nil {
+		return v, err
+	}
+
+	for _, w := range v.GetItems() {
+		hideAddressPolicy(w)
+	}
+
+	return v, err
+}
+
+// hideAddressPolicy clears what this entity declared it never answers with.
+//
+// A nil row passes through, because an error is answered with one and the
+// caller of this is handing both on.
+//
+// By field number and through the descriptor, rather than a setter per
+// field, because a setter's argument has a type and this has to hold for
+// every field a row can carry. A `Set<F>(nil)` per secret is what this
+// was, and it compiled only while every secret anybody had declared was
+// `bytes`: a `string` one ended the build in a generated file, and an
+// enum would have needed its own type spelled out here to say zero.
+//
+// Clear is also the truer word. A field with presence is **absent**
+// afterwards rather than present and empty, which is what "never answered
+// with" says; one without presence reads as its zero value either way.
+// And the numbers are the ones `hidden` filters the trail's patch by, so
+// the two cannot come to disagree about which fields they are.
+func hideAddressPolicy(v *api.AddressPolicy) *api.AddressPolicy {
+	if v == nil {
+		return nil
+	}
+
+	m := v.ProtoReflect()
+	fs := m.Descriptor().Fields()
+	for _, n := range []protoreflect.FieldNumber{11} {
+		m.Clear(fs.ByNumber(n))
+	}
+
+	return v
+}
+
 // Intercept is the layer that runs gRPC interceptors between two layers.
 //
 // They are `grpc.UnaryServerInterceptor` and `grpc.StreamServerInterceptor`,
@@ -24338,6 +24415,9 @@ func Resources(w *watch.Watch, project resource.Project) (*resource.Server, erro
 }
 
 var resourceSecrets = map[protoreflect.FullName][]protoreflect.FieldNumber{
+	"shale.AddressPolicy": {
+		11,
+	},
 	"shale.CameraCredentialVersion": {
 		16,
 		17,

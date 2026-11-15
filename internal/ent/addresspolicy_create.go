@@ -66,6 +66,12 @@ func (_c *AddressPolicyCreate) SetActive(v bool) *AddressPolicyCreate {
 	return _c
 }
 
+// SetDnsTsigSecret sets the "dns_tsig_secret" field.
+func (_c *AddressPolicyCreate) SetDnsTsigSecret(v []byte) *AddressPolicyCreate {
+	_c.mutation.SetDnsTsigSecret(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *AddressPolicyCreate) SetDateUpdated(v time.Time) *AddressPolicyCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -111,6 +117,12 @@ func (_c *AddressPolicyCreate) SetNillableDateActivated(v *time.Time) *AddressPo
 	if v != nil {
 		_c.SetDateActivated(*v)
 	}
+	return _c
+}
+
+// SetDnsSync sets the "dns_sync" field.
+func (_c *AddressPolicyCreate) SetDnsSync(v *api.DnsSync) *AddressPolicyCreate {
+	_c.mutation.SetDnsSync(v)
 	return _c
 }
 
@@ -264,6 +276,10 @@ func (_c *AddressPolicyCreate) createSpec() (*AddressPolicy, *sqlgraph.CreateSpe
 		_spec.SetField(addresspolicy.FieldActive, field.TypeBool, value)
 		_node.Active = value
 	}
+	if value, ok := _c.mutation.DnsTsigSecret(); ok {
+		_spec.SetField(addresspolicy.FieldDnsTsigSecret, field.TypeBytes, value)
+		_node.DnsTsigSecret = value
+	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(addresspolicy.FieldDateUpdated, field.TypeTime, value)
 		_node.DateUpdated = value
@@ -279,6 +295,17 @@ func (_c *AddressPolicyCreate) createSpec() (*AddressPolicy, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.DateActivated(); ok {
 		_spec.SetField(addresspolicy.FieldDateActivated, field.TypeTime, value)
 		_node.DateActivated = &value
+	}
+	if value, ok := _c.mutation.DnsSync(); ok {
+		vv, err := addresspolicy.ValueScanner.DnsSync.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(addresspolicy.FieldDnsSync, field.TypeJson, vv)
+		_node.DnsSync = value
 	}
 	return _node, _spec, nil
 }

@@ -1450,18 +1450,21 @@ func (b0 NetworkRule_builder) Build() *NetworkRule {
 
 // AddressParams is the resolver and its parameters (§34.10).
 type AddressParams struct {
-	state                     protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Resolver       string                 `protobuf:"bytes,1,opt,name=resolver"`
-	xxx_hidden_Template       string                 `protobuf:"bytes,2,opt,name=template"`
-	xxx_hidden_Rules          *[]*NetworkRule        `protobuf:"bytes,3,rep,name=rules"`
-	xxx_hidden_TrustedProxies []string               `protobuf:"bytes,4,rep,name=trusted_proxies,json=trustedProxies"`
-	xxx_hidden_DnsServer      string                 `protobuf:"bytes,5,opt,name=dns_server,json=dnsServer"`
-	xxx_hidden_DnsZone        string                 `protobuf:"bytes,6,opt,name=dns_zone,json=dnsZone"`
-	xxx_hidden_DnsTsigName    string                 `protobuf:"bytes,7,opt,name=dns_tsig_name,json=dnsTsigName"`
-	xxx_hidden_DnsTsigSecret  string                 `protobuf:"bytes,8,opt,name=dns_tsig_secret,json=dnsTsigSecret"`
-	xxx_hidden_ExtraNames     []string               `protobuf:"bytes,9,rep,name=extra_names,json=extraNames"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Resolver         string                 `protobuf:"bytes,1,opt,name=resolver"`
+	xxx_hidden_Template         string                 `protobuf:"bytes,2,opt,name=template"`
+	xxx_hidden_Rules            *[]*NetworkRule        `protobuf:"bytes,3,rep,name=rules"`
+	xxx_hidden_TrustedProxies   []string               `protobuf:"bytes,4,rep,name=trusted_proxies,json=trustedProxies"`
+	xxx_hidden_DnsServer        string                 `protobuf:"bytes,5,opt,name=dns_server,json=dnsServer"`
+	xxx_hidden_DnsZone          string                 `protobuf:"bytes,6,opt,name=dns_zone,json=dnsZone"`
+	xxx_hidden_DnsTsigName      string                 `protobuf:"bytes,7,opt,name=dns_tsig_name,json=dnsTsigName"`
+	xxx_hidden_DnsTsigSecret    string                 `protobuf:"bytes,8,opt,name=dns_tsig_secret,json=dnsTsigSecret"`
+	xxx_hidden_ExtraNames       []string               `protobuf:"bytes,9,rep,name=extra_names,json=extraNames"`
+	xxx_hidden_DnsTsigAlgorithm string                 `protobuf:"bytes,10,opt,name=dns_tsig_algorithm,json=dnsTsigAlgorithm"`
+	xxx_hidden_DnsTtl           int32                  `protobuf:"varint,11,opt,name=dns_ttl,json=dnsTtl"`
+	xxx_hidden_DnsNetworks      []string               `protobuf:"bytes,12,rep,name=dns_networks,json=dnsNetworks"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *AddressParams) Reset() {
@@ -1540,6 +1543,7 @@ func (x *AddressParams) GetDnsTsigName() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in shale/policy.proto.
 func (x *AddressParams) GetDnsTsigSecret() string {
 	if x != nil {
 		return x.xxx_hidden_DnsTsigSecret
@@ -1550,6 +1554,27 @@ func (x *AddressParams) GetDnsTsigSecret() string {
 func (x *AddressParams) GetExtraNames() []string {
 	if x != nil {
 		return x.xxx_hidden_ExtraNames
+	}
+	return nil
+}
+
+func (x *AddressParams) GetDnsTsigAlgorithm() string {
+	if x != nil {
+		return x.xxx_hidden_DnsTsigAlgorithm
+	}
+	return ""
+}
+
+func (x *AddressParams) GetDnsTtl() int32 {
+	if x != nil {
+		return x.xxx_hidden_DnsTtl
+	}
+	return 0
+}
+
+func (x *AddressParams) GetDnsNetworks() []string {
+	if x != nil {
+		return x.xxx_hidden_DnsNetworks
 	}
 	return nil
 }
@@ -1582,6 +1607,7 @@ func (x *AddressParams) SetDnsTsigName(v string) {
 	x.xxx_hidden_DnsTsigName = v
 }
 
+// Deprecated: Marked as deprecated in shale/policy.proto.
 func (x *AddressParams) SetDnsTsigSecret(v string) {
 	x.xxx_hidden_DnsTsigSecret = v
 }
@@ -1590,24 +1616,55 @@ func (x *AddressParams) SetExtraNames(v []string) {
 	x.xxx_hidden_ExtraNames = v
 }
 
+func (x *AddressParams) SetDnsTsigAlgorithm(v string) {
+	x.xxx_hidden_DnsTsigAlgorithm = v
+}
+
+func (x *AddressParams) SetDnsTtl(v int32) {
+	x.xxx_hidden_DnsTtl = v
+}
+
+func (x *AddressParams) SetDnsNetworks(v []string) {
+	x.xxx_hidden_DnsNetworks = v
+}
+
 type AddressParams_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// "advertised" (default), "template", or "dns".
 	Resolver string
-	// For template and dns: e.g. "{alias}.nodes.example.com".
+	// For template and dns: e.g. "{alias}.nodes.example.com". `{id}` is the
+	// host's ID.
 	Template string
 	Rules    []*NetworkRule
 	// Callers from these addresses carry the real client address in the
 	// PROXY protocol header.
 	TrustedProxies []string
-	// For dns: the server the CP updates (RFC 2136) and the zone.
-	DnsServer     string
-	DnsZone       string
-	DnsTsigName   string
+	// For dns: the server the CP updates (RFC 2136, over TCP), `host` or
+	// `host:port` (53), and the zone the template's names are in.
+	DnsServer string
+	DnsZone   string
+	// For dns: the name of the TSIG key the updates are signed with. Its
+	// secret is AddressPolicy.dns_tsig_secret.
+	DnsTsigName string
+	// Not read, and refused when written: the secret is
+	// AddressPolicy.dns_tsig_secret, which is sealed and never answered with.
+	// Kept so that a row written before still reads.
+	//
+	// Deprecated: Marked as deprecated in shale/policy.proto.
 	DnsTsigSecret string
 	// Extra names every node certificate should carry.
 	ExtraNames []string
+	// For dns: the TSIG algorithm, `hmac-sha256` when empty; also
+	// `hmac-sha224`, `hmac-sha384`, `hmac-sha512` and `hmac-sha1`.
+	DnsTsigAlgorithm string
+	// For dns: the TTL of the records, seconds; zero is 60.
+	DnsTtl int32
+	// For dns: the networks (CIDRs) whose addresses a host's records carry.
+	// Empty is the first IPv4 and the first IPv6 address the host reports
+	// that are neither loopback nor link-local. A host whose data plane
+	// listens on one IP gets that IP either way.
+	DnsNetworks []string
 }
 
 func (b0 AddressParams_builder) Build() *AddressParams {
@@ -1623,6 +1680,152 @@ func (b0 AddressParams_builder) Build() *AddressParams {
 	x.xxx_hidden_DnsTsigName = b.DnsTsigName
 	x.xxx_hidden_DnsTsigSecret = b.DnsTsigSecret
 	x.xxx_hidden_ExtraNames = b.ExtraNames
+	x.xxx_hidden_DnsTsigAlgorithm = b.DnsTsigAlgorithm
+	x.xxx_hidden_DnsTtl = b.DnsTtl
+	x.xxx_hidden_DnsNetworks = b.DnsNetworks
+	return m0
+}
+
+// DnsSync is what the leader last did to the zone of a `dns` policy
+// (§34.10). A failure shows here, in the log, and in
+// `shale.cp.dns_updates{result=error}`.
+type DnsSync struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_DateSynced *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=date_synced,json=dateSynced"`
+	xxx_hidden_Names      int32                  `protobuf:"varint,2,opt,name=names"`
+	xxx_hidden_Error      string                 `protobuf:"bytes,3,opt,name=error"`
+	xxx_hidden_DateFailed *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_failed,json=dateFailed"`
+	xxx_hidden_Conflicts  []string               `protobuf:"bytes,5,rep,name=conflicts"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *DnsSync) Reset() {
+	*x = DnsSync{}
+	mi := &file_shale_policy_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DnsSync) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DnsSync) ProtoMessage() {}
+
+func (x *DnsSync) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_policy_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *DnsSync) GetDateSynced() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateSynced
+	}
+	return nil
+}
+
+func (x *DnsSync) GetNames() int32 {
+	if x != nil {
+		return x.xxx_hidden_Names
+	}
+	return 0
+}
+
+func (x *DnsSync) GetError() string {
+	if x != nil {
+		return x.xxx_hidden_Error
+	}
+	return ""
+}
+
+func (x *DnsSync) GetDateFailed() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateFailed
+	}
+	return nil
+}
+
+func (x *DnsSync) GetConflicts() []string {
+	if x != nil {
+		return x.xxx_hidden_Conflicts
+	}
+	return nil
+}
+
+func (x *DnsSync) SetDateSynced(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateSynced = v
+}
+
+func (x *DnsSync) SetNames(v int32) {
+	x.xxx_hidden_Names = v
+}
+
+func (x *DnsSync) SetError(v string) {
+	x.xxx_hidden_Error = v
+}
+
+func (x *DnsSync) SetDateFailed(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateFailed = v
+}
+
+func (x *DnsSync) SetConflicts(v []string) {
+	x.xxx_hidden_Conflicts = v
+}
+
+func (x *DnsSync) HasDateSynced() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateSynced != nil
+}
+
+func (x *DnsSync) HasDateFailed() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateFailed != nil
+}
+
+func (x *DnsSync) ClearDateSynced() {
+	x.xxx_hidden_DateSynced = nil
+}
+
+func (x *DnsSync) ClearDateFailed() {
+	x.xxx_hidden_DateFailed = nil
+}
+
+type DnsSync_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The last full sync against the zone that went through.
+	DateSynced *timestamppb.Timestamp
+	// The names Shale holds in the zone after it.
+	Names int32
+	// The last failure and when; cleared by the next full sync without one.
+	Error      string
+	DateFailed *timestamppb.Timestamp
+	// Names the template gives a host that hold records Shale does not own,
+	// which it leaves alone.
+	Conflicts []string
+}
+
+func (b0 DnsSync_builder) Build() *DnsSync {
+	m0 := &DnsSync{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_DateSynced = b.DateSynced
+	x.xxx_hidden_Names = b.Names
+	x.xxx_hidden_Error = b.Error
+	x.xxx_hidden_DateFailed = b.DateFailed
+	x.xxx_hidden_Conflicts = b.Conflicts
 	return m0
 }
 
@@ -1638,17 +1841,19 @@ type AddressPolicy struct {
 	xxx_hidden_Version       int64                  `protobuf:"varint,8,opt,name=version"`
 	xxx_hidden_Params        *AddressParams         `protobuf:"bytes,9,opt,name=params"`
 	xxx_hidden_Active        bool                   `protobuf:"varint,10,opt,name=active"`
+	xxx_hidden_DnsTsigSecret []byte                 `protobuf:"bytes,11,opt,name=dns_tsig_secret,json=dnsTsigSecret"`
 	xxx_hidden_DateUpdated   *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased    *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	xxx_hidden_DateActivated *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=date_activated,json=dateActivated"`
+	xxx_hidden_DnsSync       *DnsSync               `protobuf:"bytes,17,opt,name=dns_sync,json=dnsSync"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
 
 func (x *AddressPolicy) Reset() {
 	*x = AddressPolicy{}
-	mi := &file_shale_policy_proto_msgTypes[7]
+	mi := &file_shale_policy_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1660,7 +1865,7 @@ func (x *AddressPolicy) String() string {
 func (*AddressPolicy) ProtoMessage() {}
 
 func (x *AddressPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_policy_proto_msgTypes[7]
+	mi := &file_shale_policy_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1727,6 +1932,13 @@ func (x *AddressPolicy) GetActive() bool {
 	return false
 }
 
+func (x *AddressPolicy) GetDnsTsigSecret() []byte {
+	if x != nil {
+		return x.xxx_hidden_DnsTsigSecret
+	}
+	return nil
+}
+
 func (x *AddressPolicy) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -1751,6 +1963,13 @@ func (x *AddressPolicy) GetDateCreated() *timestamppb.Timestamp {
 func (x *AddressPolicy) GetDateActivated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateActivated
+	}
+	return nil
+}
+
+func (x *AddressPolicy) GetDnsSync() *DnsSync {
+	if x != nil {
+		return x.xxx_hidden_DnsSync
 	}
 	return nil
 }
@@ -1790,6 +2009,13 @@ func (x *AddressPolicy) SetActive(v bool) {
 	x.xxx_hidden_Active = v
 }
 
+func (x *AddressPolicy) SetDnsTsigSecret(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_DnsTsigSecret = v
+}
+
 func (x *AddressPolicy) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
@@ -1804,6 +2030,10 @@ func (x *AddressPolicy) SetDateCreated(v *timestamppb.Timestamp) {
 
 func (x *AddressPolicy) SetDateActivated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateActivated = v
+}
+
+func (x *AddressPolicy) SetDnsSync(v *DnsSync) {
+	x.xxx_hidden_DnsSync = v
 }
 
 func (x *AddressPolicy) HasParams() bool {
@@ -1841,6 +2071,13 @@ func (x *AddressPolicy) HasDateActivated() bool {
 	return x.xxx_hidden_DateActivated != nil
 }
 
+func (x *AddressPolicy) HasDnsSync() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DnsSync != nil
+}
+
 func (x *AddressPolicy) ClearParams() {
 	x.xxx_hidden_Params = nil
 }
@@ -1861,21 +2098,30 @@ func (x *AddressPolicy) ClearDateActivated() {
 	x.xxx_hidden_DateActivated = nil
 }
 
+func (x *AddressPolicy) ClearDnsSync() {
+	x.xxx_hidden_DnsSync = nil
+}
+
 type AddressPolicy_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id            []byte
-	Alias         string
-	Name          string
-	Desc          string
-	Labels        map[string]string
-	Version       int64
-	Params        *AddressParams
-	Active        bool
+	Id      []byte
+	Alias   string
+	Name    string
+	Desc    string
+	Labels  map[string]string
+	Version int64
+	Params  *AddressParams
+	Active  bool
+	// For dns: the TSIG secret, base64 in JSON as `tsig-keygen` prints it.
+	// Sealed by the KEK when written, and never answered with (§34.10).
+	DnsTsigSecret []byte
 	DateUpdated   *timestamppb.Timestamp
 	DateErased    *timestamppb.Timestamp
 	DateCreated   *timestamppb.Timestamp
 	DateActivated *timestamppb.Timestamp
+	// For dns: the leader's upkeep of the records, which it writes.
+	DnsSync *DnsSync
 }
 
 func (b0 AddressPolicy_builder) Build() *AddressPolicy {
@@ -1890,10 +2136,12 @@ func (b0 AddressPolicy_builder) Build() *AddressPolicy {
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_Params = b.Params
 	x.xxx_hidden_Active = b.Active
+	x.xxx_hidden_DnsTsigSecret = b.DnsTsigSecret
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_DateActivated = b.DateActivated
+	x.xxx_hidden_DnsSync = b.DnsSync
 	return m0
 }
 
@@ -2024,7 +2272,7 @@ const file_shale_policy_proto_rawDesc = "" +
 	"\vcaller_cidr\x18\x01 \x01(\tR\n" +
 	"callerCidr\x12\x1f\n" +
 	"\vprefer_cidr\x18\x02 \x01(\tR\n" +
-	"preferCidr\"\xc1\x02\n" +
+	"preferCidr\"\xaf\x03\n" +
 	"\rAddressParams\x12\x1a\n" +
 	"\bresolver\x18\x01 \x01(\tR\bresolver\x12\x1a\n" +
 	"\btemplate\x18\x02 \x01(\tR\btemplate\x12(\n" +
@@ -2033,10 +2281,22 @@ const file_shale_policy_proto_rawDesc = "" +
 	"\n" +
 	"dns_server\x18\x05 \x01(\tR\tdnsServer\x12\x19\n" +
 	"\bdns_zone\x18\x06 \x01(\tR\adnsZone\x12\"\n" +
-	"\rdns_tsig_name\x18\a \x01(\tR\vdnsTsigName\x12&\n" +
-	"\x0fdns_tsig_secret\x18\b \x01(\tR\rdnsTsigSecret\x12\x1f\n" +
+	"\rdns_tsig_name\x18\a \x01(\tR\vdnsTsigName\x12*\n" +
+	"\x0fdns_tsig_secret\x18\b \x01(\tB\x02\x18\x01R\rdnsTsigSecret\x12\x1f\n" +
 	"\vextra_names\x18\t \x03(\tR\n" +
-	"extraNames\"\xd9\x05\n" +
+	"extraNames\x12,\n" +
+	"\x12dns_tsig_algorithm\x18\n" +
+	" \x01(\tR\x10dnsTsigAlgorithm\x12\x17\n" +
+	"\adns_ttl\x18\v \x01(\x05R\x06dnsTtl\x12!\n" +
+	"\fdns_networks\x18\f \x03(\tR\vdnsNetworks\"\xcd\x01\n" +
+	"\aDnsSync\x12;\n" +
+	"\vdate_synced\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"dateSynced\x12\x14\n" +
+	"\x05names\x18\x02 \x01(\x05R\x05names\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x12;\n" +
+	"\vdate_failed\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"dateFailed\x12\x1c\n" +
+	"\tconflicts\x18\x05 \x03(\tR\tconflicts\"\xbb\x06\n" +
 	"\rAddressPolicy\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
@@ -2046,12 +2306,14 @@ const file_shale_policy_proto_rawDesc = "" +
 	"\aversion\x18\b \x01(\x03B\b\xea\x82\x16\x040\x01@\x01R\aversion\x12,\n" +
 	"\x06params\x18\t \x01(\v2\x14.shale.AddressParamsR\x06params\x12\x16\n" +
 	"\x06active\x18\n" +
-	" \x01(\bR\x06active\x12F\n" +
+	" \x01(\bR\x06active\x125\n" +
+	"\x0fdns_tsig_secret\x18\v \x01(\fB\r\xea\x82\x16\x03\x82\x01\x00\xaa\xc1\x16\x02\b\x01R\rdnsTsigSecret\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12I\n" +
-	"\x0edate_activated\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\rdateActivated\x1a9\n" +
+	"\x0edate_activated\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\rdateActivated\x12)\n" +
+	"\bdns_sync\x18\x11 \x01(\v2\x0e.shale.DnsSyncR\adnsSync\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:c\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
@@ -2072,7 +2334,7 @@ const file_shale_policy_proto_rawDesc = "" +
 	"\x19SIGNING_KEY_STATE_RETIRED\x10\x03B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_shale_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_shale_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_shale_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_shale_policy_proto_goTypes = []any{
 	(SigningKeyState)(0),          // 0: shale.SigningKeyState
 	(*SigningKey)(nil),            // 1: shale.SigningKey
@@ -2082,47 +2344,51 @@ var file_shale_policy_proto_goTypes = []any{
 	(*UploadPolicy)(nil),          // 5: shale.UploadPolicy
 	(*NetworkRule)(nil),           // 6: shale.NetworkRule
 	(*AddressParams)(nil),         // 7: shale.AddressParams
-	(*AddressPolicy)(nil),         // 8: shale.AddressPolicy
-	nil,                           // 9: shale.SigningKey.LabelsEntry
-	nil,                           // 10: shale.PlacementPolicy.LabelsEntry
-	nil,                           // 11: shale.UploadPolicy.LabelsEntry
-	nil,                           // 12: shale.AddressPolicy.LabelsEntry
-	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
-	(UploadMode)(0),               // 14: shale.UploadMode
+	(*DnsSync)(nil),               // 8: shale.DnsSync
+	(*AddressPolicy)(nil),         // 9: shale.AddressPolicy
+	nil,                           // 10: shale.SigningKey.LabelsEntry
+	nil,                           // 11: shale.PlacementPolicy.LabelsEntry
+	nil,                           // 12: shale.UploadPolicy.LabelsEntry
+	nil,                           // 13: shale.AddressPolicy.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
+	(UploadMode)(0),               // 15: shale.UploadMode
 }
 var file_shale_policy_proto_depIdxs = []int32{
-	9,  // 0: shale.SigningKey.labels:type_name -> shale.SigningKey.LabelsEntry
+	10, // 0: shale.SigningKey.labels:type_name -> shale.SigningKey.LabelsEntry
 	0,  // 1: shale.SigningKey.state:type_name -> shale.SigningKeyState
-	13, // 2: shale.SigningKey.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 3: shale.SigningKey.date_erased:type_name -> google.protobuf.Timestamp
-	13, // 4: shale.SigningKey.date_created:type_name -> google.protobuf.Timestamp
-	13, // 5: shale.SigningKey.date_signing:type_name -> google.protobuf.Timestamp
-	13, // 6: shale.SigningKey.date_retired:type_name -> google.protobuf.Timestamp
-	10, // 7: shale.PlacementPolicy.labels:type_name -> shale.PlacementPolicy.LabelsEntry
+	14, // 2: shale.SigningKey.date_updated:type_name -> google.protobuf.Timestamp
+	14, // 3: shale.SigningKey.date_erased:type_name -> google.protobuf.Timestamp
+	14, // 4: shale.SigningKey.date_created:type_name -> google.protobuf.Timestamp
+	14, // 5: shale.SigningKey.date_signing:type_name -> google.protobuf.Timestamp
+	14, // 6: shale.SigningKey.date_retired:type_name -> google.protobuf.Timestamp
+	11, // 7: shale.PlacementPolicy.labels:type_name -> shale.PlacementPolicy.LabelsEntry
 	2,  // 8: shale.PlacementPolicy.params:type_name -> shale.PlacementParams
-	13, // 9: shale.PlacementPolicy.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 10: shale.PlacementPolicy.date_erased:type_name -> google.protobuf.Timestamp
-	13, // 11: shale.PlacementPolicy.date_created:type_name -> google.protobuf.Timestamp
-	13, // 12: shale.PlacementPolicy.date_activated:type_name -> google.protobuf.Timestamp
-	14, // 13: shale.UploadBounds.default_mode:type_name -> shale.UploadMode
-	11, // 14: shale.UploadPolicy.labels:type_name -> shale.UploadPolicy.LabelsEntry
+	14, // 9: shale.PlacementPolicy.date_updated:type_name -> google.protobuf.Timestamp
+	14, // 10: shale.PlacementPolicy.date_erased:type_name -> google.protobuf.Timestamp
+	14, // 11: shale.PlacementPolicy.date_created:type_name -> google.protobuf.Timestamp
+	14, // 12: shale.PlacementPolicy.date_activated:type_name -> google.protobuf.Timestamp
+	15, // 13: shale.UploadBounds.default_mode:type_name -> shale.UploadMode
+	12, // 14: shale.UploadPolicy.labels:type_name -> shale.UploadPolicy.LabelsEntry
 	4,  // 15: shale.UploadPolicy.bounds:type_name -> shale.UploadBounds
-	13, // 16: shale.UploadPolicy.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 17: shale.UploadPolicy.date_erased:type_name -> google.protobuf.Timestamp
-	13, // 18: shale.UploadPolicy.date_created:type_name -> google.protobuf.Timestamp
-	13, // 19: shale.UploadPolicy.date_activated:type_name -> google.protobuf.Timestamp
+	14, // 16: shale.UploadPolicy.date_updated:type_name -> google.protobuf.Timestamp
+	14, // 17: shale.UploadPolicy.date_erased:type_name -> google.protobuf.Timestamp
+	14, // 18: shale.UploadPolicy.date_created:type_name -> google.protobuf.Timestamp
+	14, // 19: shale.UploadPolicy.date_activated:type_name -> google.protobuf.Timestamp
 	6,  // 20: shale.AddressParams.rules:type_name -> shale.NetworkRule
-	12, // 21: shale.AddressPolicy.labels:type_name -> shale.AddressPolicy.LabelsEntry
-	7,  // 22: shale.AddressPolicy.params:type_name -> shale.AddressParams
-	13, // 23: shale.AddressPolicy.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 24: shale.AddressPolicy.date_erased:type_name -> google.protobuf.Timestamp
-	13, // 25: shale.AddressPolicy.date_created:type_name -> google.protobuf.Timestamp
-	13, // 26: shale.AddressPolicy.date_activated:type_name -> google.protobuf.Timestamp
-	27, // [27:27] is the sub-list for method output_type
-	27, // [27:27] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	14, // 21: shale.DnsSync.date_synced:type_name -> google.protobuf.Timestamp
+	14, // 22: shale.DnsSync.date_failed:type_name -> google.protobuf.Timestamp
+	13, // 23: shale.AddressPolicy.labels:type_name -> shale.AddressPolicy.LabelsEntry
+	7,  // 24: shale.AddressPolicy.params:type_name -> shale.AddressParams
+	14, // 25: shale.AddressPolicy.date_updated:type_name -> google.protobuf.Timestamp
+	14, // 26: shale.AddressPolicy.date_erased:type_name -> google.protobuf.Timestamp
+	14, // 27: shale.AddressPolicy.date_created:type_name -> google.protobuf.Timestamp
+	14, // 28: shale.AddressPolicy.date_activated:type_name -> google.protobuf.Timestamp
+	8,  // 29: shale.AddressPolicy.dns_sync:type_name -> shale.DnsSync
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_shale_policy_proto_init() }
@@ -2137,7 +2403,7 @@ func file_shale_policy_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_policy_proto_rawDesc), len(file_shale_policy_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

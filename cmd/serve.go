@@ -100,6 +100,9 @@ type Server struct {
 	Jobs  *core.Jobs
 	// Directives is the leader's traffic toward the nodes (§34.9).
 	Directives *core.Directives
+	// Dns is the leader's upkeep of the `dns` address resolver's records
+	// (§34.10).
+	Dns *core.DnsRecords
 	// Leader is the lease over PostgreSQL; nil on SQLite, where this
 	// process is the only one.
 	Leader *Leader
@@ -294,6 +297,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	// create the KEK after the server is assembled; a missing key fails closed.
 	deps.Credentials = s.cameraCredentialFactory(ungated)
 	deps.PrepareCameraEnrollment = s.prepareCameraEnrollment
+	// And a dns address policy's TSIG secret (§34.10), under a key of its
+	// own derived in the core layer, read as lazily.
+	deps.Kek = func() core.Kek { return s.Kek }
 	if c.Export.Enabled {
 		deps.ExportURL = func() string { return c.Export.endpoint() }
 	}
@@ -338,8 +344,13 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 	}
 	deps.DialNode = s.nodeDialer()
 	s.Directives = core.NewDirectives(deps)
+	s.Dns = core.NewDnsRecords(deps)
 	if c.Control.DirectivesEvery > 0 {
 		s.Directives.Every = c.Control.DirectivesEvery
+		s.Dns.Every = c.Control.DirectivesEvery
+	}
+	if c.Control.DnsSyncEvery > 0 {
+		s.Dns.SyncEvery = c.Control.DnsSyncEvery
 	}
 	if dia == "postgres" {
 		// Several CP processes share the database: one of them leads
@@ -347,8 +358,9 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 		s.Leader = NewLeader(db, slog.Default())
 		s.Jobs.Leader = s.Leader.Is
 		s.Directives.Leader = s.Leader.Is
+		s.Dns.Leader = s.Leader.Is
 	}
-	s.Spin = append(s.Spin, s.Jobs, s.Directives)
+	s.Spin = append(s.Spin, s.Jobs, s.Directives, s.Dns)
 	if c.Auth.Delegation.On() {
 		s.Spin = append(s.Spin, spin.Func(s.followStanding))
 	}

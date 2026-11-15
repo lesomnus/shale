@@ -343,6 +343,7 @@ scrape endpoint. The names, by the process that measures them:
 | hosts pending, certificates due | `shale.cp.hosts_pending{kind}`, `shale.cp.certs_due{kind}` |
 | producers per relay, reassignments | `shale.cp.producers_per_relay{relay}`, `shale.cp.relay_reassignments` |
 | directives pending, reconciliation lag | `shale.cp.laminae_dates_unsynced`, `shale.cp.reconcile_lag_s{sink}`, `shale.cp.directive_errors` |
+| the `dns` resolver's records: updates by what and how, and the age of the last whole read of the zone ([§34.10](11-deployment.md#3410-node-addresses)) | `shale.cp.dns_updates{op=create,replace,delete; result=ok,error,conflict}`, `shale.cp.dns_sync_lag_s` |
 | laminae in DELETING, rows pruned | `shale.cp.laminae_deleting`, `shale.cp.rows_pruned{kind}` |
 | watch streams, broker reconnects | payday's, when it exports them; none here yet |
 
@@ -390,7 +391,7 @@ shale reader adopt <reader> '{"sites":[{"id":"<site>"}]}'
 shale tenant ls|erase|patch              # patch: capacity_share; tenants come from roster (§33.1)
 shale signing-key ls|watch|rotate
 shale placement-policy add|ls|activate
-shale address-policy add|ls|activate     # how nodes are named to clients (§34.10)
+shale address-policy add|ls|get|patch|activate  # how nodes are named to clients (§34.10)
 shale upload-policy add|ls|activate      # bounds for negotiated upload profiles
 # `ca rotate`, a CA rollover started early (§33.5), comes with the rollover itself (#60)
 

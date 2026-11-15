@@ -27,6 +27,8 @@ const (
 	FieldParams = "params"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
+	// FieldDnsTsigSecret holds the string denoting the dns_tsig_secret field in the database.
+	FieldDnsTsigSecret = "dns_tsig_secret"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -35,6 +37,8 @@ const (
 	FieldDateCreated = "date_created"
 	// FieldDateActivated holds the string denoting the date_activated field in the database.
 	FieldDateActivated = "date_activated"
+	// FieldDnsSync holds the string denoting the dns_sync field in the database.
+	FieldDnsSync = "dns_sync"
 	// Table holds the table name of the addresspolicy in the database.
 	Table = "addresspolicy"
 )
@@ -49,10 +53,12 @@ var Columns = []string{
 	FieldVersion,
 	FieldParams,
 	FieldActive,
+	FieldDnsTsigSecret,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
 	FieldDateActivated,
+	FieldDnsSync,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -68,7 +74,8 @@ func ValidColumn(column string) bool {
 var (
 	// ValueScanner of all AddressPolicy fields.
 	ValueScanner struct {
-		Params field.TypeValueScanner[*api.AddressParams]
+		Params  field.TypeValueScanner[*api.AddressParams]
+		DnsSync field.TypeValueScanner[*api.DnsSync]
 	}
 )
 

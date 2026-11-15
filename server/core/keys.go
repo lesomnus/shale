@@ -5,7 +5,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ed25519"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -90,6 +92,15 @@ func (k Kek) Wrap(priv []byte) ([]byte, error) {
 	}
 
 	return append(nonce, g.Seal(nil, nonce, priv, nil)...), nil
+}
+
+// Derive is a key of the KEK's for one use, named by label, so that what
+// one use seals no other opens.
+func (k Kek) Derive(label string) Kek {
+	h := hmac.New(sha256.New, k)
+	h.Write([]byte(label))
+
+	return Kek(h.Sum(nil))
 }
 
 // Unwrap opens what Wrap sealed.

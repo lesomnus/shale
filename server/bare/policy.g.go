@@ -1889,6 +1889,11 @@ func (st AddressPolicyServiceServer) create(ctx context.Context, req *api.Addres
 		q.SetParams(req.GetParams())
 	}
 	q.SetActive(req.GetActive())
+	if req.HasDnsTsigSecret() {
+		q.SetDnsTsigSecret(req.GetDnsTsigSecret())
+	} else {
+		q.SetDnsTsigSecret([]byte{})
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -1897,6 +1902,9 @@ func (st AddressPolicyServiceServer) create(ctx context.Context, req *api.Addres
 	}
 	if req.HasDateActivated() {
 		q.SetDateActivated(req.GetDateActivated().AsTime())
+	}
+	if req.HasDnsSync() {
+		q.SetDnsSync(req.GetDnsSync())
 	}
 	return q, ds, nil
 }
@@ -2046,6 +2054,9 @@ func AddressPolicySelectedFields(m *api.AddressPolicySelect) []string {
 	if m.GetActive() {
 		vs = append(vs, addresspolicy.FieldActive)
 	}
+	if m.GetDnsTsigSecret() {
+		vs = append(vs, addresspolicy.FieldDnsTsigSecret)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, addresspolicy.FieldDateUpdated)
 	}
@@ -2057,6 +2068,9 @@ func AddressPolicySelectedFields(m *api.AddressPolicySelect) []string {
 	}
 	if m.GetDateActivated() {
 		vs = append(vs, addresspolicy.FieldDateActivated)
+	}
+	if m.GetDnsSync() {
+		vs = append(vs, addresspolicy.FieldDnsSync)
 	}
 
 	return vs
@@ -2122,7 +2136,7 @@ func AddressPolicyGetKey(ctx context.Context, db *ent.Client, ref *api.AddressPo
 var addressPolicyOrmEntity = ormpatch.MustEntityOf(api.File_shale_policy_proto, "AddressPolicy")
 
 var addressPolicyPatchColumns = entpatch.Columns{
-	1: addresspolicy.FieldId, 4: addresspolicy.FieldAlias, 5: addresspolicy.FieldName, 6: addresspolicy.FieldDesc, 7: addresspolicy.FieldLabels, 8: addresspolicy.FieldVersion, 9: addresspolicy.FieldParams, 10: addresspolicy.FieldActive, 13: addresspolicy.FieldDateUpdated, 14: addresspolicy.FieldDateErased, 15: addresspolicy.FieldDateCreated, 16: addresspolicy.FieldDateActivated}
+	1: addresspolicy.FieldId, 4: addresspolicy.FieldAlias, 5: addresspolicy.FieldName, 6: addresspolicy.FieldDesc, 7: addresspolicy.FieldLabels, 8: addresspolicy.FieldVersion, 9: addresspolicy.FieldParams, 10: addresspolicy.FieldActive, 11: addresspolicy.FieldDnsTsigSecret, 13: addresspolicy.FieldDateUpdated, 14: addresspolicy.FieldDateErased, 15: addresspolicy.FieldDateCreated, 16: addresspolicy.FieldDateActivated, 17: addresspolicy.FieldDnsSync}
 
 func (s AddressPolicyServiceServer) Apply(ctx context.Context, req *api.AddressPolicyApplyRequest) (*api.AddressPolicy, error) {
 	if !req.HasPatch() {

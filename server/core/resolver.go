@@ -2,6 +2,7 @@ package core
 
 import (
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -10,6 +11,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/pki"
 )
 
 // NodeAddresses is what a resolver knows about a node: facts, not policy
@@ -33,7 +35,7 @@ type Resolver interface {
 type Advertised struct{}
 
 func (Advertised) Endpoints(n NodeAddresses, caller string, p *api.AddressParams) []*api.Endpoint {
-	if p != nil && p.GetResolver() == "template" && p.GetTemplate() != "" {
+	if byTemplate(p) {
 		return Template{}.Endpoints(n, caller, p)
 	}
 
@@ -48,16 +50,36 @@ func (Advertised) Endpoints(n NodeAddresses, caller string, p *api.AddressParams
 	return []*api.Endpoint{endpoint(host, port, n.Dev)}
 }
 
-// Template names a node by a pattern such as `{alias}.nodes.example.com`,
-// with DNS managed outside Shale.
+// Template names a node by a pattern such as `{alias}.nodes.example.com`:
+// the `template` resolver, with DNS managed outside Shale, and the `dns`
+// one, whose records the leader keeps (§34.10, dns.go).
 type Template struct{}
 
 func (Template) Endpoints(n NodeAddresses, _ string, p *api.AddressParams) []*api.Endpoint {
 	_, port := splitAddr(n.DataAddress)
-	host := strings.ReplaceAll(p.GetTemplate(), "{alias}", n.Alias)
-	host = strings.ReplaceAll(host, "{id}", n.Id.String())
 
-	return []*api.Endpoint{endpoint(host, port, n.Dev)}
+	return []*api.Endpoint{endpoint(templateName(p.GetTemplate(), n), port, n.Dev)}
+}
+
+// byTemplate says whether the policy hands out names from its template:
+// the `template` and `dns` resolvers.
+func byTemplate(p *api.AddressParams) bool {
+	if p == nil || p.GetTemplate() == "" {
+		return false
+	}
+	switch p.GetResolver() {
+	case "template", "dns":
+		return true
+	}
+
+	return false
+}
+
+// templateName is the name a template gives a host.
+func templateName(tmpl string, n NodeAddresses) string {
+	host := strings.ReplaceAll(tmpl, "{alias}", n.Alias)
+
+	return strings.ReplaceAll(host, "{id}", n.Id.String())
 }
 
 // named is the endpoint of an address a host reports by name and port,
@@ -169,9 +191,7 @@ func pickAddress(ifs []*api.HostInterface, caller string, p *api.AddressParams) 
 // active resolver can hand out (§34.10).
 func NamesFor(n NodeAddresses, p *api.AddressParams) (dns []string, ips []net.IP) {
 	if p != nil && p.GetTemplate() != "" {
-		host := strings.ReplaceAll(p.GetTemplate(), "{alias}", n.Alias)
-		host = strings.ReplaceAll(host, "{id}", n.Id.String())
-		dns = append(dns, host)
+		dns = append(dns, templateName(p.GetTemplate(), n))
 	}
 	for _, i := range n.Interfaces {
 		for _, a := range i.GetAddresses() {
@@ -194,6 +214,37 @@ func NamesFor(n NodeAddresses, p *api.AddressParams) (dns []string, ips []net.IP
 	dns = append(dns, "localhost")
 
 	return dns, ips
+}
+
+// policyNames are the names the active policy hands out for a host by
+// itself, which its certificate must carry (§33.5): the template's and the
+// extra names. They change with the policy, unlike what the host reports.
+func policyNames(n NodeAddresses, p *api.AddressParams) []string {
+	var out []string
+	if p.GetTemplate() != "" {
+		out = append(out, templateName(p.GetTemplate(), n))
+	}
+
+	return append(out, p.GetExtraNames()...)
+}
+
+// certCovers says whether a host's certificate carries every one of names.
+// One that does not parse is not asked about: renewing would not help it.
+func certCovers(chain []byte, names []string) bool {
+	if len(names) == 0 {
+		return true
+	}
+	certs, err := pki.ParseCerts(chain)
+	if err != nil || len(certs) == 0 {
+		return true
+	}
+	for _, name := range names {
+		if !slices.ContainsFunc(certs[0].DNSNames, func(v string) bool { return strings.EqualFold(v, name) }) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // hostIPs answers the addresses of this host's interfaces, read at most

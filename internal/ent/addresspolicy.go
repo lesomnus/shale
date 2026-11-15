@@ -34,6 +34,8 @@ type AddressPolicy struct {
 	Params *api.AddressParams `json:"params,omitempty"`
 	// Active holds the value of the "active" field.
 	Active bool `json:"active,omitempty"`
+	// DnsTsigSecret holds the value of the "dns_tsig_secret" field.
+	DnsTsigSecret []byte `json:"dns_tsig_secret,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -42,7 +44,9 @@ type AddressPolicy struct {
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// DateActivated holds the value of the "date_activated" field.
 	DateActivated *time.Time `json:"date_activated,omitempty"`
-	selectValues  sql.SelectValues
+	// DnsSync holds the value of the "dns_sync" field.
+	DnsSync      *api.DnsSync `json:"dns_sync,omitempty"`
+	selectValues sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -50,7 +54,7 @@ func (*AddressPolicy) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case addresspolicy.FieldLabels:
+		case addresspolicy.FieldLabels, addresspolicy.FieldDnsTsigSecret:
 			values[i] = new([]byte)
 		case addresspolicy.FieldActive:
 			values[i] = new(sql.NullBool)
@@ -64,6 +68,8 @@ func (*AddressPolicy) scanValues(columns []string) ([]any, error) {
 			values[i] = new(uuid.UUID)
 		case addresspolicy.FieldParams:
 			values[i] = addresspolicy.ValueScanner.Params.ScanValue()
+		case addresspolicy.FieldDnsSync:
+			values[i] = addresspolicy.ValueScanner.DnsSync.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -129,6 +135,12 @@ func (_m *AddressPolicy) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Active = value.Bool
 			}
+		case addresspolicy.FieldDnsTsigSecret:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field dns_tsig_secret", values[i])
+			} else if value != nil {
+				_m.DnsTsigSecret = *value
+			}
 		case addresspolicy.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field date_updated", values[i])
@@ -154,6 +166,12 @@ func (_m *AddressPolicy) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateActivated = new(time.Time)
 				*_m.DateActivated = value.Time
+			}
+		case addresspolicy.FieldDnsSync:
+			if value, err := addresspolicy.ValueScanner.DnsSync.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.DnsSync = value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -212,6 +230,9 @@ func (_m *AddressPolicy) String() string {
 	builder.WriteString("active=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Active))
 	builder.WriteString(", ")
+	builder.WriteString("dns_tsig_secret=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DnsTsigSecret))
+	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -227,6 +248,9 @@ func (_m *AddressPolicy) String() string {
 		builder.WriteString("date_activated=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("dns_sync=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DnsSync))
 	builder.WriteByte(')')
 	return builder.String()
 }

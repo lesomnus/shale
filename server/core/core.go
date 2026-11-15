@@ -82,6 +82,10 @@ type Deps struct {
 	Own api.Server
 	// Keys signs tokens.
 	Keys *Keys
+	// Kek answers the KEK, which seals what the CP keeps of an operator's
+	// secrets, such as a `dns` address policy's TSIG secret (§34.10). Nil,
+	// or nil answered, before `shale init` made one.
+	Kek func() Kek
 	// ExportURL is the optional native MP4 download endpoint on the tenant
 	// HTTP listener. An empty result (or nil) disables issuing or redeeming
 	// capabilities. A relative path is served by that listener; a deployment
