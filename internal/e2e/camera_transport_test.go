@@ -527,7 +527,15 @@ func TestCameraTransportCandidateRacesAndReplays(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			results[i], errs[i] = f.machine.VerifyTransport(f.ctx, api.CameraPolicyVerifyTransportRequest_builder{Grant: g, SpkiSha256: f.key.SPKI}.Build())
+			// A test CP on SQLite has no row locks: a transaction that lost
+			// the race can fail whole, writing nothing, and its caller
+			// retries. Every answer that lands must be the one decision.
+			for range 5 {
+				results[i], errs[i] = f.machine.VerifyTransport(f.ctx, api.CameraPolicyVerifyTransportRequest_builder{Grant: g, SpkiSha256: f.key.SPKI}.Build())
+				if errs[i] == nil {
+					return
+				}
+			}
 		}()
 	}
 	wg.Wait()
