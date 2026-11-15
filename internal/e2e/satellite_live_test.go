@@ -182,7 +182,7 @@ const keyInterval = 2 * time.Second
 // satellite, which reads it out of the upload. The producer's own tee sends
 // nothing for it.
 func TestSatelliteLive(t *testing.T) {
-	c := start(t)
+	c := start(t, noBuiltInSatellite)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sat, _ := c.startSatellite("sat", filepath.Join(t.TempDir(), "sat"))
@@ -236,7 +236,7 @@ func TestSatelliteLive(t *testing.T) {
 // the next with nothing missing, so a viewer watches across them as across
 // any keyframe.
 func TestSatelliteLiveAcrossLaminae(t *testing.T) {
-	c := start(t)
+	c := start(t, noBuiltInSatellite)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c.smallLaminae(ctx)
@@ -271,7 +271,7 @@ func TestSatelliteLiveAcrossLaminae(t *testing.T) {
 // own stream at once, which feeds it from its next keyframe: a viewer waits
 // no longer than a keyframe interval, and never gets two feeders' video.
 func TestSatelliteLiveFallsBack(t *testing.T) {
-	c := start(t, func(c *cmd.Config) { c.Control.SatelliteDownAfter = 10 * time.Minute })
+	c := start(t, noBuiltInSatellite, func(c *cmd.Config) { c.Control.SatelliteDownAfter = 10 * time.Minute })
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c.smallLaminae(ctx)
@@ -315,7 +315,7 @@ func TestSatelliteLiveFallsBack(t *testing.T) {
 // does not run, so its live stays on the producer's tee while its uploads
 // go through the satellite.
 func TestSatelliteLiveHelperStaysOnProducer(t *testing.T) {
-	c := start(t)
+	c := start(t, noBuiltInSatellite)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sat, _ := c.startSatellite("sat", filepath.Join(t.TempDir(), "sat"))

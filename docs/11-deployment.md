@@ -14,7 +14,7 @@ shale serve producer --cp <url>   Producer: records the cameras of one set and u
 shale serve reader   --cp <url>   Reader agent beside a media server (§33.4)
 shale serve relay    --cp <url>   Relay: live streams to viewers over WebRTC (§39)
 shale serve satellite --cp <url>  Satellite: producers upload through it (§41)
-shale serve all [--dev <dir>]     control, cluster, one Storage Node, and one Relay in one process
+shale serve all [--dev <dir>]     control, cluster, one Storage Node, one Relay, and one Satellite in one process
 ```
 
 - `control` and `cluster` are **separate entry points**, not one server with a
@@ -119,7 +119,7 @@ next start and is recognized by its hardware identity
 | Producer | — (an edge host) | `shale-producer.service` on the gateway | `shale-producer.service` | container on the gateway |
 | Reader | `shale-reader` sidecar or host service beside the media server | `shale-reader.service` | same host | sidecar container |
 | Relay | Deployment with hostNetwork or a LoadBalancer with UDP, one per site | `shale-relay.service` | same process | container, `--network host` |
-| Satellite | — (beside the producers it serves) | `shale@satellite` | not in `serve all` | container |
+| Satellite | — (beside the producers it serves) | `shale@satellite` | same process | container |
 | DB | PostgreSQL | PostgreSQL | SQLite | PostgreSQL or SQLite |
 | Sinks | hostPath | mount points | mount points or directories | bind mounts |
 | Node network | **hostNetwork** | host | host | `--network host` |
@@ -284,17 +284,24 @@ next start and is recognized by its hardware identity
 
 ### 34.7 Single machine
 
-`shale serve all` runs the tenant API, the cluster API, one Storage Node, and
-one Relay in one process, with SQLite and an in-memory watch broker.
+`shale serve all` runs the tenant API, the cluster API, one Storage Node, one
+Relay, and one Satellite in one process, with SQLite and an in-memory watch
+broker.
 
 - `shale init` creates one tenant. A single organization never has to think
   about tenants: slugs omit them, and every producer, reader, and person
   belongs to that one tenant.
 - Sinks can be whole HDDs or directories
   ([§22.2](07-storage-node.md#222-sinks-and-devices)).
-- The local node is adopted automatically. Producers and readers still join
-  and are adopted, and still use CP-signed tokens, so moving to a multi-node
-  cluster later changes no client.
+- The node, the relay and the satellite of the process join its cluster
+  listener over loopback, each with its state beside the others', and are
+  adopted at once under `control.auto_adopt`, which `--dev` turns on;
+  otherwise each waits for its `adopt`, as any host. Producers and readers
+  still join and are adopted, and still use CP-signed tokens, so moving to a
+  multi-node cluster later changes no client.
+- The satellite serves only the producers that ask for one
+  (`producer.upload_via`); `satellite.in_process: false` leaves it out
+  ([§41.10](18-satellite.md#4110-in-serve-all)).
 - With one node, set spread falls back to spreading across devices
   ([§11](03-placement.md#11-placement)).
 - roster, where people and tenants are ([§33.1](10-security.md#331-trust-model)),
@@ -306,8 +313,9 @@ one Relay in one process, with SQLite and an in-memory watch broker.
   roster names it with `auth.roster.addr` instead, and then nothing is
   embedded.
 - `shale serve all --dev <dir>` is development mode: one directory sink,
-  plaintext allowed, the multi-sink warning suppressed, and the console's
-  origins written down for it ([§40.4](17-console.md#404-serving-it)).
+  plaintext allowed, the multi-sink warning suppressed, the console's
+  origins written down for it ([§40.4](17-console.md#404-serving-it)), and
+  the satellite on a port of loopback the system picks.
 
 ### 34.8 Containers
 
@@ -593,7 +601,9 @@ Changing a node's addresses never touches laminae. Their location is
 
 A satellite ([§41](18-satellite.md#41-satellite)) stands where producers can
 reach it and it can reach the nodes: on the site's LAN, or at the edge of
-the network the nodes are on. It joins the cluster API like a relay:
+the network the nodes are on. `shale serve all` runs one of its own
+([§41.10](18-satellite.md#4110-in-serve-all)); one on another machine
+joins the cluster API like a relay:
 
 ```yaml
 # /etc/shale/shale.yaml, shale@satellite

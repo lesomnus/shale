@@ -409,9 +409,9 @@ func TestCaRolloverOverTls(t *testing.T) {
 }
 
 // `ca rotate` begins a rollover early, in development mode's cluster of a
-// node and a relay; a second node, adopted and then gone quiet holding
-// init's bundle, holds it until it is no longer live -- here, until its
-// certificate expires, which the test brings forward.
+// node, a relay and a satellite; a second node, adopted and then gone
+// quiet holding init's bundle, holds it until it is no longer live --
+// here, until its certificate expires, which the test brings forward.
 func TestCaRolloverWaitsForLiveHosts(t *testing.T) {
 	x := require.New(t)
 	ctx := context.Background()
@@ -449,8 +449,8 @@ func TestCaRolloverWaitsForLiveHosts(t *testing.T) {
 	_, err = ops.Erase(ctx, api.CertificateAuthorityRef_builder{Id: next.GetId()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err), "the CA set is the rollover's to change")
 
-	// The node and the relay of this process take the new bundle; the
-	// quiet node does not, and the rollover waits for it.
+	// The node, the relay and the satellite of this process take the new
+	// bundle; the quiet node does not, and the rollover waits for it.
 	var waiting []*api.CertificateAuthorityWaiting
 	x.Eventually(func() bool {
 		st, err = ops.Status(ctx, &api.CertificateAuthorityStatusRequest{})
@@ -480,10 +480,11 @@ func TestCaRolloverWaitsForLiveHosts(t *testing.T) {
 	x.Equal(next.GetId(), st.GetAuthorities()[1].GetId())
 	x.Equal(api.CertificateAuthorityState_CERTIFICATE_AUTHORITY_STATE_ACTIVE, st.GetAuthorities()[1].GetState())
 
-	// The node and the relay of this process hold a certificate from the
-	// new CA and its bundle alone.
+	// The node, the relay and the satellite of this process hold a
+	// certificate from the new CA and its bundle alone.
 	nextCert := caCert(t, next)
 	relays := api.NewRelayServiceClient(c.dialCluster(c.operator()))
+	sats := api.NewSatelliteServiceClient(c.dialCluster(c.operator()))
 	x.Eventually(func() bool {
 		ns, err := nodes.List(ctx, api.NodeListRequest_builder{}.Build())
 		if err != nil {
@@ -506,9 +507,18 @@ func TestCaRolloverWaitsForLiveHosts(t *testing.T) {
 				return false
 			}
 		}
+		ss, err := sats.List(ctx, api.SatelliteListRequest_builder{}.Build())
+		if err != nil || len(ss.GetItems()) == 0 {
+			return false
+		}
+		for _, s := range ss.GetItems() {
+			if s.GetCaHash() != st.GetBundleHash() || !pki.IssuedBy(leafOfPem(t, s.GetJoin().GetCertificate()), nextCert) {
+				return false
+			}
+		}
 
 		return true
-	}, 30*time.Second, 100*time.Millisecond, "the node and the relay renewed from the new CA and hold its bundle")
+	}, 30*time.Second, 100*time.Millisecond, "the node, the relay and the satellite renewed from the new CA and hold its bundle")
 }
 
 func leafOfPem(t *testing.T, b []byte) *x509.Certificate {

@@ -1,7 +1,7 @@
 # A single machine (§34.7) as containers: PostgreSQL and `shale serve all`,
-# which runs the tenant API, the cluster API, one Storage Node, and one
-# Relay in one process. The state directory is a volume; the sink is a
-# volume by default and a bind mount of a whole HDD with
+# which runs the tenant API, the cluster API, one Storage Node, one Relay,
+# and one Satellite in one process. The state directory is a volume; the
+# sink is a volume by default and a bind mount of a whole HDD with
 # `SHALE_SINK=/mnt/hdd01` (§34.8).
 #
 #   docker compose up -d

@@ -67,7 +67,9 @@ Producer ── PUT/HEAD, mTLS ──► Satellite ── PUT/HEAD ──► the
   restarts while the CP is away serves as it did
   ([§34.3](11-deployment.md#343-state-on-disk)).
 - It is optional. A cluster that runs none, and a producer that does not ask
-  for one, upload as they always have.
+  for one, upload as they always have. `shale serve all` runs one in its
+  process ([§41.10](#4110-in-serve-all)), which a producer uses only when
+  it asks.
 
 ### 41.2 Assignment
 
@@ -484,7 +486,7 @@ whether the assigned satellite takes it, as its last heartbeat did
 under `committed`, and its log says so once. A satellite of an earlier
 release says nothing, so it is sent no handoff, which it would pass on to a
 node with every candidate's token. The satellite never writes what it
-accepted to disk ([§41.10](#4110-not-yet)).
+accepted to disk ([§41.11](#4111-not-yet)).
 
 **The handoff.** The protocol is a node's ([§12.2](04-write-path.md#122-resumable-part-uploads)),
 with four headers a node never sends nor is sent:
@@ -648,12 +650,60 @@ delivery that the node's abandon rule finalized, is brought back by its
 `LaminaStored`, as any late event ([§14](04-write-path.md#14-duplicates-and-orphans)).
 The producer counts none of these as its own losses: it handed them off.
 
-### 41.10 Not yet
+### 41.10 In `serve all`
+
+`shale serve all` runs a satellite beside its node and its relay
+([§34.7](11-deployment.md#347-single-machine)), so one machine has every
+host a producer may use. It is the satellite of `shale serve satellite`,
+with `satellite.*` read as there, and it joins as the relay of the
+process does:
+
+- **The CP.** It dials the cluster listener of the process, on loopback
+  when that listens on every interface, unless `cp` names another, and
+  keeps its state in `<state>/satellite`. It is adopted as the node and the
+  relay are: at once under `control.auto_adopt`, which `--dev` turns on;
+  otherwise it waits for `shale satellite adopt`, and nothing is assigned
+  to it until then.
+- **Its listener** is `satellite.addr`. Under `--dev`, unless that is set,
+  it is a port of loopback the system picks: nothing dials a satellite at
+  an address of its own, since the CP hands it to the producers it
+  assigns, and many `serve all --dev` run on one machine at once (the
+  end-to-end harness among them). Outside development mode it is `:7460`,
+  as for any satellite.
+- **Both of its hops are loopback.** It calls the CP from loopback, and the
+  address resolver hands a caller on the CP's host loopback for a host on
+  that host ([§34.10](11-deployment.md#3410-node-addresses)): its routes to
+  the node of the process and its feeds to the relay are loopback, on
+  whatever interfaces those listen. An address the node or the relay is
+  told to report instead (`storage.advertise`, `relay.advertise`) is
+  handed to every caller, the satellite too. A producer on another
+  machine is handed the satellite's routable address, as it is handed the
+  node's: an interface it listens on, chosen by the producer's network, or
+  `satellite.advertise` where the producers know the machine by another
+  address (NAT, a container).
+- **What it is for.** On one machine a producer that reaches the satellite
+  reaches the node too, so the second of §41's limits does not arise. The
+  other two do: a producer on `upload_via: satellite` or `auto` sends each
+  camera's live once over its uplink, which the satellite feeds the relay
+  from ([§41.8](#418-live-fan-out)), and under `retain: accepted` hands its
+  segments off ([§41.9](#419-retain-accepted)). One on `direct`, the
+  default, is assigned none, and nothing of it changes.
+- **Unused, it costs** a listener, a heartbeat every
+  `satellite.heartbeat_interval`, and a read of the key set every 30 s.
+  The pools of [§41.4](#414-memory) are what requests reserve, counted
+  as they come; nothing is allocated before one does.
+- **It stops with the CP.** What it holds under `retain: accepted` when
+  the process stops is reported LOST only as far as the CP, stopping too,
+  still answers; the next start, a new incarnation, makes the rest LOST at
+  once ([§41.9](#loss)).
+- **`satellite.in_process: false`** leaves it out: for a machine that runs
+  a satellite of its own beside `serve all`, or wants none.
+
+### 41.11 Not yet
 
 - **A durable spill** for `retain: accepted`: the satellite writing what it
   accepted to disk under a backlog. Lamina data stays off any spool
   ([§22.3](07-storage-node.md#223-no-ssd-in-the-data-path)); that would be a
   decision of its own.
-- A satellite in the process of `shale serve all`, where both its hops are
-  loopback; HTTP/3 to the satellite; reads through a satellite for viewers
-  who reach it but not the nodes.
+- HTTP/3 to the satellite; reads through a satellite for viewers who reach
+  it but not the nodes.

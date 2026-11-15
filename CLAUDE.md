@@ -184,7 +184,10 @@ holds a password. Two consequences for a change:
   `retain: accepted` (§41.9). `internal/token` is the access
   token; `internal/placement` the HRW scheduler; `internal/pki` the CA.
 - Development mode (`--dev <dir>`) is plaintext with the plain header; the
-  e2e harness in `internal/e2e` starts `serve all --dev` in-process.
+  e2e harness in `internal/e2e` starts `serve all --dev` in-process: both
+  APIs, a node, a relay and a satellite (§41.10), each on a port the
+  system picks, the node and the satellite in `cli.Running`. A test that
+  starts satellites of its own leaves that one out (`noBuiltInSatellite`).
 - `ts/` is the console (§40): Vite + React over payday's client layer,
   `ts/gen` from `pd gen --ts`, payday's TypeScript package from npm, at
   or above the floor the payday `go.mod` pins holds it to (`pd versions`).

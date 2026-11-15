@@ -41,8 +41,8 @@ import (
 
 // NewCmdServe is `shale serve <role>` (§34.1): one binary, one command per
 // role. `control` and `cluster` are separate entry points, not one server
-// with a flag; `all` serves both on separate listeners with a node and a
-// relay in the same process.
+// with a flag; `all` serves both on separate listeners with a node, a
+// relay and a satellite in the same process.
 func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 	common := func() flg.Flags {
 		return flg.Flags{
@@ -141,7 +141,7 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 				}),
 			},
 			{
-				Name: "all", Brief: "control, cluster, one Storage Node, and one Relay in one process", Flags: common(),
+				Name: "all", Brief: "control, cluster, one Storage Node, one Relay, and one Satellite in one process", Flags: common(),
 				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 					apply(self)
 					return ServeAll(ctx, c, nil)
@@ -230,11 +230,15 @@ type Running struct {
 	TenantAddr  string
 	ClusterAddr string
 	Node        *storage.Node
-	CP          *cmd.Server
+	// Satellite is the satellite of the process (§41.10), nil under
+	// `satellite.in_process: false`; its Addr is bound once Ready is
+	// closed.
+	Satellite *satellite.Satellite
+	CP        *cmd.Server
 }
 
-// ServeAll is §34.7: both APIs, a node, and a relay in one process. `ready`
-// is told the addresses once they are bound.
+// ServeAll is §34.7: both APIs, a node, a relay, and a satellite in one
+// process. `ready` is told the addresses once they are bound.
 func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 	ctx, done, err := Telemetry(ctx, c)
 	if err != nil {
@@ -284,25 +288,24 @@ func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 	if err != nil {
 		return err
 	}
-	if nc.Cp == "" || c.Cp == "" {
-		scheme := "https://"
-		if c.IsDev() {
-			scheme = "http://"
-		}
-		addr := cl.Addr().String()
-		if host, port, err := net.SplitHostPort(addr); err == nil {
-			if ip := net.ParseIP(host); ip == nil || ip.IsUnspecified() {
-				addr = net.JoinHostPort("127.0.0.1", port)
-			}
-		}
-		nc.Cp = scheme + addr
+	if nc.Cp == "" {
+		nc.Cp = inProcessCp(c, cl.Addr().String())
 	}
 	n, err := storage.New(nc)
 	if err != nil {
 		return err
 	}
+	// The satellite, as the relay, dials the same listener (§41.10).
+	var sat *satellite.Satellite
+	if sc, ok, err := inProcessSatelliteConfig(c, cl.Addr().String()); err != nil {
+		return err
+	} else if ok {
+		if sat, err = satellite.New(sc); err != nil {
+			return err
+		}
+	}
 	if ready != nil {
-		ready(Running{TenantAddr: tl.Addr().String(), ClusterAddr: cl.Addr().String(), Node: n, CP: s})
+		ready(Running{TenantAddr: tl.Addr().String(), ClusterAddr: cl.Addr().String(), Node: n, Satellite: sat, CP: s})
 	}
 	g.Go(func() error {
 		// Give the listeners a moment; the join loop retries anyway.
@@ -318,8 +321,38 @@ func ServeAll(ctx context.Context, c *cmd.Config, ready func(Running)) error {
 	if relayInProcess != nil {
 		g.Go(func() error { return relayInProcess(ctx, c, cl.Addr().String()) })
 	}
+	if sat != nil {
+		g.Go(func() error {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-time.After(200 * time.Millisecond):
+			}
+
+			return sat.Run(ctx)
+		})
+	}
 
 	return g.Wait()
+}
+
+// inProcessCp is the cluster listener of `serve all` as the hosts in its
+// process dial it (§34.7): on loopback when it listens on every
+// interface, so the address resolver hands them loopback for each other
+// (§34.10).
+func inProcessCp(c *cmd.Config, clusterAddr string) string {
+	scheme := "https://"
+	if c.IsDev() {
+		scheme = "http://"
+	}
+	addr := clusterAddr
+	if host, port, err := net.SplitHostPort(addr); err == nil {
+		if ip := net.ParseIP(host); ip == nil || ip.IsUnspecified() {
+			addr = net.JoinHostPort("127.0.0.1", port)
+		}
+	}
+
+	return scheme + addr
 }
 
 // storageConfig maps the file onto the node's settings.
@@ -676,17 +709,7 @@ var (
 	relayInProcess = func(ctx context.Context, c *cmd.Config, clusterAddr string) error {
 		rc := relayConfig(c)
 		if rc.Cp == "" {
-			scheme := "https://"
-			if c.IsDev() {
-				scheme = "http://"
-			}
-			addr := clusterAddr
-			if host, port, err := net.SplitHostPort(addr); err == nil {
-				if ip := net.ParseIP(host); ip == nil || ip.IsUnspecified() {
-					addr = net.JoinHostPort("127.0.0.1", port)
-				}
-			}
-			rc.Cp = scheme + addr
+			rc.Cp = inProcessCp(c, clusterAddr)
 		}
 		r, err := relay.New(rc)
 		if err != nil {
@@ -721,8 +744,60 @@ func serveSatellite(ctx context.Context, c *cmd.Config) error {
 	return s.Run(ctx)
 }
 
-// SatelliteConfig maps the file onto the satellite's settings (§36.1).
+// SatelliteConfig maps the file onto the settings of `serve satellite`
+// (§36.1).
 func SatelliteConfig(c *cmd.Config) (satellite.Config, error) {
+	cfg, err := satelliteConfig(c)
+	if err != nil {
+		return cfg, err
+	}
+	if c.IsDev() {
+		if cfg.Addr == "" {
+			cfg.Addr = "127.0.0.1:7460"
+		}
+		// In development the cluster API is the one `--dev` describes.
+		if cfg.Cp == "" {
+			cfg.Cp = c.Client.ClusterAddr
+		}
+	}
+	if cfg.Cp == "" {
+		return cfg, errors.New("a satellite needs cp: the cluster API to join (§33.4)")
+	}
+
+	return cfg, nil
+}
+
+// inProcessSatelliteConfig is the satellite of `serve all` (§41.10),
+// whose cluster listener is clusterAddr; ok is false under
+// `satellite.in_process: false`. The settings are those of `serve
+// satellite`, but that it joins as the relay of the process does, on
+// loopback, and that development mode has it listen on a port of loopback
+// the system picks: nothing dials it at an address of its own, since the
+// CP hands it to the producers it assigns, and many `serve all --dev` run
+// on one machine at once. Outside development mode it listens on
+// `satellite.addr`, `:7460` by default, and producers on other machines
+// are handed its routable address as they are the node's (§34.10).
+func inProcessSatelliteConfig(c *cmd.Config, clusterAddr string) (satellite.Config, bool, error) {
+	if v := c.Satellite.InProcess; v != nil && !*v {
+		return satellite.Config{}, false, nil
+	}
+	cfg, err := satelliteConfig(c)
+	if err != nil {
+		return cfg, false, err
+	}
+	if cfg.Cp == "" {
+		cfg.Cp = inProcessCp(c, clusterAddr)
+	}
+	if cfg.Addr == "" && c.IsDev() {
+		cfg.Addr = "127.0.0.1:0"
+	}
+
+	return cfg, true, nil
+}
+
+// satelliteConfig maps the file onto the satellite's settings, wherever it
+// runs.
+func satelliteConfig(c *cmd.Config) (satellite.Config, error) {
 	sc := c.Satellite
 	cfg := satellite.Config{
 		StateDir:          c.StateDir("satellite"),
@@ -763,18 +838,6 @@ func SatelliteConfig(c *cmd.Config) (satellite.Config, error) {
 			return cfg, fmt.Errorf("satellite.retained_per_producer: %q is not a size", sc.RetainedPerProducer)
 		}
 		cfg.RetainedPerProducer = v
-	}
-	if c.IsDev() {
-		if cfg.Addr == "" {
-			cfg.Addr = "127.0.0.1:7460"
-		}
-		// In development the cluster API is the one `--dev` describes.
-		if cfg.Cp == "" {
-			cfg.Cp = c.Client.ClusterAddr
-		}
-	}
-	if cfg.Cp == "" {
-		return cfg, errors.New("a satellite needs cp: the cluster API to join (§33.4)")
 	}
 
 	return cfg, nil

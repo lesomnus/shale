@@ -191,7 +191,7 @@ func (c *cluster) attemptsOf(ctx context.Context, o *api.Lamina) []*api.Attempt 
 // satellite's to fail over from, to the next candidate, in the producer's
 // name; and nothing is lost.
 func TestSatelliteAccepted(t *testing.T) {
-	c := start(t, func(c *cmd.Config) { c.Control.NodeDownAfter = 10 * time.Minute })
+	c := start(t, noBuiltInSatellite, func(c *cmd.Config) { c.Control.NodeDownAfter = 10 * time.Minute })
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c.smallLaminae(ctx)
@@ -306,7 +306,7 @@ func TestSatelliteAccepted(t *testing.T) {
 // takes none, its assignment saying so, and what still asks it is passed
 // through. Either way the segments are stored and nothing is lost.
 func TestSatelliteAcceptedPassedThrough(t *testing.T) {
-	c := start(t, func(c *cmd.Config) { c.Control.SatelliteDownAfter = 10 * time.Minute })
+	c := start(t, noBuiltInSatellite, func(c *cmd.Config) { c.Control.SatelliteDownAfter = 10 * time.Minute })
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c.smallLaminae(ctx)
@@ -350,7 +350,7 @@ func TestSatelliteAcceptedPassedThrough(t *testing.T) {
 // and in its attempts' reasons, not the producer's (§41.9). A producer
 // under `committed` through the same satellite loses nothing.
 func TestSatelliteAcceptedLost(t *testing.T) {
-	c := start(t, func(c *cmd.Config) {
+	c := start(t, noBuiltInSatellite, func(c *cmd.Config) {
 		c.Control.NodeDownAfter = 10 * time.Minute
 		c.Control.SatelliteDownAfter = 10 * time.Minute
 	})
@@ -408,7 +408,7 @@ func TestSatelliteAcceptedLost(t *testing.T) {
 // delivery to the node, which reads them again, feeds nothing more. The
 // producer's own tee sends nothing.
 func TestSatelliteAcceptedFeedsLive(t *testing.T) {
-	c := start(t)
+	c := start(t, noBuiltInSatellite)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c.smallLaminae(ctx)
@@ -449,7 +449,7 @@ func TestSatelliteAcceptedFeedsLive(t *testing.T) {
 // (§41.9): for a lamina of a set no producer of its records, the CP
 // refuses every one of them, and recording it as the lamina's holder.
 func TestSatelliteDelegatedCalls(t *testing.T) {
-	c := start(t)
+	c := start(t, noBuiltInSatellite)
 	ctx := context.Background()
 	sat, _ := c.startSatelliteWith("sat", filepath.Join(t.TempDir(), "sat"), nil)
 	_, _, allocate := camera(t, ctx, c.dial("@acme/admin"), "foreign", nil)
