@@ -20,6 +20,11 @@ import (
 	"github.com/lesomnus/shale/internal/satellite"
 )
 
+// noBuiltInSatellite leaves out the satellite `serve all` runs (§41.10),
+// for a test whose satellites are the ones it starts: the CP would assign
+// its producers to either.
+func noBuiltInSatellite(c *cmd.Config) { c.Satellite.InProcess = z.Ptr(false) }
+
 // startSatellite runs a satellite in this process (§41), with the state
 // directory given so it can be started again as itself, and answers once
 // the CP holds it alive: adopted, as `serve all` adopts the hosts that
@@ -180,7 +185,7 @@ func (c *cluster) committedBytes(ctx context.Context, set *api.Set) (int, int64)
 // of its committed laminae forwarded by the satellite to the node its
 // tokens name, and what the node committed plays.
 func TestSatelliteUpload(t *testing.T) {
-	c := start(t)
+	c := start(t, noBuiltInSatellite)
 	ctx := context.Background()
 	c.smallLaminae(ctx)
 	sat, _ := c.startSatellite("sat", filepath.Join(t.TempDir(), "sat"))
@@ -288,7 +293,7 @@ func TestSatelliteUpload(t *testing.T) {
 // producer resumes on the node directly from the offset the node has; the
 // satellite back, the producer is assigned it again and records through it.
 func TestSatelliteDiesMidUpload(t *testing.T) {
-	c := start(t, func(c *cmd.Config) { c.Control.SatelliteDownAfter = 3 * time.Second })
+	c := start(t, noBuiltInSatellite, func(c *cmd.Config) { c.Control.SatelliteDownAfter = 3 * time.Second })
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c.smallLaminae(ctx)
@@ -331,7 +336,7 @@ func TestSatelliteDiesMidUpload(t *testing.T) {
 // once, without waiting for the CP, which here still holds the satellite
 // alive and assigned, and loses nothing.
 func TestSatelliteAutoFallsBack(t *testing.T) {
-	c := start(t, func(c *cmd.Config) { c.Control.SatelliteDownAfter = 10 * time.Minute })
+	c := start(t, noBuiltInSatellite, func(c *cmd.Config) { c.Control.SatelliteDownAfter = 10 * time.Minute })
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c.smallLaminae(ctx)
