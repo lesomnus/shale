@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/ingest.proto.
  */
 export const file_shale_ingest: GenFile = /*@__PURE__*/
-  fileDesc("ChJzaGFsZS9pbmdlc3QucHJvdG8SBXNoYWxlIqEDCg1BdHRhY2hSZXF1ZXN0EisKBWhlbGxvGAEgASgLMhouc2hhbGUuQXR0YWNoUmVxdWVzdC5IZWxsb0gAEikKBGRhdGEYAiABKAsyGS5zaGFsZS5BdHRhY2hSZXF1ZXN0LkRhdGFIABIrCgVyZXNldBgDIAEoCzIaLnNoYWxlLkF0dGFjaFJlcXVlc3QuUmVzZXRIABoeCgVIZWxsbxIVCg1wdWJsaXNoX3Rva2VuGAEgASgJGpsBCgREYXRhEhEKCXNvdXJjZV9pZBgBIAEoDBIPCgdwYXlsb2FkGAIgASgMEhUKDWNhcHR1cmVfZXBvY2gYAyABKAkSKwoHcmVhZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASKwoHc2VudF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaQgoFUmVzZXQSEQoJc291cmNlX2lkGAEgASgMEhUKDWNhcHR1cmVfZXBvY2gYAiABKAkSDwoHc3RvcHBlZBgDIAEoCEIJCgdtZXNzYWdlIvoBCg5BdHRhY2hSZXNwb25zZRIsCgVzdGFydBgBIAEoCzIbLnNoYWxlLkF0dGFjaFJlc3BvbnNlLlN0YXJ0SAASKgoEc3RvcBgCIAEoCzIaLnNoYWxlLkF0dGFjaFJlc3BvbnNlLlN0b3BIABIwCgd3ZWxjb21lGAMgASgLMh0uc2hhbGUuQXR0YWNoUmVzcG9uc2UuV2VsY29tZUgAGhoKBVN0YXJ0EhEKCXNvdXJjZV9pZBgBIAEoDBoZCgRTdG9wEhEKCXNvdXJjZV9pZBgBIAEoDBoaCgdXZWxjb21lEg8KB3NvdXJjZXMYASADKAxCCQoHbWVzc2FnZTJICgtSZWxheUluZ2VzdBI5CgZBdHRhY2gSFC5zaGFsZS5BdHRhY2hSZXF1ZXN0GhUuc2hhbGUuQXR0YWNoUmVzcG9uc2UoATABQiRaHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpkgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("ChJzaGFsZS9pbmdlc3QucHJvdG8SBXNoYWxlIuUDCg1BdHRhY2hSZXF1ZXN0EisKBWhlbGxvGAEgASgLMhouc2hhbGUuQXR0YWNoUmVxdWVzdC5IZWxsb0gAEikKBGRhdGEYAiABKAsyGS5zaGFsZS5BdHRhY2hSZXF1ZXN0LkRhdGFIABIrCgVyZXNldBgDIAEoCzIaLnNoYWxlLkF0dGFjaFJlcXVlc3QuUmVzZXRIABIpCgRmZWVkGAQgASgLMhkuc2hhbGUuQXR0YWNoUmVxdWVzdC5GZWVkSAAaHgoFSGVsbG8SFQoNcHVibGlzaF90b2tlbhgBIAEoCRqbAQoERGF0YRIRCglzb3VyY2VfaWQYASABKAwSDwoHcGF5bG9hZBgCIAEoDBIVCg1jYXB0dXJlX2Vwb2NoGAMgASgJEisKB3JlYWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEisKB3NlbnRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGkIKBVJlc2V0EhEKCXNvdXJjZV9pZBgBIAEoDBIVCg1jYXB0dXJlX2Vwb2NoGAIgASgJEg8KB3N0b3BwZWQYAyABKAgaFwoERmVlZBIPCgdzb3VyY2VzGAEgAygMQgkKB21lc3NhZ2Ui+gEKDkF0dGFjaFJlc3BvbnNlEiwKBXN0YXJ0GAEgASgLMhsuc2hhbGUuQXR0YWNoUmVzcG9uc2UuU3RhcnRIABIqCgRzdG9wGAIgASgLMhouc2hhbGUuQXR0YWNoUmVzcG9uc2UuU3RvcEgAEjAKB3dlbGNvbWUYAyABKAsyHS5zaGFsZS5BdHRhY2hSZXNwb25zZS5XZWxjb21lSAAaGgoFU3RhcnQSEQoJc291cmNlX2lkGAEgASgMGhkKBFN0b3ASEQoJc291cmNlX2lkGAEgASgMGhoKB1dlbGNvbWUSDwoHc291cmNlcxgBIAMoDEIJCgdtZXNzYWdlMkgKC1JlbGF5SW5nZXN0EjkKBkF0dGFjaBIULnNoYWxlLkF0dGFjaFJlcXVlc3QaFS5zaGFsZS5BdHRhY2hSZXNwb25zZSgBMAFCJFodZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGmSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message shale.AttachRequest
@@ -40,6 +40,12 @@ export type AttachRequest = Message<"shale.AttachRequest"> & {
      */
     value: AttachRequest_Reset;
     case: "reset";
+  } | {
+    /**
+     * @generated from field: shale.AttachRequest.Feed feed = 4;
+     */
+    value: AttachRequest_Feed;
+    case: "feed";
   } | { case: undefined; value?: undefined };
 };
 
@@ -143,6 +149,29 @@ export const AttachRequest_ResetSchema: GenMessage<AttachRequest_Reset> = /*@__P
   messageDesc(file_shale_ingest, 0, 2);
 
 /**
+ * A satellite's stream only (§39.3, §41.8): the sources of its token it
+ * feeds now, the whole set each time, none until the first. The relay
+ * takes a satellite that feeds a source as its feeder over the producer's
+ * own stream. A producer's stream feeds every source of its token and
+ * never sends it.
+ *
+ * @generated from message shale.AttachRequest.Feed
+ */
+export type AttachRequest_Feed = Message<"shale.AttachRequest.Feed"> & {
+  /**
+   * @generated from field: repeated bytes sources = 1;
+   */
+  sources: Uint8Array[];
+};
+
+/**
+ * Describes the message shale.AttachRequest.Feed.
+ * Use `create(AttachRequest_FeedSchema)` to create a new message.
+ */
+export const AttachRequest_FeedSchema: GenMessage<AttachRequest_Feed> = /*@__PURE__*/
+  messageDesc(file_shale_ingest, 0, 3);
+
+/**
  * @generated from message shale.AttachResponse
  */
 export type AttachResponse = Message<"shale.AttachResponse"> & {
@@ -231,8 +260,9 @@ export const AttachResponse_WelcomeSchema: GenMessage<AttachResponse_Welcome> = 
   messageDesc(file_shale_ingest, 1, 2);
 
 /**
- * RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3).
- * The producer dials; the relay says which sources to send and when to stop.
+ * RelayIngest is the one stream a producer keeps to its relay (§35.8, §39.3),
+ * and a satellite one for each producer whose live it feeds (§41.8). The
+ * feeder dials; the relay says which sources to send and when to stop.
  *
  * @generated from service shale.RelayIngest
  */
