@@ -405,7 +405,10 @@ becomes an orphan, and orphans are reclaimed by GC ([§21.3](06-retention-gc.md#
   incarnation's upload of the same slot: the producer restarted mid-slot
   and the CP answered the same lamina and attempts. The node cannot tell
   whose bytes they are, so the producer does: a `409` whose offset is
-  past what it stated, or a `HEAD` offset past what it sent, ends the
+  past both what it stated and what its earlier requests for the key sent
+  (the node refuses a request it answers `409` whole, so only an earlier
+  one, cut short after the node had its bytes, can have left the node
+  ahead of the offset stated), or a `HEAD` offset past what it sent, ends the
   attempt with the reason "the node holds bytes of this key that are not
   ours", the CP keeps that sink eligible, and `Reallocate` hands out a
   fresh attempt with a fresh key. The old file is finalized or removed by

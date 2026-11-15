@@ -266,6 +266,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		if err != nil {
 			return err
 		}
+		sentBefore := sentMax
 		status, newOffset, sent, complete, err := u.put(ctx, url, tok, al, seg, offset, part)
 		if offset+sent > sentMax {
 			sentMax = offset + sent
@@ -297,9 +298,12 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 			return errTooLong
 		case status == http.StatusConflict:
 			// The node's offset differs: carry on from there (§12.5), unless
-			// it is past what we told it, which is a file we did not write:
-			// our own bytes only ever leave the node behind what we said.
-			if newOffset > offset {
+			// it is past both what we told it and what our earlier requests
+			// sent, which is a file we did not write. A request the node
+			// answers 409 it refuses whole, so only an earlier one can have
+			// put our bytes there: one cut short after the node had them,
+			// whose offset a HEAD that failed, or a 503, did not bring back.
+			if newOffset > max(offset, sentBefore) {
 				return errForeign
 			}
 			if newOffset >= 0 {
