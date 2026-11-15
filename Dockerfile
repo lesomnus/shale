@@ -13,7 +13,7 @@
 #
 #   docker buildx bake build      # ./output/{amd64,arm64}
 #   docker buildx bake package    # ghcr.io/lesomnus/shale, both platforms
-FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS console
+FROM --platform=$BUILDPLATFORM node:26-bookworm-slim AS console
 WORKDIR /src/ts
 COPY ts/package.json ts/package-lock.json ./
 RUN npm ci --no-audit --no-fund
