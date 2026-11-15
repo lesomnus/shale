@@ -75,6 +75,24 @@ var stateViews = []stateView{
 			}
 		}
 	}},
+	{"satellite", "pending", "satellites waiting for adoption (§33.4)", true, func(ctx context.Context, conn pdcmd.Conn) ([]stateRow, error) {
+		var out []stateRow
+		after := ""
+		for {
+			vs, err := api.NewSatelliteServiceClient(conn).List(ctx, api.SatelliteListRequest_builder{Size: 500, After: after}.Build())
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range vs.GetItems() {
+				if v.GetState() == api.HostState_HOST_STATE_PENDING {
+					out = append(out, stateRow{v.GetAlias(), idStr(v.GetId()), v.GetHostname() + " " + v.GetJoin().GetSourceAddress(), ts(v.GetDateCreated())})
+				}
+			}
+			if after = vs.GetNext(); after == "" {
+				return out, nil
+			}
+		}
+	}},
 	{"producer", "pending", "producers waiting for adoption (§33.4)", false, func(ctx context.Context, conn pdcmd.Conn) ([]stateRow, error) {
 		var out []stateRow
 		after := ""

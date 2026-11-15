@@ -33,6 +33,7 @@ import (
 	"github.com/lesomnus/shale/internal/producer"
 	"github.com/lesomnus/shale/internal/reader"
 	"github.com/lesomnus/shale/internal/relay"
+	"github.com/lesomnus/shale/internal/satellite"
 	"github.com/lesomnus/shale/internal/storage"
 	catalog "github.com/lesomnus/shale/source"
 	catalogcp "github.com/lesomnus/shale/source/cp"
@@ -130,6 +131,13 @@ func NewCmdServe(c *cmd.Config, l *cfg.Loader[cmd.Config]) *xli.Command {
 				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
 					apply(self)
 					return serveRelay(ctx, c)
+				}),
+			},
+			{
+				Name: "satellite", Brief: "a Satellite: producers upload through it to the Storage Nodes", Flags: common(),
+				Handler: xli.OnRun(func(ctx context.Context, self *xli.Command, _ xli.Next) error {
+					apply(self)
+					return serveSatellite(ctx, c)
 				}),
 			},
 			{
@@ -484,6 +492,11 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 		return cfg, fmt.Errorf("producer.http3: %w", err)
 	}
 	cfg.Upload.HTTP3 = mode
+	via, err := producer.ParseVia(pc.UploadVia)
+	if err != nil {
+		return cfg, fmt.Errorf("producer.upload_via: %w", err)
+	}
+	cfg.Upload.Via = via
 	if catalogMode == "cp" {
 		if len(pc.Sources) != 0 || pc.Demo != 0 {
 			return cfg, errors.New("CP catalog and local/demo sources cannot be combined implicitly")
@@ -683,6 +696,69 @@ var (
 		return r.Run(ctx)
 	}
 )
+
+// serveSatellite is `shale serve satellite` (§41).
+func serveSatellite(ctx context.Context, c *cmd.Config) error {
+	ctx, done, err := Telemetry(ctx, c)
+	if err != nil {
+		return err
+	}
+	defer done()
+	cfg, err := SatelliteConfig(c)
+	if err != nil {
+		return err
+	}
+	s, err := satellite.New(cfg)
+	if err != nil {
+		return err
+	}
+
+	return s.Run(ctx)
+}
+
+// SatelliteConfig maps the file onto the satellite's settings (§36.1).
+func SatelliteConfig(c *cmd.Config) (satellite.Config, error) {
+	sc := c.Satellite
+	cfg := satellite.Config{
+		StateDir:          c.StateDir("satellite"),
+		Cp:                c.Cp,
+		CaHash:            c.CaHash,
+		Dev:               c.IsDev(),
+		Addr:              sc.Addr,
+		Advertise:         sc.Advertise,
+		HeartbeatInterval: sc.HeartbeatInterval,
+		TokenSkew:         sc.TokenSkew,
+		Log:               slog.Default(),
+	}
+	if sc.MemoryBudget != "" {
+		v, err := storage.ParseCapacity(sc.MemoryBudget)
+		if err != nil || v <= 0 {
+			return cfg, fmt.Errorf("satellite.memory_budget: %q is not a size", sc.MemoryBudget)
+		}
+		cfg.MemoryBudget = v
+	}
+	if sc.RequestBuffer != "" {
+		v, err := storage.ParseCapacity(sc.RequestBuffer)
+		if err != nil || v <= 0 || v > 64<<20 {
+			return cfg, fmt.Errorf("satellite.request_buffer: %q is not a size up to 64MiB", sc.RequestBuffer)
+		}
+		cfg.RequestBuffer = int(v)
+	}
+	if c.IsDev() {
+		if cfg.Addr == "" {
+			cfg.Addr = "127.0.0.1:7460"
+		}
+		// In development the cluster API is the one `--dev` describes.
+		if cfg.Cp == "" {
+			cfg.Cp = c.Client.ClusterAddr
+		}
+	}
+	if cfg.Cp == "" {
+		return cfg, errors.New("a satellite needs cp: the cluster API to join (§33.4)")
+	}
+
+	return cfg, nil
+}
 
 // rewindBudget is `relay.rewind_budget` in bytes; 0, the default, when
 // nothing or nothing parseable was written.

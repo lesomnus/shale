@@ -117,6 +117,8 @@ func (b *Sandbox) asHost(ctx context.Context, id pdid.Id) (context.Context, erro
 		method = api.NodeService_Heartbeat_FullMethodName
 	case core.DomRelay:
 		method = api.RelayService_Heartbeat_FullMethodName
+	case core.DomSatellite:
+		method = api.SatelliteService_Heartbeat_FullMethodName
 	case core.DomProducer:
 		method = api.ProducerService_Heartbeat_FullMethodName
 	default:

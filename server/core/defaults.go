@@ -58,6 +58,20 @@ const (
 	// a viewer has its picture back within E6's 10 s and one late or lost
 	// heartbeat moves nobody.
 	DefaultRelayDownAfter = 6 * time.Second
+	// DefaultSatelliteDownAfter is three of a satellite's heartbeats, every
+	// 2 s, as a relay's (§41.2): a producer whose satellite died is assigned
+	// another, or uploads directly, within seconds rather than holding its
+	// segments.
+	DefaultSatelliteDownAfter = 6 * time.Second
+	// SatelliteAssignmentTTL is how long a producer may use its satellite
+	// assignment without hearing it again (§41.2): every heartbeat answer
+	// renews it, and it outlasts the default allocation TTL, so a producer
+	// that cannot reach the CP goes on uploading through its satellite as
+	// long as its tokens let it.
+	SatelliteAssignmentTTL = 30 * time.Minute
+	// SatelliteRouteTTL is how long a satellite may forward to a node's
+	// data plane as Route answered it before asking again (§41.3).
+	SatelliteRouteTTL = time.Minute
 	// DefaultSinkAutoAdoptAfter is how long a sink whose node is down waits
 	// before the node that reports it adopts it (§28.3).
 	DefaultSinkAutoAdoptAfter = 10 * time.Minute

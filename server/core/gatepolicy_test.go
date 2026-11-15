@@ -247,3 +247,41 @@ func TestCameraWorkerHasOnlyScopedExecutionVerbs(t *testing.T) {
 		require.Equal(t, codes.PermissionDenied, status.Code(call(worker, m)), m)
 	}
 }
+
+// A satellite does its own work on the cluster API and nothing more
+// (§41): its heartbeat, certificate and routes, and the key set it
+// verifies put tokens with; never a tenant's rows, another host's verbs,
+// nor anything on the tenant API. Its Join is public, as every host's.
+func TestSatelliteHasOnlyItsOwnVerbs(t *testing.T) {
+	ctx := context.Background()
+	sat := pdid.New(DomSatellite)
+	cluster := ClusterPolicy{ClusterTenant: pdid.New(DomTenant)}
+	for _, m := range []string{
+		api.SatelliteService_Heartbeat_FullMethodName, api.SatelliteService_RenewCertificate_FullMethodName,
+		api.SatelliteService_Route_FullMethodName, api.SatelliteService_Get_FullMethodName,
+		api.SigningKeyService_List_FullMethodName,
+	} {
+		require.NoError(t, cluster.May(ctx, gate.Call{Actor: sat, Action: m}), m)
+	}
+	for _, m := range []string{
+		api.SatelliteService_Adopt_FullMethodName, api.SatelliteService_Assign_FullMethodName, api.SatelliteService_Patch_FullMethodName,
+		api.SatelliteService_Erase_FullMethodName, api.SatelliteService_List_FullMethodName,
+		api.NodeService_Resolve_FullMethodName, api.NodeService_Heartbeat_FullMethodName, api.RelayService_Heartbeat_FullMethodName,
+		api.ProducerService_List_FullMethodName, api.LaminaService_Allocate_FullMethodName, api.SigningKeyService_Rotate_FullMethodName,
+	} {
+		require.Equal(t, codes.PermissionDenied, status.Code(cluster.May(ctx, gate.Call{Actor: sat, Action: m})), m)
+	}
+	require.Equal(t, codes.PermissionDenied, status.Code(TenantPolicy{}.May(ctx, gate.Call{Actor: sat, Tenant: pdid.New(DomTenant), Action: api.SetService_Get_FullMethodName})))
+	require.True(t, Public(api.SatelliteService_Join_FullMethodName))
+	require.True(t, IsClusterService(api.SatelliteService_Heartbeat_FullMethodName))
+
+	// Rows the system writes, closed to operators as well; the labels are
+	// theirs.
+	op := pdid.New(DomHolder)
+	byTenant := ClusterPolicy{ClusterTenant: cluster.ClusterTenant}
+	for _, m := range []string{api.SatelliteService_Add_FullMethodName, api.SatelliteService_Apply_FullMethodName} {
+		require.Equal(t, codes.PermissionDenied, status.Code(byTenant.May(ctx, gate.Call{Actor: op, Tenant: cluster.ClusterTenant, Action: m})), m)
+	}
+	require.NoError(t, byTenant.May(ctx, gate.Call{Actor: op, Tenant: cluster.ClusterTenant, Action: api.SatelliteService_Patch_FullMethodName}))
+	require.NoError(t, byTenant.May(ctx, gate.Call{Actor: op, Tenant: cluster.ClusterTenant, Action: api.SatelliteService_Adopt_FullMethodName}))
+}

@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/node"
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/signingkey"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"go.opentelemetry.io/otel/attribute"
@@ -155,8 +156,9 @@ func (j *Jobs) Once(ctx context.Context) error {
 	j.gauges(ctx, now)
 
 	// Key rotation (§33.3): an ACTIVE key becomes the signing key once every
-	// live node holds it; a key demoted from signing is retired after the
-	// longest token lifetime.
+	// live node and satellite holds it, since both verify put tokens (§41.3);
+	// a key demoted from signing is retired after the longest token
+	// lifetime.
 	keys, err := j.d.Ent.SigningKey.Query().Where(signingkey.DateErasedIsNil()).All(ctx)
 	if err != nil {
 		return err
@@ -169,6 +171,10 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 	}
 	nodes, err := j.d.Ent.Node.Query().All(ctx)
+	if err != nil {
+		return err
+	}
+	sats, err := j.d.Ent.Satellite.Query().Where(satellite.DateErasedIsNil()).All(ctx)
 	if err != nil {
 		return err
 	}
@@ -193,6 +199,15 @@ func (j *Jobs) Once(ctx context.Context) error {
 						continue
 					}
 					if !contains(n.KeyIds, k.Alias) {
+						held = false
+						break
+					}
+				}
+				for _, v := range sats {
+					if !satelliteAlive(v, now, j.d.satelliteDownAfter()) {
+						continue
+					}
+					if !contains(v.KeyIds, k.Alias) {
 						held = false
 						break
 					}
@@ -229,6 +244,9 @@ func (j *Jobs) Once(ctx context.Context) error {
 	}
 	if n, err := j.d.Ent.Relay.Query().Where(relay.StateEQ(int32(api.HostState_HOST_STATE_PENDING))).Count(ctx); err == nil {
 		m.PendingHosts.Record(ctx, int64(n), kindAttr("relay"))
+	}
+	if n, err := j.d.Ent.Satellite.Query().Where(satellite.StateEQ(int32(api.HostState_HOST_STATE_PENDING))).Count(ctx); err == nil {
+		m.PendingHosts.Record(ctx, int64(n), kindAttr("satellite"))
 	}
 	if n, err := j.d.Ent.Lamina.Query().Where(lamina.StateEQ(int32(api.LaminaState_LAMINA_STATE_DELETING))).Count(ctx); err == nil {
 		m.Deleting.Record(ctx, int64(n))

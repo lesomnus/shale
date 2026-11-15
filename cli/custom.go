@@ -32,6 +32,8 @@ var custom = map[string]string{
 	"node/resolve":              "shale.NodeService.Resolve",
 	"relay/adopt":               "shale.RelayService.Adopt",
 	"relay/assign":              "shale.RelayService.Assign",
+	"satellite/adopt":           "shale.SatelliteService.Adopt",
+	"satellite/assign":          "shale.SatelliteService.Assign",
 	"producer/adopt":            "shale.ProducerService.Adopt",
 	"reader/adopt":              "shale.ReaderService.Adopt",
 	"set/negotiate":             "shale.SetService.Negotiate",

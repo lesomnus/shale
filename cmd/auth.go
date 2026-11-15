@@ -80,7 +80,7 @@ func Resolver(s *Server) auth.Resolver {
 		switch k.Domain() {
 		case core.DomHolder:
 			return holderFrame(ctx, own, api.HolderRef_builder{Id: k.Bytes()}.Build())
-		case core.DomProducer, core.DomReader, core.DomNode, core.DomRelay, core.DomCameraWorker:
+		case core.DomProducer, core.DomReader, core.DomNode, core.DomRelay, core.DomSatellite, core.DomCameraWorker:
 			return hostFrame(ctx, own, k, id)
 		default:
 			return nil, fmt.Errorf("%w: a %s cannot call", auth.ErrNoCredential, k.Domain())
@@ -152,6 +152,12 @@ func hostFrame(ctx context.Context, own api.Server, k pdid.Id, id auth.Identity)
 		state, serial, row = v.GetState(), v.GetCertSerial(), v
 	case core.DomRelay:
 		v, err := own.Relay().Get(ctx, api.RelayGetRequest_builder{Ref: api.RelayRef_builder{Id: k.Bytes()}.Build()}.Build())
+		if err != nil {
+			return nil, refused(err)
+		}
+		state, serial, row = v.GetState(), v.GetCertSerial(), v
+	case core.DomSatellite:
+		v, err := own.Satellite().Get(ctx, api.SatelliteGetRequest_builder{Ref: api.SatelliteRef_builder{Id: k.Bytes()}.Build()}.Build())
 		if err != nil {
 			return nil, refused(err)
 		}
