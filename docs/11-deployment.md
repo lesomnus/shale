@@ -360,7 +360,7 @@ holds**:
 | lamina with `dates_synced = false` | `SetDates` | the node's acknowledgement |
 | device `QUARANTINED` or retired; sink retired | `SetSinkState(accept_writes: false)` | acknowledgement |
 | device released | `SetSinkState(accept_writes: true)` | acknowledgement |
-| node certificate outdated by an `AddressPolicy` change | `InstallCertificate` | the heartbeat reporting the new serial |
+| node certificate without a name the active `AddressPolicy` hands out ([§34.10](#3410-node-addresses)) | none: the heartbeat answer asks for a renewal | the renewal |
 | operator asked for `locate` or `gc run` | `Locate`, `Gc` | acknowledgement (not retried) |
 
 The CP sends a directive when the state changes, retries with backoff while
@@ -426,7 +426,7 @@ global, versioned entity that operators activate through the cluster API
 |---|---|---|
 | `advertised` (default) | one of the IPs the node reports, chosen by rules on the caller's network (e.g. internal CIDRs get the internal interface, others the external one; IPv4 or IPv6) | no DNS at all |
 | `template` | a name built from the node, e.g. `{alias}.nodes.example.com` | DNS records managed outside Shale |
-| `dns` | the same template names, and the CP **maintains the records itself** in a DNS server it is given (RFC 2136 dynamic update, or a provider plugin) | DNS that follows the cluster: records appear when a node joins, change when its IPs change, and disappear when it leaves |
+| `dns` | the same template names, and the CP **maintains the records itself** in a DNS server it is given (RFC 2136 dynamic updates, signed with TSIG) | DNS that follows the cluster: records appear when a node is adopted, change when its IPs change, and disappear when it is removed |
 
 **A name the host reports is handed out as it is.** A node whose data
 address is a name and a port (`storage.advertise:
@@ -442,6 +442,73 @@ interface for that node. An IP, or an address with no host (`:7410`),
 goes through the resolver as before. The node's host certificate carries
 the name as well, so a client that trusts only the shale CA still
 verifies it.
+
+**The `dns` resolver's records.** The leader
+([§34.9](#349-events-and-directives)) keeps them in the zone `dns_zone`
+on `dns_server`, through RFC 2136 updates over TCP, each signed with the
+policy's TSIG key. Setting it up is in
+[§36.1](13-configuration.md#361-configuration-reference).
+
+- **Which names.** One per adopted node and relay: the template's name for
+  it, as the resolver hands out. A host waiting for adoption has none yet;
+  an erased host's name goes. Hosts the template gives one name (a node and
+  a relay on one machine, under `{alias}`) share it, with both's
+  addresses.
+- **Which addresses**, as A and AAAA records with `dns_ttl` (60 s): the IP
+  the host's data plane listens on (a relay's ingest) when it reports one;
+  otherwise the addresses it reports inside `dns_networks`; with none
+  listed, its first IPv4 and first IPv6 address that are neither loopback
+  nor link-local, the one `advertised` hands a caller no rule matches. A
+  machine's other interfaces (a container bridge, a VPN) are left out
+  unless `dns_networks` names them. The CP sends one set of records; what
+  internal and external clients are answered differently is the server's
+  doing (views), as for `template`.
+- **Which names are Shale's.** Every name Shale writes carries a TXT record,
+  `heritage=shale,shale/owner=<the cluster tenant's ID>`, the marker. Shale
+  creates a name only where nothing is (the update's prerequisite: the name
+  is not in use); it replaces or removes a name only while it carries the
+  marker, on the condition that its TXT records are still the ones read; and
+  within a name it touches A, AAAA and its marker alone. The server checks
+  each condition in the same transaction as the update, so a record
+  somebody writes in the meantime is not overwritten. A name the template
+  gives a host but somebody else holds is left alone and listed in the
+  policy's `dns_sync.conflicts`; a name whose marker an operator deletes is
+  theirs from then on. Two clusters sharing a zone tell their names apart
+  by the owner.
+- **When.** Every `directives_every` (5 s) the leader compares the hosts
+  with what it last wrote, asks the server about each name whose host
+  changed, and updates it: a node adopted, re-addressed, renamed or erased
+  is in the zone within seconds, whichever CP replica heard of it. Every
+  `control.dns_sync_every` (10 min), on becoming the leader, and when the
+  policy changes, it reads the whole zone (AXFR, signed) and repairs every
+  name it owns that differs, a record deleted behind its back among them,
+  and removes the names no host wants any more. A server that refuses the
+  transfer leaves that last part undone; the names hosts want are still
+  kept, and the refusal shows.
+- **What it did** shows in three places: the log (`dns: name created`,
+  `... update failed`), `shale.cp.dns_updates{op,result}` and
+  `shale.cp.dns_sync_lag_s` ([§31](09-operations.md#31-observability)),
+  and the policy's `dns_sync`: when the zone was last read whole, the
+  names Shale holds, the conflicts, and the last error and when, which
+  stays until a whole read goes through without one. A failure is retried
+  with backoff, up to five minutes apart.
+- **Activation checks the policy**: the template carries `{alias}` (or
+  `{id}`) and its names end in `dns_zone`, the server address parses, the
+  key has a name, a known algorithm and a secret; then the CP asks the
+  server for the zone's SOA with the key, and a server that does not answer
+  it, or refuses the key, refuses the activation. An active policy patched
+  is held to the same, bar the question.
+- **The TSIG secret** is `dns_tsig_secret` on the policy, not in its
+  parameters. It is sealed with a key derived from the KEK
+  ([§33.3](10-security.md#333-signing-keys-and-rotation)) when written, and
+  never answered with: no `Get`, `List`, `Add`, `Patch` or `Activate`
+  carries it, the trail keeps no value of it
+  ([§26.5](08-sizing.md#265-the-control-planes-database)), and no log
+  line names it. `Apply` is closed on the entity, since a patch document
+  would store it unsealed, and `params.dns_tsig_secret`, where it was
+  declared before, is refused. Rotating it is writing it again.
+- A policy that stops being `dns` removes nothing: its records stay until
+  an operator deletes them, by their marker.
 
 Further resolvers (per-site or per-region names, a load-aware name, a
 service-mesh address) implement the same interface: given a node, the caller
@@ -475,11 +542,16 @@ IP the active resolver can hand out:
 
 - The CP computes the SANs from the resolver: the IPs for `advertised`, the
   generated names for `template` and `dns`.
-- When the `AddressPolicy` changes, the CP issues new certificates for the
-  affected nodes' existing keys and installs them through the control API
-  ([§33.5](10-security.md#335-tls)). The CP activates the new policy only
-  after every live node has one, the same way it rotates signing keys
-  ([§33.3](10-security.md#333-signing-keys-and-rotation)).
+- When the `AddressPolicy` changes, a node or relay whose certificate lacks
+  a name the active policy hands out for it (the template's, `extra_names`)
+  is asked to renew in its next heartbeat answer, and the renewal carries
+  them ([§33.5](10-security.md#335-tls)). Activation does not wait for it
+  yet: until a host has renewed, a heartbeat or two, a client handed its
+  new name fails the handshake and moves to the next candidate. Issuing the
+  certificates for the hosts' existing keys, installing them through the
+  control API, and activating only once every live node has one, as
+  signing keys rotate ([§33.3](10-security.md#333-signing-keys-and-rotation)),
+  is the design that would close that window.
 - With external certificates, a wildcard such as `*.nodes.example.com` covers
   a template in one certificate.
 

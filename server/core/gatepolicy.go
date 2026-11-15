@@ -114,6 +114,10 @@ func closedToEveryone(m string) bool {
 	case strings.HasPrefix(m, "/shale.RelayService/"):
 		// `relay patch` is the operator's, for labels (§39.2).
 		return strings.HasSuffix(m, "/Add") || strings.HasSuffix(m, "/Apply")
+	case m == api.AddressPolicyService_Apply_FullMethodName:
+		// A dns policy's TSIG secret is sealed on its way in through Add
+		// and Patch (§34.10); a patch document would store it as written.
+		return true
 	}
 
 	return false

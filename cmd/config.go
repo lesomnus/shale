@@ -159,6 +159,11 @@ type ControlConfig struct {
 	// DirectivesEvery is how often the leader compares the state with what
 	// the nodes were told (§34.9); default 5 s.
 	DirectivesEvery time.Duration `yaml:"directives_every"`
+	// DnsSyncEvery is how often the leader reads the whole zone of a `dns`
+	// address policy and repairs what differs (§34.10); default 10 min.
+	// Between, it updates the names whose hosts changed every
+	// directives_every.
+	DnsSyncEvery time.Duration `yaml:"dns_sync_every"`
 	// NodeDownAfter is how long a host may go unheard before it is down
 	// (§27); default 30 s. Its laminae read as unavailable from then on and
 	// placement stops offering its sinks, so a cluster whose heartbeats

@@ -553,8 +553,10 @@ message AddressPolicyAddRequest {
   int64 version = 8 [features.field_presence = IMPLICIT];
   AddressParams params = 9;
   bool active = 10 [features.field_presence = IMPLICIT];
+  bytes dns_tsig_secret = 11;
   google.protobuf.Timestamp date_created = 15;
   google.protobuf.Timestamp date_activated = 16;
+  DnsSync dns_sync = 17;
 }
 
 message AddressPolicyGetRequest {
@@ -579,10 +581,12 @@ message AddressPolicySelect {
   bool version = 8;
   bool params = 9;
   bool active = 10;
+  bool dns_tsig_secret = 11;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
   bool date_activated = 16;
+  bool dns_sync = 17;
 }
 
 message AddressPolicyPatchRequest {
@@ -598,6 +602,7 @@ message AddressPolicyPatchRequest {
   // outright: setting both this and params clears.
   bool params_null = 19;
   bool active = 20;
+  bytes dns_tsig_secret = 22;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -618,6 +623,12 @@ message AddressPolicyPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and date_activated clears.
   bool date_activated_null = 33;
+  DnsSync dns_sync = 34;
+  // Clear dns_sync instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and dns_sync clears.
+  bool dns_sync_null = 35;
 }
 
 message AddressPolicyApplyRequest {

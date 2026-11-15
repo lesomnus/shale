@@ -110,6 +110,18 @@ func (_u *AddressPolicyUpdate) SetNillableActive(v *bool) *AddressPolicyUpdate {
 	return _u
 }
 
+// SetDnsTsigSecret sets the "dns_tsig_secret" field.
+func (_u *AddressPolicyUpdate) SetDnsTsigSecret(v []byte) *AddressPolicyUpdate {
+	_u.mutation.SetDnsTsigSecret(v)
+	return _u
+}
+
+// ClearDnsTsigSecret clears the value of the "dns_tsig_secret" field.
+func (_u *AddressPolicyUpdate) ClearDnsTsigSecret() *AddressPolicyUpdate {
+	_u.mutation.ClearDnsTsigSecret()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *AddressPolicyUpdate) SetDateUpdated(v time.Time) *AddressPolicyUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -161,6 +173,18 @@ func (_u *AddressPolicyUpdate) SetNillableDateActivated(v *time.Time) *AddressPo
 // ClearDateActivated clears the value of the "date_activated" field.
 func (_u *AddressPolicyUpdate) ClearDateActivated() *AddressPolicyUpdate {
 	_u.mutation.ClearDateActivated()
+	return _u
+}
+
+// SetDnsSync sets the "dns_sync" field.
+func (_u *AddressPolicyUpdate) SetDnsSync(v *api.DnsSync) *AddressPolicyUpdate {
+	_u.mutation.SetDnsSync(v)
+	return _u
+}
+
+// ClearDnsSync clears the value of the "dns_sync" field.
+func (_u *AddressPolicyUpdate) ClearDnsSync() *AddressPolicyUpdate {
+	_u.mutation.ClearDnsSync()
 	return _u
 }
 
@@ -260,6 +284,15 @@ func (_u *AddressPolicyUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldActive); ok {
 		_spec.SetField(addresspolicy.FieldActive, field.TypeBool, e)
 	}
+	if value, ok := _u.mutation.DnsTsigSecret(); ok {
+		_spec.SetField(addresspolicy.FieldDnsTsigSecret, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDnsTsigSecret); ok {
+		_spec.SetField(addresspolicy.FieldDnsTsigSecret, field.TypeBytes, e)
+	}
+	if _u.mutation.DnsTsigSecretCleared() {
+		_spec.ClearField(addresspolicy.FieldDnsTsigSecret, field.TypeBytes)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(addresspolicy.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -286,6 +319,22 @@ func (_u *AddressPolicyUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.DateActivatedCleared() {
 		_spec.ClearField(addresspolicy.FieldDateActivated, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DnsSync(); ok {
+		vv, err := addresspolicy.ValueScanner.DnsSync.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(addresspolicy.FieldDnsSync, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDnsSync); ok {
+		_spec.SetField(addresspolicy.FieldDnsSync, field.TypeJson, e)
+	}
+	if _u.mutation.DnsSyncCleared() {
+		_spec.ClearField(addresspolicy.FieldDnsSync, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -389,6 +438,18 @@ func (_u *AddressPolicyUpdateOne) SetNillableActive(v *bool) *AddressPolicyUpdat
 	return _u
 }
 
+// SetDnsTsigSecret sets the "dns_tsig_secret" field.
+func (_u *AddressPolicyUpdateOne) SetDnsTsigSecret(v []byte) *AddressPolicyUpdateOne {
+	_u.mutation.SetDnsTsigSecret(v)
+	return _u
+}
+
+// ClearDnsTsigSecret clears the value of the "dns_tsig_secret" field.
+func (_u *AddressPolicyUpdateOne) ClearDnsTsigSecret() *AddressPolicyUpdateOne {
+	_u.mutation.ClearDnsTsigSecret()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *AddressPolicyUpdateOne) SetDateUpdated(v time.Time) *AddressPolicyUpdateOne {
 	_u.mutation.SetDateUpdated(v)
@@ -440,6 +501,18 @@ func (_u *AddressPolicyUpdateOne) SetNillableDateActivated(v *time.Time) *Addres
 // ClearDateActivated clears the value of the "date_activated" field.
 func (_u *AddressPolicyUpdateOne) ClearDateActivated() *AddressPolicyUpdateOne {
 	_u.mutation.ClearDateActivated()
+	return _u
+}
+
+// SetDnsSync sets the "dns_sync" field.
+func (_u *AddressPolicyUpdateOne) SetDnsSync(v *api.DnsSync) *AddressPolicyUpdateOne {
+	_u.mutation.SetDnsSync(v)
+	return _u
+}
+
+// ClearDnsSync clears the value of the "dns_sync" field.
+func (_u *AddressPolicyUpdateOne) ClearDnsSync() *AddressPolicyUpdateOne {
+	_u.mutation.ClearDnsSync()
 	return _u
 }
 
@@ -569,6 +642,15 @@ func (_u *AddressPolicyUpdateOne) sqlSave(ctx context.Context) (_node *AddressPo
 	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldActive); ok {
 		_spec.SetField(addresspolicy.FieldActive, field.TypeBool, e)
 	}
+	if value, ok := _u.mutation.DnsTsigSecret(); ok {
+		_spec.SetField(addresspolicy.FieldDnsTsigSecret, field.TypeBytes, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDnsTsigSecret); ok {
+		_spec.SetField(addresspolicy.FieldDnsTsigSecret, field.TypeBytes, e)
+	}
+	if _u.mutation.DnsTsigSecretCleared() {
+		_spec.ClearField(addresspolicy.FieldDnsTsigSecret, field.TypeBytes)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(addresspolicy.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -595,6 +677,22 @@ func (_u *AddressPolicyUpdateOne) sqlSave(ctx context.Context) (_node *AddressPo
 	}
 	if _u.mutation.DateActivatedCleared() {
 		_spec.ClearField(addresspolicy.FieldDateActivated, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DnsSync(); ok {
+		vv, err := addresspolicy.ValueScanner.DnsSync.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(addresspolicy.FieldDnsSync, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(addresspolicy.FieldDnsSync); ok {
+		_spec.SetField(addresspolicy.FieldDnsSync, field.TypeJson, e)
+	}
+	if _u.mutation.DnsSyncCleared() {
+		_spec.ClearField(addresspolicy.FieldDnsSync, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &AddressPolicy{config: _u.config}

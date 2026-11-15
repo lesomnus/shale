@@ -28,6 +28,12 @@ deployment runs well on them, and changes them only for a reason.
 | Placement | `new_device_ramp` | off (weight × 0.25 for 30 days when on) | — | cluster | [D6](placement-decisions.md#d6-weight--raw-capacity-not-free-space) |
 | Addresses | resolver | `advertised` | `advertised`, `template`, `dns` | cluster (`AddressPolicy`) | [§34.10](11-deployment.md#3410-node-addresses) |
 | Addresses | `trusted_proxies` | none | — | cluster (`AddressPolicy`) | [§34.10](11-deployment.md#3410-node-addresses) |
+| Addresses | `template` | none | `template`, `dns`: a host name with `{alias}` or `{id}`; for `dns`, ending in `dns_zone` | cluster (`AddressPolicy`) | [§34.10](11-deployment.md#3410-node-addresses) |
+| Addresses | `dns_server`, `dns_zone` | none | `dns`: `host` or `host:port` (53), reached over TCP; the zone the names are in | cluster (`AddressPolicy`) | [§34.10](11-deployment.md#3410-node-addresses) |
+| Addresses | `dns_tsig_name`, `dns_tsig_algorithm`, `dns_tsig_secret` | none; `hmac-sha256` | `dns`: the TSIG key; `hmac-sha224`, `-sha384`, `-sha512`, `-sha1`; the secret is the policy's own field, base64, sealed, never answered with | cluster (`AddressPolicy`) | [§34.10](11-deployment.md#3410-node-addresses) |
+| Addresses | `dns_ttl` | 60 s | — | cluster (`AddressPolicy`) | [§34.10](11-deployment.md#3410-node-addresses) |
+| Addresses | `dns_networks` | none: a host's first IPv4 and IPv6 address, neither loopback nor link-local | CIDRs: the addresses inside them; the data plane's IP when it listens on one, either way | cluster (`AddressPolicy`) | [§34.10](11-deployment.md#3410-node-addresses) |
+| Addresses | `control.dns_sync_every` | 10 min | how often the leader reads the `dns` zone whole and repairs it; changes are followed every `control.directives_every` | control | [§34.10](11-deployment.md#3410-node-addresses) |
 | Retention | `retention.expire` | 30 days | — | set | [§20.2](06-retention-gc.md#202-initial-dates) |
 | Retention | `retention.delete` | = `retention.expire` | ≥ `retention.expire`, or `none` | set | [§20.2](06-retention-gc.md#202-initial-dates) |
 | Retention | `sweep_interval` | 1 day | — | node | [§20.1](06-retention-gc.md#201-date_deleted-is-an-expiry-not-an-event) |
@@ -167,6 +173,88 @@ Not configurable on purpose: the token signature algorithm (Ed25519), the
 entity domain bytes ([§35.3](12-api.md#353-entities)), the order in which a
 host's hardware identity is read ([§33.4](10-security.md#334-joining-and-adoption)),
 and the rule that duplicates are left to GC ([§14](04-write-path.md#14-duplicates-and-orphans)).
+
+**The `dns` resolver** ([§34.10](11-deployment.md#3410-node-addresses))
+needs a zone on an authoritative server that takes RFC 2136 updates over
+TCP, and a TSIG key the server accepts for updates of A, AAAA and TXT
+records in it, for signed queries, and for a transfer of the zone (AXFR,
+which the whole read every `control.dns_sync_every` is). A zone of its own
+for the nodes, here `nodes.example.com`, keeps everything else out of
+Shale's reach. Make the key on the server's side:
+
+```sh
+tsig-keygen -a hmac-sha256 shale-update     # BIND: prints the key block below
+keymgr -t shale-update hmac-sha256          # Knot: prints the key in its own form
+```
+
+With BIND, the key and what it may do, in `named.conf`:
+
+```text
+key "shale-update" {
+    algorithm hmac-sha256;
+    secret "<base64 secret>";
+};
+
+zone "nodes.example.com" {
+    type primary;
+    file "/var/lib/bind/nodes.example.com.zone";
+    update-policy {
+        grant shale-update zonesub A AAAA TXT;
+    };
+    allow-transfer { key shale-update; };
+};
+```
+
+With Knot DNS, in `knot.conf`:
+
+```yaml
+key:
+  - id: shale-update
+    algorithm: hmac-sha256
+    secret: <base64 secret>
+
+acl:
+  - id: shale-update
+    key: shale-update
+    action: [update, transfer]
+    update-type: [A, AAAA, TXT]
+
+zone:
+  - domain: nodes.example.com
+    acl: shale-update
+```
+
+Then the policy, with the secret in a file rather than on a command line
+(`-` reads the request from standard input), and its activation, which
+asks the server for the zone's SOA with the key and is refused when that
+fails:
+
+```sh
+cat > dns-policy.json <<'EOF'
+{
+  "version": 2,
+  "params": {
+    "resolver": "dns",
+    "template": "{alias}.nodes.example.com",
+    "dns_server": "192.0.2.53",
+    "dns_zone": "nodes.example.com",
+    "dns_tsig_name": "shale-update",
+    "dns_ttl": 60
+  },
+  "dns_tsig_secret": "<base64 secret>"
+}
+EOF
+shale address-policy add @dns - < dns-policy.json && rm dns-policy.json
+shale address-policy activate @dns
+shale address-policy get @dns -o protojson   # dns_sync: what the leader last did
+```
+
+Every name Shale writes carries a TXT record
+`heritage=shale,shale/owner=<cluster tenant ID>`, and Shale changes no name
+without it. Nodes and relays renew their certificates for the template's
+names in their next heartbeats. To rotate the key, add it on the server,
+`shale address-policy patch @dns` with the new `dns_tsig_secret`, then
+remove the old one.
 
 **Metrics.** Every process measures the instruments of
 [§31](09-operations.md#31-observability) it owns (`shale.node.*`,

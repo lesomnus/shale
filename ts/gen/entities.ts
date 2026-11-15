@@ -77,6 +77,7 @@ export const AddressPolicy = {
 	alias: "alias",
 	key: "id",
 	ids: ["id"],
+	secrets: ["dnsTsigSecret"],
 	service: AddressPolicyService,
 } as const satisfies EntityDesc
 

@@ -80,6 +80,11 @@ func Active(v bool) predicate.AddressPolicy {
 	return predicate.AddressPolicy(sql.FieldEQ(FieldActive, v))
 }
 
+// DnsTsigSecret applies equality check predicate on the "dns_tsig_secret" field. It's identical to DnsTsigSecretEQ.
+func DnsTsigSecret(v []byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldEQ(FieldDnsTsigSecret, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.AddressPolicy {
 	return predicate.AddressPolicy(sql.FieldEQ(FieldDateUpdated, v))
@@ -365,6 +370,56 @@ func ActiveNEQ(v bool) predicate.AddressPolicy {
 	return predicate.AddressPolicy(sql.FieldNEQ(FieldActive, v))
 }
 
+// DnsTsigSecretEQ applies the EQ predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretEQ(v []byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldEQ(FieldDnsTsigSecret, v))
+}
+
+// DnsTsigSecretNEQ applies the NEQ predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretNEQ(v []byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldNEQ(FieldDnsTsigSecret, v))
+}
+
+// DnsTsigSecretIn applies the In predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretIn(vs ...[]byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldIn(FieldDnsTsigSecret, vs...))
+}
+
+// DnsTsigSecretNotIn applies the NotIn predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretNotIn(vs ...[]byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldNotIn(FieldDnsTsigSecret, vs...))
+}
+
+// DnsTsigSecretGT applies the GT predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretGT(v []byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldGT(FieldDnsTsigSecret, v))
+}
+
+// DnsTsigSecretGTE applies the GTE predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretGTE(v []byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldGTE(FieldDnsTsigSecret, v))
+}
+
+// DnsTsigSecretLT applies the LT predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretLT(v []byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldLT(FieldDnsTsigSecret, v))
+}
+
+// DnsTsigSecretLTE applies the LTE predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretLTE(v []byte) predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldLTE(FieldDnsTsigSecret, v))
+}
+
+// DnsTsigSecretIsNil applies the IsNil predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretIsNil() predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldIsNull(FieldDnsTsigSecret))
+}
+
+// DnsTsigSecretNotNil applies the NotNil predicate on the "dns_tsig_secret" field.
+func DnsTsigSecretNotNil() predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldNotNull(FieldDnsTsigSecret))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.AddressPolicy {
 	return predicate.AddressPolicy(sql.FieldEQ(FieldDateUpdated, v))
@@ -553,6 +608,16 @@ func DateActivatedIsNil() predicate.AddressPolicy {
 // DateActivatedNotNil applies the NotNil predicate on the "date_activated" field.
 func DateActivatedNotNil() predicate.AddressPolicy {
 	return predicate.AddressPolicy(sql.FieldNotNull(FieldDateActivated))
+}
+
+// DnsSyncIsNil applies the IsNil predicate on the "dns_sync" field.
+func DnsSyncIsNil() predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldIsNull(FieldDnsSync))
+}
+
+// DnsSyncNotNil applies the NotNil predicate on the "dns_sync" field.
+func DnsSyncNotNil() predicate.AddressPolicy {
+	return predicate.AddressPolicy(sql.FieldNotNull(FieldDnsSync))
 }
 
 // And groups predicates with the AND operator between them.

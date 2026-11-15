@@ -673,6 +673,23 @@ func (m *AddressPolicyMutation) OldActive(ctx context.Context) (v bool, err erro
 	return oldValue.Active, nil
 }
 
+// OldDnsTsigSecret returns the old "dns_tsig_secret" field's value of the AddressPolicy entity.
+// If the AddressPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AddressPolicyMutation) OldDnsTsigSecret(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDnsTsigSecret is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDnsTsigSecret requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDnsTsigSecret: %w", err)
+	}
+	return oldValue.DnsTsigSecret, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the AddressPolicy entity.
 // If the AddressPolicy object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -741,6 +758,23 @@ func (m *AddressPolicyMutation) OldDateActivated(ctx context.Context) (v *time.T
 	return oldValue.DateActivated, nil
 }
 
+// OldDnsSync returns the old "dns_sync" field's value of the AddressPolicy entity.
+// If the AddressPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AddressPolicyMutation) OldDnsSync(ctx context.Context) (v *api.DnsSync, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDnsSync is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDnsSync requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDnsSync: %w", err)
+	}
+	return oldValue.DnsSync, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -760,6 +794,8 @@ func (m *AddressPolicyMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldParams(ctx)
 	case addresspolicy.FieldActive:
 		return m.OldActive(ctx)
+	case addresspolicy.FieldDnsTsigSecret:
+		return m.OldDnsTsigSecret(ctx)
 	case addresspolicy.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case addresspolicy.FieldDateErased:
@@ -768,6 +804,8 @@ func (m *AddressPolicyMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldDateCreated(ctx)
 	case addresspolicy.FieldDateActivated:
 		return m.OldDateActivated(ctx)
+	case addresspolicy.FieldDnsSync:
+		return m.OldDnsSync(ctx)
 	}
 	return nil, fmt.Errorf("unknown AddressPolicy field %s", name)
 }

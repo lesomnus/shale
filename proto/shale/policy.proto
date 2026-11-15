@@ -262,19 +262,52 @@ message NetworkRule {
 message AddressParams {
   // "advertised" (default), "template", or "dns".
   string resolver = 1;
-  // For template and dns: e.g. "{alias}.nodes.example.com".
+  // For template and dns: e.g. "{alias}.nodes.example.com". `{id}` is the
+  // host's ID.
   string template = 2;
   repeated NetworkRule rules = 3;
   // Callers from these addresses carry the real client address in the
   // PROXY protocol header.
   repeated string trusted_proxies = 4;
-  // For dns: the server the CP updates (RFC 2136) and the zone.
+  // For dns: the server the CP updates (RFC 2136, over TCP), `host` or
+  // `host:port` (53), and the zone the template's names are in.
   string dns_server = 5;
   string dns_zone = 6;
+  // For dns: the name of the TSIG key the updates are signed with. Its
+  // secret is AddressPolicy.dns_tsig_secret.
   string dns_tsig_name = 7;
-  string dns_tsig_secret = 8;
+  // Not read, and refused when written: the secret is
+  // AddressPolicy.dns_tsig_secret, which is sealed and never answered with.
+  // Kept so that a row written before still reads.
+  string dns_tsig_secret = 8 [deprecated = true];
   // Extra names every node certificate should carry.
   repeated string extra_names = 9;
+  // For dns: the TSIG algorithm, `hmac-sha256` when empty; also
+  // `hmac-sha224`, `hmac-sha384`, `hmac-sha512` and `hmac-sha1`.
+  string dns_tsig_algorithm = 10;
+  // For dns: the TTL of the records, seconds; zero is 60.
+  int32 dns_ttl = 11;
+  // For dns: the networks (CIDRs) whose addresses a host's records carry.
+  // Empty is the first IPv4 and the first IPv6 address the host reports
+  // that are neither loopback nor link-local. A host whose data plane
+  // listens on one IP gets that IP either way.
+  repeated string dns_networks = 12;
+}
+
+// DnsSync is what the leader last did to the zone of a `dns` policy
+// (§34.10). A failure shows here, in the log, and in
+// `shale.cp.dns_updates{result=error}`.
+message DnsSync {
+  // The last full sync against the zone that went through.
+  google.protobuf.Timestamp date_synced = 1;
+  // The names Shale holds in the zone after it.
+  int32 names = 2;
+  // The last failure and when; cleared by the next full sync without one.
+  string error = 3;
+  google.protobuf.Timestamp date_failed = 4;
+  // Names the template gives a host that hold records Shale does not own,
+  // which it leaves alone.
+  repeated string conflicts = 5;
 }
 
 // AddressPolicy is a versioned resolver configuration; one is active
@@ -296,6 +329,12 @@ message AddressPolicy {
   }];
   AddressParams params = 9;
   bool active = 10;
+  // For dns: the TSIG secret, base64 in JSON as `tsig-keygen` prints it.
+  // Sealed by the KEK when written, and never answered with (§34.10).
+  bytes dns_tsig_secret = 11 [
+    (orm.field) = {default: ""},
+    (payday.field) = {secret: true}
+  ];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
@@ -305,6 +344,8 @@ message AddressPolicy {
   }];
 
   google.protobuf.Timestamp date_activated = 16 [(orm.field) = {nullable: true}];
+  // For dns: the leader's upkeep of the records, which it writes.
+  DnsSync dns_sync = 17;
 
   option (orm.message) = {
     rpc: {crud: true}

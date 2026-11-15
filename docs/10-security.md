@@ -482,9 +482,12 @@ Running one is [§36.4](13-configuration.md#364-running-a-reader).
   name and IP the active address resolver can hand out for that node, because
   producers and readers dial nodes directly and verify what they were given
   ([§34.10](11-deployment.md#3410-node-addresses)). When the `AddressPolicy`
-  changes, the CP issues new node certificates for the nodes' existing keys
-  and installs them (`NodeControl.InstallCertificate`), and activates the new
-  policy only after every live node has one.
+  changes, a node or relay whose certificate lacks a name the active policy
+  hands out for it is asked to renew in its heartbeat answer, and the
+  renewal carries the policy's names. Activation does not wait for the
+  renewals yet; issuing the certificates for the nodes' existing keys,
+  installing them (`NodeControl.InstallCertificate`), and activating only
+  after every live node has one is the design that would.
 - Lifetimes: host certificates 90 days, renewed at 60; the CP certificate one
   year, renewed by the CP itself; the CA 10 years.
 - **CA rollover is automatic.** One year before the CA expires, the CP creates

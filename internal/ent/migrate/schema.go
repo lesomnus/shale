@@ -63,10 +63,12 @@ var (
 		{Name: "version", Type: field.TypeInt64},
 		{Name: "params", Type: field.TypeJson, Nullable: true},
 		{Name: "active", Type: field.TypeBool},
+		{Name: "dns_tsig_secret", Type: field.TypeBytes, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "date_activated", Type: field.TypeTime, Nullable: true},
+		{Name: "dns_sync", Type: field.TypeJson, Nullable: true},
 	}
 	// AddresspolicyTable holds the schema information for the "addresspolicy" table.
 	AddresspolicyTable = &schema.Table{
@@ -77,7 +79,7 @@ var (
 			{
 				Name:    "addresspolicy_page",
 				Unique:  false,
-				Columns: []*schema.Column{AddresspolicyColumns[10], AddresspolicyColumns[0]},
+				Columns: []*schema.Column{AddresspolicyColumns[11], AddresspolicyColumns[0]},
 			},
 			{
 				Name:    "addresspolicy_alias",

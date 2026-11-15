@@ -864,6 +864,22 @@ func (s Core) Node() api.NodeServiceServer {
 	return coreNode{s, s.Next().Node()}
 }
 
+// outdated says whether a host's certificate lacks a name the active
+// address policy hands out for it, as it does once a policy that names
+// hosts is activated or changed (§33.5): its heartbeat answer then asks it
+// to renew, and the renewal carries the names of the policy then active.
+func (s Core) outdated(ctx context.Context, n NodeAddresses, cert []byte) bool {
+	if s.d.CA == nil || len(cert) == 0 {
+		return false
+	}
+	_, _, _, address, err := s.policies(ctx)
+	if err != nil {
+		return false
+	}
+
+	return !certCovers(cert, policyNames(n, address))
+}
+
 func (s Core) nodeNames(ctx context.Context, id pdid.Id, alias string, ifs []*api.HostInterface, data string) pki.Names {
 	_, _, _, address, _ := s.policies(ctx)
 	dns, ips := NamesFor(NodeAddresses{Id: id, Alias: alias, Interfaces: ifs, DataAddress: data}, address)
@@ -1192,6 +1208,9 @@ func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) 
 	if exp := n.GetDateCertExpires(); exp != nil && now.After(renewAt(n.GetDateAdopted(), exp)) {
 		resp.RenewCertificate = true
 	}
+	if !resp.RenewCertificate && s.outdated(ctx, NodeAddresses{Id: f.Actor, Alias: n.GetAlias()}, n.GetJoin().GetCertificate()) {
+		resp.RenewCertificate = true
+	}
 
 	return resp.Build(), nil
 }
@@ -1504,6 +1523,9 @@ func (s coreRelay) Heartbeat(ctx context.Context, req *api.RelayHeartbeatRequest
 	}
 	resp := api.RelayHeartbeatResponse_builder{}
 	if exp := r.GetDateCertExpires(); exp != nil && now.After(renewAt(r.GetDateAdopted(), exp)) {
+		resp.RenewCertificate = true
+	}
+	if !resp.RenewCertificate && s.outdated(ctx, NodeAddresses{Id: f.Actor, Alias: r.GetAlias()}, r.GetJoin().GetCertificate()) {
 		resp.RenewCertificate = true
 	}
 

@@ -45,6 +45,9 @@ func init() {
 	// addresspolicyDescParams is the schema descriptor for params field.
 	addresspolicyDescParams := addresspolicyFields[6].Descriptor()
 	addresspolicy.ValueScanner.Params = addresspolicyDescParams.ValueScanner.(field.TypeValueScanner[*api.AddressParams])
+	// addresspolicyDescDnsSync is the schema descriptor for dns_sync field.
+	addresspolicyDescDnsSync := addresspolicyFields[13].Descriptor()
+	addresspolicy.ValueScanner.DnsSync = addresspolicyDescDnsSync.ValueScanner.(field.TypeValueScanner[*api.DnsSync])
 	auditFields := schema.Audit{}.Fields()
 	_ = auditFields
 	// auditDescDomain is the schema descriptor for domain field.

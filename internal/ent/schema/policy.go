@@ -185,6 +185,8 @@ func (AddressPolicy) Fields() []ent.Field {
 		field.Json("params", &api.AddressParams{}).ValueScanner(entpb.ValueScanner[*api.AddressParams]{}).
 			Optional(),
 		field.Bool("active"),
+		field.Bytes("dns_tsig_secret").
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().
@@ -194,6 +196,8 @@ func (AddressPolicy) Fields() []ent.Field {
 			Optional(),
 		field.Time("date_activated").
 			Nillable().
+			Optional(),
+		field.Json("dns_sync", &api.DnsSync{}).ValueScanner(entpb.ValueScanner[*api.DnsSync]{}).
 			Optional(),
 	}
 }

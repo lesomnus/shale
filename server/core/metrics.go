@@ -41,6 +41,10 @@ type Metrics struct {
 	DatesUnsynced     metric.Int64Gauge
 	ReconcileLag      metric.Int64Gauge
 	Pruned            metric.Int64Counter
+	// The `dns` resolver's records (§34.10): every update by what it did
+	// and how it went, and how long since the zone was last read whole.
+	DnsUpdates metric.Int64Counter
+	DnsSyncLag metric.Int64Gauge
 }
 
 // NewMetrics makes the instruments from the telemetry the context carries.
@@ -76,6 +80,9 @@ func NewMetrics(ctx context.Context) *Metrics {
 		DatesUnsynced:     o.Int64Gauge("shale.cp.laminae_dates_unsynced", metric.WithDescription("laminae whose rescheduled dates the node has not confirmed: directives pending")),
 		ReconcileLag:      o.Int64Gauge("shale.cp.reconcile_lag_s", metric.WithDescription("seconds since the sink was last reconciled"), metric.WithUnit("s")),
 		Pruned:            o.Int64Counter("shale.cp.rows_pruned", metric.WithDescription("rows the retention sweeps removed, by kind")),
+
+		DnsUpdates: o.Int64Counter("shale.cp.dns_updates", metric.WithDescription("updates of the dns resolver's zone, by op (create, replace, delete) and result (ok, error, conflict)")),
+		DnsSyncLag: o.Int64Gauge("shale.cp.dns_sync_lag_s", metric.WithDescription("seconds since the leader last read the dns resolver's zone whole"), metric.WithUnit("s")),
 	}
 }
 

@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shale/policy.proto.
  */
 export const file_shale_policy: GenFile = /*@__PURE__*/
-  fileDesc("ChJzaGFsZS9wb2xpY3kucHJvdG8SBXNoYWxlIqEFCgpTaWduaW5nS2V5EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRItCgZsYWJlbHMYByADKAsyHS5zaGFsZS5TaWduaW5nS2V5LkxhYmVsc0VudHJ5EhsKCnB1YmxpY19rZXkYCCABKAxCB+qCFgOCAQASIgoLcHJpdmF0ZV9rZXkYCSABKAxCDeqCFgOCAQCqwRYCCAESJQoFc3RhdGUYCiABKA4yFi5zaGFsZS5TaWduaW5nS2V5U3RhdGUSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjgKDGRhdGVfc2lnbmluZxgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI4CgxkYXRlX3JldGlyZWQYESABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAEaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATpbyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWLQgPMiUKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYgFChkOgAqACJxCg9QbGFjZW1lbnRQYXJhbXMSEQoJc2NoZWR1bGVyGAEgASgJEhcKD2ZvcmVjYXN0X21hcmdpbhgCIAEoARIZChFtYXhfc2lua19jYXBhY2l0eRgDIAEoAxIXCg9uZXdfZGV2aWNlX3JhbXAYBCABKAgi5gQKD1BsYWNlbWVudFBvbGljeRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASFQoFYWxpYXMYBCABKAlCBuqCFgIwARIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSMgoGbGFiZWxzGAcgAygLMiIuc2hhbGUuUGxhY2VtZW50UG9saWN5LkxhYmVsc0VudHJ5EhkKB3ZlcnNpb24YCCABKANCCOqCFgQwAUABEiYKBnBhcmFtcxgJIAEoCzIWLnNoYWxlLlBsYWNlbWVudFBhcmFtcxIOCgZhY3RpdmUYCiABKAgSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjoKDmRhdGVfYWN0aXZhdGVkGBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6Y8r8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjUIEDIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmFjdGl2ZSAUKGQqACKJBQoMVXBsb2FkQm91bmRzEhcKD21heF9iaXRyYXRlX2NhcBgBIAEoAxIVCg10YXJnZXRfbGFtaW5hGAIgASgDEhIKCm1pbl9sYW1pbmEYAyABKAMSEgoKbWF4X2xhbWluYRgEIAEoAxIkChxrZXlmcmFtZV9pbnRlcnZhbF9kZWZhdWx0X21zGAUgASgDEiAKGGtleWZyYW1lX2ludGVydmFsX21pbl9tcxgGIAEoAxIgChhrZXlmcmFtZV9pbnRlcnZhbF9tYXhfbXMYByABKAMSHAoUaWRsZV90aW1lb3V0X2RlZmF1bHQYCCABKAMSGAoQaWRsZV90aW1lb3V0X21pbhgJIAEoAxIYChBpZGxlX3RpbWVvdXRfbWF4GAogASgDEh8KF2FiYW5kb25fdGltZW91dF9kZWZhdWx0GAsgASgDEhsKE2FiYW5kb25fdGltZW91dF9taW4YDCABKAMSGwoTYWJhbmRvbl90aW1lb3V0X21heBgNIAEoAxIiChphbGxvY2F0aW9uX2hvcml6b25fZGVmYXVsdBgOIAEoAxIeChZhbGxvY2F0aW9uX2hvcml6b25fbWluGA8gASgDEh4KFmFsbG9jYXRpb25faG9yaXpvbl9tYXgYECABKAMSJwoMZGVmYXVsdF9tb2RlGBEgASgOMhEuc2hhbGUuVXBsb2FkTW9kZRIZChFtYXhfb3Blbl9hdHRlbXB0cxgSIAEoBRIXCg9jbG9ja190b2xlcmFuY2UYEyABKAMSFgoOcmVhZF90b2tlbl90dGwYFCABKAMSFgoOdmlld190b2tlbl90dGwYFSABKAMSGQoRcHVibGlzaF90b2tlbl90dGwYFiABKAMi3QQKDFVwbG9hZFBvbGljeRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASFQoFYWxpYXMYBCABKAlCBuqCFgIwARIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSLwoGbGFiZWxzGAcgAygLMh8uc2hhbGUuVXBsb2FkUG9saWN5LkxhYmVsc0VudHJ5EhkKB3ZlcnNpb24YCCABKANCCOqCFgQwAUABEiMKBmJvdW5kcxgJIAEoCzITLnNoYWxlLlVwbG9hZEJvdW5kcxIOCgZhY3RpdmUYCiABKAgSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjoKDmRhdGVfYWN0aXZhdGVkGBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6Y8r8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjUIEjIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmFjdGl2ZSAUKGQqACI3CgtOZXR3b3JrUnVsZRITCgtjYWxsZXJfY2lkchgBIAEoCRITCgtwcmVmZXJfY2lkchgCIAEoCSLaAQoNQWRkcmVzc1BhcmFtcxIQCghyZXNvbHZlchgBIAEoCRIQCgh0ZW1wbGF0ZRgCIAEoCRIhCgVydWxlcxgDIAMoCzISLnNoYWxlLk5ldHdvcmtSdWxlEhcKD3RydXN0ZWRfcHJveGllcxgEIAMoCRISCgpkbnNfc2VydmVyGAUgASgJEhAKCGRuc196b25lGAYgASgJEhUKDWRuc190c2lnX25hbWUYByABKAkSFwoPZG5zX3RzaWdfc2VjcmV0GAggASgJEhMKC2V4dHJhX25hbWVzGAkgAygJIuAECg1BZGRyZXNzUG9saWN5EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIwCgZsYWJlbHMYByADKAsyIC5zaGFsZS5BZGRyZXNzUG9saWN5LkxhYmVsc0VudHJ5EhkKB3ZlcnNpb24YCCABKANCCOqCFgQwAUABEiQKBnBhcmFtcxgJIAEoCzIULnNoYWxlLkFkZHJlc3NQYXJhbXMSDgoGYWN0aXZlGAogASgIEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABI6Cg5kYXRlX2FjdGl2YXRlZBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOmPK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY1CBUyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZhY3RpdmUgFChkKgAqkAEKD1NpZ25pbmdLZXlTdGF0ZRIhCh1TSUdOSU5HX0tFWV9TVEFURV9VTlNQRUNJRklFRBAAEhwKGFNJR05JTkdfS0VZX1NUQVRFX0FDVElWRRABEh0KGVNJR05JTkdfS0VZX1NUQVRFX1NJR05JTkcQAhIdChlTSUdOSU5HX0tFWV9TVEFURV9SRVRJUkVEEANCJFodZ2l0aHViLmNvbS9sZXNvbW51cy9zaGFsZS9hcGmSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_common]);
+  fileDesc("ChJzaGFsZS9wb2xpY3kucHJvdG8SBXNoYWxlIqEFCgpTaWduaW5nS2V5EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRItCgZsYWJlbHMYByADKAsyHS5zaGFsZS5TaWduaW5nS2V5LkxhYmVsc0VudHJ5EhsKCnB1YmxpY19rZXkYCCABKAxCB+qCFgOCAQASIgoLcHJpdmF0ZV9rZXkYCSABKAxCDeqCFgOCAQCqwRYCCAESJQoFc3RhdGUYCiABKA4yFi5zaGFsZS5TaWduaW5nS2V5U3RhdGUSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjgKDGRhdGVfc2lnbmluZxgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI4CgxkYXRlX3JldGlyZWQYESABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAEaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATpbyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWLQgPMiUKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYgFChkOgAqACJxCg9QbGFjZW1lbnRQYXJhbXMSEQoJc2NoZWR1bGVyGAEgASgJEhcKD2ZvcmVjYXN0X21hcmdpbhgCIAEoARIZChFtYXhfc2lua19jYXBhY2l0eRgDIAEoAxIXCg9uZXdfZGV2aWNlX3JhbXAYBCABKAgi5gQKD1BsYWNlbWVudFBvbGljeRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASFQoFYWxpYXMYBCABKAlCBuqCFgIwARIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSMgoGbGFiZWxzGAcgAygLMiIuc2hhbGUuUGxhY2VtZW50UG9saWN5LkxhYmVsc0VudHJ5EhkKB3ZlcnNpb24YCCABKANCCOqCFgQwAUABEiYKBnBhcmFtcxgJIAEoCzIWLnNoYWxlLlBsYWNlbWVudFBhcmFtcxIOCgZhY3RpdmUYCiABKAgSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjoKDmRhdGVfYWN0aXZhdGVkGBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6Y8r8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjUIEDIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmFjdGl2ZSAUKGQqACKJBQoMVXBsb2FkQm91bmRzEhcKD21heF9iaXRyYXRlX2NhcBgBIAEoAxIVCg10YXJnZXRfbGFtaW5hGAIgASgDEhIKCm1pbl9sYW1pbmEYAyABKAMSEgoKbWF4X2xhbWluYRgEIAEoAxIkChxrZXlmcmFtZV9pbnRlcnZhbF9kZWZhdWx0X21zGAUgASgDEiAKGGtleWZyYW1lX2ludGVydmFsX21pbl9tcxgGIAEoAxIgChhrZXlmcmFtZV9pbnRlcnZhbF9tYXhfbXMYByABKAMSHAoUaWRsZV90aW1lb3V0X2RlZmF1bHQYCCABKAMSGAoQaWRsZV90aW1lb3V0X21pbhgJIAEoAxIYChBpZGxlX3RpbWVvdXRfbWF4GAogASgDEh8KF2FiYW5kb25fdGltZW91dF9kZWZhdWx0GAsgASgDEhsKE2FiYW5kb25fdGltZW91dF9taW4YDCABKAMSGwoTYWJhbmRvbl90aW1lb3V0X21heBgNIAEoAxIiChphbGxvY2F0aW9uX2hvcml6b25fZGVmYXVsdBgOIAEoAxIeChZhbGxvY2F0aW9uX2hvcml6b25fbWluGA8gASgDEh4KFmFsbG9jYXRpb25faG9yaXpvbl9tYXgYECABKAMSJwoMZGVmYXVsdF9tb2RlGBEgASgOMhEuc2hhbGUuVXBsb2FkTW9kZRIZChFtYXhfb3Blbl9hdHRlbXB0cxgSIAEoBRIXCg9jbG9ja190b2xlcmFuY2UYEyABKAMSFgoOcmVhZF90b2tlbl90dGwYFCABKAMSFgoOdmlld190b2tlbl90dGwYFSABKAMSGQoRcHVibGlzaF90b2tlbl90dGwYFiABKAMi3QQKDFVwbG9hZFBvbGljeRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASFQoFYWxpYXMYBCABKAlCBuqCFgIwARIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSLwoGbGFiZWxzGAcgAygLMh8uc2hhbGUuVXBsb2FkUG9saWN5LkxhYmVsc0VudHJ5EhkKB3ZlcnNpb24YCCABKANCCOqCFgQwAUABEiMKBmJvdW5kcxgJIAEoCzITLnNoYWxlLlVwbG9hZEJvdW5kcxIOCgZhY3RpdmUYCiABKAgSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAEjoKDmRhdGVfYWN0aXZhdGVkGBAgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6Y8r8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjUIEjIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBmFjdGl2ZSAUKGQqACI3CgtOZXR3b3JrUnVsZRITCgtjYWxsZXJfY2lkchgBIAEoCRITCgtwcmVmZXJfY2lkchgCIAEoCSKhAgoNQWRkcmVzc1BhcmFtcxIQCghyZXNvbHZlchgBIAEoCRIQCgh0ZW1wbGF0ZRgCIAEoCRIhCgVydWxlcxgDIAMoCzISLnNoYWxlLk5ldHdvcmtSdWxlEhcKD3RydXN0ZWRfcHJveGllcxgEIAMoCRISCgpkbnNfc2VydmVyGAUgASgJEhAKCGRuc196b25lGAYgASgJEhUKDWRuc190c2lnX25hbWUYByABKAkSGwoPZG5zX3RzaWdfc2VjcmV0GAggASgJQgIYARITCgtleHRyYV9uYW1lcxgJIAMoCRIaChJkbnNfdHNpZ19hbGdvcml0aG0YCiABKAkSDwoHZG5zX3R0bBgLIAEoBRIUCgxkbnNfbmV0d29ya3MYDCADKAkinAEKB0Ruc1N5bmMSLwoLZGF0ZV9zeW5jZWQYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg0KBW5hbWVzGAIgASgFEg0KBWVycm9yGAMgASgJEi8KC2RhdGVfZmFpbGVkGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCgljb25mbGljdHMYBSADKAkiqgUKDUFkZHJlc3NQb2xpY3kSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEjAKBmxhYmVscxgHIAMoCzIgLnNoYWxlLkFkZHJlc3NQb2xpY3kuTGFiZWxzRW50cnkSGQoHdmVyc2lvbhgIIAEoA0II6oIWBDABQAESJAoGcGFyYW1zGAkgASgLMhQuc2hhbGUuQWRkcmVzc1BhcmFtcxIOCgZhY3RpdmUYCiABKAgSJgoPZG5zX3RzaWdfc2VjcmV0GAsgASgMQg3qghYDggEAqsEWAggBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABI6Cg5kYXRlX2FjdGl2YXRlZBgQIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIgCghkbnNfc3luYxgRIAEoCzIOLnNoYWxlLkRuc1N5bmMaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATpjyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWNQgVMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGYWN0aXZlIBQoZCoAKpABCg9TaWduaW5nS2V5U3RhdGUSIQodU0lHTklOR19LRVlfU1RBVEVfVU5TUEVDSUZJRUQQABIcChhTSUdOSU5HX0tFWV9TVEFURV9BQ1RJVkUQARIdChlTSUdOSU5HX0tFWV9TVEFURV9TSUdOSU5HEAISHQoZU0lHTklOR19LRVlfU1RBVEVfUkVUSVJFRBADQiRaHWdpdGh1Yi5jb20vbGVzb21udXMvc2hhbGUvYXBpkgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday, file_shale_common]);
 
 /**
  * SigningKey is one Ed25519 key the CP signs access tokens with (§33.3).
@@ -477,7 +477,8 @@ export type AddressParams = Message<"shale.AddressParams"> & {
   resolver: string;
 
   /**
-   * For template and dns: e.g. "{alias}.nodes.example.com".
+   * For template and dns: e.g. "{alias}.nodes.example.com". `{id}` is the
+   * host's ID.
    *
    * @generated from field: string template = 2;
    */
@@ -497,7 +498,8 @@ export type AddressParams = Message<"shale.AddressParams"> & {
   trustedProxies: string[];
 
   /**
-   * For dns: the server the CP updates (RFC 2136) and the zone.
+   * For dns: the server the CP updates (RFC 2136, over TCP), `host` or
+   * `host:port` (53), and the zone the template's names are in.
    *
    * @generated from field: string dns_server = 5;
    */
@@ -509,12 +511,20 @@ export type AddressParams = Message<"shale.AddressParams"> & {
   dnsZone: string;
 
   /**
+   * For dns: the name of the TSIG key the updates are signed with. Its
+   * secret is AddressPolicy.dns_tsig_secret.
+   *
    * @generated from field: string dns_tsig_name = 7;
    */
   dnsTsigName: string;
 
   /**
-   * @generated from field: string dns_tsig_secret = 8;
+   * Not read, and refused when written: the secret is
+   * AddressPolicy.dns_tsig_secret, which is sealed and never answered with.
+   * Kept so that a row written before still reads.
+   *
+   * @generated from field: string dns_tsig_secret = 8 [deprecated = true];
+   * @deprecated
    */
   dnsTsigSecret: string;
 
@@ -524,6 +534,31 @@ export type AddressParams = Message<"shale.AddressParams"> & {
    * @generated from field: repeated string extra_names = 9;
    */
   extraNames: string[];
+
+  /**
+   * For dns: the TSIG algorithm, `hmac-sha256` when empty; also
+   * `hmac-sha224`, `hmac-sha384`, `hmac-sha512` and `hmac-sha1`.
+   *
+   * @generated from field: string dns_tsig_algorithm = 10;
+   */
+  dnsTsigAlgorithm: string;
+
+  /**
+   * For dns: the TTL of the records, seconds; zero is 60.
+   *
+   * @generated from field: int32 dns_ttl = 11;
+   */
+  dnsTtl: number;
+
+  /**
+   * For dns: the networks (CIDRs) whose addresses a host's records carry.
+   * Empty is the first IPv4 and the first IPv6 address the host reports
+   * that are neither loopback nor link-local. A host whose data plane
+   * listens on one IP gets that IP either way.
+   *
+   * @generated from field: repeated string dns_networks = 12;
+   */
+  dnsNetworks: string[];
 };
 
 /**
@@ -532,6 +567,56 @@ export type AddressParams = Message<"shale.AddressParams"> & {
  */
 export const AddressParamsSchema: GenMessage<AddressParams> = /*@__PURE__*/
   messageDesc(file_shale_policy, 6);
+
+/**
+ * DnsSync is what the leader last did to the zone of a `dns` policy
+ * (§34.10). A failure shows here, in the log, and in
+ * `shale.cp.dns_updates{result=error}`.
+ *
+ * @generated from message shale.DnsSync
+ */
+export type DnsSync = Message<"shale.DnsSync"> & {
+  /**
+   * The last full sync against the zone that went through.
+   *
+   * @generated from field: google.protobuf.Timestamp date_synced = 1;
+   */
+  dateSynced?: Timestamp | undefined;
+
+  /**
+   * The names Shale holds in the zone after it.
+   *
+   * @generated from field: int32 names = 2;
+   */
+  names: number;
+
+  /**
+   * The last failure and when; cleared by the next full sync without one.
+   *
+   * @generated from field: string error = 3;
+   */
+  error: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_failed = 4;
+   */
+  dateFailed?: Timestamp | undefined;
+
+  /**
+   * Names the template gives a host that hold records Shale does not own,
+   * which it leaves alone.
+   *
+   * @generated from field: repeated string conflicts = 5;
+   */
+  conflicts: string[];
+};
+
+/**
+ * Describes the message shale.DnsSync.
+ * Use `create(DnsSyncSchema)` to create a new message.
+ */
+export const DnsSyncSchema: GenMessage<DnsSync> = /*@__PURE__*/
+  messageDesc(file_shale_policy, 7);
 
 /**
  * AddressPolicy is a versioned resolver configuration; one is active
@@ -581,6 +666,14 @@ export type AddressPolicy = Message<"shale.AddressPolicy"> & {
   active: boolean;
 
   /**
+   * For dns: the TSIG secret, base64 in JSON as `tsig-keygen` prints it.
+   * Sealed by the KEK when written, and never answered with (§34.10).
+   *
+   * @generated from field: bytes dns_tsig_secret = 11;
+   */
+  dnsTsigSecret: Uint8Array;
+
+  /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */
   dateUpdated?: Timestamp | undefined;
@@ -599,6 +692,13 @@ export type AddressPolicy = Message<"shale.AddressPolicy"> & {
    * @generated from field: google.protobuf.Timestamp date_activated = 16;
    */
   dateActivated?: Timestamp | undefined;
+
+  /**
+   * For dns: the leader's upkeep of the records, which it writes.
+   *
+   * @generated from field: shale.DnsSync dns_sync = 17;
+   */
+  dnsSync?: DnsSync | undefined;
 };
 
 /**
@@ -606,7 +706,7 @@ export type AddressPolicy = Message<"shale.AddressPolicy"> & {
  * Use `create(AddressPolicySchema)` to create a new message.
  */
 export const AddressPolicySchema: GenMessage<AddressPolicy> = /*@__PURE__*/
-  messageDesc(file_shale_policy, 7);
+  messageDesc(file_shale_policy, 8);
 
 /**
  * SigningKeyState is a key's place in rotation (§33.3).
