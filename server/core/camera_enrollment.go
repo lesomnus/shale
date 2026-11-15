@@ -29,6 +29,7 @@ func cameraEnrollmentInputs(p *api.CameraPolicy, preset *api.CameraPreset, activ
 		out.SetBootstrap(proto.Clone(bootstrap).(*api.CameraBootstrapProfile))
 	}
 	out.SetDeviceTlsIdentity(cameraDeviceTLSIdentity(p, device))
+	out.SetTlsVerification(p.GetEnrollment().GetTlsVerification())
 	return out
 }
 

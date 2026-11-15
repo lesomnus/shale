@@ -2408,6 +2408,7 @@ type CameraJobInputs struct {
 	xxx_hidden_Configuration        *CameraPresetSettings      `protobuf:"bytes,8,opt,name=configuration"`
 	xxx_hidden_Bootstrap            *CameraBootstrapProfile    `protobuf:"bytes,9,opt,name=bootstrap"`
 	xxx_hidden_DeviceTlsIdentity    *CameraDeviceTLSIdentity   `protobuf:"bytes,10,opt,name=device_tls_identity,json=deviceTlsIdentity"`
+	xxx_hidden_TlsVerification      string                     `protobuf:"bytes,11,opt,name=tls_verification,json=tlsVerification"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -2507,6 +2508,13 @@ func (x *CameraJobInputs) GetDeviceTlsIdentity() *CameraDeviceTLSIdentity {
 	return nil
 }
 
+func (x *CameraJobInputs) GetTlsVerification() string {
+	if x != nil {
+		return x.xxx_hidden_TlsVerification
+	}
+	return ""
+}
+
 func (x *CameraJobInputs) SetPolicy(v *CameraRevisionReference) {
 	x.xxx_hidden_Policy = v
 }
@@ -2545,6 +2553,10 @@ func (x *CameraJobInputs) SetBootstrap(v *CameraBootstrapProfile) {
 
 func (x *CameraJobInputs) SetDeviceTlsIdentity(v *CameraDeviceTLSIdentity) {
 	x.xxx_hidden_DeviceTlsIdentity = v
+}
+
+func (x *CameraJobInputs) SetTlsVerification(v string) {
+	x.xxx_hidden_TlsVerification = v
 }
 
 func (x *CameraJobInputs) HasPolicy() bool {
@@ -2662,6 +2674,9 @@ type CameraJobInputs_builder struct {
 	// Exact selected device identity from the operator-approved policy revision.
 	// Callers cannot add, change or omit that policy's selected approval.
 	DeviceTlsIdentity *CameraDeviceTLSIdentity
+	// The pinned policy's tls_verification, exactly; "skip" only from a policy
+	// that says so, and never together with device_tls_identity.
+	TlsVerification string
 }
 
 func (b0 CameraJobInputs_builder) Build() *CameraJobInputs {
@@ -2678,6 +2693,7 @@ func (b0 CameraJobInputs_builder) Build() *CameraJobInputs {
 	x.xxx_hidden_Configuration = b.Configuration
 	x.xxx_hidden_Bootstrap = b.Bootstrap
 	x.xxx_hidden_DeviceTlsIdentity = b.DeviceTlsIdentity
+	x.xxx_hidden_TlsVerification = b.TlsVerification
 	return m0
 }
 
@@ -5288,7 +5304,7 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\x05field\x18\x02 \x01(\tR\x05field\x12\x1c\n" +
 	"\trequested\x18\x03 \x01(\tR\trequested\x12\x18\n" +
 	"\aapplied\x18\x04 \x01(\tR\aapplied\x12\x16\n" +
-	"\x06reason\x18\x05 \x01(\tR\x06reason\"\xb0\x05\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\"\xdb\x05\n" +
 	"\x0fCameraJobInputs\x126\n" +
 	"\x06policy\x18\x01 \x01(\v2\x1e.shale.CameraRevisionReferenceR\x06policy\x126\n" +
 	"\x06preset\x18\x02 \x01(\v2\x1e.shale.CameraRevisionReferenceR\x06preset\x125\n" +
@@ -5300,7 +5316,8 @@ const file_shale_camera_proto_rawDesc = "" +
 	"\rconfiguration\x18\b \x01(\v2\x1b.shale.CameraPresetSettingsR\rconfiguration\x12;\n" +
 	"\tbootstrap\x18\t \x01(\v2\x1d.shale.CameraBootstrapProfileR\tbootstrap\x12N\n" +
 	"\x13device_tls_identity\x18\n" +
-	" \x01(\v2\x1e.shale.CameraDeviceTLSIdentityR\x11deviceTlsIdentity\"\xa5\x04\n" +
+	" \x01(\v2\x1e.shale.CameraDeviceTLSIdentityR\x11deviceTlsIdentity\x12)\n" +
+	"\x10tls_verification\x18\v \x01(\tR\x0ftlsVerification\"\xa5\x04\n" +
 	"\x14CameraJobObservation\x129\n" +
 	"\teffective\x18\x01 \x01(\v2\x1b.shale.CameraCaptureProfileR\teffective\x126\n" +
 	"\bverified\x18\x02 \x01(\v2\x1a.shale.CameraMediaEvidenceR\bverified\x120\n" +

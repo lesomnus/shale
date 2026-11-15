@@ -65,6 +65,8 @@ type Request struct {
 	ProbeDuration        time.Duration             `json:"probe_duration,omitempty"`
 	Bootstrap            *camera.BootstrapSettings `json:"bootstrap,omitempty"`
 	DeviceTLSIdentity    *camera.DeviceTLSIdentity `json:"device_tls_identity,omitempty"`
+	// TLSVerification is the policy's: empty, or camera.TLSVerificationSkip.
+	TLSVerification string `json:"tls_verification,omitempty"`
 }
 
 type Event struct {
@@ -197,6 +199,10 @@ func (q Request) Validate() error {
 		return camera.ErrInvalid
 	}
 	if q.DeviceTLSIdentity != nil && (q.DeviceTLSIdentity.Validate() != nil || q.DeviceTLSIdentity.DeviceID != string(q.Device.ID) || q.Bootstrap == nil || q.Bootstrap.WebScheme != "https") {
+		return camera.ErrInvalid
+	}
+	// Skipping verification means no key, so it cannot come with a pin.
+	if q.TLSVerification != "" && (q.TLSVerification != camera.TLSVerificationSkip || q.DeviceTLSIdentity != nil || q.Bootstrap == nil || q.Bootstrap.WebScheme != "https") {
 		return camera.ErrInvalid
 	}
 	if q.ID == "" || q.BindingID == "" || q.Device.ID == "" || (!q.UsePreset && q.Desired.Revision == "") || q.Provider == "" || q.Scope.TenantID == "" || q.Scope.SetID == "" || q.Scope.ProducerID == "" || q.Scope.NetworkID == "" || len(q.Device.Endpoints) == 0 {

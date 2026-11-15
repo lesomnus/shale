@@ -32,6 +32,12 @@ message CameraEnrollmentPolicy {
   // credential-free known-factory challenge must precede binding or secrets.
   // Existing identities, credentials, jobs and changed keys never opt in.
   bool trust_new_factory_tls = 9;
+  // Empty verifies every camera's HTTPS web key: a pin, or ordinary PKI.
+  // "skip" checks no key there; a device is then identified by its recorded
+  // MAC and serial only, and administrator credentials go to an endpoint
+  // whose key is unverified. It needs an explicit HTTPS bootstrap and excludes
+  // device_tls_identities and trust_new_factory_tls.
+  string tls_verification = 10;
 }
 // One immutable policy revision. The network selects its active policy by CAS.
 message CameraPolicy {

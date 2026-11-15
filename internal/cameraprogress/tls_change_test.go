@@ -44,3 +44,24 @@ func TestChangedTLSIdentityCheckpointNeedsAPinForTheSameDevice(t *testing.T) {
 		require.ErrorIs(t, err, ErrInvalid, name)
 	}
 }
+
+func TestTLSVerificationCheckpointRoundTrip(t *testing.T) {
+	want := checkpoint()
+	want.Request.TLSVerification = camera.TLSVerificationSkip
+	wire, got := wireRoundTrip(t, want)
+	require.Equal(t, want, got)
+	require.Equal(t, camera.TLSVerificationSkip, wire.GetRequest().GetTlsVerification())
+	for name, edit := range map[string]func(*provision.Run){
+		"with a pin": func(r *provision.Run) {
+			r.Request.DeviceTLSIdentity = &camera.DeviceTLSIdentity{DeviceID: string(r.Request.Device.ID), SPKISHA256: "sha256:" + strings.Repeat("a", 64)}
+		},
+		"unknown value": func(r *provision.Run) { r.Request.TLSVerification = "SKIP" },
+		"no bootstrap":  func(r *provision.Run) { r.Request.Bootstrap = nil },
+	} {
+		r := checkpoint()
+		r.Request.TLSVerification = camera.TLSVerificationSkip
+		edit(&r)
+		_, err := Encode(r)
+		require.ErrorIs(t, err, ErrInvalid, name)
+	}
+}

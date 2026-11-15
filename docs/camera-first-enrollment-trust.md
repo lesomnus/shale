@@ -5,7 +5,9 @@ explicitly set `trust_new_factory_tls: true` for a separately configured private
 camera LAN. This is an opt-in first-enrollment policy, not a general certificate
 error fallback. It requires automatic enrollment, activation permission, a
 positive device limit, an explicit interface and private CIDRs, and a supported
-C420 bootstrap profile using HTTPS port 443.
+C420 bootstrap profile using HTTPS port 443. It cannot be combined with
+`tls_verification: "skip"`, which checks no key at all
+([camera TLS identity](camera-tls-identity.md#skipping-tls-verification)).
 
 The CP records discovery inventory first. Before creating a binding, Source,
 job or credential, it returns `factory_tls_required` and a two-minute plan for

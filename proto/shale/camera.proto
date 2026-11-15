@@ -170,6 +170,9 @@ message CameraJobInputs {
   // Exact selected device identity from the operator-approved policy revision.
   // Callers cannot add, change or omit that policy's selected approval.
   CameraDeviceTLSIdentity device_tls_identity = 10;
+  // The pinned policy's tls_verification, exactly; "skip" only from a policy
+  // that says so, and never together with device_tls_identity.
+  string tls_verification = 11;
 }
 message CameraJobObservation {
   CameraCaptureProfile effective = 1;
