@@ -8,7 +8,9 @@ The Control Plane speaks **resource-oriented gRPC**, built with
 small **control API** (gRPC) that only the Control Plane calls
 ([§35.7](#357-storage-node-control-api)). Relays take streams from
 producers over gRPC and serve viewers over WHEP
-([§35.8](#358-relay-ingest-and-whep)).
+([§35.8](#358-relay-ingest-and-whep)). Satellites serve a node's upload
+paths to producers and forward them to the nodes
+([§35.9](#359-satellite-upload-proxy)).
 
 ### 35.1 Conventions
 
@@ -62,7 +64,7 @@ in the public server at all
 | Surface | Entry point | Callers | Tenant wall | Exposure |
 |---|---|---|---|---|
 | **Tenant API** | `shale serve control` | producers, readers, people, tenant admins | **on**: a caller sees only its own tenant | may face the internet |
-| **Cluster API** | `shale serve cluster` | Storage Nodes, cluster operators | spans all tenants; writes global entities | **internal network only** |
+| **Cluster API** | `shale serve cluster` | Storage Nodes, relays, satellites, cluster operators | spans all tenants; writes global entities | **internal network only** |
 
 Who may call what on each surface is `server/core/gatepolicy.go`, and it is
 code rather than configuration, with one switch
@@ -71,7 +73,7 @@ code rather than configuration, with one switch
 | Caller | Tenant API | Cluster API |
 |---|---|---|
 | producer, reader | the calls of its own work | — |
-| node, relay | — | the calls of its own work |
+| node, relay, satellite | — | the calls of its own work |
 | person, operators a **tenant** (default) | everything in their tenant but what the system writes; a password only by one who sees every site | the people of `control.cluster_tenant`: everything but what the system writes |
 | person, roster says (`auth.operators`) | the reads behind the console (`Get`/`List`/`Watch` of sets, sources, laminae, sites, producers, readers; `Get`/`List` of attempts; `Set.Live`, `Source.Live`, `Lamina.Timeline`), and every other call a pattern roster grants them covers, but what the system writes | the people of the tenant `auth.operators` names whom roster grants all of Shale (`/shale.*/*`) there: everything but what the system writes. A narrower grant is nothing here, since every call here spans tenants |
 
@@ -111,6 +113,7 @@ each surface that is made without a credential.
 | `Delegation` | tenant | 25 | none served: written by `DelegationService`'s own verbs | tenant |
 | `Node` | **global** | 12 | Get, Patch, List, Erase, Watch | cluster |
 | `Relay` | **global** | 24 | Get, Patch, List, Erase, Watch | cluster |
+| `Satellite` | **global** | 43 | Get, Patch, List, Erase, Watch | cluster |
 | `Device` | **global** | 13 | Get, List, Watch | cluster |
 | `Sink` | **global** | 14 | Get, List, Watch | cluster |
 | `SigningKey` | **global** | 15 | List, Watch | cluster |
@@ -125,14 +128,14 @@ hosts are adopted instead ([§33.4](10-security.md#334-joining-and-adoption),
 never reused.
 
 - **Tenant-owned** is payday's default. Every entity outside the wall says
-  `global: {}` explicitly, and a search for it lists exactly the nine above.
+  `global: {}` explicitly, and a search for it lists exactly the ten above.
   Storage is physically shared, so the infrastructure that holds it belongs to
   the cluster, not to any tenant.
 - **Holders are people**: tenant admins, cluster operators, and console users.
   They sign in ([§33.1](10-security.md#331-trust-model)). payday's audit trail
   names a Holder or a host as the actor of every write.
 - **Hosts are entities of their own.** A `Producer` and a `Reader` belong to a
-  tenant; a `Node` and a `Relay` are global. A host row is created by the
+  tenant; a `Node`, a `Relay` and a `Satellite` are global. A host row is created by the
   host's own `Join` and made usable by an operator's `Adopt`; there is no
   generated `Add`. Each carries its hardware identity and its certificate
   ([§33.4](10-security.md#334-joining-and-adoption)).
@@ -154,7 +157,7 @@ never reused.
 - **Generated `Patch` stays closed on `Lamina`, `Attempt`, and the global
   entities**, and on the state and identity fields of hosts. State there
   changes only through the custom RPCs below, each of which means one thing.
-  `Patch` on a producer or a relay changes its alias, name, and labels,
+  `Patch` on a producer, a relay or a satellite changes its alias, name, and labels,
   and a producer's live policy ([§39.3](16-relay.md#393-from-the-producer));
   the rest of a host's row is refused.
 
@@ -162,7 +165,8 @@ Key fields, beyond payday's `id`, `tenant`, `alias`, and `date_*`:
 
 ```text
 Tenant           capacity_share (overlay on payday's Tenant, §21.4)
-Site             name, description, relay_selector (labels, §39.2)
+Site             name, description, relay_selector (labels, §39.2),
+                 satellite_selector (labels, §41.2)
 SiteMember       site, and one of holder | reader
 Set              site, epoch, set_spread, retention (expire, delete), checksum,
                  max_bitrate_total (optional cap, §12.6), auto_raise (§38.5),
@@ -178,7 +182,8 @@ Source           set, ordinal (assigned by Add, immutable), zone,
 Producer         set, site (copied from the set), hardware_id, hostname,
                  state (pending | adopted | erased), certificate serial,
                  date_adopted, date_seen, relay (assigned, §39.2),
-                 live (always | on_demand, §39.3)
+                 live (always | on_demand, §39.3), satellite (assigned,
+                 §41.2), the path its uploads take (status.upload, §41.5)
 Reader           hardware_id, hostname, state, certificate serial,
                  date_adopted, date_seen; sites through SiteMember
 Delegation       holder (the person), app (its holder at roster), client_id,
@@ -195,6 +200,11 @@ Node             alias, hardware_id, hostname, state, reported interfaces and
 Relay            alias, labels, hardware_id, hostname, state, reported
                  interfaces and IPs, certificate serial, last heartbeat,
                  attached producers, active sources, viewers, egress (§39)
+Satellite        alias, labels, hardware_id, hostname, state, reported
+                 interfaces and IPs, upload address, certificate serial,
+                 last heartbeat, known key IDs, CA bundle hash, the
+                 in-flight pool and its budget, uploads, producers,
+                 forwarded bytes, refusals (§41)
 Device           node, hardware ID, slot, health, SMART summary, failure score,
                  quarantine (state, date, reason, history)
 Sink             node, device, path, capacity, free, pressure, capabilities,
@@ -212,7 +222,8 @@ UploadPolicy     version, bounds and defaults of every negotiated value, active
 ```proto
 service SetService {
   // Proposed upload profile in, agreed profile and adjustments out (§12.6).
-  // The answer also carries the producer's relay assignment (§39.2).
+  // The answer also carries the producer's relay assignment (§39.2), and
+  // its satellite assignment when it asks for one (`satellite`, §41.2).
   rpc Negotiate(SetNegotiateRequest) returns (SetNegotiateResponse);
   // Allocations for every member of the set, up to a horizon (§12.1).
   rpc Allocate(SetAllocateRequest) returns (SetAllocateResponse);
@@ -263,7 +274,9 @@ service ProducerService {
   // Called over mTLS before the certificate expires (§33.5).
   rpc RenewCertificate(ProducerRenewCertificateRequest) returns (ProducerRenewCertificateResponse);
   // Input state per source and host load, every producer_heartbeat_interval
-  // (§38.6). The answer carries the current relay assignment (§39.2).
+  // (§38.6), and the path its uploads take (`upload`, §41.5). The answer
+  // carries the current relay assignment (§39.2), and the satellite
+  // assignment of a producer whose `upload.via` asks for one (§41.2).
   rpc Heartbeat(ProducerHeartbeatRequest) returns (ProducerHeartbeatResponse);
   // The current relay assignment and a fresh publish token, on demand:
   // called the moment the producer's relay stream breaks (§39.2).
@@ -359,6 +372,22 @@ service RelayService {
   rpc Assign(RelayAssignRequest) returns (Relay);
 }
 
+service SatelliteService {
+  rpc Join(SatelliteJoinRequest) returns (SatelliteJoinResponse);        // as NodeService.Join (§33.4)
+  rpc Adopt(SatelliteAdoptRequest) returns (Satellite);
+  rpc RenewCertificate(SatelliteRenewCertificateRequest) returns (SatelliteRenewCertificateResponse);
+  // The in-flight pool and its budget, uploads, forwarded bytes, refusals,
+  // load, key IDs in; the producers assigned to it, each with its
+  // certificate serial, out: the only callers it serves (§41.2, §41.3).
+  rpc Heartbeat(SatelliteHeartbeatRequest) returns (SatelliteHeartbeatResponse);
+  // A node's data plane as the address resolver gives it for the
+  // satellite's network, and until when: where it forwards a token for
+  // that node, and nowhere else (§41.3).
+  rpc Route(SatelliteRouteRequest) returns (SatelliteRouteResponse);
+  // An operator moves a producer to a satellite; the assignment stays sticky.
+  rpc Assign(SatelliteAssignRequest) returns (Satellite);
+}
+
 service DeviceService {
   rpc Quarantine(DeviceQuarantineRequest) returns (Device);               // §27
   rpc Release(DeviceReleaseRequest) returns (Device);
@@ -392,8 +421,9 @@ service AddressPolicyService {
 }
 ```
 
-- Nodes **poll** `SigningKey` every 30 s; a rotation waits for every live
-  node to report the new key before it signs
+- Nodes, relays and satellites **poll** `SigningKey` every 30 s; a
+  rotation waits for every live node and satellite, which verify put
+  tokens, to report the new key before it signs
   ([§33.3](10-security.md#333-signing-keys-and-rotation)).
 - Every host's heartbeat carries the hash of the CA bundle it holds, and
   its answer's `renew_certificate` is set during a CA rollover for a host
@@ -583,3 +613,35 @@ GET    /recent/{source_id}     ?since=<seconds>, Authorization: Shale <view toke
 ICE servers are announced in the answer's candidates and, when configured,
 as `Link` headers per the WHEP draft. There are no other endpoints besides
 health and metrics.
+
+### 35.9 Satellite: upload proxy
+
+A satellite serves the upload half of a node's data plane to the producers
+assigned to it, and forwards each request to the node its put token names
+([§41.3](18-satellite.md#413-the-upload-proxy)):
+
+```text
+PUT    /laminae/{lamina_key}   as on a node (§35.6), with a put token
+HEAD   /laminae/{lamina_key}   as on a node, with a put token
+GET    /healthz
+```
+
+- HTTPS with the satellite's host certificate, HTTP/1.1 and HTTP/2; a
+  client certificate is required, and must be that of an adopted producer
+  assigned to the satellite, with the serial the CP records. Plaintext, and
+  `Shale-Producer: <producer id>` in its place, in development mode only.
+- The token is checked as the node would check it, and must have been
+  issued to the calling producer. The node is the token's audience, at the
+  address `SatelliteService.Route` gives; nothing in the request names it.
+- Every answer from the node comes back as the node gave it: status,
+  headers (but the hop's own and `Alt-Svc`), body, trailers. The table of
+  [§35.6](#356-storage-node-http-data-plane) holds through a satellite.
+- What the satellite answers itself carries `Shale-Satellite: <reason>`:
+
+| Response | `Shale-Satellite` | Meaning |
+|---|---|---|
+| `403` | `unassigned` | not a producer this satellite serves: the satellite's refusal, not the node's |
+| `401`, `403` | `token` | the token is not one the node would take, or not the caller's |
+| `503 Retry-After` | `busy` | the in-flight pool has no room ([§41.4](18-satellite.md#414-memory)); as a busy node |
+| `502` | `unreachable` | no route to the node, or the node did not answer |
+| `404`, `405` | `request` | not an upload path or method |

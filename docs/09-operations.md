@@ -291,6 +291,11 @@ relay (§39)
   sessions started / refused (limits, bad tokens), start-to-first-frame time
   CPU
 
+satellite (§41)
+  in-flight pool and its budget, requests passing through
+  producers assigned, bytes forwarded, requests refused
+  CPU
+
 control plane
   hosts pending adoption, certificates due for renewal
   producers per relay, reassignments
@@ -333,11 +338,13 @@ scrape endpoint. The names, by the process that measures them:
 | ingest per node | `shale.node.ingest_bps` |
 | producer per source | `shale.producer.input_up`, `frame_rate`, `rate_bps`, `keyframe_interval_ms`, `capture_restarts`, `early_cuts`, all `{source}` |
 | producer host, uplink, live helpers | `shale.producer.cpu`, `temperature`, `uplink_bps`, `live_transcodes`, `live_dropped` |
+| the path a producer's uploads take, and its satellite failing ([§41.5](18-satellite.md#415-from-the-producer)) | `shale.producer.upload_requests{path=direct,satellite}`, `shale.producer.satellite_fallbacks` |
 | how long live waits on the producer: queued until the relay stream takes it ([§39.3](16-relay.md#393-from-the-producer)) | `shale.producer.live_send_wait_ms` |
 | frames the recording lost: gaps over one and three quarters frames, and wall time a capture's rebased timestamps hid ([§38.6](15-producer.md#386-health-and-heartbeats)) | `shale.producer.frame_gaps{source}`, `shale.producer.frames_missed{source}` |
 | captures that delivered nothing for 5 s or more, and the timestamp jumps ffmpeg rebased | `shale.producer.capture_stalls{source}`, `shale.producer.capture_stalled_seconds{source}`, `shale.producer.timestamp_discontinuities{source}` |
 | the Go runtime, every process: collections and their CPU, assists, heap, goroutines, scheduling | `shale.runtime.gc.cycles`, `gc.cpu`, `gc.assist`, `heap.live`, `heap.goal`, `memory`, `goroutines`, `sched.latency_max` |
 | relay | `shale.relay.attached_producers`, `active_sources`, `viewers`, `egress_bytes`, `sessions{outcome}`, `first_frame_ms`, `catch_up_ms`, `nacked_packets`, `cpu` |
+| satellite ([§41.4](18-satellite.md#414-memory)) | `shale.satellite.in_flight_bytes`, `in_flight_budget`, `uploads`, `producers`, `forwarded_bytes`, `refused`, `cpu` |
 | what pacing adds to live's delay, and its clock's moves ([§39.4](16-relay.md#394-viewers)) | `shale.relay.pace_delay_ms`, `shale.relay.pace_resets{why=late,ahead}`, `shale.relay.pace_recovered_ms` |
 | live's way from the producer: its queue (t2 − t1), the uplink (t3 − t2), and the payloads whose clocks disagree ([§39.3](16-relay.md#393-from-the-producer)) | `shale.relay.producer_queue_ms{producer}`, `shale.relay.uplink_ms{producer}`, `shale.relay.uplink_skewed{producer}` |
 | live's way to the screen: held in the relay (t4 − t3), and what timed viewers report, the network (t5 − t4), the browser (t6 − t5) and all of it (t6 − t1) ([§39.4](16-relay.md#394-viewers)) | `shale.relay.hold_ms{path=paced,catch_up}`, `shale.relay.viewer_network_ms`, `viewer_playout_ms`, `viewer_total_ms` |

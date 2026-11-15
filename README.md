@@ -122,6 +122,7 @@ you know the overview and data model.
 | 15 | [Producer](docs/15-producer.md) | §38 | The producer program: inputs and the fragmented MP4 contract, cutting at keyframes, managed capture with ffmpeg and its three tiers of tuning, camera discovery and registration, choosing the bitrate ceiling as a feedback loop, heartbeats, live output. The client side Shale ships; the storage design does not depend on it. |
 | 16 | [Relay](docs/16-relay.md) | §39 | Live viewing: a stateless host that takes a producer's streams on demand and serves viewers over WebRTC (WHEP); assignment of producers to relays, tokens, instant start, capacity, failures. Never touches storage. |
 | 17 | [Console](docs/17-console.md) | §40 | The operator's page: adoption, the quarantine queue, cameras and their state, segments arriving, live view; how it stays current; the sandbox it is developed against, the control plane compiled into the page with simulated hosts. |
+| 18 | [Satellite](docs/18-satellite.md) | §41 | A host producers upload through: the Storage Node's upload protocol, forwarded to the node each token names; who may use it and how it is assigned, the memory budget, `upload_via`, failures, and what it is to do next. |
 | — | [Placement Decisions](docs/placement-decisions.md) | D1–D9 | Decision report behind §11: scenario, requirements, the options considered, and why each one was chosen or rejected. |
 | — | [Kubernetes Tutorial](docs/tutorial-k8s.md) | — | A walk-through of §34.5 and §28.4: standing a deployment up on storage borrowed from a file server, recording into it, and changing the disk under it when the one you ordered arrives. |
 | — | [Producer Bench](docs/producer-bench.md) | — | Measurements of a Raspberry Pi 400 recording one camera: encoder quality and bitrate, audio in the same segment, CPU load and temperature. Reference for producer hardware; not part of the storage design. |
@@ -133,7 +134,7 @@ you know the overview and data model.
 | Evaluating whether Shale fits | Overview → Sizing → Configuration |
 | Implementing the Control Plane | Overview → Data Model → Placement (+ decision report) → Write Path → Retention and GC → Security → Deployment → API |
 | Implementing the Storage Node | Overview → Data Model → Write Path → Read Path → Storage Node → Retention and GC → Operations → Security → API (§35.6, §35.7) |
-| Building or running a producer | Overview → Data Model → Write Path → Security (§33.2, §33.4) → API → Producer |
+| Building or running a producer | Overview → Data Model → Write Path → Security (§33.2, §33.4) → API → Producer → Satellite |
 | Building a media server or a viewer (reader) | Overview → Data Model → Read Path → Security (§33.2, §33.4) → Running a Reader (§36.4) → API |
 | Building a live viewer or a monitoring wall | Overview → Security (§33.1, §33.2) → Relay → API (§35.4, §35.8) |
 | Operating a cluster | Overview → Sizing → Deployment → Security (§33.4) → Storage Node (sinks, §22.2) → Operations → Retention and GC |

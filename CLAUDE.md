@@ -175,8 +175,10 @@ holds a password. Two consequences for a change:
   SiteMember's one-of). `cmd/serve.go` stacks it and decides the two API
   surfaces; `server/core/gatepolicy.go` says who may call what on each.
 - Hosts are `internal/storage` (the node), and later `internal/producer`,
-  `internal/reader`, `internal/relay`; `internal/hostagent` is what they
-  share (key, join, certificate, dialing). `internal/token` is the access
+  `internal/reader`, `internal/relay`, `internal/satellite` (the upload
+  proxy producers go through, §41; the CP's side is
+  `server/core/satellite.go`); `internal/hostagent` is what they share
+  (key, join, certificate, dialing). `internal/token` is the access
   token; `internal/placement` the HRW scheduler; `internal/pki` the CA.
 - Development mode (`--dev <dir>`) is plaintext with the plain header; the
   e2e harness in `internal/e2e` starts `serve all --dev` in-process.

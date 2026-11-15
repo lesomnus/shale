@@ -10,7 +10,7 @@ install -d -o shale -g shale -m 0700 /var/lib/shale
 install -d -m 0755 /etc/shale
 # /etc/shale/shale.yaml: see below
 systemctl daemon-reload
-systemctl enable --now shale@storage       # or all, control, cluster, producer, reader, relay, edge, camera-worker
+systemctl enable --now shale@storage       # or all, control, cluster, producer, reader, relay, satellite, edge, camera-worker
 journalctl -fu shale@storage
 ```
 

@@ -27,7 +27,7 @@ state: /var/lib/shale
 #   checkpoints:
 #     key: /etc/shale/checkpoints.pem     # an archive is refused without one (§26.5)
 
-# --- storage/relay roles: the cluster API to join (§33.4) ------------------
+# --- storage/relay/satellite roles: the cluster API to join (§33.4) --------
 # cp: https://cp.example.com:7401
 # ca_hash: sha256:...                     # printed by `shale init`
 # Producers and managed edge roles use the tenant API on 7400 instead.
@@ -47,6 +47,7 @@ state: /var/lib/shale
 # tenant: acme
 # producer:
 #   # http3: auto                         # uploads over HTTP/3 where a node offers it; off by default (§35.6)
+#   # upload_via: auto                    # through the satellite the CP assigns; direct by default (§41.5)
 #   sources:
 #     - alias: door
 #       input: v4l2:/dev/video0
@@ -57,3 +58,8 @@ state: /var/lib/shale
 # relay:
 #   ingest_addr: ":7430"
 #   whep_addr: ":7431"
+
+# --- a satellite producers upload through (shale@satellite, §41) -----------
+# satellite:
+#   addr: ":7460"
+#   # memory_budget: 256MiB              # what passes through, at most (§41.4)

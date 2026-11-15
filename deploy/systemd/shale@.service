@@ -1,5 +1,5 @@
 # One unit per role (§34.6): `systemctl enable --now shale@storage`,
-# `shale@producer`, `shale@control`, `shale@cluster`, `shale@relay`,
+# `shale@producer`, `shale@control`, `shale@cluster`, `shale@relay`, `shale@satellite`,
 # `shale@reader`, `shale@edge`, `shale@camera-worker`, or `shale@all`.
 # edge includes worker+producer; do not also run their standalone units
 # against the same role state directories. Configuration lives
