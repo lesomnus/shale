@@ -20,8 +20,8 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.6
 	github.com/gofrs/flock v0.13.0
 	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
-	github.com/lesomnus/mkot v0.0.0-20261017184153-a69c4c1f08ca
-	github.com/lesomnus/mkot/otlp v0.0.0-20261102031530-c2e07a0dfebd
+	github.com/lesomnus/mkot v0.0.0-20261102031530-c2e07a0dfebd
+	github.com/lesomnus/mkot/otlp v0.0.0-20261109051210-adf1656dc93b
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/payday v0.0.0-20261111104036-eb198c8243d2
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da

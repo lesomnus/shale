@@ -108,12 +108,12 @@ github.com/lesomnus/flob v0.0.0-20261010120939-21f89e60609e h1:1McF2PA9Lqp63JLip
 github.com/lesomnus/flob v0.0.0-20261010120939-21f89e60609e/go.mod h1:fZCkpUttk+/7q+nAuwnVZkbBWjcq3cWniWtz4lY8Dig=
 github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f h1:9nbBqBxxNk8rVtY1q2tUIA9FPcIZ0PMapR2yFVwU0pY=
 github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f/go.mod h1:VY6bugvBCYkwrDxanNUkVBxNm/bWbUoj3T5ZGgt0ZZE=
-github.com/lesomnus/mkot v0.0.0-20261017184153-a69c4c1f08ca h1:SYMXqPJwVBBLI9eKoStCmU7VR44h2Fpk0qZu64zUVfk=
-github.com/lesomnus/mkot v0.0.0-20261017184153-a69c4c1f08ca/go.mod h1:g5UbjQTLO4FPAqekFLHPhoKupAJoM7AVqlz3qYfhePA=
+github.com/lesomnus/mkot v0.0.0-20261102031530-c2e07a0dfebd h1:Af1YpA2cVMrYTHiqIAiK1SVEGkfTLrNp+us0kr9I+JA=
+github.com/lesomnus/mkot v0.0.0-20261102031530-c2e07a0dfebd/go.mod h1:g5UbjQTLO4FPAqekFLHPhoKupAJoM7AVqlz3qYfhePA=
 github.com/lesomnus/mkot/mkotx v0.0.0-20261013182918-46d8b05a79b3 h1:lx23mtt9FD3fhJhQGEsD2Q+kvTyX494XyqM66ZP76IQ=
 github.com/lesomnus/mkot/mkotx v0.0.0-20261013182918-46d8b05a79b3/go.mod h1:aK3083jk/DoHbuEgTIEkHBo4S/MRkAdVxoYQmW9/2b8=
-github.com/lesomnus/mkot/otlp v0.0.0-20261102031530-c2e07a0dfebd h1:lEh+n9eFv4Qr+HKzcvOWuWZIlg6idh9YNw2BWwiz0hk=
-github.com/lesomnus/mkot/otlp v0.0.0-20261102031530-c2e07a0dfebd/go.mod h1:N0ccSrb7dmi239l7vtKJaN2XkaAQNmDjT9F1Z01Tu5g=
+github.com/lesomnus/mkot/otlp v0.0.0-20261109051210-adf1656dc93b h1:W3Yl5Pmf5IEuRvE1ypSvHSsk4jlPnmYEqXpvPDYQc1Y=
+github.com/lesomnus/mkot/otlp v0.0.0-20261109051210-adf1656dc93b/go.mod h1:NiVXeIZi65030Wm642UQmvXZt3S6Oo/RVqfqsQMyQCE=
 github.com/lesomnus/mkot/pretty v0.0.0-20261013182918-46d8b05a79b3 h1:/B0jQVB/299IvK7VI29TSNJtanceAhuC7vb9Nlx+FX0=
 github.com/lesomnus/mkot/pretty v0.0.0-20261013182918-46d8b05a79b3/go.mod h1:CxeMsbImfuXKQJrRfDqMbb2okI77mGxsqgwR24nTjx8=
 github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155 h1:6+fiPhbQ3o6yA/LT8S4+9iwQ34p7D2nCsn9rRYq8lg8=
