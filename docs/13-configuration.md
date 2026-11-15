@@ -301,7 +301,7 @@ reader:
    the tenant API's gRPC listener with the key and certificate as its client
    certificate and the bundle as its roots, and calls what a reader may:
    `Get`, `List` and `Live` of sets and sources, `Get`, `List`, `Timeline`
-   and `Export` of laminae, `Get` and `List` of sites, and its own
+   and `Export` of laminae, `Get` and `List` of sites, and
    `ReaderService.Get`. The answers carry the view and read tokens its
    browsers take to the relay and the nodes
    ([§17.1](05-read-path.md#171-flow), [§39.4](16-relay.md#394-viewers)).
