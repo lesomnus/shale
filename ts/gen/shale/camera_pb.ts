@@ -362,7 +362,7 @@ export type CameraTransportCandidate = Message<"shale.CameraTransportCandidate">
   observationRevision: bigint;
 
   /**
-   * "pending", "verified", "accepted" or "operator_required".
+   * "pending", "accepted" or "operator_required".
    *
    * @generated from field: string state = 7;
    */

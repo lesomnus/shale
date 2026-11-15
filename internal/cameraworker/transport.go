@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/tlsidentity"
+	"github.com/lesomnus/shale/internal/cameratransport"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -30,7 +31,7 @@ func transportGrantScope(v *api.CameraWorkerAssignment, worker []byte, request *
 			candidate = c
 		}
 	}
-	if candidate == nil || candidate.GetState() != "pending" || !proto.Equal(candidate.GetGrant(), g) {
+	if candidate == nil || candidate.GetState() != cameratransport.StatePending || !proto.Equal(candidate.GetGrant(), g) {
 		return camera.ErrForbidden
 	}
 	if _, err := discoveryScope(v, worker, time.Second); err != nil {

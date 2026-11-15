@@ -193,7 +193,7 @@ func TestCameraPresetAndPolicyPublicationCommandsAreMounted(t *testing.T) {
 		}
 		require.Equal(t, 1, count, "publication groups belong only to the tenant API")
 	}
-	for _, path := range [][]string{{"camera-preset", "publish"}, {"camera-preset", "create"}, {"camera-policy", "create"}, {"camera-policy", "activate"}, {"camera-policy", "enroll"}, {"camera-policy", "approve-tls"}} {
+	for _, path := range [][]string{{"camera-preset", "publish"}, {"camera-preset", "create"}, {"camera-policy", "create"}, {"camera-policy", "activate"}, {"camera-policy", "enroll"}, {"camera-policy", "approve-tls"}, {"camera-device", "observe"}} {
 		out, err := run(t, &cmd.Config{}, "", append(path, "--help")...)
 		require.NoError(t, err, path)
 		require.Contains(t, out, path[1])

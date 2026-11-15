@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/provision"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -67,7 +69,7 @@ func TestCameraTransportMaintainSettlesStaleCandidates(t *testing.T) {
 	expired := transportCandidate("a", "http://192.0.2.20/onvif", cameraTransportPending, now, -time.Second)
 	generation := transportCandidate("b", "http://192.0.2.21/onvif", cameraTransportPending, now, time.Minute)
 	generation.SetAssignmentGeneration(1)
-	moved := transportCandidate("c", "http://192.0.2.22/onvif", cameraTransportVerified, now, time.Minute)
+	moved := transportCandidate("c", "http://192.0.2.22/onvif", cameraTransportPending, now, time.Minute)
 	moved.SetObservationRevision(4)
 	current := transportCandidate("d", "http://192.0.2.23/onvif", cameraTransportPending, now, time.Minute)
 	settled := transportCandidate("e", "http://192.0.2.24/onvif", cameraTransportOperator, now, -time.Second)
@@ -145,4 +147,27 @@ func TestCameraTransportGrantSyntax(t *testing.T) {
 	require.Error(t, cameraTransportGrantValid(g))
 	g = api.CameraTransportGrant_builder{CandidateId: valid.GetCandidateId(), Trust: valid.GetTrust()}.Build()
 	require.Error(t, cameraTransportGrantValid(g), "a grant names its times and rows")
+}
+
+func TestCameraProgressTransportReinspectsBeforeAnyWrite(t *testing.T) {
+	eps := transportEndpoints("http://192.0.2.20:2020/onvif")
+	d := api.CameraDevice_builder{Endpoints: eps, Identity: api.CameraIdentityEvidence_builder{Serial: "unit-1", Macs: []string{"02:00:00:00:00:01"}, Authenticated: true}.Build()}.Build()
+	same := camera.DeviceHint{Serial: "unit-1", MAC: "02:00:00:00:00:01", Evidence: []camera.Evidence{{Authenticated: true}}}
+	other := same
+	other.MAC = "02:00:00:00:00:02"
+	written := provision.Run{Plan: &camera.ChangePlan{}}
+	// Not moved by a candidate: nothing new is required.
+	require.NoError(t, cameraProgressTransport(written, d))
+	require.NoError(t, cameraProgressTransport(provision.Run{Inspection: &camera.Inspection{Device: other}}, d))
+	d.SetTransport(api.CameraTransportState_builder{Candidates: []*api.CameraTransportCandidate{api.CameraTransportCandidate_builder{State: cameraTransportAccepted, Endpoints: eps}.Build()}}.Build())
+	require.NoError(t, cameraProgressTransport(provision.Run{}, d), "a run that has written nothing may still inspect")
+	require.Error(t, cameraProgressTransport(written, d), "no write before the reinspection")
+	require.NoError(t, cameraProgressTransport(provision.Run{Inspection: &camera.Inspection{Device: same}, Plan: &camera.ChangePlan{}}, d))
+	require.Error(t, cameraProgressTransport(provision.Run{Inspection: &camera.Inspection{Device: other}}, d), "another MAC")
+	other = same
+	other.Serial = "unit-2"
+	require.Error(t, cameraProgressTransport(provision.Run{Inspection: &camera.Inspection{Device: other}}, d), "another serial")
+	other = same
+	other.Evidence = nil
+	require.Error(t, cameraProgressTransport(provision.Run{Inspection: &camera.Inspection{Device: other}}, d), "an unauthenticated inspection")
 }

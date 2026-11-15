@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/shale/camera"
 )
@@ -208,7 +209,8 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
 		return
 	}
-	if c.username != "" {
+	// A camera's clock is public: WS-Security digests use the device time.
+	if c.username != "" && name != "GetSystemDateAndTime" {
 		token := request.Header.Security.Token
 		nonce, err := base64.StdEncoding.DecodeString(token.Nonce)
 		h := sha1.New()
@@ -225,6 +227,9 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 	const media1 = "http://www.onvif.org/ver10/media/wsdl"
 	const media2 = "http://www.onvif.org/ver20/media/wsdl"
 	switch name {
+	case "GetSystemDateAndTime":
+		now := time.Now().UTC()
+		response = fmt.Sprintf("<SystemDateAndTime><UTCDateTime><Date><Year>%d</Year><Month>%d</Month><Day>%d</Day></Date><Time><Hour>%d</Hour><Minute>%d</Minute><Second>%d</Second></Time></UTCDateTime></SystemDateAndTime>", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 	case "GetDeviceInformation":
 		response = "<Manufacturer>" + xmlText(c.identity.Manufacturer) + "</Manufacturer><Model>" + xmlText(c.identity.Model) + "</Model><FirmwareVersion>" + xmlText(c.identity.Firmware) + "</FirmwareVersion><SerialNumber>" + xmlText(c.identity.Serial) + "</SerialNumber><HardwareId>" + xmlText(c.identity.Hardware) + "</HardwareId>"
 	case "GetNetworkInterfaces":

@@ -95,7 +95,7 @@ message CameraTransportCandidate {
   repeated string macs = 4;
   int64 assignment_generation = 5;
   int64 observation_revision = 6;
-  // "pending", "verified", "accepted" or "operator_required".
+  // "pending", "accepted" or "operator_required".
   string state = 7;
   // A fixed outcome code; see docs/camera-worker.md.
   string code = 8;
