@@ -170,6 +170,14 @@ func (s coreSet) negotiateManaged(ctx context.Context, r *api.SetNegotiateReques
 	if ra, err := s.relayAssignment(ctx, f.Actor, set); err == nil {
 		out.SetRelay(ra)
 	}
+	// The satellite, as an unmanaged negotiation answers it (§41.2): a
+	// producer takes an answer without one for "none" and uploads directly
+	// until its next heartbeat names it again.
+	if r.GetSatellite() {
+		if sa, err := s.satelliteAssignment(ctx, f.Actor, set, true); err == nil && sa != nil {
+			out.SetSatellite(sa)
+		}
+	}
 	return out, nil
 }
 
