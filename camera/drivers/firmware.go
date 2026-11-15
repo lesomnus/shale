@@ -24,6 +24,25 @@ func (d *Driver) UpgradeFirmware(ctx context.Context, h camera.DeviceHint, lease
 	return v.UpgradeFirmware(ctx, fresh, lease, file)
 }
 
+// ObserveWebIdentity reads the key the camera's web port presents now with a
+// credential-free handshake. Only a driver pinning this device's key may ask:
+// it explains a refused pin to an operator, and approves nothing.
+func (d *Driver) ObserveWebIdentity(ctx context.Context, h camera.DeviceHint) (camera.DeviceTLSIdentity, error) {
+	endpoint, err := d.endpoint(ctx, h)
+	if err != nil {
+		return camera.DeviceTLSIdentity{}, err
+	}
+	if d.identity == nil || d.bootstrap == nil || d.bootstrap.WebScheme != "https" {
+		return camera.DeviceTLSIdentity{}, camera.ErrInvalid
+	}
+	web := &url.URL{Scheme: "https", Host: net.JoinHostPort(endpoint.Hostname(), strconv.Itoa(d.bootstrap.WebPort))}
+	pin, err := tlsidentity.Observe(ctx, web.String())
+	if err != nil {
+		return camera.DeviceTLSIdentity{}, err
+	}
+	return camera.DeviceTLSIdentity{DeviceID: d.identity.DeviceID, SPKISHA256: pin}, nil
+}
+
 // ConfirmWebIdentity observes the key the camera's web port presents now and
 // logs in with lease over a connection pinned to that key. Only a driver that
 // already pins this device's key may do this: it is the step that replaces

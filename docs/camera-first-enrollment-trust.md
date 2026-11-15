@@ -52,4 +52,7 @@ To stop a pending plan, disable or replace the policy or revoke/reassign the
 Worker; stale plans are rejected. Policy activation does not rewrite an already
 created immutable job. Cancel affected jobs or revoke their assignment when
 withdrawing an existing job's authority. Otherwise rotate a camera key through
-an explicit operator-approved policy revision, never automatic first trust.
+an explicit operator-approved policy revision, never automatic first trust: a
+job that meets a changed key stops with it, and `camera-policy approve-tls`
+writes and activates that revision
+([camera TLS identity](camera-tls-identity.md#approving-a-changed-key)).

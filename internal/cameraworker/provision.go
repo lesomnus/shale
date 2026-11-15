@@ -35,7 +35,7 @@ func (p Provisioner) Execute(ctx context.Context, e *Execution) error {
 	}
 	d := p.Devices
 	d.Execution = e
-	engine := provision.Engine{Store: store, Auth: p.Auth(e), Inspector: d, Configurator: d, Bootstrapper: d, Verifier: d, Initializer: d, Presets: JobPresets{Execution: e, Client: p.Presets}, Publisher: p.Publisher(e), Firmware: d, Images: p.Images}
+	engine := provision.Engine{Store: store, Auth: p.Auth(e), Inspector: d, Configurator: d, Bootstrapper: d, Verifier: d, Initializer: d, Presets: JobPresets{Execution: e, Client: p.Presets}, Publisher: p.Publisher(e), Firmware: d, Images: p.Images, TLSObserver: d}
 	_, err = engine.Execute(ctx, q, true)
 	return err
 }

@@ -22116,6 +22116,11 @@ func (s interceptCameraPolicy) TrustFactoryTLS(ctx context.Context, req *api.Cam
 		api.CameraPolicyService_TrustFactoryTLS_FullMethodName, req, s.CameraPolicyServiceServer.TrustFactoryTLS)
 }
 
+func (s interceptCameraPolicy) ApproveTLS(ctx context.Context, req *api.CameraPolicyApproveTLSRequest) (*api.CameraPolicyApproveTLSResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
+		api.CameraPolicyService_ApproveTLS_FullMethodName, req, s.CameraPolicyServiceServer.ApproveTLS)
+}
+
 func (s Intercept) Device() api.DeviceServiceServer {
 	return interceptDevice{s, s.Next().Device()}
 }

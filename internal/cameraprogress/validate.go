@@ -67,6 +67,10 @@ func validateRun(r provision.Run) error {
 			return ErrInvalid
 		}
 	}
+	// A changed key is meaningful only against a pin for the same device.
+	if v, pin := r.ChangedTLSIdentity, r.PinnedTLSIdentity(); v != nil && (v.Validate() != nil || pin == nil || v.DeviceID != pin.DeviceID || v.SPKISHA256 == pin.SPKISHA256) {
+		return ErrInvalid
+	}
 	for _, pinned := range []struct {
 		ref     *camera.CredentialRef
 		purpose camera.AuthPurpose

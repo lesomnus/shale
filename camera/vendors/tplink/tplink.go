@@ -20,6 +20,7 @@ import (
 
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/onvif"
+	"github.com/lesomnus/shale/camera/tlsidentity"
 )
 
 // ProfileC420V122 identifies the observed EasyCam C420 HW1.0 firmware 1.2.2
@@ -164,6 +165,19 @@ func (d *Driver) rpc(ctx context.Context, payload any) (rpcResult, error) {
 	return result, err
 }
 
+// transportError keeps only what a caller acts on: net/http errors include
+// the URL, and so a session token. A pinned key the device no longer
+// presents is kept apart, so a job can stop and ask for an approval.
+func transportError(ctx context.Context, err error) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if errors.Is(err, tlsidentity.ErrPeerIdentity) {
+		return camera.ErrTLSIdentityChanged
+	}
+	return onvif.ErrTransport
+}
+
 func (d *Driver) rpcJSON(ctx context.Context, ep string, payload, result any) (int, error) {
 	data, err := json.Marshal(payload)
 	if err != nil {
@@ -189,10 +203,7 @@ func (d *Driver) rpcJSON(ctx context.Context, ep string, payload, result any) (i
 	h.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	response, err := h.Do(req)
 	if err != nil {
-		if ctx.Err() != nil {
-			return 0, ctx.Err()
-		}
-		return 0, onvif.ErrTransport
+		return 0, transportError(ctx, err)
 	}
 	defer response.Body.Close()
 	data, err = io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))

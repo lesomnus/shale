@@ -113,6 +113,19 @@ type Run struct {
 	Warnings            []camera.PresetWarning     `json:"warnings,omitempty"`
 	// Firmware is set before a preset-required upgrade writes the device.
 	Firmware *FirmwareState `json:"firmware,omitempty"`
+	// ChangedTLSIdentity is the key the device presented when the run stopped
+	// because it differed from the pin. It is cleared once the pinned key
+	// answers again; only an operator's approval makes it a pin.
+	ChangedTLSIdentity *camera.DeviceTLSIdentity `json:"changed_tls_identity,omitempty"`
+}
+
+// PinnedTLSIdentity is the key this run's device steps pin: the request's, or
+// the one its own completed firmware upgrade accepted in its place.
+func (r Run) PinnedTLSIdentity() *camera.DeviceTLSIdentity {
+	if f := r.Firmware; f != nil && f.Complete && f.TLSIdentity != nil {
+		return f.TLSIdentity
+	}
+	return r.Request.DeviceTLSIdentity
 }
 
 type Impact struct {
@@ -173,6 +186,10 @@ type Engine struct {
 	// the target build (default 6m); FirmwarePoll is its interval (10s).
 	FirmwareReboot time.Duration
 	FirmwarePoll   time.Duration
+	// TLSObserver reads the key a pinned device presents when it refuses the
+	// pin, so the run stops with that key for an operator to approve. Without
+	// it a refused pin fails the run like any refused connection.
+	TLSObserver camera.WebIdentityObserver
 }
 
 func (q Request) Validate() error {
@@ -281,6 +298,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	// provider's current default has changed since the previous process.
 	defer func() {
 		if err != nil {
+			if errors.Is(err, camera.ErrTLSIdentityChanged) {
+				err = e.changedTLS(ctx, &out, err)
+			}
 			stage, code := failure(err)
 			// A canceled request must still leave a durable recovery checkpoint.
 			sctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
@@ -307,6 +327,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 		if err != nil {
 			return out, err
 		}
+		// A pinned device answered over its pinned connection: a key it
+		// presented in its place before no longer stops this run.
+		out.ChangedTLSIdentity = nil
 	}
 	if activation == camera.ActivationRequired {
 		if !apply {
@@ -603,6 +626,8 @@ func failure(err error) (Stage, string) {
 		return Failed, "firmware_not_applied"
 	case errors.Is(err, camera.ErrFirmwareImage):
 		return Failed, "firmware_image_unavailable"
+	case errors.Is(err, camera.ErrTLSIdentityChanged):
+		return WaitingInput, "tls_key_changed"
 	default:
 		return Failed, "operation_failed"
 	}
@@ -617,7 +642,7 @@ func (e operationError) Error() string { return fmt.Sprintf("camera provisioning
 func (e operationError) Unwrap() error { return e.kind }
 func safeError(err error) error {
 	_, code := failure(err)
-	for _, kind := range []error{camera.ErrAuthRequired, camera.ErrExpired, camera.ErrNeedsUserInput, camera.ErrManualActivation, camera.ErrAmbiguousIdentity, camera.ErrUnsupported, camera.ErrForbidden, camera.ErrConflict, ErrConflict, ErrNotReady, ErrFirmwareNotApplied, camera.ErrFirmwareImage, context.Canceled, context.DeadlineExceeded} {
+	for _, kind := range []error{camera.ErrAuthRequired, camera.ErrExpired, camera.ErrNeedsUserInput, camera.ErrManualActivation, camera.ErrAmbiguousIdentity, camera.ErrUnsupported, camera.ErrForbidden, camera.ErrConflict, ErrConflict, ErrNotReady, ErrFirmwareNotApplied, camera.ErrFirmwareImage, camera.ErrTLSIdentityChanged, context.Canceled, context.DeadlineExceeded} {
 		if errors.Is(err, kind) {
 			return operationError{kind, code}
 		}

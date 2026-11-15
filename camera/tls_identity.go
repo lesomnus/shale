@@ -1,6 +1,8 @@
 package camera
 
 import (
+	"context"
+	"errors"
 	"regexp"
 	"strings"
 	"unicode"
@@ -22,4 +24,16 @@ func (i DeviceTLSIdentity) Validate() error {
 		return ErrInvalid
 	}
 	return nil
+}
+
+// ErrTLSIdentityChanged means a device's web port presented a key other than
+// its pinned one. The handshake failed before any request was sent; nothing,
+// including a credential, reached the device.
+var ErrTLSIdentityChanged = errors.New("camera TLS key differs from its pin")
+
+// WebIdentityObserver reads the key a pinned device's web port presents now,
+// with a credential-free handshake on its current authorized endpoint. The
+// result is an observation for an operator to approve, never trust by itself.
+type WebIdentityObserver interface {
+	ObserveWebIdentity(context.Context, DeviceHint) (DeviceTLSIdentity, error)
 }

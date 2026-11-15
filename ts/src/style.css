@@ -311,6 +311,10 @@ td.actions button + button {
 	margin: 0;
 	font-variant-numeric: tabular-nums;
 }
+/* A key digest is one long word; let it wrap anywhere. */
+.key {
+	word-break: break-all;
+}
 
 /* ---- badges and bars ---- */
 .badge {

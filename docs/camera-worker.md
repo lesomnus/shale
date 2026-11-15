@@ -112,6 +112,9 @@ change, local FileProvider fallback or Source publication. The central
 [credential provider](camera-credentials.md) is available through
 `Execution.Credentials()`. The managed CLI composition injects the policy/preset,
 scoped drivers, independent media verifier and CP publisher/observer adapters.
+When a pinned device refuses its pin, the driver also reads the key it presents,
+in its own leased step and without a credential, and the job stops with that key
+for an operator ([approving a changed key](camera-tls-identity.md#approving-a-changed-key)).
 Other embeddings select their executor explicitly. The seam retains the complete
 typed job and recoverable progress without a lossy conversion to a local Run.
 

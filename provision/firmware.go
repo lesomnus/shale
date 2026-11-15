@@ -135,6 +135,8 @@ func (e *Engine) firmware(ctx context.Context, r *Run, before camera.DeviceHint,
 		}
 	}
 	r.Firmware.Complete = true
+	// The device answered over the key this upgrade accepted.
+	r.ChangedTLSIdentity = nil
 	r.Inspection = &inspection
 	return inspection, nil, false, e.save(ctx, r, Inspecting, "firmware_upgraded")
 }

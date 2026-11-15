@@ -19,6 +19,9 @@ service CameraPolicyService {
   rpc Observe(CameraPolicyObserveRequest) returns (CameraPolicyObserveResponse);
   // First trust is available only before any binding, job, or camera secret.
   rpc TrustFactoryTLS(CameraPolicyTrustFactoryTLSRequest) returns (CameraPolicyObserveResponse);
+  // Approves the key a job stopped on: a new policy revision with that
+  // device's key, activated by network CAS, and a job that continues with it.
+  rpc ApproveTLS(CameraPolicyApproveTLSRequest) returns (CameraPolicyApproveTLSResponse);
 }
 message CameraPolicyCreateRequest {
   CameraNetworkRef network = 1;
@@ -58,4 +61,20 @@ message CameraPolicyTrustFactoryTLSRequest {
   // The assigned Worker's credential-free known factory challenge observed
   // that the initial administrator password is still unset.
   bool activation_required = 3 [features.field_presence = IMPLICIT];
+}
+message CameraPolicyApproveTLSRequest {
+  // The job that stopped on a changed key. Its binding's device is the only
+  // device the approval names.
+  CameraJobRef ref = 1;
+  // Exactly the key that job recorded; any other key is refused.
+  string spki_sha256 = 2 [features.field_presence = IMPLICIT];
+  // The network's current dateUpdated, as for Activate.
+  google.protobuf.Timestamp expected_network_version = 3;
+}
+message CameraPolicyApproveTLSResponse {
+  // The active revision now approving the key, and its network.
+  CameraPolicy policy = 1;
+  CameraNetwork network = 2;
+  // The job that replaces the stopped one, pinned to the approved key.
+  CameraJob job = 3;
 }

@@ -119,6 +119,9 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 	if err := s.cameraProgressFirmware(ctx, run, previous, j, a, d); err != nil {
 		return nil, err
 	}
+	if err := cameraProgressChangedTLS(run, d); err != nil {
+		return nil, err
+	}
 	if previous != nil && (run.CandidateIndex < previous.CandidateIndex || previous.Effective != nil && run.Effective == nil) {
 		return nil, failed("a selected camera candidate cannot move backwards or be cleared")
 	}

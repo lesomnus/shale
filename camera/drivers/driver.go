@@ -49,11 +49,12 @@ type Driver struct {
 }
 
 var (
-	_ camera.Inspector         = (*Driver)(nil)
-	_ camera.VideoConfigurator = (*Driver)(nil)
-	_ camera.Bootstrapper      = (*Driver)(nil)
-	_ camera.DeviceInitializer = (*Driver)(nil)
-	_ camera.FirmwareUpgrader  = (*Driver)(nil)
+	_ camera.Inspector           = (*Driver)(nil)
+	_ camera.VideoConfigurator   = (*Driver)(nil)
+	_ camera.Bootstrapper        = (*Driver)(nil)
+	_ camera.DeviceInitializer   = (*Driver)(nil)
+	_ camera.FirmwareUpgrader    = (*Driver)(nil)
+	_ camera.WebIdentityObserver = (*Driver)(nil)
 )
 
 func New(o Options) (*Driver, error) {

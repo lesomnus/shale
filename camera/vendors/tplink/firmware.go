@@ -14,7 +14,6 @@ import (
 	"unicode"
 
 	"github.com/lesomnus/shale/camera"
-	"github.com/lesomnus/shale/camera/onvif"
 )
 
 // MaxFirmwareBytes bounds an image held in memory for one upload. The
@@ -110,11 +109,7 @@ func (s *webSession) upload(ctx context.Context, target, name string, data []byt
 	h.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	response, err := h.Do(req)
 	if err != nil {
-		// net/http errors include the URL, and so the session token.
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		return onvif.ErrTransport
+		return transportError(ctx, err)
 	}
 	defer response.Body.Close()
 	raw, err := io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))

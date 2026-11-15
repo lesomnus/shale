@@ -142,37 +142,45 @@ func (s coreCameraPolicy) Create(ctx context.Context, r *api.CameraPolicyCreateR
 		if err != nil {
 			return err
 		}
-		if err := cameraPresetScope(preset, network.GetTenant().GetId(), network.GetSite().GetId()); err != nil {
-			return err
-		}
-		if err := c.cameraEnrollmentPolicy(ctx, network, r.GetEnrollment()); err != nil {
-			return err
-		}
-		old, err := c.ent(ctx).CameraPolicy.Query().Where(camerapolicy.TenantIdEQ(mustId(network.GetTenant().GetId()).Uuid()), camerapolicy.PolicyKeyEQ(r.GetPolicyKey()), camerapolicy.RevisionEQ(r.GetRevision())).Only(ctx)
-		if err == nil {
-			if old.DateErased != nil {
-				return status.Error(codes.AlreadyExists, "an immutable policy revision cannot be replaced")
-			}
-			out, err = nx.CameraPolicy().Get(ctx, api.CameraPolicyGetRequest_builder{Ref: api.CameraPolicyRef_builder{Id: old.Id[:]}.Build()}.Build())
-			if err != nil {
-				return err
-			}
-			if !bytes.Equal(out.GetNetwork().GetId(), network.GetId()) || !bytes.Equal(out.GetPreset().GetId(), preset.GetId()) || out.GetName() != r.GetName() || !proto.Equal(out.GetEnrollment(), r.GetEnrollment()) {
-				return status.Error(codes.AlreadyExists, "policy revision already has different content")
-			}
-			return nil
-		}
-		if !ent.IsNotFound(err) {
-			return err
-		}
-		out, err = nx.CameraPolicy().Add(ctx, api.CameraPolicyAddRequest_builder{Tenant: api.TenantRef_builder{Id: network.GetTenant().GetId()}.Build(), Site: cameraSite(network.GetSite()), Network: api.CameraNetworkRef_builder{Id: network.GetId()}.Build(), Preset: api.CameraPresetRef_builder{Id: preset.GetId()}.Build(), PolicyKey: r.GetPolicyKey(), Revision: r.GetRevision(), Name: r.GetName(), Enrollment: r.GetEnrollment()}.Build())
-		if err != nil {
-			return err
-		}
-		out, err = nx.CameraPolicy().Get(ctx, api.CameraPolicyGetRequest_builder{Ref: api.CameraPolicyRef_builder{Id: out.GetId()}.Build()}.Build())
+		out, err = c.cameraCreatePolicy(ctx, network, preset, r.GetPolicyKey(), r.GetRevision(), r.GetName(), r.GetEnrollment())
 		return err
 	})
 	return out, cameraConflict(err)
+}
+
+// cameraCreatePolicy writes one immutable revision, or returns the stored one
+// when it has exactly this content. Its caller owns the transaction and has
+// authorized the network and preset reads.
+func (s Core) cameraCreatePolicy(ctx context.Context, network *api.CameraNetwork, preset *api.CameraPreset, key, revision, name string, enrollment *api.CameraEnrollmentPolicy) (*api.CameraPolicy, error) {
+	nx := s.Next()
+	if err := cameraPresetScope(preset, network.GetTenant().GetId(), network.GetSite().GetId()); err != nil {
+		return nil, err
+	}
+	if err := s.cameraEnrollmentPolicy(ctx, network, enrollment); err != nil {
+		return nil, err
+	}
+	old, err := s.ent(ctx).CameraPolicy.Query().Where(camerapolicy.TenantIdEQ(mustId(network.GetTenant().GetId()).Uuid()), camerapolicy.PolicyKeyEQ(key), camerapolicy.RevisionEQ(revision)).Only(ctx)
+	if err == nil {
+		if old.DateErased != nil {
+			return nil, status.Error(codes.AlreadyExists, "an immutable policy revision cannot be replaced")
+		}
+		out, err := nx.CameraPolicy().Get(ctx, api.CameraPolicyGetRequest_builder{Ref: api.CameraPolicyRef_builder{Id: old.Id[:]}.Build()}.Build())
+		if err != nil {
+			return nil, err
+		}
+		if !bytes.Equal(out.GetNetwork().GetId(), network.GetId()) || !bytes.Equal(out.GetPreset().GetId(), preset.GetId()) || out.GetName() != name || !proto.Equal(out.GetEnrollment(), enrollment) {
+			return nil, status.Error(codes.AlreadyExists, "policy revision already has different content")
+		}
+		return out, nil
+	}
+	if !ent.IsNotFound(err) {
+		return nil, err
+	}
+	out, err := nx.CameraPolicy().Add(ctx, api.CameraPolicyAddRequest_builder{Tenant: api.TenantRef_builder{Id: network.GetTenant().GetId()}.Build(), Site: cameraSite(network.GetSite()), Network: api.CameraNetworkRef_builder{Id: network.GetId()}.Build(), Preset: api.CameraPresetRef_builder{Id: preset.GetId()}.Build(), PolicyKey: key, Revision: revision, Name: name, Enrollment: enrollment}.Build())
+	if err != nil {
+		return nil, err
+	}
+	return nx.CameraPolicy().Get(ctx, api.CameraPolicyGetRequest_builder{Ref: api.CameraPolicyRef_builder{Id: out.GetId()}.Build()}.Build())
 }
 
 func (s coreCameraPolicy) Activate(ctx context.Context, r *api.CameraPolicyActivateRequest) (*api.CameraNetwork, error) {
@@ -202,18 +210,23 @@ func (s coreCameraPolicy) Activate(ctx context.Context, r *api.CameraPolicyActiv
 		if err := cameraVersion(r.GetExpectedNetworkVersion(), n.GetDateUpdated()); err != nil {
 			return err
 		}
-		if bytes.Equal(n.GetActivePolicyId(), p.GetId()) {
-			out = n
-			return nil
-		}
-		_, err = nx.CameraNetwork().Patch(ctx, api.CameraNetworkPatchRequest_builder{Ref: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), ActivePolicyId: p.GetId(), Revision: z.Ptr(n.GetRevision() + 1), DateUpdated: n.GetDateUpdated()}.Build())
-		if err != nil {
-			return err
-		}
-		out, err = nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: n.GetId()}.Build()}.Build())
+		out, err = c.cameraActivatePolicy(ctx, n, p)
 		return err
 	})
 	return out, cameraConflict(err)
+}
+
+// cameraActivatePolicy moves the network's active pointer. Its caller holds
+// the network lock and has checked the operator's expected network version.
+func (s Core) cameraActivatePolicy(ctx context.Context, n *api.CameraNetwork, p *api.CameraPolicy) (*api.CameraNetwork, error) {
+	if bytes.Equal(n.GetActivePolicyId(), p.GetId()) {
+		return n, nil
+	}
+	nx := s.Next()
+	if _, err := nx.CameraNetwork().Patch(ctx, api.CameraNetworkPatchRequest_builder{Ref: api.CameraNetworkRef_builder{Id: n.GetId()}.Build(), ActivePolicyId: p.GetId(), Revision: z.Ptr(n.GetRevision() + 1), DateUpdated: n.GetDateUpdated()}.Build()); err != nil {
+		return nil, err
+	}
+	return nx.CameraNetwork().Get(ctx, api.CameraNetworkGetRequest_builder{Ref: api.CameraNetworkRef_builder{Id: n.GetId()}.Build()}.Build())
 }
 
 func cameraPresetID(raw string, domain pdid.Domain) ([]byte, error) {
