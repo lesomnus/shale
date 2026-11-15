@@ -15,7 +15,7 @@ import (
 // request's own, not one handed on to the next: the transport to the node
 // may still be reading it after the node has answered.
 //
-// The retained pool of `retain: accepted` (§41.8) is to sit beside this
+// The retained pool of `retain: accepted` (§41.9) is to sit beside this
 // one, in the same budget; nothing here assumes it is the only pool.
 type pool struct {
 	budget int64
