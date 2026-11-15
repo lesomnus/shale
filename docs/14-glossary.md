@@ -16,6 +16,8 @@
 | **Satellite Assignment** | The satellite a producer uploads through when its `upload_via` asks for one, chosen by the CP by site labels, room and load, sticky until the satellite is down |
 | **In-flight Pool** | What a satellite's requests passing through hold of its `memory_budget`; a request that finds no room is refused `503` with `Retry-After` |
 | **Publish Token** | Access token with `op = publish`: lets a producer attach to one relay and feed its sources |
+| **Feed Token** | Access token with `op = feed`: a satellite's publish token in a producer's name, for the sources that producer hands it, taken by the relay only from that satellite's certificate ([§41.8](18-satellite.md#418-live-fan-out)) |
+| **Feeder** | The one stream that feeds a relay a source at a time: a satellite that feeds it from the producer's uploads, else the producer's own tee ([§39.3](16-relay.md#393-from-the-producer)) |
 | **View Token** | Access token with `op = view`: lets a viewer watch one source on one relay for an hour |
 | **WHEP** | WebRTC HTTP egress protocol: the viewer posts an SDP offer to the relay and gets the answer |
 | **GOP Cache** | The relay's copy of the current group of pictures per source, so a joining viewer starts at once |

@@ -69,6 +69,7 @@ deployment runs well on them, and changes them only for a reason.
 | Uploads | placement retries | 3 | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | `http3` | `off`: TCP, as before HTTP/3 | `auto`: HTTP/3 to a node whose answers offer it; `on`: to every node from the first request. Either falls back to TCP when the handshake does not complete in 5 s, and keeps that node on TCP for 5 min, doubling to 1 h | producer | [§35.6](12-api.md#356-storage-node-http-data-plane) |
 | Uploads | `upload_via` | `direct`: to the node an allocation names, as before satellites | `satellite`: through the satellite the CP assigns, directly while none is; `auto`: as `satellite`, and directly for 1 min, doubling to 15 min, once the satellite cannot be reached | producer | [§41.5](18-satellite.md#415-from-the-producer) |
+| Live | `live_feed` | `auto`: the satellite feeds the relay from the upload a source whose live uploads go through it and that needs no live helper; the producer's tee feeds every other | `producer`: the producer's tee feeds every source, as before satellites. Nothing changes under `upload_via: direct` | producer | [§41.8](18-satellite.md#418-live-fan-out) |
 | Uploads | checksum | off (CRC32C when on) | — | set | [§30](09-operations.md#30-integrity) |
 | Node | `part_size` | 16 MB | — | node | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Node | `max_uploads` per sink | 64 | — | node | [§12.2](04-write-path.md#122-resumable-part-uploads) |
@@ -326,10 +327,11 @@ out:
   and nothing else.
 
 - **Holding bytes on a satellite.** A satellite moves bytes and holds
-  none a producer does not ([§41](18-satellite.md#41-satellite)). Feeding
-  the relay from the upload stream, and `retain: accepted`, which lets an
-  edge host free its RAM once the satellite has the bytes, are its next
-  steps ([§41.8](18-satellite.md#418-not-yet)).
+  none a producer does not ([§41](18-satellite.md#41-satellite)); it feeds
+  the relay from the upload stream as it passes
+  ([§41.8](18-satellite.md#418-live-fan-out)). `retain: accepted`, which
+  lets an edge host free its RAM once the satellite has the bytes, is its
+  next step ([§41.9](18-satellite.md#419-not-yet)).
 
 Ideas recorded, not planned:
 
