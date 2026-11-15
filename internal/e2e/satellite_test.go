@@ -71,15 +71,27 @@ func (c *cluster) startSatellite(name, stateDir string) (*satellite.Satellite, c
 
 // recordInto runs a producer of the bench recording for a new set, with
 // its uploads going the way `via` says, and adopts it.
-func (c *cluster) recordInto(ctx context.Context, alias string, via producer.Via, edit ...func(*producer.Config)) (*producer.Producer, *api.Set, *api.Producer) {
+func (c *cluster) recordInto(ctx context.Context, alias string, via producer.Via) (*producer.Producer, *api.Set, *api.Producer) {
 	c.t.Helper()
 	admin := c.dial("@acme/admin")
 	set, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{
 		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: alias,
 	}.Build())
 	require.NoError(c.t, err)
+	p, _ := c.runProducer(ctx, filepath.Join(c.t.TempDir(), "producer-"+alias), alias, via)
+	row := adoptProducer(c.t, ctx, api.NewProducerServiceClient(admin), set)
+
+	return p, set, row
+}
+
+// runProducer runs a producer of the bench recording from stateDir, with
+// its uploads going the way `via` says; it answers when the producer
+// stopped. One machine has one hardware identity, so a test runs one
+// producer at a time, and the same one again from its state directory.
+func (c *cluster) runProducer(ctx context.Context, stateDir, alias string, via producer.Via) (*producer.Producer, <-chan struct{}) {
+	c.t.Helper()
 	cfg := producer.Config{
-		StateDir:          filepath.Join(c.t.TempDir(), "producer-"+alias),
+		StateDir:          stateDir,
 		Cp:                "http://" + c.running.TenantAddr,
 		Dev:               true,
 		Sources:           []producer.SourceConfig{{Alias: "door-" + alias, Input: "raw:" + samplePath(c.t), Fps: 30, MaxBitrate: 2_000_000, Format: "h264"}},
@@ -89,15 +101,15 @@ func (c *cluster) recordInto(ctx context.Context, alias string, via producer.Via
 		Buffer:            64 << 20,
 		Upload:            producer.UploadConfig{Via: via, ResumeTimeout: 20 * time.Second},
 	}
-	for _, e := range edit {
-		e(&cfg)
-	}
 	p, err := producer.New(cfg)
 	require.NoError(c.t, err)
-	go p.Run(ctx)
-	row := adoptProducer(c.t, ctx, api.NewProducerServiceClient(admin), set)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		p.Run(ctx)
+	}()
 
-	return p, set, row
+	return p, done
 }
 
 // smallLaminae activates an upload policy of 1 MiB laminae, so the bench
@@ -114,14 +126,31 @@ func (c *cluster) smallLaminae(ctx context.Context) {
 	require.NoError(c.t, err)
 }
 
+// untilOK answers what fn answers once it stops failing, within 30 s:
+// the suite's database is SQLite, which answers "locked" now and then
+// while every host in the process writes to it at once.
+func untilOK[T any](t *testing.T, fn func() (T, error)) T {
+	t.Helper()
+	v, err := fn()
+	for deadline := time.Now().Add(30 * time.Second); err != nil && time.Now().Before(deadline); {
+		time.Sleep(200 * time.Millisecond)
+		v, err = fn()
+	}
+	require.NoError(t, err)
+
+	return v
+}
+
 // laminaeOf is every lamina of a set.
 func (c *cluster) laminaeOf(ctx context.Context, set *api.Set) []*api.Lamina {
 	c.t.Helper()
-	vs, err := api.NewLaminaServiceClient(c.dial("@acme/admin")).List(ctx, api.LaminaListRequest_builder{
-		Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
-		Size:    200,
-	}.Build())
-	require.NoError(c.t, err)
+	laminae := api.NewLaminaServiceClient(c.dial("@acme/admin"))
+	vs := untilOK(c.t, func() (*api.LaminaListResponse, error) {
+		return laminae.List(ctx, api.LaminaListRequest_builder{
+			Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Set: api.SetRef_builder{Id: set.GetId()}.Build()}.Build()},
+			Size:    200,
+		}.Build())
+	})
 
 	return vs.GetItems()
 }
@@ -143,75 +172,104 @@ func (c *cluster) committedBytes(ctx context.Context, set *api.Set) (int, int64)
 	return n, size
 }
 
-// TestSatelliteUpload is §41's upload proxy under `retain: committed`: a
-// producer with `upload_via: satellite` is assigned the satellite and
-// records through it, every byte of its committed laminae forwarded by the
-// satellite to the node its tokens name, and what the node committed plays.
-// A producer beside it on an old configuration, which says nothing of
-// `upload_via`, is not assigned the satellite and uploads to the node
-// directly, as it always has.
+// TestSatelliteUpload is §41's upload proxy under `retain: committed`. A
+// producer on an old configuration, which says nothing of `upload_via`,
+// is not assigned the satellite beside it and uploads to the node
+// directly, as it always has. Told `upload_via: satellite`, the same
+// producer is assigned the satellite and records through it, every byte
+// of its committed laminae forwarded by the satellite to the node its
+// tokens name, and what the node committed plays.
 func TestSatelliteUpload(t *testing.T) {
 	c := start(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := context.Background()
 	c.smallLaminae(ctx)
 	sat, _ := c.startSatellite("sat", filepath.Join(t.TempDir(), "sat"))
-
-	through, throughSet, throughRow := c.recordInto(ctx, "through", producer.ViaSatellite)
-	direct, directSet, directRow := c.recordInto(ctx, "direct", "")
-	require.Eventually(t, func() bool {
-		a, _ := c.committedBytes(ctx, throughSet)
-		b, _ := c.committedBytes(ctx, directSet)
-		return a >= 3 && b >= 3
-	}, 120*time.Second, 500*time.Millisecond, "both record")
-
-	// Every byte of the satellite producer's committed laminae came through
-	// the satellite.
-	_, viaBytes := c.committedBytes(ctx, throughSet)
-	require.GreaterOrEqual(t, sat.Forwarded(), viaBytes, "the satellite producer's laminae came through the satellite")
-	cancel()
-
-	// What the CP knows: the satellite serves the one producer, which says
-	// its uploads go through it; the other has no satellite, so the
-	// satellite would refuse it, and says nothing.
-	cctx := context.Background()
-	producers := api.NewProducerServiceClient(c.dial("@acme/admin"))
-	v, err := producers.Get(cctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: throughRow.GetId()}.Build()}.Build())
+	admin := c.dial("@acme/admin")
+	producers := api.NewProducerServiceClient(admin)
+	sats := api.NewSatelliteServiceClient(c.dialCluster(c.operator()))
+	satRow := func() *api.Satellite {
+		return untilOK(t, func() (*api.Satellite, error) {
+			return sats.Get(ctx, api.SatelliteGetRequest_builder{Ref: api.SatelliteRef_builder{Id: sat.Id().Bytes()}.Build()}.Build())
+		})
+	}
+	set, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{
+		Tenant: api.TenantRef_builder{Alias: z.Ptr("acme")}.Build(), Alias: "cams",
+	}.Build())
 	require.NoError(t, err)
+	stateDir := filepath.Join(t.TempDir(), "producer")
+
+	// An old configuration: directly, and no satellite.
+	octx, stopOld := context.WithCancel(ctx)
+	old, oldDone := c.runProducer(octx, stateDir, "cams", "")
+	row := adoptProducer(t, ctx, producers, set)
+	require.Eventually(t, func() bool { n, _ := c.committedBytes(ctx, set); return n >= 2 }, 120*time.Second, 500*time.Millisecond, "recording directly")
+	require.Zero(t, sat.Forwarded(), "nothing went through the satellite")
+	producerRow := func() *api.Producer {
+		return untilOK(t, func() (*api.Producer, error) {
+			return producers.Get(ctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: row.GetId()}.Build()}.Build())
+		})
+	}
+	v := producerRow()
+	require.Empty(t, v.GetSatellite().GetId(), "not assigned the satellite")
+	require.Nil(t, v.GetStatus().GetUpload(), "it says nothing new")
+	require.Zero(t, satRow().GetStatus().GetProducers())
+	stopOld()
+	<-oldDone
+	require.Zero(t, old.Stats().Lost)
+
+	// The same producer, told `upload_via: satellite`.
+	switched := time.Now()
+	pctx, stop := context.WithCancel(ctx)
+	defer stop()
+	p, done := c.runProducer(pctx, stateDir, "cams", producer.ViaSatellite)
+	defer func() { stop(); <-done }()
+	since := func() (int, int64) {
+		var n int
+		var size int64
+		for _, o := range c.laminaeOf(ctx, set) {
+			require.NotEqual(t, api.LaminaState_LAMINA_STATE_LOST, o.GetState(), "a lamina was lost")
+			if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED && o.GetDateStarted().AsTime().After(switched) {
+				n++
+				size += o.GetSize()
+			}
+		}
+		return n, size
+	}
+	require.Eventually(t, func() bool { n, _ := since(); return n >= 3 }, 120*time.Second, 500*time.Millisecond, "recording through the satellite")
+
+	// Every byte of what it committed since came through the satellite.
+	_, viaBytes := since()
+	require.Positive(t, viaBytes)
+	require.GreaterOrEqual(t, sat.Forwarded(), viaBytes, "its laminae came through the satellite")
+
+	// What the CP knows: the satellite serves the producer, which says its
+	// uploads go through it.
+	v = producerRow()
 	require.Equal(t, sat.Id().Bytes(), v.GetSatellite().GetId())
 	require.Equal(t, "satellite", v.GetStatus().GetUpload().GetVia())
 	require.Equal(t, sat.Id().Bytes(), v.GetStatus().GetUpload().GetSatelliteId())
-	v, err = producers.Get(cctx, api.ProducerGetRequest_builder{Ref: api.ProducerRef_builder{Id: directRow.GetId()}.Build()}.Build())
-	require.NoError(t, err)
-	require.Empty(t, v.GetSatellite().GetId())
-	require.Nil(t, v.GetStatus().GetUpload())
-	row, err := api.NewSatelliteServiceClient(c.dialCluster(c.operator())).Get(cctx, api.SatelliteGetRequest_builder{Ref: api.SatelliteRef_builder{Id: sat.Id().Bytes()}.Build()}.Build())
-	require.NoError(t, err)
-	require.Equal(t, int32(1), row.GetStatus().GetProducers())
-	require.Positive(t, row.GetStatus().GetForwardedBytes())
-	require.NotEmpty(t, row.GetKeyIds(), "it holds the key set")
+	require.Eventually(t, func() bool { return satRow().GetStatus().GetProducers() == 1 }, 10*time.Second, 200*time.Millisecond)
+	st := satRow()
+	require.Positive(t, st.GetStatus().GetForwardedBytes())
+	require.NotEmpty(t, st.GetKeyIds(), "it holds the key set")
 	used, peak, budget := sat.InFlight()
 	require.Positive(t, peak)
 	require.LessOrEqual(t, used, budget)
 
 	// What came through plays, as anything a node committed does.
-	laminae := api.NewLaminaServiceClient(c.dial("@acme/admin"))
 	var src []byte
-	for _, o := range c.laminaeOf(cctx, throughSet) {
-		if o.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED {
-			src = o.GetSource().GetId()
-			break
-		}
+	for _, o := range c.laminaeOf(ctx, set) {
+		src = o.GetSource().GetId()
 	}
-	tl, err := laminae.Timeline(cctx, api.LaminaTimelineRequest_builder{
+	tl, err := api.NewLaminaServiceClient(admin).Timeline(ctx, api.LaminaTimelineRequest_builder{
 		Source: api.SourceRef_builder{Id: src}.Build(),
-		From:   timestamppb.New(time.Now().Add(-10 * time.Minute)), To: timestamppb.New(time.Now().Add(time.Minute)),
+		From:   timestamppb.New(switched), To: timestamppb.New(time.Now().Add(time.Minute)),
 	}.Build())
 	require.NoError(t, err)
 	require.Len(t, tl.GetSources(), 1)
 	played := 0
 	for _, o := range tl.GetSources()[0].GetLaminae() {
-		if o.GetState() != api.ReadState_READ_STATE_AVAILABLE {
+		if o.GetState() != api.ReadState_READ_STATE_AVAILABLE || !o.GetDateStarted().AsTime().After(switched) {
 			continue
 		}
 		b := fetch(t, o.GetUrl())
@@ -220,8 +278,7 @@ func TestSatelliteUpload(t *testing.T) {
 		played++
 	}
 	require.GreaterOrEqual(t, played, 3)
-	require.Zero(t, through.Stats().Lost)
-	require.Zero(t, direct.Stats().Lost)
+	require.Zero(t, p.Stats().Lost)
 }
 
 // TestSatelliteDiesMidUpload is §41.6: under `retain: committed` the
@@ -290,8 +347,8 @@ func TestSatelliteAutoFallsBack(t *testing.T) {
 	require.Eventually(t, func() bool { return p.Stats().Stored >= before+3 }, 90*time.Second, 500*time.Millisecond,
 		"recording goes on directly: %+v", p.Stats())
 	require.Zero(t, p.Stats().Lost)
-	n, _ := c.committedBytes(ctx, set)
-	require.GreaterOrEqual(t, n, 5)
+	require.Eventually(t, func() bool { n, _ := c.committedBytes(ctx, set); return n >= 5 }, 30*time.Second, 300*time.Millisecond,
+		"what it stored is committed")
 
 	// The CP still names the satellite: the producer went directly by
 	// itself.
