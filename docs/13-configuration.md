@@ -64,6 +64,7 @@ deployment runs well on them, and changes them only for a reason.
 | Uploads | `resume_timeout` | 2 min | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | `retry_after_cap` | 2 min | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | placement retries | 3 | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
+| Uploads | `http3` | `off`: TCP, as before HTTP/3 | `auto`: HTTP/3 to a node whose answers offer it; `on`: to every node from the first request. Either falls back to TCP when the handshake does not complete in 5 s, and keeps that node on TCP for 5 min, doubling to 1 h | producer | [§35.6](12-api.md#356-storage-node-http-data-plane) |
 | Uploads | checksum | off (CRC32C when on) | — | set | [§30](09-operations.md#30-integrity) |
 | Node | `part_size` | 16 MB | — | node | [§12.2](04-write-path.md#122-resumable-part-uploads) |
 | Node | `max_uploads` per sink | 64 | — | node | [§12.2](04-write-path.md#122-resumable-part-uploads) |
@@ -78,6 +79,7 @@ deployment runs well on them, and changes them only for a reason.
 | Node | `heartbeat_interval` | 5 s | — | node | [§27](09-operations.md#27-node--device--sink-health-and-quarantine) |
 | Node | `storage.cert_file`, `storage.key_file` | none (the host certificate) | both or neither; the data plane only, read again when the files change | node | [§33.5](10-security.md#335-tls), [§40.5](17-console.md#405-playback) |
 | Node | `storage.advertise` | the bound data address, through the resolver | host:port; a name is handed out as it is | node | [§34.10](11-deployment.md#3410-node-addresses) |
+| Node | `storage.http3` | `on` | `on`, `off`: the data plane over HTTP/3 as well, on UDP at the data port, offered with `Alt-Svc`; a UDP port the node cannot have leaves it on TCP alone; none in development mode | node | [§35.6](12-api.md#356-storage-node-http-data-plane) |
 | Producer | `producer_heartbeat_interval` | 30 s | — | producer | [§38.6](15-producer.md#386-health-and-heartbeats) |
 | Producer | `producer_down_after` | 90 s (three heartbeats) | — | cluster | [§38.6](15-producer.md#386-health-and-heartbeats) |
 | Producer | `uplink` | none | — | producer | [§38.5](15-producer.md#385-choosing-the-ceiling) |

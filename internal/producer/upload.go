@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/internal/h3"
 	"github.com/lesomnus/shale/internal/storage"
 	"github.com/lesomnus/shale/internal/token"
 	"github.com/lesomnus/shale/server/core"
@@ -33,6 +34,11 @@ type UploadConfig struct {
 	RetryAfterCap    time.Duration
 	PlacementRetries int
 	Client           *http.Client
+	// HTTP3 is when a node's HTTP/3 is taken (§35.6, `producer.http3`):
+	// off by default, so a producer updated without a word in its
+	// configuration uploads over TCP as it did. Read where the producer
+	// makes Client; a Client given is used as it is.
+	HTTP3 h3.Mode
 	// Part is how many bytes one request carries under `retain: written`
 	// before it ends and the node reports what is durable (§12.2); about
 	// the node's part size keeps the device's writes large.

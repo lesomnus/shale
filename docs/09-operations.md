@@ -311,6 +311,7 @@ scrape endpoint. The names, by the process that measures them:
 |---|---|
 | write, commit, allocation latency | `shale.cp.write_latency_ms`, `shale.cp.commit_latency_ms`, `shale.cp.allocation_latency_ms` |
 | uploads in flight, part buffer pool, 503 rate | `shale.node.uploads_in_flight`, `shale.node.part_buffer_used_bytes`, `shale.node.refused{reason}` |
+| data plane requests by HTTP version ([§35.6](12-api.md#356-storage-node-http-data-plane)) | `shale.node.requests{proto=h1,h2,h3}` |
 | resumes, idle timeouts, per-actor limit hits | `shale.node.upload_resumes`, `shale.node.uploads_abandoned{outcome,why}`, `shale.node.refused{reason=upload_limit,read_limit}` |
 | live lag | `shale.node.oldest_upload_age_ms{sink}` |
 | abandoned uploads | `shale.node.uploads_abandoned{outcome=finalized_incomplete,deleted}` |

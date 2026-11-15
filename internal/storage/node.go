@@ -6,10 +6,8 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"net"
-	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -58,6 +56,10 @@ type Config struct {
 	// when they change (§33.5). The control API keeps the host's.
 	CertFile string
 	KeyFile  string
+	// HTTP3 serves the data plane over HTTP/3 as well, on UDP at the data
+	// port, with the same certificates (§35.6): `storage.http3`, on unless
+	// turned off. Development mode is plaintext, and QUIC never is.
+	HTTP3 bool
 
 	Sinks  []SinkConfig
 	Limits Limits
@@ -321,28 +323,7 @@ func (n *Node) Run(ctx context.Context) error {
 		return err
 	}
 
-	httpSrv := &http.Server{Handler: n.dp, ReadHeaderTimeout: 30 * time.Second, ErrorLog: log.New(httpNoise{n.log}, "", 0)}
-	g.Go(func() error {
-		var err error
-		if tlsCfg != nil {
-			httpSrv.TLSConfig = tlsCfg
-			err = httpSrv.ServeTLS(dl, "", "")
-		} else {
-			err = httpSrv.Serve(dl)
-		}
-		if errors.Is(err, http.ErrServerClosed) {
-			return nil
-		}
-
-		return err
-	})
-	g.Go(func() error {
-		<-ctx.Done()
-		shut, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		return httpSrv.Shutdown(shut)
-	})
+	h3on := n.serveData(ctx, g, dl, tlsCfg)
 
 	gs := n.controlServer(ctlTls)
 	g.Go(func() error { return gs.Serve(cl) })
@@ -353,7 +334,7 @@ func (n *Node) Run(ctx context.Context) error {
 		return nil
 	})
 
-	n.log.Info("serving", "data", dl.Addr().String(), "control", cl.Addr().String(), "tls", tlsCfg != nil, "cert_file", n.cfg.CertFile)
+	n.log.Info("serving", "data", dl.Addr().String(), "control", cl.Addr().String(), "tls", tlsCfg != nil, "http3", h3on, "cert_file", n.cfg.CertFile)
 	close(n.Ready)
 
 	g.Go(func() error { return n.heartbeats(ctx) })

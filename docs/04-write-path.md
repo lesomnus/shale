@@ -576,6 +576,10 @@ timeouts, connection reset, `502`, `504`, and `503` (honoring `Retry-After` up
 to `retry_after_cap`, default 2 minutes). An interrupted upload resumes from
 its offset ([§12.2](#122-resumable-part-uploads)).
 
+Over HTTP/3 ([§35.6](12-api.md#356-storage-node-http-data-plane)) it is the
+same, and a handshake that does not complete is no failure of the target:
+the request goes over TCP, and the target stays on TCP for a while.
+
 The limit is based on progress, not attempt count. A slow link may reconnect
 many times. The producer keeps resuming as long as each attempt advances the
 offset, and gives up on the target after `resume_timeout` (e.g. 2 minutes)

@@ -26,6 +26,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/internal/h3"
 	"github.com/lesomnus/shale/internal/hostagent"
 	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
@@ -600,6 +601,19 @@ func (p *Producer) Run(ctx context.Context) error {
 		hc, err := p.agent.HTTPClient()
 		if err != nil {
 			return err
+		}
+		// And HTTP/3 where `producer.http3` says (§35.6), with the same
+		// roots and the same client certificate. Off, the client is TCP's
+		// alone and no UDP socket is opened.
+		if mode := p.cfg.Upload.HTTP3; mode != "" && mode != h3.Off {
+			tlsCfg, err := p.agent.PeerTLS()
+			if err != nil {
+				return err
+			}
+			tr := h3.NewTransport(hc.Transport, tlsCfg, mode, p.log)
+			defer tr.Close()
+			hc.Transport = tr
+			p.log.Info("uploads: http3", "mode", string(mode))
 		}
 		p.uploader.Cfg.Client = hc
 	}

@@ -257,7 +257,10 @@ producer:
 
 It appears in `shale producer pending`, and `shale producer adopt`
 binds it to a set. Its uploads go straight to the Storage Nodes on the
-host network (port 7420), never through the cluster's Services.
+host network (port 7420), never through the cluster's Services. The nodes
+serve HTTP/3 on UDP 7420 as well (§35.6), so a firewall on those hosts
+lets both in; `producer.http3: auto` is what has a producer use it, on a
+WiFi link above all.
 
 ## Known wrinkles
 

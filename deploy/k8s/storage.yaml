@@ -66,6 +66,12 @@ spec:
           ports:
             - containerPort: 7420
               name: data
+            # HTTP/3 on the data port (§35.6), on by default
+            # (`storage.http3`): a firewall on the host lets UDP 7420 in
+            # as well as TCP.
+            - containerPort: 7420
+              name: data-quic
+              protocol: UDP
             - containerPort: 7421
               name: control
           readinessProbe:

@@ -16,6 +16,7 @@ type metrics struct {
 	uploads   metric.Int64UpDownCounter
 	reads     metric.Int64UpDownCounter
 	refused   metric.Int64Counter
+	requests  metric.Int64Counter
 	committed metric.Int64Counter
 	bytes     metric.Int64Counter
 	reclaimed metric.Int64Counter
@@ -69,6 +70,7 @@ func newMetrics(ctx context.Context) *metrics {
 		uploads:   o.Int64UpDownCounter("shale.node.uploads_in_flight", metric.WithDescription("uploads open per sink")),
 		reads:     o.Int64UpDownCounter("shale.node.read_sessions", metric.WithDescription("read sessions open")),
 		refused:   o.Int64Counter("shale.node.refused", metric.WithDescription("requests refused, by reason")),
+		requests:  o.Int64Counter("shale.node.requests", metric.WithDescription("data plane requests, by HTTP version: h1, h2, h3")),
 		committed: o.Int64Counter("shale.node.uploads_committed", metric.WithDescription("uploads committed, complete or incomplete")),
 		bytes:     o.Int64Counter("shale.node.bytes_committed", metric.WithDescription("bytes of committed uploads"), metric.WithUnit("By")),
 		reclaimed: o.Int64Counter("shale.node.gc_reclaimed_bytes", metric.WithDescription("bytes GC reclaimed per sink"), metric.WithUnit("By")),
