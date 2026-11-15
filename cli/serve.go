@@ -3,8 +3,10 @@ package cli
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -26,7 +28,9 @@ import (
 	"github.com/lesomnus/shale/cmd"
 	"github.com/lesomnus/shale/internal/cameraworker"
 	entmigrate "github.com/lesomnus/shale/internal/ent/migrate"
+	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/internal/producer"
+	"github.com/lesomnus/shale/internal/reader"
 	"github.com/lesomnus/shale/internal/relay"
 	"github.com/lesomnus/shale/internal/storage"
 	catalog "github.com/lesomnus/shale/source"
@@ -536,12 +540,73 @@ func ProducerConfig(c *cmd.Config) (producer.Config, error) {
 	return cfg, nil
 }
 
-// The reader agent and the relay arrive with their own packages; until
-// then the commands say so.
-var (
-	serveReader = func(ctx context.Context, c *cmd.Config) error {
-		return errors.New("the reader agent is not built yet")
+// serveReader is `shale serve reader` (§33.4): the reader's credential,
+// kept current in its state directory.
+func serveReader(ctx context.Context, c *cmd.Config) error {
+	ctx, done, err := Telemetry(ctx, c)
+	if err != nil {
+		return err
 	}
+	defer done()
+	cfg, err := ReaderConfig(c)
+	if err != nil {
+		return err
+	}
+	r, err := reader.New(cfg)
+	if err != nil {
+		return err
+	}
+
+	return r.Run(ctx)
+}
+
+// ReaderConfig maps the file onto the reader agent's settings.
+func ReaderConfig(c *cmd.Config) (reader.Config, error) {
+	rc := c.Reader
+	if rc.Addr != "" {
+		return reader.Config{}, errors.New("reader.addr: the localhost listener for a media server is not built (§33.4); leave it empty, and read with the reader's certificate files")
+	}
+	cfg := reader.Config{
+		StateDir:          c.StateDir("reader"),
+		Cp:                c.Cp,
+		CaHash:            c.CaHash,
+		Tenant:            c.Tenant,
+		Dev:               c.IsDev(),
+		HeartbeatInterval: rc.HeartbeatInterval,
+		Log:               slog.Default(),
+	}
+	// In development the control plane is the one `--dev` describes.
+	if cfg.Cp == "" && c.IsDev() {
+		cfg.Cp = c.Client.Addr
+	}
+	if cfg.Cp == "" {
+		return cfg, errors.New("a reader needs cp: the tenant API's gRPC address (server.addr) to join (§33.4)")
+	}
+	switch rc.CpCa {
+	case "":
+	case "system":
+		pool, err := pki.SystemRoots()
+		if err != nil || pool == nil {
+			return cfg, fmt.Errorf("reader.cp_ca: the system's roots: %w", err)
+		}
+		cfg.CpRoots = pool
+	default:
+		b, err := os.ReadFile(rc.CpCa)
+		if err != nil {
+			return cfg, fmt.Errorf("reader.cp_ca: %w", err)
+		}
+		pool, err := pki.Pool(b)
+		if err != nil {
+			return cfg, fmt.Errorf("reader.cp_ca: %w", err)
+		}
+		cfg.CpRoots = pool
+	}
+
+	return cfg, nil
+}
+
+// The relay, apart and in the process of `serve all`.
+var (
 	serveRelay = func(ctx context.Context, c *cmd.Config) error {
 		ctx, done, err := Telemetry(ctx, c)
 		if err != nil {

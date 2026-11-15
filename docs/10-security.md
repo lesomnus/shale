@@ -414,14 +414,18 @@ shale serve reader   --cp https://cp.example.com:7400   # likewise
 
 6. The CP issues the **host certificate** from its built-in CA
    ([§33.5](#335-tls)) and the next `Join` answers with it, the CA bundle,
-   and, for a node, its `node_id` and the key set. The host is running.
+   and, for a node, its `node_id` and the key set. The host keeps it once it
+   has checked that it is for its own key, names the row the answer names,
+   and chains to the bundle, as it checks every renewal; one that does not
+   is not stored, and the host asks again. The host is running.
 
 **Renewal is automatic.** A host renews at two thirds of its certificate's
 lifetime (`RenewCertificate`, over mTLS with the current certificate), and may
 send a new key. If a certificate has already expired, for instance a chassis
 that sat in storage for a year, the host goes back to step 3 with the same
 hardware identity, appears as "known host, new key", and one `adopt` puts it
-back under its old name, `node_id`, and sinks. A cluster that trusts its
+back under its old name, `node_id`, and sinks; a reader keeps its sites
+unless the `adopt` names others. A cluster that trusts its
 hardware identities can set `readopt: auto` and skip that click; the default
 is `manual`, because a hardware identity is a claim the host makes, not one
 the CP can verify.
@@ -434,11 +438,39 @@ list. `shale node erase` is refused while sinks are attached to the node,
 unless `--detach` is given, which leaves their laminae UNAVAILABLE until the
 sinks are adopted elsewhere ([§28.3](09-operations.md#283-node-failure-and-device-re-homing)).
 
-A **Reader** host is the machine that runs a media server. `shale serve
-reader` is an agent beside it: it holds the reader's certificate, serves the
-tenant API on localhost without TLS for the media server software, and writes
-the CA bundle to a file the media server uses to trust Storage Nodes when it
-fetches laminae directly. The media server itself manages no keys.
+A **Reader** host is the machine that runs a media server, or the backend of
+a viewer of its own. `shale serve reader` is an agent beside it that keeps
+the reader's credential current in its state directory -- the key, the
+certificate, and the CA bundle (`host.key`, `host.crt`, `ca.crt`) -- and holds
+nothing else: no person's session, no signing key, no KEK. It joins and
+waits for adoption as above, heartbeats over mTLS, and renews at two thirds
+of the certificate's life or when the CP asks. The software beside it reads
+with those files: it calls the
+tenant API's gRPC listener with the certificate, and takes the tokens the
+answers carry to the nodes and the relay itself.
+
+- **Files.** A renewal keeps the key and replaces `ca.crt`, then
+  `host.crt`, each whole by a rename, so they are never seen half-written;
+  the CP refuses the old serial from then on, on connections already open
+  too. The software loads the pair for each new connection, or when
+  `host.crt` changes, and loads it again once a call is refused
+  `UNAUTHENTICATED`.
+- **Scope.** A reader reads its tenant within the sites it was adopted for
+  (`SiteMember` rows), or all of it when it was adopted with none
+  (`all_sites`). A set in no site, with its sources and laminae, is read
+  only by a reader of the whole tenant, as by a person who sees every site.
+  It calls the reads [§36.4](13-configuration.md#364-running-a-reader)
+  lists and its own heartbeat and renewal; anything else is refused.
+- **Expiry.** A reader that was off for longer than its certificate lives
+  cannot renew it, and the CP's TLS refuses it. The agent then makes a new
+  key and joins again without the expired certificate: "known host, new
+  key", under its row, until an `adopt` takes it back with its sites. An
+  erased reader is refused at once, and its agent joins again as a new
+  reader.
+- **Not built:** the tenant API on localhost without TLS, for a media server
+  that manages no keys; `reader.addr` is refused.
+
+Running one is [§36.4](13-configuration.md#364-running-a-reader).
 
 ### 33.5 TLS
 
@@ -500,12 +532,18 @@ fetches laminae directly. The media server itself manages no keys.
   host pins the CP's CA on first contact (or checks `ca_hash`) and trusts
   that bundle alone from then on ([§33.4](#334-joining-and-adoption)), and
   the CP pins a node's control API to the shale CA and the node's
-  identity. A media server beside a reader that fetches laminae itself
-  needs the system's roots beside the bundle the agent writes for it.
+  identity. A reader is the one host an operator may widen it for, by
+  naming the CA a CP's `control.cert_file` comes from (`reader.cp_ca`, the
+  system's roots or a PEM file): the CP is then verified by its name like
+  any server, nothing is pinned, and the bundle the join hands over is
+  trusted beside it. A media server beside a reader that fetches laminae
+  itself needs the system's roots beside the bundle the agent writes for
+  it.
 - TLS is on everywhere, the data-center LAN included. With AES-NI it costs
   about one core per several GB/s, which is small next to HDD-bound ingest.
-- **Plaintext only in development mode** (`shale serve all --dev`) and on the
-  reader agent's localhost listener.
+- **Plaintext only in development mode** (`shale serve all --dev`). The
+  reader agent's localhost listener would be the other place, and it is not
+  built ([§33.4](#334-joining-and-adoption)).
 
 ### 33.6 Channels
 
