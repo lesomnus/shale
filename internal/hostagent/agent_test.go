@@ -395,3 +395,68 @@ func TestJoinRefusesCertificateThatDoesNotVerify(t *testing.T) {
 	x.Equal(id, a.Id())
 	x.Empty(srv.answers)
 }
+
+// A host that runs through a CA rollover (§33.5) verifies a node renewed
+// from the next CA once it holds the bundle with both, with the client it
+// already had; and its own listeners trust that CA from then on too.
+func TestPeerFollowsTheBundle(t *testing.T) {
+	x := require.New(t)
+	old, next := mustCA(t), mustCA(t)
+	roots(t, func() (*x509.CertPool, error) { return nil, errors.New("no system roots") })
+
+	a := pinned(t, old)
+	c, err := a.HTTPClient()
+	x.NoError(err)
+	x.NoError(get(t, c, server(t, old).URL))
+	renewed := server(t, next).URL
+	x.Error(get(t, c, renewed), "the bundle has the old CA alone")
+
+	pool, err := a.TrustPool()
+	x.NoError(err)
+	again, err := a.TrustPool()
+	x.NoError(err)
+	x.Same(pool, again, "read again only when the bundle changes")
+
+	x.NoError(a.Store.SetBundle(append(old.Bundle(), next.Bundle()...)))
+	x.NoError(get(t, c, renewed), "the same client, once the bundle carries both")
+	x.NoError(get(t, c, server(t, old).URL))
+
+	pool, err = a.TrustPool()
+	x.NoError(err)
+	x.NotSame(again, pool)
+	key, err := pki.NewHostKey()
+	x.NoError(err)
+	csr, err := key.CSR("producer")
+	x.NoError(err)
+	leaf, err := next.IssueHost(csr, pdid.New(22), pki.Names{}, time.Now())
+	x.NoError(err)
+	_, err = leaf.Verify(x509.VerifyOptions{Roots: pool, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}})
+	x.NoError(err, "a client certificate from the next CA")
+}
+
+// A host presents its certificate to a server that names its CA, and none
+// to one that names only others: a node of an earlier release, which read
+// its bundle when it started, takes a client with no certificate (the data
+// plane authenticates by token) rather than refusing one it cannot verify.
+// A server names CAs by their subject, which is why a rollover's next CA
+// is named apart from the one it replaces.
+func TestClientCertificateOnlyWhereItsCaIsAsked(t *testing.T) {
+	x := require.New(t)
+	old, err := pki.NewCA("shale-ca", time.Now())
+	x.NoError(err)
+	next, err := pki.NewCA("shale-ca 2035-11-15T00:00:00Z", time.Now())
+	x.NoError(err)
+	a := pinned(t, next)
+	csr, err := a.key.CSR("producer")
+	x.NoError(err)
+	leaf, err := next.IssueHost(csr, pdid.New(22), pki.Names{}, time.Now())
+	x.NoError(err)
+	x.NoError(a.Store.SetCert(pki.EncodeCerts(leaf), next.Bundle()))
+
+	got, err := a.clientCertificate(&tls.CertificateRequestInfo{AcceptableCAs: [][]byte{next.Cert.RawSubject}, Version: tls.VersionTLS13, SignatureSchemes: []tls.SignatureScheme{tls.ECDSAWithP256AndSHA256}})
+	x.NoError(err)
+	x.Len(got.Certificate, 1)
+	got, err = a.clientCertificate(&tls.CertificateRequestInfo{AcceptableCAs: [][]byte{old.Cert.RawSubject}, Version: tls.VersionTLS13, SignatureSchemes: []tls.SignatureScheme{tls.ECDSAWithP256AndSHA256}})
+	x.NoError(err)
+	x.Empty(got.Certificate, "none for a server that does not know the CA")
+}
