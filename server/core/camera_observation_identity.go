@@ -73,6 +73,21 @@ func cameraObservationDiscoveryID(d *api.CameraDevice, incoming string) string {
 }
 
 func cameraObservationReconcile(current *api.CameraDevice, r *api.CameraPolicyObserveRequest) error {
+	if err := cameraObservationEvidence(current, r); err != nil {
+		return err
+	}
+	if (current.GetIdentity().GetAuthenticated() || len(current.GetActiveJobId()) > 0) && !slices.Equal(cameraObservationEndpointSet(current.GetEndpoints()), cameraObservationEndpointSet(r.GetEndpoints())) {
+		// A fresh MAC/EPR is not permission to redirect an existing camera's
+		// credentials or active physical writer to another transport endpoint.
+		// Observe stages such a move as a transport candidate before this.
+		return status.Error(codes.Aborted, "camera transport change requires operator reconciliation")
+	}
+	return nil
+}
+
+// cameraObservationEvidence refuses hints that contradict the device's known
+// EPR or interface MACs.
+func cameraObservationEvidence(current *api.CameraDevice, r *api.CameraPolicyObserveRequest) error {
 	known, incoming := current.GetEnrollment().GetDiscoveryId(), r.GetDiscoveryId()
 	if strings.HasPrefix(known, "urn:uuid:") && strings.HasPrefix(incoming, "urn:uuid:") && known != incoming {
 		return status.Error(codes.Aborted, "camera discovery identity requires operator reconciliation")
@@ -90,11 +105,6 @@ func cameraObservationReconcile(current *api.CameraDevice, r *api.CameraPolicyOb
 		if !slices.Equal(normalize(macs), normalize(r.GetIdentity().GetMacs())) {
 			return status.Error(codes.Aborted, "camera interface evidence requires operator reconciliation")
 		}
-	}
-	if (current.GetIdentity().GetAuthenticated() || len(current.GetActiveJobId()) > 0) && !slices.Equal(cameraObservationEndpointSet(current.GetEndpoints()), cameraObservationEndpointSet(r.GetEndpoints())) {
-		// A fresh MAC/EPR is not permission to redirect an existing camera's
-		// credentials or active physical writer to another transport endpoint.
-		return status.Error(codes.Aborted, "camera transport change requires operator reconciliation")
 	}
 	return nil
 }

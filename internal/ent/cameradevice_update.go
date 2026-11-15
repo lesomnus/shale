@@ -214,6 +214,18 @@ func (_u *CameraDeviceUpdate) ClearFirmwareTls() *CameraDeviceUpdate {
 	return _u
 }
 
+// SetTransport sets the "transport" field.
+func (_u *CameraDeviceUpdate) SetTransport(v *api.CameraTransportState) *CameraDeviceUpdate {
+	_u.mutation.SetTransport(v)
+	return _u
+}
+
+// ClearTransport clears the value of the "transport" field.
+func (_u *CameraDeviceUpdate) ClearTransport() *CameraDeviceUpdate {
+	_u.mutation.ClearTransport()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraDeviceUpdate) SetDateUpdated(v time.Time) *CameraDeviceUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -448,6 +460,22 @@ func (_u *CameraDeviceUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if _u.mutation.FirmwareTlsCleared() {
 		_spec.ClearField(cameradevice.FieldFirmwareTls, field.TypeJson)
 	}
+	if value, ok := _u.mutation.Transport(); ok {
+		vv, err := cameradevice.ValueScanner.Transport.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(cameradevice.FieldTransport, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldTransport); ok {
+		_spec.SetField(cameradevice.FieldTransport, field.TypeJson, e)
+	}
+	if _u.mutation.TransportCleared() {
+		_spec.ClearField(cameradevice.FieldTransport, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -667,6 +695,18 @@ func (_u *CameraDeviceUpdateOne) SetFirmwareTls(v *api.CameraFirmwareTLSState) *
 // ClearFirmwareTls clears the value of the "firmware_tls" field.
 func (_u *CameraDeviceUpdateOne) ClearFirmwareTls() *CameraDeviceUpdateOne {
 	_u.mutation.ClearFirmwareTls()
+	return _u
+}
+
+// SetTransport sets the "transport" field.
+func (_u *CameraDeviceUpdateOne) SetTransport(v *api.CameraTransportState) *CameraDeviceUpdateOne {
+	_u.mutation.SetTransport(v)
+	return _u
+}
+
+// ClearTransport clears the value of the "transport" field.
+func (_u *CameraDeviceUpdateOne) ClearTransport() *CameraDeviceUpdateOne {
+	_u.mutation.ClearTransport()
 	return _u
 }
 
@@ -933,6 +973,22 @@ func (_u *CameraDeviceUpdateOne) sqlSave(ctx context.Context) (_node *CameraDevi
 	}
 	if _u.mutation.FirmwareTlsCleared() {
 		_spec.ClearField(cameradevice.FieldFirmwareTls, field.TypeJson)
+	}
+	if value, ok := _u.mutation.Transport(); ok {
+		vv, err := cameradevice.ValueScanner.Transport.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(cameradevice.FieldTransport, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldTransport); ok {
+		_spec.SetField(cameradevice.FieldTransport, field.TypeJson, e)
+	}
+	if _u.mutation.TransportCleared() {
+		_spec.ClearField(cameradevice.FieldTransport, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

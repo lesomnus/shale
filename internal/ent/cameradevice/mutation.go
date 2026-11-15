@@ -34,6 +34,7 @@ type Mutation struct {
 	enrollment              **api.CameraEnrollmentObservation
 	factory_tls             **api.CameraFactoryTLSState
 	firmware_tls            **api.CameraFirmwareTLSState
+	transport               **api.CameraTransportState
 	date_updated            *time.Time
 	date_erased             *time.Time
 	date_created            *time.Time
@@ -494,6 +495,42 @@ func (m *Mutation) ResetFirmwareTls() {
 	delete(m.exprs, FieldFirmwareTls)
 }
 
+// SetTransport sets the "transport" field.
+func (m *Mutation) SetTransport(ats *api.CameraTransportState) {
+	m.transport = &ats
+	delete(m.clearedFields, FieldTransport)
+	delete(m.exprs, FieldTransport)
+}
+
+// Transport returns the value of the "transport" field in the mutation.
+func (m *Mutation) Transport() (r *api.CameraTransportState, exists bool) {
+	v := m.transport
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearTransport clears the value of the "transport" field.
+func (m *Mutation) ClearTransport() {
+	m.transport = nil
+	delete(m.exprs, FieldTransport)
+	m.clearedFields[FieldTransport] = struct{}{}
+}
+
+// TransportCleared returns if the "transport" field was cleared in this mutation.
+func (m *Mutation) TransportCleared() bool {
+	_, ok := m.clearedFields[FieldTransport]
+	return ok
+}
+
+// ResetTransport resets all changes to the "transport" field.
+func (m *Mutation) ResetTransport() {
+	m.transport = nil
+	delete(m.clearedFields, FieldTransport)
+	delete(m.exprs, FieldTransport)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -770,7 +807,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 19)
+	fields := make([]string, 0, 20)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -809,6 +846,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.firmware_tls != nil || m.exprs[FieldFirmwareTls] != nil {
 		fields = append(fields, FieldFirmwareTls)
+	}
+	if m.transport != nil || m.exprs[FieldTransport] != nil {
+		fields = append(fields, FieldTransport)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -868,6 +908,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.FactoryTls()
 	case FieldFirmwareTls:
 		return m.FirmwareTls()
+	case FieldTransport:
+		return m.Transport()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -1029,6 +1071,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFirmwareTls(v)
 		return nil
+	case FieldTransport:
+		v, ok := value.(*api.CameraTransportState)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTransport(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -1137,6 +1189,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetFactoryTls()
 	case FieldFirmwareTls:
 		m.ResetFirmwareTls()
+	case FieldTransport:
+		m.ResetTransport()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -1205,6 +1259,9 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldFirmwareTls]; ok {
 		fields = append(fields, FieldFirmwareTls)
+	}
+	if _, ok := m.exprs[FieldTransport]; ok {
+		fields = append(fields, FieldTransport)
 	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
@@ -1289,6 +1346,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldFirmwareTls) {
 		fields = append(fields, FieldFirmwareTls)
 	}
+	if m.FieldCleared(FieldTransport) {
+		fields = append(fields, FieldTransport)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -1332,6 +1392,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldFirmwareTls:
 		m.ClearFirmwareTls()
+		return nil
+	case FieldTransport:
+		m.ClearTransport()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -1388,6 +1451,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldFirmwareTls:
 		m.ResetFirmwareTls()
+		return nil
+	case FieldTransport:
+		m.ResetTransport()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

@@ -22858,6 +22858,11 @@ func (s interceptCameraPolicy) ApproveTLS(ctx context.Context, req *api.CameraPo
 		api.CameraPolicyService_ApproveTLS_FullMethodName, req, s.CameraPolicyServiceServer.ApproveTLS)
 }
 
+func (s interceptCameraPolicy) VerifyTransport(ctx context.Context, req *api.CameraPolicyVerifyTransportRequest) (*api.CameraPolicyObserveResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
+		api.CameraPolicyService_VerifyTransport_FullMethodName, req, s.CameraPolicyServiceServer.VerifyTransport)
+}
+
 func (s Intercept) CertificateAuthority() api.CertificateAuthorityServiceServer {
 	return interceptCertificateAuthority{s, s.Next().CertificateAuthority()}
 }

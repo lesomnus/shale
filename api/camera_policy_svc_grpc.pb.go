@@ -32,6 +32,7 @@ const (
 	CameraPolicyService_Observe_FullMethodName         = "/shale.CameraPolicyService/Observe"
 	CameraPolicyService_TrustFactoryTLS_FullMethodName = "/shale.CameraPolicyService/TrustFactoryTLS"
 	CameraPolicyService_ApproveTLS_FullMethodName      = "/shale.CameraPolicyService/ApproveTLS"
+	CameraPolicyService_VerifyTransport_FullMethodName = "/shale.CameraPolicyService/VerifyTransport"
 )
 
 // CameraPolicyServiceClient is the client API for CameraPolicyService service.
@@ -73,6 +74,9 @@ type CameraPolicyServiceClient interface {
 	// Approves the key a job stopped on: a new policy revision with that
 	// device's key, activated by network CAS, and a job that continues with it.
 	ApproveTLS(ctx context.Context, in *CameraPolicyApproveTLSRequest, opts ...grpc.CallOption) (*CameraPolicyApproveTLSResponse, error)
+	// The assigned Worker's credential-free verification of a moved camera's
+	// transport candidate, rechecked against today's fences in one transaction.
+	VerifyTransport(ctx context.Context, in *CameraPolicyVerifyTransportRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error)
 }
 
 type cameraPolicyServiceClient struct {
@@ -222,6 +226,16 @@ func (c *cameraPolicyServiceClient) ApproveTLS(ctx context.Context, in *CameraPo
 	return out, nil
 }
 
+func (c *cameraPolicyServiceClient) VerifyTransport(ctx context.Context, in *CameraPolicyVerifyTransportRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraPolicyObserveResponse)
+	err := c.cc.Invoke(ctx, CameraPolicyService_VerifyTransport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CameraPolicyServiceServer is the server API for CameraPolicyService service.
 // All implementations must embed UnimplementedCameraPolicyServiceServer
 // for forward compatibility.
@@ -261,6 +275,9 @@ type CameraPolicyServiceServer interface {
 	// Approves the key a job stopped on: a new policy revision with that
 	// device's key, activated by network CAS, and a job that continues with it.
 	ApproveTLS(context.Context, *CameraPolicyApproveTLSRequest) (*CameraPolicyApproveTLSResponse, error)
+	// The assigned Worker's credential-free verification of a moved camera's
+	// transport candidate, rechecked against today's fences in one transaction.
+	VerifyTransport(context.Context, *CameraPolicyVerifyTransportRequest) (*CameraPolicyObserveResponse, error)
 	mustEmbedUnimplementedCameraPolicyServiceServer()
 }
 
@@ -309,6 +326,9 @@ func (UnimplementedCameraPolicyServiceServer) TrustFactoryTLS(context.Context, *
 }
 func (UnimplementedCameraPolicyServiceServer) ApproveTLS(context.Context, *CameraPolicyApproveTLSRequest) (*CameraPolicyApproveTLSResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ApproveTLS not implemented")
+}
+func (UnimplementedCameraPolicyServiceServer) VerifyTransport(context.Context, *CameraPolicyVerifyTransportRequest) (*CameraPolicyObserveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyTransport not implemented")
 }
 func (UnimplementedCameraPolicyServiceServer) mustEmbedUnimplementedCameraPolicyServiceServer() {}
 func (UnimplementedCameraPolicyServiceServer) testEmbeddedByValue()                             {}
@@ -558,6 +578,24 @@ func _CameraPolicyService_ApproveTLS_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CameraPolicyService_VerifyTransport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPolicyVerifyTransportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPolicyServiceServer).VerifyTransport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPolicyService_VerifyTransport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPolicyServiceServer).VerifyTransport(ctx, req.(*CameraPolicyVerifyTransportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CameraPolicyService_ServiceDesc is the grpc.ServiceDesc for CameraPolicyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -612,6 +650,10 @@ var CameraPolicyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ApproveTLS",
 			Handler:    _CameraPolicyService_ApproveTLS_Handler,
+		},
+		{
+			MethodName: "VerifyTransport",
+			Handler:    _CameraPolicyService_VerifyTransport_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

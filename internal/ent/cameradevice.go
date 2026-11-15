@@ -49,6 +49,8 @@ type CameraDevice struct {
 	FactoryTls *api.CameraFactoryTLSState `json:"factory_tls,omitempty"`
 	// FirmwareTls holds the value of the "firmware_tls" field.
 	FirmwareTls *api.CameraFirmwareTLSState `json:"firmware_tls,omitempty"`
+	// Transport holds the value of the "transport" field.
+	Transport *api.CameraTransportState `json:"transport,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -140,6 +142,8 @@ func (*CameraDevice) scanValues(columns []string) ([]any, error) {
 			values[i] = cameradevice.ValueScanner.FactoryTls.ScanValue()
 		case cameradevice.FieldFirmwareTls:
 			values[i] = cameradevice.ValueScanner.FirmwareTls.ScanValue()
+		case cameradevice.FieldTransport:
+			values[i] = cameradevice.ValueScanner.Transport.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -241,6 +245,12 @@ func (_m *CameraDevice) assignValues(columns []string, values []any) error {
 				return err
 			} else {
 				_m.FirmwareTls = value
+			}
+		case cameradevice.FieldTransport:
+			if value, err := cameradevice.ValueScanner.Transport.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Transport = value
 			}
 		case cameradevice.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -370,6 +380,9 @@ func (_m *CameraDevice) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("firmware_tls=")
 	builder.WriteString(fmt.Sprintf("%v", _m.FirmwareTls))
+	builder.WriteString(", ")
+	builder.WriteString("transport=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Transport))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

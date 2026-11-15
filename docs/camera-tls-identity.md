@@ -54,7 +54,9 @@ matching network/scope. A selected policy approval cannot be changed or omitted.
 A Device without a selected approval receives no exception and uses normal PKI.
 A DHCP address change can preserve the same Device and approved key. The runtime
 must still obtain that Device's current permitted endpoints; an old IP address
-never grants trust to another physical unit.
+never grants trust to another physical unit. The approved key is also how a
+moved camera is recognized at its new address
+([verifying a moved camera](#verifying-a-moved-camera)).
 
 The portable checkpoint preserves this identity through
 `CameraProvisionRequest.device_tls_identity`. CP checks exact equality with the
@@ -140,6 +142,29 @@ same request is refused: the stopped job is settled. If the device presents yet
 another key afterwards, the successor stops on it and needs its own approval.
 Workers cannot call `ApproveTLS`.
 
+## Verifying a moved camera
+
+A camera seen at a new address is a
+[transport candidate](camera-worker.md#transport-candidates). Its EPR and MAC
+are public and can be copied, so they only say which Device to check. The check
+is the Device's approved key: the key a job under its latest job's policy
+revision pins for it now, the policy's approval or the key Shale accepted after
+its own firmware upgrade. The network's active policy must name the same key;
+otherwise the candidate is `trust_mismatch`.
+
+The assigned Worker performs one credential-free TLS handshake with
+`https://<new host>:<the pinned bootstrap web port>` and reports the key the
+peer presented. The completed handshake proves the peer holds that key's private
+half. The CP compares it with the approved key; another key is `key_mismatch`,
+and nothing but the handshake reached that host.
+
+Only per-device keys are verified this way. Ordinary PKI is not: a certificate
+chaining to the camera vendor's CA, or a name it carries, does not tell one
+camera from another, and the policy retains no server identity of this camera
+to compare. Such a device is `trust_missing` and stays with an operator, as do
+HTTP devices (`insecure_http`) and policies that skip verification
+(`tls_verification_skip`), which have no key to verify.
+
 ## Skipping TLS verification
 
 A camera network policy may set `tls_verification` to `"skip"`
@@ -182,7 +207,8 @@ maintained.
 A skipping policy approves no key. `ApproveTLS` is therefore refused while such a
 policy is the network's active one; enroll the binding under it instead. A
 firmware upgrade under it accepts no new key either: the device's MAC and serial
-alone confirm it afterwards.
+alone confirm it afterwards. Nor can it recognize a moved camera, which stays
+with an operator.
 
 The policy, job and checkpoint fields extend existing typed JSON payloads. They
 add no credential plaintext or new table; `CameraDevice.firmware_tls` is a new
@@ -196,4 +222,5 @@ substitution and checkpoint retention in `server/core/camera_tls_identity_test.g
 with actual TLS, Roster operator grants and independently adopted Worker and
 Producer identities. `TestCameraPolicyApproveChangedTLSKey` drives a job through
 a real Worker to a changed-key stop and covers the approval's refusals and
-result. Camera transport verification has its own tests.
+result. `TestCameraTransportCandidate*` stage moved cameras and verify them
+with real handshakes against fake cameras that move or copy an identity.

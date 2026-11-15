@@ -32,16 +32,48 @@ func cameraObservedHost(raw string) string {
 // Checking only a canonical index hit would hide legacy-format MAC duplicates
 // or another device which already owns the proposed camera host.
 func (s Core) cameraObservationInventory(ctx context.Context, n *api.CameraNetwork, r *api.CameraPolicyObserveRequest, keys []string, mac string) ([]*ent.CameraDevice, error) {
-	rows, err := s.ent(ctx).CameraDevice.Query().Where(cameradevice.NetworkIdEQ(mustId(n.GetId()).Uuid()), cameradevice.DateErasedIsNil()).Select(cameradevice.FieldId, cameradevice.FieldDeviceKey, cameradevice.FieldIdentity, cameradevice.FieldEnrollment, cameradevice.FieldEndpoints).Limit(cameraObservationLookupLimit + 1).All(ctx)
+	matched, owners, err := s.cameraObservationRows(ctx, n, r, keys, mac)
 	if err != nil {
 		return nil, err
 	}
-	return cameraSelectObservationInventory(rows, r, keys, mac)
+	return cameraObservationOwned(matched, owners)
+}
+
+// cameraObservationRows is the bounded locked snapshot's answer before any
+// decision: the rows the hints select, and the rows owning a proposed host.
+func (s Core) cameraObservationRows(ctx context.Context, n *api.CameraNetwork, r *api.CameraPolicyObserveRequest, keys []string, mac string) ([]*ent.CameraDevice, map[string]bool, error) {
+	rows, err := s.ent(ctx).CameraDevice.Query().Where(cameradevice.NetworkIdEQ(mustId(n.GetId()).Uuid()), cameradevice.DateErasedIsNil()).Select(cameradevice.FieldId, cameradevice.FieldDeviceKey, cameradevice.FieldIdentity, cameradevice.FieldEnrollment, cameradevice.FieldEndpoints).Limit(cameraObservationLookupLimit + 1).All(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return cameraClassifyObservationInventory(rows, r, keys, mac)
 }
 
 func cameraSelectObservationInventory(rows []*ent.CameraDevice, r *api.CameraPolicyObserveRequest, keys []string, mac string) ([]*ent.CameraDevice, error) {
+	matched, owners, err := cameraClassifyObservationInventory(rows, r, keys, mac)
+	if err != nil {
+		return nil, err
+	}
+	return cameraObservationOwned(matched, owners)
+}
+
+func cameraObservationOwned(matched []*ent.CameraDevice, endpointOwners map[string]bool) ([]*ent.CameraDevice, error) {
+	if len(matched) > 1 {
+		return nil, status.Error(codes.Aborted, "legacy camera interface evidence identifies conflicting inventory rows")
+	}
+	for id := range endpointOwners {
+		if len(matched) == 0 || matched[0].Id.String() != id {
+			// Endpoint equality is a collision signal, never an identity claim.
+			// Do not create a second physical writer or merge records by address.
+			return nil, status.Error(codes.Aborted, "camera endpoint already has unresolved inventory ownership")
+		}
+	}
+	return matched, nil
+}
+
+func cameraClassifyObservationInventory(rows []*ent.CameraDevice, r *api.CameraPolicyObserveRequest, keys []string, mac string) ([]*ent.CameraDevice, map[string]bool, error) {
 	if len(rows) > cameraObservationLookupLimit {
-		return nil, status.Error(codes.ResourceExhausted, "camera inventory lookup requires explicit operator enrollment or a smaller network")
+		return nil, nil, status.Error(codes.ResourceExhausted, "camera inventory lookup requires explicit operator enrollment or a smaller network")
 	}
 	var matched []*ent.CameraDevice
 	endpointOwners := map[string]bool{}
@@ -66,15 +98,5 @@ func cameraSelectObservationInventory(rows []*ent.CameraDevice, r *api.CameraPol
 			}
 		}
 	}
-	if len(matched) > 1 {
-		return nil, status.Error(codes.Aborted, "legacy camera interface evidence identifies conflicting inventory rows")
-	}
-	for id := range endpointOwners {
-		if len(matched) == 0 || matched[0].Id.String() != id {
-			// Endpoint equality is a collision signal, never an identity claim.
-			// Do not create a second physical writer or merge records by address.
-			return nil, status.Error(codes.Aborted, "camera endpoint already has unresolved inventory ownership")
-		}
-	}
-	return matched, nil
+	return matched, endpointOwners, nil
 }

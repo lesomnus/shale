@@ -151,12 +151,11 @@ skipped. If one scan associates the same hint with different candidate IDs or
 transport hosts, that whole key is skipped with a fixed ambiguity warning.
 Duplicate packets for one candidate and host can merge endpoints. These hints
 never authenticate a physical identity: discovery authentication flags are
-cleared, and the CP preserves previously authenticated inventory evidence. After
-a DHCP address change, an operator must first approve the new endpoints with
-`CameraDevice.Observe`, its current version and its retained authenticated
-identity. Leased inspection then confirms that physical identity before further
-writes or publication. An address hint never grants inventory ownership or
-credential access.
+cleared, and the CP preserves previously authenticated inventory evidence. A
+camera seen at other endpoints after a DHCP address change becomes a
+[transport candidate](#transport-candidates), staged beside its authorized
+endpoints. An address hint never grants inventory ownership or credential
+access.
 
 Discovery runs independently of heartbeat, job polling and lease renewal. Errors
 produce fixed messages without device text and retry at the next interval; they
@@ -240,8 +239,8 @@ These are unauthenticated observations, including leases for non-camera devices.
 They do not grant activation, approve a certificate or let a camera reclaim an
 existing inventory row. The current automatic-enrollment policy, capacity,
 device trust and leased execution checks decide whether a discovered candidate
-can become a camera. A later DHCP move of an already authenticated camera still
-requires the separate endpoint-reconciliation authority described below.
+can become a camera. A later DHCP move of an already authenticated camera is a
+[transport candidate](#transport-candidates), never an endpoint change.
 
 An initial canonical MAC observation reuses an explicitly registered
 `mac/<MAC>` inventory key in that same network. A later EPR at the same endpoint
@@ -256,10 +255,83 @@ already owned IP host is rejected; an address alone never merges records or
 creates another physical writer.
 
 Discovery never replaces authenticated physical identity. It also cannot change
-the transport endpoints of an authenticated device or active job. Such a move
-requires an explicit operator reconciliation followed by fresh leased inspection;
-a fresh MAC/EPR alone cannot redirect that device's credentials. Ordinary PKI or
-separately approved per-device TLS trust remains independent of these hints.
+the transport endpoints of a recording camera: a fresh MAC/EPR alone cannot
+redirect that device's credentials. Ordinary PKI or separately approved
+per-device TLS trust remains independent of these hints.
+
+### Transport candidates
+
+A camera's endpoints are guarded once it has an authenticated identity, a job
+ever held it, or its binding has a published capture input. When the assigned
+Worker's scan places a guarded camera, by its EPR or MAC, at other endpoints,
+`CameraPolicy.Observe` does not move it. It stages a transport candidate in
+`CameraDevice.transport` and answers `transport_<code>`:
+
+- **Separate.** The candidate holds the observed endpoints, the hints that
+  matched, and the assignment generation and endpoint revision it departs
+  from. The device's endpoints, identity, observation revision and discovery ID
+  stay as they were; no binding, Source, job or credential is touched.
+- **Bounded and expiring.** At most four per device, newest kept; each lives
+  two minutes. A scan repeating a live candidate's endpoints returns that same
+  candidate, so a fixed outcome stays until it expires. A later scan after
+  expiry starts a new one: stale evidence never approves a later observation.
+- **One at a time.** Two live candidates with different endpoints are both
+  `ambiguous`.
+
+A candidate the CP can check is `pending` with code `verification_required`.
+Its grant goes to the assigned Worker in `CameraPolicyObserveResponse.transport_grant`.
+The grant binds the exact candidate, Device, Network and its version, the
+assignment and its generation, the device's endpoint revision, its latest job
+and that job's policy revision, and the device's approved key: the key a job
+under that revision pins for this device now
+([camera TLS identity](camera-tls-identity.md#verifying-a-moved-camera)). Its
+endpoint is `https://<candidate host>:<the pinned bootstrap web port>`.
+
+The Worker polls its assignment again and checks the grant against it: the same
+generation, network version and endpoint revision, the one host its scan saw,
+within the assigned prefixes, inside the grant's lifetime. Only then does it
+perform one credential-free TLS handshake with that origin, bounded by the
+grant's expiry: no HTTP request, credential, cookie or caller TLS configuration.
+It sends the presented key to `CameraPolicy.VerifyTransport` with the exact
+stored grant. An unreachable candidate is not reported; it stays pending and
+expires.
+
+`VerifyTransport` rechecks, in one transaction under the network, assignment
+and device locks: the grant's expiry, the presented key against the grant's,
+the assignment generation, the network version (trust changes with it), the
+device's endpoint revision, its latest job and unfinished jobs, the key a job
+would pin today, the other live candidates and every other device's hosts. A
+candidate that passes is `verified` with code `key_verified`. Anything else
+settles it `operator_required` with a fixed code. A replay of a decided grant,
+after a lost response or a race, returns its outcome without another write; the
+same grant with another key is refused. Only the assigned Worker may call it.
+
+An operator still moves the camera: `CameraDevice.Observe` with the device's
+current version and the candidate's endpoints (omit `identity` to keep the
+authenticated one). A changed endpoint set clears every staged candidate.
+
+These cases never get a grant, or settle the candidate, and stay with an
+operator:
+
+| Code | Why |
+| --- | --- |
+| `insecure_http` | The device's web transport is HTTP: no key to verify |
+| `trust_missing` | No per-device key: ordinary PKI trusts a CA, and a certificate from the same CA is not this camera |
+| `tls_verification_skip` | The job's or the active policy skips TLS verification |
+| `trust_mismatch` | The active policy approves another key than the device's last job pinned |
+| `identity_missing` | No authenticated serial and MAC to reinspect |
+| `recovery_unavailable` | No published binding whose last job pinned a policy revision |
+| `mutation_active` | A job for the device is unfinished |
+| `evidence_conflict` | The EPR or MAC contradicts the device's known ones |
+| `host_owned` | Another device owns the candidate's host, in any spelling, port or path |
+| `ambiguous` | Several live candidates, or several hosts in one |
+| `key_mismatch` | The candidate presented another key; nothing else reached it |
+| `expired` | The evidence or its grant outlived two minutes |
+| `assignment_changed`, `trust_changed`, `endpoints_changed`, `job_changed` | What the grant was bound to changed before the CP checked it |
+
+A Worker older than this ignores the grant; its candidates expire and stay on
+the operator path. A CP older than this refuses the moved observation, as it
+always did, and sends no grant.
 
 ## Explicit HTTP compatibility
 

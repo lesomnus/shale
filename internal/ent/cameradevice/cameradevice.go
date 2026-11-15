@@ -40,6 +40,8 @@ const (
 	FieldFactoryTls = "factory_tls"
 	// FieldFirmwareTls holds the string denoting the firmware_tls field in the database.
 	FieldFirmwareTls = "firmware_tls"
+	// FieldTransport holds the string denoting the transport field in the database.
+	FieldTransport = "transport"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -99,6 +101,7 @@ var Columns = []string{
 	FieldEnrollment,
 	FieldFactoryTls,
 	FieldFirmwareTls,
+	FieldTransport,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -125,6 +128,7 @@ var (
 		Enrollment  field.TypeValueScanner[*api.CameraEnrollmentObservation]
 		FactoryTls  field.TypeValueScanner[*api.CameraFactoryTLSState]
 		FirmwareTls field.TypeValueScanner[*api.CameraFirmwareTLSState]
+		Transport   field.TypeValueScanner[*api.CameraTransportState]
 	}
 )
 

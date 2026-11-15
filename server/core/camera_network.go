@@ -5,6 +5,7 @@ import (
 	"context"
 	"net"
 	"net/netip"
+	"slices"
 	"strings"
 
 	"github.com/lesomnus/shale/api"
@@ -249,7 +250,13 @@ func (s coreCameraDevice) Observe(ctx context.Context, r *api.CameraDeviceObserv
 			}
 			// Evidence records do not grant ownership or secret access.
 		}
-		out, err = nx.CameraDevice().Patch(ctx, api.CameraDevicePatchRequest_builder{Ref: r.GetRef(), Identity: identity, Endpoints: r.GetEndpoints(), ObservationRevision: z.Ptr(v.GetObservationRevision() + 1), DateUpdated: r.GetExpectedVersion()}.Build())
+		patch := api.CameraDevicePatchRequest_builder{Ref: r.GetRef(), Identity: identity, Endpoints: r.GetEndpoints(), ObservationRevision: z.Ptr(v.GetObservationRevision() + 1), DateUpdated: r.GetExpectedVersion()}.Build()
+		if !slices.Equal(cameraObservationEndpointSet(v.GetEndpoints()), cameraObservationEndpointSet(r.GetEndpoints())) {
+			// The operator decided where the camera is. Every staged transport
+			// candidate departed from the endpoints this replaces.
+			patch.SetTransportNull(true)
+		}
+		out, err = nx.CameraDevice().Patch(ctx, patch)
 		return err
 	})
 	if status.Code(err) == codes.NotFound {

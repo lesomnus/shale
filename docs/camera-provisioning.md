@@ -254,7 +254,9 @@ network evidence; ambiguous identity needs an explicit claim instead of an
 automatic merge.
 
 A binding has a stable logical role and target assignment. Rediscovery or DHCP
-must not create a new Source. Switching the main profile need not create another
+must not create a new Source. A moved camera is checked by its approved TLS key
+before its new address is used
+([transport candidates](camera-worker.md#transport-candidates)). Switching the main profile need not create another
 Source either. Physical replacement can deliberately retain a logical Source's
 name/history while recording the new device association. Generate aliases once
 per binding, not on every retry.

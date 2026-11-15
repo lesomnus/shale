@@ -113,6 +113,12 @@ func (_c *CameraDeviceCreate) SetFirmwareTls(v *api.CameraFirmwareTLSState) *Cam
 	return _c
 }
 
+// SetTransport sets the "transport" field.
+func (_c *CameraDeviceCreate) SetTransport(v *api.CameraTransportState) *CameraDeviceCreate {
+	_c.mutation.SetTransport(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraDeviceCreate) SetDateUpdated(v time.Time) *CameraDeviceCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -404,6 +410,17 @@ func (_c *CameraDeviceCreate) createSpec() (*CameraDevice, *sqlgraph.CreateSpec,
 		}
 		_spec.SetField(cameradevice.FieldFirmwareTls, field.TypeJson, vv)
 		_node.FirmwareTls = value
+	}
+	if value, ok := _c.mutation.Transport(); ok {
+		vv, err := cameradevice.ValueScanner.Transport.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(cameradevice.FieldTransport, field.TypeJson, vv)
+		_node.Transport = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

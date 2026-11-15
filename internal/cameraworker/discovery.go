@@ -116,6 +116,9 @@ func (w *Worker) discoverAssigned(ctx context.Context, workers api.CameraWorkerS
 			if err := w.completeFactoryTLS(ctx, workers, policies, observed, probeFactoryTLS); err != nil {
 				w.logDiscoveryFailure(ctx, "factory_tls", err)
 			}
+			if err := w.verifyTransport(ctx, workers, policies, request, observed, probeTransport); err != nil {
+				w.logDiscoveryFailure(ctx, "transport", err)
+			}
 		}
 	}
 }
