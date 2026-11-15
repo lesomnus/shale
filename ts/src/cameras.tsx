@@ -1,9 +1,10 @@
 /**
  * Cameras: every set of the tenant, its sources, and what its producer's
  * heartbeat says about each (§38.6): up or down, the frame rate, the measured
- * rate against the ceiling, a scene gone dark (§38.10), and the suggestion a
- * starved source earns (§38.5), and why cameras the producer's catalog names
- * are not recording yet.
+ * rate against the ceiling, a scene gone dark (§38.10), the suggestion a
+ * starved source earns with the raise auto_raise applied or the limit that
+ * held it (§38.5), and why cameras the producer's catalog names are not
+ * recording yet.
  *
  * @module
  */
@@ -15,7 +16,7 @@ import { key } from '@lesomnus/payday/store'
 import { HostState, type Producer } from '../gen/shale/host_pb.js'
 import { ProducerService } from '../gen/shale/host_svc_pb.js'
 import type { Set, Source } from '../gen/shale/set_pb.js'
-import { AdmissionWaitReason, UploadMode, type AdmissionWait } from '../gen/shale/common_pb.js'
+import { AdmissionWaitReason, RaiseLimit, RateControl, UploadMode, type AdmissionWait, type RaiseBlocked } from '../gen/shale/common_pb.js'
 import { SetService, SourceService } from '../gen/shale/set_svc_pb.js'
 import type { SourceReport } from '../gen/shale/common_pb.js'
 
@@ -99,6 +100,7 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 				<span className="dim">
 					{v.link?.mode === UploadMode.BUFFERED ? 'buffered' : 'live'} upload
 					{v.maxBitrateTotal > 0n && ` · ${bps(v.maxBitrateTotal)} in all`}
+					{v.autoRaise && ' · starved ceilings raised by themselves'}
 				</span>
 				<a href={`#/live/${hex(v.id)}`}>watch live</a>
 				<a href={`#/segments/${hex(v.id)}`}>segments</a>
@@ -123,7 +125,7 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 					{[...sources.data.items]
 						.sort((a, b) => a.ordinal - b.ordinal)
 						.map((src) => (
-							<Camera key={key(src.id)} source={src} report={reports.get(hex(src.id))} producerUp={alive} wait={waiting.has(hex(src.id)) ? wait : undefined} />
+							<Camera key={key(src.id)} source={src} report={reports.get(hex(src.id))} producerUp={alive} wait={waiting.has(hex(src.id)) ? wait : undefined} autoRaise={v.autoRaise} />
 						))}
 				</div>
 			)}
@@ -131,9 +133,10 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 	)
 }
 
-function Camera(props: { source: Source; report: SourceReport | undefined; producerUp: boolean; wait: AdmissionWait | undefined }): ReactNode {
+function Camera(props: { source: Source; report: SourceReport | undefined; producerUp: boolean; wait: AdmissionWait | undefined; autoRaise: boolean }): ReactNode {
 	const s = props.source
 	const r = props.report
+	const starvation = s.starvation
 	const ceiling = Number(r?.maxBitrate ?? s.profile?.maxBitrate ?? 0n)
 	const rate = Number(r?.measuredBitrate ?? 0n)
 	let state: { tone: Tone; text: string }
@@ -196,17 +199,76 @@ function Camera(props: { source: Source; report: SourceReport | undefined; produ
 						<dd className="bad mono">{r.error}</dd>
 					</>
 				)}
-				{s.starvation?.starved && (
+				{starvation?.starved && (
 					<>
 						<dt>suggestion</dt>
 						<dd className="warn">
-							starved at its ceiling: raise to {bps(s.starvation.suggestedMaxBitrate > 0n ? s.starvation.suggestedMaxBitrate : BigInt(Math.round(ceiling * 1.25)))}
+							starved at its ceiling: raise to {bps(starvation.suggestedMaxBitrate > 0n ? starvation.suggestedMaxBitrate : BigInt(Math.round(ceiling * 1.25)))}
+							{starvation.blocked !== undefined ? (
+								<>
+									; held: {heldText(starvation.blocked)}
+									<span className="dim">
+										{' '}
+										· since <Ago at={starvation.blocked.dateSince} />
+									</span>
+								</>
+							) : (
+								props.autoRaise && r !== undefined && <span className="dim">{notRaised(r)}</span>
+							)}
+						</dd>
+					</>
+				)}
+				{starvation?.dateRaised !== undefined && (
+					<>
+						<dt>raised</dt>
+						<dd>
+							from {bps(starvation.raisedFrom)} to {bps(starvation.raisedMaxBitrate)} for starvation
+							<span className="dim">
+								{' '}
+								· <Ago at={starvation.dateRaised} />
+							</span>
 						</dd>
 					</>
 				)}
 			</dl>
 		</div>
 	)
+}
+
+/**
+ * heldText says which limit keeps a starved camera's ceiling where it is
+ * (§38.5), with what the raise needs against what the limit allows.
+ */
+function heldText(b: RaiseBlocked): string {
+	switch (b.limit) {
+		case RaiseLimit.UPLOAD_POLICY:
+			return `the upload policy caps a ceiling at ${bps(b.available)}`
+		case RaiseLimit.SET_BITRATE:
+			return `the set's ceilings would sum to ${bps(b.required)}, and it allows ${bps(b.available)} in all`
+		case RaiseLimit.UPLINK:
+			return `recording and live would need ${bps(b.required)} (the ceilings × 1.2, × 2.2 when live runs always), and producer.uplink is ${bps(b.available)}`
+		default:
+			return 'a limit'
+	}
+}
+
+/**
+ * notRaised says why a set with auto_raise leaves a starved camera to a
+ * person, when nothing holds it at a limit (§38.5); empty when it is only
+ * waiting for its day.
+ */
+function notRaised(r: SourceReport): string {
+	if (r.captureEpoch !== '') return ' · not raised by itself: its camera binding pins the ceiling'
+	switch (r.rateControl) {
+		case RateControl.VBR:
+			return ' · raised at most once a day'
+		case RateControl.CBR:
+			return ' · not raised by itself: a CBR encoder spends its ceiling whatever the picture'
+		case RateControl.COPY:
+			return " · not raised by itself: the stream is the camera's own, so its rate is set on the camera"
+		default:
+			return ' · not raised by itself: the producer does not say how it encodes this camera'
+	}
 }
 
 /** waitShort is a wait's reason in a word or two, for a camera's badge. */

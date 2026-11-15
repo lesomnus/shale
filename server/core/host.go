@@ -477,7 +477,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 	}
 
 	// Starvation accounting on each source (§38.5).
-	suggestions, err := s.starvation(ctx, p, reports)
+	suggestions, err := s.starvation(ctx, p, req.GetUplink(), reports)
 	if err != nil {
 		return nil, err
 	}

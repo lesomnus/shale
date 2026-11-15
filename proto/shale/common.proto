@@ -51,14 +51,70 @@ message ObservedRate {
   google.protobuf.Timestamp date_updated = 3;
 }
 
-// Starvation is the producer's account of a source at its ceiling (§38.5).
+// Starvation is the producer's account of a source at its ceiling over a
+// day, and what the CP made of it (§38.5).
 message Starvation {
   int64 seconds_at_cap = 1;
   int64 episodes = 2;
   int64 seconds_total = 3;
+  // When the day the counts are of began: the first report after the last
+  // day ended, or the last raise, since what a source did at its old
+  // ceiling says nothing of the new one.
   google.protobuf.Timestamp date_reset = 4;
   bool starved = 5;
   int64 suggested_max_bitrate = 6;
+  // The last raise auto_raise applied: when, and from what ceiling to what.
+  // The next one is 24 hours later at the soonest. While the set's
+  // auto_raise is on, the CP agrees at least raised_max_bitrate at every
+  // negotiation, so a producer that starts again from its starting ceiling
+  // keeps the raise (§12.6).
+  google.protobuf.Timestamp date_raised = 7;
+  int64 raised_from = 8;
+  int64 raised_max_bitrate = 9;
+  // The limit the suggestion would break; absent when it fits. A raise
+  // that breaks one is not applied, and the CP warns instead.
+  RaiseBlocked blocked = 10;
+}
+
+// RaiseBlocked is a limit a starved source's suggested ceiling would break
+// (§38.5): what the raise needs and what the limit allows, in bits a
+// second.
+message RaiseBlocked {
+  RaiseLimit limit = 1;
+  int64 required = 2;
+  int64 available = 3;
+  // Since when the suggestion has been held at this limit.
+  google.protobuf.Timestamp date_since = 4;
+}
+
+// RaiseLimit is a bound every ceiling raise stays inside (§38.5).
+enum RaiseLimit {
+  RAISE_LIMIT_UNSPECIFIED = 0;
+  // The active UploadPolicy's max_bitrate_cap; required is the suggested
+  // ceiling.
+  RAISE_LIMIT_UPLOAD_POLICY = 1;
+  // The set's max_bitrate_total; required is the sum of the set's ceilings
+  // with the raise.
+  RAISE_LIMIT_SET_BITRATE = 2;
+  // The producer's uplink; required is that sum × 1.2, and the sum once
+  // more when the producer's live policy is `always`.
+  RAISE_LIMIT_UPLINK = 3;
+}
+
+// RateControl is how the encoder a producer runs for a source spends its
+// ceiling (§38.3, §38.5).
+enum RateControl {
+  // Not said: a command's or a pushed stream, a raw source, a capture that
+  // has not started, or a producer that does not say.
+  RATE_CONTROL_UNSPECIFIED = 0;
+  // Capped VBR, or a variable rate around a target: the picture decides
+  // the rate, up to the ceiling. Only these are raised for starvation.
+  RATE_CONTROL_VBR = 1;
+  // A constant rate: the encoder spends its target whatever the picture.
+  RATE_CONTROL_CBR = 2;
+  // The camera's stream, copied: its rate is the camera's encoder's, which
+  // the ceiling does not change.
+  RATE_CONTROL_COPY = 3;
 }
 
 // Endpoint is how a client reaches a host, as the active address resolver
@@ -186,6 +242,9 @@ message SourceReport {
   bool dark = 13;
   // Empty for legacy static sources; otherwise the exact applied incarnation.
   string capture_epoch = 14;
+  // How the source's encoder spends its ceiling (§38.5): auto_raise raises
+  // only a source that says VBR.
+  RateControl rate_control = 15;
 }
 
 // ProducerStatus is the last heartbeat the CP kept on a producer row.

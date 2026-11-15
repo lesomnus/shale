@@ -373,8 +373,10 @@ is a loop with three parts.
    ([§38.2](#382-cutting-segments)). After an early cut the producer raises
    that source's ceiling by 25% at its next negotiation, whatever its rate
    control: the stream exceeded what was declared, so the declaration was
-   wrong. A ceiling guessed too low therefore costs a few short segments and
-   nothing else.
+   wrong. It is the declaration that moves: the encoder keeps its cap until
+   its next start, since an encoder given more would spend more and could
+   overrun the raised ceiling as it did the old. A ceiling guessed too low
+   therefore costs a few short segments and nothing else.
 
 3. **Starvation, measured by the producer.** A capped-VBR encoder that
    needs more bits than its cap allows sits at the cap and raises its
@@ -389,25 +391,56 @@ is a loop with three parts.
    | episode | 3 to 60 consecutive seconds at the cap. Shorter is one keyframe's spike; longer is a scene condition (noise, rain, snow, a crowd) that more bits would only spend on noise |
    | starved | at least 50 episodes in a day, while fewer than 10% of the day's seconds were at the cap |
 
-   Both counts travel in the producer's heartbeat ([§38.6](#386-health-and-heartbeats)).
+   Both counts travel in the producer's heartbeat ([§38.6](#386-health-and-heartbeats)),
+   and the CP adds them up on the `Source`. A day is the 24 hours from the
+   first report after the last day ended; the next report starts a new one.
    For a starved source the console **suggests** raising the ceiling by 25%,
    with the hours of the day the episodes fell in, so a person can see
    whether it is traffic or weather. A set with `auto_raise: on` applies the
-   suggestion itself, at most once a day, and the producer re-launches the
-   encoder with the new cap at the next segment boundary. The default is
-   off, because the episode filter makes the guess good, not certain. A CBR
-   source is never adjusted this way: it sits at its ceiling by definition,
-   and its quality is a choice, not an observation. Ceilings are never
-   lowered automatically. A loose ceiling costs only headroom in the link
-   check, and the console suggests lowering it when a source never exceeds
-   half of it.
+   suggestion itself, at most once a day: when the source is starved and
+   its last raise was at least 24 hours ago. A raise starts a new day, since
+   what a source did at its old ceiling says nothing of the new one. The CP
+   keeps the raise on the source and moves the set's profile version, so
+   the producer negotiates again at its next heartbeat, and from then on
+   the CP agrees at least the raised ceiling for as long as `auto_raise` is
+   on ([§12.6](04-write-path.md#126-upload-profile-negotiation)): a producer
+   that starts again from its starting ceiling keeps the raise, and turning
+   `auto_raise` off hands the ceiling back to what the producer proposes.
+   The producer re-launches the encoder with the new cap at the next segment
+   boundary: the segment closes there as on any cut, what the old process
+   writes while it stops is not kept, and the new process's stream opens
+   the next segment, a second or two late. The default is off, because the
+   episode filter makes the guess good, not certain.
+
+   Only a source the producer encodes with a variable rate is adjusted this
+   way, and its heartbeat says which it is: `libx264`, VAAPI, QSV and NVENC
+   under `-maxrate`, and GStreamer's `v4l2h264enc`
+   ([§38.3](#383-managed-capture)). A CBR source (`h264_v4l2m2m`,
+   GStreamer's `x264enc`) is never adjusted this way: it sits at its ceiling
+   by definition, and its quality is a choice, not an observation. Nor is a
+   stream passed through, whose rate is the camera's encoder's and does not
+   follow the ceiling; a command's stream; or a camera a `CameraBinding`
+   manages, whose ceiling its published specification pins
+   ([camera control plane](camera-control-plane.md)). These are only
+   suggested. Ceilings are never lowered automatically. A loose ceiling
+   costs only headroom in the link check, and the console suggests lowering
+   it when a source never exceeds half of it.
 
 Every step stays inside the `UploadPolicy` cap, the set's
 `max_bitrate_total`, and the producer's `uplink` when one is declared: the
 sum of the set's ceilings × 1.2, plus the sum once more when the producer's
 live policy is `always` ([§39.2](16-relay.md#392-assignment)), must fit it
-([§12.2](04-write-path.md#122-resumable-part-uploads)). When a raise would
-break one of these, the loop stops and warns instead.
+([§12.2](04-write-path.md#122-resumable-part-uploads)). The producer says
+its `uplink` in its heartbeat, and the CP holds a raise to the rule the
+producer's own uplink check uses. A raise counts the set's ceilings as its
+next negotiation agrees them, every raise already applied included. When a
+raise would break one of these, the loop stops and warns instead: the
+ceiling stays where it is, the CP logs the limit with what the raise needs
+and what the limit allows when it first holds one back, and keeps both on
+the source, which the console shows beside the suggestion, with since when.
+The raise is applied at the first report after the limit moves. A set
+without `auto_raise` is told the same, since a person raising the ceiling
+would meet the same limit.
 
 **Cameras that wait.** A catalog's cameras are taken up together or not at
 all. The producer keeps the cameras it records, and holds back the new or
@@ -443,10 +476,12 @@ configuration.
 The producer sends `ProducerService.Heartbeat` every
 `producer_heartbeat_interval` (30 s): per source its input state (`up`,
 `down`, `starting`), frame rate, measured rate over the last minute,
-keyframe interval, encoder, restarts, early cuts, the seconds at the
+keyframe interval, encoder, its rate control (VBR, CBR, or the camera's
+stream copied), restarts, early cuts, the seconds at the
 cap and episodes since the last heartbeat ([§38.5](#385-choosing-the-ceiling)),
 and whether its scene is dark and its segments skipped ([§38.10](#3810-dark-scenes));
-for the host, CPU, temperature, and uplink usage; and why cameras its
+for the host, CPU, temperature, uplink usage, and the `uplink` it declares;
+and why cameras its
 catalog names wait to start, when they do ([§38.5](#385-choosing-the-ceiling)). Consoles show a camera
 that went dark, and the Control Plane's `date_seen` on the `Producer` row
 comes from it ([§35.3](12-api.md#353-entities), [§31](09-operations.md#31-observability)).
