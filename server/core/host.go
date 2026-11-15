@@ -103,12 +103,14 @@ func (s Core) joinRecord(hj *api.HostJoin, from string, rejoin bool) *api.HostJo
 	}.Build()
 }
 
-// issue signs the CSR a row holds and answers the PEM and the serial.
-func (s Core) issue(hj *api.HostJoin, id pdid.Id, names pki.Names) (pem []byte, serial string, expires time.Time, err error) {
-	if s.d.CA == nil {
-		return nil, "", time.Time{}, status.Error(codes.FailedPrecondition, "this control plane has no CA; adoption cannot issue a certificate")
+// issue signs the CSR a row holds and answers the PEM and the serial, from
+// the CA that issues now (§33.5).
+func (s Core) issue(ctx context.Context, hj *api.HostJoin, id pdid.Id, names pki.Names) (pem []byte, serial string, expires time.Time, err error) {
+	ca, err := s.issuer(ctx)
+	if err != nil {
+		return nil, "", time.Time{}, err
 	}
-	c, err := s.d.CA.IssueHost(hj.GetCsr(), id, names, s.d.now())
+	c, err := ca.IssueHost(hj.GetCsr(), id, names, s.d.now())
 	if err != nil {
 		return nil, "", time.Time{}, err
 	}
@@ -116,12 +118,29 @@ func (s Core) issue(hj *api.HostJoin, id pdid.Id, names pki.Names) (pem []byte, 
 	return pki.EncodeCerts(c), pki.Serial(c), c.NotAfter, nil
 }
 
-func (s Core) bundle() []byte {
-	if s.d.CA == nil {
+// issuer is the CA that issues now: init's until the first rollover, the
+// active stored one from then on (§33.5).
+func (s Core) issuer(ctx context.Context) (*pki.CA, error) {
+	set, err := s.d.Authorities().Current(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if set == nil || set.Issuer == nil {
+		return nil, status.Error(codes.FailedPrecondition, "this control plane has no CA; adoption cannot issue a certificate")
+	}
+
+	return set.Issuer, nil
+}
+
+// bundle is every CA a host is to trust: during a rollover the current one
+// and the next, or the current one and the one it replaces (§33.5).
+func (s Core) bundle(ctx context.Context) []byte {
+	set, err := s.d.Authorities().Current(ctx)
+	if err != nil || set == nil {
 		return nil
 	}
 
-	return s.d.CA.Bundle()
+	return set.Bundle
 }
 
 // aliasFor picks a unique alias for a host from its hostname.
@@ -227,7 +246,7 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
 	}
 
-	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle()}
+	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
 	switch s.decide(js, hj) {
 	case decCreate:
 		id := pdid.New(DomProducer)
@@ -277,7 +296,7 @@ func (s coreProducer) Join(ctx context.Context, req *api.ProducerJoinRequest) (*
 	case decRejoin:
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || s.autoAdopt(DomProducer, hj, from) {
-			pem, serial, exp, err := s.issue(rec, js.id, pki.Names{})
+			pem, serial, exp, err := s.issue(ctx, rec, js.id, pki.Names{})
 			if err != nil {
 				return nil, err
 			}
@@ -329,7 +348,7 @@ func (s coreProducer) Patch(ctx context.Context, req *api.ProducerPatchRequest) 
 	if req.HasSite() || req.HasSiteNull() || req.HasSet() || req.HasSetNull() || req.HasHardwareId() || req.HasHostname() ||
 		req.HasState() || req.HasCertSerial() || req.HasJoin() || req.HasJoinNull() || req.HasDateAdopted() || req.HasDateAdoptedNull() ||
 		req.HasDateSeen() || req.HasDateSeenNull() || req.HasDateCertExpires() || req.HasDateCertExpiresNull() ||
-		req.HasRelay() || req.HasRelayNull() || req.HasStatus() || req.HasStatusNull() || req.HasVersion() {
+		req.HasRelay() || req.HasRelayNull() || req.HasStatus() || req.HasStatusNull() || req.HasVersion() || req.HasCaHash() {
 		return nil, status.Error(codes.PermissionDenied, "a producer's alias, name, desc, labels and live are a person's to patch; the rest of the row is the system's")
 	}
 
@@ -373,7 +392,7 @@ func (s coreProducer) Adopt(ctx context.Context, req *api.ProducerAdoptRequest) 
 	if rec == nil || len(rec.GetCsr()) == 0 {
 		return nil, failed("this producer has no pending join request")
 	}
-	pem, serial, exp, err := s.issue(rec, mustId(p.GetId()), pki.Names{})
+	pem, serial, exp, err := s.issue(ctx, rec, mustId(p.GetId()), pki.Names{})
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +442,7 @@ func (s coreProducer) RenewCertificate(ctx context.Context, req *api.ProducerRen
 		rec = &api.HostJoin{}
 	}
 	rec.SetCsr(req.GetCsr())
-	pem, serial, exp, err := s.issue(rec, f.Actor, pki.Names{})
+	pem, serial, exp, err := s.issue(ctx, rec, f.Actor, pki.Names{})
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +457,7 @@ func (s coreProducer) RenewCertificate(ctx context.Context, req *api.ProducerRen
 		return nil, err
 	}
 
-	return api.ProducerRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle()}.Build(), nil
+	return api.ProducerRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle(ctx)}.Build(), nil
 }
 
 func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatRequest) (*api.ProducerHeartbeatResponse, error) {
@@ -472,6 +491,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 			Admission:    admissionOf(req.GetAdmission(), now),
 		}.Build(),
 		Version:          z.Ptr(req.GetVersion()),
+		CaHash:           z.Ptr(req.GetCaHash()),
 		DateUpdatedForce: z.Ptr(true),
 	}.Build()); err != nil {
 		return nil, err
@@ -493,6 +513,9 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 		}
 	}
 	if exp := p.GetDateCertExpires(); exp != nil && now.After(renewAt(p.GetDateAdopted(), exp)) {
+		resp.RenewCertificate = true
+	}
+	if s.renewForCa(ctx, req.GetCaHash(), p.GetJoin().GetCertificate()) {
 		resp.RenewCertificate = true
 	}
 
@@ -615,7 +638,7 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
 	}
 
-	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle()}
+	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
 	switch s.decide(js, hj) {
 	case decCreate:
 		id := pdid.New(DomReader)
@@ -663,7 +686,7 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 	case decRejoin:
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || s.autoAdopt(DomReader, hj, from) {
-			pem, serial, exp, err := s.issue(rec, js.id, pki.Names{})
+			pem, serial, exp, err := s.issue(ctx, rec, js.id, pki.Names{})
 			if err != nil {
 				return nil, err
 			}
@@ -713,7 +736,7 @@ func (s coreReader) Adopt(ctx context.Context, req *api.ReaderAdoptRequest) (*ap
 	if rec == nil || len(rec.GetCsr()) == 0 {
 		return nil, failed("this reader has no pending join request")
 	}
-	pem, serial, exp, err := s.issue(rec, mustId(r.GetId()), pki.Names{})
+	pem, serial, exp, err := s.issue(ctx, rec, mustId(r.GetId()), pki.Names{})
 	if err != nil {
 		return nil, err
 	}
@@ -806,7 +829,7 @@ func (s coreReader) RenewCertificate(ctx context.Context, req *api.ReaderRenewCe
 		rec = &api.HostJoin{}
 	}
 	rec.SetCsr(req.GetCsr())
-	pem, serial, exp, err := s.issue(rec, f.Actor, pki.Names{})
+	pem, serial, exp, err := s.issue(ctx, rec, f.Actor, pki.Names{})
 	if err != nil {
 		return nil, err
 	}
@@ -821,7 +844,7 @@ func (s coreReader) RenewCertificate(ctx context.Context, req *api.ReaderRenewCe
 		return nil, err
 	}
 
-	return api.ReaderRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle()}.Build(), nil
+	return api.ReaderRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle(ctx)}.Build(), nil
 }
 
 func (s coreReader) Heartbeat(ctx context.Context, req *api.ReaderHeartbeatRequest) (*api.ReaderHeartbeatResponse, error) {
@@ -841,12 +864,16 @@ func (s coreReader) Heartbeat(ctx context.Context, req *api.ReaderHeartbeatReque
 		Ref:              api.ReaderRef_builder{Id: r.GetId()}.Build(),
 		DateSeen:         timestamppb.New(now),
 		Version:          z.Ptr(req.GetVersion()),
+		CaHash:           z.Ptr(req.GetCaHash()),
 		DateUpdatedForce: z.Ptr(true),
 	}.Build()); err != nil {
 		return nil, err
 	}
 	resp := api.ReaderHeartbeatResponse_builder{}
 	if exp := r.GetDateCertExpires(); exp != nil && now.After(renewAt(r.GetDateAdopted(), exp)) {
+		resp.RenewCertificate = true
+	}
+	if s.renewForCa(ctx, req.GetCaHash(), r.GetJoin().GetCertificate()) {
 		resp.RenewCertificate = true
 	}
 
@@ -908,7 +935,7 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
 	}
 
-	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle()}
+	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
 	resp := api.NodeJoinResponse_builder{}
 	auto := s.autoAdopt(DomNode, hj, from)
 
@@ -981,7 +1008,7 @@ func (s coreNode) Join(ctx context.Context, req *api.NodeJoinRequest) (*api.Node
 	case decRejoin:
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || auto {
-			pem, serial, exp, err := s.issue(rec, js.id, s.nodeNames(ctx, js.id, row.Alias, req.GetInterfaces(), req.GetDataAddress()))
+			pem, serial, exp, err := s.issue(ctx, rec, js.id, s.nodeNames(ctx, js.id, row.Alias, req.GetInterfaces(), req.GetDataAddress()))
 			if err != nil {
 				return nil, err
 			}
@@ -1040,7 +1067,7 @@ func (s Core) adoptNode(ctx context.Context, srv api.Server, n *api.Node, alias 
 	if alias == "" {
 		alias = n.GetAlias()
 	}
-	pem, serial, exp, err := s.issue(rec, id, s.nodeNames(ctx, id, alias, n.GetInterfaces(), n.GetDataAddress()))
+	pem, serial, exp, err := s.issue(ctx, rec, id, s.nodeNames(ctx, id, alias, n.GetInterfaces(), n.GetDataAddress()))
 	if err != nil {
 		return nil, err
 	}
@@ -1115,7 +1142,7 @@ func (s coreNode) RenewCertificate(ctx context.Context, req *api.NodeRenewCertif
 		rec = &api.HostJoin{}
 	}
 	rec.SetCsr(req.GetCsr())
-	pem, serial, exp, err := s.issue(rec, f.Actor, s.nodeNames(ctx, f.Actor, n.GetAlias(), n.GetInterfaces(), n.GetDataAddress()))
+	pem, serial, exp, err := s.issue(ctx, rec, f.Actor, s.nodeNames(ctx, f.Actor, n.GetAlias(), n.GetInterfaces(), n.GetDataAddress()))
 	if err != nil {
 		return nil, err
 	}
@@ -1130,7 +1157,7 @@ func (s coreNode) RenewCertificate(ctx context.Context, req *api.NodeRenewCertif
 		return nil, err
 	}
 
-	return api.NodeRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle()}.Build(), nil
+	return api.NodeRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle(ctx)}.Build(), nil
 }
 
 func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) (*api.NodeHeartbeatResponse, error) {
@@ -1211,6 +1238,9 @@ func (s coreNode) Heartbeat(ctx context.Context, req *api.NodeHeartbeatRequest) 
 	if !resp.RenewCertificate && s.outdated(ctx, NodeAddresses{Id: f.Actor, Alias: n.GetAlias()}, n.GetJoin().GetCertificate()) {
 		resp.RenewCertificate = true
 	}
+	if !resp.RenewCertificate && s.renewForCa(ctx, req.GetCaHash(), n.GetJoin().GetCertificate()) {
+		resp.RenewCertificate = true
+	}
 
 	return resp.Build(), nil
 }
@@ -1281,7 +1311,7 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
 	}
 
-	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle()}
+	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
 	resp := api.RelayJoinResponse_builder{}
 	auto := s.autoAdopt(DomRelay, hj, from)
 
@@ -1353,7 +1383,7 @@ func (s coreRelay) Join(ctx context.Context, req *api.RelayJoinRequest) (*api.Re
 	case decRejoin:
 		rec := s.joinRecord(hj, from, true)
 		if s.d.Readopt == "auto" || auto {
-			pem, serial, exp, err := s.issue(rec, js.id, s.relayNames(ctx, js.id, row.Alias, req.GetInterfaces(), req.GetIngestAddress(), req.GetWhepAddress()))
+			pem, serial, exp, err := s.issue(ctx, rec, js.id, s.relayNames(ctx, js.id, row.Alias, req.GetInterfaces(), req.GetIngestAddress(), req.GetWhepAddress()))
 			if err != nil {
 				return nil, err
 			}
@@ -1408,7 +1438,7 @@ func (s Core) adoptRelay(ctx context.Context, srv api.Server, r *api.Relay, alia
 	if alias == "" {
 		alias = r.GetAlias()
 	}
-	pem, serial, exp, err := s.issue(rec, id, s.relayNames(ctx, id, alias, r.GetInterfaces(), r.GetIngestAddress(), r.GetWhepAddress()))
+	pem, serial, exp, err := s.issue(ctx, rec, id, s.relayNames(ctx, id, alias, r.GetInterfaces(), r.GetIngestAddress(), r.GetWhepAddress()))
 	if err != nil {
 		return nil, err
 	}
@@ -1461,7 +1491,7 @@ func (s coreRelay) RenewCertificate(ctx context.Context, req *api.RelayRenewCert
 		rec = &api.HostJoin{}
 	}
 	rec.SetCsr(req.GetCsr())
-	pem, serial, exp, err := s.issue(rec, f.Actor, s.relayNames(ctx, f.Actor, r.GetAlias(), r.GetInterfaces(), r.GetIngestAddress(), r.GetWhepAddress()))
+	pem, serial, exp, err := s.issue(ctx, rec, f.Actor, s.relayNames(ctx, f.Actor, r.GetAlias(), r.GetInterfaces(), r.GetIngestAddress(), r.GetWhepAddress()))
 	if err != nil {
 		return nil, err
 	}
@@ -1476,7 +1506,7 @@ func (s coreRelay) RenewCertificate(ctx context.Context, req *api.RelayRenewCert
 		return nil, err
 	}
 
-	return api.RelayRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle()}.Build(), nil
+	return api.RelayRenewCertificateResponse_builder{Certificate: pem, CaBundle: s.bundle(ctx)}.Build(), nil
 }
 
 func (s coreRelay) Heartbeat(ctx context.Context, req *api.RelayHeartbeatRequest) (*api.RelayHeartbeatResponse, error) {
@@ -1526,6 +1556,9 @@ func (s coreRelay) Heartbeat(ctx context.Context, req *api.RelayHeartbeatRequest
 		resp.RenewCertificate = true
 	}
 	if !resp.RenewCertificate && s.outdated(ctx, NodeAddresses{Id: f.Actor, Alias: r.GetAlias()}, r.GetJoin().GetCertificate()) {
+		resp.RenewCertificate = true
+	}
+	if !resp.RenewCertificate && s.renewForCa(ctx, req.GetCaHash(), r.GetJoin().GetCertificate()) {
 		resp.RenewCertificate = true
 	}
 

@@ -139,6 +139,9 @@ func CameraWorkerOrErr(p CameraWorker, err error) CameraWorker {
 	}
 }
 
+// CertificateAuthority is the predicate function for certificateauthority builders.
+type CertificateAuthority func(*sql.Selector)
+
 // Delegation is the predicate function for delegation builders.
 type Delegation func(*sql.Selector)
 

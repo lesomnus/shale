@@ -879,6 +879,7 @@ var (
 		{Name: "approved_key_fingerprint", Type: field.TypeString},
 		{Name: "date_cert_issued", Type: field.TypeTime, Nullable: true},
 		{Name: "certificate", Type: field.TypeBytes, Nullable: true},
+		{Name: "ca_hash", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 	}
@@ -890,13 +891,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cameraworker_tenant_tenant",
-				Columns:    []*schema.Column{CameraworkerColumns[20]},
+				Columns:    []*schema.Column{CameraworkerColumns[21]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "cameraworker_site_site",
-				Columns:    []*schema.Column{CameraworkerColumns[21]},
+				Columns:    []*schema.Column{CameraworkerColumns[22]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -905,12 +906,12 @@ var (
 			{
 				Name:    "cameraworker_page",
 				Unique:  false,
-				Columns: []*schema.Column{CameraworkerColumns[20], CameraworkerColumns[12], CameraworkerColumns[0]},
+				Columns: []*schema.Column{CameraworkerColumns[21], CameraworkerColumns[12], CameraworkerColumns[0]},
 			},
 			{
 				Name:    "cameraworker_slug",
 				Unique:  true,
-				Columns: []*schema.Column{CameraworkerColumns[1], CameraworkerColumns[20]},
+				Columns: []*schema.Column{CameraworkerColumns[1], CameraworkerColumns[21]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -918,7 +919,46 @@ var (
 			{
 				Name:    "cameraworker_hardware",
 				Unique:  false,
-				Columns: []*schema.Column{CameraworkerColumns[5], CameraworkerColumns[20]},
+				Columns: []*schema.Column{CameraworkerColumns[5], CameraworkerColumns[21]},
+			},
+		},
+	}
+	// CertificateauthorityColumns holds the columns for the "certificateauthority" table.
+	CertificateauthorityColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "alias", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "certificate", Type: field.TypeBytes, Nullable: true},
+		{Name: "private_key", Type: field.TypeBytes, Nullable: true},
+		{Name: "state", Type: field.TypeInt32},
+		{Name: "fingerprint", Type: field.TypeString},
+		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "date_active", Type: field.TypeTime, Nullable: true},
+		{Name: "date_retired", Type: field.TypeTime, Nullable: true},
+	}
+	// CertificateauthorityTable holds the schema information for the "certificateauthority" table.
+	CertificateauthorityTable = &schema.Table{
+		Name:       "certificateauthority",
+		Columns:    CertificateauthorityColumns,
+		PrimaryKey: []*schema.Column{CertificateauthorityColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "certificateauthority_page",
+				Unique:  false,
+				Columns: []*schema.Column{CertificateauthorityColumns[12], CertificateauthorityColumns[0]},
+			},
+			{
+				Name:    "certificateauthority_alias",
+				Unique:  true,
+				Columns: []*schema.Column{CertificateauthorityColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
 			},
 		},
 	}
@@ -1344,6 +1384,7 @@ var (
 		{Name: "status", Type: field.TypeJson, Nullable: true},
 		{Name: "version", Type: field.TypeString},
 		{Name: "live", Type: field.TypeInt32, Nullable: true, Default: 0},
+		{Name: "ca_hash", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "set_id", Type: field.TypeUuid, Nullable: true},
@@ -1357,25 +1398,25 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "producer_tenant_tenant",
-				Columns:    []*schema.Column{ProducerColumns[19]},
+				Columns:    []*schema.Column{ProducerColumns[20]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "producer_site_site",
-				Columns:    []*schema.Column{ProducerColumns[20]},
+				Columns:    []*schema.Column{ProducerColumns[21]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "producer_set_set",
-				Columns:    []*schema.Column{ProducerColumns[21]},
+				Columns:    []*schema.Column{ProducerColumns[22]},
 				RefColumns: []*schema.Column{SetColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "producer_relay_relay",
-				Columns:    []*schema.Column{ProducerColumns[22]},
+				Columns:    []*schema.Column{ProducerColumns[23]},
 				RefColumns: []*schema.Column{RelayColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -1384,12 +1425,12 @@ var (
 			{
 				Name:    "producer_page",
 				Unique:  false,
-				Columns: []*schema.Column{ProducerColumns[19], ProducerColumns[11], ProducerColumns[0]},
+				Columns: []*schema.Column{ProducerColumns[20], ProducerColumns[11], ProducerColumns[0]},
 			},
 			{
 				Name:    "producer_slug",
 				Unique:  true,
-				Columns: []*schema.Column{ProducerColumns[1], ProducerColumns[19]},
+				Columns: []*schema.Column{ProducerColumns[1], ProducerColumns[20]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -1397,7 +1438,7 @@ var (
 			{
 				Name:    "producer_hardware",
 				Unique:  false,
-				Columns: []*schema.Column{ProducerColumns[5], ProducerColumns[19]},
+				Columns: []*schema.Column{ProducerColumns[5], ProducerColumns[20]},
 			},
 		},
 	}
@@ -1421,6 +1462,7 @@ var (
 		{Name: "date_cert_expires", Type: field.TypeTime, Nullable: true},
 		{Name: "version", Type: field.TypeString},
 		{Name: "all_sites", Type: field.TypeBool},
+		{Name: "ca_hash", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "tenant_id", Type: field.TypeUuid},
 	}
 	// ReaderTable holds the schema information for the "reader" table.
@@ -1431,7 +1473,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "reader_tenant_tenant",
-				Columns:    []*schema.Column{ReaderColumns[18]},
+				Columns:    []*schema.Column{ReaderColumns[19]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1440,12 +1482,12 @@ var (
 			{
 				Name:    "reader_page",
 				Unique:  false,
-				Columns: []*schema.Column{ReaderColumns[18], ReaderColumns[12], ReaderColumns[0]},
+				Columns: []*schema.Column{ReaderColumns[19], ReaderColumns[12], ReaderColumns[0]},
 			},
 			{
 				Name:    "reader_slug",
 				Unique:  true,
-				Columns: []*schema.Column{ReaderColumns[1], ReaderColumns[18]},
+				Columns: []*schema.Column{ReaderColumns[1], ReaderColumns[19]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -1453,7 +1495,7 @@ var (
 			{
 				Name:    "reader_hardware",
 				Unique:  false,
-				Columns: []*schema.Column{ReaderColumns[5], ReaderColumns[18]},
+				Columns: []*schema.Column{ReaderColumns[5], ReaderColumns[19]},
 			},
 		},
 	}
@@ -1935,6 +1977,7 @@ var (
 		CamerapolicyTable,
 		CamerapresetTable,
 		CameraworkerTable,
+		CertificateauthorityTable,
 		DelegationTable,
 		DeviceTable,
 		HolderTable,
@@ -2042,6 +2085,9 @@ func init() {
 	CameraworkerTable.ForeignKeys[1].RefTable = SiteTable
 	CameraworkerTable.Annotation = &entsql.Annotation{
 		Table: "cameraworker",
+	}
+	CertificateauthorityTable.Annotation = &entsql.Annotation{
+		Table: "certificateauthority",
 	}
 	DelegationTable.ForeignKeys[0].RefTable = TenantTable
 	DelegationTable.ForeignKeys[1].RefTable = HolderTable

@@ -325,7 +325,7 @@ func (n *Node) Run(ctx context.Context) error {
 	g.Go(func() error {
 		var err error
 		if tlsCfg != nil {
-			httpSrv.TLSConfig = tlsCfg
+			httpSrv.TLSConfig = n.trustCurrent(tlsCfg.Clone())
 			err = httpSrv.ServeTLS(dl, "", "")
 		} else {
 			err = httpSrv.Serve(dl)
@@ -444,6 +444,29 @@ func (n *Node) tlsConfigs() (data, control *tls.Config, err error) {
 	return data, control, nil
 }
 
+// trustCurrent has cfg, a listener's finished configuration, verify client
+// certificates against the bundle as it is at each handshake: a renewal
+// that brought the next CA of a rollover (§33.5) has the node trust a
+// producer, and the CP, renewed from it without a restart.
+func (n *Node) trustCurrent(cfg *tls.Config) *tls.Config {
+	if cfg.ClientCAs == nil {
+		return cfg
+	}
+	base := cfg.Clone()
+	cfg.GetConfigForClient = func(*tls.ClientHelloInfo) (*tls.Config, error) {
+		pool, err := n.agent.TrustPool()
+		if err != nil || pool == nil {
+			return nil, nil
+		}
+		c := base.Clone()
+		c.ClientCAs = pool
+
+		return c, nil
+	}
+
+	return cfg
+}
+
 // carries says whether the certificate is good for the name a client asked
 // for; an empty name, from a client that dialed an IP, is none.
 func carries(c *tls.Certificate, name string) bool {
@@ -466,7 +489,7 @@ func (n *Node) controlServer(tlsCfg *tls.Config) *grpc.Server {
 		c := tlsCfg.Clone()
 		c.ClientAuth = tls.RequireAndVerifyClientCert
 		c.NextProtos = []string{"h2"}
-		opts = append(opts, grpc.Creds(credentials.NewTLS(c)))
+		opts = append(opts, grpc.Creds(credentials.NewTLS(n.trustCurrent(c))))
 		opts = append(opts, grpc.ChainUnaryInterceptor(cpOnlyUnary), grpc.ChainStreamInterceptor(cpOnlyStream))
 	}
 	gs := grpc.NewServer(opts...)

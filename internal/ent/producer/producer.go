@@ -50,6 +50,8 @@ const (
 	FieldVersion = "version"
 	// FieldLive holds the string denoting the live field in the database.
 	FieldLive = "live"
+	// FieldCaHash holds the string denoting the ca_hash field in the database.
+	FieldCaHash = "ca_hash"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
@@ -119,6 +121,7 @@ var Columns = []string{
 	FieldStatus,
 	FieldVersion,
 	FieldLive,
+	FieldCaHash,
 	FieldTenantId,
 	FieldSiteId,
 	FieldSetId,
@@ -138,6 +141,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultLive holds the default value on creation for the "live" field.
 	DefaultLive int32
+	// DefaultCaHash holds the default value on creation for the "ca_hash" field.
+	DefaultCaHash string
 	// ValueScanner of all Producer fields.
 	ValueScanner struct {
 		Join   field.TypeValueScanner[*api.HostJoin]
@@ -226,6 +231,11 @@ func ByVersion(opts ...sql.OrderTermOption) OrderOption {
 // ByLive orders the results by the live field.
 func ByLive(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLive, opts...).ToFunc()
+}
+
+// ByCaHash orders the results by the ca_hash field.
+func ByCaHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCaHash, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

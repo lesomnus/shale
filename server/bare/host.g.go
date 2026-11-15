@@ -1536,6 +1536,11 @@ func (st ProducerServiceServer) create(ctx context.Context, req *api.ProducerAdd
 	} else {
 		q.SetLive(0)
 	}
+	if req.HasCaHash() {
+		q.SetCaHash(req.GetCaHash())
+	} else {
+		q.SetCaHash("")
+	}
 	return q, ds, nil
 }
 
@@ -1717,6 +1722,9 @@ func ProducerSelectedFields(m *api.ProducerSelect) []string {
 	if m.GetLive() {
 		vs = append(vs, producer.FieldLive)
 	}
+	if m.GetCaHash() {
+		vs = append(vs, producer.FieldCaHash)
+	}
 
 	return vs
 }
@@ -1826,7 +1834,7 @@ func ProducerGetKey(ctx context.Context, db *ent.Client, ref *api.ProducerRef) (
 var producerOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Producer")
 
 var producerPatchColumns = entpatch.Columns{
-	1: producer.FieldId, 2: producer.TenantColumn, 3: producer.SiteColumn, 4: producer.FieldAlias, 5: producer.FieldName, 6: producer.FieldDesc, 7: producer.FieldLabels, 8: producer.SetColumn, 9: producer.FieldHardwareId, 10: producer.FieldHostname, 11: producer.FieldState, 12: producer.FieldCertSerial, 13: producer.FieldDateUpdated, 14: producer.FieldDateErased, 15: producer.FieldDateCreated, 16: producer.FieldJoin, 17: producer.FieldDateAdopted, 18: producer.FieldDateSeen, 19: producer.FieldDateCertExpires, 20: producer.RelayColumn, 21: producer.FieldStatus, 22: producer.FieldVersion, 23: producer.FieldLive}
+	1: producer.FieldId, 2: producer.TenantColumn, 3: producer.SiteColumn, 4: producer.FieldAlias, 5: producer.FieldName, 6: producer.FieldDesc, 7: producer.FieldLabels, 8: producer.SetColumn, 9: producer.FieldHardwareId, 10: producer.FieldHostname, 11: producer.FieldState, 12: producer.FieldCertSerial, 13: producer.FieldDateUpdated, 14: producer.FieldDateErased, 15: producer.FieldDateCreated, 16: producer.FieldJoin, 17: producer.FieldDateAdopted, 18: producer.FieldDateSeen, 19: producer.FieldDateCertExpires, 20: producer.RelayColumn, 21: producer.FieldStatus, 22: producer.FieldVersion, 23: producer.FieldLive, 24: producer.FieldCaHash}
 
 func (s ProducerServiceServer) Apply(ctx context.Context, req *api.ProducerApplyRequest) (*api.Producer, error) {
 	if !req.HasPatch() {
@@ -2223,6 +2231,11 @@ func (st ReaderServiceServer) create(ctx context.Context, req *api.ReaderAddRequ
 	}
 	q.SetVersion(req.GetVersion())
 	q.SetAllSites(req.GetAllSites())
+	if req.HasCaHash() {
+		q.SetCaHash(req.GetCaHash())
+	} else {
+		q.SetCaHash("")
+	}
 	return q, ds, nil
 }
 
@@ -2401,6 +2414,9 @@ func ReaderSelectedFields(m *api.ReaderSelect) []string {
 	if m.GetAllSites() {
 		vs = append(vs, reader.FieldAllSites)
 	}
+	if m.GetCaHash() {
+		vs = append(vs, reader.FieldCaHash)
+	}
 
 	return vs
 }
@@ -2470,7 +2486,7 @@ func ReaderGetKey(ctx context.Context, db *ent.Client, ref *api.ReaderRef) (uuid
 var readerOrmEntity = ormpatch.MustEntityOf(api.File_shale_host_proto, "Reader")
 
 var readerPatchColumns = entpatch.Columns{
-	1: reader.FieldId, 2: reader.TenantColumn, 4: reader.FieldAlias, 5: reader.FieldName, 6: reader.FieldDesc, 7: reader.FieldLabels, 8: reader.FieldHardwareId, 9: reader.FieldHostname, 10: reader.FieldState, 11: reader.FieldCertSerial, 12: reader.FieldJoin, 13: reader.FieldDateUpdated, 14: reader.FieldDateErased, 15: reader.FieldDateCreated, 16: reader.FieldDateAdopted, 17: reader.FieldDateSeen, 18: reader.FieldDateCertExpires, 19: reader.FieldVersion, 20: reader.FieldAllSites}
+	1: reader.FieldId, 2: reader.TenantColumn, 4: reader.FieldAlias, 5: reader.FieldName, 6: reader.FieldDesc, 7: reader.FieldLabels, 8: reader.FieldHardwareId, 9: reader.FieldHostname, 10: reader.FieldState, 11: reader.FieldCertSerial, 12: reader.FieldJoin, 13: reader.FieldDateUpdated, 14: reader.FieldDateErased, 15: reader.FieldDateCreated, 16: reader.FieldDateAdopted, 17: reader.FieldDateSeen, 18: reader.FieldDateCertExpires, 19: reader.FieldVersion, 20: reader.FieldAllSites, 21: reader.FieldCaHash}
 
 func (s ReaderServiceServer) Apply(ctx context.Context, req *api.ReaderApplyRequest) (*api.Reader, error) {
 	if !req.HasPatch() {

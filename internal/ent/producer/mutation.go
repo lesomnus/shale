@@ -38,6 +38,7 @@ type Mutation struct {
 	version           *string
 	live              *int32
 	addlive           *int32
+	ca_hash           *string
 	clearedFields     map[string]struct{}
 	exprs             map[string]sql.Querier
 	tenant            *uuid.UUID
@@ -616,6 +617,42 @@ func (m *Mutation) ResetLive() {
 	delete(m.exprs, FieldLive)
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (m *Mutation) SetCaHash(s string) {
+	m.ca_hash = &s
+	delete(m.clearedFields, FieldCaHash)
+	delete(m.exprs, FieldCaHash)
+}
+
+// CaHash returns the value of the "ca_hash" field in the mutation.
+func (m *Mutation) CaHash() (r string, exists bool) {
+	v := m.ca_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCaHash clears the value of the "ca_hash" field.
+func (m *Mutation) ClearCaHash() {
+	m.ca_hash = nil
+	delete(m.exprs, FieldCaHash)
+	m.clearedFields[FieldCaHash] = struct{}{}
+}
+
+// CaHashCleared returns if the "ca_hash" field was cleared in this mutation.
+func (m *Mutation) CaHashCleared() bool {
+	_, ok := m.clearedFields[FieldCaHash]
+	return ok
+}
+
+// ResetCaHash resets all changes to the "ca_hash" field.
+func (m *Mutation) ResetCaHash() {
+	m.ca_hash = nil
+	delete(m.clearedFields, FieldCaHash)
+	delete(m.exprs, FieldCaHash)
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -876,7 +913,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 22)
+	fields := make([]string, 0, 23)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -930,6 +967,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.live != nil || m.exprs[FieldLive] != nil {
 		fields = append(fields, FieldLive)
+	}
+	if m.ca_hash != nil || m.exprs[FieldCaHash] != nil {
+		fields = append(fields, FieldCaHash)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -993,6 +1033,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Version()
 	case FieldLive:
 		return m.Live()
+	case FieldCaHash:
+		return m.CaHash()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldSiteId:
@@ -1200,6 +1242,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetLive(v)
 		return nil
+	case FieldCaHash:
+		v, ok := value.(string)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCaHash(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -1298,6 +1350,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetVersion()
 	case FieldLive:
 		m.ResetLive()
+	case FieldCaHash:
+		m.ResetCaHash()
 	case FieldTenantId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	case FieldSiteId:
@@ -1377,6 +1431,9 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldLive]; ok {
 		fields = append(fields, FieldLive)
+	}
+	if _, ok := m.exprs[FieldCaHash]; ok {
+		fields = append(fields, FieldCaHash)
 	}
 	return fields
 }
@@ -1461,6 +1518,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldLive) {
 		fields = append(fields, FieldLive)
 	}
+	if m.FieldCleared(FieldCaHash) {
+		fields = append(fields, FieldCaHash)
+	}
 	if m.FieldCleared(FieldSiteId) {
 		fields = append(fields, FieldSiteId)
 	}
@@ -1510,6 +1570,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldLive:
 		m.ClearLive()
+		return nil
+	case FieldCaHash:
+		m.ClearCaHash()
 		return nil
 	case FieldSiteId:
 		m.ClearSiteId()
@@ -1581,6 +1644,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldLive:
 		m.ResetLive()
+		return nil
+	case FieldCaHash:
+		m.ResetCaHash()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

@@ -50,6 +50,7 @@ type CameraWorker struct {
 	xxx_hidden_ApprovedKeyFingerprint string                 `protobuf:"bytes,20,opt,name=approved_key_fingerprint,json=approvedKeyFingerprint"`
 	xxx_hidden_DateCertIssued         *timestamppb.Timestamp `protobuf:"bytes,21,opt,name=date_cert_issued,json=dateCertIssued"`
 	xxx_hidden_Certificate            []byte                 `protobuf:"bytes,22,opt,name=certificate"`
+	xxx_hidden_CaHash                 string                 `protobuf:"bytes,23,opt,name=ca_hash,json=caHash"`
 	unknownFields                     protoimpl.UnknownFields
 	sizeCache                         protoimpl.SizeCache
 }
@@ -233,6 +234,13 @@ func (x *CameraWorker) GetCertificate() []byte {
 	return nil
 }
 
+func (x *CameraWorker) GetCaHash() string {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return ""
+}
+
 func (x *CameraWorker) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -325,6 +333,10 @@ func (x *CameraWorker) SetCertificate(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Certificate = v
+}
+
+func (x *CameraWorker) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = v
 }
 
 func (x *CameraWorker) HasTenant() bool {
@@ -466,6 +478,9 @@ type CameraWorker_builder struct {
 	DateCertIssued *timestamppb.Timestamp
 	// Approved public certificate, independent of a pending new-key Join request.
 	Certificate []byte
+	// The hash of the CA bundle it holds, from its heartbeat (§33.5). A
+	// default, so the column is added to a database that predates it.
+	CaHash string
 }
 
 func (b0 CameraWorker_builder) Build() *CameraWorker {
@@ -494,6 +509,7 @@ func (b0 CameraWorker_builder) Build() *CameraWorker {
 	x.xxx_hidden_ApprovedKeyFingerprint = b.ApprovedKeyFingerprint
 	x.xxx_hidden_DateCertIssued = b.DateCertIssued
 	x.xxx_hidden_Certificate = b.Certificate
+	x.xxx_hidden_CaHash = b.CaHash
 	return m0
 }
 
@@ -501,7 +517,7 @@ var File_shale_camera_worker_proto protoreflect.FileDescriptor
 
 const file_shale_camera_worker_proto_rawDesc = "" +
 	"\n" +
-	"\x19shale/camera_worker.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x10shale/site.proto\x1a\x19shale/payday/tenant.proto\"\xaa\n" +
+	"\x19shale/camera_worker.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x12shale/common.proto\x1a\x10shale/host.proto\x1a\x10shale/site.proto\x1a\x19shale/payday/tenant.proto\"\xcc\n" +
 	"\n" +
 	"\fCameraWorker\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
@@ -529,7 +545,8 @@ const file_shale_camera_worker_proto_rawDesc = "" +
 	"\aversion\x18\x13 \x01(\tR\aversion\x128\n" +
 	"\x18approved_key_fingerprint\x18\x14 \x01(\tR\x16approvedKeyFingerprint\x12L\n" +
 	"\x10date_cert_issued\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0edateCertIssued\x12(\n" +
-	"\vcertificate\x18\x16 \x01(\fB\x06\xea\x82\x16\x028\x01R\vcertificate\x1a9\n" +
+	"\vcertificate\x18\x16 \x01(\fB\x06\xea\x82\x16\x028\x01R\vcertificate\x12 \n" +
+	"\aca_hash\x18\x17 \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xcb\x01\xca\xfc\x15|\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +

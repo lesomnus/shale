@@ -24,6 +24,7 @@ import { CameraCredentialVersionSchema } from './shale/camera_credential_version
 import { CameraPolicySchema } from './shale/camera_policy_pb.js'
 import { CameraPresetSchema } from './shale/camera_preset_pb.js'
 import { CameraWorkerSchema } from './shale/camera_worker_pb.js'
+import { CertificateAuthoritySchema } from './shale/certificate_authority_pb.js'
 import { DelegationSchema } from './shale/delegation_pb.js'
 import { DeviceSchema, SinkSchema } from './shale/storage_pb.js'
 import { HolderSchema } from './shale/payday/holder_pb.js'
@@ -46,6 +47,7 @@ import { CameraCredentialVersionService } from './shale/camera_credential_versio
 import { CameraPolicyService } from './shale/camera_policy_svc_pb.js'
 import { CameraPresetService } from './shale/camera_preset_svc_pb.js'
 import { CameraWorkerService } from './shale/camera_worker_svc_pb.js'
+import { CertificateAuthorityService } from './shale/certificate_authority_svc_pb.js'
 import { DelegationService } from './shale/delegation_svc_pb.js'
 import { DeviceService, SinkService } from './shale/storage_svc_pb.js'
 import { HolderService } from './shale/payday/holder_svc_pb.js'
@@ -241,6 +243,19 @@ export const CameraWorker = {
 	key: "id",
 	ids: ["id"],
 	service: CameraWorkerService,
+} as const satisfies EntityDesc
+
+/** shale.CertificateAuthority, as the store holds it. */
+export const CertificateAuthority = {
+	typeName: "shale.CertificateAuthority",
+	schema: CertificateAuthoritySchema,
+	domain: 42,
+	version: "dateUpdated",
+	alias: "alias",
+	key: "id",
+	ids: ["id"],
+	secrets: ["privateKey"],
+	service: CertificateAuthorityService,
 } as const satisfies EntityDesc
 
 /** shale.Delegation, as the store holds it. */
@@ -488,5 +503,5 @@ export const UploadPolicy = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
+export const entities = [Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment, CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice, CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant, UploadPolicy] as const
 

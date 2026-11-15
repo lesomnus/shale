@@ -26,6 +26,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/camerapolicy"
 	"github.com/lesomnus/shale/internal/ent/camerapreset"
 	"github.com/lesomnus/shale/internal/ent/cameraworker"
+	"github.com/lesomnus/shale/internal/ent/certificateauthority"
 	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
@@ -73,6 +74,7 @@ const (
 	TypeCameraPolicy            = "CameraPolicy"
 	TypeCameraPreset            = "CameraPreset"
 	TypeCameraWorker            = "CameraWorker"
+	TypeCertificateAuthority    = "CertificateAuthority"
 	TypeDelegation              = "Delegation"
 	TypeDevice                  = "Device"
 	TypeHolder                  = "Holder"
@@ -6332,6 +6334,23 @@ func (m *CameraWorkerMutation) OldCertificate(ctx context.Context) (v *[]byte, e
 	return oldValue.Certificate, nil
 }
 
+// OldCaHash returns the old "ca_hash" field's value of the CameraWorker entity.
+// If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CameraWorkerMutation) OldCaHash(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCaHash is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCaHash requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCaHash: %w", err)
+	}
+	return oldValue.CaHash, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the CameraWorker entity.
 // If the CameraWorker object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -6409,12 +6428,400 @@ func (m *CameraWorkerMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldDateCertIssued(ctx)
 	case cameraworker.FieldCertificate:
 		return m.OldCertificate(ctx)
+	case cameraworker.FieldCaHash:
+		return m.OldCaHash(ctx)
 	case cameraworker.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case cameraworker.FieldSiteId:
 		return m.OldSiteId(ctx)
 	}
 	return nil, fmt.Errorf("unknown CameraWorker field %s", name)
+}
+
+// CertificateAuthorityMutation represents an operation that mutates the CertificateAuthority nodes in the graph.
+type CertificateAuthorityMutation struct {
+	certificateauthority.Mutation
+	config
+	id       *uuid.UUID
+	done     bool
+	oldValue func(context.Context) (*CertificateAuthority, error)
+}
+
+var _ ent.Mutation = (*CertificateAuthorityMutation)(nil)
+
+// certificateauthorityOption allows management of the mutation configuration using functional options.
+type certificateauthorityOption func(*CertificateAuthorityMutation)
+
+// newCertificateAuthorityMutation creates new mutation for the CertificateAuthority entity.
+func newCertificateAuthorityMutation(c config, op Op, opts ...certificateauthorityOption) *CertificateAuthorityMutation {
+	m := &CertificateAuthorityMutation{
+		Mutation: *certificateauthority.NewMutation(op),
+		config:   c,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// SetId sets the value of the id field. Note that this
+// operation is only accepted on creation of CertificateAuthority entities.
+func (m *CertificateAuthorityMutation) SetId(id uuid.UUID) {
+	m.id = &id
+}
+
+// Id returns the Id value in the mutation. Note that the Id is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CertificateAuthorityMutation) Id() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// withCertificateAuthorityId sets the Id field of the mutation.
+func withCertificateAuthorityId(id uuid.UUID) certificateauthorityOption {
+	return func(m *CertificateAuthorityMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CertificateAuthority
+		)
+		m.oldValue = func(ctx context.Context) (*CertificateAuthority, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CertificateAuthority.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCertificateAuthority sets the old CertificateAuthority of the mutation.
+func withCertificateAuthority(node *CertificateAuthority) certificateauthorityOption {
+	return func(m *CertificateAuthorityMutation) {
+		m.oldValue = func(context.Context) (*CertificateAuthority, error) {
+			return node, nil
+		}
+		m.id = &node.Id
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CertificateAuthorityMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CertificateAuthorityMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// Ids queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CertificateAuthorityMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.Op().Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.Id()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.Op().Is(OpUpdate | OpDelete):
+		return m.Client().CertificateAuthority.Query().Where(m.Predicates()...).Ids(ctx)
+	default:
+		return nil, fmt.Errorf("Ids is not allowed on %s operations", m.Op())
+	}
+}
+
+// OldAlias returns the old "alias" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldAlias(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAlias is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAlias requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAlias: %w", err)
+	}
+	return oldValue.Alias, nil
+}
+
+// OldName returns the old "name" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldName requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// OldDesc returns the old "desc" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldDesc(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDesc is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDesc requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDesc: %w", err)
+	}
+	return oldValue.Desc, nil
+}
+
+// OldLabels returns the old "labels" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// OldCertificate returns the old "certificate" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldCertificate(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCertificate is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCertificate requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCertificate: %w", err)
+	}
+	return oldValue.Certificate, nil
+}
+
+// OldPrivateKey returns the old "private_key" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldPrivateKey(ctx context.Context) (v []byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldPrivateKey is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldPrivateKey requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrivateKey: %w", err)
+	}
+	return oldValue.PrivateKey, nil
+}
+
+// OldState returns the old "state" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldState(ctx context.Context) (v int32, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldState requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// OldFingerprint returns the old "fingerprint" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldFingerprint(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldFingerprint is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldFingerprint requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFingerprint: %w", err)
+	}
+	return oldValue.Fingerprint, nil
+}
+
+// OldDateExpires returns the old "date_expires" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateExpires requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+	}
+	return oldValue.DateExpires, nil
+}
+
+// OldDateUpdated returns the old "date_updated" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldDateUpdated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateUpdated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateUpdated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateUpdated: %w", err)
+	}
+	return oldValue.DateUpdated, nil
+}
+
+// OldDateErased returns the old "date_erased" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldDateErased(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateErased is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateErased requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateErased: %w", err)
+	}
+	return oldValue.DateErased, nil
+}
+
+// OldDateCreated returns the old "date_created" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldDateCreated(ctx context.Context) (v time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateCreated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateCreated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateCreated: %w", err)
+	}
+	return oldValue.DateCreated, nil
+}
+
+// OldDateActive returns the old "date_active" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldDateActive(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateActive is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateActive requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateActive: %w", err)
+	}
+	return oldValue.DateActive, nil
+}
+
+// OldDateRetired returns the old "date_retired" field's value of the CertificateAuthority entity.
+// If the CertificateAuthority object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertificateAuthorityMutation) OldDateRetired(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateRetired is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateRetired requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateRetired: %w", err)
+	}
+	return oldValue.DateRetired, nil
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CertificateAuthorityMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case certificateauthority.FieldAlias:
+		return m.OldAlias(ctx)
+	case certificateauthority.FieldName:
+		return m.OldName(ctx)
+	case certificateauthority.FieldDesc:
+		return m.OldDesc(ctx)
+	case certificateauthority.FieldLabels:
+		return m.OldLabels(ctx)
+	case certificateauthority.FieldCertificate:
+		return m.OldCertificate(ctx)
+	case certificateauthority.FieldPrivateKey:
+		return m.OldPrivateKey(ctx)
+	case certificateauthority.FieldState:
+		return m.OldState(ctx)
+	case certificateauthority.FieldFingerprint:
+		return m.OldFingerprint(ctx)
+	case certificateauthority.FieldDateExpires:
+		return m.OldDateExpires(ctx)
+	case certificateauthority.FieldDateUpdated:
+		return m.OldDateUpdated(ctx)
+	case certificateauthority.FieldDateErased:
+		return m.OldDateErased(ctx)
+	case certificateauthority.FieldDateCreated:
+		return m.OldDateCreated(ctx)
+	case certificateauthority.FieldDateActive:
+		return m.OldDateActive(ctx)
+	case certificateauthority.FieldDateRetired:
+		return m.OldDateRetired(ctx)
+	}
+	return nil, fmt.Errorf("unknown CertificateAuthority field %s", name)
 }
 
 // DelegationMutation represents an operation that mutates the Delegation nodes in the graph.
@@ -9979,6 +10386,23 @@ func (m *ProducerMutation) OldLive(ctx context.Context) (v int32, err error) {
 	return oldValue.Live, nil
 }
 
+// OldCaHash returns the old "ca_hash" field's value of the Producer entity.
+// If the Producer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProducerMutation) OldCaHash(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCaHash is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCaHash requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCaHash: %w", err)
+	}
+	return oldValue.CaHash, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the Producer entity.
 // If the Producer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -10088,6 +10512,8 @@ func (m *ProducerMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldVersion(ctx)
 	case producer.FieldLive:
 		return m.OldLive(ctx)
+	case producer.FieldCaHash:
+		return m.OldCaHash(ctx)
 	case producer.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case producer.FieldSiteId:
@@ -10500,6 +10926,23 @@ func (m *ReaderMutation) OldAllSites(ctx context.Context) (v bool, err error) {
 	return oldValue.AllSites, nil
 }
 
+// OldCaHash returns the old "ca_hash" field's value of the Reader entity.
+// If the Reader object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReaderMutation) OldCaHash(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldCaHash is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldCaHash requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCaHash: %w", err)
+	}
+	return oldValue.CaHash, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the Reader entity.
 // If the Reader object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -10556,6 +10999,8 @@ func (m *ReaderMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldVersion(ctx)
 	case reader.FieldAllSites:
 		return m.OldAllSites(ctx)
+	case reader.FieldCaHash:
+		return m.OldCaHash(ctx)
 	case reader.FieldTenantId:
 		return m.OldTenantId(ctx)
 	}

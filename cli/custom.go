@@ -57,6 +57,8 @@ var custom = map[string]string{
 	"device/declare-dead":       "shale.DeviceService.DeclareDead",
 	"device/locate":             "shale.DeviceService.Locate",
 	"signing-key/rotate":        "shale.SigningKeyService.Rotate",
+	"ca/rotate":                 "shale.CertificateAuthorityService.Rotate",
+	"ca/status":                 "shale.CertificateAuthorityService.Status",
 	"placement-policy/activate": "shale.PlacementPolicyService.Activate",
 	"upload-policy/activate":    "shale.UploadPolicyService.Activate",
 	"address-policy/activate":   "shale.AddressPolicyService.Activate",

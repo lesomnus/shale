@@ -26,6 +26,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/camerapolicy"
 	"github.com/lesomnus/shale/internal/ent/camerapreset"
 	"github.com/lesomnus/shale/internal/ent/cameraworker"
+	"github.com/lesomnus/shale/internal/ent/certificateauthority"
 	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
@@ -85,6 +86,8 @@ type Client struct {
 	CameraPreset *CameraPresetClient
 	// CameraWorker is the client for interacting with the CameraWorker builders.
 	CameraWorker *CameraWorkerClient
+	// CertificateAuthority is the client for interacting with the CertificateAuthority builders.
+	CertificateAuthority *CertificateAuthorityClient
 	// Delegation is the client for interacting with the Delegation builders.
 	Delegation *DelegationClient
 	// Device is the client for interacting with the Device builders.
@@ -150,6 +153,7 @@ func (c *Client) init() {
 	c.CameraPolicy = NewCameraPolicyClient(c.config)
 	c.CameraPreset = NewCameraPresetClient(c.config)
 	c.CameraWorker = NewCameraWorkerClient(c.config)
+	c.CertificateAuthority = NewCertificateAuthorityClient(c.config)
 	c.Delegation = NewDelegationClient(c.config)
 	c.Device = NewDeviceClient(c.config)
 	c.Holder = NewHolderClient(c.config)
@@ -277,6 +281,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		CameraPolicy:            NewCameraPolicyClient(cfg),
 		CameraPreset:            NewCameraPresetClient(cfg),
 		CameraWorker:            NewCameraWorkerClient(cfg),
+		CertificateAuthority:    NewCertificateAuthorityClient(cfg),
 		Delegation:              NewDelegationClient(cfg),
 		Device:                  NewDeviceClient(cfg),
 		Holder:                  NewHolderClient(cfg),
@@ -331,6 +336,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		CameraPolicy:            NewCameraPolicyClient(cfg),
 		CameraPreset:            NewCameraPresetClient(cfg),
 		CameraWorker:            NewCameraWorkerClient(cfg),
+		CertificateAuthority:    NewCertificateAuthorityClient(cfg),
 		Delegation:              NewDelegationClient(cfg),
 		Device:                  NewDeviceClient(cfg),
 		Holder:                  NewHolderClient(cfg),
@@ -429,9 +435,10 @@ func (c *Client) Use(hooks ...Hook) {
 		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.CameraAssignment,
 		c.CameraBinding, c.CameraCredential, c.CameraCredentialVersion, c.CameraDevice,
 		c.CameraJob, c.CameraNetwork, c.CameraPolicy, c.CameraPreset, c.CameraWorker,
-		c.Delegation, c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed,
-		c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set,
-		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
+		c.CertificateAuthority, c.Delegation, c.Device, c.Holder, c.Lamina, c.Node,
+		c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal,
+		c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant,
+		c.UploadPolicy,
 	} {
 		n.Use(hooks...)
 	}
@@ -444,9 +451,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.Access, c.AddressPolicy, c.Archived, c.Attempt, c.Audit, c.CameraAssignment,
 		c.CameraBinding, c.CameraCredential, c.CameraCredentialVersion, c.CameraDevice,
 		c.CameraJob, c.CameraNetwork, c.CameraPolicy, c.CameraPreset, c.CameraWorker,
-		c.Delegation, c.Device, c.Holder, c.Lamina, c.Node, c.Outbox, c.Owed,
-		c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal, c.Set,
-		c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant, c.UploadPolicy,
+		c.CertificateAuthority, c.Delegation, c.Device, c.Holder, c.Lamina, c.Node,
+		c.Outbox, c.Owed, c.PlacementPolicy, c.Producer, c.Reader, c.Relay, c.RowSeal,
+		c.Set, c.SigningKey, c.Sink, c.Site, c.SiteMember, c.Source, c.Tenant,
+		c.UploadPolicy,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -485,6 +493,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CameraPreset.mutate(ctx, m)
 	case *CameraWorkerMutation:
 		return c.CameraWorker.mutate(ctx, m)
+	case *CertificateAuthorityMutation:
+		return c.CertificateAuthority.mutate(ctx, m)
 	case *DelegationMutation:
 		return c.Delegation.mutate(ctx, m)
 	case *DeviceMutation:
@@ -3146,6 +3156,139 @@ func (c *CameraWorkerClient) mutate(ctx context.Context, m *CameraWorkerMutation
 		return (&CameraWorkerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CameraWorker mutation op: %q", m.Op())
+	}
+}
+
+// CertificateAuthorityClient is a client for the CertificateAuthority schema.
+type CertificateAuthorityClient struct {
+	config
+}
+
+// NewCertificateAuthorityClient returns a client for the CertificateAuthority from the given config.
+func NewCertificateAuthorityClient(c config) *CertificateAuthorityClient {
+	return &CertificateAuthorityClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `certificateauthority.Hooks(f(g(h())))`.
+func (c *CertificateAuthorityClient) Use(hooks ...Hook) {
+	c.hooks.CertificateAuthority = append(c.hooks.CertificateAuthority, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `certificateauthority.Intercept(f(g(h())))`.
+func (c *CertificateAuthorityClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CertificateAuthority = append(c.inters.CertificateAuthority, interceptors...)
+}
+
+// Create returns a builder for creating a CertificateAuthority entity.
+func (c *CertificateAuthorityClient) Create() *CertificateAuthorityCreate {
+	mutation := newCertificateAuthorityMutation(c.config, OpCreate)
+	return &CertificateAuthorityCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CertificateAuthority entities.
+func (c *CertificateAuthorityClient) CreateBulk(builders ...*CertificateAuthorityCreate) *CertificateAuthorityCreateBulk {
+	return &CertificateAuthorityCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CertificateAuthorityClient) MapCreateBulk(slice any, setFunc func(*CertificateAuthorityCreate, int)) *CertificateAuthorityCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CertificateAuthorityCreateBulk{err: fmt.Errorf("calling to CertificateAuthorityClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CertificateAuthorityCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CertificateAuthorityCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CertificateAuthority.
+func (c *CertificateAuthorityClient) Update() *CertificateAuthorityUpdate {
+	mutation := newCertificateAuthorityMutation(c.config, OpUpdate)
+	return &CertificateAuthorityUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CertificateAuthorityClient) UpdateOne(_m *CertificateAuthority) *CertificateAuthorityUpdateOne {
+	mutation := newCertificateAuthorityMutation(c.config, OpUpdateOne, withCertificateAuthority(_m))
+	return &CertificateAuthorityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *CertificateAuthorityClient) UpdateOneId(id uuid.UUID) *CertificateAuthorityUpdateOne {
+	mutation := newCertificateAuthorityMutation(c.config, OpUpdateOne, withCertificateAuthorityId(id))
+	return &CertificateAuthorityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CertificateAuthority.
+func (c *CertificateAuthorityClient) Delete() *CertificateAuthorityDelete {
+	mutation := newCertificateAuthorityMutation(c.config, OpDelete)
+	return &CertificateAuthorityDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CertificateAuthorityClient) DeleteOne(_m *CertificateAuthority) *CertificateAuthorityDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *CertificateAuthorityClient) DeleteOneId(id uuid.UUID) *CertificateAuthorityDeleteOne {
+	builder := c.Delete().Where(certificateauthority.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &CertificateAuthorityDeleteOne{builder}
+}
+
+// Query returns a query builder for CertificateAuthority.
+func (c *CertificateAuthorityClient) Query() *CertificateAuthorityQuery {
+	return &CertificateAuthorityQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCertificateAuthority},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CertificateAuthority entity by its id.
+func (c *CertificateAuthorityClient) Get(ctx context.Context, id uuid.UUID) (*CertificateAuthority, error) {
+	return c.Query().Where(certificateauthority.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CertificateAuthorityClient) GetX(ctx context.Context, id uuid.UUID) *CertificateAuthority {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *CertificateAuthorityClient) Hooks() []Hook {
+	return c.hooks.CertificateAuthority
+}
+
+// Interceptors returns the client interceptors.
+func (c *CertificateAuthorityClient) Interceptors() []Interceptor {
+	return c.inters.CertificateAuthority
+}
+
+func (c *CertificateAuthorityClient) mutate(ctx context.Context, m *CertificateAuthorityMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CertificateAuthorityCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CertificateAuthorityUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CertificateAuthorityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CertificateAuthorityDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CertificateAuthority mutation op: %q", m.Op())
 	}
 }
 
@@ -6230,17 +6373,17 @@ type (
 	hooks struct {
 		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
 		CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice,
-		CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation,
-		Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader,
-		Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
-		UploadPolicy []ent.Hook
+		CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker,
+		CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed,
+		PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site,
+		SiteMember, Source, Tenant, UploadPolicy []ent.Hook
 	}
 	inters struct {
 		Access, AddressPolicy, Archived, Attempt, Audit, CameraAssignment,
 		CameraBinding, CameraCredential, CameraCredentialVersion, CameraDevice,
-		CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker, Delegation,
-		Device, Holder, Lamina, Node, Outbox, Owed, PlacementPolicy, Producer, Reader,
-		Relay, RowSeal, Set, SigningKey, Sink, Site, SiteMember, Source, Tenant,
-		UploadPolicy []ent.Interceptor
+		CameraJob, CameraNetwork, CameraPolicy, CameraPreset, CameraWorker,
+		CertificateAuthority, Delegation, Device, Holder, Lamina, Node, Outbox, Owed,
+		PlacementPolicy, Producer, Reader, Relay, RowSeal, Set, SigningKey, Sink, Site,
+		SiteMember, Source, Tenant, UploadPolicy []ent.Interceptor
 	}
 )

@@ -59,5 +59,6 @@ func (e *CameraWorker) Proto() *api.CameraWorker {
 	if e.Certificate != nil {
 		x.SetCertificate(*e.Certificate)
 	}
+	x.SetCaHash(e.CaHash)
 	return x
 }
