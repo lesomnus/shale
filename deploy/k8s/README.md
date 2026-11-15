@@ -257,7 +257,11 @@ producer:
 
 It appears in `shale producer pending`, and `shale producer adopt`
 binds it to a set. Its uploads go straight to the Storage Nodes on the
-host network (port 7420), never through the cluster's Services.
+host network (port 7420), never through the cluster's Services. With
+`storage.http3: on` (storage-config.yaml) the nodes serve HTTP/3 on UDP
+7420 as well (§35.6), so a firewall on those hosts lets both in; browsers
+then take the console's Playback and Export to it by themselves, and a
+producer with `producer.http3: auto` its uploads, on a WiFi link above all.
 
 ## Known wrinkles
 

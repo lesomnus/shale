@@ -35,8 +35,9 @@ state: /var/lib/shale
 
 # --- a storage node (shale@storage) ----------------------------------------
 # storage:
-#   addr: ":7410"
+#   addr: ":7410"                         # TCP; and UDP with http3: on
 #   control_addr: ":7411"
+#   # http3: on                           # HTTP/3 too, browsers included; off by default (§35.6)
 #   sinks:
 #     - path: /mnt/hdd01                  # a whole HDD: identity and capacity detected
 #     - path: /mnt/hdd02
@@ -45,6 +46,7 @@ state: /var/lib/shale
 # cp: https://cp.example.com:7400
 # tenant: acme
 # producer:
+#   # http3: auto                         # uploads over HTTP/3 where a node offers it; off by default (§35.6)
 #   sources:
 #     - alias: door
 #       input: v4l2:/dev/video0

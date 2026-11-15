@@ -444,6 +444,66 @@ HEAD   /laminae/{lamina_key}   upload offset and completeness, or lamina metadat
 A `HEAD` on a complete lamina also answers `Shale-Checksum: crc32c=<hex>`
 when the set asked for checksums ([§30](09-operations.md#30-integrity)).
 
+**HTTP/3.** A node serves it when the operator turns it on,
+`storage.http3: on`; it is off by default. Then the node serves it on UDP
+at its data port, the number its TCP listener has, with the same handler
+and the same TLS at each handshake as over TCP: the certificate chosen by
+the name a client asks for, and a client certificate verified against the
+bundle the node holds then, the next CA of a rollover included
+([§33.5](10-security.md#335-tls)). A producer's HTTP/3 verifies a node
+against the bundle it holds at each handshake, as its TCP does.
+
+- **Turning it on moves browsers too.** A browser that reads laminae from
+  the node, the console's Playback and Export
+  ([§40.5](17-console.md#405-playback)) under an external certificate it
+  trusts, follows the `Alt-Svc` by itself and takes those reads to HTTP/3,
+  their throughput with them, on QUIC in the node rather than the kernel's
+  TCP. The data port needs UDP open from wherever those browsers and
+  producers sit; where it is not, a browser falls back to TCP after its
+  own attempt. Both are why it is an operator's choice and not what an
+  upgrade does.
+- Every answer, over TCP and HTTP/3 alike, offers it:
+  `Alt-Svc: h3=":<port>"; ma=3600`, on the port the request came to. A
+  port mapping in front of the node therefore maps UDP as it maps TCP
+  ([§34.5](11-deployment.md#345-kubernetes)). A node that cannot have the
+  UDP port serves TCP alone, says so in its log, and offers nothing.
+  Development mode is plaintext ([§34.7](11-deployment.md#347-single-machine)),
+  and QUIC never is, so there is no HTTP/3 there.
+- A client takes it as it chooses. A browser follows the `Alt-Svc` as
+  above. A producer takes it only when `producer.http3` says so
+  ([§36.1](13-configuration.md#361-configuration-reference)): `off`, the
+  default, is TCP as before; `auto` speaks HTTP/3 to a node once one of its
+  answers offered it on that port; `on` speaks it to every node from the
+  first request. A handshake that does not complete within 5 s (UDP blocked
+  on the path, or a node that does not serve it) sends the same request
+  over TCP at once, since nothing of it went out. The producer then keeps
+  that node on TCP for 5 minutes, doubling while HTTP/3 keeps failing, up
+  to an hour, unless TCP fails as well: then the node is away, not its UDP.
+  A failure after the handshake is the request's, and is resumed as over
+  TCP ([§13](04-write-path.md#13-retry-and-reallocation)). The CP's export
+  and the CLI read over TCP.
+- The semantics are the same on every version: resumable uploads with
+  `Upload-Offset` and the `409`, `413` and `503` above, a live body of no
+  announced length that grows while it is sent, its end time as a
+  trailer, the idle timeout, and `Range`. Requests are counted by version,
+  `shale.node.requests{proto}` ([§31](09-operations.md#31-observability)).
+- QUIC's own settings: no 0-RTT, since an upload is not a request to
+  replay. The receive windows, which bound what a producer has in flight to
+  a node and keeps for retransmission, are 2 MB a stream and 4 MB a
+  connection, below quic-go's 6 and 15 MB, which a Raspberry Pi would hold
+  in RAM. A connection nothing was heard on for 30 s is gone, a producer
+  pings an idle one every 10 s, and a node closes one that has carried no
+  request for 90 s. A node that stops refuses new connections first, then
+  gives the open ones 5 s, as over TCP. quic-go asks the kernel for 7 MB
+  UDP socket buffers and says once in the log when it gets less
+  (`net.core.rmem_max`, `wmem_max`): a producer's rates need nothing near
+  that, and a busy node may raise them.
+- An endpoint's `protocol` is what a client speaks to it: `h2` with
+  `https` (a client without HTTP/2 takes HTTP/1.1), and `h1` with the
+  plaintext `http` of development mode. HTTP/3 is on the same host and
+  port, so the CP names no endpoint apart for it
+  ([§34.10](11-deployment.md#3410-node-addresses)).
+
 ### 35.7 Storage Node: control API
 
 The Control Plane calls nodes. Each node serves one gRPC service on its

@@ -341,6 +341,38 @@ func (a *Agent) PeerTLS() (*tls.Config, error) {
 	return &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12, GetClientCertificate: a.clientCertificate}, nil
 }
 
+// PeerTLSHeld is PeerTLS for the bundle held at each call, made again only
+// when the bundle changes: what a client that dials other hosts by itself
+// starts every handshake from, the producer's HTTP/3 (internal/h3), as
+// HTTPClient's transport is for TCP. Through a CA rollover (§33.5) it
+// verifies a node renewed from the next CA without a restart.
+func (a *Agent) PeerTLSHeld() func() (*tls.Config, error) {
+	var (
+		mu   sync.Mutex
+		held []byte
+		cfg  *tls.Config
+	)
+
+	return func() (*tls.Config, error) {
+		bundle, err := a.Store.Bundle()
+		if err != nil {
+			return nil, err
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		if cfg != nil && bytes.Equal(bundle, held) {
+			return cfg, nil
+		}
+		c, err := a.PeerTLS()
+		if err != nil {
+			return nil, err
+		}
+		cfg, held = c, bundle
+
+		return c, nil
+	}
+}
+
 // clientCertificate is the host certificate for a server that asks for
 // one, when it is from a CA the server names; none otherwise, as Go does
 // with a fixed certificate. A node of an earlier release trusts the bundle

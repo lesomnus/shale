@@ -14,6 +14,10 @@ data:
     storage:
       addr: ":7420"
       control_addr: ":7421"
+      # HTTP/3 on UDP 7420 as well (§35.6), off unless turned on: browsers
+      # then take Playback and Export to it by themselves, and the hosts'
+      # firewalls must let UDP 7420 in.
+      # http3: on
       # The data plane serves this instead of the host certificate, to a
       # client that asks for a name it carries, and reads it again when
       # cert-manager renews it; with SHALE_STORAGE_ADVERTISE a name it

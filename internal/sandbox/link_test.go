@@ -112,6 +112,29 @@ func TestTheSandboxLetsTheLinkerPruneMethods(t *testing.T) {
 	}
 }
 
+// TestTheSandboxLinksNoQuic says that HTTP/3 stays with the hosts that speak
+// it (§35.6). quic-go builds for js/wasm, so nothing would fail if the page
+// linked it: it would only grow, by a QUIC stack that cannot open a socket
+// there. internal/h3 is kept out of internal/hostagent, which the control
+// plane links, for this.
+func TestTheSandboxLinksNoQuic(t *testing.T) {
+	x := require.New(t)
+
+	if testing.Short() {
+		t.Skip("lists what the sandbox links")
+	}
+
+	c := exec.CommandContext(t.Context(), "go", "list", "-tags", tags, "-deps", "./wasm")
+	c.Dir = filepath.Join("..", "..")
+	c.Env = append(os.Environ(), "GOOS=js", "GOARCH=wasm")
+	out, err := c.CombinedOutput()
+	x.NoError(err, "%s", out)
+	x.Contains(string(out), "github.com/lesomnus/shale/server/core", "the list is the sandbox's")
+	for _, pkg := range strings.Fields(string(out)) {
+		x.False(strings.HasPrefix(pkg, "github.com/quic-go/") || pkg == "github.com/lesomnus/shale/internal/h3", "the sandbox links %s", pkg)
+	}
+}
+
 // linked is a name in the linker's dump without what it marked the name with,
 // and whether that was a method called by index.
 func linked(s string) (string, bool) {

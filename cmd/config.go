@@ -217,9 +217,14 @@ type StorageConfig struct {
 	// certificate, e.g. one a browser trusts for the console's Playback
 	// (§33.5); both or neither, read again when the files change. The
 	// control API keeps the host certificate.
-	CertFile string       `yaml:"cert_file"`
-	KeyFile  string       `yaml:"key_file"`
-	Sinks    []SinkConfig `yaml:"sinks"`
+	CertFile string `yaml:"cert_file"`
+	KeyFile  string `yaml:"key_file"`
+	// Http3 is `off` (the default) or `on`: the data plane over HTTP/3 as
+	// well, on UDP at the same port, advertised with Alt-Svc (§35.6), which
+	// browsers follow for the console's Playback and Export by themselves.
+	// A UDP port the node cannot have leaves it serving TCP alone.
+	Http3 string       `yaml:"http3"`
+	Sinks []SinkConfig `yaml:"sinks"`
 
 	PartSize        string `yaml:"part_size"`
 	MaxUploads      int    `yaml:"max_uploads"`
@@ -399,6 +404,11 @@ type ProducerConfig struct {
 	ResumeTimeout    time.Duration `yaml:"resume_timeout"`
 	RetryAfterCap    time.Duration `yaml:"retry_after_cap"`
 	PlacementRetries int           `yaml:"placement_retries"`
+	// Http3 is when uploads take a node's HTTP/3 (§35.6): `off` (the
+	// default), TCP as before; `auto`, HTTP/3 to a node that says it
+	// serves it, with TCP for a while after a handshake that fails; `on`,
+	// HTTP/3 to every node from the first request, with the same fallback.
+	Http3 string `yaml:"http3"`
 	// Uplink is the link's capacity, e.g. "20Mbps", for the link check.
 	Uplink string `yaml:"uplink"`
 	// Buffer is the RAM budget for segments not yet stored, e.g. "512MiB"

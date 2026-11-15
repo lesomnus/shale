@@ -405,7 +405,10 @@ becomes an orphan, and orphans are reclaimed by GC ([§21.3](06-retention-gc.md#
   incarnation's upload of the same slot: the producer restarted mid-slot
   and the CP answered the same lamina and attempts. The node cannot tell
   whose bytes they are, so the producer does: a `409` whose offset is
-  past what it stated, or a `HEAD` offset past what it sent, ends the
+  past both what it stated and what its earlier requests for the key sent
+  (the node refuses a request it answers `409` whole, so only an earlier
+  one, cut short after the node had its bytes, can have left the node
+  ahead of the offset stated), or a `HEAD` offset past what it sent, ends the
   attempt with the reason "the node holds bytes of this key that are not
   ours", the CP keeps that sink eligible, and `Reallocate` hands out a
   fresh attempt with a fresh key. The old file is finalized or removed by
@@ -572,6 +575,10 @@ Transient transport errors are retried against the same target: connect/TLS
 timeouts, connection reset, `502`, `504`, and `503` (honoring `Retry-After` up
 to `retry_after_cap`, default 2 minutes). An interrupted upload resumes from
 its offset ([§12.2](#122-resumable-part-uploads)).
+
+Over HTTP/3 ([§35.6](12-api.md#356-storage-node-http-data-plane)) it is the
+same, and a handshake that does not complete is no failure of the target:
+the request goes over TCP, and the target stays on TCP for a while.
 
 The limit is based on progress, not attempt count. A slow link may reconnect
 many times. The producer keeps resuming as long as each attempt advances the
