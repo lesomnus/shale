@@ -562,6 +562,22 @@ func uploadReportOf(v *api.UploadReport) *api.UploadReport {
 			return nil
 		}
 	}
+	// The sources whose live it hands the satellite (§41.8): Source ids, at
+	// most as many as a publish token names. The satellite's feed token
+	// names those of them the producer's own names, and no others.
+	switch v.GetLiveFeed() {
+	case "", "auto", "producer":
+	default:
+		return nil
+	}
+	if len(v.GetLiveSources()) > maxLiveSources {
+		return nil
+	}
+	for _, id := range v.GetLiveSources() {
+		if v, err := pdid.From(id); err != nil || v.Domain() != DomSource {
+			return nil
+		}
+	}
 
 	return api.UploadReport_builder{
 		Via:              v.GetVia(),
@@ -569,8 +585,14 @@ func uploadReportOf(v *api.UploadReport) *api.UploadReport {
 		ThroughSatellite: v.GetThroughSatellite(),
 		Direct:           v.GetDirect(),
 		Fallbacks:        v.GetFallbacks(),
+		LiveSources:      v.GetLiveSources(),
+		LiveFeed:         v.GetLiveFeed(),
 	}.Build()
 }
+
+// maxLiveSources bounds the sources a producer says it hands its satellite:
+// as many as a relay takes in one publish token.
+const maxLiveSources = 4096
 
 // maxAdmissionSources bounds the cameras one heartbeat says are waiting: an
 // assignment holds at most 500.
