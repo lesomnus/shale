@@ -178,7 +178,10 @@ holds a password. Two consequences for a change:
   `internal/reader`, `internal/relay`, `internal/satellite` (the upload
   proxy producers go through, §41; the CP's side is
   `server/core/satellite.go`); `internal/hostagent` is what they share
-  (key, join, certificate, dialing). `internal/token` is the access
+  (key, join, certificate, dialing). `internal/upload` is the upload
+  client, resume and failover across candidates (§12.2, §13), which a
+  producer runs for its segments and a satellite for those it took under
+  `retain: accepted` (§41.9). `internal/token` is the access
   token; `internal/placement` the HRW scheduler; `internal/pki` the CA.
 - Development mode (`--dev <dir>`) is plaintext with the plain header; the
   e2e harness in `internal/e2e` starts `serve all --dev` in-process.

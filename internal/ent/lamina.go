@@ -9,6 +9,7 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/shale/internal/ent/lamina"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/site"
@@ -71,6 +72,8 @@ type Lamina struct {
 	SourceId uuid.UUID `json:"source_id,omitempty"`
 	// SinkId holds the value of the "sink_id" field.
 	SinkId uuid.UUID `json:"sink_id,omitempty"`
+	// SatelliteId holds the value of the "satellite_id" field.
+	SatelliteId uuid.UUID `json:"satellite_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the LaminaQuery when eager-loading is set.
 	Edges        LaminaEdges `json:"edges"`
@@ -89,9 +92,11 @@ type LaminaEdges struct {
 	Source *Source `json:"source,omitempty"`
 	// Sink holds the value of the sink edge.
 	Sink *Sink `json:"sink,omitempty"`
+	// Satellite holds the value of the satellite edge.
+	Satellite *Satellite `json:"satellite,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // TenantOrErr returns the Tenant value or an error if the edge
@@ -149,6 +154,17 @@ func (e LaminaEdges) SinkOrErr() (*Sink, error) {
 	return nil, &NotLoadedError{edge: "sink"}
 }
 
+// SatelliteOrErr returns the Satellite value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e LaminaEdges) SatelliteOrErr() (*Satellite, error) {
+	if e.Satellite != nil {
+		return e.Satellite, nil
+	} else if e.loadedTypes[5] {
+		return nil, &NotFoundError{label: satellite.Label}
+	}
+	return nil, &NotLoadedError{edge: "satellite"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Lamina) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -164,7 +180,7 @@ func (*Lamina) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case lamina.FieldDateUpdated, lamina.FieldDateCreated, lamina.FieldDateStarted, lamina.FieldDateEnded, lamina.FieldDateExpired, lamina.FieldDateDeleted, lamina.FieldDateCommitted, lamina.FieldDateFinished:
 			values[i] = new(sql.NullTime)
-		case lamina.FieldSiteId, lamina.FieldSinkId:
+		case lamina.FieldSiteId, lamina.FieldSinkId, lamina.FieldSatelliteId:
 			values[i] = new(sql.Null[uuid.UUID])
 		case lamina.FieldId, lamina.FieldTenantId, lamina.FieldSetId, lamina.FieldSourceId:
 			values[i] = new(uuid.UUID)
@@ -337,6 +353,12 @@ func (_m *Lamina) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SinkId = value.V
 			}
+		case lamina.FieldSatelliteId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field satellite_id", values[i])
+			} else if value.Valid {
+				_m.SatelliteId = value.V
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -373,6 +395,11 @@ func (_m *Lamina) QuerySource() *SourceQuery {
 // QuerySink queries the "sink" edge of the Lamina entity.
 func (_m *Lamina) QuerySink() *SinkQuery {
 	return NewLaminaClient(_m.config).QuerySink(_m)
+}
+
+// QuerySatellite queries the "satellite" edge of the Lamina entity.
+func (_m *Lamina) QuerySatellite() *SatelliteQuery {
+	return NewLaminaClient(_m.config).QuerySatellite(_m)
 }
 
 // Update returns a builder for updating this Lamina.
@@ -477,6 +504,9 @@ func (_m *Lamina) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("sink_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SinkId))
+	builder.WriteString(", ")
+	builder.WriteString("satellite_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SatelliteId))
 	builder.WriteByte(')')
 	return builder.String()
 }

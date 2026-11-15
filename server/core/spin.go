@@ -94,6 +94,13 @@ func (j *Jobs) Once(ctx context.Context) error {
 		}
 	}
 
+	// What a satellite that is down held under `retain: accepted` is LOST
+	// once nothing can deliver it (§41.9), before the rule below would
+	// remove it as a lamina nobody stored.
+	if err := (Core{d: j.d}).satellitesDown(ctx, now); err != nil {
+		j.log().Warn("satellites down", "err", err.Error())
+	}
+
 	// Laminae none of whose attempts stored anything, abandon_grace after
 	// the last one expired, are removed (§12.1, §20.4).
 	pending, err := j.d.Ent.Lamina.Query().

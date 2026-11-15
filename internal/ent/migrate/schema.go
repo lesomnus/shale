@@ -1149,6 +1149,7 @@ var (
 		{Name: "set_id", Type: field.TypeUuid},
 		{Name: "source_id", Type: field.TypeUuid},
 		{Name: "sink_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "satellite_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// LaminaTable holds the schema information for the "lamina" table.
 	LaminaTable = &schema.Table{
@@ -1184,6 +1185,12 @@ var (
 				Symbol:     "lamina_sink_sink",
 				Columns:    []*schema.Column{LaminaColumns[24]},
 				RefColumns: []*schema.Column{SinkColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "lamina_satellite_satellite",
+				Columns:    []*schema.Column{LaminaColumns[25]},
+				RefColumns: []*schema.Column{SatelliteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -2167,6 +2174,7 @@ func init() {
 	LaminaTable.ForeignKeys[2].RefTable = SetTable
 	LaminaTable.ForeignKeys[3].RefTable = SourceTable
 	LaminaTable.ForeignKeys[4].RefTable = SinkTable
+	LaminaTable.ForeignKeys[5].RefTable = SatelliteTable
 	LaminaTable.Annotation = &entsql.Annotation{
 		Table: "lamina",
 	}

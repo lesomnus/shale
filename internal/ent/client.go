@@ -3951,6 +3951,22 @@ func (c *LaminaClient) QuerySink(_m *Lamina) *SinkQuery {
 	return query
 }
 
+// QuerySatellite queries the satellite edge of a Lamina.
+func (c *LaminaClient) QuerySatellite(_m *Lamina) *SatelliteQuery {
+	query := (&SatelliteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(lamina.Table, lamina.FieldId, id),
+			sqlgraph.To(satellite.Table, satellite.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SatelliteTable, lamina.SatelliteColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *LaminaClient) Hooks() []Hook {
 	return c.hooks.Lamina

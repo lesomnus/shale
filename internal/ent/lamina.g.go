@@ -74,6 +74,13 @@ func (e *Lamina) Proto() *api.Lamina {
 	x.SetEpoch(e.Epoch)
 	x.SetSkipReason(api.LaminaSkipReason(e.SkipReason))
 	x.SetCaptureEpoch(e.CaptureEpoch)
+	if v := e.Edges.Satellite; v != nil {
+		x.SetSatellite(v.Proto())
+	} else if v := e.SatelliteId; v != *new(uuid.UUID) {
+		r := &api.Satellite{}
+		r.SetId(v[:])
+		x.SetSatellite(r)
+	}
 	return x
 }
 func (e *Attempt) Proto() *api.Attempt {

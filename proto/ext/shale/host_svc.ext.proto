@@ -80,6 +80,11 @@ service SatelliteService {
   // An operator moves a producer to a satellite; the assignment stays
   // sticky while the satellite is alive (§41.2).
   rpc Assign(SatelliteAssignRequest) returns (Satellite);
+  // The satellite is about to take a lamina's bytes under `retain:
+  // accepted` (§41.9): the CP records it on the lamina, so a loss of them
+  // is the satellite's. Only for a PENDING lamina of a producer assigned
+  // to it; before it answers the producer that it holds anything.
+  rpc Accept(SatelliteAcceptRequest) returns (SatelliteAcceptResponse);
 }
 
 // JoinAnswer is what every host's Join answers: pending, or adopted with the
@@ -397,4 +402,13 @@ message SatelliteRouteResponse {
 message SatelliteAssignRequest {
   SatelliteRef ref = 1;
   ProducerRef producer = 2;
+}
+
+message SatelliteAcceptRequest {
+  bytes lamina_id = 1 [features.field_presence = IMPLICIT];
+}
+
+message SatelliteAcceptResponse {
+  // The producer the lamina is recorded for, which the satellite acts for.
+  bytes producer_id = 1 [features.field_presence = IMPLICIT];
 }

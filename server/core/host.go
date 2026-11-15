@@ -554,13 +554,22 @@ func uploadReportOf(v *api.UploadReport) *api.UploadReport {
 	default:
 		return nil
 	}
-	if v.GetThroughSatellite() < 0 || v.GetDirect() < 0 || v.GetFallbacks() < 0 {
+	if v.GetThroughSatellite() < 0 || v.GetDirect() < 0 || v.GetFallbacks() < 0 ||
+		v.GetHandedOff() < 0 || v.GetHandedOffBytes() < 0 || v.GetPassed() < 0 {
 		return nil
 	}
 	if id := v.GetSatelliteId(); len(id) > 0 {
 		if v, err := pdid.From(id); err != nil || v.Domain() != DomSatellite {
 			return nil
 		}
+	}
+	// The retain policy, which only these name (§12.2, §41.9); an empty
+	// one is a producer that does not say.
+	retain := v.GetRetain()
+	switch retain {
+	case "", "committed", "written", "accepted":
+	default:
+		retain = ""
 	}
 	// The sources whose live it hands the satellite (§41.8): Source ids, at
 	// most as many as a publish token names. The satellite's feed token
@@ -585,6 +594,10 @@ func uploadReportOf(v *api.UploadReport) *api.UploadReport {
 		ThroughSatellite: v.GetThroughSatellite(),
 		Direct:           v.GetDirect(),
 		Fallbacks:        v.GetFallbacks(),
+		Retain:           retain,
+		HandedOff:        v.GetHandedOff(),
+		HandedOffBytes:   v.GetHandedOffBytes(),
+		Passed:           v.GetPassed(),
 		LiveSources:      v.GetLiveSources(),
 		LiveFeed:         v.GetLiveFeed(),
 	}.Build()

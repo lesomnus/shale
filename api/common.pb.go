@@ -1861,6 +1861,7 @@ type SatelliteAssignment struct {
 	xxx_hidden_SatelliteId []byte                 `protobuf:"bytes,1,opt,name=satellite_id,json=satelliteId"`
 	xxx_hidden_Endpoints   *[]*Endpoint           `protobuf:"bytes,2,rep,name=endpoints"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_Accept      bool                   `protobuf:"varint,4,opt,name=accept"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1913,6 +1914,13 @@ func (x *SatelliteAssignment) GetDateExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *SatelliteAssignment) GetAccept() bool {
+	if x != nil {
+		return x.xxx_hidden_Accept
+	}
+	return false
+}
+
 func (x *SatelliteAssignment) SetSatelliteId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -1926,6 +1934,10 @@ func (x *SatelliteAssignment) SetEndpoints(v []*Endpoint) {
 
 func (x *SatelliteAssignment) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
+}
+
+func (x *SatelliteAssignment) SetAccept(v bool) {
+	x.xxx_hidden_Accept = v
 }
 
 func (x *SatelliteAssignment) HasDateExpires() bool {
@@ -1945,6 +1957,10 @@ type SatelliteAssignment_builder struct {
 	SatelliteId []byte
 	Endpoints   []*Endpoint
 	DateExpires *timestamppb.Timestamp
+	// Whether the satellite takes `retain: accepted` (§41.9), as its last
+	// heartbeat said. A producer hands it segments only when it does: one
+	// that would not know the handoff would pass it on to a node.
+	Accept bool
 }
 
 func (b0 SatelliteAssignment_builder) Build() *SatelliteAssignment {
@@ -1954,6 +1970,7 @@ func (b0 SatelliteAssignment_builder) Build() *SatelliteAssignment {
 	x.xxx_hidden_SatelliteId = b.SatelliteId
 	x.xxx_hidden_Endpoints = &b.Endpoints
 	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_Accept = b.Accept
 	return m0
 }
 
@@ -1969,6 +1986,10 @@ type UploadReport struct {
 	xxx_hidden_Fallbacks        int64                  `protobuf:"varint,5,opt,name=fallbacks"`
 	xxx_hidden_LiveSources      [][]byte               `protobuf:"bytes,6,rep,name=live_sources,json=liveSources"`
 	xxx_hidden_LiveFeed         string                 `protobuf:"bytes,7,opt,name=live_feed,json=liveFeed"`
+	xxx_hidden_Retain           string                 `protobuf:"bytes,8,opt,name=retain"`
+	xxx_hidden_HandedOff        int64                  `protobuf:"varint,9,opt,name=handed_off,json=handedOff"`
+	xxx_hidden_HandedOffBytes   int64                  `protobuf:"varint,10,opt,name=handed_off_bytes,json=handedOffBytes"`
+	xxx_hidden_Passed           int64                  `protobuf:"varint,11,opt,name=passed"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -2047,6 +2068,34 @@ func (x *UploadReport) GetLiveFeed() string {
 	return ""
 }
 
+func (x *UploadReport) GetRetain() string {
+	if x != nil {
+		return x.xxx_hidden_Retain
+	}
+	return ""
+}
+
+func (x *UploadReport) GetHandedOff() int64 {
+	if x != nil {
+		return x.xxx_hidden_HandedOff
+	}
+	return 0
+}
+
+func (x *UploadReport) GetHandedOffBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_HandedOffBytes
+	}
+	return 0
+}
+
+func (x *UploadReport) GetPassed() int64 {
+	if x != nil {
+		return x.xxx_hidden_Passed
+	}
+	return 0
+}
+
 func (x *UploadReport) SetVia(v string) {
 	x.xxx_hidden_Via = v
 }
@@ -2078,6 +2127,22 @@ func (x *UploadReport) SetLiveFeed(v string) {
 	x.xxx_hidden_LiveFeed = v
 }
 
+func (x *UploadReport) SetRetain(v string) {
+	x.xxx_hidden_Retain = v
+}
+
+func (x *UploadReport) SetHandedOff(v int64) {
+	x.xxx_hidden_HandedOff = v
+}
+
+func (x *UploadReport) SetHandedOffBytes(v int64) {
+	x.xxx_hidden_HandedOffBytes = v
+}
+
+func (x *UploadReport) SetPassed(v int64) {
+	x.xxx_hidden_Passed = v
+}
+
 type UploadReport_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2099,6 +2164,15 @@ type UploadReport_builder struct {
 	// `producer.live_feed`, as configured: `auto` or `producer`; empty from a
 	// producer that predates it.
 	LiveFeed string
+	// The producer's `retain`; empty from a producer that does not say.
+	Retain string
+	// Under `retain: accepted` (§41.9): segments the satellite took whole,
+	// and their bytes, which the producer let go before any node had them;
+	// and requests the satellite passed through to the node rather than
+	// accepted, the producer keeping the bytes as under `committed`.
+	HandedOff      int64
+	HandedOffBytes int64
+	Passed         int64
 }
 
 func (b0 UploadReport_builder) Build() *UploadReport {
@@ -2112,6 +2186,10 @@ func (b0 UploadReport_builder) Build() *UploadReport {
 	x.xxx_hidden_Fallbacks = b.Fallbacks
 	x.xxx_hidden_LiveSources = b.LiveSources
 	x.xxx_hidden_LiveFeed = b.LiveFeed
+	x.xxx_hidden_Retain = b.Retain
+	x.xxx_hidden_HandedOff = b.HandedOff
+	x.xxx_hidden_HandedOffBytes = b.HandedOffBytes
+	x.xxx_hidden_Passed = b.Passed
 	return m0
 }
 
@@ -4217,9 +4295,19 @@ type SatelliteStatus struct {
 	xxx_hidden_ForwardedBytes int64                  `protobuf:"varint,6,opt,name=forwarded_bytes,json=forwardedBytes"`
 	xxx_hidden_Refused        int64                  `protobuf:"varint,7,opt,name=refused"`
 	xxx_hidden_Load           *HostLoad              `protobuf:"bytes,8,opt,name=load"`
+	xxx_hidden_RetainedBytes  int64                  `protobuf:"varint,9,opt,name=retained_bytes,json=retainedBytes"`
+	xxx_hidden_RetainedBudget int64                  `protobuf:"varint,10,opt,name=retained_budget,json=retainedBudget"`
 	xxx_hidden_LiveSources    int32                  `protobuf:"varint,11,opt,name=live_sources,json=liveSources"`
 	xxx_hidden_LiveBytes      int64                  `protobuf:"varint,12,opt,name=live_bytes,json=liveBytes"`
 	xxx_hidden_LiveDropped    int64                  `protobuf:"varint,13,opt,name=live_dropped,json=liveDropped"`
+	xxx_hidden_Retained       *[]*RetainedShare      `protobuf:"bytes,14,rep,name=retained"`
+	xxx_hidden_Held           [][]byte               `protobuf:"bytes,15,rep,name=held"`
+	xxx_hidden_Incarnation    string                 `protobuf:"bytes,16,opt,name=incarnation"`
+	xxx_hidden_AcceptedBytes  int64                  `protobuf:"varint,17,opt,name=accepted_bytes,json=acceptedBytes"`
+	xxx_hidden_Delivered      int64                  `protobuf:"varint,18,opt,name=delivered"`
+	xxx_hidden_GivenUp        int64                  `protobuf:"varint,19,opt,name=given_up,json=givenUp"`
+	xxx_hidden_Passed         int64                  `protobuf:"varint,20,opt,name=passed"`
+	xxx_hidden_Accept         bool                   `protobuf:"varint,21,opt,name=accept"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -4305,6 +4393,20 @@ func (x *SatelliteStatus) GetLoad() *HostLoad {
 	return nil
 }
 
+func (x *SatelliteStatus) GetRetainedBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_RetainedBytes
+	}
+	return 0
+}
+
+func (x *SatelliteStatus) GetRetainedBudget() int64 {
+	if x != nil {
+		return x.xxx_hidden_RetainedBudget
+	}
+	return 0
+}
+
 func (x *SatelliteStatus) GetLiveSources() int32 {
 	if x != nil {
 		return x.xxx_hidden_LiveSources
@@ -4324,6 +4426,64 @@ func (x *SatelliteStatus) GetLiveDropped() int64 {
 		return x.xxx_hidden_LiveDropped
 	}
 	return 0
+}
+
+func (x *SatelliteStatus) GetRetained() []*RetainedShare {
+	if x != nil {
+		if x.xxx_hidden_Retained != nil {
+			return *x.xxx_hidden_Retained
+		}
+	}
+	return nil
+}
+
+func (x *SatelliteStatus) GetHeld() [][]byte {
+	if x != nil {
+		return x.xxx_hidden_Held
+	}
+	return nil
+}
+
+func (x *SatelliteStatus) GetIncarnation() string {
+	if x != nil {
+		return x.xxx_hidden_Incarnation
+	}
+	return ""
+}
+
+func (x *SatelliteStatus) GetAcceptedBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_AcceptedBytes
+	}
+	return 0
+}
+
+func (x *SatelliteStatus) GetDelivered() int64 {
+	if x != nil {
+		return x.xxx_hidden_Delivered
+	}
+	return 0
+}
+
+func (x *SatelliteStatus) GetGivenUp() int64 {
+	if x != nil {
+		return x.xxx_hidden_GivenUp
+	}
+	return 0
+}
+
+func (x *SatelliteStatus) GetPassed() int64 {
+	if x != nil {
+		return x.xxx_hidden_Passed
+	}
+	return 0
+}
+
+func (x *SatelliteStatus) GetAccept() bool {
+	if x != nil {
+		return x.xxx_hidden_Accept
+	}
+	return false
 }
 
 func (x *SatelliteStatus) SetDateReported(v *timestamppb.Timestamp) {
@@ -4358,6 +4518,14 @@ func (x *SatelliteStatus) SetLoad(v *HostLoad) {
 	x.xxx_hidden_Load = v
 }
 
+func (x *SatelliteStatus) SetRetainedBytes(v int64) {
+	x.xxx_hidden_RetainedBytes = v
+}
+
+func (x *SatelliteStatus) SetRetainedBudget(v int64) {
+	x.xxx_hidden_RetainedBudget = v
+}
+
 func (x *SatelliteStatus) SetLiveSources(v int32) {
 	x.xxx_hidden_LiveSources = v
 }
@@ -4368,6 +4536,38 @@ func (x *SatelliteStatus) SetLiveBytes(v int64) {
 
 func (x *SatelliteStatus) SetLiveDropped(v int64) {
 	x.xxx_hidden_LiveDropped = v
+}
+
+func (x *SatelliteStatus) SetRetained(v []*RetainedShare) {
+	x.xxx_hidden_Retained = &v
+}
+
+func (x *SatelliteStatus) SetHeld(v [][]byte) {
+	x.xxx_hidden_Held = v
+}
+
+func (x *SatelliteStatus) SetIncarnation(v string) {
+	x.xxx_hidden_Incarnation = v
+}
+
+func (x *SatelliteStatus) SetAcceptedBytes(v int64) {
+	x.xxx_hidden_AcceptedBytes = v
+}
+
+func (x *SatelliteStatus) SetDelivered(v int64) {
+	x.xxx_hidden_Delivered = v
+}
+
+func (x *SatelliteStatus) SetGivenUp(v int64) {
+	x.xxx_hidden_GivenUp = v
+}
+
+func (x *SatelliteStatus) SetPassed(v int64) {
+	x.xxx_hidden_Passed = v
+}
+
+func (x *SatelliteStatus) SetAccept(v bool) {
+	x.xxx_hidden_Accept = v
 }
 
 func (x *SatelliteStatus) HasDateReported() bool {
@@ -4409,15 +4609,35 @@ type SatelliteStatus_builder struct {
 	ForwardedBytes int64
 	Refused        int64
 	Load           *HostLoad
-	// 9 and 10 are kept for the retained pool of `retain: accepted`
-	// (§41.9), which is not built yet.
-	//
+	// The retained pool (§41.9): the bytes of segments taken under
+	// `retain: accepted` and not yet delivered, and what bounds them. A
+	// satellite that refuses `accepted` reports a budget of zero.
+	RetainedBytes  int64
+	RetainedBudget int64
 	// Live fan-out (§41.8): the sources it feeds relays now, the bytes it
 	// sent them, and the fragments it dropped because a relay was behind,
 	// since it started.
 	LiveSources int32
 	LiveBytes   int64
 	LiveDropped int64
+	// What each producer holds of the retained pool, and its share; only
+	// producers that hold bytes or asked for acceptance lately.
+	Retained []*RetainedShare
+	// The laminae whose bytes it holds now, undelivered.
+	Held [][]byte
+	// A value the process draws when it starts. A heartbeat with another one
+	// than the last is a satellite that restarted, and what it held before
+	// is gone (§41.9).
+	Incarnation string
+	// Since it started: bytes taken under `accepted`, segments delivered,
+	// segments given up, and requests passed through to the node rather
+	// than accepted, for want of room or because it refuses `accepted`.
+	AcceptedBytes int64
+	Delivered     int64
+	GivenUp       int64
+	Passed        int64
+	// Whether it takes `retain: accepted` at all (`satellite.accept`).
+	Accept bool
 }
 
 func (b0 SatelliteStatus_builder) Build() *SatelliteStatus {
@@ -4432,9 +4652,256 @@ func (b0 SatelliteStatus_builder) Build() *SatelliteStatus {
 	x.xxx_hidden_ForwardedBytes = b.ForwardedBytes
 	x.xxx_hidden_Refused = b.Refused
 	x.xxx_hidden_Load = b.Load
+	x.xxx_hidden_RetainedBytes = b.RetainedBytes
+	x.xxx_hidden_RetainedBudget = b.RetainedBudget
 	x.xxx_hidden_LiveSources = b.LiveSources
 	x.xxx_hidden_LiveBytes = b.LiveBytes
 	x.xxx_hidden_LiveDropped = b.LiveDropped
+	x.xxx_hidden_Retained = &b.Retained
+	x.xxx_hidden_Held = b.Held
+	x.xxx_hidden_Incarnation = b.Incarnation
+	x.xxx_hidden_AcceptedBytes = b.AcceptedBytes
+	x.xxx_hidden_Delivered = b.Delivered
+	x.xxx_hidden_GivenUp = b.GivenUp
+	x.xxx_hidden_Passed = b.Passed
+	x.xxx_hidden_Accept = b.Accept
+	return m0
+}
+
+// RetainedShare is one producer's part of a satellite's retained pool
+// (§41.9).
+type RetainedShare struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ProducerId []byte                 `protobuf:"bytes,1,opt,name=producer_id,json=producerId"`
+	xxx_hidden_Bytes      int64                  `protobuf:"varint,2,opt,name=bytes"`
+	xxx_hidden_Laminae    int32                  `protobuf:"varint,3,opt,name=laminae"`
+	xxx_hidden_Share      int64                  `protobuf:"varint,4,opt,name=share"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *RetainedShare) Reset() {
+	*x = RetainedShare{}
+	mi := &file_shale_common_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetainedShare) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetainedShare) ProtoMessage() {}
+
+func (x *RetainedShare) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_common_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RetainedShare) GetProducerId() []byte {
+	if x != nil {
+		return x.xxx_hidden_ProducerId
+	}
+	return nil
+}
+
+func (x *RetainedShare) GetBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_Bytes
+	}
+	return 0
+}
+
+func (x *RetainedShare) GetLaminae() int32 {
+	if x != nil {
+		return x.xxx_hidden_Laminae
+	}
+	return 0
+}
+
+func (x *RetainedShare) GetShare() int64 {
+	if x != nil {
+		return x.xxx_hidden_Share
+	}
+	return 0
+}
+
+func (x *RetainedShare) SetProducerId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_ProducerId = v
+}
+
+func (x *RetainedShare) SetBytes(v int64) {
+	x.xxx_hidden_Bytes = v
+}
+
+func (x *RetainedShare) SetLaminae(v int32) {
+	x.xxx_hidden_Laminae = v
+}
+
+func (x *RetainedShare) SetShare(v int64) {
+	x.xxx_hidden_Share = v
+}
+
+type RetainedShare_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	ProducerId []byte
+	// What its segments hold, reservations included, and how many there are.
+	Bytes   int64
+	Laminae int32
+	// The most it may hold now: the pool over the producers using it,
+	// capped by `satellite.retained_per_producer`.
+	Share int64
+}
+
+func (b0 RetainedShare_builder) Build() *RetainedShare {
+	m0 := &RetainedShare{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ProducerId = b.ProducerId
+	x.xxx_hidden_Bytes = b.Bytes
+	x.xxx_hidden_Laminae = b.Laminae
+	x.xxx_hidden_Share = b.Share
+	return m0
+}
+
+// Handoff is what a producer under `retain: accepted` sends a satellite
+// with the first request of a segment (§41.9): the allocation, every
+// candidate with its token, and the producer's own limits, so the
+// satellite delivers and fails over as the producer would have.
+type Handoff struct {
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Allocation       *Allocation            `protobuf:"bytes,1,opt,name=allocation"`
+	xxx_hidden_ResumeTimeoutMs  int64                  `protobuf:"varint,2,opt,name=resume_timeout_ms,json=resumeTimeoutMs"`
+	xxx_hidden_AbandonTimeoutMs int64                  `protobuf:"varint,3,opt,name=abandon_timeout_ms,json=abandonTimeoutMs"`
+	xxx_hidden_RetryAfterCapMs  int64                  `protobuf:"varint,4,opt,name=retry_after_cap_ms,json=retryAfterCapMs"`
+	xxx_hidden_PlacementRetries int32                  `protobuf:"varint,5,opt,name=placement_retries,json=placementRetries"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *Handoff) Reset() {
+	*x = Handoff{}
+	mi := &file_shale_common_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Handoff) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Handoff) ProtoMessage() {}
+
+func (x *Handoff) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_common_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Handoff) GetAllocation() *Allocation {
+	if x != nil {
+		return x.xxx_hidden_Allocation
+	}
+	return nil
+}
+
+func (x *Handoff) GetResumeTimeoutMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_ResumeTimeoutMs
+	}
+	return 0
+}
+
+func (x *Handoff) GetAbandonTimeoutMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_AbandonTimeoutMs
+	}
+	return 0
+}
+
+func (x *Handoff) GetRetryAfterCapMs() int64 {
+	if x != nil {
+		return x.xxx_hidden_RetryAfterCapMs
+	}
+	return 0
+}
+
+func (x *Handoff) GetPlacementRetries() int32 {
+	if x != nil {
+		return x.xxx_hidden_PlacementRetries
+	}
+	return 0
+}
+
+func (x *Handoff) SetAllocation(v *Allocation) {
+	x.xxx_hidden_Allocation = v
+}
+
+func (x *Handoff) SetResumeTimeoutMs(v int64) {
+	x.xxx_hidden_ResumeTimeoutMs = v
+}
+
+func (x *Handoff) SetAbandonTimeoutMs(v int64) {
+	x.xxx_hidden_AbandonTimeoutMs = v
+}
+
+func (x *Handoff) SetRetryAfterCapMs(v int64) {
+	x.xxx_hidden_RetryAfterCapMs = v
+}
+
+func (x *Handoff) SetPlacementRetries(v int32) {
+	x.xxx_hidden_PlacementRetries = v
+}
+
+func (x *Handoff) HasAllocation() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Allocation != nil
+}
+
+func (x *Handoff) ClearAllocation() {
+	x.xxx_hidden_Allocation = nil
+}
+
+type Handoff_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Allocation *Allocation
+	// How long a target may go without progress before the next one, and
+	// how long the segment may go without any before it is given up.
+	ResumeTimeoutMs  int64
+	AbandonTimeoutMs int64
+	RetryAfterCapMs  int64
+	PlacementRetries int32
+}
+
+func (b0 Handoff_builder) Build() *Handoff {
+	m0 := &Handoff{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Allocation = b.Allocation
+	x.xxx_hidden_ResumeTimeoutMs = b.ResumeTimeoutMs
+	x.xxx_hidden_AbandonTimeoutMs = b.AbandonTimeoutMs
+	x.xxx_hidden_RetryAfterCapMs = b.RetryAfterCapMs
+	x.xxx_hidden_PlacementRetries = b.PlacementRetries
 	return m0
 }
 
@@ -4472,7 +4939,7 @@ type LaminaRecord struct {
 
 func (x *LaminaRecord) Reset() {
 	*x = LaminaRecord{}
-	mi := &file_shale_common_proto_msgTypes[24]
+	mi := &file_shale_common_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4484,7 +4951,7 @@ func (x *LaminaRecord) String() string {
 func (*LaminaRecord) ProtoMessage() {}
 
 func (x *LaminaRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[24]
+	mi := &file_shale_common_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4816,7 +5283,7 @@ type CaptureEpochGrant struct {
 
 func (x *CaptureEpochGrant) Reset() {
 	*x = CaptureEpochGrant{}
-	mi := &file_shale_common_proto_msgTypes[25]
+	mi := &file_shale_common_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4828,7 +5295,7 @@ func (x *CaptureEpochGrant) String() string {
 func (*CaptureEpochGrant) ProtoMessage() {}
 
 func (x *CaptureEpochGrant) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[25]
+	mi := &file_shale_common_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4929,7 +5396,7 @@ type TokenClaims struct {
 
 func (x *TokenClaims) Reset() {
 	*x = TokenClaims{}
-	mi := &file_shale_common_proto_msgTypes[26]
+	mi := &file_shale_common_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4941,7 +5408,7 @@ func (x *TokenClaims) String() string {
 func (*TokenClaims) ProtoMessage() {}
 
 func (x *TokenClaims) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[26]
+	mi := &file_shale_common_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5409,7 +5876,7 @@ type LaminaStored struct {
 
 func (x *LaminaStored) Reset() {
 	*x = LaminaStored{}
-	mi := &file_shale_common_proto_msgTypes[27]
+	mi := &file_shale_common_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5421,7 +5888,7 @@ func (x *LaminaStored) String() string {
 func (*LaminaStored) ProtoMessage() {}
 
 func (x *LaminaStored) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[27]
+	mi := &file_shale_common_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5677,7 +6144,7 @@ type LaminaDeleted struct {
 
 func (x *LaminaDeleted) Reset() {
 	*x = LaminaDeleted{}
-	mi := &file_shale_common_proto_msgTypes[28]
+	mi := &file_shale_common_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5689,7 +6156,7 @@ func (x *LaminaDeleted) String() string {
 func (*LaminaDeleted) ProtoMessage() {}
 
 func (x *LaminaDeleted) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[28]
+	mi := &file_shale_common_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5824,7 +6291,7 @@ type LaminaMissing struct {
 
 func (x *LaminaMissing) Reset() {
 	*x = LaminaMissing{}
-	mi := &file_shale_common_proto_msgTypes[29]
+	mi := &file_shale_common_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5836,7 +6303,7 @@ func (x *LaminaMissing) String() string {
 func (*LaminaMissing) ProtoMessage() {}
 
 func (x *LaminaMissing) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[29]
+	mi := &file_shale_common_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5967,7 +6434,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_shale_common_proto_msgTypes[30]
+	mi := &file_shale_common_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5979,7 +6446,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[30]
+	mi := &file_shale_common_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6144,7 +6611,7 @@ func (b0 Event_builder) Build() *Event {
 type case_Event_Event protoreflect.FieldNumber
 
 func (x case_Event_Event) String() string {
-	md := file_shale_common_proto_msgTypes[30].Descriptor()
+	md := file_shale_common_proto_msgTypes[32].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -6185,7 +6652,7 @@ type KeyEntry struct {
 
 func (x *KeyEntry) Reset() {
 	*x = KeyEntry{}
-	mi := &file_shale_common_proto_msgTypes[31]
+	mi := &file_shale_common_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6197,7 +6664,7 @@ func (x *KeyEntry) String() string {
 func (*KeyEntry) ProtoMessage() {}
 
 func (x *KeyEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[31]
+	mi := &file_shale_common_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6342,11 +6809,12 @@ const file_shale_common_proto_rawDesc = "" +
 	"\tendpoints\x18\x02 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12#\n" +
 	"\rpublish_token\x18\x03 \x01(\tR\fpublishToken\x12=\n" +
 	"\fdate_expires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12%\n" +
-	"\x04live\x18\x05 \x01(\x0e2\x11.shale.LivePolicyR\x04live\"\xa6\x01\n" +
+	"\x04live\x18\x05 \x01(\x0e2\x11.shale.LivePolicyR\x04live\"\xbe\x01\n" +
 	"\x13SatelliteAssignment\x12!\n" +
 	"\fsatellite_id\x18\x01 \x01(\fR\vsatelliteId\x12-\n" +
 	"\tendpoints\x18\x02 \x03(\v2\x0f.shale.EndpointR\tendpoints\x12=\n" +
-	"\fdate_expires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"\xe6\x01\n" +
+	"\fdate_expires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12\x16\n" +
+	"\x06accept\x18\x04 \x01(\bR\x06accept\"\xdf\x02\n" +
 	"\fUploadReport\x12\x10\n" +
 	"\x03via\x18\x01 \x01(\tR\x03via\x12!\n" +
 	"\fsatellite_id\x18\x02 \x01(\fR\vsatelliteId\x12+\n" +
@@ -6354,7 +6822,13 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x06direct\x18\x04 \x01(\x03R\x06direct\x12\x1c\n" +
 	"\tfallbacks\x18\x05 \x01(\x03R\tfallbacks\x12!\n" +
 	"\flive_sources\x18\x06 \x03(\fR\vliveSources\x12\x1b\n" +
-	"\tlive_feed\x18\a \x01(\tR\bliveFeed\"\xfb\x02\n" +
+	"\tlive_feed\x18\a \x01(\tR\bliveFeed\x12\x16\n" +
+	"\x06retain\x18\b \x01(\tR\x06retain\x12\x1d\n" +
+	"\n" +
+	"handed_off\x18\t \x01(\x03R\thandedOff\x12(\n" +
+	"\x10handed_off_bytes\x18\n" +
+	" \x01(\x03R\x0ehandedOffBytes\x12\x16\n" +
+	"\x06passed\x18\v \x01(\x03R\x06passed\"\xfb\x02\n" +
 	"\bHostJoin\x12\x1f\n" +
 	"\vhardware_id\x18\x01 \x01(\tR\n" +
 	"hardwareId\x12?\n" +
@@ -6489,7 +6963,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\frewind_bytes\x18\t \x01(\x03R\vrewindBytes\x12#\n" +
 	"\rrewind_budget\x18\n" +
 	" \x01(\x03R\frewindBudget\x12+\n" +
-	"\x11satellite_feeders\x18\v \x01(\bR\x10satelliteFeeders\"\xa9\x03\n" +
+	"\x11satellite_feeders\x18\v \x01(\bR\x10satelliteFeeders\"\xf1\x05\n" +
 	"\x0fSatelliteStatus\x12?\n" +
 	"\rdate_reported\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\fdateReported\x12&\n" +
 	"\x0fin_flight_bytes\x18\x02 \x01(\x03R\rinFlightBytes\x12(\n" +
@@ -6498,11 +6972,36 @@ const file_shale_common_proto_rawDesc = "" +
 	"\tproducers\x18\x05 \x01(\x05R\tproducers\x12'\n" +
 	"\x0fforwarded_bytes\x18\x06 \x01(\x03R\x0eforwardedBytes\x12\x18\n" +
 	"\arefused\x18\a \x01(\x03R\arefused\x12#\n" +
-	"\x04load\x18\b \x01(\v2\x0f.shale.HostLoadR\x04load\x12!\n" +
+	"\x04load\x18\b \x01(\v2\x0f.shale.HostLoadR\x04load\x12%\n" +
+	"\x0eretained_bytes\x18\t \x01(\x03R\rretainedBytes\x12'\n" +
+	"\x0fretained_budget\x18\n" +
+	" \x01(\x03R\x0eretainedBudget\x12!\n" +
 	"\flive_sources\x18\v \x01(\x05R\vliveSources\x12\x1d\n" +
 	"\n" +
 	"live_bytes\x18\f \x01(\x03R\tliveBytes\x12!\n" +
-	"\flive_dropped\x18\r \x01(\x03R\vliveDropped\"\xd7\x05\n" +
+	"\flive_dropped\x18\r \x01(\x03R\vliveDropped\x120\n" +
+	"\bretained\x18\x0e \x03(\v2\x14.shale.RetainedShareR\bretained\x12\x12\n" +
+	"\x04held\x18\x0f \x03(\fR\x04held\x12 \n" +
+	"\vincarnation\x18\x10 \x01(\tR\vincarnation\x12%\n" +
+	"\x0eaccepted_bytes\x18\x11 \x01(\x03R\racceptedBytes\x12\x1c\n" +
+	"\tdelivered\x18\x12 \x01(\x03R\tdelivered\x12\x19\n" +
+	"\bgiven_up\x18\x13 \x01(\x03R\agivenUp\x12\x16\n" +
+	"\x06passed\x18\x14 \x01(\x03R\x06passed\x12\x16\n" +
+	"\x06accept\x18\x15 \x01(\bR\x06accept\"v\n" +
+	"\rRetainedShare\x12\x1f\n" +
+	"\vproducer_id\x18\x01 \x01(\fR\n" +
+	"producerId\x12\x14\n" +
+	"\x05bytes\x18\x02 \x01(\x03R\x05bytes\x12\x18\n" +
+	"\alaminae\x18\x03 \x01(\x05R\alaminae\x12\x14\n" +
+	"\x05share\x18\x04 \x01(\x03R\x05share\"\xf0\x01\n" +
+	"\aHandoff\x121\n" +
+	"\n" +
+	"allocation\x18\x01 \x01(\v2\x11.shale.AllocationR\n" +
+	"allocation\x12*\n" +
+	"\x11resume_timeout_ms\x18\x02 \x01(\x03R\x0fresumeTimeoutMs\x12,\n" +
+	"\x12abandon_timeout_ms\x18\x03 \x01(\x03R\x10abandonTimeoutMs\x12+\n" +
+	"\x12retry_after_cap_ms\x18\x04 \x01(\x03R\x0fretryAfterCapMs\x12+\n" +
+	"\x11placement_retries\x18\x05 \x01(\x05R\x10placementRetries\"\xd7\x05\n" +
 	"\fLaminaRecord\x12%\n" +
 	"\x0eformat_version\x18\x01 \x01(\x05R\rformatVersion\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\fR\btenantId\x12\x17\n" +
@@ -6672,7 +7171,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x18MISSING_REASON_ABANDONED\x10\x03B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_shale_common_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_shale_common_proto_goTypes = []any{
 	(UploadMode)(0),               // 0: shale.UploadMode
 	(RaiseLimit)(0),               // 1: shale.RaiseLimit
@@ -6708,81 +7207,85 @@ var file_shale_common_proto_goTypes = []any{
 	(*NodeStatus)(nil),            // 31: shale.NodeStatus
 	(*RelayStatus)(nil),           // 32: shale.RelayStatus
 	(*SatelliteStatus)(nil),       // 33: shale.SatelliteStatus
-	(*LaminaRecord)(nil),          // 34: shale.LaminaRecord
-	(*CaptureEpochGrant)(nil),     // 35: shale.CaptureEpochGrant
-	(*TokenClaims)(nil),           // 36: shale.TokenClaims
-	(*LaminaStored)(nil),          // 37: shale.LaminaStored
-	(*LaminaDeleted)(nil),         // 38: shale.LaminaDeleted
-	(*LaminaMissing)(nil),         // 39: shale.LaminaMissing
-	(*Event)(nil),                 // 40: shale.Event
-	(*KeyEntry)(nil),              // 41: shale.KeyEntry
-	(*timestamppb.Timestamp)(nil), // 42: google.protobuf.Timestamp
+	(*RetainedShare)(nil),         // 34: shale.RetainedShare
+	(*Handoff)(nil),               // 35: shale.Handoff
+	(*LaminaRecord)(nil),          // 36: shale.LaminaRecord
+	(*CaptureEpochGrant)(nil),     // 37: shale.CaptureEpochGrant
+	(*TokenClaims)(nil),           // 38: shale.TokenClaims
+	(*LaminaStored)(nil),          // 39: shale.LaminaStored
+	(*LaminaDeleted)(nil),         // 40: shale.LaminaDeleted
+	(*LaminaMissing)(nil),         // 41: shale.LaminaMissing
+	(*Event)(nil),                 // 42: shale.Event
+	(*KeyEntry)(nil),              // 43: shale.KeyEntry
+	(*timestamppb.Timestamp)(nil), // 44: google.protobuf.Timestamp
 }
 var file_shale_common_proto_depIdxs = []int32{
 	0,  // 0: shale.LinkProfile.mode:type_name -> shale.UploadMode
-	42, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
-	42, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
-	42, // 3: shale.Starvation.date_raised:type_name -> google.protobuf.Timestamp
+	44, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
+	44, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
+	44, // 3: shale.Starvation.date_raised:type_name -> google.protobuf.Timestamp
 	14, // 4: shale.Starvation.blocked:type_name -> shale.RaiseBlocked
 	1,  // 5: shale.RaiseBlocked.limit:type_name -> shale.RaiseLimit
-	42, // 6: shale.RaiseBlocked.date_since:type_name -> google.protobuf.Timestamp
+	44, // 6: shale.RaiseBlocked.date_since:type_name -> google.protobuf.Timestamp
 	15, // 7: shale.Candidate.endpoints:type_name -> shale.Endpoint
-	42, // 8: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
+	44, // 8: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
 	16, // 9: shale.Allocation.candidates:type_name -> shale.Candidate
-	42, // 10: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
+	44, // 10: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
 	11, // 11: shale.Allocation.profile:type_name -> shale.SegmentProfile
 	10, // 12: shale.Allocation.link:type_name -> shale.LinkProfile
 	15, // 13: shale.RelayAssignment.endpoints:type_name -> shale.Endpoint
-	42, // 14: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
+	44, // 14: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
 	3,  // 15: shale.RelayAssignment.live:type_name -> shale.LivePolicy
 	15, // 16: shale.SatelliteAssignment.endpoints:type_name -> shale.Endpoint
-	42, // 17: shale.SatelliteAssignment.date_expires:type_name -> google.protobuf.Timestamp
+	44, // 17: shale.SatelliteAssignment.date_expires:type_name -> google.protobuf.Timestamp
 	4,  // 18: shale.HostJoin.hardware_id_kind:type_name -> shale.HardwareIdKind
-	42, // 19: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
+	44, // 19: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
 	2,  // 20: shale.SourceReport.rate_control:type_name -> shale.RateControl
 	24, // 21: shale.ProducerStatus.sources:type_name -> shale.SourceReport
 	23, // 22: shale.ProducerStatus.load:type_name -> shale.HostLoad
-	42, // 23: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
+	44, // 23: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
 	26, // 24: shale.ProducerStatus.admission:type_name -> shale.AdmissionWait
 	20, // 25: shale.ProducerStatus.upload:type_name -> shale.UploadReport
 	5,  // 26: shale.AdmissionWait.reason:type_name -> shale.AdmissionWaitReason
-	42, // 27: shale.AdmissionWait.date_since:type_name -> google.protobuf.Timestamp
+	44, // 27: shale.AdmissionWait.date_since:type_name -> google.protobuf.Timestamp
 	6,  // 28: shale.SinkReport.pressure:type_name -> shale.Pressure
 	27, // 29: shale.SinkReport.capabilities:type_name -> shale.SinkCapabilities
-	42, // 30: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
-	42, // 31: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
+	44, // 30: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
+	44, // 31: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
 	29, // 32: shale.DeviceReport.smart:type_name -> shale.SmartSummary
-	42, // 33: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
-	42, // 34: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
+	44, // 33: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
+	44, // 34: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
 	23, // 35: shale.RelayStatus.load:type_name -> shale.HostLoad
-	42, // 36: shale.SatelliteStatus.date_reported:type_name -> google.protobuf.Timestamp
+	44, // 36: shale.SatelliteStatus.date_reported:type_name -> google.protobuf.Timestamp
 	23, // 37: shale.SatelliteStatus.load:type_name -> shale.HostLoad
-	7,  // 38: shale.LaminaRecord.state:type_name -> shale.RecordState
-	0,  // 39: shale.LaminaRecord.mode:type_name -> shale.UploadMode
-	42, // 40: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
-	42, // 41: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
-	8,  // 42: shale.TokenClaims.op:type_name -> shale.TokenOp
-	34, // 43: shale.TokenClaims.record:type_name -> shale.LaminaRecord
-	0,  // 44: shale.TokenClaims.mode:type_name -> shale.UploadMode
-	3,  // 45: shale.TokenClaims.live:type_name -> shale.LivePolicy
-	42, // 46: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
-	42, // 47: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
-	35, // 48: shale.TokenClaims.capture_epochs:type_name -> shale.CaptureEpochGrant
-	42, // 49: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
-	42, // 50: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
-	42, // 51: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
-	34, // 52: shale.LaminaStored.record:type_name -> shale.LaminaRecord
-	42, // 53: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
-	9,  // 54: shale.LaminaMissing.reason:type_name -> shale.MissingReason
-	42, // 55: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
-	37, // 56: shale.Event.stored:type_name -> shale.LaminaStored
-	38, // 57: shale.Event.deleted:type_name -> shale.LaminaDeleted
-	39, // 58: shale.Event.missing:type_name -> shale.LaminaMissing
-	59, // [59:59] is the sub-list for method output_type
-	59, // [59:59] is the sub-list for method input_type
-	59, // [59:59] is the sub-list for extension type_name
-	59, // [59:59] is the sub-list for extension extendee
-	0,  // [0:59] is the sub-list for field type_name
+	34, // 38: shale.SatelliteStatus.retained:type_name -> shale.RetainedShare
+	17, // 39: shale.Handoff.allocation:type_name -> shale.Allocation
+	7,  // 40: shale.LaminaRecord.state:type_name -> shale.RecordState
+	0,  // 41: shale.LaminaRecord.mode:type_name -> shale.UploadMode
+	44, // 42: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
+	44, // 43: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
+	8,  // 44: shale.TokenClaims.op:type_name -> shale.TokenOp
+	36, // 45: shale.TokenClaims.record:type_name -> shale.LaminaRecord
+	0,  // 46: shale.TokenClaims.mode:type_name -> shale.UploadMode
+	3,  // 47: shale.TokenClaims.live:type_name -> shale.LivePolicy
+	44, // 48: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
+	44, // 49: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
+	37, // 50: shale.TokenClaims.capture_epochs:type_name -> shale.CaptureEpochGrant
+	44, // 51: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
+	44, // 52: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
+	44, // 53: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
+	36, // 54: shale.LaminaStored.record:type_name -> shale.LaminaRecord
+	44, // 55: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
+	9,  // 56: shale.LaminaMissing.reason:type_name -> shale.MissingReason
+	44, // 57: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
+	39, // 58: shale.Event.stored:type_name -> shale.LaminaStored
+	40, // 59: shale.Event.deleted:type_name -> shale.LaminaDeleted
+	41, // 60: shale.Event.missing:type_name -> shale.LaminaMissing
+	61, // [61:61] is the sub-list for method output_type
+	61, // [61:61] is the sub-list for method input_type
+	61, // [61:61] is the sub-list for extension type_name
+	61, // [61:61] is the sub-list for extension extendee
+	0,  // [0:61] is the sub-list for field type_name
 }
 
 func init() { file_shale_common_proto_init() }
@@ -6790,7 +7293,7 @@ func file_shale_common_proto_init() {
 	if File_shale_common_proto != nil {
 		return
 	}
-	file_shale_common_proto_msgTypes[30].OneofWrappers = []any{
+	file_shale_common_proto_msgTypes[32].OneofWrappers = []any{
 		(*event_Stored)(nil),
 		(*event_Deleted)(nil),
 		(*event_Missing)(nil),
@@ -6801,7 +7304,7 @@ func file_shale_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_common_proto_rawDesc), len(file_shale_common_proto_rawDesc)),
 			NumEnums:      10,
-			NumMessages:   32,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -158,6 +158,7 @@ type LaminaAddRequest struct {
 	xxx_hidden_Epoch            int64                  `protobuf:"varint,28,opt,name=epoch"`
 	xxx_hidden_SkipReason       LaminaSkipReason       `protobuf:"varint,29,opt,name=skip_reason,json=skipReason,enum=shale.LaminaSkipReason"`
 	xxx_hidden_CaptureEpoch     *string                `protobuf:"bytes,30,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_Satellite        *SatelliteRef          `protobuf:"bytes,31,opt,name=satellite"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -362,12 +363,19 @@ func (x *LaminaAddRequest) GetCaptureEpoch() string {
 	return ""
 }
 
+func (x *LaminaAddRequest) GetSatellite() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
 func (x *LaminaAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 25)
 }
 
 func (x *LaminaAddRequest) SetTenant(v *TenantRef) {
@@ -451,7 +459,7 @@ func (x *LaminaAddRequest) SetChecksum(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Checksum = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 25)
 }
 
 func (x *LaminaAddRequest) SetEpoch(v int64) {
@@ -460,12 +468,16 @@ func (x *LaminaAddRequest) SetEpoch(v int64) {
 
 func (x *LaminaAddRequest) SetSkipReason(v LaminaSkipReason) {
 	x.xxx_hidden_SkipReason = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 25)
 }
 
 func (x *LaminaAddRequest) SetCaptureEpoch(v string) {
 	x.xxx_hidden_CaptureEpoch = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 24)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 25)
+}
+
+func (x *LaminaAddRequest) SetSatellite(v *SatelliteRef) {
+	x.xxx_hidden_Satellite = v
 }
 
 func (x *LaminaAddRequest) HasId() bool {
@@ -580,6 +592,13 @@ func (x *LaminaAddRequest) HasCaptureEpoch() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 23)
 }
 
+func (x *LaminaAddRequest) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
 func (x *LaminaAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -648,6 +667,10 @@ func (x *LaminaAddRequest) ClearCaptureEpoch() {
 	x.xxx_hidden_CaptureEpoch = nil
 }
 
+func (x *LaminaAddRequest) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
+}
+
 type LaminaAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -675,6 +698,7 @@ type LaminaAddRequest_builder struct {
 	Epoch            int64
 	SkipReason       *LaminaSkipReason
 	CaptureEpoch     *string
+	Satellite        *SatelliteRef
 }
 
 func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
@@ -682,7 +706,7 @@ func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 25)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -705,18 +729,19 @@ func (b0 LaminaAddRequest_builder) Build() *LaminaAddRequest {
 	x.xxx_hidden_DateCommitted = b.DateCommitted
 	x.xxx_hidden_DateFinished = b.DateFinished
 	if b.Checksum != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 25)
 		x.xxx_hidden_Checksum = b.Checksum
 	}
 	x.xxx_hidden_Epoch = b.Epoch
 	if b.SkipReason != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 25)
 		x.xxx_hidden_SkipReason = *b.SkipReason
 	}
 	if b.CaptureEpoch != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 24)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 25)
 		x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
 	}
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -966,6 +991,7 @@ type LaminaSelect struct {
 	xxx_hidden_Epoch            bool                   `protobuf:"varint,28,opt,name=epoch"`
 	xxx_hidden_SkipReason       bool                   `protobuf:"varint,29,opt,name=skip_reason,json=skipReason"`
 	xxx_hidden_CaptureEpoch     bool                   `protobuf:"varint,30,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_Satellite        *SatelliteSelect       `protobuf:"bytes,31,opt,name=satellite"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
 	XXX_presence                [1]uint32
 	unknownFields               protoimpl.UnknownFields
@@ -1172,9 +1198,16 @@ func (x *LaminaSelect) GetCaptureEpoch() bool {
 	return false
 }
 
+func (x *LaminaSelect) GetSatellite() *SatelliteSelect {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
 func (x *LaminaSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 26)
 }
 
 func (x *LaminaSelect) SetTenant(v *TenantSelect) {
@@ -1199,97 +1232,101 @@ func (x *LaminaSelect) SetSink(v *SinkSelect) {
 
 func (x *LaminaSelect) SetLaminaKey(v bool) {
 	x.xxx_hidden_LaminaKey = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 26)
 }
 
 func (x *LaminaSelect) SetState(v bool) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 26)
 }
 
 func (x *LaminaSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 26)
 }
 
 func (x *LaminaSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 26)
 }
 
 func (x *LaminaSelect) SetDateStarted(v bool) {
 	x.xxx_hidden_DateStarted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 26)
 }
 
 func (x *LaminaSelect) SetDateEnded(v bool) {
 	x.xxx_hidden_DateEnded = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 26)
 }
 
 func (x *LaminaSelect) SetEndedEstimated(v bool) {
 	x.xxx_hidden_EndedEstimated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 26)
 }
 
 func (x *LaminaSelect) SetSize(v bool) {
 	x.xxx_hidden_Size = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 26)
 }
 
 func (x *LaminaSelect) SetIncomplete(v bool) {
 	x.xxx_hidden_Incomplete = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 26)
 }
 
 func (x *LaminaSelect) SetDateExpired(v bool) {
 	x.xxx_hidden_DateExpired = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 26)
 }
 
 func (x *LaminaSelect) SetDateDeleted(v bool) {
 	x.xxx_hidden_DateDeleted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 26)
 }
 
 func (x *LaminaSelect) SetDatesSynced(v bool) {
 	x.xxx_hidden_DatesSynced = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 26)
 }
 
 func (x *LaminaSelect) SetPlacementVersion(v bool) {
 	x.xxx_hidden_PlacementVersion = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 26)
 }
 
 func (x *LaminaSelect) SetDateCommitted(v bool) {
 	x.xxx_hidden_DateCommitted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 26)
 }
 
 func (x *LaminaSelect) SetDateFinished(v bool) {
 	x.xxx_hidden_DateFinished = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 26)
 }
 
 func (x *LaminaSelect) SetChecksum(v bool) {
 	x.xxx_hidden_Checksum = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 26)
 }
 
 func (x *LaminaSelect) SetEpoch(v bool) {
 	x.xxx_hidden_Epoch = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 26)
 }
 
 func (x *LaminaSelect) SetSkipReason(v bool) {
 	x.xxx_hidden_SkipReason = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 26)
 }
 
 func (x *LaminaSelect) SetCaptureEpoch(v bool) {
 	x.xxx_hidden_CaptureEpoch = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 26)
+}
+
+func (x *LaminaSelect) SetSatellite(v *SatelliteSelect) {
+	x.xxx_hidden_Satellite = v
 }
 
 func (x *LaminaSelect) HasAll() bool {
@@ -1467,6 +1504,13 @@ func (x *LaminaSelect) HasCaptureEpoch() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 24)
 }
 
+func (x *LaminaSelect) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
 func (x *LaminaSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -1587,6 +1631,10 @@ func (x *LaminaSelect) ClearCaptureEpoch() {
 	x.xxx_hidden_CaptureEpoch = false
 }
 
+func (x *LaminaSelect) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
+}
+
 type LaminaSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -1615,6 +1663,7 @@ type LaminaSelect_builder struct {
 	Epoch            *bool
 	SkipReason       *bool
 	CaptureEpoch     *bool
+	Satellite        *SatelliteSelect
 }
 
 func (b0 LaminaSelect_builder) Build() *LaminaSelect {
@@ -1622,7 +1671,7 @@ func (b0 LaminaSelect_builder) Build() *LaminaSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 26)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -1631,81 +1680,82 @@ func (b0 LaminaSelect_builder) Build() *LaminaSelect {
 	x.xxx_hidden_Source = b.Source
 	x.xxx_hidden_Sink = b.Sink
 	if b.LaminaKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 26)
 		x.xxx_hidden_LaminaKey = *b.LaminaKey
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 26)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 26)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 26)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.DateStarted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 26)
 		x.xxx_hidden_DateStarted = *b.DateStarted
 	}
 	if b.DateEnded != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 26)
 		x.xxx_hidden_DateEnded = *b.DateEnded
 	}
 	if b.EndedEstimated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 26)
 		x.xxx_hidden_EndedEstimated = *b.EndedEstimated
 	}
 	if b.Size != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 26)
 		x.xxx_hidden_Size = *b.Size
 	}
 	if b.Incomplete != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 26)
 		x.xxx_hidden_Incomplete = *b.Incomplete
 	}
 	if b.DateExpired != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 26)
 		x.xxx_hidden_DateExpired = *b.DateExpired
 	}
 	if b.DateDeleted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 26)
 		x.xxx_hidden_DateDeleted = *b.DateDeleted
 	}
 	if b.DatesSynced != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 26)
 		x.xxx_hidden_DatesSynced = *b.DatesSynced
 	}
 	if b.PlacementVersion != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 26)
 		x.xxx_hidden_PlacementVersion = *b.PlacementVersion
 	}
 	if b.DateCommitted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 26)
 		x.xxx_hidden_DateCommitted = *b.DateCommitted
 	}
 	if b.DateFinished != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 26)
 		x.xxx_hidden_DateFinished = *b.DateFinished
 	}
 	if b.Checksum != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 26)
 		x.xxx_hidden_Checksum = *b.Checksum
 	}
 	if b.Epoch != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 26)
 		x.xxx_hidden_Epoch = *b.Epoch
 	}
 	if b.SkipReason != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 26)
 		x.xxx_hidden_SkipReason = *b.SkipReason
 	}
 	if b.CaptureEpoch != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 26)
 		x.xxx_hidden_CaptureEpoch = *b.CaptureEpoch
 	}
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -1736,6 +1786,8 @@ type LaminaPatchRequest struct {
 	xxx_hidden_Checksum          []byte                 `protobuf:"bytes,54,opt,name=checksum"`
 	xxx_hidden_Epoch             int64                  `protobuf:"varint,56,opt,name=epoch"`
 	xxx_hidden_SkipReason        LaminaSkipReason       `protobuf:"varint,58,opt,name=skip_reason,json=skipReason,enum=shale.LaminaSkipReason"`
+	xxx_hidden_Satellite         *SatelliteRef          `protobuf:"bytes,62,opt,name=satellite"`
+	xxx_hidden_SatelliteNull     bool                   `protobuf:"varint,63,opt,name=satellite_null,json=satelliteNull"`
 	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
 	XXX_presence                 [1]uint32
 	unknownFields                protoimpl.UnknownFields
@@ -1949,6 +2001,20 @@ func (x *LaminaPatchRequest) GetSkipReason() LaminaSkipReason {
 	return LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED
 }
 
+func (x *LaminaPatchRequest) GetSatellite() *SatelliteRef {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
+func (x *LaminaPatchRequest) GetSatelliteNull() bool {
+	if x != nil {
+		return x.xxx_hidden_SatelliteNull
+	}
+	return false
+}
+
 func (x *LaminaPatchRequest) SetRef(v *LaminaRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -1959,17 +2025,17 @@ func (x *LaminaPatchRequest) SetSink(v *SinkRef) {
 
 func (x *LaminaPatchRequest) SetSinkNull(v bool) {
 	x.xxx_hidden_SinkNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 27)
 }
 
 func (x *LaminaPatchRequest) SetLaminaKey(v string) {
 	x.xxx_hidden_LaminaKey = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 27)
 }
 
 func (x *LaminaPatchRequest) SetState(v LaminaState) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 27)
 }
 
 func (x *LaminaPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1978,7 +2044,7 @@ func (x *LaminaPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *LaminaPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 27)
 }
 
 func (x *LaminaPatchRequest) SetDateStarted(v *timestamppb.Timestamp) {
@@ -1991,22 +2057,22 @@ func (x *LaminaPatchRequest) SetDateEnded(v *timestamppb.Timestamp) {
 
 func (x *LaminaPatchRequest) SetDateEndedNull(v bool) {
 	x.xxx_hidden_DateEndedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 27)
 }
 
 func (x *LaminaPatchRequest) SetEndedEstimated(v bool) {
 	x.xxx_hidden_EndedEstimated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 27)
 }
 
 func (x *LaminaPatchRequest) SetSize(v int64) {
 	x.xxx_hidden_Size = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 27)
 }
 
 func (x *LaminaPatchRequest) SetIncomplete(v bool) {
 	x.xxx_hidden_Incomplete = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 27)
 }
 
 func (x *LaminaPatchRequest) SetDateExpired(v *timestamppb.Timestamp) {
@@ -2019,17 +2085,17 @@ func (x *LaminaPatchRequest) SetDateDeleted(v *timestamppb.Timestamp) {
 
 func (x *LaminaPatchRequest) SetDateDeletedNull(v bool) {
 	x.xxx_hidden_DateDeletedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 27)
 }
 
 func (x *LaminaPatchRequest) SetDatesSynced(v bool) {
 	x.xxx_hidden_DatesSynced = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 27)
 }
 
 func (x *LaminaPatchRequest) SetPlacementVersion(v int64) {
 	x.xxx_hidden_PlacementVersion = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 27)
 }
 
 func (x *LaminaPatchRequest) SetDateCommitted(v *timestamppb.Timestamp) {
@@ -2038,7 +2104,7 @@ func (x *LaminaPatchRequest) SetDateCommitted(v *timestamppb.Timestamp) {
 
 func (x *LaminaPatchRequest) SetDateCommittedNull(v bool) {
 	x.xxx_hidden_DateCommittedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 27)
 }
 
 func (x *LaminaPatchRequest) SetDateFinished(v *timestamppb.Timestamp) {
@@ -2047,7 +2113,7 @@ func (x *LaminaPatchRequest) SetDateFinished(v *timestamppb.Timestamp) {
 
 func (x *LaminaPatchRequest) SetDateFinishedNull(v bool) {
 	x.xxx_hidden_DateFinishedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 27)
 }
 
 func (x *LaminaPatchRequest) SetChecksum(v []byte) {
@@ -2055,17 +2121,26 @@ func (x *LaminaPatchRequest) SetChecksum(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Checksum = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 27)
 }
 
 func (x *LaminaPatchRequest) SetEpoch(v int64) {
 	x.xxx_hidden_Epoch = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 27)
 }
 
 func (x *LaminaPatchRequest) SetSkipReason(v LaminaSkipReason) {
 	x.xxx_hidden_SkipReason = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 25)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 27)
+}
+
+func (x *LaminaPatchRequest) SetSatellite(v *SatelliteRef) {
+	x.xxx_hidden_Satellite = v
+}
+
+func (x *LaminaPatchRequest) SetSatelliteNull(v bool) {
+	x.xxx_hidden_SatelliteNull = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 27)
 }
 
 func (x *LaminaPatchRequest) HasRef() bool {
@@ -2243,6 +2318,20 @@ func (x *LaminaPatchRequest) HasSkipReason() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 24)
 }
 
+func (x *LaminaPatchRequest) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
+func (x *LaminaPatchRequest) HasSatelliteNull() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 26)
+}
+
 func (x *LaminaPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -2359,6 +2448,15 @@ func (x *LaminaPatchRequest) ClearSkipReason() {
 	x.xxx_hidden_SkipReason = LaminaSkipReason_LAMINA_SKIP_REASON_UNSPECIFIED
 }
 
+func (x *LaminaPatchRequest) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
+}
+
+func (x *LaminaPatchRequest) ClearSatelliteNull() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 26)
+	x.xxx_hidden_SatelliteNull = false
+}
+
 type LaminaPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2419,6 +2517,12 @@ type LaminaPatchRequest_builder struct {
 	Checksum         []byte
 	Epoch            *int64
 	SkipReason       *LaminaSkipReason
+	Satellite        *SatelliteRef
+	// Clear satellite instead of writing it.
+	// It takes a field of its own because an unset value already means
+	// "leave it alone", so no value could have meant NULL. It wins
+	// outright: setting both this and satellite clears.
+	SatelliteNull *bool
 }
 
 func (b0 LaminaPatchRequest_builder) Build() *LaminaPatchRequest {
@@ -2428,75 +2532,80 @@ func (b0 LaminaPatchRequest_builder) Build() *LaminaPatchRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Sink = b.Sink
 	if b.SinkNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 27)
 		x.xxx_hidden_SinkNull = *b.SinkNull
 	}
 	if b.LaminaKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 27)
 		x.xxx_hidden_LaminaKey = b.LaminaKey
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 27)
 		x.xxx_hidden_State = *b.State
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 27)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_DateStarted = b.DateStarted
 	x.xxx_hidden_DateEnded = b.DateEnded
 	if b.DateEndedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 27)
 		x.xxx_hidden_DateEndedNull = *b.DateEndedNull
 	}
 	if b.EndedEstimated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 27)
 		x.xxx_hidden_EndedEstimated = *b.EndedEstimated
 	}
 	if b.Size != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 27)
 		x.xxx_hidden_Size = *b.Size
 	}
 	if b.Incomplete != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 27)
 		x.xxx_hidden_Incomplete = *b.Incomplete
 	}
 	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateDeleted = b.DateDeleted
 	if b.DateDeletedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 27)
 		x.xxx_hidden_DateDeletedNull = *b.DateDeletedNull
 	}
 	if b.DatesSynced != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 27)
 		x.xxx_hidden_DatesSynced = *b.DatesSynced
 	}
 	if b.PlacementVersion != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 27)
 		x.xxx_hidden_PlacementVersion = *b.PlacementVersion
 	}
 	x.xxx_hidden_DateCommitted = b.DateCommitted
 	if b.DateCommittedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 27)
 		x.xxx_hidden_DateCommittedNull = *b.DateCommittedNull
 	}
 	x.xxx_hidden_DateFinished = b.DateFinished
 	if b.DateFinishedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 27)
 		x.xxx_hidden_DateFinishedNull = *b.DateFinishedNull
 	}
 	if b.Checksum != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 27)
 		x.xxx_hidden_Checksum = b.Checksum
 	}
 	if b.Epoch != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 27)
 		x.xxx_hidden_Epoch = *b.Epoch
 	}
 	if b.SkipReason != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 25)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 27)
 		x.xxx_hidden_SkipReason = *b.SkipReason
+	}
+	x.xxx_hidden_Satellite = b.Satellite
+	if b.SatelliteNull != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 27)
+		x.xxx_hidden_SatelliteNull = *b.SatelliteNull
 	}
 	return m0
 }
@@ -6939,7 +7048,7 @@ var File_shale_lamina_svc_g_proto protoreflect.FileDescriptor
 
 const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18shale/lamina_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/lamina.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\x1a\x19shale/storage_svc.g.proto\"\xd9\b\n" +
+	"\x18shale/lamina_svc.g.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x12shale/common.proto\x1a\x16shale/host_svc.g.proto\x1a\x12shale/lamina.proto\x1a\x1fshale/payday/tenant_svc.g.proto\x1a\x15shale/set_svc.g.proto\x1a\x16shale/site_svc.g.proto\x1a\x19shale/storage_svc.g.proto\"\x8c\t\n" +
 	"\x10LaminaAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -6970,13 +7079,14 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\x05epoch\x18\x1c \x01(\x03B\x05\xaa\x01\x02\b\x02R\x05epoch\x128\n" +
 	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonR\n" +
 	"skipReason\x12#\n" +
-	"\rcapture_epoch\x18\x1e \x01(\tR\fcaptureEpoch\"c\n" +
+	"\rcapture_epoch\x18\x1e \x01(\tR\fcaptureEpoch\x121\n" +
+	"\tsatellite\x18\x1f \x01(\v2\x13.shale.SatelliteRefR\tsatellite\"c\n" +
 	"\x10LaminaGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12+\n" +
 	"\x06select\x18\x02 \x01(\v2\x13.shale.LaminaSelectR\x06select\"$\n" +
 	"\tLaminaRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
-	"\x03key\"\xe0\x06\n" +
+	"\x03key\"\x96\a\n" +
 	"\fLaminaSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -7008,7 +7118,8 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\x05epoch\x18\x1c \x01(\bR\x05epoch\x12\x1f\n" +
 	"\vskip_reason\x18\x1d \x01(\bR\n" +
 	"skipReason\x12#\n" +
-	"\rcapture_epoch\x18\x1e \x01(\bR\fcaptureEpoch\"\xf6\b\n" +
+	"\rcapture_epoch\x18\x1e \x01(\bR\fcaptureEpoch\x124\n" +
+	"\tsatellite\x18\x1f \x01(\v2\x16.shale.SatelliteSelectR\tsatellite\"\xd0\t\n" +
 	"\x12LaminaPatchRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12\"\n" +
 	"\x04sink\x18\x14 \x01(\v2\x0e.shale.SinkRefR\x04sink\x12\x1b\n" +
@@ -7039,7 +7150,9 @@ const file_shale_lamina_svc_g_proto_rawDesc = "" +
 	"\bchecksum\x186 \x01(\fR\bchecksum\x12\x14\n" +
 	"\x05epoch\x188 \x01(\x03R\x05epoch\x128\n" +
 	"\vskip_reason\x18: \x01(\x0e2\x17.shale.LaminaSkipReasonR\n" +
-	"skipReason\"\\\n" +
+	"skipReason\x121\n" +
+	"\tsatellite\x18> \x01(\v2\x13.shale.SatelliteRefR\tsatellite\x12%\n" +
+	"\x0esatellite_null\x18? \x01(\bR\rsatelliteNull\"\\\n" +
 	"\x12LaminaApplyRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.LaminaRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
@@ -7305,19 +7418,21 @@ var file_shale_lamina_svc_g_proto_goTypes = []any{
 	(LaminaState)(0),                   // 45: shale.LaminaState
 	(*timestamppb.Timestamp)(nil),      // 46: google.protobuf.Timestamp
 	(LaminaSkipReason)(0),              // 47: shale.LaminaSkipReason
-	(*TenantSelect)(nil),               // 48: shale.TenantSelect
-	(*SiteSelect)(nil),                 // 49: shale.SiteSelect
-	(*SetSelect)(nil),                  // 50: shale.SetSelect
-	(*SourceSelect)(nil),               // 51: shale.SourceSelect
-	(*SinkSelect)(nil),                 // 52: shale.SinkSelect
-	(*patchpb.Patch)(nil),              // 53: patch.Patch
-	(*Lamina)(nil),                     // 54: shale.Lamina
-	(*Endpoint)(nil),                   // 55: shale.Endpoint
-	(*NodeRef)(nil),                    // 56: shale.NodeRef
-	(AttemptState)(0),                  // 57: shale.AttemptState
-	(*NodeSelect)(nil),                 // 58: shale.NodeSelect
-	(*Attempt)(nil),                    // 59: shale.Attempt
-	(*Allocation)(nil),                 // 60: shale.Allocation
+	(*SatelliteRef)(nil),               // 48: shale.SatelliteRef
+	(*TenantSelect)(nil),               // 49: shale.TenantSelect
+	(*SiteSelect)(nil),                 // 50: shale.SiteSelect
+	(*SetSelect)(nil),                  // 51: shale.SetSelect
+	(*SourceSelect)(nil),               // 52: shale.SourceSelect
+	(*SinkSelect)(nil),                 // 53: shale.SinkSelect
+	(*SatelliteSelect)(nil),            // 54: shale.SatelliteSelect
+	(*patchpb.Patch)(nil),              // 55: patch.Patch
+	(*Lamina)(nil),                     // 56: shale.Lamina
+	(*Endpoint)(nil),                   // 57: shale.Endpoint
+	(*NodeRef)(nil),                    // 58: shale.NodeRef
+	(AttemptState)(0),                  // 59: shale.AttemptState
+	(*NodeSelect)(nil),                 // 60: shale.NodeSelect
+	(*Attempt)(nil),                    // 61: shale.Attempt
+	(*Allocation)(nil),                 // 62: shale.Allocation
 }
 var file_shale_lamina_svc_g_proto_depIdxs = []int32{
 	40,  // 0: shale.LaminaAddRequest.tenant:type_name -> shale.TenantRef
@@ -7334,152 +7449,155 @@ var file_shale_lamina_svc_g_proto_depIdxs = []int32{
 	46,  // 11: shale.LaminaAddRequest.date_committed:type_name -> google.protobuf.Timestamp
 	46,  // 12: shale.LaminaAddRequest.date_finished:type_name -> google.protobuf.Timestamp
 	47,  // 13: shale.LaminaAddRequest.skip_reason:type_name -> shale.LaminaSkipReason
-	4,   // 14: shale.LaminaGetRequest.ref:type_name -> shale.LaminaRef
-	5,   // 15: shale.LaminaGetRequest.select:type_name -> shale.LaminaSelect
-	48,  // 16: shale.LaminaSelect.tenant:type_name -> shale.TenantSelect
-	49,  // 17: shale.LaminaSelect.site:type_name -> shale.SiteSelect
-	50,  // 18: shale.LaminaSelect.set:type_name -> shale.SetSelect
-	51,  // 19: shale.LaminaSelect.source:type_name -> shale.SourceSelect
-	52,  // 20: shale.LaminaSelect.sink:type_name -> shale.SinkSelect
-	4,   // 21: shale.LaminaPatchRequest.ref:type_name -> shale.LaminaRef
-	44,  // 22: shale.LaminaPatchRequest.sink:type_name -> shale.SinkRef
-	45,  // 23: shale.LaminaPatchRequest.state:type_name -> shale.LaminaState
-	46,  // 24: shale.LaminaPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	46,  // 25: shale.LaminaPatchRequest.date_started:type_name -> google.protobuf.Timestamp
-	46,  // 26: shale.LaminaPatchRequest.date_ended:type_name -> google.protobuf.Timestamp
-	46,  // 27: shale.LaminaPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
-	46,  // 28: shale.LaminaPatchRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	46,  // 29: shale.LaminaPatchRequest.date_committed:type_name -> google.protobuf.Timestamp
-	46,  // 30: shale.LaminaPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
-	47,  // 31: shale.LaminaPatchRequest.skip_reason:type_name -> shale.LaminaSkipReason
-	4,   // 32: shale.LaminaApplyRequest.ref:type_name -> shale.LaminaRef
-	53,  // 33: shale.LaminaApplyRequest.patch:type_name -> patch.Patch
-	11,  // 34: shale.LaminaListRequest.filters:type_name -> shale.LaminaFilter
-	54,  // 35: shale.LaminaListResponse.items:type_name -> shale.Lamina
-	4,   // 36: shale.LaminaFilter.ref:type_name -> shale.LaminaRef
-	40,  // 37: shale.LaminaFilter.tenant:type_name -> shale.TenantRef
-	42,  // 38: shale.LaminaFilter.set:type_name -> shale.SetRef
-	43,  // 39: shale.LaminaFilter.source:type_name -> shale.SourceRef
-	44,  // 40: shale.LaminaFilter.sink:type_name -> shale.SinkRef
-	11,  // 41: shale.LaminaWatchRequest.filters:type_name -> shale.LaminaFilter
-	14,  // 42: shale.LaminaWatchResponse.items:type_name -> shale.LaminaWatchItem
-	54,  // 43: shale.LaminaWatchItem.value:type_name -> shale.Lamina
-	43,  // 44: shale.LaminaAllocateRequest.source:type_name -> shale.SourceRef
-	46,  // 45: shale.LaminaAllocateRequest.date_started:type_name -> google.protobuf.Timestamp
-	4,   // 46: shale.LaminaAllocateRequest.after:type_name -> shale.LaminaRef
-	4,   // 47: shale.LaminaReallocateRequest.ref:type_name -> shale.LaminaRef
-	4,   // 48: shale.LaminaRenewRequest.ref:type_name -> shale.LaminaRef
-	18,  // 49: shale.LaminaRenewRequest.attempt:type_name -> shale.AttemptRef
-	4,   // 50: shale.LaminaReportAttemptRequest.ref:type_name -> shale.LaminaRef
-	18,  // 51: shale.LaminaReportAttemptRequest.attempt:type_name -> shale.AttemptRef
-	4,   // 52: shale.LaminaReportFailureRequest.ref:type_name -> shale.LaminaRef
-	4,   // 53: shale.LaminaSkipRequest.ref:type_name -> shale.LaminaRef
-	46,  // 54: shale.LaminaSkipRequest.date_ended:type_name -> google.protobuf.Timestamp
-	47,  // 55: shale.LaminaSkipRequest.reason:type_name -> shale.LaminaSkipReason
-	4,   // 56: shale.LaminaRescheduleRequest.ref:type_name -> shale.LaminaRef
-	42,  // 57: shale.LaminaRescheduleRequest.set:type_name -> shale.SetRef
-	43,  // 58: shale.LaminaRescheduleRequest.source:type_name -> shale.SourceRef
-	46,  // 59: shale.LaminaRescheduleRequest.from:type_name -> google.protobuf.Timestamp
-	46,  // 60: shale.LaminaRescheduleRequest.to:type_name -> google.protobuf.Timestamp
-	46,  // 61: shale.LaminaRescheduleRequest.date_expired:type_name -> google.protobuf.Timestamp
-	46,  // 62: shale.LaminaRescheduleRequest.date_deleted:type_name -> google.protobuf.Timestamp
-	42,  // 63: shale.LaminaTimelineRequest.set:type_name -> shale.SetRef
-	43,  // 64: shale.LaminaTimelineRequest.source:type_name -> shale.SourceRef
-	46,  // 65: shale.LaminaTimelineRequest.from:type_name -> google.protobuf.Timestamp
-	46,  // 66: shale.LaminaTimelineRequest.to:type_name -> google.protobuf.Timestamp
-	26,  // 67: shale.LaminaTimelineResponse.sources:type_name -> shale.TimelineSource
-	27,  // 68: shale.TimelineSource.laminae:type_name -> shale.TimelineLamina
-	28,  // 69: shale.TimelineSource.gaps:type_name -> shale.TimelineGap
-	46,  // 70: shale.TimelineLamina.date_started:type_name -> google.protobuf.Timestamp
-	46,  // 71: shale.TimelineLamina.date_ended:type_name -> google.protobuf.Timestamp
-	0,   // 72: shale.TimelineLamina.state:type_name -> shale.ReadState
-	55,  // 73: shale.TimelineLamina.endpoints:type_name -> shale.Endpoint
-	46,  // 74: shale.TimelineLamina.date_token_expires:type_name -> google.protobuf.Timestamp
-	46,  // 75: shale.TimelineGap.from:type_name -> google.protobuf.Timestamp
-	46,  // 76: shale.TimelineGap.to:type_name -> google.protobuf.Timestamp
-	1,   // 77: shale.TimelineGap.reason:type_name -> shale.GapReason
-	43,  // 78: shale.LaminaExportRequest.source:type_name -> shale.SourceRef
-	46,  // 79: shale.LaminaExportRequest.from:type_name -> google.protobuf.Timestamp
-	46,  // 80: shale.LaminaExportRequest.to:type_name -> google.protobuf.Timestamp
-	46,  // 81: shale.LaminaExportResponse.date_expires:type_name -> google.protobuf.Timestamp
-	40,  // 82: shale.AttemptAddRequest.tenant:type_name -> shale.TenantRef
-	41,  // 83: shale.AttemptAddRequest.site:type_name -> shale.SiteRef
-	4,   // 84: shale.AttemptAddRequest.lamina:type_name -> shale.LaminaRef
-	44,  // 85: shale.AttemptAddRequest.sink:type_name -> shale.SinkRef
-	56,  // 86: shale.AttemptAddRequest.node:type_name -> shale.NodeRef
-	57,  // 87: shale.AttemptAddRequest.state:type_name -> shale.AttemptState
-	46,  // 88: shale.AttemptAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	46,  // 89: shale.AttemptAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	46,  // 90: shale.AttemptAddRequest.date_finished:type_name -> google.protobuf.Timestamp
-	18,  // 91: shale.AttemptGetRequest.ref:type_name -> shale.AttemptRef
-	33,  // 92: shale.AttemptGetRequest.select:type_name -> shale.AttemptSelect
-	48,  // 93: shale.AttemptSelect.tenant:type_name -> shale.TenantSelect
-	49,  // 94: shale.AttemptSelect.site:type_name -> shale.SiteSelect
-	5,   // 95: shale.AttemptSelect.lamina:type_name -> shale.LaminaSelect
-	52,  // 96: shale.AttemptSelect.sink:type_name -> shale.SinkSelect
-	58,  // 97: shale.AttemptSelect.node:type_name -> shale.NodeSelect
-	18,  // 98: shale.AttemptPatchRequest.ref:type_name -> shale.AttemptRef
-	57,  // 99: shale.AttemptPatchRequest.state:type_name -> shale.AttemptState
-	46,  // 100: shale.AttemptPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	46,  // 101: shale.AttemptPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
-	46,  // 102: shale.AttemptPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
-	18,  // 103: shale.AttemptApplyRequest.ref:type_name -> shale.AttemptRef
-	53,  // 104: shale.AttemptApplyRequest.patch:type_name -> patch.Patch
-	39,  // 105: shale.AttemptListRequest.filters:type_name -> shale.AttemptFilter
-	59,  // 106: shale.AttemptListResponse.items:type_name -> shale.Attempt
-	18,  // 107: shale.AttemptFilter.ref:type_name -> shale.AttemptRef
-	40,  // 108: shale.AttemptFilter.tenant:type_name -> shale.TenantRef
-	4,   // 109: shale.AttemptFilter.lamina:type_name -> shale.LaminaRef
-	44,  // 110: shale.AttemptFilter.sink:type_name -> shale.SinkRef
-	2,   // 111: shale.LaminaService.Add:input_type -> shale.LaminaAddRequest
-	3,   // 112: shale.LaminaService.Get:input_type -> shale.LaminaGetRequest
-	6,   // 113: shale.LaminaService.Patch:input_type -> shale.LaminaPatchRequest
-	7,   // 114: shale.LaminaService.Apply:input_type -> shale.LaminaApplyRequest
-	4,   // 115: shale.LaminaService.Erase:input_type -> shale.LaminaRef
-	9,   // 116: shale.LaminaService.List:input_type -> shale.LaminaListRequest
-	12,  // 117: shale.LaminaService.Watch:input_type -> shale.LaminaWatchRequest
-	15,  // 118: shale.LaminaService.Allocate:input_type -> shale.LaminaAllocateRequest
-	16,  // 119: shale.LaminaService.Reallocate:input_type -> shale.LaminaReallocateRequest
-	17,  // 120: shale.LaminaService.Renew:input_type -> shale.LaminaRenewRequest
-	19,  // 121: shale.LaminaService.ReportAttempt:input_type -> shale.LaminaReportAttemptRequest
-	20,  // 122: shale.LaminaService.ReportFailure:input_type -> shale.LaminaReportFailureRequest
-	21,  // 123: shale.LaminaService.Skip:input_type -> shale.LaminaSkipRequest
-	22,  // 124: shale.LaminaService.Reschedule:input_type -> shale.LaminaRescheduleRequest
-	24,  // 125: shale.LaminaService.Timeline:input_type -> shale.LaminaTimelineRequest
-	29,  // 126: shale.LaminaService.Export:input_type -> shale.LaminaExportRequest
-	31,  // 127: shale.AttemptService.Add:input_type -> shale.AttemptAddRequest
-	32,  // 128: shale.AttemptService.Get:input_type -> shale.AttemptGetRequest
-	34,  // 129: shale.AttemptService.Patch:input_type -> shale.AttemptPatchRequest
-	35,  // 130: shale.AttemptService.Apply:input_type -> shale.AttemptApplyRequest
-	18,  // 131: shale.AttemptService.Erase:input_type -> shale.AttemptRef
-	37,  // 132: shale.AttemptService.List:input_type -> shale.AttemptListRequest
-	54,  // 133: shale.LaminaService.Add:output_type -> shale.Lamina
-	54,  // 134: shale.LaminaService.Get:output_type -> shale.Lamina
-	54,  // 135: shale.LaminaService.Patch:output_type -> shale.Lamina
-	54,  // 136: shale.LaminaService.Apply:output_type -> shale.Lamina
-	8,   // 137: shale.LaminaService.Erase:output_type -> shale.LaminaEraseResponse
-	10,  // 138: shale.LaminaService.List:output_type -> shale.LaminaListResponse
-	13,  // 139: shale.LaminaService.Watch:output_type -> shale.LaminaWatchResponse
-	60,  // 140: shale.LaminaService.Allocate:output_type -> shale.Allocation
-	60,  // 141: shale.LaminaService.Reallocate:output_type -> shale.Allocation
-	60,  // 142: shale.LaminaService.Renew:output_type -> shale.Allocation
-	59,  // 143: shale.LaminaService.ReportAttempt:output_type -> shale.Attempt
-	54,  // 144: shale.LaminaService.ReportFailure:output_type -> shale.Lamina
-	54,  // 145: shale.LaminaService.Skip:output_type -> shale.Lamina
-	23,  // 146: shale.LaminaService.Reschedule:output_type -> shale.LaminaRescheduleResponse
-	25,  // 147: shale.LaminaService.Timeline:output_type -> shale.LaminaTimelineResponse
-	30,  // 148: shale.LaminaService.Export:output_type -> shale.LaminaExportResponse
-	59,  // 149: shale.AttemptService.Add:output_type -> shale.Attempt
-	59,  // 150: shale.AttemptService.Get:output_type -> shale.Attempt
-	59,  // 151: shale.AttemptService.Patch:output_type -> shale.Attempt
-	59,  // 152: shale.AttemptService.Apply:output_type -> shale.Attempt
-	36,  // 153: shale.AttemptService.Erase:output_type -> shale.AttemptEraseResponse
-	38,  // 154: shale.AttemptService.List:output_type -> shale.AttemptListResponse
-	133, // [133:155] is the sub-list for method output_type
-	111, // [111:133] is the sub-list for method input_type
-	111, // [111:111] is the sub-list for extension type_name
-	111, // [111:111] is the sub-list for extension extendee
-	0,   // [0:111] is the sub-list for field type_name
+	48,  // 14: shale.LaminaAddRequest.satellite:type_name -> shale.SatelliteRef
+	4,   // 15: shale.LaminaGetRequest.ref:type_name -> shale.LaminaRef
+	5,   // 16: shale.LaminaGetRequest.select:type_name -> shale.LaminaSelect
+	49,  // 17: shale.LaminaSelect.tenant:type_name -> shale.TenantSelect
+	50,  // 18: shale.LaminaSelect.site:type_name -> shale.SiteSelect
+	51,  // 19: shale.LaminaSelect.set:type_name -> shale.SetSelect
+	52,  // 20: shale.LaminaSelect.source:type_name -> shale.SourceSelect
+	53,  // 21: shale.LaminaSelect.sink:type_name -> shale.SinkSelect
+	54,  // 22: shale.LaminaSelect.satellite:type_name -> shale.SatelliteSelect
+	4,   // 23: shale.LaminaPatchRequest.ref:type_name -> shale.LaminaRef
+	44,  // 24: shale.LaminaPatchRequest.sink:type_name -> shale.SinkRef
+	45,  // 25: shale.LaminaPatchRequest.state:type_name -> shale.LaminaState
+	46,  // 26: shale.LaminaPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	46,  // 27: shale.LaminaPatchRequest.date_started:type_name -> google.protobuf.Timestamp
+	46,  // 28: shale.LaminaPatchRequest.date_ended:type_name -> google.protobuf.Timestamp
+	46,  // 29: shale.LaminaPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
+	46,  // 30: shale.LaminaPatchRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	46,  // 31: shale.LaminaPatchRequest.date_committed:type_name -> google.protobuf.Timestamp
+	46,  // 32: shale.LaminaPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
+	47,  // 33: shale.LaminaPatchRequest.skip_reason:type_name -> shale.LaminaSkipReason
+	48,  // 34: shale.LaminaPatchRequest.satellite:type_name -> shale.SatelliteRef
+	4,   // 35: shale.LaminaApplyRequest.ref:type_name -> shale.LaminaRef
+	55,  // 36: shale.LaminaApplyRequest.patch:type_name -> patch.Patch
+	11,  // 37: shale.LaminaListRequest.filters:type_name -> shale.LaminaFilter
+	56,  // 38: shale.LaminaListResponse.items:type_name -> shale.Lamina
+	4,   // 39: shale.LaminaFilter.ref:type_name -> shale.LaminaRef
+	40,  // 40: shale.LaminaFilter.tenant:type_name -> shale.TenantRef
+	42,  // 41: shale.LaminaFilter.set:type_name -> shale.SetRef
+	43,  // 42: shale.LaminaFilter.source:type_name -> shale.SourceRef
+	44,  // 43: shale.LaminaFilter.sink:type_name -> shale.SinkRef
+	11,  // 44: shale.LaminaWatchRequest.filters:type_name -> shale.LaminaFilter
+	14,  // 45: shale.LaminaWatchResponse.items:type_name -> shale.LaminaWatchItem
+	56,  // 46: shale.LaminaWatchItem.value:type_name -> shale.Lamina
+	43,  // 47: shale.LaminaAllocateRequest.source:type_name -> shale.SourceRef
+	46,  // 48: shale.LaminaAllocateRequest.date_started:type_name -> google.protobuf.Timestamp
+	4,   // 49: shale.LaminaAllocateRequest.after:type_name -> shale.LaminaRef
+	4,   // 50: shale.LaminaReallocateRequest.ref:type_name -> shale.LaminaRef
+	4,   // 51: shale.LaminaRenewRequest.ref:type_name -> shale.LaminaRef
+	18,  // 52: shale.LaminaRenewRequest.attempt:type_name -> shale.AttemptRef
+	4,   // 53: shale.LaminaReportAttemptRequest.ref:type_name -> shale.LaminaRef
+	18,  // 54: shale.LaminaReportAttemptRequest.attempt:type_name -> shale.AttemptRef
+	4,   // 55: shale.LaminaReportFailureRequest.ref:type_name -> shale.LaminaRef
+	4,   // 56: shale.LaminaSkipRequest.ref:type_name -> shale.LaminaRef
+	46,  // 57: shale.LaminaSkipRequest.date_ended:type_name -> google.protobuf.Timestamp
+	47,  // 58: shale.LaminaSkipRequest.reason:type_name -> shale.LaminaSkipReason
+	4,   // 59: shale.LaminaRescheduleRequest.ref:type_name -> shale.LaminaRef
+	42,  // 60: shale.LaminaRescheduleRequest.set:type_name -> shale.SetRef
+	43,  // 61: shale.LaminaRescheduleRequest.source:type_name -> shale.SourceRef
+	46,  // 62: shale.LaminaRescheduleRequest.from:type_name -> google.protobuf.Timestamp
+	46,  // 63: shale.LaminaRescheduleRequest.to:type_name -> google.protobuf.Timestamp
+	46,  // 64: shale.LaminaRescheduleRequest.date_expired:type_name -> google.protobuf.Timestamp
+	46,  // 65: shale.LaminaRescheduleRequest.date_deleted:type_name -> google.protobuf.Timestamp
+	42,  // 66: shale.LaminaTimelineRequest.set:type_name -> shale.SetRef
+	43,  // 67: shale.LaminaTimelineRequest.source:type_name -> shale.SourceRef
+	46,  // 68: shale.LaminaTimelineRequest.from:type_name -> google.protobuf.Timestamp
+	46,  // 69: shale.LaminaTimelineRequest.to:type_name -> google.protobuf.Timestamp
+	26,  // 70: shale.LaminaTimelineResponse.sources:type_name -> shale.TimelineSource
+	27,  // 71: shale.TimelineSource.laminae:type_name -> shale.TimelineLamina
+	28,  // 72: shale.TimelineSource.gaps:type_name -> shale.TimelineGap
+	46,  // 73: shale.TimelineLamina.date_started:type_name -> google.protobuf.Timestamp
+	46,  // 74: shale.TimelineLamina.date_ended:type_name -> google.protobuf.Timestamp
+	0,   // 75: shale.TimelineLamina.state:type_name -> shale.ReadState
+	57,  // 76: shale.TimelineLamina.endpoints:type_name -> shale.Endpoint
+	46,  // 77: shale.TimelineLamina.date_token_expires:type_name -> google.protobuf.Timestamp
+	46,  // 78: shale.TimelineGap.from:type_name -> google.protobuf.Timestamp
+	46,  // 79: shale.TimelineGap.to:type_name -> google.protobuf.Timestamp
+	1,   // 80: shale.TimelineGap.reason:type_name -> shale.GapReason
+	43,  // 81: shale.LaminaExportRequest.source:type_name -> shale.SourceRef
+	46,  // 82: shale.LaminaExportRequest.from:type_name -> google.protobuf.Timestamp
+	46,  // 83: shale.LaminaExportRequest.to:type_name -> google.protobuf.Timestamp
+	46,  // 84: shale.LaminaExportResponse.date_expires:type_name -> google.protobuf.Timestamp
+	40,  // 85: shale.AttemptAddRequest.tenant:type_name -> shale.TenantRef
+	41,  // 86: shale.AttemptAddRequest.site:type_name -> shale.SiteRef
+	4,   // 87: shale.AttemptAddRequest.lamina:type_name -> shale.LaminaRef
+	44,  // 88: shale.AttemptAddRequest.sink:type_name -> shale.SinkRef
+	58,  // 89: shale.AttemptAddRequest.node:type_name -> shale.NodeRef
+	59,  // 90: shale.AttemptAddRequest.state:type_name -> shale.AttemptState
+	46,  // 91: shale.AttemptAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	46,  // 92: shale.AttemptAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	46,  // 93: shale.AttemptAddRequest.date_finished:type_name -> google.protobuf.Timestamp
+	18,  // 94: shale.AttemptGetRequest.ref:type_name -> shale.AttemptRef
+	33,  // 95: shale.AttemptGetRequest.select:type_name -> shale.AttemptSelect
+	49,  // 96: shale.AttemptSelect.tenant:type_name -> shale.TenantSelect
+	50,  // 97: shale.AttemptSelect.site:type_name -> shale.SiteSelect
+	5,   // 98: shale.AttemptSelect.lamina:type_name -> shale.LaminaSelect
+	53,  // 99: shale.AttemptSelect.sink:type_name -> shale.SinkSelect
+	60,  // 100: shale.AttemptSelect.node:type_name -> shale.NodeSelect
+	18,  // 101: shale.AttemptPatchRequest.ref:type_name -> shale.AttemptRef
+	59,  // 102: shale.AttemptPatchRequest.state:type_name -> shale.AttemptState
+	46,  // 103: shale.AttemptPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	46,  // 104: shale.AttemptPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
+	46,  // 105: shale.AttemptPatchRequest.date_finished:type_name -> google.protobuf.Timestamp
+	18,  // 106: shale.AttemptApplyRequest.ref:type_name -> shale.AttemptRef
+	55,  // 107: shale.AttemptApplyRequest.patch:type_name -> patch.Patch
+	39,  // 108: shale.AttemptListRequest.filters:type_name -> shale.AttemptFilter
+	61,  // 109: shale.AttemptListResponse.items:type_name -> shale.Attempt
+	18,  // 110: shale.AttemptFilter.ref:type_name -> shale.AttemptRef
+	40,  // 111: shale.AttemptFilter.tenant:type_name -> shale.TenantRef
+	4,   // 112: shale.AttemptFilter.lamina:type_name -> shale.LaminaRef
+	44,  // 113: shale.AttemptFilter.sink:type_name -> shale.SinkRef
+	2,   // 114: shale.LaminaService.Add:input_type -> shale.LaminaAddRequest
+	3,   // 115: shale.LaminaService.Get:input_type -> shale.LaminaGetRequest
+	6,   // 116: shale.LaminaService.Patch:input_type -> shale.LaminaPatchRequest
+	7,   // 117: shale.LaminaService.Apply:input_type -> shale.LaminaApplyRequest
+	4,   // 118: shale.LaminaService.Erase:input_type -> shale.LaminaRef
+	9,   // 119: shale.LaminaService.List:input_type -> shale.LaminaListRequest
+	12,  // 120: shale.LaminaService.Watch:input_type -> shale.LaminaWatchRequest
+	15,  // 121: shale.LaminaService.Allocate:input_type -> shale.LaminaAllocateRequest
+	16,  // 122: shale.LaminaService.Reallocate:input_type -> shale.LaminaReallocateRequest
+	17,  // 123: shale.LaminaService.Renew:input_type -> shale.LaminaRenewRequest
+	19,  // 124: shale.LaminaService.ReportAttempt:input_type -> shale.LaminaReportAttemptRequest
+	20,  // 125: shale.LaminaService.ReportFailure:input_type -> shale.LaminaReportFailureRequest
+	21,  // 126: shale.LaminaService.Skip:input_type -> shale.LaminaSkipRequest
+	22,  // 127: shale.LaminaService.Reschedule:input_type -> shale.LaminaRescheduleRequest
+	24,  // 128: shale.LaminaService.Timeline:input_type -> shale.LaminaTimelineRequest
+	29,  // 129: shale.LaminaService.Export:input_type -> shale.LaminaExportRequest
+	31,  // 130: shale.AttemptService.Add:input_type -> shale.AttemptAddRequest
+	32,  // 131: shale.AttemptService.Get:input_type -> shale.AttemptGetRequest
+	34,  // 132: shale.AttemptService.Patch:input_type -> shale.AttemptPatchRequest
+	35,  // 133: shale.AttemptService.Apply:input_type -> shale.AttemptApplyRequest
+	18,  // 134: shale.AttemptService.Erase:input_type -> shale.AttemptRef
+	37,  // 135: shale.AttemptService.List:input_type -> shale.AttemptListRequest
+	56,  // 136: shale.LaminaService.Add:output_type -> shale.Lamina
+	56,  // 137: shale.LaminaService.Get:output_type -> shale.Lamina
+	56,  // 138: shale.LaminaService.Patch:output_type -> shale.Lamina
+	56,  // 139: shale.LaminaService.Apply:output_type -> shale.Lamina
+	8,   // 140: shale.LaminaService.Erase:output_type -> shale.LaminaEraseResponse
+	10,  // 141: shale.LaminaService.List:output_type -> shale.LaminaListResponse
+	13,  // 142: shale.LaminaService.Watch:output_type -> shale.LaminaWatchResponse
+	62,  // 143: shale.LaminaService.Allocate:output_type -> shale.Allocation
+	62,  // 144: shale.LaminaService.Reallocate:output_type -> shale.Allocation
+	62,  // 145: shale.LaminaService.Renew:output_type -> shale.Allocation
+	61,  // 146: shale.LaminaService.ReportAttempt:output_type -> shale.Attempt
+	56,  // 147: shale.LaminaService.ReportFailure:output_type -> shale.Lamina
+	56,  // 148: shale.LaminaService.Skip:output_type -> shale.Lamina
+	23,  // 149: shale.LaminaService.Reschedule:output_type -> shale.LaminaRescheduleResponse
+	25,  // 150: shale.LaminaService.Timeline:output_type -> shale.LaminaTimelineResponse
+	30,  // 151: shale.LaminaService.Export:output_type -> shale.LaminaExportResponse
+	61,  // 152: shale.AttemptService.Add:output_type -> shale.Attempt
+	61,  // 153: shale.AttemptService.Get:output_type -> shale.Attempt
+	61,  // 154: shale.AttemptService.Patch:output_type -> shale.Attempt
+	61,  // 155: shale.AttemptService.Apply:output_type -> shale.Attempt
+	36,  // 156: shale.AttemptService.Erase:output_type -> shale.AttemptEraseResponse
+	38,  // 157: shale.AttemptService.List:output_type -> shale.AttemptListResponse
+	136, // [136:158] is the sub-list for method output_type
+	114, // [114:136] is the sub-list for method input_type
+	114, // [114:114] is the sub-list for extension type_name
+	114, // [114:114] is the sub-list for extension extendee
+	0,   // [0:114] is the sub-list for field type_name
 }
 
 func init() { file_shale_lamina_svc_g_proto_init() }

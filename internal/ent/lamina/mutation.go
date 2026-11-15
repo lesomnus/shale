@@ -53,6 +53,8 @@ type Mutation struct {
 	clearedsource        bool
 	sink                 *uuid.UUID
 	clearedsink          bool
+	satellite            *uuid.UUID
+	clearedsatellite     bool
 	predicates           []predicate.Lamina
 }
 
@@ -837,6 +839,39 @@ func (m *Mutation) ResetSinkId() {
 	delete(m.clearedFields, FieldSinkId)
 }
 
+// SetSatelliteId sets the "satellite_id" field.
+func (m *Mutation) SetSatelliteId(u uuid.UUID) {
+	m.satellite = &u
+	delete(m.clearedFields, FieldSatelliteId)
+}
+
+// SatelliteId returns the value of the "satellite_id" field in the mutation.
+func (m *Mutation) SatelliteId() (r uuid.UUID, exists bool) {
+	v := m.satellite
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearSatelliteId clears the value of the "satellite_id" field.
+func (m *Mutation) ClearSatelliteId() {
+	m.satellite = nil
+	m.clearedFields[FieldSatelliteId] = struct{}{}
+}
+
+// SatelliteIdCleared returns if the "satellite_id" field was cleared in this mutation.
+func (m *Mutation) SatelliteIdCleared() bool {
+	_, ok := m.clearedFields[FieldSatelliteId]
+	return ok
+}
+
+// ResetSatelliteId resets all changes to the "satellite_id" field.
+func (m *Mutation) ResetSatelliteId() {
+	m.satellite = nil
+	delete(m.clearedFields, FieldSatelliteId)
+}
+
 // ClearTenant clears the "tenant" edge to the Tenant entity.
 func (m *Mutation) ClearTenant() {
 	m.clearedtenant = true
@@ -972,6 +1007,33 @@ func (m *Mutation) ResetSink() {
 	m.clearedsink = false
 }
 
+// ClearSatellite clears the "satellite" edge to the Satellite entity.
+func (m *Mutation) ClearSatellite() {
+	m.clearedsatellite = true
+	m.clearedFields[FieldSatelliteId] = struct{}{}
+}
+
+// SatelliteCleared reports if the "satellite" edge to the Satellite entity was cleared.
+func (m *Mutation) SatelliteCleared() bool {
+	return m.SatelliteIdCleared() || m.clearedsatellite
+}
+
+// SatelliteIds returns the "satellite" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// SatelliteId instead. It exists only for internal usage by the builders.
+func (m *Mutation) SatelliteIds() (ids []uuid.UUID) {
+	if id := m.satellite; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSatellite resets all changes to the "satellite" edge.
+func (m *Mutation) ResetSatellite() {
+	m.satellite = nil
+	m.clearedsatellite = false
+}
+
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.Lamina) {
 	m.predicates = append(m.predicates, ps...)
@@ -1006,7 +1068,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 25)
 	if m.lamina_key != nil || m.exprs[FieldLaminaKey] != nil {
 		fields = append(fields, FieldLaminaKey)
 	}
@@ -1079,6 +1141,9 @@ func (m *Mutation) Fields() []string {
 	if m.sink != nil {
 		fields = append(fields, FieldSinkId)
 	}
+	if m.satellite != nil {
+		fields = append(fields, FieldSatelliteId)
+	}
 	return fields
 }
 
@@ -1141,6 +1206,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.SourceId()
 	case FieldSinkId:
 		return m.SinkId()
+	case FieldSatelliteId:
+		return m.SatelliteId()
 	}
 	return nil, false
 }
@@ -1400,6 +1467,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSinkId(v)
 		return nil
+	case FieldSatelliteId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSatelliteId(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Lamina field %s", name)
 }
@@ -1469,6 +1546,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 	case FieldSourceId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	case FieldSinkId:
+		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
+	case FieldSatelliteId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	default:
 		return fmt.Errorf("unknown Lamina field %s", name)
@@ -1670,6 +1749,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldSinkId) {
 		fields = append(fields, FieldSinkId)
 	}
+	if m.FieldCleared(FieldSatelliteId) {
+		fields = append(fields, FieldSatelliteId)
+	}
 	return fields
 }
 
@@ -1719,6 +1801,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldSinkId:
 		m.ClearSinkId()
+		return nil
+	case FieldSatelliteId:
+		m.ClearSatelliteId()
 		return nil
 	}
 	return fmt.Errorf("unknown Lamina nullable field %s", name)
@@ -1800,13 +1885,16 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldSinkId:
 		m.ResetSinkId()
 		return nil
+	case FieldSatelliteId:
+		m.ResetSatelliteId()
+		return nil
 	}
 	return fmt.Errorf("unknown Lamina field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *Mutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.tenant != nil {
 		edges = append(edges, EdgeTenant)
 	}
@@ -1821,6 +1909,9 @@ func (m *Mutation) AddedEdges() []string {
 	}
 	if m.sink != nil {
 		edges = append(edges, EdgeSink)
+	}
+	if m.satellite != nil {
+		edges = append(edges, EdgeSatellite)
 	}
 	return edges
 }
@@ -1849,13 +1940,17 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.sink; id != nil {
 			return []ent.Value{*id}
 		}
+	case EdgeSatellite:
+		if id := m.satellite; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *Mutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	return edges
 }
 
@@ -1867,7 +1962,7 @@ func (m *Mutation) RemovedIds(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *Mutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedtenant {
 		edges = append(edges, EdgeTenant)
 	}
@@ -1882,6 +1977,9 @@ func (m *Mutation) ClearedEdges() []string {
 	}
 	if m.clearedsink {
 		edges = append(edges, EdgeSink)
+	}
+	if m.clearedsatellite {
+		edges = append(edges, EdgeSatellite)
 	}
 	return edges
 }
@@ -1900,6 +1998,8 @@ func (m *Mutation) EdgeCleared(name string) bool {
 		return m.clearedsource
 	case EdgeSink:
 		return m.clearedsink
+	case EdgeSatellite:
+		return m.clearedsatellite
 	}
 	return false
 }
@@ -1923,6 +2023,9 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeSink:
 		m.ClearSink()
 		return nil
+	case EdgeSatellite:
+		m.ClearSatellite()
+		return nil
 	}
 	return fmt.Errorf("unknown Lamina unique edge %s", name)
 }
@@ -1945,6 +2048,9 @@ func (m *Mutation) ResetEdge(name string) error {
 		return nil
 	case EdgeSink:
 		m.ResetSink()
+		return nil
+	case EdgeSatellite:
+		m.ResetSatellite()
 		return nil
 	}
 	return fmt.Errorf("unknown Lamina edge %s", name)

@@ -3,31 +3,25 @@ package producer
 import (
 	"context"
 	"errors"
-	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/h3"
-	"github.com/lesomnus/shale/internal/satellite"
-	"github.com/lesomnus/shale/internal/storage"
-	"github.com/lesomnus/shale/internal/token"
-	"github.com/lesomnus/shale/server/core"
+	"github.com/lesomnus/shale/internal/upload"
 )
 
-// The upload client (§12.2, §13): live or buffered, resumable from the
-// offset HEAD reports, moving to the next candidate after a failure it
-// reports, asking for more when the candidates run out.
+// The upload client (§12.2, §13) is internal/upload's, which a satellite
+// runs too (§41.9): live or buffered, resumable from the offset HEAD
+// reports, moving to the next candidate after a failure it reports, asking
+// for more when the candidates run out. What is the producer's own is the
+// path its requests take (§41.5), and handing a segment to a satellite
+// under `retain: accepted` (§41.9).
 
 // UploadConfig is the producer's own upload settings (§36.1).
 type UploadConfig struct {
@@ -44,6 +38,11 @@ type UploadConfig struct {
 	// before it ends and the node reports what is durable (§12.2); about
 	// the node's part size keeps the device's writes large.
 	Part int64
+	// AcceptPart is how many bytes one request carries under `retain:
+	// accepted` before the satellite answers what it holds and the
+	// producer lets it go (§41.9): no device waits on it, so it is small,
+	// and the producer holds about this much of a live segment.
+	AcceptPart int64
 	// Via is the path uploads take (§41.5, `producer.upload_via`):
 	// directly to the nodes by default, so a producer updated without a
 	// word in its configuration uploads as it did.
@@ -55,25 +54,16 @@ type UploadConfig struct {
 }
 
 func (c *UploadConfig) defaults() {
-	if c.ResumeTimeout == 0 {
-		c.ResumeTimeout = 2 * time.Minute
+	e := c.engine()
+	e.Defaults()
+	c.ResumeTimeout, c.RetryAfterCap, c.PlacementRetries, c.Client, c.Part = e.ResumeTimeout, e.RetryAfterCap, e.PlacementRetries, e.Client, e.Part
+	if c.AcceptPart == 0 {
+		c.AcceptPart = 1 << 20
 	}
-	if c.Part == 0 {
-		c.Part = 16 << 20
-	}
-	if c.RetryAfterCap == 0 {
-		c.RetryAfterCap = 2 * time.Minute
-	}
-	if c.PlacementRetries == 0 {
-		c.PlacementRetries = 3
-	}
-	if c.Client == nil {
-		c.Client = &http.Client{Transport: &http.Transport{
-			MaxIdleConnsPerHost: 8,
-			IdleConnTimeout:     90 * time.Second,
-			ForceAttemptHTTP2:   true,
-		}}
-	}
+}
+
+func (c *UploadConfig) engine() upload.Config {
+	return upload.Config{ResumeTimeout: c.ResumeTimeout, RetryAfterCap: c.RetryAfterCap, PlacementRetries: c.PlacementRetries, Client: c.Client, Part: c.Part}
 }
 
 // Uploader uploads segments with the allocations it is given.
@@ -88,6 +78,11 @@ type Uploader struct {
 	// of requests, the bytes a node reported durable are released, and a
 	// target that fails after that ends the segment where it has it.
 	Written bool
+	// Accepted is `retain: accepted` (§41.9): a segment goes to the
+	// satellite, which takes the bytes, and the producer lets them go as
+	// the satellite says it holds them. Without a satellite it is
+	// `committed`.
+	Accepted bool
 	// Satellite routes requests through the satellite the CP assigned,
 	// where Cfg.Via says to (§41.5), and hands it the live of the segments
 	// that may be fed from it where Cfg.LiveFeed says to (§41.8); nil is
@@ -97,326 +92,77 @@ type Uploader struct {
 	// defaulted fills in what Cfg leaves out, once: every source's upload
 	// loop calls Upload, each from a goroutine of its own.
 	defaulted sync.Once
+	engine    *upload.Uploader
+	// passed counts requests a satellite passed through rather than
+	// accepted; plain says the log told that `accepted` went as
+	// `committed` for want of a satellite.
+	passed atomic.Int64
+	plain  atomic.Bool
 }
 
 // Result is what became of a segment.
-type Result struct {
-	Stored     bool
-	Incomplete bool
-	Attempts   int
-	Err        error
-	// Cut says the segment ended where its node had it: bytes below the
-	// node's offset had been released under `retain: written`, so no other
-	// target could take it from the start (§12.2). The node finalizes what
-	// it holds as an incomplete lamina by the abandon rule (§15).
-	Cut bool
+type Result = upload.Result
+
+// init fills in Cfg and makes the engine, once.
+func (u *Uploader) init() {
+	u.defaulted.Do(func() {
+		u.Cfg.defaults()
+		u.engine = &upload.Uploader{Cfg: u.Cfg.engine(), Laminae: u.Laminae, Log: u.Log, Written: u.Written, Router: linkRouter{u}}
+		if u.m != nil {
+			m := u.m
+			u.engine.Hooks = upload.Hooks{
+				Stored: func(d time.Duration) {
+					m.uploadDuration.Record(context.Background(), float64(d.Microseconds())/1000)
+				},
+				Retry:   func(kind string) { m.retries.Add(context.Background(), 1, kindAttr(kind)) },
+				Request: func(via bool) { m.uploadRequests.Add(context.Background(), 1, pathAttr(via)) },
+			}
+		}
+	})
 }
 
-var (
-	errResume  = errors.New("no progress within resume_timeout")
-	errBusy    = errors.New("the node stayed busy past resume_timeout")
-	errTooLong = errors.New("413: the upload exceeds max_length")
-	errRefused = errors.New("the node refused the upload")
-	// errNoCompletion is a 200 or 201 without Upload-Complete: ?1, which a
-	// node never means; the upload resumes from the offset it holds.
-	errNoCompletion = errors.New("the node answered success without completion")
-	// errForeign is a key that holds bytes this producer never sent: an
-	// earlier incarnation's upload of the same slot. They are not this
-	// segment's, so the attempt is given up and the lamina gets another
-	// (§12.5, §15).
-	errForeign = errors.New(core.ForeignBytesReason)
-)
-
 // Upload sends one segment: live while it grows, buffered once closed. It
-// answers when the segment is durable somewhere, or lost.
+// answers when the segment is durable somewhere, handed to a satellite,
+// or lost.
 func (u *Uploader) Upload(ctx context.Context, al *api.Allocation, seg *Segment) Result {
-	began := time.Now()
-	u.defaulted.Do(u.Cfg.defaults)
-	res := Result{}
-	tried := map[string]bool{}
-
-	for round := 0; round <= u.Cfg.PlacementRetries; round++ {
-		if al.GetCaptureEpoch() != seg.CaptureEpoch {
-			res.Err = errors.New("allocation capture incarnation differs from queued segment")
+	u.init()
+	var sent upload.Sent
+	if u.Accepted {
+		res, s, ok := u.handoff(ctx, al, seg)
+		if ok {
 			return res
 		}
-		for _, cand := range al.GetCandidates() {
-			key := string(cand.GetAttemptId())
-			if tried[key] {
-				continue
-			}
-			tried[key] = true
-			res.Attempts++
+		sent = s
+		if res.Passed {
+			// The satellite passed it through: the rest goes as under
+			// `committed`, and the result says so.
+			out := u.engine.UploadSent(ctx, al, seg, sent)
+			out.Passed = true
 
-			err := u.attempt(ctx, al, cand, seg)
-			if err == nil {
-				res.Stored = true
-				if u.m != nil {
-					u.m.uploadDuration.Record(context.Background(), float64(time.Since(began).Microseconds())/1000)
-				}
-				return res
-			}
-			if ctx.Err() != nil {
-				res.Err = ctx.Err()
-				return res
-			}
-			if seg.Released() > 0 {
-				// Bytes below the node's offset are gone from here: the
-				// segment cannot start over elsewhere. It ends where that
-				// node has it (§12.2), and the node's abandon rule makes
-				// an incomplete lamina of that (§15).
-				u.Log.Warn("segment cut short at the node's offset", "key", al.GetLaminaKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "offset", seg.Released(), "err", err.Error())
-				res.Cut, res.Err = true, err
-
-				return res
-			}
-			if errors.Is(err, errExpired) {
-				// The attempt outlived its TTL unrenewed, and the CP will
-				// not renew it now: neither the candidates issued with it
-				// nor a reallocation help. The segment is kept, and asking
-				// for its slot again answers the same lamina with a new
-				// attempt (§12.1, §12.2).
-				res.Err = err
-
-				return res
-			}
-			u.Log.Warn("attempt failed", "key", al.GetLaminaKey(), "node", pdid.Id(mustId(cand.GetNodeId())).String(), "err", err.Error())
-			// The failed attempt is reported before moving on (§13).
-			rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-			u.Laminae.ReportAttempt(rctx, api.LaminaReportAttemptRequest_builder{
-				Ref:           api.LaminaRef_builder{Id: al.GetLaminaId()}.Build(),
-				Attempt:       api.AttemptRef_builder{Id: cand.GetAttemptId()}.Build(),
-				FailureReason: err.Error(),
-			}.Build())
-			cancel()
+			return out
 		}
-
-		// Every candidate tried: ask for the next one.
-		rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		if u.m != nil {
-			u.m.retries.Add(context.Background(), 1, kindAttr("placement"))
-		}
-		next, err := u.Laminae.Reallocate(rctx, api.LaminaReallocateRequest_builder{Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build()}.Build())
-		cancel()
-		if err != nil {
-			u.Log.Warn("reallocate", "key", al.GetLaminaKey(), "err", err.Error())
-			break
-		}
-		al = next
 	}
 
-	// Every candidate and every reallocation failed: not stored anywhere.
-	// The producer keeps the segment and tries again later, or gives it up
-	// when its RAM budget says so (§16).
-	res.Err = errors.New("every candidate failed")
-
-	return res
+	return u.engine.UploadSent(ctx, al, seg, sent)
 }
 
 // GiveUp reports a lamina the producer will not upload: it becomes LOST
 // (§13). The CP leaves a lamina that is no longer PENDING as it is, so a
 // segment stored after all is not undone. key is for the log.
 func (u *Uploader) GiveUp(ctx context.Context, lamina []byte, key, reason string) {
-	rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	if _, err := u.Laminae.ReportFailure(rctx, api.LaminaReportFailureRequest_builder{
-		Ref: api.LaminaRef_builder{Id: lamina}.Build(), Reason: reason,
-	}.Build()); err != nil {
-		u.Log.Warn("report failure", "key", key, "err", err.Error())
-	}
+	u.init()
+	u.engine.GiveUp(ctx, lamina, key, reason)
 }
 
 // Skip tells the CP nothing was stored for a segment on purpose (§38.10):
 // its lamina becomes SKIPPED with the span and the reason.
 func (u *Uploader) Skip(ctx context.Context, al *api.Allocation, ended time.Time, reason api.LaminaSkipReason) error {
-	rctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	_, err := u.Laminae.Skip(rctx, api.LaminaSkipRequest_builder{
-		Ref: api.LaminaRef_builder{Id: al.GetLaminaId()}.Build(), DateEnded: timestamppb.New(ended), Reason: reason,
-	}.Build())
+	u.init()
 
-	return err
+	return u.engine.Skip(ctx, al, ended, reason)
 }
 
-func mustId(b []byte) pdid.Id {
-	id, _ := pdid.From(b)
-
-	return id
-}
-
-// attempt is one target: same-target retries with resume until
-// resume_timeout passes without progress (§13).
-func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Candidate, seg *Segment) error {
-	if len(cand.GetEndpoints()) == 0 {
-		return errors.New("no endpoint")
-	}
-	ep := cand.GetEndpoints()[0]
-	// The key is the candidate's: it names the attempt, and the token
-	// names the key (§23.2).
-	key := cand.GetLaminaKey()
-	if key == "" {
-		key = al.GetLaminaKey()
-	}
-
-	// The token is renewed while the attempt runs, before its TTL, so an
-	// upload that outlives it carries on at the same key (§12.2).
-	ls := newLease(u.Laminae, u.Log, al, cand)
-	lctx, stop := context.WithCancel(ctx)
-	defer stop()
-	go ls.keep(lctx)
-
-	var offset int64
-	// sentMax is the furthest byte this process sent for the key: a node
-	// offset beyond it is somebody else's bytes.
-	var sentMax int64
-	// Under `retain: written` a live segment goes in parts: each request
-	// ends after `part` bytes without completing, the node answers with
-	// what is durable, and those bytes are released (§12.2).
-	var part int64
-	if u.Written {
-		part = u.Cfg.Part
-	}
-	lastProgress := time.Now()
-	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		tok, err := ls.token(ctx)
-		if err != nil {
-			return err
-		}
-		// Where this request goes: the node, or the satellite in front of
-		// it (§41.5), asked at every request, so a satellite that fails or
-		// is replaced is left at the next.
-		base, viaSatellite := u.Satellite.route(ep)
-		url := base + "/" + key
-		sentBefore := sentMax
-		r := u.put(ctx, url, viaSatellite, tok, al, seg, offset, part)
-		status, newOffset, sent, complete, err := r.status, r.offset, r.sent, r.complete, r.err
-		if offset+sent > sentMax {
-			sentMax = offset + sent
-		}
-		if ctx.Err() == nil {
-			switch {
-			case satelliteFailure(viaSatellite, r.resp, err):
-				// The satellite's failure, not the node's: it does not count
-				// against this candidate (§41.5). The offset is asked for
-				// where requests go now, and the upload resumes from it.
-				u.satelliteFailed(r.failure())
-				lastProgress = time.Now()
-				status, err = 0, r.failure()
-			case viaSatellite:
-				u.Satellite.succeeded()
-			case status == 0 && err != nil:
-				u.Satellite.directFailed()
-			}
-		}
-		if (status == http.StatusCreated || status == http.StatusOK) && !complete {
-			// A success status that does not say the lamina is complete is
-			// no commit: an answer the node did not mean (§12.5). The
-			// offset is asked for and the upload resumes.
-			status, err = 0, errNoCompletion
-		}
-		switch {
-		case status == http.StatusCreated || status == http.StatusOK:
-			return nil
-		case status == http.StatusNoContent && part > 0:
-			// A part is on the device up to the offset the node reports
-			// (aligned, so at most a few KiB short of what was sent): the
-			// bytes below it are released and the next part follows, or
-			// the completing request once the segment has closed.
-			if newOffset < 0 || newOffset > sentMax {
-				return errForeign
-			}
-			if newOffset > offset {
-				lastProgress = time.Now()
-			}
-			offset = newOffset
-			seg.Release(offset)
-			continue
-		case status == http.StatusRequestEntityTooLarge:
-			return errTooLong
-		case status == http.StatusConflict:
-			// The node's offset differs: carry on from there (§12.5), unless
-			// it is past both what we told it and what our earlier requests
-			// sent, which is a file we did not write. A request the node
-			// answers 409 it refuses whole, so only an earlier one can have
-			// put our bytes there: one cut short after the node had them,
-			// whose offset a HEAD that failed, or a 503, did not bring back.
-			if newOffset > max(offset, sentBefore) {
-				return errForeign
-			}
-			if newOffset >= 0 {
-				offset = newOffset
-				lastProgress = time.Now()
-				continue
-			}
-			return errRefused
-		case status == http.StatusServiceUnavailable:
-			// Busy: wait Retry-After on the same target (§13), but not
-			// forever: a target that stays busy past resume_timeout with
-			// no progress is given up like one that stays silent, so a
-			// node that keeps restarting cannot hold a segment.
-			if time.Since(lastProgress) > u.Cfg.ResumeTimeout {
-				return errBusy
-			}
-			wait := u.retryAfter(newOffset)
-			if u.m != nil {
-				u.m.retries.Add(context.Background(), 1, kindAttr("same_target"))
-			}
-			u.Log.Info("node busy", "key", al.GetLaminaKey(), "wait", wait.String())
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(wait):
-			}
-			continue
-		case status == http.StatusForbidden || status == http.StatusUnauthorized:
-			return fmt.Errorf("refused: %d", status)
-		case status >= 400 && status < 500:
-			return fmt.Errorf("refused: %d", status)
-		}
-
-		// A transport error or a 5xx: HEAD for the offset and resume.
-		if err != nil {
-			u.Log.Warn("upload interrupted", "key", al.GetLaminaKey(), "url", token.RedactURL(url), "err", err.Error())
-		}
-		cur, herr := u.head(ctx, ep, key, tok, &lastProgress)
-		if herr == nil {
-			if cur > sentMax {
-				return errForeign
-			}
-			if cur > offset {
-				offset = cur
-				lastProgress = time.Now()
-			}
-			if cur < 0 {
-				// Complete already.
-				return nil
-			}
-		}
-		if time.Since(lastProgress) > u.Cfg.ResumeTimeout {
-			return errResume
-		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(2 * time.Second):
-		}
-	}
-}
-
-func (u *Uploader) retryAfter(v int64) time.Duration {
-	d := time.Duration(v) * time.Second
-	if d <= 0 {
-		d = 10 * time.Second
-	}
-	if d > u.Cfg.RetryAfterCap {
-		d = u.Cfg.RetryAfterCap
-	}
-
-	return d
-}
+func mustId(b []byte) pdid.Id { return upload.MustId(b) }
 
 // satelliteFailed tells the satellite link, and counts a fallback.
 func (u *Uploader) satelliteFailed(err error) {
@@ -425,205 +171,35 @@ func (u *Uploader) satelliteFailed(err error) {
 	}
 }
 
-// reply is what one request came back with: the status, the offset a 409
-// or a 204 or the Retry-After a 503 carried, the bytes sent, whether the
-// answer said the lamina is complete, and the answer itself, without its
-// body, for whose answer it was (§41.5).
-type reply struct {
-	status   int
-	offset   int64
-	sent     int64
-	complete bool
-	err      error
-	resp     *http.Response
+// linkRouter is the satellite link as the upload client asks it: where
+// each request goes, and how the satellite did (§41.5).
+type linkRouter struct{ u *Uploader }
+
+func (r linkRouter) Route(cand *api.Candidate) (string, bool, error) {
+	eps := cand.GetEndpoints()
+	if len(eps) == 0 {
+		return "", false, errors.New("no endpoint")
+	}
+	base, via := r.u.Satellite.route(eps[0])
+
+	return base, via, nil
 }
 
-// failure is what the log says of a satellite's failure.
-func (r reply) failure() error {
-	if r.err != nil {
-		return r.err
+// Prepare marks a request for the satellite: in development mode which
+// producer it is, and for a live segment whether its live is handed to the
+// satellite, and from where (§41.8). Under `retain: accepted` too: the
+// satellite feeds the relay from what it takes.
+func (r linkRouter) Prepare(req *http.Request, via bool, put *upload.Request) {
+	r.u.Satellite.prepare(req, via)
+	if put == nil || !put.Live {
+		return
 	}
-	if r.resp != nil {
-		return fmt.Errorf("the satellite refused: %d %s", r.status, r.resp.Header.Get(satellite.HdrSatellite))
+	if seg, ok := put.Segment.(*Segment); ok {
+		r.u.Satellite.liveRequest(req, put.Allocation.GetSourceId(), via, seg, put.Offset)
 	}
-
-	return errors.New("the satellite did not answer")
 }
 
-// put is one request from `offset`: the rest of the segment as a body that
-// grows while the capture runs (live) or a known length (buffered), or,
-// with `part` set on a live segment, at most that many bytes that do not
-// complete the upload (§12.2).
-func (u *Uploader) put(ctx context.Context, url string, viaSatellite bool, tok string, al *api.Allocation, seg *Segment, offset, part int64) reply {
-	live := !seg.Closed()
-	// A live segment in parts: this request carries at most `part` bytes,
-	// or what arrives before the segment closes, and does not complete
-	// the upload. The completing request comes once the segment is closed
-	// and everything is on the node: a closed segment, so the buffered
-	// branch, with nothing left to send.
-	partial := live && part > 0
-	var rd io.Reader = seg.ReaderFrom(offset)
-	if partial {
-		rd = io.LimitReader(rd, part)
-	}
-	counted := &countingReader{r: rd}
-	var body io.Reader = counted
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
-	if err != nil {
-		return reply{offset: -1, err: err}
-	}
-	req.Header.Set("Authorization", token.Scheme+" "+tok)
-	u.Satellite.prepare(req, viaSatellite)
-	if live {
-		// Where the live of this source is fed from (§41.8): the satellite,
-		// from this body, or the producer's own tee.
-		u.Satellite.liveRequest(req, al.GetSourceId(), viaSatellite, seg, offset)
-	}
-	req.Header.Set(storage.HdrUploadOffset, strconv.FormatInt(offset, 10))
-	req.Header.Set(storage.HdrUploadComplete, "?1")
-	req.Header.Set(storage.HdrDateStarted, seg.Started.UTC().Format(time.RFC3339Nano))
-	if partial {
-		req.Header.Set(storage.HdrUploadComplete, "?0")
-		req.ContentLength = -1
-		if h := al.GetSizeHint(); h > 0 {
-			req.Header.Set(storage.HdrSizeHint, strconv.FormatInt(h, 10))
-		}
-	} else if live {
-		// Chunked, with the size hint and the end time as a trailer (§12.2).
-		req.ContentLength = -1
-		if h := al.GetSizeHint(); h > 0 {
-			req.Header.Set(storage.HdrSizeHint, strconv.FormatInt(h, 10))
-		}
-		req.Trailer = http.Header{storage.HdrDateEnded: nil}
-		req.Body = &trailerBody{ReadCloser: io.NopCloser(body), seg: seg, req: req}
-	} else {
-		n := seg.Len() - offset
-		req.ContentLength = n
-		req.Header.Set(storage.HdrUploadLength, strconv.FormatInt(seg.Len(), 10))
-		if !seg.Ended.IsZero() {
-			req.Header.Set(storage.HdrDateEnded, seg.Ended.UTC().Format(time.RFC3339Nano))
-		}
-	}
-
-	u.Satellite.sent(viaSatellite)
-	if u.m != nil {
-		u.m.uploadRequests.Add(context.Background(), 1, pathAttr(viaSatellite))
-	}
-	resp, err := u.Cfg.Client.Do(req)
-	if err != nil {
-		return reply{offset: -1, sent: counted.n.Load(), err: err}
-	}
-	defer resp.Body.Close()
-	// The body of a refusal says why; the log carries it.
-	var reason string
-	if resp.StatusCode >= 400 {
-		b, _ := io.ReadAll(io.LimitReader(resp.Body, 200))
-		reason = strings.TrimSpace(string(b))
-	}
-	io.Copy(io.Discard, resp.Body)
-	complete := strings.TrimSpace(resp.Header.Get(storage.HdrUploadComplete)) == "?1"
-	if resp.StatusCode == http.StatusServiceUnavailable && reason != "" {
-		u.Log.Info("node refused", "key", al.GetLaminaKey(), "why", reason)
-	}
-
-	var v int64 = -1
-	switch resp.StatusCode {
-	case http.StatusConflict, http.StatusNoContent:
-		if s := resp.Header.Get(storage.HdrUploadOffset); s != "" {
-			v, _ = strconv.ParseInt(s, 10, 64)
-		}
-	case http.StatusServiceUnavailable:
-		if s := resp.Header.Get(storage.HdrRetryAfter); s != "" {
-			v, _ = strconv.ParseInt(s, 10, 64)
-		}
-	}
-	r := reply{status: resp.StatusCode, offset: v, sent: counted.n.Load(), complete: complete, resp: resp}
-	if resp.StatusCode >= 500 {
-		r.err = fmt.Errorf("server error %d", resp.StatusCode)
-	}
-
-	return r
-}
-
-// countingReader counts what a request body handed over. The transport
-// reads a body on a goroutine of its own, which can still be at it when Do
-// has answered -- with an error, or a node's answer that came first -- so
-// the count is atomic.
-type countingReader struct {
-	r io.Reader
-	n atomic.Int64
-}
-
-func (c *countingReader) Read(p []byte) (int, error) {
-	n, err := c.r.Read(p)
-	c.n.Add(int64(n))
-
-	return n, err
-}
-
-// trailerBody fills the end-time trailer once the segment is closed, which
-// is when the body ends.
-type trailerBody struct {
-	io.ReadCloser
-	seg *Segment
-	req *http.Request
-}
-
-func (b *trailerBody) Read(p []byte) (int, error) {
-	n, err := b.ReadCloser.Read(p)
-	if err == io.EOF && !b.seg.Ended.IsZero() {
-		b.req.Trailer.Set(storage.HdrDateEnded, b.seg.Ended.UTC().Format(time.RFC3339Nano))
-	}
-
-	return n, err
-}
-
-// head asks the node where the upload stands: the offset, or -1 when the
-// upload is already complete. It goes where a request for the candidate
-// whose endpoint is ep goes now, and a satellite that fails it is the
-// satellite's failure, as a PUT's is (§41.5).
-func (u *Uploader) head(ctx context.Context, ep *api.Endpoint, key, tok string, lastProgress *time.Time) (int64, error) {
-	base, viaSatellite := u.Satellite.route(ep)
-	hctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(hctx, http.MethodHead, base+"/"+key, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Authorization", token.Scheme+" "+tok)
-	u.Satellite.prepare(req, viaSatellite)
-	resp, err := u.Cfg.Client.Do(req)
-	if ctx.Err() == nil && satelliteFailure(viaSatellite, resp, err) {
-		f := reply{err: err, resp: resp}
-		if resp != nil {
-			f.status = resp.StatusCode
-			resp.Body.Close()
-		}
-		u.satelliteFailed(f.failure())
-		*lastProgress = time.Now()
-
-		return 0, f.failure()
-	}
-	if err != nil {
-		if !viaSatellite && ctx.Err() == nil {
-			u.Satellite.directFailed()
-		}
-		return 0, err
-	}
-	resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return 0, nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("HEAD %d", resp.StatusCode)
-	}
-	if strings.TrimSpace(resp.Header.Get(storage.HdrUploadComplete)) == "?1" {
-		return -1, nil
-	}
-	v, err := strconv.ParseInt(resp.Header.Get(storage.HdrUploadOffset), 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return v, nil
-}
+func (r linkRouter) Sent(via bool)    { r.u.Satellite.sent(via) }
+func (r linkRouter) Failed(err error) { r.u.satelliteFailed(err) }
+func (r linkRouter) Succeeded()       { r.u.Satellite.succeeded() }
+func (r linkRouter) DirectFailed()    { r.u.Satellite.directFailed() }

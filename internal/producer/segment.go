@@ -55,6 +55,35 @@ type Segment struct {
 	base      int64
 	closed    bool
 	discarded bool
+	// passed says a satellite passed the segment through rather than took
+	// it under `retain: accepted` (§41.9): it goes on as under `committed`.
+	passed bool
+}
+
+// Span is when the segment's data starts and, once closed, ends.
+func (s *Segment) Span() (time.Time, time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.Started, s.Ended
+}
+
+// Epoch is the capture incarnation the segment belongs to.
+func (s *Segment) Epoch() string { return s.CaptureEpoch }
+
+// pass marks the segment passed through by a satellite (§41.9).
+func (s *Segment) pass() {
+	s.mu.Lock()
+	s.passed = true
+	s.mu.Unlock()
+}
+
+// wasPassed says a satellite passed the segment through.
+func (s *Segment) wasPassed() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.passed
 }
 
 // NewSegment makes a segment for a test or a synthetic producer.

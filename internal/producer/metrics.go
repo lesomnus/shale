@@ -36,7 +36,11 @@ type metrics struct {
 	// failed and uploads went directly for a while (§41.5).
 	uploadRequests     metric.Int64Counter
 	satelliteFallbacks metric.Int64Counter
-	earlyCuts          metric.Int64Counter
+	// Under `retain: accepted` (§41.9): the bytes of the segments handed
+	// to the satellite whole, and the requests it passed through instead.
+	handedOffBytes metric.Int64Counter
+	acceptPassed   metric.Int64Counter
+	earlyCuts      metric.Int64Counter
 	// Frames a camera sent that the recording does not have: a gap longer
 	// than one and three quarters frames, and the frames that fit in it.
 	frameGaps    metric.Int64Counter
@@ -57,7 +61,7 @@ func newMetrics(ctx context.Context) *metrics {
 		fps:        o.Float64Gauge("shale.producer.frame_rate", metric.WithDescription("frames per second per source")),
 		keyframe:   o.Int64Gauge("shale.producer.keyframe_interval_ms", metric.WithDescription("keyframe interval per source"), metric.WithUnit("ms")),
 		restarts:   o.Int64Gauge("shale.producer.capture_restarts", metric.WithDescription("capture restarts per source")),
-		segments:   o.Int64Counter("shale.producer.segments", metric.WithDescription("segments by outcome: stored, lost, cut short at a node's offset (§12.2), or skipped for a dark scene (§38.10)")),
+		segments:   o.Int64Counter("shale.producer.segments", metric.WithDescription("segments by outcome: stored, lost, cut short at a node's offset (§12.2), skipped for a dark scene (§38.10), or handed off to the satellite under retain: accepted (§41.9)")),
 		dark:       o.Int64Gauge("shale.producer.dark", metric.WithDescription("1 while a source's scene has been dark past idle.dark_after and its segments are skipped (§38.10)")),
 		dropped:    o.Int64Gauge("shale.producer.live_dropped", metric.WithDescription("live batches dropped because the relay lagged")),
 		transcodes: o.Int64Gauge("shale.producer.live_transcodes", metric.WithDescription("live helpers running: watched sources whose audio is encoded as Opus")),
@@ -70,6 +74,8 @@ func newMetrics(ctx context.Context) *metrics {
 		retries:            o.Int64Counter("shale.producer.retries", metric.WithDescription("upload retries by kind: same_target after a 503, placement after a failed candidate (§13)")),
 		uploadRequests:     o.Int64Counter("shale.producer.upload_requests", metric.WithDescription("upload requests (PUT) by path: direct to the node, or through the satellite (§41.5)")),
 		satelliteFallbacks: o.Int64Counter("shale.producer.satellite_fallbacks", metric.WithDescription("times the satellite could not be reached and `upload_via: auto` went directly to the nodes for a while (§41.5)")),
+		handedOffBytes:     o.Int64Counter("shale.producer.handed_off_bytes", metric.WithDescription("bytes of the segments the satellite took whole under retain: accepted, let go before any node had them (§41.9)"), metric.WithUnit("By")),
+		acceptPassed:       o.Int64Counter("shale.producer.accept_passed", metric.WithDescription("requests under retain: accepted the satellite passed through to the node rather than took, by reason: the producer kept the bytes, as under committed (§41.9)")),
 		earlyCuts:          o.Int64Counter("shale.producer.early_cuts", metric.WithDescription("segments cut early for running over their ceiling, per source (§38.2)")),
 		frameGaps:          o.Int64Counter("shale.producer.frame_gaps", metric.WithDescription("gaps between a source's recorded frames longer than one and three quarters frames, per source")),
 		framesMissed:       o.Int64Counter("shale.producer.frames_missed", metric.WithDescription("frames that would have filled those gaps at the source's frame rate, per source")),
@@ -90,6 +96,10 @@ func pathAttr(viaSatellite bool) metric.MeasurementOption {
 
 func sourceAttr(alias string) metric.MeasurementOption {
 	return metric.WithAttributes(attribute.String("source", alias))
+}
+
+func reasonAttr(why string) metric.MeasurementOption {
+	return metric.WithAttributes(attribute.String("reason", why))
 }
 
 func kindAttr(kind string) metric.MeasurementOption {

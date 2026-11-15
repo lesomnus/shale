@@ -8560,6 +8560,23 @@ func (m *LaminaMutation) OldSinkId(ctx context.Context) (v uuid.UUID, err error)
 	return oldValue.SinkId, nil
 }
 
+// OldSatelliteId returns the old "satellite_id" field's value of the Lamina entity.
+// If the Lamina object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LaminaMutation) OldSatelliteId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSatelliteId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSatelliteId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSatelliteId: %w", err)
+	}
+	return oldValue.SatelliteId, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -8613,6 +8630,8 @@ func (m *LaminaMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldSourceId(ctx)
 	case lamina.FieldSinkId:
 		return m.OldSinkId(ctx)
+	case lamina.FieldSatelliteId:
+		return m.OldSatelliteId(ctx)
 	}
 	return nil, fmt.Errorf("unknown Lamina field %s", name)
 }

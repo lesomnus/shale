@@ -125,6 +125,37 @@ func (s Core) LaminaRow(ctx context.Context, ref *api.LaminaRef) (*api.Lamina, e
 	}.Build())
 }
 
+// onBehalf is who a call on a lamina is made for (§41.9): the caller, and
+// its tenant; or, for a satellite, the producer it acts for, which must
+// record the lamina's set and be assigned to it, and the lamina's tenant,
+// so the tokens and rows are the producer's as they would have been. by
+// names the satellite for the history the call leaves, empty otherwise.
+func (s Core) onBehalf(ctx context.Context, f *frame.Frame, obj *api.Lamina) (who, tenant pdid.Id, by string, err error) {
+	if kindOf(f.Actor) != DomSatellite {
+		return f.Actor, f.Tenant, "", nil
+	}
+	who, err = s.satelliteActsFor(ctx, f.Actor, obj.GetSet().GetId())
+	if err != nil {
+		return pdid.Nil, pdid.Nil, "", err
+	}
+	o, err := s.ent(ctx).Lamina.Get(ctx, mustId(obj.GetId()).Uuid())
+	if err != nil {
+		return pdid.Nil, pdid.Nil, "", err
+	}
+
+	return who, pdid.Id(o.TenantId), "satellite " + s.satelliteName(ctx, f.Actor), nil
+}
+
+// byWhom is a reason as history keeps it: a satellite's call says it is
+// the satellite's, for the producer it acts for (§41.9).
+func byWhom(by, reason string) string {
+	if by == "" {
+		return reason
+	}
+
+	return by + ", for its producer: " + reason
+}
+
 // Reallocate is the next candidate after the ones an allocation carried
 // (§13): the ranking again, skipping every sink that already has an attempt.
 func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateRequest) (*api.Allocation, error) {
@@ -134,6 +165,10 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	}
 
 	obj, err := s.LaminaRow(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	who, tenant, by, err := s.onBehalf(ctx, f, obj)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +192,7 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 		}
 	}
 
-	frozen, managed, err := s.cameraAllocationPreflight(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), f.Actor, f.Tenant)
+	frozen, managed, err := s.cameraAllocationPreflight(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), who, tenant)
 	if err != nil {
 		return nil, err
 	}
@@ -213,18 +248,22 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	}
 	at := pdid.New(DomAttempt)
 	transaction := s.tx
-	if managed {
+	if managed || by != "" {
+		// A satellite's call is the producer's, authorized above (§41.9).
 		transaction = s.ownTx
+	}
+	if by != "" {
+		s.d.log().Info("reallocated for a producer", "by", by, "lamina", mustId(obj.GetId()).String())
 	}
 	err = transaction(ctx, func(ctx context.Context, nx api.Server) error {
 		if managed {
-			if _, _, _, err := New(nx, s.d).cameraAllocationProfile(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), true, f.Actor, f.Tenant); err != nil {
+			if _, _, _, err := New(nx, s.d).cameraAllocationProfile(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), true, who, tenant); err != nil {
 				return err
 			}
 		}
 		_, err := nx.Attempt().Add(ctx, api.AttemptAddRequest_builder{
 			Id:          at.Bytes(),
-			Tenant:      tenantRef(f.Tenant),
+			Tenant:      tenantRef(tenant),
 			Site:        siteRef,
 			Lamina:      api.LaminaRef_builder{Id: obj.GetId()}.Build(),
 			Sink:        api.SinkRef_builder{Id: next.Id.Bytes()}.Build(),
@@ -244,7 +283,7 @@ func (s coreLamina) Reallocate(ctx context.Context, req *api.LaminaReallocateReq
 	// attempt including the new one.
 	var out *api.Allocation
 	err = transaction(ctx, func(ctx context.Context, nx api.Server) error {
-		v, err := New(nx, s.d).allocateSlot(ctx, nx, a, src, started, pdid.Nil, f.Actor, f.Tenant, obj.GetCaptureEpoch(), true)
+		v, err := New(nx, s.d).allocateSlot(ctx, nx, a, src, started, pdid.Nil, who, tenant, obj.GetCaptureEpoch(), true)
 		out = v
 
 		return err
@@ -265,6 +304,10 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 	}
 
 	obj, err := s.LaminaRow(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	who, tenant, by, err := s.onBehalf(ctx, f, obj)
 	if err != nil {
 		return nil, err
 	}
@@ -311,14 +354,15 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 		return nil, err
 	}
 	transaction := s.tx
-	if managed {
+	if managed || by != "" {
+		// A satellite's call is the producer's, authorized above (§41.9).
 		transaction = s.ownTx
 	}
 	var out *api.Allocation
 	err = transaction(ctx, func(ctx context.Context, nx api.Server) error {
 		prof := segmentOf(src, set, a.bounds)
 		if managed {
-			frozen, _, _, err := New(nx, s.d).cameraAllocationProfile(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), true, f.Actor, f.Tenant)
+			frozen, _, _, err := New(nx, s.d).cameraAllocationProfile(ctx, src, obj.GetCaptureEpoch(), obj.GetDateStarted().AsTime(), true, who, tenant)
 			if err != nil {
 				return err
 			}
@@ -328,7 +372,7 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 		if _, err := nx.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{Ref: api.AttemptRef_builder{Id: at.GetId()}.Build(), DateExpires: timestamppb.New(a.now.Add(ttl)), DateUpdated: at.GetDateUpdated()}.Build()); err != nil {
 			return err
 		}
-		v, err := New(nx, s.d).allocateSlot(ctx, nx, a, src, obj.GetDateStarted().AsTime(), pdid.Nil, f.Actor, f.Tenant, obj.GetCaptureEpoch(), true)
+		v, err := New(nx, s.d).allocateSlot(ctx, nx, a, src, obj.GetDateStarted().AsTime(), pdid.Nil, who, tenant, obj.GetCaptureEpoch(), true)
 		out = v
 		return err
 	})
@@ -340,11 +384,16 @@ func (s coreLamina) Renew(ctx context.Context, req *api.LaminaRenewRequest) (*ap
 
 // ReportAttempt marks one attempt failed (§13). The lamina stays PENDING.
 func (s coreLamina) ReportAttempt(ctx context.Context, req *api.LaminaReportAttemptRequest) (*api.Attempt, error) {
-	if _, err := actor(ctx); err != nil {
+	f, err := actor(ctx)
+	if err != nil {
 		return nil, err
 	}
 
 	obj, err := s.LaminaRow(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	who, _, by, err := s.onBehalf(ctx, f, obj)
 	if err != nil {
 		return nil, err
 	}
@@ -367,6 +416,7 @@ func (s coreLamina) ReportAttempt(ctx context.Context, req *api.LaminaReportAtte
 	if reason == "" {
 		reason = "reported"
 	}
+	reason = byWhom(by, reason)
 	now := s.d.now()
 	out, err := s.Next().Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
 		Ref:           api.AttemptRef_builder{Id: at.GetId()}.Build(),
@@ -378,9 +428,10 @@ func (s coreLamina) ReportAttempt(ctx context.Context, req *api.LaminaReportAtte
 	if err != nil {
 		return nil, err
 	}
-	// The node's failure score (§27): +1, capped per producer per day.
-	if f, err := actor(ctx); err == nil && len(at.GetNode().GetId()) > 0 {
-		if err := s.producerReport(ctx, mustId(at.GetNode().GetId()), f.Actor, now); err != nil {
+	// The node's failure score (§27): +1, capped per producer per day; a
+	// satellite's report counts as its producer's.
+	if len(at.GetNode().GetId()) > 0 {
+		if err := s.producerReport(ctx, mustId(at.GetNode().GetId()), who, now); err != nil {
 			s.d.log().Warn("score node", "err", err.Error())
 		}
 	}
@@ -391,7 +442,8 @@ func (s coreLamina) ReportAttempt(ctx context.Context, req *api.LaminaReportAtte
 // ReportFailure is the producer giving up on a lamina: it becomes LOST
 // (§13). A late LaminaStored still brings it back (§14).
 func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFailureRequest) (*api.Lamina, error) {
-	if _, err := actor(ctx); err != nil {
+	f, err := actor(ctx)
+	if err != nil {
 		return nil, err
 	}
 
@@ -399,9 +451,14 @@ func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFail
 	if err != nil {
 		return nil, err
 	}
+	_, _, by, err := s.onBehalf(ctx, f, obj)
+	if err != nil {
+		return nil, err
+	}
 	if obj.GetState() != api.LaminaState_LAMINA_STATE_PENDING {
 		return obj, nil
 	}
+	reason := byWhom(by, req.GetReason())
 
 	now := s.d.now()
 	var out *api.Lamina
@@ -414,7 +471,6 @@ func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFail
 		}
 		for _, a := range open {
 			st := api.AttemptState_ATTEMPT_STATE_FAILED
-			reason := req.GetReason()
 			if _, err := nx.Attempt().Patch(ctx, api.AttemptPatchRequest_builder{
 				Ref:              api.AttemptRef_builder{Id: a.Id[:]}.Build(),
 				State:            &st,
@@ -440,6 +496,14 @@ func (s coreLamina) ReportFailure(ctx context.Context, req *api.LaminaReportFail
 	if err != nil {
 		return nil, err
 	}
+	// Counted as whose loss it is: the producer's, or the satellite's that
+	// gave up what it had accepted (§41.9).
+	whose := "producer"
+	if by != "" {
+		whose = "satellite"
+		s.d.log().Warn("lamina lost: a satellite gave up what it accepted", "by", by, "lamina", mustId(obj.GetId()).String(), "why", req.GetReason())
+	}
+	s.d.metrics().Lost.Add(ctx, 1, metric.WithAttributes(attribute.String("by", whose)))
 
 	return out, nil
 }

@@ -26,8 +26,9 @@ import (
 
 // satelliteLive runs a producer of a recording from internal/producer/
 // testdata for a new set, uploading `via`, live on demand from its first
-// attachment, and adopts it; it answers once Live names the source.
-func (c *cluster) satelliteLive(ctx context.Context, alias, recording string, via producer.Via) (*producer.Producer, *api.Set) {
+// attachment, and adopts it; it answers once Live names the source. edit
+// changes the producer's configuration.
+func (c *cluster) satelliteLive(ctx context.Context, alias, recording string, via producer.Via, edit ...func(*producer.Config)) (*producer.Producer, *api.Set) {
 	c.t.Helper()
 	admin := c.dial("@acme/admin")
 	set, err := api.NewSetServiceClient(admin).Add(ctx, api.SetAddRequest_builder{
@@ -50,7 +51,7 @@ func (c *cluster) satelliteLive(ctx context.Context, alias, recording string, vi
 
 	sample, err := filepath.Abs(filepath.Join("..", "producer", "testdata", recording))
 	require.NoError(c.t, err)
-	p, err := producer.New(producer.Config{
+	cfg := producer.Config{
 		StateDir:          filepath.Join(c.t.TempDir(), "producer-"+alias),
 		Cp:                "http://" + c.running.TenantAddr,
 		Dev:               true,
@@ -61,7 +62,11 @@ func (c *cluster) satelliteLive(ctx context.Context, alias, recording string, vi
 		AllocationHorizon: time.Minute,
 		Buffer:            64 << 20,
 		Upload:            producer.UploadConfig{Via: via, ResumeTimeout: 20 * time.Second},
-	})
+	}
+	for _, e := range edit {
+		e(&cfg)
+	}
+	p, err := producer.New(cfg)
 	require.NoError(c.t, err)
 	go p.Run(ctx)
 

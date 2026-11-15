@@ -63,7 +63,7 @@ deployment runs well on them, and changes them only for a reason.
 | Segments | ceiling raise after an early cut | +25% | — | producer | [§38.5](15-producer.md#385-choosing-the-ceiling) |
 | Segments | starvation | a second is at the cap when its trailing keyframe interval holds ≥ 95% of what the ceiling allows; an episode is 3–60 s at the cap; starved = ≥ 50 episodes in a day with < 10% of its seconds at the cap | — | cluster | [§38.5](15-producer.md#385-choosing-the-ceiling) |
 | Segments | `auto_raise` | off (suggest only) | on: +25% to a starved source the producer encodes with a variable rate (not CBR, not a copied stream, not a camera a `CameraBinding` manages), when its last raise was at least 24 h ago, and only inside the upload policy's cap, the set's `max_bitrate_total` and the producer's `uplink` (else held there, with a warning); agreed at every negotiation while on; never lowers | set | [§38.5](15-producer.md#385-choosing-the-ceiling) |
-| Uploads | `retain` | `committed` | `committed`, `written` | producer | [§12.2](04-write-path.md#122-resumable-part-uploads) |
+| Uploads | `retain` | `committed` | `committed`, `written`, `accepted` (the satellite holds the segment and delivers it; without a satellite, `committed`) | producer | [§12.2](04-write-path.md#122-resumable-part-uploads), [§41.9](18-satellite.md#419-retain-accepted) |
 | Uploads | `resume_timeout` | 2 min | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | `retry_after_cap` | 2 min | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
 | Uploads | placement retries | 3 | — | producer | [§13](04-write-path.md#13-retry-and-reallocation) |
@@ -177,7 +177,10 @@ deployment runs well on them, and changes them only for a reason.
 | Live | `control.relay_down_after` | 6 s (three relay heartbeats) | how long a relay may go unheard before it is down: its producers are reassigned and `Live` stops naming it; at least three `relay.heartbeat_interval`s | control | [§39.2](16-relay.md#392-assignment), [§39.6](16-relay.md#396-failures) |
 | Satellite | `satellite.addr` | `:7460` | the upload listener: HTTPS, HTTP/1.1 and HTTP/2, a producer's client certificate required | satellite | [§41.3](18-satellite.md#413-the-upload-proxy) |
 | Satellite | `satellite.advertise` | the bound address | a host, or host:port, reported for the upload listener; a name is handed out as it is | satellite | [§34.10](11-deployment.md#3410-node-addresses) |
-| Satellite | `satellite.memory_budget` | 256 MiB | the one budget of what it holds of producers' bytes; today all of it the in-flight pool; over it a request is refused `503` with `Retry-After` | satellite | [§41.4](18-satellite.md#414-memory) |
+| Satellite | `satellite.memory_budget` | 256 MiB | the one budget of what it holds of producers' bytes: the retained pool and, the rest, the in-flight pool; over the in-flight pool a request is refused `503` with `Retry-After` | satellite | [§41.4](18-satellite.md#414-memory) |
+| Satellite | `satellite.accept` | `true` | `false`: requests under `retain: accepted` pass through as under `committed`, and the in-flight pool has the whole budget | satellite | [§41.9](18-satellite.md#419-retain-accepted) |
+| Satellite | `satellite.retained_budget` | half of `memory_budget` | less than `memory_budget` by a request's share at least: the bytes of segments taken under `retain: accepted` and not yet delivered; a new segment that does not fit passes through | satellite | [§41.9](18-satellite.md#419-retain-accepted) |
+| Satellite | `satellite.retained_per_producer` | none: the pool over the producers using it | a size: the most of the retained pool one producer's new segments are taken into | satellite | [§41.9](18-satellite.md#419-retain-accepted) |
 | Satellite | `satellite.request_buffer` | 256 KiB | at least 64 KiB, at most 64 MiB: the buffer a request's body is copied through; a request reserves twice it | satellite | [§41.4](18-satellite.md#414-memory) |
 | Satellite | `satellite.heartbeat_interval` | 2 s | a third of `control.satellite_down_after` or less | satellite | [§41.2](18-satellite.md#412-assignment) |
 | Satellite | `satellite.token_skew` | 1 min | the clock skew a put token's expiry is allowed, as a node's | satellite | [§41.3](18-satellite.md#413-the-upload-proxy) |
@@ -326,12 +329,11 @@ out:
   encode ([§38.7](15-producer.md#387-live-output)); either transcodes audio
   and nothing else.
 
-- **Holding bytes on a satellite.** A satellite moves bytes and holds
-  none a producer does not ([§41](18-satellite.md#41-satellite)); it feeds
-  the relay from the upload stream as it passes
-  ([§41.8](18-satellite.md#418-live-fan-out)). `retain: accepted`, which
-  lets an edge host free its RAM once the satellite has the bytes, is its
-  next step ([§41.9](18-satellite.md#419-not-yet)).
+- **Holding bytes on a satellite.** A satellite feeds the relay from the
+  upload stream as it passes ([§41.8](18-satellite.md#418-live-fan-out)),
+  and under `retain: accepted` holds what a producer let go, in RAM only
+  ([§41.9](18-satellite.md#419-retain-accepted)); a durable spill to its
+  disk is not planned ([§41.10](18-satellite.md#4110-not-yet)).
 
 Ideas recorded, not planned:
 

@@ -255,7 +255,8 @@ ingest
   resumes per upload, idle timeouts, per-actor limit hits
   live lag (recorded time − time covered by bytes on a sink), per producer
   abandoned uploads: finalized incomplete / deleted
-  producer segments by outcome: stored, lost, cut short under `retain: written` (§12.2)
+  producer segments by outcome: stored, lost, cut short under `retain: written` (§12.2),
+    handed off to the satellite under `retain: accepted` (§41.9)
   upload duration by producer (spots slow or degrading links)
   same-target / placement retry counts, lost laminae
   duplicate attempts, orphans reclaimed, laminae recovered by reconciliation
@@ -294,6 +295,8 @@ relay (§39)
 satellite (§41)
   in-flight pool and its budget, requests passing through
   producers assigned, bytes forwarded, requests refused
+  retained pool and its budget, segments held, bytes accepted,
+    segments delivered, given up, passed through (§41.9)
   CPU
 
 control plane
@@ -320,10 +323,10 @@ scrape endpoint. The names, by the process that measures them:
 | resumes, idle timeouts, per-actor limit hits | `shale.node.upload_resumes`, `shale.node.uploads_abandoned{outcome,why}`, `shale.node.refused{reason=upload_limit,read_limit}` |
 | live lag | `shale.node.oldest_upload_age_ms{sink}` |
 | abandoned uploads | `shale.node.uploads_abandoned{outcome=finalized_incomplete,deleted}` |
-| producer segments by outcome, cuts | `shale.producer.segments{outcome=stored,lost,cut,skipped}`, `shale.producer.early_cuts{source}` |
+| producer segments by outcome, cuts | `shale.producer.segments{outcome=stored,lost,cut,skipped,handed_off}`, `shale.producer.early_cuts{source}` |
 | dark scenes (§38.10) | `shale.producer.dark{source}` (1 while skipping), `shale.cp.laminae_skipped{reason}` |
 | upload duration by producer | `shale.producer.upload_duration_ms` |
-| retry counts, lost laminae | `shale.producer.retries{kind=same_target,placement}`, `shale.cp.laminae_lost` |
+| retry counts, lost laminae | `shale.producer.retries{kind=same_target,placement}`, `shale.cp.laminae_lost{by=producer,satellite}` (a node's missing file is counted without `by`) |
 | duplicates, orphans, recovered | `shale.cp.duplicates`, `shale.node.gc_approved{reason}`, `shale.cp.recovered{sink}` |
 | device queue depth and wait per class | `shale.node.device_queue_depth{device,class}`, `shale.node.device_wait_ms{class}` |
 | I/O errors, failure score, quarantines | `shale.cp.device_io_errors{device}`, `shale.cp.device_failure_score{device}`, `shale.cp.quarantines{kind}` |
@@ -346,6 +349,7 @@ scrape endpoint. The names, by the process that measures them:
 | relay | `shale.relay.attached_producers`, `active_sources`, `viewers`, `egress_bytes`, `sessions{outcome}`, `first_frame_ms`, `catch_up_ms`, `nacked_packets`, `cpu` |
 | satellite ([§41.4](18-satellite.md#414-memory)) | `shale.satellite.in_flight_bytes`, `in_flight_budget`, `uploads`, `producers`, `forwarded_bytes`, `refused`, `cpu` |
 | a satellite's live fan-out: the sources it feeds relays, the bytes sent, the fragments dropped for a relay behind; the relay's handoffs between a satellite and a producer's tee ([§41.8](18-satellite.md#418-live-fan-out)) | `shale.satellite.live_sources`, `live_bytes`, `live_dropped`; `shale.relay.feeder_handoffs` |
+| `retain: accepted` ([§41.9](18-satellite.md#419-retain-accepted)) | `shale.satellite.retained_bytes`, `retained_budget`, `held`, `accepted_bytes`, `delivered`, `given_up`, `passed`; `shale.producer.handed_off_bytes{source}`, `shale.producer.accept_passed{reason}` |
 | what pacing adds to live's delay, and its clock's moves ([§39.4](16-relay.md#394-viewers)) | `shale.relay.pace_delay_ms`, `shale.relay.pace_resets{why=late,ahead}`, `shale.relay.pace_recovered_ms` |
 | live's way from the producer: its queue (t2 − t1), the uplink (t3 − t2), and the payloads whose clocks disagree ([§39.3](16-relay.md#393-from-the-producer)) | `shale.relay.producer_queue_ms{producer}`, `shale.relay.uplink_ms{producer}`, `shale.relay.uplink_skewed{producer}` |
 | live's way to the screen: held in the relay (t4 − t3), and what timed viewers report, the network (t5 − t4), the browser (t6 − t5) and all of it (t6 − t1) ([§39.4](16-relay.md#394-viewers)) | `shale.relay.hold_ms{path=paced,catch_up}`, `shale.relay.viewer_network_ms`, `viewer_playout_ms`, `viewer_total_ms` |

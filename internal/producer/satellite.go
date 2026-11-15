@@ -17,6 +17,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/satellite"
+	"github.com/lesomnus/shale/internal/upload"
 )
 
 // Uploading through a satellite (§41.5): the same requests, paths and
@@ -135,6 +136,15 @@ type SatelliteLink struct {
 	through   atomic.Int64
 	direct    atomic.Int64
 	fallbacks atomic.Int64
+	// retain is the producer's `retain`, and the counts of `accepted`
+	// since the last report (§41.9): segments handed off and their bytes,
+	// and requests the satellite passed through.
+	retain         string
+	handedOff      atomic.Int64
+	handedOffBytes atomic.Int64
+	passed         atomic.Int64
+	// passedTotal is passed since the producer started, for its Stats.
+	passedTotal atomic.Int64
 }
 
 // NewSatelliteLink is a link for uploads that go the way via says; dev is
@@ -295,11 +305,42 @@ func (l *SatelliteLink) say(msg, satellite string) {
 	l.log.Info(msg, "via", string(l.via), "satellite", satellite)
 }
 
+// accepts says whether the satellite requests go to now takes `retain:
+// accepted`, as the CP said (§41.9): one of an earlier release would not
+// know the handoff, and would pass it on to a node.
+func (l *SatelliteLink) accepts() bool {
+	if l == nil {
+		return false
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	return l.assignment != nil && l.assignment.GetAccept()
+}
+
+// holder is where the rest of a segment whose start the satellite holds
+// goes (§41.9): the satellite assigned, whether or not `auto` went
+// directly for a while, since only it has those bytes. False without one.
+func (l *SatelliteLink) holder() (string, bool) {
+	if l == nil || l.via == ViaDirect {
+		return "", false
+	}
+	now := l.now()
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	a := l.assignment
+	if a == nil || l.base == "" || (a.GetDateExpires() != nil && now.After(a.GetDateExpires().AsTime())) {
+		return "", false
+	}
+
+	return l.base, true
+}
+
 // prepare marks a request that goes through the satellite: in development
 // mode, which producer it is.
 func (l *SatelliteLink) prepare(req *http.Request, viaSatellite bool) {
 	if viaSatellite && l.dev && !l.producer.IsZero() {
-		req.Header.Set(satellite.HdrProducer, l.producer.String())
+		req.Header.Set(upload.HdrProducer, l.producer.String())
 	}
 }
 
@@ -396,6 +437,10 @@ func (l *SatelliteLink) report() *api.UploadReport {
 		ThroughSatellite: l.through.Swap(0),
 		Direct:           l.direct.Swap(0),
 		Fallbacks:        l.fallbacks.Swap(0),
+		Retain:           l.retain,
+		HandedOff:        l.handedOff.Swap(0),
+		HandedOffBytes:   l.handedOffBytes.Swap(0),
+		Passed:           l.passed.Swap(0),
 		LiveSources:      l.Handed(),
 	}
 	l.mu.Lock()
@@ -409,18 +454,7 @@ func (l *SatelliteLink) report() *api.UploadReport {
 }
 
 // satelliteFailure says whether an answer, or its absence, is the
-// satellite's failure rather than the node's: no answer at all from the
-// satellite, or its refusal of this producer. Every other answer that
-// comes through the satellite is the node's, or the satellite's in the
-// node's words (a busy 503), and is handled as it always was.
-// A request the producer itself gave up, its context ended, is neither's.
+// satellite's failure rather than the node's (§41.5).
 func satelliteFailure(viaSatellite bool, resp *http.Response, err error) bool {
-	if !viaSatellite {
-		return false
-	}
-	if resp == nil {
-		return err != nil
-	}
-
-	return resp.Header.Get(satellite.HdrSatellite) == satellite.ReasonUnassigned
+	return upload.SatelliteFailure(viaSatellite, resp, err)
 }

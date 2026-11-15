@@ -176,6 +176,11 @@ func SinkId(v uuid.UUID) predicate.Lamina {
 	return predicate.Lamina(sql.FieldEQ(FieldSinkId, v))
 }
 
+// SatelliteId applies equality check predicate on the "satellite_id" field. It's identical to SatelliteIdEQ.
+func SatelliteId(v uuid.UUID) predicate.Lamina {
+	return predicate.Lamina(sql.FieldEQ(FieldSatelliteId, v))
+}
+
 // LaminaKeyEQ applies the EQ predicate on the "lamina_key" field.
 func LaminaKeyEQ(v string) predicate.Lamina {
 	return predicate.Lamina(sql.FieldEQ(FieldLaminaKey, v))
@@ -1116,6 +1121,36 @@ func SinkIdNotNil() predicate.Lamina {
 	return predicate.Lamina(sql.FieldNotNull(FieldSinkId))
 }
 
+// SatelliteIdEQ applies the EQ predicate on the "satellite_id" field.
+func SatelliteIdEQ(v uuid.UUID) predicate.Lamina {
+	return predicate.Lamina(sql.FieldEQ(FieldSatelliteId, v))
+}
+
+// SatelliteIdNEQ applies the NEQ predicate on the "satellite_id" field.
+func SatelliteIdNEQ(v uuid.UUID) predicate.Lamina {
+	return predicate.Lamina(sql.FieldNEQ(FieldSatelliteId, v))
+}
+
+// SatelliteIdIn applies the In predicate on the "satellite_id" field.
+func SatelliteIdIn(vs ...uuid.UUID) predicate.Lamina {
+	return predicate.Lamina(sql.FieldIn(FieldSatelliteId, vs...))
+}
+
+// SatelliteIdNotIn applies the NotIn predicate on the "satellite_id" field.
+func SatelliteIdNotIn(vs ...uuid.UUID) predicate.Lamina {
+	return predicate.Lamina(sql.FieldNotIn(FieldSatelliteId, vs...))
+}
+
+// SatelliteIdIsNil applies the IsNil predicate on the "satellite_id" field.
+func SatelliteIdIsNil() predicate.Lamina {
+	return predicate.Lamina(sql.FieldIsNull(FieldSatelliteId))
+}
+
+// SatelliteIdNotNil applies the NotNil predicate on the "satellite_id" field.
+func SatelliteIdNotNil() predicate.Lamina {
+	return predicate.Lamina(sql.FieldNotNull(FieldSatelliteId))
+}
+
 // HasTenant applies the HasEdge predicate on the "tenant" edge.
 func HasTenant() predicate.Lamina {
 	return predicate.Lamina(func(s *sql.Selector) {
@@ -1223,6 +1258,29 @@ func HasSink() predicate.Lamina {
 func HasSinkWith(preds ...predicate.Sink) predicate.Lamina {
 	return predicate.Lamina(func(s *sql.Selector) {
 		step := newSinkStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSatellite applies the HasEdge predicate on the "satellite" edge.
+func HasSatellite() predicate.Lamina {
+	return predicate.Lamina(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, SatelliteTable, SatelliteColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSatelliteWith applies the HasEdge predicate on the "satellite" edge with a given conditions (other predicates).
+func HasSatelliteWith(preds ...predicate.Satellite) predicate.Lamina {
+	return predicate.Lamina(func(s *sql.Selector) {
+		step := newSatelliteStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

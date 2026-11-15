@@ -69,6 +69,8 @@ func (Lamina) Fields() []ent.Field {
 			Immutable(),
 		field.Uuid("sink_id").
 			Optional(),
+		field.Uuid("satellite_id").
+			Optional(),
 	}
 }
 
@@ -96,6 +98,9 @@ func (Lamina) Edges() []ent.Edge {
 		edge.To("sink", Sink.Type).
 			Unique().
 			Field("sink_id"),
+		edge.To("satellite", Satellite.Type).
+			Unique().
+			Field("satellite_id"),
 	}
 }
 

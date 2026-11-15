@@ -181,6 +181,10 @@ message SatelliteAssignment {
   bytes satellite_id = 1;
   repeated Endpoint endpoints = 2;
   google.protobuf.Timestamp date_expires = 3;
+  // Whether the satellite takes `retain: accepted` (§41.9), as its last
+  // heartbeat said. A producer hands it segments only when it does: one
+  // that would not know the handoff would pass it on to a node.
+  bool accept = 4;
 }
 
 // UploadReport is how a producer's uploads went since its last heartbeat
@@ -205,6 +209,15 @@ message UploadReport {
   // `producer.live_feed`, as configured: `auto` or `producer`; empty from a
   // producer that predates it.
   string live_feed = 7;
+  // The producer's `retain`; empty from a producer that does not say.
+  string retain = 8;
+  // Under `retain: accepted` (§41.9): segments the satellite took whole,
+  // and their bytes, which the producer let go before any node had them;
+  // and requests the satellite passed through to the node rather than
+  // accepted, the producer keeping the bytes as under `committed`.
+  int64 handed_off = 9;
+  int64 handed_off_bytes = 10;
+  int64 passed = 11;
 }
 
 // LivePolicy is whether a producer's cameras are on the relay at all times
@@ -457,15 +470,61 @@ message SatelliteStatus {
   int64 forwarded_bytes = 6;
   int64 refused = 7;
   HostLoad load = 8;
-  // 9 and 10 are kept for the retained pool of `retain: accepted`
-  // (§41.9), which is not built yet.
-  //
+  // The retained pool (§41.9): the bytes of segments taken under
+  // `retain: accepted` and not yet delivered, and what bounds them. A
+  // satellite that refuses `accepted` reports a budget of zero.
+  int64 retained_bytes = 9;
+  int64 retained_budget = 10;
   // Live fan-out (§41.8): the sources it feeds relays now, the bytes it
   // sent them, and the fragments it dropped because a relay was behind,
   // since it started.
   int32 live_sources = 11;
   int64 live_bytes = 12;
   int64 live_dropped = 13;
+  // What each producer holds of the retained pool, and its share; only
+  // producers that hold bytes or asked for acceptance lately.
+  repeated RetainedShare retained = 14;
+  // The laminae whose bytes it holds now, undelivered.
+  repeated bytes held = 15;
+  // A value the process draws when it starts. A heartbeat with another one
+  // than the last is a satellite that restarted, and what it held before
+  // is gone (§41.9).
+  string incarnation = 16;
+  // Since it started: bytes taken under `accepted`, segments delivered,
+  // segments given up, and requests passed through to the node rather
+  // than accepted, for want of room or because it refuses `accepted`.
+  int64 accepted_bytes = 17;
+  int64 delivered = 18;
+  int64 given_up = 19;
+  int64 passed = 20;
+  // Whether it takes `retain: accepted` at all (`satellite.accept`).
+  bool accept = 21;
+}
+
+// RetainedShare is one producer's part of a satellite's retained pool
+// (§41.9).
+message RetainedShare {
+  bytes producer_id = 1;
+  // What its segments hold, reservations included, and how many there are.
+  int64 bytes = 2;
+  int32 laminae = 3;
+  // The most it may hold now: the pool over the producers using it,
+  // capped by `satellite.retained_per_producer`.
+  int64 share = 4;
+}
+
+// Handoff is what a producer under `retain: accepted` sends a satellite
+// with the first request of a segment (§41.9): the allocation, every
+// candidate with its token, and the producer's own limits, so the
+// satellite delivers and fails over as the producer would have.
+message Handoff {
+  Allocation allocation = 1;
+  // How long a target may go without progress before the next one, and
+  // how long the segment may go without any before it is given up.
+  int64 resume_timeout_ms = 2;
+  int64 abandon_timeout_ms = 3;
+  int64 retry_after_cap_ms = 4;
+  int32 placement_retries = 5;
 }
 
 // RecordState is the upload state a lamina file's xattr records (§23.1).

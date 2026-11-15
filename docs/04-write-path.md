@@ -207,9 +207,13 @@ bytes:
 |---|---|---|
 | `committed` (default) | the whole segment until `201` | resume from the lower offset, or re-upload elsewhere |
 | `written` | what is above the last reported offset: the segment is sent as a series of requests with `Upload-Complete: ?0`, and the producer frees everything below each `204`'s offset | the segment is lost |
+| `accepted` | what the satellite has not said it holds: the segment goes to the satellite as under `written`, and the producer frees what the satellite holds; the satellite delivers it and fails over itself ([§41.9](18-satellite.md#419-retain-accepted)). Without a satellite, as `committed` | the satellite, holding the whole segment, re-uploads it elsewhere; if the satellite dies first, what it held is lost |
 
 `written` is meant for RAM-constrained producers. It follows the
-loss-tolerant principle, but the loss is real. Its requests may be any
+loss-tolerant principle, but the loss is real. `accepted` frees the
+producer's RAM sooner still, and moves the risk to the satellite's RAM:
+what a satellite accepted and had not delivered is lost with it, for every
+producer it serves. Its requests may be any
 4 KiB-aligned size. Requests of about `part_size` (16 MB) or more keep the
 device's writes large; smaller ones cost the node a small write each and are
 otherwise safe.
@@ -716,13 +720,17 @@ segment at once: waiting would not change the answer.
 Producer parameters:
 
 - upload mode: `live` or `buffered`
-- `retain`: `committed` or `written` ([§12.2](#122-resumable-part-uploads))
+- `retain`: `committed`, `written` or `accepted` ([§12.2](#122-resumable-part-uploads))
 - RAM buffer size (`buffer`, 512 MiB by default): what it counts is what is
   held, so under `committed` it must cover the fleet's segments in flight,
   `sources × max_bitrate × segment_duration` and headroom for a segment that
   waits; under `written` a source that is being taken holds about one part
   (16 MB) and a tail, and only the segments no node has taken yet, an
-  outage's, are whole. A control-plane restart is some twenty seconds
+  outage's, are whole; under `accepted` a source holds about a request's
+  part (1 MiB), and segments are whole only while the satellite passes them
+  through ([§41.9](18-satellite.md#419-retain-accepted)). A segment handed
+  off to the satellite leaves the producer's queue, and is the satellite's
+  to store or to report. A control-plane restart is some twenty seconds
   without allocations: at 120 Mbps of intake that is 300 MB held.
 - maximum age of a buffered segment
 - retry backoff

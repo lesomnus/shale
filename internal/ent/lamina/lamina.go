@@ -60,6 +60,8 @@ const (
 	FieldSourceId = "source_id"
 	// FieldSinkId holds the string denoting the sink_id field in the database.
 	FieldSinkId = "sink_id"
+	// FieldSatelliteId holds the string denoting the satellite_id field in the database.
+	FieldSatelliteId = "satellite_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
 	EdgeTenant = "tenant"
 	// EdgeSite holds the string denoting the site edge name in mutations.
@@ -70,6 +72,8 @@ const (
 	EdgeSource = "source"
 	// EdgeSink holds the string denoting the sink edge name in mutations.
 	EdgeSink = "sink"
+	// EdgeSatellite holds the string denoting the satellite edge name in mutations.
+	EdgeSatellite = "satellite"
 	// Table holds the table name of the lamina in the database.
 	Table = "lamina"
 	// TenantTable is the table that holds the tenant relation/edge.
@@ -107,6 +111,13 @@ const (
 	SinkInverseTable = "sink"
 	// SinkColumn is the table column denoting the sink relation/edge.
 	SinkColumn = "sink_id"
+	// SatelliteTable is the table that holds the satellite relation/edge.
+	SatelliteTable = "lamina"
+	// SatelliteInverseTable is the table name for the Satellite entity.
+	// It exists in this package in order to avoid circular dependency with the "satellite" package.
+	SatelliteInverseTable = "satellite"
+	// SatelliteColumn is the table column denoting the satellite relation/edge.
+	SatelliteColumn = "satellite_id"
 )
 
 // Columns holds all SQL columns for lamina fields.
@@ -136,6 +147,7 @@ var Columns = []string{
 	FieldSetId,
 	FieldSourceId,
 	FieldSinkId,
+	FieldSatelliteId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -278,6 +290,11 @@ func BySinkId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSinkId, opts...).ToFunc()
 }
 
+// BySatelliteId orders the results by the satellite_id field.
+func BySatelliteId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSatelliteId, opts...).ToFunc()
+}
+
 // ByTenantField orders the results by tenant field.
 func ByTenantField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -310,6 +327,13 @@ func BySourceField(field string, opts ...sql.OrderTermOption) OrderOption {
 func BySinkField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newSinkStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// BySatelliteField orders the results by satellite field.
+func BySatelliteField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSatelliteStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newTenantStep() *sqlgraph.Step {
@@ -345,5 +369,12 @@ func newSinkStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(SinkInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, SinkTable, SinkColumn),
+	)
+}
+func newSatelliteStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(SatelliteInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, SatelliteTable, SatelliteColumn),
 	)
 }

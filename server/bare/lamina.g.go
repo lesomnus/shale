@@ -13,6 +13,7 @@ import (
 	lamina "github.com/lesomnus/shale/internal/ent/lamina"
 	node "github.com/lesomnus/shale/internal/ent/node"
 	predicate "github.com/lesomnus/shale/internal/ent/predicate"
+	satellite "github.com/lesomnus/shale/internal/ent/satellite"
 	set "github.com/lesomnus/shale/internal/ent/set"
 	sink "github.com/lesomnus/shale/internal/ent/sink"
 	site "github.com/lesomnus/shale/internal/ent/site"
@@ -172,6 +173,20 @@ func (s LaminaServiceServer) image(v *api.Lamina) *api.Lamina {
 			trim(m.Get(f).Message())
 		}
 	}
+	{
+		f := m.Descriptor().Fields().ByNumber(31)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
 	return out
 }
 
@@ -179,7 +194,7 @@ func (s LaminaServiceServer) image(v *api.Lamina) *api.Lamina {
 // and what the answer says about its edges. Add and AddMany both write
 // with it, so that an item of an AddMany is the row an Add of it would be.
 func (st LaminaServiceServer) create(ctx context.Context, req *api.LaminaAddRequest) (*ent.LaminaCreate, []func(v *api.Lamina), error) {
-	ds := make([]func(v *api.Lamina), 0, 5)
+	ds := make([]func(v *api.Lamina), 0, 6)
 	q := st.Db.Lamina.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -288,6 +303,16 @@ func (st LaminaServiceServer) create(ctx context.Context, req *api.LaminaAddRequ
 		q.SetCaptureEpoch(req.GetCaptureEpoch())
 	} else {
 		q.SetCaptureEpoch("")
+	}
+	if req.HasSatellite() {
+		if k, err := SatelliteGetKey(ctx, st.Db, req.GetSatellite()); err != nil {
+			return nil, nil, err
+		} else {
+			q.SetSatelliteId(k)
+			ds = append(ds, func(v *api.Lamina) {
+				v.SetSatellite(api.Satellite_builder{Id: k[:]}.Build())
+			})
+		}
 	}
 	return q, ds, nil
 }
@@ -511,6 +536,12 @@ func LaminaSelect(q *ent.LaminaQuery, m *api.LaminaSelect) {
 			SinkSelect(q, m.GetSink())
 		})
 	}
+	if m.HasSatellite() {
+		q.WithSatellite(func(q *ent.SatelliteQuery) {
+			q.Where(satellite.DateErasedIsNil())
+			SatelliteSelect(q, m.GetSatellite())
+		})
+	}
 }
 
 func LaminaSelectInit(q *ent.LaminaQuery, m *api.LaminaSelect) {
@@ -524,6 +555,12 @@ func (s LaminaServiceServer) Patch(ctx context.Context, req *api.LaminaPatchRequ
 		switch ed.Number() {
 		case 10:
 			k, err := SinkGetKey(ctx, s.Db, ref.Interface().(*api.SinkRef))
+			if err != nil {
+				return protoreflect.Value{}, err
+			}
+			return protoreflect.ValueOfBytes(k[:]), nil
+		case 31:
+			k, err := SatelliteGetKey(ctx, s.Db, ref.Interface().(*api.SatelliteRef))
 			if err != nil {
 				return protoreflect.Value{}, err
 			}
@@ -576,7 +613,7 @@ func LaminaGetKey(ctx context.Context, db *ent.Client, ref *api.LaminaRef) (uuid
 var laminaOrmEntity = ormpatch.MustEntityOf(api.File_shale_lamina_proto, "Lamina")
 
 var laminaPatchColumns = entpatch.Columns{
-	1: lamina.FieldId, 2: lamina.TenantColumn, 3: lamina.SiteColumn, 8: lamina.SetColumn, 9: lamina.SourceColumn, 10: lamina.SinkColumn, 11: lamina.FieldLaminaKey, 12: lamina.FieldState, 13: lamina.FieldDateUpdated, 15: lamina.FieldDateCreated, 16: lamina.FieldDateStarted, 17: lamina.FieldDateEnded, 18: lamina.FieldEndedEstimated, 19: lamina.FieldSize, 20: lamina.FieldIncomplete, 21: lamina.FieldDateExpired, 22: lamina.FieldDateDeleted, 23: lamina.FieldDatesSynced, 24: lamina.FieldPlacementVersion, 25: lamina.FieldDateCommitted, 26: lamina.FieldDateFinished, 27: lamina.FieldChecksum, 28: lamina.FieldEpoch, 29: lamina.FieldSkipReason, 30: lamina.FieldCaptureEpoch}
+	1: lamina.FieldId, 2: lamina.TenantColumn, 3: lamina.SiteColumn, 8: lamina.SetColumn, 9: lamina.SourceColumn, 10: lamina.SinkColumn, 11: lamina.FieldLaminaKey, 12: lamina.FieldState, 13: lamina.FieldDateUpdated, 15: lamina.FieldDateCreated, 16: lamina.FieldDateStarted, 17: lamina.FieldDateEnded, 18: lamina.FieldEndedEstimated, 19: lamina.FieldSize, 20: lamina.FieldIncomplete, 21: lamina.FieldDateExpired, 22: lamina.FieldDateDeleted, 23: lamina.FieldDatesSynced, 24: lamina.FieldPlacementVersion, 25: lamina.FieldDateCommitted, 26: lamina.FieldDateFinished, 27: lamina.FieldChecksum, 28: lamina.FieldEpoch, 29: lamina.FieldSkipReason, 30: lamina.FieldCaptureEpoch, 31: lamina.SatelliteColumn}
 
 func (s LaminaServiceServer) Apply(ctx context.Context, req *api.LaminaApplyRequest) (*api.Lamina, error) {
 	if !req.HasPatch() {

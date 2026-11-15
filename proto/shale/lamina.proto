@@ -90,6 +90,10 @@ message Lamina {
   LaminaSkipReason skip_reason = 29 [(orm.field) = {default: ""}];
   // Capture incarnation, unrelated to the placement epoch bucket above.
   string capture_epoch = 30 [(orm.field) = {immutable: true default: ""}];
+  // The satellite that took the lamina's bytes under `retain: accepted`
+  // (§41.9), set when it took them: the producer let them go, so what
+  // becomes of them is the satellite's, and a loss of them is its own.
+  Satellite satellite = 31 [(orm.edge) = {nullable: true}];
 
   option (orm.message) = {
     rpc: {crud: true}

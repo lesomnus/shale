@@ -364,10 +364,19 @@ var relayMay = map[string]bool{
 // heartbeat and certificate, the routes to the nodes its producers' tokens
 // name, and the key set it verifies those tokens with. Nothing that reads
 // a tenant's rows: the producers it serves are in its heartbeat's answer.
+//
+// Under `retain: accepted` it delivers what it took in a producer's stead
+// (§41.9): it records itself as a lamina's holder (Accept), and makes the
+// producer's lamina calls, Renew, ReportAttempt, Reallocate and
+// ReportFailure. The core layer takes them only for a lamina whose set's
+// producer is assigned to the satellite now, and in that producer's name.
 var satelliteMay = map[string]bool{
 	api.SatelliteService_Get_FullMethodName: true, api.SatelliteService_Heartbeat_FullMethodName: true,
 	api.SatelliteService_RenewCertificate_FullMethodName: true, api.SatelliteService_Route_FullMethodName: true,
-	api.SigningKeyService_Get_FullMethodName: true, api.SigningKeyService_List_FullMethodName: true, api.SigningKeyService_Watch_FullMethodName: true,
+	api.SatelliteService_Accept_FullMethodName: true,
+	api.SigningKeyService_Get_FullMethodName:   true, api.SigningKeyService_List_FullMethodName: true, api.SigningKeyService_Watch_FullMethodName: true,
+	api.LaminaService_Renew_FullMethodName: true, api.LaminaService_ReportAttempt_FullMethodName: true,
+	api.LaminaService_Reallocate_FullMethodName: true, api.LaminaService_ReportFailure_FullMethodName: true,
 }
 
 func (p ClusterPolicy) May(ctx context.Context, c gate.Call) error {

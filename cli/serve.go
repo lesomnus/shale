@@ -749,6 +749,21 @@ func SatelliteConfig(c *cmd.Config) (satellite.Config, error) {
 		}
 		cfg.RequestBuffer = int(v)
 	}
+	cfg.RefuseAccepted = sc.Accept != nil && !*sc.Accept
+	if sc.RetainedBudget != "" {
+		v, err := storage.ParseCapacity(sc.RetainedBudget)
+		if err != nil || v <= 0 {
+			return cfg, fmt.Errorf("satellite.retained_budget: %q is not a size", sc.RetainedBudget)
+		}
+		cfg.RetainedBudget = v
+	}
+	if sc.RetainedPerProducer != "" {
+		v, err := storage.ParseCapacity(sc.RetainedPerProducer)
+		if err != nil || v <= 0 {
+			return cfg, fmt.Errorf("satellite.retained_per_producer: %q is not a size", sc.RetainedPerProducer)
+		}
+		cfg.RetainedPerProducer = v
+	}
 	if c.IsDev() {
 		if cfg.Addr == "" {
 			cfg.Addr = "127.0.0.1:7460"

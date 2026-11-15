@@ -235,14 +235,14 @@ func (lr *liveRig) liveToken(key string) string {
 	})
 }
 
-// upload is a live upload in progress: its body is written as the test
+// liveUpload is a live upload in progress: its body is written as the test
 // says, and its answer comes when it ends.
-type upload struct {
+type liveUpload struct {
 	w    *io.PipeWriter
 	done chan *http.Response
 }
 
-func (lr *liveRig) upload(key string, offset, from int64) *upload {
+func (lr *liveRig) upload(key string, offset, from int64) *liveUpload {
 	pr, pw := io.Pipe()
 	req, err := http.NewRequest(http.MethodPut, lr.srv.URL+"/"+key, pr)
 	require.NoError(lr.t, err)
@@ -250,7 +250,7 @@ func (lr *liveRig) upload(key string, offset, from int64) *upload {
 	req.Header.Set("Authorization", token.Scheme+" "+lr.liveToken(key))
 	req.Header.Set("Upload-Offset", strconv.FormatInt(offset, 10))
 	req.Header.Set(HdrLive, strconv.FormatInt(from, 10))
-	u := &upload{w: pw, done: make(chan *http.Response, 1)}
+	u := &liveUpload{w: pw, done: make(chan *http.Response, 1)}
 	go func() {
 		resp, err := lr.p.client.Do(req)
 		if err != nil {
@@ -265,7 +265,7 @@ func (lr *liveRig) upload(key string, offset, from int64) *upload {
 	return u
 }
 
-func (u *upload) end(t *testing.T) *http.Response {
+func (u *liveUpload) end(t *testing.T) *http.Response {
 	u.w.Close()
 	select {
 	case resp := <-u.done:
