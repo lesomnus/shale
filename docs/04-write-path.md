@@ -477,6 +477,13 @@ CP        clamps each value into the active UploadPolicy's bounds and the
 - Every allocation carries the current `profile_version`. When an operator
   activates a new `UploadPolicy`, the CP re-clamps stored profiles, the version
   changes, and the producer negotiates again on its next allocation.
+- In a set with `auto_raise` on, a source the CP raised for starvation is
+  agreed at least the raised ceiling, whatever the producer proposes, with an
+  adjustment that says so; the raise also moves the version, which the
+  heartbeat carries too ([§38.5](15-producer.md#385-choosing-the-ceiling)).
+  The policy's cap and the set's total still apply on top of it. An encoder
+  the producer runs takes a ceiling agreed other than the one proposed, up
+  or down, at the next segment boundary.
 
 **Bitrate is a ceiling, not a rate.** Encoders either hold a constant bitrate
 (CBR) or vary it with the picture (VBR). A quiet scene then costs a fraction of

@@ -168,7 +168,9 @@ Source           set, ordinal (assigned by Add, immutable), zone,
                  §38.9, §39.3),
                  agreed segment profile (max_bitrate, segment duration,
                  keyframe interval), observed rate (recent, expected;
-                 derived, §12.6), seconds at the cap and episodes (§38.5)
+                 derived, §12.6), seconds at the cap and episodes, the
+                 suggestion, the last automatic raise and the limit that
+                 holds one back (§38.5)
 Producer         set, site (copied from the set), hardware_id, hostname,
                  state (pending | adopted | erased), certificate serial,
                  date_adopted, date_seen, relay (assigned, §39.2),
