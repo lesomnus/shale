@@ -26,6 +26,12 @@ func (i DeviceTLSIdentity) Validate() error {
 	return nil
 }
 
+// TLSVerificationSkip is the one value a camera network policy may set besides
+// the default, empty, which verifies a device's HTTPS web key by its pin or by
+// ordinary PKI. Skip checks no key there: the device is identified by its
+// recorded MAC and serial only, and credentials go to an unverified endpoint.
+const TLSVerificationSkip = "skip"
+
 // ErrTLSIdentityChanged means a device's web port presented a key other than
 // its pinned one. The handshake failed before any request was sent; nothing,
 // including a credential, reached the device.

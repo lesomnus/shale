@@ -24,6 +24,9 @@ func (s Core) cameraPinnedInputs(ctx context.Context, a *api.CameraAssignment, d
 		if err := cameraExactTLSIdentity(nil, a, d, out); err != nil {
 			return nil, err
 		}
+		if out.GetTlsVerification() != "" {
+			return nil, denied("tls_verification", "only a policy revision that says so skips TLS verification")
+		}
 	}
 	if ref := out.GetPolicy(); ref != nil {
 		id, err := cameraPresetID(ref.GetId(), DomCameraPolicy)
@@ -47,6 +50,9 @@ func (s Core) cameraPinnedInputs(ctx context.Context, a *api.CameraAssignment, d
 			return nil, denied("bootstrap", "bootstrap does not match the pinned policy revision")
 		}
 		if err := cameraExactTLSIdentity(p, a, d, out); err != nil {
+			return nil, err
+		}
+		if err := cameraTLSVerificationInputs(p, out); err != nil {
 			return nil, err
 		}
 		pinned, err := s.Next().CameraPreset().Get(ctx, api.CameraPresetGetRequest_builder{Ref: api.CameraPresetRef_builder{Id: p.GetPreset().GetId()}.Build()}.Build())

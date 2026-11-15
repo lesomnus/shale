@@ -223,4 +223,14 @@ func TestCameraPolicyApproveChangedTLSKey(t *testing.T) {
 	require.True(t, proto.Equal(pin(d1, "b"), again.GetInputs().GetDeviceTlsIdentity()))
 	_, err = approve(policies, successor, "b", approved.GetNetwork())
 	require.Equal(t, codes.FailedPrecondition, status.Code(err), "a different key after the approval needs its own approval")
+
+	// A network whose active policy checks no key has no key to approve.
+	skip := cameraPolicyCreateRequest(n, preset, "tls-approve-policy", "skip")
+	skip.SetEnrollment(api.CameraEnrollmentPolicy_builder{Bootstrap: proto.Clone(original.GetEnrollment().GetBootstrap()).(*api.CameraBootstrapProfile), TlsVerification: cameramodel.TLSVerificationSkip}.Build())
+	skipping, err := policies.Create(ctx, skip)
+	require.NoError(t, err)
+	n, err = policies.Activate(ctx, api.CameraPolicyActivateRequest_builder{Ref: api.CameraPolicyRef_builder{Id: skipping.GetId()}.Build(), ExpectedNetworkVersion: approved.GetNetwork().GetDateUpdated()}.Build())
+	require.NoError(t, err)
+	_, err = approve(policies, successor, "c", n)
+	require.Equal(t, codes.FailedPrecondition, status.Code(err))
 }

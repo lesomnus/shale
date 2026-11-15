@@ -52,6 +52,12 @@ A job that meets a key other than its pin stops with that key, and
 active policy with that device's key, activated by network CAS, and a successor
 job pinned to it ([approving a changed key](camera-tls-identity.md#approving-a-changed-key)).
 
+A policy may instead set `tls_verification: "skip"`, off by default. Its jobs
+then check no web key and identify a camera by its recorded MAC and serial
+only; administrator credentials go to an endpoint whose key is unverified. The
+revision shows the setting, and only a revision that says so makes a job skip
+([skipping TLS verification](camera-tls-identity.md#skipping-tls-verification)).
+
 ## Automatic first factory TLS trust
 
 An isolated private camera network can explicitly opt in to

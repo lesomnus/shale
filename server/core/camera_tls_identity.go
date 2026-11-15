@@ -6,6 +6,8 @@ import (
 	"regexp"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/provision"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -87,11 +89,56 @@ func cameraSelectedTLSIdentity(p *api.CameraPolicy, device []byte) *api.CameraDe
 	return nil
 }
 
+// cameraTLSVerificationPolicy allows one value besides the default: "skip",
+// on an explicit HTTPS bootstrap, and never beside a key it would not check.
+func cameraTLSVerificationPolicy(p *api.CameraEnrollmentPolicy) error {
+	switch p.GetTlsVerification() {
+	case "":
+		return nil
+	case camera.TLSVerificationSkip:
+	default:
+		return invalid("tls_verification", `only "skip" may be set; empty verifies`)
+	}
+	if err := cameraTLSBootstrap(p.GetBootstrap()); err != nil {
+		return invalid("tls_verification", "skipping TLS verification needs an explicit HTTPS bootstrap destination")
+	}
+	if len(p.GetDeviceTlsIdentities()) != 0 || p.GetTrustNewFactoryTls() {
+		return invalid("tls_verification", "skipping TLS verification excludes device TLS identities and factory TLS trust")
+	}
+	return nil
+}
+
+// cameraTLSVerificationInputs: a job skips verification only as its pinned
+// policy says, and then pins no key. Without a policy it never skips.
+func cameraTLSVerificationInputs(p *api.CameraPolicy, input *api.CameraJobInputs) error {
+	if input.GetTlsVerification() != p.GetEnrollment().GetTlsVerification() {
+		return denied("tls_verification", "a job skips TLS verification only as its pinned policy revision says")
+	}
+	return nil
+}
+
+// cameraProgressSkipIdentity: a job that checks no web key identifies its
+// device by the recorded MAC and serial only. Once the device has an
+// authenticated identity, every authenticated inspection must match it.
+func cameraProgressSkipIdentity(j *api.CameraJob, run provision.Run, d *api.CameraDevice) error {
+	if j.GetInputs().GetTlsVerification() != camera.TLSVerificationSkip || run.Inspection == nil || !d.GetIdentity().GetAuthenticated() || !cameraAuthenticated(run.Inspection.Device) {
+		return nil
+	}
+	if !cameraSameRecordedDevice(run.Inspection.Device, run.Inspection.Device, d.GetIdentity()) {
+		return failed("without TLS verification a camera is identified by its recorded MAC and serial, and these differ")
+	}
+	return nil
+}
+
 // cameraDeviceTLSIdentity is the key a new job pins: the policy's approval for
 // this device, else its trusted factory key. A key the device presented right
 // after a Shale firmware upgrade stands in for that approval while the
 // approval is unchanged; a later operator approval takes precedence again.
+// A policy that skips TLS verification pins no key.
 func cameraDeviceTLSIdentity(p *api.CameraPolicy, d *api.CameraDevice) *api.CameraDeviceTLSIdentity {
+	if p.GetEnrollment().GetTlsVerification() == camera.TLSVerificationSkip {
+		return nil
+	}
 	approved := cameraApprovedTLSIdentity(p, d)
 	if approved == nil {
 		return nil

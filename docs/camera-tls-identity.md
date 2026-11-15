@@ -4,7 +4,8 @@ A factory camera may expose HTTPS with a certificate that normal PKI cannot
 verify. An operator can approve the observed public-key identity of one exact CP
 camera through an immutable `CameraPolicy` revision. This approval does not grant
 activation, credential access, device ownership, or access to another camera.
-Without an approval the existing strict PKI behavior is unchanged.
+Without an approval the existing strict PKI behavior is unchanged, unless the
+policy explicitly [skips TLS verification](#skipping-tls-verification).
 
 `CameraEnrollmentPolicy.device_tls_identities` contains at most 128 entries:
 
@@ -138,6 +139,50 @@ stopped on a changed key is refused, and nothing is written. Once it succeeds th
 same request is refused: the stopped job is settled. If the device presents yet
 another key afterwards, the successor stops on it and needs its own approval.
 Workers cannot call `ApproveTLS`.
+
+## Skipping TLS verification
+
+A camera network policy may set `tls_verification` to `"skip"`
+(`"tlsVerification": "skip"` in the JSON request). It is off unless a policy
+revision says so. The default, empty, verifies the camera's HTTPS web key: by
+its pin, or by ordinary PKI where no key is approved.
+
+- **Allowed values.** Only `skip` is accepted besides empty. It needs an explicit
+  HTTPS bootstrap. It cannot be combined with `device_tls_identities` or
+  `trust_new_factory_tls`, whose keys it would not check.
+- **Visible.** The setting is part of the immutable revision, so
+  `camera-policy get` shows it.
+- **Copied exactly.** Each job copies it into `CameraJobInputs.tls_verification`
+  as its pinned revision says, and its checkpoint keeps it as it keeps the
+  bootstrap selection. A job without a policy, or under a policy that verifies,
+  cannot set it; a job under a skipping policy cannot drop it.
+
+A skipping job pins no key. The worker's web client accepts whatever key the
+camera presents. It is still bound to the device's current authorized hosts and
+HTTPS web port, and it follows no redirects. The device is identified by its
+recorded MAC and serial only:
+
+- **Worker.** Before any credentialed web call (initialization, firmware upgrade)
+  the driver requires an authenticated inspection that reports the serial and
+  one of the MACs of the device's authenticated identity at the control plane.
+  A device with no such recorded identity is refused.
+- **Control plane.** It refuses any checkpoint whose authenticated inspection
+  reports another serial or MAC.
+
+A device's first authenticated inspection records that identity, as for any job.
+
+**What it gives up.** The managed administrator credential is sent to an
+endpoint whose key is not verified. For a factory camera, so is the initial
+administrator password during activation, before the device can be identified
+at all. Anything on the camera LAN that answers at the device's address, and
+reports its MAC and serial, can receive them. Use it only on an isolated camera
+network, and prefer pinned keys, with the approval above, where keys can be
+maintained.
+
+A skipping policy approves no key. `ApproveTLS` is therefore refused while such a
+policy is the network's active one; enroll the binding under it instead. A
+firmware upgrade under it accepts no new key either: the device's MAC and serial
+alone confirm it afterwards.
 
 The policy, job and checkpoint fields extend existing typed JSON payloads. They
 add no credential plaintext or new table; `CameraDevice.firmware_tls` is a new

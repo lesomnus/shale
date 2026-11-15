@@ -142,3 +142,19 @@ func TestUnpinnedRunNeverRecordsAChangedKey(t *testing.T) {
 	require.Nil(t, r.ChangedTLSIdentity)
 	require.Zero(t, c.observations)
 }
+
+func TestTLSVerificationSkipIsOnlyTheExplicitValueOverHTTPSWithoutAPin(t *testing.T) {
+	q, _, _ := keyedEngine(t, key("a"), key("a"))
+	require.NoError(t, q.Validate())
+	q.TLSVerification = camera.TLSVerificationSkip
+	require.ErrorIs(t, q.Validate(), camera.ErrInvalid, "skipping cannot come with a pin")
+	q.DeviceTLSIdentity = nil
+	require.NoError(t, q.Validate())
+	q.Bootstrap.WebScheme = "http"
+	require.ErrorIs(t, q.Validate(), camera.ErrInvalid)
+	q.Bootstrap.WebScheme = "https"
+	for _, v := range []string{"SKIP", "verify", "off"} {
+		q.TLSVerification = v
+		require.ErrorIs(t, q.Validate(), camera.ErrInvalid, v)
+	}
+}

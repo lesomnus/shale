@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/internal/cameraprogress"
 	"github.com/lesomnus/shale/internal/cameratls"
 	"github.com/lesomnus/shale/provision"
@@ -118,6 +119,9 @@ func (s coreCameraPolicy) ApproveTLS(ctx context.Context, r *api.CameraPolicyApp
 		}
 		if err := cameraSameScope(base.GetTenant().GetId(), base.GetSite().GetId(), n.GetTenant().GetId(), n.GetSite().GetId()); err != nil {
 			return err
+		}
+		if base.GetEnrollment().GetTlsVerification() == camera.TLSVerificationSkip {
+			return failed("the network's active policy skips TLS verification and approves no key; enroll the binding under it instead")
 		}
 		p := base
 		if !proto.Equal(cameraSelectedTLSIdentity(base, d.GetId()), observed) {

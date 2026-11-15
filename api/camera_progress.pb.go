@@ -870,6 +870,7 @@ type CameraProvisionRequest struct {
 	xxx_hidden_ProbeDurationNs      int64                         `protobuf:"varint,15,opt,name=probe_duration_ns,json=probeDurationNs"`
 	xxx_hidden_Bootstrap            *CameraBootstrapProfile       `protobuf:"bytes,16,opt,name=bootstrap"`
 	xxx_hidden_DeviceTlsIdentity    *CameraDeviceTLSIdentity      `protobuf:"bytes,17,opt,name=device_tls_identity,json=deviceTlsIdentity"`
+	xxx_hidden_TlsVerification      string                        `protobuf:"bytes,18,opt,name=tls_verification,json=tlsVerification"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -1018,6 +1019,13 @@ func (x *CameraProvisionRequest) GetDeviceTlsIdentity() *CameraDeviceTLSIdentity
 	return nil
 }
 
+func (x *CameraProvisionRequest) GetTlsVerification() string {
+	if x != nil {
+		return x.xxx_hidden_TlsVerification
+	}
+	return ""
+}
+
 func (x *CameraProvisionRequest) SetId(v string) {
 	x.xxx_hidden_Id = v
 }
@@ -1084,6 +1092,10 @@ func (x *CameraProvisionRequest) SetBootstrap(v *CameraBootstrapProfile) {
 
 func (x *CameraProvisionRequest) SetDeviceTlsIdentity(v *CameraDeviceTLSIdentity) {
 	x.xxx_hidden_DeviceTlsIdentity = v
+}
+
+func (x *CameraProvisionRequest) SetTlsVerification(v string) {
+	x.xxx_hidden_TlsVerification = v
 }
 
 func (x *CameraProvisionRequest) HasScope() bool {
@@ -1195,6 +1207,8 @@ type CameraProvisionRequest_builder struct {
 	Bootstrap            *CameraBootstrapProfile
 	// Immutable JobInputs approval, retained through every portable checkpoint.
 	DeviceTlsIdentity *CameraDeviceTLSIdentity
+	// Immutable JobInputs tls_verification, retained the same way.
+	TlsVerification string
 }
 
 func (b0 CameraProvisionRequest_builder) Build() *CameraProvisionRequest {
@@ -1218,6 +1232,7 @@ func (b0 CameraProvisionRequest_builder) Build() *CameraProvisionRequest {
 	x.xxx_hidden_ProbeDurationNs = b.ProbeDurationNs
 	x.xxx_hidden_Bootstrap = b.Bootstrap
 	x.xxx_hidden_DeviceTlsIdentity = b.DeviceTlsIdentity
+	x.xxx_hidden_TlsVerification = b.TlsVerification
 	return m0
 }
 
@@ -4745,7 +4760,7 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\aversion\x18\x03 \x01(\tR\aversion\x12\x18\n" +
 	"\apurpose\x18\x04 \x01(\tR\apurpose\x12 \n" +
 	"\vrecoverable\x18\x05 \x01(\bR\vrecoverable\x12.\n" +
-	"\x05scope\x18\x06 \x01(\v2\x18.shale.CameraPresetScopeR\x05scope\"\xbc\x06\n" +
+	"\x05scope\x18\x06 \x01(\v2\x18.shale.CameraPresetScopeR\x05scope\"\xe7\x06\n" +
 	"\x16CameraProvisionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -4767,7 +4782,8 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\x16allow_producer_restart\x18\x0e \x01(\bR\x14allowProducerRestart\x12*\n" +
 	"\x11probe_duration_ns\x18\x0f \x01(\x03R\x0fprobeDurationNs\x12;\n" +
 	"\tbootstrap\x18\x10 \x01(\v2\x1d.shale.CameraBootstrapProfileR\tbootstrap\x12N\n" +
-	"\x13device_tls_identity\x18\x11 \x01(\v2\x1e.shale.CameraDeviceTLSIdentityR\x11deviceTlsIdentity\"I\n" +
+	"\x13device_tls_identity\x18\x11 \x01(\v2\x1e.shale.CameraDeviceTLSIdentityR\x11deviceTlsIdentity\x12)\n" +
+	"\x10tls_verification\x18\x12 \x01(\tR\x0ftlsVerification\"I\n" +
 	"\x19CameraProvisionResolution\x12\x14\n" +
 	"\x05width\x18\x01 \x01(\x05R\x05width\x12\x16\n" +
 	"\x06height\x18\x02 \x01(\x05R\x06height\"T\n" +

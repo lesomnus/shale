@@ -119,15 +119,24 @@ func (d *Driver) pinnedWebClient(pin string, timeout time.Duration) (*http.Clien
 	if err != nil {
 		return nil, nil, camera.ErrInvalid
 	}
-	port := strconv.Itoa(d.bootstrap.WebPort)
-	client, transport := d.scopedHTTPClient(config, timeout, func(u *url.URL) bool {
-		p := u.Port()
-		if p == "" {
-			p = "443"
-		}
-		return u.Scheme == "https" && p == port
-	})
+	client, transport := d.scopedHTTPClient(config, timeout, d.webPortOnly)
 	return client, transport, nil
+}
+
+// unverifiedWebClient checks no key on the device's HTTPS web port. Only a
+// policy's tls_verification: skip selects it; the device's own hosts, the
+// web port and the refusal of redirects still bound it.
+func (d *Driver) unverifiedWebClient(timeout time.Duration) (*http.Client, *http.Transport) {
+	config := &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}
+	return d.scopedHTTPClient(config, timeout, d.webPortOnly)
+}
+
+func (d *Driver) webPortOnly(u *url.URL) bool {
+	p := u.Port()
+	if p == "" {
+		p = "443"
+	}
+	return u.Scheme == "https" && p == strconv.Itoa(d.bootstrap.WebPort)
 }
 
 func (d *Driver) scopedHTTPClient(config *tls.Config, timeout time.Duration, allowURL func(*url.URL) bool) (*http.Client, *http.Transport) {

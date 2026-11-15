@@ -38,6 +38,9 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 	if !reflect.DeepEqual(run.Request.Bootstrap, camerabootstrap.Decode(j.GetInputs().GetBootstrap())) {
 		return nil, invalid("progress.bootstrap", "checkpoint must retain the exact pinned bootstrap profile")
 	}
+	if run.Request.TLSVerification != j.GetInputs().GetTlsVerification() {
+		return nil, invalid("progress.tls_verification", "checkpoint must retain the job's exact TLS verification")
+	}
 	// Status-only reports may carry the exact historical checkpoint after a
 	// Producer replacement. An edit must instead bind today's complete scope.
 	if proto.Equal(before, next) {
@@ -114,6 +117,9 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		return nil, err
 	}
 	if err := cameraProgressIdentity(run, previous, d); err != nil {
+		return nil, err
+	}
+	if err := cameraProgressSkipIdentity(j, run, d); err != nil {
 		return nil, err
 	}
 	if err := s.cameraProgressFirmware(ctx, run, previous, j, a, d); err != nil {

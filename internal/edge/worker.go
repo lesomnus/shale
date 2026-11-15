@@ -49,9 +49,16 @@ func buildWorker(cfg cameraworker.Config, broker *sourceBroker, options CameraOp
 						return cameraworker.DeviceAdapters{}, camera.ErrInvalid
 					}
 					var hosts []string
-					var deviceID string
+					var deviceID, serial string
+					var macs []string
 					identity := cameraworker.DeviceTLSIdentity(w)
-					if identity != nil {
+					// Only a policy saying so skips the web key check; the CP's
+					// authenticated MAC and serial then identify the device.
+					skip := w.GetJob().GetInputs().GetTlsVerification() == camera.TLSVerificationSkip
+					if recorded := w.GetDevice().GetIdentity(); skip && recorded.GetAuthenticated() {
+						serial, macs = recorded.GetSerial(), recorded.GetMacs()
+					}
+					if identity != nil || skip {
 						device, err := pdid.From(w.GetDevice().GetId())
 						if err != nil || device.Domain() != 27 {
 							return cameraworker.DeviceAdapters{}, camera.ErrInvalid
@@ -67,7 +74,7 @@ func buildWorker(cfg cameraworker.Config, broker *sourceBroker, options CameraOp
 							}
 						}
 					}
-					driver, err := drivers.New(drivers.Options{NetworkID: network.String(), CIDRs: w.GetNetwork().GetCidrs(), Bootstrap: camerabootstrap.Decode(w.GetJob().GetInputs().GetBootstrap()), Roots: options.Roots, DeviceTLSIdentity: identity, DeviceID: deviceID, DeviceHosts: hosts})
+					driver, err := drivers.New(drivers.Options{NetworkID: network.String(), CIDRs: w.GetNetwork().GetCidrs(), Bootstrap: camerabootstrap.Decode(w.GetJob().GetInputs().GetBootstrap()), Roots: options.Roots, DeviceTLSIdentity: identity, SkipTLSVerification: skip, RecordedSerial: serial, RecordedMACs: macs, DeviceID: deviceID, DeviceHosts: hosts})
 					if err != nil {
 						return cameraworker.DeviceAdapters{}, err
 					}

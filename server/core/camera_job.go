@@ -9,6 +9,7 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
 	"github.com/lesomnus/shale/internal/ent/lamina"
@@ -42,6 +43,18 @@ func cameraInputs(v *api.CameraJobInputs) error {
 		if err := cameraTLSBootstrap(v.GetBootstrap()); err != nil {
 			return err
 		}
+	}
+	switch v.GetTlsVerification() {
+	case "":
+	case camera.TLSVerificationSkip:
+		if err := cameraTLSBootstrap(v.GetBootstrap()); err != nil {
+			return invalid("tls_verification", "skipping TLS verification needs an explicit HTTPS bootstrap destination")
+		}
+		if v.GetDeviceTlsIdentity() != nil {
+			return invalid("tls_verification", "a job that skips TLS verification pins no key")
+		}
+	default:
+		return invalid("tls_verification", `only "skip" may be set; empty verifies`)
 	}
 	if err := cameraProfile(v.GetDesired(), false); err != nil {
 		return err
