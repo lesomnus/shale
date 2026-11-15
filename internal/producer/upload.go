@@ -19,6 +19,7 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/h3"
+	"github.com/lesomnus/shale/internal/satellite"
 	"github.com/lesomnus/shale/internal/storage"
 	"github.com/lesomnus/shale/internal/token"
 	"github.com/lesomnus/shale/server/core"
@@ -43,6 +44,10 @@ type UploadConfig struct {
 	// before it ends and the node reports what is durable (§12.2); about
 	// the node's part size keeps the device's writes large.
 	Part int64
+	// Via is the path uploads take (§41.5, `producer.upload_via`):
+	// directly to the nodes by default, so a producer updated without a
+	// word in its configuration uploads as it did.
+	Via Via
 }
 
 func (c *UploadConfig) defaults() {
@@ -79,6 +84,9 @@ type Uploader struct {
 	// of requests, the bytes a node reported durable are released, and a
 	// target that fails after that ends the segment where it has it.
 	Written bool
+	// Satellite routes requests through the satellite the CP assigned,
+	// where Cfg.Via says to (§41.5); nil is directly to the nodes.
+	Satellite *SatelliteLink
 
 	// defaulted fills in what Cfg leaves out, once: every source's upload
 	// loop calls Upload, each from a goroutine of its own.
@@ -243,7 +251,6 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 	if key == "" {
 		key = al.GetLaminaKey()
 	}
-	url := fmt.Sprintf("%s://%s:%d/%s", ep.GetScheme(), ep.GetHost(), ep.GetPort(), key)
 
 	// The token is renewed while the attempt runs, before its TTL, so an
 	// upload that outlives it carries on at the same key (§12.2).
@@ -272,10 +279,31 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		if err != nil {
 			return err
 		}
+		// Where this request goes: the node, or the satellite in front of
+		// it (§41.5), asked at every request, so a satellite that fails or
+		// is replaced is left at the next.
+		base, viaSatellite := u.Satellite.route(ep)
+		url := base + "/" + key
 		sentBefore := sentMax
-		status, newOffset, sent, complete, err := u.put(ctx, url, tok, al, seg, offset, part)
+		r := u.put(ctx, url, viaSatellite, tok, al, seg, offset, part)
+		status, newOffset, sent, complete, err := r.status, r.offset, r.sent, r.complete, r.err
 		if offset+sent > sentMax {
 			sentMax = offset + sent
+		}
+		if ctx.Err() == nil {
+			switch {
+			case satelliteFailure(viaSatellite, r.resp, err):
+				// The satellite's failure, not the node's: it does not count
+				// against this candidate (§41.5). The offset is asked for
+				// where requests go now, and the upload resumes from it.
+				u.satelliteFailed(r.failure())
+				lastProgress = time.Now()
+				status, err = 0, r.failure()
+			case viaSatellite:
+				u.Satellite.succeeded()
+			case status == 0 && err != nil:
+				u.Satellite.directFailed()
+			}
 		}
 		if (status == http.StatusCreated || status == http.StatusOK) && !complete {
 			// A success status that does not say the lamina is complete is
@@ -347,7 +375,7 @@ func (u *Uploader) attempt(ctx context.Context, al *api.Allocation, cand *api.Ca
 		if err != nil {
 			u.Log.Warn("upload interrupted", "key", al.GetLaminaKey(), "url", token.RedactURL(url), "err", err.Error())
 		}
-		cur, herr := u.head(ctx, url, tok)
+		cur, herr := u.head(ctx, ep, key, tok, &lastProgress)
 		if herr == nil {
 			if cur > sentMax {
 				return errForeign
@@ -384,13 +412,43 @@ func (u *Uploader) retryAfter(v int64) time.Duration {
 	return d
 }
 
+// satelliteFailed tells the satellite link, and counts a fallback.
+func (u *Uploader) satelliteFailed(err error) {
+	if u.Satellite.failed(err) && u.m != nil {
+		u.m.satelliteFallbacks.Add(context.Background(), 1)
+	}
+}
+
+// reply is what one request came back with: the status, the offset a 409
+// or a 204 or the Retry-After a 503 carried, the bytes sent, whether the
+// answer said the lamina is complete, and the answer itself, without its
+// body, for whose answer it was (§41.5).
+type reply struct {
+	status   int
+	offset   int64
+	sent     int64
+	complete bool
+	err      error
+	resp     *http.Response
+}
+
+// failure is what the log says of a satellite's failure.
+func (r reply) failure() error {
+	if r.err != nil {
+		return r.err
+	}
+	if r.resp != nil {
+		return fmt.Errorf("the satellite refused: %d %s", r.status, r.resp.Header.Get(satellite.HdrSatellite))
+	}
+
+	return errors.New("the satellite did not answer")
+}
+
 // put is one request from `offset`: the rest of the segment as a body that
 // grows while the capture runs (live) or a known length (buffered), or,
 // with `part` set on a live segment, at most that many bytes that do not
-// complete the upload (§12.2). It answers the status, the offset a 409 or
-// a 204 or the Retry-After a 503 carried, the bytes sent, and whether the
-// answer said the lamina is complete.
-func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation, seg *Segment, offset, part int64) (int, int64, int64, bool, error) {
+// complete the upload (§12.2).
+func (u *Uploader) put(ctx context.Context, url string, viaSatellite bool, tok string, al *api.Allocation, seg *Segment, offset, part int64) reply {
 	live := !seg.Closed()
 	// A live segment in parts: this request carries at most `part` bytes,
 	// or what arrives before the segment closes, and does not complete
@@ -406,9 +464,10 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 	var body io.Reader = counted
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
 	if err != nil {
-		return 0, -1, 0, false, err
+		return reply{offset: -1, err: err}
 	}
 	req.Header.Set("Authorization", token.Scheme+" "+tok)
+	u.Satellite.prepare(req, viaSatellite)
 	req.Header.Set(storage.HdrUploadOffset, strconv.FormatInt(offset, 10))
 	req.Header.Set(storage.HdrUploadComplete, "?1")
 	req.Header.Set(storage.HdrDateStarted, seg.Started.UTC().Format(time.RFC3339Nano))
@@ -435,9 +494,13 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 		}
 	}
 
+	u.Satellite.sent(viaSatellite)
+	if u.m != nil {
+		u.m.uploadRequests.Add(context.Background(), 1, pathAttr(viaSatellite))
+	}
 	resp, err := u.Cfg.Client.Do(req)
 	if err != nil {
-		return 0, -1, counted.n.Load(), false, err
+		return reply{offset: -1, sent: counted.n.Load(), err: err}
 	}
 	defer resp.Body.Close()
 	// The body of a refusal says why; the log carries it.
@@ -463,11 +526,12 @@ func (u *Uploader) put(ctx context.Context, url, tok string, al *api.Allocation,
 			v, _ = strconv.ParseInt(s, 10, 64)
 		}
 	}
+	r := reply{status: resp.StatusCode, offset: v, sent: counted.n.Load(), complete: complete, resp: resp}
 	if resp.StatusCode >= 500 {
-		return resp.StatusCode, v, counted.n.Load(), complete, fmt.Errorf("server error %d", resp.StatusCode)
+		r.err = fmt.Errorf("server error %d", resp.StatusCode)
 	}
 
-	return resp.StatusCode, v, counted.n.Load(), complete, nil
+	return r
 }
 
 // countingReader counts what a request body handed over. The transport
@@ -504,17 +568,35 @@ func (b *trailerBody) Read(p []byte) (int, error) {
 }
 
 // head asks the node where the upload stands: the offset, or -1 when the
-// upload is already complete.
-func (u *Uploader) head(ctx context.Context, url, tok string) (int64, error) {
+// upload is already complete. It goes where a request for the candidate
+// whose endpoint is ep goes now, and a satellite that fails it is the
+// satellite's failure, as a PUT's is (§41.5).
+func (u *Uploader) head(ctx context.Context, ep *api.Endpoint, key, tok string, lastProgress *time.Time) (int64, error) {
+	base, viaSatellite := u.Satellite.route(ep)
 	hctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	req, err := http.NewRequestWithContext(hctx, http.MethodHead, url, nil)
+	req, err := http.NewRequestWithContext(hctx, http.MethodHead, base+"/"+key, nil)
 	if err != nil {
 		return 0, err
 	}
 	req.Header.Set("Authorization", token.Scheme+" "+tok)
+	u.Satellite.prepare(req, viaSatellite)
 	resp, err := u.Cfg.Client.Do(req)
+	if ctx.Err() == nil && satelliteFailure(viaSatellite, resp, err) {
+		f := reply{err: err, resp: resp}
+		if resp != nil {
+			f.status = resp.StatusCode
+			resp.Body.Close()
+		}
+		u.satelliteFailed(f.failure())
+		*lastProgress = time.Now()
+
+		return 0, f.failure()
+	}
 	if err != nil {
+		if !viaSatellite && ctx.Err() == nil {
+			u.Satellite.directFailed()
+		}
 		return 0, err
 	}
 	resp.Body.Close()
