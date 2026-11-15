@@ -131,6 +131,11 @@ func AllSites(v bool) predicate.Reader {
 	return predicate.Reader(sql.FieldEQ(FieldAllSites, v))
 }
 
+// CaHash applies equality check predicate on the "ca_hash" field. It's identical to CaHashEQ.
+func CaHash(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldEQ(FieldCaHash, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Reader {
 	return predicate.Reader(sql.FieldEQ(FieldTenantId, v))
@@ -949,6 +954,81 @@ func AllSitesEQ(v bool) predicate.Reader {
 // AllSitesNEQ applies the NEQ predicate on the "all_sites" field.
 func AllSitesNEQ(v bool) predicate.Reader {
 	return predicate.Reader(sql.FieldNEQ(FieldAllSites, v))
+}
+
+// CaHashEQ applies the EQ predicate on the "ca_hash" field.
+func CaHashEQ(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldEQ(FieldCaHash, v))
+}
+
+// CaHashNEQ applies the NEQ predicate on the "ca_hash" field.
+func CaHashNEQ(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldNEQ(FieldCaHash, v))
+}
+
+// CaHashIn applies the In predicate on the "ca_hash" field.
+func CaHashIn(vs ...string) predicate.Reader {
+	return predicate.Reader(sql.FieldIn(FieldCaHash, vs...))
+}
+
+// CaHashNotIn applies the NotIn predicate on the "ca_hash" field.
+func CaHashNotIn(vs ...string) predicate.Reader {
+	return predicate.Reader(sql.FieldNotIn(FieldCaHash, vs...))
+}
+
+// CaHashGT applies the GT predicate on the "ca_hash" field.
+func CaHashGT(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldGT(FieldCaHash, v))
+}
+
+// CaHashGTE applies the GTE predicate on the "ca_hash" field.
+func CaHashGTE(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldGTE(FieldCaHash, v))
+}
+
+// CaHashLT applies the LT predicate on the "ca_hash" field.
+func CaHashLT(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldLT(FieldCaHash, v))
+}
+
+// CaHashLTE applies the LTE predicate on the "ca_hash" field.
+func CaHashLTE(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldLTE(FieldCaHash, v))
+}
+
+// CaHashContains applies the Contains predicate on the "ca_hash" field.
+func CaHashContains(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldContains(FieldCaHash, v))
+}
+
+// CaHashHasPrefix applies the HasPrefix predicate on the "ca_hash" field.
+func CaHashHasPrefix(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldHasPrefix(FieldCaHash, v))
+}
+
+// CaHashHasSuffix applies the HasSuffix predicate on the "ca_hash" field.
+func CaHashHasSuffix(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldHasSuffix(FieldCaHash, v))
+}
+
+// CaHashIsNil applies the IsNil predicate on the "ca_hash" field.
+func CaHashIsNil() predicate.Reader {
+	return predicate.Reader(sql.FieldIsNull(FieldCaHash))
+}
+
+// CaHashNotNil applies the NotNil predicate on the "ca_hash" field.
+func CaHashNotNil() predicate.Reader {
+	return predicate.Reader(sql.FieldNotNull(FieldCaHash))
+}
+
+// CaHashEqualFold applies the EqualFold predicate on the "ca_hash" field.
+func CaHashEqualFold(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldEqualFold(FieldCaHash, v))
+}
+
+// CaHashContainsFold applies the ContainsFold predicate on the "ca_hash" field.
+func CaHashContainsFold(v string) predicate.Reader {
+	return predicate.Reader(sql.FieldContainsFold(FieldCaHash, v))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

@@ -131,6 +131,11 @@ func Live(v int32) predicate.Producer {
 	return predicate.Producer(sql.FieldEQ(FieldLive, v))
 }
 
+// CaHash applies equality check predicate on the "ca_hash" field. It's identical to CaHashEQ.
+func CaHash(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldEQ(FieldCaHash, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Producer {
 	return predicate.Producer(sql.FieldEQ(FieldTenantId, v))
@@ -1014,6 +1019,81 @@ func LiveIsNil() predicate.Producer {
 // LiveNotNil applies the NotNil predicate on the "live" field.
 func LiveNotNil() predicate.Producer {
 	return predicate.Producer(sql.FieldNotNull(FieldLive))
+}
+
+// CaHashEQ applies the EQ predicate on the "ca_hash" field.
+func CaHashEQ(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldEQ(FieldCaHash, v))
+}
+
+// CaHashNEQ applies the NEQ predicate on the "ca_hash" field.
+func CaHashNEQ(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldNEQ(FieldCaHash, v))
+}
+
+// CaHashIn applies the In predicate on the "ca_hash" field.
+func CaHashIn(vs ...string) predicate.Producer {
+	return predicate.Producer(sql.FieldIn(FieldCaHash, vs...))
+}
+
+// CaHashNotIn applies the NotIn predicate on the "ca_hash" field.
+func CaHashNotIn(vs ...string) predicate.Producer {
+	return predicate.Producer(sql.FieldNotIn(FieldCaHash, vs...))
+}
+
+// CaHashGT applies the GT predicate on the "ca_hash" field.
+func CaHashGT(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldGT(FieldCaHash, v))
+}
+
+// CaHashGTE applies the GTE predicate on the "ca_hash" field.
+func CaHashGTE(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldGTE(FieldCaHash, v))
+}
+
+// CaHashLT applies the LT predicate on the "ca_hash" field.
+func CaHashLT(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldLT(FieldCaHash, v))
+}
+
+// CaHashLTE applies the LTE predicate on the "ca_hash" field.
+func CaHashLTE(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldLTE(FieldCaHash, v))
+}
+
+// CaHashContains applies the Contains predicate on the "ca_hash" field.
+func CaHashContains(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldContains(FieldCaHash, v))
+}
+
+// CaHashHasPrefix applies the HasPrefix predicate on the "ca_hash" field.
+func CaHashHasPrefix(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldHasPrefix(FieldCaHash, v))
+}
+
+// CaHashHasSuffix applies the HasSuffix predicate on the "ca_hash" field.
+func CaHashHasSuffix(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldHasSuffix(FieldCaHash, v))
+}
+
+// CaHashIsNil applies the IsNil predicate on the "ca_hash" field.
+func CaHashIsNil() predicate.Producer {
+	return predicate.Producer(sql.FieldIsNull(FieldCaHash))
+}
+
+// CaHashNotNil applies the NotNil predicate on the "ca_hash" field.
+func CaHashNotNil() predicate.Producer {
+	return predicate.Producer(sql.FieldNotNull(FieldCaHash))
+}
+
+// CaHashEqualFold applies the EqualFold predicate on the "ca_hash" field.
+func CaHashEqualFold(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldEqualFold(FieldCaHash, v))
+}
+
+// CaHashContainsFold applies the ContainsFold predicate on the "ca_hash" field.
+func CaHashContainsFold(v string) predicate.Producer {
+	return predicate.Producer(sql.FieldContainsFold(FieldCaHash, v))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

@@ -8480,6 +8480,7 @@ type ProducerAddRequest struct {
 	xxx_hidden_Status          *ProducerStatus        `protobuf:"bytes,21,opt,name=status"`
 	xxx_hidden_Version         string                 `protobuf:"bytes,22,opt,name=version"`
 	xxx_hidden_Live            LivePolicy             `protobuf:"varint,23,opt,name=live,enum=shale.LivePolicy"`
+	xxx_hidden_CaHash          *string                `protobuf:"bytes,24,opt,name=ca_hash,json=caHash"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -8660,12 +8661,22 @@ func (x *ProducerAddRequest) GetLive() LivePolicy {
 	return LivePolicy_LIVE_POLICY_UNSPECIFIED
 }
 
+func (x *ProducerAddRequest) GetCaHash() string {
+	if x != nil {
+		if x.xxx_hidden_CaHash != nil {
+			return *x.xxx_hidden_CaHash
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ProducerAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 22)
 }
 
 func (x *ProducerAddRequest) SetTenant(v *TenantRef) {
@@ -8746,7 +8757,12 @@ func (x *ProducerAddRequest) SetVersion(v string) {
 
 func (x *ProducerAddRequest) SetLive(v LivePolicy) {
 	x.xxx_hidden_Live = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 22)
+}
+
+func (x *ProducerAddRequest) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 22)
 }
 
 func (x *ProducerAddRequest) HasId() bool {
@@ -8833,6 +8849,13 @@ func (x *ProducerAddRequest) HasLive() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
 }
 
+func (x *ProducerAddRequest) HasCaHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
+}
+
 func (x *ProducerAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -8883,6 +8906,11 @@ func (x *ProducerAddRequest) ClearLive() {
 	x.xxx_hidden_Live = LivePolicy_LIVE_POLICY_UNSPECIFIED
 }
 
+func (x *ProducerAddRequest) ClearCaHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
+	x.xxx_hidden_CaHash = nil
+}
+
 type ProducerAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -8907,6 +8935,7 @@ type ProducerAddRequest_builder struct {
 	Status          *ProducerStatus
 	Version         string
 	Live            *LivePolicy
+	CaHash          *string
 }
 
 func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
@@ -8914,7 +8943,7 @@ func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 22)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -8937,8 +8966,12 @@ func (b0 ProducerAddRequest_builder) Build() *ProducerAddRequest {
 	x.xxx_hidden_Status = b.Status
 	x.xxx_hidden_Version = b.Version
 	if b.Live != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 22)
 		x.xxx_hidden_Live = *b.Live
+	}
+	if b.CaHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 22)
+		x.xxx_hidden_CaHash = b.CaHash
 	}
 	return m0
 }
@@ -9061,6 +9094,7 @@ type ProducerSelect struct {
 	xxx_hidden_Status          bool                   `protobuf:"varint,21,opt,name=status"`
 	xxx_hidden_Version         bool                   `protobuf:"varint,22,opt,name=version"`
 	xxx_hidden_Live            bool                   `protobuf:"varint,23,opt,name=live"`
+	xxx_hidden_CaHash          bool                   `protobuf:"varint,24,opt,name=ca_hash,json=caHash"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -9253,9 +9287,16 @@ func (x *ProducerSelect) GetLive() bool {
 	return false
 }
 
+func (x *ProducerSelect) GetCaHash() bool {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return false
+}
+
 func (x *ProducerSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 24)
 }
 
 func (x *ProducerSelect) SetTenant(v *TenantSelect) {
@@ -9268,22 +9309,22 @@ func (x *ProducerSelect) SetSite(v *SiteSelect) {
 
 func (x *ProducerSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 24)
 }
 
 func (x *ProducerSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 24)
 }
 
 func (x *ProducerSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 24)
 }
 
 func (x *ProducerSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 24)
 }
 
 func (x *ProducerSelect) SetSet(v *SetSelect) {
@@ -9292,57 +9333,57 @@ func (x *ProducerSelect) SetSet(v *SetSelect) {
 
 func (x *ProducerSelect) SetHardwareId(v bool) {
 	x.xxx_hidden_HardwareId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 24)
 }
 
 func (x *ProducerSelect) SetHostname(v bool) {
 	x.xxx_hidden_Hostname = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 24)
 }
 
 func (x *ProducerSelect) SetState(v bool) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 24)
 }
 
 func (x *ProducerSelect) SetCertSerial(v bool) {
 	x.xxx_hidden_CertSerial = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 24)
 }
 
 func (x *ProducerSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 24)
 }
 
 func (x *ProducerSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 24)
 }
 
 func (x *ProducerSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 24)
 }
 
 func (x *ProducerSelect) SetJoin(v bool) {
 	x.xxx_hidden_Join = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 24)
 }
 
 func (x *ProducerSelect) SetDateAdopted(v bool) {
 	x.xxx_hidden_DateAdopted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 24)
 }
 
 func (x *ProducerSelect) SetDateSeen(v bool) {
 	x.xxx_hidden_DateSeen = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 24)
 }
 
 func (x *ProducerSelect) SetDateCertExpires(v bool) {
 	x.xxx_hidden_DateCertExpires = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 24)
 }
 
 func (x *ProducerSelect) SetRelay(v *RelaySelect) {
@@ -9351,17 +9392,22 @@ func (x *ProducerSelect) SetRelay(v *RelaySelect) {
 
 func (x *ProducerSelect) SetStatus(v bool) {
 	x.xxx_hidden_Status = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 24)
 }
 
 func (x *ProducerSelect) SetVersion(v bool) {
 	x.xxx_hidden_Version = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 24)
 }
 
 func (x *ProducerSelect) SetLive(v bool) {
 	x.xxx_hidden_Live = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 23)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 24)
+}
+
+func (x *ProducerSelect) SetCaHash(v bool) {
+	x.xxx_hidden_CaHash = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 23, 24)
 }
 
 func (x *ProducerSelect) HasAll() bool {
@@ -9525,6 +9571,13 @@ func (x *ProducerSelect) HasLive() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 22)
 }
 
+func (x *ProducerSelect) HasCaHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 23)
+}
+
 func (x *ProducerSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -9636,6 +9689,11 @@ func (x *ProducerSelect) ClearLive() {
 	x.xxx_hidden_Live = false
 }
 
+func (x *ProducerSelect) ClearCaHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 23)
+	x.xxx_hidden_CaHash = false
+}
+
 type ProducerSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -9662,6 +9720,7 @@ type ProducerSelect_builder struct {
 	Status          *bool
 	Version         *bool
 	Live            *bool
+	CaHash          *bool
 }
 
 func (b0 ProducerSelect_builder) Build() *ProducerSelect {
@@ -9669,84 +9728,88 @@ func (b0 ProducerSelect_builder) Build() *ProducerSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 24)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 24)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 24)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 24)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 24)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	x.xxx_hidden_Set = b.Set
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 24)
 		x.xxx_hidden_HardwareId = *b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 24)
 		x.xxx_hidden_Hostname = *b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 24)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 24)
 		x.xxx_hidden_CertSerial = *b.CertSerial
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 24)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 24)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 24)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.Join != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 24)
 		x.xxx_hidden_Join = *b.Join
 	}
 	if b.DateAdopted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 24)
 		x.xxx_hidden_DateAdopted = *b.DateAdopted
 	}
 	if b.DateSeen != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 24)
 		x.xxx_hidden_DateSeen = *b.DateSeen
 	}
 	if b.DateCertExpires != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 24)
 		x.xxx_hidden_DateCertExpires = *b.DateCertExpires
 	}
 	x.xxx_hidden_Relay = b.Relay
 	if b.Status != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 24)
 		x.xxx_hidden_Status = *b.Status
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 24)
 		x.xxx_hidden_Version = *b.Version
 	}
 	if b.Live != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 23)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 24)
 		x.xxx_hidden_Live = *b.Live
+	}
+	if b.CaHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 23, 24)
+		x.xxx_hidden_CaHash = *b.CaHash
 	}
 	return m0
 }
@@ -9782,6 +9845,7 @@ type ProducerPatchRequest struct {
 	xxx_hidden_StatusNull          bool                   `protobuf:"varint,43,opt,name=status_null,json=statusNull"`
 	xxx_hidden_Version             *string                `protobuf:"bytes,44,opt,name=version"`
 	xxx_hidden_Live                LivePolicy             `protobuf:"varint,46,opt,name=live,enum=shale.LivePolicy"`
+	xxx_hidden_CaHash              *string                `protobuf:"bytes,48,opt,name=ca_hash,json=caHash"`
 	XXX_raceDetectHookData         protoimpl.RaceDetectHookData
 	XXX_presence                   [1]uint32
 	unknownFields                  protoimpl.UnknownFields
@@ -10041,6 +10105,16 @@ func (x *ProducerPatchRequest) GetLive() LivePolicy {
 	return LivePolicy_LIVE_POLICY_UNSPECIFIED
 }
 
+func (x *ProducerPatchRequest) GetCaHash() string {
+	if x != nil {
+		if x.xxx_hidden_CaHash != nil {
+			return *x.xxx_hidden_CaHash
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ProducerPatchRequest) SetRef(v *ProducerRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -10051,22 +10125,22 @@ func (x *ProducerPatchRequest) SetSite(v *SiteRef) {
 
 func (x *ProducerPatchRequest) SetSiteNull(v bool) {
 	x.xxx_hidden_SiteNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 30)
 }
 
 func (x *ProducerPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 30)
 }
 
 func (x *ProducerPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 30)
 }
 
 func (x *ProducerPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 30)
 }
 
 func (x *ProducerPatchRequest) SetLabels(v map[string]string) {
@@ -10079,27 +10153,27 @@ func (x *ProducerPatchRequest) SetSet(v *SetRef) {
 
 func (x *ProducerPatchRequest) SetSetNull(v bool) {
 	x.xxx_hidden_SetNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 30)
 }
 
 func (x *ProducerPatchRequest) SetHardwareId(v string) {
 	x.xxx_hidden_HardwareId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 30)
 }
 
 func (x *ProducerPatchRequest) SetHostname(v string) {
 	x.xxx_hidden_Hostname = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 30)
 }
 
 func (x *ProducerPatchRequest) SetState(v HostState) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 30)
 }
 
 func (x *ProducerPatchRequest) SetCertSerial(v string) {
 	x.xxx_hidden_CertSerial = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 30)
 }
 
 func (x *ProducerPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -10108,7 +10182,7 @@ func (x *ProducerPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 30)
 }
 
 func (x *ProducerPatchRequest) SetJoin(v *HostJoin) {
@@ -10117,7 +10191,7 @@ func (x *ProducerPatchRequest) SetJoin(v *HostJoin) {
 
 func (x *ProducerPatchRequest) SetJoinNull(v bool) {
 	x.xxx_hidden_JoinNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 30)
 }
 
 func (x *ProducerPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
@@ -10126,7 +10200,7 @@ func (x *ProducerPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateAdoptedNull(v bool) {
 	x.xxx_hidden_DateAdoptedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 30)
 }
 
 func (x *ProducerPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
@@ -10135,7 +10209,7 @@ func (x *ProducerPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateSeenNull(v bool) {
 	x.xxx_hidden_DateSeenNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 30)
 }
 
 func (x *ProducerPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
@@ -10144,7 +10218,7 @@ func (x *ProducerPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
 
 func (x *ProducerPatchRequest) SetDateCertExpiresNull(v bool) {
 	x.xxx_hidden_DateCertExpiresNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 22, 30)
 }
 
 func (x *ProducerPatchRequest) SetRelay(v *RelayRef) {
@@ -10153,7 +10227,7 @@ func (x *ProducerPatchRequest) SetRelay(v *RelayRef) {
 
 func (x *ProducerPatchRequest) SetRelayNull(v bool) {
 	x.xxx_hidden_RelayNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 24, 30)
 }
 
 func (x *ProducerPatchRequest) SetStatus(v *ProducerStatus) {
@@ -10162,17 +10236,22 @@ func (x *ProducerPatchRequest) SetStatus(v *ProducerStatus) {
 
 func (x *ProducerPatchRequest) SetStatusNull(v bool) {
 	x.xxx_hidden_StatusNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 26, 30)
 }
 
 func (x *ProducerPatchRequest) SetVersion(v string) {
 	x.xxx_hidden_Version = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 27, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 27, 30)
 }
 
 func (x *ProducerPatchRequest) SetLive(v LivePolicy) {
 	x.xxx_hidden_Live = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 28, 29)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 28, 30)
+}
+
+func (x *ProducerPatchRequest) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 29, 30)
 }
 
 func (x *ProducerPatchRequest) HasRef() bool {
@@ -10371,6 +10450,13 @@ func (x *ProducerPatchRequest) HasLive() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 28)
 }
 
+func (x *ProducerPatchRequest) HasCaHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 29)
+}
+
 func (x *ProducerPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -10501,6 +10587,11 @@ func (x *ProducerPatchRequest) ClearLive() {
 	x.xxx_hidden_Live = LivePolicy_LIVE_POLICY_UNSPECIFIED
 }
 
+func (x *ProducerPatchRequest) ClearCaHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 29)
+	x.xxx_hidden_CaHash = nil
+}
+
 type ProducerPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -10577,6 +10668,7 @@ type ProducerPatchRequest_builder struct {
 	StatusNull *bool
 	Version    *string
 	Live       *LivePolicy
+	CaHash     *string
 }
 
 func (b0 ProducerPatchRequest_builder) Build() *ProducerPatchRequest {
@@ -10586,85 +10678,89 @@ func (b0 ProducerPatchRequest_builder) Build() *ProducerPatchRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Site = b.Site
 	if b.SiteNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 30)
 		x.xxx_hidden_SiteNull = *b.SiteNull
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 30)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 30)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 30)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Set = b.Set
 	if b.SetNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 30)
 		x.xxx_hidden_SetNull = *b.SetNull
 	}
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 30)
 		x.xxx_hidden_HardwareId = b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 30)
 		x.xxx_hidden_Hostname = b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 30)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 30)
 		x.xxx_hidden_CertSerial = b.CertSerial
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 30)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_Join = b.Join
 	if b.JoinNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 30)
 		x.xxx_hidden_JoinNull = *b.JoinNull
 	}
 	x.xxx_hidden_DateAdopted = b.DateAdopted
 	if b.DateAdoptedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 30)
 		x.xxx_hidden_DateAdoptedNull = *b.DateAdoptedNull
 	}
 	x.xxx_hidden_DateSeen = b.DateSeen
 	if b.DateSeenNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 30)
 		x.xxx_hidden_DateSeenNull = *b.DateSeenNull
 	}
 	x.xxx_hidden_DateCertExpires = b.DateCertExpires
 	if b.DateCertExpiresNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 22, 30)
 		x.xxx_hidden_DateCertExpiresNull = *b.DateCertExpiresNull
 	}
 	x.xxx_hidden_Relay = b.Relay
 	if b.RelayNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 24, 30)
 		x.xxx_hidden_RelayNull = *b.RelayNull
 	}
 	x.xxx_hidden_Status = b.Status
 	if b.StatusNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 26, 30)
 		x.xxx_hidden_StatusNull = *b.StatusNull
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 27, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 27, 30)
 		x.xxx_hidden_Version = b.Version
 	}
 	if b.Live != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 28, 29)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 28, 30)
 		x.xxx_hidden_Live = *b.Live
+	}
+	if b.CaHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 29, 30)
+		x.xxx_hidden_CaHash = b.CaHash
 	}
 	return m0
 }
@@ -12400,6 +12496,7 @@ type ReaderAddRequest struct {
 	xxx_hidden_DateCertExpires *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=date_cert_expires,json=dateCertExpires"`
 	xxx_hidden_Version         string                 `protobuf:"bytes,19,opt,name=version"`
 	xxx_hidden_AllSites        bool                   `protobuf:"varint,20,opt,name=all_sites,json=allSites"`
+	xxx_hidden_CaHash          *string                `protobuf:"bytes,21,opt,name=ca_hash,json=caHash"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -12550,12 +12647,22 @@ func (x *ReaderAddRequest) GetAllSites() bool {
 	return false
 }
 
+func (x *ReaderAddRequest) GetCaHash() string {
+	if x != nil {
+		if x.xxx_hidden_CaHash != nil {
+			return *x.xxx_hidden_CaHash
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ReaderAddRequest) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 17)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 18)
 }
 
 func (x *ReaderAddRequest) SetTenant(v *TenantRef) {
@@ -12622,6 +12729,11 @@ func (x *ReaderAddRequest) SetAllSites(v bool) {
 	x.xxx_hidden_AllSites = v
 }
 
+func (x *ReaderAddRequest) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 18)
+}
+
 func (x *ReaderAddRequest) HasId() bool {
 	if x == nil {
 		return false
@@ -12671,6 +12783,13 @@ func (x *ReaderAddRequest) HasDateCertExpires() bool {
 	return x.xxx_hidden_DateCertExpires != nil
 }
 
+func (x *ReaderAddRequest) HasCaHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 17)
+}
+
 func (x *ReaderAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -12700,6 +12819,11 @@ func (x *ReaderAddRequest) ClearDateCertExpires() {
 	x.xxx_hidden_DateCertExpires = nil
 }
 
+func (x *ReaderAddRequest) ClearCaHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 17)
+	x.xxx_hidden_CaHash = nil
+}
+
 type ReaderAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -12720,6 +12844,7 @@ type ReaderAddRequest_builder struct {
 	DateCertExpires *timestamppb.Timestamp
 	Version         string
 	AllSites        bool
+	CaHash          *string
 }
 
 func (b0 ReaderAddRequest_builder) Build() *ReaderAddRequest {
@@ -12727,7 +12852,7 @@ func (b0 ReaderAddRequest_builder) Build() *ReaderAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 17)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 18)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -12746,6 +12871,10 @@ func (b0 ReaderAddRequest_builder) Build() *ReaderAddRequest {
 	x.xxx_hidden_DateCertExpires = b.DateCertExpires
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_AllSites = b.AllSites
+	if b.CaHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 18)
+		x.xxx_hidden_CaHash = b.CaHash
+	}
 	return m0
 }
 
@@ -13136,6 +13265,7 @@ type ReaderSelect struct {
 	xxx_hidden_DateCertExpires bool                   `protobuf:"varint,18,opt,name=date_cert_expires,json=dateCertExpires"`
 	xxx_hidden_Version         bool                   `protobuf:"varint,19,opt,name=version"`
 	xxx_hidden_AllSites        bool                   `protobuf:"varint,20,opt,name=all_sites,json=allSites"`
+	xxx_hidden_CaHash          bool                   `protobuf:"varint,21,opt,name=ca_hash,json=caHash"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
 	unknownFields              protoimpl.UnknownFields
@@ -13300,9 +13430,16 @@ func (x *ReaderSelect) GetAllSites() bool {
 	return false
 }
 
+func (x *ReaderSelect) GetCaHash() bool {
+	if x != nil {
+		return x.xxx_hidden_CaHash
+	}
+	return false
+}
+
 func (x *ReaderSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 20)
 }
 
 func (x *ReaderSelect) SetTenant(v *TenantSelect) {
@@ -13311,87 +13448,92 @@ func (x *ReaderSelect) SetTenant(v *TenantSelect) {
 
 func (x *ReaderSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 20)
 }
 
 func (x *ReaderSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 20)
 }
 
 func (x *ReaderSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 20)
 }
 
 func (x *ReaderSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 20)
 }
 
 func (x *ReaderSelect) SetHardwareId(v bool) {
 	x.xxx_hidden_HardwareId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 20)
 }
 
 func (x *ReaderSelect) SetHostname(v bool) {
 	x.xxx_hidden_Hostname = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 20)
 }
 
 func (x *ReaderSelect) SetState(v bool) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 20)
 }
 
 func (x *ReaderSelect) SetCertSerial(v bool) {
 	x.xxx_hidden_CertSerial = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 20)
 }
 
 func (x *ReaderSelect) SetJoin(v bool) {
 	x.xxx_hidden_Join = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 20)
 }
 
 func (x *ReaderSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 20)
 }
 
 func (x *ReaderSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 20)
 }
 
 func (x *ReaderSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 20)
 }
 
 func (x *ReaderSelect) SetDateAdopted(v bool) {
 	x.xxx_hidden_DateAdopted = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 20)
 }
 
 func (x *ReaderSelect) SetDateSeen(v bool) {
 	x.xxx_hidden_DateSeen = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 20)
 }
 
 func (x *ReaderSelect) SetDateCertExpires(v bool) {
 	x.xxx_hidden_DateCertExpires = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 20)
 }
 
 func (x *ReaderSelect) SetVersion(v bool) {
 	x.xxx_hidden_Version = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 17, 20)
 }
 
 func (x *ReaderSelect) SetAllSites(v bool) {
 	x.xxx_hidden_AllSites = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 19)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 20)
+}
+
+func (x *ReaderSelect) SetCaHash(v bool) {
+	x.xxx_hidden_CaHash = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 20)
 }
 
 func (x *ReaderSelect) HasAll() bool {
@@ -13527,6 +13669,13 @@ func (x *ReaderSelect) HasAllSites() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 18)
 }
 
+func (x *ReaderSelect) HasCaHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 19)
+}
+
 func (x *ReaderSelect) ClearAll() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_All = false
@@ -13621,6 +13770,11 @@ func (x *ReaderSelect) ClearAllSites() {
 	x.xxx_hidden_AllSites = false
 }
 
+func (x *ReaderSelect) ClearCaHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 19)
+	x.xxx_hidden_CaHash = false
+}
+
 type ReaderSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -13643,6 +13797,7 @@ type ReaderSelect_builder struct {
 	DateCertExpires *bool
 	Version         *bool
 	AllSites        *bool
+	CaHash          *bool
 }
 
 func (b0 ReaderSelect_builder) Build() *ReaderSelect {
@@ -13650,77 +13805,81 @@ func (b0 ReaderSelect_builder) Build() *ReaderSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 20)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 20)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 20)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 20)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 20)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 20)
 		x.xxx_hidden_HardwareId = *b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 20)
 		x.xxx_hidden_Hostname = *b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 20)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 20)
 		x.xxx_hidden_CertSerial = *b.CertSerial
 	}
 	if b.Join != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 20)
 		x.xxx_hidden_Join = *b.Join
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 20)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 20)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 20)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	if b.DateAdopted != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 20)
 		x.xxx_hidden_DateAdopted = *b.DateAdopted
 	}
 	if b.DateSeen != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 20)
 		x.xxx_hidden_DateSeen = *b.DateSeen
 	}
 	if b.DateCertExpires != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 20)
 		x.xxx_hidden_DateCertExpires = *b.DateCertExpires
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 17, 20)
 		x.xxx_hidden_Version = *b.Version
 	}
 	if b.AllSites != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 19)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 20)
 		x.xxx_hidden_AllSites = *b.AllSites
+	}
+	if b.CaHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 20)
+		x.xxx_hidden_CaHash = *b.CaHash
 	}
 	return m0
 }
@@ -13748,6 +13907,7 @@ type ReaderPatchRequest struct {
 	xxx_hidden_DateCertExpiresNull bool                   `protobuf:"varint,37,opt,name=date_cert_expires_null,json=dateCertExpiresNull"`
 	xxx_hidden_Version             *string                `protobuf:"bytes,38,opt,name=version"`
 	xxx_hidden_AllSites            bool                   `protobuf:"varint,40,opt,name=all_sites,json=allSites"`
+	xxx_hidden_CaHash              *string                `protobuf:"bytes,42,opt,name=ca_hash,json=caHash"`
 	XXX_raceDetectHookData         protoimpl.RaceDetectHookData
 	XXX_presence                   [1]uint32
 	unknownFields                  protoimpl.UnknownFields
@@ -13949,23 +14109,33 @@ func (x *ReaderPatchRequest) GetAllSites() bool {
 	return false
 }
 
+func (x *ReaderPatchRequest) GetCaHash() string {
+	if x != nil {
+		if x.xxx_hidden_CaHash != nil {
+			return *x.xxx_hidden_CaHash
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ReaderPatchRequest) SetRef(v *ReaderRef) {
 	x.xxx_hidden_Ref = v
 }
 
 func (x *ReaderPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 22)
 }
 
 func (x *ReaderPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 22)
 }
 
 func (x *ReaderPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 22)
 }
 
 func (x *ReaderPatchRequest) SetLabels(v map[string]string) {
@@ -13974,22 +14144,22 @@ func (x *ReaderPatchRequest) SetLabels(v map[string]string) {
 
 func (x *ReaderPatchRequest) SetHardwareId(v string) {
 	x.xxx_hidden_HardwareId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 22)
 }
 
 func (x *ReaderPatchRequest) SetHostname(v string) {
 	x.xxx_hidden_Hostname = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 22)
 }
 
 func (x *ReaderPatchRequest) SetState(v HostState) {
 	x.xxx_hidden_State = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 22)
 }
 
 func (x *ReaderPatchRequest) SetCertSerial(v string) {
 	x.xxx_hidden_CertSerial = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 22)
 }
 
 func (x *ReaderPatchRequest) SetJoin(v *HostJoin) {
@@ -13998,7 +14168,7 @@ func (x *ReaderPatchRequest) SetJoin(v *HostJoin) {
 
 func (x *ReaderPatchRequest) SetJoinNull(v bool) {
 	x.xxx_hidden_JoinNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 22)
 }
 
 func (x *ReaderPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -14007,7 +14177,7 @@ func (x *ReaderPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ReaderPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 22)
 }
 
 func (x *ReaderPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
@@ -14016,7 +14186,7 @@ func (x *ReaderPatchRequest) SetDateAdopted(v *timestamppb.Timestamp) {
 
 func (x *ReaderPatchRequest) SetDateAdoptedNull(v bool) {
 	x.xxx_hidden_DateAdoptedNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 22)
 }
 
 func (x *ReaderPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
@@ -14025,7 +14195,7 @@ func (x *ReaderPatchRequest) SetDateSeen(v *timestamppb.Timestamp) {
 
 func (x *ReaderPatchRequest) SetDateSeenNull(v bool) {
 	x.xxx_hidden_DateSeenNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 16, 22)
 }
 
 func (x *ReaderPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
@@ -14034,17 +14204,22 @@ func (x *ReaderPatchRequest) SetDateCertExpires(v *timestamppb.Timestamp) {
 
 func (x *ReaderPatchRequest) SetDateCertExpiresNull(v bool) {
 	x.xxx_hidden_DateCertExpiresNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 18, 22)
 }
 
 func (x *ReaderPatchRequest) SetVersion(v string) {
 	x.xxx_hidden_Version = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 19, 22)
 }
 
 func (x *ReaderPatchRequest) SetAllSites(v bool) {
 	x.xxx_hidden_AllSites = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 21)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 20, 22)
+}
+
+func (x *ReaderPatchRequest) SetCaHash(v string) {
+	x.xxx_hidden_CaHash = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 21, 22)
 }
 
 func (x *ReaderPatchRequest) HasRef() bool {
@@ -14187,6 +14362,13 @@ func (x *ReaderPatchRequest) HasAllSites() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 20)
 }
 
+func (x *ReaderPatchRequest) HasCaHash() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 21)
+}
+
 func (x *ReaderPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -14281,6 +14463,11 @@ func (x *ReaderPatchRequest) ClearAllSites() {
 	x.xxx_hidden_AllSites = false
 }
 
+func (x *ReaderPatchRequest) ClearCaHash() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 21)
+	x.xxx_hidden_CaHash = nil
+}
+
 type ReaderPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -14333,6 +14520,7 @@ type ReaderPatchRequest_builder struct {
 	DateCertExpiresNull *bool
 	Version             *string
 	AllSites            *bool
+	CaHash              *string
 }
 
 func (b0 ReaderPatchRequest_builder) Build() *ReaderPatchRequest {
@@ -14341,66 +14529,70 @@ func (b0 ReaderPatchRequest_builder) Build() *ReaderPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 22)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 22)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 22)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	if b.HardwareId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 22)
 		x.xxx_hidden_HardwareId = b.HardwareId
 	}
 	if b.Hostname != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 22)
 		x.xxx_hidden_Hostname = b.Hostname
 	}
 	if b.State != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 22)
 		x.xxx_hidden_State = *b.State
 	}
 	if b.CertSerial != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 22)
 		x.xxx_hidden_CertSerial = b.CertSerial
 	}
 	x.xxx_hidden_Join = b.Join
 	if b.JoinNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 22)
 		x.xxx_hidden_JoinNull = *b.JoinNull
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 22)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	x.xxx_hidden_DateAdopted = b.DateAdopted
 	if b.DateAdoptedNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 22)
 		x.xxx_hidden_DateAdoptedNull = *b.DateAdoptedNull
 	}
 	x.xxx_hidden_DateSeen = b.DateSeen
 	if b.DateSeenNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 16, 22)
 		x.xxx_hidden_DateSeenNull = *b.DateSeenNull
 	}
 	x.xxx_hidden_DateCertExpires = b.DateCertExpires
 	if b.DateCertExpiresNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 18, 22)
 		x.xxx_hidden_DateCertExpiresNull = *b.DateCertExpiresNull
 	}
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 19, 22)
 		x.xxx_hidden_Version = b.Version
 	}
 	if b.AllSites != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 21)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 20, 22)
 		x.xxx_hidden_AllSites = *b.AllSites
+	}
+	if b.CaHash != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 21, 22)
+		x.xxx_hidden_CaHash = b.CaHash
 	}
 	return m0
 }
@@ -16062,7 +16254,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x03key\"S\n" +
 	"\x11ProducerRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12(\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xc4\a\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xdd\a\n" +
 	"\x12ProducerAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -16087,13 +16279,14 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x05relay\x18\x14 \x01(\v2\x0f.shale.RelayRefR\x05relay\x12-\n" +
 	"\x06status\x18\x15 \x01(\v2\x15.shale.ProducerStatusR\x06status\x12\x1f\n" +
 	"\aversion\x18\x16 \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x12%\n" +
-	"\x04live\x18\x17 \x01(\x0e2\x11.shale.LivePolicyR\x04live\x1a9\n" +
+	"\x04live\x18\x17 \x01(\x0e2\x11.shale.LivePolicyR\x04live\x12\x17\n" +
+	"\aca_hash\x18\x18 \x01(\tR\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"i\n" +
 	"\x12ProducerGetRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.shale.ProducerRefR\x03ref\x12-\n" +
-	"\x06select\x18\x02 \x01(\v2\x15.shale.ProducerSelectR\x06select\"\xbb\x05\n" +
+	"\x06select\x18\x02 \x01(\v2\x15.shale.ProducerSelectR\x06select\"\xd4\x05\n" +
 	"\x0eProducerSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12%\n" +
@@ -16121,7 +16314,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x05relay\x18\x14 \x01(\v2\x12.shale.RelaySelectR\x05relay\x12\x16\n" +
 	"\x06status\x18\x15 \x01(\bR\x06status\x12\x18\n" +
 	"\aversion\x18\x16 \x01(\bR\aversion\x12\x12\n" +
-	"\x04live\x18\x17 \x01(\bR\x04live\"\xc6\t\n" +
+	"\x04live\x18\x17 \x01(\bR\x04live\x12\x17\n" +
+	"\aca_hash\x18\x18 \x01(\bR\x06caHash\"\xdf\t\n" +
 	"\x14ProducerPatchRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.shale.ProducerRefR\x03ref\x12\"\n" +
 	"\x04site\x18\x06 \x01(\v2\x0e.shale.SiteRefR\x04site\x12\x1b\n" +
@@ -16156,7 +16350,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\vstatus_null\x18+ \x01(\bR\n" +
 	"statusNull\x12\x18\n" +
 	"\aversion\x18, \x01(\tR\aversion\x12%\n" +
-	"\x04live\x18. \x01(\x0e2\x11.shale.LivePolicyR\x04live\x1a9\n" +
+	"\x04live\x18. \x01(\x0e2\x11.shale.LivePolicyR\x04live\x12\x17\n" +
+	"\aca_hash\x180 \x01(\tR\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"`\n" +
@@ -16229,7 +16424,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x06reason\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06reason\"\x16\n" +
 	"\x14ProducerRelayRequest\"E\n" +
 	"\x15ProducerRelayResponse\x12,\n" +
-	"\x05relay\x18\x01 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\"\xa2\x06\n" +
+	"\x05relay\x18\x01 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\"\xbb\x06\n" +
 	"\x10ReaderAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\x1b\n" +
@@ -16250,7 +16445,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\tdate_seen\x18\x11 \x01(\v2\x1a.google.protobuf.TimestampR\bdateSeen\x12F\n" +
 	"\x11date_cert_expires\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateCertExpires\x12\x1f\n" +
 	"\aversion\x18\x13 \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x12\"\n" +
-	"\tall_sites\x18\x14 \x01(\bB\x05\xaa\x01\x02\b\x02R\ballSites\x1a9\n" +
+	"\tall_sites\x18\x14 \x01(\bB\x05\xaa\x01\x02\b\x02R\ballSites\x12\x17\n" +
+	"\aca_hash\x18\x15 \x01(\tR\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"c\n" +
@@ -16263,7 +16459,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x03key\"Q\n" +
 	"\x0fReaderRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12(\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xb5\x04\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\"\xce\x04\n" +
 	"\fReaderSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12+\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x13.shale.TenantSelectR\x06tenant\x12\x14\n" +
@@ -16287,7 +16483,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\tdate_seen\x18\x11 \x01(\bR\bdateSeen\x12*\n" +
 	"\x11date_cert_expires\x18\x12 \x01(\bR\x0fdateCertExpires\x12\x18\n" +
 	"\aversion\x18\x13 \x01(\bR\aversion\x12\x1b\n" +
-	"\tall_sites\x18\x14 \x01(\bR\ballSites\"\xa3\a\n" +
+	"\tall_sites\x18\x14 \x01(\bR\ballSites\x12\x17\n" +
+	"\aca_hash\x18\x15 \x01(\bR\x06caHash\"\xbc\a\n" +
 	"\x12ReaderPatchRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.shale.ReaderRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -16312,7 +16509,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x11date_cert_expires\x18$ \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateCertExpires\x123\n" +
 	"\x16date_cert_expires_null\x18% \x01(\bR\x13dateCertExpiresNull\x12\x18\n" +
 	"\aversion\x18& \x01(\tR\aversion\x12\x1b\n" +
-	"\tall_sites\x18( \x01(\bR\ballSites\x1a9\n" +
+	"\tall_sites\x18( \x01(\bR\ballSites\x12\x17\n" +
+	"\aca_hash\x18* \x01(\tR\x06caHash\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +

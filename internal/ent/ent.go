@@ -24,6 +24,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/camerapolicy"
 	"github.com/lesomnus/shale/internal/ent/camerapreset"
 	"github.com/lesomnus/shale/internal/ent/cameraworker"
+	"github.com/lesomnus/shale/internal/ent/certificateauthority"
 	"github.com/lesomnus/shale/internal/ent/delegation"
 	"github.com/lesomnus/shale/internal/ent/device"
 	"github.com/lesomnus/shale/internal/ent/holder"
@@ -122,6 +123,7 @@ func checkColumn(t, c string) error {
 			camerapolicy.Table:            camerapolicy.ValidColumn,
 			camerapreset.Table:            camerapreset.ValidColumn,
 			cameraworker.Table:            cameraworker.ValidColumn,
+			certificateauthority.Table:    certificateauthority.ValidColumn,
 			delegation.Table:              delegation.ValidColumn,
 			device.Table:                  device.ValidColumn,
 			holder.Table:                  holder.ValidColumn,

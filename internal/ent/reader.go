@@ -55,6 +55,8 @@ type Reader struct {
 	Version string `json:"version,omitempty"`
 	// AllSites holds the value of the "all_sites" field.
 	AllSites bool `json:"all_sites,omitempty"`
+	// CaHash holds the value of the "ca_hash" field.
+	CaHash string `json:"ca_hash,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -94,7 +96,7 @@ func (*Reader) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case reader.FieldState:
 			values[i] = new(sql.NullInt64)
-		case reader.FieldAlias, reader.FieldName, reader.FieldDesc, reader.FieldHardwareId, reader.FieldHostname, reader.FieldCertSerial, reader.FieldVersion:
+		case reader.FieldAlias, reader.FieldName, reader.FieldDesc, reader.FieldHardwareId, reader.FieldHostname, reader.FieldCertSerial, reader.FieldVersion, reader.FieldCaHash:
 			values[i] = new(sql.NullString)
 		case reader.FieldDateUpdated, reader.FieldDateErased, reader.FieldDateCreated, reader.FieldDateAdopted, reader.FieldDateSeen, reader.FieldDateCertExpires:
 			values[i] = new(sql.NullTime)
@@ -231,6 +233,12 @@ func (_m *Reader) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.AllSites = value.Bool
 			}
+		case reader.FieldCaHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field ca_hash", values[i])
+			} else if value.Valid {
+				_m.CaHash = value.String
+			}
 		case reader.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -336,6 +344,9 @@ func (_m *Reader) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("all_sites=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AllSites))
+	builder.WriteString(", ")
+	builder.WriteString("ca_hash=")
+	builder.WriteString(_m.CaHash)
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

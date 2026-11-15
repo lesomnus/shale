@@ -310,6 +310,26 @@ func (_u *ProducerUpdate) ClearLive() *ProducerUpdate {
 	return _u
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_u *ProducerUpdate) SetCaHash(v string) *ProducerUpdate {
+	_u.mutation.SetCaHash(v)
+	return _u
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_u *ProducerUpdate) SetNillableCaHash(v *string) *ProducerUpdate {
+	if v != nil {
+		_u.SetCaHash(*v)
+	}
+	return _u
+}
+
+// ClearCaHash clears the value of the "ca_hash" field.
+func (_u *ProducerUpdate) ClearCaHash() *ProducerUpdate {
+	_u.mutation.ClearCaHash()
+	return _u
+}
+
 // SetSiteId sets the "site_id" field.
 func (_u *ProducerUpdate) SetSiteId(v uuid.UUID) *ProducerUpdate {
 	_u.mutation.SetSiteId(v)
@@ -609,6 +629,15 @@ func (_u *ProducerUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.LiveCleared() {
 		_spec.ClearField(producer.FieldLive, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.CaHash(); ok {
+		_spec.SetField(producer.FieldCaHash, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldCaHash); ok {
+		_spec.SetField(producer.FieldCaHash, field.TypeString, e)
+	}
+	if _u.mutation.CaHashCleared() {
+		_spec.ClearField(producer.FieldCaHash, field.TypeString)
 	}
 	if _u.mutation.SiteCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -995,6 +1024,26 @@ func (_u *ProducerUpdateOne) ClearLive() *ProducerUpdateOne {
 	return _u
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_u *ProducerUpdateOne) SetCaHash(v string) *ProducerUpdateOne {
+	_u.mutation.SetCaHash(v)
+	return _u
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_u *ProducerUpdateOne) SetNillableCaHash(v *string) *ProducerUpdateOne {
+	if v != nil {
+		_u.SetCaHash(*v)
+	}
+	return _u
+}
+
+// ClearCaHash clears the value of the "ca_hash" field.
+func (_u *ProducerUpdateOne) ClearCaHash() *ProducerUpdateOne {
+	_u.mutation.ClearCaHash()
+	return _u
+}
+
 // SetSiteId sets the "site_id" field.
 func (_u *ProducerUpdateOne) SetSiteId(v uuid.UUID) *ProducerUpdateOne {
 	_u.mutation.SetSiteId(v)
@@ -1324,6 +1373,15 @@ func (_u *ProducerUpdateOne) sqlSave(ctx context.Context) (_node *Producer, err 
 	}
 	if _u.mutation.LiveCleared() {
 		_spec.ClearField(producer.FieldLive, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.CaHash(); ok {
+		_spec.SetField(producer.FieldCaHash, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(producer.FieldCaHash); ok {
+		_spec.SetField(producer.FieldCaHash, field.TypeString, e)
+	}
+	if _u.mutation.CaHashCleared() {
+		_spec.ClearField(producer.FieldCaHash, field.TypeString)
 	}
 	if _u.mutation.SiteCleared() {
 		edge := &sqlgraph.EdgeSpec{
