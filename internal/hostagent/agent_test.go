@@ -434,6 +434,42 @@ func TestPeerFollowsTheBundle(t *testing.T) {
 	x.NoError(err, "a client certificate from the next CA")
 }
 
+// PeerTLSHeld, what the producer's HTTP/3 starts each handshake from,
+// follows the bundle as HTTPClient does: the same configuration while the
+// bundle stays, and one that verifies a node renewed from the next CA once
+// the bundle carries it.
+func TestPeerTLSHeldFollowsTheBundle(t *testing.T) {
+	x := require.New(t)
+	old, next := mustCA(t), mustCA(t)
+	roots(t, func() (*x509.CertPool, error) { return nil, errors.New("no system roots") })
+	a := pinned(t, old)
+	held := a.PeerTLSHeld()
+
+	verify := func(cfg *tls.Config, s *httptest.Server) error {
+		c := cfg.Clone()
+		c.ServerName = "127.0.0.1"
+		conn, err := tls.Dial("tcp", s.Listener.Addr().String(), c)
+		if err == nil {
+			conn.Close()
+		}
+
+		return err
+	}
+	first, err := held()
+	x.NoError(err)
+	again, err := held()
+	x.NoError(err)
+	x.Same(first, again, "made again only when the bundle changes")
+	x.Error(verify(first, server(t, next)), "the bundle has the old CA alone")
+
+	x.NoError(a.Store.SetBundle(append(old.Bundle(), next.Bundle()...)))
+	now, err := held()
+	x.NoError(err)
+	x.NotSame(first, now)
+	x.NoError(verify(now, server(t, next)))
+	x.NoError(verify(now, server(t, old)))
+}
+
 // A host presents its certificate to a server that names its CA, and none
 // to one that names only others: a node of an earlier release, which read
 // its bundle when it started, takes a client with no certificate (the data

@@ -4392,7 +4392,10 @@ type NodeResolveRequest_builder struct {
 
 	Ref *NodeRef
 	// The caller's address; the calling connection's when empty.
-	From     string
+	From string
+	// The caller's protocol, "h1", "h2" or "h3" (§34.10): the endpoints say
+	// it, on the one host and port every protocol is served on. Empty is
+	// what a client starts with.
 	Protocol string
 }
 

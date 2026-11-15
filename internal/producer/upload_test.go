@@ -140,3 +140,71 @@ func TestUploadsAtOnce(t *testing.T) {
 	}
 	require.Equal(t, int32(sources), stored.Load())
 }
+
+// fakeNode keeps an upload's bytes as a node does (§12.2, §12.5): a
+// request at another offset than its own is refused with 409 and the
+// offset, and the first request with bytes is cut short after `cut` of
+// them, answered 503 with what it kept, as a node that stops under it.
+type fakeNode struct {
+	mu   sync.Mutex
+	have []byte
+	cut  int
+	cuts int
+}
+
+func (n *fakeNode) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if r.Method == http.MethodHead {
+		w.Header().Set(storage.HdrUploadOffset, strconv.Itoa(len(n.have)))
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	offset, _ := strconv.Atoi(r.Header.Get(storage.HdrUploadOffset))
+	if offset != len(n.have) {
+		w.Header().Set(storage.HdrUploadOffset, strconv.Itoa(len(n.have)))
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+	if n.cut > 0 && n.cuts == 0 {
+		n.cuts++
+		b := make([]byte, n.cut)
+		k, _ := io.ReadFull(r.Body, b)
+		n.have = append(n.have, b[:k]...)
+		w.Header().Set(storage.HdrUploadOffset, strconv.Itoa(len(n.have)))
+		w.Header().Set(storage.HdrRetryAfter, "1")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	b, _ := io.ReadAll(r.Body)
+	n.have = append(n.have, b...)
+	w.Header().Set(storage.HdrUploadComplete, "?1")
+	w.WriteHeader(http.StatusCreated)
+}
+
+// A node that cut an upload short has our bytes past the offset we last
+// told it: the 409 that says so is ours to carry on from, and the segment
+// is stored whole on the same target. Bytes past anything we sent are not
+// ours, and end the attempt (§12.5).
+func TestUploadResumesPastTheStatedOffset(t *testing.T) {
+	seg := NewSegment(time.Now(), nil)
+	body := bytes.Repeat([]byte("0123456789abcdef"), 4<<10)
+	seg.Write(body)
+	seg.Close(time.Now())
+	u := &Uploader{Cfg: UploadConfig{ResumeTimeout: 10 * time.Second}, Laminae: noLaminae{}, Log: slog.New(slog.DiscardHandler)}
+
+	n := &fakeNode{cut: 20_000}
+	srv := httptest.NewServer(n)
+	defer srv.Close()
+	res := u.Upload(context.Background(), allocationAt(t, srv.Listener.Addr().String(), "laminae/cut"), seg)
+	require.True(t, res.Stored, "%v", res.Err)
+	require.Equal(t, 1, res.Attempts, "the same target")
+	require.Equal(t, body, n.have)
+
+	foreign := &fakeNode{have: []byte("an earlier incarnation's")}
+	srv = httptest.NewServer(foreign)
+	defer srv.Close()
+	res = u.Upload(context.Background(), allocationAt(t, srv.Listener.Addr().String(), "laminae/foreign"), seg)
+	require.False(t, res.Stored)
+	require.Equal(t, "an earlier incarnation's", string(foreign.have), "not continued")
+}
