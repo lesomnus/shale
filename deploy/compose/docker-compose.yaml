@@ -11,7 +11,7 @@
 # (`configs:`), so nothing has to be copied next to this file.
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: shale
       POSTGRES_PASSWORD: ${SHALE_DB_PASSWORD:-shale}
