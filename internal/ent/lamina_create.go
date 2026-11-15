@@ -10,6 +10,7 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/shale/internal/ent/lamina"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/site"
@@ -260,6 +261,20 @@ func (_c *LaminaCreate) SetNillableSinkId(v *uuid.UUID) *LaminaCreate {
 	return _c
 }
 
+// SetSatelliteId sets the "satellite_id" field.
+func (_c *LaminaCreate) SetSatelliteId(v uuid.UUID) *LaminaCreate {
+	_c.mutation.SetSatelliteId(v)
+	return _c
+}
+
+// SetNillableSatelliteId sets the "satellite_id" field if the given value is not nil.
+func (_c *LaminaCreate) SetNillableSatelliteId(v *uuid.UUID) *LaminaCreate {
+	if v != nil {
+		_c.SetSatelliteId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *LaminaCreate) SetId(v uuid.UUID) *LaminaCreate {
 	_c.mutation.SetId(v)
@@ -289,6 +304,11 @@ func (_c *LaminaCreate) SetSource(v *Source) *LaminaCreate {
 // SetSink sets the "sink" edge to the Sink entity.
 func (_c *LaminaCreate) SetSink(v *Sink) *LaminaCreate {
 	return _c.SetSinkId(v.Id)
+}
+
+// SetSatellite sets the "satellite" edge to the Satellite entity.
+func (_c *LaminaCreate) SetSatellite(v *Satellite) *LaminaCreate {
+	return _c.SetSatelliteId(v.Id)
 }
 
 // Mutation returns the LaminaMutation object of the builder.
@@ -598,6 +618,23 @@ func (_c *LaminaCreate) createSpec() (*Lamina, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.SinkId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SatelliteIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   lamina.SatelliteTable,
+			Columns: []string{lamina.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.SatelliteId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

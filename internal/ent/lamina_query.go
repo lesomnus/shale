@@ -10,6 +10,7 @@ import (
 
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/predicate"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/set"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/ent/site"
@@ -24,16 +25,17 @@ import (
 // LaminaQuery is the builder for querying Lamina entities.
 type LaminaQuery struct {
 	config
-	ctx        *QueryContext
-	order      []lamina.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Lamina
-	withTenant *TenantQuery
-	withSite   *SiteQuery
-	withSet    *SetQuery
-	withSource *SourceQuery
-	withSink   *SinkQuery
-	modifiers  []func(*sql.Selector)
+	ctx           *QueryContext
+	order         []lamina.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.Lamina
+	withTenant    *TenantQuery
+	withSite      *SiteQuery
+	withSet       *SetQuery
+	withSource    *SourceQuery
+	withSink      *SinkQuery
+	withSatellite *SatelliteQuery
+	modifiers     []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -173,6 +175,28 @@ func (_q *LaminaQuery) QuerySink() *SinkQuery {
 			sqlgraph.From(lamina.Table, lamina.FieldId, selector),
 			sqlgraph.To(sink.Table, sink.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SinkTable, lamina.SinkColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySatellite chains the current query on the "satellite" edge.
+func (_q *LaminaQuery) QuerySatellite() *SatelliteQuery {
+	query := (&SatelliteClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(lamina.Table, lamina.FieldId, selector),
+			sqlgraph.To(satellite.Table, satellite.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, lamina.SatelliteTable, lamina.SatelliteColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -367,16 +391,17 @@ func (_q *LaminaQuery) Clone() *LaminaQuery {
 		return nil
 	}
 	return &LaminaQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]lamina.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Lamina{}, _q.predicates...),
-		withTenant: _q.withTenant.Clone(),
-		withSite:   _q.withSite.Clone(),
-		withSet:    _q.withSet.Clone(),
-		withSource: _q.withSource.Clone(),
-		withSink:   _q.withSink.Clone(),
+		config:        _q.config,
+		ctx:           _q.ctx.Clone(),
+		order:         append([]lamina.OrderOption{}, _q.order...),
+		inters:        append([]Interceptor{}, _q.inters...),
+		predicates:    append([]predicate.Lamina{}, _q.predicates...),
+		withTenant:    _q.withTenant.Clone(),
+		withSite:      _q.withSite.Clone(),
+		withSet:       _q.withSet.Clone(),
+		withSource:    _q.withSource.Clone(),
+		withSink:      _q.withSink.Clone(),
+		withSatellite: _q.withSatellite.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -436,6 +461,17 @@ func (_q *LaminaQuery) WithSink(opts ...func(*SinkQuery)) *LaminaQuery {
 		opt(query)
 	}
 	_q.withSink = query
+	return _q
+}
+
+// WithSatellite tells the query-builder to eager-load the nodes that are connected to
+// the "satellite" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *LaminaQuery) WithSatellite(opts ...func(*SatelliteQuery)) *LaminaQuery {
+	query := (&SatelliteClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSatellite = query
 	return _q
 }
 
@@ -517,12 +553,13 @@ func (_q *LaminaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lamin
 	var (
 		nodes       = []*Lamina{}
 		_spec       = _q.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			_q.withTenant != nil,
 			_q.withSite != nil,
 			_q.withSet != nil,
 			_q.withSource != nil,
 			_q.withSink != nil,
+			_q.withSatellite != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -573,6 +610,12 @@ func (_q *LaminaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lamin
 	if query := _q.withSink; query != nil {
 		if err := _q.loadSink(ctx, query, nodes, nil,
 			func(n *Lamina, e *Sink) { n.Edges.Sink = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSatellite; query != nil {
+		if err := _q.loadSatellite(ctx, query, nodes, nil,
+			func(n *Lamina, e *Satellite) { n.Edges.Satellite = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -724,6 +767,35 @@ func (_q *LaminaQuery) loadSink(ctx context.Context, query *SinkQuery, nodes []*
 	}
 	return nil
 }
+func (_q *LaminaQuery) loadSatellite(ctx context.Context, query *SatelliteQuery, nodes []*Lamina, init func(*Lamina), assign func(*Lamina, *Satellite)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Lamina)
+	for i := range nodes {
+		fk := nodes[i].SatelliteId
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(satellite.IdIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.Id]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "satellite_id" returned %v`, n.Id)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *LaminaQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -767,6 +839,9 @@ func (_q *LaminaQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withSink != nil {
 			_spec.Node.AddColumnOnce(lamina.FieldSinkId)
+		}
+		if _q.withSatellite != nil {
+			_spec.Node.AddColumnOnce(lamina.FieldSatelliteId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

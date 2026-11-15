@@ -110,6 +110,7 @@ message LaminaAddRequest {
   int64 epoch = 28 [features.field_presence = IMPLICIT];
   LaminaSkipReason skip_reason = 29;
   string capture_epoch = 30;
+  SatelliteRef satellite = 31;
 }
 
 message LaminaGetRequest {
@@ -149,6 +150,7 @@ message LaminaSelect {
   bool epoch = 28;
   bool skip_reason = 29;
   bool capture_epoch = 30;
+  SatelliteSelect satellite = 31;
 }
 
 message LaminaPatchRequest {
@@ -209,6 +211,12 @@ message LaminaPatchRequest {
   bytes checksum = 54;
   int64 epoch = 56;
   LaminaSkipReason skip_reason = 58;
+  SatelliteRef satellite = 62;
+  // Clear satellite instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and satellite clears.
+  bool satellite_null = 63;
 }
 
 message LaminaApplyRequest {

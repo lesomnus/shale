@@ -1208,6 +1208,7 @@ const (
 	SatelliteService_Heartbeat_FullMethodName        = "/shale.SatelliteService/Heartbeat"
 	SatelliteService_Route_FullMethodName            = "/shale.SatelliteService/Route"
 	SatelliteService_Assign_FullMethodName           = "/shale.SatelliteService/Assign"
+	SatelliteService_Accept_FullMethodName           = "/shale.SatelliteService/Accept"
 )
 
 // SatelliteServiceClient is the client API for SatelliteService service.
@@ -1251,6 +1252,11 @@ type SatelliteServiceClient interface {
 	// An operator moves a producer to a satellite; the assignment stays
 	// sticky while the satellite is alive (§41.2).
 	Assign(ctx context.Context, in *SatelliteAssignRequest, opts ...grpc.CallOption) (*Satellite, error)
+	// The satellite is about to take a lamina's bytes under `retain:
+	// accepted` (§41.9): the CP records it on the lamina, so a loss of them
+	// is the satellite's. Only for a PENDING lamina of a producer assigned
+	// to it; before it answers the producer that it holds anything.
+	Accept(ctx context.Context, in *SatelliteAcceptRequest, opts ...grpc.CallOption) (*SatelliteAcceptResponse, error)
 }
 
 type satelliteServiceClient struct {
@@ -1400,6 +1406,16 @@ func (c *satelliteServiceClient) Assign(ctx context.Context, in *SatelliteAssign
 	return out, nil
 }
 
+func (c *satelliteServiceClient) Accept(ctx context.Context, in *SatelliteAcceptRequest, opts ...grpc.CallOption) (*SatelliteAcceptResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SatelliteAcceptResponse)
+	err := c.cc.Invoke(ctx, SatelliteService_Accept_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SatelliteServiceServer is the server API for SatelliteService service.
 // All implementations must embed UnimplementedSatelliteServiceServer
 // for forward compatibility.
@@ -1441,6 +1457,11 @@ type SatelliteServiceServer interface {
 	// An operator moves a producer to a satellite; the assignment stays
 	// sticky while the satellite is alive (§41.2).
 	Assign(context.Context, *SatelliteAssignRequest) (*Satellite, error)
+	// The satellite is about to take a lamina's bytes under `retain:
+	// accepted` (§41.9): the CP records it on the lamina, so a loss of them
+	// is the satellite's. Only for a PENDING lamina of a producer assigned
+	// to it; before it answers the producer that it holds anything.
+	Accept(context.Context, *SatelliteAcceptRequest) (*SatelliteAcceptResponse, error)
 	mustEmbedUnimplementedSatelliteServiceServer()
 }
 
@@ -1489,6 +1510,9 @@ func (UnimplementedSatelliteServiceServer) Route(context.Context, *SatelliteRout
 }
 func (UnimplementedSatelliteServiceServer) Assign(context.Context, *SatelliteAssignRequest) (*Satellite, error) {
 	return nil, status.Error(codes.Unimplemented, "method Assign not implemented")
+}
+func (UnimplementedSatelliteServiceServer) Accept(context.Context, *SatelliteAcceptRequest) (*SatelliteAcceptResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Accept not implemented")
 }
 func (UnimplementedSatelliteServiceServer) mustEmbedUnimplementedSatelliteServiceServer() {}
 func (UnimplementedSatelliteServiceServer) testEmbeddedByValue()                          {}
@@ -1738,6 +1762,24 @@ func _SatelliteService_Assign_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SatelliteService_Accept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SatelliteAcceptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SatelliteServiceServer).Accept(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SatelliteService_Accept_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SatelliteServiceServer).Accept(ctx, req.(*SatelliteAcceptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SatelliteService_ServiceDesc is the grpc.ServiceDesc for SatelliteService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1792,6 +1834,10 @@ var SatelliteService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Assign",
 			Handler:    _SatelliteService_Assign_Handler,
+		},
+		{
+			MethodName: "Accept",
+			Handler:    _SatelliteService_Accept_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

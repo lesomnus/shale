@@ -212,6 +212,7 @@ type Lamina struct {
 	xxx_hidden_Epoch            int64                  `protobuf:"varint,28,opt,name=epoch"`
 	xxx_hidden_SkipReason       LaminaSkipReason       `protobuf:"varint,29,opt,name=skip_reason,json=skipReason,enum=shale.LaminaSkipReason"`
 	xxx_hidden_CaptureEpoch     string                 `protobuf:"bytes,30,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_Satellite        *Satellite             `protobuf:"bytes,31,opt,name=satellite"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -416,6 +417,13 @@ func (x *Lamina) GetCaptureEpoch() string {
 	return ""
 }
 
+func (x *Lamina) GetSatellite() *Satellite {
+	if x != nil {
+		return x.xxx_hidden_Satellite
+	}
+	return nil
+}
+
 func (x *Lamina) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -522,6 +530,10 @@ func (x *Lamina) SetCaptureEpoch(v string) {
 	x.xxx_hidden_CaptureEpoch = v
 }
 
+func (x *Lamina) SetSatellite(v *Satellite) {
+	x.xxx_hidden_Satellite = v
+}
+
 func (x *Lamina) HasTenant() bool {
 	if x == nil {
 		return false
@@ -613,6 +625,13 @@ func (x *Lamina) HasDateFinished() bool {
 	return x.xxx_hidden_DateFinished != nil
 }
 
+func (x *Lamina) HasSatellite() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Satellite != nil
+}
+
 func (x *Lamina) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
@@ -665,6 +684,10 @@ func (x *Lamina) ClearDateFinished() {
 	x.xxx_hidden_DateFinished = nil
 }
 
+func (x *Lamina) ClearSatellite() {
+	x.xxx_hidden_Satellite = nil
+}
+
 type Lamina_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -704,6 +727,10 @@ type Lamina_builder struct {
 	SkipReason LaminaSkipReason
 	// Capture incarnation, unrelated to the placement epoch bucket above.
 	CaptureEpoch string
+	// The satellite that took the lamina's bytes under `retain: accepted`
+	// (§41.9), set when it took them: the producer let them go, so what
+	// becomes of them is the satellite's, and a loss of them is its own.
+	Satellite *Satellite
 }
 
 func (b0 Lamina_builder) Build() *Lamina {
@@ -735,6 +762,7 @@ func (b0 Lamina_builder) Build() *Lamina {
 	x.xxx_hidden_Epoch = b.Epoch
 	x.xxx_hidden_SkipReason = b.SkipReason
 	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
+	x.xxx_hidden_Satellite = b.Satellite
 	return m0
 }
 
@@ -1075,7 +1103,7 @@ var File_shale_lamina_proto protoreflect.FileDescriptor
 
 const file_shale_lamina_proto_rawDesc = "" +
 	"\n" +
-	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xb5\f\n" +
+	"\x12shale/lamina.proto\x12\x05shale\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x10shale/host.proto\x1a\x19shale/payday/tenant.proto\x1a\x0fshale/set.proto\x1a\x10shale/site.proto\x1a\x13shale/storage.proto\"\xed\f\n" +
 	"\x06Lamina\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12-\n" +
 	"\x06tenant\x18\x02 \x01(\v2\r.shale.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12)\n" +
@@ -1108,7 +1136,8 @@ const file_shale_lamina_proto_rawDesc = "" +
 	"\x05epoch\x18\x1c \x01(\x03R\x05epoch\x12A\n" +
 	"\vskip_reason\x18\x1d \x01(\x0e2\x17.shale.LaminaSkipReasonB\a\xea\x82\x16\x03\x82\x01\x00R\n" +
 	"skipReason\x12.\n" +
-	"\rcapture_epoch\x18\x1e \x01(\tB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\fcaptureEpoch:\xd1\x02\xca\xfc\x15\xf5\x01\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
+	"\rcapture_epoch\x18\x1e \x01(\tB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\fcaptureEpoch\x126\n" +
+	"\tsatellite\x18\x1f \x01(\v2\x10.shale.SatelliteB\x06\xf2\x82\x16\x028\x01R\tsatellite:\xd1\x02\xca\xfc\x15\xf5\x01\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
@@ -1208,7 +1237,8 @@ var file_shale_lamina_proto_goTypes = []any{
 	(*Source)(nil),                // 8: shale.Source
 	(*Sink)(nil),                  // 9: shale.Sink
 	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
-	(*Node)(nil),                  // 11: shale.Node
+	(*Satellite)(nil),             // 11: shale.Satellite
+	(*Node)(nil),                  // 12: shale.Node
 }
 var file_shale_lamina_proto_depIdxs = []int32{
 	5,  // 0: shale.Lamina.tenant:type_name -> shale.Tenant
@@ -1226,21 +1256,22 @@ var file_shale_lamina_proto_depIdxs = []int32{
 	10, // 12: shale.Lamina.date_committed:type_name -> google.protobuf.Timestamp
 	10, // 13: shale.Lamina.date_finished:type_name -> google.protobuf.Timestamp
 	1,  // 14: shale.Lamina.skip_reason:type_name -> shale.LaminaSkipReason
-	5,  // 15: shale.Attempt.tenant:type_name -> shale.Tenant
-	6,  // 16: shale.Attempt.site:type_name -> shale.Site
-	3,  // 17: shale.Attempt.lamina:type_name -> shale.Lamina
-	9,  // 18: shale.Attempt.sink:type_name -> shale.Sink
-	11, // 19: shale.Attempt.node:type_name -> shale.Node
-	2,  // 20: shale.Attempt.state:type_name -> shale.AttemptState
-	10, // 21: shale.Attempt.date_updated:type_name -> google.protobuf.Timestamp
-	10, // 22: shale.Attempt.date_created:type_name -> google.protobuf.Timestamp
-	10, // 23: shale.Attempt.date_expires:type_name -> google.protobuf.Timestamp
-	10, // 24: shale.Attempt.date_finished:type_name -> google.protobuf.Timestamp
-	25, // [25:25] is the sub-list for method output_type
-	25, // [25:25] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	11, // 15: shale.Lamina.satellite:type_name -> shale.Satellite
+	5,  // 16: shale.Attempt.tenant:type_name -> shale.Tenant
+	6,  // 17: shale.Attempt.site:type_name -> shale.Site
+	3,  // 18: shale.Attempt.lamina:type_name -> shale.Lamina
+	9,  // 19: shale.Attempt.sink:type_name -> shale.Sink
+	12, // 20: shale.Attempt.node:type_name -> shale.Node
+	2,  // 21: shale.Attempt.state:type_name -> shale.AttemptState
+	10, // 22: shale.Attempt.date_updated:type_name -> google.protobuf.Timestamp
+	10, // 23: shale.Attempt.date_created:type_name -> google.protobuf.Timestamp
+	10, // 24: shale.Attempt.date_expires:type_name -> google.protobuf.Timestamp
+	10, // 25: shale.Attempt.date_finished:type_name -> google.protobuf.Timestamp
+	26, // [26:26] is the sub-list for method output_type
+	26, // [26:26] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_shale_lamina_proto_init() }

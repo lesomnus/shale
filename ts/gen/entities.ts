@@ -303,7 +303,7 @@ export const Lamina = {
 	schema: LaminaSchema,
 	domain: 9,
 	version: "dateUpdated",
-	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }, { field: "set", to: "shale.Set" }, { field: "source", to: "shale.Source" }, { field: "sink", to: "shale.Sink" }],
+	refs: [{ field: "tenant", to: "shale.Tenant" }, { field: "site", to: "shale.Site" }, { field: "set", to: "shale.Set" }, { field: "source", to: "shale.Source" }, { field: "sink", to: "shale.Sink" }, { field: "satellite", to: "shale.Satellite" }],
 	key: "id",
 	ids: ["id"],
 	service: LaminaService,

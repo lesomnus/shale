@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/shale/internal/ent/lamina"
 	"github.com/lesomnus/shale/internal/ent/predicate"
+	"github.com/lesomnus/shale/internal/ent/satellite"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -364,9 +365,34 @@ func (_u *LaminaUpdate) ClearSinkId() *LaminaUpdate {
 	return _u
 }
 
+// SetSatelliteId sets the "satellite_id" field.
+func (_u *LaminaUpdate) SetSatelliteId(v uuid.UUID) *LaminaUpdate {
+	_u.mutation.SetSatelliteId(v)
+	return _u
+}
+
+// SetNillableSatelliteId sets the "satellite_id" field if the given value is not nil.
+func (_u *LaminaUpdate) SetNillableSatelliteId(v *uuid.UUID) *LaminaUpdate {
+	if v != nil {
+		_u.SetSatelliteId(*v)
+	}
+	return _u
+}
+
+// ClearSatelliteId clears the value of the "satellite_id" field.
+func (_u *LaminaUpdate) ClearSatelliteId() *LaminaUpdate {
+	_u.mutation.ClearSatelliteId()
+	return _u
+}
+
 // SetSink sets the "sink" edge to the Sink entity.
 func (_u *LaminaUpdate) SetSink(v *Sink) *LaminaUpdate {
 	return _u.SetSinkId(v.Id)
+}
+
+// SetSatellite sets the "satellite" edge to the Satellite entity.
+func (_u *LaminaUpdate) SetSatellite(v *Satellite) *LaminaUpdate {
+	return _u.SetSatelliteId(v.Id)
 }
 
 // Mutation returns the LaminaMutation object of the builder.
@@ -377,6 +403,12 @@ func (_u *LaminaUpdate) Mutation() *LaminaMutation {
 // ClearSink clears the "sink" edge to the Sink entity.
 func (_u *LaminaUpdate) ClearSink() *LaminaUpdate {
 	_u.mutation.ClearSink()
+	return _u
+}
+
+// ClearSatellite clears the "satellite" edge to the Satellite entity.
+func (_u *LaminaUpdate) ClearSatellite() *LaminaUpdate {
+	_u.mutation.ClearSatellite()
 	return _u
 }
 
@@ -608,6 +640,35 @@ func (_u *LaminaUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(sink.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SatelliteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   lamina.SatelliteTable,
+			Columns: []string{lamina.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SatelliteIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   lamina.SatelliteTable,
+			Columns: []string{lamina.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {
@@ -970,9 +1031,34 @@ func (_u *LaminaUpdateOne) ClearSinkId() *LaminaUpdateOne {
 	return _u
 }
 
+// SetSatelliteId sets the "satellite_id" field.
+func (_u *LaminaUpdateOne) SetSatelliteId(v uuid.UUID) *LaminaUpdateOne {
+	_u.mutation.SetSatelliteId(v)
+	return _u
+}
+
+// SetNillableSatelliteId sets the "satellite_id" field if the given value is not nil.
+func (_u *LaminaUpdateOne) SetNillableSatelliteId(v *uuid.UUID) *LaminaUpdateOne {
+	if v != nil {
+		_u.SetSatelliteId(*v)
+	}
+	return _u
+}
+
+// ClearSatelliteId clears the value of the "satellite_id" field.
+func (_u *LaminaUpdateOne) ClearSatelliteId() *LaminaUpdateOne {
+	_u.mutation.ClearSatelliteId()
+	return _u
+}
+
 // SetSink sets the "sink" edge to the Sink entity.
 func (_u *LaminaUpdateOne) SetSink(v *Sink) *LaminaUpdateOne {
 	return _u.SetSinkId(v.Id)
+}
+
+// SetSatellite sets the "satellite" edge to the Satellite entity.
+func (_u *LaminaUpdateOne) SetSatellite(v *Satellite) *LaminaUpdateOne {
+	return _u.SetSatelliteId(v.Id)
 }
 
 // Mutation returns the LaminaMutation object of the builder.
@@ -983,6 +1069,12 @@ func (_u *LaminaUpdateOne) Mutation() *LaminaMutation {
 // ClearSink clears the "sink" edge to the Sink entity.
 func (_u *LaminaUpdateOne) ClearSink() *LaminaUpdateOne {
 	_u.mutation.ClearSink()
+	return _u
+}
+
+// ClearSatellite clears the "satellite" edge to the Satellite entity.
+func (_u *LaminaUpdateOne) ClearSatellite() *LaminaUpdateOne {
+	_u.mutation.ClearSatellite()
 	return _u
 }
 
@@ -1244,6 +1336,35 @@ func (_u *LaminaUpdateOne) sqlSave(ctx context.Context) (_node *Lamina, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IdSpec: sqlgraph.NewFieldSpec(sink.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SatelliteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   lamina.SatelliteTable,
+			Columns: []string{lamina.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SatelliteIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   lamina.SatelliteTable,
+			Columns: []string{lamina.SatelliteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(satellite.FieldId, field.TypeUuid),
 			},
 		}
 		for _, k := range nodes {

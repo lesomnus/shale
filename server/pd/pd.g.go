@@ -22761,6 +22761,11 @@ func (s interceptSatellite) Assign(ctx context.Context, req *api.SatelliteAssign
 		api.SatelliteService_Assign_FullMethodName, req, s.SatelliteServiceServer.Assign)
 }
 
+func (s interceptSatellite) Accept(ctx context.Context, req *api.SatelliteAcceptRequest) (*api.SatelliteAcceptResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SatelliteServiceServer,
+		api.SatelliteService_Accept_FullMethodName, req, s.SatelliteServiceServer.Accept)
+}
+
 func (s Intercept) Producer() api.ProducerServiceServer {
 	return interceptProducer{s, s.Next().Producer()}
 }
@@ -26595,6 +26600,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 28, Name: entLamina.FieldEpoch, Type: 3, Nullable: false, Key: 0},
 				{Number: 29, Name: entLamina.FieldSkipReason, Type: 14, Nullable: false, Key: 0},
 				{Number: 30, Name: entLamina.FieldCaptureEpoch, Type: 9, Nullable: false, Key: 0},
+				{Number: 31, Name: entLamina.SatelliteColumn, Type: 64, Nullable: true, Key: 1},
 			}, v)
 			if err != nil {
 				return nil, err

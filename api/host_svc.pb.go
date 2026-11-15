@@ -12314,6 +12314,127 @@ func (b0 SatelliteAssignRequest_builder) Build() *SatelliteAssignRequest {
 	return m0
 }
 
+type SatelliteAcceptRequest struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_LaminaId []byte                 `protobuf:"bytes,1,opt,name=lamina_id,json=laminaId"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SatelliteAcceptRequest) Reset() {
+	*x = SatelliteAcceptRequest{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteAcceptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteAcceptRequest) ProtoMessage() {}
+
+func (x *SatelliteAcceptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteAcceptRequest) GetLaminaId() []byte {
+	if x != nil {
+		return x.xxx_hidden_LaminaId
+	}
+	return nil
+}
+
+func (x *SatelliteAcceptRequest) SetLaminaId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_LaminaId = v
+}
+
+type SatelliteAcceptRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	LaminaId []byte
+}
+
+func (b0 SatelliteAcceptRequest_builder) Build() *SatelliteAcceptRequest {
+	m0 := &SatelliteAcceptRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_LaminaId = b.LaminaId
+	return m0
+}
+
+type SatelliteAcceptResponse struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_ProducerId []byte                 `protobuf:"bytes,1,opt,name=producer_id,json=producerId"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *SatelliteAcceptResponse) Reset() {
+	*x = SatelliteAcceptResponse{}
+	mi := &file_shale_host_svc_g_proto_msgTypes[74]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SatelliteAcceptResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SatelliteAcceptResponse) ProtoMessage() {}
+
+func (x *SatelliteAcceptResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_host_svc_g_proto_msgTypes[74]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SatelliteAcceptResponse) GetProducerId() []byte {
+	if x != nil {
+		return x.xxx_hidden_ProducerId
+	}
+	return nil
+}
+
+func (x *SatelliteAcceptResponse) SetProducerId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_ProducerId = v
+}
+
+type SatelliteAcceptResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The producer the lamina is recorded for, which the satellite acts for.
+	ProducerId []byte
+}
+
+func (b0 SatelliteAcceptResponse_builder) Build() *SatelliteAcceptResponse {
+	m0 := &SatelliteAcceptResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_ProducerId = b.ProducerId
+	return m0
+}
+
 type ProducerAddRequest struct {
 	state                      protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id              []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -12347,7 +12468,7 @@ type ProducerAddRequest struct {
 
 func (x *ProducerAddRequest) Reset() {
 	*x = ProducerAddRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[73]
+	mi := &file_shale_host_svc_g_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12359,7 +12480,7 @@ func (x *ProducerAddRequest) String() string {
 func (*ProducerAddRequest) ProtoMessage() {}
 
 func (x *ProducerAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[73]
+	mi := &file_shale_host_svc_g_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12868,7 +12989,7 @@ type ProducerGetRequest struct {
 
 func (x *ProducerGetRequest) Reset() {
 	*x = ProducerGetRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[74]
+	mi := &file_shale_host_svc_g_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12880,7 +13001,7 @@ func (x *ProducerGetRequest) String() string {
 func (*ProducerGetRequest) ProtoMessage() {}
 
 func (x *ProducerGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[74]
+	mi := &file_shale_host_svc_g_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12986,7 +13107,7 @@ type ProducerSelect struct {
 
 func (x *ProducerSelect) Reset() {
 	*x = ProducerSelect{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[75]
+	mi := &file_shale_host_svc_g_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -12998,7 +13119,7 @@ func (x *ProducerSelect) String() string {
 func (*ProducerSelect) ProtoMessage() {}
 
 func (x *ProducerSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[75]
+	mi := &file_shale_host_svc_g_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13763,7 +13884,7 @@ type ProducerPatchRequest struct {
 
 func (x *ProducerPatchRequest) Reset() {
 	*x = ProducerPatchRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[76]
+	mi := &file_shale_host_svc_g_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -13775,7 +13896,7 @@ func (x *ProducerPatchRequest) String() string {
 func (*ProducerPatchRequest) ProtoMessage() {}
 
 func (x *ProducerPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[76]
+	mi := &file_shale_host_svc_g_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14741,7 +14862,7 @@ type ProducerApplyRequest struct {
 
 func (x *ProducerApplyRequest) Reset() {
 	*x = ProducerApplyRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[77]
+	mi := &file_shale_host_svc_g_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14753,7 +14874,7 @@ func (x *ProducerApplyRequest) String() string {
 func (*ProducerApplyRequest) ProtoMessage() {}
 
 func (x *ProducerApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[77]
+	mi := &file_shale_host_svc_g_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14835,7 +14956,7 @@ type ProducerEraseResponse struct {
 
 func (x *ProducerEraseResponse) Reset() {
 	*x = ProducerEraseResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[78]
+	mi := &file_shale_host_svc_g_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14847,7 +14968,7 @@ func (x *ProducerEraseResponse) String() string {
 func (*ProducerEraseResponse) ProtoMessage() {}
 
 func (x *ProducerEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[78]
+	mi := &file_shale_host_svc_g_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14916,7 +15037,7 @@ type ProducerListRequest struct {
 
 func (x *ProducerListRequest) Reset() {
 	*x = ProducerListRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[79]
+	mi := &file_shale_host_svc_g_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14928,7 +15049,7 @@ func (x *ProducerListRequest) String() string {
 func (*ProducerListRequest) ProtoMessage() {}
 
 func (x *ProducerListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[79]
+	mi := &file_shale_host_svc_g_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15028,7 +15149,7 @@ type ProducerListResponse struct {
 
 func (x *ProducerListResponse) Reset() {
 	*x = ProducerListResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[80]
+	mi := &file_shale_host_svc_g_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15040,7 +15161,7 @@ func (x *ProducerListResponse) String() string {
 func (*ProducerListResponse) ProtoMessage() {}
 
 func (x *ProducerListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[80]
+	mi := &file_shale_host_svc_g_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15111,7 +15232,7 @@ type ProducerFilter struct {
 
 func (x *ProducerFilter) Reset() {
 	*x = ProducerFilter{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[81]
+	mi := &file_shale_host_svc_g_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15123,7 +15244,7 @@ func (x *ProducerFilter) String() string {
 func (*ProducerFilter) ProtoMessage() {}
 
 func (x *ProducerFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[81]
+	mi := &file_shale_host_svc_g_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15265,7 +15386,7 @@ type ProducerWatchRequest struct {
 
 func (x *ProducerWatchRequest) Reset() {
 	*x = ProducerWatchRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[82]
+	mi := &file_shale_host_svc_g_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15277,7 +15398,7 @@ func (x *ProducerWatchRequest) String() string {
 func (*ProducerWatchRequest) ProtoMessage() {}
 
 func (x *ProducerWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[82]
+	mi := &file_shale_host_svc_g_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15349,7 +15470,7 @@ type ProducerWatchResponse struct {
 
 func (x *ProducerWatchResponse) Reset() {
 	*x = ProducerWatchResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[83]
+	mi := &file_shale_host_svc_g_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15361,7 +15482,7 @@ func (x *ProducerWatchResponse) String() string {
 func (*ProducerWatchResponse) ProtoMessage() {}
 
 func (x *ProducerWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[83]
+	mi := &file_shale_host_svc_g_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15413,7 +15534,7 @@ type ProducerWatchItem struct {
 
 func (x *ProducerWatchItem) Reset() {
 	*x = ProducerWatchItem{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[84]
+	mi := &file_shale_host_svc_g_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15425,7 +15546,7 @@ func (x *ProducerWatchItem) String() string {
 func (*ProducerWatchItem) ProtoMessage() {}
 
 func (x *ProducerWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[84]
+	mi := &file_shale_host_svc_g_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15544,7 +15665,7 @@ type ProducerJoinRequest struct {
 
 func (x *ProducerJoinRequest) Reset() {
 	*x = ProducerJoinRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[85]
+	mi := &file_shale_host_svc_g_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15556,7 +15677,7 @@ func (x *ProducerJoinRequest) String() string {
 func (*ProducerJoinRequest) ProtoMessage() {}
 
 func (x *ProducerJoinRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[85]
+	mi := &file_shale_host_svc_g_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15627,7 +15748,7 @@ type ProducerJoinResponse struct {
 
 func (x *ProducerJoinResponse) Reset() {
 	*x = ProducerJoinResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[86]
+	mi := &file_shale_host_svc_g_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15639,7 +15760,7 @@ func (x *ProducerJoinResponse) String() string {
 func (*ProducerJoinResponse) ProtoMessage() {}
 
 func (x *ProducerJoinResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[86]
+	mi := &file_shale_host_svc_g_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15697,7 +15818,7 @@ type ProducerAdoptRequest struct {
 
 func (x *ProducerAdoptRequest) Reset() {
 	*x = ProducerAdoptRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[87]
+	mi := &file_shale_host_svc_g_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15709,7 +15830,7 @@ func (x *ProducerAdoptRequest) String() string {
 func (*ProducerAdoptRequest) ProtoMessage() {}
 
 func (x *ProducerAdoptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[87]
+	mi := &file_shale_host_svc_g_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15803,7 +15924,7 @@ type ProducerRenewCertificateRequest struct {
 
 func (x *ProducerRenewCertificateRequest) Reset() {
 	*x = ProducerRenewCertificateRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[88]
+	mi := &file_shale_host_svc_g_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15815,7 +15936,7 @@ func (x *ProducerRenewCertificateRequest) String() string {
 func (*ProducerRenewCertificateRequest) ProtoMessage() {}
 
 func (x *ProducerRenewCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[88]
+	mi := &file_shale_host_svc_g_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15864,7 +15985,7 @@ type ProducerRenewCertificateResponse struct {
 
 func (x *ProducerRenewCertificateResponse) Reset() {
 	*x = ProducerRenewCertificateResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[89]
+	mi := &file_shale_host_svc_g_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15876,7 +15997,7 @@ func (x *ProducerRenewCertificateResponse) String() string {
 func (*ProducerRenewCertificateResponse) ProtoMessage() {}
 
 func (x *ProducerRenewCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[89]
+	mi := &file_shale_host_svc_g_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15947,7 +16068,7 @@ type ProducerHeartbeatRequest struct {
 
 func (x *ProducerHeartbeatRequest) Reset() {
 	*x = ProducerHeartbeatRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[90]
+	mi := &file_shale_host_svc_g_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15959,7 +16080,7 @@ func (x *ProducerHeartbeatRequest) String() string {
 func (*ProducerHeartbeatRequest) ProtoMessage() {}
 
 func (x *ProducerHeartbeatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[90]
+	mi := &file_shale_host_svc_g_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16141,7 +16262,7 @@ type ProducerHeartbeatResponse struct {
 
 func (x *ProducerHeartbeatResponse) Reset() {
 	*x = ProducerHeartbeatResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[91]
+	mi := &file_shale_host_svc_g_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16153,7 +16274,7 @@ func (x *ProducerHeartbeatResponse) String() string {
 func (*ProducerHeartbeatResponse) ProtoMessage() {}
 
 func (x *ProducerHeartbeatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[91]
+	mi := &file_shale_host_svc_g_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16284,7 +16405,7 @@ type Suggestion struct {
 
 func (x *Suggestion) Reset() {
 	*x = Suggestion{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[92]
+	mi := &file_shale_host_svc_g_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16296,7 +16417,7 @@ func (x *Suggestion) String() string {
 func (*Suggestion) ProtoMessage() {}
 
 func (x *Suggestion) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[92]
+	mi := &file_shale_host_svc_g_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16395,7 +16516,7 @@ type ProducerRelayRequest struct {
 
 func (x *ProducerRelayRequest) Reset() {
 	*x = ProducerRelayRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[93]
+	mi := &file_shale_host_svc_g_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16407,7 +16528,7 @@ func (x *ProducerRelayRequest) String() string {
 func (*ProducerRelayRequest) ProtoMessage() {}
 
 func (x *ProducerRelayRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[93]
+	mi := &file_shale_host_svc_g_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16439,7 +16560,7 @@ type ProducerRelayResponse struct {
 
 func (x *ProducerRelayResponse) Reset() {
 	*x = ProducerRelayResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[94]
+	mi := &file_shale_host_svc_g_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16451,7 +16572,7 @@ func (x *ProducerRelayResponse) String() string {
 func (*ProducerRelayResponse) ProtoMessage() {}
 
 func (x *ProducerRelayResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[94]
+	mi := &file_shale_host_svc_g_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16526,7 +16647,7 @@ type ReaderAddRequest struct {
 
 func (x *ReaderAddRequest) Reset() {
 	*x = ReaderAddRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[95]
+	mi := &file_shale_host_svc_g_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16538,7 +16659,7 @@ func (x *ReaderAddRequest) String() string {
 func (*ReaderAddRequest) ProtoMessage() {}
 
 func (x *ReaderAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[95]
+	mi := &file_shale_host_svc_g_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16909,7 +17030,7 @@ type ReaderGetRequest struct {
 
 func (x *ReaderGetRequest) Reset() {
 	*x = ReaderGetRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[96]
+	mi := &file_shale_host_svc_g_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16921,7 +17042,7 @@ func (x *ReaderGetRequest) String() string {
 func (*ReaderGetRequest) ProtoMessage() {}
 
 func (x *ReaderGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[96]
+	mi := &file_shale_host_svc_g_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17001,7 +17122,7 @@ type ReaderRef struct {
 
 func (x *ReaderRef) Reset() {
 	*x = ReaderRef{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[97]
+	mi := &file_shale_host_svc_g_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17013,7 +17134,7 @@ func (x *ReaderRef) String() string {
 func (*ReaderRef) ProtoMessage() {}
 
 func (x *ReaderRef) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[97]
+	mi := &file_shale_host_svc_g_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17139,7 +17260,7 @@ func (b0 ReaderRef_builder) Build() *ReaderRef {
 type case_ReaderRef_Key protoreflect.FieldNumber
 
 func (x case_ReaderRef_Key) String() string {
-	md := file_shale_host_svc_g_proto_msgTypes[97].Descriptor()
+	md := file_shale_host_svc_g_proto_msgTypes[99].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -17174,7 +17295,7 @@ type ReaderRefBySlug struct {
 
 func (x *ReaderRefBySlug) Reset() {
 	*x = ReaderRefBySlug{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[98]
+	mi := &file_shale_host_svc_g_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17186,7 +17307,7 @@ func (x *ReaderRefBySlug) String() string {
 func (*ReaderRefBySlug) ProtoMessage() {}
 
 func (x *ReaderRefBySlug) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[98]
+	mi := &file_shale_host_svc_g_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17295,7 +17416,7 @@ type ReaderSelect struct {
 
 func (x *ReaderSelect) Reset() {
 	*x = ReaderSelect{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[99]
+	mi := &file_shale_host_svc_g_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17307,7 +17428,7 @@ func (x *ReaderSelect) String() string {
 func (*ReaderSelect) ProtoMessage() {}
 
 func (x *ReaderSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[99]
+	mi := &file_shale_host_svc_g_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17937,7 +18058,7 @@ type ReaderPatchRequest struct {
 
 func (x *ReaderPatchRequest) Reset() {
 	*x = ReaderPatchRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[100]
+	mi := &file_shale_host_svc_g_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17949,7 +18070,7 @@ func (x *ReaderPatchRequest) String() string {
 func (*ReaderPatchRequest) ProtoMessage() {}
 
 func (x *ReaderPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[100]
+	mi := &file_shale_host_svc_g_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18628,7 +18749,7 @@ type ReaderApplyRequest struct {
 
 func (x *ReaderApplyRequest) Reset() {
 	*x = ReaderApplyRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[101]
+	mi := &file_shale_host_svc_g_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18640,7 +18761,7 @@ func (x *ReaderApplyRequest) String() string {
 func (*ReaderApplyRequest) ProtoMessage() {}
 
 func (x *ReaderApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[101]
+	mi := &file_shale_host_svc_g_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18722,7 +18843,7 @@ type ReaderEraseResponse struct {
 
 func (x *ReaderEraseResponse) Reset() {
 	*x = ReaderEraseResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[102]
+	mi := &file_shale_host_svc_g_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18734,7 +18855,7 @@ func (x *ReaderEraseResponse) String() string {
 func (*ReaderEraseResponse) ProtoMessage() {}
 
 func (x *ReaderEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[102]
+	mi := &file_shale_host_svc_g_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18803,7 +18924,7 @@ type ReaderListRequest struct {
 
 func (x *ReaderListRequest) Reset() {
 	*x = ReaderListRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[103]
+	mi := &file_shale_host_svc_g_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18815,7 +18936,7 @@ func (x *ReaderListRequest) String() string {
 func (*ReaderListRequest) ProtoMessage() {}
 
 func (x *ReaderListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[103]
+	mi := &file_shale_host_svc_g_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18915,7 +19036,7 @@ type ReaderListResponse struct {
 
 func (x *ReaderListResponse) Reset() {
 	*x = ReaderListResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[104]
+	mi := &file_shale_host_svc_g_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18927,7 +19048,7 @@ func (x *ReaderListResponse) String() string {
 func (*ReaderListResponse) ProtoMessage() {}
 
 func (x *ReaderListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[104]
+	mi := &file_shale_host_svc_g_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18996,7 +19117,7 @@ type ReaderFilter struct {
 
 func (x *ReaderFilter) Reset() {
 	*x = ReaderFilter{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[105]
+	mi := &file_shale_host_svc_g_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19008,7 +19129,7 @@ func (x *ReaderFilter) String() string {
 func (*ReaderFilter) ProtoMessage() {}
 
 func (x *ReaderFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[105]
+	mi := &file_shale_host_svc_g_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19102,7 +19223,7 @@ type ReaderWatchRequest struct {
 
 func (x *ReaderWatchRequest) Reset() {
 	*x = ReaderWatchRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[106]
+	mi := &file_shale_host_svc_g_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19114,7 +19235,7 @@ func (x *ReaderWatchRequest) String() string {
 func (*ReaderWatchRequest) ProtoMessage() {}
 
 func (x *ReaderWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[106]
+	mi := &file_shale_host_svc_g_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19186,7 +19307,7 @@ type ReaderWatchResponse struct {
 
 func (x *ReaderWatchResponse) Reset() {
 	*x = ReaderWatchResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[107]
+	mi := &file_shale_host_svc_g_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19198,7 +19319,7 @@ func (x *ReaderWatchResponse) String() string {
 func (*ReaderWatchResponse) ProtoMessage() {}
 
 func (x *ReaderWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[107]
+	mi := &file_shale_host_svc_g_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19250,7 +19371,7 @@ type ReaderWatchItem struct {
 
 func (x *ReaderWatchItem) Reset() {
 	*x = ReaderWatchItem{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[108]
+	mi := &file_shale_host_svc_g_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19262,7 +19383,7 @@ func (x *ReaderWatchItem) String() string {
 func (*ReaderWatchItem) ProtoMessage() {}
 
 func (x *ReaderWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[108]
+	mi := &file_shale_host_svc_g_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19381,7 +19502,7 @@ type ReaderJoinRequest struct {
 
 func (x *ReaderJoinRequest) Reset() {
 	*x = ReaderJoinRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[109]
+	mi := &file_shale_host_svc_g_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19393,7 +19514,7 @@ func (x *ReaderJoinRequest) String() string {
 func (*ReaderJoinRequest) ProtoMessage() {}
 
 func (x *ReaderJoinRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[109]
+	mi := &file_shale_host_svc_g_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19462,7 +19583,7 @@ type ReaderJoinResponse struct {
 
 func (x *ReaderJoinResponse) Reset() {
 	*x = ReaderJoinResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[110]
+	mi := &file_shale_host_svc_g_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19474,7 +19595,7 @@ func (x *ReaderJoinResponse) String() string {
 func (*ReaderJoinResponse) ProtoMessage() {}
 
 func (x *ReaderJoinResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[110]
+	mi := &file_shale_host_svc_g_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19532,7 +19653,7 @@ type ReaderAdoptRequest struct {
 
 func (x *ReaderAdoptRequest) Reset() {
 	*x = ReaderAdoptRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[111]
+	mi := &file_shale_host_svc_g_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19544,7 +19665,7 @@ func (x *ReaderAdoptRequest) String() string {
 func (*ReaderAdoptRequest) ProtoMessage() {}
 
 func (x *ReaderAdoptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[111]
+	mi := &file_shale_host_svc_g_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19629,7 +19750,7 @@ type ReaderRenewCertificateRequest struct {
 
 func (x *ReaderRenewCertificateRequest) Reset() {
 	*x = ReaderRenewCertificateRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[112]
+	mi := &file_shale_host_svc_g_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19641,7 +19762,7 @@ func (x *ReaderRenewCertificateRequest) String() string {
 func (*ReaderRenewCertificateRequest) ProtoMessage() {}
 
 func (x *ReaderRenewCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[112]
+	mi := &file_shale_host_svc_g_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19690,7 +19811,7 @@ type ReaderRenewCertificateResponse struct {
 
 func (x *ReaderRenewCertificateResponse) Reset() {
 	*x = ReaderRenewCertificateResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[113]
+	mi := &file_shale_host_svc_g_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19702,7 +19823,7 @@ func (x *ReaderRenewCertificateResponse) String() string {
 func (*ReaderRenewCertificateResponse) ProtoMessage() {}
 
 func (x *ReaderRenewCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[113]
+	mi := &file_shale_host_svc_g_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19767,7 +19888,7 @@ type ReaderHeartbeatRequest struct {
 
 func (x *ReaderHeartbeatRequest) Reset() {
 	*x = ReaderHeartbeatRequest{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[114]
+	mi := &file_shale_host_svc_g_proto_msgTypes[116]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19779,7 +19900,7 @@ func (x *ReaderHeartbeatRequest) String() string {
 func (*ReaderHeartbeatRequest) ProtoMessage() {}
 
 func (x *ReaderHeartbeatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[114]
+	mi := &file_shale_host_svc_g_proto_msgTypes[116]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19837,7 +19958,7 @@ type ReaderHeartbeatResponse struct {
 
 func (x *ReaderHeartbeatResponse) Reset() {
 	*x = ReaderHeartbeatResponse{}
-	mi := &file_shale_host_svc_g_proto_msgTypes[115]
+	mi := &file_shale_host_svc_g_proto_msgTypes[117]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19849,7 +19970,7 @@ func (x *ReaderHeartbeatResponse) String() string {
 func (*ReaderHeartbeatResponse) ProtoMessage() {}
 
 func (x *ReaderHeartbeatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_host_svc_g_proto_msgTypes[115]
+	mi := &file_shale_host_svc_g_proto_msgTypes[117]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20448,7 +20569,12 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"o\n" +
 	"\x16SatelliteAssignRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.shale.SatelliteRefR\x03ref\x12.\n" +
-	"\bproducer\x18\x02 \x01(\v2\x12.shale.ProducerRefR\bproducer\"\x90\b\n" +
+	"\bproducer\x18\x02 \x01(\v2\x12.shale.ProducerRefR\bproducer\"<\n" +
+	"\x16SatelliteAcceptRequest\x12\"\n" +
+	"\tlamina_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\blaminaId\"A\n" +
+	"\x17SatelliteAcceptResponse\x12&\n" +
+	"\vproducer_id\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\n" +
+	"producerId\"\x90\b\n" +
 	"\x12ProducerAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x10.shale.TenantRefR\x06tenant\x12\"\n" +
@@ -20790,7 +20916,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x05Adopt\x12\x18.shale.RelayAdoptRequest\x1a\f.shale.Relay\x12]\n" +
 	"\x10RenewCertificate\x12#.shale.RelayRenewCertificateRequest\x1a$.shale.RelayRenewCertificateResponse\x12H\n" +
 	"\tHeartbeat\x12\x1c.shale.RelayHeartbeatRequest\x1a\x1d.shale.RelayHeartbeatResponse\x121\n" +
-	"\x06Assign\x12\x19.shale.RelayAssignRequest\x1a\f.shale.Relay2\xec\x06\n" +
+	"\x06Assign\x12\x19.shale.RelayAssignRequest\x1a\f.shale.Relay2\xb5\a\n" +
 	"\x10SatelliteService\x123\n" +
 	"\x03Add\x12\x1a.shale.SatelliteAddRequest\x1a\x10.shale.Satellite\x123\n" +
 	"\x03Get\x12\x1a.shale.SatelliteGetRequest\x1a\x10.shale.Satellite\x127\n" +
@@ -20804,7 +20930,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x10RenewCertificate\x12'.shale.SatelliteRenewCertificateRequest\x1a(.shale.SatelliteRenewCertificateResponse\x12P\n" +
 	"\tHeartbeat\x12 .shale.SatelliteHeartbeatRequest\x1a!.shale.SatelliteHeartbeatResponse\x12D\n" +
 	"\x05Route\x12\x1c.shale.SatelliteRouteRequest\x1a\x1d.shale.SatelliteRouteResponse\x129\n" +
-	"\x06Assign\x12\x1d.shale.SatelliteAssignRequest\x1a\x10.shale.Satellite2\x98\x06\n" +
+	"\x06Assign\x12\x1d.shale.SatelliteAssignRequest\x1a\x10.shale.Satellite\x12G\n" +
+	"\x06Accept\x12\x1d.shale.SatelliteAcceptRequest\x1a\x1e.shale.SatelliteAcceptResponse2\x98\x06\n" +
 	"\x0fProducerService\x121\n" +
 	"\x03Add\x12\x19.shale.ProducerAddRequest\x1a\x0f.shale.Producer\x121\n" +
 	"\x03Get\x12\x19.shale.ProducerGetRequest\x1a\x0f.shale.Producer\x125\n" +
@@ -20831,7 +20958,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x10RenewCertificate\x12$.shale.ReaderRenewCertificateRequest\x1a%.shale.ReaderRenewCertificateResponse\x12J\n" +
 	"\tHeartbeat\x12\x1d.shale.ReaderHeartbeatRequest\x1a\x1e.shale.ReaderHeartbeatResponseB\x1fZ\x1dgithub.com/lesomnus/shale/apib\beditionsp\xe8\a"
 
-var file_shale_host_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 131)
+var file_shale_host_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 133)
 var file_shale_host_svc_g_proto_goTypes = []any{
 	(*NodeAddRequest)(nil),                    // 0: shale.NodeAddRequest
 	(*NodeGetRequest)(nil),                    // 1: shale.NodeGetRequest
@@ -20906,324 +21033,326 @@ var file_shale_host_svc_g_proto_goTypes = []any{
 	(*SatelliteRouteRequest)(nil),             // 70: shale.SatelliteRouteRequest
 	(*SatelliteRouteResponse)(nil),            // 71: shale.SatelliteRouteResponse
 	(*SatelliteAssignRequest)(nil),            // 72: shale.SatelliteAssignRequest
-	(*ProducerAddRequest)(nil),                // 73: shale.ProducerAddRequest
-	(*ProducerGetRequest)(nil),                // 74: shale.ProducerGetRequest
-	(*ProducerSelect)(nil),                    // 75: shale.ProducerSelect
-	(*ProducerPatchRequest)(nil),              // 76: shale.ProducerPatchRequest
-	(*ProducerApplyRequest)(nil),              // 77: shale.ProducerApplyRequest
-	(*ProducerEraseResponse)(nil),             // 78: shale.ProducerEraseResponse
-	(*ProducerListRequest)(nil),               // 79: shale.ProducerListRequest
-	(*ProducerListResponse)(nil),              // 80: shale.ProducerListResponse
-	(*ProducerFilter)(nil),                    // 81: shale.ProducerFilter
-	(*ProducerWatchRequest)(nil),              // 82: shale.ProducerWatchRequest
-	(*ProducerWatchResponse)(nil),             // 83: shale.ProducerWatchResponse
-	(*ProducerWatchItem)(nil),                 // 84: shale.ProducerWatchItem
-	(*ProducerJoinRequest)(nil),               // 85: shale.ProducerJoinRequest
-	(*ProducerJoinResponse)(nil),              // 86: shale.ProducerJoinResponse
-	(*ProducerAdoptRequest)(nil),              // 87: shale.ProducerAdoptRequest
-	(*ProducerRenewCertificateRequest)(nil),   // 88: shale.ProducerRenewCertificateRequest
-	(*ProducerRenewCertificateResponse)(nil),  // 89: shale.ProducerRenewCertificateResponse
-	(*ProducerHeartbeatRequest)(nil),          // 90: shale.ProducerHeartbeatRequest
-	(*ProducerHeartbeatResponse)(nil),         // 91: shale.ProducerHeartbeatResponse
-	(*Suggestion)(nil),                        // 92: shale.Suggestion
-	(*ProducerRelayRequest)(nil),              // 93: shale.ProducerRelayRequest
-	(*ProducerRelayResponse)(nil),             // 94: shale.ProducerRelayResponse
-	(*ReaderAddRequest)(nil),                  // 95: shale.ReaderAddRequest
-	(*ReaderGetRequest)(nil),                  // 96: shale.ReaderGetRequest
-	(*ReaderRef)(nil),                         // 97: shale.ReaderRef
-	(*ReaderRefBySlug)(nil),                   // 98: shale.ReaderRefBySlug
-	(*ReaderSelect)(nil),                      // 99: shale.ReaderSelect
-	(*ReaderPatchRequest)(nil),                // 100: shale.ReaderPatchRequest
-	(*ReaderApplyRequest)(nil),                // 101: shale.ReaderApplyRequest
-	(*ReaderEraseResponse)(nil),               // 102: shale.ReaderEraseResponse
-	(*ReaderListRequest)(nil),                 // 103: shale.ReaderListRequest
-	(*ReaderListResponse)(nil),                // 104: shale.ReaderListResponse
-	(*ReaderFilter)(nil),                      // 105: shale.ReaderFilter
-	(*ReaderWatchRequest)(nil),                // 106: shale.ReaderWatchRequest
-	(*ReaderWatchResponse)(nil),               // 107: shale.ReaderWatchResponse
-	(*ReaderWatchItem)(nil),                   // 108: shale.ReaderWatchItem
-	(*ReaderJoinRequest)(nil),                 // 109: shale.ReaderJoinRequest
-	(*ReaderJoinResponse)(nil),                // 110: shale.ReaderJoinResponse
-	(*ReaderAdoptRequest)(nil),                // 111: shale.ReaderAdoptRequest
-	(*ReaderRenewCertificateRequest)(nil),     // 112: shale.ReaderRenewCertificateRequest
-	(*ReaderRenewCertificateResponse)(nil),    // 113: shale.ReaderRenewCertificateResponse
-	(*ReaderHeartbeatRequest)(nil),            // 114: shale.ReaderHeartbeatRequest
-	(*ReaderHeartbeatResponse)(nil),           // 115: shale.ReaderHeartbeatResponse
-	nil,                                       // 116: shale.NodeAddRequest.LabelsEntry
-	nil,                                       // 117: shale.NodePatchRequest.LabelsEntry
-	nil,                                       // 118: shale.NodeFilter.LabelsEntry
-	nil,                                       // 119: shale.RelayAddRequest.LabelsEntry
-	nil,                                       // 120: shale.RelayPatchRequest.LabelsEntry
-	nil,                                       // 121: shale.RelayFilter.LabelsEntry
-	nil,                                       // 122: shale.SatelliteAddRequest.LabelsEntry
-	nil,                                       // 123: shale.SatellitePatchRequest.LabelsEntry
-	nil,                                       // 124: shale.SatelliteFilter.LabelsEntry
-	nil,                                       // 125: shale.ProducerAddRequest.LabelsEntry
-	nil,                                       // 126: shale.ProducerPatchRequest.LabelsEntry
-	nil,                                       // 127: shale.ProducerFilter.LabelsEntry
-	nil,                                       // 128: shale.ReaderAddRequest.LabelsEntry
-	nil,                                       // 129: shale.ReaderPatchRequest.LabelsEntry
-	nil,                                       // 130: shale.ReaderFilter.LabelsEntry
-	(HostState)(0),                            // 131: shale.HostState
-	(*HostJoin)(nil),                          // 132: shale.HostJoin
-	(*timestamppb.Timestamp)(nil),             // 133: google.protobuf.Timestamp
-	(*HostInterface)(nil),                     // 134: shale.HostInterface
-	(*NodeStatus)(nil),                        // 135: shale.NodeStatus
-	(*patchpb.Patch)(nil),                     // 136: patch.Patch
-	(*Node)(nil),                              // 137: shale.Node
-	(*SinkReport)(nil),                        // 138: shale.SinkReport
-	(*DeviceReport)(nil),                      // 139: shale.DeviceReport
-	(*KeyEntry)(nil),                          // 140: shale.KeyEntry
-	(SinkAttachment)(0),                       // 141: shale.SinkAttachment
-	(*Event)(nil),                             // 142: shale.Event
-	(*Endpoint)(nil),                          // 143: shale.Endpoint
-	(*RelayStatus)(nil),                       // 144: shale.RelayStatus
-	(*Relay)(nil),                             // 145: shale.Relay
-	(*TenantRef)(nil),                         // 146: shale.TenantRef
-	(*SatelliteStatus)(nil),                   // 147: shale.SatelliteStatus
-	(*Satellite)(nil),                         // 148: shale.Satellite
-	(*SiteRef)(nil),                           // 149: shale.SiteRef
-	(*SetRef)(nil),                            // 150: shale.SetRef
-	(*ProducerStatus)(nil),                    // 151: shale.ProducerStatus
-	(LivePolicy)(0),                           // 152: shale.LivePolicy
-	(*TenantSelect)(nil),                      // 153: shale.TenantSelect
-	(*SiteSelect)(nil),                        // 154: shale.SiteSelect
-	(*SetSelect)(nil),                         // 155: shale.SetSelect
-	(*Producer)(nil),                          // 156: shale.Producer
-	(*SourceReport)(nil),                      // 157: shale.SourceReport
-	(*HostLoad)(nil),                          // 158: shale.HostLoad
-	(*AdmissionWait)(nil),                     // 159: shale.AdmissionWait
-	(*UploadReport)(nil),                      // 160: shale.UploadReport
-	(*RelayAssignment)(nil),                   // 161: shale.RelayAssignment
-	(*SatelliteAssignment)(nil),               // 162: shale.SatelliteAssignment
-	(*Reader)(nil),                            // 163: shale.Reader
+	(*SatelliteAcceptRequest)(nil),            // 73: shale.SatelliteAcceptRequest
+	(*SatelliteAcceptResponse)(nil),           // 74: shale.SatelliteAcceptResponse
+	(*ProducerAddRequest)(nil),                // 75: shale.ProducerAddRequest
+	(*ProducerGetRequest)(nil),                // 76: shale.ProducerGetRequest
+	(*ProducerSelect)(nil),                    // 77: shale.ProducerSelect
+	(*ProducerPatchRequest)(nil),              // 78: shale.ProducerPatchRequest
+	(*ProducerApplyRequest)(nil),              // 79: shale.ProducerApplyRequest
+	(*ProducerEraseResponse)(nil),             // 80: shale.ProducerEraseResponse
+	(*ProducerListRequest)(nil),               // 81: shale.ProducerListRequest
+	(*ProducerListResponse)(nil),              // 82: shale.ProducerListResponse
+	(*ProducerFilter)(nil),                    // 83: shale.ProducerFilter
+	(*ProducerWatchRequest)(nil),              // 84: shale.ProducerWatchRequest
+	(*ProducerWatchResponse)(nil),             // 85: shale.ProducerWatchResponse
+	(*ProducerWatchItem)(nil),                 // 86: shale.ProducerWatchItem
+	(*ProducerJoinRequest)(nil),               // 87: shale.ProducerJoinRequest
+	(*ProducerJoinResponse)(nil),              // 88: shale.ProducerJoinResponse
+	(*ProducerAdoptRequest)(nil),              // 89: shale.ProducerAdoptRequest
+	(*ProducerRenewCertificateRequest)(nil),   // 90: shale.ProducerRenewCertificateRequest
+	(*ProducerRenewCertificateResponse)(nil),  // 91: shale.ProducerRenewCertificateResponse
+	(*ProducerHeartbeatRequest)(nil),          // 92: shale.ProducerHeartbeatRequest
+	(*ProducerHeartbeatResponse)(nil),         // 93: shale.ProducerHeartbeatResponse
+	(*Suggestion)(nil),                        // 94: shale.Suggestion
+	(*ProducerRelayRequest)(nil),              // 95: shale.ProducerRelayRequest
+	(*ProducerRelayResponse)(nil),             // 96: shale.ProducerRelayResponse
+	(*ReaderAddRequest)(nil),                  // 97: shale.ReaderAddRequest
+	(*ReaderGetRequest)(nil),                  // 98: shale.ReaderGetRequest
+	(*ReaderRef)(nil),                         // 99: shale.ReaderRef
+	(*ReaderRefBySlug)(nil),                   // 100: shale.ReaderRefBySlug
+	(*ReaderSelect)(nil),                      // 101: shale.ReaderSelect
+	(*ReaderPatchRequest)(nil),                // 102: shale.ReaderPatchRequest
+	(*ReaderApplyRequest)(nil),                // 103: shale.ReaderApplyRequest
+	(*ReaderEraseResponse)(nil),               // 104: shale.ReaderEraseResponse
+	(*ReaderListRequest)(nil),                 // 105: shale.ReaderListRequest
+	(*ReaderListResponse)(nil),                // 106: shale.ReaderListResponse
+	(*ReaderFilter)(nil),                      // 107: shale.ReaderFilter
+	(*ReaderWatchRequest)(nil),                // 108: shale.ReaderWatchRequest
+	(*ReaderWatchResponse)(nil),               // 109: shale.ReaderWatchResponse
+	(*ReaderWatchItem)(nil),                   // 110: shale.ReaderWatchItem
+	(*ReaderJoinRequest)(nil),                 // 111: shale.ReaderJoinRequest
+	(*ReaderJoinResponse)(nil),                // 112: shale.ReaderJoinResponse
+	(*ReaderAdoptRequest)(nil),                // 113: shale.ReaderAdoptRequest
+	(*ReaderRenewCertificateRequest)(nil),     // 114: shale.ReaderRenewCertificateRequest
+	(*ReaderRenewCertificateResponse)(nil),    // 115: shale.ReaderRenewCertificateResponse
+	(*ReaderHeartbeatRequest)(nil),            // 116: shale.ReaderHeartbeatRequest
+	(*ReaderHeartbeatResponse)(nil),           // 117: shale.ReaderHeartbeatResponse
+	nil,                                       // 118: shale.NodeAddRequest.LabelsEntry
+	nil,                                       // 119: shale.NodePatchRequest.LabelsEntry
+	nil,                                       // 120: shale.NodeFilter.LabelsEntry
+	nil,                                       // 121: shale.RelayAddRequest.LabelsEntry
+	nil,                                       // 122: shale.RelayPatchRequest.LabelsEntry
+	nil,                                       // 123: shale.RelayFilter.LabelsEntry
+	nil,                                       // 124: shale.SatelliteAddRequest.LabelsEntry
+	nil,                                       // 125: shale.SatellitePatchRequest.LabelsEntry
+	nil,                                       // 126: shale.SatelliteFilter.LabelsEntry
+	nil,                                       // 127: shale.ProducerAddRequest.LabelsEntry
+	nil,                                       // 128: shale.ProducerPatchRequest.LabelsEntry
+	nil,                                       // 129: shale.ProducerFilter.LabelsEntry
+	nil,                                       // 130: shale.ReaderAddRequest.LabelsEntry
+	nil,                                       // 131: shale.ReaderPatchRequest.LabelsEntry
+	nil,                                       // 132: shale.ReaderFilter.LabelsEntry
+	(HostState)(0),                            // 133: shale.HostState
+	(*HostJoin)(nil),                          // 134: shale.HostJoin
+	(*timestamppb.Timestamp)(nil),             // 135: google.protobuf.Timestamp
+	(*HostInterface)(nil),                     // 136: shale.HostInterface
+	(*NodeStatus)(nil),                        // 137: shale.NodeStatus
+	(*patchpb.Patch)(nil),                     // 138: patch.Patch
+	(*Node)(nil),                              // 139: shale.Node
+	(*SinkReport)(nil),                        // 140: shale.SinkReport
+	(*DeviceReport)(nil),                      // 141: shale.DeviceReport
+	(*KeyEntry)(nil),                          // 142: shale.KeyEntry
+	(SinkAttachment)(0),                       // 143: shale.SinkAttachment
+	(*Event)(nil),                             // 144: shale.Event
+	(*Endpoint)(nil),                          // 145: shale.Endpoint
+	(*RelayStatus)(nil),                       // 146: shale.RelayStatus
+	(*Relay)(nil),                             // 147: shale.Relay
+	(*TenantRef)(nil),                         // 148: shale.TenantRef
+	(*SatelliteStatus)(nil),                   // 149: shale.SatelliteStatus
+	(*Satellite)(nil),                         // 150: shale.Satellite
+	(*SiteRef)(nil),                           // 151: shale.SiteRef
+	(*SetRef)(nil),                            // 152: shale.SetRef
+	(*ProducerStatus)(nil),                    // 153: shale.ProducerStatus
+	(LivePolicy)(0),                           // 154: shale.LivePolicy
+	(*TenantSelect)(nil),                      // 155: shale.TenantSelect
+	(*SiteSelect)(nil),                        // 156: shale.SiteSelect
+	(*SetSelect)(nil),                         // 157: shale.SetSelect
+	(*Producer)(nil),                          // 158: shale.Producer
+	(*SourceReport)(nil),                      // 159: shale.SourceReport
+	(*HostLoad)(nil),                          // 160: shale.HostLoad
+	(*AdmissionWait)(nil),                     // 161: shale.AdmissionWait
+	(*UploadReport)(nil),                      // 162: shale.UploadReport
+	(*RelayAssignment)(nil),                   // 163: shale.RelayAssignment
+	(*SatelliteAssignment)(nil),               // 164: shale.SatelliteAssignment
+	(*Reader)(nil),                            // 165: shale.Reader
 }
 var file_shale_host_svc_g_proto_depIdxs = []int32{
-	116, // 0: shale.NodeAddRequest.labels:type_name -> shale.NodeAddRequest.LabelsEntry
-	131, // 1: shale.NodeAddRequest.state:type_name -> shale.HostState
-	132, // 2: shale.NodeAddRequest.join:type_name -> shale.HostJoin
-	133, // 3: shale.NodeAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	133, // 4: shale.NodeAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 5: shale.NodeAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 6: shale.NodeAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	134, // 7: shale.NodeAddRequest.interfaces:type_name -> shale.HostInterface
-	135, // 8: shale.NodeAddRequest.status:type_name -> shale.NodeStatus
-	133, // 9: shale.NodeAddRequest.date_scored:type_name -> google.protobuf.Timestamp
+	118, // 0: shale.NodeAddRequest.labels:type_name -> shale.NodeAddRequest.LabelsEntry
+	133, // 1: shale.NodeAddRequest.state:type_name -> shale.HostState
+	134, // 2: shale.NodeAddRequest.join:type_name -> shale.HostJoin
+	135, // 3: shale.NodeAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	135, // 4: shale.NodeAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 5: shale.NodeAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 6: shale.NodeAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	136, // 7: shale.NodeAddRequest.interfaces:type_name -> shale.HostInterface
+	137, // 8: shale.NodeAddRequest.status:type_name -> shale.NodeStatus
+	135, // 9: shale.NodeAddRequest.date_scored:type_name -> google.protobuf.Timestamp
 	2,   // 10: shale.NodeGetRequest.ref:type_name -> shale.NodeRef
 	3,   // 11: shale.NodeGetRequest.select:type_name -> shale.NodeSelect
 	2,   // 12: shale.NodePatchRequest.ref:type_name -> shale.NodeRef
-	117, // 13: shale.NodePatchRequest.labels:type_name -> shale.NodePatchRequest.LabelsEntry
-	131, // 14: shale.NodePatchRequest.state:type_name -> shale.HostState
-	132, // 15: shale.NodePatchRequest.join:type_name -> shale.HostJoin
-	133, // 16: shale.NodePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	133, // 17: shale.NodePatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 18: shale.NodePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 19: shale.NodePatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	134, // 20: shale.NodePatchRequest.interfaces:type_name -> shale.HostInterface
-	135, // 21: shale.NodePatchRequest.status:type_name -> shale.NodeStatus
-	133, // 22: shale.NodePatchRequest.date_scored:type_name -> google.protobuf.Timestamp
+	119, // 13: shale.NodePatchRequest.labels:type_name -> shale.NodePatchRequest.LabelsEntry
+	133, // 14: shale.NodePatchRequest.state:type_name -> shale.HostState
+	134, // 15: shale.NodePatchRequest.join:type_name -> shale.HostJoin
+	135, // 16: shale.NodePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	135, // 17: shale.NodePatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 18: shale.NodePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 19: shale.NodePatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	136, // 20: shale.NodePatchRequest.interfaces:type_name -> shale.HostInterface
+	137, // 21: shale.NodePatchRequest.status:type_name -> shale.NodeStatus
+	135, // 22: shale.NodePatchRequest.date_scored:type_name -> google.protobuf.Timestamp
 	2,   // 23: shale.NodeApplyRequest.ref:type_name -> shale.NodeRef
-	136, // 24: shale.NodeApplyRequest.patch:type_name -> patch.Patch
+	138, // 24: shale.NodeApplyRequest.patch:type_name -> patch.Patch
 	9,   // 25: shale.NodeListRequest.filters:type_name -> shale.NodeFilter
-	137, // 26: shale.NodeListResponse.items:type_name -> shale.Node
+	139, // 26: shale.NodeListResponse.items:type_name -> shale.Node
 	2,   // 27: shale.NodeFilter.ref:type_name -> shale.NodeRef
-	118, // 28: shale.NodeFilter.labels:type_name -> shale.NodeFilter.LabelsEntry
+	120, // 28: shale.NodeFilter.labels:type_name -> shale.NodeFilter.LabelsEntry
 	9,   // 29: shale.NodeWatchRequest.filters:type_name -> shale.NodeFilter
 	12,  // 30: shale.NodeWatchResponse.items:type_name -> shale.NodeWatchItem
-	137, // 31: shale.NodeWatchItem.value:type_name -> shale.Node
-	132, // 32: shale.NodeJoinRequest.host:type_name -> shale.HostJoin
-	134, // 33: shale.NodeJoinRequest.interfaces:type_name -> shale.HostInterface
-	138, // 34: shale.NodeJoinRequest.sinks:type_name -> shale.SinkReport
-	139, // 35: shale.NodeJoinRequest.devices:type_name -> shale.DeviceReport
+	139, // 31: shale.NodeWatchItem.value:type_name -> shale.Node
+	134, // 32: shale.NodeJoinRequest.host:type_name -> shale.HostJoin
+	136, // 33: shale.NodeJoinRequest.interfaces:type_name -> shale.HostInterface
+	140, // 34: shale.NodeJoinRequest.sinks:type_name -> shale.SinkReport
+	141, // 35: shale.NodeJoinRequest.devices:type_name -> shale.DeviceReport
 	15,  // 36: shale.NodeJoinResponse.answer:type_name -> shale.JoinAnswer
-	140, // 37: shale.NodeJoinResponse.keys:type_name -> shale.KeyEntry
-	131, // 38: shale.JoinAnswer.state:type_name -> shale.HostState
+	142, // 37: shale.NodeJoinResponse.keys:type_name -> shale.KeyEntry
+	133, // 38: shale.JoinAnswer.state:type_name -> shale.HostState
 	2,   // 39: shale.NodeAdoptRequest.ref:type_name -> shale.NodeRef
-	139, // 40: shale.NodeHeartbeatRequest.devices:type_name -> shale.DeviceReport
-	138, // 41: shale.NodeHeartbeatRequest.sinks:type_name -> shale.SinkReport
-	134, // 42: shale.NodeHeartbeatRequest.interfaces:type_name -> shale.HostInterface
+	141, // 40: shale.NodeHeartbeatRequest.devices:type_name -> shale.DeviceReport
+	140, // 41: shale.NodeHeartbeatRequest.sinks:type_name -> shale.SinkReport
+	136, // 42: shale.NodeHeartbeatRequest.interfaces:type_name -> shale.HostInterface
 	21,  // 43: shale.NodeHeartbeatResponse.sinks:type_name -> shale.SinkAnswer
-	141, // 44: shale.SinkAnswer.attachment:type_name -> shale.SinkAttachment
-	142, // 45: shale.NodePushEventsRequest.events:type_name -> shale.Event
+	143, // 44: shale.SinkAnswer.attachment:type_name -> shale.SinkAttachment
+	144, // 45: shale.NodePushEventsRequest.events:type_name -> shale.Event
 	2,   // 46: shale.NodeResolveRequest.ref:type_name -> shale.NodeRef
-	143, // 47: shale.NodeResolveResponse.endpoints:type_name -> shale.Endpoint
-	119, // 48: shale.RelayAddRequest.labels:type_name -> shale.RelayAddRequest.LabelsEntry
-	131, // 49: shale.RelayAddRequest.state:type_name -> shale.HostState
-	132, // 50: shale.RelayAddRequest.join:type_name -> shale.HostJoin
-	133, // 51: shale.RelayAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	133, // 52: shale.RelayAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 53: shale.RelayAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 54: shale.RelayAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	134, // 55: shale.RelayAddRequest.interfaces:type_name -> shale.HostInterface
-	144, // 56: shale.RelayAddRequest.status:type_name -> shale.RelayStatus
+	145, // 47: shale.NodeResolveResponse.endpoints:type_name -> shale.Endpoint
+	121, // 48: shale.RelayAddRequest.labels:type_name -> shale.RelayAddRequest.LabelsEntry
+	133, // 49: shale.RelayAddRequest.state:type_name -> shale.HostState
+	134, // 50: shale.RelayAddRequest.join:type_name -> shale.HostJoin
+	135, // 51: shale.RelayAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	135, // 52: shale.RelayAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 53: shale.RelayAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 54: shale.RelayAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	136, // 55: shale.RelayAddRequest.interfaces:type_name -> shale.HostInterface
+	146, // 56: shale.RelayAddRequest.status:type_name -> shale.RelayStatus
 	28,  // 57: shale.RelayGetRequest.ref:type_name -> shale.RelayRef
 	29,  // 58: shale.RelayGetRequest.select:type_name -> shale.RelaySelect
 	28,  // 59: shale.RelayPatchRequest.ref:type_name -> shale.RelayRef
-	120, // 60: shale.RelayPatchRequest.labels:type_name -> shale.RelayPatchRequest.LabelsEntry
-	131, // 61: shale.RelayPatchRequest.state:type_name -> shale.HostState
-	132, // 62: shale.RelayPatchRequest.join:type_name -> shale.HostJoin
-	133, // 63: shale.RelayPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	133, // 64: shale.RelayPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 65: shale.RelayPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 66: shale.RelayPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	134, // 67: shale.RelayPatchRequest.interfaces:type_name -> shale.HostInterface
-	144, // 68: shale.RelayPatchRequest.status:type_name -> shale.RelayStatus
+	122, // 60: shale.RelayPatchRequest.labels:type_name -> shale.RelayPatchRequest.LabelsEntry
+	133, // 61: shale.RelayPatchRequest.state:type_name -> shale.HostState
+	134, // 62: shale.RelayPatchRequest.join:type_name -> shale.HostJoin
+	135, // 63: shale.RelayPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	135, // 64: shale.RelayPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 65: shale.RelayPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 66: shale.RelayPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	136, // 67: shale.RelayPatchRequest.interfaces:type_name -> shale.HostInterface
+	146, // 68: shale.RelayPatchRequest.status:type_name -> shale.RelayStatus
 	28,  // 69: shale.RelayApplyRequest.ref:type_name -> shale.RelayRef
-	136, // 70: shale.RelayApplyRequest.patch:type_name -> patch.Patch
+	138, // 70: shale.RelayApplyRequest.patch:type_name -> patch.Patch
 	35,  // 71: shale.RelayListRequest.filters:type_name -> shale.RelayFilter
-	145, // 72: shale.RelayListResponse.items:type_name -> shale.Relay
+	147, // 72: shale.RelayListResponse.items:type_name -> shale.Relay
 	28,  // 73: shale.RelayFilter.ref:type_name -> shale.RelayRef
-	121, // 74: shale.RelayFilter.labels:type_name -> shale.RelayFilter.LabelsEntry
+	123, // 74: shale.RelayFilter.labels:type_name -> shale.RelayFilter.LabelsEntry
 	35,  // 75: shale.RelayWatchRequest.filters:type_name -> shale.RelayFilter
 	38,  // 76: shale.RelayWatchResponse.items:type_name -> shale.RelayWatchItem
-	145, // 77: shale.RelayWatchItem.value:type_name -> shale.Relay
-	132, // 78: shale.RelayJoinRequest.host:type_name -> shale.HostJoin
-	134, // 79: shale.RelayJoinRequest.interfaces:type_name -> shale.HostInterface
+	147, // 77: shale.RelayWatchItem.value:type_name -> shale.Relay
+	134, // 78: shale.RelayJoinRequest.host:type_name -> shale.HostJoin
+	136, // 79: shale.RelayJoinRequest.interfaces:type_name -> shale.HostInterface
 	15,  // 80: shale.RelayJoinResponse.answer:type_name -> shale.JoinAnswer
-	140, // 81: shale.RelayJoinResponse.keys:type_name -> shale.KeyEntry
+	142, // 81: shale.RelayJoinResponse.keys:type_name -> shale.KeyEntry
 	28,  // 82: shale.RelayAdoptRequest.ref:type_name -> shale.RelayRef
-	144, // 83: shale.RelayHeartbeatRequest.status:type_name -> shale.RelayStatus
-	134, // 84: shale.RelayHeartbeatRequest.interfaces:type_name -> shale.HostInterface
+	146, // 83: shale.RelayHeartbeatRequest.status:type_name -> shale.RelayStatus
+	136, // 84: shale.RelayHeartbeatRequest.interfaces:type_name -> shale.HostInterface
 	28,  // 85: shale.RelayAssignRequest.ref:type_name -> shale.RelayRef
 	47,  // 86: shale.RelayAssignRequest.producer:type_name -> shale.ProducerRef
 	48,  // 87: shale.ProducerRef.slug:type_name -> shale.ProducerRefBySlug
-	146, // 88: shale.ProducerRefBySlug.tenant:type_name -> shale.TenantRef
-	122, // 89: shale.SatelliteAddRequest.labels:type_name -> shale.SatelliteAddRequest.LabelsEntry
-	131, // 90: shale.SatelliteAddRequest.state:type_name -> shale.HostState
-	132, // 91: shale.SatelliteAddRequest.join:type_name -> shale.HostJoin
-	133, // 92: shale.SatelliteAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	133, // 93: shale.SatelliteAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 94: shale.SatelliteAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 95: shale.SatelliteAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	134, // 96: shale.SatelliteAddRequest.interfaces:type_name -> shale.HostInterface
-	147, // 97: shale.SatelliteAddRequest.status:type_name -> shale.SatelliteStatus
+	148, // 88: shale.ProducerRefBySlug.tenant:type_name -> shale.TenantRef
+	124, // 89: shale.SatelliteAddRequest.labels:type_name -> shale.SatelliteAddRequest.LabelsEntry
+	133, // 90: shale.SatelliteAddRequest.state:type_name -> shale.HostState
+	134, // 91: shale.SatelliteAddRequest.join:type_name -> shale.HostJoin
+	135, // 92: shale.SatelliteAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	135, // 93: shale.SatelliteAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 94: shale.SatelliteAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 95: shale.SatelliteAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	136, // 96: shale.SatelliteAddRequest.interfaces:type_name -> shale.HostInterface
+	149, // 97: shale.SatelliteAddRequest.status:type_name -> shale.SatelliteStatus
 	51,  // 98: shale.SatelliteGetRequest.ref:type_name -> shale.SatelliteRef
 	52,  // 99: shale.SatelliteGetRequest.select:type_name -> shale.SatelliteSelect
 	51,  // 100: shale.SatellitePatchRequest.ref:type_name -> shale.SatelliteRef
-	123, // 101: shale.SatellitePatchRequest.labels:type_name -> shale.SatellitePatchRequest.LabelsEntry
-	131, // 102: shale.SatellitePatchRequest.state:type_name -> shale.HostState
-	132, // 103: shale.SatellitePatchRequest.join:type_name -> shale.HostJoin
-	133, // 104: shale.SatellitePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	133, // 105: shale.SatellitePatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 106: shale.SatellitePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 107: shale.SatellitePatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	134, // 108: shale.SatellitePatchRequest.interfaces:type_name -> shale.HostInterface
-	147, // 109: shale.SatellitePatchRequest.status:type_name -> shale.SatelliteStatus
+	125, // 101: shale.SatellitePatchRequest.labels:type_name -> shale.SatellitePatchRequest.LabelsEntry
+	133, // 102: shale.SatellitePatchRequest.state:type_name -> shale.HostState
+	134, // 103: shale.SatellitePatchRequest.join:type_name -> shale.HostJoin
+	135, // 104: shale.SatellitePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	135, // 105: shale.SatellitePatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 106: shale.SatellitePatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 107: shale.SatellitePatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	136, // 108: shale.SatellitePatchRequest.interfaces:type_name -> shale.HostInterface
+	149, // 109: shale.SatellitePatchRequest.status:type_name -> shale.SatelliteStatus
 	51,  // 110: shale.SatelliteApplyRequest.ref:type_name -> shale.SatelliteRef
-	136, // 111: shale.SatelliteApplyRequest.patch:type_name -> patch.Patch
+	138, // 111: shale.SatelliteApplyRequest.patch:type_name -> patch.Patch
 	58,  // 112: shale.SatelliteListRequest.filters:type_name -> shale.SatelliteFilter
-	148, // 113: shale.SatelliteListResponse.items:type_name -> shale.Satellite
+	150, // 113: shale.SatelliteListResponse.items:type_name -> shale.Satellite
 	51,  // 114: shale.SatelliteFilter.ref:type_name -> shale.SatelliteRef
-	124, // 115: shale.SatelliteFilter.labels:type_name -> shale.SatelliteFilter.LabelsEntry
+	126, // 115: shale.SatelliteFilter.labels:type_name -> shale.SatelliteFilter.LabelsEntry
 	58,  // 116: shale.SatelliteWatchRequest.filters:type_name -> shale.SatelliteFilter
 	61,  // 117: shale.SatelliteWatchResponse.items:type_name -> shale.SatelliteWatchItem
-	148, // 118: shale.SatelliteWatchItem.value:type_name -> shale.Satellite
-	132, // 119: shale.SatelliteJoinRequest.host:type_name -> shale.HostJoin
-	134, // 120: shale.SatelliteJoinRequest.interfaces:type_name -> shale.HostInterface
+	150, // 118: shale.SatelliteWatchItem.value:type_name -> shale.Satellite
+	134, // 119: shale.SatelliteJoinRequest.host:type_name -> shale.HostJoin
+	136, // 120: shale.SatelliteJoinRequest.interfaces:type_name -> shale.HostInterface
 	15,  // 121: shale.SatelliteJoinResponse.answer:type_name -> shale.JoinAnswer
-	140, // 122: shale.SatelliteJoinResponse.keys:type_name -> shale.KeyEntry
+	142, // 122: shale.SatelliteJoinResponse.keys:type_name -> shale.KeyEntry
 	51,  // 123: shale.SatelliteAdoptRequest.ref:type_name -> shale.SatelliteRef
-	147, // 124: shale.SatelliteHeartbeatRequest.status:type_name -> shale.SatelliteStatus
-	134, // 125: shale.SatelliteHeartbeatRequest.interfaces:type_name -> shale.HostInterface
+	149, // 124: shale.SatelliteHeartbeatRequest.status:type_name -> shale.SatelliteStatus
+	136, // 125: shale.SatelliteHeartbeatRequest.interfaces:type_name -> shale.HostInterface
 	69,  // 126: shale.SatelliteHeartbeatResponse.producers:type_name -> shale.SatelliteProducer
-	143, // 127: shale.SatelliteRouteResponse.endpoints:type_name -> shale.Endpoint
-	133, // 128: shale.SatelliteRouteResponse.date_expires:type_name -> google.protobuf.Timestamp
+	145, // 127: shale.SatelliteRouteResponse.endpoints:type_name -> shale.Endpoint
+	135, // 128: shale.SatelliteRouteResponse.date_expires:type_name -> google.protobuf.Timestamp
 	51,  // 129: shale.SatelliteAssignRequest.ref:type_name -> shale.SatelliteRef
 	47,  // 130: shale.SatelliteAssignRequest.producer:type_name -> shale.ProducerRef
-	146, // 131: shale.ProducerAddRequest.tenant:type_name -> shale.TenantRef
-	149, // 132: shale.ProducerAddRequest.site:type_name -> shale.SiteRef
-	125, // 133: shale.ProducerAddRequest.labels:type_name -> shale.ProducerAddRequest.LabelsEntry
-	150, // 134: shale.ProducerAddRequest.set:type_name -> shale.SetRef
-	131, // 135: shale.ProducerAddRequest.state:type_name -> shale.HostState
-	133, // 136: shale.ProducerAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	132, // 137: shale.ProducerAddRequest.join:type_name -> shale.HostJoin
-	133, // 138: shale.ProducerAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 139: shale.ProducerAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 140: shale.ProducerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	148, // 131: shale.ProducerAddRequest.tenant:type_name -> shale.TenantRef
+	151, // 132: shale.ProducerAddRequest.site:type_name -> shale.SiteRef
+	127, // 133: shale.ProducerAddRequest.labels:type_name -> shale.ProducerAddRequest.LabelsEntry
+	152, // 134: shale.ProducerAddRequest.set:type_name -> shale.SetRef
+	133, // 135: shale.ProducerAddRequest.state:type_name -> shale.HostState
+	135, // 136: shale.ProducerAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	134, // 137: shale.ProducerAddRequest.join:type_name -> shale.HostJoin
+	135, // 138: shale.ProducerAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 139: shale.ProducerAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 140: shale.ProducerAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
 	28,  // 141: shale.ProducerAddRequest.relay:type_name -> shale.RelayRef
-	151, // 142: shale.ProducerAddRequest.status:type_name -> shale.ProducerStatus
-	152, // 143: shale.ProducerAddRequest.live:type_name -> shale.LivePolicy
+	153, // 142: shale.ProducerAddRequest.status:type_name -> shale.ProducerStatus
+	154, // 143: shale.ProducerAddRequest.live:type_name -> shale.LivePolicy
 	51,  // 144: shale.ProducerAddRequest.satellite:type_name -> shale.SatelliteRef
 	47,  // 145: shale.ProducerGetRequest.ref:type_name -> shale.ProducerRef
-	75,  // 146: shale.ProducerGetRequest.select:type_name -> shale.ProducerSelect
-	153, // 147: shale.ProducerSelect.tenant:type_name -> shale.TenantSelect
-	154, // 148: shale.ProducerSelect.site:type_name -> shale.SiteSelect
-	155, // 149: shale.ProducerSelect.set:type_name -> shale.SetSelect
+	77,  // 146: shale.ProducerGetRequest.select:type_name -> shale.ProducerSelect
+	155, // 147: shale.ProducerSelect.tenant:type_name -> shale.TenantSelect
+	156, // 148: shale.ProducerSelect.site:type_name -> shale.SiteSelect
+	157, // 149: shale.ProducerSelect.set:type_name -> shale.SetSelect
 	29,  // 150: shale.ProducerSelect.relay:type_name -> shale.RelaySelect
 	52,  // 151: shale.ProducerSelect.satellite:type_name -> shale.SatelliteSelect
 	47,  // 152: shale.ProducerPatchRequest.ref:type_name -> shale.ProducerRef
-	149, // 153: shale.ProducerPatchRequest.site:type_name -> shale.SiteRef
-	126, // 154: shale.ProducerPatchRequest.labels:type_name -> shale.ProducerPatchRequest.LabelsEntry
-	150, // 155: shale.ProducerPatchRequest.set:type_name -> shale.SetRef
-	131, // 156: shale.ProducerPatchRequest.state:type_name -> shale.HostState
-	133, // 157: shale.ProducerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	132, // 158: shale.ProducerPatchRequest.join:type_name -> shale.HostJoin
-	133, // 159: shale.ProducerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 160: shale.ProducerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 161: shale.ProducerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	151, // 153: shale.ProducerPatchRequest.site:type_name -> shale.SiteRef
+	128, // 154: shale.ProducerPatchRequest.labels:type_name -> shale.ProducerPatchRequest.LabelsEntry
+	152, // 155: shale.ProducerPatchRequest.set:type_name -> shale.SetRef
+	133, // 156: shale.ProducerPatchRequest.state:type_name -> shale.HostState
+	135, // 157: shale.ProducerPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	134, // 158: shale.ProducerPatchRequest.join:type_name -> shale.HostJoin
+	135, // 159: shale.ProducerPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 160: shale.ProducerPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 161: shale.ProducerPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
 	28,  // 162: shale.ProducerPatchRequest.relay:type_name -> shale.RelayRef
-	151, // 163: shale.ProducerPatchRequest.status:type_name -> shale.ProducerStatus
-	152, // 164: shale.ProducerPatchRequest.live:type_name -> shale.LivePolicy
+	153, // 163: shale.ProducerPatchRequest.status:type_name -> shale.ProducerStatus
+	154, // 164: shale.ProducerPatchRequest.live:type_name -> shale.LivePolicy
 	51,  // 165: shale.ProducerPatchRequest.satellite:type_name -> shale.SatelliteRef
 	47,  // 166: shale.ProducerApplyRequest.ref:type_name -> shale.ProducerRef
-	136, // 167: shale.ProducerApplyRequest.patch:type_name -> patch.Patch
-	81,  // 168: shale.ProducerListRequest.filters:type_name -> shale.ProducerFilter
-	156, // 169: shale.ProducerListResponse.items:type_name -> shale.Producer
+	138, // 167: shale.ProducerApplyRequest.patch:type_name -> patch.Patch
+	83,  // 168: shale.ProducerListRequest.filters:type_name -> shale.ProducerFilter
+	158, // 169: shale.ProducerListResponse.items:type_name -> shale.Producer
 	47,  // 170: shale.ProducerFilter.ref:type_name -> shale.ProducerRef
-	146, // 171: shale.ProducerFilter.tenant:type_name -> shale.TenantRef
-	150, // 172: shale.ProducerFilter.set:type_name -> shale.SetRef
-	149, // 173: shale.ProducerFilter.site:type_name -> shale.SiteRef
-	127, // 174: shale.ProducerFilter.labels:type_name -> shale.ProducerFilter.LabelsEntry
-	81,  // 175: shale.ProducerWatchRequest.filters:type_name -> shale.ProducerFilter
-	84,  // 176: shale.ProducerWatchResponse.items:type_name -> shale.ProducerWatchItem
-	156, // 177: shale.ProducerWatchItem.value:type_name -> shale.Producer
-	132, // 178: shale.ProducerJoinRequest.host:type_name -> shale.HostJoin
+	148, // 171: shale.ProducerFilter.tenant:type_name -> shale.TenantRef
+	152, // 172: shale.ProducerFilter.set:type_name -> shale.SetRef
+	151, // 173: shale.ProducerFilter.site:type_name -> shale.SiteRef
+	129, // 174: shale.ProducerFilter.labels:type_name -> shale.ProducerFilter.LabelsEntry
+	83,  // 175: shale.ProducerWatchRequest.filters:type_name -> shale.ProducerFilter
+	86,  // 176: shale.ProducerWatchResponse.items:type_name -> shale.ProducerWatchItem
+	158, // 177: shale.ProducerWatchItem.value:type_name -> shale.Producer
+	134, // 178: shale.ProducerJoinRequest.host:type_name -> shale.HostJoin
 	15,  // 179: shale.ProducerJoinResponse.answer:type_name -> shale.JoinAnswer
 	47,  // 180: shale.ProducerAdoptRequest.ref:type_name -> shale.ProducerRef
-	150, // 181: shale.ProducerAdoptRequest.set:type_name -> shale.SetRef
-	157, // 182: shale.ProducerHeartbeatRequest.sources:type_name -> shale.SourceReport
-	158, // 183: shale.ProducerHeartbeatRequest.load:type_name -> shale.HostLoad
-	159, // 184: shale.ProducerHeartbeatRequest.admission:type_name -> shale.AdmissionWait
-	160, // 185: shale.ProducerHeartbeatRequest.upload:type_name -> shale.UploadReport
-	161, // 186: shale.ProducerHeartbeatResponse.relay:type_name -> shale.RelayAssignment
-	92,  // 187: shale.ProducerHeartbeatResponse.suggestions:type_name -> shale.Suggestion
-	162, // 188: shale.ProducerHeartbeatResponse.satellite:type_name -> shale.SatelliteAssignment
-	161, // 189: shale.ProducerRelayResponse.relay:type_name -> shale.RelayAssignment
-	146, // 190: shale.ReaderAddRequest.tenant:type_name -> shale.TenantRef
-	128, // 191: shale.ReaderAddRequest.labels:type_name -> shale.ReaderAddRequest.LabelsEntry
-	131, // 192: shale.ReaderAddRequest.state:type_name -> shale.HostState
-	132, // 193: shale.ReaderAddRequest.join:type_name -> shale.HostJoin
-	133, // 194: shale.ReaderAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	133, // 195: shale.ReaderAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 196: shale.ReaderAddRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 197: shale.ReaderAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	97,  // 198: shale.ReaderGetRequest.ref:type_name -> shale.ReaderRef
-	99,  // 199: shale.ReaderGetRequest.select:type_name -> shale.ReaderSelect
-	98,  // 200: shale.ReaderRef.slug:type_name -> shale.ReaderRefBySlug
-	146, // 201: shale.ReaderRefBySlug.tenant:type_name -> shale.TenantRef
-	153, // 202: shale.ReaderSelect.tenant:type_name -> shale.TenantSelect
-	97,  // 203: shale.ReaderPatchRequest.ref:type_name -> shale.ReaderRef
-	129, // 204: shale.ReaderPatchRequest.labels:type_name -> shale.ReaderPatchRequest.LabelsEntry
-	131, // 205: shale.ReaderPatchRequest.state:type_name -> shale.HostState
-	132, // 206: shale.ReaderPatchRequest.join:type_name -> shale.HostJoin
-	133, // 207: shale.ReaderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	133, // 208: shale.ReaderPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
-	133, // 209: shale.ReaderPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
-	133, // 210: shale.ReaderPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
-	97,  // 211: shale.ReaderApplyRequest.ref:type_name -> shale.ReaderRef
-	136, // 212: shale.ReaderApplyRequest.patch:type_name -> patch.Patch
-	105, // 213: shale.ReaderListRequest.filters:type_name -> shale.ReaderFilter
-	163, // 214: shale.ReaderListResponse.items:type_name -> shale.Reader
-	97,  // 215: shale.ReaderFilter.ref:type_name -> shale.ReaderRef
-	146, // 216: shale.ReaderFilter.tenant:type_name -> shale.TenantRef
-	130, // 217: shale.ReaderFilter.labels:type_name -> shale.ReaderFilter.LabelsEntry
-	105, // 218: shale.ReaderWatchRequest.filters:type_name -> shale.ReaderFilter
-	108, // 219: shale.ReaderWatchResponse.items:type_name -> shale.ReaderWatchItem
-	163, // 220: shale.ReaderWatchItem.value:type_name -> shale.Reader
-	132, // 221: shale.ReaderJoinRequest.host:type_name -> shale.HostJoin
+	152, // 181: shale.ProducerAdoptRequest.set:type_name -> shale.SetRef
+	159, // 182: shale.ProducerHeartbeatRequest.sources:type_name -> shale.SourceReport
+	160, // 183: shale.ProducerHeartbeatRequest.load:type_name -> shale.HostLoad
+	161, // 184: shale.ProducerHeartbeatRequest.admission:type_name -> shale.AdmissionWait
+	162, // 185: shale.ProducerHeartbeatRequest.upload:type_name -> shale.UploadReport
+	163, // 186: shale.ProducerHeartbeatResponse.relay:type_name -> shale.RelayAssignment
+	94,  // 187: shale.ProducerHeartbeatResponse.suggestions:type_name -> shale.Suggestion
+	164, // 188: shale.ProducerHeartbeatResponse.satellite:type_name -> shale.SatelliteAssignment
+	163, // 189: shale.ProducerRelayResponse.relay:type_name -> shale.RelayAssignment
+	148, // 190: shale.ReaderAddRequest.tenant:type_name -> shale.TenantRef
+	130, // 191: shale.ReaderAddRequest.labels:type_name -> shale.ReaderAddRequest.LabelsEntry
+	133, // 192: shale.ReaderAddRequest.state:type_name -> shale.HostState
+	134, // 193: shale.ReaderAddRequest.join:type_name -> shale.HostJoin
+	135, // 194: shale.ReaderAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	135, // 195: shale.ReaderAddRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 196: shale.ReaderAddRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 197: shale.ReaderAddRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	99,  // 198: shale.ReaderGetRequest.ref:type_name -> shale.ReaderRef
+	101, // 199: shale.ReaderGetRequest.select:type_name -> shale.ReaderSelect
+	100, // 200: shale.ReaderRef.slug:type_name -> shale.ReaderRefBySlug
+	148, // 201: shale.ReaderRefBySlug.tenant:type_name -> shale.TenantRef
+	155, // 202: shale.ReaderSelect.tenant:type_name -> shale.TenantSelect
+	99,  // 203: shale.ReaderPatchRequest.ref:type_name -> shale.ReaderRef
+	131, // 204: shale.ReaderPatchRequest.labels:type_name -> shale.ReaderPatchRequest.LabelsEntry
+	133, // 205: shale.ReaderPatchRequest.state:type_name -> shale.HostState
+	134, // 206: shale.ReaderPatchRequest.join:type_name -> shale.HostJoin
+	135, // 207: shale.ReaderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	135, // 208: shale.ReaderPatchRequest.date_adopted:type_name -> google.protobuf.Timestamp
+	135, // 209: shale.ReaderPatchRequest.date_seen:type_name -> google.protobuf.Timestamp
+	135, // 210: shale.ReaderPatchRequest.date_cert_expires:type_name -> google.protobuf.Timestamp
+	99,  // 211: shale.ReaderApplyRequest.ref:type_name -> shale.ReaderRef
+	138, // 212: shale.ReaderApplyRequest.patch:type_name -> patch.Patch
+	107, // 213: shale.ReaderListRequest.filters:type_name -> shale.ReaderFilter
+	165, // 214: shale.ReaderListResponse.items:type_name -> shale.Reader
+	99,  // 215: shale.ReaderFilter.ref:type_name -> shale.ReaderRef
+	148, // 216: shale.ReaderFilter.tenant:type_name -> shale.TenantRef
+	132, // 217: shale.ReaderFilter.labels:type_name -> shale.ReaderFilter.LabelsEntry
+	107, // 218: shale.ReaderWatchRequest.filters:type_name -> shale.ReaderFilter
+	110, // 219: shale.ReaderWatchResponse.items:type_name -> shale.ReaderWatchItem
+	165, // 220: shale.ReaderWatchItem.value:type_name -> shale.Reader
+	134, // 221: shale.ReaderJoinRequest.host:type_name -> shale.HostJoin
 	15,  // 222: shale.ReaderJoinResponse.answer:type_name -> shale.JoinAnswer
-	97,  // 223: shale.ReaderAdoptRequest.ref:type_name -> shale.ReaderRef
-	149, // 224: shale.ReaderAdoptRequest.sites:type_name -> shale.SiteRef
+	99,  // 223: shale.ReaderAdoptRequest.ref:type_name -> shale.ReaderRef
+	151, // 224: shale.ReaderAdoptRequest.sites:type_name -> shale.SiteRef
 	0,   // 225: shale.NodeService.Add:input_type -> shale.NodeAddRequest
 	1,   // 226: shale.NodeService.Get:input_type -> shale.NodeGetRequest
 	4,   // 227: shale.NodeService.Patch:input_type -> shale.NodePatchRequest
@@ -21262,92 +21391,94 @@ var file_shale_host_svc_g_proto_depIdxs = []int32{
 	67,  // 260: shale.SatelliteService.Heartbeat:input_type -> shale.SatelliteHeartbeatRequest
 	70,  // 261: shale.SatelliteService.Route:input_type -> shale.SatelliteRouteRequest
 	72,  // 262: shale.SatelliteService.Assign:input_type -> shale.SatelliteAssignRequest
-	73,  // 263: shale.ProducerService.Add:input_type -> shale.ProducerAddRequest
-	74,  // 264: shale.ProducerService.Get:input_type -> shale.ProducerGetRequest
-	76,  // 265: shale.ProducerService.Patch:input_type -> shale.ProducerPatchRequest
-	77,  // 266: shale.ProducerService.Apply:input_type -> shale.ProducerApplyRequest
-	47,  // 267: shale.ProducerService.Erase:input_type -> shale.ProducerRef
-	79,  // 268: shale.ProducerService.List:input_type -> shale.ProducerListRequest
-	82,  // 269: shale.ProducerService.Watch:input_type -> shale.ProducerWatchRequest
-	85,  // 270: shale.ProducerService.Join:input_type -> shale.ProducerJoinRequest
-	87,  // 271: shale.ProducerService.Adopt:input_type -> shale.ProducerAdoptRequest
-	88,  // 272: shale.ProducerService.RenewCertificate:input_type -> shale.ProducerRenewCertificateRequest
-	90,  // 273: shale.ProducerService.Heartbeat:input_type -> shale.ProducerHeartbeatRequest
-	93,  // 274: shale.ProducerService.Relay:input_type -> shale.ProducerRelayRequest
-	95,  // 275: shale.ReaderService.Add:input_type -> shale.ReaderAddRequest
-	96,  // 276: shale.ReaderService.Get:input_type -> shale.ReaderGetRequest
-	100, // 277: shale.ReaderService.Patch:input_type -> shale.ReaderPatchRequest
-	101, // 278: shale.ReaderService.Apply:input_type -> shale.ReaderApplyRequest
-	97,  // 279: shale.ReaderService.Erase:input_type -> shale.ReaderRef
-	103, // 280: shale.ReaderService.List:input_type -> shale.ReaderListRequest
-	106, // 281: shale.ReaderService.Watch:input_type -> shale.ReaderWatchRequest
-	109, // 282: shale.ReaderService.Join:input_type -> shale.ReaderJoinRequest
-	111, // 283: shale.ReaderService.Adopt:input_type -> shale.ReaderAdoptRequest
-	112, // 284: shale.ReaderService.RenewCertificate:input_type -> shale.ReaderRenewCertificateRequest
-	114, // 285: shale.ReaderService.Heartbeat:input_type -> shale.ReaderHeartbeatRequest
-	137, // 286: shale.NodeService.Add:output_type -> shale.Node
-	137, // 287: shale.NodeService.Get:output_type -> shale.Node
-	137, // 288: shale.NodeService.Patch:output_type -> shale.Node
-	137, // 289: shale.NodeService.Apply:output_type -> shale.Node
-	6,   // 290: shale.NodeService.Erase:output_type -> shale.NodeEraseResponse
-	8,   // 291: shale.NodeService.List:output_type -> shale.NodeListResponse
-	11,  // 292: shale.NodeService.Watch:output_type -> shale.NodeWatchResponse
-	14,  // 293: shale.NodeService.Join:output_type -> shale.NodeJoinResponse
-	137, // 294: shale.NodeService.Adopt:output_type -> shale.Node
-	18,  // 295: shale.NodeService.RenewCertificate:output_type -> shale.NodeRenewCertificateResponse
-	20,  // 296: shale.NodeService.Heartbeat:output_type -> shale.NodeHeartbeatResponse
-	23,  // 297: shale.NodeService.PushEvents:output_type -> shale.NodePushEventsResponse
-	25,  // 298: shale.NodeService.Resolve:output_type -> shale.NodeResolveResponse
-	145, // 299: shale.RelayService.Add:output_type -> shale.Relay
-	145, // 300: shale.RelayService.Get:output_type -> shale.Relay
-	145, // 301: shale.RelayService.Patch:output_type -> shale.Relay
-	145, // 302: shale.RelayService.Apply:output_type -> shale.Relay
-	32,  // 303: shale.RelayService.Erase:output_type -> shale.RelayEraseResponse
-	34,  // 304: shale.RelayService.List:output_type -> shale.RelayListResponse
-	37,  // 305: shale.RelayService.Watch:output_type -> shale.RelayWatchResponse
-	40,  // 306: shale.RelayService.Join:output_type -> shale.RelayJoinResponse
-	145, // 307: shale.RelayService.Adopt:output_type -> shale.Relay
-	43,  // 308: shale.RelayService.RenewCertificate:output_type -> shale.RelayRenewCertificateResponse
-	45,  // 309: shale.RelayService.Heartbeat:output_type -> shale.RelayHeartbeatResponse
-	145, // 310: shale.RelayService.Assign:output_type -> shale.Relay
-	148, // 311: shale.SatelliteService.Add:output_type -> shale.Satellite
-	148, // 312: shale.SatelliteService.Get:output_type -> shale.Satellite
-	148, // 313: shale.SatelliteService.Patch:output_type -> shale.Satellite
-	148, // 314: shale.SatelliteService.Apply:output_type -> shale.Satellite
-	55,  // 315: shale.SatelliteService.Erase:output_type -> shale.SatelliteEraseResponse
-	57,  // 316: shale.SatelliteService.List:output_type -> shale.SatelliteListResponse
-	60,  // 317: shale.SatelliteService.Watch:output_type -> shale.SatelliteWatchResponse
-	63,  // 318: shale.SatelliteService.Join:output_type -> shale.SatelliteJoinResponse
-	148, // 319: shale.SatelliteService.Adopt:output_type -> shale.Satellite
-	66,  // 320: shale.SatelliteService.RenewCertificate:output_type -> shale.SatelliteRenewCertificateResponse
-	68,  // 321: shale.SatelliteService.Heartbeat:output_type -> shale.SatelliteHeartbeatResponse
-	71,  // 322: shale.SatelliteService.Route:output_type -> shale.SatelliteRouteResponse
-	148, // 323: shale.SatelliteService.Assign:output_type -> shale.Satellite
-	156, // 324: shale.ProducerService.Add:output_type -> shale.Producer
-	156, // 325: shale.ProducerService.Get:output_type -> shale.Producer
-	156, // 326: shale.ProducerService.Patch:output_type -> shale.Producer
-	156, // 327: shale.ProducerService.Apply:output_type -> shale.Producer
-	78,  // 328: shale.ProducerService.Erase:output_type -> shale.ProducerEraseResponse
-	80,  // 329: shale.ProducerService.List:output_type -> shale.ProducerListResponse
-	83,  // 330: shale.ProducerService.Watch:output_type -> shale.ProducerWatchResponse
-	86,  // 331: shale.ProducerService.Join:output_type -> shale.ProducerJoinResponse
-	156, // 332: shale.ProducerService.Adopt:output_type -> shale.Producer
-	89,  // 333: shale.ProducerService.RenewCertificate:output_type -> shale.ProducerRenewCertificateResponse
-	91,  // 334: shale.ProducerService.Heartbeat:output_type -> shale.ProducerHeartbeatResponse
-	94,  // 335: shale.ProducerService.Relay:output_type -> shale.ProducerRelayResponse
-	163, // 336: shale.ReaderService.Add:output_type -> shale.Reader
-	163, // 337: shale.ReaderService.Get:output_type -> shale.Reader
-	163, // 338: shale.ReaderService.Patch:output_type -> shale.Reader
-	163, // 339: shale.ReaderService.Apply:output_type -> shale.Reader
-	102, // 340: shale.ReaderService.Erase:output_type -> shale.ReaderEraseResponse
-	104, // 341: shale.ReaderService.List:output_type -> shale.ReaderListResponse
-	107, // 342: shale.ReaderService.Watch:output_type -> shale.ReaderWatchResponse
-	110, // 343: shale.ReaderService.Join:output_type -> shale.ReaderJoinResponse
-	163, // 344: shale.ReaderService.Adopt:output_type -> shale.Reader
-	113, // 345: shale.ReaderService.RenewCertificate:output_type -> shale.ReaderRenewCertificateResponse
-	115, // 346: shale.ReaderService.Heartbeat:output_type -> shale.ReaderHeartbeatResponse
-	286, // [286:347] is the sub-list for method output_type
-	225, // [225:286] is the sub-list for method input_type
+	73,  // 263: shale.SatelliteService.Accept:input_type -> shale.SatelliteAcceptRequest
+	75,  // 264: shale.ProducerService.Add:input_type -> shale.ProducerAddRequest
+	76,  // 265: shale.ProducerService.Get:input_type -> shale.ProducerGetRequest
+	78,  // 266: shale.ProducerService.Patch:input_type -> shale.ProducerPatchRequest
+	79,  // 267: shale.ProducerService.Apply:input_type -> shale.ProducerApplyRequest
+	47,  // 268: shale.ProducerService.Erase:input_type -> shale.ProducerRef
+	81,  // 269: shale.ProducerService.List:input_type -> shale.ProducerListRequest
+	84,  // 270: shale.ProducerService.Watch:input_type -> shale.ProducerWatchRequest
+	87,  // 271: shale.ProducerService.Join:input_type -> shale.ProducerJoinRequest
+	89,  // 272: shale.ProducerService.Adopt:input_type -> shale.ProducerAdoptRequest
+	90,  // 273: shale.ProducerService.RenewCertificate:input_type -> shale.ProducerRenewCertificateRequest
+	92,  // 274: shale.ProducerService.Heartbeat:input_type -> shale.ProducerHeartbeatRequest
+	95,  // 275: shale.ProducerService.Relay:input_type -> shale.ProducerRelayRequest
+	97,  // 276: shale.ReaderService.Add:input_type -> shale.ReaderAddRequest
+	98,  // 277: shale.ReaderService.Get:input_type -> shale.ReaderGetRequest
+	102, // 278: shale.ReaderService.Patch:input_type -> shale.ReaderPatchRequest
+	103, // 279: shale.ReaderService.Apply:input_type -> shale.ReaderApplyRequest
+	99,  // 280: shale.ReaderService.Erase:input_type -> shale.ReaderRef
+	105, // 281: shale.ReaderService.List:input_type -> shale.ReaderListRequest
+	108, // 282: shale.ReaderService.Watch:input_type -> shale.ReaderWatchRequest
+	111, // 283: shale.ReaderService.Join:input_type -> shale.ReaderJoinRequest
+	113, // 284: shale.ReaderService.Adopt:input_type -> shale.ReaderAdoptRequest
+	114, // 285: shale.ReaderService.RenewCertificate:input_type -> shale.ReaderRenewCertificateRequest
+	116, // 286: shale.ReaderService.Heartbeat:input_type -> shale.ReaderHeartbeatRequest
+	139, // 287: shale.NodeService.Add:output_type -> shale.Node
+	139, // 288: shale.NodeService.Get:output_type -> shale.Node
+	139, // 289: shale.NodeService.Patch:output_type -> shale.Node
+	139, // 290: shale.NodeService.Apply:output_type -> shale.Node
+	6,   // 291: shale.NodeService.Erase:output_type -> shale.NodeEraseResponse
+	8,   // 292: shale.NodeService.List:output_type -> shale.NodeListResponse
+	11,  // 293: shale.NodeService.Watch:output_type -> shale.NodeWatchResponse
+	14,  // 294: shale.NodeService.Join:output_type -> shale.NodeJoinResponse
+	139, // 295: shale.NodeService.Adopt:output_type -> shale.Node
+	18,  // 296: shale.NodeService.RenewCertificate:output_type -> shale.NodeRenewCertificateResponse
+	20,  // 297: shale.NodeService.Heartbeat:output_type -> shale.NodeHeartbeatResponse
+	23,  // 298: shale.NodeService.PushEvents:output_type -> shale.NodePushEventsResponse
+	25,  // 299: shale.NodeService.Resolve:output_type -> shale.NodeResolveResponse
+	147, // 300: shale.RelayService.Add:output_type -> shale.Relay
+	147, // 301: shale.RelayService.Get:output_type -> shale.Relay
+	147, // 302: shale.RelayService.Patch:output_type -> shale.Relay
+	147, // 303: shale.RelayService.Apply:output_type -> shale.Relay
+	32,  // 304: shale.RelayService.Erase:output_type -> shale.RelayEraseResponse
+	34,  // 305: shale.RelayService.List:output_type -> shale.RelayListResponse
+	37,  // 306: shale.RelayService.Watch:output_type -> shale.RelayWatchResponse
+	40,  // 307: shale.RelayService.Join:output_type -> shale.RelayJoinResponse
+	147, // 308: shale.RelayService.Adopt:output_type -> shale.Relay
+	43,  // 309: shale.RelayService.RenewCertificate:output_type -> shale.RelayRenewCertificateResponse
+	45,  // 310: shale.RelayService.Heartbeat:output_type -> shale.RelayHeartbeatResponse
+	147, // 311: shale.RelayService.Assign:output_type -> shale.Relay
+	150, // 312: shale.SatelliteService.Add:output_type -> shale.Satellite
+	150, // 313: shale.SatelliteService.Get:output_type -> shale.Satellite
+	150, // 314: shale.SatelliteService.Patch:output_type -> shale.Satellite
+	150, // 315: shale.SatelliteService.Apply:output_type -> shale.Satellite
+	55,  // 316: shale.SatelliteService.Erase:output_type -> shale.SatelliteEraseResponse
+	57,  // 317: shale.SatelliteService.List:output_type -> shale.SatelliteListResponse
+	60,  // 318: shale.SatelliteService.Watch:output_type -> shale.SatelliteWatchResponse
+	63,  // 319: shale.SatelliteService.Join:output_type -> shale.SatelliteJoinResponse
+	150, // 320: shale.SatelliteService.Adopt:output_type -> shale.Satellite
+	66,  // 321: shale.SatelliteService.RenewCertificate:output_type -> shale.SatelliteRenewCertificateResponse
+	68,  // 322: shale.SatelliteService.Heartbeat:output_type -> shale.SatelliteHeartbeatResponse
+	71,  // 323: shale.SatelliteService.Route:output_type -> shale.SatelliteRouteResponse
+	150, // 324: shale.SatelliteService.Assign:output_type -> shale.Satellite
+	74,  // 325: shale.SatelliteService.Accept:output_type -> shale.SatelliteAcceptResponse
+	158, // 326: shale.ProducerService.Add:output_type -> shale.Producer
+	158, // 327: shale.ProducerService.Get:output_type -> shale.Producer
+	158, // 328: shale.ProducerService.Patch:output_type -> shale.Producer
+	158, // 329: shale.ProducerService.Apply:output_type -> shale.Producer
+	80,  // 330: shale.ProducerService.Erase:output_type -> shale.ProducerEraseResponse
+	82,  // 331: shale.ProducerService.List:output_type -> shale.ProducerListResponse
+	85,  // 332: shale.ProducerService.Watch:output_type -> shale.ProducerWatchResponse
+	88,  // 333: shale.ProducerService.Join:output_type -> shale.ProducerJoinResponse
+	158, // 334: shale.ProducerService.Adopt:output_type -> shale.Producer
+	91,  // 335: shale.ProducerService.RenewCertificate:output_type -> shale.ProducerRenewCertificateResponse
+	93,  // 336: shale.ProducerService.Heartbeat:output_type -> shale.ProducerHeartbeatResponse
+	96,  // 337: shale.ProducerService.Relay:output_type -> shale.ProducerRelayResponse
+	165, // 338: shale.ReaderService.Add:output_type -> shale.Reader
+	165, // 339: shale.ReaderService.Get:output_type -> shale.Reader
+	165, // 340: shale.ReaderService.Patch:output_type -> shale.Reader
+	165, // 341: shale.ReaderService.Apply:output_type -> shale.Reader
+	104, // 342: shale.ReaderService.Erase:output_type -> shale.ReaderEraseResponse
+	106, // 343: shale.ReaderService.List:output_type -> shale.ReaderListResponse
+	109, // 344: shale.ReaderService.Watch:output_type -> shale.ReaderWatchResponse
+	112, // 345: shale.ReaderService.Join:output_type -> shale.ReaderJoinResponse
+	165, // 346: shale.ReaderService.Adopt:output_type -> shale.Reader
+	115, // 347: shale.ReaderService.RenewCertificate:output_type -> shale.ReaderRenewCertificateResponse
+	117, // 348: shale.ReaderService.Heartbeat:output_type -> shale.ReaderHeartbeatResponse
+	287, // [287:349] is the sub-list for method output_type
+	225, // [225:287] is the sub-list for method input_type
 	225, // [225:225] is the sub-list for extension type_name
 	225, // [225:225] is the sub-list for extension extendee
 	0,   // [0:225] is the sub-list for field type_name
@@ -21380,7 +21511,7 @@ func file_shale_host_svc_g_proto_init() {
 		(*satelliteRef_Id)(nil),
 		(*satelliteRef_Alias)(nil),
 	}
-	file_shale_host_svc_g_proto_msgTypes[97].OneofWrappers = []any{
+	file_shale_host_svc_g_proto_msgTypes[99].OneofWrappers = []any{
 		(*readerRef_Id)(nil),
 		(*readerRef_Slug)(nil),
 	}
@@ -21390,7 +21521,7 @@ func file_shale_host_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_host_svc_g_proto_rawDesc), len(file_shale_host_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   131,
+			NumMessages:   133,
 			NumExtensions: 0,
 			NumServices:   5,
 		},
