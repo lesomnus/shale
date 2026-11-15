@@ -47,6 +47,10 @@ credential access based on discovery hints.
 
 The [device TLS contract](camera-tls-identity.md) defines operator approval,
 per-device scope, checkpoint recovery, transport verification and key withdrawal.
+A job that meets a key other than its pin stops with that key, and
+`CameraPolicy.ApproveTLS` approves it in one request: a new revision of the
+active policy with that device's key, activated by network CAS, and a successor
+job pinned to it ([approving a changed key](camera-tls-identity.md#approving-a-changed-key)).
 
 ## Automatic first factory TLS trust
 
@@ -150,7 +154,9 @@ recordings after Producer application; policy resolution is not readiness.
 Operators use `CameraPreset.Create`, `CameraPolicy.Create`, and
 `CameraPolicy.Activate` to publish immutable revisions and CAS the network's
 active pointer. `CameraPolicy.Enroll` explicitly creates another intent for an
-existing binding. Generic mutations of either revision entity remain closed.
+existing binding. `CameraPolicy.ApproveTLS` writes and activates the revision
+approving a key a job stopped on, under the same validation and CAS, and replaces
+that job. Generic mutations of either revision entity remain closed.
 
 The assigned Worker sends `CameraPolicy.Observe` with its assignment generation.
 CP first commits the sanitized inventory observation, then prepares credentials
@@ -258,6 +264,7 @@ shale --config operator.yaml camera-policy create - -o json < camera-policy.json
 shale --config operator.yaml camera-network get NETWORK_UUID '{"select":{"all":true}}' -o json
 shale --config operator.yaml camera-policy activate POLICY_UUID '{"expectedNetworkVersion":"2026-11-09T12:00:00Z"}' -o json
 shale --config operator.yaml camera-policy enroll - -o json < enrollment-intent.json
+shale --config operator.yaml camera-policy approve-tls JOB_UUID '{"spkiSha256":"sha256:<key>","expectedNetworkVersion":"2026-11-09T12:00:00Z"}' -o json
 ```
 
 Replace the example IDs and timestamp with the intended network/policy and the

@@ -4100,6 +4100,7 @@ type CameraProvisionState struct {
 	xxx_hidden_Warnings            *CameraProvisionWarnings           `protobuf:"bytes,23,opt,name=warnings"`
 	xxx_hidden_DeploymentProfile   *CameraProvisionMediaProfile       `protobuf:"bytes,24,opt,name=deployment_profile,json=deploymentProfile"`
 	xxx_hidden_Firmware            *CameraProvisionFirmware           `protobuf:"bytes,25,opt,name=firmware"`
+	xxx_hidden_ChangedTlsIdentity  *CameraDeviceTLSIdentity           `protobuf:"bytes,26,opt,name=changed_tls_identity,json=changedTlsIdentity"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -4304,6 +4305,13 @@ func (x *CameraProvisionState) GetFirmware() *CameraProvisionFirmware {
 	return nil
 }
 
+func (x *CameraProvisionState) GetChangedTlsIdentity() *CameraDeviceTLSIdentity {
+	if x != nil {
+		return x.xxx_hidden_ChangedTlsIdentity
+	}
+	return nil
+}
+
 func (x *CameraProvisionState) SetSchemaVersion(v uint32) {
 	x.xxx_hidden_SchemaVersion = v
 }
@@ -4402,6 +4410,10 @@ func (x *CameraProvisionState) SetDeploymentProfile(v *CameraProvisionMediaProfi
 
 func (x *CameraProvisionState) SetFirmware(v *CameraProvisionFirmware) {
 	x.xxx_hidden_Firmware = v
+}
+
+func (x *CameraProvisionState) SetChangedTlsIdentity(v *CameraDeviceTLSIdentity) {
+	x.xxx_hidden_ChangedTlsIdentity = v
 }
 
 func (x *CameraProvisionState) HasRequest() bool {
@@ -4537,6 +4549,13 @@ func (x *CameraProvisionState) HasFirmware() bool {
 	return x.xxx_hidden_Firmware != nil
 }
 
+func (x *CameraProvisionState) HasChangedTlsIdentity() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_ChangedTlsIdentity != nil
+}
+
 func (x *CameraProvisionState) ClearRequest() {
 	x.xxx_hidden_Request = nil
 }
@@ -4613,6 +4632,10 @@ func (x *CameraProvisionState) ClearFirmware() {
 	x.xxx_hidden_Firmware = nil
 }
 
+func (x *CameraProvisionState) ClearChangedTlsIdentity() {
+	x.xxx_hidden_ChangedTlsIdentity = nil
+}
+
 type CameraProvisionState_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -4641,6 +4664,10 @@ type CameraProvisionState_builder struct {
 	Warnings            *CameraProvisionWarnings
 	DeploymentProfile   *CameraProvisionMediaProfile
 	Firmware            *CameraProvisionFirmware
+	// The key the device's web port presented when this job stopped because
+	// it differed from the job's pin. An observation for an operator to
+	// approve (CameraPolicy.ApproveTLS), never trust by itself.
+	ChangedTlsIdentity *CameraDeviceTLSIdentity
 }
 
 func (b0 CameraProvisionState_builder) Build() *CameraProvisionState {
@@ -4672,6 +4699,7 @@ func (b0 CameraProvisionState_builder) Build() *CameraProvisionState {
 	x.xxx_hidden_Warnings = b.Warnings
 	x.xxx_hidden_DeploymentProfile = b.DeploymentProfile
 	x.xxx_hidden_Firmware = b.Firmware
+	x.xxx_hidden_ChangedTlsIdentity = b.ChangedTlsIdentity
 	return m0
 }
 
@@ -4893,7 +4921,7 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\x02to\x18\x02 \x01(\tR\x02to\x12!\n" +
 	"\fimage_sha256\x18\x03 \x01(\tR\vimageSha256\x12\x1a\n" +
 	"\bcomplete\x18\x04 \x01(\bR\bcomplete\x12A\n" +
-	"\ftls_identity\x18\x05 \x01(\v2\x1e.shale.CameraDeviceTLSIdentityR\vtlsIdentity\"\xc8\v\n" +
+	"\ftls_identity\x18\x05 \x01(\v2\x1e.shale.CameraDeviceTLSIdentityR\vtlsIdentity\"\x9a\f\n" +
 	"\x14CameraProvisionState\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\rR\rschemaVersion\x127\n" +
 	"\arequest\x18\x02 \x01(\v2\x1d.shale.CameraProvisionRequestR\arequest\x12\x14\n" +
@@ -4925,7 +4953,8 @@ const file_shale_camera_progress_proto_rawDesc = "" +
 	"\vinitialized\x18\x16 \x01(\v2$.shale.CameraProvisionDeviceSettingsR\vinitialized\x12:\n" +
 	"\bwarnings\x18\x17 \x01(\v2\x1e.shale.CameraProvisionWarningsR\bwarnings\x12Q\n" +
 	"\x12deployment_profile\x18\x18 \x01(\v2\".shale.CameraProvisionMediaProfileR\x11deploymentProfile\x12:\n" +
-	"\bfirmware\x18\x19 \x01(\v2\x1e.shale.CameraProvisionFirmwareR\bfirmwareB$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\bfirmware\x18\x19 \x01(\v2\x1e.shale.CameraProvisionFirmwareR\bfirmware\x12P\n" +
+	"\x14changed_tls_identity\x18\x1a \x01(\v2\x1e.shale.CameraDeviceTLSIdentityR\x12changedTlsIdentityB$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_shale_camera_progress_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_shale_camera_progress_proto_goTypes = []any{
@@ -5041,11 +5070,12 @@ var file_shale_camera_progress_proto_depIdxs = []int32{
 	32, // 65: shale.CameraProvisionState.warnings:type_name -> shale.CameraProvisionWarnings
 	15, // 66: shale.CameraProvisionState.deployment_profile:type_name -> shale.CameraProvisionMediaProfile
 	33, // 67: shale.CameraProvisionState.firmware:type_name -> shale.CameraProvisionFirmware
-	68, // [68:68] is the sub-list for method output_type
-	68, // [68:68] is the sub-list for method input_type
-	68, // [68:68] is the sub-list for extension type_name
-	68, // [68:68] is the sub-list for extension extendee
-	0,  // [0:68] is the sub-list for field type_name
+	39, // 68: shale.CameraProvisionState.changed_tls_identity:type_name -> shale.CameraDeviceTLSIdentity
+	69, // [69:69] is the sub-list for method output_type
+	69, // [69:69] is the sub-list for method input_type
+	69, // [69:69] is the sub-list for extension type_name
+	69, // [69:69] is the sub-list for extension extendee
+	0,  // [0:69] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_progress_proto_init() }

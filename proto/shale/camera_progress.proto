@@ -232,4 +232,8 @@ message CameraProvisionState {
   CameraProvisionWarnings warnings = 23;
   CameraProvisionMediaProfile deployment_profile = 24;
   CameraProvisionFirmware firmware = 25;
+  // The key the device's web port presented when this job stopped because
+  // it differed from the job's pin. An observation for an operator to
+  // approve (CameraPolicy.ApproveTLS), never trust by itself.
+  CameraDeviceTLSIdentity changed_tls_identity = 26;
 }

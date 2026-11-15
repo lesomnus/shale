@@ -20,6 +20,7 @@ type DeviceAdapters struct {
 	Initializer  camera.DeviceInitializer
 	Verifier     camera.MediaVerifier
 	Firmware     camera.FirmwareUpgrader
+	Observer     camera.WebIdentityObserver
 	Release      func()
 }
 
@@ -38,9 +39,13 @@ type LeasedDevices struct {
 	Initializer  camera.DeviceInitializer
 	Verifier     camera.MediaVerifier
 	Firmware     camera.FirmwareUpgrader
+	Observer     camera.WebIdentityObserver
 }
 
-var _ camera.FirmwareUpgrader = LeasedDevices{}
+var (
+	_ camera.FirmwareUpgrader    = LeasedDevices{}
+	_ camera.WebIdentityObserver = LeasedDevices{}
+)
 
 func freshTransport(h camera.DeviceHint, w *api.CameraWorkerWork) (camera.DeviceHint, error) {
 	fresh := deviceHint(w)
@@ -52,12 +57,12 @@ func freshTransport(h camera.DeviceHint, w *api.CameraWorkerWork) (camera.Device
 }
 
 func (d LeasedDevices) mixedAdapters() bool {
-	return d.Factory != nil && (d.Inspector != nil || d.Configurator != nil || d.Bootstrapper != nil || d.Initializer != nil || d.Verifier != nil || d.Firmware != nil)
+	return d.Factory != nil && (d.Inspector != nil || d.Configurator != nil || d.Bootstrapper != nil || d.Initializer != nil || d.Verifier != nil || d.Firmware != nil || d.Observer != nil)
 }
 
 func (d LeasedDevices) adapters(ctx context.Context, w *api.CameraWorkerWork, f func(DeviceAdapters) error) error {
 	if d.Factory == nil {
-		return f(DeviceAdapters{Inspector: d.Inspector, Configurator: d.Configurator, Bootstrapper: d.Bootstrapper, Initializer: d.Initializer, Verifier: d.Verifier, Firmware: d.Firmware})
+		return f(DeviceAdapters{Inspector: d.Inspector, Configurator: d.Configurator, Bootstrapper: d.Bootstrapper, Initializer: d.Initializer, Verifier: d.Verifier, Firmware: d.Firmware, Observer: d.Observer})
 	}
 	adapters, err := d.Factory(ctx, w)
 	if adapters.Release != nil {
@@ -210,6 +215,23 @@ func (d LeasedDevices) ConfirmWebIdentity(ctx context.Context, h camera.DeviceHi
 		}
 		var e error
 		out, e = adapters.Firmware.ConfirmWebIdentity(ctx, h, lease)
+		return e
+	})
+	return out, err
+}
+
+// ObserveWebIdentity reads, within one leased step, the key a device whose
+// pin was refused presents now. It sends no credential.
+func (d LeasedDevices) ObserveWebIdentity(ctx context.Context, h camera.DeviceHint) (out camera.DeviceTLSIdentity, err error) {
+	if d.Factory == nil && d.Observer == nil {
+		return out, camera.ErrUnsupported
+	}
+	err = d.step(ctx, h, func(ctx context.Context, h camera.DeviceHint, adapters DeviceAdapters) error {
+		if adapters.Observer == nil {
+			return camera.ErrUnsupported
+		}
+		var e error
+		out, e = adapters.Observer.ObserveWebIdentity(ctx, h)
 		return e
 	})
 	return out, err

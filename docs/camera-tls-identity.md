@@ -37,7 +37,9 @@ Every named Device must exist in that policy's exact tenant, site (including
 NULL), and network. Duplicate Device IDs, malformed IDs and noncanonical digests
 are rejected. A new key needs a new policy revision, with the one exception
 [after a firmware upgrade](#after-a-firmware-upgrade) that Shale performed itself;
-an existing revision cannot be overwritten. Activation permission and any policy activation CAS remain
+an existing revision cannot be overwritten. A job that stops on a changed key
+lets one operator request write that revision
+([approving a changed key](#approving-a-changed-key)). Activation permission and any policy activation CAS remain
 independent requirements. Changing or activating a policy does not withdraw the
 pin from an already created immutable Job. To withdraw existing execution, cancel
 the affected Job or revoke/replace its Worker assignment; do not rely on changing
@@ -90,6 +92,52 @@ first trust.
 
 Outside that window nothing changed: a key that differs from the job's pin is
 refused, including after a firmware update or factory reset Shale did not perform.
+Such a job stops, as the next section describes.
+
+## Approving a changed key
+
+A job whose device presents a key other than the one it pins (a manual
+firmware update, a factory reset) is refused in the TLS handshake, before any
+request or credential is sent. The worker then reads the presented key with a
+credential-free handshake on the device's current authorized endpoint and web
+port, and the job stops: stage `WAITING`, code `tls_key_changed`, and the key
+in its checkpoint as `CameraProvisionState.changed_tls_identity`. The control
+plane accepts that field only for the job's own device and only when it differs
+from the key the job pins. It is an observation, never a pin: the job keeps its
+immutable input, a later job for the device pins the policy's key as before, and
+a job created naming the observed key is refused. If the device later answers
+over its pinned key again, the next attempt clears the observation. The console
+lists stopped camera jobs with both keys.
+
+One operator request approves the observed key:
+
+```sh
+shale --config operator.yaml camera-policy approve-tls JOB_UUID '{"spkiSha256":"sha256:<the key the job recorded>","expectedNetworkVersion":"2026-11-09T12:00:00Z"}'
+```
+
+`CameraPolicy.ApproveTLS` names the stopped job, the exact key it recorded and
+the network's current `dateUpdated`. The device is the job's own; no request
+field names another one. In one recorded transaction the control plane:
+
+1. checks that the job is `WAITING` with that exact key for its own device,
+   and that the network version is current (the same CAS as `Activate`);
+2. writes a revision of the network's active policy (the job's own revision when
+   none is active) that differs only in this device's `device_tls_identities`
+   entry, with the same `policy_key` and name and the revision
+   `tls-<digest of base revision, device and key>`; it passes the same
+   validation as `CameraPolicy.Create`;
+3. activates that revision;
+4. cancels the stopped job, whose pin can never be met again;
+5. enrolls a successor job for the same binding under the new revision. It keeps
+   the stopped job's exact credential versions, may activate the device only if
+   both the stopped job and the new revision allowed that, and pins the approved
+   key.
+
+Any other key, another job, a stale network version or a job that has not
+stopped on a changed key is refused, and nothing is written. Once it succeeds the
+same request is refused: the stopped job is settled. If the device presents yet
+another key afterwards, the successor stops on it and needs its own approval.
+Workers cannot call `ApproveTLS`.
 
 The policy, job and checkpoint fields extend existing typed JSON payloads. They
 add no credential plaintext or new table; `CameraDevice.firmware_tls` is a new
@@ -101,4 +149,6 @@ Validation covers policy syntax/scope, detached per-device selection, direct Job
 substitution and checkpoint retention in `server/core/camera_tls_identity_test.go`.
 `TestCameraPolicyDeviceTLSIdentityAuthorityAndJobPins` exercises the public CP
 with actual TLS, Roster operator grants and independently adopted Worker and
-Producer identities. Camera transport verification has its own tests.
+Producer identities. `TestCameraPolicyApproveChangedTLSKey` drives a job through
+a real Worker to a changed-key stop and covers the approval's refusals and
+result. Camera transport verification has its own tests.

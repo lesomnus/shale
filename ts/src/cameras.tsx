@@ -4,15 +4,21 @@
  * rate against the ceiling, a scene gone dark (§38.10), the suggestion a
  * starved source earns with the raise auto_raise applied or the limit that
  * held it (§38.5), and why cameras the producer's catalog names are not
- * recording yet.
+ * recording yet. Above them, the camera jobs that stopped and wait on an
+ * operator, with why: a TLS key a job's pin does not name is shown beside
+ * that pin (docs/camera-tls-identity.md).
  *
  * @module
  */
 
 import type { ReactNode } from 'react'
 
+import { useRow } from '@lesomnus/payday/react'
 import { key } from '@lesomnus/payday/store'
 
+import { CameraBinding as CameraBindingEntity } from '../gen/entities.js'
+import { CameraJobStage, type CameraBinding, type CameraJob } from '../gen/shale/camera_pb.js'
+import { CameraJobService } from '../gen/shale/camera_svc_pb.js'
 import { HostState, type Producer } from '../gen/shale/host_pb.js'
 import { ProducerService } from '../gen/shale/host_svc_pb.js'
 import type { Set, Source } from '../gen/shale/set_pb.js'
@@ -22,7 +28,7 @@ import type { SourceReport } from '../gen/shale/common_pb.js'
 
 import { tenantOf } from './session.js'
 import { On, useSurfaces } from './surface.js'
-import { Ago, Badge, Bar, Empty, Err, Loading, bps, byId, bytes, date, hex, sameId, seconds, useNow, usePolled, type Tone } from './ui.js'
+import { Ago, Badge, Bar, Empty, Err, Loading, bps, byId, bytes, date, hex, sameId, seconds, short, useNow, usePolled, type Tone } from './ui.js'
 
 const DOWN_AFTER_MS = 90_000
 
@@ -34,9 +40,79 @@ export function Cameras(): ReactNode {
 				A set is the cameras one producer records; what each camera is doing is what that producer said in its last heartbeat.
 			</p>
 			<On surface="tenant" note="Sets and cameras belong to a tenant: sign in to the tenant API.">
+				<StoppedJobs />
 				<Sets />
 			</On>
 		</>
+	)
+}
+
+/**
+ * StoppedJobs are the tenant's camera jobs waiting on an operator. Reading
+ * them is a camera grant at roster, so a person without one sees nothing
+ * here rather than an error.
+ */
+function StoppedJobs(): ReactNode {
+	const s = useSurfaces()
+	const tenant = tenantOf(s.sessions.tenant?.session.who ?? '')
+	const jobs = usePolled(CameraJobService.method.list, { filters: [{ tenant: { key: { case: 'alias' as const, value: tenant } } }], size: 500, reverse: true }, 15000)
+	if (jobs.state === 'error' || jobs.data === undefined) return null
+	const stopped = jobs.data.items.filter((j) => j.stage === CameraJobStage.WAITING)
+	if (stopped.length === 0) return null
+
+	return (
+		<section>
+			<h2>Camera jobs that stopped</h2>
+			<div className="cards">
+				{stopped.map((j) => (
+					<StoppedJob key={key(j.id)} job={j} />
+				))}
+			</div>
+		</section>
+	)
+}
+
+/**
+ * StoppedJob is one job and why it stopped. One that met a changed TLS key
+ * shows the key it pins and the key the camera presents instead; nothing was
+ * sent to the camera over it. Only `camera-policy approve-tls` with exactly
+ * that key lets the camera's next job pin it.
+ */
+function StoppedJob(props: { job: CameraJob }): ReactNode {
+	const j = props.job
+	const binding = useRow<CameraBinding>(CameraBindingEntity.typeName, j.binding?.id)
+	const progress = j.observed?.progress
+	const changed = progress?.changedTlsIdentity
+	// After its own firmware upgrade a job pins the key that upgrade accepted.
+	const pinned = progress?.firmware?.complete === true && progress.firmware.tlsIdentity !== undefined ? progress.firmware.tlsIdentity : j.inputs?.deviceTlsIdentity
+
+	return (
+		<div className="card">
+			<div className="title">
+				<b>{binding?.sourceAlias || short(j.id)}</b>
+				<Badge tone={changed === undefined ? 'warn' : 'bad'}>{changed === undefined ? `stopped: ${j.observed?.code || 'waiting'}` : 'TLS key changed'}</Badge>
+			</div>
+			<dl>
+				<dt>job</dt>
+				<dd className="mono">{hex(j.id)}</dd>
+				<dt>since</dt>
+				<dd>
+					<Ago at={j.dateUpdated} />
+				</dd>
+				{changed !== undefined && (
+					<>
+						<dt>pinned key</dt>
+						<dd className="mono key">{pinned?.spkiSha256 ?? '-'}</dd>
+						<dt>presented key</dt>
+						<dd className="mono key bad">{changed.spkiSha256}</dd>
+						<dt>to approve</dt>
+						<dd className="mono key dim">
+							shale camera-policy approve-tls {hex(j.id)} '{`{"spkiSha256":"${changed.spkiSha256}","expectedNetworkVersion":"<the network's dateUpdated>"}`}'
+						</dd>
+					</>
+				)}
+			</dl>
+		</div>
 	)
 }
 
