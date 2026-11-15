@@ -515,6 +515,18 @@ service-mesh address) implement the same interface: given a node, the caller
 (its network, tenant, and site), and the protocol (HTTP/1.1, HTTP/2, or HTTP/3),
 return one or more endpoints with scheme, host, and port.
 
+**The protocol.** A node serves every protocol on one host and port, HTTP/3
+on the UDP port of the TCP one ([§35.6](12-api.md#356-storage-node-http-data-plane)),
+so the resolvers above name it alike for each, and nothing hands out an
+endpoint for HTTP/3 apart: a client learns of it from the node's
+`Alt-Svc`, and whether UDP gets through from where the client sits is the
+client's to find out, not the CP's. An endpoint's `protocol` says `h2`
+with `https`, `h1` with development mode's `http`; `NodeService.Resolve`
+answers the protocol a caller asks for (`h1`, `h2`, `h3`) on the same
+endpoints. A resolver that names a node differently by protocol, a load
+balancer in front of the nodes that carries no UDP for one, is where the
+protocol would first decide something.
+
 **The caller's network** is the source address of the call, unless the
 `AddressPolicy` lists `trusted_proxies`: calls from those addresses carry the
 real client address in the PROXY protocol header, and the resolver uses that.

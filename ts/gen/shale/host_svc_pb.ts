@@ -1159,6 +1159,10 @@ export type NodeResolveRequest = Message<"shale.NodeResolveRequest"> & {
   from: string;
 
   /**
+   * The caller's protocol, "h1", "h2" or "h3" (§34.10): the endpoints say
+   * it, on the one host and port every protocol is served on. Empty is
+   * what a client starts with.
+   *
    * @generated from field: string protocol = 3 [features.field_presence = IMPLICIT];
    */
   protocol: string;

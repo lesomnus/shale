@@ -1274,7 +1274,12 @@ type Endpoint_builder struct {
 	Scheme string
 	Host   string
 	Port   int32
-	// "h1", "h2", or "h3".
+	// "h1", "h2", or "h3": what a client speaks to the endpoint. The CP hands
+	// out "h2" with https, which a client that does not speak HTTP/2 takes as
+	// HTTP/1.1, and "h1" with the plaintext http of development mode. A node
+	// that serves HTTP/3 does so on the same host and port over UDP and says
+	// so in the Alt-Svc of its answers (§35.6); "h3" is answered to a caller
+	// that asks for it by protocol.
 	Protocol string
 }
 

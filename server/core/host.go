@@ -1232,9 +1232,9 @@ func (s coreNode) Resolve(ctx context.Context, req *api.NodeResolveRequest) (*ap
 		from, _ = peerAddr(ctx)
 	}
 
-	return api.NodeResolveResponse_builder{Endpoints: s.nodeEndpoints(NodeAddresses{
+	return api.NodeResolveResponse_builder{Endpoints: forProtocol(s.nodeEndpoints(NodeAddresses{
 		Id: mustId(n.GetId()), Alias: n.GetAlias(), Interfaces: n.GetInterfaces(), DataAddress: n.GetDataAddress(), Dev: s.d.Dev,
-	}, from, address)}.Build(), nil
+	}, from, address), req.GetProtocol())}.Build(), nil
 }
 
 // ---- Relay -------------------------------------------------------------

@@ -127,3 +127,30 @@ func TestNodeEndpointsByName(t *testing.T) {
 	n.DataAddress = ":7420"
 	require.Equal(t, "n1.nodes.example.com", s.endpoints(n, "10.1.2.9", tmpl)[0].GetHost())
 }
+
+// What an endpoint says it speaks (§34.10, §35.6): HTTP/2 over TLS, HTTP/1.1
+// in development mode's plaintext, and the protocol a caller asks for by it
+// on the same host and port, since HTTP/3 is served there too.
+func TestEndpointProtocol(t *testing.T) {
+	ifs := []*api.HostInterface{api.HostInterface_builder{Name: "eth0", Addresses: []string{"10.1.2.80/24"}}.Build()}
+	n := &ent.Node{Alias: "n1", Interfaces: ifs, DataAddress: ":7420"}
+	require.Equal(t, "h2", Core{d: &Deps{}}.endpoints(n, "10.1.2.9", nil)[0].GetProtocol())
+	require.Equal(t, "h1", Core{d: &Deps{Dev: true}}.endpoints(n, "10.1.2.9", nil)[0].GetProtocol())
+
+	for _, c := range []struct {
+		dev         bool
+		asked, want string
+	}{
+		{false, "", "h2"},
+		{false, "h3", "h3"},
+		{false, "h1", "h1"},
+		{false, "quic", "h2"},
+		{true, "h3", "h1"},
+	} {
+		eps := forProtocol(Core{d: &Deps{Dev: c.dev}}.endpoints(n, "10.1.2.9", nil), c.asked)
+		require.Len(t, eps, 1)
+		require.Equal(t, c.want, eps[0].GetProtocol(), c.asked)
+		require.Equal(t, "10.1.2.80", eps[0].GetHost())
+		require.Equal(t, int32(7420), eps[0].GetPort())
+	}
+}
