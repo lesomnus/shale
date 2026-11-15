@@ -5,6 +5,7 @@ package hostagent
 
 import (
 	"context"
+	"crypto"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -48,6 +49,15 @@ type Agent struct {
 	Cp string
 	// CaHash makes the first-contact pin a check.
 	CaHash string
+	// CpRoots are CAs the operator trusts explicitly for the CP's server
+	// certificate, a public or corporate CA its `control.cert_file` comes
+	// from: trusted beside the pinned bundle, and in place of the
+	// first-contact pin, which is then not taken (§33.5). Nil, the default,
+	// is the pinned bundle alone.
+	CpRoots *x509.CertPool
+	// JoinEvery is how often Join asks again while pending; JoinInterval
+	// when zero.
+	JoinEvery time.Duration
 	// Dev allows plaintext to the CP.
 	Dev bool
 	Log *slog.Logger
@@ -189,6 +199,18 @@ func (a *Agent) tlsConfigPresent(present bool) (*tls.Config, error) {
 	bundle, err := a.Store.Bundle()
 	if err != nil {
 		return nil, err
+	}
+	if a.CpRoots != nil {
+		// Trusted explicitly: verified like any server, by its name, with
+		// the bundle beside so a CP serving its shale certificate still
+		// passes; nothing is pinned.
+		pool := a.CpRoots.Clone()
+		if len(bundle) > 0 && !pool.AppendCertsFromPEM(bundle) {
+			return nil, errors.New("pki: no certificate in the bundle")
+		}
+		cfg.RootCAs = pool
+
+		return cfg, nil
 	}
 	if len(bundle) > 0 {
 		pool, err := pki.Pool(bundle)
@@ -399,17 +421,25 @@ func (a *Agent) join(ctx context.Context, call JoinFunc, dial func(context.Conte
 		if err != nil {
 			a.Log.Warn("join", "err", err.Error())
 		} else if ans.JoinAnswer.GetState() == api.HostState_HOST_STATE_ADOPTED && len(ans.JoinAnswer.GetCertificate()) > 0 {
-			if err := a.Store.SetCert(ans.JoinAnswer.GetCertificate(), ans.JoinAnswer.GetCaBundle()); err != nil {
-				return Answer{}, err
-			}
 			id, err := pdid.From(ans.JoinAnswer.GetId())
 			if err != nil {
 				return Answer{}, err
 			}
-			a.id = id
-			a.Log.Info("adopted", "id", id.String(), "alias", ans.JoinAnswer.GetAlias())
+			leaf, err := a.verifyIssued(ans.JoinAnswer.GetCertificate(), ans.JoinAnswer.GetCaBundle(), id)
+			if err != nil {
+				// Not stored: what this host holds stays as it was, and it
+				// asks again.
+				a.Log.Warn("join: the certificate handed back does not verify", "err", err.Error())
+			} else {
+				if err := a.Store.SetCert(ans.JoinAnswer.GetCertificate(), ans.JoinAnswer.GetCaBundle()); err != nil {
+					return Answer{}, err
+				}
+				a.id = id
+				a.Log.Info("adopted", "id", id.String(), "alias", ans.JoinAnswer.GetAlias(),
+					"serial", pki.Serial(leaf), "expires", leaf.NotAfter)
 
-			return ans, nil
+				return ans, nil
+			}
 		} else if !said {
 			a.Log.Info("waiting for adoption",
 				"alias", ans.JoinAnswer.GetAlias(),
@@ -419,12 +449,104 @@ func (a *Agent) join(ctx context.Context, call JoinFunc, dial func(context.Conte
 			said = true
 		}
 
+		every := a.JoinEvery
+		if every <= 0 {
+			every = JoinInterval
+		}
 		select {
 		case <-ctx.Done():
 			return Answer{}, ctx.Err()
-		case <-time.After(JoinInterval):
+		case <-time.After(every):
 		}
 	}
+}
+
+// verifyIssued checks a certificate the CP handed over before it replaces
+// the one held: it is for this host's key, it names row `id`, and it chains
+// to the bundle it came with (the pinned one when it came with none) as a
+// client certificate. The chain is checked as of now, or of the nearest
+// moment the certificate is valid at when this host's clock is outside it:
+// a host whose clock is behind still takes what was just issued, and
+// whether a certificate has expired is Ready's question, not this one's.
+func (a *Agent) verifyIssued(chainPEM, bundlePEM []byte, id pdid.Id) (*x509.Certificate, error) {
+	chain, err := pki.ParseCerts(chainPEM)
+	if err != nil {
+		return nil, err
+	}
+	if len(chain) == 0 {
+		return nil, errors.New("no certificate")
+	}
+	leaf := chain[0]
+	if !a.certifies(leaf) {
+		return nil, errors.New("the certificate is not for this host's key")
+	}
+	if got, ok := pki.IdOf(leaf); !ok || got != id {
+		return nil, fmt.Errorf("the certificate names %s, not %s", got, id)
+	}
+	if len(bundlePEM) == 0 {
+		if bundlePEM, err = a.Store.Bundle(); err != nil {
+			return nil, err
+		}
+	}
+	roots, err := pki.Pool(bundlePEM)
+	if err != nil {
+		return nil, err
+	}
+	at := time.Now()
+	if at.Before(leaf.NotBefore) {
+		at = leaf.NotBefore
+	} else if at.After(leaf.NotAfter) {
+		at = leaf.NotAfter
+	}
+	opts := x509.VerifyOptions{
+		Roots:         roots,
+		Intermediates: x509.NewCertPool(),
+		CurrentTime:   at,
+		KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+	for _, c := range chain[1:] {
+		opts.Intermediates.AddCert(c)
+	}
+	if _, err := leaf.Verify(opts); err != nil {
+		return nil, err
+	}
+
+	return leaf, nil
+}
+
+// certifies says whether a certificate is for this host's current key.
+func (a *Agent) certifies(c *x509.Certificate) bool {
+	pub, ok := c.PublicKey.(interface{ Equal(crypto.PublicKey) bool })
+
+	return ok && pub.Equal(&a.key.Key.PublicKey)
+}
+
+// Expired says whether the host holds a certificate for its current key
+// that has run out (§33.4). Such a host goes back to Join with a new key
+// (Rekey) and is adopted again; one already rekeyed holds an expired
+// certificate for its old key, and this is false.
+func (a *Agent) Expired(now time.Time) bool {
+	leaf, err := a.Leaf()
+	if err != nil || leaf == nil {
+		return false
+	}
+
+	return !now.Before(leaf.NotAfter) && a.certifies(leaf)
+}
+
+// Rekey replaces the host key (§33.4): a host whose certificate expired
+// cannot renew it, and Join with the key the CP knows would hand the same
+// expired certificate back. With a new key it appears as "known host, new
+// key" under its row, and one adopt puts it back. The expired certificate
+// stays until the new one replaces it, so the host still knows its row.
+func (a *Agent) Rekey() error {
+	k, err := a.Store.Rotate()
+	if err != nil {
+		return err
+	}
+	a.key = k
+
+	return nil
 }
 
 // Ready says whether the host holds a certificate it can still use.
@@ -457,6 +579,9 @@ func (a *Agent) Renew(ctx context.Context, conn *grpc.ClientConn, call func(ctx 
 	cert, bundle, err := call(ctx, conn, csr)
 	if err != nil {
 		return err
+	}
+	if _, err := a.verifyIssued(cert, bundle, a.id); err != nil {
+		return fmt.Errorf("the renewed certificate does not verify: %w", err)
 	}
 
 	return a.Store.SetCert(cert, bundle)

@@ -16,6 +16,7 @@ deployment runs well on them, and changes them only for a reason.
 - **negotiated**: the producer proposes, and the CP clamps the proposal into
   cluster bounds ([§12.6](04-write-path.md#126-upload-profile-negotiation)).
 - **producer**: the producer's own configuration; nobody else sees it.
+- **reader**: the reader agent's own configuration, likewise.
 
 | Area | Parameter | Default | Bounds | Scope | Described in |
 |---|---|---|---|---|---|
@@ -114,6 +115,9 @@ deployment runs well on them, and changes them only for a reason.
 | Hosts | host certificate lifetime | 90 days, renewed at 60 | — | cluster | [§33.5](10-security.md#335-tls) |
 | Hosts | CP certificate lifetime | 1 year, renewed by the CP | — | cluster | [§33.5](10-security.md#335-tls) |
 | Hosts | CA lifetime | 10 years, rollover starts 1 year before | — | cluster | [§33.5](10-security.md#335-tls) |
+| Hosts | `reader.heartbeat_interval` | 30 s | — | reader | [§36.4](#364-running-a-reader) |
+| Hosts | `reader.cp_ca` | none: the CA pinned on first contact | `system` (the system's roots) or a PEM file: a CA trusted for the CP's certificate beside the pinned bundle, in place of the pin | reader | [§36.4](#364-running-a-reader), [§33.5](10-security.md#335-tls) |
+| Hosts | `reader.addr` | none | refused: the localhost listener is not built | reader | [§33.4](10-security.md#334-joining-and-adoption) |
 | Security | `read_token_ttl` | 1 h | — | cluster | [§33.2](10-security.md#332-access-tokens) |
 | People | `auth.roster.addr` | none: roster in this process | an address | control | [§33.1](10-security.md#331-trust-model) |
 | People | `auth.roster.key` | none | `env:NAME`, `file:PATH`, or the key: an `rk_` serves the tenants that nominated it, an `rt_` its own | control | [§33.1](10-security.md#331-trust-model) |
@@ -267,3 +271,82 @@ relay and the viewer ([§39.3](16-relay.md#393-from-the-producer)).
 but it cannot tell the producer to start and stop sending, and it would
 need its own gateway to Shale's tokens and sites. The relay reuses both
 and adds one thing, on-demand ingest ([§39](16-relay.md#39-relay)).
+
+### 36.4 Running a Reader
+
+A program that shows Shale's video to people of its own -- a viewer that
+lists cameras, asks for live and recorded video, and sends its browsers
+straight to the relay and the nodes -- reads as a **Reader**: a host of the
+tenant, adopted once, whose certificate `shale serve reader` keeps current
+beside it ([§33.4](10-security.md#334-joining-and-adoption)). It needs no
+person's session, no signing key and no KEK, and it only reads.
+
+```yaml
+# /etc/shale/shale.yaml on the machine beside the viewer
+cp: cp.example.com:7400   # the tenant API's gRPC listener (server.addr)
+tenant: acme              # with more than one tenant
+reader:
+  # cp_ca: system         # the CP's certificate is from a public CA
+```
+
+1. **Start it.** `shale serve reader` makes a key under
+   `/var/lib/shale/reader`, joins, and logs `waiting for adoption` with the
+   reader's alias, its hardware identity, its key fingerprint, and the
+   command that adopts it.
+2. **Adopt it** once the fingerprint matches the one `shale reader pending`
+   or the console shows: `shale reader adopt @acme/<alias>
+   '{"sites":[{"id":"<site>"}]}'`, or with no sites for the whole tenant.
+3. **Read with its files**: `host.key` (mode 0600), `host.crt`, and
+   `ca.crt`, the shale CA's bundle, in the same directory. The program dials
+   the tenant API's gRPC listener with the key and certificate as its client
+   certificate and the bundle as its roots, and calls what a reader may:
+   `Get`, `List` and `Live` of sets and sources, `Get`, `List`, `Timeline`
+   and `Export` of laminae, `Get` and `List` of sites, and
+   `ReaderService.Get`. The answers carry the view and read tokens its
+   browsers take to the relay and the nodes
+   ([§17.1](05-read-path.md#171-flow), [§39.4](16-relay.md#394-viewers)).
+
+**The endpoint.** `cp` is the tenant API's native gRPC listener
+(`server.addr`, 7400 by default), reached by TLS passthrough when there is a
+load balancer in front ([§34.5](11-deployment.md#345-kubernetes)): the
+certificate is the credential, and it is presented in the TLS handshake. The
+HTTP listener beside it (`server.http.addr`, 7402) is the browsers' -- the
+console, signing in, Connect and gRPC-Web -- and usually sits behind an
+Ingress that ends TLS, which a client certificate does not get through. A
+host neither joins nor calls there.
+
+**Trusting the CP.** On first contact the agent pins the CA the CP
+presents, or checks it against `ca_hash`, and trusts that bundle alone from
+then on. A CP whose `control.cert_file` comes from a public or corporate CA
+is named instead, explicitly: `reader.cp_ca: system` trusts the system's
+roots, a path trusts the CAs in that PEM file. The CP is then verified by
+its name like any server, nothing is pinned, and the bundle the join hands
+over is trusted beside it ([§33.5](10-security.md#335-tls)). The program
+reading with the files trusts the same.
+
+**Renewal.** The agent heartbeats every `reader.heartbeat_interval` and
+renews at two thirds of the certificate's life, 60 of its 90 days, or when
+the CP asks. A renewal keeps the key and replaces the files whole, so they
+are never half-written, and from that moment the CP refuses the old serial,
+on connections already open as well. The program loads the pair for each
+new connection, or when `host.crt` changes, and once a call is refused
+`UNAUTHENTICATED` it loads the files again and retries.
+
+**What it reads.** Its tenant, within the sites it was adopted for, or all
+of it when it was adopted with none. A set in no site, with its cameras and
+their recordings, is in none of a reader's sites: only a reader of the
+whole tenant reads it. Every write is refused.
+
+**When the certificate runs out.** A reader that was off for longer than
+its certificate lives cannot renew it: the CP's TLS refuses an expired
+certificate. The agent then makes a new key and joins again without the
+expired one; it is pending under its old alias as "known host, new key",
+and `shale reader adopt @acme/<alias>` takes it back with the sites it had
+(naming sites replaces them). Until then the program reads nothing. A
+reader that was erased is refused at once and joins again as a new reader,
+for an operator to adopt; a machine that lost its state directory joins as
+"known host, new key" too ([§34.3](11-deployment.md#343-state-on-disk)).
+
+**Not built.** The localhost listener of §33.4 -- the tenant API without
+TLS, for a media server that manages no keys -- is not: `reader.addr` is
+refused, and a program reads with the files.
