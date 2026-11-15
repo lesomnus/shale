@@ -28,11 +28,12 @@ func (s Core) CameraWorker() api.CameraWorkerServiceServer {
 	return coreCameraWorker{s, s.Next().CameraWorker()}
 }
 
-func (s Core) issueWorker(hj *api.HostJoin, id pdid.Id) ([]byte, string, time.Time, error) {
-	if s.d.CA == nil {
-		return nil, "", time.Time{}, failed("this control plane has no CA")
+func (s Core) issueWorker(ctx context.Context, hj *api.HostJoin, id pdid.Id) ([]byte, string, time.Time, error) {
+	ca, err := s.issuer(ctx)
+	if err != nil {
+		return nil, "", time.Time{}, err
 	}
-	c, err := s.d.CA.IssueClientHost(hj.GetCsr(), id, s.d.now())
+	c, err := ca.IssueClientHost(hj.GetCsr(), id, s.d.now())
 	if err != nil {
 		return nil, "", time.Time{}, err
 	}
@@ -113,7 +114,7 @@ func (s coreCameraWorker) Adopt(ctx context.Context, r *api.CameraWorkerAdoptReq
 		if err != nil {
 			return err
 		}
-		cert, serial, exp, err := s.issueWorker(rec, mustId(w.GetId()))
+		cert, serial, exp, err := s.issueWorker(ctx, rec, mustId(w.GetId()))
 		if err != nil {
 			return err
 		}
@@ -149,11 +150,18 @@ func (s coreCameraWorker) Heartbeat(ctx context.Context, r *api.CameraWorkerHear
 		return nil, invalid("version", "a bounded printable version is required")
 	}
 	now := s.d.now()
-	_, err = s.own(ctx).CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{Ref: api.CameraWorkerRef_builder{Id: w.GetId()}.Build(), DateSeen: timestamppb.New(now), Version: z.Ptr(r.GetVersion()), DateUpdatedForce: z.Ptr(true)}.Build())
+	if len(r.GetCaHash()) > 128 || strings.ContainsFunc(r.GetCaHash(), unprintable) {
+		return nil, invalid("ca_hash", "a bounded printable hash is required")
+	}
+	_, err = s.own(ctx).CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{Ref: api.CameraWorkerRef_builder{Id: w.GetId()}.Build(), DateSeen: timestamppb.New(now), Version: z.Ptr(r.GetVersion()), CaHash: z.Ptr(r.GetCaHash()), DateUpdatedForce: z.Ptr(true)}.Build())
 	if err != nil {
 		return nil, err
 	}
-	return api.CameraWorkerHeartbeatResponse_builder{RenewCertificate: w.GetDateCertExpires() != nil && now.After(renewAt(w.GetDateCertIssued(), w.GetDateCertExpires()))}.Build(), nil
+	renew := w.GetDateCertExpires() != nil && now.After(renewAt(w.GetDateCertIssued(), w.GetDateCertExpires()))
+	// The CA set asks too (§33.5): another bundle, or a certificate from the
+	// CA a rollover replaces.
+	renew = renew || s.renewForCa(ctx, r.GetCaHash(), w.GetCertificate())
+	return api.CameraWorkerHeartbeatResponse_builder{RenewCertificate: renew}.Build(), nil
 }
 
 func (s coreCameraWorker) Revoke(ctx context.Context, r *api.CameraWorkerRevokeRequest) (*api.CameraWorker, error) {
@@ -225,7 +233,7 @@ func (s coreCameraWorker) Join(ctx context.Context, req *api.CameraWorkerJoinReq
 		js = &joinState{id: pdid.Id(row.Id), state: api.HostState(row.State), join: row.Join, certSerial: row.CertSerial}
 	}
 
-	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle()}
+	answer := api.JoinAnswer_builder{State: api.HostState_HOST_STATE_PENDING, CaBundle: s.bundle(ctx)}
 	decision := s.decide(js, hj)
 	if row != nil && api.HostState(row.State) == api.HostState_HOST_STATE_ADOPTED {
 		decision = decRejoin
@@ -314,7 +322,7 @@ func (s coreCameraWorker) RenewCertificate(ctx context.Context, req *api.CameraW
 		rec.SetCsr(req.GetCsr())
 		rec.SetKeyFingerprint(key[:23])
 		rec.SetRejoin(false)
-		cert, serial, expiry, err := s.issueWorker(rec, mustId(r.GetId()))
+		cert, serial, expiry, err := s.issueWorker(ctx, rec, mustId(r.GetId()))
 		if err != nil {
 			return err
 		}
@@ -322,7 +330,7 @@ func (s coreCameraWorker) RenewCertificate(ctx context.Context, req *api.CameraW
 		if _, err = own.CameraWorker().Patch(ctx, api.CameraWorkerPatchRequest_builder{Ref: api.CameraWorkerRef_builder{Id: r.GetId()}.Build(), Join: rec, Certificate: cert, CertSerial: z.Ptr(serial), DateCertIssued: timestamppb.New(s.d.now()), DateCertExpires: timestamppb.New(expiry), DateUpdated: r.GetDateUpdated()}.Build()); err != nil {
 			return err
 		}
-		out = api.CameraWorkerRenewCertificateResponse_builder{Certificate: cert, CaBundle: s.bundle()}.Build()
+		out = api.CameraWorkerRenewCertificateResponse_builder{Certificate: cert, CaBundle: s.bundle(ctx)}.Build()
 		return nil
 	})
 	if err != nil {
@@ -347,7 +355,7 @@ func (s coreCameraWorker) resumeApprovedWorker(ctx context.Context, id pdid.Id, 
 		cert := w.GetCertificate()
 		if w.GetDateCertExpires() == nil || !w.GetDateCertExpires().AsTime().After(s.d.now()) {
 			rec := s.joinRecord(hj, from, false)
-			issued, serial, expiry, err := s.issueWorker(rec, id)
+			issued, serial, expiry, err := s.issueWorker(ctx, rec, id)
 			if err != nil {
 				return err
 			}
@@ -360,7 +368,7 @@ func (s coreCameraWorker) resumeApprovedWorker(ctx context.Context, id pdid.Id, 
 		if len(cert) == 0 {
 			return failed("approved worker has no stored certificate")
 		}
-		out = api.CameraWorkerJoinResponse_builder{Answer: api.JoinAnswer_builder{Id: w.GetId(), Alias: w.GetAlias(), State: api.HostState_HOST_STATE_ADOPTED, Certificate: cert, CaBundle: s.bundle()}.Build()}.Build()
+		out = api.CameraWorkerJoinResponse_builder{Answer: api.JoinAnswer_builder{Id: w.GetId(), Alias: w.GetAlias(), State: api.HostState_HOST_STATE_ADOPTED, Certificate: cert, CaBundle: s.bundle(ctx)}.Build()}.Build()
 		return nil
 	})
 	if err != nil {

@@ -184,6 +184,20 @@ func (_c *ProducerCreate) SetNillableLive(v *int32) *ProducerCreate {
 	return _c
 }
 
+// SetCaHash sets the "ca_hash" field.
+func (_c *ProducerCreate) SetCaHash(v string) *ProducerCreate {
+	_c.mutation.SetCaHash(v)
+	return _c
+}
+
+// SetNillableCaHash sets the "ca_hash" field if the given value is not nil.
+func (_c *ProducerCreate) SetNillableCaHash(v *string) *ProducerCreate {
+	if v != nil {
+		_c.SetCaHash(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *ProducerCreate) SetTenantId(v uuid.UUID) *ProducerCreate {
 	_c.mutation.SetTenantId(v)
@@ -297,6 +311,12 @@ func (_c *ProducerCreate) defaults() {
 		if _, ok := _c.mutation.FieldExpr(producer.FieldLive); !ok {
 			v := producer.DefaultLive
 			_c.mutation.SetLive(v)
+		}
+	}
+	if _, ok := _c.mutation.CaHash(); !ok {
+		if _, ok := _c.mutation.FieldExpr(producer.FieldCaHash); !ok {
+			v := producer.DefaultCaHash
+			_c.mutation.SetCaHash(v)
 		}
 	}
 }
@@ -478,6 +498,10 @@ func (_c *ProducerCreate) createSpec() (*Producer, *sqlgraph.CreateSpec, error) 
 	if value, ok := _c.mutation.Live(); ok {
 		_spec.SetField(producer.FieldLive, field.TypeInt32, value)
 		_node.Live = value
+	}
+	if value, ok := _c.mutation.CaHash(); ok {
+		_spec.SetField(producer.FieldCaHash, field.TypeString, value)
+		_node.CaHash = value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

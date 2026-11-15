@@ -194,6 +194,9 @@ func (Producer) Fields() []ent.Field {
 		field.Int32("live").
 			Optional().
 			Default(0),
+		field.String("ca_hash").
+			Optional().
+			Default(""),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Uuid("site_id").
@@ -281,6 +284,9 @@ func (Reader) Fields() []ent.Field {
 			Optional(),
 		field.String("version"),
 		field.Bool("all_sites"),
+		field.String("ca_hash").
+			Optional().
+			Default(""),
 		field.Uuid("tenant_id").
 			Immutable(),
 	}

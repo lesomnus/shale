@@ -91,9 +91,16 @@ type Deps struct {
 	// capabilities. A relative path is served by that listener; a deployment
 	// behind a proxy can configure its absolute public URL.
 	ExportURL func() string
-	// CA issues host certificates. Nil on a deployment with external
+	// CA is the CA `shale init` wrote into the state directory. It issues
+	// host certificates until the first rollover; from then on the stored
+	// CA set does (Authorities, §33.5). Nil on a deployment with external
 	// certificates only, where adoption cannot issue any.
 	CA *pki.CA
+	// CaRolloverBefore and CaSettle are the clocks of a CA rollover
+	// (§33.5): how long before the active CA expires one begins, and the
+	// least time each of its steps lasts. Zero is §36.1's default.
+	CaRolloverBefore time.Duration
+	CaSettle         time.Duration
 	// Resolve turns a node into the endpoints a caller dials (§34.10).
 	Resolve Resolver
 	// AutoAdopt says whether a join is adopted at once, which `shale serve
@@ -147,6 +154,10 @@ type Deps struct {
 	PrepareCameraEnrollment func(context.Context, CameraEnrollmentPreparation) (CameraEnrollmentCredentials, error)
 
 	pol policies
+
+	// cas is the CA set as this process read it (§33.5).
+	casOnce sync.Once
+	cas     *Authorities
 
 	// reports caps what one producer may add to one node's score per day
 	// (§27); per process, which is enough for a cap.

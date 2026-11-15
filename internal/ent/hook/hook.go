@@ -189,6 +189,18 @@ func (f CameraWorkerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CameraWorkerMutation", m)
 }
 
+// The CertificateAuthorityFunc type is an adapter to allow the use of ordinary
+// function as CertificateAuthority mutator.
+type CertificateAuthorityFunc func(context.Context, *ent.CertificateAuthorityMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CertificateAuthorityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CertificateAuthorityMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CertificateAuthorityMutation", m)
+}
+
 // The DelegationFunc type is an adapter to allow the use of ordinary
 // function as Delegation mutator.
 type DelegationFunc func(context.Context, *ent.DelegationMutation) (ent.Value, error)

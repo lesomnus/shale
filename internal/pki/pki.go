@@ -9,6 +9,8 @@
 package pki
 
 import (
+	"bytes"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -97,21 +99,45 @@ func Load(certPath, keyPath string) (*CA, error) {
 	if err != nil {
 		return nil, err
 	}
+	ca, err := ParseCA(cb, kb)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", certPath, err)
+	}
 
-	certs, err := ParseCerts(cb)
+	return ca, nil
+}
+
+// ParseCA reads a CA from its certificate and key as PEM, refusing a pair
+// that does not belong together.
+func ParseCA(certPEM, keyPEM []byte) (*CA, error) {
+	certs, err := ParseCerts(certPEM)
 	if err != nil {
 		return nil, err
 	}
 	if len(certs) == 0 {
-		return nil, errors.New("pki: no certificate in " + certPath)
+		return nil, errors.New("pki: no certificate")
 	}
-
-	key, err := ParseKey(kb)
+	key, err := ParseKey(keyPEM)
 	if err != nil {
 		return nil, err
 	}
+	pub, ok := certs[0].PublicKey.(interface{ Equal(crypto.PublicKey) bool })
+	if !ok || !pub.Equal(&key.PublicKey) {
+		return nil, errors.New("pki: the key is not the certificate's")
+	}
 
 	return &CA{Cert: certs[0], Key: key}, nil
+}
+
+// IssuedBy says whether certificate c was signed by the CA certificate ca,
+// which is how the CP tells which of its CAs a host's certificate came from
+// during a rollover (§33.5).
+func IssuedBy(c, ca *x509.Certificate) bool {
+	if c == nil || ca == nil || !bytes.Equal(c.RawIssuer, ca.RawSubject) {
+		return false
+	}
+
+	return c.CheckSignatureFrom(ca) == nil
 }
 
 // Save writes the CA to PEM files, the key with mode 0600.

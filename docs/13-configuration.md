@@ -119,8 +119,10 @@ deployment runs well on them, and changes them only for a reason.
 | Hosts | `join_pending_ttl` | 24 h | — | cluster | [§33.4](10-security.md#334-joining-and-adoption) |
 | Hosts | `readopt` | `manual` | `manual`, `auto` | cluster | [§33.4](10-security.md#334-joining-and-adoption) |
 | Hosts | host certificate lifetime | 90 days, renewed at 60 | — | cluster | [§33.5](10-security.md#335-tls) |
-| Hosts | CP certificate lifetime | 1 year, renewed by the CP | — | cluster | [§33.5](10-security.md#335-tls) |
-| Hosts | CA lifetime | 10 years, rollover starts 1 year before | — | cluster | [§33.5](10-security.md#335-tls) |
+| Hosts | CP certificate lifetime | 1 year, renewed by the CP at two thirds, in memory, and when the CA that issues changes | — | cluster | [§33.5](10-security.md#335-tls) |
+| Hosts | CA lifetime | 10 years | — | cluster | [§33.5](10-security.md#335-tls) |
+| Hosts | `control.ca_rollover_before` | 1 year | how long before the active CA expires the leader begins a rollover; `shale ca rotate` begins one at any time | control | [§33.5](10-security.md#335-tls) |
+| Hosts | `control.ca_settle` | 1 min | the least time each step of a CA rollover stands before the next; every CP process reads the CA set again at half of it | control | [§33.5](10-security.md#335-tls) |
 | Hosts | `reader.heartbeat_interval` | 30 s | — | reader | [§36.4](#364-running-a-reader) |
 | Hosts | `reader.cp_ca` | none: the CA pinned on first contact | `system` (the system's roots) or a PEM file: a CA trusted for the CP's certificate beside the pinned bundle, in place of the pin | reader | [§36.4](#364-running-a-reader), [§33.5](10-security.md#335-tls) |
 | Hosts | `reader.addr` | none | refused: the localhost listener is not built | reader | [§33.4](10-security.md#334-joining-and-adoption) |

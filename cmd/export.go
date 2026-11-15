@@ -14,7 +14,6 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/internal/exporthttp"
-	"github.com/lesomnus/shale/internal/pki"
 	"github.com/lesomnus/shale/server/core"
 )
 
@@ -61,26 +60,23 @@ func (c ExportConfig) check(dev bool) error {
 }
 
 func (s *Server) exportHandler() (http.Handler, error) {
-	roots, err := pki.SystemRoots()
-	if err != nil || roots == nil {
-		roots = x509.NewCertPool()
-	}
-	if s.CA != nil {
-		roots.AddCert(s.CA.Cert)
-	}
-	transport := &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		DialContext:           (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
-		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
-		ForceAttemptHTTP2:     true,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ResponseHeaderTimeout: 30 * time.Second,
-		IdleConnTimeout:       90 * time.Second,
-		MaxIdleConns:          16,
-		MaxIdleConnsPerHost:   4,
-		MaxConnsPerHost:       8,
-		DisableCompression:    true,
-	}
+	// The system's roots and the CA set as it is now, made again when a
+	// rollover changes the bundle (§33.5).
+	transport := &casTransport{cas: s.Deps.Authorities(), make: func(roots *x509.CertPool) *http.Transport {
+		return &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext,
+			TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
+			ForceAttemptHTTP2:     true,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 30 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          16,
+			MaxIdleConnsPerHost:   4,
+			MaxConnsPerHost:       8,
+			DisableCompression:    true,
+		}
+	}}
 	client := &http.Client{Transport: transport}
 	c := s.cfg.Export
 	return &exporthttp.Handler{
