@@ -8,7 +8,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"io"
 	"log/slog"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -359,6 +358,13 @@ type source struct {
 	skipped    int64
 	lastReport time.Time
 	raise      bool
+	// retune says the CP agreed a ceiling other than the one proposed:
+	// auto_raise raised it, or the set's total or the policy held it down.
+	// The encoder takes it at the next segment boundary (§38.5). A raise
+	// the producer proposes itself after an early cut waits for the
+	// encoder's next start: the declaration was wrong, not the encoder, and
+	// an encoder given more spends more.
+	retune bool
 }
 
 // New prepares a producer; Run does the work.
@@ -792,6 +798,8 @@ func (p *Producer) negotiateSources(ctx context.Context, sources []*source, snap
 func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source, snapshot catalog.Snapshot, preview bool) error {
 	var proposals []*api.SourceProposal
 	var total int64
+	// proposed is each source's proposed ceiling, by Source id.
+	proposed := map[string]int64{}
 	for _, s := range sources {
 		if err := p.refreshCeiling(ctx, s); err != nil {
 			return refused(api.AdmissionWaitReason_ADMISSION_WAIT_REASON_CEILING, 0, 0, err)
@@ -807,6 +815,7 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 			ceiling = ceiling * 5 / 4
 		}
 		total += ceiling
+		proposed[string(s.row.GetId())] = ceiling
 		prof := api.SegmentProfile_builder{MaxBitrate: ceiling}
 		if p.cfg.SegmentDuration > 0 {
 			prof.DurationSeconds = int64(p.cfg.SegmentDuration.Seconds())
@@ -840,8 +849,8 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 	if managed {
 		// Reserve peak simultaneous live traffic even with on-demand relay policy.
 		// Preview may fail; neither capture nor an existing Source profile changed.
-		if p.cfg.Uplink > 0 && float64(total)*2.2 > float64(p.cfg.Uplink) {
-			return refused(api.AdmissionWaitReason_ADMISSION_WAIT_REASON_UPLINK, int64(math.Ceil(float64(total)*2.2)), p.cfg.Uplink,
+		if need := core.UplinkNeed(total, true); p.cfg.Uplink > 0 && need > p.cfg.Uplink {
+			return refused(api.AdmissionWaitReason_ADMISSION_WAIT_REASON_UPLINK, need, p.cfg.Uplink,
 				status.Error(codes.ResourceExhausted, "managed capture exceeds Producer uplink budget"))
 		}
 		id, _ := pdid.Parse(snapshot.Revision.AssignmentID)
@@ -886,23 +895,14 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 	p.terms = terms{version: resp.GetProfileVersion(), mode: mode, link: resp.GetLink()}
 	p.mu.Unlock()
 	p.relay.set(resp.GetRelay())
-	// The uplink budget (§38.5): the ceilings with 20% headroom, and once
-	// more when the relay carries every camera at all times (§39.3).
-	if p.cfg.Uplink > 0 {
-		need := float64(total) * 1.2
-		if ra := resp.GetRelay(); ra != nil && ra.GetLive() != api.LivePolicy_LIVE_POLICY_ON_DEMAND {
-			need += float64(total)
-		}
-		if need > float64(p.cfg.Uplink) {
-			p.log.Warn("the ceilings exceed the uplink: 20% headroom, and once more for live at all times", "ceilings", total, "need", int64(need), "uplink", p.cfg.Uplink)
-		}
-	}
+	var agreed int64
 	for _, ag := range resp.GetSources() {
 		for _, s := range sources {
 			if string(s.row.GetId()) != string(ag.GetSourceId()) {
 				continue
 			}
 			prof := ag.GetProfile()
+			agreed += prof.GetMaxBitrate()
 			d := time.Duration(prof.GetDurationSeconds()) * time.Second
 			sched := Schedule{
 				Duration: d,
@@ -913,9 +913,19 @@ func (p *Producer) negotiateSourcesLocked(ctx context.Context, sources []*source
 			s.profile = prof
 			s.ceiling = prof.GetMaxBitrate()
 			s.sched = sched
+			if !managed && prof.GetMaxBitrate() != proposed[string(s.row.GetId())] {
+				s.retune = true
+			}
 			s.mu.Unlock()
 			p.log.Info("profile", "source", s.cfg.Alias, "max_bitrate", prof.GetMaxBitrate(), "duration", d.String(), "keyframe_ms", prof.GetKeyframeIntervalMs(), "phase", sched.Phase.String())
 		}
+	}
+	// The uplink budget (§38.5), on the ceilings as agreed, which can be
+	// more than proposed (auto_raise): 20% headroom, and once more when the
+	// relay carries every camera at all times (§39.3).
+	ra := resp.GetRelay()
+	if need := core.UplinkNeed(agreed, ra != nil && ra.GetLive() != api.LivePolicy_LIVE_POLICY_ON_DEMAND); p.cfg.Uplink > 0 && need > p.cfg.Uplink {
+		p.log.Warn("the ceilings exceed the uplink: 20% headroom, and once more for live at all times", "ceilings", agreed, "need", need, "uplink", p.cfg.Uplink)
 	}
 
 	return nil
@@ -1038,6 +1048,17 @@ func (p *Producer) newCutter(s *source) *Cutter {
 			s.prefix = b
 			s.mu.Unlock()
 		},
+		// A ceiling the CP agreed other than proposed is the encoder's from
+		// the next segment on (§38.5); an encoder that has started with it
+		// since is left alone.
+		Boundary: func() bool {
+			s.mu.Lock()
+			retune := s.retune
+			s.retune = false
+			s.mu.Unlock()
+
+			return retune && s.capture != nil && s.capture.Outdated()
+		},
 	}
 }
 
@@ -1062,7 +1083,7 @@ func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 	}
 	var f Frame
 	started := time.Now()
-	checked := false
+	checked, restarting := false, false
 	for {
 		if err := reader.Next(&f); err != nil {
 			if !errors.Is(err, io.EOF) && ctx.Err() == nil {
@@ -1071,6 +1092,18 @@ func (p *Producer) readMP4(ctx context.Context, s *source, r io.Reader) {
 			break
 		}
 		cutter.Feed(&f)
+		if cutter.Ended() {
+			// The segment closed at its boundary for the encoder to take
+			// the agreed profile (§38.5): what the old process writes
+			// until it ends is not kept, and the next one's stream opens
+			// the next segment.
+			if !restarting {
+				restarting = true
+				p.log.Info("capture restarted at the segment boundary for the agreed profile", "source", s.cfg.Alias)
+				s.capture.Restart()
+			}
+			continue
+		}
 		p.relay.feedEpoch(s, &f, reader.Init(), ticket.Epoch)
 		p.observeApplication(s, &progress, &f, reader.Init())
 		s.accountFrame(&f, 0)
@@ -1724,6 +1757,9 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 				r.Error = in.LastError()
 			}
 		}
+		if s.capture != nil {
+			r.RateControl = s.capture.RateControl()
+		}
 		s.atCap, s.episodes, s.seconds = 0, 0, 0
 		s.mu.Unlock()
 		reports = append(reports, r.Build())
@@ -1764,6 +1800,7 @@ func (p *Producer) heartbeat(ctx context.Context) error {
 		CaHash:    p.agent.BundleHash(),
 		Version:   hostagent.Version,
 		Admission: p.admission.Load(),
+		Uplink:    p.cfg.Uplink,
 	}.Build())
 	if err != nil {
 		return err

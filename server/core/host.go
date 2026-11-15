@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent/producer"
 	"github.com/lesomnus/shale/internal/ent/reader"
 	"github.com/lesomnus/shale/internal/ent/relay"
+	"github.com/lesomnus/shale/internal/ent/sitemember"
 	"github.com/lesomnus/shale/internal/ent/tenant"
 	"github.com/lesomnus/shale/internal/pki"
 )
@@ -477,7 +478,7 @@ func (s coreProducer) Heartbeat(ctx context.Context, req *api.ProducerHeartbeatR
 	}
 
 	// Starvation accounting on each source (§38.5).
-	suggestions, err := s.starvation(ctx, p, reports)
+	suggestions, err := s.starvation(ctx, p, req.GetUplink(), reports)
 	if err != nil {
 		return nil, err
 	}
@@ -636,7 +637,12 @@ func (s coreReader) Join(ctx context.Context, req *api.ReaderJoinRequest) (*api.
 		}
 		answer.Id = id.Bytes()
 		answer.Alias = alias
-		answer.Message = "waiting for adoption: shale reader adopt " + alias
+		// The command as it is typed (§32), as a producer is told.
+		who := alias
+		if t, err := s.ent(ctx).Tenant.Get(ctx, tid.Uuid()); err == nil && t.Alias != "" {
+			who = "@" + t.Alias + "/" + alias
+		}
+		answer.Message = "waiting for adoption: shale reader adopt " + who
 	case decPending:
 		if _, err := s.own(ctx).Reader().Patch(ctx, api.ReaderPatchRequest_builder{
 			Ref:              api.ReaderRef_builder{Id: js.id.Bytes()}.Build(),
@@ -714,6 +720,15 @@ func (s coreReader) Adopt(ctx context.Context, req *api.ReaderAdoptRequest) (*ap
 	rec.SetCertificate(pem)
 	rec.SetRejoin(false)
 
+	// Adopting a reader that is already adopted -- a known host with a new
+	// key, after its certificate expired or its state was lost (§33.4) --
+	// puts it back as it was: its sites stay unless the request names
+	// others, which then replace them. Only a first adoption reads no
+	// sites as the whole tenant, so taking a reader back never widens what
+	// it may read.
+	readopt := r.GetState() == api.HostState_HOST_STATE_ADOPTED
+	scope := !readopt || len(req.GetSites()) > 0
+
 	var out *api.Reader
 	err = s.tx(ctx, func(ctx context.Context, nx api.Server) error {
 		patch := api.ReaderPatchRequest_builder{
@@ -723,8 +738,10 @@ func (s coreReader) Adopt(ctx context.Context, req *api.ReaderAdoptRequest) (*ap
 			CertSerial:      z.Ptr(serial),
 			DateAdopted:     timestamppb.New(s.d.now()),
 			DateCertExpires: timestamppb.New(exp),
-			AllSites:        z.Ptr(len(req.GetSites()) == 0),
 			DateUpdated:     r.GetDateUpdated(),
+		}
+		if scope {
+			patch.AllSites = z.Ptr(len(req.GetSites()) == 0)
 		}
 		if a := strings.TrimSpace(req.GetAlias()); a != "" {
 			patch.Alias = z.Ptr(a)
@@ -735,6 +752,17 @@ func (s coreReader) Adopt(ctx context.Context, req *api.ReaderAdoptRequest) (*ap
 		}
 		out = v
 
+		if readopt && scope {
+			ids, err := s.ent(ctx).SiteMember.Query().Where(sitemember.ReaderIdEQ(mustId(r.GetId()).Uuid())).Ids(ctx)
+			if err != nil {
+				return err
+			}
+			for _, id := range ids {
+				if _, err := nx.SiteMember().Erase(ctx, api.SiteMemberRef_builder{Id: pdid.Id(id).Bytes()}.Build()); err != nil {
+					return err
+				}
+			}
+		}
 		for _, site := range req.GetSites() {
 			st, err := nx.Site().Get(ctx, api.SiteGetRequest_builder{Ref: site}.Build())
 			if err != nil {

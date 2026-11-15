@@ -100,7 +100,7 @@ data, so the "no SSD in the data path" rule
 | Storage Node | `/var/lib/shale/storage` | host key and certificate, CA bundle, cached key set |
 | Storage Node | each sink path | lamina data, sink label |
 | Producer | `/var/lib/shale/producer` | host key and certificate, CA bundle. Segments are held in RAM only ([§16](04-write-path.md#16-producer-backpressure)) |
-| Reader | `/var/lib/shale/reader` | host key and certificate, CA bundle |
+| Reader | `/var/lib/shale/reader` | host key and certificate, CA bundle (`host.key`, `host.crt`, `ca.crt`), which the software beside it reads with ([§36.4](13-configuration.md#364-running-a-reader)) |
 | Relay | `/var/lib/shale/relay` | host key and certificate, CA bundle, cached key set. No stream state: everything it carries is in RAM ([§39](16-relay.md#39-relay)) |
 
 A host that loses its state directory has lost its key. It joins again on its

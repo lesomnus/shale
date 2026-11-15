@@ -11877,6 +11877,7 @@ type ProducerHeartbeatRequest struct {
 	xxx_hidden_Version    string                 `protobuf:"bytes,4,opt,name=version"`
 	xxx_hidden_RelayState string                 `protobuf:"bytes,5,opt,name=relay_state,json=relayState"`
 	xxx_hidden_Admission  *AdmissionWait         `protobuf:"bytes,6,opt,name=admission"`
+	xxx_hidden_Uplink     int64                  `protobuf:"varint,7,opt,name=uplink"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -11950,6 +11951,13 @@ func (x *ProducerHeartbeatRequest) GetAdmission() *AdmissionWait {
 	return nil
 }
 
+func (x *ProducerHeartbeatRequest) GetUplink() int64 {
+	if x != nil {
+		return x.xxx_hidden_Uplink
+	}
+	return 0
+}
+
 func (x *ProducerHeartbeatRequest) SetSources(v []*SourceReport) {
 	x.xxx_hidden_Sources = &v
 }
@@ -11972,6 +11980,10 @@ func (x *ProducerHeartbeatRequest) SetRelayState(v string) {
 
 func (x *ProducerHeartbeatRequest) SetAdmission(v *AdmissionWait) {
 	x.xxx_hidden_Admission = v
+}
+
+func (x *ProducerHeartbeatRequest) SetUplink(v int64) {
+	x.xxx_hidden_Uplink = v
 }
 
 func (x *ProducerHeartbeatRequest) HasLoad() bool {
@@ -12006,6 +12018,10 @@ type ProducerHeartbeatRequest_builder struct {
 	RelayState string
 	// Cameras its catalog names that it has not taken up, and why (§38.5).
 	Admission *AdmissionWait
+	// The producer's declared `uplink` in bits a second, zero when it
+	// declares none: the CP keeps the raises auto_raise applies inside it
+	// (§38.5).
+	Uplink int64
 }
 
 func (b0 ProducerHeartbeatRequest_builder) Build() *ProducerHeartbeatRequest {
@@ -12018,6 +12034,7 @@ func (b0 ProducerHeartbeatRequest_builder) Build() *ProducerHeartbeatRequest {
 	x.xxx_hidden_Version = b.Version
 	x.xxx_hidden_RelayState = b.RelayState
 	x.xxx_hidden_Admission = b.Admission
+	x.xxx_hidden_Uplink = b.Uplink
 	return m0
 }
 
@@ -12134,8 +12151,9 @@ func (b0 ProducerHeartbeatResponse_builder) Build() *ProducerHeartbeatResponse {
 	return m0
 }
 
-// Suggestion is a ceiling the CP suggests raising (§38.5); with auto_raise
-// the CP has already raised it.
+// Suggestion is a ceiling the CP suggests raising (§38.5). `applied` says
+// auto_raise raised it, and the producer's next negotiation agrees it;
+// otherwise `reason` says what holds it back, when anything does.
 type Suggestion struct {
 	state                 protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_SourceId   []byte                 `protobuf:"bytes,1,opt,name=source_id,json=sourceId"`
@@ -16186,7 +16204,7 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\x03csr\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\x03csr\"o\n" +
 	" ProducerRenewCertificateResponse\x12'\n" +
 	"\vcertificate\x18\x01 \x01(\fB\x05\xaa\x01\x02\b\x02R\vcertificate\x12\"\n" +
-	"\tca_bundle\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\bcaBundle\"\x8b\x02\n" +
+	"\tca_bundle\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\bcaBundle\"\xaa\x02\n" +
 	"\x18ProducerHeartbeatRequest\x12-\n" +
 	"\asources\x18\x01 \x03(\v2\x13.shale.SourceReportR\asources\x12#\n" +
 	"\x04load\x18\x02 \x01(\v2\x0f.shale.HostLoadR\x04load\x12\x1e\n" +
@@ -16194,7 +16212,8 @@ const file_shale_host_svc_g_proto_rawDesc = "" +
 	"\aversion\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\aversion\x12&\n" +
 	"\vrelay_state\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\n" +
 	"relayState\x122\n" +
-	"\tadmission\x18\x06 \x01(\v2\x14.shale.AdmissionWaitR\tadmission\"\xe2\x01\n" +
+	"\tadmission\x18\x06 \x01(\v2\x14.shale.AdmissionWaitR\tadmission\x12\x1d\n" +
+	"\x06uplink\x18\a \x01(\x03B\x05\xaa\x01\x02\b\x02R\x06uplink\"\xe2\x01\n" +
 	"\x19ProducerHeartbeatResponse\x12,\n" +
 	"\x05relay\x18\x01 \x01(\v2\x16.shale.RelayAssignmentR\x05relay\x12.\n" +
 	"\x0fprofile_version\x18\x02 \x01(\x03B\x05\xaa\x01\x02\b\x02R\x0eprofileVersion\x123\n" +

@@ -138,8 +138,10 @@ never reused.
   ([§7](02-data-model.md#7-source-set-zone-epoch)). `Set` declares it,
   nullable and immutable. `Source`, `Lamina`, `Attempt`, and `Producer` carry
   a copy, because payday narrows each row by its own field 3. A reader may see
-  several sites, so its sites are `SiteMember` rows, like a person's. Tenant
-  admins see all sites.
+  several sites, so its sites are `SiteMember` rows, like a person's, or all
+  of them (`all_sites`) when it was adopted with none. Tenant admins see all
+  sites. A row in no site is in none of anybody's sites: only a caller that
+  sees all of them reads a set of no site and its sources and laminae.
 - **Erasure.** A `Set` or `Source` is soft-erased (`date_erased`): its cameras
   stop being allocated for, and their recorded laminae stay readable until
   retention removes them. A host is soft-erased too, and an erased host's
@@ -168,7 +170,9 @@ Source           set, ordinal (assigned by Add, immutable), zone,
                  §38.9, §39.3),
                  agreed segment profile (max_bitrate, segment duration,
                  keyframe interval), observed rate (recent, expected;
-                 derived, §12.6), seconds at the cap and episodes (§38.5)
+                 derived, §12.6), seconds at the cap and episodes, the
+                 suggestion, the last automatic raise and the limit that
+                 holds one back (§38.5)
 Producer         set, site (copied from the set), hardware_id, hostname,
                  state (pending | adopted | erased), certificate serial,
                  date_adopted, date_seen, relay (assigned, §39.2),
@@ -264,8 +268,12 @@ service ProducerService {
 
 service ReaderService {
   rpc Join(ReaderJoinRequest) returns (ReaderJoinResponse);                  // as above
-  rpc Adopt(ReaderAdoptRequest) returns (Reader);                            // with its sites
+  // With its sites; none is the whole tenant. Adopting one already adopted,
+  // a known host with a new key, keeps its sites unless it names others.
+  rpc Adopt(ReaderAdoptRequest) returns (Reader);
   rpc RenewCertificate(ReaderRenewCertificateRequest) returns (ReaderRenewCertificateResponse);
+  // Every reader.heartbeat_interval; the answer may ask for renewal (§33.4).
+  rpc Heartbeat(ReaderHeartbeatRequest) returns (ReaderHeartbeatResponse);
 }
 ```
 

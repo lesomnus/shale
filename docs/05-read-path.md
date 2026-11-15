@@ -17,6 +17,13 @@
             front plays from that keyframe (§23.1)
 ```
 
+The reader is a person in the console, or a program reading with a Reader
+host's certificate, which `shale serve reader` keeps current beside it
+([§36.4](13-configuration.md#364-running-a-reader)). Either is answered
+within its sites ([§33.1](10-security.md#331-trust-model),
+[§33.4](10-security.md#334-joining-and-adoption)): a set in no site is read
+only by one that sees every site.
+
 A time-range query returns explicit **gaps** for any part of the range that has
 no available lamina ([§19](#19-reader-semantics)). What the bytes are is
 the source's `content_type` ([§7](02-data-model.md#7-source-set-zone-epoch)):

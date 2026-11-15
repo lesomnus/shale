@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
 	"github.com/lesomnus/shale/camera/credential"
 	"github.com/lesomnus/shale/internal/fmp4"
@@ -583,7 +584,8 @@ type Capture struct {
 	// aacEnc is the AAC encoder a GStreamer capture chose, once it did.
 	aacEnc string
 	// Profile answers the agreed ceiling and keyframe interval when a
-	// process starts, so a new cap takes effect at the next start (§38.5).
+	// process starts, so a new cap takes effect at the next start, which
+	// the producer makes the next segment boundary (Outdated, §38.5).
 	Profile func() (ceiling int64, keyframe time.Duration)
 	// RawLoops is how many times a `raw:` input is played; 0 is forever.
 	RawLoops int
@@ -614,6 +616,81 @@ type Capture struct {
 	// cancel ends the running process; kicked says it was ended on purpose.
 	cancel context.CancelFunc
 	kicked bool
+	// running is what the process running now, or the last one, was
+	// started with.
+	running started
+}
+
+// started is what a capture process was started with: its encoder,
+// "copy" for a stream it passes through and empty when it runs none of
+// Shale's (a command, a raw input), and the agreed ceiling and keyframe
+// interval it took (§38.5).
+type started struct {
+	encoder  string
+	ceiling  int64
+	keyframe time.Duration
+}
+
+// rateControlOf is how an encoder spends the ceiling it is given (§38.3,
+// §38.5): h264_v4l2m2m and GStreamer's x264enc take a target and hold it,
+// every other one runs capped VBR (ffmpeg's encoders under -maxrate, the
+// Pi's v4l2h264enc variable-rate around its target).
+func rateControlOf(encoder string) api.RateControl {
+	switch encoder {
+	case "":
+		return api.RateControl_RATE_CONTROL_UNSPECIFIED
+	case "copy":
+		return api.RateControl_RATE_CONTROL_COPY
+	case "h264_v4l2m2m", "x264enc":
+		return api.RateControl_RATE_CONTROL_CBR
+	default:
+		return api.RateControl_RATE_CONTROL_VBR
+	}
+}
+
+// RateControl is how the encoder of the running process, or of the last
+// one, spends the ceiling (§38.5); unspecified before the first start.
+func (c *Capture) RateControl() api.RateControl {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return rateControlOf(c.running.encoder)
+}
+
+// Outdated says the running process encodes with a ceiling or keyframe
+// interval other than the agreed one now: it takes the agreed one at its
+// next start (§38.5). A stream passed through, or a command's, takes
+// neither and never is.
+func (c *Capture) Outdated() bool {
+	c.mu.Lock()
+	run, up := c.running, c.up
+	c.mu.Unlock()
+	if !up || run.encoder == "" || run.encoder == "copy" || c.Profile == nil {
+		return false
+	}
+	ceiling, keyframe := c.Profile()
+
+	return ceiling != run.ceiling || keyframe != run.keyframe
+}
+
+// Restart ends the running process on purpose, so that it starts again
+// at once with the agreed profile as it is now (§38.5); it is neither a
+// failure nor a restart the heartbeat counts.
+func (c *Capture) Restart() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.cancel == nil {
+		return
+	}
+	c.kicked = true
+	c.cancel()
+}
+
+// begin records what a process is started with.
+func (c *Capture) begin(encoder string, ceiling int64, keyframe time.Duration) {
+	c.mu.Lock()
+	c.running = started{encoder: encoder, ceiling: ceiling, keyframe: keyframe}
+	c.mu.Unlock()
 }
 
 // audioRefused looks at what the capture says on stderr (§38.3): a
@@ -730,9 +807,10 @@ func (c *Capture) applyControls() {
 	}
 }
 
-// errKicked is a process ended, or that ended, for the audio to be
-// encoded (audioRefused): started again at once.
-var errKicked = errors.New("capture restarted with the audio encoded")
+// errKicked is a process ended, or that ended, on purpose: for the audio
+// to be encoded (audioRefused), or for the encoder to take the agreed
+// profile (Restart). It is started again at once.
+var errKicked = errors.New("capture restarted on purpose")
 
 // stopGrace is how long a capture process has, once interrupted, to end
 // on its own before its process group is killed (§38.3).
@@ -816,6 +894,7 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 	// the one RemuxArgs makes for ffmpeg's TS.
 	var remuxArgs []string
 	if src.Command != "" {
+		c.begin("", ceiling, keyframe)
 		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", src.Command)
 	} else if src.gstreamer() {
 		encoder := src.Encoder
@@ -830,6 +909,7 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 				encoder = c.Encoder
 			}
 		}
+		c.begin(encoder, ceiling, keyframe)
 		aac, opus := src.gstAudio()
 		if aac && c.aacEnc == "" {
 			c.aacEnc = PickGstAAC(ctx, c.gst())
@@ -874,6 +954,7 @@ func (c *Capture) onceResolved(ctx context.Context, read func(r io.Reader), src 
 				encoder = c.Encoder
 			}
 		}
+		c.begin(encoder, ceiling, keyframe)
 		if c.Remux && !Remuxed(encoder) {
 			// Forced: the first stage writes TS as a remuxed encoder's does.
 			RemuxEncoders[encoder] = true

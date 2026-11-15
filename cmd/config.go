@@ -424,10 +424,19 @@ type ProducerConfig struct {
 	Audio *AudioConfig `yaml:"audio"`
 }
 
-// ReaderConfig is the reader agent's own settings (§33.4).
+// ReaderConfig is the reader agent's own settings (§33.4). Its `cp` is
+// the tenant API's gRPC address (`server.addr`), not its HTTP listener.
 type ReaderConfig struct {
-	// Addr is the plaintext localhost listener the media server uses.
+	// Addr is the plaintext localhost listener a media server would use.
+	// Not built: a reader with it set refuses to start.
 	Addr string `yaml:"addr"`
+	// HeartbeatInterval is how often the reader says it is there; 30 s.
+	HeartbeatInterval time.Duration `yaml:"heartbeat_interval"`
+	// CpCa is a CA trusted explicitly for the CP's server certificate,
+	// beside the bundle pinned at first contact: `system` for the system's
+	// roots, or the path of a PEM file. For a CP whose `control.cert_file`
+	// comes from a public or corporate CA (§33.5). Empty pins.
+	CpCa string `yaml:"cp_ca"`
 }
 
 // RelayConfig is a relay's own settings (§39).

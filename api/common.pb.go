@@ -66,6 +66,116 @@ func (x UploadMode) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
+// RaiseLimit is a bound every ceiling raise stays inside (§38.5).
+type RaiseLimit int32
+
+const (
+	RaiseLimit_RAISE_LIMIT_UNSPECIFIED RaiseLimit = 0
+	// The active UploadPolicy's max_bitrate_cap; required is the suggested
+	// ceiling.
+	RaiseLimit_RAISE_LIMIT_UPLOAD_POLICY RaiseLimit = 1
+	// The set's max_bitrate_total; required is the sum of the set's ceilings
+	// with the raise.
+	RaiseLimit_RAISE_LIMIT_SET_BITRATE RaiseLimit = 2
+	// The producer's uplink; required is that sum × 1.2, and the sum once
+	// more when the producer's live policy is `always`.
+	RaiseLimit_RAISE_LIMIT_UPLINK RaiseLimit = 3
+)
+
+// Enum value maps for RaiseLimit.
+var (
+	RaiseLimit_name = map[int32]string{
+		0: "RAISE_LIMIT_UNSPECIFIED",
+		1: "RAISE_LIMIT_UPLOAD_POLICY",
+		2: "RAISE_LIMIT_SET_BITRATE",
+		3: "RAISE_LIMIT_UPLINK",
+	}
+	RaiseLimit_value = map[string]int32{
+		"RAISE_LIMIT_UNSPECIFIED":   0,
+		"RAISE_LIMIT_UPLOAD_POLICY": 1,
+		"RAISE_LIMIT_SET_BITRATE":   2,
+		"RAISE_LIMIT_UPLINK":        3,
+	}
+)
+
+func (x RaiseLimit) Enum() *RaiseLimit {
+	p := new(RaiseLimit)
+	*p = x
+	return p
+}
+
+func (x RaiseLimit) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RaiseLimit) Descriptor() protoreflect.EnumDescriptor {
+	return file_shale_common_proto_enumTypes[1].Descriptor()
+}
+
+func (RaiseLimit) Type() protoreflect.EnumType {
+	return &file_shale_common_proto_enumTypes[1]
+}
+
+func (x RaiseLimit) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// RateControl is how the encoder a producer runs for a source spends its
+// ceiling (§38.3, §38.5).
+type RateControl int32
+
+const (
+	// Not said: a command's or a pushed stream, a raw source, a capture that
+	// has not started, or a producer that does not say.
+	RateControl_RATE_CONTROL_UNSPECIFIED RateControl = 0
+	// Capped VBR, or a variable rate around a target: the picture decides
+	// the rate, up to the ceiling. Only these are raised for starvation.
+	RateControl_RATE_CONTROL_VBR RateControl = 1
+	// A constant rate: the encoder spends its target whatever the picture.
+	RateControl_RATE_CONTROL_CBR RateControl = 2
+	// The camera's stream, copied: its rate is the camera's encoder's, which
+	// the ceiling does not change.
+	RateControl_RATE_CONTROL_COPY RateControl = 3
+)
+
+// Enum value maps for RateControl.
+var (
+	RateControl_name = map[int32]string{
+		0: "RATE_CONTROL_UNSPECIFIED",
+		1: "RATE_CONTROL_VBR",
+		2: "RATE_CONTROL_CBR",
+		3: "RATE_CONTROL_COPY",
+	}
+	RateControl_value = map[string]int32{
+		"RATE_CONTROL_UNSPECIFIED": 0,
+		"RATE_CONTROL_VBR":         1,
+		"RATE_CONTROL_CBR":         2,
+		"RATE_CONTROL_COPY":        3,
+	}
+)
+
+func (x RateControl) Enum() *RateControl {
+	p := new(RateControl)
+	*p = x
+	return p
+}
+
+func (x RateControl) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RateControl) Descriptor() protoreflect.EnumDescriptor {
+	return file_shale_common_proto_enumTypes[2].Descriptor()
+}
+
+func (RateControl) Type() protoreflect.EnumType {
+	return &file_shale_common_proto_enumTypes[2]
+}
+
+func (x RateControl) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // LivePolicy is whether a producer's cameras are on the relay at all times
 // or only while someone watches (§39.3). Unspecified reads as `always`.
 type LivePolicy int32
@@ -106,11 +216,11 @@ func (x LivePolicy) String() string {
 }
 
 func (LivePolicy) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[1].Descriptor()
+	return file_shale_common_proto_enumTypes[3].Descriptor()
 }
 
 func (LivePolicy) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[1]
+	return &file_shale_common_proto_enumTypes[3]
 }
 
 func (x LivePolicy) Number() protoreflect.EnumNumber {
@@ -155,11 +265,11 @@ func (x HardwareIdKind) String() string {
 }
 
 func (HardwareIdKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[2].Descriptor()
+	return file_shale_common_proto_enumTypes[4].Descriptor()
 }
 
 func (HardwareIdKind) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[2]
+	return &file_shale_common_proto_enumTypes[4]
 }
 
 func (x HardwareIdKind) Number() protoreflect.EnumNumber {
@@ -231,11 +341,11 @@ func (x AdmissionWaitReason) String() string {
 }
 
 func (AdmissionWaitReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[3].Descriptor()
+	return file_shale_common_proto_enumTypes[5].Descriptor()
 }
 
 func (AdmissionWaitReason) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[3]
+	return &file_shale_common_proto_enumTypes[5]
 }
 
 func (x AdmissionWaitReason) Number() protoreflect.EnumNumber {
@@ -279,11 +389,11 @@ func (x Pressure) String() string {
 }
 
 func (Pressure) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[4].Descriptor()
+	return file_shale_common_proto_enumTypes[6].Descriptor()
 }
 
 func (Pressure) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[4]
+	return &file_shale_common_proto_enumTypes[6]
 }
 
 func (x Pressure) Number() protoreflect.EnumNumber {
@@ -324,11 +434,11 @@ func (x RecordState) String() string {
 }
 
 func (RecordState) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[5].Descriptor()
+	return file_shale_common_proto_enumTypes[7].Descriptor()
 }
 
 func (RecordState) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[5]
+	return &file_shale_common_proto_enumTypes[7]
 }
 
 func (x RecordState) Number() protoreflect.EnumNumber {
@@ -380,11 +490,11 @@ func (x TokenOp) String() string {
 }
 
 func (TokenOp) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[6].Descriptor()
+	return file_shale_common_proto_enumTypes[8].Descriptor()
 }
 
 func (TokenOp) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[6]
+	return &file_shale_common_proto_enumTypes[8]
 }
 
 func (x TokenOp) Number() protoreflect.EnumNumber {
@@ -431,11 +541,11 @@ func (x MissingReason) String() string {
 }
 
 func (MissingReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_shale_common_proto_enumTypes[7].Descriptor()
+	return file_shale_common_proto_enumTypes[9].Descriptor()
 }
 
 func (MissingReason) Type() protoreflect.EnumType {
-	return &file_shale_common_proto_enumTypes[7]
+	return &file_shale_common_proto_enumTypes[9]
 }
 
 func (x MissingReason) Number() protoreflect.EnumNumber {
@@ -735,7 +845,8 @@ func (b0 ObservedRate_builder) Build() *ObservedRate {
 	return m0
 }
 
-// Starvation is the producer's account of a source at its ceiling (§38.5).
+// Starvation is the producer's account of a source at its ceiling over a
+// day, and what the CP made of it (§38.5).
 type Starvation struct {
 	state                          protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_SecondsAtCap        int64                  `protobuf:"varint,1,opt,name=seconds_at_cap,json=secondsAtCap"`
@@ -744,6 +855,10 @@ type Starvation struct {
 	xxx_hidden_DateReset           *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_reset,json=dateReset"`
 	xxx_hidden_Starved             bool                   `protobuf:"varint,5,opt,name=starved"`
 	xxx_hidden_SuggestedMaxBitrate int64                  `protobuf:"varint,6,opt,name=suggested_max_bitrate,json=suggestedMaxBitrate"`
+	xxx_hidden_DateRaised          *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=date_raised,json=dateRaised"`
+	xxx_hidden_RaisedFrom          int64                  `protobuf:"varint,8,opt,name=raised_from,json=raisedFrom"`
+	xxx_hidden_RaisedMaxBitrate    int64                  `protobuf:"varint,9,opt,name=raised_max_bitrate,json=raisedMaxBitrate"`
+	xxx_hidden_Blocked             *RaiseBlocked          `protobuf:"bytes,10,opt,name=blocked"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -815,6 +930,34 @@ func (x *Starvation) GetSuggestedMaxBitrate() int64 {
 	return 0
 }
 
+func (x *Starvation) GetDateRaised() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateRaised
+	}
+	return nil
+}
+
+func (x *Starvation) GetRaisedFrom() int64 {
+	if x != nil {
+		return x.xxx_hidden_RaisedFrom
+	}
+	return 0
+}
+
+func (x *Starvation) GetRaisedMaxBitrate() int64 {
+	if x != nil {
+		return x.xxx_hidden_RaisedMaxBitrate
+	}
+	return 0
+}
+
+func (x *Starvation) GetBlocked() *RaiseBlocked {
+	if x != nil {
+		return x.xxx_hidden_Blocked
+	}
+	return nil
+}
+
 func (x *Starvation) SetSecondsAtCap(v int64) {
 	x.xxx_hidden_SecondsAtCap = v
 }
@@ -839,6 +982,22 @@ func (x *Starvation) SetSuggestedMaxBitrate(v int64) {
 	x.xxx_hidden_SuggestedMaxBitrate = v
 }
 
+func (x *Starvation) SetDateRaised(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateRaised = v
+}
+
+func (x *Starvation) SetRaisedFrom(v int64) {
+	x.xxx_hidden_RaisedFrom = v
+}
+
+func (x *Starvation) SetRaisedMaxBitrate(v int64) {
+	x.xxx_hidden_RaisedMaxBitrate = v
+}
+
+func (x *Starvation) SetBlocked(v *RaiseBlocked) {
+	x.xxx_hidden_Blocked = v
+}
+
 func (x *Starvation) HasDateReset() bool {
 	if x == nil {
 		return false
@@ -846,19 +1005,55 @@ func (x *Starvation) HasDateReset() bool {
 	return x.xxx_hidden_DateReset != nil
 }
 
+func (x *Starvation) HasDateRaised() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateRaised != nil
+}
+
+func (x *Starvation) HasBlocked() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Blocked != nil
+}
+
 func (x *Starvation) ClearDateReset() {
 	x.xxx_hidden_DateReset = nil
+}
+
+func (x *Starvation) ClearDateRaised() {
+	x.xxx_hidden_DateRaised = nil
+}
+
+func (x *Starvation) ClearBlocked() {
+	x.xxx_hidden_Blocked = nil
 }
 
 type Starvation_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	SecondsAtCap        int64
-	Episodes            int64
-	SecondsTotal        int64
+	SecondsAtCap int64
+	Episodes     int64
+	SecondsTotal int64
+	// When the day the counts are of began: the first report after the last
+	// day ended, or the last raise, since what a source did at its old
+	// ceiling says nothing of the new one.
 	DateReset           *timestamppb.Timestamp
 	Starved             bool
 	SuggestedMaxBitrate int64
+	// The last raise auto_raise applied: when, and from what ceiling to what.
+	// The next one is 24 hours later at the soonest. While the set's
+	// auto_raise is on, the CP agrees at least raised_max_bitrate at every
+	// negotiation, so a producer that starts again from its starting ceiling
+	// keeps the raise (§12.6).
+	DateRaised       *timestamppb.Timestamp
+	RaisedFrom       int64
+	RaisedMaxBitrate int64
+	// The limit the suggestion would break; absent when it fits. A raise
+	// that breaks one is not applied, and the CP warns instead.
+	Blocked *RaiseBlocked
 }
 
 func (b0 Starvation_builder) Build() *Starvation {
@@ -871,6 +1066,124 @@ func (b0 Starvation_builder) Build() *Starvation {
 	x.xxx_hidden_DateReset = b.DateReset
 	x.xxx_hidden_Starved = b.Starved
 	x.xxx_hidden_SuggestedMaxBitrate = b.SuggestedMaxBitrate
+	x.xxx_hidden_DateRaised = b.DateRaised
+	x.xxx_hidden_RaisedFrom = b.RaisedFrom
+	x.xxx_hidden_RaisedMaxBitrate = b.RaisedMaxBitrate
+	x.xxx_hidden_Blocked = b.Blocked
+	return m0
+}
+
+// RaiseBlocked is a limit a starved source's suggested ceiling would break
+// (§38.5): what the raise needs and what the limit allows, in bits a
+// second.
+type RaiseBlocked struct {
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Limit     RaiseLimit             `protobuf:"varint,1,opt,name=limit,enum=shale.RaiseLimit"`
+	xxx_hidden_Required  int64                  `protobuf:"varint,2,opt,name=required"`
+	xxx_hidden_Available int64                  `protobuf:"varint,3,opt,name=available"`
+	xxx_hidden_DateSince *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_since,json=dateSince"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *RaiseBlocked) Reset() {
+	*x = RaiseBlocked{}
+	mi := &file_shale_common_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RaiseBlocked) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RaiseBlocked) ProtoMessage() {}
+
+func (x *RaiseBlocked) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_common_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *RaiseBlocked) GetLimit() RaiseLimit {
+	if x != nil {
+		return x.xxx_hidden_Limit
+	}
+	return RaiseLimit_RAISE_LIMIT_UNSPECIFIED
+}
+
+func (x *RaiseBlocked) GetRequired() int64 {
+	if x != nil {
+		return x.xxx_hidden_Required
+	}
+	return 0
+}
+
+func (x *RaiseBlocked) GetAvailable() int64 {
+	if x != nil {
+		return x.xxx_hidden_Available
+	}
+	return 0
+}
+
+func (x *RaiseBlocked) GetDateSince() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateSince
+	}
+	return nil
+}
+
+func (x *RaiseBlocked) SetLimit(v RaiseLimit) {
+	x.xxx_hidden_Limit = v
+}
+
+func (x *RaiseBlocked) SetRequired(v int64) {
+	x.xxx_hidden_Required = v
+}
+
+func (x *RaiseBlocked) SetAvailable(v int64) {
+	x.xxx_hidden_Available = v
+}
+
+func (x *RaiseBlocked) SetDateSince(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateSince = v
+}
+
+func (x *RaiseBlocked) HasDateSince() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateSince != nil
+}
+
+func (x *RaiseBlocked) ClearDateSince() {
+	x.xxx_hidden_DateSince = nil
+}
+
+type RaiseBlocked_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Limit     RaiseLimit
+	Required  int64
+	Available int64
+	// Since when the suggestion has been held at this limit.
+	DateSince *timestamppb.Timestamp
+}
+
+func (b0 RaiseBlocked_builder) Build() *RaiseBlocked {
+	m0 := &RaiseBlocked{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Limit = b.Limit
+	x.xxx_hidden_Required = b.Required
+	x.xxx_hidden_Available = b.Available
+	x.xxx_hidden_DateSince = b.DateSince
 	return m0
 }
 
@@ -888,7 +1201,7 @@ type Endpoint struct {
 
 func (x *Endpoint) Reset() {
 	*x = Endpoint{}
-	mi := &file_shale_common_proto_msgTypes[4]
+	mi := &file_shale_common_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -900,7 +1213,7 @@ func (x *Endpoint) String() string {
 func (*Endpoint) ProtoMessage() {}
 
 func (x *Endpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[4]
+	mi := &file_shale_common_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -992,7 +1305,7 @@ type Candidate struct {
 
 func (x *Candidate) Reset() {
 	*x = Candidate{}
-	mi := &file_shale_common_proto_msgTypes[5]
+	mi := &file_shale_common_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1004,7 +1317,7 @@ func (x *Candidate) String() string {
 func (*Candidate) ProtoMessage() {}
 
 func (x *Candidate) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[5]
+	mi := &file_shale_common_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1141,7 +1454,7 @@ type Allocation struct {
 
 func (x *Allocation) Reset() {
 	*x = Allocation{}
-	mi := &file_shale_common_proto_msgTypes[6]
+	mi := &file_shale_common_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1153,7 +1466,7 @@ func (x *Allocation) String() string {
 func (*Allocation) ProtoMessage() {}
 
 func (x *Allocation) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[6]
+	mi := &file_shale_common_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1412,7 +1725,7 @@ type RelayAssignment struct {
 
 func (x *RelayAssignment) Reset() {
 	*x = RelayAssignment{}
-	mi := &file_shale_common_proto_msgTypes[7]
+	mi := &file_shale_common_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1424,7 +1737,7 @@ func (x *RelayAssignment) String() string {
 func (*RelayAssignment) ProtoMessage() {}
 
 func (x *RelayAssignment) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[7]
+	mi := &file_shale_common_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1549,7 +1862,7 @@ type HostJoin struct {
 
 func (x *HostJoin) Reset() {
 	*x = HostJoin{}
-	mi := &file_shale_common_proto_msgTypes[8]
+	mi := &file_shale_common_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1561,7 +1874,7 @@ func (x *HostJoin) String() string {
 func (*HostJoin) ProtoMessage() {}
 
 func (x *HostJoin) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[8]
+	mi := &file_shale_common_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1745,7 +2058,7 @@ type HostInterface struct {
 
 func (x *HostInterface) Reset() {
 	*x = HostInterface{}
-	mi := &file_shale_common_proto_msgTypes[9]
+	mi := &file_shale_common_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1757,7 +2070,7 @@ func (x *HostInterface) String() string {
 func (*HostInterface) ProtoMessage() {}
 
 func (x *HostInterface) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[9]
+	mi := &file_shale_common_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1819,7 +2132,7 @@ type HostLoad struct {
 
 func (x *HostLoad) Reset() {
 	*x = HostLoad{}
-	mi := &file_shale_common_proto_msgTypes[10]
+	mi := &file_shale_common_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1831,7 +2144,7 @@ func (x *HostLoad) String() string {
 func (*HostLoad) ProtoMessage() {}
 
 func (x *HostLoad) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[10]
+	mi := &file_shale_common_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1923,13 +2236,14 @@ type SourceReport struct {
 	xxx_hidden_Error              string                 `protobuf:"bytes,12,opt,name=error"`
 	xxx_hidden_Dark               bool                   `protobuf:"varint,13,opt,name=dark"`
 	xxx_hidden_CaptureEpoch       string                 `protobuf:"bytes,14,opt,name=capture_epoch,json=captureEpoch"`
+	xxx_hidden_RateControl        RateControl            `protobuf:"varint,15,opt,name=rate_control,json=rateControl,enum=shale.RateControl"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
 
 func (x *SourceReport) Reset() {
 	*x = SourceReport{}
-	mi := &file_shale_common_proto_msgTypes[11]
+	mi := &file_shale_common_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1941,7 +2255,7 @@ func (x *SourceReport) String() string {
 func (*SourceReport) ProtoMessage() {}
 
 func (x *SourceReport) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[11]
+	mi := &file_shale_common_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2050,6 +2364,13 @@ func (x *SourceReport) GetCaptureEpoch() string {
 	return ""
 }
 
+func (x *SourceReport) GetRateControl() RateControl {
+	if x != nil {
+		return x.xxx_hidden_RateControl
+	}
+	return RateControl_RATE_CONTROL_UNSPECIFIED
+}
+
 func (x *SourceReport) SetSourceId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -2109,6 +2430,10 @@ func (x *SourceReport) SetCaptureEpoch(v string) {
 	x.xxx_hidden_CaptureEpoch = v
 }
 
+func (x *SourceReport) SetRateControl(v RateControl) {
+	x.xxx_hidden_RateControl = v
+}
+
 type SourceReport_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2129,6 +2454,9 @@ type SourceReport_builder struct {
 	Dark bool
 	// Empty for legacy static sources; otherwise the exact applied incarnation.
 	CaptureEpoch string
+	// How the source's encoder spends its ceiling (§38.5): auto_raise raises
+	// only a source that says VBR.
+	RateControl RateControl
 }
 
 func (b0 SourceReport_builder) Build() *SourceReport {
@@ -2149,6 +2477,7 @@ func (b0 SourceReport_builder) Build() *SourceReport {
 	x.xxx_hidden_Error = b.Error
 	x.xxx_hidden_Dark = b.Dark
 	x.xxx_hidden_CaptureEpoch = b.CaptureEpoch
+	x.xxx_hidden_RateControl = b.RateControl
 	return m0
 }
 
@@ -2165,7 +2494,7 @@ type ProducerStatus struct {
 
 func (x *ProducerStatus) Reset() {
 	*x = ProducerStatus{}
-	mi := &file_shale_common_proto_msgTypes[12]
+	mi := &file_shale_common_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2177,7 +2506,7 @@ func (x *ProducerStatus) String() string {
 func (*ProducerStatus) ProtoMessage() {}
 
 func (x *ProducerStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[12]
+	mi := &file_shale_common_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2308,7 +2637,7 @@ type AdmissionWait struct {
 
 func (x *AdmissionWait) Reset() {
 	*x = AdmissionWait{}
-	mi := &file_shale_common_proto_msgTypes[13]
+	mi := &file_shale_common_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2320,7 +2649,7 @@ func (x *AdmissionWait) String() string {
 func (*AdmissionWait) ProtoMessage() {}
 
 func (x *AdmissionWait) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[13]
+	mi := &file_shale_common_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2454,7 +2783,7 @@ type SinkCapabilities struct {
 
 func (x *SinkCapabilities) Reset() {
 	*x = SinkCapabilities{}
-	mi := &file_shale_common_proto_msgTypes[14]
+	mi := &file_shale_common_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2466,7 +2795,7 @@ func (x *SinkCapabilities) String() string {
 func (*SinkCapabilities) ProtoMessage() {}
 
 func (x *SinkCapabilities) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[14]
+	mi := &file_shale_common_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2601,7 +2930,7 @@ type SinkReport struct {
 
 func (x *SinkReport) Reset() {
 	*x = SinkReport{}
-	mi := &file_shale_common_proto_msgTypes[15]
+	mi := &file_shale_common_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2613,7 +2942,7 @@ func (x *SinkReport) String() string {
 func (*SinkReport) ProtoMessage() {}
 
 func (x *SinkReport) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[15]
+	mi := &file_shale_common_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2835,7 +3164,7 @@ type SmartSummary struct {
 
 func (x *SmartSummary) Reset() {
 	*x = SmartSummary{}
-	mi := &file_shale_common_proto_msgTypes[16]
+	mi := &file_shale_common_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2847,7 +3176,7 @@ func (x *SmartSummary) String() string {
 func (*SmartSummary) ProtoMessage() {}
 
 func (x *SmartSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[16]
+	mi := &file_shale_common_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2994,7 +3323,7 @@ type DeviceReport struct {
 
 func (x *DeviceReport) Reset() {
 	*x = DeviceReport{}
-	mi := &file_shale_common_proto_msgTypes[17]
+	mi := &file_shale_common_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3006,7 +3335,7 @@ func (x *DeviceReport) String() string {
 func (*DeviceReport) ProtoMessage() {}
 
 func (x *DeviceReport) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[17]
+	mi := &file_shale_common_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3224,7 +3553,7 @@ type NodeStatus struct {
 
 func (x *NodeStatus) Reset() {
 	*x = NodeStatus{}
-	mi := &file_shale_common_proto_msgTypes[18]
+	mi := &file_shale_common_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3236,7 +3565,7 @@ func (x *NodeStatus) String() string {
 func (*NodeStatus) ProtoMessage() {}
 
 func (x *NodeStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[18]
+	mi := &file_shale_common_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3367,7 +3696,7 @@ type RelayStatus struct {
 
 func (x *RelayStatus) Reset() {
 	*x = RelayStatus{}
-	mi := &file_shale_common_proto_msgTypes[19]
+	mi := &file_shale_common_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3379,7 +3708,7 @@ func (x *RelayStatus) String() string {
 func (*RelayStatus) ProtoMessage() {}
 
 func (x *RelayStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[19]
+	mi := &file_shale_common_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3592,7 +3921,7 @@ type LaminaRecord struct {
 
 func (x *LaminaRecord) Reset() {
 	*x = LaminaRecord{}
-	mi := &file_shale_common_proto_msgTypes[20]
+	mi := &file_shale_common_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3604,7 +3933,7 @@ func (x *LaminaRecord) String() string {
 func (*LaminaRecord) ProtoMessage() {}
 
 func (x *LaminaRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[20]
+	mi := &file_shale_common_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3936,7 +4265,7 @@ type CaptureEpochGrant struct {
 
 func (x *CaptureEpochGrant) Reset() {
 	*x = CaptureEpochGrant{}
-	mi := &file_shale_common_proto_msgTypes[21]
+	mi := &file_shale_common_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3948,7 +4277,7 @@ func (x *CaptureEpochGrant) String() string {
 func (*CaptureEpochGrant) ProtoMessage() {}
 
 func (x *CaptureEpochGrant) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[21]
+	mi := &file_shale_common_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4048,7 +4377,7 @@ type TokenClaims struct {
 
 func (x *TokenClaims) Reset() {
 	*x = TokenClaims{}
-	mi := &file_shale_common_proto_msgTypes[22]
+	mi := &file_shale_common_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4060,7 +4389,7 @@ func (x *TokenClaims) String() string {
 func (*TokenClaims) ProtoMessage() {}
 
 func (x *TokenClaims) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[22]
+	mi := &file_shale_common_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4510,7 +4839,7 @@ type LaminaStored struct {
 
 func (x *LaminaStored) Reset() {
 	*x = LaminaStored{}
-	mi := &file_shale_common_proto_msgTypes[23]
+	mi := &file_shale_common_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4522,7 +4851,7 @@ func (x *LaminaStored) String() string {
 func (*LaminaStored) ProtoMessage() {}
 
 func (x *LaminaStored) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[23]
+	mi := &file_shale_common_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4778,7 +5107,7 @@ type LaminaDeleted struct {
 
 func (x *LaminaDeleted) Reset() {
 	*x = LaminaDeleted{}
-	mi := &file_shale_common_proto_msgTypes[24]
+	mi := &file_shale_common_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4790,7 +5119,7 @@ func (x *LaminaDeleted) String() string {
 func (*LaminaDeleted) ProtoMessage() {}
 
 func (x *LaminaDeleted) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[24]
+	mi := &file_shale_common_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4925,7 +5254,7 @@ type LaminaMissing struct {
 
 func (x *LaminaMissing) Reset() {
 	*x = LaminaMissing{}
-	mi := &file_shale_common_proto_msgTypes[25]
+	mi := &file_shale_common_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4937,7 +5266,7 @@ func (x *LaminaMissing) String() string {
 func (*LaminaMissing) ProtoMessage() {}
 
 func (x *LaminaMissing) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[25]
+	mi := &file_shale_common_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5068,7 +5397,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_shale_common_proto_msgTypes[26]
+	mi := &file_shale_common_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5080,7 +5409,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[26]
+	mi := &file_shale_common_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5245,7 +5574,7 @@ func (b0 Event_builder) Build() *Event {
 type case_Event_Event protoreflect.FieldNumber
 
 func (x case_Event_Event) String() string {
-	md := file_shale_common_proto_msgTypes[26].Descriptor()
+	md := file_shale_common_proto_msgTypes[27].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -5286,7 +5615,7 @@ type KeyEntry struct {
 
 func (x *KeyEntry) Reset() {
 	*x = KeyEntry{}
-	mi := &file_shale_common_proto_msgTypes[27]
+	mi := &file_shale_common_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5298,7 +5627,7 @@ func (x *KeyEntry) String() string {
 func (*KeyEntry) ProtoMessage() {}
 
 func (x *KeyEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_common_proto_msgTypes[27]
+	mi := &file_shale_common_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5381,7 +5710,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\fObservedRate\x12\x16\n" +
 	"\x06recent\x18\x01 \x01(\x03R\x06recent\x12\x1a\n" +
 	"\bexpected\x18\x02 \x01(\x03R\bexpected\x12=\n" +
-	"\fdate_updated\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\"\xfc\x01\n" +
+	"\fdate_updated\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\"\xb7\x03\n" +
 	"\n" +
 	"Starvation\x12$\n" +
 	"\x0eseconds_at_cap\x18\x01 \x01(\x03R\fsecondsAtCap\x12\x1a\n" +
@@ -5390,7 +5719,20 @@ const file_shale_common_proto_rawDesc = "" +
 	"\n" +
 	"date_reset\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tdateReset\x12\x18\n" +
 	"\astarved\x18\x05 \x01(\bR\astarved\x122\n" +
-	"\x15suggested_max_bitrate\x18\x06 \x01(\x03R\x13suggestedMaxBitrate\"f\n" +
+	"\x15suggested_max_bitrate\x18\x06 \x01(\x03R\x13suggestedMaxBitrate\x12;\n" +
+	"\vdate_raised\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"dateRaised\x12\x1f\n" +
+	"\vraised_from\x18\b \x01(\x03R\n" +
+	"raisedFrom\x12,\n" +
+	"\x12raised_max_bitrate\x18\t \x01(\x03R\x10raisedMaxBitrate\x12-\n" +
+	"\ablocked\x18\n" +
+	" \x01(\v2\x13.shale.RaiseBlockedR\ablocked\"\xac\x01\n" +
+	"\fRaiseBlocked\x12'\n" +
+	"\x05limit\x18\x01 \x01(\x0e2\x11.shale.RaiseLimitR\x05limit\x12\x1a\n" +
+	"\brequired\x18\x02 \x01(\x03R\brequired\x12\x1c\n" +
+	"\tavailable\x18\x03 \x01(\x03R\tavailable\x129\n" +
+	"\n" +
+	"date_since\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tdateSince\"f\n" +
 	"\bEndpoint\x12\x16\n" +
 	"\x06scheme\x18\x01 \x01(\tR\x06scheme\x12\x12\n" +
 	"\x04host\x18\x02 \x01(\tR\x04host\x12\x12\n" +
@@ -5453,7 +5795,7 @@ const file_shale_common_proto_rawDesc = "" +
 	"\vtemperature\x18\x02 \x01(\x01R\vtemperature\x12\x1d\n" +
 	"\n" +
 	"uplink_bps\x18\x03 \x01(\x03R\tuplinkBps\x12!\n" +
-	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\xe3\x03\n" +
+	"\fmemory_bytes\x18\x04 \x01(\x03R\vmemoryBytes\"\x9a\x04\n" +
 	"\fSourceReport\x12\x1b\n" +
 	"\tsource_id\x18\x01 \x01(\fR\bsourceId\x12\x19\n" +
 	"\binput_up\x18\x02 \x01(\bR\ainputUp\x12\x1d\n" +
@@ -5472,7 +5814,8 @@ const file_shale_common_proto_rawDesc = "" +
 	"\rseconds_total\x18\v \x01(\x03R\fsecondsTotal\x12\x14\n" +
 	"\x05error\x18\f \x01(\tR\x05error\x12\x12\n" +
 	"\x04dark\x18\r \x01(\bR\x04dark\x12#\n" +
-	"\rcapture_epoch\x18\x0e \x01(\tR\fcaptureEpoch\"\xd9\x01\n" +
+	"\rcapture_epoch\x18\x0e \x01(\tR\fcaptureEpoch\x125\n" +
+	"\frate_control\x18\x0f \x01(\x0e2\x12.shale.RateControlR\vrateControl\"\xd9\x01\n" +
 	"\x0eProducerStatus\x12-\n" +
 	"\asources\x18\x01 \x03(\v2\x13.shale.SourceReportR\asources\x12#\n" +
 	"\x04load\x18\x02 \x01(\v2\x0f.shale.HostLoadR\x04load\x12?\n" +
@@ -5674,7 +6017,18 @@ const file_shale_common_proto_rawDesc = "" +
 	"UploadMode\x12\x1b\n" +
 	"\x17UPLOAD_MODE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10UPLOAD_MODE_LIVE\x10\x01\x12\x18\n" +
-	"\x14UPLOAD_MODE_BUFFERED\x10\x02*\\\n" +
+	"\x14UPLOAD_MODE_BUFFERED\x10\x02*}\n" +
+	"\n" +
+	"RaiseLimit\x12\x1b\n" +
+	"\x17RAISE_LIMIT_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19RAISE_LIMIT_UPLOAD_POLICY\x10\x01\x12\x1b\n" +
+	"\x17RAISE_LIMIT_SET_BITRATE\x10\x02\x12\x16\n" +
+	"\x12RAISE_LIMIT_UPLINK\x10\x03*n\n" +
+	"\vRateControl\x12\x1c\n" +
+	"\x18RATE_CONTROL_UNSPECIFIED\x10\x00\x12\x14\n" +
+	"\x10RATE_CONTROL_VBR\x10\x01\x12\x14\n" +
+	"\x10RATE_CONTROL_CBR\x10\x02\x12\x15\n" +
+	"\x11RATE_CONTROL_COPY\x10\x03*\\\n" +
 	"\n" +
 	"LivePolicy\x12\x1b\n" +
 	"\x17LIVE_POLICY_UNSPECIFIED\x10\x00\x12\x16\n" +
@@ -5718,102 +6072,110 @@ const file_shale_common_proto_rawDesc = "" +
 	"\x16MISSING_REASON_DAMAGED\x10\x02\x12\x1c\n" +
 	"\x18MISSING_REASON_ABANDONED\x10\x03B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_common_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_shale_common_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
+var file_shale_common_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_shale_common_proto_goTypes = []any{
 	(UploadMode)(0),               // 0: shale.UploadMode
-	(LivePolicy)(0),               // 1: shale.LivePolicy
-	(HardwareIdKind)(0),           // 2: shale.HardwareIdKind
-	(AdmissionWaitReason)(0),      // 3: shale.AdmissionWaitReason
-	(Pressure)(0),                 // 4: shale.Pressure
-	(RecordState)(0),              // 5: shale.RecordState
-	(TokenOp)(0),                  // 6: shale.TokenOp
-	(MissingReason)(0),            // 7: shale.MissingReason
-	(*LinkProfile)(nil),           // 8: shale.LinkProfile
-	(*SegmentProfile)(nil),        // 9: shale.SegmentProfile
-	(*ObservedRate)(nil),          // 10: shale.ObservedRate
-	(*Starvation)(nil),            // 11: shale.Starvation
-	(*Endpoint)(nil),              // 12: shale.Endpoint
-	(*Candidate)(nil),             // 13: shale.Candidate
-	(*Allocation)(nil),            // 14: shale.Allocation
-	(*RelayAssignment)(nil),       // 15: shale.RelayAssignment
-	(*HostJoin)(nil),              // 16: shale.HostJoin
-	(*HostInterface)(nil),         // 17: shale.HostInterface
-	(*HostLoad)(nil),              // 18: shale.HostLoad
-	(*SourceReport)(nil),          // 19: shale.SourceReport
-	(*ProducerStatus)(nil),        // 20: shale.ProducerStatus
-	(*AdmissionWait)(nil),         // 21: shale.AdmissionWait
-	(*SinkCapabilities)(nil),      // 22: shale.SinkCapabilities
-	(*SinkReport)(nil),            // 23: shale.SinkReport
-	(*SmartSummary)(nil),          // 24: shale.SmartSummary
-	(*DeviceReport)(nil),          // 25: shale.DeviceReport
-	(*NodeStatus)(nil),            // 26: shale.NodeStatus
-	(*RelayStatus)(nil),           // 27: shale.RelayStatus
-	(*LaminaRecord)(nil),          // 28: shale.LaminaRecord
-	(*CaptureEpochGrant)(nil),     // 29: shale.CaptureEpochGrant
-	(*TokenClaims)(nil),           // 30: shale.TokenClaims
-	(*LaminaStored)(nil),          // 31: shale.LaminaStored
-	(*LaminaDeleted)(nil),         // 32: shale.LaminaDeleted
-	(*LaminaMissing)(nil),         // 33: shale.LaminaMissing
-	(*Event)(nil),                 // 34: shale.Event
-	(*KeyEntry)(nil),              // 35: shale.KeyEntry
-	(*timestamppb.Timestamp)(nil), // 36: google.protobuf.Timestamp
+	(RaiseLimit)(0),               // 1: shale.RaiseLimit
+	(RateControl)(0),              // 2: shale.RateControl
+	(LivePolicy)(0),               // 3: shale.LivePolicy
+	(HardwareIdKind)(0),           // 4: shale.HardwareIdKind
+	(AdmissionWaitReason)(0),      // 5: shale.AdmissionWaitReason
+	(Pressure)(0),                 // 6: shale.Pressure
+	(RecordState)(0),              // 7: shale.RecordState
+	(TokenOp)(0),                  // 8: shale.TokenOp
+	(MissingReason)(0),            // 9: shale.MissingReason
+	(*LinkProfile)(nil),           // 10: shale.LinkProfile
+	(*SegmentProfile)(nil),        // 11: shale.SegmentProfile
+	(*ObservedRate)(nil),          // 12: shale.ObservedRate
+	(*Starvation)(nil),            // 13: shale.Starvation
+	(*RaiseBlocked)(nil),          // 14: shale.RaiseBlocked
+	(*Endpoint)(nil),              // 15: shale.Endpoint
+	(*Candidate)(nil),             // 16: shale.Candidate
+	(*Allocation)(nil),            // 17: shale.Allocation
+	(*RelayAssignment)(nil),       // 18: shale.RelayAssignment
+	(*HostJoin)(nil),              // 19: shale.HostJoin
+	(*HostInterface)(nil),         // 20: shale.HostInterface
+	(*HostLoad)(nil),              // 21: shale.HostLoad
+	(*SourceReport)(nil),          // 22: shale.SourceReport
+	(*ProducerStatus)(nil),        // 23: shale.ProducerStatus
+	(*AdmissionWait)(nil),         // 24: shale.AdmissionWait
+	(*SinkCapabilities)(nil),      // 25: shale.SinkCapabilities
+	(*SinkReport)(nil),            // 26: shale.SinkReport
+	(*SmartSummary)(nil),          // 27: shale.SmartSummary
+	(*DeviceReport)(nil),          // 28: shale.DeviceReport
+	(*NodeStatus)(nil),            // 29: shale.NodeStatus
+	(*RelayStatus)(nil),           // 30: shale.RelayStatus
+	(*LaminaRecord)(nil),          // 31: shale.LaminaRecord
+	(*CaptureEpochGrant)(nil),     // 32: shale.CaptureEpochGrant
+	(*TokenClaims)(nil),           // 33: shale.TokenClaims
+	(*LaminaStored)(nil),          // 34: shale.LaminaStored
+	(*LaminaDeleted)(nil),         // 35: shale.LaminaDeleted
+	(*LaminaMissing)(nil),         // 36: shale.LaminaMissing
+	(*Event)(nil),                 // 37: shale.Event
+	(*KeyEntry)(nil),              // 38: shale.KeyEntry
+	(*timestamppb.Timestamp)(nil), // 39: google.protobuf.Timestamp
 }
 var file_shale_common_proto_depIdxs = []int32{
 	0,  // 0: shale.LinkProfile.mode:type_name -> shale.UploadMode
-	36, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
-	36, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
-	12, // 3: shale.Candidate.endpoints:type_name -> shale.Endpoint
-	36, // 4: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
-	13, // 5: shale.Allocation.candidates:type_name -> shale.Candidate
-	36, // 6: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
-	9,  // 7: shale.Allocation.profile:type_name -> shale.SegmentProfile
-	8,  // 8: shale.Allocation.link:type_name -> shale.LinkProfile
-	12, // 9: shale.RelayAssignment.endpoints:type_name -> shale.Endpoint
-	36, // 10: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
-	1,  // 11: shale.RelayAssignment.live:type_name -> shale.LivePolicy
-	2,  // 12: shale.HostJoin.hardware_id_kind:type_name -> shale.HardwareIdKind
-	36, // 13: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
-	19, // 14: shale.ProducerStatus.sources:type_name -> shale.SourceReport
-	18, // 15: shale.ProducerStatus.load:type_name -> shale.HostLoad
-	36, // 16: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
-	21, // 17: shale.ProducerStatus.admission:type_name -> shale.AdmissionWait
-	3,  // 18: shale.AdmissionWait.reason:type_name -> shale.AdmissionWaitReason
-	36, // 19: shale.AdmissionWait.date_since:type_name -> google.protobuf.Timestamp
-	4,  // 20: shale.SinkReport.pressure:type_name -> shale.Pressure
-	22, // 21: shale.SinkReport.capabilities:type_name -> shale.SinkCapabilities
-	36, // 22: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
-	36, // 23: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
-	24, // 24: shale.DeviceReport.smart:type_name -> shale.SmartSummary
-	36, // 25: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
-	36, // 26: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
-	18, // 27: shale.RelayStatus.load:type_name -> shale.HostLoad
-	5,  // 28: shale.LaminaRecord.state:type_name -> shale.RecordState
-	0,  // 29: shale.LaminaRecord.mode:type_name -> shale.UploadMode
-	36, // 30: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
-	36, // 31: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
-	6,  // 32: shale.TokenClaims.op:type_name -> shale.TokenOp
-	28, // 33: shale.TokenClaims.record:type_name -> shale.LaminaRecord
-	0,  // 34: shale.TokenClaims.mode:type_name -> shale.UploadMode
-	1,  // 35: shale.TokenClaims.live:type_name -> shale.LivePolicy
-	36, // 36: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
-	36, // 37: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
-	29, // 38: shale.TokenClaims.capture_epochs:type_name -> shale.CaptureEpochGrant
-	36, // 39: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
-	36, // 40: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
-	36, // 41: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
-	28, // 42: shale.LaminaStored.record:type_name -> shale.LaminaRecord
-	36, // 43: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
-	7,  // 44: shale.LaminaMissing.reason:type_name -> shale.MissingReason
-	36, // 45: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
-	31, // 46: shale.Event.stored:type_name -> shale.LaminaStored
-	32, // 47: shale.Event.deleted:type_name -> shale.LaminaDeleted
-	33, // 48: shale.Event.missing:type_name -> shale.LaminaMissing
-	49, // [49:49] is the sub-list for method output_type
-	49, // [49:49] is the sub-list for method input_type
-	49, // [49:49] is the sub-list for extension type_name
-	49, // [49:49] is the sub-list for extension extendee
-	0,  // [0:49] is the sub-list for field type_name
+	39, // 1: shale.ObservedRate.date_updated:type_name -> google.protobuf.Timestamp
+	39, // 2: shale.Starvation.date_reset:type_name -> google.protobuf.Timestamp
+	39, // 3: shale.Starvation.date_raised:type_name -> google.protobuf.Timestamp
+	14, // 4: shale.Starvation.blocked:type_name -> shale.RaiseBlocked
+	1,  // 5: shale.RaiseBlocked.limit:type_name -> shale.RaiseLimit
+	39, // 6: shale.RaiseBlocked.date_since:type_name -> google.protobuf.Timestamp
+	15, // 7: shale.Candidate.endpoints:type_name -> shale.Endpoint
+	39, // 8: shale.Allocation.date_started:type_name -> google.protobuf.Timestamp
+	16, // 9: shale.Allocation.candidates:type_name -> shale.Candidate
+	39, // 10: shale.Allocation.date_expires:type_name -> google.protobuf.Timestamp
+	11, // 11: shale.Allocation.profile:type_name -> shale.SegmentProfile
+	10, // 12: shale.Allocation.link:type_name -> shale.LinkProfile
+	15, // 13: shale.RelayAssignment.endpoints:type_name -> shale.Endpoint
+	39, // 14: shale.RelayAssignment.date_expires:type_name -> google.protobuf.Timestamp
+	3,  // 15: shale.RelayAssignment.live:type_name -> shale.LivePolicy
+	4,  // 16: shale.HostJoin.hardware_id_kind:type_name -> shale.HardwareIdKind
+	39, // 17: shale.HostJoin.date_joined:type_name -> google.protobuf.Timestamp
+	2,  // 18: shale.SourceReport.rate_control:type_name -> shale.RateControl
+	22, // 19: shale.ProducerStatus.sources:type_name -> shale.SourceReport
+	21, // 20: shale.ProducerStatus.load:type_name -> shale.HostLoad
+	39, // 21: shale.ProducerStatus.date_reported:type_name -> google.protobuf.Timestamp
+	24, // 22: shale.ProducerStatus.admission:type_name -> shale.AdmissionWait
+	5,  // 23: shale.AdmissionWait.reason:type_name -> shale.AdmissionWaitReason
+	39, // 24: shale.AdmissionWait.date_since:type_name -> google.protobuf.Timestamp
+	6,  // 25: shale.SinkReport.pressure:type_name -> shale.Pressure
+	25, // 26: shale.SinkReport.capabilities:type_name -> shale.SinkCapabilities
+	39, // 27: shale.SinkReport.date_newest:type_name -> google.protobuf.Timestamp
+	39, // 28: shale.SmartSummary.date_read:type_name -> google.protobuf.Timestamp
+	27, // 29: shale.DeviceReport.smart:type_name -> shale.SmartSummary
+	39, // 30: shale.NodeStatus.date_reported:type_name -> google.protobuf.Timestamp
+	39, // 31: shale.RelayStatus.date_reported:type_name -> google.protobuf.Timestamp
+	21, // 32: shale.RelayStatus.load:type_name -> shale.HostLoad
+	7,  // 33: shale.LaminaRecord.state:type_name -> shale.RecordState
+	0,  // 34: shale.LaminaRecord.mode:type_name -> shale.UploadMode
+	39, // 35: shale.TokenClaims.exp:type_name -> google.protobuf.Timestamp
+	39, // 36: shale.TokenClaims.iat:type_name -> google.protobuf.Timestamp
+	8,  // 37: shale.TokenClaims.op:type_name -> shale.TokenOp
+	31, // 38: shale.TokenClaims.record:type_name -> shale.LaminaRecord
+	0,  // 39: shale.TokenClaims.mode:type_name -> shale.UploadMode
+	3,  // 40: shale.TokenClaims.live:type_name -> shale.LivePolicy
+	39, // 41: shale.TokenClaims.export_from:type_name -> google.protobuf.Timestamp
+	39, // 42: shale.TokenClaims.export_to:type_name -> google.protobuf.Timestamp
+	32, // 43: shale.TokenClaims.capture_epochs:type_name -> shale.CaptureEpochGrant
+	39, // 44: shale.LaminaStored.date_started:type_name -> google.protobuf.Timestamp
+	39, // 45: shale.LaminaStored.date_ended:type_name -> google.protobuf.Timestamp
+	39, // 46: shale.LaminaStored.date_committed:type_name -> google.protobuf.Timestamp
+	31, // 47: shale.LaminaStored.record:type_name -> shale.LaminaRecord
+	39, // 48: shale.LaminaDeleted.date_deleted:type_name -> google.protobuf.Timestamp
+	9,  // 49: shale.LaminaMissing.reason:type_name -> shale.MissingReason
+	39, // 50: shale.LaminaMissing.date_observed:type_name -> google.protobuf.Timestamp
+	34, // 51: shale.Event.stored:type_name -> shale.LaminaStored
+	35, // 52: shale.Event.deleted:type_name -> shale.LaminaDeleted
+	36, // 53: shale.Event.missing:type_name -> shale.LaminaMissing
+	54, // [54:54] is the sub-list for method output_type
+	54, // [54:54] is the sub-list for method input_type
+	54, // [54:54] is the sub-list for extension type_name
+	54, // [54:54] is the sub-list for extension extendee
+	0,  // [0:54] is the sub-list for field type_name
 }
 
 func init() { file_shale_common_proto_init() }
@@ -5821,7 +6183,7 @@ func file_shale_common_proto_init() {
 	if File_shale_common_proto != nil {
 		return
 	}
-	file_shale_common_proto_msgTypes[26].OneofWrappers = []any{
+	file_shale_common_proto_msgTypes[27].OneofWrappers = []any{
 		(*event_Stored)(nil),
 		(*event_Deleted)(nil),
 		(*event_Missing)(nil),
@@ -5831,8 +6193,8 @@ func file_shale_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_common_proto_rawDesc), len(file_shale_common_proto_rawDesc)),
-			NumEnums:      8,
-			NumMessages:   28,
+			NumEnums:      10,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
