@@ -70,7 +70,8 @@ class PackageContentTest(unittest.TestCase):
                         "usr/share/doc/shale/deploy/edge/README.md": "deploy/edge/README.md",
                     }
                     for guide in ("camera-policy", "camera-credentials", "camera-worker-drivers",
-                                  "camera-tls-identity", "camera-provisioner"):
+                                  "camera-tls-identity", "camera-provisioner", "camera-worker",
+                                  "camera-first-enrollment-trust"):
                         files[f"usr/share/doc/shale/docs/{guide}.md"] = f"docs/{guide}.md"
                     for installed, source in files.items():
                         with self.subTest(installed=installed):
@@ -115,7 +116,8 @@ class PackageContentTest(unittest.TestCase):
         count = 0
         guides = ("docs/managed-edge.md", "docs/camera-policy.md", "docs/camera-credentials.md",
                   "docs/camera-worker-drivers.md", "docs/camera-tls-identity.md",
-                  "docs/camera-provisioner.md", "deploy/edge/README.md")
+                  "docs/camera-provisioner.md", "docs/camera-worker.md",
+                  "docs/camera-first-enrollment-trust.md", "deploy/edge/README.md")
         for relative in guides:
             guide = documents / relative
             for link in re.findall(r"\[[^\]]+\]\(([^)]+)\)", guide.read_text()):
