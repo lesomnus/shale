@@ -48,6 +48,9 @@ type relayLink struct {
 	relayId  pdid.Id
 	dropped  int64
 	noFfmpeg bool
+	// sent is the bytes the tee handed the relay stream, by source: none of
+	// a source a satellite feeds (§41.8).
+	sent map[pdid.Id]int64
 }
 
 // tap is one started source: sent from the first key fragment on.
@@ -79,7 +82,7 @@ type relayEpoch struct {
 }
 
 func newRelayLink(p *Producer) *relayLink {
-	return &relayLink{p: p, changed: make(chan struct{}, 1), active: map[pdid.Id]*tap{}, send: make(chan queued, sendQueue), controls: make(chan struct{}, 1), resets: map[pdid.Id]relayEpoch{}, epochs: map[pdid.Id]relayEpoch{}}
+	return &relayLink{p: p, changed: make(chan struct{}, 1), active: map[pdid.Id]*tap{}, send: make(chan queued, sendQueue), controls: make(chan struct{}, 1), resets: map[pdid.Id]relayEpoch{}, epochs: map[pdid.Id]relayEpoch{}, sent: map[pdid.Id]int64{}}
 }
 
 // set takes the assignment the CP handed over; a different relay makes
@@ -278,6 +281,11 @@ func (l *relayLink) attach(ctx context.Context, ra *api.RelayAssignment) (up boo
 				if err := stream.Send(q.msg); err != nil {
 					errs <- err
 					return
+				}
+				if id, err := pdid.From(q.msg.GetData().GetSourceId()); err == nil {
+					l.mu.Lock()
+					l.sent[id] += int64(len(q.msg.GetData().GetPayload()))
+					l.mu.Unlock()
 				}
 				// Send returns once flow control lets the message go to
 				// the transport: the wait is the queue's and the uplink's
