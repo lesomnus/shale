@@ -300,15 +300,36 @@ expires.
 and device locks: the grant's expiry, the presented key against the grant's,
 the assignment generation, the network version (trust changes with it), the
 device's endpoint revision, its latest job and unfinished jobs, the key a job
-would pin today, the other live candidates and every other device's hosts. A
-candidate that passes is `verified` with code `key_verified`. Anything else
-settles it `operator_required` with a fixed code. A replay of a decided grant,
-after a lost response or a race, returns its outcome without another write; the
-same grant with another key is refused. Only the assigned Worker may call it.
+would pin today, the other live candidates and every other device's hosts. Any
+difference settles the candidate `operator_required` with a fixed code. A
+candidate that passes is `accepted`, and the same transaction:
 
-An operator still moves the camera: `CameraDevice.Observe` with the device's
+1. moves the device's endpoints to the candidate's and advances its endpoint
+   revision, keeping its authenticated identity and discovery ID;
+2. enrolls a recovery job for the same binding, so the same Source, with the
+   request key `transport/<candidate>`. It keeps the latest job's policy and
+   preset revisions, bootstrap, exact management and streaming credential
+   versions and the verified key; it has no initial credential and no
+   activation. A job that would differ is refused and nothing is written.
+
+The recovery job reinspects the camera, authenticated, before anything else.
+While a device's endpoints are those of an accepted candidate, both the Worker
+(before the engine continues) and the CP (before it accepts a checkpoint with
+configuration, firmware or publication state) require that inspection to report
+the recorded serial and one recorded MAC. Only then does the job configure,
+verify media and publish the binding's new input to the Producer.
+
+A replay of a decided grant, after a lost response or a race, returns its
+outcome and recovery job without another write; the same grant with another key
+is refused. Only the assigned Worker may call it. The next scan finds the camera
+at its endpoints and reports the recovery as `reconciliation_pending`.
+
+An operator moves any other camera: `CameraDevice.Observe` with the device's
 current version and the candidate's endpoints (omit `identity` to keep the
-authenticated one). A changed endpoint set clears every staged candidate.
+authenticated one), also `shale camera-device observe DEVICE '{...}'`. A changed
+endpoint set clears every staged candidate. The console's Cameras page lists the
+cameras seen at another address, each candidate's state and why, and that command
+for the ones an operator must decide.
 
 These cases never get a grant, or settle the candidate, and stay with an
 operator:
@@ -320,7 +341,8 @@ operator:
 | `tls_verification_skip` | The job's or the active policy skips TLS verification |
 | `trust_mismatch` | The active policy approves another key than the device's last job pinned |
 | `identity_missing` | No authenticated serial and MAC to reinspect |
-| `recovery_unavailable` | No published binding whose last job pinned a policy revision |
+| `recovery_unavailable` | No published binding whose last job pinned a policy revision, preset and credentials a recovery can reproduce |
+| `policy_manual` | The network's active policy is not automatic: discovery starts no job there |
 | `mutation_active` | A job for the device is unfinished |
 | `evidence_conflict` | The EPR or MAC contradicts the device's known ones |
 | `host_owned` | Another device owns the candidate's host, in any spelling, port or path |
@@ -330,8 +352,9 @@ operator:
 | `assignment_changed`, `trust_changed`, `endpoints_changed`, `job_changed` | What the grant was bound to changed before the CP checked it |
 
 A Worker older than this ignores the grant; its candidates expire and stay on
-the operator path. A CP older than this refuses the moved observation, as it
-always did, and sends no grant.
+the operator path, and its recovery jobs, if a newer Worker created one, are
+still checked by the CP. A CP older than this refuses the moved observation, as
+it always did, and sends no grant.
 
 ## Explicit HTTP compatibility
 

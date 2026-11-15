@@ -28,9 +28,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// transportVerified is what a candidate presenting its device's approved key
-// comes to.
-const transportVerified = "transport_key_verified"
+// transportAccepted is what a current candidate presenting its device's
+// approved key comes to.
+const transportAccepted = "transport_accepted"
 
 const (
 	transportEPR    = "urn:uuid:7d6c4b9e-5a3f-4c1e-9b2d-0e8f6a4c2d10"
@@ -124,7 +124,7 @@ func newTransportFixture(t *testing.T, o transportOptions) *transportFixture {
 	credential := func(purpose string) *api.CameraCredentialReference {
 		return api.CameraCredentialReference_builder{Provider: "cp", Id: "transport-" + purpose, Version: "1", Purpose: purpose}.Build()
 	}
-	inputs := api.CameraJobInputs_builder{Policy: api.CameraRevisionReference_builder{Id: cameraPolicyID(t, f.policy.GetId()), Revision: f.policy.GetRevision()}.Build(), Bootstrap: proto.Clone(enrollment.GetBootstrap()).(*api.CameraBootstrapProfile), ManagementCredential: credential("management"), StreamingCredential: credential("streaming"), TlsVerification: enrollment.GetTlsVerification()}.Build()
+	inputs := api.CameraJobInputs_builder{Policy: api.CameraRevisionReference_builder{Id: cameraPolicyID(t, f.policy.GetId()), Revision: f.policy.GetRevision()}.Build(), Preset: api.CameraRevisionReference_builder{Id: cameraPolicyID(t, f.preset.GetId()), Revision: f.preset.GetRevision()}.Build(), Bootstrap: proto.Clone(enrollment.GetBootstrap()).(*api.CameraBootstrapProfile), ManagementCredential: credential("management"), StreamingCredential: credential("streaming"), TlsVerification: enrollment.GetTlsVerification()}.Build()
 	if o.pin {
 		inputs.SetDeviceTlsIdentity(f.pin(t, f.key.SPKI))
 	}
@@ -244,10 +244,18 @@ func (d *transportDiscoverer) Discover(_ context.Context, scope cameramodel.Disc
 }
 
 // run starts the real Worker runtime with this discoverer. It executes no job.
-func (f *transportFixture) run(t *testing.T, discoverer cameramodel.Discoverer) {
+// It hands every job it is given to jobs, without touching the camera.
+func (f *transportFixture) run(t *testing.T, discoverer cameramodel.Discoverer, jobs chan<- *api.CameraJob) {
 	t.Helper()
-	runtime, err := cameraworker.New(cameraworker.Config{StateDir: f.agent.Store.Dir, Cp: f.cp, Tenant: "acme", HardwareID: "transport-worker", CaHash: pki.Fingerprint(f.server.CA.Cert), HeartbeatInterval: 100 * time.Millisecond, RetryInterval: 100 * time.Millisecond, LeaseSeconds: 30, DiscoveryInterval: time.Second, DiscoveryTimeout: 500 * time.Millisecond, Discoverer: discoverer, Log: f.agent.Log, Executor: cameraworker.ExecutorFunc(func(context.Context, *cameraworker.Execution) error {
-		t.Error("a staged transport candidate created a job")
+	runtime, err := cameraworker.New(cameraworker.Config{StateDir: f.agent.Store.Dir, Cp: f.cp, Tenant: "acme", HardwareID: "transport-worker", CaHash: pki.Fingerprint(f.server.CA.Cert), HeartbeatInterval: 100 * time.Millisecond, RetryInterval: 100 * time.Millisecond, LeaseSeconds: 30, DiscoveryInterval: time.Second, DiscoveryTimeout: 500 * time.Millisecond, Discoverer: discoverer, Log: f.agent.Log, Executor: cameraworker.ExecutorFunc(func(_ context.Context, e *cameraworker.Execution) error {
+		if jobs == nil {
+			t.Error("a staged transport candidate created a job")
+			return nil
+		}
+		select {
+		case jobs <- e.Snapshot().GetJob():
+		default:
+		}
 		return nil
 	})})
 	require.NoError(t, err)
@@ -282,24 +290,61 @@ func (f *transportFixture) decided(t *testing.T, host string) *api.CameraTranspo
 }
 
 // The same camera at an unowned new address presents its approved key in a
-// credential-free handshake by the real Worker. Nothing else reaches it.
-func TestCameraTransportCandidateVerifiesTheApprovedKeyCredentialFree(t *testing.T) {
+// credential-free handshake by the real Worker. Nothing else reaches it, and
+// one transaction moves it and enrolls its recovery job with the same pins.
+func TestCameraTransportCandidateAcceptsTheApprovedKeyCredentialFree(t *testing.T) {
 	f := newTransportFixture(t, transportOptions{pin: true})
 	require.NoError(t, f.camera.MoveTo("127.0.0.3"))
 	discoverer := &transportDiscoverer{}
 	discoverer.set(f.camera)
-	f.run(t, discoverer)
+	jobs := make(chan *api.CameraJob, 1)
+	f.run(t, discoverer, jobs)
 	c := f.decided(t, "127.0.0.3")
-	require.Equal(t, "verified", c.GetState())
-	require.Equal(t, "key_verified", c.GetCode())
+	require.Equal(t, "accepted", c.GetState())
+	require.Equal(t, "accepted", c.GetCode())
 	require.Equal(t, f.key.SPKI, c.GetPresentedSpkiSha256())
 	require.True(t, proto.Equal(f.pin(t, f.key.SPKI), c.GetGrant().GetTrust()))
 	require.Equal(t, "https://127.0.0.3:"+strconv.Itoa(f.port), c.GetGrant().GetEndpoint())
 	require.Equal(t, f.job.GetId(), c.GetGrant().GetJobId())
 	require.Positive(t, f.camera.WebHandshakes())
 	require.Empty(t, f.camera.AuthAttempts(), "verification presents no credential")
-	f.unchanged(t)
-	require.Equal(t, "transport_key_verified", f.get(t).GetEnrollment().GetCode())
+
+	d := f.get(t)
+	require.Equal(t, f.camera.CurrentURL(), d.GetEndpoints()[0].GetUri(), "the verified endpoints are the device's now")
+	require.Len(t, d.GetEndpoints(), 1)
+	require.Greater(t, d.GetObservationRevision(), f.device.GetObservationRevision())
+	require.True(t, proto.Equal(f.device.GetIdentity(), d.GetIdentity()), "the authenticated identity is kept")
+	require.Equal(t, transportEPR, d.GetEnrollment().GetDiscoveryId())
+	var recovery *api.CameraJob
+	select {
+	case recovery = <-jobs:
+	case <-time.After(15 * time.Second):
+		t.Fatal("the Worker was not given the recovery job")
+	}
+	require.Equal(t, c.GetJobId(), recovery.GetId())
+	require.Equal(t, "transport/"+c.GetId(), recovery.GetRequestKey())
+	require.Equal(t, f.binding.GetId(), recovery.GetBinding().GetId(), "the same binding, so the same Source")
+	in, last := recovery.GetInputs(), f.job.GetInputs()
+	require.True(t, proto.Equal(last.GetDeviceTlsIdentity(), in.GetDeviceTlsIdentity()), "the same pin")
+	for _, pair := range [][2]proto.Message{{last.GetPolicy(), in.GetPolicy()}, {last.GetPreset(), in.GetPreset()}, {last.GetBootstrap(), in.GetBootstrap()}, {last.GetManagementCredential(), in.GetManagementCredential()}, {last.GetStreamingCredential(), in.GetStreamingCredential()}} {
+		require.True(t, proto.Equal(pair[0], pair[1]), "the last job's exact versions")
+	}
+	require.Nil(t, in.GetInitialCredential(), "no initial credential")
+	require.False(t, in.GetAllowActivation(), "no activation authority")
+	require.Equal(t, 1, mustCameraBindingCount(t, f.ctx, f.server))
+	sources, err := f.server.Ent.Source.Query().Count(f.ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, sources)
+	require.True(t, proto.Equal(f.binding.GetDesired(), f.getBinding(t).GetDesired()), "the input changes only when the recovery publishes")
+	// The next scan finds the camera where it is and the recovery pending.
+	here := proto.Clone(f.request).(*api.CameraPolicyObserveRequest)
+	here.GetEndpoints()[0].SetUri(f.camera.CurrentURL())
+	v := f.observe(t, here)
+	require.Equal(t, "reconciliation_pending", v.GetCode())
+	require.Equal(t, recovery.GetId(), v.GetJob().GetId())
+	count, err := f.server.Ent.CameraJob.Query().Count(f.ctx)
+	require.NoError(t, err)
+	require.Equal(t, 2, count)
 }
 
 // A device copying the camera's EPR and MAC at a new address, with another
@@ -309,7 +354,7 @@ func TestCameraTransportCandidateImpostorReceivesNoCredential(t *testing.T) {
 	impostor := cameratest.ServeCamera(t, cameratest.CameraOptions{IP: "127.0.0.4", Profile: cameramodel.MediaProfile{Codec: "h264", Width: 160, Height: 90, FPS: 10, Bitrate: 128_000, GOP: 10}, Identity: cameratest.CameraIdentity{Serial: transportSerial, MAC: transportMAC, DiscoveryID: transportEPR}, Web: ptr(f.key.Issue(t)), WebPort: f.port})
 	discoverer := &transportDiscoverer{}
 	discoverer.set(impostor.ONVIF)
-	f.run(t, discoverer)
+	f.run(t, discoverer, nil)
 	c := f.decided(t, "127.0.0.4")
 	require.Equal(t, "operator_required", c.GetState())
 	require.Equal(t, "key_mismatch", c.GetCode())
@@ -463,6 +508,18 @@ func TestCameraTransportCandidateFailsClosed(t *testing.T) {
 		require.NoError(t, err)
 		staged(t, f, "127.0.0.3", "trust_mismatch")
 	})
+	t.Run("manual_policy", func(t *testing.T) {
+		// Discovery starts no job where the operator enrolls by hand.
+		f := newTransportFixture(t, transportOptions{pin: true})
+		request := cameraPolicyCreateRequest(f.network, f.preset, "transport-policy", "manual")
+		request.SetEnrollment(proto.Clone(f.policy.GetEnrollment()).(*api.CameraEnrollmentPolicy))
+		request.GetEnrollment().SetAutomatic(false)
+		manual, err := f.policies.Create(f.ctx, request)
+		require.NoError(t, err)
+		_, err = f.policies.Activate(f.ctx, api.CameraPolicyActivateRequest_builder{Ref: api.CameraPolicyRef_builder{Id: manual.GetId()}.Build(), ExpectedNetworkVersion: f.network.GetDateUpdated()}.Build())
+		require.NoError(t, err)
+		staged(t, f, "127.0.0.3", "policy_manual")
+	})
 	t.Run("unfinished_job", func(t *testing.T) {
 		f := newTransportFixture(t, transportOptions{pin: true})
 		g := granted(t, f, "127.0.0.3")
@@ -539,19 +596,32 @@ func TestCameraTransportCandidateRacesAndReplays(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	for i, err := range errs {
-		require.NoError(t, err)
-		require.Equal(t, transportVerified, results[i].GetCode())
-	}
 	decided := f.get(t)
 	c := decided.GetTransport().GetCandidates()[0]
-	require.Equal(t, "verified", c.GetState())
+	require.Equal(t, "accepted", c.GetState())
+	for i, err := range errs {
+		require.NoError(t, err)
+		require.Equal(t, transportAccepted, results[i].GetCode())
+		require.Equal(t, c.GetJobId(), results[i].GetJob().GetId(), "one exact recovery job")
+		require.Equal(t, f.binding.GetId(), results[i].GetBinding().GetId())
+	}
 	// A lost response is answered again without another write.
 	replay := f.verify(t, g, f.key.SPKI)
-	require.Equal(t, transportVerified, replay.GetCode())
+	require.Equal(t, transportAccepted, replay.GetCode())
+	require.Equal(t, c.GetJobId(), replay.GetJob().GetId())
 	require.True(t, proto.Equal(decided.GetDateUpdated(), f.get(t).GetDateUpdated()))
 	// The decided grant cannot be decided again with another key.
 	_, err = f.machine.VerifyTransport(f.ctx, api.CameraPolicyVerifyTransportRequest_builder{Grant: g, SpkiSha256: cameratest.NewWebKey(t).SPKI}.Build())
 	require.Equal(t, codes.Aborted, status.Code(err))
-	f.unchanged(t)
+	jobs, err := f.server.Ent.CameraJob.Query().Count(f.ctx)
+	require.NoError(t, err)
+	require.Equal(t, 2, jobs, "the original and one recovery")
+	require.Equal(t, "http://127.0.0.3:2020/onvif/device_service", decided.GetEndpoints()[0].GetUri())
+	// The stale grant of a decided candidate cannot approve a later move.
+	later := f.observe(t, f.moved("127.0.0.4"))
+	require.NotEqual(t, g.GetCandidateId(), later.GetTransportGrant().GetCandidateId())
+	require.Equal(t, "transport_mutation_active", later.GetCode(), "the recovery job is unfinished")
+	replay = f.verify(t, g, f.key.SPKI)
+	require.Equal(t, transportAccepted, replay.GetCode())
+	require.Equal(t, "http://127.0.0.3:2020/onvif/device_service", f.get(t).GetEndpoints()[0].GetUri())
 }

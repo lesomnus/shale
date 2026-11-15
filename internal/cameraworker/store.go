@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/shale/internal/camerabootstrap"
 	"github.com/lesomnus/shale/internal/cameraprogress"
 	"github.com/lesomnus/shale/internal/cameratls"
+	"github.com/lesomnus/shale/internal/cameratransport"
 	"github.com/lesomnus/shale/provision"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -116,8 +117,19 @@ func (s *JobStore) Identify(ctx context.Context, scope camera.EnrollmentScope, h
 	if scope != enrollmentScope(w.GetAssignment()) || h.ID != camera.DeviceID(cameraID(w.GetDevice().GetId())) {
 		return camera.ErrForbidden
 	}
-	prior := w.GetDevice().GetIdentity()
+	return recordedIdentity(w.GetDevice(), h)
+}
+
+// recordedIdentity refuses an inspection that contradicts the device's
+// authenticated record before the engine writes anything.
+func recordedIdentity(d *api.CameraDevice, h camera.DeviceHint) error {
+	prior := d.GetIdentity()
 	if prior.GetAuthenticated() && (prior.GetSerial() != "" && prior.GetSerial() != h.Serial || prior.GetHardware() != "" && prior.GetHardware() != h.Hardware) {
+		return camera.ErrAmbiguousIdentity
+	}
+	// A camera a verified transport candidate moved was recognized by its key
+	// only: before anything else it must report its recorded serial and MAC.
+	if cameratransport.Recovered(d) && !cameratransport.SameRecorded(prior, h) {
 		return camera.ErrAmbiguousIdentity
 	}
 	return nil

@@ -8,6 +8,7 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/shale/api"
+	"github.com/lesomnus/shale/camera"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -144,4 +145,22 @@ func TestTransportVerificationReportsThePresentedKeyOnly(t *testing.T) {
 		t.Fatal("no grant, no handshake")
 		return "", nil
 	}))
+}
+
+func TestRecoveredCameraMustReportItsRecordedSerialAndMAC(t *testing.T) {
+	eps := []*api.CameraObservedEndpoint{api.CameraObservedEndpoint_builder{Uri: "http://192.0.2.20:2020/onvif/device_service"}.Build()}
+	d := api.CameraDevice_builder{Endpoints: eps, Identity: api.CameraIdentityEvidence_builder{Serial: "unit-1", Macs: []string{"02:00:00:00:00:01"}, Authenticated: true}.Build()}.Build()
+	same := camera.DeviceHint{Serial: "unit-1", MAC: "02:00:00:00:00:01", Evidence: []camera.Evidence{{Authenticated: true}}}
+	noMAC := same
+	noMAC.MAC = ""
+	require.NoError(t, recordedIdentity(d, noMAC), "elsewhere an inspection without a MAC is as before")
+	d.SetTransport(api.CameraTransportState_builder{Candidates: []*api.CameraTransportCandidate{api.CameraTransportCandidate_builder{State: "accepted", Endpoints: eps}.Build()}}.Build())
+	require.NoError(t, recordedIdentity(d, same))
+	require.ErrorIs(t, recordedIdentity(d, noMAC), camera.ErrAmbiguousIdentity, "at verified endpoints the MAC must be reported")
+	other := same
+	other.MAC = "02:00:00:00:00:02"
+	require.ErrorIs(t, recordedIdentity(d, other), camera.ErrAmbiguousIdentity)
+	other = same
+	other.Serial = "unit-2"
+	require.ErrorIs(t, recordedIdentity(d, other), camera.ErrAmbiguousIdentity)
 }

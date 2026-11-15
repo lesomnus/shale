@@ -122,6 +122,9 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 	if err := cameraProgressSkipIdentity(j, run, d); err != nil {
 		return nil, err
 	}
+	if err := cameraProgressTransport(run, d); err != nil {
+		return nil, err
+	}
 	if err := s.cameraProgressFirmware(ctx, run, previous, j, a, d); err != nil {
 		return nil, err
 	}

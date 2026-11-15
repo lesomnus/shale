@@ -78,9 +78,12 @@ is separately covered by `TestBacklogAfterOutageWritten`; this checkpoint does
 not claim that an HTTP PUT had already started.
 
 For an authenticated device, a DHCP lease or public EPR alone cannot redirect
-credentials to a new host. The operations fixture explicitly approves the new
-endpoints through the operator's versioned `CameraDevice.Observe`, retaining its
-authenticated identity. It does not claim unattended DHCP address recovery.
+credentials to a new host. The operations fixture's cameras have no per-device
+TLS key, so their move stays a transport candidate on the operator path: it
+explicitly approves the new endpoints through the operator's versioned
+`CameraDevice.Observe`, retaining the authenticated identity. Unattended
+recovery of a camera with a per-device key, verified by a credential-free
+handshake, is covered by `TestCameraTransportRecoveryKeepsRecording`.
 Its third physical camera uses a separate, unowned address so capacity admission
 cannot bypass retained inventory ownership at the old camera's address.
 

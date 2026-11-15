@@ -156,7 +156,10 @@ The assigned Worker performs one credential-free TLS handshake with
 `https://<new host>:<the pinned bootstrap web port>` and reports the key the
 peer presented. The completed handshake proves the peer holds that key's private
 half. The CP compares it with the approved key; another key is `key_mismatch`,
-and nothing but the handshake reached that host.
+and nothing but the handshake reached that host. The approved key moves the
+camera, and its recovery job pins that same key; credentials go to the new host
+only over connections that present it, after the job reinspects the recorded
+serial and MAC.
 
 Only per-device keys are verified this way. Ordinary PKI is not: a certificate
 chaining to the camera vendor's CA, or a name it carries, does not tell one
@@ -223,4 +226,6 @@ with actual TLS, Roster operator grants and independently adopted Worker and
 Producer identities. `TestCameraPolicyApproveChangedTLSKey` drives a job through
 a real Worker to a changed-key stop and covers the approval's refusals and
 result. `TestCameraTransportCandidate*` stage moved cameras and verify them
-with real handshakes against fake cameras that move or copy an identity.
+with real handshakes against fake cameras that move or copy an identity, and
+`TestCameraTransportRecoveryKeepsRecording` moves a recording camera through
+the installed edge and keeps its Source recording.

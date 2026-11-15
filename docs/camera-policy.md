@@ -229,7 +229,9 @@ cannot publish by omitting the typed checkpoint.
 A repeated discovery reuses an unfinished job without regenerating secrets.
 When a completed binding's address changes, transport reconciliation retains
 the old policy and credential versions, the same binding and Source, and
-disables first-time activation. A terminal failure is not an implicit retry:
+disables first-time activation. For a camera with a per-device key, a verified
+[transport candidate](camera-worker.md#transport-candidates) creates that job
+itself; otherwise it follows the operator's `CameraDevice.Observe`. A terminal failure is not an implicit retry:
 an operator creates a new enrollment intent. An active-policy edit alone never
 reapplies settings to an existing camera.
 

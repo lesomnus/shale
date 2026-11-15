@@ -25,6 +25,7 @@ var custom = map[string]string{
 	"camera-policy/activate":    "shale.CameraPolicyService.Activate",
 	"camera-policy/enroll":      "shale.CameraPolicyService.Enroll",
 	"camera-policy/approve-tls": "shale.CameraPolicyService.ApproveTLS",
+	"camera-device/observe":     "shale.CameraDeviceService.Observe",
 	"camera-worker/adopt":       "shale.CameraWorkerService.Adopt",
 	"camera-worker/revoke":      "shale.CameraWorkerService.Revoke",
 	"node/adopt":                "shale.NodeService.Adopt",

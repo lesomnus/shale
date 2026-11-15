@@ -6,7 +6,9 @@
  * held it (§38.5), and why cameras the producer's catalog names are not
  * recording yet. Above them, the camera jobs that stopped and wait on an
  * operator, with why: a TLS key a job's pin does not name is shown beside
- * that pin (docs/camera-tls-identity.md).
+ * that pin (docs/camera-tls-identity.md). And the cameras seen at another
+ * address, with what checking their key there came to
+ * (docs/camera-worker.md, "Transport candidates").
  *
  * @module
  */
@@ -17,8 +19,8 @@ import { useRow } from '@lesomnus/payday/react'
 import { key } from '@lesomnus/payday/store'
 
 import { CameraBinding as CameraBindingEntity } from '../gen/entities.js'
-import { CameraJobStage, type CameraBinding, type CameraJob } from '../gen/shale/camera_pb.js'
-import { CameraJobService } from '../gen/shale/camera_svc_pb.js'
+import { CameraJobStage, type CameraBinding, type CameraDevice, type CameraJob, type CameraObservedEndpoint, type CameraTransportCandidate } from '../gen/shale/camera_pb.js'
+import { CameraDeviceService, CameraJobService } from '../gen/shale/camera_svc_pb.js'
 import { HostState, type Producer } from '../gen/shale/host_pb.js'
 import { ProducerService } from '../gen/shale/host_svc_pb.js'
 import type { Set, Source } from '../gen/shale/set_pb.js'
@@ -41,6 +43,7 @@ export function Cameras(): ReactNode {
 			</p>
 			<On surface="tenant" note="Sets and cameras belong to a tenant: sign in to the tenant API.">
 				<StoppedJobs />
+				<MovedCameras />
 				<Sets />
 			</On>
 		</>
@@ -113,6 +116,147 @@ function StoppedJob(props: { job: CameraJob }): ReactNode {
 				)}
 			</dl>
 		</div>
+	)
+}
+
+/**
+ * MovedCameras are the tenant's cameras the worker saw somewhere other than
+ * their authorized endpoints. Nothing moved them but a verified key or an
+ * operator; each candidate shows what checking it came to. Reading them is a
+ * camera grant at roster, so a person without one sees nothing here.
+ */
+function MovedCameras(): ReactNode {
+	const s = useSurfaces()
+	const tenant = tenantOf(s.sessions.tenant?.session.who ?? '')
+	const devices = usePolled(CameraDeviceService.method.list, { filters: [{ tenant: { key: { case: 'alias' as const, value: tenant } } }], size: 500 }, 15000)
+	if (devices.state === 'error' || devices.data === undefined) return null
+	const moved = devices.data.items.filter((d) => (d.transport?.candidates.length ?? 0) > 0)
+	if (moved.length === 0) return null
+
+	return (
+		<section>
+			<h2>Cameras seen at another address</h2>
+			<div className="cards">
+				{moved.map((d) => (
+					<MovedCamera key={key(d.id)} device={d} />
+				))}
+			</div>
+		</section>
+	)
+}
+
+/** transportWhy says, for each fixed outcome code, what it means. */
+const transportWhy: Record<string, string> = {
+	verification_required: 'the worker is checking its key at the new address, without a credential',
+	accepted: 'it presented its approved key there; a recovery job with the same pins moved it',
+	insecure_http: 'its web transport is HTTP: there is no key to check',
+	trust_missing: 'no key of this camera is approved: ordinary PKI does not tell one camera from another',
+	tls_verification_skip: 'its policy skips TLS verification: there is no key to check',
+	trust_mismatch: "the active policy approves another key than the camera's last job pinned",
+	identity_missing: 'no authenticated serial and MAC to reinspect it by',
+	recovery_unavailable: 'no published binding whose last job pinned a policy',
+	policy_manual: "the network's active policy enrolls by hand",
+	mutation_active: 'a job for this camera has not finished',
+	evidence_conflict: 'its EPR or MAC contradicts what is known of this camera',
+	ambiguous: 'it was seen at more than one new address',
+	host_owned: 'another camera owns that address',
+	key_mismatch: 'another key answered there: not this camera, and nothing but a TLS handshake reached it',
+	expired: 'the observation expired before it was checked',
+	assignment_changed: "the camera network's worker assignment changed while it was checked",
+	trust_changed: "the network or the camera's approved key changed while it was checked",
+	endpoints_changed: "the camera's endpoints changed while it was checked",
+	job_changed: "the camera's last job changed while it was checked",
+}
+
+function hosts(eps: CameraObservedEndpoint[] | undefined): string {
+	const out = new globalThis.Set<string>()
+	for (const ep of eps ?? []) {
+		try {
+			out.add(new URL(ep.uri).hostname)
+		} catch {
+			out.add(ep.uri)
+		}
+	}
+	return [...out].join(', ')
+}
+
+/**
+ * MovedCamera is one camera and its candidates, newest first. One an operator
+ * must decide shows the command that moves it: CameraDevice.Observe with the
+ * device's current version and the candidate's endpoints.
+ */
+function MovedCamera(props: { device: CameraDevice }): ReactNode {
+	const d = props.device
+	const candidates = [...(d.transport?.candidates ?? [])].reverse()
+
+	return (
+		<div className="card">
+			<div className="title">
+				<b>{d.name || d.alias || d.deviceKey}</b>
+				<span className="mono dim">{hosts(d.endpoints)}</span>
+			</div>
+			{candidates.map((c) => (
+				<TransportCandidate key={c.id} device={d} candidate={c} />
+			))}
+		</div>
+	)
+}
+
+function TransportCandidate(props: { device: CameraDevice; candidate: CameraTransportCandidate }): ReactNode {
+	const c = props.candidate
+	const now = useNow()
+	const expires = date(c.dateExpires)
+	const lapsed = c.state === 'pending' && expires !== undefined && expires.getTime() <= now
+	const code = lapsed ? 'expired' : c.code
+	const operator = c.state === 'operator_required' || lapsed
+	const tone: Tone = c.state === 'accepted' ? 'ok' : operator ? 'bad' : 'warn'
+	const label = c.state === 'accepted' ? 'moved' : operator ? 'operator action' : 'verifying'
+	const approved = c.grant?.trust?.spkiSha256
+	const endpoints = JSON.stringify(c.endpoints.map((ep) => ({ uri: ep.uri })))
+
+	return (
+		<dl>
+			<dt>seen at</dt>
+			<dd className="mono">
+				{hosts(c.endpoints)} <Badge tone={tone}>{label}</Badge>
+			</dd>
+			<dt>why</dt>
+			<dd>{transportWhy[code] ?? code}</dd>
+			<dt>seen</dt>
+			<dd>
+				<Ago at={c.dateObserved} />
+			</dd>
+			{c.dateDecided !== undefined && (
+				<>
+					<dt>decided</dt>
+					<dd>
+						<Ago at={c.dateDecided} />
+					</dd>
+				</>
+			)}
+			{c.presentedSpkiSha256 !== '' && approved !== undefined && c.presentedSpkiSha256 !== approved && (
+				<>
+					<dt>approved key</dt>
+					<dd className="mono key">{approved}</dd>
+					<dt>presented key</dt>
+					<dd className="mono key bad">{c.presentedSpkiSha256}</dd>
+				</>
+			)}
+			{c.jobId.length > 0 && (
+				<>
+					<dt>recovery job</dt>
+					<dd className="mono">{hex(c.jobId)}</dd>
+				</>
+			)}
+			{operator && (
+				<>
+					<dt>to move it</dt>
+					<dd className="mono key dim">
+						shale camera-device observe {hex(props.device.id)} '{`{"expectedVersion":"<the device's dateUpdated>","endpoints":${endpoints}}`}'
+					</dd>
+				</>
+			)}
+		</dl>
 	)
 }
 

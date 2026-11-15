@@ -12,10 +12,12 @@ import (
 
 	"github.com/lesomnus/shale/api"
 	"github.com/lesomnus/shale/camera"
+	"github.com/lesomnus/shale/internal/cameratransport"
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/camerabinding"
 	"github.com/lesomnus/shale/internal/ent/cameradevice"
 	"github.com/lesomnus/shale/internal/ent/camerajob"
+	"github.com/lesomnus/shale/provision"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -30,14 +32,15 @@ const (
 	cameraTransportLifetime = 2 * time.Minute
 	cameraTransportLimit    = 4
 
-	cameraTransportPending  = "pending"
-	cameraTransportVerified = "verified"
-	cameraTransportOperator = "operator_required"
+	cameraTransportPending  = cameratransport.StatePending
+	cameraTransportAccepted = cameratransport.StateAccepted
+	cameraTransportOperator = cameratransport.StateOperator
 
 	// The fixed outcome codes. Every code but the first two leaves the move to
 	// an operator's CameraDevice.Observe.
 	cameraTransportRequired     = "verification_required"
-	cameraTransportKeyVerified  = "key_verified"
+	cameraTransportDone         = "accepted"
+	cameraTransportManual       = "policy_manual"
 	cameraTransportInsecureHTTP = "insecure_http"
 	cameraTransportTrustMissing = "trust_missing"
 	cameraTransportTrustSkip    = "tls_verification_skip"
@@ -142,6 +145,17 @@ func (s Core) cameraTransportTrust(ctx context.Context, a *api.CameraAssignment,
 		out.code = cameraTransportNoRecovery
 		return out, nil
 	}
+	preset, err := nx.CameraPreset().Get(ctx, api.CameraPresetGetRequest_builder{Ref: api.CameraPresetRef_builder{Id: p.GetPreset().GetId()}.Build()}.Build())
+	if err != nil {
+		return out, err
+	}
+	// The recovery is a job under the same revision, preset and transport as
+	// the last one: one that cannot be reproduced is not recovered by itself.
+	want := cameraEnrollmentInputs(p, preset, false, d)
+	if !proto.Equal(want.GetPolicy(), j.GetInputs().GetPolicy()) || !proto.Equal(want.GetPreset(), j.GetInputs().GetPreset()) || !proto.Equal(want.GetBootstrap(), j.GetInputs().GetBootstrap()) || want.GetTlsVerification() != j.GetInputs().GetTlsVerification() || j.GetInputs().GetManagementCredential() == nil || j.GetInputs().GetStreamingCredential() == nil {
+		out.code = cameraTransportNoRecovery
+		return out, nil
+	}
 	out.binding, out.job, out.policy = b, j, p
 	var active *api.CameraPolicy
 	if len(n.GetActivePolicyId()) > 0 {
@@ -171,7 +185,12 @@ func (s Core) cameraTransportTrust(ctx context.Context, a *api.CameraAssignment,
 		return out, nil
 	}
 	out.port = bootstrap.GetWebPort()
-	if active != nil && !proto.Equal(cameraDeviceTLSIdentity(active, d), out.pin) {
+	if active == nil || !active.GetEnrollment().GetAutomatic() {
+		// Discovery starts no job on a network the operator enrolls by hand.
+		out.code = cameraTransportManual
+		return out, nil
+	}
+	if !proto.Equal(cameraDeviceTLSIdentity(active, d), out.pin) {
 		// The operator's current approval and the device's last job disagree.
 		out.code = cameraTransportTrustDiffers
 		return out, nil
@@ -224,7 +243,7 @@ func (s Core) cameraTransportHostOwned(ctx context.Context, n *api.CameraNetwork
 
 func cameraTransportLive(c *api.CameraTransportCandidate, now time.Time) bool {
 	switch c.GetState() {
-	case cameraTransportPending, cameraTransportVerified, cameraTransportOperator:
+	case cameraTransportPending, cameraTransportOperator:
 	default:
 		return false
 	}
@@ -242,7 +261,7 @@ func cameraTransportDecide(c *api.CameraTransportCandidate, code string, now tim
 // authorized endpoint revision, can no longer be verified.
 func cameraTransportMaintain(state *api.CameraTransportState, a *api.CameraAssignment, d *api.CameraDevice, now time.Time) {
 	for _, c := range state.GetCandidates() {
-		if c.GetState() != cameraTransportPending && c.GetState() != cameraTransportVerified {
+		if c.GetState() != cameraTransportPending {
 			continue
 		}
 		switch {
@@ -271,14 +290,14 @@ func cameraTransportAmbiguity(state *api.CameraTransportState, now time.Time) {
 		return
 	}
 	for _, c := range live {
-		if c.GetState() == cameraTransportPending || c.GetState() == cameraTransportVerified {
+		if c.GetState() == cameraTransportPending {
 			cameraTransportDecide(c, cameraTransportAmbiguous, now)
 		}
 	}
 }
 
 func cameraTransportSetKey(eps []*api.CameraObservedEndpoint) string {
-	set := cameraObservationEndpointSet(eps)
+	set := cameratransport.EndpointSet(eps)
 	out := ""
 	for _, v := range set {
 		out += v + "\x00"
@@ -431,7 +450,8 @@ func cameraTransportGrantValid(g *api.CameraTransportGrant) error {
 // grant against today's assignment generation, network version, device
 // endpoints and job, the device's approved key, the other live candidates and
 // host ownership; any difference settles the candidate with a fixed code for
-// an operator. A replay of a decided candidate returns its outcome.
+// an operator. Otherwise the same transaction moves the device's endpoints and
+// enrolls its recovery job. A replay of a decided candidate returns its outcome.
 func (s coreCameraPolicy) VerifyTransport(ctx context.Context, r *api.CameraPolicyVerifyTransportRequest) (*api.CameraPolicyObserveResponse, error) {
 	if err := cameraMessage(r); err != nil {
 		return nil, err
@@ -483,6 +503,18 @@ func (s coreCameraPolicy) VerifyTransport(ctx context.Context, r *api.CameraPoli
 				return status.Error(codes.Aborted, "camera transport candidate was already decided")
 			}
 			out = api.CameraPolicyObserveResponse_builder{Device: d, Code: cameraTransportCode(candidate)}.Build()
+			if job := candidate.GetJobId(); len(job) > 0 {
+				j, err := nx.CameraJob().Get(ctx, api.CameraJobGetRequest_builder{Ref: api.CameraJobRef_builder{Id: job}.Build()}.Build())
+				if err != nil {
+					return err
+				}
+				b, err := nx.CameraBinding().Get(ctx, api.CameraBindingGetRequest_builder{Ref: api.CameraBindingRef_builder{Id: j.GetBinding().GetId()}.Build()}.Build())
+				if err != nil {
+					return err
+				}
+				out.SetJob(j)
+				out.SetBinding(b)
+			}
 			return nil
 		}
 		now := s.d.now()
@@ -504,29 +536,52 @@ func (s coreCameraPolicy) VerifyTransport(ctx context.Context, r *api.CameraPoli
 		case d.GetObservationRevision() != g.GetObservationRevision():
 			decide(cameraTransportMoved)
 		}
+		var trust cameraTransportTrust
 		if candidate.GetState() == cameraTransportPending {
-			code, err := c.cameraTransportRecheck(ctx, a, n, d, state, candidate, now)
+			var code string
+			trust, code, err = c.cameraTransportRecheck(ctx, a, n, d, state, candidate, now)
 			if err != nil {
 				return err
 			}
 			if code != "" {
 				decide(code)
-			} else {
-				candidate.SetState(cameraTransportVerified)
-				candidate.SetCode(cameraTransportKeyVerified)
-				candidate.SetDateDecided(timestamppb.New(now))
+			}
+		}
+		out = api.CameraPolicyObserveResponse_builder{}.Build()
+		patch := api.CameraDevicePatchRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), Transport: state}.Build()
+		if candidate.GetState() == cameraTransportPending {
+			// Verified and current: the recovery job and the move commit
+			// together, or neither does.
+			j, err := c.cameraTransportRecover(ctx, a, d, trust, candidate)
+			if err != nil {
+				return err
+			}
+			candidate.SetState(cameraTransportAccepted)
+			candidate.SetCode(cameraTransportDone)
+			candidate.SetDateDecided(timestamppb.New(now))
+			candidate.SetJobId(j.GetId())
+			patch.SetEndpoints(candidate.GetEndpoints())
+			patch.SetObservationRevision(d.GetObservationRevision() + 1)
+			out.SetJob(j)
+			out.SetBinding(trust.binding)
+			// The job may have read the device; take today's version.
+			d, err = nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build()}.Build())
+			if err != nil {
+				return err
 			}
 		}
 		// The device's observation code shows the outcome, as Observe's would.
-		enrollment := api.CameraEnrollmentObservation_builder{Code: cameraTransportCode(candidate), ObservedAt: timestamppb.New(now), DiscoveryId: d.GetEnrollment().GetDiscoveryId()}.Build()
-		if _, err := nx.CameraDevice().Patch(ctx, api.CameraDevicePatchRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build(), Transport: state, Enrollment: enrollment, DateUpdated: d.GetDateUpdated()}.Build()); err != nil {
+		patch.SetEnrollment(api.CameraEnrollmentObservation_builder{Code: cameraTransportCode(candidate), ObservedAt: timestamppb.New(now), DiscoveryId: d.GetEnrollment().GetDiscoveryId()}.Build())
+		patch.SetDateUpdated(d.GetDateUpdated())
+		if _, err := nx.CameraDevice().Patch(ctx, patch); err != nil {
 			return err
 		}
 		d, err = nx.CameraDevice().Get(ctx, api.CameraDeviceGetRequest_builder{Ref: api.CameraDeviceRef_builder{Id: d.GetId()}.Build()}.Build())
 		if err != nil {
 			return err
 		}
-		out = api.CameraPolicyObserveResponse_builder{Device: d, Code: cameraTransportCode(candidate)}.Build()
+		out.SetDevice(d)
+		out.SetCode(cameraTransportCode(candidate))
 		return nil
 	})
 	if err != nil {
@@ -541,37 +596,77 @@ func (s coreCameraPolicy) VerifyTransport(ctx context.Context, r *api.CameraPoli
 // cameraTransportRecheck is today's answer to everything the grant was bound
 // to beyond its own fields: the device's job and approved key, the other
 // candidates and who owns the host. Empty when the candidate still stands.
-func (s Core) cameraTransportRecheck(ctx context.Context, a *api.CameraAssignment, n *api.CameraNetwork, d *api.CameraDevice, state *api.CameraTransportState, c *api.CameraTransportCandidate, now time.Time) (string, error) {
+func (s Core) cameraTransportRecheck(ctx context.Context, a *api.CameraAssignment, n *api.CameraNetwork, d *api.CameraDevice, state *api.CameraTransportState, c *api.CameraTransportCandidate, now time.Time) (cameraTransportTrust, string, error) {
 	g := c.GetGrant()
 	trust, err := s.cameraTransportTrust(ctx, a, n, d)
 	if err != nil {
-		return "", err
+		return trust, "", err
 	}
 	switch {
 	case trust.code == cameraTransportMutation:
-		return cameraTransportMutation, nil
+		return trust, cameraTransportMutation, nil
 	case trust.job == nil || !bytes.Equal(trust.job.GetId(), g.GetJobId()):
-		return cameraTransportJobChanged, nil
+		return trust, cameraTransportJobChanged, nil
 	case trust.code != "" || !proto.Equal(trust.pin, g.GetTrust()) || !proto.Equal(trust.job.GetInputs().GetPolicy(), g.GetPolicy()):
-		return cameraTransportTrustChanged, nil
+		return trust, cameraTransportTrustChanged, nil
 	}
 	if origin, ok := cameraTransportOrigin(c.GetEndpoints(), trust.port); !ok || origin != g.GetEndpoint() {
-		return cameraTransportMoved, nil
+		return trust, cameraTransportMoved, nil
 	}
 	for _, other := range state.GetCandidates() {
 		if other.GetId() != c.GetId() && cameraTransportLive(other, now) && cameraTransportSetKey(other.GetEndpoints()) != cameraTransportSetKey(c.GetEndpoints()) {
-			return cameraTransportAmbiguous, nil
+			return trust, cameraTransportAmbiguous, nil
 		}
 	}
 	owned, err := s.cameraTransportHostOwned(ctx, n, d, c.GetEndpoints())
 	if err != nil {
-		return "", err
+		return trust, "", err
 	}
 	if owned {
-		return cameraTransportHostOwned, nil
+		return trust, cameraTransportHostOwned, nil
 	}
 	if err := cameraEndpoints(c.GetEndpoints(), n.GetCidrs()); err != nil {
-		return cameraTransportMoved, nil
+		return trust, cameraTransportMoved, nil
 	}
-	return "", nil
+	return trust, "", nil
+}
+
+// cameraTransportRecover enrolls the recovery job of an accepted candidate:
+// the same binding, the last job's policy and preset revisions, its exact
+// management and streaming credential versions and the verified key, with no
+// initial credential and no activation. The job reinspects the recorded serial
+// and MAC before any write (cameraProgressTransport).
+func (s Core) cameraTransportRecover(ctx context.Context, a *api.CameraAssignment, d *api.CameraDevice, trust cameraTransportTrust, c *api.CameraTransportCandidate) (*api.CameraJob, error) {
+	last := trust.job.GetInputs()
+	j, err := s.cameraEnrollJob(ctx, a, trust.binding, trust.policy, "transport/"+c.GetId(), false, last)
+	if err != nil {
+		return nil, err
+	}
+	in := j.GetInputs()
+	if !bytes.Equal(j.GetBinding().GetId(), trust.binding.GetId()) || !proto.Equal(in.GetDeviceTlsIdentity(), c.GetGrant().GetTrust()) || in.GetAllowActivation() || in.GetInitialCredential() != nil ||
+		!proto.Equal(in.GetPolicy(), last.GetPolicy()) || !proto.Equal(in.GetPreset(), last.GetPreset()) || !proto.Equal(in.GetBootstrap(), last.GetBootstrap()) ||
+		!proto.Equal(in.GetManagementCredential(), last.GetManagementCredential()) || !proto.Equal(in.GetStreamingCredential(), last.GetStreamingCredential()) || in.GetTlsVerification() != last.GetTlsVerification() {
+		return nil, failed("a transport recovery job must keep the last job's pins and the verified key")
+	}
+	return j, nil
+}
+
+// cameraProgressTransport: a camera whose endpoints a verified candidate moved
+// was recognized by its key only. Before any configuration write, firmware or
+// publication, a job there must reinspect, authenticated, the recorded serial
+// and one recorded MAC.
+func cameraProgressTransport(run provision.Run, d *api.CameraDevice) error {
+	if !cameratransport.Recovered(d) {
+		return nil
+	}
+	if run.Inspection == nil {
+		if run.Preset != nil || run.Effective != nil || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.Verified != nil || run.DeploymentProfile != nil || run.Firmware != nil || run.Binding.DeploymentID != "" {
+			return failed("a moved camera must reinspect its recorded serial and MAC before any write")
+		}
+		return nil
+	}
+	if !cameratransport.SameRecorded(d.GetIdentity(), run.Inspection.Device) {
+		return failed("a moved camera reported another serial or MAC than its recorded identity")
+	}
+	return nil
 }

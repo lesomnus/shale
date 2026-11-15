@@ -1353,7 +1353,7 @@ type CameraTransportCandidate_builder struct {
 	Macs                 []string
 	AssignmentGeneration int64
 	ObservationRevision  int64
-	// "pending", "verified", "accepted" or "operator_required".
+	// "pending", "accepted" or "operator_required".
 	State string
 	// A fixed outcome code; see docs/camera-worker.md.
 	Code string
