@@ -1065,7 +1065,8 @@ type UploadBounds_builder struct {
 	AllocationHorizonMin     int64
 	AllocationHorizonMax     int64
 	DefaultMode              UploadMode
-	// 32.
+	// 32: a floor, since a source's cap is never below 3 × (⌈horizon ÷
+	// segment duration⌉ + 2), what its look-ahead needs (§12.1).
 	MaxOpenAttempts int32
 	// Seconds beyond the horizon a future date_started may lie (300).
 	ClockTolerance int64

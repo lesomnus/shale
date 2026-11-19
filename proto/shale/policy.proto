@@ -182,7 +182,8 @@ message UploadBounds {
   int64 allocation_horizon_min = 15;
   int64 allocation_horizon_max = 16;
   UploadMode default_mode = 17;
-  // 32.
+  // 32: a floor, since a source's cap is never below 3 × (⌈horizon ÷
+  // segment duration⌉ + 2), what its look-ahead needs (§12.1).
   int32 max_open_attempts = 18;
   // Seconds beyond the horizon a future date_started may lie (300).
   int64 clock_tolerance = 19;

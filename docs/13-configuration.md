@@ -54,7 +54,7 @@ deployment runs well on them, and changes them only for a reason.
 | Uploads | `abandon_timeout` | 5 min | 1–30 min, and ≥ 2 × `idle_timeout` | negotiated, per set | [§15](04-write-path.md#15-partial-laminae) |
 | Uploads | `allocation_horizon` | 10 min | 1–30 min | negotiated, per set | [§12.1](04-write-path.md#121-flow) |
 | Uploads | `allocation_ttl` | horizon + longest segment + `abandon_timeout` + 5 min (22 min at the defaults) | derived; `control.allocation_ttl` replaces it | control | [§12.1](04-write-path.md#121-flow) |
-| Uploads | `max_open_attempts` per source | 32 | — | cluster | [§12.1](04-write-path.md#121-flow) |
+| Uploads | `max_open_attempts` per source | 32, raised to 3 × (⌈`allocation_horizon` ÷ segment duration⌉ + 2) (36 at 66-second segments and the default horizon) | a floor: never below what the horizon needs. A slot that has begun counts only the open attempts of laminae that have begun, against twice the cap | cluster (`UploadPolicy`) | [§12.1](04-write-path.md#121-flow) |
 | Uploads | `clock_tolerance` (future `date_started`) | 5 min beyond the horizon | — | cluster | [§10](02-data-model.md#10-time-semantics) |
 | Uploads | `max_backlog_age` (past `date_started`) | = `retention.expire` | — | set | [§10](02-data-model.md#10-time-semantics) |
 | Segments | `max_bitrate: auto` starting table | 1080p30 → 4 Mbps and the rest of the table in [§38.5](15-producer.md#385-choosing-the-ceiling) | — | producer | [§38.5](15-producer.md#385-choosing-the-ceiling) |

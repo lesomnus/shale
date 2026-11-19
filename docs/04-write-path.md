@@ -40,8 +40,8 @@ short CP outage. It adds no durable producer state:
 
 - A producer holds allocations for the segments of each camera that are due
   within `allocation_horizon` (negotiated, [§12.6](#126-upload-profile-negotiation);
-  default 10 minutes ≈ 5 segments at 2 minutes), in RAM only. After a restart
-  it simply asks again.
+  default 10 minutes: 5 segments at 2 minutes, 10 at 66 seconds), in RAM
+  only. After a restart it simply asks again.
 - `SetService.Allocate` returns allocations for every member of the set up to
   the horizon in one call. Placement is a pure function of
   `(set, epoch, ordinal)` and the expected `date_started`
@@ -54,12 +54,47 @@ short CP outage. It adds no durable producer state:
   usually holds one segment; when the camera stops and comes back within
   the slot ([§15](#15-partial-laminae)) the segment that follows begins
   after the stored one ended, and gets a lamina of its own in the same
-  slot, so nothing the camera delivered is refused. A source may hold at
-  most `max_open_attempts` (default 32) unfinished attempts; beyond that no
-  new lamina is allocated, while a lamina already allocated whose
-  attempts all failed still gets fresh ones, so a segment being retried
+  slot, so nothing the camera delivered is refused.
+- **Open attempts per source are capped**, which bounds what a runaway
+  producer can allocate. An attempt is open while it is `ALLOCATED` and
+  unexpired. The cap is `max_open_attempts` (default 32), raised to what
+  the source's look-ahead needs:
+
+  ```text
+  cap = max(max_open_attempts,
+            3 × (⌈allocation_horizon ÷ segment duration⌉ + 2))
+  ```
+
+  That is three candidates ([§13](#13-retry-and-reallocation)) for every
+  slot up to the horizon, the one being recorded among them, and for the
+  segment before it, still uploading: 36 at 66-second segments and the
+  default horizon. The policy's value is a floor: it can raise the cap,
+  never lower it below what the horizon needs. The cap refuses only a
+  **new** lamina (`RESOURCE_EXHAUSTED`). Asking again for a lamina the
+  source holds is answered past it, and a lamina whose attempts all failed
+  still gets fresh ones, so a segment being retried
   ([§16](#16-producer-backpressure)) is never held back by the allocations
   ahead of it.
+- **Look-ahead never crowds out a segment that exists.** A slot still
+  ahead counts every open attempt against the cap, so the look-ahead
+  takes only what is left. A slot that has begun counts only the open
+  attempts of laminae that have begun too, against **twice** the cap. Begun
+  means a `date_started` no later than the CP's now, plus one keyframe
+  interval and one encoder burst for a producer clock a little ahead.
+  The look-ahead makes a lamina only while the source holds less than the
+  cap, so its laminae hold about the cap at most. That stays true once
+  they have begun, used or not, as for a camera that stopped and came
+  back. Segments being recorded or waiting in a backlog
+  ([§16](#16-producer-backpressure)) therefore always have about the cap
+  for laminae of their own, however much was fetched ahead. A source still
+  cannot leave more begun segments open than twice the cap allows, which
+  the producer's RAM budget and `max_backlog_age` bound anyway.
+- **A member at the cap stops its own look-ahead.** `SetService.Allocate`
+  stops that member's look-ahead at the first slot the cap refuses. It
+  answers the nearer slots the member got, and every other member in
+  full, and logs this once per member and call. Only a real failure (the
+  database, placement) fails the call, and with it the whole set's
+  look-ahead.
 - **A lamina is one segment's.** The CP answers a lamina again, with
   fresh tokens, for as long as it is `PENDING`, which lasts until its
   commit reaches the CP: that is the idempotency above. A slot can hold
