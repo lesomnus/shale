@@ -83,17 +83,13 @@ func isolatedOperationsMediaAfter(t *testing.T, f *isolatedFixture, role string,
 	job, binding := f.WaitActive(role)
 	var record *api.Lamina
 	require.Eventually(t, func() bool {
-		rows, err := api.NewLaminaServiceClient(f.Admin).List(f.Ctx, api.LaminaListRequest_builder{Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: binding.GetSource().GetId()}.Build()}.Build()}, Size: 100}.Build())
-		if err != nil || len(rows.GetItems()) >= 100 {
-			return false
-		}
-		for _, row := range rows.GetItems() {
+		return anyLamina(f.Ctx, f.Admin, binding.GetSource().GetId(), func(row *api.Lamina) bool {
 			if row.GetDateCommitted() != nil && row.GetDateCommitted().AsTime().After(after) && row.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED && !row.GetIncomplete() && row.GetCaptureEpoch() == binding.GetAppliedApplication().GetCaptureEpoch() {
 				record = row
 				return true
 			}
-		}
-		return false
+			return false
+		})
 	}, 35*time.Second, 100*time.Millisecond, "storage must commit actual media after connectivity is restored")
 	evidence, err := qualifyWHEP(f.Ctx, lifecycleLive(t, f.Admin, binding), edgeMediaOptions{})
 	require.NoError(t, err)

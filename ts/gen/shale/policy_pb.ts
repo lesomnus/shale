@@ -324,7 +324,8 @@ export type UploadBounds = Message<"shale.UploadBounds"> & {
   defaultMode: UploadMode;
 
   /**
-   * 32.
+   * 32: a floor, since a source's cap is never below 3 × (⌈horizon ÷
+   * segment duration⌉ + 2), what its look-ahead needs (§12.1).
    *
    * @generated from field: int32 max_open_attempts = 18;
    */

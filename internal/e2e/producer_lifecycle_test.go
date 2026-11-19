@@ -204,20 +204,16 @@ func lifecycleCommitted(t *testing.T, admin *grpc.ClientConn, b *api.CameraBindi
 	epoch := b.GetAppliedApplication().GetCaptureEpoch()
 	var found *api.Lamina
 	require.Eventually(t, func() bool {
-		rows, err := api.NewLaminaServiceClient(admin).List(t.Context(), api.LaminaListRequest_builder{Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: b.GetSource().GetId()}.Build()}.Build()}, Size: 500}.Build())
-		if err != nil {
-			return false
-		}
-		for _, v := range rows.GetItems() {
+		return anyLamina(t.Context(), admin, b.GetSource().GetId(), func(v *api.Lamina) bool {
 			if len(after) > 0 && !v.GetDateStarted().AsTime().After(after[0].GetDateStarted().AsTime()) {
-				continue
+				return false
 			}
 			if v.GetCaptureEpoch() == epoch && v.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED && !v.GetIncomplete() {
 				found = v
 				return true
 			}
-		}
-		return false
+			return false
+		})
 	}, 25*time.Second, 100*time.Millisecond, "a complete committed recording must retain this exact new capture epoch")
 	return found
 }

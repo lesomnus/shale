@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -21,6 +22,7 @@ import (
 	"github.com/lesomnus/shale/internal/ent"
 	"github.com/lesomnus/shale/internal/ent/attempt"
 	"github.com/lesomnus/shale/internal/ent/lamina"
+	"github.com/lesomnus/shale/internal/ent/predicate"
 	"github.com/lesomnus/shale/internal/ent/sink"
 	"github.com/lesomnus/shale/internal/placement"
 )
@@ -415,15 +417,8 @@ func (s Core) allocateSlot(ctx context.Context, next api.Server, a *allocCtx, sr
 			// new laminae. A lamina already allocated whose attempts all
 			// failed gets fresh ones regardless, so a segment being retried
 			// is never held back by the allocations ahead of it (§16).
-			n, err := s.ent(ctx).Attempt.Query().
-				Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now),
-					attempt.HasLaminaWith(lamina.SourceIdEQ(srcId.Uuid()))).
-				Count(ctx)
-			if err != nil {
+			if err := s.capOpenAttempts(ctx, a, src, started, openAttemptCap(a.bounds, horizon, duration), slack); err != nil {
 				return nil, err
-			}
-			if n >= a.bounds.MaxOpenAttempts {
-				return nil, status.Errorf(codes.ResourceExhausted, "source %s holds %d open attempts", src.GetAlias(), n)
 			}
 		}
 
@@ -604,6 +599,77 @@ type cand struct {
 	expires        time.Time
 }
 
+// openAttemptCap is §12.1's cap on a source's open attempts: the policy's
+// max_open_attempts, raised to what the source's look-ahead needs, so the
+// horizon fits whatever the segment duration. That is Candidates attempts
+// for each slot up to the horizon, the one being recorded among them
+// (⌈horizon ÷ duration⌉ + 1), and for the one before it, still uploading.
+func openAttemptCap(b Bounds, horizon, duration time.Duration) int {
+	n := b.MaxOpenAttempts
+	if duration > 0 && horizon > 0 {
+		slots := int((horizon+duration-1)/duration) + 2
+		n = max(n, Candidates*slots)
+	}
+
+	return n
+}
+
+// capOpenAttempts refuses a new lamina for a segment beginning at
+// `started` once the source holds `limit` open attempts (§12.1).
+//
+// Look-ahead may not crowd out a segment that exists. A slot still ahead
+// counts every open attempt, so the look-ahead takes what is left. A slot
+// that has begun, by the CP's clock with `slack` for a producer's clock a
+// little ahead, counts only the open attempts of laminae that have begun
+// too, against twice the limit. The look-ahead makes a lamina only while
+// the source holds less than the limit, so its laminae hold at most about
+// the limit, begun or not; whether or not they were used, at least as much
+// again is left for the segments being recorded or waiting in a backlog,
+// and how many of those a source can leave open is still bounded.
+//
+// It only reads, so a refusal leaves the transaction as it was: the
+// look-ahead of SetService.Allocate stops there and keeps the rest.
+func (s Core) capOpenAttempts(ctx context.Context, a *allocCtx, src *api.Source, started time.Time, limit int, slack time.Duration) error {
+	of := []predicate.Lamina{lamina.SourceIdEQ(mustId(src.GetId()).Uuid())}
+	begun := !started.After(a.now.Add(slack))
+	if begun {
+		of = append(of, lamina.DateStartedLTE(a.now.Add(slack).UTC()))
+		limit *= 2
+	}
+	n, err := s.ent(ctx).Attempt.Query().
+		Where(attempt.StateEQ(int32(api.AttemptState_ATTEMPT_STATE_ALLOCATED)), attempt.DateExpiresGT(a.now),
+			attempt.HasLaminaWith(of...)).
+		Count(ctx)
+	if err != nil {
+		return err
+	}
+	if n >= limit {
+		return &capError{source: src.GetAlias(), open: n, limit: limit, begun: begun}
+	}
+
+	return nil
+}
+
+// capError is a new lamina refused at the open-attempt cap (§12.1):
+// RESOURCE_EXHAUSTED to the caller of LaminaService.Allocate, and where a
+// member's look-ahead stops in SetService.Allocate.
+type capError struct {
+	source      string
+	open, limit int
+	begun       bool
+}
+
+func (e *capError) GRPCStatus() *status.Status {
+	of := "open attempts"
+	if e.begun {
+		of = "open attempts of segments that have begun"
+	}
+
+	return status.Newf(codes.ResourceExhausted, "source %s holds %d %s; the cap is %d", e.source, e.open, of, e.limit)
+}
+
+func (e *capError) Error() string { return e.GRPCStatus().Err().Error() }
+
 // Allocate answers allocations for every member of the set up to the
 // horizon (§12.1).
 func (s coreSet) Allocate(ctx context.Context, req *api.SetAllocateRequest) (*api.SetAllocateResponse, error) {
@@ -671,13 +737,22 @@ func (s coreSet) Allocate(ctx context.Context, req *api.SetAllocateRequest) (*ap
 			}
 			d := time.Duration(prof.GetDurationSeconds()) * time.Second
 			start := slotOf(now, set.GetId(), int(m.GetOrdinal()), len(a.members), d)
-			for !start.After(now.Add(horizon)) {
+			for ; !start.After(now.Add(horizon)); start = start.Add(d) {
 				al, err := New(next, s.d).allocateSlot(ctx, next, a, m, start, pdid.Nil, f.Actor, f.Tenant, sourceEpoch, true)
+				// A member at the open-attempt cap stops its look-ahead
+				// there and keeps the nearer slots it got; the other
+				// members are not held back by it (§12.1). The refusal
+				// wrote nothing, so the transaction goes on; a real
+				// failure still ends it.
+				var c *capError
+				if errors.As(err, &c) {
+					s.d.log().Info("look-ahead stops at the open-attempt cap", "source", m.GetAlias(), "open", c.open, "cap", c.limit, "at", start.UTC())
+					break
+				}
 				if err != nil {
 					return err
 				}
 				out = append(out, al)
-				start = start.Add(d)
 			}
 		}
 
