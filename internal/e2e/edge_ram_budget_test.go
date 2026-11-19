@@ -120,17 +120,13 @@ func TestEdgeRAMBudgetLimitsUnstoredMediaAndRecovers(t *testing.T) {
 	require.Equal(t, epoch, current.GetAppliedApplication().GetCaptureEpoch())
 	var recovered *api.Lamina
 	require.Eventually(t, func() bool {
-		rows, err := api.NewLaminaServiceClient(admin).List(ctx, api.LaminaListRequest_builder{Filters: []*api.LaminaFilter{api.LaminaFilter_builder{Source: api.SourceRef_builder{Id: binding.GetSource().GetId()}.Build()}.Build()}, Size: 100}.Build())
-		if err != nil || len(rows.GetItems()) >= 100 {
-			return false
-		}
-		for _, row := range rows.GetItems() {
+		return anyLamina(ctx, admin, binding.GetSource().GetId(), func(row *api.Lamina) bool {
 			if row.GetDateCommitted() != nil && row.GetDateCommitted().AsTime().After(restoredAt) && row.GetState() == api.LaminaState_LAMINA_STATE_COMMITTED && !row.GetIncomplete() && row.GetCaptureEpoch() == epoch {
 				recovered = row
 				return true
 			}
-		}
-		return false
+			return false
+		})
 	}, 20*time.Second, 100*time.Millisecond)
 	require.NotNil(t, recovered.GetDateCommitted())
 	require.True(t, recovered.GetDateCommitted().AsTime().After(restoredAt))
