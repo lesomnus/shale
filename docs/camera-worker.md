@@ -179,15 +179,26 @@ camera_worker:
   initial_neighbors: true
 ```
 
-Configure the camera network in CP with an exact `interface_hint` and explicit
-seed endpoint IPs. The provider runs the ordinary unprivileged iproute2 command
+Configure the camera network in CP with an exact `interface_hint` and its
+current CIDRs. The provider runs the ordinary unprivileged iproute2 command
 `ip -j neighbor show dev <interface>`; it sends no probes, reads no DHCP lease
-files and needs no additional capabilities. It considers only those seed hosts,
-at most 32 seeds and 1024 cache entries. Missing, failed, incomplete, multicast
-or conflicting mappings provide no candidate. Another normal network operation
-must populate a missing kernel cache entry; an IP seed alone remains insufficient.
+files and needs no additional capabilities. It considers only two kinds of
+host, at most 32 seeds, 256 discovered hosts and 1024 cache entries:
+
+- the network's explicit seed endpoint IPs, for a factory camera that does not
+  answer WS-Discovery yet;
+- hosts inside the current CIDRs that answered this round's WS-Discovery
+  without a MAC. A static-address camera has no DHCP lease, and some firmware
+  answers with an EPR that is not a `urn:uuid:` (a bare `uuid:`, for
+  example); without the cache entry such a camera has no durable identity and
+  every scan skips it.
+
+Missing, failed, incomplete, multicast or conflicting mappings provide no
+candidate. Another normal network operation must populate a missing kernel
+cache entry; an IP seed or a WS-Discovery answer alone remains insufficient.
 Other embeddings may inject another bounded observation implementation through
-the same seam.
+the same seam; one that implements `discovery.DiscoveredObservationProvider`
+also receives the regular discoverer's observations.
 
 ### DHCP lease hints for newly connected cameras
 
@@ -224,7 +235,7 @@ CIDRs. For example, `http://192.168.250.205:2020/onvif/device_service` supplies 
 management template for a new `192.168.250.42` lease; it does not authorize hosts
 outside the current assigned prefixes. Media-only RTSP seeds are not templates.
 No packet is sent by this provider and no whole-prefix or neighbor-cache scan is
-performed. The ordinary WS-Discovery and optional seed-neighbor sources remain
+performed. The ordinary WS-Discovery and optional neighbor-cache sources remain
 independently composed with these hints.
 
 Only usable IPv4 unicast/MAC pairs are considered. Expired, malformed,

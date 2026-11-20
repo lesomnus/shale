@@ -143,6 +143,33 @@ func parseDNSMasqLeases(ctx context.Context, data []byte) ([]Lease, error) {
 	return out, nil
 }
 
+// scopeHosts parses a network's current CIDRs into a test for the host
+// addresses inside them, excluding each IPv4 network and broadcast address.
+func scopeHosts(cidrs []string) (func(netip.Addr) bool, error) {
+	prefixes := make([]netip.Prefix, len(cidrs))
+	for i, raw := range cidrs {
+		prefix, err := netip.ParsePrefix(raw)
+		if err != nil || prefix.Bits() == 0 || prefix != prefix.Masked() || !prefix.Addr().IsGlobalUnicast() || prefix.Addr().IsLinkLocalUnicast() {
+			return nil, camera.ErrInvalid
+		}
+		prefixes[i] = prefix
+	}
+	return func(ip netip.Addr) bool {
+		return slices.ContainsFunc(prefixes, func(prefix netip.Prefix) bool {
+			if !prefix.Contains(ip) {
+				return false
+			}
+			if ip.Is4() && prefix.Bits() < 31 {
+				addr, network := ip.As4(), prefix.Addr().As4()
+				value, base := binary.BigEndian.Uint32(addr[:]), binary.BigEndian.Uint32(network[:])
+				broadcast := base | (uint32(1)<<(32-prefix.Bits()) - 1)
+				return value != base && value != broadcast
+			}
+			return true
+		})
+	}, nil
+}
+
 // DHCPObservations creates only unauthenticated transport candidates. The
 // caller supplies today's CIDRs and exact interface; current DHCP hosts reuse
 // only the management scheme/port/path templates already named by its seeds.
@@ -159,27 +186,9 @@ func (p DHCPObservations) ObserveInitial(ctx context.Context, scope camera.Disco
 	if scope.ID == "" || !exactInterface.MatchString(scope.Interface) || scope.Interface == "lo" || len(scope.CIDRs) == 0 || len(scope.CIDRs) > 32 || len(scope.Seeds) > 32 || p.Source == nil {
 		return nil, camera.ErrInvalid
 	}
-	prefixes := make([]netip.Prefix, len(scope.CIDRs))
-	for i, raw := range scope.CIDRs {
-		prefix, err := netip.ParsePrefix(raw)
-		if err != nil || prefix.Bits() == 0 || prefix != prefix.Masked() || !prefix.Addr().IsGlobalUnicast() || prefix.Addr().IsLinkLocalUnicast() {
-			return nil, camera.ErrInvalid
-		}
-		prefixes[i] = prefix
-	}
-	allowed := func(ip netip.Addr) bool {
-		return slices.ContainsFunc(prefixes, func(prefix netip.Prefix) bool {
-			if !prefix.Contains(ip) {
-				return false
-			}
-			if ip.Is4() && prefix.Bits() < 31 {
-				addr, network := ip.As4(), prefix.Addr().As4()
-				value, base := binary.BigEndian.Uint32(addr[:]), binary.BigEndian.Uint32(network[:])
-				broadcast := base | (uint32(1)<<(32-prefix.Bits()) - 1)
-				return value != base && value != broadcast
-			}
-			return true
-		})
+	allowed, err := scopeHosts(scope.CIDRs)
+	if err != nil {
+		return nil, err
 	}
 	var templates []url.URL
 	keys := map[string]bool{}
@@ -270,6 +279,12 @@ func (p DHCPObservations) ObserveInitial(ctx context.Context, scope camera.Disco
 type InitialProviders []camera.InitialObservationProvider
 
 func (p InitialProviders) ObserveInitial(ctx context.Context, scope camera.DiscoveryScope) ([]camera.Observation, error) {
+	return p.ObserveDiscovered(ctx, scope, nil)
+}
+
+// ObserveDiscovered passes the discovered observations to each source that
+// can describe them.
+func (p InitialProviders) ObserveDiscovered(ctx context.Context, scope camera.DiscoveryScope, discovered []camera.Observation) ([]camera.Observation, error) {
 	if len(p) == 0 || len(p) > 8 {
 		return nil, camera.ErrInvalid
 	}
@@ -278,7 +293,7 @@ func (p InitialProviders) ObserveInitial(ctx context.Context, scope camera.Disco
 		if provider == nil {
 			return nil, camera.ErrInvalid
 		}
-		rows, err := provider.ObserveInitial(ctx, scope)
+		rows, err := observeInitial(ctx, provider, scope, discovered)
 		if err != nil {
 			return nil, err
 		}
