@@ -6,6 +6,7 @@ import ipaddress
 import json
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -13,6 +14,12 @@ from dataclasses import dataclass
 
 class Invalid(ValueError):
     pass
+
+
+# Debian's chrony.conf reads its directory (`confdir /etc/chrony/conf.d`);
+# CHRONY_FILE is the rendered copy to review and install there.
+CHRONY_DROPIN = "/etc/chrony/conf.d/shale-camera-lan.conf"
+CHRONY_FILE = "shale-camera-lan.chrony.conf"
 
 
 @dataclass(frozen=True)
@@ -23,6 +30,7 @@ class Network:
     first: str
     last: str
     lease_seconds: int = 86400
+    ntp: bool = True
 
     def validate(self):
         for name in (self.interface, self.uplink):
@@ -107,8 +115,15 @@ ignore-auto-dns=true
 [ipv6]
 method=disabled
 """
-        dhcp = f"""# Only the dedicated camera LAN. No DNS, router, NTP or forwarding service.
-port=0
+        if self.ntp:
+            scope = f"""# Only the dedicated camera LAN. No DNS, router or forwarding service.
+# NTP is the Pi's own chrony, which {CHRONY_DROPIN} opens to this subnet.
+"""
+            ntp = f"dhcp-option=option:ntp-server,{address.ip}\n"
+        else:
+            scope = "# Only the dedicated camera LAN. No DNS, router, NTP or forwarding service.\n"
+            ntp = ""
+        dhcp = scope + f"""port=0
 pid-file=
 interface={self.interface}
 except-interface=lo
@@ -121,7 +136,7 @@ dhcp-lease-max={int(last) - int(first) + 1}
 dhcp-leasefile=/var/lib/shale-camera-dhcp/leases
 dhcp-option=option:router
 dhcp-option=option:dns-server
-log-facility=-
+{ntp}log-facility=-
 """
         service = """[Unit]
 Description=DHCP for the isolated Shale camera LAN
@@ -167,6 +182,26 @@ SupplementaryGroups=shale-camera-discovery
 [Service]
 SupplementaryGroups=shale-camera-discovery
 """
+        chrony = f"""# Install only as {CHRONY_DROPIN}: NTP for the isolated
+# Shale camera LAN on {self.interface}, from the Pi's own synchronized clock.
+#
+# Serve the camera subnet and nothing wider. chronyd answers no NTP client it
+# was not told to allow, so Wi-Fi and every other network stay closed. There is
+# no bindaddress or binddevice: each is one setting for all of chronyd's NTP
+# service, so a drop-in must not take it over.
+allow {address.network}
+
+# No `local` directive, deliberately. Without one, a chronyd that has not
+# synchronized to its own upstream servers marks every reply unsynchronized
+# (leap indicator 3), which NTP clients reject. A Pi without a battery-backed
+# RTC boots with a guessed clock; a camera must not be set from that guess.
+
+# Per client address: one reply per 8 s on average, bursts of 8 for a camera
+# starting up, then still one in four, so a camera that polls too often is
+# slowed rather than cut off. It applies to every client chronyd serves; with
+# the allow above, those are the cameras.
+ratelimit interval 3 burst 8 leak 2
+"""
         manifest = json.dumps({
             "interface": self.interface, "uplink": self.uplink,
             "address": str(address), "cidr": str(address.network),
@@ -174,7 +209,7 @@ SupplementaryGroups=shale-camera-discovery
             "discovery_interface": self.interface,
             "multicast": True,
         }, indent=2) + "\n"
-        return {
+        files = {
             "shale-camera-lan.nmconnection": (0o600, profile),
             "camera-dhcp.conf": (0o644, dhcp),
             "shale-camera-dhcp.service": (0o644, service),
@@ -183,6 +218,9 @@ SupplementaryGroups=shale-camera-discovery
             "shale-edge-dhcp.conf": (0o644, edge_group),
             "shale-camera-worker-dhcp.conf": (0o644, worker_group),
         }
+        if self.ntp:
+            files[CHRONY_FILE] = (0o644, chrony)
+        return files
 
 
 def inventory():
@@ -203,11 +241,13 @@ def main():
     parser.add_argument("--first", required=True, help="first DHCP pool address")
     parser.add_argument("--last", required=True, help="last DHCP pool address")
     parser.add_argument("--lease-seconds", type=int, default=86400)
+    parser.add_argument("--ntp", action=argparse.BooleanOptionalAction, default=True,
+                        help="serve NTP to the camera LAN from the Pi's chrony and advertise it over DHCP (default: on)")
     parser.add_argument("--offline", action="store_true", help="render without host interface/route checks; validate again on the Pi")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--output", type=Path, help="new output directory; existing directories are refused")
     args = parser.parse_args()
-    network = Network(args.interface, args.uplink, args.address, args.first, args.last, args.lease_seconds)
+    network = Network(args.interface, args.uplink, args.address, args.first, args.last, args.lease_seconds, args.ntp)
     try:
         files = network.files()
         if not args.offline:
@@ -226,6 +266,12 @@ def main():
                 path.chmod(mode)
                 f.write(content)
         print(f"Rendered {len(files)} files in {args.output}; review before manual installation.")
+        if args.ntp:
+            # Printed, never run: chronyd reads conf.d only when it starts, and
+            # `chronyc reload sources` re-reads sources, not `allow`.
+            print("NTP for the camera LAN (--no-ntp omits it). After review, on the Pi:\n"
+                  f"  sudo install -m 0644 {shlex.quote(str(args.output / CHRONY_FILE))} {CHRONY_DROPIN}\n"
+                  "  sudo systemctl restart chrony")
         if args.offline:
             print("Host checks skipped: run --validate-only on the Pi before installing.")
     except (Invalid, OSError, subprocess.SubprocessError, json.JSONDecodeError) as exc:

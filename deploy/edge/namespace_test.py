@@ -5,16 +5,35 @@ import ipaddress
 import json
 import os
 from pathlib import Path
+import shutil
 import signal
 import subprocess
 import tempfile
 import time
 
-from camera_lan import Network
+from camera_lan import CHRONY_DROPIN, CHRONY_FILE, Network
+
+# An NTPv4 client request; prints the reply's leap indicator, mode and stratum.
+NTP_QUERY = """import socket, sys
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.settimeout(1)
+s.sendto(bytes([0x23]) + bytes(47), (sys.argv[1], 123))
+try:
+    reply = s.recv(512)
+except TimeoutError:
+    print("none")
+else:
+    print(reply[0] >> 6, reply[0] & 7, reply[1])
+"""
 
 
 def run(*argv, **kw):
     return subprocess.run(argv, check=True, capture_output=True, text=True, **kw)
+
+
+def offered(values):
+    """Router and DNS stay suppressed; NTP is the Pi's own camera-LAN address."""
+    return not values["router"] and not values["dns"] and values["ntpsrv"] == "192.168.250.1"
 
 
 def main():
@@ -24,6 +43,7 @@ def main():
     namespaces = {role: f"shale-test-{os.getpid()}-{role}" for role in ("server", "camera", "uplink")}
     processes = []
     created = []
+    written = []
     try:
         for ns in namespaces.values():
             run("ip", "netns", "add", ns)
@@ -54,7 +74,8 @@ def main():
             leases.mkdir(mode=0o700)
             os.chown(leases, 65534, 65534)
             conf = base / "dnsmasq.conf"
-            generated = Network("eth0", "wlan0", "192.168.250.1/24", "192.168.250.20", "192.168.250.99").files()["camera-dhcp.conf"][1]
+            files = Network("eth0", "wlan0", "192.168.250.1/24", "192.168.250.20", "192.168.250.99").files()
+            generated = files["camera-dhcp.conf"][1]
             conf.write_text(generated.replace("/var/lib/shale-camera-dhcp/leases", str(leases / "leases")))
             hook = base / "client-hook"
             hook.write_text("""#!/usr/bin/python3
@@ -105,7 +126,7 @@ if sys.argv[1] in ('bound', 'renew'):
                 assert p.returncode == 0, p.stdout + p.stderr + log_path.read_text()
                 values = json.loads(result.read_text())
                 assert ipaddress.IPv4Address(values["ip"]) in ipaddress.IPv4Network("192.168.250.0/24")
-                assert not values["router"] and not values["dns"] and not values["ntpsrv"], values
+                assert offered(values), values
                 return values["ip"]
 
             def wait_bound(path, process, previous=0):
@@ -115,7 +136,7 @@ if sys.argv[1] in ('bound', 'renew'):
                         raise AssertionError("DHCP client stopped: " + (base / "client.log").read_text())
                     if path.exists() and path.stat().st_mtime_ns > previous:
                         values = json.loads(path.read_text())
-                        assert not values["router"] and not values["dns"] and not values["ntpsrv"], values
+                        assert offered(values), values
                         return values
                     time.sleep(0.02)
                 raise AssertionError("client did not receive the expected DHCP acknowledgement")
@@ -157,7 +178,62 @@ if sys.argv[1] in ('bound', 'renew'):
             daemon = start_dhcp()
             renew()
             client("uplink", "still-forbidden.json", expect=False)
-            print("DHCP DORA/renewal, lease restart, Wi-Fi flap and uplink isolation passed")
+
+            # The Pi's chronyd as Debian ships it, with the rendered drop-in in its
+            # conf.d and a server on the Wi-Fi side as its only reachable source.
+            # Paths stay under chrony's own directories, the ones a host's AppArmor
+            # profile for chronyd permits; -x leaves this container's clock alone.
+            assert "confdir /etc/chrony/conf.d" in Path("/etc/chrony/chrony.conf").read_text().splitlines()
+            Path("/run/chrony").mkdir(mode=0o750, exist_ok=True)
+            shutil.chown("/run/chrony", "_chrony", "_chrony")
+            # chronyd polls no source until its first name resolution is over:
+            # let the stock pool fail at once, not wait out unreachable resolvers.
+            netns_etc = Path("/etc/netns", namespaces["server"])
+            netns_etc.mkdir(parents=True)
+            written.append(netns_etc)
+            upstream_conf = Path("/etc/chrony/shale-test-upstream.conf")
+            for path, text in ((netns_etc / "resolv.conf", "nameserver 127.0.0.1\n"),
+                               (Path(CHRONY_DROPIN), files[CHRONY_FILE][1]),
+                               (Path("/etc/chrony/sources.d/shale-test-upstream.sources"),
+                                "server 10.23.0.1 iburst minpoll -4 maxpoll -4\n"),
+                               (upstream_conf, "local stratum 8\nallow 10.23.0.0/24\n"
+                                "pidfile /run/chrony/shale-test-upstream.pid\ncmdport 0\nbindcmdaddress /\n")):
+                with path.open("x") as f:
+                    written.append(path)
+                    f.write(text)
+
+            def chronyd(role, name, *argv):
+                with (base / f"chrony-{name}.log").open("w") as log:
+                    p = subprocess.Popen(["ip", "netns", "exec", namespaces[role], "chronyd", "-d", "-x", *argv],
+                                         stdout=log, stderr=subprocess.STDOUT)
+                processes.append(p)
+                return p
+
+            def ntp(role, server):
+                return ns_run(role, "python3", "-c", NTP_QUERY, server).stdout.split()
+
+            def chrony_logs():
+                return "".join(path.read_text() for path in sorted(base.glob("chrony-*.log")))
+
+            def camera_ntp(leap, process):
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline:
+                    assert process.poll() is None, chrony_logs()
+                    reply = ntp("camera", "192.168.250.1")
+                    if reply[0] == leap:
+                        return reply
+                    time.sleep(0.2)
+                raise AssertionError(f"no NTP reply with leap indicator {leap}: {reply}\n{chrony_logs()}")
+
+            edge_chrony = chronyd("server", "edge")
+            # Before it has synchronized, the Pi answers only "unsynchronized"
+            # (leap 3, stratum 0), which no client may set its clock from.
+            assert camera_ntp("3", edge_chrony) == ["3", "4", "0"]
+            chronyd("uplink", "upstream", "-f", str(upstream_conf))
+            assert camera_ntp("0", edge_chrony) == ["0", "4", "9"]
+            # Its Wi-Fi address is not answered, synchronized as it now is.
+            assert ntp("uplink", "10.23.0.2") == ["none"]
+            print("DHCP DORA/renewal, lease restart, Wi-Fi flap, uplink isolation and camera-LAN NTP passed")
     finally:
         for p in reversed(processes):
             if p.poll() is None:
@@ -169,6 +245,8 @@ if sys.argv[1] in ('bound', 'renew'):
                     p.wait()
         for ns in reversed(created):
             subprocess.run(["ip", "netns", "del", ns], capture_output=True)
+        for path in reversed(written):
+            path.rmdir() if path.is_dir() else path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

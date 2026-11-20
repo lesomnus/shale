@@ -101,7 +101,7 @@ class PackageContentTest(unittest.TestCase):
                         "shale-camera-lan.nmconnection", "camera-dhcp.conf",
                         "shale-camera-dhcp.service", "camera-network.json",
                         "shale-camera-dhcp.sysusers.conf", "shale-edge-dhcp.conf",
-                        "shale-camera-worker-dhcp.conf",
+                        "shale-camera-worker-dhcp.conf", "shale-camera-lan.chrony.conf",
                     })
                     self.assertEqual(stat.S_IMODE((output / "shale-camera-lan.nmconnection").stat().st_mode),
                                      0o600)
@@ -111,6 +111,9 @@ class PackageContentTest(unittest.TestCase):
                     self.assertIn("no-dhcp-interface=wlan0\n", dhcp)
                     self.assertIn("dhcp-option=option:router\n", dhcp)
                     self.assertIn("dhcp-option=option:dns-server\n", dhcp)
+                    self.assertIn("dhcp-option=option:ntp-server,192.168.250.1\n", dhcp)
+                    chrony = (output / "shale-camera-lan.chrony.conf").read_text()
+                    self.assertIn("\nallow 192.168.250.0/24\n", chrony)
 
     def check_guide_links(self, documents):
         count = 0
