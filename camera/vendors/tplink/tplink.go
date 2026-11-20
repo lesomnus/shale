@@ -1,5 +1,7 @@
 // Package tplink supplies narrowly selected TP-Link extensions to the standard
-// ONVIF driver. It never registers Sources, resets devices or changes their clock.
+// ONVIF driver. It never registers Sources or resets devices. It changes a
+// clock only when a preset's time_sync asks, through the two standard ONVIF
+// time writes on the qualified build (time_sync.go), never the web UI's.
 package tplink
 
 import (
@@ -53,7 +55,9 @@ type Driver struct {
 	WebEndpoint          string
 	CompatibilityProfile string
 	Language             string
-	activationKey        *rsa.PublicKey // package fixture hook; defaults to firmware public key
+	// TimeServer resolves a time_sync's server; nil makes time sync unsupported.
+	TimeServer    TimeServerFunc
+	activationKey *rsa.PublicKey // package fixture hook; defaults to firmware public key
 }
 
 type Adapter = Driver

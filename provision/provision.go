@@ -113,6 +113,9 @@ type Run struct {
 	InitializationPlan  *camera.InitializationPlan `json:"initialization_plan,omitempty"`
 	Initialized         *camera.DeviceSettings     `json:"initialized,omitempty"`
 	Warnings            []camera.PresetWarning     `json:"warnings,omitempty"`
+	// TimeSync journals the selected candidate's time_sync, its plan before
+	// any write (time_sync.go).
+	TimeSync *TimeSyncState `json:"time_sync,omitempty"`
 	// Firmware is set before a preset-required upgrade writes the device.
 	Firmware *FirmwareState `json:"firmware,omitempty"`
 	// ChangedTLSIdentity is the key the device presented when the run stopped
@@ -192,6 +195,14 @@ type Engine struct {
 	// pin, so the run stops with that key for an operator to approve. Without
 	// it a refused pin fails the run like any refused connection.
 	TLSObserver camera.WebIdentityObserver
+	// Clock reads a device's own clock, to see a time sync converge. Without
+	// it, a time sync that reads back is recorded as unconverged.
+	Clock camera.ClockObserver
+	// TimeSyncWait bounds the wait for a device's clock to come within
+	// camera.TimeSyncTolerance once its time sync reads back (default 90s);
+	// TimeSyncPoll is its interval (5s).
+	TimeSyncWait time.Duration
+	TimeSyncPoll time.Duration
 }
 
 func (q Request) Validate() error {
@@ -426,6 +437,9 @@ func (e *Engine) Execute(ctx context.Context, q Request, apply bool) (out Run, e
 	}
 	readback, desired, configured, err := e.configure(ctx, &out, inspection, resolved, lease, apply)
 	if err != nil || !configured {
+		return out, err
+	}
+	if err = e.syncTime(ctx, &out, readback, &lease, acquire); err != nil {
 		return out, err
 	}
 	check := *out.Plan

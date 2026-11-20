@@ -65,8 +65,9 @@ bounded, expiring transport candidate in `CameraDevice.transport`
 that changes the endpoint set clears those candidates. `CameraDevice.clock` is
 the camera's own clock as the assigned Worker last read it, recorded only
 through `CameraPolicy.ObserveClock`
-([camera clocks](camera-worker.md#camera-clocks)); nothing writes it to the
-camera.
+([camera clocks](camera-worker.md#camera-clocks)); nothing writes that reading
+to the camera. A preset's `time_sync` is what sets a camera's clock
+([camera time sync](camera-policy.md#camera-time-sync)).
 
 Bind reserves the logical key and Source centrally. It generates a stable alias
 when none is provided, reuses a matching existing provisioning binding, or imports

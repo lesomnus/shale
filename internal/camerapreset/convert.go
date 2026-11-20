@@ -13,7 +13,7 @@ import (
 func settings(v *api.CameraPresetSettings) camera.PresetSettings {
 	x := v.GetVideo()
 	return camera.PresetSettings{
-		Initialization: camera.DeviceSettings{PowerLineFrequency: int(v.GetPowerLineFrequency()), SmartCodec: v.GetSmartCodec()},
+		Initialization: camera.DeviceSettings{PowerLineFrequency: int(v.GetPowerLineFrequency()), SmartCodec: v.GetSmartCodec(), TimeSync: TimeSync(v.GetTimeSync())},
 		Video:          camera.DesiredState{ProfileToken: x.GetProfileToken(), Codec: x.GetCodec(), Width: int(x.GetWidth()), Height: int(x.GetHeight()), FPS: x.GetFps(), Bitrate: x.GetBitrateBps(), GOP: int(x.GetGopFrames()), Revision: x.GetRevision(), AllowFallback: x.GetAllowFallback()},
 		Preserve:       slices.Clone(v.GetPreserve()),
 	}
@@ -24,9 +24,24 @@ func encodeSettings(v camera.PresetSettings) *api.CameraPresetSettings {
 	return api.CameraPresetSettings_builder{
 		PowerLineFrequency: int32(v.Initialization.PowerLineFrequency),
 		SmartCodec:         v.Initialization.SmartCodec,
+		TimeSync:           EncodeTimeSync(v.Initialization.TimeSync),
 		Video:              api.CameraPresetVideo_builder{ProfileToken: x.ProfileToken, Codec: x.Codec, Width: int32(x.Width), Height: int32(x.Height), Fps: x.FPS, BitrateBps: x.Bitrate, GopFrames: int32(x.GOP), Revision: x.Revision, AllowFallback: x.AllowFallback}.Build(),
 		Preserve:           slices.Clone(v.Preserve),
 	}.Build()
+}
+
+// TimeSync and EncodeTimeSync translate a time sync. Zero is absent on the
+// wire, and an absent or empty message is zero, so a snapshot without one
+// encodes exactly as before the field existed.
+func TimeSync(v *api.CameraPresetTimeSync) camera.TimeSync {
+	return camera.TimeSync{NTP: v.GetNtp(), TimeZone: v.GetTimezone()}
+}
+
+func EncodeTimeSync(v camera.TimeSync) *api.CameraPresetTimeSync {
+	if v.IsZero() {
+		return nil
+	}
+	return api.CameraPresetTimeSync_builder{Ntp: v.NTP, Timezone: v.TimeZone}.Build()
 }
 
 // EncodeSettings and DecodeSettings are shared by typed provisioning checkpoints.

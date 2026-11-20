@@ -172,6 +172,17 @@ message CameraProvisionPreset {
 message CameraProvisionDeviceSettings {
   int32 power_line_frequency = 1;
   string smart_codec = 2;
+  CameraPresetTimeSync time_sync = 3;
+}
+// A time-sync plan's explicit state: the IPv4 server the worker resolved the
+// setting's ntp to, which it writes, and what the device said before.
+message CameraProvisionInitializationTimeSync {
+  string server = 1;
+  bool before_ntp_from_dhcp = 2;
+  CameraProvisionStrings before_ntp = 3;
+  string before_mode = 4;
+  string before_tz = 5;
+  bool before_daylight_savings = 6;
 }
 message CameraProvisionInitializationVideoMain {
   string encode_type = 1;
@@ -189,6 +200,13 @@ message CameraProvisionInitializationPlan {
   CameraProvisionStrings changes = 3;
   string revision = 4;
   CameraProvisionInitializationVideoMain video_main_before = 5;
+  CameraProvisionInitializationTimeSync time_sync = 6;
+}
+// The selected candidate's time_sync: its plan, saved before any write, and
+// whether its outcome (verified, or a warning) is recorded.
+message CameraProvisionTimeSync {
+  CameraProvisionInitializationPlan plan = 1;
+  bool settled = 2;
 }
 message CameraProvisionWarning {
   string code = 1;
@@ -238,4 +256,5 @@ message CameraProvisionState {
   // it differed from the job's pin. An observation for an operator to
   // approve (CameraPolicy.ApproveTLS), never trust by itself.
   CameraDeviceTLSIdentity changed_tls_identity = 26;
+  CameraProvisionTimeSync time_sync = 27;
 }

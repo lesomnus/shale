@@ -24,19 +24,30 @@ type PresetRef struct {
 	Revision string `json:"revision" yaml:"revision"`
 }
 
-// DeviceSettings are prerequisites to media planning. Zero preserves the
-// current setting. Changing power-line frequency can change the frame rates
-// reported by a device, so media capabilities must be inspected again afterward.
+// DeviceSettings are a device's initialization settings. Zero preserves the
+// current setting. Frequency and smart codec are prerequisites to media
+// planning: changing power-line frequency can change the frame rates reported
+// by a device, so media capabilities must be inspected again afterward.
+// TimeSync is not a media prerequisite; it is applied on its own once the
+// video settings are verified, and never fails an enrollment
+// (docs/camera-policy.md, "Camera time sync").
 type DeviceSettings struct {
-	PowerLineFrequency int    `json:"power_line_frequency,omitempty" yaml:"power_line_frequency,omitempty"`
-	SmartCodec         string `json:"smart_codec,omitempty" yaml:"smart_codec,omitempty"`
+	PowerLineFrequency int      `json:"power_line_frequency,omitempty" yaml:"power_line_frequency,omitempty"`
+	SmartCodec         string   `json:"smart_codec,omitempty" yaml:"smart_codec,omitempty"`
+	TimeSync           TimeSync `json:"time_sync,omitzero" yaml:"time_sync,omitempty"`
 }
 
 func (s DeviceSettings) Validate() error {
-	if s.PowerLineFrequency != 0 && s.PowerLineFrequency != 50 && s.PowerLineFrequency != 60 || s.SmartCodec != "" && s.SmartCodec != "off" && s.SmartCodec != "on" {
+	if s.PowerLineFrequency != 0 && s.PowerLineFrequency != 50 && s.PowerLineFrequency != 60 || s.SmartCodec != "" && s.SmartCodec != "off" && s.SmartCodec != "on" || s.TimeSync.Validate() != nil {
 		return ErrInvalid
 	}
 	return nil
+}
+
+// Prerequisites are the settings media planning depends on: all but TimeSync.
+func (s DeviceSettings) Prerequisites() DeviceSettings {
+	s.TimeSync = TimeSync{}
+	return s
 }
 
 type PresetSettings struct {
@@ -75,12 +86,19 @@ type InitializationPlan struct {
 	Changes         []string                 `json:"changes,omitempty"`
 	Revision        string                   `json:"revision"`
 	VideoMainBefore *InitializationVideoMain `json:"video_main_before,omitempty"`
+	// TimeSync is set on a time-sync plan only: the server it writes.
+	TimeSync *InitializationTimeSync `json:"time_sync,omitempty"`
 }
 
 // DeviceInitializer applies prerequisites after authentication and before media
 // planning. PlanInitialization is read-only. ApplyInitialization must recheck
 // its precondition and read back the resulting state. It does not factory reset
 // a device or replace the first-password Bootstrapper contract.
+//
+// TimeSync is planned and applied on its own, never together with another
+// setting, and its plan satisfies ValidateTimeSyncPlan. A device or firmware
+// that cannot take it yields ErrUnsupported, and a server outside the camera
+// network ErrTimeServerRefused, before anything is written.
 type DeviceInitializer interface {
 	PlanInitialization(context.Context, DeviceHint, CredentialLease, DeviceSettings) (InitializationPlan, error)
 	ApplyInitialization(context.Context, DeviceHint, CredentialLease, InitializationPlan) (DeviceSettings, error)
@@ -100,6 +118,7 @@ type PresetWarning struct {
 const (
 	PresetFieldFrequency  = "initialization.power_line_frequency"
 	PresetFieldSmartCodec = "initialization.smart_codec"
+	PresetFieldTimeSync   = "initialization.time_sync"
 	PresetFieldCodec      = "video.codec"
 	PresetFieldResolution = "video.resolution"
 	PresetFieldFPS        = "video.fps"
@@ -124,7 +143,7 @@ func ValidatePresetSettings(s PresetSettings) error {
 	}
 	seen := make(map[string]bool, len(s.Preserve))
 	for _, f := range s.Preserve {
-		if seen[f] || !knownPresetField(f) || presetField(s, f) != "" {
+		if seen[f] || !KnownPresetField(f) || presetField(s, f) != "" {
 			return fmt.Errorf("%w: invalid or conflicting preserved preset field", ErrInvalid)
 		}
 		seen[f] = true
@@ -140,6 +159,10 @@ func MergePresetSettings(base, override PresetSettings) PresetSettings {
 	}
 	if override.Initialization.SmartCodec != "" {
 		base.Initialization.SmartCodec = override.Initialization.SmartCodec
+	}
+	// A time sync is one setting: a server and a zone are never mixed.
+	if !override.Initialization.TimeSync.IsZero() {
+		base.Initialization.TimeSync = override.Initialization.TimeSync
 	}
 	v, o := &base.Video, override.Video
 	if o.ProfileToken != "" {
@@ -169,6 +192,8 @@ func MergePresetSettings(base, override PresetSettings) PresetSettings {
 			base.Initialization.PowerLineFrequency = 0
 		case PresetFieldSmartCodec:
 			base.Initialization.SmartCodec = ""
+		case PresetFieldTimeSync:
+			base.Initialization.TimeSync = TimeSync{}
 		case PresetFieldProfile:
 			v.ProfileToken = ""
 		case PresetFieldCodec:
@@ -207,7 +232,7 @@ func (p DevicePreset) Validate() error {
 	}
 	seen := make(map[string]bool, len(p.Required))
 	for _, f := range p.Required {
-		if seen[f] || !knownPresetField(f) {
+		if seen[f] || !KnownPresetField(f) {
 			return fmt.Errorf("%w: invalid required preset field", ErrInvalid)
 		}
 		seen[f] = true
@@ -277,7 +302,7 @@ func (p DevicePreset) Clone() DevicePreset {
 // supplement Reason with the rejected candidate's structured failure category.
 func WarningsFor(requested, effective PresetSettings) []PresetWarning {
 	var out []PresetWarning
-	for _, f := range []string{PresetFieldFrequency, PresetFieldSmartCodec, PresetFieldProfile, PresetFieldCodec, PresetFieldResolution, PresetFieldFPS, PresetFieldBitrate, PresetFieldGOP} {
+	for _, f := range presetFields {
 		want, got := presetField(requested, f), presetField(effective, f)
 		if want != got {
 			if got == "" {
@@ -289,9 +314,10 @@ func WarningsFor(requested, effective PresetSettings) []PresetWarning {
 	return out
 }
 
-func knownPresetField(f string) bool {
-	return slices.Contains([]string{PresetFieldFrequency, PresetFieldSmartCodec, PresetFieldProfile, PresetFieldCodec, PresetFieldResolution, PresetFieldFPS, PresetFieldBitrate, PresetFieldGOP}, f)
-}
+var presetFields = []string{PresetFieldFrequency, PresetFieldSmartCodec, PresetFieldTimeSync, PresetFieldProfile, PresetFieldCodec, PresetFieldResolution, PresetFieldFPS, PresetFieldBitrate, PresetFieldGOP}
+
+// KnownPresetField says whether f names a field preserve and required may list.
+func KnownPresetField(f string) bool { return slices.Contains(presetFields, f) }
 
 func presetField(s PresetSettings, f string) string {
 	integer := func(n int64) string {
@@ -305,6 +331,8 @@ func presetField(s PresetSettings, f string) string {
 		return integer(int64(s.Initialization.PowerLineFrequency))
 	case PresetFieldSmartCodec:
 		return s.Initialization.SmartCodec
+	case PresetFieldTimeSync:
+		return s.Initialization.TimeSync.String()
 	case PresetFieldProfile:
 		return s.Video.ProfileToken
 	case PresetFieldCodec:

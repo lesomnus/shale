@@ -74,8 +74,8 @@ Reuse `camera/preset.Provider` for rule validation, precedence, conflict checks,
 canonical fingerprints and composition. The CP wire representation must preserve
 all of its semantics:
 
-- Initialization frequency, profile token, codec, resolution, fractional FPS,
-  bitrate and GOP are typed fields. A capture profile's keyframe interval alone
+- Initialization frequency, smart codec and time sync, profile token, codec,
+  resolution, fractional FPS, bitrate and GOP are typed fields. A capture profile's keyframe interval alone
   cannot represent a device's requested GOP length.
 - Preserve fields and required fields retain their separate meanings.
 - An absent fallback override inherits alternatives; an explicitly empty override
@@ -179,8 +179,8 @@ seen at other endpoints enrolls nothing: the outcome is `transport_<code>` of it
 `CameraPolicy.VerifyTransport` takes the assigned Worker's credential-free check
 of it. `CameraPolicy.ObserveClock` takes the same Worker's credential-free
 reading of a device's own clock at its authorized endpoint and records it on
-the device ([camera clocks](camera-worker.md#camera-clocks)); no policy sets a
-camera's clock yet.
+the device ([camera clocks](camera-worker.md#camera-clocks)). Only a preset's
+[`time_sync`](#camera-time-sync) sets a camera's clock.
 
 An optional `Deps.PrepareCameraEnrollment` callback receives the current recorded
 server and transaction driver. Its return value contains purpose-bound durable
@@ -316,3 +316,80 @@ enrollment intent to change an existing job's settings. CP checkpoints bind the
 explicit mode to a bounded native before snapshot and reject unsolicited or
 modified snapshots. The selected mode is read back before video configuration
 and checked again afterward; an applied mode does not by itself prove a GOP.
+
+`initialization.time_sync` is published the same way; see
+[camera time sync](#camera-time-sync).
+
+## Camera time sync
+
+A camera LAN usually reaches no time server but its edge, and a camera with a
+static address never learns one from DHCP. A preset can point such cameras at
+the edge's own NTP service ([time for the camera LAN](../deploy/edge/README.md#time-for-the-camera-lan))
+and set their time zone:
+
+```yaml
+settings:
+  initialization:
+    time_sync: {ntp: edge, timezone: "KST-9"}
+```
+
+`ntp` is `edge` or an IPv4 literal, and nothing else. `edge` is the Worker's
+own address on the camera network: the source address it reaches that camera
+from ([camera time sync](camera-worker.md#camera-time-sync)). A literal is
+written as given. A hostname, an IPv6 address, a port, a zone, a non-canonical
+spelling (`192.0.2.01`) and the unspecified, broadcast and multicast addresses
+are refused when the preset is published. Whichever form, the server written
+must lie inside the camera network's CIDRs, so a preset cannot point cameras
+at an arbitrary server:
+
+- `CameraPolicy.Create` refuses a policy whose preset names a literal outside
+  its network's CIDRs, in any rule or alternative that can apply on that
+  network (no `scope.network_id`, or that network's).
+- The Worker resolves the setting for each camera at plan and again at apply
+  time, and writes nothing to a camera when the result is outside its
+  network's CIDRs. `edge` resolves only there.
+- Every checkpoint that journals a time-sync plan names the resolved server,
+  and the CP refuses one outside the job's network CIDRs, or a literal written
+  as anything but itself.
+
+`timezone` is a POSIX TZ string as ONVIF's `TimeZone/TZ` carries it, at most
+64 bytes: `std offset [dst [offset] [,start[/time],end[/time]]]`, such as
+`KST-9`, `UTC0`, `CST6CDT,M3.2.0,M11.1.0` or `<+0330>-3:30`. An Olson name
+such as `Asia/Seoul` is refused. Both fields are set, or neither: an absent
+or empty `time_sync` leaves the camera's clock as it is, which is the default
+and what every existing preset does.
+
+The setting travels like `smart_codec`: in rules and alternatives, in
+`CameraJobInputs.configuration` for a direct job, in the resolved snapshot a
+job pins and in its typed checkpoint. A more specific rule replaces the whole
+setting; `preserve: [initialization.time_sync]` in an alternative leaves the
+clock alone, and `required` may list it. It is not a media prerequisite: the
+job applies it on its own after the video settings read back
+([provisioner](camera-provisioner.md#time-sync)), through ONVIF `SetNTP` and
+`SetSystemDateAndTime`, never through a vendor web UI.
+
+The device's answer never fails the enrollment. Each of these leaves the job
+`ACTIVE` with a durable warning on `initialization.time_sync`:
+
+| Code | When |
+| --- | --- |
+| `unsupported` | The adapter is not qualified for the camera's model and firmware, or the camera declined a time operation (an ONVIF fault such as `ActionNotSupported`) or does not keep what it took. `applied` is `unchanged` when nothing was written, or what the camera reports now. |
+| `time_sync_refused` | The server resolved outside the camera network. Nothing was written. |
+| `time_sync_unconverged` | The settings read back, but the camera's clock was not within two seconds of the Worker's after 90 seconds. `applied` names the server, the zone and the last offset. |
+
+A clock that converges later is seen in `CameraDevice.clock`, which the Worker
+reads every five minutes ([camera clocks](camera-worker.md#camera-clocks)).
+Authentication, transport and lease failures fail the step as anywhere else.
+
+Only the TP-Link EasyCam C420 HW1.0 on firmware 1.2.2 Build260624 is
+qualified ([PROTOCOL.md](../camera/vendors/tplink/PROTOCOL.md#time-sync)). The
+generic ONVIF path has no device initializer, so any other camera receives an
+`unsupported` warning and no write. The standalone provisioner has no camera
+network to resolve against and reports time sync as unsupported too.
+
+A Worker older than this field cannot apply it and cannot claim it applied:
+it decodes the pinned snapshot without the field, and the CP refuses the
+first checkpoint carrying that snapshot (`preset_resolved`), before any
+initialization or video write. Such a job makes no progress until its Worker
+is upgraded. A Worker that knows the field, given a preset without it, writes
+and journals nothing new.

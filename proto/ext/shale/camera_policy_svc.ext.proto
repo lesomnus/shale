@@ -26,8 +26,8 @@ service CameraPolicyService {
   // transport candidate, rechecked against today's fences in one transaction.
   rpc VerifyTransport(CameraPolicyVerifyTransportRequest) returns (CameraPolicyObserveResponse);
   // The assigned Worker's credential-free reading of a device's own clock at
-  // one of its authorized endpoints. It records the reading on the device;
-  // nothing sets the camera's clock.
+  // one of its authorized endpoints. It records the reading on the device and
+  // sets nothing on the camera; only a job's preset time_sync sets a clock.
   rpc ObserveClock(CameraPolicyObserveClockRequest) returns (CameraDevice);
 }
 message CameraPolicyObserveClockRequest {

@@ -212,6 +212,39 @@ refused when that field is required. A selected fallback records the requested
 and effective mode in the structured warning. Hardware and firmware support is
 adapter-specific; an unsupported explicit mode is not silently ignored.
 
+### Time sync
+
+`initialization.time_sync` points a camera at an NTP server and sets its time
+zone:
+
+```yaml
+  - id: c420-time
+    scope:
+      tenant_id: 00000000-0000-0000-0000-000000000001
+    match: {manufacturer: TP-Link, model: EasyCam C420, hardware: "1.0"}
+    settings:
+      initialization:
+        time_sync: {ntp: edge, timezone: "KST-9"}
+```
+
+`ntp` is `edge`, the Worker's own address on the camera network, or an IPv4
+literal; a hostname is refused. `timezone` is a POSIX TZ string. Both are set,
+or neither, and omitting `time_sync` leaves the clock alone. The
+[camera policy](camera-policy.md#camera-time-sync) states the validation and
+the camera network bound.
+
+Time sync is not a media prerequisite and never fails an enrollment. After the
+selected candidate's video settings read back, the run plans the time sync
+read-only, journals the plan with the resolved server before any write,
+writes only what differs, reads it back, and waits up to 90 seconds for the
+camera's clock to come within two seconds. A camera or firmware that cannot
+take it, a server outside the camera network, and a clock that does not
+converge each leave the run `active` with a warning (`unsupported`,
+`time_sync_refused`, `time_sync_unconverged`); `run.time_sync` keeps the plan
+and `settled` once that outcome is recorded, and a resumed run does not
+repeat it. Time sync needs the managed camera worker, which knows the camera
+network; the standalone provisioner reports it as unsupported.
+
 ### Firmware requirement
 
 A rule can require a firmware build before any setting is applied:
@@ -403,8 +436,9 @@ intent. The credential is stored durably **before** any device write. Prepare a
 separate streaming-purpose reference to the account used for actual RTSP.
 
 Already initialized cameras skip activation. Reads do not call the web login
-helper that changes the device clock; nothing sets a camera's clock, and the
-outbound Worker only observes it ([camera clocks](camera-worker.md#camera-clocks)).
+helper that changes the device clock. Only a preset's [`time_sync`](#time-sync)
+sets a camera's clock, through ONVIF, and the outbound Worker observes it
+([camera clocks](camera-worker.md#camera-clocks)).
 The C420 Media1 H.264 claim remains
 unverified until Media2/read-back and the actual stream agree. Do not reset an
 installed camera to create an activation test fixture.

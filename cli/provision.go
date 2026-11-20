@@ -332,6 +332,9 @@ func cameraSettingsSummary(settings camera.PresetSettings) string {
 	if settings.Initialization.SmartCodec != "" {
 		parts = append(parts, fmt.Sprintf("smart_codec=%q", settings.Initialization.SmartCodec))
 	}
+	if t := settings.Initialization.TimeSync; !t.IsZero() {
+		parts = append(parts, fmt.Sprintf("time_sync=%q/%q", t.NTP, t.TimeZone))
+	}
 	v := settings.Video
 	if v.ProfileToken != "" {
 		parts = append(parts, fmt.Sprintf("profile=%q", v.ProfileToken))

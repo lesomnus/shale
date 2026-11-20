@@ -122,8 +122,9 @@ func New(o Options) (*Driver, error) {
 	d.baseline = onvif.NewClient(d.client)
 	if d.identity != nil || d.skip {
 		// These explicitly approved C420s can boot with a stale RTC on an
-		// isolated LAN. Only WS-Security uses their public UTC sample; neither
-		// the camera clock nor host-side authorization time is changed.
+		// isolated LAN. Only WS-Security uses their public UTC sample, and
+		// host-side authorization time is not changed. A preset's time_sync
+		// alone writes the camera clock, and drops the sample when it does.
 		d.baseline.UseDeviceTimeForAuthentication = true
 	}
 	if d.identity != nil {
@@ -211,6 +212,7 @@ func (d *Driver) vendor(ctx context.Context, h camera.DeviceHint) (*tplink.Drive
 	web := &url.URL{Scheme: d.bootstrap.WebScheme, Host: net.JoinHostPort(endpoint.Hostname(), strconv.Itoa(d.bootstrap.WebPort))}
 	v := tplink.NewDriver(d.baseline, web.String())
 	v.CompatibilityProfile = d.bootstrap.CompatibilityProfile
+	v.TimeServer = d.timeServer
 	if d.webClient != nil {
 		v.HTTPClient = d.webClient
 	}

@@ -1082,8 +1082,8 @@ export const CameraPolicyService: GenService<{
   },
   /**
    * The assigned Worker's credential-free reading of a device's own clock at
-   * one of its authorized endpoints. It records the reading on the device;
-   * nothing sets the camera's clock.
+   * one of its authorized endpoints. It records the reading on the device and
+   * sets nothing on the camera; only a job's preset time_sync sets a clock.
    *
    * @generated from rpc shale.CameraPolicyService.ObserveClock
    */

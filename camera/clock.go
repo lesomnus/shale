@@ -19,7 +19,8 @@ const MaxClockRTT = 30 * time.Second
 const maxClockTZ = 64
 
 // DeviceClock is one credential-free reading of a device's own clock. It is an
-// observation: reading a clock never sets it, and nothing in this module does.
+// observation: reading a clock never sets it. Only a preset's TimeSync, applied
+// by a DeviceInitializer, writes one.
 type DeviceClock struct {
 	// UTC is what the device said, in its whole seconds.
 	UTC time.Time

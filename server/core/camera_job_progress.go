@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"math"
+	"net/netip"
 	"reflect"
 
 	"github.com/lesomnus/shale/api"
@@ -135,7 +136,7 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		return nil, failed("a selected camera candidate cannot move backwards or be cleared")
 	}
 	if run.Preset == nil {
-		if j.GetPinnedPreset() != nil || previous != nil && previous.Preset != nil || run.Effective != nil || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.Verified != nil || run.DeploymentProfile != nil || run.CandidateIndex != 0 {
+		if j.GetPinnedPreset() != nil || previous != nil && previous.Preset != nil || run.Effective != nil || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.TimeSync != nil || run.Verified != nil || run.DeploymentProfile != nil || run.CandidateIndex != 0 {
 			return nil, invalid("progress.preset", "configuration state requires its immutable preset snapshot")
 		}
 		if err := cameraProgressMedia(run, camera.PresetSettings{}, observed); err != nil {
@@ -180,7 +181,7 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		return nil, invalid("progress.candidate", "checkpoint selects no allowed camera candidate")
 	}
 	if run.Effective == nil {
-		if run.CandidateIndex != 0 || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.Verified != nil || run.DeploymentProfile != nil {
+		if run.CandidateIndex != 0 || run.Plan != nil || run.InitializationPlan != nil || run.Initialized != nil || run.TimeSync != nil || run.Verified != nil || run.DeploymentProfile != nil {
 			return nil, invalid("progress.effective", "configuration state requires an explicit selected candidate")
 		}
 		if err := cameraProgressWarnings(run.Warnings, observed.GetWarnings(), nil); err != nil {
@@ -201,6 +202,9 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 	if err := cameraProgressPlan(run, candidate, previous); err != nil {
 		return nil, err
 	}
+	if err := cameraProgressTimeSync(run, candidate, previous, n.GetCidrs()); err != nil {
+		return nil, err
+	}
 	if err := cameraProgressMedia(run, candidate, observed); err != nil {
 		return nil, err
 	}
@@ -208,6 +212,52 @@ func (s Core) cameraProgress(ctx context.Context, j *api.CameraJob, a *api.Camer
 		return nil, err
 	}
 	return newPin, nil
+}
+
+// cameraProgressTimeSync binds a time sync's journal to the selected
+// candidate's time_sync and the camera network (docs/camera-policy.md,
+// "Camera time sync"). The server a plan writes is an IPv4 address inside the
+// network's CIDRs, and an explicit one is the setting itself; "edge" resolves
+// on the worker, so the CP checks where it resolved. A resumed plan may be
+// read again, but a recorded outcome stays recorded.
+func cameraProgressTimeSync(run provision.Run, candidate camera.PresetSettings, previous *provision.Run, cidrs []string) error {
+	want := candidate.Initialization.TimeSync
+	if run.TimeSync == nil {
+		if previous != nil && previous.TimeSync != nil && previous.TimeSync.Settled && previous.CandidateIndex == run.CandidateIndex {
+			return failed("a recorded camera time sync cannot be cleared")
+		}
+		return nil
+	}
+	if want.IsZero() {
+		return invalid("progress.time_sync", "time sync requires the selected candidate's explicit time_sync")
+	}
+	if previous != nil && previous.TimeSync != nil && previous.TimeSync.Settled && previous.CandidateIndex == run.CandidateIndex && (!run.TimeSync.Settled || !reflect.DeepEqual(previous.TimeSync, run.TimeSync)) {
+		return failed("a recorded camera time sync cannot change")
+	}
+	p := run.TimeSync.Plan
+	if p == nil {
+		if !run.TimeSync.Settled {
+			return invalid("progress.time_sync", "an unsettled time sync requires its plan")
+		}
+		return nil
+	}
+	if camera.ValidateTimeSyncPlan(*p, want) != nil {
+		return invalid("progress.time_sync", "time sync plan must retain the selected time_sync")
+	}
+	server, err := netip.ParseAddr(p.TimeSync.Server)
+	if err != nil {
+		return invalid("progress.time_sync", "time sync requires an IPv4 server")
+	}
+	var prefixes []netip.Prefix
+	for _, raw := range cidrs {
+		if prefix, err := netip.ParsePrefix(raw); err == nil {
+			prefixes = append(prefixes, prefix.Masked())
+		}
+	}
+	if !camera.TimeServerAllowed(server, prefixes) {
+		return invalid("progress.time_sync", "a camera's time server must be inside its camera network")
+	}
+	return nil
 }
 
 func cameraProgressDeclaration(run provision.Run, observed *api.CameraJobObservation) error {
@@ -420,6 +470,8 @@ func cameraProgressWarnings(run []camera.PresetWarning, observed []*api.CameraWa
 }
 
 func cameraProgressPlan(run provision.Run, candidate camera.PresetSettings, previous *provision.Run) error {
+	// Media prerequisites only: a time sync has its own journal.
+	candidate.Initialization = candidate.Initialization.Prerequisites()
 	initialization := candidate.Initialization != (camera.DeviceSettings{})
 	if run.InitializationPlan != nil && (!initialization || camera.ValidateInitializationPlan(*run.InitializationPlan, candidate.Initialization) != nil) || run.Initialized != nil && (!initialization || *run.Initialized != candidate.Initialization) {
 		return invalid("progress.initialization", "initialization must retain the selected explicit device settings")
