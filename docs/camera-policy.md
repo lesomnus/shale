@@ -330,7 +330,7 @@ and set their time zone:
 ```yaml
 settings:
   initialization:
-    time_sync: {ntp: edge, timezone: "KST-9"}
+    time_sync: {ntp: edge, timezone: "GMT-9"} # UTC+9, spelled as the C420 keeps it
 ```
 
 `ntp` is `edge` or an IPv4 literal, and nothing else. `edge` is the Worker's
@@ -383,7 +383,10 @@ Authentication, transport and lease failures fail the step as anywhere else.
 
 Only the TP-Link EasyCam C420 HW1.0 on firmware 1.2.2 Build260624 is
 qualified ([TP-Link compatibility, "Time sync"](https://github.com/lesomnus/shale/blob/main/camera/vendors/tplink/PROTOCOL.md#time-sync),
-which this package does not install). The
+which this package does not install). It keeps only a zone named `GMT` or
+`UTC`: it answers `KST-9` with success and drops it, so the job ends with an
+`unsupported` warning after NTP has already set the clock. Write UTC+9 as
+`GMT-9`; POSIX offsets are west-positive, so `GMT+09:00` is UTC−9. The
 generic ONVIF path has no device initializer, so any other camera receives an
 `unsupported` warning and no write. The standalone provisioner has no camera
 network to resolve against and reports time sync as unsupported too.
