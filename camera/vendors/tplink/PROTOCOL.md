@@ -196,13 +196,12 @@ frequency recovery; they do not claim physical acceptance of this new adapter.
 A preset's `initialization.time_sync: {ntp, timezone}` is applied on the
 1.2.2 Build260624 entry only (`timeSyncTarget`, the same exact build as smart
 codec; the 1.2.0 entry, other builds and other models are `unsupported` before
-any call). Its qualification is the ONVIF standard's, not a device run: the
-two writes are the Device service operations of the
+any call). The two writes are the Device service operations of the
 [ONVIF Device WSDL](https://www.onvif.org/ver10/device/wsdl/devicemgmt.wsdl),
-and this build already answers `GetSystemDateAndTime` in that shape
-(`DateTimeType` `NTP`, `TZ` `GMT0GMT`, unauthenticated, on the ONVIF port).
-**Acceptance of the writes on a C420 has not been observed yet** and must be
-confirmed on hardware.
+and this build answers `GetSystemDateAndTime` in that shape (`DateTimeType`
+`NTP`, `TZ` `GMT0GMT`, unauthenticated, on the ONVIF port). Six units took
+both writes on 2026-11-20, **but keep only a time zone named `GMT` or `UTC`**
+([hardware observations](#hardware-observations-2026-11-20)).
 
 It uses ONVIF alone, with the leased administrator credential over
 WS-Security, and never the web UI: not the login helper, not
@@ -226,23 +225,36 @@ operations other than an authorization one (`ActionNotSupported`,
 takes the writes but reads back other values; the job then records what the
 camera reports in its warning and stays `ACTIVE`.
 
-When this first runs against a real C420, record here, for the build and the
-date:
+### Hardware observations (2026-11-20)
 
-- the `GetNTP` reply before the write (`FromDHCP`, the factory `NTPManual`
-  entries and their `Type`), and the `GetSystemDateAndTime` reply;
-- whether `SetNTP` and `SetSystemDateAndTime` succeed, or the exact fault
-  subcode of either;
-- the TZ string read back, byte for byte: a camera that normalizes it (for
-  example to `KST-9:00:00`) reads back as `unsupported` until the comparison
-  accepts its spelling;
-- whether `DateTimeType` stays `NTP` and `DaylightSavings` `false`;
-- how long the clock takes to come within two seconds of the edge once the
-  edge's chrony is synchronized (`chronyc clients` on the Pi shows the
-  camera's requests), and whether a camera that was 138 to 147 days behind
-  steps at once or slews;
-- whether the setting survives a reboot, and whether the web UI's time page
-  shows the same server and zone afterwards.
+Six 1.2.2 Build260624 units, each on an isolated camera LAN whose edge serves
+NTP with chrony:
+
+- Before: `GetNTP` reported `FromDHCP` `false` and one `NTPManual` of `Type`
+  `IPv4`, `0.0.0.0`; `GetSystemDateAndTime` reported `NTP`, `DaylightSavings`
+  `false` and `GMT0GMT`. Four clocks were 138 to 147 days behind, two about 13
+  seconds.
+- `SetNTP` succeeds and reads back exactly. The camera asks the server at once
+  and **steps** its clock: a unit 138 days behind was 0.4 s off a second after
+  the write. A whole job step, plan to `time_sync_verified`, took 1.4 to 2.1 s.
+- `SetSystemDateAndTime` answers every request below with an empty response,
+  never a fault. `DateTimeType` stays `NTP` and `DaylightSavings` `false`, but
+  the TZ is kept only when it is named `GMT` or `UTC`:
+
+  | `TZ` sent | `TZ` read back | Local time at 22:41 UTC |
+  | --- | --- | --- |
+  | `KST-9` | `GMT0GMT` (dropped) | 22:41 |
+  | `GMT-9`, `UTC-9`, `GMT-09:00` | as sent | 07:41 (UTC+9) |
+  | `GMT+09:00` | as sent | 13:41 (UTC−9, POSIX sign) |
+  | `KST-9:00:00` | `GMT9GMT` | 13:41 (renamed, sign flipped) |
+
+  A preset with `KST-9` therefore ends in an `unsupported` warning after NTP
+  already set the clock; write UTC+9 as `GMT-9`. The adapter does not rewrite a
+  zone: the read-back comparison stays exact.
+- With `GMT-9` all six were `time_sync_verified`, with no warning.
+
+Not observed yet: whether the setting survives a reboot, and what the web UI's
+time page shows afterwards.
 
 Fixtures (`internal/cameratest`) cover the write shape and order, idempotent
 replanning, writing only what differs, a declined write before and after

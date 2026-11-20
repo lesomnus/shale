@@ -224,11 +224,12 @@ zone:
     match: {manufacturer: TP-Link, model: EasyCam C420, hardware: "1.0"}
     settings:
       initialization:
-        time_sync: {ntp: edge, timezone: "KST-9"}
+        time_sync: {ntp: edge, timezone: "GMT-9"}
 ```
 
 `ntp` is `edge`, the Worker's own address on the camera network, or an IPv4
-literal; a hostname is refused. `timezone` is a POSIX TZ string. Both are set,
+literal; a hostname is refused. `timezone` is a POSIX TZ string; the C420
+keeps only one named `GMT` or `UTC`, so UTC+9 is `GMT-9`. Both are set,
 or neither, and omitting `time_sync` leaves the clock alone. The
 [camera policy](camera-policy.md#camera-time-sync) states the validation and
 the camera network bound.

@@ -21,11 +21,10 @@ const timeSyncPlanRevision = "tplink/c420/onvif-time-sync-v1"
 type TimeServerFunc func(ctx context.Context, hint camera.DeviceHint, ntp string) (netip.Addr, error)
 
 // timeSyncTarget is the one build time sync is qualified for: HW1.0 firmware
-// 1.2.2 Build260624, as smart codec. The qualification is ONVIF's: SetNTP and
-// SetSystemDateAndTime are standard device-service operations, and this build
-// answers GetSystemDateAndTime in that shape. Their acceptance on the C420
-// itself is to be confirmed on hardware (PROTOCOL.md, "Time sync"); until then
-// a fault from the device is a warning, not a failed enrollment.
+// 1.2.2 Build260624, as smart codec. SetNTP and SetSystemDateAndTime are
+// standard device-service operations, and this build takes both; it keeps a
+// time zone only when it is named GMT or UTC (PROTOCOL.md, "Time sync"). A
+// write it declines or drops is a warning, not a failed enrollment.
 func timeSyncTarget(h camera.DeviceHint) bool {
 	if deviceProfile(h) != ProfileC420V122 {
 		return false
