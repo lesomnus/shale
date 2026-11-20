@@ -16,7 +16,9 @@ disconnect that cable and attach only the camera switch to the selected port.
 Install `python3`, `iproute2`, `dnsmasq-base` and `network-manager` using the OS
 package manager. `dnsmasq-base` supplies the daemon without enabling the generic
 DHCP/DNS service. Existing independent DHCP configurations must be checked before
-enabling another instance; this recipe does not modify them.
+enabling another instance; this recipe does not modify them. The cameras' time
+service uses the `chrony` that Raspberry Pi OS and Debian already run; render
+with `--no-ntp` on a Pi without it.
 
 Choose a private camera subnet that overlaps neither the Wi-Fi LAN nor any VPN
 route. The example below is an example, not a subnet allocation for your site.
@@ -43,15 +45,19 @@ The Debian package installs this guide at
 It installs neither a network profile nor an enabled DHCP service. A checkout
 is not needed to render the files on the Pi.
 
-Review the seven files:
+Review the eight files (seven with `--no-ntp`):
 
 - The NetworkManager keyfile gives only Ethernet a manual camera address, disables
   IPv6 on that connection and sets `never-default=true`. It uses neither the
   `shared` method nor a gateway/DNS override. Wi-Fi is untouched.
 - `camera-dhcp.conf` binds DHCP to the exact camera interface, explicitly excludes
   the uplink and loopback, disables DNS and suppresses default router/DNS options.
-  It advertises no NTP server. Cameras receive an address for local communication
-  and are not promised Internet, DNS or time service from the Pi.
+  It advertises the Pi's camera address as NTP server, unless rendered with
+  `--no-ntp`. Cameras receive an address for local communication and are not
+  promised Internet or DNS from the Pi.
+- `shale-camera-lan.chrony.conf` lets the Pi's chrony serve time to exactly the
+  camera subnet; see [Time for the camera LAN](#time-for-the-camera-lan).
+  `--no-ntp` renders neither it nor the DHCP option.
 - `shale-camera-dhcp.service` runs a separate maintained dnsmasq process with its
   own persistent lease directory. It does not depend on a Shale process lifetime.
   DHCP holds only the network capabilities it needs; Worker/Producer do not need
@@ -133,7 +139,8 @@ Shale edge service leaves DHCP running. The interface and address may disappear
 and reappear: dnsmasq's Linux `bind-dynamic` mode follows the selected interface.
 Neither this unit nor the NetworkManager profile enables forwarding or installs
 NAT/firewall rules. Existing host firewall policy must allow camera-interface
-UDP 67/68 and required discovery/RTSP, without opening DHCP on Wi-Fi.
+UDP 67/68, UDP 123 for time and required discovery/RTSP, without opening DHCP
+on Wi-Fi.
 
 Inspect `ip -4 route`, `ip -4 address show dev eth0`,
 `journalctl -u shale-camera-dhcp` and
@@ -216,6 +223,86 @@ new lease file as well, restore the saved old unit/config and original state
 symlink, then reload/start the old unit. Do not remove either state's lease data
 or change the private ancestor's ownership/mode.
 
+## Time for the camera LAN
+
+Cameras on this LAN reach no server but the Pi. One in NTP mode never
+synchronizes, and its clock drifts or restarts from a factory date after power
+loss. That clock stamps the camera's on-screen timestamp and its own logs, and
+ONVIF WS-Security checks a request's `Created` time against it: a camera that
+is far enough off rejects correctly signed requests. By default the recipe
+therefore serves time from the Pi, whose chrony is synchronized over Wi-Fi:
+
+- `shale-camera-lan.chrony.conf`, installed as
+  `/etc/chrony/conf.d/shale-camera-lan.conf`, allows the exact subnet of the
+  camera address and nothing wider, with a per-camera `ratelimit`. Debian and
+  Raspberry Pi OS read that directory through `confdir /etc/chrony/conf.d` in
+  `/etc/chrony/chrony.conf`.
+- `camera-dhcp.conf` advertises the Pi's camera address as NTP server (DHCP
+  option 42) to cameras that take their server from DHCP. A camera set to a fixed
+  NTP server needs that same address. Router and DNS stay suppressed.
+
+**No time until the Pi has it.** The drop-in has no `local` directive,
+deliberately. Until chronyd has synchronized to its own upstream servers, it
+answers a camera only with "unsynchronized" (leap indicator 3, stratum 0), which
+an NTP client must not set its clock from. A Pi without a battery-backed RTC
+boots with a guessed clock, and cameras do not get that guess. A camera client
+that ignores the leap indicator would still take it; that is a firmware fault.
+
+**Wi-Fi stays closed.** chronyd listens for NTP on every address of the Pi,
+Wi-Fi included, but answers only the clients that an `allow` admits, so Wi-Fi
+and every other network get no reply. The drop-in sets no `bindaddress` or
+`binddevice`. Each is a single setting for all of chronyd's NTP service, which a
+drop-in must not take over from the main configuration.
+
+Install it after the opt-in installation above. chronyd reads `conf.d` only when
+it starts, and `chronyc reload sources` re-reads sources, not `allow`, so restart
+it. The restart leaves the system clock running, and chronyd resynchronizes
+within seconds.
+
+```sh
+sudo sh -eu <<'NTP'
+grep -qx 'confdir /etc/chrony/conf.d' /etc/chrony/chrony.conf
+target=/etc/chrony/conf.d/shale-camera-lan.conf
+if [ -e "$target" ] || [ -L "$target" ]; then
+  echo "Refusing to replace existing $target." >&2
+  exit 1
+fi
+install -m 0644 camera-lan/shale-camera-lan.chrony.conf "$target"
+systemctl restart chrony
+NTP
+```
+
+A recipe installed before this change also needs the new DHCP option. Render
+with the installed parameters, check that the NTP comment and option are the
+only difference, then replace the configuration and restart DHCP. Cameras pick
+the option up at their next renewal, by default within half the 24-hour lease,
+or when their link restarts.
+
+```sh
+diff -u /etc/shale/camera-dhcp.conf camera-lan/camera-dhcp.conf
+sudo cp -a /etc/shale/camera-dhcp.conf /etc/shale/camera-dhcp.conf.before-ntp
+sudo install -m 0644 camera-lan/camera-dhcp.conf /etc/shale/camera-dhcp.conf
+sudo dnsmasq --test --conf-file=/etc/shale/camera-dhcp.conf
+sudo systemctl restart shale-camera-dhcp.service
+```
+
+Verify on the Pi:
+
+```sh
+chronyc tracking          # "Leap status : Normal": the Pi has time to serve
+sudo chronyc clients      # each camera address and its NTP request count
+sudo chronyc serverstats  # NTP packets received and dropped
+```
+
+`clients` and `serverstats` need chronyd's root-only command socket. Until
+`tracking` reports `Normal`, cameras get only unsynchronized replies. A camera
+missing from `clients` has not reached chronyd: check the host firewall and the
+camera's NTP server setting.
+
+To opt out, render with `--no-ntp`: no drop-in, and no NTP option in
+`camera-dhcp.conf`. To withdraw it after installation, remove the drop-in,
+restart chrony and install a `--no-ntp` rendering of `camera-dhcp.conf` as above.
+
 ## Run the managed Shale roles
 
 Follow the [managed edge guide](../../docs/managed-edge.md) for machine approval,
@@ -251,6 +338,9 @@ sudo nmcli connection down shale-camera-lan
 sudo nmcli connection delete shale-camera-lan
 sudo rm /etc/shale/camera-dhcp.conf /etc/systemd/system/shale-camera-dhcp.service
 sudo systemctl daemon-reload
+# Only if the time drop-in was installed:
+sudo rm /etc/chrony/conf.d/shale-camera-lan.conf
+sudo systemctl restart chrony
 ```
 
 Restore only the old Ethernet profile you explicitly changed. The recipe does
@@ -285,11 +375,13 @@ replace current assignment checks. This recipe adds no durable video spool.
 ## References and checks
 
 The settings follow the [dnsmasq manual](https://dnsmasq.org/docs/dnsmasq-man.html),
-[NetworkManager IPv4 reference](https://networkmanager.dev/docs/api/latest/settings-ipv4.html)
+[NetworkManager IPv4 reference](https://networkmanager.dev/docs/api/latest/settings-ipv4.html),
+[chrony documentation](https://chrony-project.org/documentation.html)
 and [Raspberry Pi networking documentation](https://www.raspberrypi.com/documentation/computers/configuration.html).
 From a source checkout, run
 `python3 -m unittest discover -s deploy/edge -p 'test_*.py'` for range,
-interface, route-collision and generated-scope checks. Physical Pi/camera
+interface, route-collision and generated-scope checks, including the NTP
+subnet, DHCP option and `--no-ntp`. Physical Pi/camera
 qualification is an explicit separate deployment step; tests do not reset a
 production camera.
 
@@ -297,10 +389,16 @@ The protocol fixture uses fresh Linux network namespaces inside an explicitly
 privileged container with no external network. It runs dnsmasq as a non-root
 user with the unit's three ambient capabilities and sends actual DHCP requests
 from synthetic camera and uplink peers. It checks address acquisition, absent
-router/DNS/NTP options, lease recovery across daemon restart, camera access
-during a simulated uplink flap and refusal to serve the uplink. NetworkManager's
-Wi-Fi route restoration is simulated; physical reboot/radio qualification is
-not inferred from this test.
+router/DNS options, the NTP option naming the Pi, lease recovery across daemon
+restart, camera access during a simulated uplink flap and refusal to serve the
+uplink. NetworkManager's Wi-Fi route restoration is simulated; physical
+reboot/radio qualification is not inferred from this test.
+
+It then starts Debian's stock chrony configuration with the rendered drop-in in
+`conf.d`, under `-x` so the container's clock is left alone. Before chronyd
+has synchronized, the camera gets only an unsynchronized reply. Once chronyd
+synchronizes to a server on the simulated Wi-Fi side, the camera gets time,
+and the Pi's Wi-Fi address still gets no reply.
 
 Before the DHCP protocol run, `lease_permissions_test.py` uses distinct Unix
 UIDs/groups in that same disposable container. The Worker can read the lease
@@ -331,8 +429,9 @@ DHCP lease                              192.168.250.1     10.23.0.2           10
 ```
 
 The camera obtains its address from an actual DHCP exchange before a test starts.
-The runner checks server DORA log entries, a persisted lease and absent
-router/DNS/NTP options. It configures the WS-Discovery multicast route on the
+The runner checks server DORA log entries, a persisted lease, absent router/DNS
+options and the NTP option naming the edge's camera address. It starts no NTP
+server. It configures the WS-Discovery multicast route on the
 camera LAN and disables edge IPv4 forwarding. There is no bridge, NAT, physical
 interface or route from CP to the camera LAN. The Wi-Fi link is a veth simulation;
 it does not model radio behavior.

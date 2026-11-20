@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
+import subprocess
 import sys
+import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location("camera_lan", Path(__file__).with_name("camera_lan.py"))
@@ -67,6 +69,64 @@ class CameraLANTest(unittest.TestCase):
         self.assertNotIn("shale@", service)
         self.assertIn("StateDirectory=shale-camera-dhcp", service)
         self.assertNotIn("NET_ADMIN", profile)
+
+    def test_ntp_serves_exactly_the_camera_subnet_from_the_pi(self):
+        for address, subnet, pool in (("192.168.250.1/24", "192.168.250.0/24", ("192.168.250.20", "192.168.250.99")),
+                                      ("10.40.8.9/29", "10.40.8.8/29", ("10.40.8.10", "10.40.8.14")),
+                                      ("172.20.0.1/16", "172.20.0.0/16", ("172.20.1.1", "172.20.1.9"))):
+            with self.subTest(address=address):
+                files = self.network(address=address, first=pool[0], last=pool[1]).files()
+                chrony = files[module.CHRONY_FILE][1]
+                # Exactly these: nothing wider, no `local`, no bindaddress/binddevice.
+                directives = [line for line in chrony.splitlines() if line and not line.startswith("#")]
+                self.assertEqual(directives, [f"allow {subnet}", "ratelimit interval 3 burst 8 leak 2"])
+                self.assertEqual(files[module.CHRONY_FILE][0], 0o644)
+                dhcp = files["camera-dhcp.conf"][1]
+                self.assertIn(f"dhcp-option=option:ntp-server,{address.split('/')[0]}\n", dhcp)
+                self.assertEqual(sum(line.startswith("dhcp-option=") for line in dhcp.splitlines()), 3)
+                # Router and DNS stay suppressed beside it.
+                self.assertIn("dhcp-option=option:router\n", dhcp)
+                self.assertIn("dhcp-option=option:dns-server\n", dhcp)
+        # chrony's confdir reads only *.conf.
+        self.assertRegex(module.CHRONY_DROPIN, r"^/etc/chrony/conf\.d/[^/]+\.conf$")
+        self.assertIn(module.CHRONY_DROPIN, self.network().files()[module.CHRONY_FILE][1])
+
+    def test_no_ntp_renders_neither_the_dropin_nor_the_option(self):
+        with_ntp = self.network().files()
+        files = self.network(ntp=False).files()
+        self.assertEqual(set(files), set(with_ntp) - {module.CHRONY_FILE})
+        dhcp = files["camera-dhcp.conf"][1]
+        self.assertNotIn("ntp-server", dhcp)
+        self.assertNotIn("chrony", dhcp)
+        self.assertIn("dhcp-option=option:router\n", dhcp)
+        self.assertIn("dhcp-option=option:dns-server\n", dhcp)
+        # Apart from comments, the option line is the whole difference.
+        self.assertEqual([line for line in dhcp.splitlines() if not line.startswith("#")],
+                         [line for line in with_ntp["camera-dhcp.conf"][1].splitlines()
+                          if not line.startswith("#") and "ntp-server" not in line])
+
+    def test_invalid_address_renders_no_ntp_scope(self):
+        for address in ("192.168.250.1", "192.168.250.1/33", "192.168.250.1/8", "192.168.250.0/24",
+                        "192.168.250.255/24", "8.8.8.1/24", "fd00::1/64", "192.168.250.1/24\nallow all",
+                        "192.168.250.1/24 0.0.0.0/0", "camera", ""):
+            with self.subTest(address=address), self.assertRaises(Invalid):
+                self.network(address=address).files()
+
+    def test_cli_prints_ntp_install_steps_and_no_ntp_omits_them(self):
+        argv = ["--offline", "--interface", "eth0", "--uplink", "wlan0", "--address", "192.168.250.1/24",
+                "--first", "192.168.250.20", "--last", "192.168.250.99"]
+        with tempfile.TemporaryDirectory() as temp:
+            for extra, expected in (([], True), (["--ntp"], True), (["--no-ntp"], False)):
+                output = Path(temp) / f"out{len(extra)}{expected}"
+                with self.subTest(extra=extra):
+                    done = subprocess.run([sys.executable, str(Path(__file__).with_name("camera_lan.py")),
+                                           *argv, *extra, "--output", str(output)],
+                                          capture_output=True, text=True, check=True)
+                    self.assertEqual((output / module.CHRONY_FILE).exists(), expected)
+                    self.assertEqual("ntp-server" in (output / "camera-dhcp.conf").read_text(), expected)
+                    self.assertEqual(module.CHRONY_DROPIN in done.stdout, expected)
+                    self.assertEqual("systemctl restart chrony" in done.stdout, expected)
+                    self.assertEqual(len(list(output.iterdir())), 8 if expected else 7)
 
     def test_lease_readers_have_no_dhcp_write_or_camera_credential_group(self):
         files = self.network().files()

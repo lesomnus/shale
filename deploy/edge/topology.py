@@ -112,7 +112,9 @@ if sys.argv[1] in ('bound', 'renew'):
                                  env={**os.environ, "SHALE_DHCP_LEASE": str(lease_path)})
         self.wait_for(lease_path.exists, self.client, 15, "camera DHCP lease")
         lease = json.loads(lease_path.read_text())
-        if lease["event"] != "bound" or any(lease[k] for k in ("router", "dns", "ntpsrv")):
+        # Router and DNS stay suppressed; NTP is the edge's own camera-LAN address.
+        if (lease["event"] != "bound" or lease["router"] or lease["dns"]
+                or lease["ntpsrv"] != "192.168.250.1"):
             raise RuntimeError("unexpected DHCP options: " + repr(lease))
         address = ipaddress.IPv4Address(lease["ip"])
         if not ipaddress.IPv4Address("192.168.250.20") <= address <= ipaddress.IPv4Address("192.168.250.99"):

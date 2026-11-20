@@ -385,7 +385,8 @@ if event in ('bound', 'renew'):
     lease.update({k: os.environ.get(k, '') for k in ('ip', 'subnet', 'router', 'dns', 'ntpsrv')})
     address = ipaddress.IPv4Address(lease['ip'])
     assert ipaddress.IPv4Address('192.168.250.20') <= address <= ipaddress.IPv4Address('192.168.250.99')
-    assert lease['subnet'] == '255.255.255.0' and not any(lease[k] for k in ('router', 'dns', 'ntpsrv'))
+    assert lease['subnet'] == '255.255.255.0' and not lease['router'] and not lease['dns']
+    assert lease['ntpsrv'] == '192.168.250.1'  # the edge's camera-LAN address
 if old.get('ip') and old['ip'] != lease['ip']:
     subprocess.run(['ip', '-4', 'addr', 'del', old['ip'] + '/24', 'dev', 'eth0'], check=True)
 if lease['ip']:
