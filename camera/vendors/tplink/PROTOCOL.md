@@ -253,8 +253,17 @@ NTP with chrony:
   zone: the read-back comparison stays exact.
 - With `GMT-9` all six were `time_sync_verified`, with no warning.
 
-Not observed yet: whether the setting survives a reboot, and what the web UI's
-time page shows afterwards.
+- After an ONVIF `SystemReboot` (answered `Rebooting in 30 seconds`; the unit
+  was unreachable for 53 s) the setting survives. `GetNTP` still reports the one
+  manual server and `FromDHCP` `false`, with `NTP` and `DaylightSavings`
+  `false`. The camera asked the server while booting, and its first answer was
+  already 1.3 s off (the reading carries whole seconds only).
+- The zone, however, reads back renamed `GMT-9GMT` after the reboot, the same
+  shape as the factory `GMT0GMT`. Local time is unchanged (UTC+9). The exact
+  read-back comparison treats the new spelling as different, so a later
+  re-apply writes `GMT-9` again and verifies; nothing fails.
+
+Not observed yet: what the web UI's time page shows.
 
 Fixtures (`internal/cameratest`) cover the write shape and order, idempotent
 replanning, writing only what differs, a declined write before and after
