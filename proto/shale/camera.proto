@@ -194,6 +194,24 @@ message CameraEnrollmentObservation {
   // A deduplication hint, never proof of authenticated ownership.
   string discovery_id = 3;
 }
+// A camera's own clock as its assigned Worker last read it: public ONVIF
+// GetSystemDateAndTime, without a credential, at one of the device's
+// authorized endpoints. An observation only; nothing in Shale sets a camera's
+// clock (docs/camera-worker.md, "Camera clocks").
+message CameraClockObservation {
+  // The camera's UTC minus the Worker's clock at the round trip's midpoint.
+  // The camera answers in whole seconds, so the middle of its second is
+  // taken: the offset is right to within half a second and half of rtt_ms.
+  int64 offset_ms = 1;
+  // The round trip, connection included: the reading's uncertainty.
+  int64 rtt_ms = 2;
+  // The camera's DateTimeType, "Manual" or "NTP"; empty when it said neither.
+  string mode = 3;
+  // The POSIX TZ string the camera reported; empty when it reported none.
+  string tz = 4;
+  // When the Worker read it, on the Worker's clock.
+  google.protobuf.Timestamp observed_at = 5;
+}
 message CameraMediaEvidence {
   CameraCaptureProfile profile = 1;
   bool decoded = 2;
@@ -320,6 +338,9 @@ message CameraDevice {
   // Moved-camera observations awaiting verification or an operator. Never
   // the authorized endpoints, and never a pin.
   CameraTransportState transport = 21;
+  // The camera's own clock as its Worker last read it. Absent until a
+  // Worker that reads clocks has; never written to the camera.
+  CameraClockObservation clock = 22;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true default: ""}];

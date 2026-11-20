@@ -379,6 +379,7 @@ message CameraDeviceAddRequest {
   CameraFactoryTLSState factory_tls = 19;
   CameraFirmwareTLSState firmware_tls = 20;
   CameraTransportState transport = 21;
+  CameraClockObservation clock = 22;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -418,6 +419,7 @@ message CameraDeviceSelect {
   bool factory_tls = 19;
   bool firmware_tls = 20;
   bool transport = 21;
+  bool clock = 22;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -468,6 +470,12 @@ message CameraDevicePatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and transport clears.
   bool transport_null = 43;
+  CameraClockObservation clock = 44;
+  // Clear clock instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and clock clears.
+  bool clock_null = 45;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

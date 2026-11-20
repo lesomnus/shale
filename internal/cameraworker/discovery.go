@@ -119,6 +119,9 @@ func (w *Worker) discoverAssigned(ctx context.Context, workers api.CameraWorkerS
 			if err := w.verifyTransport(ctx, workers, policies, request, observed, probeTransport); err != nil {
 				w.logDiscoveryFailure(ctx, "transport", err)
 			}
+			if err := w.observeClock(ctx, policies, scope, request, observed); err != nil {
+				w.logDiscoveryFailure(ctx, "clock", err)
+			}
 		}
 	}
 }

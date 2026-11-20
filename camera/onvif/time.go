@@ -22,6 +22,35 @@ type deviceTimeSample struct {
 // redirects, and never invokes SetSystemDateAndTime. Transport policy and the
 // caller's deadline remain those of the original HTTP client/context.
 func (c *Client) GetSystemDateAndTime(ctx context.Context, endpoint string) (time.Time, error) {
+	r, err := c.publicDateAndTime(ctx, endpoint)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return parseDeviceUTC(r)
+}
+
+// ReadClock reads the device's own clock at this exact endpoint, as
+// GetSystemDateAndTime does: no credential, cookie or redirect. It also takes
+// the DateTimeType and TZ the device reports, and times the round trip on the
+// monotonic clock. It is an observation; nothing here sets a device's clock.
+func (c *Client) ReadClock(ctx context.Context, endpoint string) (camera.DeviceClock, error) {
+	start := time.Now()
+	r, err := c.publicDateAndTime(ctx, endpoint)
+	rtt := time.Since(start)
+	if err != nil {
+		return camera.DeviceClock{}, err
+	}
+	clock, err := parseDeviceClock(r)
+	if err != nil {
+		return camera.DeviceClock{}, err
+	}
+	// The device read its clock somewhere inside the round trip; the middle
+	// is the best guess, and the round trip how far off it can be.
+	clock.ObservedAt, clock.RTT = start.Add(rtt/2).Round(0), rtt
+	return clock, nil
+}
+
+func (c *Client) publicDateAndTime(ctx context.Context, endpoint string) (*node, error) {
 	public := &Client{}
 	if c.HTTPClient != nil {
 		h := *c.HTTPClient
@@ -31,11 +60,43 @@ func (c *Client) GetSystemDateAndTime(ctx context.Context, endpoint string) (tim
 	r, err := public.request(ctx, endpoint, deviceNS, "GetSystemDateAndTime", "", camera.CredentialMaterial{})
 	if err != nil {
 		if ctx.Err() != nil {
-			return time.Time{}, ctx.Err()
+			return nil, ctx.Err()
 		}
-		return time.Time{}, ErrDeviceTime
+		return nil, ErrDeviceTime
 	}
-	return parseDeviceUTC(r)
+	return r, nil
+}
+
+// parseDeviceClock is parseDeviceUTC with what else the device says of its
+// clock. Only UTC is required: a mode or TZ that is missing, repeated or not
+// one a reading may carry is left unknown rather than failing the reading.
+func parseDeviceClock(response *node) (camera.DeviceClock, error) {
+	utc, err := parseDeviceUTC(response)
+	if err != nil {
+		return camera.DeviceClock{}, err
+	}
+	out := camera.DeviceClock{UTC: utc}
+	// parseDeviceUTC admitted exactly one SystemDateAndTime.
+	at := response.all("SystemDateAndTime")[0]
+	if mode, ok := leafText(at, "DateTimeType"); ok && mode != "" && camera.ValidClockMode(mode) {
+		out.Mode = mode
+	}
+	if zones := at.all("TimeZone"); len(zones) == 1 {
+		if tz, ok := leafText(zones[0], "TZ"); ok && camera.ValidClockTZ(tz) {
+			out.TZ = tz
+		}
+	}
+	return out, nil
+}
+
+// leafText is the trimmed text of parent's one child named name, which has
+// no children of its own.
+func leafText(parent *node, name string) (string, bool) {
+	fields := parent.all(name)
+	if len(fields) != 1 || len(fields[0].Children) != 0 {
+		return "", false
+	}
+	return strings.TrimSpace(fields[0].Text), true
 }
 
 func parseDeviceUTC(response *node) (time.Time, error) {

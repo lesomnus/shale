@@ -577,6 +577,7 @@ var (
 		{Name: "factory_tls", Type: field.TypeJson, Nullable: true},
 		{Name: "firmware_tls", Type: field.TypeJson, Nullable: true},
 		{Name: "transport", Type: field.TypeJson, Nullable: true},
+		{Name: "clock", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -592,19 +593,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cameradevice_tenant_tenant",
-				Columns:    []*schema.Column{CameradeviceColumns[18]},
+				Columns:    []*schema.Column{CameradeviceColumns[19]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "cameradevice_site_site",
-				Columns:    []*schema.Column{CameradeviceColumns[19]},
+				Columns:    []*schema.Column{CameradeviceColumns[20]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "cameradevice_cameranetwork_network",
-				Columns:    []*schema.Column{CameradeviceColumns[20]},
+				Columns:    []*schema.Column{CameradeviceColumns[21]},
 				RefColumns: []*schema.Column{CameranetworkColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -613,12 +614,12 @@ var (
 			{
 				Name:    "cameradevice_page",
 				Unique:  false,
-				Columns: []*schema.Column{CameradeviceColumns[18], CameradeviceColumns[17], CameradeviceColumns[0]},
+				Columns: []*schema.Column{CameradeviceColumns[19], CameradeviceColumns[18], CameradeviceColumns[0]},
 			},
 			{
 				Name:    "cameradevice_identity",
 				Unique:  true,
-				Columns: []*schema.Column{CameradeviceColumns[20], CameradeviceColumns[5]},
+				Columns: []*schema.Column{CameradeviceColumns[21], CameradeviceColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

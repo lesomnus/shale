@@ -119,6 +119,12 @@ func (_c *CameraDeviceCreate) SetTransport(v *api.CameraTransportState) *CameraD
 	return _c
 }
 
+// SetClock sets the "clock" field.
+func (_c *CameraDeviceCreate) SetClock(v *api.CameraClockObservation) *CameraDeviceCreate {
+	_c.mutation.SetClock(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *CameraDeviceCreate) SetDateUpdated(v time.Time) *CameraDeviceCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -421,6 +427,17 @@ func (_c *CameraDeviceCreate) createSpec() (*CameraDevice, *sqlgraph.CreateSpec,
 		}
 		_spec.SetField(cameradevice.FieldTransport, field.TypeJson, vv)
 		_node.Transport = value
+	}
+	if value, ok := _c.mutation.Clock(); ok {
+		vv, err := cameradevice.ValueScanner.Clock.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(cameradevice.FieldClock, field.TypeJson, vv)
+		_node.Clock = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

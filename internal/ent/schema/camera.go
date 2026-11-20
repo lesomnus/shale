@@ -113,6 +113,8 @@ func (CameraDevice) Fields() []ent.Field {
 			Optional(),
 		field.Json("transport", &api.CameraTransportState{}).ValueScanner(entpb.ValueScanner[*api.CameraTransportState]{}).
 			Optional(),
+		field.Json("clock", &api.CameraClockObservation{}).ValueScanner(entpb.ValueScanner[*api.CameraClockObservation]{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

@@ -177,7 +177,10 @@ the visible device. Outcomes include `policy_missing`, `policy_manual`,
 seen at other endpoints enrolls nothing: the outcome is `transport_<code>` of its
 [transport candidate](camera-worker.md#transport-candidates), and
 `CameraPolicy.VerifyTransport` takes the assigned Worker's credential-free check
-of it.
+of it. `CameraPolicy.ObserveClock` takes the same Worker's credential-free
+reading of a device's own clock at its authorized endpoint and records it on
+the device ([camera clocks](camera-worker.md#camera-clocks)); no policy sets a
+camera's clock yet.
 
 An optional `Deps.PrepareCameraEnrollment` callback receives the current recorded
 server and transaction driver. Its return value contains purpose-bound durable

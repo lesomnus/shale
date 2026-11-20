@@ -8,7 +8,9 @@
  * operator, with why: a TLS key a job's pin does not name is shown beside
  * that pin (docs/camera-tls-identity.md). And the cameras seen at another
  * address, with what checking their key there came to
- * (docs/camera-worker.md, "Transport candidates").
+ * (docs/camera-worker.md, "Transport candidates"). Each camera with a camera
+ * device shows its own clock as the worker last read it, against the
+ * worker's (docs/camera-worker.md, "Camera clocks").
  *
  * @module
  */
@@ -19,8 +21,16 @@ import { useRow } from '@lesomnus/payday/react'
 import { key } from '@lesomnus/payday/store'
 
 import { CameraBinding as CameraBindingEntity } from '../gen/entities.js'
-import { CameraJobStage, type CameraBinding, type CameraDevice, type CameraJob, type CameraObservedEndpoint, type CameraTransportCandidate } from '../gen/shale/camera_pb.js'
-import { CameraDeviceService, CameraJobService } from '../gen/shale/camera_svc_pb.js'
+import {
+	CameraJobStage,
+	type CameraBinding,
+	type CameraClockObservation,
+	type CameraDevice,
+	type CameraJob,
+	type CameraObservedEndpoint,
+	type CameraTransportCandidate,
+} from '../gen/shale/camera_pb.js'
+import { CameraBindingService, CameraDeviceService, CameraJobService } from '../gen/shale/camera_svc_pb.js'
 import { HostState, type Producer } from '../gen/shale/host_pb.js'
 import { ProducerService } from '../gen/shale/host_svc_pb.js'
 import type { Set, Source } from '../gen/shale/set_pb.js'
@@ -33,6 +43,9 @@ import { On, useSurfaces } from './surface.js'
 import { Ago, Badge, Bar, Empty, Err, Loading, bps, byId, bytes, date, hex, sameId, seconds, short, useNow, usePolled, type Tone } from './ui.js'
 
 const DOWN_AFTER_MS = 90_000
+
+/** A camera clock further off than this from the worker's is a warning. */
+const CLOCK_WARN_MS = 2_000
 
 export function Cameras(): ReactNode {
 	return (
@@ -266,6 +279,7 @@ function Sets(): ReactNode {
 	const filter = { tenant: { key: { case: 'alias' as const, value: tenant } } }
 	const sets = usePolled(SetService.method.list, { filters: [filter], size: 200 }, 15000)
 	const producers = usePolled(ProducerService.method.list, { filters: [filter], size: 200 })
+	const devices = useSourceDevices(filter)
 	if (sets.state === 'error') return <Err error={sets.error} />
 	if (sets.data === undefined) return <Loading />
 	if (sets.data.items.length === 0) return <Empty>No set yet. A set is made with the CLI: `shale set add`, then a producer is adopted for it.</Empty>
@@ -273,13 +287,32 @@ function Sets(): ReactNode {
 	return (
 		<>
 			{sets.data.items.map((v) => (
-				<SetBlock key={key(v.id)} set={v} producers={producers.data?.items.filter((p) => sameId(p.set?.id, v.id)) ?? []} />
+				<SetBlock key={key(v.id)} set={v} producers={producers.data?.items.filter((p) => sameId(p.set?.id, v.id)) ?? []} devices={devices} />
 			))}
 		</>
 	)
 }
 
-function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
+/**
+ * useSourceDevices maps each source a camera binding records to its camera
+ * device, by the source's hex. Reading them is a camera grant at roster, so a
+ * person without one gets an empty map and sees no clock rather than an error.
+ */
+function useSourceDevices(filter: { tenant: { key: { case: 'alias'; value: string } } }): Map<string, CameraDevice> {
+	const devices = usePolled(CameraDeviceService.method.list, { filters: [filter], size: 500 }, 15000)
+	const bindings = usePolled(CameraBindingService.method.list, { filters: [filter], size: 500 }, 15000)
+	const out = new Map<string, CameraDevice>()
+	if (devices.data === undefined || bindings.data === undefined) return out
+	const byDevice = new Map(devices.data.items.map((d) => [hex(d.id), d]))
+	for (const b of bindings.data.items) {
+		const d = byDevice.get(hex(b.device?.id))
+		if (d !== undefined && b.source !== undefined) out.set(hex(b.source.id), d)
+	}
+
+	return out
+}
+
+function SetBlock(props: { set: Set; producers: Producer[]; devices: Map<string, CameraDevice> }): ReactNode {
 	const v = props.set
 	const sources = usePolled(SourceService.method.list, { filters: [{ set: byId(v.id) }], size: 200 }, 10000)
 	const producer = props.producers.find((p) => p.state === HostState.ADOPTED)
@@ -345,7 +378,15 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 					{[...sources.data.items]
 						.sort((a, b) => a.ordinal - b.ordinal)
 						.map((src) => (
-							<Camera key={key(src.id)} source={src} report={reports.get(hex(src.id))} producerUp={alive} wait={waiting.has(hex(src.id)) ? wait : undefined} autoRaise={v.autoRaise} />
+							<Camera
+								key={key(src.id)}
+								source={src}
+								report={reports.get(hex(src.id))}
+								producerUp={alive}
+								wait={waiting.has(hex(src.id)) ? wait : undefined}
+								autoRaise={v.autoRaise}
+								device={props.devices.get(hex(src.id))}
+							/>
 						))}
 				</div>
 			)}
@@ -353,7 +394,14 @@ function SetBlock(props: { set: Set; producers: Producer[] }): ReactNode {
 	)
 }
 
-function Camera(props: { source: Source; report: SourceReport | undefined; producerUp: boolean; wait: AdmissionWait | undefined; autoRaise: boolean }): ReactNode {
+function Camera(props: {
+	source: Source
+	report: SourceReport | undefined
+	producerUp: boolean
+	wait: AdmissionWait | undefined
+	autoRaise: boolean
+	device: CameraDevice | undefined
+}): ReactNode {
 	const s = props.source
 	const r = props.report
 	const starvation = s.starvation
@@ -403,6 +451,12 @@ function Camera(props: { source: Source; report: SourceReport | undefined; produ
 				<dd>
 					{s.profile === undefined ? '-' : `${seconds(Number(s.profile.durationSeconds))} · ${bytes((s.profile.maxBitrate * s.profile.durationSeconds) / 8n)} at most`}
 				</dd>
+				{props.device !== undefined && (
+					<>
+						<dt>clock</dt>
+						<CameraClock clock={props.device.clock} />
+					</>
+				)}
 				{r !== undefined && (r.captureRestarts > 0n || r.earlyCuts > 0n) && (
 					<>
 						<dt>trouble</dt>
@@ -453,6 +507,44 @@ function Camera(props: { source: Source; report: SourceReport | undefined; produ
 			</dl>
 		</div>
 	)
+}
+
+/**
+ * CameraClock is a camera's own clock as the worker last read it: how far it
+ * is from the worker's, its mode and its time zone. Off by more than
+ * CLOCK_WARN_MS, or a mode or zone it did not say, is a warning: a camera
+ * with no time server to reach drifts, and Shale only reads its clock.
+ */
+function CameraClock(props: { clock: CameraClockObservation | undefined }): ReactNode {
+	const c = props.clock
+	if (c === undefined) return <dd className="dim">not read yet</dd>
+	const off = c.offsetMs < 0n ? -c.offsetMs : c.offsetMs
+	const warn = off > BigInt(CLOCK_WARN_MS) || c.mode === '' || c.tz === ''
+	// The camera answers in whole seconds: the offset is right to within half
+	// a second and half the round trip.
+	const within = Number(c.rttMs) / 2 + 500
+
+	return (
+		<dd className={warn ? 'warn' : undefined} title={`${c.offsetMs} ms, ± ${within} ms`}>
+			{clockOffset(c.offsetMs)} · {c.mode === '' ? 'mode unknown' : c.mode} · {c.tz === '' ? 'TZ unknown' : c.tz}
+			<span className="dim">
+				{' '}
+				· read <Ago at={c.observedAt} />
+			</span>
+		</dd>
+	)
+}
+
+/** clockOffset is an offset in milliseconds in the unit that reads best: "−147 d", "+13 s". */
+function clockOffset(ms: bigint): string {
+	const sign = ms < 0n ? '−' : '+'
+	const abs = Number(ms < 0n ? -ms : ms)
+	if (abs < 9_950) return `${sign}${(abs / 1000).toFixed(1)} s`
+	if (abs < 59_500) return `${sign}${Math.round(abs / 1000)} s`
+	if (abs < 3_570_000) return `${sign}${Math.round(abs / 60_000)} min`
+	if (abs < 84_600_000) return `${sign}${Math.round(abs / 3_600_000)} h`
+
+	return `${sign}${Math.round(abs / 86_400_000)} d`
 }
 
 /**

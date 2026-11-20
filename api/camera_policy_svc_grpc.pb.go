@@ -33,6 +33,7 @@ const (
 	CameraPolicyService_TrustFactoryTLS_FullMethodName = "/shale.CameraPolicyService/TrustFactoryTLS"
 	CameraPolicyService_ApproveTLS_FullMethodName      = "/shale.CameraPolicyService/ApproveTLS"
 	CameraPolicyService_VerifyTransport_FullMethodName = "/shale.CameraPolicyService/VerifyTransport"
+	CameraPolicyService_ObserveClock_FullMethodName    = "/shale.CameraPolicyService/ObserveClock"
 )
 
 // CameraPolicyServiceClient is the client API for CameraPolicyService service.
@@ -77,6 +78,10 @@ type CameraPolicyServiceClient interface {
 	// The assigned Worker's credential-free verification of a moved camera's
 	// transport candidate, rechecked against today's fences in one transaction.
 	VerifyTransport(ctx context.Context, in *CameraPolicyVerifyTransportRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error)
+	// The assigned Worker's credential-free reading of a device's own clock at
+	// one of its authorized endpoints. It records the reading on the device;
+	// nothing sets the camera's clock.
+	ObserveClock(ctx context.Context, in *CameraPolicyObserveClockRequest, opts ...grpc.CallOption) (*CameraDevice, error)
 }
 
 type cameraPolicyServiceClient struct {
@@ -236,6 +241,16 @@ func (c *cameraPolicyServiceClient) VerifyTransport(ctx context.Context, in *Cam
 	return out, nil
 }
 
+func (c *cameraPolicyServiceClient) ObserveClock(ctx context.Context, in *CameraPolicyObserveClockRequest, opts ...grpc.CallOption) (*CameraDevice, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CameraDevice)
+	err := c.cc.Invoke(ctx, CameraPolicyService_ObserveClock_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CameraPolicyServiceServer is the server API for CameraPolicyService service.
 // All implementations must embed UnimplementedCameraPolicyServiceServer
 // for forward compatibility.
@@ -278,6 +293,10 @@ type CameraPolicyServiceServer interface {
 	// The assigned Worker's credential-free verification of a moved camera's
 	// transport candidate, rechecked against today's fences in one transaction.
 	VerifyTransport(context.Context, *CameraPolicyVerifyTransportRequest) (*CameraPolicyObserveResponse, error)
+	// The assigned Worker's credential-free reading of a device's own clock at
+	// one of its authorized endpoints. It records the reading on the device;
+	// nothing sets the camera's clock.
+	ObserveClock(context.Context, *CameraPolicyObserveClockRequest) (*CameraDevice, error)
 	mustEmbedUnimplementedCameraPolicyServiceServer()
 }
 
@@ -329,6 +348,9 @@ func (UnimplementedCameraPolicyServiceServer) ApproveTLS(context.Context, *Camer
 }
 func (UnimplementedCameraPolicyServiceServer) VerifyTransport(context.Context, *CameraPolicyVerifyTransportRequest) (*CameraPolicyObserveResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method VerifyTransport not implemented")
+}
+func (UnimplementedCameraPolicyServiceServer) ObserveClock(context.Context, *CameraPolicyObserveClockRequest) (*CameraDevice, error) {
+	return nil, status.Error(codes.Unimplemented, "method ObserveClock not implemented")
 }
 func (UnimplementedCameraPolicyServiceServer) mustEmbedUnimplementedCameraPolicyServiceServer() {}
 func (UnimplementedCameraPolicyServiceServer) testEmbeddedByValue()                             {}
@@ -596,6 +618,24 @@ func _CameraPolicyService_VerifyTransport_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CameraPolicyService_ObserveClock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CameraPolicyObserveClockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CameraPolicyServiceServer).ObserveClock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CameraPolicyService_ObserveClock_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CameraPolicyServiceServer).ObserveClock(ctx, req.(*CameraPolicyObserveClockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CameraPolicyService_ServiceDesc is the grpc.ServiceDesc for CameraPolicyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -654,6 +694,10 @@ var CameraPolicyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VerifyTransport",
 			Handler:    _CameraPolicyService_VerifyTransport_Handler,
+		},
+		{
+			MethodName: "ObserveClock",
+			Handler:    _CameraPolicyService_ObserveClock_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

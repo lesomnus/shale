@@ -100,6 +100,9 @@ func init() {
 	// cameradeviceDescTransport is the schema descriptor for transport field.
 	cameradeviceDescTransport := cameradeviceFields[14].Descriptor()
 	cameradevice.ValueScanner.Transport = cameradeviceDescTransport.ValueScanner.(field.TypeValueScanner[*api.CameraTransportState])
+	// cameradeviceDescClock is the schema descriptor for clock field.
+	cameradeviceDescClock := cameradeviceFields[15].Descriptor()
+	cameradevice.ValueScanner.Clock = cameradeviceDescClock.ValueScanner.(field.TypeValueScanner[*api.CameraClockObservation])
 	camerajobFields := schema.CameraJob{}.Fields()
 	_ = camerajobFields
 	// camerajobDescInputs is the schema descriptor for inputs field.

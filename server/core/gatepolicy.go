@@ -216,6 +216,7 @@ var cameraWorkerMay = map[string]bool{
 	api.CameraPolicyService_Observe_FullMethodName:          true,
 	api.CameraPolicyService_TrustFactoryTLS_FullMethodName:  true,
 	api.CameraPolicyService_VerifyTransport_FullMethodName:  true,
+	api.CameraPolicyService_ObserveClock_FullMethodName:     true,
 }
 
 var readerMay = map[string]bool{

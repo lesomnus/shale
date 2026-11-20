@@ -62,7 +62,11 @@ Claim is not proof that advertised serial/MAC values are globally unique.
 A Worker's discovery never moves a recording camera's endpoints: it stages a
 bounded, expiring transport candidate in `CameraDevice.transport`
 ([camera Worker](camera-worker.md#transport-candidates)). An operator's Observe
-that changes the endpoint set clears those candidates.
+that changes the endpoint set clears those candidates. `CameraDevice.clock` is
+the camera's own clock as the assigned Worker last read it, recorded only
+through `CameraPolicy.ObserveClock`
+([camera clocks](camera-worker.md#camera-clocks)); nothing writes it to the
+camera.
 
 Bind reserves the logical key and Source centrally. It generates a stable alias
 when none is provided, reuses a matching existing provisioning binding, or imports
