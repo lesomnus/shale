@@ -156,3 +156,89 @@ func TestInitialCompositionKeepsOneCandidateWhenONVIFAppears(t *testing.T) {
 	_, err = p.Discover(t.Context(), scope)
 	require.Error(t, err)
 }
+
+// discoveredAt is a WS-Discovery answer from host that names no MAC, under the
+// EPR form some cameras share with every other unit of their model.
+func discoveredAt(host string) camera.Observation {
+	return camera.Observation{Scope: "poe", Device: camera.DeviceHint{CandidateID: "onvif/" + host, DiscoveryID: "uuid:3fa1fe68-b915-4053-a3e1-000000000000", Endpoints: []camera.Endpoint{{URL: "http://" + host + ":2020/onvif/device_service", NetworkScope: "poe"}}, Evidence: []camera.Evidence{{Source: "ws_discovery"}}}}
+}
+
+func TestNeighborObservationsResolveHostsThatAnsweredInsideTheNetwork(t *testing.T) {
+	calls := 0
+	provider := NeighborObservations{Source: neighborSourceFunc(func(_ context.Context, iface string) ([]Neighbor, error) {
+		calls++
+		require.Equal(t, "camera0", iface)
+		return []Neighbor{
+			{Address: "192.0.2.10", MAC: "02:00:00:00:00:10", States: []string{"REACHABLE"}},
+			{Address: "192.0.2.30", MAC: "02:00:00:00:00:30", States: []string{"STALE"}},
+			{Address: "192.0.2.40", MAC: "02:00:00:00:00:41", States: []string{"REACHABLE"}},
+			{Address: "198.51.100.50", MAC: "02:00:00:00:00:50", States: []string{"REACHABLE"}},
+			{Address: "192.0.2.99", MAC: "02:00:00:00:00:99", States: []string{"REACHABLE"}},
+		}, nil
+	})}
+	named := discoveredAt("192.0.2.40")
+	named.Device.MAC = "02:00:00:00:00:40"
+	discovered := []camera.Observation{discoveredAt("192.0.2.30"), named, discoveredAt("198.51.100.50"), discoveredAt("192.0.2.60"), discoveredAt("192.0.2.10")}
+	scope := leaseScope()
+	scope.Seeds = scope.Seeds[:1]
+	out, err := provider.ObserveDiscovered(t.Context(), scope, discovered)
+	require.NoError(t, err)
+	macs := map[string]string{}
+	for _, o := range out {
+		require.Len(t, o.Device.Endpoints, 1)
+		macs[o.Device.Endpoints[0].URL] = o.Device.MAC
+		require.Empty(t, o.Device.DiscoveryID, "a hint carries no EPR of its own")
+		require.Equal(t, "neighbor_cache", o.Device.Evidence[0].Source)
+	}
+	require.Equal(t, map[string]string{
+		"http://192.0.2.10:2020/onvif/device_service": "02:00:00:00:00:10",
+		"http://192.0.2.30:2020/onvif/device_service": "02:00:00:00:00:30",
+	}, macs, "a seed keeps its endpoints; a named, foreign or uncached host yields nothing; an unseeded host is never resolved")
+
+	scope.Seeds = nil
+	out, err = provider.ObserveDiscovered(t.Context(), scope, discovered[:1])
+	require.NoError(t, err)
+	require.Len(t, out, 1, "an answer inside the network needs no seed")
+	scope.CIDRs = nil
+	out, err = provider.ObserveDiscovered(t.Context(), scope, discovered[:1])
+	require.NoError(t, err)
+	require.Empty(t, out)
+	require.Equal(t, 2, calls, "without CIDRs no answer is resolved and nothing is queried")
+	scope.CIDRs = []string{"192.0.2.1/24"}
+	_, err = provider.ObserveDiscovered(t.Context(), scope, discovered[:1])
+	require.ErrorIs(t, err, camera.ErrInvalid)
+	scope.CIDRs = leaseScope().CIDRs
+	_, err = provider.ObserveDiscovered(t.Context(), scope, make([]camera.Observation, maxDiscoveredHosts+1))
+	require.ErrorIs(t, err, camera.ErrInvalid)
+	require.Equal(t, 2, calls)
+}
+
+func TestInitialCompositionTellsStaticCamerasApartByNeighborMAC(t *testing.T) {
+	scope := leaseScope()
+	scope.Seeds = scope.Seeds[:1]
+	neighbors := NeighborObservations{Source: neighborSourceFunc(func(context.Context, string) ([]Neighbor, error) {
+		return []Neighbor{
+			{Address: "192.0.2.31", MAC: "02:00:00:00:00:31", States: []string{"REACHABLE"}},
+			{Address: "192.0.2.32", MAC: "02:00:00:00:00:32", States: []string{"STALE"}},
+		}, nil
+	})}
+	leases := DHCPObservations{Source: leaseSourceFunc(func(context.Context, string) ([]Lease, error) { return nil, nil })}
+	var seen []camera.Observation
+	primary := primaryDiscovererFunc(func(context.Context, camera.DiscoveryScope) ([]camera.Observation, error) {
+		seen = []camera.Observation{discoveredAt("192.0.2.31"), discoveredAt("192.0.2.32")}
+		return seen, nil
+	})
+	for _, provider := range []camera.InitialObservationProvider{neighbors, InitialProviders{leases, neighbors}} {
+		seen = nil
+		out, err := WithInitial{Discoverer: primary, Provider: provider}.Discover(t.Context(), scope)
+		require.NoError(t, err)
+		require.NotNil(t, seen)
+		require.Len(t, out, 2)
+		for i, mac := range []string{"02:00:00:00:00:31", "02:00:00:00:00:32"} {
+			require.Equal(t, mac, out[i].Device.MAC)
+			require.Equal(t, seen[i].Device.DiscoveryID, out[i].Device.DiscoveryID)
+			require.Equal(t, seen[i].Device.Endpoints, out[i].Device.Endpoints)
+			require.Equal(t, []string{"ws_discovery", "neighbor_cache"}, []string{out[i].Device.Evidence[0].Source, out[i].Device.Evidence[1].Source})
+		}
+	}
+}

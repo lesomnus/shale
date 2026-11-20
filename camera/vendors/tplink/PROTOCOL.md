@@ -60,6 +60,19 @@ confirmed the same public first-password key/protocol and the frequency
 exchange below. That qualification does not authorize clock, account, network
 or service changes as initialization side effects.
 
+## Discovery identity
+
+Six 1.2.2 Build260624 units observed on 2026-11-20 answer a WS-Discovery probe
+with the endpoint reference `uuid:3fa1fe68-b915-4053-a3e1-` followed by the
+unit's own MAC as twelve hex digits, without the `urn:` prefix, and with the
+single XAddr `http://<address>:80/onvif/device_service`. The reply names no MAC.
+The Worker takes only a `urn:uuid:` reference as an identity and does not parse
+a MAC out of a vendor string, so a C420 is known by its MAC: from a DHCP lease,
+or, with `initial_neighbors`, from the kernel neighbor-cache entry of the host
+that answered ([camera Worker](../../../docs/camera-worker.md#initial-observations-before-onvif-activation)).
+A static-address C420 on a Worker without either source is never observed after
+enrollment.
+
 ## Image-frequency initialization
 
 The C420's factory 50 Hz image setting exposes at most 25 fps; 60 Hz exposes

@@ -16,20 +16,39 @@ type WithInitial struct {
 	Provider   camera.InitialObservationProvider
 }
 
+// DiscoveredObservationProvider is an initial source that can also describe
+// what the regular discoverer found. WithInitial passes it that discoverer's
+// observations; ObserveInitial is the same with none.
+type DiscoveredObservationProvider interface {
+	camera.InitialObservationProvider
+	ObserveDiscovered(context.Context, camera.DiscoveryScope, []camera.Observation) ([]camera.Observation, error)
+}
+
+// observeInitial asks provider about the discovered observations when it can.
+func observeInitial(ctx context.Context, provider camera.InitialObservationProvider, scope camera.DiscoveryScope, discovered []camera.Observation) ([]camera.Observation, error) {
+	if p, ok := provider.(DiscoveredObservationProvider); ok {
+		return p.ObserveDiscovered(ctx, scope, discovered)
+	}
+	return provider.ObserveInitial(ctx, scope)
+}
+
+// Discover runs the regular discoverer before the initial source, so the
+// source can see what answered.
 func (d WithInitial) Discover(ctx context.Context, scope camera.DiscoveryScope) ([]camera.Observation, error) {
 	if d.Provider == nil {
 		return nil, camera.ErrInvalid
 	}
-	initial, err := d.Provider.ObserveInitial(ctx, scope)
-	if err != nil {
-		return nil, err
-	}
 	var primary []camera.Observation
 	if d.Discoverer != nil {
+		var err error
 		primary, err = d.Discoverer.Discover(ctx, scope)
 		if err != nil {
 			return nil, err
 		}
+	}
+	initial, err := observeInitial(ctx, d.Provider, scope, primary)
+	if err != nil {
+		return nil, err
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -56,7 +75,9 @@ func observationHost(o camera.Observation, scope string) (string, error) {
 }
 
 func combineInitial(scope camera.DiscoveryScope, primary, initial []camera.Observation) ([]camera.Observation, error) {
-	if len(primary)+len(initial) > 256 {
+	// A discovered host can return as an initial hint too, so the two are
+	// bounded apart: seeds, discovered hosts and leases fit the second.
+	if len(primary) > maxDiscoveredHosts || len(initial) > 2*maxDiscoveredHosts {
 		return nil, camera.ErrInvalid
 	}
 	byHost, macHosts := map[string]camera.Observation{}, map[string]string{}
