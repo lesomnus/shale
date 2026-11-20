@@ -30,7 +30,7 @@ func Encode(run provision.Run) (*api.CameraProvisionState, error) {
 		return nil, ErrInvalid
 	}
 	e := encoder{}
-	out := api.CameraProvisionState_builder{SchemaVersion: schemaVersion, Request: e.request(run.Request), Stage: string(run.Stage), Version: run.Version, CreatedAt: stamp(run.CreatedAt), UpdatedAt: stamp(run.UpdatedAt), Inspection: e.inspection(run.Inspection), Plan: e.plan(run.Plan), Verified: e.verified(run.Verified), InitialRef: ref(run.InitialRef), ManagementRef: ref(run.ManagementRef), StreamingRef: ref(run.StreamingRef), ActivationAttempted: run.ActivationAttempted, ActivationComplete: run.ActivationComplete, Binding: binding(run.Binding), Events: events(run.Events), Impacts: impacts(run.Impacts), Preset: e.preset(run.Preset), Effective: e.settings(run.Effective), CandidateIndex: int32(run.CandidateIndex), InitializationPlan: initialization(run.InitializationPlan), Initialized: deviceSettings(run.Initialized), Warnings: warnings(run.Warnings), DeploymentProfile: profilePointer(run.DeploymentProfile), Firmware: firmware(run.Firmware), ChangedTlsIdentity: cameratls.Encode(run.ChangedTLSIdentity)}.Build()
+	out := api.CameraProvisionState_builder{SchemaVersion: schemaVersion, Request: e.request(run.Request), Stage: string(run.Stage), Version: run.Version, CreatedAt: stamp(run.CreatedAt), UpdatedAt: stamp(run.UpdatedAt), Inspection: e.inspection(run.Inspection), Plan: e.plan(run.Plan), Verified: e.verified(run.Verified), InitialRef: ref(run.InitialRef), ManagementRef: ref(run.ManagementRef), StreamingRef: ref(run.StreamingRef), ActivationAttempted: run.ActivationAttempted, ActivationComplete: run.ActivationComplete, Binding: binding(run.Binding), Events: events(run.Events), Impacts: impacts(run.Impacts), Preset: e.preset(run.Preset), Effective: e.settings(run.Effective), CandidateIndex: int32(run.CandidateIndex), InitializationPlan: initialization(run.InitializationPlan), Initialized: deviceSettings(run.Initialized), Warnings: warnings(run.Warnings), DeploymentProfile: profilePointer(run.DeploymentProfile), Firmware: firmware(run.Firmware), ChangedTlsIdentity: cameratls.Encode(run.ChangedTLSIdentity), TimeSync: timeSync(run.TimeSync)}.Build()
 	if e.err != nil || validateWire(out) != nil {
 		return nil, ErrInvalid
 	}
@@ -44,7 +44,7 @@ func Decode(value *api.CameraProvisionState) (provision.Run, error) {
 		return provision.Run{}, ErrInvalid
 	}
 	d := decoder{}
-	r := provision.Run{Request: d.request(value.GetRequest()), Stage: provision.Stage(value.GetStage()), Version: value.GetVersion(), CreatedAt: date(value.GetCreatedAt()), UpdatedAt: date(value.GetUpdatedAt()), Inspection: d.inspection(value.GetInspection()), Plan: d.plan(value.GetPlan()), Verified: d.verified(value.GetVerified()), InitialRef: d.ref(value.GetInitialRef()), ManagementRef: d.ref(value.GetManagementRef()), StreamingRef: d.ref(value.GetStreamingRef()), ActivationAttempted: value.GetActivationAttempted(), ActivationComplete: value.GetActivationComplete(), Binding: d.binding(value.GetBinding()), Events: d.events(value.GetEvents()), Impacts: d.impacts(value.GetImpacts()), Preset: d.preset(value.GetPreset()), Effective: d.settings(value.GetEffective()), CandidateIndex: int(value.GetCandidateIndex()), InitializationPlan: d.initialization(value.GetInitializationPlan()), Initialized: d.deviceSettings(value.GetInitialized()), Warnings: d.warnings(value.GetWarnings()), DeploymentProfile: d.profilePointer(value.GetDeploymentProfile()), Firmware: d.firmware(value.GetFirmware()), ChangedTLSIdentity: cameratls.Decode(value.GetChangedTlsIdentity())}
+	r := provision.Run{Request: d.request(value.GetRequest()), Stage: provision.Stage(value.GetStage()), Version: value.GetVersion(), CreatedAt: date(value.GetCreatedAt()), UpdatedAt: date(value.GetUpdatedAt()), Inspection: d.inspection(value.GetInspection()), Plan: d.plan(value.GetPlan()), Verified: d.verified(value.GetVerified()), InitialRef: d.ref(value.GetInitialRef()), ManagementRef: d.ref(value.GetManagementRef()), StreamingRef: d.ref(value.GetStreamingRef()), ActivationAttempted: value.GetActivationAttempted(), ActivationComplete: value.GetActivationComplete(), Binding: d.binding(value.GetBinding()), Events: d.events(value.GetEvents()), Impacts: d.impacts(value.GetImpacts()), Preset: d.preset(value.GetPreset()), Effective: d.settings(value.GetEffective()), CandidateIndex: int(value.GetCandidateIndex()), InitializationPlan: d.initialization(value.GetInitializationPlan()), Initialized: d.deviceSettings(value.GetInitialized()), Warnings: d.warnings(value.GetWarnings()), DeploymentProfile: d.profilePointer(value.GetDeploymentProfile()), Firmware: d.firmware(value.GetFirmware()), ChangedTLSIdentity: cameratls.Decode(value.GetChangedTlsIdentity()), TimeSync: d.timeSync(value.GetTimeSync())}
 	if d.err != nil || validateRun(r) != nil {
 		return provision.Run{}, ErrInvalid
 	}
@@ -191,7 +191,7 @@ func deviceSettings(v *camera.DeviceSettings) *api.CameraProvisionDeviceSettings
 	if v == nil {
 		return nil
 	}
-	return api.CameraProvisionDeviceSettings_builder{PowerLineFrequency: int32(v.PowerLineFrequency), SmartCodec: v.SmartCodec}.Build()
+	return api.CameraProvisionDeviceSettings_builder{PowerLineFrequency: int32(v.PowerLineFrequency), SmartCodec: v.SmartCodec, TimeSync: camerapreset.EncodeTimeSync(v.TimeSync)}.Build()
 }
 func initializationVideoMain(v *camera.InitializationVideoMain) *api.CameraProvisionInitializationVideoMain {
 	if v == nil {
@@ -203,7 +203,7 @@ func initialization(v *camera.InitializationPlan) *api.CameraProvisionInitializa
 	if v == nil {
 		return nil
 	}
-	return api.CameraProvisionInitializationPlan_builder{Before: deviceSettings(&v.Before), After: deviceSettings(&v.After), Changes: stringsPB(v.Changes), Revision: v.Revision, VideoMainBefore: initializationVideoMain(v.VideoMainBefore)}.Build()
+	return api.CameraProvisionInitializationPlan_builder{Before: deviceSettings(&v.Before), After: deviceSettings(&v.After), Changes: stringsPB(v.Changes), Revision: v.Revision, VideoMainBefore: initializationVideoMain(v.VideoMainBefore), TimeSync: initializationTimeSync(v.TimeSync)}.Build()
 }
 
 type encoder struct{ err error }
@@ -514,7 +514,9 @@ func (d *decoder) deviceSettings(v *api.CameraProvisionDeviceSettings) *camera.D
 	if v == nil {
 		return nil
 	}
-	return &camera.DeviceSettings{PowerLineFrequency: int(v.GetPowerLineFrequency()), SmartCodec: v.GetSmartCodec()}
+	// A present time sync is never empty: zero is encoded as absent.
+	d.require(!v.HasTimeSync() || !camerapreset.TimeSync(v.GetTimeSync()).IsZero())
+	return &camera.DeviceSettings{PowerLineFrequency: int(v.GetPowerLineFrequency()), SmartCodec: v.GetSmartCodec(), TimeSync: camerapreset.TimeSync(v.GetTimeSync())}
 }
 func (d *decoder) initializationVideoMain(v *api.CameraProvisionInitializationVideoMain) *camera.InitializationVideoMain {
 	if v == nil {
@@ -535,7 +537,7 @@ func (d *decoder) initialization(v *api.CameraProvisionInitializationPlan) *came
 		d.err = ErrInvalid
 		return nil
 	}
-	return &camera.InitializationPlan{Before: *before, After: *after, Changes: readStrings(v.GetChanges()), Revision: v.GetRevision(), VideoMainBefore: d.initializationVideoMain(v.GetVideoMainBefore())}
+	return &camera.InitializationPlan{Before: *before, After: *after, Changes: readStrings(v.GetChanges()), Revision: v.GetRevision(), VideoMainBefore: d.initializationVideoMain(v.GetVideoMainBefore()), TimeSync: d.initializationTimeSync(v.GetTimeSync())}
 }
 
 func profilePointer(v *camera.MediaProfile) *api.CameraProvisionMediaProfile {
@@ -550,6 +552,33 @@ func (d *decoder) profilePointer(v *api.CameraProvisionMediaProfile) *camera.Med
 	}
 	out := d.profile(v)
 	return &out
+}
+
+func initializationTimeSync(v *camera.InitializationTimeSync) *api.CameraProvisionInitializationTimeSync {
+	if v == nil {
+		return nil
+	}
+	return api.CameraProvisionInitializationTimeSync_builder{Server: v.Server, BeforeNtpFromDhcp: v.BeforeNTPFromDHCP, BeforeNtp: stringsPB(v.BeforeNTP), BeforeMode: v.BeforeMode, BeforeTz: v.BeforeTZ, BeforeDaylightSavings: v.BeforeDaylightSavings}.Build()
+}
+func (d *decoder) initializationTimeSync(v *api.CameraProvisionInitializationTimeSync) *camera.InitializationTimeSync {
+	if v == nil {
+		return nil
+	}
+	out := &camera.InitializationTimeSync{Server: v.GetServer(), BeforeNTPFromDHCP: v.GetBeforeNtpFromDhcp(), BeforeNTP: readStrings(v.GetBeforeNtp()), BeforeMode: v.GetBeforeMode(), BeforeTZ: v.GetBeforeTz(), BeforeDaylightSavings: v.GetBeforeDaylightSavings()}
+	d.require(out.Validate() == nil)
+	return out
+}
+func timeSync(v *provision.TimeSyncState) *api.CameraProvisionTimeSync {
+	if v == nil {
+		return nil
+	}
+	return api.CameraProvisionTimeSync_builder{Plan: initialization(v.Plan), Settled: v.Settled}.Build()
+}
+func (d *decoder) timeSync(v *api.CameraProvisionTimeSync) *provision.TimeSyncState {
+	if v == nil {
+		return nil
+	}
+	return &provision.TimeSyncState{Plan: d.initialization(v.GetPlan()), Settled: v.GetSettled()}
 }
 
 func firmware(v *provision.FirmwareState) *api.CameraProvisionFirmware {

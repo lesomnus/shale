@@ -50,7 +50,7 @@ type Config struct {
 	// Clocks, beside discovery, reads the own clock of each camera a scan
 	// places at its authorized endpoints, at most once per ClockInterval per
 	// camera, and reports it. The composition root supplies its LAN transport.
-	// Nothing sets a camera's clock.
+	// Reading sets nothing; only a job's preset time_sync writes a clock.
 	Clocks        camera.ClockReader
 	ClockInterval time.Duration
 	Log           *slog.Logger

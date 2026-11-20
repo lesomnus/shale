@@ -46,8 +46,12 @@ func (v InitializationVideoMain) Validate() error {
 
 // ValidateInitializationPlan binds a native precondition to explicit intent.
 // Frequency-only plans from earlier versions do not require a video snapshot.
+// It is for media prerequisites; a time-sync plan is ValidateTimeSyncPlan's.
 func ValidateInitializationPlan(p InitializationPlan, desired DeviceSettings) error {
 	if desired.Validate() != nil || p.Before.Validate() != nil || p.After.Validate() != nil || p.After != desired {
+		return ErrInvalid
+	}
+	if desired != desired.Prerequisites() || p.Before != p.Before.Prerequisites() || p.TimeSync != nil {
 		return ErrInvalid
 	}
 	if desired.PowerLineFrequency == 0 && p.Before.PowerLineFrequency != 0 {

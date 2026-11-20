@@ -99,7 +99,7 @@ func (e *Engine) configure(ctx context.Context, r *Run, inspection camera.Inspec
 		if q.UsePreset && (r.Effective == nil || r.CandidateIndex != index) {
 			r.CandidateIndex, r.Effective = index, &candidate
 			r.Warnings = camera.WarningsFor(candidates[0], candidate)
-			r.InitializationPlan, r.Initialized, r.Plan, r.Verified = nil, nil, nil, nil
+			r.InitializationPlan, r.Initialized, r.Plan, r.Verified, r.TimeSync = nil, nil, nil, nil, nil
 			if err := e.save(ctx, r, Inspecting, "preset_candidate_selected"); err != nil {
 				return inspection, candidate.Video, false, err
 			}
@@ -156,13 +156,13 @@ func (e *Engine) configure(ctx context.Context, r *Run, inspection camera.Inspec
 		if err != nil {
 			return inspection, candidate.Video, false, err
 		}
-		if candidate.Initialization != (camera.DeviceSettings{}) {
+		if prerequisites := candidate.Initialization.Prerequisites(); prerequisites != (camera.DeviceSettings{}) {
 			initializer := e.initializer()
-			checked, err := initializer.PlanInitialization(ctx, readback.Device, lease, candidate.Initialization)
+			checked, err := initializer.PlanInitialization(ctx, readback.Device, lease, prerequisites)
 			if err != nil {
 				return readback, candidate.Video, false, err
 			}
-			if len(checked.Changes) != 0 || checked.Before != candidate.Initialization || checked.After != candidate.Initialization {
+			if len(checked.Changes) != 0 || checked.Before != prerequisites || checked.After != prerequisites {
 				return readback, candidate.Video, false, camera.ErrConflict
 			}
 			r.Initialized = &checked.Before
@@ -182,7 +182,9 @@ func (e *Engine) configure(ctx context.Context, r *Run, inspection camera.Inspec
 
 // initialize is deliberately separate from password activation. A frequency
 // change can unlock media options, so it must finish before video planning.
+// A time sync is no media prerequisite; syncTime applies it afterwards.
 func (e *Engine) initialize(ctx context.Context, r *Run, inspection camera.Inspection, lease camera.CredentialLease, candidate camera.PresetSettings, apply bool) (camera.Inspection, bool, error) {
+	candidate.Initialization = candidate.Initialization.Prerequisites()
 	if candidate.Initialization == (camera.DeviceSettings{}) {
 		return inspection, true, nil
 	}

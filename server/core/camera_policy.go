@@ -159,6 +159,9 @@ func (s Core) cameraCreatePolicy(ctx context.Context, network *api.CameraNetwork
 	if err := s.cameraEnrollmentPolicy(ctx, network, enrollment); err != nil {
 		return nil, err
 	}
+	if err := cameraPolicyTimeServers(network, preset); err != nil {
+		return nil, err
+	}
 	old, err := s.ent(ctx).CameraPolicy.Query().Where(camerapolicy.TenantIdEQ(mustId(network.GetTenant().GetId()).Uuid()), camerapolicy.PolicyKeyEQ(key), camerapolicy.RevisionEQ(revision)).Only(ctx)
 	if err == nil {
 		if old.DateErased != nil {

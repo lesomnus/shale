@@ -239,7 +239,11 @@ therefore serves time from the Pi, whose chrony is synchronized over Wi-Fi:
   `/etc/chrony/chrony.conf`.
 - `camera-dhcp.conf` advertises the Pi's camera address as NTP server (DHCP
   option 42) to cameras that take their server from DHCP. A camera set to a fixed
-  NTP server needs that same address. Router and DNS stay suppressed.
+  NTP server, or a static address, needs that same address. A camera preset's
+  `time_sync: {ntp: edge, timezone: ...}` writes it to qualified cameras over
+  ONVIF, with the Worker's address toward each camera
+  ([camera time sync](../../docs/camera-policy.md#camera-time-sync)). Router and
+  DNS stay suppressed.
 
 **No time until the Pi has it.** The drop-in has no `local` directive,
 deliberately. Until chronyd has synchronized to its own upstream servers, it
@@ -297,7 +301,8 @@ sudo chronyc serverstats  # NTP packets received and dropped
 `clients` and `serverstats` need chronyd's root-only command socket. Until
 `tracking` reports `Normal`, cameras get only unsynchronized replies. A camera
 missing from `clients` has not reached chronyd: check the host firewall and the
-camera's NTP server setting.
+camera's NTP server setting, which a preset's `time_sync` sets and the
+camera's job journals (`progress.time_sync`).
 
 To opt out, render with `--no-ntp`: no drop-in, and no NTP option in
 `camera-dhcp.conf`. To withdraw it after installation, remove the drop-in,

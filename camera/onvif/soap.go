@@ -1,5 +1,7 @@
-// Package onvif implements the read-only ONVIF Device/Media inspector and a
-// narrowly scoped video configurator. Authentication never sets the device clock.
+// Package onvif implements the read-only ONVIF Device/Media inspector, a
+// narrowly scoped video configurator, and the two device-service time writes
+// a preset's time_sync asks for (SetNTP and SetSystemDateAndTime, time_sync.go).
+// Nothing else writes a device's clock, and authentication never does.
 package onvif
 
 import (
@@ -40,6 +42,9 @@ var (
 	ErrResponse     = errors.New("invalid ONVIF response")
 	ErrVerification = errors.New("ONVIF configuration read-back differs from plan")
 	ErrDeviceTime   = errors.New("ONVIF device UTC time unavailable")
+	// errDeviceFault is a SOAP fault no other error names: the device
+	// declined the operation. It is an ErrResponse to every other caller.
+	errDeviceFault = fmt.Errorf("%w: device fault", ErrResponse)
 )
 
 // Client retains no credentials. Its zero value is usable. Configure it before
@@ -342,7 +347,7 @@ func (c *Client) request(ctx context.Context, endpoint, ns, operation, body stri
 			case strings.Contains(s, "ActionNotSupported"), strings.Contains(s, "NoSuchService"), strings.Contains(s, "OptionalActionNotImplemented"):
 				return nil, camera.ErrUnsupported
 			}
-			return nil, ErrResponse
+			return nil, errDeviceFault
 		}
 		if res.StatusCode < 200 || res.StatusCode >= 300 {
 			return nil, ErrTransport

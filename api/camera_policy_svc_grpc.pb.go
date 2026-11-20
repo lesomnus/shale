@@ -79,8 +79,8 @@ type CameraPolicyServiceClient interface {
 	// transport candidate, rechecked against today's fences in one transaction.
 	VerifyTransport(ctx context.Context, in *CameraPolicyVerifyTransportRequest, opts ...grpc.CallOption) (*CameraPolicyObserveResponse, error)
 	// The assigned Worker's credential-free reading of a device's own clock at
-	// one of its authorized endpoints. It records the reading on the device;
-	// nothing sets the camera's clock.
+	// one of its authorized endpoints. It records the reading on the device and
+	// sets nothing on the camera; only a job's preset time_sync sets a clock.
 	ObserveClock(ctx context.Context, in *CameraPolicyObserveClockRequest, opts ...grpc.CallOption) (*CameraDevice, error)
 }
 
@@ -294,8 +294,8 @@ type CameraPolicyServiceServer interface {
 	// transport candidate, rechecked against today's fences in one transaction.
 	VerifyTransport(context.Context, *CameraPolicyVerifyTransportRequest) (*CameraPolicyObserveResponse, error)
 	// The assigned Worker's credential-free reading of a device's own clock at
-	// one of its authorized endpoints. It records the reading on the device;
-	// nothing sets the camera's clock.
+	// one of its authorized endpoints. It records the reading on the device and
+	// sets nothing on the camera; only a job's preset time_sync sets a clock.
 	ObserveClock(context.Context, *CameraPolicyObserveClockRequest) (*CameraDevice, error)
 	mustEmbedUnimplementedCameraPolicyServiceServer()
 }

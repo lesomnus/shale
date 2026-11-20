@@ -361,13 +361,13 @@ it always did, and sends no grant.
 A camera LAN without a time service leaves each camera's clock where it was
 last set. On an edge with six TP-Link C420s, four were 138 to 147 days behind
 and two within about 13 seconds, every one in `NTP` mode with TZ `GMT0GMT` and
-no NTP server to reach. Shale does not write a camera's clock: inspection,
-activation and configuration call neither `SetSystemDateAndTime` nor `SetNTP`,
-nor the TP-Link login helper that writes the clock, and the pinned C420 path
-signs WS-Security with the camera's own public time instead. A preset
-capability that sets NTP and the time zone is not yet available. Until it is,
-the Worker observes each clock, so operators see the drift and that change
-can be measured.
+no NTP server to reach. Shale writes a camera's clock only when a preset's
+`time_sync` asks ([camera time sync](#camera-time-sync)), and then through
+ONVIF `SetNTP` and `SetSystemDateAndTime` alone. Inspection, activation and
+configuration call neither, nor the TP-Link login helper that writes the
+clock, and the pinned C420 path signs WS-Security with the camera's own public
+time instead. The Worker observes each clock either way, so operators see the
+drift, and a time sync that converges late, as it changes.
 
 After a scan's `CameraPolicy.Observe`, the Worker reads the clock of each
 camera that scan placed at its authorized endpoints: the first HTTP(S)
@@ -415,6 +415,51 @@ unknown. `shale camera-device get` prints the whole reading.
 A CP older than this answers `Unimplemented`; the Worker records nothing and
 logs nothing for it. A Worker older than this sends no reading, and the
 device has no `clock`.
+
+### Camera time sync
+
+A job whose preset sets `initialization.time_sync`
+([camera policy](camera-policy.md#camera-time-sync)) points the camera at an
+NTP server and sets its time zone, once its video settings read back. The
+Worker resolves the setting's `ntp` itself, for each camera, at plan time and
+again at apply time:
+
+- `edge` is the Worker's own address toward the camera: the local address of
+  a UDP socket connected to the camera's endpoint host on port 123, which the
+  kernel chooses by route and sends nothing for. On an edge that is the Pi's
+  camera-LAN address, where chrony serves the cameras
+  ([time for the camera LAN](../deploy/edge/README.md#time-for-the-camera-lan)).
+- An IPv4 literal is itself. No name is looked up.
+
+The result must be an IPv4 address inside the assigned network's CIDRs, the
+same prefixes that bound every camera address the Worker dials. Otherwise the
+camera is neither asked about its time nor written to, and the job records a
+`time_sync_refused` warning. So a network whose CIDRs name the cameras but not
+the edge's own address refuses `edge`; list the camera subnet itself.
+
+The step, each device operation under a fresh lease as everywhere else:
+
+1. Plan, read-only: resolve the server, then read `GetNTP` (with the job's
+   credential) and the public `GetSystemDateAndTime`. The plan names the
+   resolved server and what the camera reported, and lists which of the two
+   writes differ. A camera already pointed at that server alone, keeping time
+   by NTP in that zone, needs none.
+2. Journal that plan in the job's checkpoint (`time_sync_planned`) before the
+   first write. The CP refuses a plan whose server is outside the network.
+3. Apply: resolve again (a different result is a conflict), read again, and
+   write only what differs: `SetNTP(FromDHCP=false, NTPManual=[IPv4 server])`,
+   then `SetSystemDateAndTime(DateTimeType=NTP, DaylightSavings=false,
+   TimeZone{TZ})`, then read both back. A write can move the camera's clock, so
+   the cached device time that signs WS-Security is dropped after each one.
+4. Read back with a fresh plan, then read the camera's clock credential-free,
+   as above, every five seconds for up to 90, until it is within two seconds
+   of the Worker's.
+
+The outcome is recorded once (`progress.time_sync.settled`), with the event
+`time_sync_verified`, `time_sync_unconverged`, `time_sync_unsupported` or
+`time_sync_refused` and, for all but the first, a warning; a retried job does
+not repeat it. None of them fails the enrollment. Only the TP-Link C420 on its
+qualified build is driven; every other camera is `unsupported` before any call.
 
 ## Explicit HTTP compatibility
 

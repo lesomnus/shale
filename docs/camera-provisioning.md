@@ -215,10 +215,11 @@ the device clock. A TP-Link extension must correct the former and avoid the
 hidden write during inspection. These exceptions belong in the relevant
 facets, not scattered through the workflow.
 
-Shale still writes no camera's clock. The Worker only reads it, credential-free,
-and records the offset, mode and TZ on the device
-([camera clocks](camera-worker.md#camera-clocks)). Setting NTP and the time
-zone through a preset is not yet a capability.
+Shale writes a camera's clock only when a preset's `time_sync` asks, and then
+only through ONVIF `SetNTP` and `SetSystemDateAndTime`, never through the
+TP-Link login helper ([camera time sync](camera-policy.md#camera-time-sync)).
+The Worker also reads every clock, credential-free, and records the offset,
+mode and TZ on the device ([camera clocks](camera-worker.md#camera-clocks)).
 
 ## Workflow and durable execution
 

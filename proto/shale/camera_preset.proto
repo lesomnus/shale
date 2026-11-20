@@ -27,6 +27,18 @@ message CameraPresetSettings {
   repeated string preserve = 3;
   // Empty preserves current state; explicit values are off/on.
   string smart_codec = 4;
+  // Absent or empty leaves the camera's clock alone.
+  CameraPresetTimeSync time_sync = 5;
+}
+// Points a camera at an NTP server and sets its time zone, through ONVIF
+// SetNTP and SetSystemDateAndTime (docs/camera-policy.md, "Camera time sync").
+// Both fields are set, or neither.
+message CameraPresetTimeSync {
+  // "edge", the worker's own address on the camera network, or an IPv4
+  // literal. Either must lie inside the camera network's CIDRs; no hostname.
+  string ntp = 1;
+  // A POSIX TZ string, as ONVIF carries it, such as "KST-9".
+  string timezone = 2;
 }
 // Absent inherits alternatives; present with no candidates explicitly clears.
 message CameraPresetAlternatives { repeated CameraPresetSettings candidates = 1; }

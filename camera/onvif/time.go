@@ -32,22 +32,28 @@ func (c *Client) GetSystemDateAndTime(ctx context.Context, endpoint string) (tim
 // ReadClock reads the device's own clock at this exact endpoint, as
 // GetSystemDateAndTime does: no credential, cookie or redirect. It also takes
 // the DateTimeType and TZ the device reports, and times the round trip on the
-// monotonic clock. It is an observation; nothing here sets a device's clock.
+// monotonic clock. It is an observation; it never sets a device's clock.
 func (c *Client) ReadClock(ctx context.Context, endpoint string) (camera.DeviceClock, error) {
+	clock, _, err := c.readClock(ctx, endpoint)
+	return clock, err
+}
+
+// readClock is ReadClock with the response it read.
+func (c *Client) readClock(ctx context.Context, endpoint string) (camera.DeviceClock, *node, error) {
 	start := time.Now()
 	r, err := c.publicDateAndTime(ctx, endpoint)
 	rtt := time.Since(start)
 	if err != nil {
-		return camera.DeviceClock{}, err
+		return camera.DeviceClock{}, nil, err
 	}
 	clock, err := parseDeviceClock(r)
 	if err != nil {
-		return camera.DeviceClock{}, err
+		return camera.DeviceClock{}, nil, err
 	}
 	// The device read its clock somewhere inside the round trip; the middle
 	// is the best guess, and the round trip how far off it can be.
 	clock.ObservedAt, clock.RTT = start.Add(rtt/2).Round(0), rtt
-	return clock, nil
+	return clock, r, nil
 }
 
 func (c *Client) publicDateAndTime(ctx context.Context, endpoint string) (*node, error) {
@@ -179,7 +185,11 @@ func (c *Client) authenticationTime(ctx context.Context, endpoint string) (time.
 		c.clockMu.Lock()
 		if err != nil {
 			sample.err = ErrDeviceTime
-			delete(c.clocks, key) // A later operation may retry a failed public read.
+			// A later operation may retry a failed public read. A time write
+			// may already have dropped this sample and another taken its place.
+			if c.clocks[key] == sample {
+				delete(c.clocks, key)
+			}
 		} else {
 			sample.utc, sample.at = utc, midpoint
 		}

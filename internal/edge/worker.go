@@ -82,7 +82,7 @@ func buildWorker(cfg cameraworker.Config, broker *sourceBroker, options CameraOp
 					if err != nil {
 						return cameraworker.DeviceAdapters{}, err
 					}
-					return cameraworker.DeviceAdapters{Inspector: driver, Configurator: driver, Bootstrapper: driver, Initializer: driver, Firmware: driver, Observer: driver, Verifier: &media.Verifier{AuthProvider: auth, Ffmpeg: options.FFmpeg, Ffprobe: options.FFprobe, NetworkScope: network.String()}, Release: driver.Close}, nil
+					return cameraworker.DeviceAdapters{Inspector: driver, Configurator: driver, Bootstrapper: driver, Initializer: driver, Firmware: driver, Observer: driver, Clock: driver, Verifier: &media.Verifier{AuthProvider: auth, Ffmpeg: options.FFmpeg, Ffprobe: options.FFprobe, NetworkScope: network.String()}, Release: driver.Close}, nil
 				}},
 				Images: images,
 				Publisher: func(e *cameraworker.Execution) provision.SourcePublisher {

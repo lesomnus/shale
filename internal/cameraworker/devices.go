@@ -21,6 +21,7 @@ type DeviceAdapters struct {
 	Verifier     camera.MediaVerifier
 	Firmware     camera.FirmwareUpgrader
 	Observer     camera.WebIdentityObserver
+	Clock        camera.ClockObserver
 	Release      func()
 }
 
@@ -40,11 +41,13 @@ type LeasedDevices struct {
 	Verifier     camera.MediaVerifier
 	Firmware     camera.FirmwareUpgrader
 	Observer     camera.WebIdentityObserver
+	Clock        camera.ClockObserver
 }
 
 var (
 	_ camera.FirmwareUpgrader    = LeasedDevices{}
 	_ camera.WebIdentityObserver = LeasedDevices{}
+	_ camera.ClockObserver       = LeasedDevices{}
 )
 
 func freshTransport(h camera.DeviceHint, w *api.CameraWorkerWork) (camera.DeviceHint, error) {
@@ -57,12 +60,12 @@ func freshTransport(h camera.DeviceHint, w *api.CameraWorkerWork) (camera.Device
 }
 
 func (d LeasedDevices) mixedAdapters() bool {
-	return d.Factory != nil && (d.Inspector != nil || d.Configurator != nil || d.Bootstrapper != nil || d.Initializer != nil || d.Verifier != nil || d.Firmware != nil || d.Observer != nil)
+	return d.Factory != nil && (d.Inspector != nil || d.Configurator != nil || d.Bootstrapper != nil || d.Initializer != nil || d.Verifier != nil || d.Firmware != nil || d.Observer != nil || d.Clock != nil)
 }
 
 func (d LeasedDevices) adapters(ctx context.Context, w *api.CameraWorkerWork, f func(DeviceAdapters) error) error {
 	if d.Factory == nil {
-		return f(DeviceAdapters{Inspector: d.Inspector, Configurator: d.Configurator, Bootstrapper: d.Bootstrapper, Initializer: d.Initializer, Verifier: d.Verifier, Firmware: d.Firmware, Observer: d.Observer})
+		return f(DeviceAdapters{Inspector: d.Inspector, Configurator: d.Configurator, Bootstrapper: d.Bootstrapper, Initializer: d.Initializer, Verifier: d.Verifier, Firmware: d.Firmware, Observer: d.Observer, Clock: d.Clock})
 	}
 	adapters, err := d.Factory(ctx, w)
 	if adapters.Release != nil {
@@ -236,6 +239,25 @@ func (d LeasedDevices) ObserveWebIdentity(ctx context.Context, h camera.DeviceHi
 	})
 	return out, err
 }
+
+// ObserveClock reads, within one leased step, the device's own clock at its
+// current authorized endpoint, credential-free: how a time sync is seen to
+// converge.
+func (d LeasedDevices) ObserveClock(ctx context.Context, h camera.DeviceHint) (out camera.DeviceClock, err error) {
+	if d.Factory == nil && d.Clock == nil {
+		return out, camera.ErrUnsupported
+	}
+	err = d.step(ctx, h, func(ctx context.Context, h camera.DeviceHint, adapters DeviceAdapters) error {
+		if adapters.Clock == nil {
+			return camera.ErrUnsupported
+		}
+		var e error
+		out, e = adapters.Clock.ObserveClock(ctx, h)
+		return e
+	})
+	return out, err
+}
+
 func (d LeasedDevices) Verify(ctx context.Context, r camera.MediaRequest) (out camera.VerifiedState, err error) {
 	if d.Factory == nil && d.Verifier == nil || d.Execution == nil || d.mixedAdapters() {
 		return out, camera.ErrInvalid

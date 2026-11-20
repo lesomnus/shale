@@ -353,6 +353,4 @@ func samePatch(a, b Rule) bool {
 	return reflect.DeepEqual(a.Settings, b.Settings) && reflect.DeepEqual(a.Fallbacks, b.Fallbacks) && slices.Equal(a.Required, b.Required) && reflect.DeepEqual(a.Firmware, b.Firmware)
 }
 
-func knownField(field string) bool {
-	return slices.Contains([]string{camera.PresetFieldFrequency, camera.PresetFieldSmartCodec, camera.PresetFieldProfile, camera.PresetFieldCodec, camera.PresetFieldResolution, camera.PresetFieldFPS, camera.PresetFieldBitrate, camera.PresetFieldGOP}, field)
-}
+func knownField(field string) bool { return camera.KnownPresetField(field) }

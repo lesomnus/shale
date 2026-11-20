@@ -26,12 +26,19 @@ var _ camera.DeviceInitializer = (*Driver)(nil)
 // helper: that helper also writes the camera's clock. Empty settings preserve
 // device configuration and do not open a web session. Smart codec additionally
 // records the complete bounded native main-stream state before a possible write.
+// A time sync is planned on its own, over ONVIF alone (time_sync.go).
 func (d *Driver) PlanInitialization(ctx context.Context, hint camera.DeviceHint, lease camera.CredentialLease, desired camera.DeviceSettings) (camera.InitializationPlan, error) {
 	if err := ctx.Err(); err != nil {
 		return camera.InitializationPlan{}, err
 	}
 	if desired == (camera.DeviceSettings{}) {
 		return camera.InitializationPlan{}, nil
+	}
+	if !desired.TimeSync.IsZero() {
+		if desired.Prerequisites() != (camera.DeviceSettings{}) {
+			return camera.InitializationPlan{}, camera.ErrInvalid
+		}
+		return d.planTimeSync(ctx, hint, lease, desired.TimeSync)
 	}
 	if desired.PowerLineFrequency != 0 && !validFrequency(desired.PowerLineFrequency) || desired.SmartCodec != "" && !validSmartCodec(desired.SmartCodec) {
 		return camera.InitializationPlan{}, camera.ErrInvalid
@@ -86,8 +93,11 @@ func (d *Driver) ApplyInitialization(ctx context.Context, hint camera.DeviceHint
 	if err := ctx.Err(); err != nil {
 		return camera.DeviceSettings{}, err
 	}
-	if plan.Before == (camera.DeviceSettings{}) && plan.After == (camera.DeviceSettings{}) && plan.VideoMainBefore == nil {
+	if plan.Before == (camera.DeviceSettings{}) && plan.After == (camera.DeviceSettings{}) && plan.VideoMainBefore == nil && plan.TimeSync == nil {
 		return camera.DeviceSettings{}, nil
+	}
+	if plan.TimeSync != nil || !plan.After.TimeSync.IsZero() || !plan.Before.TimeSync.IsZero() {
+		return d.applyTimeSync(ctx, hint, lease, plan)
 	}
 	if plan.After.PowerLineFrequency != 0 && (!validFrequency(plan.Before.PowerLineFrequency) || !validFrequency(plan.After.PowerLineFrequency)) || plan.After.PowerLineFrequency == 0 && plan.Before.PowerLineFrequency != 0 {
 		return camera.DeviceSettings{}, camera.ErrInvalid

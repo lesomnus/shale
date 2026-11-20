@@ -49,8 +49,29 @@ type ONVIFCamera struct {
 	attempts   []AuthAttempt
 	// The camera's own clock: how far it is from the host's, and the
 	// DateTimeType and TZ it reports, when set.
-	clockOffset       time.Duration
+	clockOffset        time.Duration
 	clockMode, clockTZ string
+	// Its NTP configuration, how it takes time writes, and when a written
+	// time server brings its clock right.
+	ntpFromDHCP bool
+	ntpManual   []string
+	timeSync    TimeSyncBehavior
+	syncAt      time.Time
+}
+
+// TimeSyncBehavior is how the camera takes ONVIF time writes. The zero value
+// takes them all, and its clock comes right as soon as it keeps time by NTP
+// from a server SetNTP wrote.
+type TimeSyncBehavior struct {
+	// Unsupported answers GetNTP, SetNTP and SetSystemDateAndTime with an
+	// ActionNotSupported fault, as firmware without them does.
+	Unsupported bool
+	// RejectDateTime faults SetSystemDateAndTime alone; SetNTP is taken.
+	RejectDateTime bool
+	// ConvergeAfter is how long the clock takes to come right; Stuck never
+	// does, as a camera whose server does not answer.
+	ConvergeAfter time.Duration
+	Stuck         bool
 }
 
 type ONVIFOptions struct {
@@ -122,6 +143,46 @@ func (c *ONVIFCamera) SetClock(offset time.Duration, mode, tz string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.clockOffset, c.clockMode, c.clockTZ = offset, mode, tz
+	c.syncAt = time.Time{}
+}
+
+// SetTimeSync sets how the camera takes ONVIF time writes.
+func (c *ONVIFCamera) SetTimeSync(b TimeSyncBehavior) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.timeSync = b
+}
+
+// SetNTPConfig sets what GetNTP reports before any write: from DHCP, and
+// manual servers as DNS names or IPv4 literals.
+func (c *ONVIFCamera) SetNTPConfig(fromDHCP bool, servers ...string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.ntpFromDHCP, c.ntpManual = fromDHCP, append([]string(nil), servers...)
+}
+
+// TimeConfig is the camera's NTP and date-time configuration now.
+func (c *ONVIFCamera) TimeConfig() (fromDHCP bool, servers []string, mode, tz string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.ntpFromDHCP, append([]string(nil), c.ntpManual...), c.clockMode, c.clockTZ
+}
+
+// offsetLocked is the clock's skew now: zero once a written server brought it
+// right.
+func (c *ONVIFCamera) offsetLocked() time.Duration {
+	if !c.syncAt.IsZero() && !time.Now().Before(c.syncAt) {
+		c.clockOffset, c.syncAt = 0, time.Time{}
+	}
+	return c.clockOffset
+}
+
+// timeWrittenLocked starts the clock toward right when it keeps time by NTP
+// from a manual server.
+func (c *ONVIFCamera) timeWrittenLocked() {
+	if c.clockMode == "NTP" && !c.ntpFromDHCP && len(c.ntpManual) > 0 && !c.timeSync.Stuck && c.syncAt.IsZero() {
+		c.syncAt = time.Now().Add(c.timeSync.ConvergeAfter)
+	}
 }
 func (c *ONVIFCamera) LoseActivationResponseOnce() {
 	c.mu.Lock()
@@ -182,6 +243,13 @@ type soapRequest struct {
 		Operation struct {
 			XMLName       xml.Name
 			Configuration encoderConfig `xml:"Configuration"`
+			// SetNTP and SetSystemDateAndTime.
+			FromDHCP  string
+			NTPManual []struct {
+				Type, IPv4Address, IPv6Address, DNSname string
+			}
+			DateTimeType, DaylightSavings string
+			TimeZone                      struct{ TZ string }
 		} `xml:",any"`
 	} `xml:"Body"`
 }
@@ -240,8 +308,48 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 	const media1 = "http://www.onvif.org/ver10/media/wsdl"
 	const media2 = "http://www.onvif.org/ver20/media/wsdl"
 	switch name {
+	case "GetNTP", "SetNTP", "SetSystemDateAndTime":
+		if c.timeSync.Unsupported || name == "SetSystemDateAndTime" && c.timeSync.RejectDateTime {
+			soapFault(w, "ter:ActionNotSupported")
+			return
+		}
+		switch name {
+		case "GetNTP":
+			response = "<NTPInformation><FromDHCP>" + strconv.FormatBool(c.ntpFromDHCP) + "</FromDHCP>"
+			for _, server := range c.ntpManual {
+				if net.ParseIP(server) != nil {
+					response += "<NTPManual><Type>IPv4</Type><IPv4Address>" + xmlText(server) + "</IPv4Address></NTPManual>"
+				} else {
+					response += "<NTPManual><Type>DNS</Type><DNSname>" + xmlText(server) + "</DNSname></NTPManual>"
+				}
+			}
+			response += "</NTPInformation>"
+		case "SetNTP":
+			x := request.Body.Operation
+			var servers []string
+			for _, host := range x.NTPManual {
+				if host.Type != "IPv4" || net.ParseIP(host.IPv4Address).To4() == nil {
+					soapFault(w, "ter:InvalidArgVal")
+					return
+				}
+				servers = append(servers, host.IPv4Address)
+			}
+			c.ntpFromDHCP, c.ntpManual = x.FromDHCP == "true", servers
+			c.timeWrittenLocked()
+		case "SetSystemDateAndTime":
+			x := request.Body.Operation
+			if x.DateTimeType != "NTP" && x.DateTimeType != "Manual" || x.DaylightSavings != "false" && x.DaylightSavings != "true" {
+				soapFault(w, "ter:InvalidArgVal")
+				return
+			}
+			c.clockMode = x.DateTimeType
+			if x.TimeZone.TZ != "" {
+				c.clockTZ = x.TimeZone.TZ
+			}
+			c.timeWrittenLocked()
+		}
 	case "GetSystemDateAndTime":
-		now := time.Now().Add(c.clockOffset).UTC()
+		now := time.Now().Add(c.offsetLocked()).UTC()
 		var about string
 		if c.clockMode != "" {
 			about += "<DateTimeType>" + xmlText(c.clockMode) + "</DateTimeType><DaylightSavings>false</DaylightSavings>"
@@ -405,6 +513,14 @@ func (c *ONVIFCamera) json(w http.ResponseWriter, r *http.Request, data []byte) 
 		return
 	}
 	_ = json.NewEncoder(w).Encode(map[string]any{"error_code": 0})
+}
+
+// soapFault answers as firmware declining an operation, with a Sender fault
+// whose subcode names why.
+func soapFault(w http.ResponseWriter, subcode string) {
+	w.Header().Set("Content-Type", "application/soap+xml")
+	w.WriteHeader(http.StatusBadRequest)
+	_, _ = fmt.Fprintf(w, `<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:ter="http://www.onvif.org/ver10/error"><s:Body><s:Fault><s:Code><s:Value>s:Sender</s:Value><s:Subcode><s:Value>%s</s:Value></s:Subcode></s:Code><s:Reason><s:Text xml:lang="en">declined</s:Text></s:Reason></s:Fault></s:Body></s:Envelope>`, xmlText(subcode))
 }
 
 func xmlText(s string) string {

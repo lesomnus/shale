@@ -38,7 +38,8 @@ writing to the installed camera on 2026-11-06:
   public key is supplied in the public firmware UI and is not a credential.
 - The UI separately calls `system.boot_set_date`, sets an alias, time settings
   and optional services. This adapter invokes **none** of those operations. It
-  does not use the web login helper that performs those writes.
+  does not use the web login helper that performs those writes. A preset's
+  time sync goes through ONVIF instead ([time sync](#time-sync)).
 - A response timeout after the password write is ambiguous. The caller retains
   the prepared immutable credential reference, rechecks activation, and verifies
   access using authenticated ONVIF inspection. Replaying activation never
@@ -89,7 +90,8 @@ and an explicit manual frequency restoration during that physical lab test:
 - Read frequency with `method: get, image: {name: "switch"}`. The only permitted
   setting write is `method: set, image: {switch: {flicker: "50hz" | "60hz"}}`.
 - Logout uses `method: do, system: {logout: "null"}`. No clock, sensor frame-rate,
-  network, service, account or factory-reset write is performed by initialization.
+  network, service, account or factory-reset write is performed by frequency
+  initialization; a clock is written only by an explicit [time sync](#time-sync).
 
 An authenticated supported model/hardware/firmware identity and a matching web
 endpoint are required for frequency writes; an anonymous activation compatibility
@@ -175,6 +177,63 @@ independent keyframe and decode evidence: ONVIF GovLength read-back and a succes
 web setting write do not establish real random-access cadence. Fixtures exercise
 the write shape, drift rejection, read-back mismatch, lost replies and combined
 frequency recovery; they do not claim physical acceptance of this new adapter.
+
+## Time sync
+
+A preset's `initialization.time_sync: {ntp, timezone}` is applied on the
+1.2.2 Build260624 entry only (`timeSyncTarget`, the same exact build as smart
+codec; the 1.2.0 entry, other builds and other models are `unsupported` before
+any call). Its qualification is the ONVIF standard's, not a device run: the
+two writes are the Device service operations of the
+[ONVIF Device WSDL](https://www.onvif.org/ver10/device/wsdl/devicemgmt.wsdl),
+and this build already answers `GetSystemDateAndTime` in that shape
+(`DateTimeType` `NTP`, `TZ` `GMT0GMT`, unauthenticated, on the ONVIF port).
+**Acceptance of the writes on a C420 has not been observed yet** and must be
+confirmed on hardware.
+
+It uses ONVIF alone, with the leased administrator credential over
+WS-Security, and never the web UI: not the login helper, not
+`system.boot_set_date`, not the UI's time settings.
+
+- Plan (read-only): `GetNTP`, then the public `GetSystemDateAndTime`.
+- Apply, each only when it differs, in this order:
+  1. `SetNTP` with `FromDHCP` `false` and one `NTPManual` of `Type` `IPv4`,
+     the server the Worker resolved.
+  2. `SetSystemDateAndTime` with `DateTimeType` `NTP`, `DaylightSavings`
+     `false` and `TimeZone/TZ`, the preset's POSIX string; no `UTCDateTime`.
+- Read back `GetNTP` and `GetSystemDateAndTime`. The camera is right when it
+  reports `FromDHCP` false, that one manual server, `NTP`, no daylight-saving
+  flag and that exact TZ string.
+
+A write can move the camera's clock at once, and the C420 checks WS-Security
+`Created` against it: the driver drops its cached device time after each write
+so the next request is signed with a fresh reading. Any SOAP fault on these
+operations other than an authorization one (`ActionNotSupported`,
+`InvalidArgVal`, `InvalidTimeZone`, ...) is `unsupported`, as is a camera that
+takes the writes but reads back other values; the job then records what the
+camera reports in its warning and stays `ACTIVE`.
+
+When this first runs against a real C420, record here, for the build and the
+date:
+
+- the `GetNTP` reply before the write (`FromDHCP`, the factory `NTPManual`
+  entries and their `Type`), and the `GetSystemDateAndTime` reply;
+- whether `SetNTP` and `SetSystemDateAndTime` succeed, or the exact fault
+  subcode of either;
+- the TZ string read back, byte for byte: a camera that normalizes it (for
+  example to `KST-9:00:00`) reads back as `unsupported` until the comparison
+  accepts its spelling;
+- whether `DateTimeType` stays `NTP` and `DaylightSavings` `false`;
+- how long the clock takes to come within two seconds of the edge once the
+  edge's chrony is synchronized (`chronyc clients` on the Pi shows the
+  camera's requests), and whether a camera that was 138 to 147 days behind
+  steps at once or slews;
+- whether the setting survives a reboot, and whether the web UI's time page
+  shows the same server and zone afterwards.
+
+Fixtures (`internal/cameratest`) cover the write shape and order, idempotent
+replanning, writing only what differs, a declined write before and after
+`SetNTP` took, convergence and its absence. They do not claim a hardware run.
 
 ## Local firmware update (#258)
 

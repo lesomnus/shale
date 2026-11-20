@@ -200,6 +200,7 @@ type CameraPresetSettings struct {
 	xxx_hidden_Video              *CameraPresetVideo     `protobuf:"bytes,2,opt,name=video"`
 	xxx_hidden_Preserve           []string               `protobuf:"bytes,3,rep,name=preserve"`
 	xxx_hidden_SmartCodec         string                 `protobuf:"bytes,4,opt,name=smart_codec,json=smartCodec"`
+	xxx_hidden_TimeSync           *CameraPresetTimeSync  `protobuf:"bytes,5,opt,name=time_sync,json=timeSync"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -257,6 +258,13 @@ func (x *CameraPresetSettings) GetSmartCodec() string {
 	return ""
 }
 
+func (x *CameraPresetSettings) GetTimeSync() *CameraPresetTimeSync {
+	if x != nil {
+		return x.xxx_hidden_TimeSync
+	}
+	return nil
+}
+
 func (x *CameraPresetSettings) SetPowerLineFrequency(v int32) {
 	x.xxx_hidden_PowerLineFrequency = v
 }
@@ -273,6 +281,10 @@ func (x *CameraPresetSettings) SetSmartCodec(v string) {
 	x.xxx_hidden_SmartCodec = v
 }
 
+func (x *CameraPresetSettings) SetTimeSync(v *CameraPresetTimeSync) {
+	x.xxx_hidden_TimeSync = v
+}
+
 func (x *CameraPresetSettings) HasVideo() bool {
 	if x == nil {
 		return false
@@ -280,8 +292,19 @@ func (x *CameraPresetSettings) HasVideo() bool {
 	return x.xxx_hidden_Video != nil
 }
 
+func (x *CameraPresetSettings) HasTimeSync() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_TimeSync != nil
+}
+
 func (x *CameraPresetSettings) ClearVideo() {
 	x.xxx_hidden_Video = nil
+}
+
+func (x *CameraPresetSettings) ClearTimeSync() {
+	x.xxx_hidden_TimeSync = nil
 }
 
 type CameraPresetSettings_builder struct {
@@ -292,6 +315,8 @@ type CameraPresetSettings_builder struct {
 	Preserve           []string
 	// Empty preserves current state; explicit values are off/on.
 	SmartCodec string
+	// Absent or empty leaves the camera's clock alone.
+	TimeSync *CameraPresetTimeSync
 }
 
 func (b0 CameraPresetSettings_builder) Build() *CameraPresetSettings {
@@ -302,6 +327,84 @@ func (b0 CameraPresetSettings_builder) Build() *CameraPresetSettings {
 	x.xxx_hidden_Video = b.Video
 	x.xxx_hidden_Preserve = b.Preserve
 	x.xxx_hidden_SmartCodec = b.SmartCodec
+	x.xxx_hidden_TimeSync = b.TimeSync
+	return m0
+}
+
+// Points a camera at an NTP server and sets its time zone, through ONVIF
+// SetNTP and SetSystemDateAndTime (docs/camera-policy.md, "Camera time sync").
+// Both fields are set, or neither.
+type CameraPresetTimeSync struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ntp      string                 `protobuf:"bytes,1,opt,name=ntp"`
+	xxx_hidden_Timezone string                 `protobuf:"bytes,2,opt,name=timezone"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *CameraPresetTimeSync) Reset() {
+	*x = CameraPresetTimeSync{}
+	mi := &file_shale_camera_preset_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CameraPresetTimeSync) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CameraPresetTimeSync) ProtoMessage() {}
+
+func (x *CameraPresetTimeSync) ProtoReflect() protoreflect.Message {
+	mi := &file_shale_camera_preset_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *CameraPresetTimeSync) GetNtp() string {
+	if x != nil {
+		return x.xxx_hidden_Ntp
+	}
+	return ""
+}
+
+func (x *CameraPresetTimeSync) GetTimezone() string {
+	if x != nil {
+		return x.xxx_hidden_Timezone
+	}
+	return ""
+}
+
+func (x *CameraPresetTimeSync) SetNtp(v string) {
+	x.xxx_hidden_Ntp = v
+}
+
+func (x *CameraPresetTimeSync) SetTimezone(v string) {
+	x.xxx_hidden_Timezone = v
+}
+
+type CameraPresetTimeSync_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// "edge", the worker's own address on the camera network, or an IPv4
+	// literal. Either must lie inside the camera network's CIDRs; no hostname.
+	Ntp string
+	// A POSIX TZ string, as ONVIF carries it, such as "KST-9".
+	Timezone string
+}
+
+func (b0 CameraPresetTimeSync_builder) Build() *CameraPresetTimeSync {
+	m0 := &CameraPresetTimeSync{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ntp = b.Ntp
+	x.xxx_hidden_Timezone = b.Timezone
 	return m0
 }
 
@@ -315,7 +418,7 @@ type CameraPresetAlternatives struct {
 
 func (x *CameraPresetAlternatives) Reset() {
 	*x = CameraPresetAlternatives{}
-	mi := &file_shale_camera_preset_proto_msgTypes[2]
+	mi := &file_shale_camera_preset_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -327,7 +430,7 @@ func (x *CameraPresetAlternatives) String() string {
 func (*CameraPresetAlternatives) ProtoMessage() {}
 
 func (x *CameraPresetAlternatives) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[2]
+	mi := &file_shale_camera_preset_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -378,7 +481,7 @@ type CameraPresetScope struct {
 
 func (x *CameraPresetScope) Reset() {
 	*x = CameraPresetScope{}
-	mi := &file_shale_camera_preset_proto_msgTypes[3]
+	mi := &file_shale_camera_preset_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -390,7 +493,7 @@ func (x *CameraPresetScope) String() string {
 func (*CameraPresetScope) ProtoMessage() {}
 
 func (x *CameraPresetScope) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[3]
+	mi := &file_shale_camera_preset_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -493,7 +596,7 @@ type CameraPresetMatch struct {
 
 func (x *CameraPresetMatch) Reset() {
 	*x = CameraPresetMatch{}
-	mi := &file_shale_camera_preset_proto_msgTypes[4]
+	mi := &file_shale_camera_preset_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -505,7 +608,7 @@ func (x *CameraPresetMatch) String() string {
 func (*CameraPresetMatch) ProtoMessage() {}
 
 func (x *CameraPresetMatch) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[4]
+	mi := &file_shale_camera_preset_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -633,7 +736,7 @@ type CameraPresetFirmware struct {
 
 func (x *CameraPresetFirmware) Reset() {
 	*x = CameraPresetFirmware{}
-	mi := &file_shale_camera_preset_proto_msgTypes[5]
+	mi := &file_shale_camera_preset_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -645,7 +748,7 @@ func (x *CameraPresetFirmware) String() string {
 func (*CameraPresetFirmware) ProtoMessage() {}
 
 func (x *CameraPresetFirmware) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[5]
+	mi := &file_shale_camera_preset_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -735,7 +838,7 @@ type CameraPresetRule struct {
 
 func (x *CameraPresetRule) Reset() {
 	*x = CameraPresetRule{}
-	mi := &file_shale_camera_preset_proto_msgTypes[6]
+	mi := &file_shale_camera_preset_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -747,7 +850,7 @@ func (x *CameraPresetRule) String() string {
 func (*CameraPresetRule) ProtoMessage() {}
 
 func (x *CameraPresetRule) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[6]
+	mi := &file_shale_camera_preset_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -931,7 +1034,7 @@ type CameraResolvedPreset struct {
 
 func (x *CameraResolvedPreset) Reset() {
 	*x = CameraResolvedPreset{}
-	mi := &file_shale_camera_preset_proto_msgTypes[7]
+	mi := &file_shale_camera_preset_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -943,7 +1046,7 @@ func (x *CameraResolvedPreset) String() string {
 func (*CameraResolvedPreset) ProtoMessage() {}
 
 func (x *CameraResolvedPreset) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[7]
+	mi := &file_shale_camera_preset_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1103,7 +1206,7 @@ type CameraPreset struct {
 
 func (x *CameraPreset) Reset() {
 	*x = CameraPreset{}
-	mi := &file_shale_camera_preset_proto_msgTypes[8]
+	mi := &file_shale_camera_preset_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1115,7 +1218,7 @@ func (x *CameraPreset) String() string {
 func (*CameraPreset) ProtoMessage() {}
 
 func (x *CameraPreset) ProtoReflect() protoreflect.Message {
-	mi := &file_shale_camera_preset_proto_msgTypes[8]
+	mi := &file_shale_camera_preset_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1383,13 +1486,17 @@ const file_shale_camera_preset_proto_rawDesc = "" +
 	"\n" +
 	"gop_frames\x18\a \x01(\x05R\tgopFrames\x12\x1a\n" +
 	"\brevision\x18\b \x01(\tR\brevision\x12%\n" +
-	"\x0eallow_fallback\x18\t \x01(\bR\rallowFallback\"\xb5\x01\n" +
+	"\x0eallow_fallback\x18\t \x01(\bR\rallowFallback\"\xef\x01\n" +
 	"\x14CameraPresetSettings\x120\n" +
 	"\x14power_line_frequency\x18\x01 \x01(\x05R\x12powerLineFrequency\x12.\n" +
 	"\x05video\x18\x02 \x01(\v2\x18.shale.CameraPresetVideoR\x05video\x12\x1a\n" +
 	"\bpreserve\x18\x03 \x03(\tR\bpreserve\x12\x1f\n" +
 	"\vsmart_codec\x18\x04 \x01(\tR\n" +
-	"smartCodec\"W\n" +
+	"smartCodec\x128\n" +
+	"\ttime_sync\x18\x05 \x01(\v2\x1b.shale.CameraPresetTimeSyncR\btimeSync\"D\n" +
+	"\x14CameraPresetTimeSync\x12\x10\n" +
+	"\x03ntp\x18\x01 \x01(\tR\x03ntp\x12\x1a\n" +
+	"\btimezone\x18\x02 \x01(\tR\btimezone\"W\n" +
 	"\x18CameraPresetAlternatives\x12;\n" +
 	"\n" +
 	"candidates\x18\x01 \x03(\v2\x1b.shale.CameraPresetSettingsR\n" +
@@ -1470,45 +1577,47 @@ const file_shale_camera_preset_proto_rawDesc = "" +
 	"\x06tenant\x1a\x06\n" +
 	"\x04site 2(\xf4\x03:\x00B$Z\x1dgithub.com/lesomnus/shale/api\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_shale_camera_preset_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_shale_camera_preset_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_shale_camera_preset_proto_goTypes = []any{
 	(*CameraPresetVideo)(nil),        // 0: shale.CameraPresetVideo
 	(*CameraPresetSettings)(nil),     // 1: shale.CameraPresetSettings
-	(*CameraPresetAlternatives)(nil), // 2: shale.CameraPresetAlternatives
-	(*CameraPresetScope)(nil),        // 3: shale.CameraPresetScope
-	(*CameraPresetMatch)(nil),        // 4: shale.CameraPresetMatch
-	(*CameraPresetFirmware)(nil),     // 5: shale.CameraPresetFirmware
-	(*CameraPresetRule)(nil),         // 6: shale.CameraPresetRule
-	(*CameraResolvedPreset)(nil),     // 7: shale.CameraResolvedPreset
-	(*CameraPreset)(nil),             // 8: shale.CameraPreset
-	nil,                              // 9: shale.CameraPreset.LabelsEntry
-	(*Tenant)(nil),                   // 10: shale.Tenant
-	(*Site)(nil),                     // 11: shale.Site
-	(*timestamppb.Timestamp)(nil),    // 12: google.protobuf.Timestamp
+	(*CameraPresetTimeSync)(nil),     // 2: shale.CameraPresetTimeSync
+	(*CameraPresetAlternatives)(nil), // 3: shale.CameraPresetAlternatives
+	(*CameraPresetScope)(nil),        // 4: shale.CameraPresetScope
+	(*CameraPresetMatch)(nil),        // 5: shale.CameraPresetMatch
+	(*CameraPresetFirmware)(nil),     // 6: shale.CameraPresetFirmware
+	(*CameraPresetRule)(nil),         // 7: shale.CameraPresetRule
+	(*CameraResolvedPreset)(nil),     // 8: shale.CameraResolvedPreset
+	(*CameraPreset)(nil),             // 9: shale.CameraPreset
+	nil,                              // 10: shale.CameraPreset.LabelsEntry
+	(*Tenant)(nil),                   // 11: shale.Tenant
+	(*Site)(nil),                     // 12: shale.Site
+	(*timestamppb.Timestamp)(nil),    // 13: google.protobuf.Timestamp
 }
 var file_shale_camera_preset_proto_depIdxs = []int32{
 	0,  // 0: shale.CameraPresetSettings.video:type_name -> shale.CameraPresetVideo
-	1,  // 1: shale.CameraPresetAlternatives.candidates:type_name -> shale.CameraPresetSettings
-	3,  // 2: shale.CameraPresetRule.scope:type_name -> shale.CameraPresetScope
-	4,  // 3: shale.CameraPresetRule.match:type_name -> shale.CameraPresetMatch
-	1,  // 4: shale.CameraPresetRule.settings:type_name -> shale.CameraPresetSettings
-	2,  // 5: shale.CameraPresetRule.alternatives:type_name -> shale.CameraPresetAlternatives
-	5,  // 6: shale.CameraPresetRule.firmware:type_name -> shale.CameraPresetFirmware
-	1,  // 7: shale.CameraResolvedPreset.requested:type_name -> shale.CameraPresetSettings
-	1,  // 8: shale.CameraResolvedPreset.alternatives:type_name -> shale.CameraPresetSettings
-	5,  // 9: shale.CameraResolvedPreset.firmware:type_name -> shale.CameraPresetFirmware
-	10, // 10: shale.CameraPreset.tenant:type_name -> shale.Tenant
-	11, // 11: shale.CameraPreset.site:type_name -> shale.Site
-	9,  // 12: shale.CameraPreset.labels:type_name -> shale.CameraPreset.LabelsEntry
-	6,  // 13: shale.CameraPreset.rules:type_name -> shale.CameraPresetRule
-	12, // 14: shale.CameraPreset.date_updated:type_name -> google.protobuf.Timestamp
-	12, // 15: shale.CameraPreset.date_erased:type_name -> google.protobuf.Timestamp
-	12, // 16: shale.CameraPreset.date_created:type_name -> google.protobuf.Timestamp
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	2,  // 1: shale.CameraPresetSettings.time_sync:type_name -> shale.CameraPresetTimeSync
+	1,  // 2: shale.CameraPresetAlternatives.candidates:type_name -> shale.CameraPresetSettings
+	4,  // 3: shale.CameraPresetRule.scope:type_name -> shale.CameraPresetScope
+	5,  // 4: shale.CameraPresetRule.match:type_name -> shale.CameraPresetMatch
+	1,  // 5: shale.CameraPresetRule.settings:type_name -> shale.CameraPresetSettings
+	3,  // 6: shale.CameraPresetRule.alternatives:type_name -> shale.CameraPresetAlternatives
+	6,  // 7: shale.CameraPresetRule.firmware:type_name -> shale.CameraPresetFirmware
+	1,  // 8: shale.CameraResolvedPreset.requested:type_name -> shale.CameraPresetSettings
+	1,  // 9: shale.CameraResolvedPreset.alternatives:type_name -> shale.CameraPresetSettings
+	6,  // 10: shale.CameraResolvedPreset.firmware:type_name -> shale.CameraPresetFirmware
+	11, // 11: shale.CameraPreset.tenant:type_name -> shale.Tenant
+	12, // 12: shale.CameraPreset.site:type_name -> shale.Site
+	10, // 13: shale.CameraPreset.labels:type_name -> shale.CameraPreset.LabelsEntry
+	7,  // 14: shale.CameraPreset.rules:type_name -> shale.CameraPresetRule
+	13, // 15: shale.CameraPreset.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 16: shale.CameraPreset.date_erased:type_name -> google.protobuf.Timestamp
+	13, // 17: shale.CameraPreset.date_created:type_name -> google.protobuf.Timestamp
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_shale_camera_preset_proto_init() }
@@ -1524,7 +1633,7 @@ func file_shale_camera_preset_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shale_camera_preset_proto_rawDesc), len(file_shale_camera_preset_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

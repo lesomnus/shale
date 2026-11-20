@@ -158,6 +158,14 @@ func validateRun(r provision.Run) error {
 		if v.Type() == reflect.TypeFor[camera.InitializationVideoMain]() && v.Interface().(camera.InitializationVideoMain).Validate() != nil {
 			return false
 		}
+		if v.Type() == reflect.TypeFor[camera.InitializationTimeSync]() && v.Interface().(camera.InitializationTimeSync).Validate() != nil {
+			return false
+		}
+		if v.Type() == reflect.TypeFor[provision.TimeSyncState]() {
+			if p := v.Interface().(provision.TimeSyncState).Plan; p != nil && camera.ValidateTimeSyncPlan(*p, p.After.TimeSync) != nil {
+				return false
+			}
+		}
 		if v.Type() == reflect.TypeFor[provision.FirmwareState]() && validFirmware(v.Interface().(provision.FirmwareState)) != nil {
 			return false
 		}
