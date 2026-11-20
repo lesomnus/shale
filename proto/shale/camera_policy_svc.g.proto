@@ -52,6 +52,10 @@ service CameraPolicyService {
   // The assigned Worker's credential-free verification of a moved camera's
   // transport candidate, rechecked against today's fences in one transaction.
   rpc VerifyTransport(CameraPolicyVerifyTransportRequest) returns (CameraPolicyObserveResponse);
+  // The assigned Worker's credential-free reading of a device's own clock at
+  // one of its authorized endpoints. It records the reading on the device;
+  // nothing sets the camera's clock.
+  rpc ObserveClock(CameraPolicyObserveClockRequest) returns (CameraDevice);
 }
 
 message CameraPolicyAddRequest {
@@ -304,4 +308,14 @@ message CameraPolicyVerifyTransportRequest {
   CameraTransportGrant grant = 1;
   // The key the candidate presented in a credential-free TLS handshake.
   string spki_sha256 = 2 [features.field_presence = IMPLICIT];
+}
+
+message CameraPolicyObserveClockRequest {
+  CameraAssignmentRef assignment = 1;
+  int64 assignment_generation = 2 [features.field_presence = IMPLICIT];
+  // By ID: the device the scan placed at endpoint.
+  CameraDeviceRef device = 3;
+  // Where the clock was read: exactly one of the device's HTTP(S) endpoints.
+  string endpoint = 4 [features.field_presence = IMPLICIT];
+  CameraClockObservation clock = 5;
 }

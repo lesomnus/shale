@@ -226,6 +226,18 @@ func (_u *CameraDeviceUpdate) ClearTransport() *CameraDeviceUpdate {
 	return _u
 }
 
+// SetClock sets the "clock" field.
+func (_u *CameraDeviceUpdate) SetClock(v *api.CameraClockObservation) *CameraDeviceUpdate {
+	_u.mutation.SetClock(v)
+	return _u
+}
+
+// ClearClock clears the value of the "clock" field.
+func (_u *CameraDeviceUpdate) ClearClock() *CameraDeviceUpdate {
+	_u.mutation.ClearClock()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *CameraDeviceUpdate) SetDateUpdated(v time.Time) *CameraDeviceUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -476,6 +488,22 @@ func (_u *CameraDeviceUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if _u.mutation.TransportCleared() {
 		_spec.ClearField(cameradevice.FieldTransport, field.TypeJson)
 	}
+	if value, ok := _u.mutation.Clock(); ok {
+		vv, err := cameradevice.ValueScanner.Clock.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(cameradevice.FieldClock, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldClock); ok {
+		_spec.SetField(cameradevice.FieldClock, field.TypeJson, e)
+	}
+	if _u.mutation.ClockCleared() {
+		_spec.ClearField(cameradevice.FieldClock, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -707,6 +735,18 @@ func (_u *CameraDeviceUpdateOne) SetTransport(v *api.CameraTransportState) *Came
 // ClearTransport clears the value of the "transport" field.
 func (_u *CameraDeviceUpdateOne) ClearTransport() *CameraDeviceUpdateOne {
 	_u.mutation.ClearTransport()
+	return _u
+}
+
+// SetClock sets the "clock" field.
+func (_u *CameraDeviceUpdateOne) SetClock(v *api.CameraClockObservation) *CameraDeviceUpdateOne {
+	_u.mutation.SetClock(v)
+	return _u
+}
+
+// ClearClock clears the value of the "clock" field.
+func (_u *CameraDeviceUpdateOne) ClearClock() *CameraDeviceUpdateOne {
+	_u.mutation.ClearClock()
 	return _u
 }
 
@@ -989,6 +1029,22 @@ func (_u *CameraDeviceUpdateOne) sqlSave(ctx context.Context) (_node *CameraDevi
 	}
 	if _u.mutation.TransportCleared() {
 		_spec.ClearField(cameradevice.FieldTransport, field.TypeJson)
+	}
+	if value, ok := _u.mutation.Clock(); ok {
+		vv, err := cameradevice.ValueScanner.Clock.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(cameradevice.FieldClock, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(cameradevice.FieldClock); ok {
+		_spec.SetField(cameradevice.FieldClock, field.TypeJson, e)
+	}
+	if _u.mutation.ClockCleared() {
+		_spec.ClearField(cameradevice.FieldClock, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(cameradevice.FieldDateUpdated, field.TypeTime, value)

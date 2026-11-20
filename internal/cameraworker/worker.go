@@ -8,6 +8,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/lesomnus/payday/pdid"
@@ -46,7 +47,13 @@ type Config struct {
 	InitialObservations camera.InitialObservationProvider
 	DiscoveryInterval   time.Duration
 	DiscoveryTimeout    time.Duration
-	Log                 *slog.Logger
+	// Clocks, beside discovery, reads the own clock of each camera a scan
+	// places at its authorized endpoints, at most once per ClockInterval per
+	// camera, and reports it. The composition root supplies its LAN transport.
+	// Nothing sets a camera's clock.
+	Clocks        camera.ClockReader
+	ClockInterval time.Duration
+	Log           *slog.Logger
 }
 
 type Worker struct {
@@ -55,6 +62,9 @@ type Worker struct {
 	// Run owns one serial poll loop at a time. Preserve only its last attempted
 	// job across session reconnects so a failing camera cannot starve its peers.
 	lastAttempted string
+	// When each camera's clock was last read, by device ID; bounded.
+	clockMu    sync.Mutex
+	clockReads map[string]time.Time
 }
 
 func New(c Config) (*Worker, error) {
@@ -81,6 +91,12 @@ func New(c Config) (*Worker, error) {
 	}
 	if c.DiscoveryInterval < time.Second || c.DiscoveryInterval > time.Hour || c.DiscoveryTimeout < time.Millisecond || c.DiscoveryTimeout > 30*time.Second {
 		return nil, errors.New("invalid camera worker discovery timing")
+	}
+	if c.ClockInterval == 0 {
+		c.ClockInterval = 5 * time.Minute
+	}
+	if c.ClockInterval < time.Second || c.ClockInterval > time.Hour {
+		return nil, errors.New("invalid camera worker clock interval")
 	}
 	if c.Log == nil {
 		c.Log = slog.Default()

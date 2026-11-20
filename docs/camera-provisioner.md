@@ -403,7 +403,9 @@ intent. The credential is stored durably **before** any device write. Prepare a
 separate streaming-purpose reference to the account used for actual RTSP.
 
 Already initialized cameras skip activation. Reads do not call the web login
-helper that changes the device clock. The C420 Media1 H.264 claim remains
+helper that changes the device clock; nothing sets a camera's clock, and the
+outbound Worker only observes it ([camera clocks](camera-worker.md#camera-clocks)).
+The C420 Media1 H.264 claim remains
 unverified until Media2/read-back and the actual stream agree. Do not reset an
 installed camera to create an activation test fixture.
 

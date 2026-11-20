@@ -27,6 +27,10 @@ func buildWorker(cfg cameraworker.Config, broker *sourceBroker, options CameraOp
 	if cfg.Discoverer == nil {
 		cfg.Discoverer = discovery.Discoverer{}
 	}
+	if cfg.Clocks == nil {
+		// Read, never set: each scanned camera's own clock, without a credential.
+		cfg.Clocks = drivers.Clocks{Roots: options.Roots}
+	}
 	var worker *cameraworker.Worker
 	// One source per worker keeps the last verified image across jobs.
 	images := &firmwareimage.Source{}

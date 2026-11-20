@@ -47,6 +47,10 @@ type ONVIFCamera struct {
 	webKey     WebKey
 	handshakes int
 	attempts   []AuthAttempt
+	// The camera's own clock: how far it is from the host's, and the
+	// DateTimeType and TZ it reports, when set.
+	clockOffset       time.Duration
+	clockMode, clockTZ string
 }
 
 type ONVIFOptions struct {
@@ -110,6 +114,15 @@ func (c *ONVIFCamera) SetVideo(p camera.MediaProfile) {
 	c.profile = p
 }
 func (c *ONVIFCamera) SetUnactivated(value bool) { c.mu.Lock(); defer c.mu.Unlock(); c.active = !value }
+
+// SetClock skews the camera's own clock by offset from the host's, as a
+// camera on a LAN without a time server drifts, and sets the DateTimeType
+// and TZ its GetSystemDateAndTime reports; empty ones are left out.
+func (c *ONVIFCamera) SetClock(offset time.Duration, mode, tz string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.clockOffset, c.clockMode, c.clockTZ = offset, mode, tz
+}
 func (c *ONVIFCamera) LoseActivationResponseOnce() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -228,8 +241,15 @@ func (c *ONVIFCamera) serve(w http.ResponseWriter, r *http.Request) {
 	const media2 = "http://www.onvif.org/ver20/media/wsdl"
 	switch name {
 	case "GetSystemDateAndTime":
-		now := time.Now().UTC()
-		response = fmt.Sprintf("<SystemDateAndTime><UTCDateTime><Date><Year>%d</Year><Month>%d</Month><Day>%d</Day></Date><Time><Hour>%d</Hour><Minute>%d</Minute><Second>%d</Second></Time></UTCDateTime></SystemDateAndTime>", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+		now := time.Now().Add(c.clockOffset).UTC()
+		var about string
+		if c.clockMode != "" {
+			about += "<DateTimeType>" + xmlText(c.clockMode) + "</DateTimeType><DaylightSavings>false</DaylightSavings>"
+		}
+		if c.clockTZ != "" {
+			about += "<TimeZone><TZ>" + xmlText(c.clockTZ) + "</TZ></TimeZone>"
+		}
+		response = fmt.Sprintf("<SystemDateAndTime>%s<UTCDateTime><Date><Year>%d</Year><Month>%d</Month><Day>%d</Day></Date><Time><Hour>%d</Hour><Minute>%d</Minute><Second>%d</Second></Time></UTCDateTime></SystemDateAndTime>", about, now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
 	case "GetDeviceInformation":
 		response = "<Manufacturer>" + xmlText(c.identity.Manufacturer) + "</Manufacturer><Model>" + xmlText(c.identity.Model) + "</Model><FirmwareVersion>" + xmlText(c.identity.Firmware) + "</FirmwareVersion><SerialNumber>" + xmlText(c.identity.Serial) + "</SerialNumber><HardwareId>" + xmlText(c.identity.Hardware) + "</HardwareId>"
 	case "GetNetworkInterfaces":

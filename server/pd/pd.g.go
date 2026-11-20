@@ -23519,6 +23519,11 @@ func (s interceptCameraPolicy) VerifyTransport(ctx context.Context, req *api.Cam
 		api.CameraPolicyService_VerifyTransport_FullMethodName, req, s.CameraPolicyServiceServer.VerifyTransport)
 }
 
+func (s interceptCameraPolicy) ObserveClock(ctx context.Context, req *api.CameraPolicyObserveClockRequest) (*api.CameraDevice, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.CameraPolicyServiceServer,
+		api.CameraPolicyService_ObserveClock_FullMethodName, req, s.CameraPolicyServiceServer.ObserveClock)
+}
+
 func (s Intercept) CertificateAuthority() api.CertificateAuthorityServiceServer {
 	return interceptCertificateAuthority{s, s.Next().CertificateAuthority()}
 }

@@ -60,8 +60,8 @@ empty view. No generic Source, Set, Lamina, inventory, or credential read API is
 opened. Producer permissions are unchanged.
 
 A Worker can call its heartbeat, renewal, Poll, CheckJob, ObserveJob,
-assignment-scoped policy Observe, job Claim/Report/Publish, and exact job-scoped
-preset and credential resolution. Generic configuration, inventory registration,
+assignment-scoped policy Observe and ObserveClock, job Claim/Report/Publish, and
+exact job-scoped preset and credential resolution. Generic configuration, inventory registration,
 assignment, binding, handover and revocation remain operator operations. Each
 execution call checks the current adopted identity/certificate serial and exact
 assignment. Job grants additionally check the assignment generation, lease owner,
@@ -355,6 +355,66 @@ A Worker older than this ignores the grant; its candidates expire and stay on
 the operator path, and its recovery jobs, if a newer Worker created one, are
 still checked by the CP. A CP older than this refuses the moved observation, as
 it always did, and sends no grant.
+
+### Camera clocks
+
+A camera LAN without a time service leaves each camera's clock where it was
+last set. On an edge with six TP-Link C420s, four were 138 to 147 days behind
+and two within about 13 seconds, every one in `NTP` mode with TZ `GMT0GMT` and
+no NTP server to reach. Shale does not write a camera's clock: inspection,
+activation and configuration call neither `SetSystemDateAndTime` nor `SetNTP`,
+nor the TP-Link login helper that writes the clock, and the pinned C420 path
+signs WS-Security with the camera's own public time instead. A preset
+capability that sets NTP and the time zone is not yet available. Until it is,
+the Worker observes each clock, so operators see the drift and that change
+can be measured.
+
+After a scan's `CameraPolicy.Observe`, the Worker reads the clock of each
+camera that scan placed at its authorized endpoints: the first HTTP(S)
+endpoint the scan saw that is also one of the device's. A camera seen only
+somewhere else, a [transport candidate](#transport-candidates), is not read.
+The reading is ONVIF `GetSystemDateAndTime` with no WS-Security, HTTP
+authentication or cookie, following no redirect, through a transport that
+dials only hosts in the assigned prefixes, within five seconds. Each camera is
+read at most once per `ClockInterval`, five minutes by default (one second to
+one hour), and a failed reading waits as long; with the 30-second scan a
+reading is at most about five and a half minutes old. `shale serve
+camera-worker` and `shale serve edge` install the reader; the bare
+`cameraworker.New` reads no clock unless its composition root injects
+`Config.Clocks`. Clocks are read only beside discovery, which these commands
+always run.
+
+The Worker sends `CameraPolicy.ObserveClock` the assignment and generation of
+the scan, the device's ID, the endpoint it read and the reading, which
+becomes `CameraDevice.clock`:
+
+| Field | Meaning |
+| --- | --- |
+| `offset_ms` | The camera's UTC minus the Worker's clock at the round trip's midpoint. The camera answers in whole seconds, so the middle of its second is taken. |
+| `rtt_ms` | The round trip, connection included, rounded up. The offset is right to within half of it and half a second. |
+| `mode` | The camera's `DateTimeType`: `Manual` or `NTP`; empty when it said neither. |
+| `tz` | The POSIX TZ string the camera reported; empty when it reported none. |
+| `observed_at` | The Worker's clock at the midpoint. |
+
+The CP records it only from the assigned Worker, under the current assignment
+generation, for a device of that network whose endpoints still include the
+one read, and within bounds: `observed_at` within five minutes of the CP's
+clock, since a Worker further off measures every camera against a wrong
+clock; a camera clock between 1970 and 9999 at that time; `rtt_ms` from zero
+to thirty seconds; one of the three modes; and a TZ of at most 64 printable
+ASCII characters without a space. Anything else is refused and nothing is
+recorded. The Worker records a mode or TZ outside these as unknown rather
+than dropping the reading. The reading replaces the last one and changes
+nothing else on the device.
+
+The console's Cameras page shows each recording camera's offset in the unit
+that reads best (`−147 d`, `+13 s`), its mode, its TZ and the reading's age,
+as a warning when the offset is over two seconds or the mode or TZ is
+unknown. `shale camera-device get` prints the whole reading.
+
+A CP older than this answers `Unimplemented`; the Worker records nothing and
+logs nothing for it. A Worker older than this sends no reading, and the
+device has no `clock`.
 
 ## Explicit HTTP compatibility
 

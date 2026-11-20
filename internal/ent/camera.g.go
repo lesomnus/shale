@@ -95,6 +95,9 @@ func (e *CameraDevice) Proto() *api.CameraDevice {
 	if e.Transport != nil {
 		x.SetTransport(e.Transport)
 	}
+	if e.Clock != nil {
+		x.SetClock(e.Clock)
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

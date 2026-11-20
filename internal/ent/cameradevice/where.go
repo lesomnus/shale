@@ -581,6 +581,16 @@ func TransportNotNil() predicate.CameraDevice {
 	return predicate.CameraDevice(sql.FieldNotNull(FieldTransport))
 }
 
+// ClockIsNil applies the IsNil predicate on the "clock" field.
+func ClockIsNil() predicate.CameraDevice {
+	return predicate.CameraDevice(sql.FieldIsNull(FieldClock))
+}
+
+// ClockNotNil applies the NotNil predicate on the "clock" field.
+func ClockNotNil() predicate.CameraDevice {
+	return predicate.CameraDevice(sql.FieldNotNull(FieldClock))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.CameraDevice {
 	return predicate.CameraDevice(sql.FieldEQ(FieldDateUpdated, v))
