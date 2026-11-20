@@ -382,7 +382,8 @@ reads every five minutes ([camera clocks](camera-worker.md#camera-clocks)).
 Authentication, transport and lease failures fail the step as anywhere else.
 
 Only the TP-Link EasyCam C420 HW1.0 on firmware 1.2.2 Build260624 is
-qualified ([PROTOCOL.md](../camera/vendors/tplink/PROTOCOL.md#time-sync)). The
+qualified ([TP-Link compatibility, "Time sync"](https://github.com/lesomnus/shale/blob/main/camera/vendors/tplink/PROTOCOL.md#time-sync),
+which this package does not install). The
 generic ONVIF path has no device initializer, so any other camera receives an
 `unsupported` warning and no write. The standalone provisioner has no camera
 network to resolve against and reports time sync as unsupported too.
