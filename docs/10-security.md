@@ -199,8 +199,19 @@ holds a credential.
   the grant decides the console alone). Hosts are unchanged. Without
   `auth.operators` the rule is the one before it, and it is what an
   embedded roster, `--dev` and the tests run by default: every person
-  administers their own tenant, and only one who sees every site issues a
-  password.
+  administers their own tenant, except where an act hands somebody a
+  secret. Only a person who sees every site issues a password. **Nobody
+  recovers a camera's credential** (`CameraCredentialService.Resolve` as a
+  person), since its answer is the camera's administrator, management or
+  streaming password in plaintext. That is an operator's act, and here
+  nobody is named one. This holds for a site's member, a person who sees
+  every site and the tenant's first person alike. They are refused with
+  the reason, and a deployment that needs recovery names operators and
+  grants the method
+  ([camera credentials](camera-credentials.md#prepare-import-and-recover)).
+  A camera worker and a producer still receive the credential their job or
+  source pins. A new RPC whose answer hands a person a secret goes beside
+  these two in `TenantPolicy.May`.
 
   **Sites, where roster says.** Reading is tenant-wide by default: a
   person's row is made with `all_sites` on (not only the tenant's first

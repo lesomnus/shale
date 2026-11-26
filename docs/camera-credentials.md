@@ -28,6 +28,22 @@ account creates a `REUSED` version with the same material rather than rotating
 it; old exact pins remain resolvable. A requested username applies only to a new
 account; existing/imported usernames remain byte-exact.
 
+**Who may recover.** A person's `Resolve` hands them a camera's administrator,
+management or streaming password, so it is an operator's act. With
+`auth.operators` set it is called by whoever roster grants
+`/shale.CameraCredentialService/Resolve` (or a pattern covering it, such as
+`/shale.*/*`) and refused to anybody else. **Without `auth.operators` nobody
+recovers a credential**: not a member of the camera's site, not a person who
+sees every site, not the tenant's first person. Each is refused
+`PERMISSION_DENIED` with "recovering a camera's credential is an operator's act,
+and this deployment names no operators (auth.operators)". A deployment that
+needs recovery names operators (`auth.operators.tenant`) and grants the method
+at roster. If it only needs a camera to have a known account, it `Prepare`s or
+`Import`s a new credential instead. Neither needs recovery, and both answer a
+reference and no material. Camera workers and producers are not affected: they
+receive the exact credential their job or source pins, as described under
+machine delivery below, whether or not operators are named.
+
 Import uses the explicit binary codec in `camera/credential/material`, preserving
 non-UTF-8 username/password bytes. Replacement requires an exact
 `expected_current`; creation cannot overwrite a concurrent version. Same-intent
