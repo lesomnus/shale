@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc"
@@ -530,6 +531,72 @@ func (s *Store) Suspend(ctx context.Context, holder pdid.Id) error {
 		DateDisabled:     timestamppb.Now(),
 		DateUpdatedForce: z.Ptr(true),
 	}.Build())
+
+	return err
+}
+
+// IssueKey mints a person of a tenant of the embedded roster a key, as
+// they do it themselves at roster's account page: roster's
+// `ApiKeyService/Issue` asked as the person, for the app `app` by its
+// alias in the tenant -- Shale's is [Agent] -- or for roster itself where
+// it is empty, held to what they hold there, ending at `ends` unless that
+// is zero. Answers the token, shown this once, and the key's identifier.
+// For the tests.
+func (s *Store) IssueKey(ctx context.Context, tenant, alias, name, app string, methods []string, ends time.Time) (string, pdid.Id, error) {
+	if s.em == nil {
+		return "", pdid.Nil, ErrExternal
+	}
+	if app == Agent {
+		if err := s.ensureAgent(ctx, tenant); err != nil {
+			return "", pdid.Nil, err
+		}
+	}
+	tref := rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()
+	req := rstr.ApiKeyIssueRequest_builder{
+		Holder:  rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(alias), Tenant: tref}.Build()}.Build(),
+		Alias:   name,
+		Methods: methods,
+	}
+	if app != "" {
+		req.App = rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(app), Tenant: tref}.Build()}.Build()
+	}
+	if !ends.IsZero() {
+		req.DateExpired = timestamppb.New(ends)
+	}
+	as := auth.PlainProvider("@" + tenant + "/" + alias).Provide(ctx)
+	v, err := rstr.NewApiKeyServiceClient(s.conn).Issue(as, req.Build())
+	if err != nil {
+		return "", pdid.Nil, fmt.Errorf("roster: issue: %w", err)
+	}
+
+	return v.GetToken(), pdid.Id(v.GetKey().GetId()), nil
+}
+
+// EndKey ends a key as its person does at roster's account page:
+// `ApiKeyService/Erase`, asked as them. For the tests.
+func (s *Store) EndKey(ctx context.Context, tenant, alias string, key pdid.Id) error {
+	if s.em == nil {
+		return ErrExternal
+	}
+	as := auth.PlainProvider("@" + tenant + "/" + alias).Provide(ctx)
+	_, err := rstr.NewApiKeyServiceClient(s.conn).Erase(as, rstr.ApiKeyRef_builder{Id: key.Bytes()}.Build())
+
+	return err
+}
+
+// InstallApp installs another app in a tenant of the embedded roster, as
+// `roster app install --serves … --administer …` does, with nothing of
+// roster's allowed it: what a key for another app is minted for. For the
+// tests.
+func (s *Store) InstallApp(ctx context.Context, tenant, app string, serves, administer []string) error {
+	if s.em == nil {
+		return ErrExternal
+	}
+	ctx, cancel := unframed(ctx)
+	defer cancel()
+	_, err := rostercli.InstallApp(ctx, s.em.rs, rostercli.AppInstall{
+		Name: app, Tenant: tenant, Allow: []string{"/roster.HolderService/Get"}, Serves: serves, Administer: administer,
+	})
 
 	return err
 }

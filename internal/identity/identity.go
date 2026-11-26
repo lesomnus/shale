@@ -99,7 +99,8 @@ const Agent = "shale"
 // role of roster's `shale-app` that installing Shale there names:
 // checking a password, reading a person and the tenant, making a person,
 // asking what roster grants somebody (`auth.operators`, §33.1), and
-// introspecting an app's exchange token issued to Shale (§33.8).
+// introspecting an app's exchange token issued to Shale (§33.8) and a
+// person's key for Shale (§33.1).
 //
 // An external roster's holder needs less, since people are made and given
 // passwords there: `/roster.HolderService/Get`,

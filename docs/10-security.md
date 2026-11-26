@@ -16,6 +16,7 @@ holds a credential.
 | **Producer** | host, tenant entity | tenant API | host certificate (mTLS) | negotiate and allocate for its set; upload with the access tokens it is given |
 | **Reader** | host, tenant entity | tenant API | host certificate (mTLS) | query and read laminae of its sites |
 | **Person** | person (Holder) | tenant API | a session, after roster vouched for them | read its tenant's sets, cameras, live video, laminae, sites and hosts; where roster says what people may change (below), the rest as far as roster grants them |
+| **Person, by a key** | person (Holder) | tenant API | `Authorization: Bearer rt_…`, a key for Shale roster minted them (below) | what the person may, and of it only the methods the key names |
 | **Tenant admin** | person (Holder) | tenant API | a session, after roster vouched for them | manage its tenant's sites, sets, sources, producers, readers, and retention dates: every person of the tenant where operators are a tenant; where roster says, a person it grants all of Shale (`/shale.*/*`) |
 | **Storage Node** | host, global entity | cluster API | host certificate (mTLS) | report its own devices and sinks; push events; propose GC |
 | **Relay** | host, global entity | cluster API | host certificate (mTLS) | report its load; serve producers and viewers that carry tokens ([§39](16-relay.md#39-relay)) |
@@ -110,6 +111,63 @@ holds a credential.
   once to learn who this is, which is roster's guidance, and Hydra's access
   tokens are opaque to anybody without its admin API -- and a session is
   what Shale already knows how to end.
+- **A person's key for Shale** is for a script. roster mints it the
+  person, **for the app Shale** (`ApiKey.app`), with some of Shale's
+  methods they hold there and an end if they give one: on roster's account
+  page (*keys*, *mint a key*, Shale as the app), by `roster me issue-key
+  --app shale`, or by a terminal's sign-in naming the app (`roster sign-in
+  --app shale`, where the deployment turned `account.terminal` on). It is
+  ended at roster too: on the account page's *revoke*, by the person, or by
+  Shale itself as the app (`ApiKeyService/Erase`; Shale has no page for it
+  yet). The tenant API takes it as `Authorization: Bearer rt_…`, read
+  after the session cookie and before the certificate; it is told apart by
+  its prefix before anything is asked of roster, and any other bearer goes
+  the way it went, to the next credential or to nobody. The cluster API
+  does not take one.
+
+  | credential | minted by | ended by | checked |
+  |---|---|---|---|
+  | a person's key for Shale (`rt_`) | roster, as the person (`ApiKeyService/Issue`: the account page, `roster me issue-key --app shale`, a terminal's sign-in) | roster: the account page's *revoke*, `ApiKeyService/Erase` by the person or by Shale, its own end, the person suspended or erased | `TokenService/Introspect`, asked as Shale in the tenant |
+
+  Shale asks roster who it is as itself (`/payday.TokenService/Introspect`,
+  which `app install --allow` names already), in a tenant, since a key names
+  none and Shale's deployment key holds nothing without `roster-at`: in
+  each tenant this deployment serves, the way somebody is found by `sub`
+  -- one asking where the configuration says the tenant (a tenant key, or
+  one per tenant). roster answers a key **for Shale** with its person,
+  their tenant, its methods and its end, and anything else -- a key of
+  roster's own, a key for another app, one ended, one of somebody
+  suspended -- as `no such token`, and so does Shale. The caller is then
+  the person, resolved to their row as a sign-in resolves them (made at
+  their first arrival, read from roster by identifier), and the call is
+  held to **both**: payday refuses a method the key does not name
+  (`PERMISSION_DENIED`, *this credential is not for that*), and the gate
+  decides for the person as for a session, `auth.operators` and its
+  `reads` included. Nothing is closed to a key that is open to the person.
+  **A key that watches names `Get` beside `Watch`**: payday reads each row
+  a stream sends as the entity's `Get` would (`/shale.SetService/Watch`
+  and `/shale.SetService/Get`), so a key naming `Watch` alone opens a
+  stream that sends nothing.
+  What roster said is kept **per key**, under a digest of it, for
+  `auth.operators.ttl` (30 s): the window in which a grant taken away at
+  roster already lands here, so a key ended at roster is refused within it
+  and no later; never beyond the key's end; and forgotten at once for a
+  person roster's sync stream says was signed out everywhere, suspended or
+  erased, where Shale's key may follow it (`/roster.SyncService/Watch`;
+  the embedded roster has none, and then it is the TTL). A roster that
+  cannot be asked is `UNAVAILABLE`, remembered for 5 s. **What is opened
+  with a key ends with it**: a stream (`Watch`) is cut, `UNAUTHENTICATED`,
+  at the key's end, by payday, which reads the end roster answered; when
+  its person is forgotten as above; and when the key is **ended at
+  roster**, within `auth.operators.ttl`: while a key has a stream open,
+  roster is asked about it again each time what it said runs out, and
+  `no such token` cuts that key's streams and no other key's of the same
+  person. A roster that cannot be asked at that moment cuts nothing -- the
+  stream is cut when roster answers that the key is none, or at the key's
+  end -- and nothing is asked about a key with no stream open. The view tokens `Live` signs, the
+  read tokens of `Timeline` and an export's ticket end no later than the
+  key, and a relay ends a live view at its token's end
+  ([§39.4](16-relay.md#394-viewers)).
 - **roster runs in the control plane's process or elsewhere.** With nothing
   configured, `shale serve all` and `shale serve control` run roster inside
   the process on a database of its own, reachable from that process only,
@@ -251,7 +309,9 @@ holds a credential.
 
   The key holds, as itself, the list of the tenants that nominated it --
   and `/roster.SyncService/Watch` where apps view on people's behalf
-  ([§33.8](#338-viewing-on-a-persons-behalf)) -- and nothing else; in each tenant it is answered as the
+  ([§33.8](#338-viewing-on-a-persons-behalf)), or where a person's keys
+  for Shale are to be forgotten the moment they stop being in good
+  standing rather than within `auth.operators.ttl` -- and nothing else; in each tenant it is answered as the
   holder `install` made, which may call the four methods `--allow` names
   -- `/roster.VouchService/Verify` beside them where people sign in with a
   password, and `/roster.MeService/Get` for a tenant key (`rt_`), which is
@@ -679,7 +739,7 @@ Running one is [§36.4](13-configuration.md#364-running-a-reader).
 | From → To | Protocol | Authentication |
 |---|---|---|
 | Producer / Reader → tenant API | gRPC over mTLS | host certificate |
-| Person / CLI → tenant or cluster API | gRPC over TLS | payday session or API token |
+| Person / CLI → tenant or cluster API | gRPC over TLS | a session; on the tenant API also a person's key for Shale (`Bearer rt_…`, [§33.1](#331-trust-model)) |
 | Producer / Reader → Storage Node | HTTP/1.1, HTTP/2, or HTTP/3 over TLS | CP-signed access token |
 | Producer → Satellite | HTTP/1.1 or HTTP/2 over mTLS ([§35.9](12-api.md#359-satellite-upload-proxy)) | producer certificate, and the CP-signed put token issued to it |
 | Satellite → Storage Node | HTTP/1.1 or HTTP/2 over TLS | the producer's CP-signed put token, forwarded |
@@ -704,6 +764,7 @@ Running one is [§36.4](13-configuration.md#364-running-a-reader).
 | A producer's key | negotiate and allocate for that producer's set, and write laminae into it up to the set's ceilings ([§12.6](04-write-path.md#126-upload-profile-negotiation)) | erase the producer; mTLS refuses it at once, tokens in flight expire within `allocation_ttl` |
 | A reader's key | read the laminae of its sites | erase the reader; effective at once for new tokens, within `read_token_ttl` for issued ones |
 | A person's session | anything that person may do, inside **their tenant only**; the wall holds; for up to 24 h, unless its person stops being in good standing at roster | sign the person out everywhere at roster, or suspend them: every session minted before it is refused within `auth.operators.ttl` (30 s) ([§33.1](#331-trust-model)); reset the password |
+| A person's key for Shale | what that person may do, of the methods the key names, inside **their tenant only**, on the tenant API alone, until the key ends | revoke it on roster's account page, or suspend the person: refused within `auth.operators.ttl` (30 s), at once where Shale follows roster's sync stream; streams opened with it end with it ([§33.1](#331-trust-model)) |
 | A node's key | act as that node: serve or drop its own sinks' data, report its own devices and sinks. A report about a sink or a device another live node holds changes nothing, its SMART and pressure included, and a sink's capacity is stored clamped to `max_sink_capacity` ([§27](09-operations.md#27-node--device--sink-health-and-quarantine)) | erase the node and adopt the machine again under a new key |
 | A hardware identity | request adoption as a known host | nothing until an operator adopts it; with `readopt: auto`, impersonate that host, which is why the default is `manual` |
 | A cluster operator's session | manage the cluster and read across tenants, **from wherever the cluster API's sign-in listener answers**: the API binds to localhost unless `cluster.addr` names an interface, until the cluster tenant (or, with `auth.operators`, the operators' tenant) is known it serves no person at all, and a deployment that exposes the sign-in listener for the console ([§40.4](17-console.md#404-serving-it)) exposes exactly that — a person with a password, behind the gate | sign the operator out everywhere at roster, or suspend them: refused within `auth.operators.ttl`; take their grant of all of Shale away, which ends it on the cluster API within the same; keep the listener where the operators are |

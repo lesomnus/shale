@@ -121,7 +121,8 @@ type ClientConfig struct {
 	// As is who the CLI calls as with the plain header, development only:
 	// `@tenant/alias`.
 	As string `yaml:"as"`
-	// Token is a session or API token.
+	// Token is sent as `Authorization: Bearer` on every call: a person's
+	// key for Shale (`rt_…`, §33.1), which the tenant API takes.
 	Token string `yaml:"token"`
 	// CaFile is the CA to verify the CP against; the state directory's
 	// bundle when empty.

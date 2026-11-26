@@ -148,12 +148,16 @@ func (d delegations) AppOf(client string) (string, bool) {
 }
 
 // followStanding ends the delegations of whoever roster says stopped being
-// in good standing (§33.8): signed out everywhere, suspended, erased. Where
-// roster cannot say it as it happens -- the one in this process, a key
-// not allowed the stream -- a delegation lasts until it is renewed and
-// roster is asked about the person, or until it ends.
+// in good standing (§33.8): signed out everywhere, suspended, erased; and
+// forgets what roster said of their keys for Shale, ending the streams
+// they opened with one (§33.1). Where roster cannot say it as it happens
+// -- the one in this process, a key not allowed the stream -- a delegation
+// lasts until it is renewed and roster is asked about the person, or until
+// it ends, and a key until roster is asked about it again
+// (`auth.operators.ttl`).
 func (s *Server) followStanding(ctx context.Context) error {
 	c := core.Core{}.WithDeps(s.Deps)
+	delegations := s.cfg.Auth.Delegation.On()
 	err := s.Identity.Watch(ctx, func(ctx context.Context, v identity.Standing) {
 		why := "signed out everywhere"
 		switch {
@@ -161,6 +165,12 @@ func (s *Server) followStanding(ctx context.Context) error {
 			why = "erased at roster"
 		case !v.Disabled.IsZero():
 			why = "suspended at roster"
+		}
+		if s.keys != nil {
+			s.keys.drop(v.Holder)
+		}
+		if !delegations {
+			return
 		}
 		since := v.Since()
 		if v.Invalidated.Equal(since) && v.Disabled.IsZero() && v.Erased.IsZero() {
@@ -179,7 +189,11 @@ func (s *Server) followStanding(ctx context.Context) error {
 		}
 	})
 	if errors.Is(err, identity.ErrNoSync) {
-		slog.Warn("delegation: roster cannot say who stops being in good standing as it happens, so a delegation lasts until its next renewal asks", "err", err.Error())
+		if delegations {
+			slog.Warn("delegation: roster cannot say who stops being in good standing as it happens, so a delegation lasts until its next renewal asks", "err", err.Error())
+		} else {
+			slog.Info("identity: roster cannot say who stops being in good standing as it happens, so a person's key is believed until roster is asked about it again (auth.operators.ttl)", "err", err.Error())
+		}
 		return nil
 	}
 

@@ -371,6 +371,30 @@ The binary is also the CLI. payday generates `get`, `ls`, `watch`, `add`,
 are named by ID or slug ([§35.1](12-api.md#351-conventions)). The CLI signs
 in as a person (`shale login`) and keeps a session.
 
+A script calls the tenant API with a person's key for Shale instead
+([§33.1](10-security.md#331-trust-model)): minted at roster for the app
+Shale with the methods the script calls -- on roster's account page, or
+`roster me issue-key --app shale` -- and handed to the CLI as `client.token`,
+in the file or as `SHALE_CLIENT_TOKEN`, which is sent as `Authorization:
+Bearer` on every call. There is no `--token` flag: a flag is in the shell's
+history and the process list, and the variable is not. The cluster API does
+not take a key.
+
+```bash
+export SHALE_CLIENT_TOKEN=rt_…             # from a secret store, not the command line
+shale --addr https://shale.example:7400 source ls
+shale --addr https://shale.example:7400 lamina timeline '{"source":{"id":"<source>"},"from":"<t>","to":"<t>"}'
+```
+
+A key is held to its own methods and to what its person may do, both: a
+method it does not name is `PERMISSION_DENIED`, *this credential is not for
+that*; a key ended at roster, of somebody suspended there, or for another
+app is `UNAUTHENTICATED`, within `auth.operators.ttl` (30 s) of being
+ended. A `watch` opened with a key is cut at the key's end, and within the
+same 30 s of the key being ended at roster; a key that watches names the
+entity's `Get` beside its `Watch` (`/shale.SetService/Watch` and
+`/shale.SetService/Get`), since each row a stream sends is read as a `Get`.
+
 ```bash
 # processes (§34.1)
 shale init [--tenant t] [--admin a] [--operator o]   # CA, signing key, first tenant, first operator and admin
